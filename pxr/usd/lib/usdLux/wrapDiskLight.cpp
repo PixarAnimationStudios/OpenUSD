@@ -48,6 +48,13 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateRadiusAttr(UsdLuxDiskLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateRadiusAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -81,6 +88,13 @@ void wrapUsdLuxDiskLight()
 
         .def(!self)
 
+        
+        .def("GetRadiusAttr",
+             &This::GetRadiusAttr)
+        .def("CreateRadiusAttr",
+             &_CreateRadiusAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
     ;
 

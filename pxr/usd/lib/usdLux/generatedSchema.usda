@@ -688,6 +688,9 @@ class DiskLight "DiskLight" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
+    float radius = 1 (
+        doc = "Radius of the disk."
+    )
     float specular = 1 (
         displayName = "Specular Multiplier"
         doc = """A multiplier for the effect of this light on the specular
@@ -749,6 +752,9 @@ class RectLight "RectLight" (
     )
     rel filters (
         doc = "Relationship to the light filters that apply to this light."
+    )
+    float height = 1 (
+        doc = "Height of the rectangle."
     )
     float intensity = 1 (
         doc = "Scales the power of the light linearly."
@@ -836,6 +842,9 @@ class RectLight "RectLight" (
         segment of a shot, and absent from others; unlike the action of 
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
+    )
+    float width = 1 (
+        doc = "Width of the rectangle."
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -953,6 +962,9 @@ class SphereLight "SphereLight" (
         to a different runtime level of detail, and that does not interact
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
+    )
+    float radius = 1 (
+        doc = "Radius of the sphere."
     )
     float specular = 1 (
         displayName = "Specular Multiplier"

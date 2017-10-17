@@ -325,6 +325,9 @@ class DiskLight "DiskLight" (
     The disk is centered in the XY plane and emits light along the -Z axis.
     The disk has a diameter of 1 unit in local space."""
 ) {
+    float radius = 1 (
+        doc = "Radius of the disk."
+    )
 }
 
 class RectLight "RectLight" (
@@ -333,6 +336,12 @@ class RectLight "RectLight" (
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit long in local space."""
 ) {
+    float width = 1 (
+        doc = "Width of the rectangle."
+    )
+    float height = 1 (
+        doc = "Height of the rectangle."
+    )
     asset texture:file (
         doc = """A color texture to use on the rectangle."""
     )
@@ -343,6 +352,9 @@ class SphereLight "SphereLight" (
     doc = """Light emitted outward from a sphere.
     The sphere has a diameter of 1 unit in local space."""
 ) {
+    float radius = 1 (
+        doc = "Radius of the sphere."
+    )
 }
 
 class GeometryLight "GeometryLight" (

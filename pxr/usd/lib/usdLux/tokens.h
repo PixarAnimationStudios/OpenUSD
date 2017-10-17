@@ -54,6 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (exposure) \
     (filters) \
     (geometry) \
+    (height) \
     (ignore) \
     (intensity) \
     (latlong) \
@@ -62,6 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mirroredBall) \
     (normalize) \
     (portals) \
+    (radius) \
     ((shadowColor, "shadow:color")) \
     ((shadowDistance, "shadow:distance")) \
     ((shadowEnable, "shadow:enable")) \
@@ -77,7 +79,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((shapingIesFile, "shaping:ies:file")) \
     (specular) \
     ((textureFile, "texture:file")) \
-    ((textureFormat, "texture:format"))
+    ((textureFormat, "texture:format")) \
+    (width)
 
 /// \anchor UsdLuxTokens
 ///
@@ -112,6 +115,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>exposure</b> - UsdLuxLight
 /// \li <b>filters</b> - UsdLuxLight
 /// \li <b>geometry</b> - UsdLuxGeometryLight
+/// \li <b>height</b> - UsdLuxRectLight
 /// \li <b>ignore</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
 /// \li <b>intensity</b> - UsdLuxDistantLight, UsdLuxLight
 /// \li <b>latlong</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
@@ -120,6 +124,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>mirroredBall</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
 /// \li <b>normalize</b> - UsdLuxLight
 /// \li <b>portals</b> - UsdLuxDomeLight
+/// \li <b>radius</b> - UsdLuxSphereLight, UsdLuxDiskLight
 /// \li <b>shadowColor</b> - UsdLuxShadowAPI
 /// \li <b>shadowDistance</b> - UsdLuxShadowAPI
 /// \li <b>shadowEnable</b> - UsdLuxShadowAPI
@@ -136,6 +141,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>specular</b> - UsdLuxLight
 /// \li <b>textureFile</b> - UsdLuxDomeLight, UsdLuxRectLight
 /// \li <b>textureFormat</b> - UsdLuxDomeLight
+/// \li <b>width</b> - UsdLuxRectLight
 TF_DECLARE_PUBLIC_TOKENS(UsdLuxTokens, USDLUX_API, USDLUX_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
