@@ -33,10 +33,12 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <cstdio>
 #include <iostream>
+
+using namespace std::placeholders;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -88,7 +90,7 @@ _DoTBBTest(bool verify, const size_t arraySize, const size_t numIterations)
     sw.Start();
     for (size_t i = 0; i < numIterations; i++) {
 
-        WorkParallelForN(arraySize, boost::bind(&_Double, _1, _2, &v));       
+        WorkParallelForN(arraySize, std::bind(&_Double, _1, _2, &v));       
 
     }
 
@@ -138,7 +140,7 @@ _DoSerialTest()
     const size_t N = 200;
     std::vector<int> v;
     _PopulateVector(N, v);
-    WorkSerialForN(N, boost::bind(&_Double, _1, _2, &v));
+    WorkSerialForN(N, std::bind(&_Double, _1, _2, &v));
     _VerifyDoubled(v);
 }
 

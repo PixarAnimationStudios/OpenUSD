@@ -29,13 +29,15 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <cstdlib>
 #include <iostream>
 #include <mutex>
 #include <set>
 #include <thread>
+
+using namespace std::placeholders;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -78,7 +80,7 @@ _TestThreadLimit(const int envVal, const size_t n)
 
     _uniqueThreads->clear();
 
-    WorkParallelForN(numSamples, boost::bind(&_CountThreads, _1, _2));
+    WorkParallelForN(numSamples, std::bind(&_CountThreads, _1, _2));
 
     std::cout << "   TBB used " << _uniqueThreads->size() << '\n';
 
