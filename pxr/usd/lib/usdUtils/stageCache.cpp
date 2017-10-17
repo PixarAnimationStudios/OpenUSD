@@ -52,8 +52,10 @@ GetSessionLayerMap()
 UsdStageCache&
 UsdUtilsStageCache::Get()
 {
-    static UsdStageCache theCache;
-    return theCache;
+    // Heap-allocate and deliberately leak this static cache to avoid
+    // problems with static destruction order.
+    static UsdStageCache *theCache = new UsdStageCache();
+    return *theCache;
 }
 
 SdfLayerRefPtr 
