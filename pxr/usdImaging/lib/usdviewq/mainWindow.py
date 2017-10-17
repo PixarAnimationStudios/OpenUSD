@@ -1204,8 +1204,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._playbackFrameIndex = 0
 
-        self._nodeSearchResults = []
-        self._attrSearchResults = []
+        self._nodeSearchResults = deque([])
+        self._attrSearchResults = deque([])
         self._nodeSearchString = ""
         self._attrSearchString = ""
         self._lastNodeSearched = self._currentNodes[0]
@@ -3126,10 +3126,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame,
                                      resetCam=False, forceComputeBBox=True)
 
-        # Clear out any attribute and prim searches when the selected prim changes
+        # Clear out any property searches when the selected prim changes
         # We can't hold onto the resulting Qt Widgets, as they are ephemeral.
-        self._nodeSearchResults = []
-        self._attrSearchResults = []
+        self._attrSearchResults = deque([])
 
         self._updateAttributeInspector(obj=self._getSelectedPrim(),
                                        updateAttributeView=True)

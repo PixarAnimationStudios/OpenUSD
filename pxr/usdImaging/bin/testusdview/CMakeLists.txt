@@ -45,6 +45,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewPrimPathBar
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewPrimSearch
+        DEST testusdviewPrimSearch
+    )
+
     pxr_register_test(testusdviewWrapper1
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback.py"
@@ -78,6 +83,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewPrimPathBar
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimPathBar.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewPrimSearch
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimSearch.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 endif()
