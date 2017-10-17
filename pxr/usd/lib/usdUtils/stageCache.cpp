@@ -43,8 +43,10 @@ typedef TfHashMap<std::string, SdfLayerRefPtr, TfHash> _SessionLayerMap;
 _SessionLayerMap&
 GetSessionLayerMap()
 {
-    static _SessionLayerMap sessionLayerMap;
-    return sessionLayerMap;
+    // Heap-allocate and deliberately leak this static cache to avoid
+    // problems with static destruction order.
+    static _SessionLayerMap *sessionLayerMap = new _SessionLayerMap();
+    return *sessionLayerMap;
 }
 
 }
