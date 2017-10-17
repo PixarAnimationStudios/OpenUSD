@@ -16,6 +16,46 @@ pxr_python_bin(testusdview
 
 if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_install_test_dir(
+        SRC testenv/testUsdviewAlive
+        DEST testusdviewAlive
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments1
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments2
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments3
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments4
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments5
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments6
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewFileArguments
+        DEST testusdviewFileArguments7
+    )
+
+    pxr_install_test_dir(
         SRC testenv/testUsdviewWrapper
         DEST testusdviewWrapper1
     )
@@ -48,6 +88,64 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_install_test_dir(
         SRC testenv/testUsdviewPrimSearch
         DEST testusdviewPrimSearch
+    )
+
+    pxr_register_test(testusdviewAlive                                               
+        PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testAlive.py test.usda"   
+        EXPECTED_RETURN_CODE 0                                                       
+    )
+
+    pxr_register_test(testusdviewFileArguments1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usda" 
+        EXPECTED_RETURN_CODE 0                                                       
+    )
+
+    pxr_register_test(testusdviewFileArguments2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usd" 
+        EXPECTED_RETURN_CODE 0                                                       
+    )
+
+    pxr_register_test(testusdviewFileArguments3
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usdc" 
+        EXPECTED_RETURN_CODE 0                                                       
+    )
+
+    pxr_register_test(testusdviewFileArguments4
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py test.py" 
+        STDERR_REDIRECT py_test_out
+        DIFF_COMPARE py_test_out 
+        EXPECTED_RETURN_CODE 1                                                       
+    )
+
+    pxr_register_test(testusdviewFileArguments5
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda" 
+        CLEAN_OUTPUT "\\/[t].*\\/.*\\/"
+        STDERR_REDIRECT invalidSyntax_test_out
+        DIFF_COMPARE invalidSyntax_test_out 
+        EXPECTED_RETURN_CODE 1 
+    )
+
+    pxr_register_test(testusdviewFileArguments6
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py test.txt" 
+        STDERR_REDIRECT txt_test_out
+        DIFF_COMPARE txt_test_out 
+        EXPECTED_RETURN_CODE 1                                                       
+    )
+
+    pxr_register_test(testusdviewFileArguments7
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py missing" 
+        STDERR_REDIRECT missing_test_out
+        DIFF_COMPARE missing_test_out 
+        EXPECTED_RETURN_CODE 1                                                       
     )
 
     pxr_register_test(testusdviewWrapper1
