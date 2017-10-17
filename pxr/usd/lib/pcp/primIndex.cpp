@@ -1304,8 +1304,7 @@ _AddArc(
              it.node; it.NextFrame()) {
 
             PcpPrimIndex_GraphPtr currentGraph = it.node.GetOwningGraph();
-            if (const PcpNodeRef dupeNode = 
-                currentGraph->GetNodeUsingSite(siteToAddInCurrentGraph)) {
+            if (currentGraph->GetNodeUsingSite(siteToAddInCurrentGraph)) {
                 foundDuplicateNode = true;
                 break;
             }
