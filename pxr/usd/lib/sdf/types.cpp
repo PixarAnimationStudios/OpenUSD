@@ -99,6 +99,7 @@ TF_REGISTRY_FUNCTION(VtValue)
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     // SdfSpecType
+    TF_ADD_ENUM_NAME(SdfSpecTypeUnknown);
     TF_ADD_ENUM_NAME(SdfSpecTypeAttribute);
     TF_ADD_ENUM_NAME(SdfSpecTypeConnection);
     TF_ADD_ENUM_NAME(SdfSpecTypeExpression);
