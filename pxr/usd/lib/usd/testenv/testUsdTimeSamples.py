@@ -199,5 +199,17 @@ def "Foo" {
         self.assertEqual(x.GetResolveInfo().GetSource(),
             Usd.ResolveInfoSourceDefault)
 
+    def test_usdaPrecisionBug(self):
+        s = Usd.Stage.CreateInMemory()
+        foo = s.DefinePrim('/foo')
+        test = foo.CreateAttribute('test', Sdf.ValueTypeNames.Float)
+        test.Set(0.0, 1.0)
+        test.Set(1.0, 1.0-Usd.TimeCode.SafeStep())
+        self.assertEqual(len(test.GetTimeSamples()), 2)
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        l.ImportFromString(s.GetRootLayer().ExportToString())
+        self.assertEqual(
+            len(l.GetAttributeAtPath('/foo.test').GetInfo('timeSamples')), 2)
+
 if __name__ == "__main__":
     unittest.main()

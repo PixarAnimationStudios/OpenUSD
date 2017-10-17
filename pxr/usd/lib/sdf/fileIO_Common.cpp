@@ -25,6 +25,7 @@
 // FileIO_Common.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 
 #include <cctype>
@@ -443,7 +444,7 @@ Sdf_FileIOUtility::WriteTimeSamples(ostream &out, size_t indent,
                                     const SdfTimeSampleMap & samples)
 {
     TF_FOR_ALL(i, samples) {
-        Write(out, indent+1, "%g: ", i->first);
+        Write(out, indent+1, "%s: ", TfStringify(i->first).c_str());
         if (i->second.IsHolding<SdfPath>()) {
             WriteSdfPath(out, 0, i->second.Get<SdfPath>() );
         } else {
