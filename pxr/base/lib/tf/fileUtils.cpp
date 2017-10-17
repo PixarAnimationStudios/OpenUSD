@@ -35,8 +35,6 @@
 #include "pxr/base/arch/errno.h"
 
 #include <boost/assign.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashset.h"
@@ -612,8 +610,9 @@ Tf_RmTreeRaiseErrors(string const& path, string const& msg)
 void
 TfRmTree(string const& path, TfWalkErrorHandler onError)
 {
+    namespace ph = std::placeholders;
     TfWalkDirs(path,
-               boost::bind(Tf_RmTree, _1, _2, _3, onError),
+               std::bind(Tf_RmTree, ph::_1, ph::_2, ph::_3, onError),
                /* topDown */ false,
                onError ? onError : Tf_RmTreeRaiseErrors);
 }
@@ -640,8 +639,10 @@ Tf_ListDir(string const& dirpath,
 vector<string>
 TfListDir(string const& path, bool recursive)
 {
+    namespace ph = std::placeholders;
     vector<string> result;
-    TfWalkDirs(path, boost::bind(Tf_ListDir, _1, _2, _3, &result, recursive));
+    TfWalkDirs(path, std::bind(Tf_ListDir, ph::_1, ph::_2, ph::_3,
+                               &result, recursive));
     return result;
 }
 

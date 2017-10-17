@@ -34,7 +34,6 @@
 
 #include <fstream>
 #include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

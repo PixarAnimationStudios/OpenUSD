@@ -27,8 +27,6 @@
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
 
-#include <boost/bind.hpp>
-
 #include <tbb/tbb_thread.h>
 
 #define FILENAME   "error.cpp"
@@ -195,7 +193,7 @@ Test_TfErrorThreadTransport()
     printf("Creating TfErrorMark\n");
     TfErrorMark m;
     printf("Launching thread\n");
-    tbb::tbb_thread t(boost::bind(_ThreadTask, &transport));
+    tbb::tbb_thread t([&transport]() { _ThreadTask(&transport); });
     TF_AXIOM(m.IsClean());
     t.join();
     printf("Thread completed, posting error.\n");
