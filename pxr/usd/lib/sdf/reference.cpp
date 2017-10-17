@@ -30,10 +30,8 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/bind.hpp>
-#include <boost/ref.hpp>
-
 #include <algorithm>
+#include <functional>
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -91,10 +89,10 @@ SdfFindReferenceByIdentity(
     const SdfReference &referenceId)
 {
     SdfReferenceVector::const_iterator it = std::find_if(
-        references.begin(), references.end(), 
-        boost::bind<bool>(
-            SdfReference::IdentityEqual(),
-            boost::cref(referenceId), _1));
+        references.begin(), references.end(),
+        [&referenceId](SdfReference const &ref) {
+            return SdfReference::IdentityEqual()(referenceId, ref);
+        });
 
     return it != references.end() ? it - references.begin() : -1;
 }
