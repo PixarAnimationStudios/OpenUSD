@@ -28,9 +28,6 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/stacked.h"
 
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/is_const.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

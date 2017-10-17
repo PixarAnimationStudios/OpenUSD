@@ -87,9 +87,7 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
 
-#include <boost/bind.hpp>
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include <tbb/spin_rw_mutex.h>
@@ -277,7 +275,6 @@ static void
 _CopyAndRemoveDescendentPaths(const T& paths, SdfPathVector* outPaths)
 {
     using std::unique_copy;
-    using boost::bind;
 
     outPaths->reserve(paths.size());
 
@@ -289,7 +286,9 @@ _CopyAndRemoveDescendentPaths(const T& paths, SdfPathVector* outPaths)
     // 'q' also in pathVecToRecompose such that p.HasPrefix(q).
     unique_copy(paths.begin(), paths.end(),
                 back_inserter(*outPaths),
-                bind(&SdfPath::HasPrefix, _2, _1));
+                [](SdfPath const &l, SdfPath const &r) {
+                    return r.HasPrefix(l);
+                });
 }
 
 
@@ -3492,11 +3491,12 @@ UsdStage::_HandleLayersDidChange(
     _CopyAndRemoveDescendentPaths(pathsToRecompose, &pathsToRecomposeVec);
 
     using std::remove_if;
-    using boost::bind;
 
     pathsToRecomposeVec.erase(
         remove_if(pathsToRecomposeVec.begin(), pathsToRecomposeVec.end(),
-                  bind(&UsdStage::_IsObjectDescendantOfInstance, this, _1)),
+                  [this](SdfPath const &path) {
+                      return _IsObjectDescendantOfInstance(path);
+                  }),
         pathsToRecomposeVec.end());
 
     // Collect the paths in otherChangedPaths that aren't under paths that
@@ -3514,7 +3514,9 @@ UsdStage::_HandleLayersDidChange(
     otherChangedPathsVec.reserve(otherChangedPaths.size());
     remove_copy_if(otherChangedPaths.begin(), otherChangedPaths.end(),
                    back_inserter(otherChangedPathsVec),
-                   bind(&UsdStage::_IsObjectDescendantOfInstance, this, _1));
+                   [this](SdfPath const &path) {
+                       return _IsObjectDescendantOfInstance(path);
+                   });
 
     // Now we want to remove all elements of otherChangedPathsVec that are
     // prefixed by elements in pathsToRecompose.

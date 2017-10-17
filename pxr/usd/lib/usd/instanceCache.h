@@ -31,7 +31,6 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <tbb/mutex.h>
-#include <boost/noncopyable.hpp>
 #include <map>
 #include <vector>
 
@@ -109,8 +108,10 @@ public:
 /// This object keeps track of the dependencies formed between 
 /// masters and prim indexes by this process.
 ///
-class Usd_InstanceCache : boost::noncopyable
+class Usd_InstanceCache
 {
+    Usd_InstanceCache(Usd_InstanceCache const &) = delete;
+    Usd_InstanceCache &operator=(Usd_InstanceCache const &) = delete;
 public:
     Usd_InstanceCache();
 

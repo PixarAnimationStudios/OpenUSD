@@ -45,7 +45,6 @@
 
 #include "pxr/base/tf/ostreamMethods.h"
 
-#include <boost/foreach.hpp>
 #include <boost/functional/hash.hpp>
 
 #include <algorithm>
@@ -452,8 +451,7 @@ private:
     explicit UsdPrim_TargetFinder(
         UsdPrim const &prim, Predicate const &pred, bool recurse)
         : _prim(prim)
-        , _consumerTask(_dispatcher,
-                        std::bind(&UsdPrim_TargetFinder::_ConsumerTask, this))
+        , _consumerTask(_dispatcher, [this]() { _ConsumerTask(); })
         , _predicate(pred)
         , _recurse(recurse) {}
 
