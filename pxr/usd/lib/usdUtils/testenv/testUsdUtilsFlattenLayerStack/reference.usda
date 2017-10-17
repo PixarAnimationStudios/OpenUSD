@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+)
+
+def Sphere "Sphere"
+{
+    def Xform "ChildFromReference"
+    {
+    }
+}

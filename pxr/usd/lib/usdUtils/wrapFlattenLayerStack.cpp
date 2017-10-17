@@ -22,19 +22,21 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include <boost/python/def.hpp>
+
+#include "pxr/usd/usdUtils/flattenLayerStack.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
+#include "pxr/base/tf/makePyConstructor.h"
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapFlattenLayerStack()
 {
-    TF_WRAP( Authoring );
-    TF_WRAP( Dependencies );
-    TF_WRAP( FlattenLayerStack );
-    TF_WRAP( Introspection );
-    TF_WRAP( Pipeline );
-    TF_WRAP( RegisteredVariantSet );
-    TF_WRAP( StageCache );
-    TF_WRAP( Stitch );
-    TF_WRAP( StitchClips );
+    def("FlattenLayerStack", UsdUtilsFlattenLayerStack,
+        boost::python::return_value_policy<
+        TfPyRefPtrFactory<SdfLayerHandle> >());
 }

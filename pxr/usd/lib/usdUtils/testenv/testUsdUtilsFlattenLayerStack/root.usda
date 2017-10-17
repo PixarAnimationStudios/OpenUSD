@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 20
+    subLayers = [
+        @./sub.usda@ (offset = -10)
+    ]
+)
+
+over "Sphere"
+{
+    float defaultOverTimeSamples = 123
+
+    float timeSamplesOverDefault.timeSamples = {
+        1: 1,
+        10: 10,
+    }
+}
+
+over "ListOpTest"
+{
+    prepend rel foo = </Pre_root>
+    append rel foo = </App_root>
+    delete rel foo = </Del_root>
+}

@@ -1,0 +1,55 @@
+#usda 1.0
+
+def Sphere "Sphere" (
+    inherits = </_class_Sphere>
+    payload = @./payload.usda@
+    references = [ @./reference.usda@ ]
+    variantSets = "vset_1"
+    variants = {
+        string vset_1 = "default"
+        string vset_2 = "default"
+    }
+)
+{
+    float timeSamplesAcrossLayerOffset
+    float timeSamplesAcrossLayerOffset.timeSamples = {
+        1: 1,
+        10: 10,
+    }
+
+    float defaultOverTimeSamples
+    float defaultOverTimeSamples.timeSamples = {
+        1: 1,
+        10: 10,
+    }
+
+    float timeSamplesOverDefault
+    float timeSamplesOverDefault = 123
+
+    asset relativePath = @./foo.usda@
+    asset[] relativePathVec = [ @./foo.usda@, @./bar.usda@ ]
+
+    variantSet "vset_1" = {
+        "default" (
+            variantSets = "vset_2"
+        )
+        {
+            variantSet "vset_2" = {
+                "default"
+                {
+                    def Xform "ChildFromNestedVariant"
+                    {
+                    }
+                }
+            }
+        }
+    }
+}
+
+def Sphere "ListOpTest"
+{
+    custom rel foo
+    prepend rel foo = </Pre_sub>
+    append rel foo = </App_sub>
+    delete rel foo = </Del_sub>
+}
