@@ -126,6 +126,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 pluginsLoaded = True
 
             except ImportError:
+                # Fails silently if UsdviewPlug is found but a sub-module is not.
+                # See bug 152226
                 pass
 
         if self._printTiming and pluginsLoaded:
@@ -201,6 +203,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._highlightColor = (1.0,1.0,0.0,0.0)
             self._selHighlightMode = "Only when paused"
             self._drawSelHighlights = True
+
+            self._allowViewUpdates = True
 
             MainWindow._renderer = parserData.renderer
             if MainWindow._renderer == 'simple':
@@ -333,7 +337,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._nodeViewUpdateTimer = QtCore.QTimer(self)
             self._nodeViewUpdateTimer.setInterval(0)
             self._nodeViewUpdateTimer.timeout.connect(self._updateNodeView)
-            
+
             # This creates the _stageView and restores state from settings file
             self._resetSettings()
 
@@ -566,8 +570,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.actionWatch_Window.toggled.connect(self._watchWindowToggled)
 
-            self._ui.actionRecompute_Clipping_Planes.triggered.connect(
-                self._stageView.detachAndReClipFromCurrentCamera)
+            if self._stageView:
+                self._ui.actionRecompute_Clipping_Planes.triggered.connect(
+                    self._stageView.detachAndReClipFromCurrentCamera)
 
             self._ui.actionAdjust_Clipping.triggered[bool].connect(
                 self._adjustClippingPlanes)
@@ -662,7 +667,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
-            self._ui.threePointLights.triggered.connect(self._stageView.update)
+            if self._stageView:
+                self._ui.threePointLights.triggered.connect(self._stageView.update)
 
             self._ui.nodeViewDepthGroup.triggered.connect(self._changeNodeViewDepth)
 
@@ -842,7 +848,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._resetView(self._initialSelectNode)
             except Exception:
                 pass
-        if self._printTiming and not self._noRender:
+        if self._printTiming and self._stageView:
             t.PrintTime("create first image")
 
         # configure render plugins after stageView initialized its renderer.
@@ -869,9 +875,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.statusMessage(msg, 12)
         with Timer() as t:
-            self._stageView.setNodes(self._prunedCurrentNodes,
-                                     self._currentFrame,
-                                     resetCam=False, forceComputeBBox=True)
+            if self._stageView:
+                self._stageView.setNodes(self._prunedCurrentNodes,
+                                         self._currentFrame,
+                                         resetCam=False, forceComputeBBox=True)
             self._refreshVars()
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
@@ -1168,17 +1175,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
 
         if not self._stageView:
-            self._stageView = StageView(parent=self, dataModel=self)
-            self._stageView.SetStage(self._stage)
-            self._stageView.noRender = self._noRender
-
-            self._stageView.fpsHUDInfo = self._fpsHUDInfo
-            self._stageView.fpsHUDKeys = self._fpsHUDKeys
-
-            self._stageView.signalPrimSelected.connect(self.onPrimSelected)
-            self._stageView.signalPrimRollover.connect(self.onRollover)
-            self._stageView.signalMouseDrag.connect(self.onStageViewMouseDrag)
-            self._stageView.signalErrorMessage.connect(self.statusMessage)
 
             # The second child is self._ui.glFrame, which disappears if
             # its size is set to zero.
@@ -1190,6 +1186,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.nodeStageSplitter.addWidget(self._ui.attributeBrowserFrame)
 
             else:
+                self._stageView = StageView(parent=self, dataModel=self)
+                self._stageView.SetStage(self._stage)
+
+                self._stageView.fpsHUDInfo = self._fpsHUDInfo
+                self._stageView.fpsHUDKeys = self._fpsHUDKeys
+
+                self._stageView.signalPrimSelected.connect(self.onPrimSelected)
+                self._stageView.signalPrimRollover.connect(self.onRollover)
+                self._stageView.signalMouseDrag.connect(self.onStageViewMouseDrag)
+                self._stageView.signalErrorMessage.connect(self.statusMessage)
+
                 layout = QtWidgets.QVBoxLayout()
                 layout.setContentsMargins(0, 0, 0, 0)
                 self._ui.glFrame.setLayout(layout)
@@ -1307,15 +1314,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._stageView.update()
 
     def _adjustClippingPlanes(self, checked):
-        if (checked):
-            self._adjustClippingDlg = adjustClipping.AdjustClipping(self,
-                                                                 self._stageView)
-            self._adjustClippingDlg.finished.connect(
-                lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
+        # Eventually, this will not be accessible when _stageView is None.
+        # Until then, silently ignore.
+        if self._stageView:
+            if (checked):
+                self._adjustClippingDlg = adjustClipping.AdjustClipping(self,
+                                                                     self._stageView)
+                self._adjustClippingDlg.finished.connect(
+                    lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
 
-            self._adjustClippingDlg.show()
-        else:
-            self._adjustClippingDlg.close()
+                self._adjustClippingDlg.show()
+            else:
+                self._adjustClippingDlg.close()
 
     @property
     def xformCache(self):
@@ -2059,7 +2069,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.actionFill.setChecked(self._fillLightEnabled)
         self._ui.actionBack.setChecked(self._backLightEnabled)
 
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
         self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
         self._highlightColor = self._colorsDict[self._highlightColorName]
@@ -2077,8 +2088,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.actionFreeCam._node = None
         self._ui.actionFreeCam.triggered.connect(
             lambda : self._cameraSelectionChanged(None))
-        self._stageView.signalSwitchedToFreeCam.connect(
-            lambda : self._cameraSelectionChanged(None))
+        if self._stageView:
+            self._stageView.signalSwitchedToFreeCam.connect(
+                lambda : self._cameraSelectionChanged(None))
 
         self._refreshCameraListAndMenu(preserveCurrCamera = False)
 
@@ -2097,8 +2109,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _saveSplitterStates(self):
         # we dont want any of the splitter positions to be saved when using
-        # -norender
-        if not self._noRender:
+        # --norender
+        if self._stageView:
             self._settings.setAndSave(
                     nodeStageSplitter = self._ui.nodeStageSplitter.saveState())
 
@@ -2159,26 +2171,27 @@ class MainWindow(QtWidgets.QMainWindow):
             selectNode = self._initialSelectNode or pRoot
 
         item = self._getItemAtPath(selectNode.GetPath())
+
         # Our response to selection-change includes redrawing.  We do NOT
         # want that to happen here, since we are subsequently going to
         # change the camera framing (and redraw, again), which can cause
         # flickering.  So make sure we don't redraw!
-        suppressRendering = self._noRender
-        self._noRender = True
+        self._allowViewUpdates = False
         self._ui.nodeView.setCurrentItem(item)
-        self._noRender = suppressRendering
+        self._allowViewUpdates = True
 
-        if (selectNode and selectNode != pRoot) or not self._startingPrimCamera:
-            # _frameSelection translates the camera from wherever it happens
-            # to be at the time.  If we had a starting selection AND a
-            # primCam, then before framing, switch back to the prim camera
-            if selectNode == self._initialSelectNode and self._startingPrimCamera:
+        if self._stageView:
+            if (selectNode and selectNode != pRoot) or not self._startingPrimCamera:
+                # _frameSelection translates the camera from wherever it happens
+                # to be at the time.  If we had a starting selection AND a
+                # primCam, then before framing, switch back to the prim camera
+                if selectNode == self._initialSelectNode and self._startingPrimCamera:
+                    self._stageView.setCameraPrim(self._startingPrimCamera)
+                self._frameSelection()
+            else:
                 self._stageView.setCameraPrim(self._startingPrimCamera)
-            self._frameSelection()
-        else:
-            self._stageView.setCameraPrim(self._startingPrimCamera)
-            self._stageView.setNodes(self._prunedCurrentNodes,
-                                     self._currentFrame)
+                self._stageView.setNodes(self._prunedCurrentNodes,
+                                         self._currentFrame)
 
     def _changeRenderMode(self, mode):
         self._renderMode = str(mode.text())
@@ -2191,7 +2204,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.menuLights.setEnabled(True)
         else:
             self._ui.menuLights.setEnabled(False)
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _changePickMode(self, mode):
         self._settings.setAndSave(PickMode=mode.text())
@@ -2200,14 +2214,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self._settings.setAndSave(SelHighlightMode=str(mode.text()))
         self._selHighlightMode = str(mode.text())
         self._drawSelHighlights = (self._selHighlightMode != "Never")
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _changeHighlightColor(self, color):
         self._settings.setAndSave(HighlightColor=str(color.text()))
         color = str(color.text())
         self._highlightColorName = color
         self._highlightColor = self._colorsDict[color]
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _changeInterpolationType(self, interpolationType):
         for t in Usd.InterpolationType.allValues:
@@ -2314,55 +2330,61 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _refreshBBox(self):
         """Recompute and hide/show Bounding Box."""
-        if not self._stageView:
-            return
-        self._stageView.setNodes(self._currentNodes,
-                                self._currentFrame,
-                                forceComputeBBox=True)
+        if self._stageView:
+            self._stageView.setNodes(self._currentNodes,
+                                     self._currentFrame,
+                                     forceComputeBBox=True)
 
     def _toggleDisplayGuide(self, checked):
         self._settings.setAndSave(DisplayGuide=checked)
         self._displayGuide = checked
-        self._stageView.updateBboxPurposes()
-        self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.updateBboxPurposes()
+            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+            self._stageView.update()
 
     def _toggleDisplayProxy(self, checked):
         self._settings.setAndSave(DisplayProxy=checked)
         self._displayProxy = checked
-        self._stageView.updateBboxPurposes()
-        self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.updateBboxPurposes()
+            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+            self._stageView.update()
 
     def _toggleDisplayRender(self, checked):
         self._settings.setAndSave(DisplayRender=checked)
         self._displayRender = checked
-        self._stageView.updateBboxPurposes()
-        self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
         self._updateAttributeView()
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.updateBboxPurposes()
+            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+            self._stageView.update()
 
     def _toggleDisplayCameraOracles(self, checked):
         self._settings.setAndSave(DisplayCameraGuides=checked)
         self._displayCameraOracles = checked
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _toggleDisplayPrimId(self, checked):
         self._settings.setAndSave(DisplayPrimId=checked)
         self._displayPrimId = checked
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _toggleEnableHardwareShading(self, checked):
         self._settings.setAndSave(EnableHardwareShading=checked)
         self._enableHardwareShading = checked
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _toggleCullBackfaces(self, checked):
         self._settings.setAndSave(CullBackfaces=checked)
         self._cullBackfaces = checked
-        self._stageView.update()
+        if self._stageView:
+            self._stageView.update()
 
     def _showInterpreter(self):
         from pythonExpressionPrompt import Myconsole
@@ -2404,16 +2426,21 @@ class MainWindow(QtWidgets.QMainWindow):
         painter = QtGui.QPainter(windowShot)
         self.render(painter, QtCore.QPoint())
 
-        # overlay the QGLWidget on and return the composed image
-        # we offset by a single point here because of Qt.Pos funkyness
-        offset = QtCore.QPoint(0,1)
-        pos = self._stageView.mapTo(self, self._stageView.pos()) - offset
-        painter.drawImage(pos, self.GrabViewportShot())
+        if self._stageView:
+            # overlay the QGLWidget on and return the composed image
+            # we offset by a single point here because of Qt.Pos funkyness
+            offset = QtCore.QPoint(0,1)
+            pos = self._stageView.mapTo(self, self._stageView.pos()) - offset
+            painter.drawImage(pos, self.GrabViewportShot())
+
         return windowShot
 
     def GrabViewportShot(self):
         '''Returns a QImage of the current stage view in usdview.'''
-        return self._stageView.grabFrameBuffer()
+        if self._stageView:
+            return self._stageView.grabFrameBuffer()
+        else:
+            return None
 
     # File handling functionality =============================================
 
@@ -2568,8 +2595,9 @@ class MainWindow(QtWidgets.QMainWindow):
             cameraPath = camera.GetPath()
         for action in self._ui.menuCamera.actions():
             action.setChecked(action.data() == cameraPath)
-        self._stageView.setCameraPrim(camera)
-        self._stageView.updateGL()
+        if self._stageView:
+            self._stageView.setCameraPrim(camera)
+            self._stageView.updateGL()
 
     def _refreshCameraListAndMenu(self, preserveCurrCamera):
         self._allSceneCameras = Utils._GetAllPrimsOfType(self._stage,
@@ -2969,29 +2997,34 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # If not in instances picking mode, select all instances.
         if not (applyPickMode and self._ui.actionPick_Instances.isChecked()):
-            self._stageView.clearInstanceSelection()
+            if self._stageView:
+                self._stageView.clearInstanceSelection()
             instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
 
         item = self._getItemAtPath(path, ensureExpanded=True)
 
         if updateMode == "replace":
-            self._stageView.clearInstanceSelection()
-            self._stageView.setInstanceSelection(path, instanceIndex, True)
+            if self._stageView:
+                self._stageView.clearInstanceSelection()
+                self._stageView.setInstanceSelection(path, instanceIndex, True)
             self._ui.nodeView.setCurrentItem(item)
         elif updateMode == "add":
-            self._stageView.setInstanceSelection(path, instanceIndex, True)
+            if self._stageView:
+                self._stageView.setInstanceSelection(path, instanceIndex, True)
             item.setSelected(True)
         else:   # "toggle"
             if instanceIndex != UsdImagingGL.GL.ALL_INSTANCES:
-                self._stageView.setInstanceSelection(path, instanceIndex,
-                    not self._stageView.getInstanceSelection(path, instanceIndex))
-                # if no instances selected, unselect item
-                if len(self._stageView.getSelectedInstanceIndices(path)) == 0:
-                    item.setSelected(False)
-                else:
-                    item.setSelected(True)
+                if self._stageView:
+                    self._stageView.setInstanceSelection(path, instanceIndex,
+                        not self._stageView.getInstanceSelection(path, instanceIndex))
+                    # if no instances selected, unselect item
+                    if len(self._stageView.getSelectedInstanceIndices(path)) == 0:
+                        item.setSelected(False)
+                    else:
+                        item.setSelected(True)
             else:
-                self._stageView.clearInstanceSelection()
+                if self._stageView:
+                    self._stageView.clearInstanceSelection()
                 item.setSelected(not item.isSelected())
             # if nothing selected, select root.
             if len(self._ui.nodeView.selectedItems()) == 0:
@@ -3084,7 +3117,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._ui.currentPathWidget.setText(', '.join([str(p) for p in paths]))
 
-        if not self._noRender:
+        if self._stageView and self._allowViewUpdates:
             # update the entire upper HUD with fresh information
             # this includes geom counts (slow)
             self._updateHUDNodeStats()
@@ -3210,19 +3243,21 @@ class MainWindow(QtWidgets.QMainWindow):
             # refresh the visibility column
             self._resetNodeViewVis(selItemsOnly=False, authoredVisHasChanged=False)
 
-        # this is the part that renders
-        if self._playing:
-            self._stageView.updateForPlayback(self._currentFrame,
-                                             self._selHighlightMode == "Always")
-        else:
-            self._stageView.setNodes(self._currentNodes, self._currentFrame)
+        if self._stageView:
+            # this is the part that renders
+            if self._playing:
+                self._stageView.updateForPlayback(self._currentFrame,
+                                                 self._selHighlightMode == "Always")
+            else:
+                self._stageView.setNodes(self._currentNodes, self._currentFrame)
 
     def setHUDVisible(self, hudVisible):
         self._ui.actionHUD.setChecked(False)
 
     def saveFrame(self, fileName):
-        pm =  QtGui.QPixmap.grabWindow(self._stageView.winId())
-        pm.save(fileName, 'TIFF')
+        if self._stageView:
+            pm =  QtGui.QPixmap.grabWindow(self._stageView.winId())
+            pm.save(fileName, 'TIFF')
 
     def _getAttributeDict(self):
         attributeDict = OrderedDict()
@@ -3789,7 +3824,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 color.alphaF()
         )
         self.cameraMaskColor = color
-        self._stageView.updateGL()
+        if self._stageView:
+            self._stageView.updateGL()
 
     def _CameraMaskMenuChanged(self):
         if self._ui.actionCameraMask_Full.isChecked():
@@ -3806,7 +3842,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._showMask_Opaque = False
         self._showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
 
-        self._stageView.updateGL()
+        if self._stageView:
+            self._stageView.updateGL()
 
         self._settings.setAndSave(actionCameraMask=showMaskSetting)
         self._settings.setAndSave(actionCameraMask_Outline=self._showMask_Outline)
@@ -3825,12 +3862,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 color.alphaF()
         )
         self.cameraReticlesColor = color
-        self._stageView.updateGL()
+        if self._stageView:
+            self._stageView.updateGL()
 
     def _CameraReticlesMenuChanged(self):
         self._showReticles_Inside = self._ui.actionCameraReticles_Inside.isChecked()
         self._showReticles_Outside = self._ui.actionCameraReticles_Outside.isChecked()
-        self._stageView.updateGL()
+        if self._stageView:
+            self._stageView.updateGL()
 
         self._settings.setAndSave(actionCameraReticles_Inside=self._showReticles_Inside)
         self._settings.setAndSave(actionCameraReticles_Outside=self._showReticles_Outside)
@@ -3854,7 +3893,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionHUD_Performance.isChecked()
         self._showHUD_GPUstats = \
             self._ui.actionHUD_GPUstats.isChecked()
-        self._stageView.updateGL()
+        if self._stageView:
+            self._stageView.updateGL()
 
         self._settings.setAndSave(actionHUD=self._ui.actionHUD.isChecked())
         self._settings.setAndSave(actionHUD_Info=self._ui.actionHUD_Info.isChecked())
@@ -4225,6 +4265,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if not item:
                     item = self._getItemAtPath(path)
                 self._showNodeContextMenu(item)
+
                 # context menu steals mouse release event from the StageView.
                 # We need to give it one so it can track its interaction
                 # mode properly

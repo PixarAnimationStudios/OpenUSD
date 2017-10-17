@@ -47,7 +47,10 @@ class PlugContext(object):
 
     def GetCurrentGfCamera(self):
         ''' Returns the last computed Gf Camera. '''
-        return self._mainWindow._stageView.gfCamera
+        if self._mainWindow._stageView:
+            return self._mainWindow._stageView.gfCamera
+        else:
+            return None
 
     def GetCurrentFrame(self):
         ''' Returns the current frame. '''

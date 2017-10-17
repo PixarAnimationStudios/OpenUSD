@@ -1365,16 +1365,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._HUDStatKeys = keys
 
     @property
-    def noRender(self):
-        return self._noRender
-
-    @noRender.setter
-    def noRender(self, value):
-        if value and self._renderer:
-            raise Exception('Renderer has already been initialized - too late to prevent rendering')
-        self._noRender = value
-
-    @property
     def overrideNear(self):
         return self._overrideNear
 
@@ -1499,7 +1489,6 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._forceRefresh = False
         self._renderTime = 0
-        self._noRender = False
 
         self._allSceneCameras = None
 
@@ -1519,11 +1508,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._vao = 0
 
     def InitRenderer(self):
-        '''Create (or re-create) the imager.   If you intend to
-        disable rendering for this widget, you MUST have already set
-        self.noRender to True prior to calling this function'''
-        if not self._noRender:
-            self._renderer = UsdImagingGL.GL()
+        '''Create (or re-create) the imager.'''
+        self._renderer = UsdImagingGL.GL()
         self._rendererPluginName = ""
 
     def GetRendererPlugins(self):
@@ -1764,9 +1750,6 @@ class StageView(QtOpenGL.QGLWidget):
         '''
         self._nodes = nodes
         self._currentFrame = frame
-
-        if self._noRender:
-            return
 
         # set highlighted paths to renderer
         self._updateSelection()
