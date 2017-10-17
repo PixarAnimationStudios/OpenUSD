@@ -196,10 +196,7 @@ class Launcher(object):
                 arg_parse_result.camera = camPath
         return True
 
-    def __LaunchProcess(self, arg_parse_result):
-        '''
-        after the arguments have been parsed, launch the UI in a forked process
-        '''
+    def LaunchPreamble(self, arg_parse_result):
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
         from pxr import Work
@@ -225,6 +222,16 @@ class Launcher(object):
 
         mainWindow = MainWindow(None, arg_parse_result)
 
+        return (app, mainWindow)
+
+    def __LaunchProcess(self, arg_parse_result):
+        '''
+        after the arguments have been parsed, launch the UI in a forked process
+        '''
+        # Initialize concurrency limit as early as possible so that it is
+        # respected by subsequent imports.
+        (app, mainWindow) = self.LaunchPreamble(arg_parse_result)
+        
         if arg_parse_result.quitAfterStartup:
             # Before we quit, process events one more time to make sure the
             # UI is fully populated (and to capture all the timing information
