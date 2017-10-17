@@ -59,10 +59,11 @@ class "Light" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     rel filters (
         doc = """Relationship to the light filters that apply to this light."""
@@ -260,12 +261,12 @@ class "ShadowAPI" (
     rel shadow:include (
         displayGroup = "Shadows"
         displayName = "Shadow Include Subset"
-        doc = "Set of geometry to consider for shadowing. If this is not specified, all geometry is used for shadowing."
+        doc = "Set of geometry to consider for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing."
     )
     rel shadow:exclude (
         displayGroup = "Shadows"
         displayName = "Shadow Exclude Subset"
-        doc = "Set of geometry to ignore for shadowing. If this is not specified, all geometry is used for shadowing."
+        doc = "Set of geometry to ignore for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing."
     )
     color3f shadow:color = (0, 0, 0) (
         displayGroup = "Shadows"
@@ -275,12 +276,12 @@ class "ShadowAPI" (
     float shadow:distance (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
-        There is no limit unless this attribute value is overriden."""
+        There is no limit unless this attribute value is overridden."""
     )
     float shadow:falloff (
         displayGroup = "Shadows"
         doc = """The near distance at which shadow falloff beings.
-        There is no falloff unless this attribute value is overriden."""
+        There is no falloff unless this attribute value is overridden."""
     )
     float shadow:falloffGamma = 1.0 (
         displayGroup = "Shadows"
@@ -369,12 +370,12 @@ class GeometryLight "GeometryLight" (
 
 class DomeLight "DomeLight" (
     inherits = </Light>
-    doc = """Light emitted inward from a distant external dome or hemisphere,
-    such as a sky."""
+    doc = """Light emitted inward from a distant external environment,
+    such as a sky or IBL light probe."""
 ) {
     asset texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high
-        dyanmic range) texture intended for IBL (image based lighting)."""
+        dynamic range) texture intended for IBL (image based lighting)."""
     )
     token texture:format = "automatic" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]

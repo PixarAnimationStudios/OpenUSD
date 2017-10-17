@@ -14,10 +14,11 @@ class "Light" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -328,7 +329,7 @@ class "ShadowAPI" (
     float shadow:distance (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
-        There is no limit unless this attribute value is overriden."""
+        There is no limit unless this attribute value is overridden."""
     )
     bool shadow:enable = 1 (
         displayGroup = "Shadows"
@@ -337,12 +338,12 @@ class "ShadowAPI" (
     rel shadow:exclude (
         displayGroup = "Shadows"
         displayName = "Shadow Exclude Subset"
-        doc = "Set of geometry to ignore for shadowing. If this is not specified, all geometry is used for shadowing."
+        doc = "Set of geometry to ignore for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing."
     )
     float shadow:falloff (
         displayGroup = "Shadows"
         doc = """The near distance at which shadow falloff beings.
-        There is no falloff unless this attribute value is overriden."""
+        There is no falloff unless this attribute value is overridden."""
     )
     float shadow:falloffGamma = 1 (
         displayGroup = "Shadows"
@@ -353,7 +354,7 @@ class "ShadowAPI" (
     rel shadow:include (
         displayGroup = "Shadows"
         displayName = "Shadow Include Subset"
-        doc = "Set of geometry to consider for shadowing. If this is not specified, all geometry is used for shadowing."
+        doc = "Set of geometry to consider for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing."
     )
 }
 
@@ -463,10 +464,11 @@ class DistantLight "DistantLight" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -596,10 +598,11 @@ class DiskLight "DiskLight" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -731,10 +734,11 @@ class RectLight "RectLight" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -871,10 +875,11 @@ class SphereLight "SphereLight" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -1005,10 +1010,11 @@ class GeometryLight "GeometryLight" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -1128,8 +1134,8 @@ class GeometryLight "GeometryLight" (
 }
 
 class DomeLight "DomeLight" (
-    doc = """Light emitted inward from a distant external dome or hemisphere,
-    such as a sky."""
+    doc = """Light emitted inward from a distant external environment,
+    such as a sky or IBL light probe."""
 )
 {
     color3f color = (1, 1, 1) (
@@ -1139,10 +1145,11 @@ class DomeLight "DomeLight" (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  Only takes effect
-        when enableColorTemperature is set to true.  When active, the
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyColorTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float diffuse = 1 (
         displayName = "Diffuse Multiplier"
@@ -1241,7 +1248,7 @@ class DomeLight "DomeLight" (
     )
     asset texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high
-        dyanmic range) texture intended for IBL (image based lighting)."""
+        dynamic range) texture intended for IBL (image based lighting)."""
     )
     token texture:format = "automatic" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]

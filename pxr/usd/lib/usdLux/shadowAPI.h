@@ -166,7 +166,7 @@ public:
     // SHADOWDISTANCE 
     // --------------------------------------------------------------------- //
     /// The maximum distance shadows are cast.
-    /// There is no limit unless this attribute value is overriden.
+    /// There is no limit unless this attribute value is overridden.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -188,7 +188,7 @@ public:
     // SHADOWFALLOFF 
     // --------------------------------------------------------------------- //
     /// The near distance at which shadow falloff beings.
-    /// There is no falloff unless this attribute value is overriden.
+    /// There is no falloff unless this attribute value is overridden.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -232,7 +232,7 @@ public:
     // --------------------------------------------------------------------- //
     // SHADOWINCLUDE 
     // --------------------------------------------------------------------- //
-    /// Set of geometry to consider for shadowing. If this is not specified, all geometry is used for shadowing.
+    /// Set of geometry to consider for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing.
     ///
     USDLUX_API
     UsdRelationship GetShadowIncludeRel() const;
@@ -246,7 +246,7 @@ public:
     // --------------------------------------------------------------------- //
     // SHADOWEXCLUDE 
     // --------------------------------------------------------------------- //
-    /// Set of geometry to ignore for shadowing. If this is not specified, all geometry is used for shadowing.
+    /// Set of geometry to ignore for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing.
     ///
     USDLUX_API
     UsdRelationship GetShadowExcludeRel() const;
