@@ -23,3 +23,7 @@ over "ListOpTest"
     append rel foo = </App_root>
     delete rel foo = </Del_root>
 }
+
+class "_class_Sphere"
+{
+}

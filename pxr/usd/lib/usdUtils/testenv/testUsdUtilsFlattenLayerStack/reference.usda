@@ -7,5 +7,10 @@ def Sphere "Sphere"
 {
     def Xform "ChildFromReference"
     {
+        float timeSamplesAcrossRef
+        float timeSamplesAcrossRef.timeSamples = {
+            1: 1,
+            10: 10,
+        }
     }
 }

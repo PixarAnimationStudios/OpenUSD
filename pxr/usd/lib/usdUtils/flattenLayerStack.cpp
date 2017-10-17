@@ -204,6 +204,15 @@ _ApplyLayerOffsetToClipInfo(
     }
 }
 
+static boost::optional<SdfReference>
+_ApplyLayerOffsetToReference(const SdfLayerOffset &offset,
+                             const SdfReference &ref)
+{
+    SdfReference result = ref;
+    result.SetLayerOffset(offset * ref.GetLayerOffset());
+    return boost::optional<SdfReference>(result);
+}
+
 // Apply layer offsets (time remapping) to time-keyed metadata.
 static VtValue
 _ApplyLayerOffset(const SdfLayerOffset &offset,
@@ -240,7 +249,7 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
             VtDictionary clips = val.UncheckedGet<VtDictionary>();
             for (auto &entry: clips) {
                 const std::string& clipSetName = entry.first;
-                VtValue& clipInfoVal= entry.second;
+                VtValue& clipInfoVal = entry.second;
                 if (!clipInfoVal.IsHolding<VtDictionary>()) {
                     TF_WARN("Expected dictionary for entry '%s' in 'clips'",
                             clipSetName.c_str());
@@ -252,8 +261,22 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
                     offset, UsdClipsAPIInfoKeys->active, &clipInfo);
                 _ApplyLayerOffsetToClipInfo(
                     offset, UsdClipsAPIInfoKeys->times, &clipInfo);
+                clipInfoVal = VtValue(clipInfo);
             }
             return VtValue(clips);
+        }
+    }
+    else if (field == SdfFieldKeys->References) {
+        if (val.IsHolding<SdfReferenceListOp>()) {
+            SdfReferenceListOp refs = val.UncheckedGet<SdfReferenceListOp>();
+            refs.ModifyOperations(boost::bind(
+                _ApplyLayerOffsetToReference,
+                // Although the caller already took the inverse of the
+                // SdfLayerOffset (to match USD value resolution), in this
+                // case we want the original offset since we'll be writing 
+                // back to a new layer offset on the reference arc.
+                offset.GetInverse(), _1));
+            return VtValue(refs);
         }
     }
     return val;

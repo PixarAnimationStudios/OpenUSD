@@ -21,7 +21,7 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
-from pxr import UsdUtils, Sdf, Usd
+from pxr import UsdUtils, Sdf, Usd, Gf, Vt
 import unittest
 
 class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
@@ -46,6 +46,9 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
             self.assertTrue(p.HasPayload())
             self.assertTrue(p.HasVariantSets())
 
+            # Classes continue to exist
+            self.assertTrue( stage.GetPrimAtPath('/_class_Sphere') )
+
             # Default in a strong layer wins over timeSamples in weak.
             a = p.GetAttribute('defaultOverTimeSamples')
             self.assertEqual( a.GetResolveInfo().GetSource(),
@@ -58,6 +61,11 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
 
             # Layer offsets affect time samples
             a = p.GetAttribute('timeSamplesAcrossLayerOffset')
+            self.assertEqual( a.GetTimeSamples(),  [11.0, 20.0] )
+
+            # Layer offsets get folded into reference arcs
+            p = stage.GetPrimAtPath('/Sphere/ChildFromReference')
+            a = p.GetAttribute('timeSamplesAcrossRef')
             self.assertEqual( a.GetTimeSamples(),  [11.0, 20.0] )
 
             # Confirm result of list-editing.
@@ -75,6 +83,16 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
                 '/Sphere/ChildFromReference',
                 '/Sphere/ChildFromNestedVariant']:
                 self.assertTrue(stage.GetPrimAtPath(childPath))
+
+            # Confirm time samples coming from (offset) clips.
+            p = stage.GetPrimAtPath('/SphereUsingClip_LegacyForm')
+            a = p.GetAttribute('xformOp:translate')
+            self.assertEqual( a.GetResolveInfo(5).GetSource(),
+                    Usd.ResolveInfoSourceValueClips )
+            p = stage.GetPrimAtPath('/SphereUsingClip')
+            a = p.GetAttribute('xformOp:translate')
+            self.assertEqual( a.GetResolveInfo(5).GetSource(),
+                    Usd.ResolveInfoSourceValueClips )
 
         # Confirm relative asset path handling in the output stage.
         p = result_stage.GetPrimAtPath('/Sphere')
@@ -95,6 +113,22 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
                 ['/App_sub', '/App_root'])
         self.assertEqual(list(targets.deletedItems),
                 ['/Del_sub', '/Del_root'])
+
+        # Confirm offsets have been folded into value clips.
+        p = layer.GetPrimAtPath('/SphereUsingClip_LegacyForm')
+        self.assertEqual( p.GetInfo('clipActive'),
+           Vt.Vec2dArray(1, [(11, 0)]) )
+        self.assertEqual( p.GetInfo('clipTimes'),
+           Vt.Vec2dArray(2, [(11, 1), (20, 10)]) )
+        p = layer.GetPrimAtPath('/SphereUsingClip')
+        self.assertEqual( p.GetInfo('clips')['default']['active'],
+           Vt.Vec2dArray(1, [(11, 0)]) )
+        self.assertEqual( p.GetInfo('clips')['default']['times'],
+           Vt.Vec2dArray(2, [(11, 1), (20, 10)]) )
+
+        # Confirm nested variant sets still exist
+        self.assertTrue(layer.GetObjectAtPath(
+            '/Sphere{vset_1=default}{vset_2=default}ChildFromNestedVariant'))
 
 if __name__=="__main__":
     unittest.main()

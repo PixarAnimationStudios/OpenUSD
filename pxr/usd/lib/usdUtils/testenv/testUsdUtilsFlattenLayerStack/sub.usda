@@ -53,3 +53,28 @@ def Sphere "ListOpTest"
     append rel foo = </App_sub>
     delete rel foo = </Del_sub>
 }
+
+def Sphere "SphereUsingClip_LegacyForm" (
+    clipAssetPaths = [ @./clip_moving_sphere.usda@ ]
+    clipManifestAssetPath = @./clip_static_sphere.usda@
+    clipPrimPath = "/Sphere"
+    clipActive = [ (1, 0) ]
+    clipTimes = [ (1, 1), (10, 10) ]
+    references = @./clip_static_sphere.usda@</Sphere>
+)
+{
+}
+
+def Sphere "SphereUsingClip" (
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip_moving_sphere.usda@]
+            string primPath = "/Sphere"
+            double2[] active = [(1, 0)]
+            double2[] times = [(1, 1), (10,10)]
+        }
+    }
+    references = @./clip_static_sphere.usda@</Sphere>
+)
+{
+}
