@@ -48,7 +48,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderIndex &renderIndex = _GetDelegate()->GetRenderIndex();
+    HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
     HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
 
     /* INSTANCE PRIMVARS */
@@ -89,7 +89,7 @@ HdStInstancer::GetInstancePrimVars()
     HF_MALLOC_TAG_FUNCTION();
 
     HdChangeTracker &changeTracker = 
-        _GetDelegate()->GetRenderIndex().GetChangeTracker();
+        GetDelegate()->GetRenderIndex().GetChangeTracker();
     SdfPath const& instancerId = GetId();
 
     // Two RPrim's might be trying to update the same instancer at once.
@@ -106,10 +106,10 @@ HdStInstancer::GetInstancePrimVars()
         // be updated just once even if there're multiple prototypes.
         if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
             HdResourceRegistrySharedPtr const& resourceRegistry = 
-                _GetDelegate()->GetRenderIndex().GetResourceRegistry();
+                GetDelegate()->GetRenderIndex().GetResourceRegistry();
 
             TfTokenVector primVarNames;
-            primVarNames = _GetDelegate()->GetPrimVarInstanceNames(instancerId);
+            primVarNames = GetDelegate()->GetPrimVarInstanceNames(instancerId);
 
             // for all instance primvars
             HdBufferSourceVector sources;
@@ -124,7 +124,7 @@ HdStInstancer::GetInstancePrimVars()
             TF_FOR_ALL(nameIt, primVarNames) {
                 if (HdChangeTracker::IsPrimVarDirty(dirtyBits, instancerId, 
                                                     *nameIt)) {
-                    VtValue value = _GetDelegate()->Get(instancerId, *nameIt);
+                    VtValue value = GetDelegate()->Get(instancerId, *nameIt);
                     if (!value.IsEmpty()) {
                         HdBufferSourceSharedPtr source;
                         if (*nameIt == HdTokens->instanceTransform &&
@@ -209,7 +209,7 @@ HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
 {
     SdfPath const &instancerId = GetId();
     VtIntArray instanceIndices
-        = _GetDelegate()->GetInstanceIndices(instancerId, prototypeId);
+        = GetDelegate()->GetInstanceIndices(instancerId, prototypeId);
 
     // quick sanity check
     // instance indices should not exceed the size of instance primvars.
@@ -242,7 +242,7 @@ HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
     // backtrace the instancer hierarchy to gather all instance indices.
     if (!GetParentId().IsEmpty()) {
         HdInstancer *parentInstancer =
-            _GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
+            GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
         if (TF_VERIFY(parentInstancer)) {
             static_cast<HdStInstancer*>(parentInstancer)->
                 _GetInstanceIndices(instancerId, instanceIndicesArray);
@@ -261,7 +261,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     // dirtyBits within this function.
 
     HdResourceRegistrySharedPtr const& resourceRegistry = 
-        _GetDelegate()->GetRenderIndex().GetResourceRegistry();
+        GetDelegate()->GetRenderIndex().GetResourceRegistry();
 
     // delegate provides sparse index array for prototypeId.
     std::vector<VtIntArray> instanceIndicesArray;

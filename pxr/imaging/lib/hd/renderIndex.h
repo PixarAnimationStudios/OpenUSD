@@ -106,6 +106,13 @@ public:
     HD_API
     void Clear();
 
+    /// Clear all entries in the render index under
+    /// the given root and belong to a specified delegate.
+    ///
+    /// Used for example to unload a delegate.
+    HD_API
+    void RemoveSubtree(const SdfPath &root, HdSceneDelegate* sceneDelegate);
+
     // ---------------------------------------------------------------------- //
     /// Given a prim id, returns the path of the correspoding rprim
     /// or an empty path if none is found.
@@ -364,6 +371,16 @@ private:
 
     template <typename T>
     static inline const TfToken & _GetTypeId();
+
+
+    void _RemoveRprimSubtree(const SdfPath &root,
+                             HdSceneDelegate* sceneDelegate);
+    void _RemoveInstancerSubtree(const SdfPath &root,
+                                 HdSceneDelegate* sceneDelegate);
+    void _RemoveExtComputationSubtree(const SdfPath &root,
+                                      HdSceneDelegate* sceneDelegate);
+    void _RemoveTaskSubtree(const SdfPath &root,
+                            HdSceneDelegate* sceneDelegate);
 
 
     // ---------------------------------------------------------------------- //

@@ -129,8 +129,7 @@ public:
     /// Returns the parent instancer identifier.
     SdfPath const& GetParentId() const { return _parentId; }
 
-protected:
-    HdSceneDelegate* _GetDelegate() const { return _delegate; }
+    HdSceneDelegate* GetDelegate() const { return _delegate; }
 
 private:
     HdSceneDelegate* _delegate;

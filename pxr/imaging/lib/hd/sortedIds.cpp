@@ -111,6 +111,30 @@ Hd_SortedIds::Remove(const SdfPath &id)
     }
 }
 
+
+HD_API
+void Hd_SortedIds::RemoveRange(size_t start, size_t end)
+{
+    size_t numIds = _ids.size();
+    size_t numToRemove = (end - start + 1);
+
+    if (_sortedCount != numIds) {
+        TF_CODING_ERROR("RemoveRange can only be called while list sorted\n");
+        return;
+    }
+
+    if (numToRemove == numIds) {
+        Clear();
+        return;
+    }
+
+    SdfPathVector::iterator itStart = _ids.begin() + start;
+    SdfPathVector::iterator itEnd   = _ids.begin() + (end + 1);
+
+    _ids.erase(itStart, itEnd);
+    _sortedCount -= numToRemove;
+}
+
 void
 Hd_SortedIds::Clear()
 {

@@ -101,6 +101,22 @@ HdRenderIndex::~HdRenderIndex()
     _DestroyFallbackPrims();
 }
 
+
+void
+HdRenderIndex::RemoveSubtree(const SdfPath &root,
+                             HdSceneDelegate* sceneDelegate)
+{
+    HD_TRACE_FUNCTION();
+
+    _RemoveRprimSubtree(root, sceneDelegate);
+    _sprimIndex.RemoveSubtree(root, sceneDelegate, _tracker, _renderDelegate);
+    _bprimIndex.RemoveSubtree(root, sceneDelegate, _tracker, _renderDelegate);
+    _RemoveInstancerSubtree(root, sceneDelegate);
+    _RemoveExtComputationSubtree(root, sceneDelegate);
+    _RemoveTaskSubtree(root, sceneDelegate);
+}
+
+
 void
 HdRenderIndex::InsertRprim(TfToken const& typeId,
                  HdSceneDelegate* sceneDelegate,
@@ -153,7 +169,6 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
-
     _RprimMap::iterator rit = _rprimMap.find(id);
     if (rit == _rprimMap.end())
         return;
@@ -177,6 +192,92 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
 
     _rprimMap.erase(rit);
 }
+
+void
+HdRenderIndex::_RemoveRprimSubtree(const SdfPath &root,
+                                   HdSceneDelegate* sceneDelegate)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    struct _Range {
+        size_t _start;
+        size_t _end;
+
+        _Range() = default;
+        _Range(size_t start, size_t end)
+         : _start(start)
+         , _end(end)
+        {
+        }
+    };
+
+    HdPrimGather gather;
+    _Range totalRange;
+    std::vector<_Range> rangesToRemove;
+
+    const SdfPathVector &ids = _rprimIds.GetIds();
+    if (!gather.SubtreeAsRange(ids,
+                               root,
+                               &totalRange._start,
+                               &totalRange._end)) {
+        return;
+    }
+
+    // end is inclusive!
+    size_t currentRangeStart = totalRange._start;
+    for (size_t rprimIdIdx  = totalRange._start;
+                rprimIdIdx <= totalRange._end;
+              ++rprimIdIdx) {
+        const SdfPath &id = ids[rprimIdIdx];
+
+        _RprimMap::iterator rit = _rprimMap.find(id);
+        if (rit == _rprimMap.end()) {
+            TF_CODING_ERROR("Rprim in id list not in info map: %s",
+                             id.GetText());
+        } else {
+            _RprimInfo &rprimInfo = rit->second;
+
+            if (rprimInfo.sceneDelegate == sceneDelegate) {
+                SdfPath instancerId = rprimInfo.rprim->GetInstancerId();
+                if (!instancerId.IsEmpty()) {
+                    _tracker.InstancerRPrimRemoved(instancerId, id);
+                }
+
+                _tracker.RprimRemoved(id);
+
+                // Ask delegate to actually delete the rprim
+                rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
+                _renderDelegate->DestroyRprim(rprimInfo.rprim);
+                rprimInfo.rprim = nullptr;
+
+                _rprimMap.erase(rit);
+            } else {
+                if (currentRangeStart < rprimIdIdx) {
+                    rangesToRemove.emplace_back(currentRangeStart,
+                                                rprimIdIdx - 1);
+                }
+
+                currentRangeStart = rprimIdIdx + 1;
+            }
+        }
+    }
+
+    // Remove final range
+    if (currentRangeStart <= totalRange._end) {
+        rangesToRemove.emplace_back(currentRangeStart,
+                                    totalRange._end);
+    }
+
+    // Remove ranges from id's in back to front order to not invalidate indices
+    while (!rangesToRemove.empty()) {
+        _Range &range = rangesToRemove.back();
+
+        _rprimIds.RemoveRange(range._start, range._end);
+        rangesToRemove.pop_back();
+    }
+}
+
 
 void
 HdRenderIndex::Clear()
@@ -257,6 +358,38 @@ HdRenderIndex::RemoveTask(SdfPath const& id)
 
     _tracker.TaskRemoved(id);
     _taskMap.erase(it);
+}
+
+
+void
+HdRenderIndex::_RemoveTaskSubtree(const SdfPath &root,
+                                  HdSceneDelegate* sceneDelegate)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _TaskMap::iterator it = _taskMap.begin();
+    while (it != _taskMap.end()) {
+        const SdfPath &id = it->first;
+        const HdTaskSharedPtr &task = it->second;
+
+        _TaskMap::iterator nextIt = it;
+        ++nextIt;
+
+        // Yuck!!!
+        const boost::shared_ptr<HdSceneTask> sceneTask =
+                                 boost::dynamic_pointer_cast<HdSceneTask>(task);
+
+        if (sceneTask) {
+            if ((sceneTask->GetDelegate() == sceneDelegate) &&
+                (id.HasPrefix(root))) {
+                _tracker.TaskRemoved(id);
+
+                _taskMap.erase(it);
+            }
+        }
+        it = nextIt;
+    }
 }
 
 // -------------------------------------------------------------------------- //
@@ -387,6 +520,9 @@ HdRenderIndex::RemoveExtComputation(SdfPath const& id)
     _extComputationMap.erase(it);
 }
 
+
+
+
 HdExtComputation const *
 HdRenderIndex::GetExtComputation(SdfPath const &id) const
 {
@@ -423,6 +559,28 @@ HdRenderIndex::GetExtComputationInfo(SdfPath const &id,
 
     *computation   = it->second.extComputation.get();
     *sceneDelegate = it->second.sceneDelegate;
+}
+
+void
+HdRenderIndex::_RemoveExtComputationSubtree(const SdfPath &root,
+                                            HdSceneDelegate* sceneDelegate)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _ExtComputationMap::iterator it = _extComputationMap.begin();
+    while (it != _extComputationMap.end()) {
+        const SdfPath &id = it->first;
+        const _ExtComputationInfo &compInfo = it->second;
+
+        if ((compInfo.sceneDelegate == sceneDelegate) &&
+            (id.HasPrefix(root))) {
+            _tracker.ExtComputationRemoved(id);
+            it = _extComputationMap.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------- //
@@ -1206,6 +1364,38 @@ HdRenderIndex::RemoveInstancer(SdfPath const& id)
     _tracker.InstancerRemoved(id);
     _instancerMap.erase(it);
 }
+
+void
+HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
+                                       HdSceneDelegate* sceneDelegate)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    _InstancerMap::iterator it = _instancerMap.begin();
+    while (it != _instancerMap.end()) {
+        const SdfPath &id = it->first;
+        HdInstancer *instancer = it->second;
+
+        if ((instancer->GetDelegate() == sceneDelegate) &&
+            (id.HasPrefix(root))) {
+            _renderDelegate->DestroyInstancer(it->second);
+
+            _tracker.InstancerRemoved(id);
+
+            // Need to capture the iterator and increment it because
+            // TfHashMap::erase() doesn't return the next iterator, like
+            // the stl version does.
+            _InstancerMap::iterator nextIt = it;
+            ++nextIt;
+            _instancerMap.erase(it);
+            it = nextIt;
+        } else {
+            ++it;
+        }
+    }
+}
+
 
 HdInstancer *
 HdRenderIndex::GetInstancer(SdfPath const &id) const
