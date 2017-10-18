@@ -65,6 +65,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (simpleLightTask)
     (camera)
     (render)
+
+    ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
 );
 
 TF_REGISTRY_FUNCTION(TfDebug)
@@ -844,6 +846,21 @@ _OnMayaSceneUpdateCallback(void* clientData)
     UsdMayaGLBatchRenderer::Reset();
 }
 
+// For Viewport 2.0, we listen for a notification from Maya's rendering
+// pipeline that all render passes have completed and then we do some cleanup.
+static
+void
+_OnMayaEndRenderCallback(MHWRender::MDrawContext& context, void* clientData)
+{
+    UsdMayaGLBatchRenderer* batchRenderer =
+        static_cast<UsdMayaGLBatchRenderer*>(clientData);
+    if (!batchRenderer) {
+        return;
+    }
+
+    batchRenderer->MayaRenderDidEnd();
+}
+
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
 {
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));
@@ -860,10 +877,28 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
             MSceneMessage::addCallback(MSceneMessage::kSceneUpdate,
                                        _OnMayaSceneUpdateCallback);
     }
+
+    MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+    if (!renderer) {
+        MGlobal::displayError("Viewport 2.0 renderer not initialized.");
+    } else {
+        renderer->addNotification(
+            _OnMayaEndRenderCallback,
+            _tokens->MayaEndRenderNotificationName.GetText(),
+            MHWRender::MPassContext::kEndRenderSemantic,
+            (void*)this);
+    }
 }
 
 UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
+    MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+    if (renderer) {
+        renderer->removeNotification(
+            _tokens->MayaEndRenderNotificationName.GetText(),
+            MHWRender::MPassContext::kEndRenderSemantic);
+    }
+
     _intersector.reset();
     _taskDelegate.reset();
 
@@ -871,7 +906,6 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
     // deleted before _renderIndex is deleted.
     _shapeRendererMap.clear();
 }
-
 
 /* static */
 void UsdMayaGLBatchRenderer::Reset()
@@ -929,28 +963,6 @@ UsdMayaGLBatchRenderer::Draw(
     delete batchData;
 }
 
-/// Returns true if the current Maya draw pass is a color pass, or false
-/// otherwise.
-static
-bool
-_IsMayaColorPass(const MHWRender::MDrawContext* drawContext)
-{
-    if (!drawContext) {
-        return false;
-    }
-
-    const MHWRender::MPassContext& passContext = drawContext->getPassContext();
-    const MStringArray& passSemantics = passContext.passSemantics();
-
-    for (unsigned int i = 0; i < passSemantics.length(); ++i) {
-        if (passSemantics[i] == MHWRender::MPassContext::kColorPassSemantic) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void
 UsdMayaGLBatchRenderer::Draw(
     const MHWRender::MDrawContext& context,
@@ -982,6 +994,16 @@ UsdMayaGLBatchRenderer::Draw(
                                         projectionMat);
     }
 
+    const MHWRender::MPassContext& passContext = context.getPassContext();
+    const MString& passId = passContext.passIdentifier();
+
+    const auto inserted = _drawnMayaRenderPasses.insert(passId.asChar());
+    if (!inserted.second) {
+        // We've already done a Hydra draw for this Maya render pass, so we
+        // don't do another one.
+        return;
+    }
+
     if( batchData->_drawShape && !_renderQueue.empty() )
     {
         MMatrix viewMat = context.getMatrix(MHWRender::MDrawContext::kViewMtx, &status);
@@ -996,6 +1018,18 @@ UsdMayaGLBatchRenderer::Draw(
         //
         _RenderBatches( &context, viewMat, projectionMat, viewport );
     }
+}
+
+void
+UsdMayaGLBatchRenderer::MayaRenderDidEnd()
+{
+    // Selection is based on what we have last rendered to the display. The
+    // selection queue is cleared during drawing, so this has the effect of
+    // resetting the render queue and prepping the selection queue without any
+    // significant memory hit.
+    _renderQueue.swap(_selectQueue);
+
+    _drawnMayaRenderPasses.clear();
 }
 
 size_t
@@ -1318,17 +1352,15 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT
 
-    // Viewport 2 may be rendering in multiple passes, so *only* if the current
-    // pass is the main color pass do we clear the render queue. For example,
-    // when shadows are turned on, Maya will execute a shadow pass before the
-    // color pass.
-    const bool isColorPass = _IsMayaColorPass(vp2Context);
-    if (isColorPass) {
-        // Selection is based on what we have last rendered to the display. The
-        // selection queue is cleared above, so this has the effect of resetting
-        // the render queue and prepping the selection queue without any
-        // significant memory hit.
-        _renderQueue.swap(_selectQueue);
+    // Viewport 2 may be rendering in multiple passes, and we want to make sure
+    // we draw once (and only once) for each of those passes, so we delay
+    // swapping the render queue into the select queue until we receive a
+    // notification that all rendering has ended.
+    // For the legacy viewport, rendering is done in a single pass and we will
+    // not receive a notification at the end of rendering, so we do the swap
+    // now.
+    if (!vp2Context) {
+        MayaRenderDidEnd();
     }
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(

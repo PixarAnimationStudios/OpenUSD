@@ -57,6 +57,7 @@
 #include <memory>
 #include <functional>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -366,7 +367,20 @@ public:
     void Draw(
             const MHWRender::MDrawContext& context,
             const MUserData *userData );
-    
+
+    /// \brief Notify the batch renderer that a Maya render has ended.
+    ///
+    /// Viewport 2.0 may execute a render in multiple passes (shadow, color,
+    /// etc.), and Maya sends a notification when all rendering has finished.
+    /// When this notification is received, this method should be called to
+    /// reset some state in the batch renderer and prepare it for subsequent
+    /// selection.
+    /// For the legacy viewport, rendering is done in a single pass and there
+    /// is no such notification sent by Maya, so this method is called
+    /// internally at the end of Hydra draws for the legacy viewport.
+    PXRUSDMAYAGL_API
+    void MayaRenderDidEnd();
+
 private:
     
     /// \brief Helper function to find a key for the shape in the renderer cache
@@ -427,11 +441,21 @@ private:
     /// \brief container of all batched render calls to be made at next display
     /// refresh.
     _RendererQueueMap _renderQueue;
-        
+
+    /// \brief Container of Maya render pass identifiers of passes drawn so far
+    /// during a Viewport 2.0 render.
+    ///
+    /// Since all Hydra geometry is drawn at once, we only ever want to execute
+    /// the Hydra draw once per Maya render pass (shadow, color, etc.). This
+    /// container keeps track of which passes have been drawn by Hydra, and it
+    /// is reset when the batch renderer is notified that a Maya render has
+    /// ended.
+    std::unordered_set<std::string> _drawnMayaRenderPasses;
+
     /// \brief container of batched render calls made at last display refresh,
     /// to be used at next selection operation.
     _RendererQueueMap _selectQueue;
-    
+
     typedef std::unordered_map<SdfPath, HdxIntersector::Hit, SdfPath::Hash> HitBatch;
     
     /// \brief a cache of all selection results gathered since the last display
