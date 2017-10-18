@@ -151,7 +151,6 @@ private:
     bool _doubleSided;
     bool _packedNormals;
     HdCullStyle _cullStyle;
-    VtValue _shadingStyle;
 };
 
 

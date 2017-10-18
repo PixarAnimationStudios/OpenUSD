@@ -52,32 +52,6 @@ public:
     HD_API
     virtual ~HdShader();
 
-    /// Obtain the source code for the Surface Shader for this prim from
-    /// the scene delegate.
-    inline std::string GetSurfaceShaderSource(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the source code for the Displacement Shader for this prim from
-    /// the scene delegate.
-    inline std::string GetDisplacementShaderSource(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the collection of shader Primvar descriptions for this prim from
-    /// the scene delegate.
-    inline HdShaderParamVector GetSurfaceShaderParams(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the value of the specified Primvar for this prim from the
-    /// scene delegate.
-    inline VtValue GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
-                                              TfToken const &paramName) const;
-
-    /// Obtain the scene delegates's globally unique id for the texture
-    /// resource identified by textureId.
-    inline HdTextureResource::ID GetTextureResourceID(
-        HdSceneDelegate* sceneDelegate,
-        SdfPath const& textureId) const;
-
     /// Causes the shader to be reloaded.
     virtual void Reload() = 0;
 
@@ -95,38 +69,6 @@ private:
     HdShader(const HdShader &)             = delete;
     HdShader &operator =(const HdShader &) = delete;
 };
-
-inline std::string
-HdShader::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetSurfaceShaderSource(GetID());
-}
-
-inline std::string
-HdShader::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetDisplacementShaderSource(GetID());
-}
-
-inline HdShaderParamVector
-HdShader::GetSurfaceShaderParams(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetSurfaceShaderParams(GetID());
-}
-
-inline VtValue
-HdShader::GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
-                                          TfToken const &paramName) const
-{
-    return sceneDelegate->GetSurfaceShaderParamValue(GetID(), paramName);
-}
-
-inline HdTextureResource::ID
-HdShader::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
-                               SdfPath const& textureId) const
-{
-    return sceneDelegate->GetTextureResourceID(textureId);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

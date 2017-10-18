@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/mixinShaderCode.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/shader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -44,7 +45,6 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -75,7 +75,6 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _doubleSided(false)
     , _packedNormals(IsEnabledPackedNormals())
     , _cullStyle(HdCullStyleDontCare)
-    , _shadingStyle()
 {
     /*NOTHING*/
 }
@@ -1050,7 +1049,7 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 HdShaderCodeSharedPtr
 HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader) const
 {
-    VtValue mixinValue = _shadingStyle;
+    VtValue mixinValue = GetShadingStyle(sceneDelegate);
     if (!mixinValue.IsEmpty()) {
         TfToken mixin = mixinValue.GetWithDefault<TfToken>();
         /// XXX In the future this could be a place to pull on a surface entry
@@ -1088,7 +1087,6 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* VISIBILITY */
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
-    _shadingStyle = GetShadingStyle(sceneDelegate);
 
     /* CONSTANT PRIMVARS */
     // This will call _GetShaderCode to resolve per rprim shader mixins
@@ -1230,7 +1228,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     // if so, we want to make sure the geometric shader does not optimize the
     // geometry shader out of the code.
     bool hasCustomDisplacementTerminal = false;
-    const HdShader *shader = static_cast<const HdShader *>(
+    const HdStShader *shader = static_cast<const HdStShader *>(
         renderIndex.GetSprim(HdPrimTypeTokens->shader, GetMaterialId()));
     if (shader) {
         const std::string & displacementShader = 
