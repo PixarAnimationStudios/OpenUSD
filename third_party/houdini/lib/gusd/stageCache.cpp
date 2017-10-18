@@ -24,6 +24,7 @@
 #include "gusd/stageCache.h"
 
 #include <DEP/DEP_MicroNode.h>
+#include <OP/OP_Director.h>
 #include <UI/UI_Object.h>
 #include <UT/UT_ConcurrentHashMap.h>
 #include <UT/UT_Interrupt.h>
@@ -362,7 +363,7 @@ private:
 class GusdStageCache::_Impl
 {
 public:
-    ~_Impl() { Clear(); }
+    ~_Impl();
 
     UT_RWLock&      GetMapLock()    { return _mapLock; }
 
@@ -473,6 +474,18 @@ private:
     
     UT_Array<GusdUSD_DataCache*> _dataCaches;
 };
+
+
+GusdStageCache::_Impl::~_Impl()
+{
+    // Clear() entries, so that micro nodes are dirtied as expected. 
+    // Don't let this happen if Houdini is undergoing shutdown,
+    // though, as the UI queue may have already expired.
+    const auto* dir = OPgetDirector();
+    if(dir && !dir->getIsQuitting()) {
+        Clear();
+    }
+}
 
 
 UsdStageRefPtr
