@@ -1258,7 +1258,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         @property
         def highlightColor(self):
-            return (1.0,1.0,0.0,0.0) # Yellow
+            return (1.0,1.0,0.0,0.8) # Yellow
 
         @property
         def drawSelHighlights(self):

@@ -200,7 +200,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._backLightEnabled = False
 
             self._highlightColorName = "Yellow"
-            self._highlightColor = (1.0,1.0,0.0,0.0)
+            self._highlightColor = (1.0,1.0,0.0,0.5)
             self._selHighlightMode = "Only when paused"
             self._drawSelHighlights = True
 
@@ -293,12 +293,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self._timer.setInterval(0)
             self._lastFrameTime = time()
 
-            self._colorsDict = {'Black': (0.0, 0.0, 0.0, 0.0),
-                                'Grey (Dark)': (0.3, 0.3, 0.3, 0.0),
-                                'Grey (Light)': (0.7, 0.7, 0.7, 0.0),
-                                'White': (1.0, 1.0, 1.0, 0.0),
-                                'Yellow': (1.0, 1.0, 0.0, 0.0),
-                                'Cyan': (0.0, 1.0, 1.0, 0.0)}
+            self._clearColorsDict = {
+                'Black':         (0.0, 0.0, 0.0, 0.0),
+                'Grey (Dark)':   (0.3, 0.3, 0.3, 0.0),
+                'Grey (Light)':  (0.7, 0.7, 0.7, 0.0),
+                'White':         (1.0, 1.0, 1.0, 0.0)}
+            self._highlightColorsDict = {
+                'White':         (1.0, 1.0, 1.0, 0.5),
+                'Yellow':        (1.0, 1.0, 0.0, 0.5),
+                'Cyan':          (0.0, 1.0, 1.0, 0.5)}
 
             # We need to store the trinary selHighlightMode state here,
             # because the stageView only deals in True/False (because it
@@ -374,7 +377,7 @@ class MainWindow(QtWidgets.QMainWindow):
                            self._ui.actionGrey_Dark,
                            self._ui.actionGrey_Light,
                            self._ui.actionWhite):
-                action.setChecked(self._colorsDict[str(action.text())] == self._clearColor)
+                action.setChecked(self._clearColorsDict[str(action.text())] == self._clearColor)
                 self._ui.colorGroup.addAction(action)
             self._ui.colorGroup.setExclusive(True)
 
@@ -1935,7 +1938,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _resetSettings(self):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
-        self._clearColor = self._colorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
+        self._clearColor = self._clearColorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
         self._renderMode = self._settings.get("RenderMode", "Smooth Shaded")
         self._pickMode = self._settings.get("PickMode", "Prims")
 
@@ -2075,7 +2078,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
         self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
-        self._highlightColor = self._colorsDict[self._highlightColorName]
+        self._highlightColor = self._highlightColorsDict[self._highlightColorName]
         self._selHighlightMode = self._settings.get("SelHighlightMode",
                                                  "Only when paused")
         self._drawSelHighlights = ( self._selHighlightMode != "Never")
@@ -2223,7 +2226,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._settings.setAndSave(HighlightColor=str(color.text()))
         color = str(color.text())
         self._highlightColorName = color
-        self._highlightColor = self._colorsDict[color]
+        self._highlightColor = self._highlightColorsDict[color]
         if self._stageView:
             self._stageView.update()
 
@@ -2288,7 +2291,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _changeBgColor(self, mode):
         colorText = str(mode.text())
-        self._clearColor = self._colorsDict[colorText]
+        self._clearColor = self._clearColorsDict[colorText]
         self._settings.setAndSave(ClearColor=colorText)
         if self._stageView:
             self._stageView.update()
