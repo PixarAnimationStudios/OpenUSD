@@ -24,9 +24,9 @@
 #include "gusd/stageCache.h"
 
 #include <DEP/DEP_MicroNode.h>
-#include <OP/OP_Director.h>
 #include <UI/UI_Object.h>
 #include <UT/UT_ConcurrentHashMap.h>
+#include <UT/UT_Exit.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_Lock.h>
 #include <UT/UT_ParallelUtil.h>
@@ -481,8 +481,7 @@ GusdStageCache::_Impl::~_Impl()
     // Clear() entries, so that micro nodes are dirtied as expected. 
     // Don't let this happen if Houdini is undergoing shutdown,
     // though, as the UI queue may have already expired.
-    const auto* dir = OPgetDirector();
-    if(dir && !dir->getIsQuitting()) {
+    if(!UT_Exit::isExiting()) {
         Clear();
     }
 }
