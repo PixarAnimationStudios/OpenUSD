@@ -30,8 +30,8 @@
 
 #include "pxr/base/tf/api.h"
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <functional>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,8 +46,8 @@ struct TfPyTraceInfo {
     int what;
 };
 
-typedef boost::function<void (TfPyTraceInfo const &)> TfPyTraceFn;
-typedef boost::shared_ptr<TfPyTraceFn> TfPyTraceFnId;
+typedef std::function<void (TfPyTraceInfo const &)> TfPyTraceFn;
+typedef std::shared_ptr<TfPyTraceFn> TfPyTraceFnId;
 
 /// Register \a f as a python trace function.
 /// It will be invoked for python tracing events. If python is not yet

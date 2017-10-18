@@ -56,7 +56,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         self._ui.revertAllButton.clicked.connect(self._revertAll)
 
     def setMainWindow(self, mainWindow):
-        # pass the mainWindow instance from which to retrieve 
+        # pass the mainWindow instance from which to retrieve
         # variable data.
         self._mainWindow = mainWindow
         self._propertyView = mainWindow._ui.propertyView
@@ -64,7 +64,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
     def populate(self, name, node):
         # called when the selected attribute has changed
         # gets the attribute object and the source node
-        try: 
+        try:
             self._attribute = self._mainWindow._attributeDict[name]
         except KeyError:
             self._mainWindow._attributeDict[name] = ''
@@ -152,7 +152,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
                 self._node.SetMember(frame, self._name, value)
             else:
                 self._node.SetAttribute(frame, self._name, value)
-            
+
             # send a signal to the mainWindow confirming the edit
             msg = 'Successfully edited %s "%s" at frame %s.' \
                     %(type, self._name, frame)
@@ -181,7 +181,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
                         %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
                     QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes,
                     QtWidgets.QMessageBox.Cancel)
-    
+
         msg = ""
         if reply == QtWidgets.QMessageBox.Yes and self._node is not None:
             # we got 'yes' as an answer
@@ -200,7 +200,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
                 msg = 'Failed to revert the %s "%s" at %s. Perhaps this '\
                       '%s is not authored in the override stage.'\
                             %(type, self._name, frameStr, type)
-        
+
         # display status message
         self._mainWindow.statusMessage(msg, 12)
 

@@ -44,6 +44,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/api.h"
+#include "pxr/base/arch/buildMode.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/callContext.h"
 
@@ -67,6 +68,28 @@ enum TfDiagnosticType {
 
 
 #if !defined(doxygen)
+
+struct Tf_DiagnosticLiteHelper {
+    constexpr Tf_DiagnosticLiteHelper(TfCallContext const &context,
+                                      TfDiagnosticType type)
+        : _context(context),
+          _type(type)
+    {
+    }
+    
+    TF_API void IssueError(
+        char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueFatalError(
+        char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueWarning(
+        char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    TF_API void IssueStatus(
+        char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+
+private:
+    TfCallContext _context;
+    TfDiagnosticType _type;
+};
 
 #define TF_CODING_ERROR                                                 \
     Tf_DiagnosticLiteHelper(TF_CALL_CONTEXT,                            \
@@ -108,37 +131,23 @@ enum TfDiagnosticType {
     Tf_DiagnosticLiteHelper(TF_CALL_CONTEXT,                            \
         TF_DIAGNOSTIC_STATUS_TYPE).IssueStatus
 
-#define TF_AXIOM(cond)                                                  \
-    do {                                                                \
-        if (ARCH_UNLIKELY(!(cond)))                                     \
-            Tf_DiagnosticLiteHelper(TF_CALL_CONTEXT,                    \
-                TF_DIAGNOSTIC_FATAL_ERROR_TYPE).                        \
-                IssueFatalError("Failed axiom: ' %s '", #cond);              \
-    } while (0)
+constexpr bool
+Tf_AxiomHelper(bool val, TfCallContext const &ctx, char const *txt) {
+    return (ARCH_LIKELY(val)) ? true :
+        (Tf_DiagnosticLiteHelper(ctx, TF_DIAGNOSTIC_FATAL_ERROR_TYPE).
+         IssueFatalError("Failed axiom: ' %s '", txt), false);
+}
 
-#define TF_DEV_AXIOM(cond)      \
-    do {                        \
-        if (TF_DEV_BUILD)       \
-            TF_AXIOM(cond);     \
-    } while (0)
+constexpr bool
+Tf_DevAxiomHelper(bool val, TfCallContext const &ctx, char const *txt) {
+    return !ARCH_DEV_BUILD || Tf_AxiomHelper(val, ctx, txt);
+}
 
-struct Tf_DiagnosticLiteHelper {
-    Tf_DiagnosticLiteHelper(TfCallContext const &context,
-                            TfDiagnosticType type)
-        : _context(context),
-          _type(type)
-    {
-    }
-    
-    TF_API void IssueError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    TF_API void IssueFatalError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    TF_API void IssueWarning(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
-    TF_API void IssueStatus(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+#define TF_AXIOM(cond) \
+    Tf_AxiomHelper(static_cast<bool>((cond)), TF_CALL_CONTEXT, #cond)
 
-private:
-    TfCallContext _context;
-    TfDiagnosticType _type;
-};
+#define TF_DEV_AXIOM(cond) \
+    Tf_DevAxiomHelper(static_cast<bool>((cond)), TF_CALL_CONTEXT, #cond)
 
 #endif  // !defined(doxygen)
 

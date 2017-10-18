@@ -498,7 +498,9 @@ redefine( const UsdStagePtr& stage,
        
         }
     }
-    stage->OverridePrim( path.AppendPath( kReferenceProtoPath ) );
+
+    stage->OverridePrim( path.AppendPath(
+        !m_prototypesScope.IsEmpty() ? m_prototypesScope : kReferenceProtoPath));
 
     m_relationshipIndexMap.clear();
     clearCaches();
@@ -602,10 +604,30 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         TF_WARN("No usdprototypespath attribute found. Specify where all the packed prototypes are to build a point instancer.");
         return;
     }
+    
+    // Check if we have an attribute for a custom prototypes scope.
+    string usdPrototypesScope;
+    GT_DataArrayHandle prototypesScopeAttr;
+    prototypesScopeAttr = sourcePrim->findAttribute("usdprototypesscope", owner, 0);
+    if(prototypesScopeAttr != NULL && prototypesScopeAttr->entries() > 0) {
+        usdPrototypesScope = prototypesScopeAttr->getS(0);
+    }
+
+    m_prototypesScope = kReferenceProtoPath;
+    if (!usdPrototypesScope.empty()) {
+        std::string errMsg;
+        if (!SdfPath::IsValidPathString(usdPrototypesScope, &errMsg)) {
+            TF_WARN("Prototype scope '%s' is an invalid Usd scope, "
+                "using standard prototype scope instead.",
+                usdPrototypesScope.c_str());
+        } else {
+            m_prototypesScope = SdfPath(usdPrototypesScope);
+        }
+    }
 
     // Get the prim path for the root (point instancer) to use as the parent
     // scope for prototypes
-    SdfPath protoPath = m_usdPointInstancerForWrite.GetPath().AppendPath(kReferenceProtoPath);
+    SdfPath protoPath = m_usdPointInstancerForWrite.GetPath().AppendPath(m_prototypesScope);
 
     // Collect sops containing prototypes into a list. If usdPrototypesPath
     // references a sop, it will be a length of one. If it references a subnet,
@@ -646,7 +668,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     // Populate a map from instance path to detail hanlde. Each detail will be
     // refined then written as a prototype, and the instance path will be used
     // to create a mapping to the usd path for indexing in the point instancer.
-    std::map<string, GU_DetailHandle> protoDetailMap;
+    std::map<std::tuple<string, bool>, GU_DetailHandle> protoDetailMap;
 
     // Iterate through sops containing prototypes, and create a detail handle
     // for each packed primitive.
@@ -669,27 +691,41 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                                                     "usdinstancepath",
                                                     searchOrder,
                                                     4 ));
+
+            // If the usdinstancepath is a valid Sdf path, we use it as the
+            // names of each prototype.
+            bool generateProtoNames = false;
             // We also support instancepath instead of usdinstancepath
             if (!instancePathAttr.isValid()) {
                 instancePathAttr = GA_ROHandleS( detailLock->findAttribute(
                                                         "instancepath",
                                                         searchOrder,
                                                         4 ));
+                // These are generall full paths to nodes and should not be
+                // used as prototype scopes.
+                generateProtoNames = true;
             }
 
             // Iteratve over each primitive and create a detail handle
             GA_Range primRange = detailLock->getPrimitiveRange();
             for(GA_Iterator offsetIt(primRange); !offsetIt.atEnd(); ++offsetIt) {
                 // Use the context's usdinstancepath as default if no attributes
-                string usdInstancePath = ctxt.usdInstancePath;
+                std::tuple<string, bool> usdInstancePath(ctxt.usdInstancePath, generateProtoNames);
                 if (instancePathAttr.isValid()) {
-                    UT_StringHolder instancePathAttrVal =
-			    instancePathAttr.get(offsetIt.getOffset());
-                    if (instancePathAttrVal.length() > 0) {
-                        usdInstancePath = instancePathAttrVal.toStdString();
+                    string instancePathAttrVal = instancePathAttr.get(offsetIt.getOffset());
+                    if (!instancePathAttrVal.empty()) {
+                        std::get<0>(usdInstancePath) = instancePathAttrVal;
+                        std::string errMsg;
+                        if (!generateProtoNames &&
+                            !SdfPath::IsValidPathString(instancePathAttrVal, &errMsg)) {
+                            TF_WARN("Instance name '%s' is an invalid Usd scope, "
+                                "using standard prototype naming instead.",
+                                instancePathAttrVal.c_str());
+                            std::get<1>(usdInstancePath) = true;
+                        }
                     }
                 }
-                if (!usdInstancePath.empty()) {
+                if (!std::get<0>(usdInstancePath).empty()) {
                     const GU_Detail *srcDetail = detailLock.getGdp();
                     GA_PrimitiveGroup primGroup(*srcDetail);
                     primGroup.addOffset(offsetIt.getOffset());
@@ -699,6 +735,11 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
                     // Handle owns the detail so it will free the memory
                     detailHandle.allocateAndSet(detail, true);
                     if(detailHandle) {
+                        if ( protoDetailMap.count(usdInstancePath) ) {
+                            TF_WARN ("Multiple prototypes found with instance "
+                                "path '%s', may result in loss of prototypes.",
+                                std::get<0>(usdInstancePath).c_str());
+                        }
                         protoDetailMap[usdInstancePath] = detailHandle;
                     }
                 } else {
@@ -734,9 +775,14 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
 
         GusdRefinerCollector refinerCollector;
         // TODO: add custom scoping for prototypes
-        string protoUsdName("prototype_");
-        protoUsdName += std::to_string(protoIdx);
-        protoIdx++;
+        string protoUsdName;
+        if ( !std::get<1>(pair.first) ) {
+            protoUsdName = std::get<0>(pair.first);
+        } else {
+            protoUsdName = "prototype_";
+            protoUsdName += std::to_string(protoIdx);
+            protoIdx++;
+        }
         SdfPath protoUsdPath = protoPath.AppendPath(SdfPath(protoUsdName));
         
         GusdRefiner refiner( 
@@ -803,7 +849,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         }
 
         // Add the mapping from instance path (pair.first) to usd path
-        protoPathsMap[pair.first] = protoUsdPath;
+        protoPathsMap[std::get<0>(pair.first)] = protoUsdPath;
     }
 
     if(ctxt.writeOverlay && (!ctxt.overlayAll || usdPrototypesPath.empty())) {
@@ -1120,11 +1166,10 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // and prototype relationships.
         filter.appendPattern(GT_OWNER_POINT,
                 "^__* ^orient ^rot ^scale ^instancepath ^usdinstancepath \
-                 ^usdprototypespath ^trans ^up ^usdactive");
-        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^usdvisible ^usdactive");
-        filter.appendPattern(GT_OWNER_CONSTANT, "^usdvisible ^usdprimpath \
-                 ^instancepath ^usdinstancepath ^usdprototypespath \
-                 ^usdactive");
+                 ^usdprototypespath ^usdprototypesscope ^trans ^up");
+        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v");
+        filter.appendPattern(GT_OWNER_CONSTANT, "^usdprimpath ^instancepath \
+                ^usdinstancepath ^usdprototypespath ^usdprototypesscope");
         if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {
 
             GusdGT_AttrFilter::OwnerArgs owners;

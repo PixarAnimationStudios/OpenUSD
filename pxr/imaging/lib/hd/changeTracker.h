@@ -57,9 +57,9 @@ class HdRenderIndex;
 class HdChangeTracker : public boost::noncopyable {
 public:
 
-    enum RprimDirtyBits {
+    enum RprimDirtyBits : HdDirtyBits {
         Clean                       = 0,
-        ForceSync                   = 1 << 0,
+        InitRepr                    = 1 << 0,
         Varying                     = 1 << 1,
         AllDirty                    = ~Varying,
         DirtyPrimID                 = 1 << 2,
@@ -67,7 +67,7 @@ public:
         DirtyRefineLevel            = 1 << 4,
         DirtyPoints                 = 1 << 5,
         DirtyPrimVar                = 1 << 6,
-        DirtySurfaceShader          = 1 << 7,
+        DirtyMaterialId             = 1 << 7,
         DirtyTopology               = 1 << 8,
         DirtyTransform              = 1 << 9,
         DirtyVisibility             = 1 << 10,
@@ -88,7 +88,7 @@ public:
     };
 
     // Dirty bits for Tasks
-    enum NonRprimDirtyBits {
+    enum NonRprimDirtyBits : HdDirtyBits {
         //Varying               = 1 << 0,
         DirtyType             = 1 << 1,
         DirtyChildren         = 1 << 2,

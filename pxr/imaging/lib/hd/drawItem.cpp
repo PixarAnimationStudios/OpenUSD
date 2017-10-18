@@ -56,9 +56,9 @@ HdDrawItem::GetPrimitiveMode() const
 }
 
 HdShaderCodeSharedPtr
-HdDrawItem::GetSurfaceShader() const
+HdDrawItem::GetMaterial() const
 {
-    return _sharedData->surfaceShader;
+    return _sharedData->material;
 }
 
 size_t

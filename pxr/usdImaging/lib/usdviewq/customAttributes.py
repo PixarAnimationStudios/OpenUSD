@@ -55,7 +55,7 @@ class CustomAttribute:
     # convenience function to make this look more like a UsdAttribute
     def GetTypeName(self):
         return ""
-        
+
 #
 # Displays the bounding box of a node
 #
@@ -72,7 +72,7 @@ class BoundingBoxAttribute(CustomAttribute):
     def Get(self, frame):
         try:
             bbox = self._bboxCache.ComputeWorldBound(self._currentNode)
-            
+
         except RuntimeError, err:
             bbox = "Invalid: " + str(err)
 
@@ -99,7 +99,7 @@ class LocalToWorldXformAttribute(CustomAttribute):
 
         return pwt
 
-# 
+#
 # Displays a relationship on the node
 #
 class RelationshipAttribute(CustomAttribute):

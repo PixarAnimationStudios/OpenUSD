@@ -54,10 +54,10 @@ TfCallContext(BUILD_COMPONENT_SRC_PREFIX __FILE__, __ARCH_FUNCTION__, __LINE__, 
 class TfCallContext
 {
 public:
-    TfCallContext(char const *file,
-                  char const *function,
-                  size_t line,
-                  char const *prettyFunction) :
+    constexpr TfCallContext(char const *file,
+                            char const *function,
+                            size_t line,
+                            char const *prettyFunction) :
         _file(file),
         _function(function),
         _line(line),

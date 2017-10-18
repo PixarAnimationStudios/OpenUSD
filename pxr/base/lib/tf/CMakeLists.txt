@@ -298,6 +298,7 @@ pxr_build_test(testTf
         testenv/bitUtils.cpp
         testenv/debug.cpp
         testenv/denseHashMap.cpp
+        testenv/delegate.cpp
         testenv/diagnosticNotices.cpp
         testenv/dl.cpp
         testenv/enum.cpp
@@ -305,6 +306,7 @@ pxr_build_test(testTf
         testenv/envSetting.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
+        testenv/flyweight.cpp
         testenv/getenv.cpp
         testenv/hash.cpp
         testenv/iterator.cpp
@@ -385,6 +387,10 @@ pxr_install_test_dir(
     DEST TfDiagnosticNotices_Python/baseline
 )
 pxr_install_test_dir(
+    SRC testenv/baseline/TfDelegate
+    DEST TfDelegate/baseline
+)
+pxr_install_test_dir(
     SRC testenv/baseline/TfEnum
     DEST TfEnum/baseline
 )
@@ -455,6 +461,11 @@ pxr_register_test(TfDebugTestEnvHelp
 pxr_register_test(TfDenseHashMap
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDenseHashMap"
 )
+pxr_register_test(TfDelegate
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegateAddRemove"
+    STDOUT_REDIRECT output.txt 
+    DIFF_COMPARE output.txt 
+)
 pxr_register_test(TfError
     ENV TF_FATAL_VERIFY=0
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfError"
@@ -498,6 +509,9 @@ pxr_register_test(TfFileUtils_Python
 pxr_register_test(TfStringUtils_Python
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfStringUtils"
+)
+pxr_register_test(TfFlyweight
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFlyweight"
 )
 pxr_register_test(TfGetenv
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfGetenv"

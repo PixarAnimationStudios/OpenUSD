@@ -741,7 +741,12 @@ PxrUsdKatanaReadPrim(
         {
             FnKat::GroupBuilder arbBuilder;
             arbBuilder.update(primvarGroup);
-            attrs.set("geometry.arbitrary", arbBuilder.build());
+            
+            FnKat::GroupAttribute arbGroup = arbBuilder.build();
+            if (arbGroup.getNumberOfChildren() > 0)
+            {
+                attrs.set("geometry.arbitrary", arbGroup);
+            }
         }
     }
 

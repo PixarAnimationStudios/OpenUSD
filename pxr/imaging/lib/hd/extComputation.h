@@ -74,7 +74,7 @@ public:
     ///
     /// Change tracking
     ///
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyInputDesc        = 1 << 0,  ///< The list of inputs or input
                                          ///  bindings changed

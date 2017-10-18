@@ -224,9 +224,7 @@ public:
     /// contribute time samples for this attribute in the given interval, 
     /// opening them if necessary.
     /// 
-    /// \param interval -  may have any combination of open/infinite and 
-    /// closed/finite endpoints; it may not have open/finite endpoints, however,
-    /// this restriction may be lifted in the future.
+    /// \param interval - the \ref GfInterval on which to gather time samples.     
     ///
     /// \param times - on return, will contain the \em sorted, ascending
     /// timeSample ordinates.  Any data in \p times will be lost, as this

@@ -1,0 +1,12 @@
+[delegate_1]: Status issued
+[delegate_1]: Warning issued
+[delegate_1]: Fatal error issued
+[delegate_1]: Status issued
+[delegate_2]: Status issued
+[delegate_1]: Warning issued
+[delegate_2]: Warning issued
+[delegate_1]: Fatal error issued
+[delegate_2]: Fatal error issued
+[delegate_1]: Status issued
+[delegate_1]: Warning issued
+[delegate_1]: Fatal error issued

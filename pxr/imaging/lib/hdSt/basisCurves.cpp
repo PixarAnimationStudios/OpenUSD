@@ -227,7 +227,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
         _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
-        *dirtyBits |= DirtyNewRepr;
+        *dirtyBits |= NewRepr;
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -280,7 +280,9 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     }
 
     // Filter custom dirty bits to only those in use.
-    *dirtyBits &= (_customDirtyBitsInUse | HdChangeTracker::AllSceneDirtyBits);
+    *dirtyBits &= (_customDirtyBitsInUse |
+                   HdChangeTracker::AllSceneDirtyBits |
+                   NewRepr);
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStBasisCurves::GetRepr " << GetId()
@@ -292,7 +294,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     // for the bits geometric shader depends on, reset all geometric shaders.
     // they are populated again at the end of _GetRepr.
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
-                      HdChangeTracker::DirtySurfaceShader)) {
+                      HdChangeTracker::DirtyMaterialId)) {
         needsSetGeometricShader = true;
     }
 
@@ -316,7 +318,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    *dirtyBits &= ~DirtyNewRepr;
+    *dirtyBits &= ~NewRepr;
 
     return it->second;
 }
@@ -619,6 +621,7 @@ HdDirtyBits
 HdStBasisCurves::_GetInitialDirtyBits() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
+        | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyNormals
@@ -627,7 +630,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTopology
         | HdChangeTracker::DirtyTransform 
         | HdChangeTracker::DirtyVisibility 

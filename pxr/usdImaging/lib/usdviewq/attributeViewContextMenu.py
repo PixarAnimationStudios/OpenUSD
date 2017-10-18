@@ -21,11 +21,14 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+import sys
 from qt import QtGui, QtWidgets, QtCore
+from pxr import Sdf
 from usdviewContextMenuItem import UsdviewContextMenuItem
 from common import (INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
                     ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
-                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE)
+                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
+                    PrimNotFoundException)
 
 #
 # Specialized context menu for running commands in the attribute viewer.
@@ -92,7 +95,7 @@ class CopyAttributeNameMenuItem(AttributeViewContextMenuItem):
 
     def RunCommand(self):
         if self._name == "":
-            return 
+            return
 
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(self._name, QtGui.QClipboard.Selection)
@@ -112,9 +115,20 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         if self._value == "":
             return
 
+        # We display relationships targets as:
+        #    /f, /g/a ...
+        # But when we ask to copy the value, we'd like to get back:
+        #    [Sdf.Path('/f'), Sdf.Path('/g/a')]
+        # Which is useful for pasting into a python interpreter.
+        if self._role == REL_WITH_TARGET_TYPE_ROLE:
+            value = str([Sdf.Path("".join(p.split())) \
+                          for p in self._value.split(",")])
+        else:
+            value = self._value
+
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(self._value, QtGui.QClipboard.Selection)
-        cb.setText(self._value, QtGui.QClipboard.Clipboard)
+        cb.setText(value, QtGui.QClipboard.Selection)
+        cb.setText(value, QtGui.QClipboard.Clipboard)
 
 # --------------------------------------------------------------------
 # Individual target selection menus
@@ -139,7 +153,7 @@ class CopyTargetPathMenuItem(AttributeViewContextMenuItem):
         if not self._item:
             return
 
-        value = ", ".join([s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()]) 
+        value = ", ".join([s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()])
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)
@@ -153,14 +167,19 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
         return "Select Target Path"
 
     def RunCommand(self):
-        self._mainWindow.jumpToTargetPaths([s.text(INDEX_PROPNAME) \
-                                            for s in self.GetSelectedOfType()])
+        paths = [s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()]
+        try:
+            self._mainWindow.jumpToTargetPaths(paths)
+        except PrimNotFoundException as ex:
+            # jumpToTargetPaths couldn't find one of the prims
+            sys.stderr.write("ERROR: %s\n" % ex.message)
+            return
 
 # --------------------------------------------------------------------
 # Target owning property selection menus
 # --------------------------------------------------------------------
 
-# 
+#
 # Jump to all target paths under the selected attribute
 #
 class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
@@ -169,7 +188,7 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
 
     def IsEnabled(self):
         if not self._item:
-            return False 
+            return False
 
         # Disable the menu if there are no targets
         # for this rel/attribute connection
@@ -184,10 +203,15 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
 
         # Deselect the parent and jump to all of its children
         self._item.setSelected(False)
-        self._mainWindow.jumpToTargetPaths([self._item.child(i).text(INDEX_PROPNAME) \
-                                             for i in range(0, self._item.childCount())])
+        paths = [self._item.child(i).text(INDEX_PROPNAME) for i in range(0, self._item.childCount())]
+        try:
+            self._mainWindow.jumpToTargetPaths(paths)
+        except PrimNotFoundException as ex:
+            # jumpToTargetPaths couldn't find one of the prims
+            sys.stderr.write("ERROR: %s\n" % ex.message)
+            return
 
-# 
+#
 # Copy all target paths under the currently selected relationship to the clipboard
 #
 class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
@@ -199,7 +223,7 @@ class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
             return
 
         value = ", ".join([self._item.child(i).text(INDEX_PROPNAME) \
-                            for i in range(0, self._item.childCount())]) 
+                            for i in range(0, self._item.childCount())])
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)

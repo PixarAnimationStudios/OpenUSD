@@ -257,13 +257,6 @@ HdSceneDelegate::GetSurfaceShaderParams(SdfPath const &shaderId)
     return HdShaderParamVector();
 }
 
-/*virtual*/
-SdfPathVector
-HdSceneDelegate::GetSurfaceShaderTextures(SdfPath const &shaderId)
-{
-    return SdfPathVector();
-}
-
 // -----------------------------------------------------------------------//
 /// \name Texture Aspects
 // -----------------------------------------------------------------------//

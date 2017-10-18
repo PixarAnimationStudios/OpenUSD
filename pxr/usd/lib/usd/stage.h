@@ -47,9 +47,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
 
-#include <boost/mpl/assert.hpp>
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
@@ -57,6 +55,7 @@
 
 #include <functional>
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <utility>
 
@@ -2015,9 +2014,9 @@ private:
     // The stage's EditTarget.
     UsdEditTarget _editTarget;
 
-    boost::scoped_ptr<PcpCache> _cache;
-    boost::scoped_ptr<Usd_ClipCache> _clipCache;
-    boost::scoped_ptr<Usd_InstanceCache> _instanceCache;
+    std::unique_ptr<PcpCache> _cache;
+    std::unique_ptr<Usd_ClipCache> _clipCache;
+    std::unique_ptr<Usd_InstanceCache> _instanceCache;
 
     // A map from Path to Prim, for fast random access.
     typedef TfHashMap<
@@ -2046,7 +2045,7 @@ private:
     UsdStagePopulationMask _populationMask;
     
     bool _isClosingStage;
-    
+
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
     friend class UsdEditTarget;
@@ -2059,6 +2058,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
 };

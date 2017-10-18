@@ -42,10 +42,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/scoped_ptr.hpp>
-
 #include <boost/python/docstring_options.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/handle.hpp>
@@ -215,9 +211,10 @@ public:
 
             ret = raw_function
                 (make_function
-                 (boost::bind
+                 (std::bind
                   (_InvokeWithErrorHandling, fn,
-                   *fullNamePrefix + "." + name, *fullNamePrefix, 0, _1, _2),
+                   *fullNamePrefix + "." + name, *fullNamePrefix, 0,
+                   std::placeholders::_1, std::placeholders::_2),
                   default_call_policies(),
                   boost::mpl::vector<handle<>, tuple, dict>()));
 
@@ -313,8 +310,9 @@ public:
     }
 
     void WrapForErrorHandling() {
-        WalkModule(_module,
-                   bind(&This::WrapForErrorHandlingCB, this, _1, _2, _3));
+        namespace ph = std::placeholders;
+        WalkModule(_module, std::bind(&This::WrapForErrorHandlingCB,
+                                      this, ph::_1, ph::_2, ph::_3));
     }
 
 
@@ -334,7 +332,9 @@ public:
     }
     
     void FixModuleAttrs() {
-        WalkModule(_module, bind(&This::FixModuleAttrsCB, this, _1, _2, _3));
+        namespace ph = std::placeholders;
+        WalkModule(_module, std::bind(&This::FixModuleAttrsCB,
+                                      this, ph::_1, ph::_2, ph::_3));
     }
 
 

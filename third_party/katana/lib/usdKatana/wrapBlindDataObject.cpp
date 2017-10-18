@@ -62,6 +62,13 @@ _CreateVisibleAttr(UsdKatanaBlindDataObject &self,
     return self.CreateVisibleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateSuppressGroupToAssemblyPromotionAttr(UsdKatanaBlindDataObject &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateSuppressGroupToAssemblyPromotionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -107,6 +114,13 @@ void wrapUsdKatanaBlindDataObject()
              &This::GetVisibleAttr)
         .def("CreateVisibleAttr",
              &_CreateVisibleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetSuppressGroupToAssemblyPromotionAttr",
+             &This::GetSuppressGroupToAssemblyPromotionAttr)
+        .def("CreateSuppressGroupToAssemblyPromotionAttr",
+             &_CreateSuppressGroupToAssemblyPromotionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

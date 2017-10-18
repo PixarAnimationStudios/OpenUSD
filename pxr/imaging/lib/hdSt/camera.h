@@ -65,7 +65,7 @@ public:
     virtual ~HdStCamera();
 
     // change tracking for HdStCamera
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyViewMatrix       = 1 << 0,
         DirtyProjMatrix       = 1 << 1,

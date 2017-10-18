@@ -30,15 +30,13 @@
 #include "pxr/base/tf/poolAllocator.h"
 #include "pxr/base/tf/stopwatch.h"
 
-#include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
-
 #include <atomic>
 #include <chrono>
-#include <vector>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <memory>
 #include <thread>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -416,7 +414,7 @@ _TestDispatcherCancellation(Graph *graph)
 int
 main(int argc, char **argv)
 {
-    boost::scoped_ptr<Graph> graph;
+    std::unique_ptr<Graph> graph;
 
     if (argc < 2) {
         std::cout << "Generating random graph" << std::endl;

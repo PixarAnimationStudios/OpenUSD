@@ -247,7 +247,7 @@ HdDirtyList::ApplyEdit(HdRprimCollection const& col)
                 if (col.HasRenderTag(index.GetRenderTag(newPath, repr))) {
                     _dirtyIds.push_back(newPath);
                     changeTracker.MarkRprimDirty(newPath,
-                                                 HdChangeTracker::ForceSync);
+                                                 HdChangeTracker::InitRepr);
                 }
             }
             ++newI;
@@ -347,7 +347,7 @@ HdDirtyList::GetDirtyRprims()
         // populate dirty rprims in the collection
         _UpdateIDs(&_dirtyIds, 0);
         TF_FOR_ALL(it, _dirtyIds) {
-            changeTracker.MarkRprimDirty(*it, HdChangeTracker::ForceSync);
+            changeTracker.MarkRprimDirty(*it, HdChangeTracker::InitRepr);
         }
 
         // this is very conservative list and is expected to be rebuilt

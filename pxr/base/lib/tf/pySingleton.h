@@ -33,7 +33,6 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/bind.hpp>
 #include <boost/mpl/vector.hpp>
 
 #include <boost/python/class.hpp>
@@ -41,6 +40,7 @@
 #include <boost/python/def_visitor.hpp>
 #include <boost/python/raw_function.hpp>
 
+#include <functional>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -98,7 +98,8 @@ struct Visitor : bp::def_visitor<Visitor> {
         // If they supplied a repr prefix, provide a repr implementation.
         if (!_reprPrefix.empty())
             c.def("__repr__",
-                  make_function(boost::bind(_Repr, _1, _reprPrefix),
+                  make_function(std::bind(
+                                    _Repr, std::placeholders::_1, _reprPrefix),
                                 bp::default_call_policies(),
                                 boost::mpl::vector<std::string,
                                                    bp::object const &>()));

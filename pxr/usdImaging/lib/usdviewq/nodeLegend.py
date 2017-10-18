@@ -21,7 +21,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-from qt import QtCore, QtWidgets
+from qt import QtWidgets
 
 from nodeLegendUI import Ui_NodeLegend
 
@@ -50,8 +50,8 @@ class NodeLegend(QtWidgets.QWidget):
         self._ui.nodeLegendColorMaster.setForegroundBrush(MasterColor)
 
         legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
-                                             + t.text() + '</font>') 
- 
+                                             + t.text() + '</font>')
+
         normalLegend = self._ui.nodeLegendLabelNormal
         normalLegend.setText(legendTextUpdate(normalLegend, NormalColor))
 
@@ -65,20 +65,23 @@ class NodeLegend(QtWidgets.QWidget):
         hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, HasArcsColor))
 
         undefinedFontLegend = self._ui.nodeLegendLabelFontsUndefined
-        undefinedFontLegend.setText(ItalicizeLabelText(undefinedFontLegend.text(), 
+        undefinedFontLegend.setText(ItalicizeLabelText(undefinedFontLegend.text(),
                                                        undefinedFontLegend.text()))
 
         definedFontLegend = self._ui.nodeLegendLabelFontsDefined
-        definedFontLegend.setText(BoldenLabelText(definedFontLegend.text(), 
+        definedFontLegend.setText(BoldenLabelText(definedFontLegend.text(),
                                                   definedFontLegend.text()))
 
         # Set three individual colors in the text line to indicate
         # the dimmed version of each primary node color
         dimmedLegend = self._ui.nodeLegendLabelDimmed
         dimmedLegendText = dimmedLegend.text()
-        dimmedLegendText = ColorizeLabelText(dimmedLegendText, "Dimmed colors", 148, 105, 30)
-        dimmedLegendText = ColorizeLabelText(dimmedLegendText, "denote", 78,91,145)
-        dimmedLegendText = ColorizeLabelText(dimmedLegendText, "inactive prims", 151,151,151)
+        dimmedLegendText = ColorizeLabelText(
+            dimmedLegendText, "Dimmed colors", 148, 105, 30)
+        dimmedLegendText = ColorizeLabelText(
+            dimmedLegendText, "denote", 78, 91, 145)
+        dimmedLegendText = ColorizeLabelText(
+            dimmedLegendText, "inactive prims", 151, 151, 151)
         dimmedLegend.setText(dimmedLegendText)
 
     def IsMinimized(self):

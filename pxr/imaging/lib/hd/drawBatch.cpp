@@ -120,8 +120,8 @@ bool
 Hd_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
                             HdDrawItem const *drawItem1)
 {
-    if (!HdShaderCode::CanAggregate(drawItem0->GetSurfaceShader(),
-                                    drawItem1->GetSurfaceShader())) {
+    if (!HdShaderCode::CanAggregate(drawItem0->GetMaterial(),
+                                    drawItem1->GetMaterial())) {
         return false;
     }
 
@@ -192,7 +192,7 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
     HdShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
     HdShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
-                                       : firstDrawItem->GetSurfaceShader();
+                                       : firstDrawItem->GetMaterial();
     boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
     bool shaderChanged = (_shaderHash != shaderHash);
     

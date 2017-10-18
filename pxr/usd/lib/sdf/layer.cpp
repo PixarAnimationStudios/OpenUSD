@@ -65,20 +65,20 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stackTrace.h"
 
-#include <boost/bind.hpp>
-
 #include <tbb/queuing_rw_mutex.h>
 
 #include <atomic>
+#include <functional>
 #include <fstream>
 #include <set>
 #include <vector>
 
-using boost::bind;
 using std::map;
 using std::set;
 using std::string;
 using std::vector;
+
+namespace ph = std::placeholders;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -2047,8 +2047,8 @@ SdfLayer::CanApply(
     static const bool fixBackpointers = true;
     SdfLayerHandle self = SdfCreateNonConstHandle(this);
     if (!edits.Process(NULL,
-                       boost::bind(&_HasObjectAtPath, self, _1),
-                       boost::bind(&_CanEdit, self, _1, _2),
+                       std::bind(&_HasObjectAtPath, self, ph::_1),
+                       std::bind(&_CanEdit, self, ph::_1, ph::_2),
                        details, !fixBackpointers)) {
         result = CombineError(result);
     }
@@ -2067,8 +2067,8 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     SdfLayerHandle self(this);
     SdfNamespaceEditVector final;
     if (!edits.Process(&final,
-                       boost::bind(&_HasObjectAtPath, self, _1),
-                       boost::bind(&_CanEdit, self, _1, _2),
+                       std::bind(&_HasObjectAtPath, self, ph::_1),
+                       std::bind(&_CanEdit, self, ph::_1, ph::_2),
                        NULL, !fixBackpointers)) {
         return false;
     }
@@ -2791,8 +2791,8 @@ SdfLayer::_UpdateReferencePaths(
     TF_AXIOM(!oldLayerPath.empty());
     
     // Prim references
-    prim->GetReferenceList().ModifyItemEdits(boost::bind(
-        &_UpdateReferencePath, oldLayerPath, newLayerPath, _1));
+    prim->GetReferenceList().ModifyItemEdits(std::bind(
+        &_UpdateReferencePath, oldLayerPath, newLayerPath, ph::_1));
 
     // Prim payloads
     if (prim->HasPayload()) {
@@ -3660,7 +3660,7 @@ SdfLayer::_PrimMoveSpec(const SdfPath& oldPath, const SdfPath& newPath,
     Sdf_ChangeManager::Get().DidMoveSpec(SdfLayerHandle(this), oldPath, newPath);
 
     Traverse(oldPath, 
-        boost::bind(_MoveSpecInternal, _data, &_idRegistry, _1, oldPath, newPath));
+        std::bind(_MoveSpecInternal, _data, &_idRegistry, ph::_1, oldPath, newPath));
 }
 
 bool 
@@ -3771,7 +3771,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
     Sdf_ChangeManager::Get().DidRemoveSpec(SdfLayerHandle(this), path, inert);
 
     TraversalFunction eraseFunc = 
-        boost::bind(&_EraseSpecAtPath, boost::get_pointer(_data), _1);
+        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
     Traverse(path, eraseFunc);
 }
 

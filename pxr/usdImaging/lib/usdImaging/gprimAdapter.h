@@ -118,6 +118,15 @@ public:
                         UsdImagingValueCache::PrimvarInfo* primvarInfo,
                         UsdTimeCode time);
    
+    // Helper function: add a given type of rprim, potentially with instancer
+    // name mangling, and add any bound shader.
+    USDIMAGING_API
+    static SdfPath _AddRprim(TfToken const& primType,
+                      UsdPrim const& usdPrim,
+                      UsdImagingIndexProxy* index,
+                      SdfPath const& materialId,
+                      UsdImagingInstancerContext const* instancerContext);
+
 protected:
 
     /// This function can be overridden if the gprim adapter wants to have
@@ -133,6 +142,7 @@ protected:
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) final;
+
 private:
 
     /// Discover required primvars by searching for primvar inputs connected to
@@ -168,8 +178,8 @@ private:
     /// inherited purpose. Inherited values are strongest.
     TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time);
 
-    /// Returns the surface shader for this prim
-    SdfPath _GetSurfaceShader(UsdPrim const& prim);
+    /// Returns the path to the material used by this prim
+    SdfPath _GetMaterialId(UsdPrim const& prim);
 };
 
 

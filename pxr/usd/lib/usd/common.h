@@ -90,8 +90,6 @@ bool UsdIsRetireLumosEnabled();
 USD_API
 bool UsdAuthorOldStyleAdd();
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
 /// \enum UsdListPosition
 ///
 /// Specifies a position to add items to lists.  Used by some Add()
@@ -108,5 +106,7 @@ enum UsdListPosition {
     /// new behavior with a TfEnvSetting.
     UsdListPositionTempDefault,
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

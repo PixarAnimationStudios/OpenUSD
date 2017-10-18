@@ -23,6 +23,8 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+
+#include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/base/plug/plugin.h"
@@ -32,6 +34,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/usd/sdf/schema.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
@@ -45,7 +48,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 using std::make_pair;
 using std::set;
 using std::string;
@@ -57,55 +59,46 @@ TF_MAKE_STATIC_DATA(TfType, _schemaBaseType) {
     *_schemaBaseType = TfType::Find<UsdSchemaBase>();
 }
 
+template <class T>
 static void
-_AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
+_CopySpec(const T &srcSpec, const T &dstSpec, 
+          const std::vector<TfToken> &disallowedFields)
 {
-    // XXX: Seems like it might be better to copy everything from source into
-    // target (with possible exceptions) rather than cherry-picking certain
-    // data.
-    static TfToken allowedTokens("allowedTokens");
+    for (const TfToken& key : srcSpec->ListInfoKeys()) {
+        const bool isDisallowed = std::binary_search(
+            disallowedFields.begin(), disallowedFields.end(), key);
+        if (!isDisallowed) {
+            dstSpec->SetInfo(key, srcSpec->GetInfo(key));
+        }
+    }
+}
+
+static void
+_AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target,
+           std::vector<TfToken> const &disallowedFields)
+{
     for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
         if (!target->GetPrimAtPath(prim->GetPath())) {
 
-            SdfPrimSpecHandle targetPrim =
+            SdfPrimSpecHandle newPrim =
                 SdfPrimSpec::New(target, prim->GetName(), prim->GetSpecifier(),
                                  prim->GetTypeName());
-
-            string doc = prim->GetDocumentation();
-            if (!doc.empty())
-                targetPrim->SetDocumentation(doc);
+            _CopySpec(prim, newPrim, disallowedFields);
 
             for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
                 SdfAttributeSpecHandle newAttr =
                     SdfAttributeSpec::New(
-                        targetPrim, attr->GetName(), attr->GetTypeName(),
+                        newPrim, attr->GetName(), attr->GetTypeName(),
                         attr->GetVariability(), attr->IsCustom());
-                if (attr->HasDefaultValue())
-                    newAttr->SetDefaultValue(attr->GetDefaultValue());
-                if (attr->HasInfo(allowedTokens))
-                    newAttr->SetInfo(allowedTokens,
-                                     attr->GetInfo(allowedTokens));
-                string doc = attr->GetDocumentation();
-                if (!doc.empty())
-                    newAttr->SetDocumentation(doc);
-                string displayName = attr->GetDisplayName();
-                if (!displayName.empty())
-                    newAttr->SetDisplayName(displayName);
-                string displayGroup = attr->GetDisplayGroup();
-                if (!displayGroup.empty())
-                    newAttr->SetDisplayGroup(displayGroup);
-                if (attr->GetHidden())
-                    newAttr->SetHidden(true);
+                _CopySpec(attr, newAttr, disallowedFields);
             }
 
             for (SdfRelationshipSpecHandle const &rel:
                      prim->GetRelationships()) {
                 SdfRelationshipSpecHandle newRel =
                     SdfRelationshipSpec::New(
-                        targetPrim, rel->GetName(), rel->IsCustom());
-                string doc = rel->GetDocumentation();
-                if (!doc.empty())
-                    newRel->SetDocumentation(doc);
+                        newPrim, rel->GetName(), rel->IsCustom());
+                _CopySpec(rel, newRel, disallowedFields);
             }
         }
     }
@@ -164,11 +157,16 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
             plugins.insert(plugin);
     }
 
+    // Get list of disallowed fields in schemas and sort them so that
+    // helper functions in _AddSchema can binary search through them.
+    std::vector<TfToken> disallowedFields = GetDisallowedFields();
+    std::sort(disallowedFields.begin(), disallowedFields.end());
+
     // For each plugin, if it has generated schema, add it to the schematics.
     SdfChangeBlock block;
     for (const PlugPluginPtr &plugin: plugins) {
         if (SdfLayerRefPtr generatedSchema = _GetGeneratedSchema(plugin))
-            _AddSchema(generatedSchema, _schematics);
+            _AddSchema(generatedSchema, _schematics, disallowedFields);
     }
 
     // Add them to the type -> path and typeName -> path maps, and the type ->
@@ -289,6 +287,41 @@ SdfPrimSpecHandle
 UsdSchemaRegistry::_GetPrimDefinitionAtPath(const SdfPath &path)
 {
     return Usd_SchemaRegistryGetPrimDefinitionAtPath(path);
+}
+
+/*static*/
+std::vector<TfToken>
+UsdSchemaRegistry::GetDisallowedFields()
+{
+    std::vector<TfToken> result = {
+        // Disallow fallback values for composition arc fields, since they
+        // won't be used during composition.
+        SdfFieldKeys->InheritPaths,
+        SdfFieldKeys->Payload,
+        SdfFieldKeys->References,
+        SdfFieldKeys->Specializes,
+        SdfFieldKeys->VariantSelection,
+        SdfFieldKeys->VariantSetNames,
+
+        // Disallow customData, since it contains information used by
+        // usdGenSchema that isn't relevant to other consumers.
+        SdfFieldKeys->CustomData,
+
+        // Disallow fallback values for these fields, since they won't be
+        // used during scenegraph population or value resolution.
+        SdfFieldKeys->Active,
+        SdfFieldKeys->Instanceable,
+        SdfFieldKeys->TimeSamples,
+        SdfFieldKeys->ConnectionPaths,
+        SdfFieldKeys->TargetPaths
+    };
+
+    // Disallow fallback values for clip-related fields, since they won't
+    // be used during value resolution.
+    const std::vector<TfToken> clipFields = UsdGetClipRelatedFields();
+    result.insert(result.end(), clipFields.begin(), clipFields.end());
+
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

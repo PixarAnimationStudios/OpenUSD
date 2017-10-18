@@ -1,0 +1,3 @@
+Error: Unable to open layer 'test.txt'.
+Reason: Cannot determine file format for @test.txt@.
+Exiting.

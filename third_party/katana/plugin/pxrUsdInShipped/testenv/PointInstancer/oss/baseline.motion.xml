@@ -85,11 +85,6 @@
   <sample size="6" time="1" value="-7.7479476928710938 6.7211818695068359 -6.9176054000854492 7.343531608581543 -8.8626184463500977 -5.5063877105712891 "/>
 </attr>
 </topAttr>
-<topAttr name="geometry">
-<attr type="GroupAttr">
-  <attr name="arbitrary" type="GroupAttr"/>
-</attr>
-</topAttr>
 <topAttr name="kind">
 <attr tupleSize="1" type="StringAttr">
   <sample size="1" time="0">
@@ -232,11 +227,6 @@
 </topAttr>
 </location>
 <location path="/root/world/geo/Rocks/Instances/Prototypes/Rock_0/geo">
-<topAttr name="geometry">
-<attr type="GroupAttr">
-  <attr name="arbitrary" type="GroupAttr"/>
-</attr>
-</topAttr>
 <topAttr name="type">
 <attr tupleSize="1" type="StringAttr">
   <sample size="1" time="0">

@@ -35,7 +35,6 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/ostreamMethods.h"
-#include <boost/bind.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <Alembic/Abc/ArchiveInfo.h>
@@ -63,6 +62,7 @@
 #include <Alembic/AbcGeom/IXform.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/Visibility.h>
+#include <memory>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -2121,10 +2121,11 @@ _PrimReaderContext::AddOutOfSchemaProperty(
             _AddProperty(TfToken(name), usdTypeName, header->getMetaData(), 
                      sampleTimes, isOutOfSchema);
 
-        prop.converter = boost::bind(
+        prop.converter = std::bind(
             _context.GetSchema().GetConversions().GetToUsdConverter(
                 alembicType, prop.typeName),
-            property.GetParent(), property.GetName(), _2, _1);
+            property.GetParent(), property.GetName(),
+            std::placeholders::_2, std::placeholders::_1);
     }
     else {
         TF_WARN("No conversion for \"%s\" of type \"%s\" at <%s>",

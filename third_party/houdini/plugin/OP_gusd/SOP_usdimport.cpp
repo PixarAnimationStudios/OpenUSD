@@ -195,6 +195,12 @@ PRM_Template*   _CreateTemplates()
     static PRM_Default parmDefaultPrimpaths(0, primPathName.getToken());
     static PRM_Default parmDefaultUiExpandState(0, "");
 
+    // Make the uiExpandState template here, so it can be
+    // configured to not cook this SOP when it changes.
+    PRM_Template uiExpandState(PRM_STRING | PRM_TYPE_INVISIBLE, 1,
+                               &parmUiExpandState, &parmDefaultUiExpandState);
+    uiExpandState.setNoCook(true);
+
     GusdPRM_Shared shared;
 
     static PRM_Template templates[] = {
@@ -234,8 +240,7 @@ PRM_Template*   _CreateTemplates()
                      &parmNameUsdfile, &parmDefaultUsdfile),
         PRM_Template(PRM_STRING | PRM_TYPE_INVISIBLE, 1,
                      &parmNamePrimpaths, &parmDefaultPrimpaths),
-        PRM_Template(PRM_STRING | PRM_TYPE_INVISIBLE, 1,
-                     &parmUiExpandState, &parmDefaultUiExpandState),
+        uiExpandState,
         PRM_Template()
     };
 

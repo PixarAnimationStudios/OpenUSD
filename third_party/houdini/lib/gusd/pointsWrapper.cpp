@@ -346,8 +346,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // primvars ----------------------------------------------------------------
 
     GusdGT_AttrFilter filter = ctxt.attributeFilter;
-    filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^widths ^pscale ^usdvisible ^usdactive");
-    filter.appendPattern(GT_OWNER_CONSTANT, "^usdvisible ^usdactive");
+    filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^widths ^pscale");
     if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {
         GusdGT_AttrFilter::OwnerArgs owners;
         owners << GT_OWNER_POINT;

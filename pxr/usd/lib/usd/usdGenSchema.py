@@ -316,15 +316,44 @@ class ClassInfo(object):
 # USD PARSER                                                                   #
 #------------------------------------------------------------------------------#
 
+def _ValidateFields(spec):
+    disallowedFields = Usd.SchemaRegistry.GetDisallowedFields()
+
+    # The schema registry will ignore these fields if they are discovered 
+    # in a generatedSchema.usda file, but we want to allow them in schema.usda.
+    whitelist = ["inheritPaths", "customData"]
+
+    invalidFields = [key for key in spec.ListInfoKeys()
+                     if key in disallowedFields and key not in whitelist]
+    if not invalidFields:
+        return True
+
+    for key in invalidFields:
+        if key == Sdf.RelationshipSpec.TargetsKey:
+            print ("ERROR: Relationship targets on <%s> cannot be specified "
+                   "in a schema." % spec.path)
+        elif key == Sdf.AttributeSpec.ConnectionPathsKey:
+            print ("ERROR: Attribute connections on <%s> cannot be specified "
+                   "in a schema." % spec.path)
+        else:
+            print ("ERROR: Fallback values for '%s' on <%s> cannot be "
+                   "specified in a schema." % (key, spec.path))
+    return False
+
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
     stage = Usd.Stage.Open(sdfLayer)
     classes = []
 
+    hasInvalidFields = False
+
     # PARSE CLASSES
     for sdfPrim in sdfLayer.rootPrims:
         if sdfPrim.name == "Typed" or sdfPrim.specifier != Sdf.SpecifierClass:
             continue
+
+        if not _ValidateFields(sdfPrim):
+            hasInvalidFields = True
 
         usdPrim = stage.GetPrimAtPath(sdfPrim.path)
         classInfo = ClassInfo(usdPrim, sdfPrim)
@@ -338,6 +367,9 @@ def ParseUsd(usdFilePath):
             attrApiNames = []
             relApiNames = []
             for sdfProp in sdfPrim.properties:
+
+                if not _ValidateFields(sdfProp):
+                    hasInvalidFields = True
                 
                 # Attribute
                 usdAttr = usdPrim.GetAttribute(sdfProp.name)
@@ -381,6 +413,9 @@ def ParseUsd(usdFilePath):
                         relApiNames.append(relInfo.apiName)
                         classInfo.rels[relInfo.name] = relInfo
                         classInfo.relOrder.append(relInfo.name)
+
+    if hasInvalidFields:
+        raise Exception('Invalid fields specified in schema.')
 
     return (_GetLibName(sdfLayer),
             _GetLibPath(sdfLayer),

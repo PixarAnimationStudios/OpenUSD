@@ -36,15 +36,15 @@ class NodeContextMenu(QtWidgets.QMenu):
     def __init__(self, parent, item):
         QtWidgets.QMenu.__init__(self, parent)
         self._menuItems = _GetContextMenuItems(parent, item)
-        
+
         for menuItem in self._menuItems:
             if menuItem.IsSeparator():
-                self.addSeparator()		    
+                self.addSeparator()
                 continue
-            
-            elif not menuItem.isValid(): 
-                continue 
-            
+
+            elif not menuItem.isValid():
+                continue
+
             action = self.addAction(menuItem.GetText(),
                                     menuItem.RunCommand)
 

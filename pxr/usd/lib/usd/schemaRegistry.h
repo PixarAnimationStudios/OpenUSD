@@ -157,6 +157,16 @@ public:
         return false;
     }
 
+    /// Returns list of fields that cannot have fallback values
+    /// specified in schemas. 
+    /// 
+    /// Fields are generally in this list because their fallback values
+    /// aren't used. For instance, fallback values for composition arcs
+    /// aren't used during composition, so allowing them to be set in
+    /// schemas would be misleading.
+    USD_API
+    static std::vector<TfToken> GetDisallowedFields();
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 

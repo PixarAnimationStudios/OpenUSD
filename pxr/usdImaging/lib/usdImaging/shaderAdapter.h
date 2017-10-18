@@ -26,66 +26,101 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/imaging/hd/shaderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingDelegate;
-
 /// \class UsdImagingShaderAdapter
 /// \brief Provides information that can be used to generate a surface shader in
 /// hydra.
-class UsdImagingShaderAdapter {
+class UsdImagingShaderAdapter : public UsdImagingPrimAdapter {
 public:
-    USDIMAGING_API
-    UsdImagingShaderAdapter(UsdImagingDelegate* delegate);
+    typedef UsdImagingPrimAdapter BaseAdapter;
 
-    /// \brief Traverses the shading prims and if any of the attributes are time
-    /// varying, returns true.
-    USDIMAGING_API
-    bool GetSurfaceShaderIsTimeVarying(SdfPath const& usdPath) const;
+    UsdImagingShaderAdapter()
+        : UsdImagingPrimAdapter()
+    {}
 
-    /// \brief Returns the surface source string for the shader at \p usdPath.
+    USDIMAGING_API
+    virtual ~UsdImagingShaderAdapter();
+
+    USDIMAGING_API
+    virtual SdfPath Populate(UsdPrim const& prim,
+                     UsdImagingIndexProxy* index,
+                     UsdImagingInstancerContext const* instancerContext = NULL);
+
+    USDIMAGING_API
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Parallel Setup and Resolve
+    // ---------------------------------------------------------------------- //
+
+    /// Thread Safe.
+    USDIMAGING_API
+    virtual void TrackVariability(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  HdDirtyBits* timeVaryingBits,
+                                  UsdImagingInstancerContext const* 
+                                      instancerContext = NULL);
+
+
+    /// Thread Safe.
+    USDIMAGING_API
+    virtual void UpdateForTime(UsdPrim const& prim,
+                               SdfPath const& cachePath, 
+                               UsdTimeCode time,
+                               HdDirtyBits requestedBits,
+                               UsdImagingInstancerContext const* 
+                                   instancerContext = NULL);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Change Processing 
+    // ---------------------------------------------------------------------- //
+
+    /// Returns a bit mask of attributes to be udpated, or
+    /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
+    USDIMAGING_API
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
+
+    USDIMAGING_API
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+protected:
+    USDIMAGING_API
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
+
+private:
+    /// \brief Returns the source string for the specified shader
+    /// terminal for the shader \p prim.
     /// 
     /// This obtains the shading source via the \c UsdHydraShader schema.
-    USDIMAGING_API
-    std::string GetSurfaceShaderSource(SdfPath const& usdPath) const;
+    std::string _GetShaderSource(UsdPrim const& prim,
+                                 TfToken const& shaderType) const;
 
-    /// \brief Returns the displacement source string for the shader at \p usdPath.
-    /// 
-    /// This obtains the shading source via the \c UsdHydraShader schema.
-    USDIMAGING_API
-    std::string GetDisplacementShaderSource(SdfPath const& usdPath) const;
+    /// \brief Returns the textures (identified by \c SdfPath objects) that \p
+    /// prim uses.
+    SdfPathVector _GetSurfaceShaderTextures(UsdPrim const& prim) const;
 
-    /// \brief Returns the value of param \p paramName for \p usdPath.
-    USDIMAGING_API
-    VtValue GetSurfaceShaderParamValue(SdfPath const& usdPath, TfToken const& paramName) const;
-
-    /// \brief Returns the parameters that \p usdPath users.  Hydra will built
+    /// \brief Returns the parameters that \p prim uses.  Hydra will build
     /// the appropriate internal data structures so that these values are
     /// available in the shader.
     ///
     /// \sa HdShaderParam
-    USDIMAGING_API
-    HdShaderParamVector GetSurfaceShaderParams(SdfPath const& usdPath) const;
+    HdShaderParamVector _GetSurfaceShaderParams(UsdPrim const& prim) const;
 
-    /// \brief Returns the textures (identified by \c SdfPath objects) that \p
-    /// usdPath users.
-    USDIMAGING_API
-    SdfPathVector GetSurfaceShaderTextures(SdfPath const& usdPath) const;
-
-private:
-    /// \brief Returns the source string for the specified shader
-    /// terminal at \p usdPath.
-    /// 
-    /// This obtains the shading source via the \c UsdHydraShader schema.
-    std::string _GetShaderSource(SdfPath const& usdPath,
-                                 TfToken const& shaderType) const;
-
-private:
-    UsdImagingDelegate* _delegate;
+    /// \brief Returns the value of param \p paramName for \p prim.
+    VtValue _GetSurfaceShaderParamValue(UsdPrim const& prim,
+                                        TfToken const& paramName,
+                                        UsdTimeCode time) const;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

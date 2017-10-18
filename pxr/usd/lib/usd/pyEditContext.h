@@ -29,6 +29,7 @@
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/editTarget.h"
 
+#include <memory>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,7 +51,7 @@ private:
 
     UsdStagePtr _stage;
     UsdEditTarget _editTarget;
-    boost::shared_ptr<UsdEditContext> _editContext;
+    std::shared_ptr<UsdEditContext> _editContext;
 };
 
 

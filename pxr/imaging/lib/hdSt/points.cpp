@@ -148,7 +148,7 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
                             dirtyBits);
         }
 
-        *dirtyBits &= ~DirtyNewRepr;
+        *dirtyBits &= ~NewRepr;
     }
 
     return it->second;
@@ -240,13 +240,14 @@ HdDirtyBits
 HdStPoints::_GetInitialDirtyBits() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
+        | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyWidths
@@ -281,7 +282,7 @@ HdStPoints::_InitRepr(TfToken const &reprName,
             }
         }
 
-        *dirtyBits |= DirtyNewRepr;
+        *dirtyBits |= NewRepr;
     }
 
 }

@@ -55,7 +55,7 @@ typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 struct HdRprimSharedData {
     HdRprimSharedData(int barContainerSize)
         : barContainer(barContainerSize)
-        , surfaceShader()
+        , material()
         , bounds()
         , hasInstancer(false)
         , visible(true)
@@ -66,7 +66,7 @@ struct HdRprimSharedData {
                       bool hasInstancer,
                       bool visible)
         : barContainer(barContainerSize)
-        , surfaceShader()
+        , material()
         , bounds()
         , hasInstancer(hasInstancer)
         , visible(visible)
@@ -76,8 +76,8 @@ struct HdRprimSharedData {
     // BufferArrayRange array
     HdBufferArrayRangeContainer barContainer;
 
-    // The ID of the surface shader to which the Rprim is bound.
-    HdShaderCodeSharedPtr surfaceShader;
+    // The material to which the Rprim is bound.
+    HdShaderCodeSharedPtr material;
 
     // Used for CPU frustum culling.
     GfBBox3d bounds;

@@ -254,9 +254,9 @@ public:
     GfMatrix4d GetTransform(UsdPrim const& prim, UsdTimeCode time,
                             bool ignoreRootTransform = false);
 
-    /// Gets the shader binding for the given prim, walking up namespace if
+    /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
-    SdfPath GetShaderBinding(UsdPrim const& prim);
+    SdfPath GetMaterialId(UsdPrim const& prim);
 
     /// Gets the instancer ID for the given prim and instancerContext.
     SdfPath GetInstancerBinding(UsdPrim const& prim,
@@ -270,8 +270,10 @@ public:
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //
 
-    /// Returns whether the adapter can be populated into the target render index.
-    virtual bool IsSupported(HdRenderIndex* renderIndex) { return true; }
+    /// Returns true if the adapter can be populated into the target index.
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const {
+        return true;
+    }
 
 protected:
     typedef std::vector<UsdImagingValueCache::PrimvarInfo> PrimvarInfoVector;
@@ -285,7 +287,8 @@ protected:
     }
 
     template <typename T>
-    void _GetPtr(UsdPrim const& prim, TfToken const& key, UsdTimeCode time, T* out) {
+    void _GetPtr(UsdPrim const& prim, TfToken const& key, UsdTimeCode time,
+                 T* out) {
         prim.GetAttribute(key).Get<T>(out, time);
     }
 

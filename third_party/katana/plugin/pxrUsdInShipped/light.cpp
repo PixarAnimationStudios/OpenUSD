@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightOp, privateData, opArgs, interface)
 {
     PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData.GetUsdInArgs();
     PxrUsdKatanaAttrMap attrs;
@@ -91,7 +91,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightOp, privateData, interface)
                         // light-specific op, and we need to run a
                         // light-filter op instead.)
                         "PxrUsdIn",
-                        interface.getOpArg(),
+                        opArgs,
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(
                             filterPrim, usdInArgs, &privateData),

@@ -122,6 +122,7 @@ void wrapGL()
             .def("IsConverged", &UsdImagingGL::IsConverged)
             .def("GetRendererPlugins", &UsdImagingGL::GetRendererPlugins,
                  return_value_policy< TfPySequenceToTuple >())
+            .def("GetRendererPluginDesc", &UsdImagingGL::GetRendererPluginDesc)
             .def("SetRendererPlugin", &UsdImagingGL::SetRendererPlugin)
             .def("GetResourceAllocation", &UsdImagingGL::GetResourceAllocation)
         ;

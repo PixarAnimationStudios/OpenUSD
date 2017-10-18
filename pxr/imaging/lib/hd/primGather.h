@@ -102,7 +102,6 @@ public:
                           void                *predicateParam,
                           SdfPathVector       *results);
 
-
     ///
     /// Subtree is a simplified form of filter, that gathers
     /// all prims that meet the single rootPath prefix condition.
@@ -116,6 +115,25 @@ public:
     void Subtree(const SdfPathVector &paths,
                  const SdfPath       &rootPath,
                  SdfPathVector       *results);
+
+    ///
+    /// Subtree is a simplified form of filter, that gathers
+    /// all prims that meet the single rootPath prefix condition.
+    ///
+    /// The list of paths to filter must be pre-sorted with
+    /// ordering defined by std::less<SdfPath &>.
+    ///
+    /// Rather than returning a list the paths, it instead returns
+    /// the start and end (inclusive) indexes into the paths
+    /// vector of that subtree range.
+    ///
+    /// If the rootPath wasn't found or an error occured, that
+    /// otherwise produces an invalid range. The method returns false.
+    HD_API
+    bool SubtreeAsRange(const SdfPathVector &paths,
+                        const SdfPath       &rootPath,
+                        size_t *start,
+                        size_t *end);
 
 private:
     struct _PathFilter {
@@ -188,6 +206,9 @@ private:
     void _WriteResults(const SdfPathVector &paths,
                        const _RangeArray &ranges,
                        SdfPathVector *results) const;
+
+    void _FilterSubTree(const SdfPathVector &paths,
+                        const SdfPath       &rootPath);
 
     // No default copying or assignment
     HdPrimGather(const HdPrimGather &) = delete;

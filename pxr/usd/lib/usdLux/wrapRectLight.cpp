@@ -50,6 +50,20 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateWidthAttr(UsdLuxRectLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateWidthAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateHeightAttr(UsdLuxRectLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateHeightAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateTextureFileAttr(UsdLuxRectLight &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTextureFileAttr(
@@ -88,6 +102,20 @@ void wrapUsdLuxRectLight()
 
         .def(!self)
 
+        
+        .def("GetWidthAttr",
+             &This::GetWidthAttr)
+        .def("CreateWidthAttr",
+             &_CreateWidthAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetHeightAttr",
+             &This::GetHeightAttr)
+        .def("CreateHeightAttr",
+             &_CreateHeightAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
         
         .def("GetTextureFileAttr",
              &This::GetTextureFileAttr)

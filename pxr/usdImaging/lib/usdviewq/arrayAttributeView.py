@@ -67,7 +67,7 @@ class ArrayAttributeView(QtWidgets.QListView):
             self.Copy()
         else:
             QtWidgets.QListView.keyPressEvent(self, e)
-    
+
     def SetAttribute(self, attr, frame):
         # XXX: probably don't need to reconstruct especially if all
         # we're doing is changing the frame

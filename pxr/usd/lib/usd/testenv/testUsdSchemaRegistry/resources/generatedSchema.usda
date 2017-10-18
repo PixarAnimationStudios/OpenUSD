@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class MetadataTest "MetadataTest" (
+    doc = "Testing documentation metadata"
+    hidden = true
+    testCustomMetadata = "garply"
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        displayGroup = "Display Group"
+        displayName = "Display Name"
+        doc = "Testing documentation metadata"
+        hidden = true
+        testCustomMetadata = "garply"
+    )
+    rel testRel (
+        displayGroup = "Display Group"
+        displayName = "Display Name"
+        doc = "Testing documentation metadata"
+        hidden = true
+        testCustomMetadata = "garply"
+    )
+}
+

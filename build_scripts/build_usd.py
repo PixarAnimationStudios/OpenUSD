@@ -742,7 +742,7 @@ PYSIDE = PythonDependency("PySide", GetPySideInstructions,
 ############################################################
 # HDF5
 
-HDF5_URL = "http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
+HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
 
 def InstallHDF5(context, force):
     with CurrentWorkingDirectory(DownloadURL(HDF5_URL, context, force)):

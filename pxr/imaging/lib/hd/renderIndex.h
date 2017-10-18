@@ -71,8 +71,7 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef std::unordered_map<TfToken,
                            VtValue,
-                           TfToken::HashFunctor,
-                           TfToken::TokensEqualFunctor> HdTaskContext;
+                           TfToken::HashFunctor> HdTaskContext;
 
 /// \class HdRenderIndex
 ///
@@ -106,6 +105,13 @@ public:
     /// Clear all r (render), s (state) and b (buffer) prims.
     HD_API
     void Clear();
+
+    /// Clear all entries in the render index under
+    /// the given root and belong to a specified delegate.
+    ///
+    /// Used for example to unload a delegate.
+    HD_API
+    void RemoveSubtree(const SdfPath &root, HdSceneDelegate* sceneDelegate);
 
     // ---------------------------------------------------------------------- //
     /// Given a prim id, returns the path of the correspoding rprim
@@ -365,6 +371,16 @@ private:
 
     template <typename T>
     static inline const TfToken & _GetTypeId();
+
+
+    void _RemoveRprimSubtree(const SdfPath &root,
+                             HdSceneDelegate* sceneDelegate);
+    void _RemoveInstancerSubtree(const SdfPath &root,
+                                 HdSceneDelegate* sceneDelegate);
+    void _RemoveExtComputationSubtree(const SdfPath &root,
+                                      HdSceneDelegate* sceneDelegate);
+    void _RemoveTaskSubtree(const SdfPath &root,
+                            HdSceneDelegate* sceneDelegate);
 
 
     // ---------------------------------------------------------------------- //

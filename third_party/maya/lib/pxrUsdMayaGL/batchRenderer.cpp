@@ -96,7 +96,11 @@ std::unique_ptr<UsdMayaGLBatchRenderer> UsdMayaGLBatchRenderer::_sGlobalRenderer
 
 /// \brief struct to hold all the information needed for a 
 /// draw request in vp1 or vp2, without requiring shape querying at
-/// draw time. 
+/// draw time.
+///
+/// Note that we set deleteAfterUse=false when calling the MUserData
+/// constructor. This ensures that the draw data survives across multiple draw
+/// passes in vp2 (e.g. a shadow pass and a color pass).
 class _BatchDrawUserData : public MUserData
 {
 public:
@@ -106,18 +110,22 @@ public:
     boost::scoped_ptr<GfVec4f> _wireframeColor;
 
     // Constructor to use when shape is drawn but no bounding box.
-    _BatchDrawUserData()
-        : MUserData(true), _drawShape(true) {}
-    
+    _BatchDrawUserData() :
+        MUserData(/* deleteAfterUse = */ false),
+        _drawShape(true) {}
+
     // Constructor to use when shape may be drawn but there is a bounding box.
-    _BatchDrawUserData(bool drawShape, const MBoundingBox &bounds, const GfVec4f &wireFrameColor)
-        : MUserData( true )
-        , _drawShape( drawShape )
-        , _bounds( new MBoundingBox(bounds) )
-        ,  _wireframeColor( new GfVec4f(wireFrameColor) ) {}
+    _BatchDrawUserData(
+            const bool drawShape,
+            const MBoundingBox& bounds,
+            const GfVec4f& wireFrameColor) :
+        MUserData(/* deleteAfterUse = */ false),
+        _drawShape(drawShape),
+        _bounds(new MBoundingBox(bounds)),
+        _wireframeColor(new GfVec4f(wireFrameColor)) {}
 
     // Make sure everything gets freed!
-    ~_BatchDrawUserData() {}
+    virtual ~_BatchDrawUserData() {}
 };
 
 
@@ -809,7 +817,7 @@ UsdMayaGLBatchRenderer::GetShapeRenderer(
         //
         std::string idString = TfStringPrintf("/x%zx", hash);
         
-        toReturn->Init(_renderIndex,
+        toReturn->Init(_renderIndex.get(),
                        SdfPath(idString),
                        usdPrim,
                        excludePrimPaths);
@@ -837,18 +845,16 @@ _OnMayaSceneUpdateCallback(void* clientData)
 }
 
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
-    : _renderIndex(nullptr)
-    , _renderDelegate()
-    , _taskDelegate()
-    , _intersector()
+    : _renderDelegate(),
+      _taskDelegate(),
+      _intersector()
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate);
-    if (!TF_VERIFY(_renderIndex != nullptr)) {
+    _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));
+    if (!TF_VERIFY(_renderIndex)) {
         return;
     }
-    _taskDelegate = TaskDelegateSharedPtr(
-                          new TaskDelegate(_renderIndex, SdfPath("/mayaTask")));
-    _intersector = HdxIntersectorSharedPtr(new HdxIntersector(_renderIndex));
+    _taskDelegate.reset(new TaskDelegate(_renderIndex.get(), SdfPath("/mayaTask")));
+    _intersector.reset(new HdxIntersector(_renderIndex.get()));
 
 
     static MCallbackId sceneUpdateCallbackId = 0;
@@ -867,7 +873,6 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
     // the _shapeRendererMap has UsdImagingDelegate objects which need to be
     // deleted before _renderIndex is deleted.
     _shapeRendererMap.clear();
-    delete _renderIndex;
 }
 
 
@@ -891,8 +896,9 @@ UsdMayaGLBatchRenderer::Draw(
     
     _BatchDrawUserData* batchData =
                 static_cast<_BatchDrawUserData*>(drawData.geometry());
-    if( !batchData )
+    if (!batchData) {
         return;
+    }
     
     MMatrix projectionMat;
     view.projectionMatrix(projectionMat);
@@ -926,6 +932,28 @@ UsdMayaGLBatchRenderer::Draw(
     delete batchData;
 }
 
+/// Returns true if the current Maya draw pass is a color pass, or false
+/// otherwise.
+static
+bool
+_IsMayaColorPass(const MHWRender::MDrawContext* drawContext)
+{
+    if (!drawContext) {
+        return false;
+    }
+
+    const MHWRender::MPassContext& passContext = drawContext->getPassContext();
+    const MStringArray& passSemantics = passContext.passSemantics();
+
+    for (unsigned int i = 0; i < passSemantics.length(); ++i) {
+        if (passSemantics[i] == MHWRender::MPassContext::kColorPassSemantic) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void
 UsdMayaGLBatchRenderer::Draw(
     const MHWRender::MDrawContext& context,
@@ -934,12 +962,14 @@ UsdMayaGLBatchRenderer::Draw(
     // VP 2.0 Implementation
     //
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
-    if( !theRenderer || !theRenderer->drawAPIIsOpenGL() )
+    if (!theRenderer || !theRenderer->drawAPIIsOpenGL()) {
         return;
+    }
 
     const _BatchDrawUserData* batchData = static_cast<const _BatchDrawUserData*>(userData);
-    if( !batchData )
+    if (!batchData) {
         return;
+    }
     
     MStatus status;
 
@@ -954,7 +984,7 @@ UsdMayaGLBatchRenderer::Draw(
                                         worldViewMat,
                                         projectionMat);
     }
-    
+
     if( batchData->_drawShape && !_renderQueue.empty() )
     {
         MMatrix viewMat = context.getMatrix(MHWRender::MDrawContext::kViewMtx, &status);
@@ -997,22 +1027,18 @@ UsdMayaGLBatchRenderer::_QueuePathForDraw(
     const SdfPath& sharedId,
     const RenderParams &params )
 {
-    size_t paramKey = params.Hash();
+    const size_t paramKey = params.Hash();
     
     auto renderSetIter = _renderQueue.find( paramKey );
-    if( renderSetIter == _renderQueue.end() )
-    {
+    if (renderSetIter == _renderQueue.end()) {
         // If we had no _SdfPathSet for this particular RenderParam combination,
         // create a new one.
         _renderQueue[paramKey] = _RenderParamSet( params, _SdfPathSet( {sharedId} ) );
-    }
-    else
-    {
+    } else {
         _SdfPathSet &renderPaths = renderSetIter->second.second;
         renderPaths.insert( sharedId );
     }
 }
-
 
 const HdxIntersector::Hit * 
 UsdMayaGLBatchRenderer::_GetHitInfo(
@@ -1023,8 +1049,9 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
     const GfMatrix4d &localToWorldSpace)
 {
     // Guard against user clicking in viewer before renderer is setup
-    if( !_renderIndex )
+    if (!_renderIndex) {
         return NULL;
+    }
 
     // Selection only occurs once per display refresh, with all usd objects
     // simulataneously. If the selectQueue is not empty, that means that
@@ -1177,7 +1204,6 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
     return TfMapLookupPtr( _selectResults, sharedId );
 }
 
-
 void
 UsdMayaGLBatchRenderer::_RenderBatches( 
     const MHWRender::MDrawContext* vp2Context,
@@ -1276,7 +1302,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
     for( const auto &renderSetIter : _renderQueue )
     {
-        size_t hash = renderSetIter.first;
+        const size_t hash = renderSetIter.first;
         const RenderParams &params = renderSetIter.second.first;
         const _SdfPathSet &renderPaths = renderSetIter.second.second;
 
@@ -1294,13 +1320,20 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT
-    
-    // Selection is based on what we have last rendered to the display. The
-    // selection queue is cleared above, so this has the effect of resetting
-    // the render queue and prepping the selection queue without any
-    // significant memory hit.
-    _renderQueue.swap( _selectQueue );
-    
+
+    // Viewport 2 may be rendering in multiple passes, so *only* if the current
+    // pass is the main color pass do we clear the render queue. For example,
+    // when shadows are turned on, Maya will execute a shadow pass before the
+    // color pass.
+    const bool isColorPass = _IsMayaColorPass(vp2Context);
+    if (isColorPass) {
+        // Selection is based on what we have last rendered to the display. The
+        // selection queue is cleared above, so this has the effect of resetting
+        // the render queue and prepping the selection queue without any
+        // significant memory hit.
+        _renderQueue.swap(_selectQueue);
+    }
+
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
         "^^^^^^^^^^^^ RENDER STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",_renderQueue.size());
 }

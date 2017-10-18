@@ -608,18 +608,20 @@ TfRegistryManager::_UnsubscribeFrom(const type_info& ti)
     Tf_RegistryManagerImpl::GetInstance().UnsubscribeFrom(ArchGetDemangled(ti));
 }
 
-Tf_RegistryInit::Tf_RegistryInit(const char* name) : _name(name)
+void
+Tf_RegistryInitCtor(char const *name)
 {
     // Finished registering functions.
     if (TfSingleton<Tf_RegistryManagerImpl>::CurrentlyExists()) {
-        Tf_RegistryManagerImpl::GetInstance().ClearActiveLibrary(_name);
+        Tf_RegistryManagerImpl::GetInstance().ClearActiveLibrary(name);
     }
 }
 
-Tf_RegistryInit::~Tf_RegistryInit()
+void
+Tf_RegistryInitDtor(char const *name)
 {
     if (TfSingleton<Tf_RegistryManagerImpl>::CurrentlyExists()) {
-        Tf_RegistryManagerImpl::GetInstance().UnloadLibrary(_name);
+        Tf_RegistryManagerImpl::GetInstance().UnloadLibrary(name);
     }
 }
 

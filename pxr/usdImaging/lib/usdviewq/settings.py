@@ -46,15 +46,15 @@ def EmitWarning(filePath):
 
 class Settings(dict):
     """A small wrapper around the standard Python dictionary.
-    
-    See help(dict) for initialization arguments This class uses python naming 
+
+    See help(dict) for initialization arguments This class uses python naming
     conventions, because it inherits from dict.
     """
 
     def __init__(self, filename, seq=None, ephemeral=False, **kwargs):
         self._filename = filename
 
-        # Ephemeral settings objects are created in the presence of 
+        # Ephemeral settings objects are created in the presence of
         # file system failures, such as the inability to create a .usdview
         # directory to store our settings. In these cases we won't perform
         # and save or load operations.
@@ -66,12 +66,12 @@ class Settings(dict):
             dict.__init__(self, seq)
         elif kwargs:
             dict.__init__(self, **kwargs)
-    
+
     def save(self, ignoreErrors=False):
         """Write the settings out to the file at filename
         """
         if self._ephemeral:
-            return 
+            return
         try:
             f = open(self._filename, "w")
             dump(self, f)
@@ -81,12 +81,12 @@ class Settings(dict):
                 return False
             raise
         return True
-    
+
     def load(self, ignoreErrors=False):
         """Load the settings from the file at filename
         """
         if self._ephemeral:
-            return 
+            return
         try:
             f = open(self._filename, "r")
             self.update(load(f))
@@ -102,7 +102,7 @@ class Settings(dict):
         """Sets keyword arguments as settings and quietly saves
         """
         if self._ephemeral:
-            return 
+            return
 
         self.update(kwargs)
         self.save(ignoreErrors=True)

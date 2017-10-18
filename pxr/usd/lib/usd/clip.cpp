@@ -62,12 +62,31 @@ TF_DEFINE_ENV_SETTING(
     "If on, legacy clip metadata will be respected when populating "
     "clips. Otherwise, legacy clip metadata will be ignored.");
 
+static bool
+_IsClipRelatedField(const TfToken& fieldName)
+{
+    return TfStringStartsWith(fieldName.GetString(), "clip");
+}
+
 bool
 UsdIsClipRelatedField(const TfToken& fieldName)
 {
-    return std::find(UsdTokens->allTokens.begin(), 
+    return _IsClipRelatedField(fieldName) && 
+           std::find(UsdTokens->allTokens.begin(), 
                      UsdTokens->allTokens.end(), 
                      fieldName) != UsdTokens->allTokens.end();
+}
+
+std::vector<TfToken>
+UsdGetClipRelatedFields()
+{
+    std::vector<TfToken> result = UsdTokens->allTokens;
+    result.erase(
+        std::remove_if(
+            result.begin(), result.end(),
+            [](const TfToken& field) { return !_IsClipRelatedField(field); }),
+        result.end());
+    return result;
 }
 
 struct Usd_SortByExternalTime

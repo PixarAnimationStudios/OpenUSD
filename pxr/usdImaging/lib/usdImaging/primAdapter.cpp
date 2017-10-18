@@ -49,7 +49,7 @@ static bool _IsEnabledXformCache() {
 }
 
 TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_BINDING_CACHE, 1, 
-                      "Enable a cache for shader bindings.");
+                      "Enable a cache for material bindings.");
 static bool _IsEnabledBindingCache() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_BINDING_CACHE) == 1;
     return _v;
@@ -361,7 +361,7 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time)
 }
 
 SdfPath
-UsdImagingPrimAdapter::GetShaderBinding(UsdPrim const& prim)
+UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
 

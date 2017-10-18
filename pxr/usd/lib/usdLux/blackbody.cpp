@@ -108,7 +108,13 @@ GfVec3f UsdLuxBlackbodyTemperatureAsRgb(float temp)
     // Eval cubic polynomial.
     GfVec3f rgb = ((a*u_seg+b)*u_seg+c)*u_seg+d;
     // Normalize to the same luminance as (1,1,1)
-    return rgb / _Rec709RgbToLuma(rgb);
+    rgb /= _Rec709RgbToLuma(rgb);
+    // Clamp at zero, since the spline can produce small negative values,
+    // e.g. in the blue component at 1300k.
+    rgb[0] = GfMax(rgb[0], 0.f);
+    rgb[1] = GfMax(rgb[1], 0.f);
+    rgb[2] = GfMax(rgb[2], 0.f);
+    return rgb;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

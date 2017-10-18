@@ -128,6 +128,9 @@ private:
     // List of prototype transforms for "subtracting" from final instance
     // transforms.
     std::vector<UT_Matrix4D> m_prototypeTransforms;
+
+    // Scope to write prototypes to (usually ../Prototypes/..).
+    SdfPath m_prototypesScope;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

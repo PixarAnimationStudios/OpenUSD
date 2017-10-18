@@ -257,8 +257,14 @@ GusdGroupBaseWrapper::updateGroupActiveFromGTPrim(
     GT_DataArrayHandle houAttr
         = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
-        int active = houAttr->getI32(0);
-        prim.SetActive((bool)active);            
+        GT_String state = houAttr->getS(0);
+        if (state) {
+            if (strcmp(state, "active") == 0) {
+                prim.SetActive(true);
+            } else if (strcmp(state, "inactive") == 0) {
+                prim.SetActive(false);
+            }
+        }
     }
 }
 

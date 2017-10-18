@@ -1,0 +1,3 @@
+Error: Unable to open layer 'test.py'.
+Reason: Cannot determine file format for @test.py@.
+Exiting.

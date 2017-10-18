@@ -170,8 +170,10 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // Need to use GetAbsoluteRootOrPrimPath() on instancerPath to drop
     // {instancer=X} from the path, so usd can find the prim.
     index->InsertInstancer(instancerPath,
-                           _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
-                           instancerContext);
+            instancerContext ? instancerContext->instancerId : SdfPath(),
+            _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
+            instancerContext ? instancerContext->instancerAdapter
+                             : UsdImagingPrimAdapterSharedPtr());
 
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.
@@ -276,7 +278,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 UsdImagingInstancerContext ctx = {
                     instancerContext->instancerId,
                     instancerContext->childName,
-                    instancerContext->instanceSurfaceShaderPath,
+                    instancerContext->instanceMaterialId,
                     UsdImagingPrimAdapterSharedPtr() };
                 protoPath = adapter->Populate(*iter, index, &ctx);
                 iter.PruneChildren();
@@ -286,11 +288,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                         "proto%d_%s_id%d", protoIndex,
                         iter->GetPath().GetName().c_str(), protoID++));
 
-                SdfPath const& shader = GetShaderBinding(*iter);
+                SdfPath const& materialId = GetMaterialId(*iter);
                 UsdImagingInstancerContext ctx = {
                     instancerPath,
                     /*childName=*/protoName,
-                    shader,
+                    materialId,
                     instancerContext->instancerAdapter };
                 protoPath = instancerPath.AppendProperty(protoName);
                 adapter->Populate(*iter, index, &ctx);

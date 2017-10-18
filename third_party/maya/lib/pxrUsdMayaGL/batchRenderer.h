@@ -441,7 +441,7 @@ private:
     /// \brief Master \c UsdImagingGL renderer used to render batches.
 
     HdEngine _hdEngine;
-    HdRenderIndex *_renderIndex;
+    std::unique_ptr<HdRenderIndex> _renderIndex;
     HdStRenderDelegate _renderDelegate;
     TaskDelegateSharedPtr _taskDelegate;
     HdxIntersectorSharedPtr _intersector;

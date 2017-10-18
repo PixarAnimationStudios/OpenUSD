@@ -49,6 +49,8 @@ using std::pair;
 using std::string;
 using std::vector;
 
+using namespace std::placeholders;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static inline bool _IsValidIdentifier(TfToken const &name);
@@ -1504,7 +1506,9 @@ SdfPath::RemoveDescendentPaths(SdfPathVector *paths)
     // Now unique and erase all descendents.  The equivalence predicate returns
     // true if rhs has lhs as a prefix.
     paths->erase(std::unique(paths->begin(), paths->end(),
-                             boost::bind(&SdfPath::HasPrefix, _2, _1)),
+                             [](SdfPath const &l, SdfPath const &r) {
+                                 return r.HasPrefix(l);
+                             }),
                  paths->end());
 }
 
@@ -1519,7 +1523,9 @@ SdfPath::RemoveAncestorPaths(SdfPathVector *paths)
     // if lhs has rhs as a prefix.
     paths->erase(paths->begin(),
                  std::unique(paths->rbegin(), paths->rend(),
-                             boost::bind(&SdfPath::HasPrefix, _1, _2)).base());
+                             [](SdfPath const &l, SdfPath const &r) {
+                                 return l.HasPrefix(r);
+                             }).base());
 }
 
 // Overload hash_value for SdfPath.

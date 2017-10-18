@@ -1,0 +1,3 @@
+Error: Unable to open layer 'invalidSyntax.usda'.
+Reason: syntax error at @HelloWorld.usda@ in </refSphere2> on line 11 in file invalidSyntax.usda.
+Exiting.

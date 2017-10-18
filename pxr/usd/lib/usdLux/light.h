@@ -279,10 +279,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Color temperature, in degrees Kelvin, representing the
     /// white point.  The default is a common white point, D65.  Lower
-    /// values are warmer and higher values are cooler.  Only takes effect
-    /// when enableColorTemperature is set to true.  When active, the
+    /// values are warmer and higher values are cooler.  The valid range
+    /// is from 1000 to 10000. Only takes effect when
+    /// enableColorTemperature is set to true.  When active, the
     /// computed result multiplies against the color attribute.
-    /// See UsdLuxBlackbodyColorTemperatureAsRgb().
+    /// See UsdLuxBlackbodyTemperatureAsRgb().
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float

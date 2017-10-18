@@ -377,11 +377,13 @@ GusdPrimWrapper::updateVisibilityFromGTPrim(
     GT_DataArrayHandle houAttr
         = sourcePrim->findAttribute(GUSD_VISIBLE_ATTR, attrOwner, 0);
     if(houAttr) {
-        int visible = houAttr->getI32(0);
-        if(visible) {
-            setVisibility(UsdGeomTokens->inherited, time);
-        } else {
-            setVisibility(UsdGeomTokens->invisible, time);
+        GT_String visible = houAttr->getS(0);
+        if (visible) {
+            if (strcmp(visible, "inherited") == 0) {
+                setVisibility(UsdGeomTokens->inherited, time);
+            } else if (strcmp(visible, "invisible") == 0) {
+                setVisibility(UsdGeomTokens->invisible, time);
+            }
         }
     }
     else if ( forceWrite ) {
@@ -404,8 +406,14 @@ GusdPrimWrapper::updateActiveFromGTPrim(
     GT_DataArrayHandle houAttr
         = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
-        int active = houAttr->getI32(0);
-        prim.SetActive((bool)active);
+        GT_String state = houAttr->getS(0);
+        if (state) {
+            if (strcmp(state, "active") == 0) {
+                prim.SetActive(true);
+            } else if (strcmp(state, "inactive") == 0) {
+                prim.SetActive(false);
+            }
+        }
     }
 }
 

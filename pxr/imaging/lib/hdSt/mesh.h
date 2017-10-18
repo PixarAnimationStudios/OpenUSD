@@ -134,12 +134,12 @@ private:
         InstancePrimVar // has to be at the very end
     };
 
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
         DirtyIndices        = (DirtySmoothNormals << 1),
         DirtyHullIndices    = (DirtyIndices       << 1),
         DirtyPointsIndices  = (DirtyHullIndices   << 1),
-        DirtyNewRepr        = (DirtyPointsIndices << 1),
+        NewRepr             = (DirtyPointsIndices << 1),
     };
 
     HdSt_MeshTopologySharedPtr _topology;

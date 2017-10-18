@@ -427,7 +427,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
                 std::make_pair(shaderParamBinding, sblock));
 
             //XXX:hack  we want to generalize surfaceShaderParams to other shaders.
-            if ((*shader) == drawItem->GetSurfaceShader()) {
+            if ((*shader) == drawItem->GetMaterial()) {
                 // shader parameters are interleaved into single struct.
                 _bindingMap[HdTokens->surfaceShaderParams] = shaderParamBinding;
             }
@@ -436,7 +436,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
         // for primvar and texture accessors
         TF_FOR_ALL(it, params) {
             // renderpass texture should be bindfull (for now)
-            bool bindless = useBindlessForTexture && ((*shader) == drawItem->GetSurfaceShader());
+            bool bindless = useBindlessForTexture && ((*shader) == drawItem->GetMaterial());
             if (it->IsFallback()) {
                 metaDataOut->shaderParameterBinding[HdBinding(HdBinding::FALLBACK, shaderFallbackLocation++)]
                     = MetaData::ShaderParameterAccessor(it->GetName(),

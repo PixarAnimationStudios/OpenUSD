@@ -35,7 +35,8 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/mpl/assert.hpp>
-#include <boost/type_traits/is_base_of.hpp>
+
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -246,7 +247,7 @@ public:
     /// \endcode
     template <class T>
     bool Is() const {
-        BOOST_MPL_ASSERT_MSG((boost::is_base_of<UsdObject, T>::value),
+        BOOST_MPL_ASSERT_MSG((std::is_base_of<UsdObject, T>::value),
                              Provided_type_must_derive_or_be_UsdObject,
                              (T));
         return UsdIsConvertible(_type, _Detail::GetObjType<T>::Value);

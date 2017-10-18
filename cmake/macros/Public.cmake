@@ -560,7 +560,7 @@ endfunction() # pxr_install_test_dir
 function(pxr_register_test TEST_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
-            "PYTHON;REQUIRES_DISPLAY;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
+            "PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
             "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
             "ENV;PRE_PATH;POST_PATH"
             ${ARGN}
@@ -600,10 +600,6 @@ function(pxr_register_test TEST_NAME)
 
         if (bt_STDERR_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stderr-redirect=${bt_STDERR_REDIRECT})
-        endif()
-
-        if (bt_REQUIRES_DISPLAY)
-            set(testWrapperCmd ${testWrapperCmd} --requires-display)
         endif()
 
         if (bt_PRE_COMMAND_STDOUT_REDIRECT)

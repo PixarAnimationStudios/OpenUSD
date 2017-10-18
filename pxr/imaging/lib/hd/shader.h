@@ -40,7 +40,7 @@ typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 class HdShader : public HdSprim {
 public:
     // change tracking for HdShader prim
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         // XXX: Got to skip varying and force sync bits for now
         DirtySurfaceShader    = 1 << 2,

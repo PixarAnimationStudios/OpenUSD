@@ -29,11 +29,6 @@
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/base/tf/hashset.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <string>
 #include <vector>
 

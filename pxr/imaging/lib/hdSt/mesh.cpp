@@ -510,7 +510,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     sources.reserve(primVarNames.size());
     HdComputationVector computations;
 
-    int numPoints = _topology ? _topology->ComputeNumPoints() : 0;
+    int numPoints = _topology ? _topology->GetNumPoints() : 0;
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
 
     bool cpuSmoothNormals =
@@ -791,7 +791,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         // already have a valid range, but the new repr may have
         // added additional items (smooth normals) or we may be transitioning
         // to unpacked normals
-        bool isNew = (*dirtyBits & DirtyNewRepr) ||
+        bool isNew = (*dirtyBits & NewRepr) ||
                      (usePackedNormals != _packedNormals);
 
         HdBufferArrayRangeSharedPtr range = bar;
@@ -1029,7 +1029,7 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
     const HdShader *shader = static_cast<const HdShader *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->shader,
-                                                       GetSurfaceShaderId()));
+                                                       GetMaterialId()));
     if (shader == nullptr) {
         shader = static_cast<const HdShader *>(
                         renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
@@ -1141,7 +1141,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* VERTEX PRIMVARS */
-    if ((*dirtyBits & DirtyNewRepr) ||
+    if ((*dirtyBits & NewRepr) ||
         (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id))) {
         _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits,
                                 requireSmoothNormals);
@@ -1231,7 +1231,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     // geometry shader out of the code.
     bool hasCustomDisplacementTerminal = false;
     const HdShader *shader = static_cast<const HdShader *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->shader, GetSurfaceShaderId()));
+        renderIndex.GetSprim(HdPrimTypeTokens->shader, GetMaterialId()));
     if (shader) {
         const std::string & displacementShader = 
             shader->GetDisplacementShaderSource(sceneDelegate);
@@ -1319,7 +1319,7 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 
         // set dirty bit to say we need to sync a new repr (buffer array
         // ranges may change)
-        *dirtyBits |= DirtyNewRepr;
+        *dirtyBits |= NewRepr;
 
         _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
 
@@ -1406,7 +1406,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
-                      HdChangeTracker::DirtySurfaceShader)) {
+                      HdChangeTracker::DirtyMaterialId)) {
         needsSetGeometricShader = true;
     }
 
@@ -1444,7 +1444,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    *dirtyBits &= ~DirtyNewRepr;
+    *dirtyBits &= ~NewRepr;
 
 
     return it->second;
@@ -1454,6 +1454,7 @@ HdDirtyBits
 HdStMesh::_GetInitialDirtyBits() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
+        | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
         | HdChangeTracker::DirtyExtent
@@ -1464,7 +1465,7 @@ HdStMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTopology
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
