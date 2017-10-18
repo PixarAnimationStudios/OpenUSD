@@ -69,4 +69,5 @@ TF_WRAP_MODULE
     TF_WRAP(UsdAttributeQuery);
     TF_WRAP(UsdCrateInfo);
     TF_WRAP(UsdResolveInfo);
+    TF_WRAP(Version);
 }

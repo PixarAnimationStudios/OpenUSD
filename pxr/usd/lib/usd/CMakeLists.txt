@@ -118,6 +118,7 @@ pxr_library(usd
         wrapTyped.cpp
         wrapUtils.cpp
         wrapVariantSets.cpp
+        wrapVersion.cpp 
 
     PYMODULE_FILES
         __init__.py
