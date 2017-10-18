@@ -437,12 +437,18 @@ private:
     /// \brief a cache of all selection results gathered since the last display
     /// refresh.
     HitBatch _selectResults;
-    
-    /// \brief Master \c UsdImagingGL renderer used to render batches.
 
+    /// \brief Hydra engine objects used to render batches.
+    /// Note that the Hydra render index is constructed with and is dependent
+    /// on the render delegate. At destruction time, the render index uses the
+    /// delegate to destroy Hydra prims, so the delegate must be destructed
+    /// *after* the render index. We enforce that ordering by declaring the
+    /// render delegate *before* the render index, since class members are
+    /// destructed in reverse declaration order.
     HdEngine _hdEngine;
-    std::unique_ptr<HdRenderIndex> _renderIndex;
     HdStRenderDelegate _renderDelegate;
+    std::unique_ptr<HdRenderIndex> _renderIndex;
+
     TaskDelegateSharedPtr _taskDelegate;
     HdxIntersectorSharedPtr _intersector;
     UsdMayaGLSoftSelectHelper _softSelectHelper;

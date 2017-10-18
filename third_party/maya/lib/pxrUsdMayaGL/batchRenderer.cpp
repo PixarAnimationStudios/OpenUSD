@@ -845,9 +845,6 @@ _OnMayaSceneUpdateCallback(void* clientData)
 }
 
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
-    : _renderDelegate(),
-      _taskDelegate(),
-      _intersector()
 {
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));
     if (!TF_VERIFY(_renderIndex)) {
