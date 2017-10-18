@@ -527,7 +527,9 @@ public:
         return sizes;
     }
 
-    /// Replaces all prefixes from \p oldPrefix to \p newPrefix.
+    /// Replaces all prefixes from \p oldName to \p newName.
+    /// Note that \p oldName and \p newName need to be silbing paths (ie. 
+    /// their parent paths must be the same).
     void UpdateForRename(const SdfPath &oldName, const SdfPath &newName) {
 
         if (oldName.GetParentPath() != newName.GetParentPath()) {
