@@ -527,6 +527,25 @@ public:
         return sizes;
     }
 
+    /// Replaces all prefixes from \p oldPrefix to \p newPrefix.
+    void UpdateForRename(const SdfPath &oldName, const SdfPath &newName) {
+
+        if (oldName.GetParentPath() != newName.GetParentPath()) {
+            TF_CODING_ERROR("Unexpected arguments.");
+            return;
+        }
+    
+        std::pair<iterator, iterator> range = FindSubtreeRange(oldName);
+        for (iterator i=range.first; i!=range.second; ++i) {
+            insert(value_type(
+                i->first.ReplacePrefix(oldName, newName),
+                i->second));
+        }
+        
+        if (range.first != range.second)
+            erase(oldName);
+    }
+
     /// @}
 
 private:
