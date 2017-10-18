@@ -132,6 +132,7 @@ class Myconsole(interpreterView):
         interpreterView.__init__(self, parent)
 
         from pxr import Usd, UsdGeom, Gf, Tf
+        from qt import QtCore, QtGui, QtWidgets
 
         # Make a _Controller
         self._controller = pythonInterpreter.Controller(
