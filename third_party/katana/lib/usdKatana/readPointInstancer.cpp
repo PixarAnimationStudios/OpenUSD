@@ -30,6 +30,7 @@
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/kind/registry.h"
 
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -594,55 +595,76 @@ PxrUsdKatanaReadPointInstancer(
             //
             SdfPathVector commonPrefixes;
 
-            UsdRelationship materialBindingsRel =
-                    UsdShadeMaterial::GetBindingRel(protoPrim);
-
-            auto assetAPI = UsdModelAPI(protoPrim);
-            std::string assetName;
-            bool isReferencedModelPrim =
-                    assetAPI.IsModel() and assetAPI.GetAssetName(&assetName);
-
-            if (!materialBindingsRel or isReferencedModelPrim)
+            // If the proto prim itself doesn't have any bindings or isn't a
+            // (sub)component, we'll walk upwards until we find a prim that
+            // does/is. Stop walking if we reach the instancer or the usdInArgs
+            // root.
+            //
+            UsdPrim prim = protoPrim;
+            while (prim and prim != instancer.GetPrim() and
+                   prim != data.GetUsdInArgs()->GetRootPrim())
             {
-                // The prim has no material bindings or is a referenced model
-                // prim (meaning that materials are defined below it); start
-                // building at the prototype path.
-                //
-                commonPrefixes.push_back(protoPath);
-            }
-            else
-            {
+                UsdRelationship materialBindingsRel =
+                        UsdShadeMaterial::GetBindingRel(prim);
                 SdfPathVector materialPaths;
-                materialBindingsRel.GetForwardedTargets(&materialPaths);
-                for (auto materialPath : materialPaths)
+                bool hasMaterialBindings = (materialBindingsRel and
+                        materialBindingsRel.GetForwardedTargets(
+                            &materialPaths) and !materialPaths.empty());
+
+                TfToken kind;
+                std::string assetName;
+                auto assetAPI = UsdModelAPI(prim);
+                // If the prim is a (sub)component, it should have materials
+                // defined below it.
+                bool hasMaterialChildren = (
+                        assetAPI.GetAssetName(&assetName) and
+                        assetAPI.GetKind(&kind) and (
+                            KindRegistry::IsA(kind, KindTokens->component) or
+                            KindRegistry::IsA(kind, KindTokens->subcomponent)));
+
+                if (hasMaterialChildren)
                 {
-                    const SdfPath &commonPrefix =
-                            protoPath.GetCommonPrefix(materialPath);
-                    if (commonPrefix.GetString() == "/")
-                    {
-                        // XXX Unhandled case.
-                        // The prototype prim and its material are not under the
-                        // same parent; start building at the prototype path
-                        // (although it is likely that bindings will be broken).
-                        //
-                        commonPrefixes.push_back(protoPath);
-                    }
-                    else
-                    {
-                        // Start building at the common ancestor between the
-                        // prototype prim and its material.
-                        //
-                        commonPrefixes.push_back(commonPrefix);
-                    }
+                    // The prim has material children, so start building at the
+                    // prim's path.
+                    //
+                    commonPrefixes.push_back(prim.GetPath());
+                    break;
                 }
-                
-                // Fail-safe in case the relationships present via 
-                // materialBindingsRel don't resolve into anything (i.e. 
-                // relationship exists but GetForwardedTargets is empty.)
-                if (commonPrefixes.empty())
+
+                if (hasMaterialBindings)
                 {
-                    commonPrefixes.push_back(protoPath);
+                    for (auto materialPath : materialPaths)
+                    {
+                        const SdfPath &commonPrefix =
+                                protoPath.GetCommonPrefix(materialPath);
+                        if (commonPrefix.GetString() == "/")
+                        {
+                            // XXX Unhandled case.
+                            // The prim and its material are not under the same
+                            // parent; start building at the prim's path
+                            // (although it is likely that bindings will be
+                            // broken).
+                            //
+                            commonPrefixes.push_back(prim.GetPath());
+                        }
+                        else
+                        {
+                            // Start building at the common ancestor between the
+                            // prim and its material.
+                            //
+                            commonPrefixes.push_back(commonPrefix);
+                        }
+                    }
+                    break;
                 }
+
+                prim = prim.GetParent();
+            }
+
+            // Fail-safe in case no common prefixes were found.
+            if (commonPrefixes.empty())
+            {
+                commonPrefixes.push_back(protoPath);
             }
 
             // XXX Unhandled case.
