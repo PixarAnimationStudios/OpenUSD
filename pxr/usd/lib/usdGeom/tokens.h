@@ -108,6 +108,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mono) \
     ((motionVelocityScale, "motion:velocityScale")) \
     (none) \
+    (nonOverlapping) \
     (nonperiodic) \
     (normals) \
     (open) \
@@ -115,6 +116,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (orientation) \
     (orientations) \
     (orthographic) \
+    (partition) \
     (periodic) \
     (perspective) \
     (point) \
@@ -155,6 +157,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (uKnots) \
     (unauthoredValuesIndex) \
     (uniform) \
+    (unrestricted) \
     (uOrder) \
     (upAxis) \
     (uRange) \
@@ -264,6 +267,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>mono</b> - Possible value for UsdGeomCamera::GetStereoRoleAttr(), Default value for UsdGeomCamera::GetStereoRoleAttr()
 /// \li <b>motionVelocityScale</b> - UsdGeomMotionAPI
 /// \li <b>none</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
+/// \li <b>nonOverlapping</b> - A type of family of GeomSubsets. It implies that  the elements in the various subsets belonging to the family are  mutually exclusive, i.e., an element that appears in one  subset may not belong to any other subset in the family.
 /// \li <b>nonperiodic</b> - Possible value for UsdGeomBasisCurves::GetWrapAttr(), Default value for UsdGeomBasisCurves::GetWrapAttr()
 /// \li <b>normals</b> - UsdGeomPointBased
 /// \li <b>open</b> - Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Default value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Default value for UsdGeomNurbsPatch::GetUFormAttr()
@@ -271,6 +275,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>orientation</b> - UsdGeomGprim
 /// \li <b>orientations</b> - UsdGeomPointInstancer
 /// \li <b>orthographic</b> - Possible value for UsdGeomCamera::GetProjectionAttr()
+/// \li <b>partition</b> - A type of family of GeomSubsets. It implies  that every element appears exacly once in only one of the  subsets in the family.
 /// \li <b>periodic</b> - Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
 /// \li <b>perspective</b> - Possible value for UsdGeomCamera::GetProjectionAttr(), Default value for UsdGeomCamera::GetProjectionAttr()
 /// \li <b>point</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
@@ -311,6 +316,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>uKnots</b> - UsdGeomNurbsPatch
 /// \li <b>unauthoredValuesIndex</b> - UsdGeomPrimvar - The index that represents  unauthored values in the indices array of an indexed primvar.
 /// \li <b>uniform</b> - Possible value for UsdGeomPrimvar::SetInterpolation. One value remains constant for each uv patch segment of the surface primitive (which is a \em face for meshes).
+/// \li <b>unrestricted</b> - A type of family of GeomSubsets. It implies that there are no restrictions w.r.t. the membership of elements in  the subsets. There could be overlapping members in subsets  belonging to the family and the union of all subsets in the  family may not contain all the elements.
 /// \li <b>uOrder</b> - UsdGeomNurbsPatch
 /// \li <b>upAxis</b> - Stage-level metadata that encodes a scene's orientation as a token whose value can be "Y" or "Z".
 /// \li <b>uRange</b> - UsdGeomNurbsPatch

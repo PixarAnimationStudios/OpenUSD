@@ -78,6 +78,24 @@ over "GLOBAL" (
                 the PointInstancer ids that should be masked (unrenderable)
                 over all time."""
             }
+            dictionary partition = {
+                string doc = """A type of family of GeomSubsets. It implies 
+                that every element appears exacly once in only one of the 
+                subsets in the family."""
+            }
+            dictionary nonOverlapping = {
+                string doc = """A type of family of GeomSubsets. It implies that 
+                the elements in the various subsets belonging to the family are 
+                mutually exclusive, i.e., an element that appears in one 
+                subset may not belong to any other subset in the family."""
+            }
+            dictionary unrestricted = {
+                string doc = """A type of family of GeomSubsets. It implies that
+                there are no restrictions w.r.t. the membership of elements in 
+                the subsets. There could be overlapping members in subsets 
+                belonging to the family and the union of all subsets in the 
+                family may not contain all the elements."""
+            }
         }
     }
 )
@@ -851,15 +869,28 @@ class GeomSubset "GeomSubset" (
     )
     uniform token familyName = "" (
         doc = """The name of the family of subsets that this subset belongs to. 
-        This is optional is only useful when there are multiple families of 
-        subsets under a geometric prim.
-        When multiple subsets belonging to a prim have the same familyName, it 
-        is possible to encode whether the subsets in the family form a partition 
-        (i.e. every element of the whole geometry appears exactly once in only 
-        one of the subsets belonging to the family) using the static method
-        UsdGeomSubset::SetFamilyType(). The validity of the partition 
-        can be checked using ValidatePartition(). However, mutual exclusivity 
-        and inclusiveness are not enforced by the authoring APIs."""
+        This is optional and is primarily useful when there are multiple 
+        families of subsets under a geometric prim. In some cases, this could 
+        also be used for achieving proper roundtripping of subset data between 
+        DCC apps.
+        When multiple subsets belonging to a prim have the same familyName, they 
+        are said to belong to the family. A <i>familyType</i> value can be 
+        encoded on the owner of a family of subsets as a token using the static 
+        method UsdGeomSubset::SetFamilyType(). "familyType" can have one of the 
+        following values:
+        <ul><li><b>UsdGeomTokens->partition</b>: implies that every element of 
+        the whole geometry appears exactly once in only one of the subsets
+        belonging to the family.</li>
+        <li><b>UsdGeomTokens->nonOverlapping</b>: an element that appears in one 
+        subset may not appear in any other subset belonging to the family.</li>
+        <li><b>UsdGeomTokens->unrestricted</b>: implies that there are no
+        restrictions w.r.t. the membership of elements in the subsets. They 
+        could be overlapping and the union of all subsets in the family may 
+        not represent the whole.</li>
+        </ul>
+        \\note The validity of subset data is not enforced by the authoring 
+        APIs, however they can be checked using UsdGeomSubset::ValidateFamily().
+        """
     )
 }
 

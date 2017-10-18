@@ -252,15 +252,15 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                 // It might be worth adding a utility method for the following 
                 // block of code in core.
                 UsdGeomSubset faceSubset = 
-                    UsdShadeMaterial::CreateMaterialBindFaceSubset(
+                    UsdShadeMaterial::CreateMaterialBindSubset(
                         UsdGeomImageable(boundPrim), 
                         /* subsetName */ TfToken(materialName),
-                        faceIndices);
+                        faceIndices, 
+                        /* elementType */ UsdGeomTokens->face);
                 material.Bind(faceSubset.GetPrim());
 
-                UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType(
-                    UsdGeomImageable(boundPrim), 
-                    UsdGeomSubset::FamilyType::Partition);
+                UsdShadeMaterial::SetMaterialBindSubsetsFamilyType(
+                    UsdGeomImageable(boundPrim), UsdGeomTokens->partition);
             }
         }
 

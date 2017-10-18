@@ -41,7 +41,7 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
 
         # Verify that the sphere mesh does not have an existing material face-set.
         geomSphere = UsdGeom.Imageable(sphere)
-        materialBindSubsets = UsdShade.Material.GetMaterialBindFaceSubsets(
+        materialBindSubsets = UsdShade.Material.GetMaterialBindSubsets(
             geomSphere)
         self.assertEqual(len(materialBindSubsets), 0)
 
@@ -50,17 +50,52 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
         faceIndices3 = Vt.IntArray((12, 13, 14, 15))
 
         # Create a new family of subsets with familyName="materialBind" .
-        subset1 = UsdShade.Material.CreateMaterialBindFaceSubset(geomSphere, 'subset1', 
-            faceIndices1)
-        subset2 = UsdShade.Material.CreateMaterialBindFaceSubset(geomSphere, 'subset2', 
-            faceIndices2)
-        subset3 = UsdShade.Material.CreateMaterialBindFaceSubset(geomSphere, 'subset3', 
-            faceIndices3)
+        subset1 = UsdShade.Material.CreateMaterialBindSubset(geomSphere, 
+            'subset1', faceIndices1, UsdGeom.Tokens.face)
+        # Default elementType is 'face'
+        subset2 = UsdShade.Material.CreateMaterialBindSubset(geomSphere, 
+            'subset2', faceIndices2)
+        self.assertEqual(subset2.GetElementTypeAttr().Get(), UsdGeom.Tokens.face)
 
-        (valid, reason) = UsdGeom.Subset.ValidatePartition(
-                            [subset1, subset2, subset3], 16)
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geomSphere, 
+                            UsdGeom.Tokens.face, 
+                            UsdShade.Tokens.materialBind)
         self.assertTrue(valid)
 
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(
+                            [subset1, subset2], 
+                            elementCount=16,
+                            familyType=UsdGeom.Tokens.nonOverlapping)
+        self.assertTrue(valid)
+
+        # Not quite a partition yet.
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(
+                            [subset1, subset2], 
+                            elementCount=16,
+                            familyType=UsdGeom.Tokens.partition)
+        self.assertFalse(valid)
+
+        # Add a subset that makes the family a partition.
+        subset3 = UsdShade.Material.CreateMaterialBindSubset(geomSphere, 
+            'subset3', faceIndices3)
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(
+                            [subset1, subset2, subset3], 
+                            elementCount=16,
+                            familyType=UsdGeom.Tokens.partition)
+        self.assertTrue(valid)
+
+        self.assertEqual(
+            UsdShade.Material.GetMaterialBindSubsetsFamilyType(geomSphere),
+            UsdGeom.Tokens.nonOverlapping)
+
+        UsdShade.Material.SetMaterialBindSubsetsFamilyType(geomSphere, 
+            UsdGeom.Tokens.partition)
+
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geomSphere, 
+                            UsdGeom.Tokens.face, 
+                            UsdShade.Tokens.materialBind)
+        self.assertTrue(valid)
+        
         UsdShade.Material(mat1).Bind(subset1.GetPrim())
         UsdShade.Material(mat2).Bind(subset2.GetPrim())
         UsdShade.Material(mat3).Bind(subset3.GetPrim())

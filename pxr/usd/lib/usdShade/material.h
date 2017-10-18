@@ -425,75 +425,89 @@ public:
 
 
     // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeMaterial_FaceSubsets
-    /// \name Face-Subsets
+    /// \anchor UsdShadeMaterial_Subsets
+    /// \name Binding materials to subsets
     /// 
     /// API to create, access and query the presence of GeomSubsets below an 
-    /// imageable prim, created for the purpose of binding materials to 
-    /// subsets of faces.
+    /// imageable prim, that are created for the purpose of binding materials.
     /// 
-    /// \note Material bindings authored on GeomSubsets with elementType="face"
-    /// are honored by renderers only if its familyName is 
-    /// <b>UsdShadeTokens->materialBind</b>.
+    /// \note Material bindings authored on GeomSubsets are honored by renderers
+    /// only if their familyName is <b>UsdShadeTokens->materialBind</b>.
     /// 
-    /// Here's some sample code that shows how to create a "face" subset and 
-    /// and bind a material to it.
+    /// Here's some sample code that shows how to create "face" subsets and 
+    /// and bind materials to them.
     /// \code
     /// UsdGeomImageable mesh = UsdGeomImageable::Get(stage,
     ///         SdfPath("/path/to/meshPrim");
-    /// UsdShadeMaterial mat1 = UsdShadeMaterial::Get(stage, 
-    ///         SdfPath("/path/to/Material1");
-    /// UsdShadeMaterial mat2 = UsdShadeMaterial::Get(stage, 
-    ///         SdfPath("/path/to/Material2");    
+    /// UsdShadeMaterial plastic = UsdShadeMaterial::Get(stage, 
+    ///         SdfPath("/path/to/PlasticMaterial");
+    /// UsdShadeMaterial metal = UsdShadeMaterial::Get(stage, 
+    ///         SdfPath("/path/to/MetalMaterial");    
     ///
-    /// VtIntArray faceIndices1, faceIndices2;
+    /// VtIntArray plasticFaces, metalFaces;
     /// //.. populate faceIndices here.
     /// //.. 
     /// 
-    /// UsdGeomSubset subset1 = 
-    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, "subset1",
-    ///                                                         faceIndices1);
-    /// UsdGeomSubset subset2 = 
-    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, "subset2",
-    ///                                                         faceIndices2);
-    /// mat1.Bind(subset1.GetPrim())
-    /// mat2.Bind(subset2.GetPrim())
+    /// UsdGeomSubset plasticSubset = 
+    ///         UsdShaderMaterial::CreateMaterialBindSubset(mesh, 
+    ///                 "plasticSubset", UsdGeomTokens->face, plasticFaces);
+    /// UsdGeomSubset metalSubset = 
+    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, 
+    ///                 "metalSubset", UsdGeomTokens->face, metalFaces);
+    /// plastic.Bind(plasticSubset.GetPrim())
+    /// metal.Bind(metalSubset.GetPrim())
     /// 
     /// \endcode
     /// @{
 
-    /// Creates a GeomSubset named \p subsetName with elementType 'face' and 
-    /// familyName <b>materialBind<b> below the given imageable prim, \p geom. 
+    /// Creates a GeomSubset named \p subsetName with element type, 
+    /// \p elementType and familyName <b>materialBind<b> below the given
+    /// imageable prim, \p geom. 
+    /// 
     /// If a GeomSubset named \p subsetName already exists, then its 
     /// "familyName" is updated to be UsdShadeTokens->materialBind and its 
-    /// "default" indices are updated with the provided \p indices value before 
-    /// returning. 
-    ///
+    /// indices (at <i>default</i> timeCode) are updated with the provided 
+    /// \p indices value before returning. 
+    /// 
+    /// This method forces the familyType of the "materialBind" family of 
+    /// subsets to UsdGeomTokens->nonOverlapping if it's unset or explicitly set
+    /// to UsdGeomTokens->unrestricted.
+    /// 
+    /// The default value \p elementType is UsdGeomTokens->face, as we expect 
+    /// materials to be bound most often to subsets of faces on meshes.
     USDSHADE_API
-    static UsdGeomSubset CreateMaterialBindFaceSubset(
+    static UsdGeomSubset CreateMaterialBindSubset(
         const UsdGeomImageable &geom,
         const TfToken &subsetName,
-        const VtIntArray &indices);
+        const VtIntArray &indices,
+        const TfToken &elementType=UsdGeomTokens->face);
 
-    /// Returns all the existing GeomSubsets with elementType 'face' and 
-    /// familyName UsdShadeTokens->materialBind below the given imageable prim, 
+    /// Returns all the existing GeomSubsets with 
+    /// familyName=UsdShadeTokens->materialBind below the given imageable prim, 
     /// \p geom.
     USDSHADE_API
-    static std::vector<UsdGeomSubset> GetMaterialBindFaceSubsets(
+    static std::vector<UsdGeomSubset> GetMaterialBindSubsets(
         const UsdGeomImageable &geom);
     
     /// Encodes whether the family of "materialBind" subsets form a valid 
     /// partition of the set of all faces on the imageable prim, \p geom.
     USDSHADE_API
-    static bool SetMaterialBindFaceSubsetsFamilyType(
+    static bool SetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom,
-        const UsdGeomSubset::FamilyType familyType);
+        const TfToken &familyType);
 
-    /// Returns whether the family of "materialBind" subsets are expected to 
-    /// form a valid partition of the set of all faces on the imageable prim, 
-    /// \p geom.
+    /// Returns the familyType of the family of "materialBind" subsets under
+    /// \p geom. 
+    /// 
+    /// By default materialBind subsets have familyType="nonOverlapping", but
+    /// their can also be tagged as a "partition", using 
+    /// SetMaterialBindFaceSubsetsFamilyType(). 
+    /// 
+    /// \sa UsdGeomSubset::SetFamilyType
+    /// \sa UsdGeomSubset::GetFamilyNameAttr
+    /// 
     USDSHADE_API
-    static UsdGeomSubset::FamilyType GetMaterialBindFaceSubsetsFamilyType(
+    static TfToken GetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom);
 
     /// @}

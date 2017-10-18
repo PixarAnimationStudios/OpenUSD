@@ -189,7 +189,7 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
     // If the gprim does not have a material faceSet which represents per-face 
     // shader assignments, assign the shading engine to the entire gprim.
     std::vector<UsdGeomSubset> faceSubsets = 
-        UsdShadeMaterial::GetMaterialBindFaceSubsets(primSchema);
+        UsdShadeMaterial::GetMaterialBindSubsets(primSchema);
 
     bool hasOldStyleFaceSets = UsdShadeMaterial::HasMaterialFaceSet(
         primSchema.GetPrim());
@@ -227,8 +227,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 
         std::string reasonWhyNotPartition;
         
-        bool validPartition = UsdGeomSubset::ValidatePartition(
-            faceSubsets, faceCount, &reasonWhyNotPartition);
+        bool validPartition = UsdGeomSubset::ValidateSubsets(
+            faceSubsets, faceCount, UsdGeomTokens->partition, 
+            &reasonWhyNotPartition);
         if (!validPartition) {
             MGlobal::displayWarning(TfStringPrintf("face-subsets on <%s> don't "
                 "form a valid partition: %s", primSchema.GetPath().GetText(), 
