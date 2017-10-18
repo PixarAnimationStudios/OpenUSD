@@ -69,13 +69,13 @@ class TestPxrOpUsdInInternalPointInstancer(unittest.TestCase):
         contents = contents.replace(cwd, '')
 
         # Remove irrelevant attrs by ignoring all dump results prior to those
-        # for /root/world/geo
+        # for /root/world/geo/Rocks
         locKey = '<location path='
         splitContents = contents.split(locKey)
         newContents = ""
         preserve = False
         for piece in splitContents:
-            if piece.startswith('"/root/world/geo">'):
+            if piece.startswith('"/root/world/geo/Rocks">'):
                 preserve = True
             if preserve:
                 newContents += (locKey + piece)
