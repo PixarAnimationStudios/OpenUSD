@@ -264,11 +264,11 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _BasisCurvesReprConfig::DescArray const &descs = _GetReprDesc(reprName);
+    _BasisCurvesReprConfig::DescArray const &reprDescs = _GetReprDesc(reprName);
 
-    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+    _ReprVector::iterator reprIt = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
-    if (it == _reprs.end()) {
+    if (reprIt == _reprs.end()) {
         // Hydra should have called _InitRepr earlier in sync when
         // before sending dirty bits to the delegate.
         TF_CODING_ERROR("_InitRepr() should be called for repr %s.",
@@ -278,6 +278,9 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
 
         return ERROR_RETURN;
     }
+
+    // _reprs holds a pair of (TfToken, HdReprSharedPtr)
+    HdReprSharedPtr const &curRepr = reprIt->second;
 
     // Filter custom dirty bits to only those in use.
     *dirtyBits &= (_customDirtyBitsInUse |
@@ -290,28 +293,38 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    bool needsSetGeometricShader = false;
-    // for the bits geometric shader depends on, reset all geometric shaders.
-    // they are populated again at the end of _GetRepr.
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
+    // For the bits geometric shader depends on, reset the geometric shaders
+    // for all the draw items of all the reprs.
+    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel |
                       HdChangeTracker::DirtyMaterialId)) {
-        needsSetGeometricShader = true;
+
+        TF_DEBUG(HD_RPRIM_UPDATED).
+            Msg("HdStBasisCurves - Resetting the geometric shader for all draw"
+                " items (currently only 1 per repr) of all reprs");
+
+        TF_FOR_ALL (it, _reprs) {
+            TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
+                drawItem->SetGeometricShader(Hd_GeometricShaderSharedPtr());
+            }
+        }
     }
 
-    // iterate and update all draw items
+    // Note: We only update/set the geometric shaders for the draw items of 
+    // the incoming 'reprName'. The draw items corresponding to other reprs
+    // may or may not be set. 
     int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         // curves don't have multiple draw items (for now)
-        const HdBasisCurvesReprDesc &desc = descs[descIdx];
+        const HdBasisCurvesReprDesc &desc = reprDescs[descIdx];
 
         if (desc.geomStyle != HdBasisCurvesGeomStyleInvalid) {
-            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex++);
+            HdDrawItem *drawItem = curRepr->GetDrawItem(drawItemIndex++);
 
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc);
             } 
             
-            if (!drawItem->GetGeometricShader() || needsSetGeometricShader) {
+            if (!drawItem->GetGeometricShader()) {
                 // Make sure all of the draw items have a geometric shader
                 _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
             }
@@ -320,7 +333,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
 
     *dirtyBits &= ~NewRepr;
 
-    return it->second;
+    return curRepr;
 }
 
 void

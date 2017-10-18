@@ -1375,11 +1375,11 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
-    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprName);
+    _ReprVector::iterator reprIt = std::find_if(_reprs.begin(), _reprs.end(),
                                             _ReprComparator(reprName));
 
-    if (it == _reprs.end()) {
+    if (reprIt == _reprs.end()) {
         // Hydra should have called _InitRepr earlier in sync when
         // before sending dirty bits to the delegate.
         TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
@@ -1389,52 +1389,62 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         return ERROR_RETURN;
     }
 
+    // _reprs holds a pair of (TfToken, HdReprSharedPtr)
+    HdReprSharedPtr const &curRepr = reprIt->second;
+
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStMesh::GetRepr " << GetId()
                   << " Repr = " << reprName << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    bool needsSetGeometricShader = false;
-    // For the bits geometric shader depends on, reset all geometric shaders.
-    // they are populated again at the end of _GetRepr.
-    // Since the dirty bits are cleaned by UpdateDrawItem (because certain
-    // reprs have multiple draw items) we need to remember if we need to set
-    // the geometric shader again
+    // For the bits geometric shader depends on, reset the geometric shaders
+    // for all the draw items of all the reprs.
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtyMaterialId)) {
-        needsSetGeometricShader = true;
+        TF_DEBUG(HD_RPRIM_UPDATED).
+            Msg("HdStMesh - Resetting the geometric shader for all draw"
+                " items of all reprs");
+
+        TF_FOR_ALL (it, _reprs) {
+            TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
+                drawItem->SetGeometricShader(Hd_GeometricShaderSharedPtr());
+            }
+        }
     }
 
-    // iterate through all reprs to figure out if any requires smoothnormals
+    // iterate through all reprdescs for the current repr to figure out if any 
+    // of them requires smoothnormals
     // if so we will calculate the normals once (clean the bits) and reuse them.
     // This is important for modes like FeyRay which requires 2 draw items
     // and one requires smooth normals but the other doesn't.
     bool requireSmoothNormals = false;
-    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdMeshReprDesc &desc = descs[descIdx];
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+        const HdMeshReprDesc &desc = reprDescs[descIdx];
         if (desc.smoothNormals) {
             requireSmoothNormals = true;
             break;
         }
     }
 
-    // iterate and update all draw items
+    // Note: We only update/set the geometric shaders for the draw items of 
+    // the incoming 'reprName'. The draw items corresponding to other reprs
+    // may or may not be set.     
     int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdMeshReprDesc &desc = descs[descIdx];
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+        const HdMeshReprDesc &desc = reprDescs[descIdx];
 
         if (desc.geomStyle != HdMeshGeomStyleInvalid) {
-            HdDrawItem *drawItem = it->second->GetDrawItem(drawItemIndex++);
+            HdDrawItem *drawItem = curRepr->GetDrawItem(drawItemIndex++);
 
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
                         requireSmoothNormals);
             } 
             
-            if (!drawItem->GetGeometricShader() || needsSetGeometricShader) {
+            if (!drawItem->GetGeometricShader()) {
                 // None of the draw items should have an unset geometric shader
                 // Can be the case after a collection rebuild of the draw items.
                 _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
@@ -1445,7 +1455,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     *dirtyBits &= ~NewRepr;
 
 
-    return it->second;
+    return curRepr;
 }
 
 HdDirtyBits
