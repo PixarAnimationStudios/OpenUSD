@@ -49,7 +49,6 @@
 
 #include <GT/GT_PrimitiveTypes.h>
 #include <OP/OP_OperatorTable.h>
-#include <UT/UT_DSOVersion.h>
 #include <UT/UT_IOTable.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
