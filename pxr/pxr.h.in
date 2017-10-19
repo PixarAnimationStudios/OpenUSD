@@ -61,4 +61,8 @@ namespace PXR_NS {
 
 #endif // PXR_USE_NAMESPACES
 
+#if @PXR_PYTHON_SUPPORT_ENABLED@
+#define PXR_PYTHON_SUPPORT_ENABLED
+#endif
+
 #endif //PXR_H

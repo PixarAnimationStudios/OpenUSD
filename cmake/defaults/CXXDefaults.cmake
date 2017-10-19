@@ -85,6 +85,13 @@ else()
     message(STATUS "C++ namespaces disabled.")
 endif()
 
+# Set Python configuration
+if (PXR_ENABLE_PYTHON_SUPPORT)
+    set(PXR_PYTHON_SUPPORT_ENABLED "1")
+else()
+    set(PXR_PYTHON_SUPPORT_ENABLED "0")
+endif()
+
 # XXX: This is a workaround for an issue in which Python headers unequivocally
 # redefine macros defined in standard library headers. This behavior 
 # prevents users from running strict builds with PXR_STRICT_BUILD_MODE
