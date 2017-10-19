@@ -148,7 +148,7 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
                             dirtyBits);
         }
 
-        *dirtyBits &= ~NewRepr;
+        *dirtyBits &= ~HdChangeTracker::NewRepr;
     }
 
     return it->second;
@@ -282,7 +282,7 @@ HdStPoints::_InitRepr(TfToken const &reprName,
             }
         }
 
-        *dirtyBits |= NewRepr;
+        *dirtyBits |= HdChangeTracker::NewRepr;
     }
 
 }

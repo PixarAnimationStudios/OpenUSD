@@ -156,6 +156,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rebuildBatches)                            \
     (singleBufferSize)                          \
     (ssboSize)                                  \
+    (skipInvisibleRprimSync)                    \
     (subdivisionRefineCPU)                      \
     (subdivisionRefineGPU)                      \
     (textureResourceMemory)                     \

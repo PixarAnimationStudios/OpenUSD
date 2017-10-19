@@ -969,6 +969,13 @@ namespace {
                 dirtyBits &= ~HdChangeTracker::InitRepr;
             }
 
+            if (rprim->CanSkipDirtyBitPropagationAndSync(dirtyBits)) {
+                // XXX: This is quite hacky. See comment in the implementation
+                // of HdRprim::CanSkipDirtyBitPropagationAndSync
+                dirtyBits = HdChangeTracker::Clean;
+                continue;
+            }
+
             // A render delegate may require additional information
             // from the scene delegate to process a change.
             //
@@ -1140,17 +1147,6 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
             if (HdChangeTracker::IsClean(dirtyBits)) {
                 numSkipped++;
-                continue;
-            }
-
-            // PERFORMANCE: don't sync rprims that are not visible.
-            // XXX This change makes invisible prims bypass PropagateDirtyBits.
-            if (!HdChangeTracker::IsVisibilityDirty(dirtyBits, rprimId) &&
-                !rprimInfo.rprim->IsVisible()) {
-                // When/if the HdDirtyList is updated to ignore dirty bits on
-                // invisible prims we need to mark this as skipped.
-                // XXX test to determine if this needs skipping or not
-                //numSkipped++;
                 continue;
             }
 

@@ -227,7 +227,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
         _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
-        *dirtyBits |= NewRepr;
+        *dirtyBits |= HdChangeTracker::NewRepr;
 
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -285,7 +285,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     // Filter custom dirty bits to only those in use.
     *dirtyBits &= (_customDirtyBitsInUse |
                    HdChangeTracker::AllSceneDirtyBits |
-                   NewRepr);
+                   HdChangeTracker::NewRepr);
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStBasisCurves::GetRepr " << GetId()
@@ -331,7 +331,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    *dirtyBits &= ~NewRepr;
+    *dirtyBits &= ~HdChangeTracker::NewRepr;
 
     return curRepr;
 }

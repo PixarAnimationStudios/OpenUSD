@@ -132,6 +132,14 @@ public:
     /// Is the prim itself visible
     bool IsVisible() const { return _sharedData.visible; }
 
+    /// This function gives an Rprim the chance to "early exit" from dirty
+    /// bit propagation, delegate sync and rprim sync altogether. It is
+    /// a temporary measure to prevent unnecessary work, like in the case of
+    /// invisible prims. The dirty bits in the change tracker remain the same.
+    /// See the implementation for the finer details.
+    HD_API
+    bool CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const;
+
     /// Returns the set of dirty bits that should be
     /// added to the change tracker for this prim, when this prim is inserted.
     HD_API

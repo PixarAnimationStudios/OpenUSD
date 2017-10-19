@@ -138,8 +138,7 @@ private:
         DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
         DirtyIndices        = (DirtySmoothNormals << 1),
         DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyPointsIndices  = (DirtyHullIndices   << 1),
-        NewRepr             = (DirtyPointsIndices << 1),
+        DirtyPointsIndices  = (DirtyHullIndices   << 1)
     };
 
     HdSt_MeshTopologySharedPtr _topology;

@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
+#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -135,6 +136,44 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
         }
     }
     return defaultReprName;
+}
+
+bool
+HdRprim::CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const
+{
+    // For invisible prims, we'd like to avoid syncing data, which involves:
+    // (a) the scene delegate pulling data post dirty-bit propagation 
+    // (b) the rprim processing its dirty bits and
+    // (c) the rprim committing resource updates to the GPU
+    // 
+    // However, the current design adds a draw item for a repr during repr 
+    // initialization (see _InitRepr) even if a prim may be invisible, which
+    // requires us go through the sync process to avoid tripping other checks.
+    // 
+    // XXX: We may want to avoid this altogether, or rethink how we approach
+    // the two workflow scenarios:
+    // ( i) objects that are always invisible (i.e., never loaded by the user or
+    // scene)
+    // (ii) vis-invis'ing objects
+    //  
+    // For now, we take the hit of first repr initialization (+ sync) and avoid
+    // time-varying updates to the invisible prim.
+    // 
+    // Note: If the sync is skipped, the dirty bits in the change tracker
+    // remain the same.
+    bool skip = false;
+
+    HdDirtyBits mask = (HdChangeTracker::DirtyVisibility |
+                        HdChangeTracker::NewRepr);
+
+    if (!IsVisible() && !(bits & mask)) {
+        // By setting the propagated dirty bits to Clean, we effectively 
+        // disable delegate and rprim sync
+        skip = true;
+        HD_PERF_COUNTER_INCR(HdPerfTokens->skipInvisibleRprimSync);
+    }
+
+    return skip;
 }
 
 HdDirtyBits

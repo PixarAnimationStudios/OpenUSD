@@ -790,7 +790,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         // already have a valid range, but the new repr may have
         // added additional items (smooth normals) or we may be transitioning
         // to unpacked normals
-        bool isNew = (*dirtyBits & NewRepr) ||
+        bool isNew = (*dirtyBits & HdChangeTracker::NewRepr) ||
                      (usePackedNormals != _packedNormals);
 
         HdBufferArrayRangeSharedPtr range = bar;
@@ -1139,7 +1139,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* VERTEX PRIMVARS */
-    if ((*dirtyBits & NewRepr) ||
+    if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id))) {
         _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits,
                                 requireSmoothNormals);
@@ -1317,7 +1317,7 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 
         // set dirty bit to say we need to sync a new repr (buffer array
         // ranges may change)
-        *dirtyBits |= NewRepr;
+        *dirtyBits |= HdChangeTracker::NewRepr;
 
         _MeshReprConfig::DescArray descs = _GetReprDesc(reprName);
 
@@ -1452,7 +1452,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    *dirtyBits &= ~NewRepr;
+    *dirtyBits &= ~HdChangeTracker::NewRepr;
 
 
     return curRepr;

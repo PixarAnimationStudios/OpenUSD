@@ -83,7 +83,9 @@ public:
         DirtyComputationPrimvarDesc = 1 << 20,
         AllSceneDirtyBits           = ((1<<21) - 1),
 
-        CustomBitsBegin             = 1 << 21,
+        NewRepr                     = 1 << 21,
+
+        CustomBitsBegin             = 1 << 22,
         CustomBitsEnd               = 1 << 30,
     };
 
