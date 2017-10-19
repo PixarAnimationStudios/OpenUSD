@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <dirent.h>
@@ -119,7 +120,6 @@
 #include <boost/any.hpp>
 #include <boost/assign.hpp>
 #include <boost/assign/list_of.hpp>
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -227,7 +227,6 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/scoped_array.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
@@ -240,6 +239,7 @@
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_signed.hpp>
 #include <boost/type_traits/remove_reference.hpp>
@@ -247,7 +247,6 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/variant.hpp>
-#include <boost/weak_ptr.hpp>
 #include <tbb/atomic.h>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/enumerable_thread_specific.h>
