@@ -2178,7 +2178,7 @@ UsdStage::ExpandPopulationMask(
 
         auto popMask = GetPopulationMask();
         for (auto const &path: tgtPaths) {
-            popMask.Add(path);
+            popMask.Add(path.GetPrimPath());
         }
         SetPopulationMask(popMask);
     }
