@@ -334,7 +334,23 @@ GusdMeshWrapper::refine(
         normalsAttr.Get(&vtVec3Array, m_time);
         GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
-        gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
+        TfToken interp;
+        if (!normalsAttr.GetMetadata(UsdGeomTokens->interpolation, &interp)) {
+            interp = UsdGeomTokens->varying;
+        }
+        if (interp == UsdGeomTokens->varying) {
+            // varying normalsAttr becomes a point attribute.
+            gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
+        } else if (interp == UsdGeomTokens->faceVarying) {
+            // faceVarying normalsAttr becomes a vertex attribute.
+            gtVertexAttrs = gtVertexAttrs->addAttribute("N", gtNormals, true);
+        } else if (interp == UsdGeomTokens->uniform) {
+            // uniform normalsAttr becomes a primitive attribute.
+            gtUniformAttrs = gtUniformAttrs->addAttribute("N", gtNormals, true);
+        } else if (interp == UsdGeomTokens->constant) {
+            // constant normalsAttr becomes a detail attribute.
+            gtDetailAttrs = gtDetailAttrs->addAttribute("N", gtNormals, true);
+        }
     }
 
     if( !refineForViewport ) {
