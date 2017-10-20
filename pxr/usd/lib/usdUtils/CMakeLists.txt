@@ -109,11 +109,6 @@ pxr_install_test_dir(
     DEST testUsdUtilsStitchClips
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdUtilsStitchClips.testenv
-    DEST testUsdUtilsStitchClips_Legacy
-)
-
 pxr_register_test(testUsdUtilsAuthoring
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAuthoring"
@@ -188,14 +183,5 @@ pxr_register_test(testUsdUtilsStitchClips
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchClips"
     EXPECTED_RETURN_CODE 0
-    ENV
-        USD_AUTHOR_LEGACY_CLIPS=0
 )
 
-pxr_register_test(testUsdUtilsStitchClips_Legacy
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchClips"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USD_AUTHOR_LEGACY_CLIPS=1
-)
