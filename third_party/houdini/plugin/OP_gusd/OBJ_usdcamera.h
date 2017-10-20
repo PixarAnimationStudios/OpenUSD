@@ -96,7 +96,14 @@ public:
 
     /** Evaluate the float value of a variable.
         This is where we hook in most of our USD queries. */
-    virtual bool            evalVariableValue(fpreal& val, int idx, int thread);
+    virtual bool            evalVariableValue(fpreal& val,
+				    int idx, int thread) override;
+    virtual bool            evalVariableValue(UT_String& val,
+				    int idx, int thread) override
+			    {
+				return OP_Network::evalVariableValue(
+						   val, idx, thread);
+			    }
 
 protected:
     GusdOBJ_usdcamera(OP_Network* net, const char* name, OP_Operator* op);

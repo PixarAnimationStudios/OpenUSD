@@ -189,6 +189,7 @@ bool        AppendVariantSelections(const UT_Array<UsdPrim>& prims,
 
 struct NameMatcher
 {
+    virtual        ~NameMatcher() = 0;
     virtual bool    operator()(const std::string& name) const = 0;
 };
 

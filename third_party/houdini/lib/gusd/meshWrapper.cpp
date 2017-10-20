@@ -44,6 +44,7 @@
 #include <GT/GT_DASubArray.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_DAConstant.h>
+#include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

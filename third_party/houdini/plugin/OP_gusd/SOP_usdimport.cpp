@@ -43,7 +43,7 @@
 #include <PI/PI_EditScriptedParms.h>
 #include <PRM/PRM_AutoDeleter.h>
 #include <UT/UT_WorkArgs.h>
-#include <UT/UT_ScopedPtr.h>
+#include <UT/UT_UniquePtr.h>
 #include <PY/PY_Python.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -481,7 +481,7 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
 
         UT_Array<GusdUSD_Traverse::PrimIndexPair> primIndexPairs;
 
-        UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
+        UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
         if(opts) {
             if(!opts->Configure(*this, t))
                 return err();
@@ -567,7 +567,7 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
     // Traverse to find a new prim selection.
     UT_Array<GusdUSD_Traverse::PrimIndexPair> expandedPrims;
     {
-        UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
+        UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
         if(opts) {
             if(!opts->Configure(*this, t))
                 return err();
