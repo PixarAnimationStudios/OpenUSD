@@ -138,16 +138,12 @@ Tf_AxiomHelper(bool val, TfCallContext const &ctx, char const *txt) {
          IssueFatalError("Failed axiom: ' %s '", txt), false);
 }
 
-constexpr bool
-Tf_DevAxiomHelper(bool val, TfCallContext const &ctx, char const *txt) {
-    return !ARCH_DEV_BUILD || Tf_AxiomHelper(val, ctx, txt);
-}
-
-#define TF_AXIOM(cond) \
+#define TF_AXIOM(cond)                                                  \
     Tf_AxiomHelper(static_cast<bool>((cond)), TF_CALL_CONTEXT, #cond)
 
-#define TF_DEV_AXIOM(cond) \
-    Tf_DevAxiomHelper(static_cast<bool>((cond)), TF_CALL_CONTEXT, #cond)
+#define TF_DEV_AXIOM(cond)                                              \
+    Tf_AxiomHelper(!ARCH_DEV_BUILD ||                                   \
+                   static_cast<bool>((cond)), TF_CALL_CONTEXT, #cond)
 
 #endif  // !defined(doxygen)
 
