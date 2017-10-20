@@ -62,6 +62,15 @@ from common import (NoValueTextColor, TimeSampleTextColor,
                     REL_PLAIN_TYPE_ROLE, REL_WITH_TARGET_TYPE_ROLE,
                     TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON,
                     CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
+                    RENDER_MODE_WIREFRAME, RENDER_MODE_WIREFRAME_ON_SURFACE,
+                    RENDER_MODE_SMOOTH_SHADED, RENDER_MODE_FLAT_SHADED,
+                    RENDER_MODE_POINTS, RENDER_MODE_GEOM_ONLY,
+                    RENDER_MODE_GEOM_FLAT, RENDER_MODE_GEOM_SMOOTH,
+                    RENDER_MODE_HIDDEN_SURFACE_WIREFRAME, ALL_RENDER_MODES,
+                    SHADED_RENDER_MODES, PICK_MODE_PRIMS, PICK_MODE_MODELS,
+                    PICK_MODE_INSTANCES, ALL_PICK_MODES, SEL_HIGHLIGHT_NEVER,
+                    SEL_HIGHLIGHT_ONLY_WHEN_PAUSED, SEL_HIGHLIGHT_ALWAYS,
+                    ALL_SEL_HIGHLIGHTS,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                     GetPrimsLoadability, GetClosestBoundMaterial)
@@ -199,10 +208,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self._fillLightEnabled = False
             self._backLightEnabled = False
 
+            # We need to store the trinary selHighlightMode state here,
+            # because the stageView only deals in True/False (because it
+            # cannot know anything about playback state).
+            # We store the highlightColorName so that we can compare state during
+            # initialization without inverting the name->value logic
+            self._selHighlightMode = SEL_HIGHLIGHT_ONLY_WHEN_PAUSED
+            self._drawSelHighlights = True
             self._highlightColorName = "Yellow"
             self._highlightColor = (1.0,1.0,0.0,0.5)
-            self._selHighlightMode = "Only when paused"
-            self._drawSelHighlights = True
 
             self._allowViewUpdates = True
 
@@ -303,14 +317,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 'Yellow':        (1.0, 1.0, 0.0, 0.5),
                 'Cyan':          (0.0, 1.0, 1.0, 0.5)}
 
-            # We need to store the trinary selHighlightMode state here,
-            # because the stageView only deals in True/False (because it
-            # cannot know anything about playback state).
-            # We store the highlightColorName so that we can compare state during
-            # initialization without inverting the name->value logic
-            self._selHighlightMode = "Only when paused"
-            self._highlightColorName = "Yellow"
-
             self.ResetDefaultMaterialSettings(store=False)
             self._defaultMaterialAmbient = \
                self._settings.get("DefaultMaterialAmbient",
@@ -400,9 +406,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.renderModeActionGroup.addAction(action)
                 action.setChecked(str(action.text()) == self._renderMode)
             self._ui.renderModeActionGroup.setExclusive(True)
-            if self._renderMode not in \
-                                [str(a.text()) for a in
-                                        self._ui.renderModeActionGroup.actions()]:
+            if self._renderMode not in ALL_RENDER_MODES:
                 print "Warning: Unknown render mode '%s', falling back to '%s'" % (
                             self._renderMode,
                             str(self._ui.renderModeActionGroup.actions()[0].text()))
@@ -417,9 +421,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.pickModeActionGroup.addAction(action)
                 action.setChecked(str(action.text()) == self._pickMode)
             self._ui.pickModeActionGroup.setExclusive(True)
-            if self._pickMode not in \
-                                [str(a.text()) for a in
-                                        self._ui.pickModeActionGroup.actions()]:
+            if self._pickMode not in ALL_PICK_MODES:
                 print "Warning: Unknown pick mode '%s', falling back to '%s'" % (
                             self._pickMode,
                             str(self._ui.pickModeActionGroup.actions()[0].text()))
@@ -1939,8 +1941,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
         self._clearColor = self._clearColorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
-        self._renderMode = self._settings.get("RenderMode", "Smooth Shaded")
-        self._pickMode = self._settings.get("PickMode", "Prims")
+        self._renderMode = self._settings.get("RenderMode", RENDER_MODE_SMOOTH_SHADED)
+        self._pickMode = self._settings.get("PickMode", PICK_MODE_PRIMS)
 
         self._ui.actionShow_Inactive_Nodes.setChecked(\
                         self._settings.get("actionShow_Inactive_Nodes", True))
@@ -2080,15 +2082,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
         self._highlightColor = self._highlightColorsDict[self._highlightColorName]
         self._selHighlightMode = self._settings.get("SelHighlightMode",
-                                                 "Only when paused")
-        self._drawSelHighlights = ( self._selHighlightMode != "Never")
+                                                 SEL_HIGHLIGHT_ONLY_WHEN_PAUSED)
+        self._drawSelHighlights = (self._selHighlightMode != SEL_HIGHLIGHT_NEVER)
 
         # lighting is not activated until a shaded mode is selected
-        self._ui.menuLights.setEnabled(self._renderMode in ('Smooth Shaded',
-                                                            'Flat Shaded',
-                                                            'WireframeOnSurface',
-                                                            'Geom Flat',
-                                                            'Geom Smooth'))
+        self._ui.menuLights.setEnabled(self._renderMode in SHADED_RENDER_MODES)
 
         self._ui.actionFreeCam._node = None
         self._ui.actionFreeCam.triggered.connect(
@@ -2201,24 +2199,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def _changeRenderMode(self, mode):
         self._renderMode = str(mode.text())
         self._settings.setAndSave(RenderMode=self._renderMode)
-        if (self._renderMode in ('Smooth Shaded',
-                                 'Flat Shaded',
-                                 'WireframeOnSurface',
-                                 'Geom Smooth',
-                                 'Geom Flat')):
-            self._ui.menuLights.setEnabled(True)
-        else:
-            self._ui.menuLights.setEnabled(False)
+        self._ui.menuLights.setEnabled(self._renderMode in SHADED_RENDER_MODES)
         if self._stageView:
             self._stageView.update()
 
     def _changePickMode(self, mode):
         self._settings.setAndSave(PickMode=mode.text())
+        self._pickMode = str(mode.text())
 
     def _changeSelHighlightMode(self, mode):
         self._settings.setAndSave(SelHighlightMode=str(mode.text()))
         self._selHighlightMode = str(mode.text())
-        self._drawSelHighlights = (self._selHighlightMode != "Never")
+        self._drawSelHighlights = (self._selHighlightMode != SEL_HIGHLIGHT_NEVER)
         if self._stageView:
             self._stageView.update()
 
@@ -2994,14 +2986,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # If model picking on, find model and select instead, IFF we are
         # requested to apply picking modes
-        if applyPickMode and self._ui.actionPick_Models.isChecked():
+        if applyPickMode and self._pickMode == PICK_MODE_MODELS:
             prim = self._stage.GetPrimAtPath(str(path))
             model = prim if prim.IsModel() else GetEnclosingModelPrim(prim)
             if model:
                 path = model.GetPath()
 
         # If not in instances picking mode, select all instances.
-        if not (applyPickMode and self._ui.actionPick_Instances.isChecked()):
+        if not (applyPickMode and self._pickMode == PICK_MODE_INSTANCES):
             if self._stageView:
                 self._stageView.clearInstanceSelection()
             instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
@@ -3251,7 +3243,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # this is the part that renders
             if self._playing:
                 self._stageView.updateForPlayback(self._currentFrame,
-                                                 self._selHighlightMode == "Always")
+                                 self._selHighlightMode == SEL_HIGHLIGHT_ALWAYS)
             else:
                 self._stageView.setNodes(self._currentNodes, self._currentFrame)
 

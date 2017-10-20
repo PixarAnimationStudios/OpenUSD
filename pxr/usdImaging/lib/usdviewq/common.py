@@ -101,6 +101,52 @@ TARGET_TYPE_ROLE = "Tgt"
 CONN_TYPE_ROLE = "Conn"
 CMP_TYPE_ROLE = "Cmp"
 
+# Render modes
+RENDER_MODE_WIREFRAME = "Wireframe"
+RENDER_MODE_WIREFRAME_ON_SURFACE = "WireframeOnSurface"
+RENDER_MODE_SMOOTH_SHADED = "Smooth Shaded"
+RENDER_MODE_FLAT_SHADED = "Flat Shaded"
+RENDER_MODE_POINTS = "Points"
+RENDER_MODE_GEOM_ONLY = "Geom Only"
+RENDER_MODE_GEOM_FLAT = "Geom Flat"
+RENDER_MODE_GEOM_SMOOTH = "Geom Smooth"
+RENDER_MODE_HIDDEN_SURFACE_WIREFRAME = "Hidden Surface Wireframe"
+
+ALL_RENDER_MODES = [RENDER_MODE_WIREFRAME,
+                    RENDER_MODE_WIREFRAME_ON_SURFACE,
+                    RENDER_MODE_SMOOTH_SHADED,
+                    RENDER_MODE_FLAT_SHADED,
+                    RENDER_MODE_POINTS,
+                    RENDER_MODE_GEOM_ONLY,
+                    RENDER_MODE_GEOM_FLAT,
+                    RENDER_MODE_GEOM_SMOOTH,
+                    RENDER_MODE_HIDDEN_SURFACE_WIREFRAME]
+
+# Render modes which use shading
+SHADED_RENDER_MODES = [RENDER_MODE_SMOOTH_SHADED,
+                       RENDER_MODE_FLAT_SHADED,
+                       RENDER_MODE_WIREFRAME_ON_SURFACE,
+                       RENDER_MODE_GEOM_FLAT,
+                       RENDER_MODE_GEOM_SMOOTH]
+
+# Pick modes
+PICK_MODE_PRIMS = "Prims"
+PICK_MODE_MODELS = "Models"
+PICK_MODE_INSTANCES = "Instances"
+
+ALL_PICK_MODES = [PICK_MODE_PRIMS,
+                  PICK_MODE_MODELS,
+                  PICK_MODE_INSTANCES]
+
+# Selection highlight modes
+SEL_HIGHLIGHT_NEVER = "Never"
+SEL_HIGHLIGHT_ONLY_WHEN_PAUSED = "Only when paused"
+SEL_HIGHLIGHT_ALWAYS = "Always"
+
+ALL_SEL_HIGHLIGHTS = [SEL_HIGHLIGHT_NEVER,
+                      SEL_HIGHLIGHT_ONLY_WHEN_PAUSED,
+                      SEL_HIGHLIGHT_ALWAYS]
+
 def _PropTreeWidgetGetRole(tw):
     return tw.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
 
