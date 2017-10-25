@@ -765,6 +765,59 @@ GusdGU_USD::AppendExpandedRefPoints(
     return GA_INVALID_OFFSET;
 }
 
+
+namespace {
+
+
+bool
+_BuildTypedRangesFromPrimRanges(
+    const GA_AttributeOwner& type,
+    const GA_Detail& srcGd,
+    const GA_Detail& dstGd,
+    const GA_Range& primSrcRng,
+    const GA_Range& primDstRng,
+    GA_Range& typedSrcRng,
+    GA_Range& typedDstRng)
+{
+    GA_Offset (GA_Primitive::*offsetFunc)(GA_Size) const;
+
+    // type must be either GA_ATTRIB_POINT or GA_ATTRIB_VERTEX
+    if (type == GA_ATTRIB_POINT) {
+        offsetFunc = &GA_Primitive::getPointOffset;
+
+    } else if (type == GA_ATTRIB_VERTEX) {
+        offsetFunc = &GA_Primitive::getVertexOffset;
+
+    } else {
+        return false;
+    }
+
+    // Gather a list of src and dst offsets from each prim.
+    GA_OffsetList srcOffsets, dstOffsets;
+
+    for (GA_Iterator srcIt(primSrcRng), dstIt(primDstRng);
+         !srcIt.atEnd(); srcIt.advance(), dstIt.advance()) {
+
+        auto* primSrc = srcGd.getPrimitive(srcIt.getOffset());
+        GA_Offset srcOffset0 = (primSrc->*offsetFunc)(0);
+
+        auto* primDst = dstGd.getPrimitive(dstIt.getOffset());
+        for (exint i = 0; i < primDst->getVertexCount(); ++i) {
+            srcOffsets.append(srcOffset0);
+            dstOffsets.append((primDst->*offsetFunc)(i));
+        }
+    }
+
+    typedSrcRng = GA_Range(srcGd.getIndexMap(type), srcOffsets);
+    typedDstRng = GA_Range(dstGd.getIndexMap(type), dstOffsets);
+
+    return true;
+}
+
+
+} /*namespace*/
+
+
 bool
 GusdGU_USD::AppendExpandedPackedPrims(
     GU_Detail& gd,
@@ -831,8 +884,8 @@ GusdGU_USD::AppendExpandedPackedPrims(
     AppendPackedPrims(*gdPtr, prims, variants, times, dstVpLOD, dstPurposes, err);
 
     // Now set transforms on those appended packed prims.
-    GA_Range dstRng(gdPtr->getPrimitiveRangeSlice(start));
-    SetPackedPrimTransforms(*gdPtr, dstRng, dstXforms.array(), err);
+    GA_Range primDstRng(gdPtr->getPrimitiveRangeSlice(start));
+    SetPackedPrimTransforms(*gdPtr, primDstRng, dstXforms.array(), err);
 
     // Need to build a list of source offsets,
     // including repeats for expanded prims. 
@@ -844,7 +897,7 @@ GusdGU_USD::AppendExpandedPackedPrims(
         // If unpacking down to polygons, iterate through the intermediate
         // packed prims in gdPtr and unpack them into gd.
         exint i = 0;
-        for (GA_Iterator it(dstRng); !it.atEnd(); ++it, ++i) {
+        for (GA_Iterator it(primDstRng); !it.atEnd(); ++it, ++i) {
             if(task.wasInterrupted()) {
                 return false;
             }
@@ -874,9 +927,9 @@ GusdGU_USD::AppendExpandedPackedPrims(
             }
         }
 
-        // dstRng needs to be reset to be the range of unpacked prims in
+        // primDstRng needs to be reset to be the range of unpacked prims in
         // gd (instead of the range of intermediate packed prims in gdPtr).
-        dstRng = GA_Range(gd.getPrimitiveRangeSlice(gdStart));
+        primDstRng = GA_Range(gd.getPrimitiveRangeSlice(gdStart));
 
         // All done with gdPtr.
         delete gdPtr;
@@ -889,25 +942,49 @@ GusdGU_USD::AppendExpandedPackedPrims(
         }
     }
 
-    // Get the filtered list of attributes to copy.
-    UT_Array<const GA_Attribute*> attrs;
-    srcGd.getAttributes().matchAttributes(filter, srcRng.getOwner(), attrs);
+    // Get the filtered lists of attributes to copy.
+    UT_Array<const GA_Attribute*> primAttrs, vertexAttrs, pointAttrs;
+    auto& attrs = srcGd.getAttributes();
+    attrs.matchAttributes(filter, GA_ATTRIB_PRIMITIVE, primAttrs);
+    attrs.matchAttributes(filter, GA_ATTRIB_VERTEX, vertexAttrs);
+    attrs.matchAttributes(filter, GA_ATTRIB_POINT, pointAttrs);
 
     // If no attrs to copy, exit early.
-    if (attrs.isEmpty()) {
+    if (primAttrs.isEmpty() && vertexAttrs.isEmpty() && pointAttrs.isEmpty()) {
         return true;
     }
 
-    GA_Range newSrcRng(srcGd.getIndexMap(srcRng.getOwner()), srcOffsets);
+    // Create a range for source prims using srcOffsets.
+    GA_Range primSrcRng(srcGd.getIndexMap(srcRng.getOwner()), srcOffsets);
 
-    // dstRng and newSrcRng should be the same size.
-    UT_ASSERT(dstRng.getEntries() == newSrcRng.getEntries());
+    // primDstRng and primSrcRng should be the same size.
+    UT_ASSERT(primDstRng.getEntries() == primSrcRng.getEntries());
 
-    if (CopyAttributes(newSrcRng, dstRng, gd.getPrimitiveMap(), attrs)) {
-        return true;
+    if (!CopyAttributes(primSrcRng, primDstRng,
+            gd.getPrimitiveMap(), primAttrs)) {
+        return false;
     }
 
-    return false;
+    if (!vertexAttrs.isEmpty()) {
+        GA_Range vtxSrcRng, vtxDstRng;
+        _BuildTypedRangesFromPrimRanges(GA_ATTRIB_VERTEX,
+            srcGd, gd, primSrcRng, primDstRng, vtxSrcRng, vtxDstRng);
+        if (!CopyAttributes(vtxSrcRng, vtxDstRng,
+                gd.getVertexMap(), vertexAttrs)) {
+            return false;
+        }
+    }
+    if (!pointAttrs.isEmpty()) {
+        GA_Range pntSrcRng, pntDstRng;
+        _BuildTypedRangesFromPrimRanges(GA_ATTRIB_POINT,
+            srcGd, gd, primSrcRng, primDstRng, pntSrcRng, pntDstRng);
+        if (!CopyAttributes(pntSrcRng, pntDstRng,
+                gd.getPointMap(), pointAttrs)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 
