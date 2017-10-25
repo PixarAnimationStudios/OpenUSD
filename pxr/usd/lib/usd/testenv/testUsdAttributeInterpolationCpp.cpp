@@ -1822,14 +1822,18 @@ ScaleAttributeSampledTimes(const UsdPrim& prim, double scale = 0.5)
     for (size_t i = 0; i < attributes.size(); ++i) {
         std::vector<double> times;
         attributes[i].GetTimeSamples(&times);
-
-        for (size_t j = 0; j < times.size(); ++j) {
-            const double currTime = times[j];
+        // Read, clear, and then re-write all samples afterward
+        // to avoid collisions from writing new samples over old.
+        std::map<double, VtValue> scaledSamples;
+        for (double currTime: times) {
             const double scaledTime = currTime * scale;
             VtValue attrVal;
             attributes[i].Get(&attrVal, UsdTimeCode(currTime));
+            scaledSamples[scaledTime] = attrVal;
             attributes[i].ClearAtTime(currTime);
-            attributes[i].Set(attrVal, UsdTimeCode(scaledTime));
+        }
+        for (const auto entry: scaledSamples) {
+            attributes[i].Set(entry.second, UsdTimeCode(entry.first));
         }
     }
 

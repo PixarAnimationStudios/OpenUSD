@@ -1507,7 +1507,10 @@ UsdStage::_SetValueImpl(
         const SdfLayerOffset layerOffset = 
             GetEditTarget().GetMapFunction().GetTimeOffset();
 
-        double localTime = layerOffset.GetInverse() * time.GetValue();
+        // XXX Currently USD uses the inverse semantics of Pcp
+        // for applying layer offsets.  So to map a value from
+        // stage back to a layer, we apply the offset (not its inverse).
+        double localTime = layerOffset * time.GetValue();
 
         attrSpec->GetLayer()->SetTimeSample(
             attrSpec->GetPath(),

@@ -260,7 +260,8 @@ class TestUsdTimeOffsets(unittest.TestCase):
                 # transformed.
                 authoredTime = barRef.attributes[
                     'attr'].GetInfo('timeSamples').keys()[0]
-                self.assertEqual(refOffset.GetInverse() * 2.0, authoredTime)
+                self.assertEqual(
+                    refOffset * 2.0, authoredTime)
 
             # Make an EditTarget to author into the sublayer.
             editTarget = stage.GetEditTargetForLocalLayer(subLayer)
@@ -273,7 +274,8 @@ class TestUsdTimeOffsets(unittest.TestCase):
                 # transformed.
                 authoredTime = subLayer.GetAttributeAtPath(
                     '/Foo.attr').GetInfo('timeSamples').keys()[0]
-                self.assertEqual(subOffset.GetInverse() * 2.0, authoredTime)
+                self.assertEqual(
+                    subOffset * 2.0, authoredTime)
 
 if __name__ == '__main__':
     unittest.main()
