@@ -1946,13 +1946,6 @@ private:
     // Specialized Time Sample I/O
     // --------------------------------------------------------------------- //
 
-    // Returns the TSM, transformed for the current offset & scale.
-    SdfTimeSampleMap _GetTimeSampleMap(const UsdAttribute &attr) const;
-
-    // Same as _GetTimeSampleMap but report whether or not timesamples exist.
-    bool _GetTimeSampleMap(const UsdAttribute &attr,
-                           SdfTimeSampleMap *out) const;
-
     /// Gets the set of time samples authored for a given attribute 
     /// within the \p interval. The interval may have any combination 
     /// of open/infinite and closed/finite endpoints; it may not have 

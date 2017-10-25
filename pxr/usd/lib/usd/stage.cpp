@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/clipCache.h"
 #include "pxr/usd/usd/debugCodes.h"
@@ -4118,6 +4119,30 @@ UsdStage::_GetDefiningSpecType(const UsdPrim& prim,
 // ------------------------------------------------------------------------- //
 
 namespace {
+
+// Populates the time sample map with the resolved values for the given 
+// attribute and returns true if time samples exist, false otherwise.
+bool 
+_GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out)
+{
+    UsdAttributeQuery attrQuery(attr);
+
+    std::vector<double> timeSamples;
+    if (attrQuery.GetTimeSamples(&timeSamples)) {
+        for (const auto& timeSample : timeSamples) {
+            VtValue value;
+            if (attrQuery.Get(&value, timeSample)) {
+                (*out)[timeSample].Swap(value);
+            }
+            else {
+                (*out)[timeSample] = VtValue(SdfValueBlock());
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 using _MasterToFlattenedPathMap 
     = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
 
@@ -4346,19 +4371,19 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
 
         double lower = 0.0, upper = 0.0;
         bool hasSamples = false;
-        VtValue defaultValue;
         if (attr.GetBracketingTimeSamples(
             0.0, &lower, &upper, &hasSamples) && hasSamples) {
-            sdfAttr->SetInfo(SdfFieldKeys->TimeSamples,
-                             VtValue(_GetTimeSampleMap(attr)));
+            SdfTimeSampleMap ts;
+            if (_GetTimeSampleMap(attr, &ts)) {
+                sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
+            }
         }
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
+            VtValue defaultValue;
             if (!attr.Get(&defaultValue)) {
-                sdfAttr->SetInfo(SdfFieldKeys->Default, 
-                                 VtValue(SdfValueBlock())); 
-            } else {
-                sdfAttr->SetInfo(SdfFieldKeys->Default, defaultValue);
+                defaultValue = SdfValueBlock();
             }
+            sdfAttr->SetInfo(SdfFieldKeys->Default, defaultValue);
         }
         SdfPathVector sources;
         attr.GetConnections(&sources);
@@ -6082,32 +6107,6 @@ UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
 // --------------------------------------------------------------------- //
 
 bool
-UsdStage::_GetTimeSampleMap(const UsdAttribute &attr,
-                            SdfTimeSampleMap *out) const
-{
-    // Note that we must invoke interpolation here. This is because
-    // value clips may have authored clipTimes which don't 
-    // have a matching sample in the corresponding clip, so we have
-    // to interpolate a value(if we can) for it.
-    std::vector<double> timeSamples;
-    if (_GetTimeSamplesInInterval(attr, GfInterval::GetFullInterval(), 
-                                  &timeSamples)) {
-        for (const auto& timeSample : timeSamples) {
-            VtValue value;
-            Usd_UntypedInterpolator interp(attr, &value);
-
-            if (_GetValueImpl(timeSample, attr, &interp, &value)) {
-                (*out)[timeSample] = value;
-            } else {
-                (*out)[timeSample] = VtValue(SdfValueBlock());
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-bool
 UsdStage::_GetTimeSamplesInInterval(const UsdAttribute& attr,
                                     const GfInterval& interval,
                                     std::vector<double>* times) const
@@ -6115,14 +6114,6 @@ UsdStage::_GetTimeSamplesInInterval(const UsdAttribute& attr,
     UsdResolveInfo info;
     _GetResolveInfo(attr, &info);
     return _GetTimeSamplesInIntervalFromResolveInfo(info, attr, interval, times);
-}
-
-SdfTimeSampleMap
-UsdStage::_GetTimeSampleMap(const UsdAttribute &attr) const
-{
-    SdfTimeSampleMap result;
-    _GetTimeSampleMap(attr, &result);
-    return result;
 }
 
 bool 

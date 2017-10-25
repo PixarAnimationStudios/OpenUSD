@@ -855,6 +855,25 @@ class TestUsdMetadata(unittest.TestCase):
                 print '\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n')))
             assert a == b
 
+    def test_AssetPathMetadata(self):
+        s = Usd.Stage.Open("assetPaths/root.usda")
+        attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPath")
+        
+        timeSamples = attr.GetMetadata("timeSamples")
+        self.assertEqual(timeSamples[0].resolvedPath,
+                         os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(timeSamples[1].resolvedPath,
+                         os.path.abspath("assetPaths/asset.usda"))
+        
+        # XXX: Currently broken
+        # self.assertEqual(
+        #    attr.GetMetadata("default").resolvedPath, 
+        #    os.path.abspath("assetPaths/asset.usda"))
+        #
+        # attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
+        # self.assertEqual(attr.GetMetadata("default")[0].resolvedPath,
+        #                  os.path.abspath("assetPaths/asset.usda"))
+
 if __name__ == '__main__':
     # Register test plugin defining list op metadata fields.
     testDir = os.path.abspath(os.getcwd())

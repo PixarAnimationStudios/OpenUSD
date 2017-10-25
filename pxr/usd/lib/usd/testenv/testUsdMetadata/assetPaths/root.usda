@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "AssetPathTest"
+{
+    asset assetPath = @./asset.usda@
+    asset[] assetPathArray = [@./asset.usda@]
+    asset assetPath.timeSamples = {
+        0: @./asset.usda@,
+        1: @./asset.usda@,
+    }
+}
