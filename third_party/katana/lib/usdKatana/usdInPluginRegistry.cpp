@@ -164,39 +164,6 @@ PxrUsdKatanaUsdInPluginRegistry::FindKindForSite(
     return _DoFindKind(kind, opName, _kindExtReg);
 }
 
-
-
-typedef std::vector<PxrUsdKatanaUsdInPluginRegistry::LocationDecoratorFnc>
-        _LocationDecoratorFncList;
-static _LocationDecoratorFncList _locationDecoratorFncList;
-
-
-void PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorFnc(
-        LocationDecoratorFnc fnc)
-{
-    _locationDecoratorFncList.push_back(fnc);
-}
-
-FnKat::GroupAttribute
-PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
-        FnKat::GeolibCookInterface& interface,
-        FnKat::GroupAttribute opArgs,
-        PxrUsdKatanaUsdInPrivateData* privateData)
-{
-    for (auto i : _locationDecoratorFncList)
-    {
-        (*i)(interface, opArgs, privateData);
-        
-        if (privateData)
-        {
-            opArgs = privateData->updateExtensionOpArgs(opArgs);
-        }
-    }
-    
-    return opArgs;
-}
-
-
 typedef std::map<std::string, PxrUsdKatanaUsdInPluginRegistry::OpDirectExecFnc>
         _OpDirectExecFncTable;
 
@@ -221,6 +188,42 @@ void PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
     {
         (*((*I).second))(privateData, opArgs, interface);
     }
+}
+
+
+typedef std::vector<PxrUsdKatanaUsdInPluginRegistry::OpDirectExecFnc>
+        _LocationDecoratorFncList;
+
+static _LocationDecoratorFncList _locationDecoratorFncList;
+
+
+void
+PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorOp(
+        const std::string& opName)
+{
+    _OpDirectExecFncTable::iterator I = _opDirectExecFncTable.find(opName);
+    
+    if (I != _opDirectExecFncTable.end())
+    {
+        _locationDecoratorFncList.push_back((*I).second);
+    }
+    
+}
+
+FnKat::GroupAttribute
+PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorOps(
+        const PxrUsdKatanaUsdInPrivateData& privateData,
+        FnKat::GroupAttribute opArgs,
+        FnKat::GeolibCookInterface& interface)
+{
+    for (auto i : _locationDecoratorFncList)
+    {
+        (*i)(privateData, opArgs, interface);
+        
+        opArgs = privateData.updateExtensionOpArgs(opArgs);
+    }
+    
+    return opArgs;
 }
 
 

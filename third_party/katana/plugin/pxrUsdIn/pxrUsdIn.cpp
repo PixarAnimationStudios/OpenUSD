@@ -621,9 +621,11 @@ public:
             }
         }
 
-        opArgs = PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorFncs(
-                interface, opArgs, privateData);
-        
+        if (privateData)
+        {
+            opArgs = PxrUsdKatanaUsdInPluginRegistry::ExecuteLocationDecoratorOps(
+                    *privateData, opArgs, interface);
+        }
 
         if (!skipAllChildren) {
 

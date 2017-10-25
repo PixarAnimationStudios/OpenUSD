@@ -122,30 +122,6 @@ public:
             std::string* opName);
 
 
-    /// \brief The signature for a plug-in "location decorator" function.
-    /// These can be registered to run at every location after other ops have
-    /// executed.
-    typedef void (*LocationDecoratorFnc)(
-            FnKat::GeolibCookInterface& interface,
-            FnKat::GroupAttribute opArgs,
-            PxrUsdKatanaUsdInPrivateData* privateData);
-    
-    /// \brief Register a plug-in function which will be called for every
-    /// katana location created from a UsdPrim. This allows for specialization
-    /// beyond specific types and kinds 
-    static void RegisterLocationDecoratorFnc(LocationDecoratorFnc fnc);
-    
-    /// \brief Run the registered plug-in functions at a katana location
-    /// and UsdPrim. It returns opArgs -- which may be altered by the executed
-    /// functions.
-    static FnKat::GroupAttribute ExecuteLocationDecoratorFncs(
-            FnKat::GeolibCookInterface& interface,
-            FnKat::GroupAttribute opArgs,
-            PxrUsdKatanaUsdInPrivateData* privateData);
-    
-    
-    
-    
     
     
     
@@ -182,6 +158,24 @@ public:
     
     
     
+    
+    /// \brief Register an op name which will be called for every
+    /// katana location created from a UsdPrim. This allows for specialization
+    /// beyond specific types and kinds. The specific op must have been
+    /// previously registered with RegisterOpDirectExecFnc -- which will
+    /// happen automatically for any op defined with one of the PXRUSDKATANA_*
+    /// macros and registered via USD_OP_REGISTER_PLUGIN.
+    static void RegisterLocationDecoratorOp(const std::string& opName);
+    
+    
+    // \brief Run the registered plug-in ops at a katana location
+    /// and UsdPrim. It returns opArgs -- which may be altered by the executed
+    /// ops.
+    static FnKat::GroupAttribute ExecuteLocationDecoratorOps(
+            const PxrUsdKatanaUsdInPrivateData& privateData,
+            FnKat::GroupAttribute opArgs,
+            FnKat::GeolibCookInterface& interface);
+
 
 private:
     static void _RegisterUsdType(

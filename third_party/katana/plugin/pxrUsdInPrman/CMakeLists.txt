@@ -11,6 +11,9 @@ pxr_plugin(${PXR_PACKAGE}
         usdGeom
         usdKatana
     
+    PRIVATE_HEADERS
+        declarePackageOps.h
+    
     CPPFILES
         register.cpp
         prmanGeometryDecorator.cpp        

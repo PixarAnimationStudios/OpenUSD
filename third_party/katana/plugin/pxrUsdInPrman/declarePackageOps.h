@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2016 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,24 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXR_USDINPRMAN_DECLAREPACKAGEOPS_H
+#define PXR_USDINPRMAN_DECLAREPACKAGEOPS_H
 
-#include "pxr/pxr.h"
+#include "usdKatana/usdInPluginRegistry.h"
 
-#include "pxrUsdInPrman/declarePackageOps.h"
+PXRUSDKATANA_USDIN_PLUGIN_DECLARE(PxrUsdInPrman_LocationDecorator)
 
-
-PXR_NAMESPACE_USING_DIRECTIVE
-
-
-DEFINE_GEOLIBOP_PLUGIN(PxrUsdInPrman_LocationDecorator);
-
-void registerPlugins()
-{
-    USD_OP_REGISTER_PLUGIN(PxrUsdInPrman_LocationDecorator, 
-                       "PxrUsdInPrman_LocationDecorator", 
-                       0, 
-                       1);
-    
-    PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorOp(
-            "PxrUsdInPrman_LocationDecorator");
-}
+#endif // PXR_USDINPRMAN_DECLAREPACKAGEOPS_H
