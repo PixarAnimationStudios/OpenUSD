@@ -152,7 +152,7 @@ GusdRefiner::refineDetail(
         if( overTransformsAttr ) {
             GA_ROHandleI h( overTransformsAttr );
             if( overTransformsAttr->getOwner() == GA_ATTRIB_DETAIL ) {
-                overlayTransforms = h.get( 0 );
+                overlayTransforms = h.get( GA_Offset(0) );
             }
             else {
                 // assume all prims in the range have the same usdovertransforms
