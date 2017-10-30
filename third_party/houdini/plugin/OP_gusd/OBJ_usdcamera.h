@@ -92,7 +92,7 @@ public:
                                     OP_Operator* op);
 
     /** Overridden to modify defaults of scripted properties. */
-    virtual bool            runCreateScript();
+    virtual bool            runCreateScript() override;
 
     /** Evaluate the float value of a variable.
         This is where we hook in most of our USD queries. */
@@ -111,14 +111,14 @@ protected:
     virtual ~GusdOBJ_usdcamera() {}
 
     virtual int             applyInputIndependentTransform(OP_Context& ctx,
-                                                           UT_DMatrix4& mx);
+				UT_DMatrix4& mx) override;
 
-    virtual bool            updateParmsFlags();
+    virtual bool            updateParmsFlags() override;
 
-    virtual void            loadStart();
-    virtual void            loadFinished();
+    virtual void            loadStart() override;
+    virtual void            loadFinished() override;
 
-    virtual OP_ERROR        cookMyObj(OP_Context& ctx);
+    virtual OP_ERROR        cookMyObj(OP_Context& ctx) override;
 
 private:
     OP_ERROR                _Cook(OP_Context& ctx);
