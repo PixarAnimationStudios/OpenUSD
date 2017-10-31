@@ -94,6 +94,9 @@ INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
 # Tf Debug entries to include in debug menu
 TF_DEBUG_MENU_ENTRIES = ["HD", "HDX", "USD", "USDIMAGING", "USDVIEWQ"]
 
+# Name of the Qt binding being used
+QT_BINDING = QtCore.__name__.split('.')[0]
+
 class MainWindow(QtWidgets.QMainWindow):
 
     ###########
@@ -167,8 +170,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self._debug = os.getenv('USDVIEW_DEBUG', False)
             self._printTiming = parserData.timing or self._debug
             self._lastViewContext = {}
-            self._statusFileName = 'state'
-            self._deprecatedStatusFileName = '.usdviewrc'
+            if QT_BINDING == 'PySide':
+                self._statusFileName = 'state'
+                self._deprecatedStatusFileNames = ('.usdviewrc')
+            else:
+                self._statusFileName = 'state.%s'%QT_BINDING
+                self._deprecatedStatusFileNames = ('state', '.usdviewrc')
             self._mallocTags = parserData.mallocTagStats
             self._bboxCache = None
             self._complexity = parserData.complexity
@@ -264,19 +271,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Create an ephemeral settings object with a non existent filepath
                 self._settings = settings.Settings('', seq=None, ephemeral=True)
             else:
-                settingsPath = os.path.join(settingsPathDir, 
-                                            self._statusFileName)
-                deprecatedSettingsPath = os.path.join(settingsPathDir, 
-                                                      self._deprecatedStatusFileName)
-                if (os.path.isfile(deprecatedSettingsPath) and
-                    not os.path.isfile(settingsPath)):
-                    warning = ('\nWARNING: The settings file at: '
-                               + str(deprecatedSettingsPath) 
-                               + ' is deprecated.\n'
-                               + 'These settings are not being used, the new '
-                               + 'settings file will be located at: '
-                               + str(settingsPath) + '.\n')
-                    print warning
+                settingsPath = os.path.join(settingsPathDir, self._statusFileName)
+                for deprecatedName in self._deprecatedStatusFileNames:
+                    deprecatedSettingsPath = \
+                        os.path.join(settingsPathDir, deprecatedName)
+                    if (os.path.isfile(deprecatedSettingsPath) and
+                        not os.path.isfile(settingsPath)):
+                        warning = ('\nWARNING: The settings file at: '
+                                + str(deprecatedSettingsPath) + ' is deprecated.\n'
+                                + 'These settings are not being used, the new '
+                                + 'settings file will be located at: '
+                                + str(settingsPath) + '.\n')
+                        print warning
+                        break
 
                 self._settings = settings.Settings(settingsPath)
 
