@@ -34,20 +34,20 @@ def _GetPrimInfo(prim, time):
     return Utils.GetPrimInfo(prim, time)
 
 # This class extends QTreeWidgetItem to also contain all the stage
-# node data associated with it and populate itself with that data.
+# prim data associated with it and populate itself with that data.
 
-class NodeViewItem(QtWidgets.QTreeWidgetItem):
-    def __init__(self, node, mainWindow, nodeHasChildren):
+class PrimViewItem(QtWidgets.QTreeWidgetItem):
+    def __init__(self, prim, mainWindow, primHasChildren):
         # Do *not* pass a parent.  The client must build the hierarchy.
         # This can dramatically improve performance when building a
         # large hierarchy.
-        super(NodeViewItem, self).__init__()
+        super(PrimViewItem, self).__init__()
 
-        self.node = node
+        self.prim = prim
         self._mainWindow = mainWindow
         self._needsPull = True
         self._needsPush = True
-        self._needsChildrenPopulated = nodeHasChildren
+        self._needsChildrenPopulated = primHasChildren
 
         # Initialize these now so loadVis(), _visData() and onClick() can
         # use them without worrying if _pull() has been called.
@@ -55,7 +55,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
         self.active = False
 
         # If we know we'll have children show a norgie, otherwise don't.
-        if nodeHasChildren:
+        if primHasChildren:
             self.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.ShowIndicator)
         else:
             self.setChildIndicatorPolicy(QtWidgets.QTreeWidgetItem.DontShowIndicator)
@@ -76,12 +76,12 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
 
             # Visibility is recursive so the parent must pull before us.
             parent = self.parent()
-            if isinstance(parent, NodeViewItem):
+            if isinstance(parent, PrimViewItem):
                 parent._pull()
 
             # Get our prim info.
             # To avoid Python overhead, request data in batch from C++.
-            info = _GetPrimInfo(self.node, self._mainWindow._currentFrame)
+            info = _GetPrimInfo(self.prim, self._mainWindow._currentFrame)
             self._extractInfo(info)
 
     def _extractInfo(self, info):
@@ -99,7 +99,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
 
         parent = self.parent()
         self.computedVis =  parent.computedVis \
-            if isinstance(parent, NodeViewItem) \
+            if isinstance(parent, PrimViewItem) \
             else UsdGeom.Tokens.inherited
         if self.imageable and self.active:
             if isVisibilityInherited:
@@ -111,7 +111,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
         """Adds children to the end of this item.  This is the only
            method clients should call to manage an item's children."""
         self._needsChildrenPopulated = False
-        super(NodeViewItem, self).addChildren(children)
+        super(PrimViewItem, self).addChildren(children)
 
     def data(self, column, role):
         # All Qt queries that affect the display of this item (label, font,
@@ -132,7 +132,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
         elif column == 2:
             result = self._visData(role)
         if not result:
-            result = super(NodeViewItem, self).data(column, role)
+            result = super(PrimViewItem, self).data(column, role)
         return result
 
     def _nameData(self, role):
@@ -212,11 +212,11 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
 
     def canChangeVis(self):
         if not self.imageable:
-            print "WARNING: The prim <" + str(self.node.GetPath()) + \
+            print "WARNING: The prim <" + str(self.prim.GetPath()) + \
                     "> is not imageable. Cannot change visibility."
             return False
         elif self.isInMaster:
-            print "WARNING: The prim <" + str(self.node.GetPath()) + \
+            print "WARNING: The prim <" + str(self.prim.GetPath()) + \
                    "> is in a master. Cannot change visibility."
             return False
         return True
@@ -229,7 +229,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
         # If visibility-properties have changed on the stage, then
         # we must re-evaluate our variability before deciding whether
         # we can avoid re-reading our visibility
-        visAttr = UsdGeom.Imageable(self.node).GetVisibilityAttr()
+        visAttr = UsdGeom.Imageable(self.prim).GetVisibilityAttr()
         if visHasBeenAuthored:
             self.visVaries = visAttr.ValueMightBeTimeVarying()
 
@@ -250,23 +250,23 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
         # We need to completely re-generate the prim tree because making a prim
         # inactive can break a reference chain, and/or make another prim
         # inactive due to inheritance.
-        self._mainWindow.UpdateNodeViewContents()
+        self._mainWindow.UpdatePrimViewContents()
 
     def loadStateChanged(self):
         # We can do better than nuking the whole prim tree, but for now,
         # use what's already handy
-        self._mainWindow.UpdateNodeViewContents()
+        self._mainWindow.UpdatePrimViewContents()
 
     @staticmethod
     def propagateVis(item, authoredVisHasChanged=True):
         parent = item.parent()
         inheritedVis = parent._resetAncestorsRecursive(authoredVisHasChanged) \
-            if isinstance(parent, NodeViewItem) \
+            if isinstance(parent, PrimViewItem) \
             else UsdGeom.Tokens.inherited
         # This may be called on the "InvisibleRootItem" that is an ordinary
         # QTreeWidgetItem, in which case we need to process its children
         # individually
-        if isinstance(item, NodeViewItem):
+        if isinstance(item, PrimViewItem):
             item._pushVisRecursive(inheritedVis, authoredVisHasChanged)
         else:
             for child in [item.child(i) for i in xrange(item.childCount())]:
@@ -276,7 +276,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
     def _resetAncestorsRecursive(self, authoredVisHasChanged):
         parent = self.parent()
         inheritedVis = parent._resetAncestorsRecursive(authoredVisHasChanged) \
-            if isinstance(parent, NodeViewItem) \
+            if isinstance(parent, PrimViewItem) \
             else UsdGeom.Tokens.inherited
 
         return self.loadVis(inheritedVis, authoredVisHasChanged)
@@ -289,29 +289,29 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
 
     def setActive(self, active):
         if self.isInMaster:
-            print "WARNING: The prim <" + str(self.node.GetPath()) + \
+            print "WARNING: The prim <" + str(self.prim.GetPath()) + \
                    "> is in a master. Cannot change activation."
             return
 
-        self.node.SetActive(active)
+        self.prim.SetActive(active)
         self.activeChanged()
 
     def setLoaded(self, loaded):
-        if self.node.IsMaster():
-            print "WARNING: The prim <" + str(self.node.GetPath()) + \
+        if self.prim.IsMaster():
+            print "WARNING: The prim <" + str(self.prim.GetPath()) + \
                    "> is a master prim. Cannot change load state."
             return
 
-        if self.node.IsActive():
+        if self.prim.IsActive():
             if loaded:
-                self.node.Load()
+                self.prim.Load()
             else:
-                self.node.Unload()
+                self.prim.Unload()
             self.loadStateChanged()
 
     def setVisible(self, visible):
         if self.canChangeVis():
-            UsdGeom.Imageable(self.node).GetVisibilityAttr().Set(UsdGeom.Tokens.inherited
+            UsdGeom.Imageable(self.prim).GetVisibilityAttr().Set(UsdGeom.Tokens.inherited
                              if visible else UsdGeom.Tokens.invisible)
             self.visChanged()
 
@@ -326,12 +326,12 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
             # the performance need for this by addressing bug #121992
             from pxr import Sdf
             with Sdf.ChangeBlock():
-                UsdGeom.Imageable(self.node).MakeVisible()
+                UsdGeom.Imageable(self.prim).MakeVisible()
             self.visChanged()
 
     def removeVisibility(self):
         if self.canChangeVis():
-            UsdGeom.Imageable(self.node).GetVisibilityAttr().Clear()
+            UsdGeom.Imageable(self.prim).GetVisibilityAttr().Clear()
             self.visChanged()
 
     def visChanged(self):
@@ -340,7 +340,7 @@ class NodeViewItem(QtWidgets.QTreeWidgetItem):
         self.loadVis(self.parent().computedVis, True)
 
     def onClick(self, col):
-        """Return True if the click caused the node to change state (visibility,
+        """Return True if the click caused the prim to change state (visibility,
         etc)"""
         if col == 2 and self.imageable and self.active:
             self.setVisible(self.vis == UsdGeom.Tokens.invisible)

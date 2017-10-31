@@ -44,8 +44,8 @@ pxr_library(usdviewq
         scalarTypes.py
         stageView.py
         usdviewContextMenuItem.py
-        nodeContextMenu.py
-        nodeContextMenuItems.py
+        primContextMenu.py
+        primContextMenuItems.py
         headerContextMenu.py
         attributeViewContextMenu.py
         layerStackContextMenu.py
@@ -55,10 +55,10 @@ pxr_library(usdviewq
         watchWindow.py
         adjustClipping.py
         adjustDefaultMaterial.py
-        nodeViewItem.py
+        primViewItem.py
         common.py
         legendUtil.py
-        nodeLegend.py
+        primLegend.py
         propertyLegend.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
@@ -73,7 +73,7 @@ pxr_library(usdviewq
         adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
-        nodeLegendUI.ui
+        primLegendUI.ui
         propertyLegendUI.ui
         pythonExpressionPromptUI.ui
 )

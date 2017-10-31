@@ -22,16 +22,16 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtWidgets
-from nodeContextMenuItems import _GetContextMenuItems
+from primContextMenuItems import _GetContextMenuItems
 
 #
-# Specialized context menu for node selection.
+# Specialized context menu for prim selection.
 #
-# It uses the per-node context menus referenced by the _GetContextMenuItems
-# function in nodeContextMenuItems. To add a new context menu item,
+# It uses the per-prim context menus referenced by the _GetContextMenuItems
+# function in primContextMenuItems. To add a new context menu item,
 # see comments in that file.
 #
-class NodeContextMenu(QtWidgets.QMenu):
+class PrimContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent, item):
         QtWidgets.QMenu.__init__(self, parent)

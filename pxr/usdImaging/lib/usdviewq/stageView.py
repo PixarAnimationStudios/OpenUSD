@@ -1488,7 +1488,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._overrideFar = None
 
         self._cameraPrim = None
-        self._nodes = []
+        self._selectedPrims = []
 
         # blind state of instance selection (key:path, value:indices)
         self._selectedInstances = dict()
@@ -1747,14 +1747,14 @@ class StageView(QtOpenGL.QGLWidget):
         # force the bbox to refresh
         self._bbox = Gf.BBox3d()
 
-    def setNodes(self, nodes, frame, resetCam=False, forceComputeBBox=False,
-                 frameFit=1.1):
-        '''Set the current nodes. resetCam = True causes the camera to reframe
-        the specified nodes. frameFit sets the ratio of the camera's frustum's
+    def setSelectedPrims(self, selectedPrims, frame, resetCam=False,
+                forceComputeBBox=False, frameFit=1.1):
+        '''Set the selected prims. resetCam = True causes the camera to reframe
+        the specified prims. frameFit sets the ratio of the camera's frustum's
         relevant dimension to the object's bounding box. 1.1, the default,
-        fits the node's bounding box in the frame with a roughly 10% margin.
+        fits the prim's bounding box in the frame with a roughly 10% margin.
         '''
-        self._nodes = nodes
+        self._selectedPrims = selectedPrims
         self._currentFrame = frame
 
         # set highlighted paths to renderer
@@ -1770,7 +1770,7 @@ class StageView(QtOpenGL.QGLWidget):
             try:
                 startTime = time()
                 self._bbox = self.getStageBBox()
-                if len(nodes) == 1 and nodes[0].GetPath() == '/':
+                if len(selectedPrims) == 1 and selectedPrims[0].GetPath() == '/':
                     if self._bbox.GetRange().IsEmpty():
                         self._selectionBBox = self._getDefaultBBox()
                     else:
@@ -1814,7 +1814,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._renderer.ClearSelected()
 
-        for p in self._nodes:
+        for p in self._selectedPrims:
             if p == psuRoot:
                 continue
             if self._selectedInstances.has_key(p.GetPath()):
@@ -1837,7 +1837,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     def getSelectionBBox(self):
         bbox = Gf.BBox3d()
-        for n in self._nodes:
+        for n in self._selectedPrims:
             if n.IsActive() and not n.IsInMaster():
                 primBBox = self._dataModel.bboxCache.ComputeWorldBound(n)
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
@@ -2106,7 +2106,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
                                          gfCamera.clippingPlanes]
 
-        if self._nodes:
+        if self._selectedPrims:
             sceneAmbient = (0.01, 0.01, 0.01, 1.0)
             material = Glf.SimpleMaterial()
             lights = []

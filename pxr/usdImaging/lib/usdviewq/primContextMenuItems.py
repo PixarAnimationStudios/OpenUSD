@@ -27,9 +27,9 @@ import os
 import sys
 
 #
-# Edit the following to alter the per-node context menu.
+# Edit the following to alter the per-prim context menu.
 #
-# Every entry should be an object derived from NodeContextMenuItem,
+# Every entry should be an object derived from PrimContextMenuItem,
 # defined below.
 #
 def _GetContextMenuItems(mainWindow, item):
@@ -49,12 +49,12 @@ def _GetContextMenuItems(mainWindow, item):
 	    IsolateAssetMenuItem(mainWindow, item)]
 
 #
-# The base class for per-node context menu items.
+# The base class for per-prim context menu items.
 #
-class NodeContextMenuItem(UsdviewContextMenuItem):
+class PrimContextMenuItem(UsdviewContextMenuItem):
 
     def __init__(self, mainWindow, item):
-    	self._currentNodes = mainWindow._currentNodes
+    	self._currentPrims = mainWindow._currentPrims
     	self._currentFrame = mainWindow._currentFrame
         self._mainWindow = mainWindow
         self._item = item
@@ -77,7 +77,7 @@ class NodeContextMenuItem(UsdviewContextMenuItem):
 #
 # Puts a separator in the context menu
 #
-class SeparatorMenuItem(NodeContextMenuItem):
+class SeparatorMenuItem(PrimContextMenuItem):
 
     def IsSeparator(self):
         return True
@@ -86,12 +86,12 @@ class SeparatorMenuItem(NodeContextMenuItem):
 # Replace each selected prim with its enclosing model prim, if it has one,
 # in the selection set
 #
-class JumpToEnclosingModelItem(NodeContextMenuItem):
+class JumpToEnclosingModelItem(PrimContextMenuItem):
 
     def IsEnabled(self):
         from common import GetEnclosingModelPrim
 
-        for p in self._currentNodes:
+        for p in self._currentPrims:
             if GetEnclosingModelPrim(p) is not None:
                 return True
         return False
@@ -106,14 +106,14 @@ class JumpToEnclosingModelItem(NodeContextMenuItem):
 # Replace each selected prim with the Material it or its closest ancestor is
 # bound to.
 #
-class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
+class JumpToBoundMaterialMenuItem(PrimContextMenuItem):
 
     def __init__(self, mainWindow, item):
-        NodeContextMenuItem.__init__(self, mainWindow, item)
+        PrimContextMenuItem.__init__(self, mainWindow, item)
         from common import GetClosestBoundMaterial
 
         self._material = None
-        for p in self._currentNodes:
+        for p in self._currentPrims:
             material, bound = GetClosestBoundMaterial(p)
             if material is not None:
                 self._material = material
@@ -133,16 +133,16 @@ class JumpToBoundMaterialMenuItem(NodeContextMenuItem):
 #
 # Allows you to activate/deactivate a prim in the graph
 #
-class ActiveMenuItem(NodeContextMenuItem):
+class ActiveMenuItem(PrimContextMenuItem):
 
     def GetText(self):
-        if self._currentNodes[0].IsActive():
+        if self._currentPrims[0].IsActive():
             return "Deactivate"
         else:
             return "Activate"
 
     def RunCommand(self):
-        active = self._currentNodes[0].IsActive()
+        active = self._currentPrims[0].IsActive()
         if active:
             self._mainWindow.deactivateSelectedPrims()
         else:
@@ -152,14 +152,14 @@ class ActiveMenuItem(NodeContextMenuItem):
 # Allows you to vis or invis a prim in the graph, based on its current
 # resolved visibility
 #
-class ToggleVisibilityMenuItem(NodeContextMenuItem):
+class ToggleVisibilityMenuItem(PrimContextMenuItem):
 
     def __init__(self, mainWindow, item):
-        NodeContextMenuItem.__init__(self, mainWindow, item)
+        PrimContextMenuItem.__init__(self, mainWindow, item)
         from pxr import UsdGeom
         self._imageable = False
         self._isVisible = False
-        for prim in self._currentNodes:
+        for prim in self._currentPrims:
             imgbl = UsdGeom.Imageable(prim)
             if imgbl:
                 self._imageable = True
@@ -183,11 +183,11 @@ class ToggleVisibilityMenuItem(NodeContextMenuItem):
 #
 # Allows you to vis-only a prim in the graph
 #
-class VisOnlyMenuItem(NodeContextMenuItem):
+class VisOnlyMenuItem(PrimContextMenuItem):
 
     def IsEnabled(self):
         from pxr import UsdGeom
-        for prim in self._currentNodes:
+        for prim in self._currentPrims:
             if prim.IsA(UsdGeom.Imageable):
                 return True
         return False
@@ -201,11 +201,11 @@ class VisOnlyMenuItem(NodeContextMenuItem):
 #
 # Remove any vis/invis authored on selected prims
 #
-class RemoveVisMenuItem(NodeContextMenuItem):
+class RemoveVisMenuItem(PrimContextMenuItem):
 
     def IsEnabled(self):
         from common import HasSessionVis
-        for prim in self._currentNodes:
+        for prim in self._currentPrims:
             if HasSessionVis(prim):
                 return True
 
@@ -221,14 +221,14 @@ class RemoveVisMenuItem(NodeContextMenuItem):
 #
 # Toggle load-state on the selected prims, if loadable
 #
-class LoadOrUnloadMenuItem(NodeContextMenuItem):
+class LoadOrUnloadMenuItem(PrimContextMenuItem):
 
     def __init__(self, mainWindow, item):
-        NodeContextMenuItem.__init__(self, mainWindow, item)
+        PrimContextMenuItem.__init__(self, mainWindow, item)
         from common import GetPrimsLoadability
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
-        self._loadable, self._loaded = GetPrimsLoadability(self._mainWindow._prunedCurrentNodes)
+        self._loadable, self._loaded = GetPrimsLoadability(self._mainWindow._prunedCurrentPrims)
 
     def IsEnabled(self):
         return self._loadable
@@ -247,15 +247,15 @@ class LoadOrUnloadMenuItem(NodeContextMenuItem):
 #
 # Copies the paths of the currently selected prims to the clipboard
 #
-class CopyPrimPathMenuItem(NodeContextMenuItem):
+class CopyPrimPathMenuItem(PrimContextMenuItem):
 
     def GetText(self):
-        if len(self._currentNodes) > 1:
+        if len(self._currentPrims) > 1:
             return "Copy Prim Paths"
         return "Copy Prim Path"
 
     def RunCommand(self):
-        pathlist = [str(p.GetPath()) for p in self._currentNodes]
+        pathlist = [str(p.GetPath()) for p in self._currentPrims]
         pathStrings = '\n'.join(pathlist)
 
         cb = QtWidgets.QApplication.clipboard()
@@ -266,14 +266,14 @@ class CopyPrimPathMenuItem(NodeContextMenuItem):
 #  Copies the path of the first-selected prim's enclosing model
 #  to the clipboard, if the prim is inside a model
 #
-class CopyModelPathMenuItem(NodeContextMenuItem):
+class CopyModelPathMenuItem(PrimContextMenuItem):
 
     def __init__(self, mainWindow, item):
-        NodeContextMenuItem.__init__(self, mainWindow, item)
+        PrimContextMenuItem.__init__(self, mainWindow, item)
         from common import GetEnclosingModelPrim
 
-        self._modelPrim = GetEnclosingModelPrim(self._currentNodes[0]) if \
-            len(self._currentNodes) == 1 else None
+        self._modelPrim = GetEnclosingModelPrim(self._currentPrims[0]) if \
+            len(self._currentPrims) == 1 else None
 
     def IsEnabled(self):
         return self._modelPrim
@@ -291,19 +291,19 @@ class CopyModelPathMenuItem(NodeContextMenuItem):
 
 
 #
-# Copies the current node and subtree to a file of the user's choosing
+# Copies the current prim and subtree to a file of the user's choosing
 # XXX This is not used, and does not work. Leaving code in for now for
 # future reference/inspiration
 #
-class IsolateCopyNodeMenuItem(NodeContextMenuItem):
+class IsolateCopyPrimMenuItem(PrimContextMenuItem):
 
     def GetText(self):
         return "Isolate Copy of Prim..."
 
     def RunCommand(self):
-        inFile = self._currentNodes[0].GetScene().GetUsdFile()
+        inFile = self._currentPrims[0].GetScene().GetUsdFile()
 
-        guessOutFile = os.getcwd() + "/" + self._currentNodes[0].GetName() + "_copy.usd"
+        guessOutFile = os.getcwd() + "/" + self._currentPrims[0].GetName() + "_copy.usd"
         (outFile, _) = QtWidgets.QFileDialog.getSaveFileName(None,
                                                          "Specify the Usd file to create",
                                                          guessOutFile,
@@ -320,28 +320,28 @@ class IsolateCopyNodeMenuItem(NodeContextMenuItem):
 
         os.system( 'usdcopy -inUsd ' + inFile +
                 ' -outUsd ' + outFile + ' ' +
-                ' -sourcePath ' + self._currentNodes[0].GetPath() + '; ' +
+                ' -sourcePath ' + self._currentPrims[0].GetPath() + '; ' +
                 'usdview ' + outFile + ' &')
 
         sys.stdout.write( "Done!\n" )
 
     def IsEnabled(self):
-        return len(self._currentNodes) == 1 and self._currentNodes[0].GetActive()
+        return len(self._currentPrims) == 1 and self._currentPrims[0].GetActive()
 
 
 #
 # Launches usdview on the asset instantiated at the selected prim, as
 # defined by USD assetInfo present on the prim
 #
-class IsolateAssetMenuItem(NodeContextMenuItem):
+class IsolateAssetMenuItem(PrimContextMenuItem):
 
     def __init__(self, mainWindow, item):
-        NodeContextMenuItem.__init__(self, mainWindow, item)
+        PrimContextMenuItem.__init__(self, mainWindow, item)
 
         self._assetName = None
-        if len(self._currentNodes) == 1:
+        if len(self._currentPrims) == 1:
             from pxr import Usd
-            model = Usd.ModelAPI(self._currentNodes[0])
+            model = Usd.ModelAPI(self._currentPrims[0])
             name = model.GetAssetName()
             identifier = model.GetAssetIdentifier()
             if name and identifier:

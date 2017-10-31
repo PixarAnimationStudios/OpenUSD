@@ -54,7 +54,7 @@ def _assertPathIsProp(mainWindow):
         assert Sdf.Path(_getPath(mainWindow)).IsPropertyPath()
 
 def _assertSelectedPrims(mainWindow, primNames):
-    primView = mainWindow._ui.nodeView
+    primView = mainWindow._ui.primView
     paths = map(str.strip, primNames.split(','))
     selected = primView.selectedItems()
 

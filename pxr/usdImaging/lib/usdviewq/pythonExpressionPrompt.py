@@ -156,10 +156,10 @@ class Myconsole(interpreterView):
         self.locals()['mainWindow'] = mainWindow
         self.locals()['stage'] = mainWindow._stage
         self.locals()['frame'] = mainWindow._currentFrame
-        self.locals()['selectedPrims'] = list(mainWindow._currentNodes)
+        self.locals()['selectedPrims'] = list(mainWindow._currentPrims)
         self.locals()['selectedInstances'] = mainWindow._stageView._selectedInstances.copy()
-        self.locals()['prim'] = mainWindow._currentNodes[0] if \
-                                        mainWindow._currentNodes else None
+        self.locals()['prim'] = mainWindow._currentPrims[0] if \
+                                        mainWindow._currentPrims else None
         self.locals()['property'] = mainWindow._currentProp
         self.locals()['spec'] = mainWindow._currentSpec
         self.locals()['layer'] = mainWindow._currentLayer

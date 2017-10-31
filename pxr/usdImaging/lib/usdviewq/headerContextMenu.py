@@ -26,7 +26,7 @@ from usdviewContextMenuItem import UsdviewContextMenuItem
 
 #
 # Specialized context menu for adding and removing columns
-# in the node browser and attribute inspector.
+# in the prim browser and attribute inspector.
 #
 class HeaderContextMenu(QtWidgets.QMenu):
 

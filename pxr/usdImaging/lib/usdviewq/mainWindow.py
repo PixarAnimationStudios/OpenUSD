@@ -37,13 +37,13 @@ from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
 from ._usdviewq import Utils
 from stageView import StageView
 from mainWindowUI import Ui_MainWindow
-from nodeContextMenu import NodeContextMenu
+from primContextMenu import PrimContextMenu
 from headerContextMenu import HeaderContextMenu
 from layerStackContextMenu import LayerStackContextMenu
 from attributeViewContextMenu import AttributeViewContextMenu
 from customAttributes import (_GetCustomAttributes, BoundingBoxAttribute,
                               LocalToWorldXformAttribute)
-from nodeViewItem import NodeViewItem
+from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
 import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
@@ -86,7 +86,7 @@ PLAYBACK = "Playback"
 RENDER = "Render"
 GETBOUNDS = "BBox"
 
-# Name for nodes that have no type
+# Name for prims that have no type
 NOTYPE = "Typeless"
 
 INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
@@ -149,14 +149,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
         # assertions without it.
-        self._nodeToItemMap.clear()
+        self._primToItemMap.clear()
 
     def __init__(self, parent, parserData):
         with Timer() as uiOpenTimer:
             QtWidgets.QMainWindow.__init__(self, parent)
-            self._nodeToItemMap = {}
+            self._primToItemMap = {}
             self._itemsToPush = []
-            self._currentNodes = []
+            self._currentPrims = []
             self._currentProp = None
             self._currentSpec = None
             self._currentLayer = None
@@ -246,11 +246,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 print parserData.usdFile, 'has no prims; exiting.'
                 sys.exit(0)
 
-            self._initialSelectNode = self._stage.GetPrimAtPath(parserData.primPath)
-            if not self._initialSelectNode:
+            self._initialSelectPrim = self._stage.GetPrimAtPath(parserData.primPath)
+            if not self._initialSelectPrim:
                 print 'Could not find prim at path <%s> to select. '\
                     'Ignoring...' % parserData.primPath
-                self._initialSelectNode = None
+                self._initialSelectPrim = None
 
             self._timeSamples = None
             self._stageView = None
@@ -347,14 +347,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.threePointLights = QtWidgets.QActionGroup(self)
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
 
-            self._nodeViewResetTimer = QtCore.QTimer(self)
-            self._nodeViewResetTimer.setInterval(250)
-            self._nodeViewResetTimer.timeout.connect(self._resetNodeView)
+            self._primViewResetTimer = QtCore.QTimer(self)
+            self._primViewResetTimer.setInterval(250)
+            self._primViewResetTimer.timeout.connect(self._resetPrimView)
 
             # Idle timer to push off-screen data to the UI.
-            self._nodeViewUpdateTimer = QtCore.QTimer(self)
-            self._nodeViewUpdateTimer.setInterval(0)
-            self._nodeViewUpdateTimer.timeout.connect(self._updateNodeView)
+            self._primViewUpdateTimer = QtCore.QTimer(self)
+            self._primViewUpdateTimer.setInterval(0)
+            self._primViewUpdateTimer.timeout.connect(self._updatePrimView)
 
             # This creates the _stageView and restores state from settings file
             self._resetSettings()
@@ -375,7 +375,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.propertyView.setSelectionBehavior(
                 QtWidgets.QAbstractItemView.SelectRows)
-            self._ui.nodeView.setSelectionBehavior(
+            self._ui.primView.setSelectionBehavior(
                 QtWidgets.QAbstractItemView.SelectRows)
             # This allows ctrl and shift clicking for multi-selecting
             self._ui.propertyView.setSelectionMode(
@@ -463,23 +463,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 action.setChecked(self._stage.GetInterpolationType() == interpolationType)
                 self._ui.interpolationActionGroup.addAction(action)
 
-            self._ui.nodeViewDepthGroup = QtWidgets.QActionGroup(self)
+            self._ui.primViewDepthGroup = QtWidgets.QActionGroup(self)
             for i in range(1, 9):
                 action = getattr(self._ui, "actionLevel_" + str(i))
-                self._ui.nodeViewDepthGroup.addAction(action)
+                self._ui.primViewDepthGroup.addAction(action)
 
             # setup animation objects for the primView and propertyView
             self._propertyLegendAnim = QtCore.QPropertyAnimation(
                 self._ui.propertyLegendContainer, "maximumHeight")
-            self._nodeLegendAnim = QtCore.QPropertyAnimation(
-                self._ui.nodeLegendContainer, "maximumHeight")
+            self._primLegendAnim = QtCore.QPropertyAnimation(
+                self._ui.primLegendContainer, "maximumHeight")
 
-            # set the context menu policy for the node browser and attribute
+            # set the context menu policy for the prim browser and attribute
             # inspector headers. This is so we can have a context menu on the
             # headers that allows you to select which columns are visible.
             self._ui.propertyView.header()\
                     .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            self._ui.nodeView.header()\
+            self._ui.primView.header()\
                     .setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
             # Set custom context menu for attribute browser
@@ -501,8 +501,8 @@ class MainWindow(QtWidgets.QMainWindow):
             twh.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
             twh.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
-            # Set the node view header to have a fixed size type and vis columns
-            nvh = self._ui.nodeView.header()
+            # Set the prim view header to have a fixed size type and vis columns
+            nvh = self._ui.primView.header()
             nvh.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
             nvh.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
             nvh.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
@@ -516,7 +516,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # To avoid QTBUG-12850 (https://bugreports.qt.io/browse/QTBUG-12850),
             # we force the horizontal scrollbar to always be visible for all
             # QTableWidget widgets in use.
-            self._ui.nodeView.setHorizontalScrollBarPolicy(
+            self._ui.primView.setHorizontalScrollBarPolicy(
                 QtCore.Qt.ScrollBarAlwaysOn)
             self._ui.propertyView.setHorizontalScrollBarPolicy(
                 QtCore.Qt.ScrollBarAlwaysOn)
@@ -530,20 +530,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
 
-            self._ui.nodeView.itemSelectionChanged.connect(
+            self._ui.primView.itemSelectionChanged.connect(
                 self._itemSelectionChanged)
 
-            self._ui.nodeView.itemClicked.connect(self._itemClicked)
+            self._ui.primView.itemClicked.connect(self._itemClicked)
 
-            self._ui.nodeView.header().customContextMenuRequested.connect(
-                self._nodeViewHeaderContextMenu)
+            self._ui.primView.header().customContextMenuRequested.connect(
+                self._primViewHeaderContextMenu)
 
             self._timer.timeout.connect(self._advanceFrameForPlayback)
 
-            self._ui.nodeView.customContextMenuRequested.connect(
-                self._nodeViewContextMenu)
+            self._ui.primView.customContextMenuRequested.connect(
+                self._primViewContextMenu)
 
-            self._ui.nodeView.expanded.connect(self._nodeViewExpanded)
+            self._ui.primView.expanded.connect(self._primViewExpanded)
 
             self._ui.frameSlider.valueChanged.connect(self.setFrame)
 
@@ -684,16 +684,16 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._stageView:
                 self._ui.threePointLights.triggered.connect(self._stageView.update)
 
-            self._ui.nodeViewDepthGroup.triggered.connect(self._changeNodeViewDepth)
+            self._ui.primViewDepthGroup.triggered.connect(self._changePrimViewDepth)
 
             self._ui.actionExpand_All.triggered.connect(
                 lambda: self._expandToDepth(1000000))
 
             self._ui.actionCollapse_All.triggered.connect(
-                self._ui.nodeView.collapseAll)
+                self._ui.primView.collapseAll)
 
-            self._ui.actionShow_Inactive_Nodes.triggered.connect(
-                self._toggleShowInactiveNodes)
+            self._ui.actionShow_Inactive_Prims.triggered.connect(
+                self._toggleShowInactivePrims)
 
             self._ui.actionShow_All_Master_Prims.triggered.connect(
                 self._toggleShowMasterPrims)
@@ -707,18 +707,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionRollover_Prim_Info.triggered.connect(
                 self._toggleRolloverPrimInfo)
 
-            self._ui.nodeViewLineEdit.returnPressed.connect(
-                self._ui.nodeViewFindNext.click)
+            self._ui.primViewLineEdit.returnPressed.connect(
+                self._ui.primViewFindNext.click)
 
-            self._ui.nodeViewFindNext.clicked.connect(self._nodeViewFindNext)
+            self._ui.primViewFindNext.clicked.connect(self._primViewFindNext)
 
             self._ui.attrViewLineEdit.returnPressed.connect(
                 self._ui.attrViewFindNext.click)
 
             self._ui.attrViewFindNext.clicked.connect(self._attrViewFindNext)
 
-            self._ui.nodeLegendQButton.clicked.connect(
-                self._nodeLegendToggleCollapse)
+            self._ui.primLegendQButton.clicked.connect(
+                self._primLegendToggleCollapse)
 
             self._ui.propertyLegendQButton.clicked.connect(
                 self._propertyLegendToggleCollapse)
@@ -775,10 +775,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.attributeValueEditor.editComplete.connect(self.editComplete)
 
             # Edit Prim menu
-            self._ui.menuEdit_Node.aboutToShow.connect(self._updateEditNodeMenu)
+            self._ui.menuEdit_Prim.aboutToShow.connect(self._updateEditPrimMenu)
 
             self._ui.actionFind_Prims.triggered.connect(
-                self._ui.nodeViewLineEdit.setFocus)
+                self._ui.primViewLineEdit.setFocus)
 
             self._ui.actionJump_to_Stage_Root.triggered.connect(
                 self.resetSelectionToPseudoroot)
@@ -818,7 +818,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._configurePlugins()
 
             # save splitter states
-            self._ui.nodeStageSplitter.splitterMoved.connect(self._splitterMoved)
+            self._ui.primStageSplitter.splitterMoved.connect(self._splitterMoved)
             self._ui.topBottomSplitter.splitterMoved.connect(self._splitterMoved)
             self._ui.attribBrowserInspectorSplitter.splitterMoved.connect(self._splitterMoved)
 
@@ -859,7 +859,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.setUpdatesEnabled(True)
         with BusyContext(), Timer() as t:
             try:
-                self._resetView(self._initialSelectNode)
+                self._resetView(self._initialSelectPrim)
             except Exception:
                 pass
         if self._printTiming and self._stageView:
@@ -890,9 +890,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusMessage(msg, 12)
         with Timer() as t:
             if self._stageView:
-                self._stageView.setNodes(self._prunedCurrentNodes,
-                                         self._currentFrame,
-                                         resetCam=False, forceComputeBBox=True)
+                self._stageView.setSelectedPrims(self._prunedCurrentPrims,
+                      self._currentFrame, resetCam=False, forceComputeBBox=True)
             self._refreshVars()
         if self._printTiming:
             t.PrintTime("'%s'" % msg)
@@ -1102,7 +1101,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     # Vars that need updating during a stage reget/refresh
     def _refreshVars(self):
-        # Need to refresh selected items to refresh nodes/view to new stage
+        # Need to refresh selected items to refresh prims/view to new stage
         self._itemSelectionChanged()
 
     def _refreshBBoxCache(self, useExtentsHint):
@@ -1173,18 +1172,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.ReloadStage(self._stage)
 
         # The difference between these two is related to multi-selection:
-        # - currentNodes contains all nodes selected
-        # - prunedCurrentNodes contains all nodes selected, excluding nodes that
+        # - currentPrims contains all prims selected
+        # - prunedCurrentPrims contains all prims selected, excluding prims that
         #   already have a parent selected (used to avoid double-rendering)
-        self._currentNodes = [self._stage.GetPseudoRoot()]
-        self._prunedCurrentNodes = self._currentNodes
+        self._currentPrims = [self._stage.GetPseudoRoot()]
+        self._prunedCurrentPrims = self._currentPrims
 
         if self._debug:
-            cProfile.runctx('self._resetNodeView(restoreSelection=False)', globals(), locals(), 'resetNodeView')
-            p = pstats.Stats('resetNodeView')
+            cProfile.runctx('self._resetPrimView(restoreSelection=False)', globals(), locals(), 'resetPrimView')
+            p = pstats.Stats('resetPrimView')
             p.strip_dirs().sort_stats(-1).print_stats()
         else:
-            self._resetNodeView(restoreSelection=False)
+            self._resetPrimView(restoreSelection=False)
 
         self._ui.frameSlider.setValue(self._ui.frameSlider.minimum())
 
@@ -1196,8 +1195,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 # remove glFrame from the ui
                 self._ui.glFrame.setParent(None)
 
-                # move the attributeBrowser into the nodeSplitter instead
-                self._ui.nodeStageSplitter.addWidget(self._ui.attributeBrowserFrame)
+                # move the attributeBrowser into the primSplitter instead
+                self._ui.primStageSplitter.addWidget(self._ui.attributeBrowserFrame)
 
             else:
                 self._stageView = StageView(parent=self, dataModel=self)
@@ -1218,11 +1217,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._playbackFrameIndex = 0
 
-        self._nodeSearchResults = deque([])
+        self._primSearchResults = deque([])
         self._attrSearchResults = deque([])
-        self._nodeSearchString = ""
+        self._primSearchString = ""
         self._attrSearchString = ""
-        self._lastNodeSearched = self._currentNodes[0]
+        self._lastPrimSearched = self._currentPrims[0]
 
         if self._stageView:
             self._stageView.setFocus(QtCore.Qt.TabFocusReason)
@@ -1235,54 +1234,54 @@ class MainWindow(QtWidgets.QMainWindow):
     # reconstructing just the prim tree under the "changed" prim(s).  The
     # (far and away) faster solution would be to implement our own TreeView
     # and model in C++.
-    def _resetNodeView(self, restoreSelection=True):
+    def _resetPrimView(self, restoreSelection=True):
         with Timer() as t, BusyContext():
             startingDepth = 3
-            self._nodeViewResetTimer.stop()
+            self._primViewResetTimer.stop()
             self._computeDisplayPredicate()
-            self._ui.nodeView.setUpdatesEnabled(False)
-            self._ui.nodeView.clear()
-            self._nodeToItemMap.clear()
+            self._ui.primView.setUpdatesEnabled(False)
+            self._ui.primView.clear()
+            self._primToItemMap.clear()
             self._itemsToPush = []
-            # force new search since we are blowing away the nodeViewItems
-            # that may be cached in _nodeSearchResults
-            self._nodeSearchResults = []
+            # force new search since we are blowing away the primViewItems
+            # that may be cached in _primSearchResults
+            self._primSearchResults = []
             self._populateRoots()
             # it's confusing to see timing for expand followed by reset with
             # the times being similar (esp when they are large)
             self._expandToDepth(startingDepth, suppressTiming=True)
             if restoreSelection:
-                self._setSelectionFromPrimList(self._currentNodes)
-            self._ui.nodeView.setUpdatesEnabled(True)
+                self._setSelectionFromPrimList(self._currentPrims)
+            self._ui.primView.setUpdatesEnabled(True)
             self._refreshCameraListAndMenu(preserveCurrCamera = True)
         if self._printTiming:
             t.PrintTime("reset Prim Browser to depth %d" % startingDepth)
 
-    def UpdateNodeViewContents(self):
+    def UpdatePrimViewContents(self):
         """Will schedule a full refresh/resync of the Prim Browser's contents.
-        Prefer this to calling _resetNodeView() directly, since it will
+        Prefer this to calling _resetPrimView() directly, since it will
         coalesce multiple calls to this method in to a single refresh"""
-        self._nodeViewResetTimer.stop()
-        self._nodeViewResetTimer.start(250)
+        self._primViewResetTimer.stop()
+        self._primViewResetTimer.start(250)
 
-    def _resetNodeViewVis(self, selItemsOnly=True,
+    def _resetPrimViewVis(self, selItemsOnly=True,
                           authoredVisHasChanged=True):
         """Updates browser rows' Vis columns... can update just selected
         items (and their descendants and ancestors), or all items in the
-        nodeView.  When authoredVisHasChanged is True, we force each item
+        primView.  When authoredVisHasChanged is True, we force each item
         to discard any value caches it may be holding onto."""
         with Timer() as t:
-            self._ui.nodeView.setUpdatesEnabled(False)
+            self._ui.primView.setUpdatesEnabled(False)
             rootsToProcess = self.getSelectedItems() if selItemsOnly else \
-                [self._ui.nodeView.invisibleRootItem()]
+                [self._ui.primView.invisibleRootItem()]
             for item in rootsToProcess:
-                NodeViewItem.propagateVis(item, authoredVisHasChanged)
-            self._ui.nodeView.setUpdatesEnabled(True)
+                PrimViewItem.propagateVis(item, authoredVisHasChanged)
+            self._ui.primView.setUpdatesEnabled(True)
         if self._printTiming:
             t.PrintTime("update vis column")
 
-    def _updateNodeView(self):
-        # Process some more node view items.
+    def _updatePrimView(self):
+        # Process some more prim view items.
         n = min(100, len(self._itemsToPush))
         if n:
             items = self._itemsToPush[-n:]
@@ -1290,7 +1289,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for item in items:
                 item.push()
         else:
-            self._nodeViewUpdateTimer.stop()
+            self._primViewUpdateTimer.stop()
 
     # Option windows ==========================================================
 
@@ -1604,11 +1603,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     attrName = str(i.text())
                     # index [0] is the the type, which can be:
                        # attribType.UNVARYING, AUTHORED OR INTERPOLATED
-                    type = self._nodeDict[attrName][0]
+                    type = self._primDict[attrName][0]
 
                     # # # # # # # # # # # # # #
                     # populate UNVARYING side #
-                    dictKey = self._currentNodes[0].GetPath() + \
+                    dictKey = self._currentPrims[0].GetPath() + \
                               str(Usd.Scene.FRAME_UNVARYING) + \
                               attrName + '_UNVARYING'
 
@@ -1616,12 +1615,12 @@ class MainWindow(QtWidgets.QMainWindow):
                         self._valueCache[dictKey][0].find(
                             "Pretty-printing canceled") != -1):
 
-                        # unvarying data is in self._nodeDict[attrName][2],
+                        # unvarying data is in self._primDict[attrName][2],
                         # so this checks if there is unvarying data
-                        if len(self._nodeDict[attrName]) > 2:
+                        if len(self._primDict[attrName]) > 2:
                             col = UnvaryingTextColor.color()
                             valString = prettyPrint.prettyPrint(
-                                        self._nodeDict[attrName][2])
+                                        self._primDict[attrName][2])
                         else:   # no unvarying data
                             col = RedColor.color()
                             valString = "Not defined in unvarying section"
@@ -1635,7 +1634,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                     # # # # # # # # # # # # #
                     # populate VARYING side #
-                    dictKey = self._currentNodes[0].GetPath() + \
+                    dictKey = self._currentPrims[0].GetPath() + \
                               str(self._currentFrame) + \
                               attrName + '_VARYING'
 
@@ -1644,15 +1643,15 @@ class MainWindow(QtWidgets.QMainWindow):
                             "Pretty-printing canceled") != -1):
 
                         # varying data is stored at index [1],
-                        # in self._nodeDict[attrName][1]
+                        # in self._primDict[attrName][1]
                         if type == attribType.AUTHORED:
                             col = AuthoredTextColor.color()
                             valString = prettyPrint.prettyPrint(
-                                        self._nodeDict[attrName][1])
+                                        self._primDict[attrName][1])
                         elif type == attribType.INTERPOLATED:
                             col = InterpolatedTextColor.color()
                             valString = prettyPrint.prettyPrint(
-                                        self._nodeDict[attrName][1])
+                                        self._primDict[attrName][1])
                         else:
                             col = RedColor.color()
                             valString = "Not defined in varying section"
@@ -1706,8 +1705,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._setPlayShortcut()
             self._fpsHUDInfo[PLAYBACK]  = "..."
             self._timer.start()
-            # For performance, don't update the node tree view while playing.
-            self._nodeViewUpdateTimer.stop()
+            # For performance, don't update the prim tree view while playing.
+            self._primViewUpdateTimer.stop()
             self._playbackIndex = 0
         else:
             # Stop playback.
@@ -1718,7 +1717,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._setPlayShortcut()
             self._fpsHUDInfo[PLAYBACK]  = "N/A"
             self._timer.stop()
-            self._nodeViewUpdateTimer.start()
+            self._primViewUpdateTimer.start()
             self._updateOnFrameChange(refreshUI=True)
 
     def _advanceFrameForPlayback(self):
@@ -1797,10 +1796,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._sliderTimer.stop()
         self._sliderTimer.start()
 
-    # Node/Attribute search functionality =====================================
+    # Prim/Attribute search functionality =====================================
 
-    def _findNodes(self, pattern, useRegex=True):
-        """Search the Usd Stage for matching nodes
+    def _findPrims(self, pattern, useRegex=True):
+        """Search the Usd Stage for matching prims
         """
         # If pattern doesn't contain regexp special chars, drop
         # down to simple search, as it's faster
@@ -1826,43 +1825,43 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return matches
 
-    def _nodeViewFindNext(self):
-        if (self._nodeSearchString == self._ui.nodeViewLineEdit.text() and
-            len(self._nodeSearchResults) > 0 and
-            self._lastNodeSearched == self._currentNodes[0]):
+    def _primViewFindNext(self):
+        if (self._primSearchString == self._ui.primViewLineEdit.text() and
+            len(self._primSearchResults) > 0 and
+            self._lastPrimSearched == self._currentPrims[0]):
             # Go to the next result of the currently ongoing search.
             # First time through, we'll be converting from SdfPaths
             # to items (see the append() below)
-            nextResult = self._nodeSearchResults.popleft()
+            nextResult = self._primSearchResults.popleft()
             if isinstance(nextResult, Sdf.Path):
                 nextResult = self._getItemAtPath(nextResult)
 
             if nextResult:
-                self._ui.nodeView.setCurrentItem(nextResult)
-                self._nodeSearchResults.append(nextResult)
-                self._lastNodeSearched = self._currentNodes[0]
+                self._ui.primView.setCurrentItem(nextResult)
+                self._primSearchResults.append(nextResult)
+                self._lastPrimSearched = self._currentPrims[0]
             # The path is effectively pruned if we couldn't map the
             # path to an item
         else:
             # Begin a new search
             with Timer() as t:
-                self._nodeSearchString = self._ui.nodeViewLineEdit.text()
-                self._nodeSearchResults = self._findNodes(str(self._ui.nodeViewLineEdit.text()))
+                self._primSearchString = self._ui.primViewLineEdit.text()
+                self._primSearchResults = self._findPrims(str(self._ui.primViewLineEdit.text()))
 
-                self._nodeSearchResults = deque(self._nodeSearchResults)
-                self._lastNodeSearched = self._currentNodes[0]
+                self._primSearchResults = deque(self._primSearchResults)
+                self._lastPrimSearched = self._currentPrims[0]
 
-                if (len(self._nodeSearchResults) > 0):
-                    self._nodeViewFindNext()
+                if (len(self._primSearchResults) > 0):
+                    self._primViewFindNext()
             if self._printTiming:
                 t.PrintTime("match '%s' (%d matches)" %
-                            (self._nodeSearchString,
-                             len(self._nodeSearchResults)))
+                            (self._primSearchString,
+                             len(self._primSearchResults)))
 
-    def _nodeLegendToggleCollapse(self):
-        ToggleLegendWithBrowser(self._ui.nodeLegendContainer,
-                                self._ui.nodeLegendQButton,
-                                self._nodeLegendAnim)
+    def _primLegendToggleCollapse(self):
+        ToggleLegendWithBrowser(self._ui.primLegendContainer,
+                                self._ui.primLegendQButton,
+                                self._primLegendAnim)
 
     def _propertyLegendToggleCollapse(self):
         ToggleLegendWithBrowser(self._ui.propertyLegendContainer,
@@ -1873,7 +1872,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.propertyView.clearSelection()
         if (self._attrSearchString == self._ui.attrViewLineEdit.text() and
             len(self._attrSearchResults) > 0 and
-            self._lastNodeSearched == self._currentNodes[0]):
+            self._lastPrimSearched == self._currentPrims[0]):
 
             # Go to the next result of the currently ongoing search
             nextResult = self._attrSearchResults.popleft()
@@ -1881,10 +1880,10 @@ class MainWindow(QtWidgets.QMainWindow):
             nextResult.setSelected(True)
             self._ui.propertyView.scrollToItem(nextResult)
             self._attrSearchResults.append(nextResult)
-            self._lastNodeSearched = self._currentNodes[0]
+            self._lastPrimSearched = self._currentPrims[0]
 
             itemName = str(nextResult.text(INDEX_PROPNAME))
-            self._ui.attributeValueEditor.populate(itemName, self._currentNodes[0])
+            self._ui.attributeValueEditor.populate(itemName, self._currentPrims[0])
             self._updateMetadataView(self._getSelectedObject())
             self._updateLayerStackView(self._getSelectedObject())
         else:
@@ -1908,7 +1907,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._attrSearchResults.sort()
             self._attrSearchResults = deque(self._attrSearchResults)
 
-            self._lastNodeSearched = self._currentNodes[0]
+            self._lastPrimSearched = self._currentPrims[0]
             if (len(self._attrSearchResults) > 0):
                 self._attrViewFindNext()
 
@@ -1937,7 +1936,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._stageView:
             # Save all the pertinent attribute values (for _toggleFramedView)
             self._storeAndReturnViewState() # ignore return val - we're stomping it
-            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame,
+            self._stageView.setSelectedPrims(self._prunedCurrentPrims, self._currentFrame,
                                      True, True) # compute bbox on frame selection
 
     def _toggleFramedView(self):
@@ -1951,8 +1950,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._renderMode = self._settings.get("RenderMode", RENDER_MODE_SMOOTH_SHADED)
         self._pickMode = self._settings.get("PickMode", PICK_MODE_PRIMS)
 
-        self._ui.actionShow_Inactive_Nodes.setChecked(\
-                        self._settings.get("actionShow_Inactive_Nodes", True))
+        self._ui.actionShow_Inactive_Prims.setChecked(\
+                        self._settings.get("actionShow_Inactive_Prims", True))
         self._ui.actionShow_All_Master_Prims.setChecked(\
                         self._settings.get("actionShow_All_Master_Prims", False))
         self._ui.actionShow_Undefined_Prims.setChecked(\
@@ -1969,9 +1968,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._reloadVaryingUI()
 
         # restore splitter positions
-        splitterSettings1 = self._settings.get('nodeStageSplitter')
+        splitterSettings1 = self._settings.get('primStageSplitter')
         if not splitterSettings1 is None:
-            self._ui.nodeStageSplitter.restoreState(splitterSettings1)
+            self._ui.primStageSplitter.restoreState(splitterSettings1)
 
         splitterSettings2 = self._settings.get('topBottomSplitter')
         if not splitterSettings2 is None:
@@ -1981,9 +1980,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if not splitterSettings3 is None:
             self._ui.attribBrowserInspectorSplitter.restoreState(splitterSettings3)
 
-        nodeViewHeaderSettings = self._settings.get('nodeViewHeader', [])
-        for i,b in enumerate(nodeViewHeaderSettings):
-            self._ui.nodeView.setColumnHidden(i, b)
+        primViewHeaderSettings = self._settings.get('primViewHeader', [])
+        for i,b in enumerate(primViewHeaderSettings):
+            self._ui.primView.setColumnHidden(i, b)
 
         self._ui.attributeInspector.\
             setCurrentIndex(self._settings.get("AttributeInspectorCurrentTab",
@@ -2095,7 +2094,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # lighting is not activated until a shaded mode is selected
         self._ui.menuLights.setEnabled(self._renderMode in SHADED_RENDER_MODES)
 
-        self._ui.actionFreeCam._node = None
+        self._ui.actionFreeCam._prim = None
         self._ui.actionFreeCam.triggered.connect(
             lambda : self._cameraSelectionChanged(None))
         if self._stageView:
@@ -2115,14 +2114,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self._clearCaches(preserveCamera=True)
 
         # Update the UIs (it gets all of them) and StageView on a timer
-        self.UpdateNodeViewContents()
+        self.UpdatePrimViewContents()
 
     def _saveSplitterStates(self):
         # we dont want any of the splitter positions to be saved when using
         # --norender
         if self._stageView:
             self._settings.setAndSave(
-                    nodeStageSplitter = self._ui.nodeStageSplitter.saveState())
+                    primStageSplitter = self._ui.primStageSplitter.saveState())
 
             self._settings.setAndSave(
                     topBottomSplitter = self._ui.topBottomSplitter.saveState())
@@ -2140,7 +2139,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleViewerMode(self):
         splitter1 = self._ui.topBottomSplitter
-        splitter2 = self._ui.nodeStageSplitter
+        splitter2 = self._ui.primStageSplitter
         sz1 = splitter1.sizes()
         sz2 = splitter2.sizes()
         if sz1[1] > 0 or sz2[0] > 0:
@@ -2152,9 +2151,9 @@ class MainWindow(QtWidgets.QMainWindow):
             splitter2.setSizes(sz2)
         else:
             # restore saved state
-            splitterSettings1 = self._settings.get('nodeStageSplitter')
+            splitterSettings1 = self._settings.get('primStageSplitter')
             if not splitterSettings1 is None:
-                self._ui.nodeStageSplitter.restoreState(splitterSettings1)
+                self._ui.primStageSplitter.restoreState(splitterSettings1)
             splitterSettings2 = self._settings.get('topBottomSplitter')
             if not splitterSettings2 is None:
                 self._ui.topBottomSplitter.restoreState(splitterSettings2)
@@ -2170,38 +2169,38 @@ class MainWindow(QtWidgets.QMainWindow):
                 sz2[1] = .75 * sz2[1]
                 splitter2.setSizes(sz2)
 
-    def _resetView(self,selectNode = None):
+    def _resetView(self,selectPrim = None):
         """ Reverts the GL frame to the initial camera view,
-        and clears selection (sets to pseudoRoot), UNLESS 'selectNode' is
+        and clears selection (sets to pseudoRoot), UNLESS 'selectPrim' is
         not None, in which case we'll select and frame it."""
-        self._ui.nodeView.clearSelection()
+        self._ui.primView.clearSelection()
         pRoot = self._stage.GetPseudoRoot()
-        if selectNode is None:
+        if selectPrim is None:
             # if we had a command-line specified selection, re-frame it
-            selectNode = self._initialSelectNode or pRoot
+            selectPrim = self._initialSelectPrim or pRoot
 
-        item = self._getItemAtPath(selectNode.GetPath())
+        item = self._getItemAtPath(selectPrim.GetPath())
 
         # Our response to selection-change includes redrawing.  We do NOT
         # want that to happen here, since we are subsequently going to
         # change the camera framing (and redraw, again), which can cause
         # flickering.  So make sure we don't redraw!
         self._allowViewUpdates = False
-        self._ui.nodeView.setCurrentItem(item)
+        self._ui.primView.setCurrentItem(item)
         self._allowViewUpdates = True
 
         if self._stageView:
-            if (selectNode and selectNode != pRoot) or not self._startingPrimCamera:
+            if (selectPrim and selectPrim != pRoot) or not self._startingPrimCamera:
                 # _frameSelection translates the camera from wherever it happens
                 # to be at the time.  If we had a starting selection AND a
                 # primCam, then before framing, switch back to the prim camera
-                if selectNode == self._initialSelectNode and self._startingPrimCamera:
+                if selectPrim == self._initialSelectPrim and self._startingPrimCamera:
                     self._stageView.setCameraPrim(self._startingPrimCamera)
                 self._frameSelection()
             else:
                 self._stageView.setCameraPrim(self._startingPrimCamera)
-                self._stageView.setNodes(self._prunedCurrentNodes,
-                                         self._currentFrame)
+                self._stageView.setSelectedPrims(self._prunedCurrentPrims,
+                                                 self._currentFrame)
 
     def _changeRenderMode(self, mode):
         self._renderMode = str(mode.text())
@@ -2335,9 +2334,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def _refreshBBox(self):
         """Recompute and hide/show Bounding Box."""
         if self._stageView:
-            self._stageView.setNodes(self._currentNodes,
-                                     self._currentFrame,
-                                     forceComputeBBox=True)
+            self._stageView.setSelectedPrims(self._currentPrims,
+                                             self._currentFrame,
+                                             forceComputeBBox=True)
 
     def _toggleDisplayGuide(self, checked):
         self._settings.setAndSave(DisplayGuide=checked)
@@ -2345,7 +2344,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
-            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+            self._stageView.setSelectedPrims(self._prunedCurrentPrims, self._currentFrame)
             self._stageView.update()
 
     def _toggleDisplayProxy(self, checked):
@@ -2354,7 +2353,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
-            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+            self._stageView.setSelectedPrims(self._prunedCurrentPrims, self._currentFrame)
             self._stageView.update()
 
     def _toggleDisplayRender(self, checked):
@@ -2363,7 +2362,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
-            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame)
+            self._stageView.setSelectedPrims(self._prunedCurrentPrims, self._currentFrame)
             self._stageView.update()
 
     def _toggleDisplayCameraOracles(self, checked):
@@ -2449,9 +2448,9 @@ class MainWindow(QtWidgets.QMainWindow):
     # File handling functionality =============================================
 
     def _cleanAndClose(self):
-        self._settings.setAndSave(nodeViewHeader = \
-                [self._ui.nodeView.isColumnHidden(c) \
-                    for c in range(self._ui.nodeView.columnCount())])
+        self._settings.setAndSave(primViewHeader = \
+                [self._ui.primView.isColumnHidden(c) \
+                    for c in range(self._ui.primView.columnCount())])
 
         self._settings.setAndSave(propertyViewHeader = \
                 [self._ui.propertyView.isColumnHidden(c) \
@@ -2471,8 +2470,8 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
 
         # Shut down some timers.
-        self._nodeViewUpdateTimer.stop()
-        self._nodeViewResetTimer.stop()
+        self._primViewUpdateTimer.stop()
+        self._primViewResetTimer.stop()
 
         # If the timer is currently active, stop it from being invoked while
         # the USD stage is being torn down.
@@ -2545,7 +2544,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # Clear out any Usd objects that may become invalid. We will pick
             # these back up in _refreshVars(), called below.
-            self._currentNodes = []
+            self._currentPrims = []
             self._currentProp = None
             self._currentSpec = None
             self._currentLayer = None
@@ -2686,7 +2685,7 @@ class MainWindow(QtWidgets.QMainWindow):
             itemName = str(currentItem.text(INDEX_PROPNAME))
 
             # inform the value editor that we selected a new attribute
-            self._ui.attributeValueEditor.populate(itemName, self._currentNodes[0])
+            self._ui.attributeValueEditor.populate(itemName, self._currentPrims[0])
         else:
             self._ui.attributeValueEditor.clear()
 
@@ -2741,14 +2740,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.contextMenu = HeaderContextMenu(self._ui.propertyView)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
-    def _nodeViewHeaderContextMenu(self, point):
-        self.contextMenu = HeaderContextMenu(self._ui.nodeView)
+    def _primViewHeaderContextMenu(self, point):
+        self.contextMenu = HeaderContextMenu(self._ui.primView)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
 
     # Widget management =================================================
 
-    def _changeNodeViewDepth(self, action):
+    def _changePrimViewDepth(self, action):
         """Signal handler for view-depth menu items
         """
         actionTxt = str(action.text())
@@ -2757,7 +2756,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._expandToDepth(depth)
 
     def _expandToDepth(self, depth, suppressTiming=False):
-        """Expands treeview nodes to the given depth
+        """Expands treeview prims to the given depth
         """
         with Timer() as t, BusyContext():
             # Populate items down to depth.  Qt will expand items at depth
@@ -2768,10 +2767,10 @@ class MainWindow(QtWidgets.QMainWindow):
             changed = (n != len(self._itemsToPush))
 
             # Expand the tree to depth.
-            self._ui.nodeView.expandToDepth(depth-1)
+            self._ui.primView.expandToDepth(depth-1)
             if changed:
                 # Resize column.
-                self._ui.nodeView.resizeColumnToContents(0)
+                self._ui.primView.resizeColumnToContents(0)
 
                 # Start pushing prim data to the UI during idle cycles.
                 # Qt doesn't need the data unless the item is actually
@@ -2781,36 +2780,36 @@ class MainWindow(QtWidgets.QMainWindow):
                 # if we're currently playing to maximize playback
                 # performance.
                 if not self._playing:
-                    self._nodeViewUpdateTimer.start()
+                    self._primViewUpdateTimer.start()
 
         if self._printTiming and not suppressTiming:
             t.PrintTime("expand Prim browser to depth %d" % depth)
 
-    def _nodeViewExpanded(self, index):
+    def _primViewExpanded(self, index):
         """Signal handler for expanded(index), facilitates lazy tree population
         """
-        self._populateChildren(self._ui.nodeView.itemFromIndex(index))
-        self._ui.nodeView.resizeColumnToContents(0)
+        self._populateChildren(self._ui.primView.itemFromIndex(index))
+        self._ui.primView.resizeColumnToContents(0)
 
-    def _toggleShowInactiveNodes(self):
-        self._settings.setAndSave(actionShow_Inactive_Nodes =
-                self._ui.actionShow_Inactive_Nodes.isChecked())
-        self._resetNodeView()
+    def _toggleShowInactivePrims(self):
+        self._settings.setAndSave(actionShow_Inactive_Prims =
+                self._ui.actionShow_Inactive_Prims.isChecked())
+        self._resetPrimView()
 
     def _toggleShowMasterPrims(self):
         self._settings.setAndSave(actionShow_All_Master_Prims =
                 self._ui.actionShow_All_Master_Prims.isChecked())
-        self._resetNodeView()
+        self._resetPrimView()
 
     def _toggleShowUndefinedPrims(self):
         self._settings.setAndSave(actionShow_Undefined_Prims=
                 self._ui.actionShow_Undefined_Prims.isChecked())
-        self._resetNodeView()
+        self._resetPrimView()
 
     def _toggleShowAbstractPrims(self):
         self._settings.setAndSave(actionShow_Abstract_Prims=
                 self._ui.actionShow_Abstract_Prims.isChecked())
-        self._resetNodeView()
+        self._resetPrimView()
 
     def _toggleRolloverPrimInfo(self):
         self._settings.setAndSave(actionRollover_Prim_Info=
@@ -2819,7 +2818,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.rolloverPicking = \
                 self._settings.get("actionRollover_Prim_Info", False)
 
-    def _tallyNodeStats(self, prim):
+    def _tallyPrimStats(self, prim):
         def _GetType(prim):
             typeString = prim.GetTypeName()
             return NOTYPE if not typeString else typeString
@@ -2838,14 +2837,14 @@ class MainWindow(QtWidgets.QMainWindow):
         return (primCount, childTypeDict)
 
     def _populateChildren(self, item, depth=0, maxDepth=1, childrenToAdd=None):
-        """Populates the children of the given item in the node viewer.
-           If childrenToAdd is given its a list of nodes to add as
+        """Populates the children of the given item in the prim viewer.
+           If childrenToAdd is given its a list of prims to add as
            children."""
-        if depth < maxDepth and item.node.IsActive():
+        if depth < maxDepth and item.prim.IsActive():
             if item.needsChildrenPopulated() or childrenToAdd:
                 # Populate all the children.
                 if not childrenToAdd:
-                    childrenToAdd = self._getFilteredChildren(item.node)
+                    childrenToAdd = self._getFilteredChildren(item.prim)
                 item.addChildren([self._populateItem(child, depth+1, maxDepth)
                                                     for child in childrenToAdd])
             elif depth + 1 < maxDepth:
@@ -2853,15 +2852,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 for i in xrange(item.childCount()):
                     self._populateChildren(item.child(i), depth+1, maxDepth)
 
-    def _populateItem(self, node, depth=0, maxDepth=0):
-        """Populates a node viewer item."""
-        item = self._nodeToItemMap.get(node)
+    def _populateItem(self, prim, depth=0, maxDepth=0):
+        """Populates a prim viewer item."""
+        item = self._primToItemMap.get(prim)
         if not item:
             # Create a new item.  If we want its children we obviously
             # have to create those too.
-            children = self._getFilteredChildren(node)
-            item = NodeViewItem(node, self, len(children) != 0)
-            self._nodeToItemMap[node] = item
+            children = self._getFilteredChildren(prim)
+            item = PrimViewItem(prim, self, len(children) != 0)
+            self._primToItemMap[prim] = item
             self._populateChildren(item, depth, maxDepth, children)
             # Push the item after the children so ancestors are processed
             # before descendants.
@@ -2875,7 +2874,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _primShouldBeShown(self, prim):
         if not prim:
             return False
-        showInactive = self._ui.actionShow_Inactive_Nodes.isChecked()
+        showInactive = self._ui.actionShow_Inactive_Prims.isChecked()
         showUndefined = self._ui.actionShow_Undefined_Prims.isChecked()
         showAbstract = self._ui.actionShow_Abstract_Prims.isChecked()
         showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
@@ -2886,9 +2885,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 (not prim.IsInMaster() or showMasters))
 
     def _populateRoots(self):
-        invisibleRootItem = self._ui.nodeView.invisibleRootItem()
-        rootNode = self._stage.GetPseudoRoot()
-        rootItem = self._populateItem(rootNode)
+        invisibleRootItem = self._ui.primView.invisibleRootItem()
+        rootPrim = self._stage.GetPseudoRoot()
+        rootItem = self._populateItem(rootPrim)
         self._populateChildren(rootItem)
 
         showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
@@ -2905,7 +2904,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _computeDisplayPredicate(self):
         # Take current browser filtering into account when discovering
         # prims while traversing
-        showInactive = self._ui.actionShow_Inactive_Nodes.isChecked()
+        showInactive = self._ui.actionShow_Inactive_Prims.isChecked()
         showUndefined = self._ui.actionShow_Undefined_Prims.isChecked()
         showAbstract = self._ui.actionShow_Abstract_Prims.isChecked()
         showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
@@ -2933,7 +2932,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def _getItemAtPath(self, path, ensureExpanded=False):
-        # If the node hasn't been expanded yet, drill down into it.
+        # If the prim hasn't been expanded yet, drill down into it.
         # Note the explicit str(path) in the following expr is necessary
         # because path may be a QString.
         path = path if isinstance(path, Sdf.Path) else Sdf.Path(str(path))
@@ -2941,12 +2940,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if not parent:
             raise RuntimeError("Prim not found at path in stage: %s" % str(path))
         pseudoRoot = self._stage.GetPseudoRoot()
-        if parent not in self._nodeToItemMap:
+        if parent not in self._primToItemMap:
             # find the first loaded parent
             childList = []
 
             while parent != pseudoRoot \
-                        and not parent in self._nodeToItemMap:
+                        and not parent in self._primToItemMap:
                 childList.append(parent)
                 parent = parent.GetParent()
 
@@ -2957,18 +2956,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # now populate down to the child
             for parent in reversed(childList):
-                item = self._nodeToItemMap[parent]
+                item = self._primToItemMap[parent]
                 self._populateChildren(item)
                 if ensureExpanded:
                     item.setExpanded(True)
 
         # finally, return the requested item, which now must be in the map
-        return self._nodeToItemMap[self._stage.GetPrimAtPath(path)]
+        return self._primToItemMap[self._stage.GetPrimAtPath(path)]
 
     def resetSelectionToPseudoroot(self):
-        self.selectNodeByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+        self.selectPrimByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
 
-    def selectNodeByPath(self, path, instanceIndex, updateMode,
+    def selectPrimByPath(self, path, instanceIndex, updateMode,
                          applyPickMode=False):
         """Modifies selection by a stage prim based on a prim path,
         which can be empty.
@@ -3011,7 +3010,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._stageView:
                 self._stageView.clearInstanceSelection()
                 self._stageView.setInstanceSelection(path, instanceIndex, True)
-            self._ui.nodeView.setCurrentItem(item)
+            self._ui.primView.setCurrentItem(item)
         elif updateMode == "add":
             if self._stageView:
                 self._stageView.setInstanceSelection(path, instanceIndex, True)
@@ -3031,7 +3030,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self._stageView.clearInstanceSelection()
                 item.setSelected(not item.isSelected())
             # if nothing selected, select root.
-            if len(self._ui.nodeView.selectedItems()) == 0:
+            if len(self._ui.primView.selectedItems()) == 0:
                 item = self._getItemAtPath(self._stage.GetPseudoRoot().GetPath())
                 item.setSelected(True)
 
@@ -3041,14 +3040,14 @@ class MainWindow(QtWidgets.QMainWindow):
         return item
 
 
-    def _getCommonNodes(self, pathsList):
+    def _getCommonPrims(self, pathsList):
         commonPrefix = os.path.commonprefix(pathsList)
         ### To prevent /Canopies/TwigA and /Canopies/TwigB
         ### from registering /Canopies/Twig as prefix
         return commonPrefix.rsplit('/', 1)[0]
 
-    def _getAttributeNode(self):
-        return self._stage.GetPrimAtPath(self._currentNodes[0].GetPath())
+    def _getAttributePrim(self):
+        return self._stage.GetPrimAtPath(self._currentPrims[0].GetPath())
 
     def _currentPathChanged(self):
         """Called when the currentPathWidget text is changed"""
@@ -3073,20 +3072,20 @@ class MainWindow(QtWidgets.QMainWindow):
         # We only want to update once in response, so temporarily disable
         # signals from the TreeWidget and manually sync selection after
         with MainWindow.UpdateBlocker(self):
-            self._ui.nodeView.clearSelection()
+            self._ui.primView.clearSelection()
             first = True
             for prim in primsToSelect:
                 if self._primShouldBeShown(prim):
                     instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
-                    item = self.selectNodeByPath(prim.GetPath(), instanceIndex,
+                    item = self.selectPrimByPath(prim.GetPath(), instanceIndex,
                                                  "replace" if first else "add")
                     first = False
-                    # selectNodeByPath expands all of item's parents,
+                    # selectPrimByPath expands all of item's parents,
                     # but that doesn't seem to work if you have manually closed
                     # one of its ancestor's noorgies.  This will ensure all
                     # selected items are visible.
-                    self._ui.nodeView.scrollToItem(item)
-        # Now resync _currentNodes et al to the new PrimView
+                    self._ui.primView.scrollToItem(item)
+        # Now resync _currentPrims et al to the new PrimView
         # selection state
         self._itemSelectionChanged()
 
@@ -3108,27 +3107,27 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         # grab a list of all the items selected
-        selectedItems = self._ui.nodeView.selectedItems()
+        selectedItems = self._ui.primView.selectedItems()
         if len(selectedItems) <= 0:
             return
 
-        # get nodes, but do not include nodes whose parents are selected too.
+        # get prims, but do not include prims whose parents are selected too.
         prunedPaths = self._getPathsFromItems(selectedItems, True)
-        self._prunedCurrentNodes = [self._stage.GetPrimAtPath(pth) for pth in prunedPaths]
-        # get all nodes selected
+        self._prunedCurrentPrims = [self._stage.GetPrimAtPath(pth) for pth in prunedPaths]
+        # get all prims selected
         paths = self._getPathsFromItems(selectedItems, False)
-        self._currentNodes = [self._stage.GetPrimAtPath(pth) for pth in paths]
+        self._currentPrims = [self._stage.GetPrimAtPath(pth) for pth in paths]
 
         self._ui.currentPathWidget.setText(', '.join([str(p) for p in paths]))
 
         if self._stageView and self._allowViewUpdates:
             # update the entire upper HUD with fresh information
             # this includes geom counts (slow)
-            self._updateHUDNodeStats()
+            self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
-            # recompute bbox on node change
-            self._stageView.setNodes(self._prunedCurrentNodes, self._currentFrame,
-                                     resetCam=False, forceComputeBBox=True)
+            # recompute bbox on prim change
+            self._stageView.setSelectedPrims(self._prunedCurrentPrims, self._currentFrame,
+                                          resetCam=False, forceComputeBBox=True)
 
         # Clear out any property searches when the selected prim changes
         # We can't hold onto the resulting Qt Widgets, as they are ephemeral.
@@ -3144,9 +3143,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # onClick() returns True if the click caused a state change (currently
         # this will only be a change to visibility).
         if item.onClick(col):
-            self.editComplete('Updated node visibility')
+            self.editComplete('Updated prim visibility')
             with Timer() as t:
-                NodeViewItem.propagateVis(item)
+                PrimViewItem.propagateVis(item)
             if self._printTiming:
                 t.PrintTime("update vis column")
         self._updateAttributeInspector(obj=self._getSelectedPrim(),
@@ -3175,19 +3174,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # Don't include the pseudoroot, though, if it's still selected, because
         # leaving it in the pruned list will cause everything else to get
         # pruned away!
-        allPaths = [itm.node.GetPath() for itm in items]
+        allPaths = [itm.prim.GetPath() for itm in items]
         if not prune:
             return allPaths
         if len(allPaths) > 1:
             allPaths = [p for p in allPaths if p != Sdf.Path.absoluteRootPath]
         return Sdf.Path.RemoveDescendentPaths(allPaths)
 
-    def _nodeViewContextMenu(self, point):
-        item = self._ui.nodeView.itemAt(point)
-        self._showNodeContextMenu(item)
+    def _primViewContextMenu(self, point):
+        item = self._ui.primView.itemAt(point)
+        self._showPrimContextMenu(item)
 
-    def _showNodeContextMenu(self, item):
-        self.contextMenu = NodeContextMenu(self, item)
+    def _showPrimContextMenu(self, item):
+        self.contextMenu = PrimContextMenu(self, item)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def setFrame(self, frameIndex, forceUpdate=False):
@@ -3244,7 +3243,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._updateLayerStackView()
 
             # refresh the visibility column
-            self._resetNodeViewVis(selItemsOnly=False, authoredVisHasChanged=False)
+            self._resetPrimViewVis(selItemsOnly=False, authoredVisHasChanged=False)
 
         if self._stageView:
             # this is the part that renders
@@ -3252,7 +3251,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._stageView.updateForPlayback(self._currentFrame,
                                  self._selHighlightMode == SEL_HIGHLIGHT_ALWAYS)
             else:
-                self._stageView.setNodes(self._currentNodes, self._currentFrame)
+                self._stageView.setSelectedPrims(self._currentPrims, self._currentFrame)
 
     def setHUDVisible(self, hudVisible):
         self._ui.actionHUD.setChecked(False)
@@ -3265,11 +3264,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def _getAttributeDict(self):
         attributeDict = OrderedDict()
 
-        # leave attribute viewer empty if multiple nodes selected
-        if len(self._currentNodes) != 1:
+        # leave attribute viewer empty if multiple prims selected
+        if len(self._currentPrims) != 1:
             return attributeDict
 
-        prim = self._currentNodes[0]
+        prim = self._currentPrims[0]
 
         composed, rels = _GetCustomAttributes(prim, self._bboxCache, self._xformCache)
 
@@ -3406,16 +3405,16 @@ class MainWindow(QtWidgets.QMainWindow):
             attrName = str(selectedAttribute.text(INDEX_PROPNAME))
 
             if PropTreeWidgetTypeIsRel(selectedAttribute):
-                obj = self._currentNodes[0].GetRelationship(attrName)
+                obj = self._currentPrims[0].GetRelationship(attrName)
             else:
-                obj = self._currentNodes[0].GetAttribute(attrName)
+                obj = self._currentPrims[0].GetAttribute(attrName)
 
             return obj
 
         return self._getSelectedPrim()
 
     def _getSelectedPrim(self):
-        return self._currentNodes[0] if self._currentNodes else None
+        return self._currentPrims[0] if self._currentPrims else None
 
     def _findIndentPos(self, s):
         for index, char in enumerate(s):
@@ -3881,7 +3880,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """updates the upper HUD with both prim info and geom counts
         this function is called by the UI when the HUD is hidden or shown"""
         if self._isHUDVisible():
-            self._updateHUDNodeStats()
+            self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
 
         self._HUDMenuChanged()
@@ -3915,16 +3914,16 @@ class MainWindow(QtWidgets.QMainWindow):
         keys = [PRIM,NOTYPE] + keys + [CV,VERT,FACE]
         return keys
 
-    def _updateHUDNodeStats(self):
-        """update the upper HUD with the proper node information"""
+    def _updateHUDPrimStats(self):
+        """update the upper HUD with the proper prim information"""
         self._upperHUDInfo = dict()
 
         if self._isHUDVisible():
-            currentPaths = [n.GetPath() for n in self._prunedCurrentNodes if n.IsActive()]
+            currentPaths = [n.GetPath() for n in self._prunedCurrentPrims if n.IsActive()]
 
             for pth in currentPaths:
-                count,types = self._tallyNodeStats(self._stage.GetPrimAtPath(pth))
-                # no entry for Node counts? initilize it
+                count,types = self._tallyPrimStats(self._stage.GetPrimAtPath(pth))
+                # no entry for Prim counts? initilize it
                 if not self._upperHUDInfo.has_key(PRIM):
                     self._upperHUDInfo[PRIM] = 0
                 self._upperHUDInfo[PRIM] += count
@@ -3947,7 +3946,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # we get multiple geom dicts, if we have multiple prims selected
         geomDicts = [self._getGeomCounts(n, self._currentFrame)
-                     for n in self._prunedCurrentNodes]
+                     for n in self._prunedCurrentPrims]
 
         for key in (CV, VERT, FACE):
             self._upperHUDInfo[key] = 0
@@ -4044,20 +4043,20 @@ class MainWindow(QtWidgets.QMainWindow):
             action.setStatusTip(Tf.Debug.GetDebugSymbolDescription(flag))
             action.triggered[bool].connect(__createTriggerLambda(flag, not isEnabled))
 
-    def _updateEditNodeMenu(self):
+    def _updateEditPrimMenu(self):
         """Make the Edit Prim menu items enabled or disabled depending on the
         selected prim."""
         
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
-        anyLoadable, unused = GetPrimsLoadability(self._prunedCurrentNodes)
+        anyLoadable, unused = GetPrimsLoadability(self._prunedCurrentPrims)
         removeEnabled = False
         anyImageable = False
         anyModels = False
         anyBoundMaterials = False
         anyActive = False
         anyInactive = False
-        for prim in self._currentNodes:
+        for prim in self._currentPrims:
             if prim.IsA(UsdGeom.Imageable):
                 imageable = UsdGeom.Imageable(prim)
                 anyImageable = anyImageable or bool(imageable)
@@ -4084,8 +4083,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def getSelectedItems(self):
-        return [self._nodeToItemMap[n] for n in self._currentNodes
-                    if n in self._nodeToItemMap]
+        return [self._primToItemMap[n] for n in self._currentPrims
+                    if n in self._primToItemMap]
 
     def _getPrimFromPropString(self, p):
         return self._stage.GetPrimAtPath(p.split('.')[0])
@@ -4128,7 +4127,7 @@ class MainWindow(QtWidgets.QMainWindow):
         newSel = []
         added = set()
         # We don't expect this to take long, so no BusyContext
-        for prim in self._currentNodes:
+        for prim in self._currentPrims:
             model = GetEnclosingModelPrim(prim)
             prim = model or prim
             if not (prim in added):
@@ -4140,7 +4139,7 @@ class MainWindow(QtWidgets.QMainWindow):
         newSel = []
         added = set()
         # We don't expect this to take long, so no BusyContext
-        for prim in self._currentNodes:
+        for prim in self._currentPrims:
             material, bound = GetClosestBoundMaterial(prim)
             if not (material in added):
                 added.add(material)
@@ -4154,7 +4153,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.editComplete('Made selected prims visible')
             # makeVisible may cause aunt and uncle prims' authored vis
             # to change, so we need to fix up the whole shebang
-            self._resetNodeViewVis(selItemsOnly=False)
+            self._resetPrimViewVis(selItemsOnly=False)
 
     def visOnlySelectedPrims(self):
         with BusyContext():
@@ -4166,21 +4165,21 @@ class MainWindow(QtWidgets.QMainWindow):
             # QTreeWidget does not honor setUpdatesEnabled, and updating
             # the Vis column for all widgets is pathologically slow.
             # It is sadly much much faster to regenerate the entire view
-            self._resetNodeView()
+            self._resetPrimView()
 
     def invisSelectedPrims(self):
         with BusyContext():
             for item in self.getSelectedItems():
                 item.setVisible(False)
             self.editComplete('Made selected prims invisible')
-            self._resetNodeViewVis()
+            self._resetPrimViewVis()
 
     def removeVisSelectedPrims(self):
         with BusyContext():
             for item in self.getSelectedItems():
                 item.removeVisibility()
             self.editComplete("Removed selected prims' visibility opinions")
-            self._resetNodeViewVis()
+            self._resetPrimViewVis()
 
     def resetSessionVisibility(self):
         with BusyContext():
@@ -4189,39 +4188,39 @@ class MainWindow(QtWidgets.QMainWindow):
             # QTreeWidget does not honor setUpdatesEnabled, and updating
             # the Vis column for all widgets is pathologically slow.
             # It is sadly much much faster to regenerate the entire view
-            self._resetNodeView()
+            self._resetPrimView()
 
     def activateSelectedPrims(self):
         with BusyContext():
-            nodeNames=[]
+            primNames=[]
             for item in self.getSelectedItems():
                 item.setActive(True)
-                nodeNames.append(item.name)
-            self.editComplete("Activated %s." % nodeNames)
+                primNames.append(item.name)
+            self.editComplete("Activated %s." % primNames)
 
     def deactivateSelectedPrims(self):
         with BusyContext():
-            nodeNames=[]
+            primNames=[]
             for item in self.getSelectedItems():
                 item.setActive(False)
-                nodeNames.append(item.name)
-            self.editComplete("Deactivated %s." % nodeNames)
+                primNames.append(item.name)
+            self.editComplete("Deactivated %s." % primNames)
 
     def loadSelectedPrims(self):
         with BusyContext():
-            nodeNames=[]
+            primNames=[]
             for item in self.getSelectedItems():
                 item.setLoaded(True)
-                nodeNames.append(item.name)
-            self.editComplete("Loaded %s." % nodeNames)
+                primNames.append(item.name)
+            self.editComplete("Loaded %s." % primNames)
 
     def unloadSelectedPrims(self):
         with BusyContext():
-            nodeNames=[]
+            primNames=[]
             for item in self.getSelectedItems():
                 item.setLoaded(False)
-                nodeNames.append(item.name)
-            self.editComplete("Unloaded %s." % nodeNames)
+                primNames.append(item.name)
+            self.editComplete("Unloaded %s." % primNames)
 
     def onCurrentFrameChanged(self, currentFrame):
         self._ui.frameField.setText(str(currentFrame))
@@ -4248,26 +4247,26 @@ class MainWindow(QtWidgets.QMainWindow):
             doSelection = True
             item = None
             if doContext:
-                for selPrim in self._currentNodes:
+                for selPrim in self._currentPrims:
                     selPath = selPrim.GetPath()
                     if (selPath != Sdf.Path.absoluteRootPath and
                         path.HasPrefix(selPath)):
                         doSelection = False
                         break
             if doSelection:
-                item = self.selectNodeByPath(path, instanceIndex, updateMode,
+                item = self.selectPrimByPath(path, instanceIndex, updateMode,
                                              applyPickMode=True)
-                if item and item.node.GetPath() != Sdf.Path.absoluteRootPath:
-                    # Scroll the node view widget to show the newly selected
+                if item and item.prim.GetPath() != Sdf.Path.absoluteRootPath:
+                    # Scroll the prim view widget to show the newly selected
                     # item, unless it's the pseudoRoot, which represents "no
                     # selection"
-                    self._ui.nodeView.scrollToItem(item)
+                    self._ui.primView.scrollToItem(item)
             if doContext:
                 # The context menu requires an item for validation.  Make sure
                 # we have a valid one to give it.
                 if not item:
                     item = self._getItemAtPath(path)
-                self._showNodeContextMenu(item)
+                self._showPrimContextMenu(item)
 
                 # context menu steals mouse release event from the StageView.
                 # We need to give it one so it can track its interaction

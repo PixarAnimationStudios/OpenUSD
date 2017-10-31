@@ -41,7 +41,7 @@ def _setPickModeAction(mainWindow, action):
 
 # Check that the current selection is the expected selection.
 def _checkPrimSelection(mainWindow, path):
-    primSelection = mainWindow._currentNodes
+    primSelection = mainWindow._currentPrims
     assert len(primSelection) == 1
     assert primSelection[0].GetPath() == path
 
@@ -62,7 +62,7 @@ def _checkInstanceSelection(mainWindow, path, instanceIndex):
 # Test picking a prim.
 def _testPickPrims(mainWindow):
     _setPickModeAction(mainWindow, mainWindow._ui.actionPick_Prims)
-    mainWindow.selectNodeByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+    mainWindow.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
 
     _checkPrimSelection(mainWindow, INSTANCER_PATH)
     _checkNoInstancesSelected(mainWindow, INSTANCER_PATH)
@@ -70,7 +70,7 @@ def _testPickPrims(mainWindow):
 # Test picking a model.
 def _testPickModels(mainWindow):
     _setPickModeAction(mainWindow, mainWindow._ui.actionPick_Models)
-    mainWindow.selectNodeByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+    mainWindow.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
 
     _checkPrimSelection(mainWindow, FOO_PATH)
     _checkNoInstancesSelected(mainWindow, INSTANCER_PATH)
@@ -78,7 +78,7 @@ def _testPickModels(mainWindow):
 # Test picking an instance.
 def _testPickInstances(mainWindow):
     _setPickModeAction(mainWindow, mainWindow._ui.actionPick_Instances)
-    mainWindow.selectNodeByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+    mainWindow.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
 
     _checkPrimSelection(mainWindow, INSTANCER_PATH)
     _checkInstanceSelection(mainWindow, INSTANCER_PATH, 0)

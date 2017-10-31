@@ -24,7 +24,7 @@
 #
 
 def _assertSelectedPrim(mainWindow, primName):
-    selected = mainWindow._ui.nodeView.selectedItems()
+    selected = mainWindow._ui.primView.selectedItems()
     assert len(selected) == 1
     # 0 indicates the first column where we store prim names
     assert primName == selected[0].text(0)
@@ -32,18 +32,18 @@ def _assertSelectedPrim(mainWindow, primName):
 def _search(mainWindow, searchTerm, expectedItems):
     # Repainting isn't necessary at all here, its left in as
     # a visual aid for anyone running this test manually
-    primSearch = mainWindow._ui.nodeViewLineEdit
+    primSearch = mainWindow._ui.primViewLineEdit
     primSearch.setText(searchTerm)
     mainWindow.repaint()
 
     for item in expectedItems:
-        mainWindow._nodeViewFindNext()
+        mainWindow._primViewFindNext()
         mainWindow.repaint()
         _assertSelectedPrim(mainWindow, item)
 
     # Looping over again will currently cycle through the elements again
     for item in expectedItems:
-        mainWindow._nodeViewFindNext()
+        mainWindow._primViewFindNext()
         mainWindow.repaint()
         _assertSelectedPrim(mainWindow, item)
 

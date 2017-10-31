@@ -61,9 +61,9 @@ class AttributeValueEditor(QtWidgets.QWidget):
         self._mainWindow = mainWindow
         self._propertyView = mainWindow._ui.propertyView
 
-    def populate(self, name, node):
+    def populate(self, name, prim):
         # called when the selected attribute has changed
-        # gets the attribute object and the source node
+        # gets the attribute object and the source prim
         try:
             self._attribute = self._mainWindow._attributeDict[name]
         except KeyError:
@@ -71,7 +71,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
             self._attribute = self._mainWindow._attributeDict[name]
 
         self._isSet = True  # an attribute is selected
-        self._node = node
+        self._prim = prim
 
         # determine if the attribute is editable, enable or disable buttons
         # XXX USD DETERMINE EDITABILITY
@@ -149,9 +149,9 @@ class AttributeValueEditor(QtWidgets.QWidget):
         try:
             # value successfully retrieved. set it.
             if self._isMember:
-                self._node.SetMember(frame, self._name, value)
+                self._prim.SetMember(frame, self._name, value)
             else:
-                self._node.SetAttribute(frame, self._name, value)
+                self._prim.SetAttribute(frame, self._name, value)
 
             # send a signal to the mainWindow confirming the edit
             msg = 'Successfully edited %s "%s" at frame %s.' \
@@ -183,15 +183,15 @@ class AttributeValueEditor(QtWidgets.QWidget):
                     QtWidgets.QMessageBox.Cancel)
 
         msg = ""
-        if reply == QtWidgets.QMessageBox.Yes and self._node is not None:
+        if reply == QtWidgets.QMessageBox.Yes and self._prim is not None:
             # we got 'yes' as an answer
             try:
                 # this removes only the value written in the top level stage
                 # which is the writable reference.
                 if self._isMember:
-                    self._node.RemoveMember(frame, section, self._name)
+                    self._prim.RemoveMember(frame, section, self._name)
                 else:
-                    self._node.RemoveAttribute(frame, section, self._name)
+                    self._prim.RemoveAttribute(frame, section, self._name)
 
                 msg = 'Reverted %s "%s" at %s.' %(type, self._name, frameStr)
                 self._mainWindow._refreshVars()

@@ -28,18 +28,18 @@
 # Every entry should be an object derived from CustomAttribute,
 # defined below.
 #
-def _GetCustomAttributes(currentNode, bboxCache, xformCache):
-    return ([BoundingBoxAttribute(currentNode, bboxCache),
-               LocalToWorldXformAttribute(currentNode, xformCache)],
-            [RelationshipAttribute(currentNode, relationship) \
-                    for relationship in currentNode.GetRelationships()])
+def _GetCustomAttributes(currentPrim, bboxCache, xformCache):
+    return ([BoundingBoxAttribute(currentPrim, bboxCache),
+               LocalToWorldXformAttribute(currentPrim, xformCache)],
+            [RelationshipAttribute(currentPrim, relationship) \
+                    for relationship in currentPrim.GetRelationships()])
 
 #
-# The base class for per-node custom attributes.
+# The base class for per-prim custom attributes.
 #
 class CustomAttribute:
-    def __init__(self, currentNode):
-        self._currentNode = currentNode
+    def __init__(self, currentPrim):
+        self._currentPrim = currentPrim
 
     def IsVisible(self):
         return True
@@ -57,11 +57,11 @@ class CustomAttribute:
         return ""
 
 #
-# Displays the bounding box of a node
+# Displays the bounding box of a prim
 #
 class BoundingBoxAttribute(CustomAttribute):
-    def __init__(self, currentNode, bboxCache):
-        CustomAttribute.__init__(self, currentNode)
+    def __init__(self, currentPrim, bboxCache):
+        CustomAttribute.__init__(self, currentPrim)
         # This is transient. The custom attr classes change every frame and
         # after every new selection.
         self._bboxCache = bboxCache
@@ -71,7 +71,7 @@ class BoundingBoxAttribute(CustomAttribute):
 
     def Get(self, frame):
         try:
-            bbox = self._bboxCache.ComputeWorldBound(self._currentNode)
+            bbox = self._bboxCache.ComputeWorldBound(self._currentPrim)
 
         except RuntimeError, err:
             bbox = "Invalid: " + str(err)
@@ -79,11 +79,11 @@ class BoundingBoxAttribute(CustomAttribute):
         return bbox
 
 #
-# Displays the Local to world xform of a node
+# Displays the Local to world xform of a prim
 #
 class LocalToWorldXformAttribute(CustomAttribute):
-    def __init__(self, currentNode, xformCache):
-        CustomAttribute.__init__(self, currentNode)
+    def __init__(self, currentPrim, xformCache):
+        CustomAttribute.__init__(self, currentPrim)
         # This is transient. The custom attr classes change every frame and
         # after every new selection.
         self._xformCache = xformCache
@@ -93,18 +93,18 @@ class LocalToWorldXformAttribute(CustomAttribute):
 
     def Get(self, frame):
         try:
-            pwt = self._xformCache.GetLocalToWorldTransform(self._currentNode)
+            pwt = self._xformCache.GetLocalToWorldTransform(self._currentPrim)
         except RuntimeError, err:
             pwt = "Invalid: " + str(err)
 
         return pwt
 
 #
-# Displays a relationship on the node
+# Displays a relationship on the prim
 #
 class RelationshipAttribute(CustomAttribute):
-    def __init__(self, currentNode, relationship):
-        CustomAttribute.__init__(self, currentNode)
+    def __init__(self, currentPrim, relationship):
+        CustomAttribute.__init__(self, currentPrim)
         self._relationship = relationship
 
     def GetName(self):

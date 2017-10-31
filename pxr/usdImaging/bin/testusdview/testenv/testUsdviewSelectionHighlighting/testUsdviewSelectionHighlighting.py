@@ -32,7 +32,7 @@ def _modifySettings(mainWindow):
 
 # Make a single selection.
 def _testSingleSelection(mainWindow):
-    mainWindow.selectNodeByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
     mainWindow._itemSelectionChanged()
 
     viewportShot = mainWindow.GrabViewportShot()
@@ -43,7 +43,7 @@ def _testNoHighlightSelection(mainWindow):
     mainWindow._ui.actionNever.setChecked(True)
     mainWindow._changeSelHighlightMode(mainWindow._ui.actionNever)
 
-    mainWindow.selectNodeByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
     mainWindow._itemSelectionChanged()
 
     viewportShot = mainWindow.GrabViewportShot()
@@ -54,9 +54,9 @@ def _testNoHighlightSelection(mainWindow):
 
 # Make two selections.
 def _testDoubleSelection(mainWindow):
-    mainWindow.selectNodeByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
     mainWindow._itemSelectionChanged()
-    mainWindow.selectNodeByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "add")
+    mainWindow.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "add")
     mainWindow._itemSelectionChanged()
 
     viewportShot = mainWindow.GrabViewportShot()
@@ -67,7 +67,7 @@ def _testColorSelection(mainWindow):
     mainWindow._ui.actionSelCyan.setChecked(True)
     mainWindow._changeHighlightColor(mainWindow._ui.actionSelCyan)
 
-    mainWindow.selectNodeByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
     mainWindow._itemSelectionChanged()
 
     viewportShot = mainWindow.GrabViewportShot()

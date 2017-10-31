@@ -23,15 +23,15 @@
 #
 from qt import QtWidgets
 
-from nodeLegendUI import Ui_NodeLegend
+from primLegendUI import Ui_PrimLegend
 
 from common import (HasArcsColor, NormalColor, MasterColor, InstanceColor,
                     ColorizeLabelText, BoldenLabelText, ItalicizeLabelText)
 
-class NodeLegend(QtWidgets.QWidget):
+class PrimLegend(QtWidgets.QWidget):
     def __init__(self, parent):
         QtWidgets.QWidget.__init__(self, parent)
-        self._ui = Ui_NodeLegend()
+        self._ui = Ui_PrimLegend()
         self._ui.setupUi(self)
 
         self._isMinimized = True
@@ -39,42 +39,42 @@ class NodeLegend(QtWidgets.QWidget):
         graphicsScene = QtWidgets.QGraphicsScene()
 
         # Set colors
-        self._ui.nodeLegendColorHasArcs.setScene(graphicsScene)
-        self._ui.nodeLegendColorNormal.setScene(graphicsScene)
-        self._ui.nodeLegendColorInstance.setScene(graphicsScene)
-        self._ui.nodeLegendColorMaster.setScene(graphicsScene)
+        self._ui.primLegendColorHasArcs.setScene(graphicsScene)
+        self._ui.primLegendColorNormal.setScene(graphicsScene)
+        self._ui.primLegendColorInstance.setScene(graphicsScene)
+        self._ui.primLegendColorMaster.setScene(graphicsScene)
 
-        self._ui.nodeLegendColorHasArcs.setForegroundBrush(HasArcsColor)
-        self._ui.nodeLegendColorNormal.setForegroundBrush(NormalColor)
-        self._ui.nodeLegendColorInstance.setForegroundBrush(InstanceColor)
-        self._ui.nodeLegendColorMaster.setForegroundBrush(MasterColor)
+        self._ui.primLegendColorHasArcs.setForegroundBrush(HasArcsColor)
+        self._ui.primLegendColorNormal.setForegroundBrush(NormalColor)
+        self._ui.primLegendColorInstance.setForegroundBrush(InstanceColor)
+        self._ui.primLegendColorMaster.setForegroundBrush(MasterColor)
 
         legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
                                              + t.text() + '</font>')
 
-        normalLegend = self._ui.nodeLegendLabelNormal
+        normalLegend = self._ui.primLegendLabelNormal
         normalLegend.setText(legendTextUpdate(normalLegend, NormalColor))
 
-        masterLegend = self._ui.nodeLegendLabelMaster
+        masterLegend = self._ui.primLegendLabelMaster
         masterLegend.setText(legendTextUpdate(masterLegend, MasterColor))
 
-        instanceLegend = self._ui.nodeLegendLabelInstance
+        instanceLegend = self._ui.primLegendLabelInstance
         instanceLegend.setText(legendTextUpdate(instanceLegend, InstanceColor))
 
-        hasArcsLegend = self._ui.nodeLegendLabelHasArcs
+        hasArcsLegend = self._ui.primLegendLabelHasArcs
         hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, HasArcsColor))
 
-        undefinedFontLegend = self._ui.nodeLegendLabelFontsUndefined
+        undefinedFontLegend = self._ui.primLegendLabelFontsUndefined
         undefinedFontLegend.setText(ItalicizeLabelText(undefinedFontLegend.text(),
                                                        undefinedFontLegend.text()))
 
-        definedFontLegend = self._ui.nodeLegendLabelFontsDefined
+        definedFontLegend = self._ui.primLegendLabelFontsDefined
         definedFontLegend.setText(BoldenLabelText(definedFontLegend.text(),
                                                   definedFontLegend.text()))
 
         # Set three individual colors in the text line to indicate
-        # the dimmed version of each primary node color
-        dimmedLegend = self._ui.nodeLegendLabelDimmed
+        # the dimmed version of each primary prim color
+        dimmedLegend = self._ui.primLegendLabelDimmed
         dimmedLegendText = dimmedLegend.text()
         dimmedLegendText = ColorizeLabelText(
             dimmedLegendText, "Dimmed colors", 148, 105, 30)
@@ -95,5 +95,5 @@ class NodeLegend(QtWidgets.QWidget):
 
     def GetResetHeight(self):
         # This predefined height is determined by the elements that exist in
-        # the nodeLegend. For more information see nodeLegendUI.ui
+        # the primLegend. For more information see primLegendUI.ui
         return 120

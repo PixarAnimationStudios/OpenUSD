@@ -65,10 +65,10 @@ class PlugContext(object):
         items = self._mainWindow.getSelectedItems()
         for item in items:
             currItem = item
-            while currItem and not currItem.node.IsModel():
+            while currItem and not currItem.prim.IsModel():
                 currItem = currItem.parent()
             if currItem:
-                models.append(currItem.node)
+                models.append(currItem.prim)
 
         return models
 
@@ -77,20 +77,20 @@ class PlugContext(object):
         prims = []
         items = self._mainWindow.getSelectedItems()
         for item in items:
-            if item.node.IsA(schemaType):
-                prims.append(item.node)
+            if item.prim.IsA(schemaType):
+                prims.append(item.prim)
 
         return prims
 
-    def GetCurrentNodes(self):
-        ''' Returns the current nodes. '''
+    def GetSelectedPrims(self):
+        ''' Returns the current prims. '''
 
-        return self._mainWindow._currentNodes
+        return self._mainWindow._currentPrims
 
     def GetSelectedPaths(self):
         ''' Returns the paths for the current selections. '''
 
-        return [item.node.GetPath()
+        return [item.prim.GetPath()
                 for item in self._mainWindow.getSelectedItems()]
 
     def GetConfigDir(self):
