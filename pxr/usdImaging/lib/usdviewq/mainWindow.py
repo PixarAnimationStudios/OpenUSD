@@ -2695,8 +2695,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._console:
             self._console.reloadConsole(self)
 
-    def _updateAttributeInspector(self, index=None, obj=None,
-                                  updateAttributeView=True):
+    def _updateAttributeInspector(self, index=None, obj=None):
         # index must be the first parameter since this method is used as
         # attributeInspector tab widget's currentChanged(int) signal callback
         if index is None:
@@ -2706,9 +2705,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if obj is None:
             obj = self._getSelectedObject()
-
-        if index == INDEX_VALUE or updateAttributeView:
-            self._updateAttributeView()
 
         if index == INDEX_METADATA:
             self._updateMetadataView(obj)
@@ -3133,9 +3129,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # We can't hold onto the resulting Qt Widgets, as they are ephemeral.
         self._attrSearchResults = deque([])
 
-        self._updateAttributeInspector(obj=self._getSelectedPrim(),
-                                       updateAttributeView=True)
-
+        self._updateAttributeInspector(obj=self._getSelectedPrim())
+        self._updateAttributeView()
         self._refreshAttributeValue()
         self._updateInterpreter()
 
@@ -3148,8 +3143,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 PrimViewItem.propagateVis(item)
             if self._printTiming:
                 t.PrintTime("update vis column")
-        self._updateAttributeInspector(obj=self._getSelectedPrim(),
-                                       updateAttributeView=False)
+        self._updateAttributeInspector(obj=self._getSelectedPrim())
 
     def _propertyViewItemClicked(self, item, col):
         role = item.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
@@ -3162,8 +3156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # The INDEX_VALUE tab is updated through a separate callback.
         if currIndex != INDEX_VALUE:
             self._updateAttributeInspector(index=currIndex,
-                                           obj=self._getSelectedObject(),
-                                           updateAttributeView=False)
+                                           obj=self._getSelectedObject())
 
     def _getPathsFromItems(self, items, prune = False):
         # this function returns a list of paths given a list of items if

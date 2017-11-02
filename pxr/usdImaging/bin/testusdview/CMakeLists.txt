@@ -90,6 +90,16 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewPrimSearch
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewPropertySearch
+        DEST testusdviewPropertySearch
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewMetadatatabSelect
+        DEST testusdviewMetadatatabSelect
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -187,6 +197,18 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewPrimSearch
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPrimSearch.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewPropertySearch
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPropertySearch.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewMetadatatabSelect
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewMetadatatabSelect.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 endif()
