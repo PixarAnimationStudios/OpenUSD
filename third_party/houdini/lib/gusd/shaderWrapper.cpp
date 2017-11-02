@@ -200,7 +200,21 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                 continue;
             }
 
-            if (strcmp(type, "string") == 0) {
+            //
+            // For each type, multiparms are treated the same as parms,
+            // ie. int and int[] are handled as the same type; float and
+            // float[], string and string[], etc.
+            // This works because a multiparm doesn't actually "contain" its
+            // elements; instead, its elements just show up as regular parms
+            // alongside the multiparm. Thus, this loop will process all parms.
+            //
+            // TODO: This will probably need to be changed at some point so
+            // that instead of multiparms and their element parms being handled
+            // individually, some mechanism needs to be put in place to combine
+            // these elements into a single array.
+            //
+            if (strcmp(type, "string") == 0 ||
+                strcmp(type, "string[]") == 0) {
 
                 UsdShadeInput shadeInput; 
 
@@ -233,7 +247,8 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     }
                 }
             }
-            else if (strcmp(type, "float") == 0) {
+            else if (strcmp(type, "float") == 0 ||
+                     strcmp(type, "float[]") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
@@ -246,7 +261,8 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set((float)val);
                 }
             }
-            else if (strcmp(type, "int") == 0) {
+            else if (strcmp(type, "int") == 0 ||
+                     strcmp(type, "int[]") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
@@ -259,7 +275,8 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set(val);
                 }
             }
-            else if (strcmp(type, "color") == 0) {
+            else if (strcmp(type, "color") == 0 ||
+                     strcmp(type, "color[]") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
@@ -272,7 +289,8 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set(GfVec3d(color));
                 }
             }
-            else if (strcmp(type, "normal") == 0) {
+            else if (strcmp(type, "normal") == 0 ||
+                     strcmp(type, "normal[]") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
@@ -285,7 +303,8 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set(GfVec3d(normal));
                 }
             }
-            else if (strcmp(type, "point") == 0) {
+            else if (strcmp(type, "point") == 0 ||
+                     strcmp(type, "point[]") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
@@ -298,7 +317,8 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                     shadeInput.Set(GfVec3d(point));
                 }
             }
-            else if (strcmp(type, "vector") == 0) {
+            else if (strcmp(type, "vector") == 0 ||
+                     strcmp(type, "vector[]") == 0) {
 
                 UsdShadeInput shadeInput 
                     = risObject.CreateInput(TfToken(parm->getToken()),
