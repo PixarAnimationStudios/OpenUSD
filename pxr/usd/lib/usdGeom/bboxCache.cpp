@@ -59,7 +59,7 @@ class UsdGeomBBoxCache::_BBoxTask: public tbb::task {
     UsdGeomBBoxCache* _owner;
     _ThreadXformCache* _xfCaches;
 public:
-    _BBoxTask(const UsdPrim& prim, const GfMatrix4d &inverseComponentCtm, 
+    _BBoxTask(const UsdPrim& prim, const GfMatrix4d &inverseComponentCtm,
               UsdGeomBBoxCache* owner, _ThreadXformCache* xfCaches)
         : _prim(prim)
         , _inverseComponentCtm(inverseComponentCtm)
@@ -103,7 +103,7 @@ private:
         std::vector<UsdPrim> dependentMasters;
     };
 
-    typedef TfHashMap<UsdPrim, _MasterTask, boost::hash<UsdPrim> > 
+    typedef TfHashMap<UsdPrim, _MasterTask, boost::hash<UsdPrim> >
         _MasterTaskMap;
 
 public:
@@ -130,7 +130,7 @@ public:
         for (const auto& t : masterTasks) {
             if (t.second.numDependencies == 0) {
                 dispatcher.Run(
-                    &_MasterBBoxResolver::_ExecuteTaskForMaster, 
+                    &_MasterBBoxResolver::_ExecuteTaskForMaster,
                     this, t.first, &masterTasks, &xfCache, &dispatcher);
             }
         }
@@ -171,8 +171,8 @@ private:
     {
         tbb::task_group_context context;
         UsdGeomBBoxCache::_BBoxTask& rootTask =
-            *new(tbb::task::allocate_root(context)) 
-                UsdGeomBBoxCache::_BBoxTask(master, GfMatrix4d(1.0), 
+            *new(tbb::task::allocate_root(context))
+                UsdGeomBBoxCache::_BBoxTask(master, GfMatrix4d(1.0),
                                             _owner, xfCaches);
         tbb::task::spawn_root_and_wait(rootTask);
 
@@ -186,7 +186,7 @@ private:
                 masterTasks->find(dependentMaster)->second;
             if (dependentMasterData.numDependencies.fetch_and_decrement() == 1){
                 dispatcher->Run(
-                    &_MasterBBoxResolver::_ExecuteTaskForMaster, 
+                    &_MasterBBoxResolver::_ExecuteTaskForMaster,
                     this, dependentMaster, masterTasks, xfCaches, dispatcher);
             }
         }
@@ -201,7 +201,7 @@ private:
 namespace
 {
 // Enumeration of queries stored for each cached entry that varies
-// over time. 
+// over time.
 enum _Queries {
     Extent = 0,
 
@@ -250,12 +250,12 @@ _GetOrCreateExtentsHintQuery(UsdGeomModelAPI& geomModel, UsdAttributeQuery* q)
 // UsdGeomBBoxCache Public API
 // -------------------------------------------------------------------------- //
 
-UsdGeomBBoxCache::UsdGeomBBoxCache(UsdTimeCode time, TfTokenVector includedPurposes,
-                                   bool useExtentsHint)
+UsdGeomBBoxCache::UsdGeomBBoxCache(
+    UsdTimeCode time, TfTokenVector includedPurposes, bool useExtentsHint)
     : _time(time)
     , _includedPurposes(includedPurposes)
-    , _useExtentsHint(useExtentsHint)
     , _ctmCache(time)
+    , _useExtentsHint(useExtentsHint)
 {
 }
 
@@ -282,8 +282,8 @@ UsdGeomBBoxCache::ComputeWorldBound(const UsdPrim& prim)
 }
 
 GfBBox3d
-UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim, 
-                                      const UsdPrim &relativeToAncestorPrim)
+UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
+                                       const UsdPrim &relativeToAncestorPrim)
 {
     GfBBox3d bbox;
     if (!prim) {
@@ -298,7 +298,7 @@ UsdGeomBBoxCache::ComputeRelativeBound(const UsdPrim& prim,
     bbox = _GetCombinedBBoxForIncludedPurposes(bboxes);
 
     GfMatrix4d primCtm = _ctmCache.GetLocalToWorldTransform(prim);
-    GfMatrix4d ancestorCtm = 
+    GfMatrix4d ancestorCtm =
         _ctmCache.GetLocalToWorldTransform(relativeToAncestorPrim);
     GfMatrix4d relativeCtm = ancestorCtm.GetInverse() * primCtm;
 
@@ -326,7 +326,7 @@ UsdGeomBBoxCache::ComputeLocalBound(const UsdPrim& prim)
     // The value of resetsXformStack does not affect the local bound.
     bool resetsXformStack = false;
     bbox.Transform(_ctmCache.GetLocalTransformation(prim, &resetsXformStack));
-    
+
     return bbox;
 }
 
@@ -347,9 +347,9 @@ UsdGeomBBoxCache::ComputeUntransformedBound(const UsdPrim& prim)
     return _GetCombinedBBoxForIncludedPurposes(bboxes);
 }
 
-GfBBox3d 
+GfBBox3d
 UsdGeomBBoxCache::ComputeUntransformedBound(
-    const UsdPrim &prim, 
+    const UsdPrim &prim,
     const SdfPathSet &pathsToSkip,
     const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides)
 {
@@ -360,14 +360,14 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         return empty;
     }
 
-    // Use a path table to populate a hash map containing all ancestors of the 
+    // Use a path table to populate a hash map containing all ancestors of the
     // paths in pathsToSkip.
     SdfPathTable<bool> ancestorsOfPathsToSkip;
     for (const SdfPath &p : pathsToSkip) {
         ancestorsOfPathsToSkip[p.GetParentPath()] = true;
     }
 
-    // Use a path table to populate a hash map containing all ancestors of the 
+    // Use a path table to populate a hash map containing all ancestors of the
     // paths in ctmOverrides.
     SdfPathTable<bool> ancestorsOfOverrides;
     for (const auto &override : ctmOverrides) {
@@ -380,52 +380,52 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
         const UsdPrim &p = *it;
         const SdfPath &primPath = p.GetPath();
 
-        // If this is one of the paths to be skipped, then prune subtree and 
+        // If this is one of the paths to be skipped, then prune subtree and
         // continue traversal.
         if (pathsToSkip.count(primPath)) {
             it.PruneChildren();
             continue;
         }
 
-        // If this is an ancestor of a path that's skipped, then we must 
-        // continue the travesal down to find prims whose bounds can be 
+        // If this is an ancestor of a path that's skipped, then we must
+        // continue the travesal down to find prims whose bounds can be
         // included.
-        if (ancestorsOfPathsToSkip.find(primPath) != 
-                ancestorsOfPathsToSkip.end()) {            
+        if (ancestorsOfPathsToSkip.find(primPath) !=
+                ancestorsOfPathsToSkip.end()) {
             continue;
         }
 
         // Check if any of the descendants of the prim have transform overrides.
-        // If yes, we need to continue the travesal down to find prims whose 
+        // If yes, we need to continue the travesal down to find prims whose
         // bounds can be included.
         if (ancestorsOfOverrides.find(primPath) != ancestorsOfOverrides.end()) {
             continue;
         }
 
-        // Check to see if any of the ancestors of the prim or the prim itself 
-        // has an xform override. 
+        // Check to see if any of the ancestors of the prim or the prim itself
+        // has an xform override.
         SdfPath pathWithOverride = primPath;
         bool foundAncestorWithOverride = false;
-        TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash>::const_iterator 
+        TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash>::const_iterator
             overrideIter;
         while (pathWithOverride != prim.GetPath()) {
             overrideIter = ctmOverrides.find(pathWithOverride);
             if (overrideIter != ctmOverrides.end()) {
-                // We're only interested in the nearest override since we 
+                // We're only interested in the nearest override since we
                 // have the override CTMs in the given prim's space.
                 foundAncestorWithOverride = true;
                 break;
             }
             pathWithOverride = pathWithOverride.GetParentPath();
         }
-        
+
         GfBBox3d bbox;
         if (!foundAncestorWithOverride) {
             bbox = ComputeRelativeBound(p, prim);
         } else {
-            // Compute bound relative to the path for which we know the 
+            // Compute bound relative to the path for which we know the
             // corrected prim-relative CTM.
-            bbox = ComputeRelativeBound(p, 
+            bbox = ComputeRelativeBound(p,
                 prim.GetStage()->GetPrimAtPath(overrideIter->first));
 
             // The override CTM is already relative to the given prim.
@@ -464,7 +464,8 @@ UsdGeomBBoxCache::_GetCombinedBBoxForIncludedPurposes(
         if (it != bboxes.end()) {
             const GfBBox3d &bboxForPurpose = it->second;
             if (!bboxForPurpose.GetRange().IsEmpty())
-                combinedBound = GfBBox3d::Combine(combinedBound, bboxForPurpose);
+                combinedBound = GfBBox3d::Combine(combinedBound,
+                                                  bboxForPurpose);
         }
     }
     return combinedBound;
@@ -476,21 +477,21 @@ UsdGeomBBoxCache::SetTime(UsdTimeCode time)
     if (time == _time)
         return;
 
-    // If we're switching time into or out of default, then clear all the 
+    // If we're switching time into or out of default, then clear all the
     // entries in the cache.
-    // 
+    //
     // This is done because the _IsVarying() check (below) returns false for an
     // attribute when
     // * it has a default value,
     // * it has a single time sample and
     // * its default value is different from the varying time sample.
     //
-    // This is an optimization that works well when playing through a shot and 
+    // This is an optimization that works well when playing through a shot and
     // computing bboxes sequentially.
-    // 
-    // It should not common to compute bboxes at the default frame. Hence, 
+    //
+    // It should not common to compute bboxes at the default frame. Hence,
     // clearing all values here should not cause any performance issues.
-    // 
+    //
     bool clearUnvarying = false;
     if (_time == UsdTimeCode::Default() || time == UsdTimeCode::Default())
         clearUnvarying = true;
@@ -548,7 +549,7 @@ UsdGeomBBoxCache::_ShouldIncludePrim(const UsdPrim& prim)
 
 template <class AttributeOrQuery>
 static bool
-_IsVaryingImpl(const UsdTimeCode time, const AttributeOrQuery& attr) 
+_IsVaryingImpl(const UsdTimeCode time, const AttributeOrQuery& attr)
 {
     // XXX: Copied from UsdImagingDelegate::_TrackVariability.
     // XXX: This logic is highly sensitive to the underlying quantization of
@@ -572,23 +573,23 @@ _IsVaryingImpl(const UsdTimeCode time, const AttributeOrQuery& attr)
         // Between samples?
         if (lower != upper) {
             return true;
-        } 
+        }
 
         // Out of range (lower) or exactly on a time sample?
-        attr.GetBracketingTimeSamples(lower+.000001, 
+        attr.GetBracketingTimeSamples(lower+.000001,
                                       &lower, &upper, &hasSamples);
         if (lower != upper) {
             return true;
         }
 
         // Out of range (greater)?
-        attr.GetBracketingTimeSamples(lower-.000001, 
+        attr.GetBracketingTimeSamples(lower-.000001,
                                       &lower, &upper, &hasSamples);
         if (lower != upper) {
             return true;
         }
         // Really only one time sample --> not varying for our purposes
-    } 
+    }
     return false;
 }
 
@@ -598,16 +599,16 @@ UsdGeomBBoxCache::_IsVarying(const UsdAttribute& attr)
     return _IsVaryingImpl(_time, attr);
 }
 
-bool 
+bool
 UsdGeomBBoxCache::_IsVarying(const UsdAttributeQuery& query)
 {
     return _IsVaryingImpl(_time, query);
 }
 
 // Returns true if the given prim is a component or a subcomponent.
-static 
-bool 
-_IsComponentOrSubComponent(const UsdPrim &prim) 
+static
+bool
+_IsComponentOrSubComponent(const UsdPrim &prim)
 {
     UsdModelAPI model(prim);
     TfToken kind;
@@ -615,26 +616,26 @@ _IsComponentOrSubComponent(const UsdPrim &prim)
         return false;
 
 
-    return KindRegistry::IsA(kind, KindTokens->component) || 
+    return KindRegistry::IsA(kind, KindTokens->component) ||
         KindRegistry::IsA(kind, KindTokens->subcomponent);
 }
 
-// Returns the nearest ancestor prim that's a component or a subcomponent, or 
-// the stage's pseudoRoot if none are found. For the purpose of computing 
-// bounding boxes, subcomponents as treated similar to components, i.e. child 
+// Returns the nearest ancestor prim that's a component or a subcomponent, or
+// the stage's pseudoRoot if none are found. For the purpose of computing
+// bounding boxes, subcomponents as treated similar to components, i.e. child
 // bounds are accumulated in subcomponent-space for prims that are underneath
 // a subcomponent.
-// 
-static 
+//
+static
 UsdPrim
-_GetNearestComponent(const UsdPrim &prim) 
+_GetNearestComponent(const UsdPrim &prim)
 {
     UsdPrim modelPrim = prim;
     while (modelPrim) {
         if (_IsComponentOrSubComponent(modelPrim))
             return modelPrim;
 
-        modelPrim = modelPrim.GetParent();        
+        modelPrim = modelPrim.GetParent();
     }
 
     // If we get here, it means we did not find a model or a subcomponent at or
@@ -642,8 +643,8 @@ _GetNearestComponent(const UsdPrim &prim)
     return prim.GetStage()->GetPseudoRoot();
 }
 
-TfToken 
-UsdGeomBBoxCache::_ComputePurpose(const UsdPrim &prim) 
+TfToken
+UsdGeomBBoxCache::_ComputePurpose(const UsdPrim &prim)
 {
     TfToken purpose;
 
@@ -651,17 +652,17 @@ UsdGeomBBoxCache::_ComputePurpose(const UsdPrim &prim)
 
     UsdPrim parentPrim = prim.GetParent();
     if (parentPrim && parentPrim.GetPath() != SdfPath::AbsoluteRootPath()) {
-        // Try and get the parent prim's purpose first. If we find it in the 
-        // cache, we can compute this prim's purpose efficiently by avoiding the 
-        // n^2 recursion which results from using the 
+        // Try and get the parent prim's purpose first. If we find it in the
+        // cache, we can compute this prim's purpose efficiently by avoiding the
+        // n^2 recursion which results from using the
         // UsdGeomImageable::ComputePurpose() API directly.
-        // 
-        _PrimBBoxHashMap::iterator parentEntryIter = 
+        //
+        _PrimBBoxHashMap::iterator parentEntryIter =
             _bboxCache.find(parentPrim);
         if (parentEntryIter != _bboxCache.end()) {
             const TfToken &parentPurpose = parentEntryIter->second.purpose;
-            // parentPurpose could be empty when "prim" is the root prim of the 
-            // subgraph for which bounds are being computed. In this case, we 
+            // parentPurpose could be empty when "prim" is the root prim of the
+            // subgraph for which bounds are being computed. In this case, we
             // fallback to using UsdGeomImageable::ComputePurpose().
             if (!parentPurpose.IsEmpty()) {
                 if (parentPurpose == UsdGeomTokens->default_) {
@@ -678,39 +679,42 @@ UsdGeomBBoxCache::_ComputePurpose(const UsdPrim &prim)
     }
 
     if (purpose.IsEmpty()) {
-        purpose = img ? img.ComputePurpose() 
+        purpose = img ? img.ComputePurpose()
                       : UsdGeomTokens->default_;
     }
 
     return purpose;
 }
 
+// Helper to determine if we should use extents hints for \p prim.
+bool UsdGeomBBoxCache::
+_UseExtentsHintForPrim(UsdPrim const &prim) const
+{
+    return _useExtentsHint && prim.IsModel() &&
+        prim.GetPath() != SdfPath::AbsoluteRootPath();
+}
+
 bool
-UsdGeomBBoxCache::_ShouldPruneChildren(const UsdPrim &prim, 
+UsdGeomBBoxCache::_ShouldPruneChildren(const UsdPrim &prim,
                                        UsdGeomBBoxCache::_Entry *entry)
 {
-   // If the entry is already complete, we don't need to try to initialize it.
+    // If the entry is already complete, we don't need to try to initialize it.
     if (entry->isComplete) {
         return true;
     }
 
-    if (prim.GetPath() != SdfPath::AbsoluteRootPath() && 
-        _useExtentsHint && prim.IsModel()) {
-
-        UsdAttribute extentsHintAttr 
-            = UsdGeomModelAPI(prim).GetExtentsHintAttr();
-        VtVec3fArray extentsHint;
-        if (extentsHintAttr 
-            && extentsHintAttr.Get(&extentsHint, _time)
-            && extentsHint.size() >= 2) {
-            return true;
-        }
+    if (!_UseExtentsHintForPrim(prim)) {
+        return false;
     }
 
-    return false;
+    UsdAttribute extentsHintAttr = UsdGeomModelAPI(prim).GetExtentsHintAttr();
+    VtVec3fArray extentsHint;
+    return (extentsHintAttr
+            && extentsHintAttr.Get(&extentsHint, _time)
+            && extentsHint.size() >= 2);
 }
 
-UsdGeomBBoxCache::_Entry* 
+UsdGeomBBoxCache::_Entry*
 UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
     const UsdPrim& prim,
     std::vector<UsdPrim>* masterPrims)
@@ -740,13 +744,13 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
         _PrimBBoxHashMap::iterator cacheIt = _bboxCache.insert(
             std::make_pair(*it, _Entry())).first;
         if (_ShouldPruneChildren(*it, &cacheIt->second)) {
-            // The entry already exists and is complete, we don't need 
+            // The entry already exists and is complete, we don't need
             // the child entries for this query.
             it.PruneChildren();
         }
 
         if (it->IsInstance()) {
-            // This prim is an instance, so we need to compute 
+            // This prim is an instance, so we need to compute
             // bounding boxes for the master prims.
             const UsdPrim master = it->GetMaster();
             if (seenMasterPrims.insert(master).second) {
@@ -772,7 +776,7 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
 
 bool
 UsdGeomBBoxCache::_Resolve(
-    const UsdPrim& prim, 
+    const UsdPrim& prim,
     UsdGeomBBoxCache::_PurposeToBBoxMap *bboxes)
 {
     TRACE_FUNCTION();
@@ -802,13 +806,13 @@ UsdGeomBBoxCache::_Resolve(
     _ThreadXformCache xfCaches;
     xfCaches.local().Swap(_ctmCache);
 
-    // Find the nearest ancestor prim that's a model or a subcomponent. 
+    // Find the nearest ancestor prim that's a model or a subcomponent.
     UsdPrim modelPrim = _GetNearestComponent(prim);
     GfMatrix4d inverseComponentCtm = _ctmCache.GetLocalToWorldTransform(
         modelPrim).GetInverse();
 
-    _BBoxTask& rootTask = *new(tbb::task::allocate_root()) 
-                               _BBoxTask(prim, inverseComponentCtm, 
+    _BBoxTask& rootTask = *new(tbb::task::allocate_root())
+                               _BBoxTask(prim, inverseComponentCtm,
                                          this, &xfCaches);
     tbb::task::spawn_root_and_wait(rootTask);
 
@@ -819,7 +823,7 @@ UsdGeomBBoxCache::_Resolve(
     // it won't populate the local xfCaches we're swapping with.
     xfCaches.local().Swap(_ctmCache);
 
-    // Note: the map may contain unresolved entries, but future queries will 
+    // Note: the map may contain unresolved entries, but future queries will
     // populate them.
 
     // If the bound is in the cache, return it.
@@ -840,38 +844,38 @@ UsdGeomBBoxCache::_GetBBoxFromExtentsHint(
         if (TfDebug::IsEnabled(USDGEOM_BBOX) &&
             !geomModel.GetPrim().IsLoaded()){
             TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] MISSING extentsHint for "
-                                       "UNLOADED model %s.\n", 
+                                       "UNLOADED model %s.\n",
                                        geomModel.GetPrim().GetPath()
-                                       .GetString().c_str()); 
+                                       .GetString().c_str());
         }
 
         return false;
     }
 
     TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] Found cached extentsHint for "
-        "model %s.\n", geomModel.GetPrim().GetPath().GetString().c_str()); 
+        "model %s.\n", geomModel.GetPrim().GetPath().GetString().c_str());
 
-    const TfTokenVector &purposeTokens = 
+    const TfTokenVector &purposeTokens =
         UsdGeomImageable::GetOrderedPurposeTokens();
 
     for(size_t i = 0; i < purposeTokens.size(); ++i) {
         size_t idx = i*2;
-        // If extents are not available for the value of purpose, it 
-        // implies that the rest of the bounds are empty. 
+        // If extents are not available for the value of purpose, it
+        // implies that the rest of the bounds are empty.
         // Hence, we can break.
         if ((idx + 2) > extents.size())
             break;
 
-        (*bboxes)[purposeTokens[i]] = 
+        (*bboxes)[purposeTokens[i]] =
             GfBBox3d( GfRange3d(extents[idx], extents[idx+1]) );
     }
 
     return true;
 }
 
-void 
-UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task, 
-                               const UsdPrim& prim, 
+void
+UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
+                               const UsdPrim& prim,
                                const GfMatrix4d &inverseComponentCtm)
 {
     TRACE_FUNCTION();
@@ -906,22 +910,20 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     }
 
     // Check if the prim is a model and has extentsHint
-    const bool useExtentsHintForPrim = 
-        (_useExtentsHint && prim.IsModel() &&
-            prim.GetPath() != SdfPath::AbsoluteRootPath());
+    const bool useExtentsHintForPrim = _UseExtentsHintForPrim(prim);
 
     boost::shared_array<UsdAttributeQuery> &queries = entry->queries;
     if (!queries) {
         // If this cache doesn't use extents hints, we don't need the
-        // corresponding query. 
-        const size_t numQueries = 
+        // corresponding query.
+        const size_t numQueries =
             (useExtentsHintForPrim ? NumQueries : NumQueries - 1);
         queries.reset(new UsdAttributeQuery[numQueries]);
     }
 
     if (useExtentsHintForPrim) {
         UsdGeomModelAPI geomModel(prim);
-        const UsdAttributeQuery& extentsHintQuery = 
+        const UsdAttributeQuery& extentsHintQuery =
             _GetOrCreateExtentsHintQuery(geomModel, &queries[ExtentsHint]);
 
         if (_GetBBoxFromExtentsHint(geomModel, extentsHintQuery, bboxes)) {
@@ -931,9 +933,6 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             //      the non-varying case, similar to below?
             entry->isVarying = _IsVarying(extentsHintQuery);
             entry->isIncluded = _ShouldIncludePrim(prim);
-            if (entry->isVarying) {
-                entry->queries = queries;
-            }
             return;
         }
     }
@@ -952,7 +951,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             _GetOrCreateExtentQuery(prim, &queries[Extent]);
 
         UsdGeomXformable xformable(prim);
-        entry->isVarying = 
+        entry->isVarying =
             (xformable && xformable.TransformMightBeTimeVarying())
             || (extentQuery && _IsVarying(extentQuery))
             || (visQuery && _IsVarying(visQuery));
@@ -973,7 +972,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         VtVec3fArray extent;
         // Read the extent of the geometry, an axis-aligned bounding box in
         // local space.
-        const UsdAttributeQuery& extentQuery = 
+        const UsdAttributeQuery& extentQuery =
             _GetOrCreateExtentQuery(prim, &queries[Extent]);
 
         // If some extent is authored, check validity
@@ -994,19 +993,19 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             // If the prim is a PointBased, try to calculate the extent
             if (UsdGeomPointBased pointBasedObj = UsdGeomPointBased(prim)) {
 
-                // XXX: We check if the points attribute is authored on the given
-                // prim. All we require from clients is that IF they author 
-                // points, they MUST also author extent.
-                // 
-                // If no extent is authored, but points has some value, we 
+                // XXX: We check if the points attribute is authored on the
+                // given prim. All we require from clients is that IF they
+                // author points, they MUST also author extent.
+                //
+                // If no extent is authored, but points has some value, we
                 // compute the extent and display a debug message.
-                // 
+                //
                 // Otherwise, the client is consistent with our demands;
                 // no warning is issued, and no extent is computed.
-                // 
+                //
                 // For more information, see bugzilla #115735
 
-                bool primHasAuthoredPoints = 
+                bool primHasAuthoredPoints =
                     pointBasedObj.GetPointsAttr().HasAuthoredValueOpinion();
 
                 if (primHasAuthoredPoints) {
@@ -1016,7 +1015,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                         prim.GetPath().GetString().c_str());
 
                     // Create extent
-                    successGettingExtent = 
+                    successGettingExtent =
                         UsdGeomBoundable::ComputeExtentFromPlugins(
                             pointBasedObj, _time, &extent);
 
@@ -1027,11 +1026,11 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                     }
                 }
 
-            } else { 
-                // Skip non-PointsBased prims without extent. Display a message 
+            } else {
+                // Skip non-PointsBased prims without extent. Display a message
                 // if the debug flag is enabled.
                 TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] WARNING: No valid "
-                    "extent authored for <%s>.", 
+                    "extent authored for <%s>.",
                     prim.GetPath().GetString().c_str());
 
             }
@@ -1056,7 +1055,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     GfMatrix4d localToComponentXform(1.0);
 
     // Accumulate child bounds:
-    // 
+    //
     //  1) Filter and queue up the children to be processed.
     //  2) Spawn new child tasks and wait for them to complete.
     //  3) Accumulate the results into this cache entry.
@@ -1065,12 +1064,12 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
 
     // Filter childen and queue children.
     if (!pruneChildren) {
-        // Compute the enclosing model's (or subcomponent's) inverse CTM. 
+        // Compute the enclosing model's (or subcomponent's) inverse CTM.
         // This will be used to compute the child bounds in model-space.
-        const GfMatrix4d &inverseEnclosingComponentCtm = 
+        const GfMatrix4d &inverseEnclosingComponentCtm =
                 _IsComponentOrSubComponent(prim) ?
                 xfCache.GetLocalToWorldTransform(prim).GetInverse() :
-                inverseComponentCtm; 
+                inverseComponentCtm;
 
         std::vector<std::pair<UsdPrim, _BBoxTask*> > included;
         // See comment in _Resolve about unloaded prims
@@ -1110,9 +1109,9 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
 
             // We're now confident that the cached flag is correct.
             if (!childEntry->isIncluded) {
-                // If the child prim is excluded, mark the parent as varying 
+                // If the child prim is excluded, mark the parent as varying
                 // if the child is imageable and its visibility is varying.
-                // This will ensure that the parent entry gets dirtied when 
+                // This will ensure that the parent entry gets dirtied when
                 // the child becomes visible.
                 UsdGeomImageable img (childPrim);
                 if (img)
@@ -1133,7 +1132,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                     new(task->allocate_child())
                         _BBoxTask(*childIt,
                                   inverseEnclosingComponentCtm,
-                                  this, 
+                                  this,
                                   task->GetXformCaches())));
                 ++refCount;
             }
@@ -1142,10 +1141,10 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // Spawn and wait.
         //
         // Warning: calling spawn() before set_ref_count results in undefined
-        // behavior. 
-        // 
+        // behavior.
+        //
         // All the child bboxTasks will be NULL if the prim is an instance.
-        // 
+        //
         if (!primIsInstance) {
             task->set_ref_count(refCount);
             TF_FOR_ALL(childIt, included) {
@@ -1155,7 +1154,8 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             }
             task->wait_for_all();
 
-            // We may have switched threads, grab the thread-local xfCache again.
+            // We may have switched threads, grab the thread-local xfCache
+            // again.
             xfCache = task->GetXformCaches()->local();
             xfCache.SetTime(_time);
         }
@@ -1179,7 +1179,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 if (!bboxInComponentSpace){
                     // Put the local extent into "baked" component space, i.e.
                     // a bbox with identity transform
-                    localToComponentXform = 
+                    localToComponentXform =
                         xfCache.GetLocalToWorldTransform(prim) *
                         inverseEnclosingComponentCtm;
 
@@ -1197,13 +1197,13 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 GfMatrix4d childLocalToComponentXform;
                 if (primIsInstance) {
                     bool resetsXf = false;
-                    childLocalToComponentXform = 
+                    childLocalToComponentXform =
                         xfCache.GetLocalTransformation(childPrim, &resetsXf) *
                         localToComponentXform;
                 }
                 else {
-                    childLocalToComponentXform = 
-                        xfCache.GetLocalToWorldTransform(childPrim) * 
+                    childLocalToComponentXform =
+                        xfCache.GetLocalToWorldTransform(childPrim) *
                         inverseEnclosingComponentCtm;
                 }
 
@@ -1224,18 +1224,18 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         }
     }
 
-    // All prims must be cached in local space: convert bbox from component to 
+    // All prims must be cached in local space: convert bbox from component to
     // local space.
     if (bboxInComponentSpace) {
-        // When children are accumulated, the bbox range is in component space, 
-        // so we must apply the inverse component-space transform 
+        // When children are accumulated, the bbox range is in component space,
+        // so we must apply the inverse component-space transform
         // (component-to-local) to move it to local space.
         GfMatrix4d componentToLocalXform = localToComponentXform.GetInverse();
         TF_FOR_ALL(bboxIt, *bboxes) {
             GfBBox3d &bbox = bboxIt->second;
             bbox.SetMatrix(componentToLocalXform);
         }
-    } 
+    }
 
     // --
     // NOTE: bbox is now in local space, either via the matrix or range.
@@ -1244,13 +1244,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     // Performance note: we could leverage the fact that the bound is initially
     // computed in world space and avoid an extra transformation for recursive
     // calls, however that optimization was not significant in early tests.
-    
-    // Stash away queries for varying entries so they can be reused
-    // for computations at other times.
-    if (entry->isVarying) {
-        entry->queries = queries;
-    }
-    
+
     // Mark as cached and return.
     entry->isComplete = true;
     TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] resolved value: %s %s "
