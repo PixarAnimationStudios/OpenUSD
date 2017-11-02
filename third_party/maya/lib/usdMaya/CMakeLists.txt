@@ -118,6 +118,7 @@ pxr_shared_library(${PXR_PACKAGE}
         module.cpp
         wrapAssembly.cpp
         wrapEditUtil.cpp
+        wrapMeshUtil.cpp
         wrapQuery.cpp
         wrapRoundTripUtil.cpp
         wrapStageCache.cpp

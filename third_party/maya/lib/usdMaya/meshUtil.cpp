@@ -24,14 +24,19 @@
 #include "pxr/pxr.h"
 #include "usdMaya/meshUtil.h"
 
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
+#include <maya/MFloatVector.h>
+#include <maya/MFloatVectorArray.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MItMeshFaceVertex.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
@@ -108,6 +113,54 @@ TfToken PxrUsdMayaMeshUtil::setEmitNormals(const UsdGeomMesh &primSchema, MFnMes
     return normalInterp;
 }
 
+bool
+PxrUsdMayaMeshUtil::GetMeshNormals(
+        const MFnMesh& mesh,
+        VtArray<GfVec3f>* normalsArray,
+        TfToken* interpolation)
+{
+    MStatus status;
+
+    // Sanity check first to make sure we can get this mesh's normals.
+    int numNormals = mesh.numNormals(&status);
+    if (status != MS::kSuccess || numNormals == 0) {
+        return false;
+    }
+
+    // Using itFV.getNormal() does not always give us the right answer, so
+    // instead we have to use itFV.normalId() and use that to index into the
+    // normals.
+    MFloatVectorArray mayaNormals;
+    status = mesh.getNormals(mayaNormals);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    normalsArray->resize(numFaceVertices);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
+        int normalId = itFV.normalId();
+        if (normalId < 0 ||
+                static_cast<size_t>(normalId) >= mayaNormals.length()) {
+            return false;
+        }
+
+        MFloatVector normal = mayaNormals[normalId];
+        (*normalsArray)[fvi][0] = normal[0];
+        (*normalsArray)[fvi][1] = normal[1];
+        (*normalsArray)[fvi][2] = normal[2];
+    }
+
+    return true;
+}
 
 // This can be customized for specific pipelines.
 // We first look for the USD string attribute, and if not present we look for
