@@ -170,6 +170,13 @@ _EmitAnyExtraLogInfo(FILE* outFile)
 }
 
 static void
+_EmitExtraLogMessage(FILE *outFile, char const *message)
+{
+    // This function can't cause any heap allocation, be careful.
+    fputs(message, outFile);
+}
+
+static void
 _EmitAnyExtraLogInfo(FILE* outFile, size_t max)
 {
     size_t n = 0;
@@ -192,12 +199,14 @@ _EmitAnyExtraLogInfo(FILE* outFile, size_t max)
 }
 
 static void
-_EmitAnyExtraLogInfo(char const *fname)
+_EmitAnyExtraLogInfo(char const *fname, char const *extraMessage=nullptr)
 {
     // This function can't cause any heap allocation, be careful.
     // XXX -- fopen() and fclose() will each do at least one heap operation.
     if (FILE* outFile = ArchOpenFile(fname, "a")) {
         _EmitAnyExtraLogInfo(outFile);
+        if (extraMessage)
+            _EmitExtraLogMessage(outFile, extraMessage);
         fclose(outFile);
     }
 }
@@ -901,7 +910,9 @@ ArchSetLogSession(
  * Use of char*'s is deliberate: only async-safe calls allowed past this point!
  */
 void
-ArchLogPostMortem(const char* reason, const char* message /* = nullptr */)
+ArchLogPostMortem(const char* reason,
+                  const char* message /* = nullptr */,
+                  const char* extraLogMsg /* = nullptr */)
 {
     static std::atomic_flag busy = ATOMIC_FLAG_INIT;
 
@@ -976,7 +987,7 @@ ArchLogPostMortem(const char* reason, const char* message /* = nullptr */)
         "------------------------------------------------------------------\n");
 
     if (loggedStack) {
-        _EmitAnyExtraLogInfo(logfile);
+        _EmitAnyExtraLogInfo(logfile, extraLogMsg);
         _FinishLoggingFatalStackTrace(progname, logfile, NULL /*session log*/, 
                                       true /* crashing hard? */);
     }

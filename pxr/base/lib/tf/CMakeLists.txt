@@ -150,7 +150,8 @@ pxr_library(tf
     PYTHON_PRIVATE_CLASSES
         pyErrorInternal
 
-    PRIVATE_HEADERS 
+    PRIVATE_HEADERS
+        scopeDescriptionPrivate.h
         pxrDoubleConversion/ieee.h
         pxrDoubleConversion/utils.h
         pxrDoubleConversion/double-conversion.h

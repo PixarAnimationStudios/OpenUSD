@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/scopeDescription.h"
+#include "pxr/base/tf/scopeDescriptionPrivate.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
@@ -32,6 +33,8 @@
 
 #include <tbb/spin_mutex.h>
 
+#include <algorithm>
+#include <chrono>
 #include <thread>
 
 using std::vector;
@@ -40,6 +43,41 @@ using std::string;
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+// A 2 MB buffer for generating the crash message, and a lock.
+tbb::spin_mutex messageMutex;
+constexpr size_t MaxMessageBytes = 2*1024*1024;
+char message[MaxMessageBytes];
+
+// Called by Tf's _fatalSignalHandler in diagnostic.cpp.  This code must be
+// async signal safe!  It must not invoke the heap allocator or anything like
+// that.
+struct _MessageWriter
+{
+    _MessageWriter() : cur(message), end(message + MaxMessageBytes - 1) {}
+
+    inline void Write(char const *txt) {
+        while (*txt && cur != end) {
+            *cur++ = *txt++;
+        }
+        *cur = '\0';
+    }
+
+    inline void Write(size_t num) {
+        if (cur == end)
+            return;
+        char *start = cur;
+        do {
+            size_t dig = num % 10;
+            *cur++ = '0' + dig;
+            num /= 10;
+        } while (num && cur != end);
+        std::reverse(start, cur);
+        *cur = '\0';
+    }
+    
+    char *cur, *end;
+};
 
 struct _Stack;
 
@@ -82,18 +120,24 @@ struct _StackRegistry
         _StackRegistry *_reg;
     };
 
+    struct _StackEntry {
+        std::thread::id id;
+        std::string idStr;
+        _Stack *stack;
+    };
+
     // Register \p stack as the stack for \p id.
     void Add(std::thread::id id, _Stack *stack) {
         tbb::spin_mutex::scoped_lock lock(_stacksMutex);
-        _stacks.emplace_back(id, stack);
+        _stacks.push_back({ id, TfStringify(id), stack });
     }
     // Remove \p stack from the registry.
     void Remove(_Stack *stack) {
         tbb::spin_mutex::scoped_lock lock(_stacksMutex);
         auto it = std::find_if(
             _stacks.begin(), _stacks.end(),
-            [stack](std::pair<std::thread::id, _Stack *> const &p) {
-                return p.second == stack;
+            [stack](_StackEntry const &e) {
+                return e.stack == stack;
             });
         TF_AXIOM(it != _stacks.end());
         std::swap(*it, _stacks.back());
@@ -106,18 +150,21 @@ struct _StackRegistry
         _stacksMutex.lock();
         auto it = std::find_if(
             _stacks.begin(), _stacks.end(),
-            [id](std::pair<std::thread::id, _Stack *> const &p) {
-                return p.first == id;
+            [id](_StackEntry const &e) {
+                return e.id == id;
             });
-        return StackLock(it == _stacks.end() ? nullptr : it->second, this);
+        return StackLock(it == _stacks.end() ? nullptr : it->stack, this);
     }    
 private:
+    // Give access to the crash reporter facility.
+    friend char const *_ComputeAndLockScopeDescriptionStackMsg();
+    
     void _UnlockThread() {
         _stacksMutex.unlock();
     }
     
     tbb::spin_mutex _stacksMutex;
-    std::vector<std::pair<std::thread::id, _Stack *>> _stacks;
+    std::vector<_StackEntry> _stacks;
 };
 
 // Obtain the registry singleton instance.
@@ -152,6 +199,110 @@ static _Stack &_GetLocalStack()
     return _tlStack;
 }
 
+static bool _TimedTryAcquire(tbb::spin_mutex::scoped_lock &lock,
+                             tbb::spin_mutex &mutex,
+                             int msecToTry = 10)
+{
+    if (lock.try_acquire(mutex))
+        return true;
+
+    auto start = std::chrono::high_resolution_clock::now();
+    int msec = 0;
+    do {
+        std::this_thread::yield();
+        if (lock.try_acquire(mutex))
+            return true;
+        msec = std::chrono::duration_cast<
+            std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - start).count();
+    } while (msec < msecToTry);
+    return false;
+}
+
+char const *
+_ComputeAndLockScopeDescriptionStackMsg()
+{
+    // Lock the message mutex.
+    messageMutex.lock();
+    
+    _MessageWriter writer;
+
+    // Try to lock the _StackRegistry mutex -- if we fail, bail.
+    auto &reg = GetRegistry();
+    tbb::spin_mutex::scoped_lock regLock;
+    if (!_TimedTryAcquire(regLock, reg._stacksMutex)) {
+        writer.Write("Error: cannot generate TfScopeDescription stacks - "
+                     "failed to acquire lock on stack registry mutex.\n");
+        return message;
+    }
+
+    // Now collect up as many entries as we can and sort.  This is number of
+    // *stacks*, like number of threads -- not stack depth.
+    constexpr size_t MaxStackEntries = 1024;
+    _StackRegistry::_StackEntry *entries[MaxStackEntries];
+    size_t numEntries = std::min(MaxStackEntries, reg._stacks.size());
+    for (size_t i = 0; i != numEntries; ++i) {
+        entries[i] = &reg._stacks[i];
+    }
+    // Sort -- always sort "main thread" first.
+    std::thread::id mainThreadId = ArchGetMainThreadId();
+    std::sort(
+        entries, entries + numEntries,
+        [mainThreadId](_StackRegistry::_StackEntry *l,
+                       _StackRegistry::_StackEntry *r) {
+            if (l->id == r->id)
+                return false;
+            if (l->id == mainThreadId)
+                return true;
+            if (r->id == mainThreadId)
+                return false;
+            return l->id < r->id;
+        });
+
+    // Now try to generate text for each of them.
+    for (size_t i = 0; i != numEntries; ++i) {
+        _StackRegistry::_StackEntry *e = entries[i];
+        // Try to lock this entry's mutex, if we fail or if empty stack, bail.
+        tbb::spin_mutex::scoped_lock stackLock;
+        if (!_TimedTryAcquire(stackLock, e->stack->mutex)) {
+            writer.Write("Error: cannot write TfScopeDescription stack "
+                         "for thread ");
+            writer.Write(e->idStr.c_str());
+            writer.Write(" - failed to acquire stack lock.\n\n");
+        }
+        if (!e->stack->head) {
+            continue;
+        }
+
+        writer.Write("Thread ");
+        writer.Write(e->idStr.c_str());
+        if (e->id == ArchGetMainThreadId()) {
+            writer.Write(" (main)");
+        }
+        writer.Write(" Scope Descriptions\n");
+
+        size_t frame = 1;
+        TfScopeDescription *curScope = e->stack->head;
+        while (curScope) {
+            writer.Write("#");
+            writer.Write(frame++);
+            writer.Write(" ");
+            writer.Write(Tf_GetScopeDescriptionText(curScope));
+            if (TfCallContext const &ctx =
+                Tf_GetScopeDescriptionContext(curScope)) {
+                writer.Write(" (from "); writer.Write(ctx.GetFunction());
+                writer.Write(" in "); writer.Write(ctx.GetFile());
+                writer.Write("#"); writer.Write(ctx.GetLine());
+                writer.Write(")");
+            }
+            writer.Write("\n");
+            curScope = Tf_GetPreviousScopeDescription(curScope);
+        }
+        writer.Write("\n");
+    }
+    return message;
+}
+
 } // anon
 
 void
@@ -176,21 +327,27 @@ TfScopeDescription::_Pop() const
     stack.head = _prev;
 }
 
-TfScopeDescription::TfScopeDescription(std::string const &msg)
+TfScopeDescription::TfScopeDescription(
+    std::string const &msg, TfCallContext const &ctx)
     : _description(msg.c_str())
+    , _context(ctx)
 {
     _Push();
 }
 
-TfScopeDescription::TfScopeDescription(std::string &&msg)
+TfScopeDescription::TfScopeDescription(
+    std::string &&msg, TfCallContext const &ctx)
     : _ownedString(std::move(msg))
     , _description(_ownedString->c_str())
+    , _context(ctx)
 {
     _Push();
 }
 
-TfScopeDescription::TfScopeDescription(char const *msg)
+TfScopeDescription::TfScopeDescription(
+    char const *msg, TfCallContext const &ctx)
     : _description(msg)
+    , _context(ctx)
 {
     _Push();
 }
@@ -261,6 +418,18 @@ vector<string>
 TfGetThisThreadScopeDescriptionStack()
 {
     return _GetScopeDescriptionStack(std::this_thread::get_id());
+}
+
+// From scopeDescriptionPrivate.h
+
+Tf_ScopeDescriptionStackReportLock::Tf_ScopeDescriptionStackReportLock()
+    : _msg(_ComputeAndLockScopeDescriptionStackMsg())
+{
+}
+
+Tf_ScopeDescriptionStackReportLock::~Tf_ScopeDescriptionStackReportLock()
+{
+    messageMutex.unlock();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

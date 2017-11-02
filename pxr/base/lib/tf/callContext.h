@@ -50,6 +50,13 @@ TfCallContext(__ARCH_FILE__, __ARCH_FUNCTION__, __LINE__, __ARCH_PRETTY_FUNCTION
 class TfCallContext
 {
 public:
+    constexpr TfCallContext()
+        : _file(nullptr)
+        , _function(nullptr)
+        , _line(0)
+        , _prettyFunction(nullptr)
+        , _hidden(false) {}
+    
     constexpr TfCallContext(char const *file,
                             char const *function,
                             size_t line,
@@ -86,6 +93,8 @@ public:
     bool IsHidden() const {
         return _hidden;
     }
+
+    explicit operator bool() const { return _file && _function; }
     
   private:
 

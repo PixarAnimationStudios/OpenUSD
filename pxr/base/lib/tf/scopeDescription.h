@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/api.h"
@@ -57,17 +58,23 @@ public:
     /// Construct with a description.  Push \a description on the stack of
     /// descriptions for this thread.  Caller guarantees that the string
     /// \p description lives at least as long as this TfScopeDescription object.
-    TF_API explicit TfScopeDescription(std::string const &description);
+    TF_API explicit
+    TfScopeDescription(std::string const &description,
+                       TfCallContext const &context = TfCallContext());
 
     /// Construct with a description.  Push \a description on the stack of
     /// descriptions for this thread.  This object adopts ownership of the
     /// rvalue \p description.
-    TF_API explicit TfScopeDescription(std::string &&description);
+    TF_API explicit
+    TfScopeDescription(std::string &&description,
+                       TfCallContext const &context = TfCallContext());
 
     /// Construct with a description.  Push \a description on the stack of
     /// descriptions for this thread.  Caller guarantees that the string
     /// \p description lives at least as long as this TfScopeDescription object.
-    TF_API explicit TfScopeDescription(char const *description);
+    TF_API explicit
+    TfScopeDescription(char const *description,
+                       TfCallContext const &context = TfCallContext());
 
     /// Destructor.
     /// Pop the description stack in this thread.
@@ -96,13 +103,17 @@ private:
     Tf_GetScopeDescriptionText(TfScopeDescription *d) {
         return d->_description;
     }
+    friend inline TfCallContext const &
+    Tf_GetScopeDescriptionContext(TfScopeDescription *d) {
+        return d->_context;
+    }
     
     inline void _Push();
     inline void _Pop() const;
     
     boost::optional<std::string> _ownedString;
     char const *_description;
-
+    TfCallContext _context;
     TfScopeDescription *_prev; // link to parent scope.
 };
 
@@ -124,7 +135,7 @@ TfGetThisThreadScopeDescriptionStack();
 #define TF_DESCRIBE_SCOPE(fmt, ...)                                            \
     TfScopeDescription __scope_description__                                   \
     (BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__),                                     \
-                 TfStringPrintf(fmt, __VA_ARGS__), fmt))
+                 TfStringPrintf(fmt, __VA_ARGS__), fmt), TF_CALL_CONTEXT)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
