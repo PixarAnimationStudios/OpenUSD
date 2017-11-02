@@ -30,6 +30,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tracelite/trace.h"
@@ -124,6 +125,8 @@ public:
 
     bool Save(string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Save");
+
+        TF_DESCRIBE_SCOPE("Saving usd binary file @%s@", fileName.c_str());
         
         auto dataFileName = _crateFile->GetFileName();
         if (!TF_VERIFY(fileName == dataFileName || dataFileName.empty()))
@@ -189,6 +192,8 @@ public:
     bool Open(string const &fileName) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Open");
 
+        TF_DESCRIBE_SCOPE("Opening usd binary file @%s@", fileName.c_str());
+        
         if (auto newData = CrateFile::Open(fileName)) {
             _crateFile = std::move(newData);
             return _PopulateFromCrateFile();
@@ -389,6 +394,8 @@ public:
     inline bool Has(const SdfAbstractDataSpecId& id,
                     const TfToken & field,
                     VtValue *value) const {
+        TF_DESCRIBE_SCOPE(GetFileName().c_str());
+        TfScopeDescription desc2(field.GetText());
         if (VtValue const *fieldValue = _GetFieldValue(id, field)) {
             if (value) {
                 *value = _DetachValue(*fieldValue);
@@ -555,6 +562,7 @@ public:
 
     inline bool QueryTimeSample(const SdfAbstractDataSpecId& id, double time,
                                 VtValue *value) const {
+        TF_DESCRIBE_SCOPE(GetFileName().c_str());
         if (VtValue const *fieldValue =
             _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
@@ -810,6 +818,7 @@ private:
 
     inline std::vector<double> const &
     _ListTimeSamplesForPath(const SdfAbstractDataSpecId &id) const {
+        TF_DESCRIBE_SCOPE(GetFileName().c_str());
         if (const VtValue* fieldValue =
             _GetFieldValue(id, SdfDataTokens->TimeSamples)) {
             if (fieldValue->IsHolding<TimeSamples>()) {
