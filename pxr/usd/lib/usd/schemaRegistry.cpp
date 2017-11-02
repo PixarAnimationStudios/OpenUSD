@@ -41,6 +41,7 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/work/loops.h"
 
 #include <set>
 #include <utility>
@@ -151,12 +152,28 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     PlugRegistry::GetAllDerivedTypes(*_schemaBaseType, &types);
 
     // Get all the plugins that provide the types.
-    set<PlugPluginPtr> plugins;
+    std::vector<PlugPluginPtr> plugins;
     for (const TfType &type: types) {
         if (PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginForType(type))
-            plugins.insert(plugin);
+            PlugRegistry::GetInstance().GetPluginForType(type)) {
+
+            auto insertIt = 
+                std::lower_bound(plugins.begin(), plugins.end(), plugin);
+            if (insertIt == plugins.end() || *insertIt != plugin) {
+                plugins.insert(insertIt, plugin);
+            }
+        }
     }
+    
+    // For each plugin, if it has generated schema, add it to the schematics.
+    std::vector<SdfLayerRefPtr> generatedSchemas(plugins.size());
+    WorkParallelForN(
+        plugins.size(),
+        [&plugins, &generatedSchemas](size_t begin, size_t end) {
+            for (; begin != end; ++begin) {
+                generatedSchemas[begin] = _GetGeneratedSchema(plugins[begin]);
+            }
+        });
 
     // Get list of disallowed fields in schemas and sort them so that
     // helper functions in _AddSchema can binary search through them.
@@ -164,11 +181,11 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     std::sort(disallowedFields.begin(), disallowedFields.end(),
               TfTokenFastArbitraryLessThan());
 
-    // For each plugin, if it has generated schema, add it to the schematics.
     SdfChangeBlock block;
-    for (const PlugPluginPtr &plugin: plugins) {
-        if (SdfLayerRefPtr generatedSchema = _GetGeneratedSchema(plugin))
+    for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
+        if (generatedSchema) {
             _AddSchema(generatedSchema, _schematics, disallowedFields);
+        }
     }
 
     // Add them to the type -> path and typeName -> path maps, and the type ->
