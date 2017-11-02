@@ -75,6 +75,14 @@ UsdImagingPrimAdapter::ShouldCullChildren(UsdPrim const&)
 }
 
 /*virtual*/
+bool
+UsdImagingPrimAdapter::IsInstancerAdapter()
+{
+    // By default, opt-out of nested-instancing adapter resolution.
+    return false;
+}
+
+/*virtual*/
 void
 UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath, 
                                          UsdImagingIndexProxy* index) 

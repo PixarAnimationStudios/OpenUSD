@@ -82,6 +82,11 @@ public:
     // given prim.
     virtual bool ShouldCullChildren(UsdPrim const& prim);
 
+    // Indicates the adapter is a multiplexing adapter (e.g. PointInstancer),
+    // potentially managing its children. This flag is used in nested
+    // instancer cases to determine which adapter is assigned to which prim.
+    virtual bool IsInstancerAdapter();
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

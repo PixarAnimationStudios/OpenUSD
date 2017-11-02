@@ -54,7 +54,9 @@ public:
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const* instancerContext = NULL);
 
-    virtual bool ShouldCullChildren(UsdPrim const& prim);
+    virtual bool ShouldCullChildren(UsdPrim const& prim) { return true; }
+
+    virtual bool IsInstancerAdapter() { return true; }
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve

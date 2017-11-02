@@ -334,21 +334,14 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
 
     // There is no need to call AddDependency, as it will be picked up via the
     // instancer context.
-    SdfPath populatedPath = adapter->Populate(prim, index, &ctx);
+    protoPath = adapter->Populate(prim, index, &ctx);
 
     if (adapter->ShouldCullChildren(prim)) {
-        // If the prim's adapter wants to prune children, it's likely some sort
-        // of multiplexing adapter, in which case we wont attempt to relocate it
-        // under the instancer (this happens in the case of recursive
-        // instancers).
         it->PruneChildren();
+    }
 
-        // we use populatedPath instead of prim.GetPath() so that prim adapter
-        // can clone the prim if necessary (see PointInstancer)
-        protoPath = populatedPath;
+    if (adapter->IsInstancerAdapter()) {
         *isLeafInstancer = false;
-    } else {
-        protoPath = instancerPath.AppendProperty(protoName);
     }
 
     return protoPath;
@@ -1089,12 +1082,6 @@ UsdImagingInstanceAdapter::GetInstancer(SdfPath const &cachePath)
         return it->second;
     }
     return SdfPath();
-}
-
-bool
-UsdImagingInstanceAdapter::ShouldCullChildren(UsdPrim const& prim)
-{
-    return true;
 }
 
 void

@@ -266,7 +266,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 // note that this is not IsInMaster.
                 range.set_begin(++iter);
                 continue;
-            } else if (adapter->ShouldCullChildren(*iter)) {
+            } else if (adapter->IsInstancerAdapter()) {
                 // if the prim is handled by some kind of multiplexing adapter
                 // (e.g. another nested PointInstancer)
                 // we'll relocate its children to itself, then no longer need to
@@ -274,14 +274,13 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 //
                 // note that this condition should be tested after IsInstance()
                 // above, since UsdImagingInstanceAdapter also returns true for
-                // ShouldCullChildren but it could be instancing something else.
+                // IsInstancerAdapter but it could be instancing something else.
                 UsdImagingInstancerContext ctx = {
                     instancerContext->instancerId,
                     instancerContext->childName,
                     instancerContext->instanceMaterialId,
                     UsdImagingPrimAdapterSharedPtr() };
                 protoPath = adapter->Populate(*iter, index, &ctx);
-                iter.PruneChildren();
             } else {
                 TfToken protoName(
                     TfStringPrintf(
@@ -294,8 +293,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     /*childName=*/protoName,
                     materialId,
                     instancerContext->instancerAdapter };
-                protoPath = instancerPath.AppendProperty(protoName);
-                adapter->Populate(*iter, index, &ctx);
+                protoPath = adapter->Populate(*iter, index, &ctx);
+            }
+
+            if (adapter->ShouldCullChildren(*iter)) {
+                iter.PruneChildren();
             }
 
             if (protoPath.IsEmpty()) {
@@ -1195,12 +1197,6 @@ UsdImagingPointInstancerAdapter::MarkVisibilityDirty(
 
         index->MarkInstancerDirty(cachePath, visibilityDirty);
     }
-}
-
-bool
-UsdImagingPointInstancerAdapter::ShouldCullChildren(UsdPrim const& prim)
-{
-    return true;
 }
 
 void
