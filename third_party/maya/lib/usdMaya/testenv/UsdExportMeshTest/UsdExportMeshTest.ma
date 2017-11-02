@@ -222,8 +222,6 @@ createNode transform -n "TestNormalsMesh" -p "UsdExportMeshTest";
 createNode mesh -n "TestNormalsMeshShape" -p "TestNormalsMesh";
 	rename -uid "723618C0-0000-704C-5872-BC9000000269";
 	addAttr -ci true -sn "mgi" -ln "mayaGprimID" -dt "string";
-	addAttr -ci true -sn "mjtoMeshEmitFaceIndex" -ln "mjtoMeshEmitFaceIndex" -min 0 
-		-max 1 -at "bool";
 	addAttr -ci true -k true -sn "RMNCFaxis" -ln "RMNCFaxis" -dv 1 -at "float";
 	addAttr -ci true -sn "USD_subdivisionScheme" -ln "USD_subdivisionScheme" -dt "string";
 	setAttr -k off ".v";
@@ -269,7 +267,6 @@ createNode mesh -n "TestNormalsMeshShape" -p "TestNormalsMesh";
 	setAttr ".dn" yes;
 	setAttr ".dr" 1;
 	setAttr ".mgi" -type "string" "ID_feecf336-849b-4b53-af4d-ae97ce301741";
-	setAttr ".mjtoMeshEmitFaceIndex" yes;
 	setAttr -k on ".USD_subdivisionScheme" -type "string" "none";
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "723618C0-0000-704C-5872-BC7500000256";
