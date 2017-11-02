@@ -30,7 +30,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/preprocessor/if.hpp>
 
 #include <vector>
@@ -41,43 +41,83 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class TfScopeDescription
 ///
 /// This class is used to provide high-level descriptions about scopes of
-/// execution that could possibly block. This class should not be used
-/// anywhere in an inner-loop. It is meant to be used in high-level scopes
-/// where we can provide descriptions relevant to application users.
-class TfScopeDescription : boost::noncopyable
+/// execution that could possibly block, or to provide relevant information
+/// about high-level action that would be useful in a crash report.
+///
+/// This class is reasonably fast to use, especially if the message strings are
+/// not dynamically created, however it should not be used in very highly
+/// performance sensitive contexts.  The cost to push & pop is essentially a TLS
+/// lookup plus a couple of atomic operations.
+class TfScopeDescription
 {
+    TfScopeDescription() = delete;
+    TfScopeDescription(TfScopeDescription const &) = delete;
+    TfScopeDescription &operator=(TfScopeDescription const &) = delete;
 public:
-    /// Construct with a description.
-    /// Push \a description on the stack of descriptions. Note that currently,
-    /// descriptions are only pushed/popped for execution in the main thread.
+    /// Construct with a description.  Push \a description on the stack of
+    /// descriptions for this thread.  Caller guarantees that the string
+    /// \p description lives at least as long as this TfScopeDescription object.
     TF_API explicit TfScopeDescription(std::string const &description);
 
+    /// Construct with a description.  Push \a description on the stack of
+    /// descriptions for this thread.  This object adopts ownership of the
+    /// rvalue \p description.
+    TF_API explicit TfScopeDescription(std::string &&description);
+
+    /// Construct with a description.  Push \a description on the stack of
+    /// descriptions for this thread.  Caller guarantees that the string
+    /// \p description lives at least as long as this TfScopeDescription object.
+    TF_API explicit TfScopeDescription(char const *description);
+
     /// Destructor.
-    /// Pop the description stack. Note that currently, descriptions are only
-    /// pushed/popped for execution in the main thread.
+    /// Pop the description stack in this thread.
     TF_API ~TfScopeDescription();
 
-    /// Replace the description stack entry for this scope with the given \a
-    /// description. Note that currently, this only has an effect on
-    /// TfScopeDescriptions constructed in the main thread.
+    /// Replace the description stack entry for this scope description.  Caller
+    /// guarantees that the string \p description lives at least as long as this
+    /// TfScopeDescription object.
     TF_API void SetDescription(std::string const &description);
 
+    /// Replace the description stack entry for this scope description.  This
+    /// object adopts ownership of the rvalue \p description.
+    TF_API void SetDescription(std::string &&description);
+
+    /// Replace the description stack entry for this scope description.  Caller
+    /// guarantees that the string \p description lives at least as long as this
+    /// TfScopeDescription object.
+    TF_API void SetDescription(char const *description);
+
 private:
-    static void *operator new(::std::size_t);
-    static void operator delete (void *);
+    friend inline TfScopeDescription *
+    Tf_GetPreviousScopeDescription(TfScopeDescription *d) {
+        return d->_prev;
+    }
+    friend inline char const *
+    Tf_GetScopeDescriptionText(TfScopeDescription *d) {
+        return d->_description;
+    }
+    
+    inline void _Push();
+    inline void _Pop() const;
+    
+    boost::optional<std::string> _ownedString;
+    char const *_description;
 
-    void _Dismiss();
-
-    int _stackIndex;
-
-    static const int InvalidIndex = -1;
+    TfScopeDescription *_prev; // link to parent scope.
 };
 
-/// Return a copy of the current description stack as a vector of strings.
-/// The most recently pushed description is at back(), and the least recently
-/// pushed description is at front().
+/// Return a copy of the current description stack for the "main" thread as
+/// identified by ArchGetMainThreadId() as a vector of strings.  The most
+/// recently pushed description is at back(), and the least recently pushed
+/// description is at front().
 TF_API std::vector<std::string>
 TfGetCurrentScopeDescriptionStack();
+
+/// Return a copy of the current description stack for the current thread of
+/// execution as a vector of strings.  The most recently pushed description is
+/// at back(), and the least recently pushed description is at front().
+TF_API std::vector<std::string>
+TfGetThisThreadScopeDescriptionStack();
 
 /// Macro that accepts either a single string, or printf-style arguments and
 /// creates a scope description local variable with the resulting string.

@@ -32,66 +32,235 @@
 
 #include <tbb/spin_mutex.h>
 
+#include <thread>
+
 using std::vector;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Static description stack
+namespace {
 
-static TfStaticData<vector<string> > _descriptionStack;
-static TfStaticData<tbb::spin_mutex> _descriptionStackMutex;
+struct _Stack;
 
-static size_t _PushDescription(string const &d)
+// Collects all present description stacks together.
+struct _StackRegistry
 {
-    tbb::spin_mutex::scoped_lock lock(*_descriptionStackMutex);
-    _descriptionStack->push_back(d);
-    return (_descriptionStack->size() - 1);
-}
+    // Lock class used by clients that read stacks.
+    friend class StackLock;
+    class StackLock {
+        friend class _StackRegistry;
+        StackLock(StackLock const &) = delete;
+        StackLock &operator=(StackLock const &) = delete;
+        inline StackLock(_Stack *stack, _StackRegistry *reg)
+            : _stack(stack), _reg(reg) {}
+        inline StackLock() : _stack(nullptr), _reg(nullptr) {}
+    public:
+        inline StackLock(StackLock &&o)
+            : _stack(o._stack), _reg(o._reg) {
+            o._stack = nullptr;
+            o._reg = nullptr;
+        }
+        inline StackLock &operator=(StackLock &&o) {
+            _stack = o._stack;
+            _reg = o._reg;
+            o._stack = nullptr;
+            o._reg = nullptr;
+            return *this;
+        }
+        inline ~StackLock() {
+            if (_reg) {
+                _reg->_UnlockThread();
+            }
+        }
+        // Provide access to the requested stack.
+        inline _Stack *Get() const {
+            return _stack;
+        }
+    private:
+        _Stack *_stack;
+        _StackRegistry *_reg;
+    };
 
-static void _PopDescription()
-{
-    tbb::spin_mutex::scoped_lock lock(*_descriptionStackMutex);
-    _descriptionStack->pop_back();
-}
-
-static void _SetDescription(size_t const idx, string const& d)
-{
-    tbb::spin_mutex::scoped_lock lock(*_descriptionStackMutex);
-    TF_AXIOM(idx < _descriptionStack->size());
-    (*_descriptionStack)[idx] = d;
-}
-
-// TfScopeDescription
-
-TfScopeDescription::TfScopeDescription(string const &description)
-    : _stackIndex(InvalidIndex)
-{
-    if (ArchIsMainThread()) {
-        _stackIndex = static_cast<int>(_PushDescription(description));
+    // Register \p stack as the stack for \p id.
+    void Add(std::thread::id id, _Stack *stack) {
+        tbb::spin_mutex::scoped_lock lock(_stacksMutex);
+        _stacks.emplace_back(id, stack);
     }
+    // Remove \p stack from the registry.
+    void Remove(_Stack *stack) {
+        tbb::spin_mutex::scoped_lock lock(_stacksMutex);
+        auto it = std::find_if(
+            _stacks.begin(), _stacks.end(),
+            [stack](std::pair<std::thread::id, _Stack *> const &p) {
+                return p.second == stack;
+            });
+        TF_AXIOM(it != _stacks.end());
+        std::swap(*it, _stacks.back());
+        _stacks.pop_back();
+    }
+    // Acquire a lock on the registry and obtain a pointer to the stack
+    // associated with \p id if one exists, otherwise return a StackLock with a
+    // nullptr stack.
+    StackLock LockThread(std::thread::id id) {
+        _stacksMutex.lock();
+        auto it = std::find_if(
+            _stacks.begin(), _stacks.end(),
+            [id](std::pair<std::thread::id, _Stack *> const &p) {
+                return p.first == id;
+            });
+        return StackLock(it == _stacks.end() ? nullptr : it->second, this);
+    }    
+private:
+    void _UnlockThread() {
+        _stacksMutex.unlock();
+    }
+    
+    tbb::spin_mutex _stacksMutex;
+    std::vector<std::pair<std::thread::id, _Stack *>> _stacks;
+};
+
+// Obtain the registry singleton instance.
+static _StackRegistry &GetRegistry() {
+    static _StackRegistry *theRegistry = new _StackRegistry;
+    return *theRegistry;
+}
+
+// Per thread description stack representation.
+struct _Stack
+{
+    // Add this stack to the registry.
+    _Stack() : head(nullptr) {
+        GetRegistry().Add(std::this_thread::get_id(), this);
+    }
+    // Remove this stack from the registry.
+    ~_Stack() {
+        GetRegistry().Remove(this);
+    }
+    // The head of the description stack (nullptr if empty);
+    TfScopeDescription *head;
+    // Thread-local lock for this stack.
+    tbb::spin_mutex mutex;
+};
+
+// Force this out-of-line since modern compilers generate way too many calls to
+// __tls_get_addr even if you cache a pointer to the thread_local yourself.
+static thread_local _Stack _tlStack;
+static _Stack &_GetLocalStack() ARCH_NOINLINE;
+static _Stack &_GetLocalStack()
+{
+    return _tlStack;
+}
+
+} // anon
+
+void
+TfScopeDescription::_Push()
+{
+    // No other thread can modify head, so we can read it without the lock
+    // safely here.
+    _Stack &stack = _GetLocalStack();
+    _prev = stack.head;
+    tbb::spin_mutex::scoped_lock lock(stack.mutex);
+    stack.head = this;
+}
+
+void
+TfScopeDescription::_Pop() const
+{
+    // No other thread can modify head, so we can read it without the lock
+    // safely here.
+    _Stack &stack = _GetLocalStack();
+    TF_AXIOM(stack.head == this);
+    tbb::spin_mutex::scoped_lock lock(stack.mutex);
+    stack.head = _prev;
+}
+
+TfScopeDescription::TfScopeDescription(std::string const &msg)
+    : _description(msg.c_str())
+{
+    _Push();
+}
+
+TfScopeDescription::TfScopeDescription(std::string &&msg)
+    : _ownedString(std::move(msg))
+    , _description(_ownedString->c_str())
+{
+    _Push();
+}
+
+TfScopeDescription::TfScopeDescription(char const *msg)
+    : _description(msg)
+{
+    _Push();
 }
 
 TfScopeDescription::~TfScopeDescription()
 {
-    if (_stackIndex != InvalidIndex) {
-        _PopDescription();
-    }
+    _Pop();
 }
 
 void
-TfScopeDescription::SetDescription(string const &description)
+TfScopeDescription::SetDescription(std::string const &msg)
 {
-    if (_stackIndex != InvalidIndex) {
-        _SetDescription(_stackIndex, description);
+    _Stack &stack = _GetLocalStack();
+    {
+        tbb::spin_mutex::scoped_lock lock(stack.mutex);
+        _description = msg.c_str();
     }
+    _ownedString = boost::none;
+}
+
+void
+TfScopeDescription::SetDescription(std::string &&msg)
+{
+    _Stack &stack = _GetLocalStack();
+    tbb::spin_mutex::scoped_lock lock(stack.mutex);
+    _ownedString = std::move(msg);
+    _description = _ownedString->c_str();
+}
+
+void
+TfScopeDescription::SetDescription(char const *msg)
+{
+    _Stack &stack = _GetLocalStack();
+    {
+        tbb::spin_mutex::scoped_lock lock(stack.mutex);
+        _description = msg;
+    }
+    _ownedString = boost::none;
+}
+
+static
+std::vector<std::string>
+_GetScopeDescriptionStack(std::thread::id id)
+{
+    std::vector<std::string> result;
+    {
+        auto lock = GetRegistry().LockThread(id);
+        if (_Stack *stack = lock.Get()) {
+            tbb::spin_mutex::scoped_lock lock(stack->mutex);
+            for (TfScopeDescription *cur = stack->head; cur;
+                 cur = Tf_GetPreviousScopeDescription(cur)) {
+                result.emplace_back(Tf_GetScopeDescriptionText(cur));
+            }
+        }
+    }
+    // Callers expect most recent called last.
+    std::reverse(result.begin(), result.end());
+    return result;
+}
+
+std::vector<std::string>
+TfGetCurrentScopeDescriptionStack()
+{
+    return _GetScopeDescriptionStack(ArchGetMainThreadId());
 }
 
 vector<string>
-TfGetCurrentScopeDescriptionStack()
+TfGetThisThreadScopeDescriptionStack()
 {
-    tbb::spin_mutex::scoped_lock lock(*_descriptionStackMutex);
-    return *_descriptionStack;
+    return _GetScopeDescriptionStack(std::this_thread::get_id());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
