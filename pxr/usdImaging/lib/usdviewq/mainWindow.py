@@ -1695,7 +1695,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # setText() causes the shortcut to be reset to whatever
             # Qt thinks it should be based on the text.  We know better.
             self._setPlayShortcut()
-            self._fpsHUDInfo[PLAYBACK]  = "..."
+            self._fpsHUDInfo[HUDEntries.PLAYBACK]  = "..."
             self._timer.start()
             # For performance, don't update the prim tree view while playing.
             self._primViewUpdateTimer.stop()
@@ -1707,7 +1707,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # setText() causes the shortcut to be reset to whatever
             # Qt thinks it should be based on the text.  We know better.
             self._setPlayShortcut()
-            self._fpsHUDInfo[PLAYBACK]  = "N/A"
+            self._fpsHUDInfo[HUDEntries.PLAYBACK]  = "N/A"
             self._timer.stop()
             self._primViewUpdateTimer.start()
             self._updateOnFrameChange(refreshUI=True)
@@ -1722,7 +1722,7 @@ class MainWindow(QtWidgets.QMainWindow):
             delta = (self._endTime - self._startTime)/4.
             ms = delta * 1000.
             fps = 1. / delta
-            self._fpsHUDInfo[PLAYBACK] = "%.2f ms (%.2f FPS)" % (ms, fps)
+            self._fpsHUDInfo[HUDEntries.PLAYBACK] = "%.2f ms (%.2f FPS)" % (ms, fps)
 
         self._playbackIndex = (self._playbackIndex + 1) % 5
         self._advanceFrame()
