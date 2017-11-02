@@ -45,7 +45,7 @@ TF_DEFINE_ENV_SETTING(
     "Append, to mimic their historical behavior.");
 
 TF_DEFINE_ENV_SETTING(
-    USD_USE_INVERSE_LAYER_OFFSET, true,
+    USD_USE_INVERSE_LAYER_OFFSET, false,
     "Set true if USD should take the inverse of SdfLayerOffset values when "
     "applying them.  True matches historical behavior; false is the "
     "intended future setting.");
