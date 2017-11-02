@@ -2163,6 +2163,7 @@ SdfLayer::_RemoveInertDFS(SdfPrimSpecHandle prim)
     bool inert = prim->IsInert();
 
     if (!inert) {
+        // Child prims
         SdfPrimSpecHandleVector removedChildren;
         TF_FOR_ALL(it, prim->GetNameChildren()) {
             SdfPrimSpecHandle child = *it;
@@ -2172,6 +2173,16 @@ SdfLayer::_RemoveInertDFS(SdfPrimSpecHandle prim)
         }
         TF_FOR_ALL(it, removedChildren) {
             prim->RemoveNameChild(*it);
+        }
+        // Child prims inside variants
+        SdfVariantSetsProxy variantSetMap = prim->GetVariantSets();
+        TF_FOR_ALL(varSetIt, variantSetMap) {
+            const SdfVariantSetSpecHandle &varSetSpec = varSetIt->second;
+            const SdfVariantSpecHandleVector &variants =
+                varSetSpec->GetVariantList();
+            TF_FOR_ALL(varIt, variants) {
+                _RemoveInertDFS((*varIt)->GetPrimSpec());
+            }
         }
     }
 
