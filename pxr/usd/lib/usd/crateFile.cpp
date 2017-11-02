@@ -56,6 +56,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/safeOutputFile.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tracelite/trace.h"
@@ -532,8 +533,6 @@ public:
         }
     }
 
-    inline FILE *GetFile() const { return _file; }
-
     inline void Flush() {
         _FlushBuffer();
         _dispatcher.Wait();
@@ -653,12 +652,14 @@ struct CrateFile::_PackingContext
     _PackingContext(_PackingContext const &) = delete;
     _PackingContext &operator=(_PackingContext const &) = delete;
 
-    _PackingContext(CrateFile *crate, FILE *file, std::string const &fileName) 
+    _PackingContext(CrateFile *crate, TfSafeOutputFile &&outFile,
+                    std::string const &fileName)
         : fileName(fileName)
         , writeVersion(crate->_fileName.empty() ?
                        GetVersionForNewlyCreatedFiles() :
                        Version(crate->_boot))
-        , bufferedOutput(file) {
+        , bufferedOutput(outFile.Get())
+        , safeOutputFile(std::move(outFile)) {
         
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
@@ -719,15 +720,19 @@ struct CrateFile::_PackingContext
         wd.Wait();
     }
 
-    inline FILE *GetFile() const { return bufferedOutput.GetFile(); }
-
+    // Destructively move the output file out of this context.
+    TfSafeOutputFile ExtractOutputFile() {
+        return std::move(safeOutputFile);
+    }
+        
     // Inform the writer that the output stream requires the given version
     // (or newer) to be read back.  This allows the writer to start with
     // a conservative version assumption and promote to newer versions
     // only as required by the data stream contents.
-    bool _RequestWriteVersionUpgrade(Version ver, std::string reason) {
+    bool RequestWriteVersionUpgrade(Version ver, std::string reason) {
         if (!writeVersion.CanRead(ver)) {
-            TF_WARN("Upgrading crate file from version %s to %s because: %s",
+            TF_WARN("Upgrading crate file <%s> from version %s to %s: %s",
+                    fileName.c_str(),
                     writeVersion.AsString().c_str(), ver.AsString().c_str(),
                     reason.c_str());
             writeVersion = ver;
@@ -766,7 +771,8 @@ struct CrateFile::_PackingContext
     Version writeVersion;
     // BufferedOutput helper.
     _BufferedOutput bufferedOutput;
-
+    // Output destination.
+    TfSafeOutputFile safeOutputFile;
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -1125,7 +1131,7 @@ public:
     void Write(SdfListOp<T> const &listOp) {
         _ListOpHeader h(listOp);
         if (h.HasPrependedItems() || h.HasAppendedItems()) {
-            crate->_packCtx->_RequestWriteVersionUpgrade(
+            crate->_packCtx->RequestWriteVersionUpgrade(
                 Version(0, 2, 0),
                 "A SdfListOp value using a prepended or appended value "
                 "was detected, which requires crate version 0.2.0.");
@@ -1600,14 +1606,18 @@ CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
     TF_VERIFY(_fileName.empty() || _fileName == fileName);
-    // We open the file for read/write (update) here in case we already have the
-    // file, since we're not rewriting the whole thing.
-    _UniqueFILE out(ArchOpenFile(fileName.c_str(), _fileName.empty() ? "w+b" : "r+b"));
-    if (!out) {
-        TF_RUNTIME_ERROR("Failed to open '%s' for writing", fileName.c_str());
-    } else {
+    
+    // We open the file using the TfSafeOutputFile helper so that we can avoid
+    // stomping on the file for other processes currently observing it, in the
+    // case that we're replacing it.  In the case where we're actually updating
+    // an existing file, we have no choice but to modify it in place.
+    TfErrorMark m;
+    auto out = _fileName.empty() ?
+        TfSafeOutputFile::Replace(fileName) :
+        TfSafeOutputFile::Update(fileName);
+    if (m.IsClean()) {
         // Create a packing context so we can start writing.
-        _packCtx.reset(new _PackingContext(this, out.release(), fileName));
+        _packCtx.reset(new _PackingContext(this, std::move(out), fileName));
         // Get rid of our local list of specs, if we have one -- the client is
         // required to repopulate it.
         vector<Spec>().swap(_specs);
@@ -1622,43 +1632,46 @@ CrateFile::Packer::operator bool() const {
 bool
 CrateFile::Packer::Close()
 {
-    if (!TF_VERIFY(_crate))
+    if (!TF_VERIFY(_crate && _crate->_packCtx))
         return false;
 
-    if (FILE *fp = _crate->_packCtx->GetFile()) {
+    // Write contents.
+    bool writeResult = _crate->_Write();
+    
+    // If we wrote successfully, store the fileName and size.
+    if (writeResult)
+        _crate->_fileName = _crate->_packCtx->fileName;
 
-        // Write contents.
-        bool writeResult = _crate->_Write();
+    // Pull out the file handle and kill the packing context.
+    TfSafeOutputFile outFile = _crate->_packCtx->ExtractOutputFile();
+    _crate->_packCtx.reset();
 
-        // If we wrote successfully, store the fileName and size.
-        if (writeResult)
-            _crate->_fileName = _crate->_packCtx->fileName;
+    if (!writeResult)
+        return false;
 
-        // Pull out the file handle and kill the packing context.
-        _UniqueFILE file(fp);
-        _crate->_packCtx.reset();
-
-        if (!writeResult)
-            return false;
-
-        // Reset the mapping or file so we can read values from the newly
-        // written file.
-        if (_crate->_useMmap) {
-            // Must remap the file.
-            _crate->_mapStart =
-                _MmapFile(_crate->_fileName.c_str(), file.get());
-            if (!_crate->_mapStart)
-                return false;
-            _crate->_InitMMap();
-        } else {
-            // Must adopt the file handle if we don't already have one.
-            _crate->_inputFile = std::move(file);
-            _crate->_InitPread();
-        }
-
-        return true;
+    // Try to reuse the open FILE * if we can, otherwise open for read.
+    _UniqueFILE file(outFile.IsOpenForUpdate() ?
+                     outFile.ReleaseUpdatedFile() : nullptr);
+    if (!file) {
+        outFile.Close();
+        file.reset(ArchOpenFile(_crate->_fileName.c_str(), "rb"));
     }
-    return false;
+    
+    // Reset the mapping or file so we can read values from the newly
+    // written file.
+    if (_crate->_useMmap) {
+        // Must remap the file.
+        _crate->_mapStart = _MmapFile(_crate->_fileName.c_str(), file.get());
+        if (!_crate->_mapStart)
+            return false;
+        _crate->_InitMMap();
+    } else {
+        // Must adopt the file handle if we don't already have one.
+        _crate->_inputFile = std::move(file);
+        _crate->_InitPread();
+    }
+    
+    return true;
 }
 
 CrateFile::Packer::Packer(Packer &&other) : _crate(other._crate)
