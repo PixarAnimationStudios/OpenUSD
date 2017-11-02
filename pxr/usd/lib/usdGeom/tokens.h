@@ -48,8 +48,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bezier) \
     (bilinear) \
     (boundaries) \
+    (bounds) \
+    (box) \
     (bspline) \
     (card) \
+    (cards) \
     (catmullClark) \
     (catmullRom) \
     (clippingPlanes) \
@@ -65,6 +68,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (creaseIndices) \
     (creaseLengths) \
     (creaseSharpnesses) \
+    (cross) \
     (cubic) \
     (curveVertexCounts) \
     ((default_, "default")) \
@@ -84,6 +88,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (familyName) \
     (focalLength) \
     (focusDistance) \
+    (fromTexture) \
     (fStop) \
     (fullGeom) \
     (guide) \
@@ -105,6 +110,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (leftHanded) \
     (linear) \
     (loop) \
+    ((modelApplyDrawMode, "model:applyDrawMode")) \
+    ((modelCardGeometry, "model:cardGeometry")) \
+    ((modelCardTextureXNeg, "model:cardTextureXNeg")) \
+    ((modelCardTextureXPos, "model:cardTextureXPos")) \
+    ((modelCardTextureYNeg, "model:cardTextureYNeg")) \
+    ((modelCardTextureYPos, "model:cardTextureYPos")) \
+    ((modelCardTextureZNeg, "model:cardTextureZNeg")) \
+    ((modelCardTextureZPos, "model:cardTextureZPos")) \
+    ((modelDrawMode, "model:drawMode")) \
+    ((modelDrawModeColor, "model:drawModeColor")) \
     (mono) \
     ((motionVelocityScale, "motion:velocityScale")) \
     (none) \
@@ -115,6 +130,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (order) \
     (orientation) \
     (orientations) \
+    (origin) \
     (orthographic) \
     (partition) \
     (periodic) \
@@ -207,8 +223,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>bezier</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr(), Default value for UsdGeomBasisCurves::GetBasisAttr()
 /// \li <b>bilinear</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
 /// \li <b>boundaries</b> - Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr()
+/// \li <b>bounds</b> - Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
+/// \li <b>box</b> - Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
 /// \li <b>bspline</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
 /// \li <b>card</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
+/// \li <b>cards</b> - Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
 /// \li <b>catmullClark</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr(), Default value for UsdGeomMesh::GetSubdivisionSchemeAttr(), Possible value for UsdGeomMesh::GetTriangleSubdivisionRuleAttr(), Default value for UsdGeomMesh::GetTriangleSubdivisionRuleAttr()
 /// \li <b>catmullRom</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
 /// \li <b>clippingPlanes</b> - UsdGeomCamera
@@ -224,9 +243,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>creaseIndices</b> - UsdGeomMesh
 /// \li <b>creaseLengths</b> - UsdGeomMesh
 /// \li <b>creaseSharpnesses</b> - UsdGeomMesh
+/// \li <b>cross</b> - Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
 /// \li <b>cubic</b> - Possible value for UsdGeomBasisCurves::GetTypeAttr(), Default value for UsdGeomBasisCurves::GetTypeAttr()
 /// \li <b>curveVertexCounts</b> - UsdGeomCurves
-/// \li <b>default_</b> - Possible value for UsdGeomImageable::GetPurposeAttr(), Default value for UsdGeomImageable::GetPurposeAttr()
+/// \li <b>default_</b> - Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomImageable::GetPurposeAttr(), Default value for UsdGeomImageable::GetPurposeAttr()
 /// \li <b>doubleSided</b> - UsdGeomGprim
 /// \li <b>edgeAndCorner</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Default value for UsdGeomMesh::GetInterpolateBoundaryAttr()
 /// \li <b>edgeOnly</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr()
@@ -243,6 +263,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>familyName</b> - UsdGeomSubset
 /// \li <b>focalLength</b> - UsdGeomCamera
 /// \li <b>focusDistance</b> - UsdGeomCamera
+/// \li <b>fromTexture</b> - Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
 /// \li <b>fStop</b> - UsdGeomCamera
 /// \li <b>fullGeom</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
 /// \li <b>guide</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
@@ -264,6 +285,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>leftHanded</b> - Possible value for UsdGeomGprim::GetOrientationAttr()
 /// \li <b>linear</b> - Possible value for UsdGeomBasisCurves::GetTypeAttr()
 /// \li <b>loop</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
+/// \li <b>modelApplyDrawMode</b> - UsdGeomModelAPI
+/// \li <b>modelCardGeometry</b> - UsdGeomModelAPI
+/// \li <b>modelCardTextureXNeg</b> - UsdGeomModelAPI
+/// \li <b>modelCardTextureXPos</b> - UsdGeomModelAPI
+/// \li <b>modelCardTextureYNeg</b> - UsdGeomModelAPI
+/// \li <b>modelCardTextureYPos</b> - UsdGeomModelAPI
+/// \li <b>modelCardTextureZNeg</b> - UsdGeomModelAPI
+/// \li <b>modelCardTextureZPos</b> - UsdGeomModelAPI
+/// \li <b>modelDrawMode</b> - UsdGeomModelAPI
+/// \li <b>modelDrawModeColor</b> - UsdGeomModelAPI
 /// \li <b>mono</b> - Possible value for UsdGeomCamera::GetStereoRoleAttr(), Default value for UsdGeomCamera::GetStereoRoleAttr()
 /// \li <b>motionVelocityScale</b> - UsdGeomMotionAPI
 /// \li <b>none</b> - Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
@@ -274,6 +305,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>order</b> - UsdGeomNurbsCurves
 /// \li <b>orientation</b> - UsdGeomGprim
 /// \li <b>orientations</b> - UsdGeomPointInstancer
+/// \li <b>origin</b> - Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
 /// \li <b>orthographic</b> - Possible value for UsdGeomCamera::GetProjectionAttr()
 /// \li <b>partition</b> - A type of family of GeomSubsets. It implies  that every element appears exacly once in only one of the  subsets in the family.
 /// \li <b>periodic</b> - Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()

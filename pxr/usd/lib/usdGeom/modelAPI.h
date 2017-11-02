@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/constraintTarget.h"
@@ -61,12 +62,72 @@ class SdfAssetPath;
 /// lofting process.
 /// 
 /// As described in GetExtentsHint() below, it is useful to cache extents
-/// at the model level.  UsdGeomModelAPI provides schema for computing and storing
-/// these cached extents, which can be consumed by UsdGeomBBoxCache to provide
-/// fast access to precomputed extents that will be used as the model's bounds
-/// (see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
+/// at the model level.  UsdGeomModelAPI provides schema for computing and
+/// storing these cached extents, which can be consumed by UsdGeomBBoxCache to
+/// provide fast access to precomputed extents that will be used as the model's
+/// bounds ( see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
+/// 
+/// \section UsdGeomModelAPI_drawMode Draw Modes
+/// 
+/// Draw modes provide optional alternate imaging behavior for USD subtrees with
+/// kind model. \em model:drawMode (which is inheritable) and
+/// \em model:applyDrawMode (which is not) are resolved into a decision to stop
+/// traversing the scene graph at a certain point, and replace a USD subtree
+/// with proxy geometry.
+/// 
+/// The value of \em model:drawMode determines the type of proxy geometry:
+/// - \em origin - Draw the model-space basis vectors of the replaced prim.
+/// - \em bounds - Draw the model-space bounding box of the replaced prim.
+/// - \em cards - Draw textured quads as a placeholder for the replaced prim.
+/// - \em default - Equivalent to \em model:drawMode not being specified: draw
+/// the USD subtree as normal.
+/// 
+/// \em model:drawMode is inheritable so that a whole scene, a large group, or
+/// all prototypes of a model hierarchy PointInstancer can be assigned a draw
+/// mode with a single attribute edit.  \em model:applyDrawMode is meant to be
+/// authored earlier, and provides flexibility for different asset types. For
+/// example, a character assembly (composed of character, clothes, etc) might
+/// have \em model:applyDrawMode set at the top of the subtree so the whole
+/// group can be drawn as a single card object. An effects subtree might have
+/// \em model:applyDrawMode set at the component level so each particle group
+/// draws individually in bounding box mode.
+/// 
+/// \section UsdGeomModelAPI_cardGeometry Cards Geometry
+/// 
+/// The specific geometry used in cards mode is controlled by the
+/// \em model:cardGeometry attribute:
+/// - \em cross - Generate a quad normal to each basis direction and negative.
+/// Locate each quad so that it bisects the model extents.
+/// - \em box   - Generate a quad normal to each basis direction and negative.
+/// Locate each quad on a face of the model extents, facing out.
+/// - \em fromTexture - Generate a quad for each supplied texture by
+/// transforming the range from (-1,-1) to (1,1) by the
+/// inverse of the \em worldToScreenPos transform, pulled
+/// from texture metadata. The resulting positions are
+/// interpreted as being in model space.
+/// 
+/// For \em cross and \em box mode, the extents are calculated for purposes
+/// \em default, \em proxy, and \em render, at their earliest authored time.
+/// If the model has no textures, all six card faces are rendered using
+/// \em model:drawModeColor. If one or more textures are present, only axes
+/// with one or more textures assigned are drawn.  For each axis, if both
+/// textures (positive and negative) are specified, they'll be used on the
+/// corresponding card faces; if only one texture is specified, it will be
+/// mapped to the opposite card face after being flipped on the texture's
+/// s-axis. Any card faces with invalid asset paths will be drawn with
+/// \em model:drawModeColor.
+/// 
+/// For \em fromTexture mode, only card faces with valid textures assigned
+/// are drawn.
+/// 
+/// All card faces are drawn and textured as double-sided.
 /// 
 /// \todo CreatePayload() 
+///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
+/// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
+/// as the value.
 ///
 class UsdGeomModelAPI : public UsdModelAPI
 {
@@ -130,6 +191,236 @@ private:
     // override SchemaBase virtuals.
     USDGEOM_API
     virtual const TfType &_GetTfType() const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELDRAWMODE 
+    // --------------------------------------------------------------------- //
+    /// Alternate imaging mode; applied to this prim or child prims
+    /// where \em model:applyDrawMode is true, or where the prim
+    /// has kind \em component. See \ref UsdGeomModelAPI_drawMode
+    /// for mode descriptions.
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    /// \n  \ref UsdGeomTokens "Allowed Values": [origin, bounds, cards, default]
+    USDGEOM_API
+    UsdAttribute GetModelDrawModeAttr() const;
+
+    /// See GetModelDrawModeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelDrawModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELAPPLYDRAWMODE 
+    // --------------------------------------------------------------------- //
+    /// If true, and this prim or parent prims have \em model:drawMode
+    /// set, apply an alternate imaging mode to this prim. See
+    /// \ref UsdGeomModelAPI_drawMode.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelApplyDrawModeAttr() const;
+
+    /// See GetModelApplyDrawModeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelApplyDrawModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELDRAWMODECOLOR 
+    // --------------------------------------------------------------------- //
+    /// The base color of imaging prims inserted for alternate
+    /// imaging modes. For \em origin and \em bounds modes, this
+    /// controls line color; for \em cards mode, this controls the
+    /// fallback quad color. If unspecified, it should be interpreted
+    /// as (0.18, 0.18, 0.18).
+    ///
+    /// \n  C++ Type: GfVec3f
+    /// \n  Usd Type: SdfValueTypeNames->Float3
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelDrawModeColorAttr() const;
+
+    /// See GetModelDrawModeColorAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelDrawModeColorAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDGEOMETRY 
+    // --------------------------------------------------------------------- //
+    /// The geometry to generate for imaging prims inserted for \em
+    /// cards imaging mode. See \ref UsdGeomModelAPI_cardGeometry for
+    /// geometry descriptions. If unspecified, it should be interpreted
+    /// as \em cross.
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    /// \n  \ref UsdGeomTokens "Allowed Values": [cross, box, fromTexture]
+    USDGEOM_API
+    UsdAttribute GetModelCardGeometryAttr() const;
+
+    /// See GetModelCardGeometryAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardGeometryAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDTEXTUREXPOS 
+    // --------------------------------------------------------------------- //
+    /// In \em cards imaging mode, the texture applied to the X+ quad.
+    /// The texture axes (s,t) are mapped to model-space axes (-y, -z).
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelCardTextureXPosAttr() const;
+
+    /// See GetModelCardTextureXPosAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardTextureXPosAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDTEXTUREYPOS 
+    // --------------------------------------------------------------------- //
+    /// In \em cards imaging mode, the texture applied to the Y+ quad.
+    /// The texture axes (s,t) are mapped to model-space axes (x, -z).
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelCardTextureYPosAttr() const;
+
+    /// See GetModelCardTextureYPosAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardTextureYPosAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDTEXTUREZPOS 
+    // --------------------------------------------------------------------- //
+    /// In \em cards imaging mode, the texture applied to the Z+ quad.
+    /// The texture axes (s,t) are mapped to model-space axes (x, -y).
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelCardTextureZPosAttr() const;
+
+    /// See GetModelCardTextureZPosAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardTextureZPosAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDTEXTUREXNEG 
+    // --------------------------------------------------------------------- //
+    /// In \em cards imaging mode, the texture applied to the X- quad.
+    /// The texture axes (s,t) are mapped to model-space axes (y, -z).
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelCardTextureXNegAttr() const;
+
+    /// See GetModelCardTextureXNegAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardTextureXNegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDTEXTUREYNEG 
+    // --------------------------------------------------------------------- //
+    /// In \em cards imaging mode, the texture applied to the Y- quad.
+    /// The texture axes (s,t) are mapped to model-space axes (-x, -z).
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelCardTextureYNegAttr() const;
+
+    /// See GetModelCardTextureYNegAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardTextureYNegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDTEXTUREZNEG 
+    // --------------------------------------------------------------------- //
+    /// In \em cards imaging mode, the texture applied to the Z- quad.
+    /// The texture axes (s,t) are mapped to model-space axes (-x, -y).
+    ///
+    /// \n  C++ Type: SdfAssetPath
+    /// \n  Usd Type: SdfValueTypeNames->Asset
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDGEOM_API
+    UsdAttribute GetModelCardTextureZNegAttr() const;
+
+    /// See GetModelCardTextureZNegAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardTextureZNegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
@@ -253,6 +544,26 @@ public:
     std::vector<UsdGeomConstraintTarget> GetConstraintTargets() const;
 
     /// @}
+
+    /// Calculate the effective model:drawMode of this prim, as defined by
+    /// its closest ancestral authored opinion, if any.
+    ///
+    /// If no opinion for model:drawMode is authored on this prim or any of its
+    /// ancestors, its computed model:drawMode is UsdGeomTokens->default_ .
+    /// Otherwise, its computed model:drawMode is that of its closest ancestor
+    /// with an authored model:drawMode.
+    ///
+    /// This function should be considered a reference implementation for
+    /// correctness. <b>If called on each prim in the context of a traversal
+    /// we will perform massive overcomputation, because sibling prims share
+    /// sub-problems in the query that can be efficiently cached, but are not
+    /// (cannot be) by this simple implementation.</b> If you have control of
+    /// your traversal, it will be far more efficient to manage model:drawMode
+    /// on a stack as you traverse.
+    ///
+    /// \sa GetModelDrawModeAttr()
+    USDGEOM_API
+    TfToken ComputeModelDrawMode() const;
 };
 
 

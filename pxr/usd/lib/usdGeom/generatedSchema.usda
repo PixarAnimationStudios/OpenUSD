@@ -3770,14 +3770,119 @@ class "GeomModelAPI" (
     lofting process.
    
     As described in GetExtentsHint() below, it is useful to cache extents
-    at the model level.  UsdGeomModelAPI provides schema for computing and storing
-    these cached extents, which can be consumed by UsdGeomBBoxCache to provide
-    fast access to precomputed extents that will be used as the model's bounds
-    (see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
-   
+    at the model level.  UsdGeomModelAPI provides schema for computing and
+    storing these cached extents, which can be consumed by UsdGeomBBoxCache to
+    provide fast access to precomputed extents that will be used as the model's
+    bounds ( see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
+
+    Draw Modes
+
+    Draw modes provide optional alternate imaging behavior for USD subtrees with
+    kind model. model:drawMode (which is inheritable) and
+    model:applyDrawMode (which is not) are resolved into a decision to stop
+    traversing the scene graph at a certain point, and replace a USD subtree
+    with proxy geometry.
+
+    The value of model:drawMode determines the type of proxy geometry:
+    - origin - Draw the model-space basis vectors of the replaced prim.
+    - bounds - Draw the model-space bounding box of the replaced prim.
+    - cards - Draw textured quads as a placeholder for the replaced prim.
+    - default - Equivalent to model:drawMode not being specified: draw
+                     the USD subtree as normal.
+
+    model:drawMode is inheritable so that a whole scene, a large group, or
+    all prototypes of a model hierarchy PointInstancer can be assigned a draw
+    mode with a single attribute edit.  model:applyDrawMode is meant to be
+    authored earlier, and provides flexibility for different asset types. For
+    example, a character assembly (composed of character, clothes, etc) might
+    have model:applyDrawMode set at the top of the subtree so the whole
+    group can be drawn as a single card object. An effects subtree might have
+    model:applyDrawMode set at the component level so each particle group
+    draws individually in bounding box mode.
+
+    Cards Geometry
+
+    The specific geometry used in cards mode is controlled by the
+    model:cardGeometry attribute:
+    - cross - Generate a quad normal to each basis direction and negative.
+                   Locate each quad so that it bisects the model extents.
+    - box   - Generate a quad normal to each basis direction and negative.
+                   Locate each quad on a face of the model extents, facing out.
+    - fromTexture - Generate a quad for each supplied texture by
+                         transforming the range from (-1,-1) to (1,1) by the
+                         inverse of the worldToScreenPos transform, pulled
+                         from texture metadata. The resulting positions are
+                         interpreted as being in model space.
+
+    For cross and box mode, the extents are calculated for purposes
+    default, proxy, and render, at their earliest authored time.
+    If the model has no textures, all six card faces are rendered using
+    model:drawModeColor. If one or more textures are present, only axes
+    with one or more textures assigned are drawn.  For each axis, if both
+    textures (positive and negative) are specified, they'll be used on the
+    corresponding card faces; if only one texture is specified, it will be
+    mapped to the opposite card face after being flipped on the texture's
+    s-axis. Any card faces with invalid asset paths will be drawn with
+    model:drawModeColor.
+
+    For fromTexture mode, only card faces with valid textures assigned
+    are drawn.
+
+    All card faces are drawn and textured as double-sided.
+
     \\todo CreatePayload() """
 )
 {
+    uniform bool model:applyDrawMode (
+        doc = """If true, and this prim or parent prims have model:drawMode
+                 set, apply an alternate imaging mode to this prim. See
+                 \\ref UsdGeomModelAPI_drawMode."""
+    )
+    uniform token model:cardGeometry (
+        allowedTokens = ["cross", "box", "fromTexture"]
+        doc = """The geometry to generate for imaging prims inserted for \\em
+                 cards imaging mode. See for
+                 geometry descriptions. If unspecified, it should be interpreted
+                 as cross."""
+    )
+    asset model:cardTextureXNeg (
+        doc = """In cards imaging mode, the texture applied to the X- quad.
+                 The texture axes (s,t) are mapped to model-space axes (y, -z)."""
+    )
+    asset model:cardTextureXPos (
+        doc = """In cards imaging mode, the texture applied to the X+ quad.
+                 The texture axes (s,t) are mapped to model-space axes (-y, -z)."""
+    )
+    asset model:cardTextureYNeg (
+        doc = """In cards imaging mode, the texture applied to the Y- quad.
+                 The texture axes (s,t) are mapped to model-space axes (-x, -z)."""
+    )
+    asset model:cardTextureYPos (
+        doc = """In cards imaging mode, the texture applied to the Y+ quad.
+                 The texture axes (s,t) are mapped to model-space axes (x, -z)."""
+    )
+    asset model:cardTextureZNeg (
+        doc = """In cards imaging mode, the texture applied to the Z- quad.
+                 The texture axes (s,t) are mapped to model-space axes (-x, -y)."""
+    )
+    asset model:cardTextureZPos (
+        doc = """In cards imaging mode, the texture applied to the Z+ quad.
+                 The texture axes (s,t) are mapped to model-space axes (x, -y)."""
+    )
+    uniform token model:drawMode (
+        allowedTokens = ["origin", "bounds", "cards", "default"]
+        doc = """Alternate imaging mode; applied to this prim or child prims
+                 where model:applyDrawMode is true, or where the prim
+                 has kind component. See \\ref UsdGeomModelAPI_drawMode
+                 for mode descriptions."""
+    )
+    uniform Vec3f model:drawModeColor (
+        doc = """The base color of imaging prims inserted for alternate
+                 imaging modes. For origin and bounds modes, this
+                 controls line color; for cards mode, this controls the
+                 fallback quad color. If unspecified, it should be interpreted
+                 as (0.18, 0.18, 0.18)."""
+    )
 }
 
 class "MotionAPI" (
