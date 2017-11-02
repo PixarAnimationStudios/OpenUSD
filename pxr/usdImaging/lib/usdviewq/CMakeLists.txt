@@ -65,6 +65,7 @@ pxr_library(usdviewq
         overridableLineEdit.py
         variantComboBox.py
         qt.py
+        constantGroup.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
@@ -81,4 +82,14 @@ pxr_library(usdviewq
 install(DIRECTORY
     icons
     DESTINATION lib/python/pxr/Usdviewq
+)
+
+pxr_test_scripts(
+    testenv/testUsdviewqConstantGroup.py
+)
+
+pxr_register_test(testUsdviewqConstantGroup
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqConstantGroup"
+    EXPECTED_RETURN_CODE 0
 )
