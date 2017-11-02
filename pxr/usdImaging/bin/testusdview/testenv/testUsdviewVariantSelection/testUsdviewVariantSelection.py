@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from PySide import QtGui
+from pxr.Usdviewq.qt import QtWidgets
 
 # positions and names of our variants
 CAPSULE = (1, 'capsule')
@@ -57,7 +57,7 @@ def _getVariantSelector(mainWindow, whichVariant):
 
     # Grab the rows of our metadata tab and select the set containing
     # our variant selection
-    metadataTable = attributeInspector.currentWidget().findChildren(QtGui.QTableWidget)[0]
+    metadataTable = attributeInspector.currentWidget().findChildren(QtWidgets.QTableWidget)[0]
 
     for i in range(0, metadataTable.rowCount()):
         currentName = metadataTable.item(i,0).text()
