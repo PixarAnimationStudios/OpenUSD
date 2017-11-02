@@ -104,13 +104,6 @@ _CreateInvisibleIdsAttr(UsdGeomPointInstancer &self,
     return self.CreateInvisibleIdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int64Array), writeSparsely);
 }
-        
-static UsdAttribute
-_CreatePrototypeDrawModeAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreatePrototypeDrawModeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -198,13 +191,6 @@ void wrapUsdGeomPointInstancer()
              &This::GetInvisibleIdsAttr)
         .def("CreateInvisibleIdsAttr",
              &_CreateInvisibleIdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetPrototypeDrawModeAttr",
-             &This::GetPrototypeDrawModeAttr)
-        .def("CreatePrototypeDrawModeAttr",
-             &_CreatePrototypeDrawModeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

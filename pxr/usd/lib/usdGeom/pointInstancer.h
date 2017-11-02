@@ -258,11 +258,6 @@ class SdfAssetPath;
 /// instance zero, the second \em elementSize elements should be assigned to
 /// instance one, and so forth.
 ///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
-/// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
-/// as the value.
-///
 class UsdGeomPointInstancer : public UsdGeomBoundable
 {
 public:
@@ -559,30 +554,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateInvisibleIdsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // PROTOTYPEDRAWMODE 
-    // --------------------------------------------------------------------- //
-    /// Draw modes that host applications can use as a hint for how each
-    /// instance of each prototype should be represented.  This hint should only
-    /// affect interactive/preview representations and is optional.
-    ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
-    /// \n  \ref UsdGeomTokens "Allowed Values": [point, card, fullGeom]
-    USDGEOM_API
-    UsdAttribute GetPrototypeDrawModeAttr() const;
-
-    /// See GetPrototypeDrawModeAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDGEOM_API
-    UsdAttribute CreatePrototypeDrawModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

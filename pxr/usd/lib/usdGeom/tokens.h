@@ -51,7 +51,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bounds) \
     (box) \
     (bspline) \
-    (card) \
     (cards) \
     (catmullClark) \
     (catmullRom) \
@@ -90,7 +89,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (focusDistance) \
     (fromTexture) \
     (fStop) \
-    (fullGeom) \
     (guide) \
     (height) \
     (hermite) \
@@ -135,7 +133,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (partition) \
     (periodic) \
     (perspective) \
-    (point) \
     (points) \
     (pointWeights) \
     (positions) \
@@ -144,7 +141,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((primvarsDisplayOpacity, "primvars:displayOpacity")) \
     (projection) \
     (protoIndices) \
-    (prototypeDrawMode) \
     (prototypes) \
     (proxy) \
     (proxyPrim) \
@@ -226,7 +222,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>bounds</b> - Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
 /// \li <b>box</b> - Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
 /// \li <b>bspline</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
-/// \li <b>card</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
 /// \li <b>cards</b> - Possible value for UsdGeomModelAPI::GetModelDrawModeAttr()
 /// \li <b>catmullClark</b> - Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr(), Default value for UsdGeomMesh::GetSubdivisionSchemeAttr(), Possible value for UsdGeomMesh::GetTriangleSubdivisionRuleAttr(), Default value for UsdGeomMesh::GetTriangleSubdivisionRuleAttr()
 /// \li <b>catmullRom</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
@@ -265,7 +260,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>focusDistance</b> - UsdGeomCamera
 /// \li <b>fromTexture</b> - Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
 /// \li <b>fStop</b> - UsdGeomCamera
-/// \li <b>fullGeom</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
 /// \li <b>guide</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
 /// \li <b>height</b> - UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
 /// \li <b>hermite</b> - Possible value for UsdGeomBasisCurves::GetBasisAttr()
@@ -310,7 +304,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>partition</b> - A type of family of GeomSubsets. It implies  that every element appears exacly once in only one of the  subsets in the family.
 /// \li <b>periodic</b> - Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
 /// \li <b>perspective</b> - Possible value for UsdGeomCamera::GetProjectionAttr(), Default value for UsdGeomCamera::GetProjectionAttr()
-/// \li <b>point</b> - Possible value for UsdGeomPointInstancer::GetPrototypeDrawModeAttr()
 /// \li <b>points</b> - UsdGeomPointBased
 /// \li <b>pointWeights</b> - UsdGeomNurbsPatch
 /// \li <b>positions</b> - UsdGeomPointInstancer
@@ -319,7 +312,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>primvarsDisplayOpacity</b> - UsdGeomGprim
 /// \li <b>projection</b> - UsdGeomCamera
 /// \li <b>protoIndices</b> - UsdGeomPointInstancer
-/// \li <b>prototypeDrawMode</b> - UsdGeomPointInstancer
 /// \li <b>prototypes</b> - UsdGeomPointInstancer
 /// \li <b>proxy</b> - Possible value for UsdGeomImageable::GetPurposeAttr()
 /// \li <b>proxyPrim</b> - UsdGeomImageable

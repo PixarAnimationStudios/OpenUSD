@@ -1586,13 +1586,6 @@ class PointInstancer "PointInstancer" (
       doc="""A list of id's to make invisible at the evaluation time.
       See \\ref UsdGeomPointInstancer_invisibleIds ."""
   )
-  
-  uniform token prototypeDrawMode (
-      allowedTokens = ["point", "card", "fullGeom"]
-      doc = """Draw modes that host applications can use as a hint for how each
-      instance of each prototype should be represented.  This hint should only
-      affect interactive/preview representations and is optional."""
-  )
 }
 
 
