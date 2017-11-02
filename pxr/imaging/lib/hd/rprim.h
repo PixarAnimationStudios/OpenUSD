@@ -249,14 +249,22 @@ protected:
     /// need not be empty).
     ///
     /// The caller is expected to pass these computation on these computations
-    /// onto the resource registry (associating them with BAR's if it is
-    /// expected the primVar will be downloaded)
+    /// onto the resource registry (associating them with BARs if it is
+    /// expected the primvar will be downloaded)
+    /// 
+    /// The computation may also need to add sources that are resolved against
+    /// internal BARs that are not to be associated with the primvar BAR. Those
+    /// are returned in the computationSources vector.
+    /// The caller is expected to add them to the resource registry if the
+    /// computation is needed.
     HD_API
     void _GetExtComputationPrimVarsComputations(
-                                              HdSceneDelegate *sceneDelegate,
-                                              HdInterpolation interpolationMode,
-                                              HdDirtyBits dirtyBits,
-                                              HdBufferSourceVector *sources);
+                    HdSceneDelegate *sceneDelegate,
+                    HdInterpolation interpolationMode,
+                    HdDirtyBits dirtyBits,
+                    HdBufferSourceVector *sources,
+                    HdComputationVector *computations,
+                    HdBufferSourceVector *computationSources);
 
     HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,

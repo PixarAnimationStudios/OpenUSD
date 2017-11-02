@@ -65,6 +65,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_ADDED, "Report when ExtComputations are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_REMOVED, "Report when ExtComputations are removed");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_UPDATED, "Report when ExtComputations are updated");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_FREEZE_CULL_FRUSTUM,
                                 "Freeze the frustum used for culling at it's current value");

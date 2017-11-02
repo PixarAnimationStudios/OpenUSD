@@ -398,5 +398,12 @@ HdSceneDelegate::GetExtComputationPrimVarDesc(SdfPath const& id,
     return HdExtComputationPrimVarDesc();
 }
 
+/*virtual*/
+std::string
+HdSceneDelegate::GetExtComputationKernel(SdfPath const& id)
+{
+    return std::string();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

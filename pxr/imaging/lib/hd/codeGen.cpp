@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
+#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -53,6 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((_double, "double"))
     ((_float, "float"))
     ((_int, "int"))
     (hd_vec3)
@@ -69,7 +71,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vec2)
     (vec3)
     (vec4)
+    (dvec2)
     (dvec3)
+    (dvec4)
     ((ptexTextureSampler, "ptexTextureSampler"))
     (isamplerBuffer)
     (samplerBuffer)
@@ -82,13 +86,18 @@ Hd_CodeGen::Hd_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
     TF_VERIFY(geometricShader);
 }
 
+Hd_CodeGen::Hd_CodeGen(HdShaderCodeSharedPtrVector const &shaders)
+    : _geometricShader(), _shaders(shaders)
+{
+}
+
 Hd_CodeGen::ID
 Hd_CodeGen::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    ID hash = _geometricShader->ComputeHash();
+    ID hash = _geometricShader ? _geometricShader->ComputeHash() : 0;
     boost::hash_combine(hash, _metaData.ComputeHash());
     boost::hash_combine(hash, HdShaderCode::ComputeHash(_shaders));
 
@@ -117,6 +126,18 @@ static void _EmitStructAccessor(std::stringstream &str,
                                 TfToken const &name,
                                 TfToken const &type,
                                 int arraySize,
+                                const char *index);
+
+static void _EmitComputeAccessor(std::stringstream &str,
+                                 TfToken const &name,
+                                 TfToken const &type,
+                                 HdBinding const &binding,
+                                 const char *index);
+
+static void _EmitComputeMutator(std::stringstream &str,
+                                TfToken const &name,
+                                TfToken const &type,
+                                HdBinding const &binding,
                                 const char *index);
 
 static void _EmitAccessor(std::stringstream &str,
@@ -214,6 +235,31 @@ _GetPackedTypeAccessor(TfToken const &token)
 }
 
 static TfToken const &
+_GetFlatType(TfToken const &token)
+{
+    if (token == _tokens->ivec2) {
+        return _tokens->_int;
+    } else if (token == _tokens->ivec3) {
+        return _tokens->_int;
+    } else if (token == _tokens->ivec4) {
+        return _tokens->_int;
+    } else if (token == _tokens->vec2) {
+        return _tokens->_float;
+    } else if (token == _tokens->vec3) {
+        return _tokens->_float;
+    } else if (token == _tokens->vec4) {
+        return _tokens->_float;
+    } else if (token == _tokens->dvec2) {
+        return _tokens->_double;
+    } else if (token == _tokens->dvec3) {
+        return _tokens->_double;
+    } else if (token == _tokens->dvec4) {
+        return _tokens->_double;
+    }
+    return token;
+}
+
+static TfToken const &
 _GetSamplerBufferType(TfToken const &token)
 {
     if (token == _tokens->_int  ||
@@ -290,7 +336,7 @@ Hd_CodeGen::Compile()
 
     // initialize autogen source buckets
     _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
-    _genGS.str(""); _genFS.str("");
+    _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
 
     // GLSL version.
@@ -640,6 +686,148 @@ Hd_CodeGen::Compile()
     return glslProgram;
 }
 
+HdGLSLProgramSharedPtr
+Hd_CodeGen::CompileComputeProgram()
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    // initialize autogen source buckets
+    _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
+    _genGS.str(""); _genFS.str(""); _genCS.str("");
+    _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
+    
+    // GLSL version.
+    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    _genCommon << "#version " << caps.glslVersion << "\n";
+    // default workgroup size
+    _genCommon << "layout(local_size_x = 1, local_size_y = 1) in;\n";
+
+    if (caps.bindlessBufferEnabled) {
+        _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
+                   << "#extension GL_NV_gpu_shader5 : require\n";
+    }
+    if (caps.bindlessTextureEnabled) {
+        _genCommon << "#extension GL_ARB_bindless_texture : require\n";
+    }
+    if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
+        _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
+    }
+    if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
+        _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
+    }
+
+    // Used in glslfx files to determine if it is using new/old
+    // imaging system. It can also be used as API guards when
+    // we need new versions of Hydra shading. 
+    _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";    
+    
+    std::stringstream uniforms;
+    std::stringstream declarations;
+    std::stringstream accessors;
+    
+    uniforms << "// Uniform block\n";
+
+    HdBinding uboBinding(HdBinding::UBO, 0);
+    uniforms << LayoutQualifier(uboBinding);
+    uniforms << "uniform ubo_" << uboBinding.GetLocation() << " {\n";
+
+    accessors << "// Read-Write Accessors & Mutators\n";
+    uniforms << "    int vertexOffset;       // offset in aggregated buffer\n";
+    TF_FOR_ALL(it, _metaData.computeReadWriteData) {
+        TfToken const &name = it->second.name;
+        HdBinding const &binding = it->first;
+        TfToken const &dataType = it->second.dataType;
+        
+        uniforms << "    int " << name << "Offset;\n";
+        uniforms << "    int " << name << "Stride;\n";
+        
+        _EmitDeclaration(declarations,
+                name,
+                //compute shaders need vector types to be flat arrays
+                _GetFlatType(dataType),
+                binding, 0);
+        // getter & setter
+        {
+            std::stringstream indexing;
+            indexing << "(localIndex + vertexOffset)"
+                     << " * " << name << "Stride"
+                     << " + " << name << "Offset";
+            _EmitComputeAccessor(accessors, name, dataType, binding,
+                    indexing.str().c_str());
+            _EmitComputeMutator(accessors, name, dataType, binding,
+                    indexing.str().c_str());
+        }
+    }
+    accessors << "// Read-Only Accessors\n";
+    // no vertex offset for constant data
+    TF_FOR_ALL(it, _metaData.computeReadOnlyData) {
+        TfToken const &name = it->second.name;
+        HdBinding const &binding = it->first;
+        TfToken const &dataType = it->second.dataType;
+        
+        uniforms << "    int " << name << "Offset;\n";
+        uniforms << "    int " << name << "Stride;\n";
+        _EmitDeclaration(declarations,
+                name,
+                //compute shaders need vector types to be flat arrays
+                _GetFlatType(dataType),
+                binding, 0);
+        // getter
+        {
+            std::stringstream indexing;
+            // no vertex offset for constant data
+            indexing << "(localIndex)"
+                     << " * " << name << "Stride"
+                     << " + " << name << "Offset";
+            _EmitComputeAccessor(accessors, name, dataType, binding,
+                    indexing.str().c_str());
+        }
+    }
+    uniforms << "};\n";
+    
+    _genCommon << uniforms.str()
+               << declarations.str()
+               << accessors.str();
+    
+    // other shaders (renderpass, lighting, surface) first
+    TF_FOR_ALL(it, _shaders) {
+        HdShaderCodeSharedPtr const &shader = *it;
+        _genCS  << shader->GetSource(HdShaderTokens->computeShader);
+    }
+
+    // main
+    _genCS << "void main() {\n";
+    _genCS << "  int computeCoordinate = int(gl_GlobalInvocationID.x);\n";
+    _genCS << "  compute(computeCoordinate);\n";
+    _genCS << "}\n";
+    
+    // create GLSL program.
+    HdGLSLProgramSharedPtr glslProgram(
+        new HdGLSLProgram(HdTokens->computeShader));
+    
+    // compile shaders
+    {
+        _csSource = _genCommon.str() + _genCS.str();
+        if (!glslProgram->CompileShader(GL_COMPUTE_SHADER, _csSource)) {
+            const char *shaderSources[1];
+            shaderSources[0] = _csSource.c_str();
+            GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+            glShaderSource(shader, 1, shaderSources, NULL);
+            glCompileShader(shader);
+
+            std::string logString;
+            HdGLUtils::GetShaderCompileStatus(shader, &logString);
+            TF_WARN("Failed to compile compute shader:\n%s\n",
+                    logString.c_str());
+            glDeleteShader(shader);
+            return HdGLSLProgramSharedPtr();
+        }
+    }
+    
+    return glslProgram;
+}
+
 static void _EmitDeclaration(std::stringstream &str,
                              TfToken const &name,
                              TfToken const &type,
@@ -793,6 +981,114 @@ static void _EmitStructAccessor(std::stringstream &str,
         str << type << " HdGet_" << name << "()"
             << " { return HdGet_" << name << "(0); }\n";
     }
+}
+
+static void _EmitComputeAccessor(
+                    std::stringstream &str,
+                    TfToken const &name,
+                    TfToken const &type,
+                    HdBinding const &binding,
+                    const char *index)
+{
+    if (index) {
+        str << type
+            << " HdGet_" << name << "(int localIndex) {\n"
+            << "  int index = " << index << ";\n";
+        if (binding.GetType() == HdBinding::TBO) {
+
+            std::string swizzle = "";
+            if (type == _tokens->vec4 || type == _tokens->ivec4) {
+                // nothing
+            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
+                swizzle = ".xyz";
+            } else if (type == _tokens->vec2 || type == _tokens->ivec2) {
+                swizzle = ".xy";
+            } else if (type == _tokens->_float || type == _tokens->_int) {
+                swizzle = ".x";
+            }
+            str << "  return texelFetch("
+                << name << ", index)" << swizzle << ";\n}\n";
+        } else if (binding.GetType() == HdBinding::SSBO) {
+            str << "  return " << type << "(";
+            int numComponents = 1;
+            if (type == _tokens->vec2 || type == _tokens->ivec2) {
+                numComponents = 2;
+            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
+                numComponents = 3;
+            } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
+                numComponents = 4;
+            }
+            for (int c = 0; c < numComponents; ++c) {
+                if (c > 0) {
+                    str << ",\n              ";
+                }
+                str << name << "[index + " << c << "]";
+            }
+            str << ");\n}\n";
+        } else {
+            str << "  return " << _GetPackedTypeAccessor(type) << "("
+                << name << "[index]);\n}\n";
+        }
+    } else {
+        // non-indexed, only makes sense for uniform or vertex.
+        if (binding.GetType() == HdBinding::UNIFORM || 
+            binding.GetType() == HdBinding::VERTEX_ATTR) {
+            str << type
+                << " HdGet_" << name << "(int localIndex) { return ";
+            str << _GetPackedTypeAccessor(type) << "(" << name << ");}\n";
+        }
+    }
+    // GLSL spec doesn't allow default parameter. use function overload instead.
+    // default to locaIndex=0
+    str << type << " HdGet_" << name << "()"
+        << " { return HdGet_" << name << "(0); }\n";
+    
+}
+
+static void _EmitComputeMutator(
+                    std::stringstream &str,
+                    TfToken const &name,
+                    TfToken const &type,
+                    HdBinding const &binding,
+                    const char *index)
+{
+    if (index) {
+        str << "void"
+            << " HdSet_" << name << "(int localIndex, " << type << " value) {\n"
+            << "  int index = " << index << ";\n";
+        if (binding.GetType() == HdBinding::SSBO) {
+            int numComponents = 1;
+            if (type == _tokens->vec2 || type == _tokens->ivec2) {
+                numComponents = 2;
+            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
+                numComponents = 3;
+            } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
+                numComponents = 4;
+            }
+            if (numComponents == 1) {
+                str << "  "
+                    << name << "[index] = value;\n";
+            } else {
+                for (int c = 0; c < numComponents; ++c) {
+                    str << "  "
+                        << name << "[index + " << c << "] = "
+                        << "value[" << c << "];\n";
+                }
+            }
+            str << "}\n";
+        } else {
+            TF_WARN("mutating non-SSBO not supported");
+        }
+    } else {
+        TF_WARN("mutating non-indexed data not supported");
+    }
+    // XXX Don't output a default mutator as we don't want accidental overwrites
+    // of compute read-write data.
+    // GLSL spec doesn't allow default parameter. use function overload instead.
+    // default to locaIndex=0
+    //str << "void HdSet_" << name << "(" << type << " value)"
+    //    << " { HdSet_" << name << "(0, value); }\n";
+    
 }
 
 static void _EmitAccessor(std::stringstream &str,

@@ -399,6 +399,12 @@ public:
     virtual HdExtComputationPrimVarDesc GetExtComputationPrimVarDesc(
                                                 SdfPath const& id,
                                                 TfToken const& varName);
+    
+    /// Returns the kernel source assigned to the computation at the path id.
+    /// If the string is empty the computation has no GPU kernel and the
+    /// CPU callback should be used.
+    HD_API
+    virtual std::string GetExtComputationKernel(SdfPath const& id);
 
 private:
     HdRenderIndex *_index;

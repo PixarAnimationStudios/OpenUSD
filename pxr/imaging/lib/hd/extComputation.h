@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -37,9 +38,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 class HdExtCompCpuComputation;
+class HdExtCompGpuComputation;
+class HdExtCompGpuComputationBufferSource;
 
 typedef boost::shared_ptr<HdExtCompCpuComputation>
-                                               HdExtCompCpuComputationSharedPtr;
+                                HdExtCompCpuComputationSharedPtr;
+typedef boost::shared_ptr<HdExtCompGpuComputation>
+                                HdExtCompGpuComputationSharedPtr;
+typedef boost::shared_ptr<HdExtCompGpuComputationBufferSource>
+                                HdExtCompGpuComputationBufferSourceSharedPtr;
 
 ///
 /// Hydra Representation of a Client defined computation.
@@ -83,11 +90,13 @@ public:
                                          ///  output arrays changed
         DirtySceneInput       = 1 << 3,  ///< A scene input changed value
         DirtyCompInput        = 1 << 4,  ///< A computation input changed value
+        DirtyKernel           = 1 << 5,  ///< The compute kernel binding changed
         AllDirty              = (DirtyInputDesc
                                 |DirtyOutputDesc
                                 |DirtyElementCount
                                 |DirtySceneInput
-                                |DirtyCompInput)
+                                |DirtyCompInput
+                                |DirtyKernel)
     };
 
     ///
@@ -108,8 +117,24 @@ public:
     /// The scene delegate identifies which delegate to pull scene inputs from.
     HD_API
     HdExtCompCpuComputationSharedPtr GetComputation(
-                                          HdSceneDelegate *sceneDelegate) const;
+                                HdSceneDelegate *sceneDelegate,
+                                HdBufferSourceVector *computationSources) const;
 
+    ///
+    /// Gets the computation object for the computation to be performed on GPU.
+    /// The returned computation has already been added to the resource registry.
+    ///
+    ///@param sceneDelegate identifies which delegate to pull scene inputs from.
+    ///
+    HD_API
+    std::pair<HdExtCompGpuComputationSharedPtr,
+              HdExtCompGpuComputationBufferSourceSharedPtr>
+                                     GetGpuComputation(
+                                HdSceneDelegate *sceneDelegate,
+                                HdBufferSourceVector *computationSources,
+                                TfToken const &primvarName,
+                                HdBufferSpecVector const &outputBufferSpecs,
+                                HdBufferSpecVector const &primInputSpecs) const;
     ///
     /// Returns the set of dirty bits required for the first-sync of the
     /// object.
@@ -131,6 +156,7 @@ private:
     TfTokenVector               _computationInputs;
     SourceComputationDescVector _computationSourceDescs;
     TfTokenVector               _outputs;
+    std::string                 _kernel;
 
     // Creates a buffer source objects that bind the inputs and
     // for processing the computation.
@@ -141,7 +167,18 @@ private:
     // The return value is the processing buffer source..
     HD_API
     HdExtCompCpuComputationSharedPtr _CreateCpuComputation(
-                                         HdSceneDelegate *sceneDelegate) const;
+                                HdSceneDelegate *sceneDelegate,
+                                HdBufferSourceVector *computationSources) const;
+
+    HD_API
+    std::pair<HdExtCompGpuComputationSharedPtr,
+              HdExtCompGpuComputationBufferSourceSharedPtr>
+                                     _CreateGpuComputation(
+                                HdSceneDelegate *sceneDelegate,
+                                HdBufferSourceVector *computationSources,
+                                TfToken const &primvarName,
+                                HdBufferSpecVector const &outputBufferSpecs,
+                                HdBufferSpecVector const &primInputSpecs) const;
 
     // No default construction or copying
     HdExtComputation() = delete;

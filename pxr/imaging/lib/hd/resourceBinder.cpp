@@ -23,8 +23,9 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/resourceBinder.h"
-#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/bufferResourceGL.h"
+#include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/drawBatch.h" // XXX: temp
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceGL.h"
@@ -41,11 +42,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((_double, "double"))
+    ((_float, "float"))
     ((_int, "int"))
     (vec2)
     (vec3)
     (vec4)
+    (dvec2)
     (dvec3)
+    (dvec4)
     (ivec2)
     (ivec3)
     (ivec4)
@@ -538,6 +543,86 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
         }
     }
     _numReservedTextureUnits = locator.textureUnit;
+}
+
+static TfToken const _Type(HdBufferSpec const &spec) {
+    GLenum glDataType = spec.glDataType;
+    int numComponents = spec.numComponents;
+    
+    if (glDataType == GL_FLOAT) {
+        switch (numComponents) {
+            case 1: return _tokens->_float;
+            case 2: return _tokens->vec2;
+            case 3: return _tokens->vec3;
+            case 4: return _tokens->vec4;
+        };
+    } else if (glDataType == GL_INT) {
+        switch (numComponents) {
+            case 1: return _tokens->_int;
+            case 2: return _tokens->ivec2;
+            case 3: return _tokens->ivec3;
+            case 4: return _tokens->ivec4;
+        };
+    } else if (glDataType == GL_DOUBLE) {
+        switch (numComponents) {
+            case 1: return _tokens->_double;
+            case 2: return _tokens->dvec2;
+            case 3: return _tokens->dvec3;
+            case 4: return _tokens->dvec4;
+        };
+    }
+    return _tokens->_float;
+}
+
+void
+Hd_ResourceBinder::ResolveComputeBindings(
+                    HdBufferSpecVector const &readWriteBufferSpecs,
+                    HdBufferSpecVector const &readOnlyBufferSpecs,
+                    HdShaderCodeSharedPtrVector const &shaders,
+                    MetaData *metaDataOut)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    if (!TF_VERIFY(metaDataOut)) {
+        return;
+    }
+
+    // binding assignments
+    BindingLocator locator;
+
+    // clear all
+    _bindingMap.clear();
+    
+    // read-write per prim data
+    for (size_t i = 0; i < readWriteBufferSpecs.size(); ++i) {
+        TfToken const name = readWriteBufferSpecs[i].name;
+        
+        HdBinding binding = locator.GetBinding(
+                HdBinding::SSBO, name);
+        _bindingMap[name] = binding;
+        
+        TfToken const &type = _Type(readWriteBufferSpecs[i]);
+        
+        metaDataOut->computeReadWriteData[binding] =
+            MetaData::PrimVar(/*name=*/name,
+                              /*type=*/type);
+    }
+    
+    // read-only per prim data
+    for (size_t i = 0; i < readOnlyBufferSpecs.size(); ++i) {
+        TfToken const name = readOnlyBufferSpecs[i].name;
+        
+        HdBinding binding = locator.GetBinding(
+                HdBinding::SSBO, name);
+        _bindingMap[name] = binding;
+        
+        TfToken const &type = _Type(readOnlyBufferSpecs[i]);
+        
+        metaDataOut->computeReadOnlyData[binding] =
+            MetaData::PrimVar(/*name=*/name,
+                              /*type=*/type);
+    }
 }
 
 void

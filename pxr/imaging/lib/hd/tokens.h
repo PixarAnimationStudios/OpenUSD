@@ -179,6 +179,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (alphaThreshold)                            \
     (clipPlanes)                                \
     (commonShaderSource)                        \
+    (computeShader)                             \
     (cullStyle)                                 \
     (drawRange)                                 \
     (environmentMap)                            \

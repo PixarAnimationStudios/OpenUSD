@@ -49,6 +49,7 @@ pxr_library(hd
         codeGen
         commandBuffer
         computation
+        computeShader
         conversions
         copyComputation
         debugCodes
@@ -61,6 +62,9 @@ pxr_library(hd
         drawItemState
         engine
         extCompCpuComputation
+        extCompGpuComputation
+        extCompGpuComputationBufferSource
+        extCompGpuComputationResource
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
