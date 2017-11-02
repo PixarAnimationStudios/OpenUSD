@@ -1235,7 +1235,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
                   sceneDelegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
                 TRACE_SCOPE("Parallel Rprim Sync");
                 // In the lambda below, we capture workerState by value and 
-                // incur a copy in the boost::bind because the lambda execution 
+                // incur a copy in the std::bind because the lambda execution 
                 // may be delayed (until we call Wait), resulting in
                 // workerState going out of scope.
                 dispatcher.Run([&r, workerState]() {
