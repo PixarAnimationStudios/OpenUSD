@@ -283,7 +283,6 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         // If we have imported USD geometry get the type to see if it is a
         // point instancer we need to overlay.
         if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
-            
             if(packedUSD->getFileName()) {
 
                 // Get the usd src prim path used for point instancers
@@ -305,7 +304,6 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
                 }
             }
         }
-        
         // If we find either an instancepath or usdinstancepath attribute, build a
         // point instancer.
         GT_Owner owner;
@@ -586,7 +584,6 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
 
         GT_AttributeListHandle pAttrs = new GT_AttributeList( new GT_AttributeMap() );
 
-
         // Allocate storage for all the attributes we want to copy.
         
         // Assume all entries in the primArray have the same set of attributes.
@@ -611,6 +608,12 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                             n, 
                             newDataArray( storage, nprims, tupleSize ), 
                             true );
+            }
+        }
+        bool hasInstanceIndices = false;
+        if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( prim.get() )) {
+            if (packedUSD->getInstanceIndex() >= 0) {
+                hasInstanceIndices = true;
             }
         }
 
@@ -638,11 +641,13 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                 }
             }
         }
+       
 
         // Allocate xform attribute used to communicate about the instances
         // with the instancerWrapper.
         GT_Real64Array*     xformArray = new GT_Real64Array(nprims, 16);
         bool foundValidTransform = false;
+        GT_Int64Array* instanceIndices = hasInstanceIndices ? new GT_Int64Array(nprims, 1) : NULL;
 
         for( size_t primIndex = 0; primIndex < nprims; ++primIndex ) {
 
@@ -670,6 +675,14 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                         pivotArray->set( pos->getF32( 0, 0 ), primIndex, 0 );
                         pivotArray->set( pos->getF32( 0, 1 ), primIndex, 1 );
                         pivotArray->set( pos->getF32( 0, 2 ), primIndex, 2 );
+                    }
+                }
+                if (hasInstanceIndices) {
+                    if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( prim.get() )) {
+                        exint index = packedUSD->getInstanceIndex();
+                        if (index >= 0) {
+                            instanceIndices->setTuple(&index, primIndex);
+                        }
                     }
                 }
             }
@@ -718,6 +731,10 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
 
         if( foundValidTransform ) {
             pAttrs = pAttrs->addAttribute( "__instancetransform", xformArray, true );
+        }
+
+        if ( hasInstanceIndices ) {
+            pAttrs = pAttrs->addAttribute( "__instanceindex", instanceIndices, true );
         }
 
         // If the instance prims have a "srcPrimPath" intrinsic (typically 

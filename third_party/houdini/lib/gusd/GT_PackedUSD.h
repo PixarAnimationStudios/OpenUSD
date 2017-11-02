@@ -112,6 +112,8 @@ public:
 
     const SdfPath& getSrcPrimPath() const { return m_srcPrimPath; }
 
+    const exint& getInstanceIndex() const { return m_instanceIndex; }
+
 private:
     UT_StringHolder m_fileName;
     UT_StringHolder m_auxFileName;

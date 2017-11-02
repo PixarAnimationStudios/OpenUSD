@@ -93,6 +93,19 @@ SdfPath _rootPrimPath(const SdfPath path)
     return _rootPrimPath(path.GetParentPath());
 }
 
+void setAngularVelocity(GT_DataArrayHandle houWAttr, std::vector<fpreal32>& houWArray) {
+    // Houdini stores angular velocity in radians per second.
+    // USD is degrees per second
+    const GT_Size numVals = houWAttr->entries() * houWAttr->getTupleSize();
+    houWArray = std::vector<fpreal32>(numVals);
+    houWAttr->fillArray(houWArray.data(), 0, numVals, houWAttr->getTupleSize());
+    std::transform(
+        houWArray.begin(),
+        houWArray.end(),
+        houWArray.begin(),
+        std::bind1st(std::multiplies<fpreal32>(), 180.0 / M_PI));
+}
+
 void setTransformAttrsFromComponents(UsdAttribute& usdPositionAttr,
                                      UsdAttribute& usdRotationAttr,
                                      UsdAttribute& usdScaleAttr,
@@ -267,95 +280,6 @@ void setTransformAttrsFromComponents(UsdAttribute& usdPositionAttr,
     }
 }
 
-void setTransformAttrsFromMatrices(const UT_Matrix4D &worldToLocal,
-                                   UsdAttribute& usdPositionAttr,
-                                   UsdAttribute& usdRotationAttr,
-                                   UsdAttribute& usdScaleAttr,
-                                   const GT_AttributeListHandle& gtAttrs,
-                                   UsdTimeCode time,
-                                   const UsdGeomPointInstancer& pointInstancer,
-                                   std::vector<UT_Matrix4D> prototypeTransforms)
-{
-    if (!usdPositionAttr.IsValid() 
-     || !usdRotationAttr.IsValid()
-     || !usdScaleAttr.IsValid()
-     || !gtAttrs)
-        return;
-
-    GT_DataArrayHandle houXformAttr = gtAttrs->get("__instancetransform", 0); 
-    if(!houXformAttr || !(houXformAttr->getTupleSize() ==16))
-        return;
-
-    GT_DataArrayHandle houXformBuffer;
-    const fpreal64* houXformArray = houXformAttr->getF64Array(houXformBuffer);
-
-    if(!houXformArray)
-        return;
-
-    GT_Size numXforms = houXformAttr->entries();
-
-    GT_Real32Array* houPositions = new GT_Real32Array(numXforms, 3);
-    GT_DataArrayHandle houPositionsHandle(houPositions);
-
-    GT_Real32Array* houRotations = new GT_Real32Array(numXforms, 4);
-    GT_DataArrayHandle houRotationsHandle(houRotations);
-
-    GT_Real32Array* houScales = new GT_Real32Array(numXforms, 3);
-    GT_DataArrayHandle houScalesHandle(houScales);
-
-
-    VtArray<int> indices;
-    pointInstancer.GetProtoIndicesAttr().Get( &indices, time);
-
-    // If we have transforms on prototypes, we have to remove them from our
-    // final instance transformation, as the potin instancer schema accounts
-    // for prototype transforms.
-    bool removeProtoTransforms = (indices.size() == numXforms) &&
-                                 (prototypeTransforms.size() > 0);
-
-    for(GA_Size i=0; i<numXforms; ++i) {
-        
-        // Build a 4x4 that represents this instance transformation.
-        // Bring this into local space and then take the 3x3 from the upper left.
-        UT_Matrix4D instXform( 
-            houXformArray[i*16],    houXformArray[i*16+1],  houXformArray[i*16+2],  houXformArray[i*16+3],
-            houXformArray[i*16+4],  houXformArray[i*16+5],  houXformArray[i*16+6],  houXformArray[i*16+7],
-            houXformArray[i*16+8],  houXformArray[i*16+9],  houXformArray[i*16+10], houXformArray[i*16+11],
-            houXformArray[i*16+12], houXformArray[i*16+13], houXformArray[i*16+14], houXformArray[i*16+15] );
-
-        UT_Matrix4D localInstXform = instXform * worldToLocal;
-
-        // Multiply by the prototype inverse to "subtract" its transformation
-        if (removeProtoTransforms) {
-            int protoIdx = indices[i];
-            UT_Matrix4D protoXform = prototypeTransforms[protoIdx];
-            protoXform.invert();
-            localInstXform =  protoXform * localInstXform;
-        }
-
-        UT_Vector3 position;
-        localInstXform.getTranslates( position );
-        houPositions->setTuple( position.data(), i );
-
-        UT_Matrix3D localInstXform3( localInstXform );
-
-        UT_Vector3 scales;
-        localInstXform3.extractScales(scales);
-        UT_Quaternion q;
-        q.updateFromRotationMatrix(localInstXform3);
-        q.normalize();
-
-        houScales->setTuple(scales.data(), i);
-        // Houdini quaternions are i,j,k,w
-        houRotations->setTuple(
-                UT_Vector4(q.x(), q.y(), q.z(), q.w()).data(), i);
-    }
-
-    GusdGT_Utils::setUsdAttribute(usdPositionAttr, houPositionsHandle, time);
-    GusdGT_Utils::setUsdAttribute(usdRotationAttr, houRotationsHandle, time);
-    GusdGT_Utils::setUsdAttribute(usdScaleAttr, houScalesHandle, time);
-}
-
 } // anon namespace
 
 /////////////////////////////////////////////////////////////////////////////
@@ -412,6 +336,59 @@ initUsdPrim(const UsdStagePtr& stage,
     return bool( m_usdPointInstancerForWrite );
 }
 
+void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
+        const UsdTimeCode* time=nullptr) {
+    // Store point instancer attribute data so that we can write "partial"
+    // overlays during overlay transform. Once a new attribute list is overlaid
+    // we lose the original data, so we have to store it somewhere if we want to
+    // access it for points where we just want the original data.
+
+    UsdGeomPointInstancer& pI = m_usdPointInstancerForWrite;
+    UsdAttribute usdProtoIndicesAttr = pI.GetProtoIndicesAttr();
+    m_preOverlayDataMap[UsdGeomTokens->protoIndices] = 
+        PreOverlayDataEntry<int>(usdProtoIndicesAttr);
+    if (!justProtoIndices) {
+        m_preOverlayDataMap[UsdGeomTokens->positions] = 
+            PreOverlayDataEntry<GfVec3f>(pI.GetPositionsAttr());
+        m_preOverlayDataMap[UsdGeomTokens->orientations] = 
+            PreOverlayDataEntry<GfQuath>(pI.GetOrientationsAttr());
+        m_preOverlayDataMap[UsdGeomTokens->scales] = 
+            PreOverlayDataEntry<GfVec3f>(pI.GetScalesAttr());
+        m_preOverlayDataMap[UsdGeomTokens->velocities] = 
+            PreOverlayDataEntry<GfVec3f>(pI.GetVelocitiesAttr());
+        m_preOverlayDataMap[UsdGeomTokens->angularVelocities] = 
+            PreOverlayDataEntry<GfVec3f>(pI.GetAngularVelocitiesAttr());
+    }
+
+    // Get all the time samples we have for prototype indices, or use the
+    // the provided timecode.
+    std::vector<double> times;
+    if (time == nullptr){
+        usdProtoIndicesAttr.GetTimeSamples(&times);
+    } else {
+        times.push_back(time->GetValue());
+    }
+    
+    // For time samples where we have prototype indices, store data.
+    for (int i = 0; i < times.size(); i++) {
+        for (TfToken token : m_usdGeomTokens) {
+            if (!m_preOverlayDataMap.count(token))
+                continue;
+            boost::apply_visitor(StoreAtTime(UsdTimeCode(times[i])), m_preOverlayDataMap[token]);
+        }
+    }
+
+}
+void GusdInstancerWrapper::clearPreOverlayData() {
+    // Clears original data so we don't have to store unnecessary information.
+    for (TfToken token : m_usdGeomTokens){
+        if (!m_preOverlayDataMap.count(token))
+            continue;
+        boost::apply_visitor(ClearData{}, m_preOverlayDataMap[token]);
+    }
+
+}
+
 GT_PrimitiveHandle GusdInstancerWrapper::
 defineForWrite(
         const GT_PrimitiveHandle& sourcePrim,
@@ -422,6 +399,17 @@ defineForWrite(
     GusdInstancerWrapper* instancePrim =
         new GusdInstancerWrapper( stage, path, ctxt, ctxt.writeOverlay );
 
+    if( ctxt.writeOverlay ) {
+        // For overlays, store original point instancer data in case of partial
+        // overlay.
+        bool justProtoIndices = (ctxt.overlayPoints || ctxt.overlayAll);
+        if (ctxt.granularity != GusdContext::PER_FRAME){
+            instancePrim->storePreOverlayData(justProtoIndices);
+        } else {
+            instancePrim->storePreOverlayData(justProtoIndices, &ctxt.time);
+        }
+    }
+
     if(!ctxt.writeOverlay || ctxt.overlayAll) {
         
         // Set empty defaults for positions, scale, and indices. 
@@ -429,9 +417,9 @@ defineForWrite(
         // with animated visibility.
         if(instancePrim) {
             VtIntArray intArray;
-            instancePrim->m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(intArray, UsdTimeCode::Default());
             VtVec3fArray vec3fArray;
             VtQuathArray quathArray;
+            instancePrim->m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(intArray, UsdTimeCode::Default());
             instancePrim->m_usdPointInstancerForWrite.GetPositionsAttr().Set(vec3fArray, UsdTimeCode::Default());
             instancePrim->m_usdPointInstancerForWrite.GetScalesAttr().Set(vec3fArray, UsdTimeCode::Default());
             instancePrim->m_usdPointInstancerForWrite.GetOrientationsAttr().Set(quathArray, UsdTimeCode::Default());
@@ -444,7 +432,6 @@ defineForWrite(
     instancePrim->writePrototypes( ctxt, stage, sourcePrim );
 
     if( ctxt.writeOverlay ) {
-
         // If we are writing an overlay, turn off pruning for this point instancer.
         // We may have shuffled the instance index order. 
         if( UsdAttribute attr = 
@@ -478,6 +465,18 @@ redefine( const UsdStagePtr& stage,
 {
     initUsdPrim( stage, path, ctxt.writeOverlay );
 
+    if( ctxt.writeOverlay ) {
+        // If per frame and redefining, we don't need to store all data, so
+        // clear previous frames and store this frame's.
+        bool justProtoIndices = (ctxt.overlayPoints || ctxt.overlayAll);
+        if (ctxt.granularity == GusdContext::PER_FRAME){
+            clearPreOverlayData();
+            storePreOverlayData(justProtoIndices);
+        } else {
+            storePreOverlayData(justProtoIndices, &ctxt.time);
+        }
+    }
+
     if(!ctxt.writeOverlay || ctxt.overlayAll) {
         
         // Set empty defaults for positions, scale, and indices. 
@@ -485,10 +484,10 @@ redefine( const UsdStagePtr& stage,
         // with animated visibility.
         if( m_usdPointInstancerForWrite ) {
             VtIntArray intArray;
-            m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(
-                    intArray, UsdTimeCode::Default());
             VtVec3fArray vec3fArray;
             VtQuathArray quathArray;
+            m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(
+                intArray, UsdTimeCode::Default());
             m_usdPointInstancerForWrite.GetPositionsAttr().Set(
                     vec3fArray, UsdTimeCode::Default());
             m_usdPointInstancerForWrite.GetScalesAttr().Set(
@@ -778,7 +777,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         newContext.authorVariantSelections = true;
 
         GusdRefinerCollector refinerCollector;
-        // TODO: add custom scoping for prototypes
+
         string protoUsdName;
         if ( !std::get<1>(pair.first) ) {
             protoUsdName = std::get<0>(pair.first);
@@ -944,7 +943,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         }
         m_relationshipIndexMap[TfToken(mapKey)] = relIdx++;
     }
-    if (ctxt.overlayAll) {
+    if (ctxt.overlayAll && relationshipPaths.size() > 0) {
         // Set the targets as this forces the point instancer to explicitly
         // only uses the new prototypes and not the ones from the file
         // we are overlaying.
@@ -998,9 +997,6 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     int numPoints = 0;
     if( writeTransforms ) {
 
-        // TODO If overlayTransforms, should ensure points array is the same
-        // length.
-
         UT_Matrix4D localToWorld;
         GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
             m_usdPointInstancerForWrite.GetPrim(),
@@ -1018,7 +1014,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         if(houAttr) {
             numPoints = houAttr->entries();
         }
-        
+
         // Mask
         // XXX We currently don't support the mask attribute, but it could
         // be authored on a prim we're overlaying, in which case we write
@@ -1085,6 +1081,55 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                 }
             }
             gotValidIndices = true;
+        } else if (ctxt.writeOverlay && (ctxt.overlayPoints || ctxt.overlayAll)) {
+            // If we are writing an overlay points or all, but didn't construct
+            // a new prototypes relationship array, we can still find the
+            // instances' appropriate proto indices from the original instancer.
+            // This will be the new indices array, and does not have to be the
+            // the same length as the original.
+
+            GT_DataArrayHandle indexAttr;
+            std::vector<exint> instanceIndexArray;
+
+            // Get the houdini attribute defining the index of its position
+            // in the original point instancer.
+            if ( auto pntAttrs = sourcePrim->getPointAttributes() )
+                indexAttr = pntAttrs->get( "__instanceindex" );
+
+            // Get the original proto indices array.
+            std::map<UsdTimeCode, VtIntArray> preOverlayProtoIndices = boost::get<PreOverlayDataEntry<int>>(
+                m_preOverlayDataMap[UsdGeomTokens->protoIndices]).preOverlayDataMap;
+
+            // If we stored indices in the point instancer we are overlaying,
+            // get those. otherwise get them from the attribute.
+            VtIntArray usdProtoIndicies;
+            if (preOverlayProtoIndices.count(ctxt.time) > 0) {
+                usdProtoIndicies = preOverlayProtoIndices[ctxt.time];
+            } else if (ctxt.granularity==GusdContext::PER_FRAME) {
+                m_usdPointInstancerForWrite.GetProtoIndicesAttr().Get(&usdProtoIndicies, ctxt.time);
+            }
+
+            if (usdProtoIndicies.size() > 0) {
+                if (indexAttr) {
+                    int numIndicies = indexAttr->entries();
+
+                    // If we have an index for each instance:
+                    if (numIndicies == numPoints) {
+                        const GT_Size numVals = indexAttr->entries() * indexAttr->getTupleSize();
+                        instanceIndexArray = std::vector<exint>(numVals);
+                        indexAttr->fillArray(instanceIndexArray.data(), 0, numVals, indexAttr->getTupleSize());
+                        
+                        // For each instance, grab it's prototype index by
+                        // accessing the original proto indices array at the
+                        // index of it's place in the instancer.
+                        for(int i=0; i<numPoints; ++i) {
+                            int index = usdProtoIndicies[instanceIndexArray[i]];
+                            idxArray->set(index, i);
+                        }
+                        gotValidIndices = true;
+                    }
+                }
+            }
         } else if (!ctxt.writeOverlay || ctxt.overlayAll) {
             TF_WARN( "Instance prototypes not specified as instance path or packed prim" );
         }
@@ -1094,61 +1139,47 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
         }
 
-        // v
-        houAttr = sourcePrim->findAttribute("v", attrOwner, 0);
-        usdAttr = m_usdPointInstancerForWrite.GetVelocitiesAttr();
-        if(houAttr && usdAttr) {
-            GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
-        }
-
-        // w
-        houAttr = sourcePrim->findAttribute("w", attrOwner, 0);
-        usdAttr = m_usdPointInstancerForWrite.GetAngularVelocitiesAttr();
-        if(houAttr && usdAttr) {
-
-            // Houdini stores angular velocity in radians per second.
-            // USD is degrees per second
-            const GT_Size numVals = houAttr->entries() * houAttr->getTupleSize();
-            std::vector<fpreal32> wArray(numVals);
-            houAttr->fillArray(wArray.data(), 0, numVals, houAttr->getTupleSize()); 
-
-            std::transform(
-                wArray.begin(),
-                wArray.end(),
-                wArray.begin(),
-                std::bind1st(std::multiplies<fpreal32>(), 180.0 / M_PI));
-
-            houAttr.reset(new GT_Real32Array(wArray.data(), houAttr->entries() , houAttr->getTupleSize()));
-            GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
-        }
-
-        // instance rotation and scale
-        UsdAttribute usdPositionAttr = m_usdPointInstancerForWrite.GetPositionsAttr();
-        UsdAttribute usdRotationAttr = m_usdPointInstancerForWrite.GetOrientationsAttr();
-        UsdAttribute usdScalesAttr = m_usdPointInstancerForWrite.GetScalesAttr();
+        // When the instance has a transform, set everything here.
         const GT_AttributeListHandle gtPointAttrs = sourcePrim->getPointAttributes();
-
-        if (usdRotationAttr 
-         && usdScalesAttr
-         && gtPointAttrs) {
-
-            if( gtPointAttrs->hasName("__instancetransform") ) {
-                setTransformAttrsFromMatrices(
-                                  worldToLocal,
-                                  usdPositionAttr,
-                                  usdRotationAttr,
-                                  usdScalesAttr,
-                                  gtPointAttrs,
-                                  ctxt.time,
-                                  m_usdPointInstancerForWrite,
-                                  m_prototypeTransforms);
+        if( gtPointAttrs->hasName("__instancetransform") ) {
+            setTransformAttrsFromMatrices(
+                              worldToLocal,
+                              gtPointAttrs,
+                              ctxt,
+                              sourcePrim);
+        }
+        else {
+            // For nativ houdini instancing with just attributes on a point.
+            // v
+            houAttr = sourcePrim->findAttribute("v", attrOwner, 0);
+            usdAttr = m_usdPointInstancerForWrite.GetVelocitiesAttr();
+            if(houAttr && usdAttr) {
+                GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
             }
-            else {
+
+            //w
+            houAttr = sourcePrim->findAttribute("w", attrOwner, 0);
+            usdAttr = m_usdPointInstancerForWrite.GetAngularVelocitiesAttr();
+            if(houAttr && usdAttr) {
+                std::vector<fpreal32> wArray;
+                setAngularVelocity(houAttr, wArray);
+                houAttr.reset(new GT_Real32Array(wArray.data(), houAttr->entries() , houAttr->getTupleSize()));
+                GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
+            }
+            UsdAttribute usdPositionAttr = m_usdPointInstancerForWrite.GetPositionsAttr();
+            UsdAttribute usdRotationAttr = m_usdPointInstancerForWrite.GetOrientationsAttr();
+            UsdAttribute usdScalesAttr = m_usdPointInstancerForWrite.GetScalesAttr();
+            
+            if (usdRotationAttr 
+             && usdScalesAttr
+             && gtPointAttrs) {
+
                 setTransformAttrsFromComponents(
                                   usdPositionAttr,
                                   usdRotationAttr,
                                   usdScalesAttr,
-                                  gtPointAttrs, ctxt.time);
+                                  gtPointAttrs,
+                                  ctxt.time);
             }
         }
     
@@ -1189,10 +1220,237 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             updatePrimvarFromGTPrim( constAttrs, filter, UsdGeomTokens->constant, ctxt.time );
         }
     }
-    
     // -------------------------------------------------------------------------
 
     return GusdPrimWrapper::updateFromGTPrim(sourcePrim, houXform, ctxt, xformCache);
+}
+void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worldToLocal,
+                                   const GT_AttributeListHandle gtAttrs,
+                                   GusdContext ctxt,
+                                   GT_PrimitiveHandle sourcePrim)
+{
+    // Create a map from TfToken to UsdAttribute for each one we want to set.
+    std::map<TfToken, UsdAttribute> usdAttrMap;
+    for (auto token : m_usdGeomTokens) {
+        if (token != UsdGeomTokens->protoIndices) {
+            usdAttrMap[token] =
+                m_usdPointInstancerForWrite.GetPrim().GetAttribute(token);
+            if(!usdAttrMap[token].IsValid()) {
+                TF_WARN( "Missing '%s' attribute from point instancer. "
+                    "Failed to update attributes.", token.GetString().c_str());
+                return;
+            }
+        }
+    }
+
+    if (!gtAttrs)
+        return;
+
+    UsdTimeCode time = ctxt.time;
+    
+    GT_DataArrayHandle houXformAttr = gtAttrs->get("__instancetransform", 0); 
+    if(!houXformAttr || !(houXformAttr->getTupleSize() ==16))
+        return;
+
+    GT_DataArrayHandle houXformBuffer;
+    const fpreal64* houXformArray = houXformAttr->getF64Array(houXformBuffer);
+
+    if(!houXformArray)
+        return;
+
+    GT_Size numXforms = houXformAttr->entries();
+
+    int numPoints = 0;
+
+    // If writing an overlay, get the indices of each instance into the original
+    // point instancer, and see if we are writing a partial overlay of some sort.
+    GT_DataArrayHandle indexAttr;
+
+    // Map from index into point instancer to point number in houdini.
+    std::map<exint, int> instanceIndexMap;
+
+    indexAttr = gtAttrs->get( "__instanceindex" );
+    if (ctxt.writeOverlay && ctxt.overlayTransforms && 
+            !(ctxt.overlayAll || ctxt.overlayPoints) && indexAttr) {
+        const GT_Size numVals = indexAttr->entries() * indexAttr->getTupleSize();
+        std::vector<exint> instanceIndexArray = std::vector<exint>(numVals);
+        indexAttr->fillArray(instanceIndexArray.data(), 0, numVals, indexAttr->getTupleSize());
+        for (int i =0; i < instanceIndexArray.size(); i++) {
+            instanceIndexMap[instanceIndexArray[i]] = i;
+        }
+
+        // Get the number of points in the original point instancer.
+        std::map<UsdTimeCode, VtIntArray> preOverlayProtoIndices = boost::get<PreOverlayDataEntry<int>>(
+            m_preOverlayDataMap[UsdGeomTokens->protoIndices]).preOverlayDataMap;
+        if ( preOverlayProtoIndices.count(time) > 0 ) {    
+            numPoints = preOverlayProtoIndices[time].size();
+        } else {
+            VtIntArray indices;
+            m_usdPointInstancerForWrite.GetProtoIndicesAttr().Get( &indices, time);
+            numPoints = indices.size();
+        }
+    } else {
+        // Just write out a point instancer with the data provided by houdini.
+        numPoints = numXforms;
+    }
+
+    // Create a handle for data from houdini
+    std::map<TfToken, GT_DataArrayHandle> houHandlesMap;
+    GT_Real32Array* houPositions = new GT_Real32Array(numPoints, 3);
+    houHandlesMap[UsdGeomTokens->positions] = GT_DataArrayHandle(houPositions);
+
+    GT_Real32Array* houRotations = new GT_Real32Array(numPoints, 4);
+    houHandlesMap[UsdGeomTokens->orientations] = GT_DataArrayHandle(houRotations);
+
+    GT_Real32Array* houScales = new GT_Real32Array(numPoints, 3);
+    houHandlesMap[UsdGeomTokens->scales] = GT_DataArrayHandle(houScales);
+
+    GT_Owner attrOwner = GT_OWNER_INVALID;
+    GT_DataArrayHandle houVAttr = sourcePrim->findAttribute("v", attrOwner, 0);
+    const float *houVArray=NULL;
+    GT_Real32Array* houVelocities=NULL;
+    if(houVAttr && houVAttr->getTupleSize() == 3) {
+        if (numPoints == numXforms) {
+            // We can set it directly with no further calculations
+            houHandlesMap[UsdGeomTokens->velocities] = houVAttr;
+        } else {
+            // We have to construct the array point by point, in order to get
+            // some data from the original point instancer.
+            GT_DataArrayHandle houVBuffer;
+            houVArray = houVAttr->getF32Array(houVBuffer);
+            houVelocities = new GT_Real32Array(numPoints, 3);
+            houHandlesMap[UsdGeomTokens->velocities] = GT_DataArrayHandle(houVelocities);
+        }
+    }
+
+    GT_DataArrayHandle houWAttr = sourcePrim->findAttribute("w", attrOwner, 0);
+    GT_Real32Array* houAngularVelocities = NULL;
+    std::vector<fpreal32> houWArray;
+    if (houWAttr && houWAttr->getTupleSize() == 3) {
+        setAngularVelocity(houWAttr, houWArray);
+        if (numPoints == numXforms) {
+            // We can set it directly with no further calculations
+            houWAttr.reset(new GT_Real32Array(houWArray.data(), houWAttr->entries() , houWAttr->getTupleSize()));
+            houHandlesMap[UsdGeomTokens->angularVelocities] = houWAttr;
+        } else {
+            // We have to construct the array point by point, in order to get
+            // some data from the original point instancer.
+            houAngularVelocities = new GT_Real32Array(numPoints, 3);
+            houHandlesMap[UsdGeomTokens->angularVelocities] = GT_DataArrayHandle(houAngularVelocities);
+        }
+    }
+
+
+
+    // If we have transforms on prototypes, we have to remove them from our
+    // final instance transformation, as the point instancer schema accounts
+    // for prototype transforms. Will only be the case when writing out new
+    // prototypes (new geom or overlay all).
+    VtIntArray indices;
+    m_usdPointInstancerForWrite.GetProtoIndicesAttr().Get( &indices, time);
+    bool removeProtoTransforms = (indices.size() == numXforms) &&
+                                 (m_prototypeTransforms.size() > 0);
+
+    for(int pt=0; pt<numPoints; ++pt) {
+        UT_Vector3 position;
+        UT_Vector3 scale;
+        UT_Quaternion q;
+        UT_Vector3 velocity;
+        UT_Vector3 angularVelocity;
+
+        if (numPoints == numXforms || instanceIndexMap.count((exint)pt)) {
+            // If all the data is from houdini, or this point is being overlaid,
+            // get the data from houdini.
+
+            int i = (numPoints == numXforms) ? pt : instanceIndexMap[pt];
+            // Build a 4x4 that represents this instance transformation.
+            // Bring this into local space and then take the 3x3 from the upper left.
+            UT_Matrix4D instXform( 
+                houXformArray[i*16],    houXformArray[i*16+1],  houXformArray[i*16+2],  houXformArray[i*16+3],
+                houXformArray[i*16+4],  houXformArray[i*16+5],  houXformArray[i*16+6],  houXformArray[i*16+7],
+                houXformArray[i*16+8],  houXformArray[i*16+9],  houXformArray[i*16+10], houXformArray[i*16+11],
+                houXformArray[i*16+12], houXformArray[i*16+13], houXformArray[i*16+14], houXformArray[i*16+15] );
+
+            UT_Matrix4D localInstXform = instXform * worldToLocal;
+            // Multiply by the prototype inverse to "subtract" its transformation
+            if (removeProtoTransforms) {
+                int protoIdx = indices[i];
+                UT_Matrix4D protoXform = m_prototypeTransforms[protoIdx];
+                protoXform.invert();
+                localInstXform =  protoXform * localInstXform;
+            }
+            localInstXform.getTranslates( position );
+            UT_Matrix3D localInstXform3( localInstXform );
+            localInstXform3.extractScales(scale);
+            q.updateFromRotationMatrix(localInstXform3);
+            q.normalize();
+            // if partial mode
+            if (numPoints != numXforms ) {
+                if (houVArray) {
+                    velocity = UT_Vector3(houVArray[i*3],
+                                          houVArray[i*3+1],
+                                          houVArray[i*3+2]);
+                }
+                if (houWArray.size() >= numXforms * 3) {
+                    angularVelocity = UT_Vector3(houWArray[i*3],
+                                                 houWArray[i*3+1],
+                                                 houWArray[i*3+2]);
+                }
+            }
+        } else {
+            // This point was in the original point instancer but not being
+            // overlaid, so get original values. Only in an overlay transform.
+
+            TfToken token = UsdGeomTokens->positions;
+            GfVec3f ptPosition;
+            if (boost::get<PreOverlayDataEntry<GfVec3f>>(
+                m_preOverlayDataMap[token]).getPointValue(time, pt, ptPosition))
+                position = GusdUT_Gf::Cast(ptPosition);
+
+            token = UsdGeomTokens->scales;
+            GfVec3f ptScale;
+            if (boost::get<PreOverlayDataEntry<GfVec3f>>(
+                m_preOverlayDataMap[token]).getPointValue(time, pt, ptScale))
+                scale = GusdUT_Gf::Cast(ptScale);
+
+            token = UsdGeomTokens->orientations;
+            GfQuath ptOrientation;
+            if (boost::get<PreOverlayDataEntry<GfQuath>>(
+                m_preOverlayDataMap[token]).getPointValue(time, pt, ptOrientation))
+                GusdUT_Gf::Convert((GfQuatf)ptOrientation, q);
+
+            token = UsdGeomTokens->velocities;
+            GfVec3f ptVelocity;
+            if (boost::get<PreOverlayDataEntry<GfVec3f>>(
+                m_preOverlayDataMap[token]).getPointValue(time, pt, ptVelocity))
+                velocity = GusdUT_Gf::Cast(ptVelocity);
+
+            token = UsdGeomTokens->angularVelocities;
+            GfVec3f ptAngularVelocity;
+            if (boost::get<PreOverlayDataEntry<GfVec3f>>(
+                m_preOverlayDataMap[token]).getPointValue(time, pt, ptAngularVelocity))
+                angularVelocity = GusdUT_Gf::Cast(ptAngularVelocity);
+
+        }
+        houPositions->setTuple( position.data(), pt );
+
+        houScales->setTuple(scale.data(), pt);
+        // Houdini quaternions are i,j,k,w
+        houRotations->setTuple(
+                UT_Vector4(q.x(), q.y(), q.z(), q.w()).data(), pt);
+
+        // We only reconstruct the data if we are doing a partial overlay.
+        if (numPoints != numXforms ) {
+            if (houVelocities != NULL)
+                houVelocities->setTuple(velocity.data(), pt);
+            if (houAngularVelocities != NULL)
+                houAngularVelocities->setTuple(angularVelocity.data(), pt);
+        }
+    }
+
+    // Set all the attributes' data.
+    for (auto pair : houHandlesMap)
+        GusdGT_Utils::setUsdAttribute(usdAttrMap[pair.first], pair.second, time);
 }
 
 bool GusdInstancerWrapper::
