@@ -103,6 +103,11 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
 void 
 HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkRprimDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _rprimState.find(id);
     if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText()))
         return;
@@ -209,6 +214,11 @@ HdChangeTracker::TaskRemoved(SdfPath const& id)
 void
 HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
 {
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkTaskDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _taskState.find(id);
     if (!TF_VERIFY(it != _taskState.end()))
         return;
@@ -250,6 +260,11 @@ HdChangeTracker::GetInstancerDirtyBits(SdfPath const& id)
 void
 HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
 {
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkInstancerDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _instancerState.find(id);
     if (!TF_VERIFY(it != _instancerState.end()))
         return;
@@ -313,6 +328,11 @@ HdChangeTracker::GetSprimDirtyBits(SdfPath const& id)
 void
 HdChangeTracker::MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkSprimDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _sprimState.find(id);
     if (!TF_VERIFY(it != _sprimState.end()))
         return;
@@ -358,6 +378,11 @@ HdChangeTracker::GetBprimDirtyBits(SdfPath const& id)
 void
 HdChangeTracker::MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkBprimDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _bprimState.find(id);
     if (!TF_VERIFY(it != _bprimState.end()))
         return;
@@ -396,6 +421,11 @@ HdChangeTracker::ExtComputationRemoved(SdfPath const& id)
 void
 HdChangeTracker::MarkExtComputationDirty(SdfPath const& id, HdDirtyBits bits)
 {
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkExtComputationDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _extComputationState.find(id);
     if (!TF_VERIFY(it != _extComputationState.end()))
         return;
