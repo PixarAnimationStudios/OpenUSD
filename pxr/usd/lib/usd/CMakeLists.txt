@@ -162,6 +162,7 @@ pxr_test_scripts(
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
     testenv/testUsdFlatten2.py
+    testenv/testUsdFlattenProperties.py
     testenv/testUsdInherits.py
     testenv/testUsdInstanceProxy.py
     testenv/testUsdInstancing.py
@@ -306,6 +307,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdFlatten2
     DEST testUsdFlatten4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFlattenProperties
+    DEST testUsdFlattenProperties
 )
 
 pxr_install_test_dir(

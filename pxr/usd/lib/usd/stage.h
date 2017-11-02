@@ -1484,7 +1484,6 @@ private:
     // Spec Existence & Definition Helpers
     // --------------------------------------------------------------------- //
 
-
     SdfPropertySpecHandleVector
     _GetPropertyStack(const UsdProperty &prop, UsdTimeCode time) const;
 
@@ -1536,6 +1535,10 @@ private:
     UsdPrim _DefinePrim(const SdfPath &path, const TfToken &typeName);
 
     bool _RemoveProperty(const SdfPath& path);
+
+    UsdProperty _FlattenProperty(const UsdProperty &srcProp,
+                                 const UsdPrim &dstParent, 
+                                 const TfToken &dstName);
 
     // --------------------------------------------------------------------- //
     // Value & Metadata Authoring

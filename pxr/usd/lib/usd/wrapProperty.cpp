@@ -72,6 +72,19 @@ void wrapUsdProperty()
         .def("IsDefined", &UsdProperty::IsDefined)
         .def("IsAuthored", &UsdProperty::IsAuthored)
         .def("IsAuthoredAt", &UsdProperty::IsAuthoredAt, arg("editTarget"))
+
+        .def("FlattenTo", 
+             (UsdProperty (UsdProperty::*)(const UsdPrim&) const)
+                 &UsdProperty::FlattenTo,
+             (arg("parent")))
+        .def("FlattenTo", 
+             (UsdProperty (UsdProperty::*)(const UsdPrim&,const TfToken&) const)
+                 &UsdProperty::FlattenTo,
+             (arg("parent"), arg("propName")))
+        .def("FlattenTo", 
+             (UsdProperty (UsdProperty::*)(const UsdProperty&) const)
+                 &UsdProperty::FlattenTo,
+             (arg("property")))
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdProperty>();

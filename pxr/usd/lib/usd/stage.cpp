@@ -4124,7 +4124,8 @@ namespace {
 // Populates the time sample map with the resolved values for the given 
 // attribute and returns true if time samples exist, false otherwise.
 bool 
-_GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out)
+_GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
+                  const SdfLayerOffset& offset = SdfLayerOffset())
 {
     UsdAttributeQuery attrQuery(attr);
 
@@ -4133,10 +4134,10 @@ _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out)
         for (const auto& timeSample : timeSamples) {
             VtValue value;
             if (attrQuery.Get(&value, timeSample)) {
-                (*out)[timeSample].Swap(value);
+                (*out)[offset * timeSample].Swap(value);
             }
             else {
-                (*out)[timeSample] = VtValue(SdfValueBlock());
+                (*out)[offset * timeSample] = VtValue(SdfValueBlock());
             }
         }
         return true;
@@ -4238,12 +4239,8 @@ _GenerateFlattenedMasterPath(const std::vector<UsdPrim>& masters)
 }
 
 void
-_CopyMetadata(const UsdObject &source, const SdfSpecHandle& dest)
+_CopyMetadata(const SdfSpecHandle& dest, const UsdMetadataValueMap& metadata)
 {
-    // GetAllMetadata returns all non-private metadata fields (it excludes
-    // composition arcs and values), which is exactly what we want here.
-    UsdMetadataValueMap metadata = source.GetAllAuthoredMetadata();
-
     // Copy each key/value into the Sdf spec.
     TfErrorMark m;
     vector<string> msgs;
@@ -4260,10 +4257,19 @@ _CopyMetadata(const UsdObject &source, const SdfSpecHandle& dest)
     }
 }
 
-void 
-_CopyProperty(const UsdProperty &prop, 
-              const SdfPrimSpecHandle &dest,
-              const _PathRemapping &pathRemapping)
+void
+_CopyAuthoredMetadata(const UsdObject &source, const SdfSpecHandle& dest)
+{
+    // GetAllMetadata returns all non-private metadata fields (it excludes
+    // composition arcs and values), which is exactly what we want here.
+    _CopyMetadata(dest, source.GetAllAuthoredMetadata());
+}
+
+void
+_CopyProperty(const UsdProperty &prop,
+              const SdfPrimSpecHandle &dest, const TfToken &destName,
+              const _PathRemapping &pathRemapping,
+              const SdfLayerOffset &timeOffset)
 {
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
@@ -4275,10 +4281,12 @@ _CopyProperty(const UsdProperty &prop,
             return;
         }
 
-        SdfAttributeSpecHandle sdfAttr =
-            SdfAttributeSpec::New(
-                dest, attr.GetName(), attr.GetTypeName());
-        _CopyMetadata(attr, sdfAttr);
+        SdfAttributeSpecHandle sdfAttr = dest->GetAttributes()[destName];
+        if (!sdfAttr) {
+            sdfAttr = SdfAttributeSpec::New(dest, destName, attr.GetTypeName());
+        }
+
+        _CopyAuthoredMetadata(attr, sdfAttr);
 
         // Copy the default & time samples, if present. We get the
         // correct timeSamples/default value resolution here because
@@ -4290,7 +4298,7 @@ _CopyProperty(const UsdProperty &prop,
         if (attr.GetBracketingTimeSamples(
             0.0, &lower, &upper, &hasSamples) && hasSamples) {
             SdfTimeSampleMap ts;
-            if (_GetTimeSampleMap(attr, &ts)) {
+            if (_GetTimeSampleMap(attr, &ts, timeOffset)) {
                 sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
             }
         }
@@ -4314,11 +4322,13 @@ _CopyProperty(const UsdProperty &prop,
          // NOTE: custom = true by default for relationship, but the
          // SdfSchema fallback is false, so we must set it explicitly
          // here. The situation is similar for variability.
-         SdfRelationshipSpecHandle sdfRel =
-             SdfRelationshipSpec::New(dest, rel.GetName(),
-                                      /*custom*/ false,
-                                      SdfVariabilityVarying);
-         _CopyMetadata(rel, sdfRel);
+         SdfRelationshipSpecHandle sdfRel = dest->GetRelationships()[destName];
+         if (!sdfRel){
+             sdfRel = SdfRelationshipSpec::New(
+                 dest, destName, /*custom*/ false, SdfVariabilityVarying);
+         }
+
+         _CopyAuthoredMetadata(rel, sdfRel);
 
          SdfPathVector targets;
          rel.GetTargets(&targets);
@@ -4359,7 +4369,7 @@ _CopyPrim(const UsdPrim &usdPrim,
                                         flattenedMasterPath));
     }
     
-    _CopyMetadata(usdPrim, newPrim);
+    _CopyAuthoredMetadata(usdPrim, newPrim);
 
     // In the case of flattening clips, we may have builtin attributes which 
     // aren't declared in the static scene topology, but may have a value 
@@ -4373,7 +4383,8 @@ _CopyPrim(const UsdPrim &usdPrim,
     
     for (auto const &prop : usdPrim.GetProperties()) {
         if (prop.IsAuthored() || hasValue(prop)) {
-            _CopyProperty(prop, newPrim, masterToFlattened);
+            _CopyProperty(prop, newPrim, prop.GetName(), masterToFlattened,
+                          SdfLayerOffset());
         }
     }
 }
@@ -4394,6 +4405,77 @@ _CopyMasterPrim(const UsdPrim &masterPrim,
         _CopyPrim(child, destinationLayer, flattenedChildPath, 
                   masterToFlattened);
     }
+}
+
+bool
+_IsPrivateFallbackFieldKey(const TfToken& fieldKey)
+{
+    // Consider documentation and comment fallbacks as private; these are
+    // primarily for schema authors and are not expected to be authored 
+    // in flattened results.
+    if (fieldKey == SdfFieldKeys->Documentation ||
+        fieldKey == SdfFieldKeys->Comment) {
+        return true;
+    }
+
+    // Consider default value fallback as non-private, since we do write out
+    // default values during flattening.
+    if (fieldKey == SdfFieldKeys->Default) {
+        return false;
+    }
+
+    return _IsPrivateFieldKey(fieldKey);
+}
+
+bool
+_HasAuthoredValue(const TfToken& fieldKey, 
+                  const SdfPropertySpecHandleVector& propStack)
+{
+    return std::any_of(
+        propStack.begin(), propStack.end(),
+        [&fieldKey](const SdfPropertySpecHandle& spec) {
+            return spec->HasInfo(fieldKey);
+        });
+}
+
+void
+_CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
+               const SdfPropertySpecHandle &dstPropDef,
+               const SdfPropertySpecHandle &dstPropSpec,
+               const SdfPropertySpecHandleVector &dstPropStack)
+{
+    if (!srcPropDef) {
+        return;
+    }
+
+    std::vector<TfToken> fallbackFields = srcPropDef->ListFields();
+    fallbackFields.erase(
+        std::remove_if(fallbackFields.begin(), fallbackFields.end(),
+                       _IsPrivateFallbackFieldKey),
+        fallbackFields.end());
+
+    UsdMetadataValueMap fallbacks;
+    for (const auto& fieldName : fallbackFields) {
+        // If the property spec already has a value for this field,
+        // don't overwrite it with the fallback.
+        if (dstPropSpec->HasField(fieldName)) {
+            continue;
+        }
+
+        // If we're flattening over a builtin property and the
+        // fallback for that property matches the source fallback
+        // and there isn't an authored value that's overriding that
+        // fallback, we don't need to write the fallback.
+        VtValue fallbackVal = srcPropDef->GetField(fieldName);
+        if (dstPropDef && dstPropDef->GetField(fieldName) == fallbackVal &&
+            !_HasAuthoredValue(fieldName, dstPropStack)) {
+                continue;
+        }
+
+        fallbacks[fieldName].Swap(fallbackVal);
+    }
+
+    _CopyMetadata(dstPropSpec, fallbacks);
 }
 
 } // end anonymous namespace
@@ -4458,6 +4540,105 @@ UsdStage::Flatten(bool addSourceFileComment) const
     }
 
     return flatLayer;
+}
+
+UsdProperty 
+UsdStage::_FlattenProperty(const UsdProperty &srcProp,
+                           const UsdPrim &dstParent, const TfToken &dstName)
+{
+    if (!srcProp) {
+        TF_CODING_ERROR("Cannot flatten invalid property <%s>", 
+                        UsdDescribe(srcProp).c_str());
+        return UsdProperty();
+    }
+
+    if (!dstParent) {
+        TF_CODING_ERROR("Cannot flatten property <%s> to invalid %s",
+                        UsdDescribe(srcProp).c_str(),
+                        UsdDescribe(dstParent).c_str());
+        return UsdProperty();
+    }
+
+    // Keep track of the pre-existing property stack for the destination
+    // property if any -- we use this later to determine if we need to
+    // stamp out the fallback values from the source property.
+    SdfPropertySpecHandleVector dstPropStack;
+    if (UsdProperty dstProp = dstParent.GetProperty(dstName)) {
+        if ((srcProp.Is<UsdAttribute>() && !dstProp.Is<UsdAttribute>()) ||
+            (srcProp.Is<UsdRelationship>() && !dstProp.Is<UsdRelationship>())) {
+            TF_CODING_ERROR("Cannot flatten %s to %s because they are "
+                            "different property types", 
+                            UsdDescribe(srcProp).c_str(), 
+                            UsdDescribe(dstProp).c_str());
+            return UsdProperty();
+        }
+
+        dstPropStack = dstProp.GetPropertyStack();
+    }
+
+    {
+        SdfChangeBlock block;
+
+        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(dstParent);
+        if (!primSpec) {
+            // _CreatePrimSpecForEditing will have already issued any
+            // coding errors, so just bail out.
+            return UsdProperty();
+        }
+
+        if (SdfPropertySpecHandle dstPropSpec = 
+                primSpec->GetProperties()[dstName]) {
+            // Ignore the pre-existing property spec when determining
+            // whether to stamp out fallback values.
+            dstPropStack.erase(
+                std::remove(dstPropStack.begin(), dstPropStack.end(), 
+                            dstPropSpec), 
+                dstPropStack.end());
+
+            // Clear out the existing property spec unless we're flattening
+            // over the source property. In that case, we don't want to
+            // remove the property spec because its authored opinions should
+            // be considered when flattening. This won't leave behind any
+            // unwanted opinions since we'll be overwriting all of the
+            // destination property spec's fields anyway in this case.
+            const bool flatteningToSelf = 
+                srcProp.GetPrim() == dstParent && srcProp.GetName() == dstName;
+            if (!flatteningToSelf) {
+                primSpec->RemoveProperty(dstPropSpec);
+            }
+        }
+
+        // Set up a path remapping so that attribute connections or 
+        // relationships targeting an object beneath the old parent prim
+        // now target objects beneath the new parent prim.
+        _PathRemapping remapping;
+        if (srcProp.GetPrim() != dstParent) {
+            remapping[srcProp.GetPrimPath()] = dstParent.GetPath();
+        }
+
+        // Apply offsets that affect the edit target to flattened time 
+        // samples to ensure they resolve to the expected value.
+        const SdfLayerOffset stageToLayerOffset = 
+            UsdPrepLayerOffset(GetEditTarget().GetMapFunction().GetTimeOffset())
+            .GetInverse();
+
+        // Copy authored property values and metadata.
+        _CopyProperty(srcProp, primSpec, dstName, remapping, stageToLayerOffset);
+
+        SdfPropertySpecHandle dstPropSpec = 
+            primSpec->GetProperties().get(dstName);
+        if (!dstPropSpec) {
+            return UsdProperty();
+        }
+
+        // Copy fallback property values and metadata if needed.
+        _CopyFallbacks(
+            _GetPropertyDefinition(srcProp.GetPrim(), srcProp.GetName()),
+            _GetPropertyDefinition(dstParent, dstName),
+            dstPropSpec, dstPropStack);
+    }
+
+    return dstParent.GetProperty(dstName);
 }
 
 const PcpPrimIndex*
