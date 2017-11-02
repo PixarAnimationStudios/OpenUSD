@@ -56,12 +56,12 @@ namespace PxrUsdMayaMeshUtil
     TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
     
     PXRUSDMAYA_API
-    TfToken getSubdivScheme(const MFnMesh &mesh, TfToken defaultValue);
+    TfToken getSubdivScheme(const MFnMesh &mesh, const TfToken& defaultValue);
     PXRUSDMAYA_API
     TfToken setSubdivScheme(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
     PXRUSDMAYA_API
-    TfToken getSubdivInterpBoundary(const MFnMesh &mesh,  TfToken defaultValue);
+    TfToken getSubdivInterpBoundary(const MFnMesh &mesh, const TfToken& defaultValue);
     PXRUSDMAYA_API
     TfToken setSubdivInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
