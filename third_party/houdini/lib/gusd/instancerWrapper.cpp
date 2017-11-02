@@ -39,6 +39,7 @@
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_RefineCollect.h>
 #include <GT/GT_TransformArray.h>
+#include <GT/GT_Util.h>
 #include <GU/GU_PrimPacked.h>
 #include <OBJ/OBJ_Node.h>
 #include <OP/OP_Director.h>
@@ -1589,6 +1590,9 @@ GusdInstancerWrapper::unpack(
         }
     }
 
+
+    GA_Offset start = -1;
+
     for( size_t i = 0; i < indices.size(); ++i )
     {
         const int idx = indices[i];
@@ -1613,6 +1617,121 @@ GusdInstancerWrapper::unpack(
         
         guPrim->setLocalTransform( UT_Matrix3D( m ) );
         guPrim->setPos3(0,p);
+
+        if( i == 0 ) {
+            start = guPrim->getPointOffset( 0 );
+        }
+    }
+
+
+    // unpack any per-instance primvars to point attributes
+
+    vector<UsdGeomPrimvar> authoredPrimvars = instancerPrim.GetAuthoredPrimvars();
+    for( const UsdGeomPrimvar &primvar : authoredPrimvars ) {
+
+        if( primvar.GetInterpolation() == UsdGeomTokens->constant || 
+            primvar.GetInterpolation() == UsdGeomTokens->uniform ) {
+
+            // TODO: Constant and uniform primvars need to be replicated for each 
+            // instance
+            TF_WARN( "%s:%s has %s interpolation. These are not supported yet.",
+                     instancerPrim.GetPrim().GetPath().GetText(), 
+                     primvar.GetPrimvarName().GetText(),
+                     primvar.GetInterpolation().GetText() ); 
+        }
+        else {
+
+            GT_DataArrayHandle pvData = GusdPrimWrapper::convertPrimvarData( primvar, UsdTimeCode( frame ) );
+            GT_Storage storage = pvData->getStorage();
+
+            if( pvData->entries() < indices.size() ) {
+                TF_WARN( "Invalid primvar found: '%s:%s'. It has %zd values. It should have at least %zd.", 
+                         instancerPrim.GetPrim().GetPath().GetText(),
+                         primvar.GetPrimvarName().GetText(), 
+                         pvData->entries(), indices.size() );
+                continue;
+            }
+
+            if( storage == GT_STORE_REAL16 ||
+                storage == GT_STORE_REAL32 ||
+                storage == GT_STORE_REAL64 ) {
+
+                GA_RWAttributeRef attr = 
+                    gdr.addFloatTuple( GA_ATTRIB_POINT, 
+                                       primvar.GetBaseName().GetString().c_str(), 
+                                       pvData->getTupleSize(),
+                                       GA_Defaults(0.0),
+                                       /* creation_args */0,
+                                       /* attribute_options */0,
+                                       GT_Util::getGAStorage(storage) );
+
+                if( attr.isValid() ) {
+                    attr->setTypeInfo( GT_Util::getGAType( pvData->getTypeInfo() ));
+                    
+                    // AIFTuples don't support half floats. Promote them to 32 bits.
+                    GT_DataArrayHandle tmp;
+                    if( storage == GT_STORE_REAL16 ||
+                        storage == GT_STORE_REAL32 ) {
+                        attr->getAIFTuple()->setRange( 
+                                attr.getAttribute(),
+                                GA_Range( attr->getIndexMap(), 
+                                          start, start + pvData->entries() ),
+                                pvData->getF32Array( tmp ) );
+                    }
+                    if( storage == GT_STORE_REAL64 ) {
+                        attr->getAIFTuple()->setRange( 
+                                attr.getAttribute(),
+                                GA_Range( attr->getIndexMap(), 
+                                          start, start + pvData->entries() ),
+                                pvData->getF64Array( tmp ) );
+                    }
+                }
+            }
+            else if( storage == GT_STORE_UINT8 ||
+                     storage == GT_STORE_INT32 ||
+                     storage == GT_STORE_INT64 ) {
+
+                GA_RWAttributeRef attr = 
+                    gdr.addIntTuple( GA_ATTRIB_POINT, 
+                                     primvar.GetBaseName().GetString().c_str(), 
+                                     pvData->getTupleSize(),
+                                     GA_Defaults(0.0),
+                                     /* creation_args */0,
+                                     /* attribute_options */0,
+                                     GT_Util::getGAStorage(storage) );
+
+                if( attr.isValid() ) {
+                    attr->setTypeInfo( GT_Util::getGAType( pvData->getTypeInfo() ));
+
+                    // AIFTuples don't support 8 bit ints. promote to 32 bits.
+                    GT_DataArrayHandle tmp;
+                    if( storage == GT_STORE_UINT8 ||
+                        storage == GT_STORE_INT32 ) {
+                        attr->getAIFTuple()->setRange( 
+                                attr.getAttribute(),
+                                GA_Range( attr->getIndexMap(), 
+                                          start, start + pvData->entries() ),
+                                pvData->getI32Array( tmp ) );
+                    }
+                    else {
+                        attr->getAIFTuple()->setRange( 
+                                attr.getAttribute(),
+                                GA_Range( attr->getIndexMap(), 
+                                          start, start + pvData->entries() ),
+                                pvData->getI64Array( tmp ) );
+                    }
+                }
+            }
+            else {
+
+                // TODO: String primvars need to be implements.
+                
+                TF_WARN( "Found primvar with unsupported data type. %s:%s type = %s",
+                         instancerPrim.GetPrim().GetPath().GetText(),
+                         primvar.GetPrimvarName().GetText(),
+                         primvar.GetTypeName().GetAsToken().GetText());
+            }
+        }
     }
     return true;
 }
