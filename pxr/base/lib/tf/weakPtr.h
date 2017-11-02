@@ -276,7 +276,7 @@ TfCreateRefPtrFromProtectedWeakPtr(TfWeakPtr<T> const &p) {
     if (T *rawPtr = get_pointer(p)) {
         // Atomically increment the ref-count iff it's nonzero.
         if (Counter::AddRefIfNonzero(
-                rawPtr, TfRefBase::_GetUniqueChangedListener())) {
+                rawPtr, TfRefBase::_uniqueChangedListener)) {
             // There was at least 1 other ref at the time we acquired our ref,
             // so this object is safe from destruction.  Transfer ownership of
             // the ref to a new TfRefPtr.

@@ -100,11 +100,12 @@ public:
     }
 
     static void SetUniqueChangedListener(UniqueChangedListener listener) {
-        UniqueChangedListener &curListener = _GetUniqueChangedListener();
-        if (curListener.lock || curListener.func || curListener.unlock) {
+        if (_uniqueChangedListener.lock ||
+            _uniqueChangedListener.func ||
+            _uniqueChangedListener.unlock) {
             TF_FATAL_ERROR("Setting an already set UniqueChangedListener");
         }
-        curListener = listener;
+        _uniqueChangedListener = listener;
     }
 
 protected:
@@ -117,7 +118,7 @@ private:
     TfRefCount _refCount;
     bool _shouldInvokeUniqueChangedListener;
 
-    TF_API static UniqueChangedListener &_GetUniqueChangedListener();
+    TF_API static UniqueChangedListener _uniqueChangedListener;
     template <typename T> friend class TfRefPtr;
     friend struct Tf_RefPtr_UniqueChangedCounter;
     friend struct Tf_RefPtr_Counter;

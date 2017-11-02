@@ -1055,11 +1055,11 @@ private:
     friend const std::type_info& TfTypeid(const TfRefPtr<U>& ptr);
 
     void _AddRef() const {
-        _Counter::AddRef(_refBase, TfRefBase::_GetUniqueChangedListener());
+        _Counter::AddRef(_refBase, TfRefBase::_uniqueChangedListener);
     }
 
     void _RemoveRef(const TfRefBase* ptr) const {
-        if (_Counter::RemoveRef(ptr, TfRefBase::_GetUniqueChangedListener())) {
+        if (_Counter::RemoveRef(ptr, TfRefBase::_uniqueChangedListener)) {
             Tf_RefPtrTracker_LastRef(this,
                 reinterpret_cast<T*>(const_cast<TfRefBase*>(ptr)));
             delete ptr;
