@@ -53,7 +53,7 @@ GusdPointsWrapper(
         UsdTimeCode time,
         GusdPurposeSet purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdPointsForRead( usdPoints )
+    , m_usdPoints( usdPoints )
 {
 }
 
@@ -67,12 +67,12 @@ initUsdPrim(const UsdStagePtr& stage,
             bool asOverride)
 {
     if( asOverride ) {
-        m_usdPointsForWrite = UsdGeomPoints(stage->OverridePrim( path ));
+        m_usdPoints = UsdGeomPoints(stage->OverridePrim( path ));
     }
     else {
-        m_usdPointsForWrite = UsdGeomPoints::Define(stage, path );
+        m_usdPoints = UsdGeomPoints::Define(stage, path );
     }
-    return bool( m_usdPointsForWrite );
+    return bool( m_usdPoints );
 }
 
 GT_PrimitiveHandle GusdPointsWrapper::
@@ -115,7 +115,7 @@ refine(GT_Refine& refiner, const GT_RefineParms* parms) const
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    const UsdGeomPoints& points = m_usdPointsForRead;
+    const UsdGeomPoints& points = m_usdPoints;
 
     VtFloatArray vtFloatArray;
     VtIntArray   vtIntArray;
@@ -258,7 +258,7 @@ doSoftCopy() const
 
 bool GusdPointsWrapper::isValid() const
 {
-    return m_usdPointsForWrite || m_usdPointsForRead;
+    return m_usdPoints;
 }
 
 bool GusdPointsWrapper::
@@ -267,12 +267,12 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  const GusdContext&        ctxt,
                  GusdSimpleXformCache&     xformCache )
 {
-    if( !m_usdPointsForWrite ) {
+    if( !m_usdPoints ) {
         return false;
     }
 
     GfMatrix4d xform = computeTransform( 
-                            m_usdPointsForWrite.GetPrim().GetParent(),
+                            m_usdPoints.GetPrim().GetParent(),
                             ctxt.time,
                             houXform,
                             xformCache );
@@ -284,7 +284,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // extent ------------------------------------------------------------------
     
     houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
-    usdAttr = m_usdPointsForWrite.GetExtentAttr();
+    usdAttr = m_usdPoints.GetExtentAttr();
     updateAttributeFromGTPrim( GT_OWNER_INVALID, "extents", houAttr, usdAttr, ctxt.time );
 
     // transform ---------------------------------------------------------------
@@ -295,7 +295,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // intrinsic attributes ----------------------------------------------------
 
     if( !ctxt.writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
-        m_usdPointsForWrite.GetPurposeAttr().Set( ctxt.purpose );
+        m_usdPoints.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // visibility
@@ -305,17 +305,17 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
     // P
     houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
-    usdAttr = m_usdPointsForWrite.GetPointsAttr();
+    usdAttr = m_usdPoints.GetPointsAttr();
     updateAttributeFromGTPrim( attrOwner, "P", houAttr, usdAttr, ctxt.time );
     
     // N
     houAttr = sourcePrim->findAttribute("N", attrOwner, 0);
-    usdAttr = m_usdPointsForWrite.GetNormalsAttr();
+    usdAttr = m_usdPoints.GetNormalsAttr();
     updateAttributeFromGTPrim( attrOwner, "N", houAttr, usdAttr, ctxt.time );
 
     // v
     houAttr = sourcePrim->findAttribute("v", attrOwner, 0);
-    usdAttr = m_usdPointsForWrite.GetVelocitiesAttr();
+    usdAttr = m_usdPoints.GetVelocitiesAttr();
     updateAttributeFromGTPrim( attrOwner, "v", houAttr, usdAttr, ctxt.time );    
     
     // pscale & width
@@ -338,7 +338,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             houAttr.reset(new GT_Real32Array(pscaleArray.data(), numVals, 1));
         }
     }
-    usdAttr = m_usdPointsForWrite.GetWidthsAttr();
+    usdAttr = m_usdPoints.GetWidthsAttr();
     updateAttributeFromGTPrim( attrOwner, "widths", houAttr, usdAttr, ctxt.time );    
 
     // -------------------------------------------------------------------------

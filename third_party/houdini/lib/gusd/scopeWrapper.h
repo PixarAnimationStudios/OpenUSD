@@ -48,9 +48,7 @@ public:
 
 public:
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdScopeForWrite; }
-
-    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdScopeForRead; }
+    virtual const UsdGeomImageable getUsdPrim() const override { return m_usdScope; }
         
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -102,7 +100,7 @@ private:
                      const SdfPath& path,
                      bool asOverride);
 
-    UsdGeomScope    m_usdScopeForRead, m_usdScopeForWrite;
+    UsdGeomScope    m_usdScope;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

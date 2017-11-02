@@ -353,7 +353,7 @@ GusdPrimWrapper::setVisibility(const TfToken& visibility, UsdTimeCode time)
         m_visible = true;
     }
 
-    UsdAttribute visAttr = getUsdPrimForWrite().GetVisibilityAttr();
+    UsdAttribute visAttr = getUsdPrim().GetVisibilityAttr();
     if( visAttr.IsValid() ) {
         TfToken oldVal;
         if( !visAttr.Get( &oldVal, 
@@ -400,7 +400,7 @@ GusdPrimWrapper::updateActiveFromGTPrim(
         const GT_PrimitiveHandle& sourcePrim,
         UsdTimeCode time)
 {
-    UsdPrim prim = getUsdPrimForWrite().GetPrim();
+    UsdPrim prim = getUsdPrim().GetPrim();
 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
@@ -433,7 +433,7 @@ void
 GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform, 
                                             UsdTimeCode time, bool force )
 {
-    UsdGeomImageable usdGeom = getUsdPrimForWrite();
+    UsdGeomImageable usdGeom = getUsdPrim();
     UsdGeomXformable prim( usdGeom );
 
     // Determine if we need to clear previous transformations from a stronger
@@ -456,7 +456,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
             // Load the root layer for temp, stronger opinion changes.
             stage->GetRootLayer()->SetPermissionToSave(false);
             stage->SetEditTarget(stage->GetRootLayer());
-            UsdGeomXformable stagePrim( getUsdPrimForWrite() );
+            UsdGeomXformable stagePrim( getUsdPrim() );
 
             // Clear the xformOps on the stronger layer, so our weaker edit
             // target (with mapping across a reference) can write out clean,
@@ -577,7 +577,7 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
     const GT_DataArrayHandle& dataIn )
 {
     GT_DataArrayHandle data = dataIn;
-    UsdGeomImageable prim( getUsdPrimForWrite() );
+    UsdGeomImageable prim( getUsdPrim() );
 
     // cerr << "updatePrimvarFromGTPrim: " 
     //         << prim.GetPrim().GetPath() << ":" << name << ", " << interpolation 
@@ -636,7 +636,7 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
     const TfToken&                interpolation,
     UsdTimeCode                   time )
 {
-    UsdGeomImageable prim( getUsdPrimForWrite() );
+    UsdGeomImageable prim( getUsdPrim() );
     const GT_AttributeMapHandle attrMapHandle = gtAttrs->getMap();
 
     for(GT_AttributeMap::const_names_iterator mapIt=attrMapHandle->begin();
@@ -674,7 +674,7 @@ GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
         double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
         // Ensure the stage start frame <= bookendFrame
-        UsdStagePtr stage = getUsdPrimForWrite().GetPrim().GetStage();
+        UsdStagePtr stage = getUsdPrim().GetPrim().GetStage();
         if(stage) {
             double startFrame = stage->GetStartTimeCode();
             if( startFrame > bookendFrame) {
@@ -682,9 +682,9 @@ GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
             }
         }
 
-        getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
+        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
                                        UsdTimeCode(bookendFrame));
-        getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
+        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
                                        UsdTimeCode(curFrame));   
     }
 }
@@ -694,9 +694,9 @@ GusdPrimWrapper::addTrailingBookend( double curFrame )
 {
     double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
-    getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
+    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
                                    UsdTimeCode(bookendFrame));
-    getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
+    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
                                    UsdTimeCode(curFrame));     
 }
 
@@ -1014,7 +1014,7 @@ GusdPrimWrapper::loadPrimvars(
     bool hasCdPrimvar = false;
 
     {
-        UsdGeomImageable prim = getUsdPrimForRead();
+        UsdGeomImageable prim = getUsdPrim();
 
         UsdGeomPrimvar colorPrimvar = prim.GetPrimvar(GusdTokens->Cd);
         if (colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {

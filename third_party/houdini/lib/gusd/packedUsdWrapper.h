@@ -43,12 +43,8 @@ public:
 
 public:
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override {
-        return UsdGeomImageable(m_primRefForWrite);
-    }
-
-    virtual const UsdGeomImageable getUsdPrimForRead() const override {
-        return UsdGeomImageable(m_primRefForRead);
+    virtual const UsdGeomImageable getUsdPrim() const override {
+            return UsdGeomImageable(m_primRef);
     }
 
     virtual bool redefine( 
@@ -93,7 +89,7 @@ private:
                       const SdfPath& path, 
                       bool asOverride );
 
-    UsdPrim     m_primRefForRead, m_primRefForWrite;
+    UsdPrim     m_primRef;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

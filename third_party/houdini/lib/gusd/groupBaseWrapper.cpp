@@ -116,7 +116,7 @@ GusdGroupBaseWrapper::unpack(
     const char*         viewportLod,
     GusdPurposeSet      purposes )
 {
-    UsdPrim usdPrim = getUsdPrimForRead().GetPrim();
+    UsdPrim usdPrim = getUsdPrim().GetPrim();
 
     // To unpack a xform or a group, create a packed prim for
     // each child

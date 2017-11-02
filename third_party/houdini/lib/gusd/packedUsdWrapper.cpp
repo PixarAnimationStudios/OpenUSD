@@ -54,8 +54,7 @@ GusdPackedUsdWrapper::GusdPackedUsdWrapper(
 
 GusdPackedUsdWrapper::GusdPackedUsdWrapper(const GusdPackedUsdWrapper& other )
     : GusdPrimWrapper(other)
-    , m_primRefForWrite(other.m_primRefForWrite)
-    , m_primRefForRead(other.m_primRefForRead)
+    , m_primRef(other.m_primRef)
 {
 }
 
@@ -69,8 +68,8 @@ initUsdPrim(const UsdStagePtr& stage,
             bool asOverride)
 {
     if( asOverride ) {
-        m_primRefForWrite = stage->OverridePrim( path );
-        if( !m_primRefForWrite || !m_primRefForWrite.IsValid() ) {
+        m_primRef = stage->OverridePrim( path );
+        if( !m_primRef || !m_primRef.IsValid() ) {
             TF_WARN( "Unable to create override prim '%s'.", path.GetText() );
         }
     }
@@ -81,9 +80,9 @@ initUsdPrim(const UsdStagePtr& stage,
         if( !parent )
             UsdGeomXform::Define( stage, parentPath );
 
-        m_primRefForWrite = stage->DefinePrim( path );
+        m_primRef = stage->DefinePrim( path );
     }
-    return bool( m_primRefForWrite );
+    return bool( m_primRef );
 }
 
 GT_PrimitiveHandle GusdPackedUsdWrapper::
@@ -107,7 +106,7 @@ redefine(const UsdStagePtr& stage,
     if( !parent )
         UsdGeomXform::Define( stage, parentPath );
 
-    m_primRefForWrite = stage->DefinePrim( path );
+    m_primRef = stage->DefinePrim( path );
     clearCaches();
     return true;
 }
@@ -160,7 +159,7 @@ doSoftCopy() const
 bool 
 GusdPackedUsdWrapper::isValid() const
 {
-    return m_primRefForWrite || m_primRefForRead;
+    return m_primRef;
 }
 
 SdfPath 
@@ -181,13 +180,13 @@ GusdPackedUsdWrapper::updateFromGTPrim(
     const GusdContext&        ctxt,
     GusdSimpleXformCache&     xformCache)
 {
-    if( !m_primRefForWrite )
+    if( !m_primRef )
         return false;
 
     GusdGT_PackedUSD* gtPackedUSD
         = dynamic_cast<GusdGT_PackedUSD*>(sourcePrim.get());
     if(!gtPackedUSD)  {
-        TF_WARN( "source prim is not a packed USD prim. '%s'", m_primRefForWrite.GetPrim().GetPath().GetText() );   
+        TF_WARN( "source prim is not a packed USD prim. '%s'", m_primRef.GetPrim().GetPath().GetText() );   
         return false;
     }
 
@@ -221,7 +220,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         SdfLayerOffset layerOffset = SdfLayerOffset(usdTimeOffset, usdTimeScale);
 
         // Add the reference. Layer offset will only appear if not default values.
-        m_primRefForWrite.GetReferences().AddReference(fileName, rootPath, layerOffset );
+        m_primRef.GetReferences().AddReference(fileName, rootPath, layerOffset );
 
         // Set variant selections.
         if(ctxt.authorVariantSelections &&
@@ -233,12 +232,12 @@ GusdPackedUsdWrapper::updateFromGTPrim(
                 if(p.IsPrimVariantSelectionPath()) {
                     auto vPair = p.GetVariantSelection();
                     if(p.StripAllVariantSelections().IsRootPrimPath()) {
-                        m_primRefForWrite.GetVariantSet( vPair.first )
+                        m_primRef.GetVariantSet( vPair.first )
                                         .SetVariantSelection( vPair.second );
                     }
                     else {
                         // FIXME I don't think this is working.
-                        UsdPrim prim = m_primRefForWrite.GetStage()->OverridePrim(p.GetPrimPath());
+                        UsdPrim prim = m_primRef.GetStage()->OverridePrim(p.GetPrimPath());
                         prim.GetVariantSet(vPair.first)
                             .SetVariantSelection(vPair.second);
                     }
@@ -253,7 +252,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         // wanted to reference. This will be used later when setting up relationships
         // for building point instancers.
         if( relPath != SdfPath::ReflexiveRelativePath() ) {
-            m_primRefForWrite.CreateAttribute(
+            m_primRef.CreateAttribute(
                                 _tokens->ReferencedPath,
                                 SdfValueTypeNames->String,
                                 SdfVariabilityUniform)
@@ -261,12 +260,12 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         }
 
         if( ctxt.purpose != UsdGeomTokens->default_ ) {
-            UsdGeomImageable( m_primRefForWrite ).GetPurposeAttr().Set( ctxt.purpose );
+            UsdGeomImageable( m_primRef ).GetPurposeAttr().Set( ctxt.purpose );
         }
 
         // Make instanceable
         if( ctxt.makeRefsInstanceable ) {
-            m_primRefForWrite.SetInstanceable( true );
+            m_primRef.SetInstanceable( true );
         }
     }
 
@@ -280,7 +279,7 @@ GusdPackedUsdWrapper::updateFromGTPrim(
         ctxt.overlayPoints || ctxt.overlayTransforms ) {
 
         GfMatrix4d xform = computeTransform( 
-                                m_primRefForWrite.GetPrim().GetParent(),
+                                m_primRef.GetPrim().GetParent(),
                                 ctxt.time,
                                 houXform,
                                 xformCache );

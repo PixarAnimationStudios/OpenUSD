@@ -50,11 +50,7 @@ public:
                           GusdPurposeSet                purposes );  
     virtual ~GusdInstancerWrapper();
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdPointInstancerForWrite; }
-
-    virtual const UsdGeomImageable getUsdPrimForRead() const override {
-        return m_usdPointInstancerForRead;
-    }
+    virtual const UsdGeomImageable getUsdPrim() const override { return m_usdPointInstancer; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -126,8 +122,7 @@ private:
                                    GT_PrimitiveHandle sourcePrim);
 
 private:
-    UsdGeomPointInstancer m_usdPointInstancerForRead,
-                          m_usdPointInstancerForWrite;
+    UsdGeomPointInstancer m_usdPointInstancer;
 
     // A map of tokens to indexes in the point instancer's relationship array.
     // The tokens could be unique ids built from USD packed prims or

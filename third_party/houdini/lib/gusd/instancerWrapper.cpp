@@ -301,7 +301,7 @@ GusdInstancerWrapper(
     UsdTimeCode                  time,
     GusdPurposeSet               purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdPointInstancerForRead( usdInstancer )
+    , m_usdPointInstancer( usdInstancer )
 {
 }
 
@@ -319,22 +319,22 @@ initUsdPrim(const UsdStagePtr& stage,
         UsdPrim existing = stage->GetPrimAtPath( path );
         if( existing ) {
             newPrim = false;
-            m_usdPointInstancerForWrite = UsdGeomPointInstancer(stage->OverridePrim( path ));
+            m_usdPointInstancer = UsdGeomPointInstancer(stage->OverridePrim( path ));
         }
         else {
             // When fracturing, we want to override the outside surfaces and create
             // new inside surfaces in one export. So if we don't find an existing prim
             // with the given path, create a new one.
-            m_usdPointInstancerForWrite = UsdGeomPointInstancer::Define( stage, path );
+            m_usdPointInstancer = UsdGeomPointInstancer::Define( stage, path );
         }
     }
     else {
-        m_usdPointInstancerForWrite = UsdGeomPointInstancer::Define( stage, path );  
+        m_usdPointInstancer = UsdGeomPointInstancer::Define( stage, path );  
     }
-    if( !m_usdPointInstancerForWrite || !m_usdPointInstancerForWrite.GetPrim().IsValid() ) {
+    if( !m_usdPointInstancer || !m_usdPointInstancer.GetPrim().IsValid() ) {
         TF_WARN( "Unable to create %s instancer '%s'.", newPrim ? "new" : "override", path.GetText() );
     }
-    return bool( m_usdPointInstancerForWrite );
+    return bool( m_usdPointInstancer );
 }
 
 void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
@@ -344,7 +344,7 @@ void GusdInstancerWrapper::storePreOverlayData(bool justProtoIndices,
     // we lose the original data, so we have to store it somewhere if we want to
     // access it for points where we just want the original data.
 
-    UsdGeomPointInstancer& pI = m_usdPointInstancerForWrite;
+    UsdGeomPointInstancer& pI = m_usdPointInstancer;
     UsdAttribute usdProtoIndicesAttr = pI.GetProtoIndicesAttr();
     m_preOverlayDataMap[UsdGeomTokens->protoIndices] = 
         PreOverlayDataEntry<int>(usdProtoIndicesAttr);
@@ -420,10 +420,10 @@ defineForWrite(
             VtIntArray intArray;
             VtVec3fArray vec3fArray;
             VtQuathArray quathArray;
-            instancePrim->m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(intArray, UsdTimeCode::Default());
-            instancePrim->m_usdPointInstancerForWrite.GetPositionsAttr().Set(vec3fArray, UsdTimeCode::Default());
-            instancePrim->m_usdPointInstancerForWrite.GetScalesAttr().Set(vec3fArray, UsdTimeCode::Default());
-            instancePrim->m_usdPointInstancerForWrite.GetOrientationsAttr().Set(quathArray, UsdTimeCode::Default());
+            instancePrim->m_usdPointInstancer.GetProtoIndicesAttr().Set(intArray, UsdTimeCode::Default());
+            instancePrim->m_usdPointInstancer.GetPositionsAttr().Set(vec3fArray, UsdTimeCode::Default());
+            instancePrim->m_usdPointInstancer.GetScalesAttr().Set(vec3fArray, UsdTimeCode::Default());
+            instancePrim->m_usdPointInstancer.GetOrientationsAttr().Set(quathArray, UsdTimeCode::Default());
         }
 
     }
@@ -436,7 +436,7 @@ defineForWrite(
         // If we are writing an overlay, turn off pruning for this point instancer.
         // We may have shuffled the instance index order. 
         if( UsdAttribute attr = 
-                instancePrim->m_usdPointInstancerForWrite.GetPrim().CreateAttribute( 
+                instancePrim->m_usdPointInstancer.GetPrim().CreateAttribute( 
                                         _tokens->prunable, SdfValueTypeNames->Bool, 
                                         false, SdfVariabilityUniform )) {
             attr.Set( false );
@@ -483,17 +483,17 @@ redefine( const UsdStagePtr& stage,
         // Set empty defaults for positions, scale, and indices. 
         // This prevents katana errors when expanding per-frame exports
         // with animated visibility.
-        if( m_usdPointInstancerForWrite ) {
+        if( m_usdPointInstancer ) {
             VtIntArray intArray;
             VtVec3fArray vec3fArray;
             VtQuathArray quathArray;
-            m_usdPointInstancerForWrite.GetProtoIndicesAttr().Set(
+            m_usdPointInstancer.GetProtoIndicesAttr().Set(
                 intArray, UsdTimeCode::Default());
-            m_usdPointInstancerForWrite.GetPositionsAttr().Set(
+            m_usdPointInstancer.GetPositionsAttr().Set(
                     vec3fArray, UsdTimeCode::Default());
-            m_usdPointInstancerForWrite.GetScalesAttr().Set(
+            m_usdPointInstancer.GetScalesAttr().Set(
                     vec3fArray, UsdTimeCode::Default());
-            m_usdPointInstancerForWrite.GetOrientationsAttr().Set(
+            m_usdPointInstancer.GetOrientationsAttr().Set(
                 quathArray, UsdTimeCode::Default());
        
         }
@@ -561,7 +561,7 @@ doSoftCopy() const
 
 bool GusdInstancerWrapper::isValid() const
 {
-    return m_usdPointInstancerForWrite || m_usdPointInstancerForRead;
+    return m_usdPointInstancer;
 }
 
 void GusdInstancerWrapper::
@@ -580,7 +580,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     // This map is used to compute the index that is stored in each enty of the
     // point array that is used to pick which prototype to use for that entry.
 
-    if( !m_usdPointInstancerForWrite) {
+    if( !m_usdPointInstancer) {
         TF_WARN( "No usd point instancer found to write prototypes to." );
         return;
     }
@@ -627,7 +627,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
 
     // Get the prim path for the root (point instancer) to use as the parent
     // scope for prototypes
-    SdfPath protoPath = m_usdPointInstancerForWrite.GetPath().AppendPath(m_prototypesScope);
+    SdfPath protoPath = m_usdPointInstancer.GetPath().AppendPath(m_prototypesScope);
 
     // Collect sops containing prototypes into a list. If usdPrototypesPath
     // references a sop, it will be a length of one. If it references a subnet,
@@ -859,14 +859,14 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     if(ctxt.writeOverlay && (!ctxt.overlayAll || usdPrototypesPath.empty())) {
 
         // If we are doing an overlay, build the map from the existing relationships
-        UsdRelationship prototypesRel = m_usdPointInstancerForWrite.GetPrototypesRel();
+        UsdRelationship prototypesRel = m_usdPointInstancer.GetPrototypesRel();
         SdfPathVector targets;
         prototypesRel.GetForwardedTargets(&targets);
         for(size_t i=0; i<targets.size(); ++i) {
             m_relationshipIndexMap[targets[i].GetNameToken()] = i;
         }
     }
-    UsdRelationship prototypesRel = m_usdPointInstancerForWrite.GetPrototypesRel();
+    UsdRelationship prototypesRel = m_usdPointInstancer.GetPrototypesRel();
     
     // Always clear the prortypes relationship array as we either don't touch it
     // or write it from scrath (rather than trying to add on top of old protos).
@@ -959,13 +959,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  const GusdContext&        ctxt,
                  GusdSimpleXformCache&     xformCache )
 {     
-    if( !m_usdPointInstancerForWrite ) {
-        TF_WARN( "Can't update USD point instancer from GT prim '%s'", m_usdPointInstancerForWrite.GetPrim().GetPath().GetText() );
+    if( !m_usdPointInstancer ) {
+        TF_WARN( "Can't update USD point instancer from GT prim '%s'", m_usdPointInstancer.GetPrim().GetPath().GetText() );
         return false;
     }
 
     DBG(cerr << "GusdInstanceWrapper::updateFromGTPrim, " << 
-            m_usdPointInstancerForWrite.GetPath().GetString() << endl);
+            m_usdPointInstancer.GetPath().GetString() << endl);
 
     bool writeTransforms = !ctxt.writeOverlay || ctxt.overlayAll || 
                                     ctxt.overlayPoints || ctxt.overlayTransforms;
@@ -973,7 +973,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     //--------------------------------------------------------------------------
 
     GfMatrix4d xform = computeTransform (
-                            m_usdPointInstancerForWrite.GetPrim().GetParent(),
+                            m_usdPointInstancer.GetPrim().GetParent(),
                             ctxt.time,
                             houXform,
                             xformCache);
@@ -1000,7 +1000,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
         UT_Matrix4D localToWorld;
         GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
-            m_usdPointInstancerForWrite.GetPrim(),
+            m_usdPointInstancer.GetPrim(),
             ctxt.time,
             localToWorld );
         UT_Matrix4D worldToLocal = localToWorld;
@@ -1020,14 +1020,14 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // XXX We currently don't support the mask attribute, but it could
         // be authored on a prim we're overlaying, in which case we write
         // a constant value of true.
-        maskAtTime = m_usdPointInstancerForWrite.ComputeMaskAtTime(ctxt.time);
+        maskAtTime = m_usdPointInstancer.ComputeMaskAtTime(ctxt.time);
         if( !maskAtTime.empty() ) {
-            m_usdPointInstancerForWrite.ActivateAllIds();
-            m_usdPointInstancerForWrite.VisAllIds(ctxt.time);
+            m_usdPointInstancer.ActivateAllIds();
+            m_usdPointInstancer.VisAllIds(ctxt.time);
         }
 
         // Indices
-        usdAttr = m_usdPointInstancerForWrite.GetProtoIndicesAttr();
+        usdAttr = m_usdPointInstancer.GetProtoIndicesAttr();
 
         bool gotValidIndices = false;
 
@@ -1107,7 +1107,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             if (preOverlayProtoIndices.count(ctxt.time) > 0) {
                 usdProtoIndicies = preOverlayProtoIndices[ctxt.time];
             } else if (ctxt.granularity==GusdContext::PER_FRAME) {
-                m_usdPointInstancerForWrite.GetProtoIndicesAttr().Get(&usdProtoIndicies, ctxt.time);
+                m_usdPointInstancer.GetProtoIndicesAttr().Get(&usdProtoIndicies, ctxt.time);
             }
 
             if (usdProtoIndicies.size() > 0) {
@@ -1153,23 +1153,23 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             // For nativ houdini instancing with just attributes on a point.
             // v
             houAttr = sourcePrim->findAttribute("v", attrOwner, 0);
-            usdAttr = m_usdPointInstancerForWrite.GetVelocitiesAttr();
+            usdAttr = m_usdPointInstancer.GetVelocitiesAttr();
             if(houAttr && usdAttr) {
                 GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
             }
 
             //w
             houAttr = sourcePrim->findAttribute("w", attrOwner, 0);
-            usdAttr = m_usdPointInstancerForWrite.GetAngularVelocitiesAttr();
+            usdAttr = m_usdPointInstancer.GetAngularVelocitiesAttr();
             if(houAttr && usdAttr) {
                 std::vector<fpreal32> wArray;
                 setAngularVelocity(houAttr, wArray);
                 houAttr.reset(new GT_Real32Array(wArray.data(), houAttr->entries() , houAttr->getTupleSize()));
                 GusdGT_Utils::setUsdAttribute(usdAttr, houAttr, ctxt.time);
             }
-            UsdAttribute usdPositionAttr = m_usdPointInstancerForWrite.GetPositionsAttr();
-            UsdAttribute usdRotationAttr = m_usdPointInstancerForWrite.GetOrientationsAttr();
-            UsdAttribute usdScalesAttr = m_usdPointInstancerForWrite.GetScalesAttr();
+            UsdAttribute usdPositionAttr = m_usdPointInstancer.GetPositionsAttr();
+            UsdAttribute usdRotationAttr = m_usdPointInstancer.GetOrientationsAttr();
+            UsdAttribute usdScalesAttr = m_usdPointInstancer.GetScalesAttr();
             
             if (usdRotationAttr 
              && usdScalesAttr
@@ -1188,8 +1188,8 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
         VtVec3fArray extent(2);
         // Using utility function from UsdGeomPointInstancer
-        if(m_usdPointInstancerForWrite.ComputeExtentAtTime(&extent, ctxt.time, ctxt.time)) {
-            m_usdPointInstancerForWrite.GetExtentAttr().Set(extent, ctxt.time);
+        if(m_usdPointInstancer.ComputeExtentAtTime(&extent, ctxt.time, ctxt.time)) {
+            m_usdPointInstancer.GetExtentAttr().Set(extent, ctxt.time);
         }
     }
 
@@ -1235,7 +1235,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
     for (auto token : m_usdGeomTokens) {
         if (token != UsdGeomTokens->protoIndices) {
             usdAttrMap[token] =
-                m_usdPointInstancerForWrite.GetPrim().GetAttribute(token);
+                m_usdPointInstancer.GetPrim().GetAttribute(token);
             if(!usdAttrMap[token].IsValid()) {
                 TF_WARN( "Missing '%s' attribute from point instancer. "
                     "Failed to update attributes.", token.GetString().c_str());
@@ -1287,7 +1287,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
             numPoints = preOverlayProtoIndices[time].size();
         } else {
             VtIntArray indices;
-            m_usdPointInstancerForWrite.GetProtoIndicesAttr().Get( &indices, time);
+            m_usdPointInstancer.GetProtoIndicesAttr().Get( &indices, time);
             numPoints = indices.size();
         }
     } else {
@@ -1348,7 +1348,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
     // for prototype transforms. Will only be the case when writing out new
     // prototypes (new geom or overlay all).
     VtIntArray indices;
-    m_usdPointInstancerForWrite.GetProtoIndicesAttr().Get( &indices, time);
+    m_usdPointInstancer.GetProtoIndicesAttr().Get( &indices, time);
     bool removeProtoTransforms = (indices.size() == numXforms) &&
                                  (m_prototypeTransforms.size() > 0);
 
@@ -1458,13 +1458,12 @@ bool GusdInstancerWrapper::
 refine( GT_Refine& refiner,
         const GT_RefineParms* parms ) const
 {
-    const UsdGeomPointInstancer& pointInstancer = m_usdPointInstancerForRead;
 
-    UsdStagePtr stage = pointInstancer.GetPrim().GetStage();
+    UsdStagePtr stage = m_usdPointInstancer.GetPrim().GetStage();
 
-    DBG(cerr << "GusdInstancerWrapper::refine, " << pointInstancer.GetPrim().GetPath() << endl);
+    DBG(cerr << "GusdInstancerWrapper::refine, " << m_usdPointInstancer.GetPrim().GetPath() << endl);
     
-    UsdRelationship relationship = pointInstancer.GetPrototypesRel();
+    UsdRelationship relationship = m_usdPointInstancer.GetPrototypesRel();
     SdfPathVector targets;
     relationship.GetForwardedTargets( &targets );
 
@@ -1472,14 +1471,14 @@ refine( GT_Refine& refiner,
     vector<GT_PrimitiveHandle> protoPrims( targets.size() );
 
     VtArray<int> indices;
-    if( !pointInstancer.GetProtoIndicesAttr().Get( &indices, m_time ) )
+    if( !m_usdPointInstancer.GetProtoIndicesAttr().Get( &indices, m_time ) )
     {
         TF_WARN("error getting indices attribute");
         return false;
     }
 
     VtArray<GfMatrix4d> frames;
-    if( !pointInstancer.ComputeInstanceTransformsAtTime( &frames,
+    if( !m_usdPointInstancer.ComputeInstanceTransformsAtTime( &frames,
                                                           m_time,
                                                           m_time,
                                                           UsdGeomPointInstancer::ProtoXformInclusion::IncludeProtoXform,
@@ -1543,15 +1542,14 @@ GusdInstancerWrapper::unpack(
     GusdPurposeSet          purposes )
 {
 
-    const UsdGeomPointInstancer& instancerPrim = m_usdPointInstancerForRead;
-    UsdPrim usdPrim = instancerPrim.GetPrim();
+    UsdPrim usdPrim = m_usdPointInstancer.GetPrim();
 
-    UsdRelationship relationship = instancerPrim.GetPrototypesRel();
+    UsdRelationship relationship = m_usdPointInstancer.GetPrototypesRel();
     SdfPathVector targets;
     relationship.GetForwardedTargets( &targets );
 
     VtArray<int> indices;
-    if( !instancerPrim.GetProtoIndicesAttr().Get( &indices, UsdTimeCode( frame )))
+    if( !m_usdPointInstancer.GetProtoIndicesAttr().Get( &indices, UsdTimeCode( frame )))
     {
         TF_WARN( "error getting indicies" );
         return false;
@@ -1564,7 +1562,7 @@ GusdInstancerWrapper::unpack(
                                   instancerXform );
 
     VtArray<GfMatrix4d> frames;
-    if( !instancerPrim.ComputeInstanceTransformsAtTime( &frames,
+    if( !m_usdPointInstancer.ComputeInstanceTransformsAtTime( &frames,
                                                         UsdTimeCode(frame),
                                                         UsdTimeCode(frame),
                                                         UsdGeomPointInstancer::ProtoXformInclusion::IncludeProtoXform,
@@ -1626,7 +1624,7 @@ GusdInstancerWrapper::unpack(
 
     // unpack any per-instance primvars to point attributes
 
-    vector<UsdGeomPrimvar> authoredPrimvars = instancerPrim.GetAuthoredPrimvars();
+    vector<UsdGeomPrimvar> authoredPrimvars = m_usdPointInstancer.GetAuthoredPrimvars();
     for( const UsdGeomPrimvar &primvar : authoredPrimvars ) {
 
         if( primvar.GetInterpolation() == UsdGeomTokens->constant || 
@@ -1635,7 +1633,7 @@ GusdInstancerWrapper::unpack(
             // TODO: Constant and uniform primvars need to be replicated for each 
             // instance
             TF_WARN( "%s:%s has %s interpolation. These are not supported yet.",
-                     instancerPrim.GetPrim().GetPath().GetText(), 
+                     m_usdPointInstancer.GetPrim().GetPath().GetText(), 
                      primvar.GetPrimvarName().GetText(),
                      primvar.GetInterpolation().GetText() ); 
         }
@@ -1646,7 +1644,7 @@ GusdInstancerWrapper::unpack(
 
             if( pvData->entries() < indices.size() ) {
                 TF_WARN( "Invalid primvar found: '%s:%s'. It has %zd values. It should have at least %zd.", 
-                         instancerPrim.GetPrim().GetPath().GetText(),
+                         m_usdPointInstancer.GetPrim().GetPath().GetText(),
                          primvar.GetPrimvarName().GetText(), 
                          pvData->entries(), indices.size() );
                 continue;
@@ -1725,9 +1723,9 @@ GusdInstancerWrapper::unpack(
             else {
 
                 // TODO: String primvars need to be implements.
-                
+
                 TF_WARN( "Found primvar with unsupported data type. %s:%s type = %s",
-                         instancerPrim.GetPrim().GetPath().GetText(),
+                         m_usdPointInstancer.GetPrim().GetPath().GetText(),
                          primvar.GetPrimvarName().GetText(),
                          primvar.GetTypeName().GetAsToken().GetText());
             }
