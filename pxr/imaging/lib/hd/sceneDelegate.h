@@ -156,7 +156,14 @@ public:
     HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
 
-    /// Returns the prim extent in world space (completely untransformed).
+
+    /// Gets the axis aligned bounds of a prim.
+    /// The returned bounds are in the local space of the prim
+    /// (transform is yet to be applied) and should contain the
+    /// bounds of any child prims.
+    ///
+    /// The returned bounds does not include any displacement that
+    /// might occur as the result of running shaders on the prim.
     HD_API
     virtual GfRange3d GetExtent(SdfPath const & id);
 
