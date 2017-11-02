@@ -185,6 +185,7 @@ pxr_library(tf
         wrapCallContext.cpp
         wrapDebug.cpp
         wrapDiagnostic.cpp
+        wrapDiagnosticBase.cpp
         wrapEnum.cpp
         wrapEnvSetting.cpp
         wrapError.cpp
