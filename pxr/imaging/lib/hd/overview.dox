@@ -62,7 +62,7 @@ HdEngine: Entry point for drawing, consumes HdRenderPass, produces HdCommandBuff
 HdRenderPass
   |
   |--- HdRprimCollection: Indicates selected rprims for render pass
-  |--- HdRenderIndex: Usd, Presto, DsoMoss, ...
+  |--- HdRenderIndex: Usd, Presto, ...
   |--- HdCommandBuffer
 
 HdRenderPassState
@@ -83,6 +83,23 @@ HdDrawItem: Abstraction of an OpenGL draw call.
 
 </pre>
 
+\b The \b Compute \b Framework 
+
+Hd supports computation of primvar data scheduled through HdResourceRegistry.
+HdComputation instances added to a registry can generate primvar data directly
+into the GPU buffers of associated rprims for drawing purposes. Support for
+externally defined primvar computation kernels is provided by HdExtComputation.
+
+<pre>
+HdComputation: Interface for GPU computation into an HdBufferArrayRange.
+
+HdExtComputation: Interface for user or asset defined computations.
+  |
+  |--- HdExtCompCpuComputation: Runs CPU compute kernels, outputs into HdBufferSources
+  |
+  |--- HdExtCompGpuComputation: Runs GPU compute kernels, outputs into HdBufferArrayRange
+
+</pre>
 
 \b The \b Scenegraph \b Index
 
@@ -96,7 +113,7 @@ The diagram below depicts object ownership; StripedBufferArray, Topology, and
 BufferResource are shared objects.
 
 <pre>
-HdSceneDelegate: Abstracts the client scene graph (Usd, Presto, DsoMoss, ...)
+HdSceneDelegate: Abstracts the client scene graph (Usd, Presto, ...)
   |
   |--- HdRenderIndex: Holds the prim mapping from client to render engine
          |
@@ -131,13 +148,17 @@ HdResourceRegistry
   |
   |--- Instance Buffers             -> HdBufferResource[] (HdVBOMemoryManager)
   |
-  |--- Vertex PrimVar Buffers       -> HdBufferResource[] (HdVBOMemoryManager)
-  |    Element PrimVar Buffefs
-  |    FaceVarying PrimVar Buffers
+  |--- Vertex Primvar Buffers       -> HdBufferResource[] (HdVBOMemoryManager)
+  |    Element Primvar Buffefs
+  |    FaceVarying Primvar Buffers
   |
   |--- Topology Buffers             -> HdBufferResource[] (HdVBOMemoryManager)
   |
-  |--- Shader Paramters             -> HdBufferResource[] (HdInterleavedMemoryManager)
+  |--- Shader Parameters            -> HdBufferResource[] (HdInterleavedMemoryManager)
+  |
+  |--- Compute Buffers              -> HdBufferResource[] (HdInterleavedSSBOMemoryManager)
+  |
+  |--- Uniform Buffers              -> HdBufferResource[] (HdInterleavedUBOMemoryManager)
   |
   |--- Textures
 
