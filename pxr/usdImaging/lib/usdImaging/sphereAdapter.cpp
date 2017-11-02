@@ -229,7 +229,12 @@ UsdImagingSphereAdapter::GetMeshTransform(UsdPrim const& prim,
 {
     double radius = 1.0;
     UsdGeomSphere sphere(prim);
-    TF_VERIFY(sphere.GetRadiusAttr().Get(&radius, time));
+    if (!sphere.GetRadiusAttr().Get(&radius, time)) {
+        // XXX:validation
+        TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
+            prim.GetPath().GetText());
+
+    }
     GfMatrix4d xf(GfVec4d(radius, radius, radius, 1.0));   
     return xf;
 }
