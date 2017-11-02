@@ -90,6 +90,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsFlattenLayerStack
+    DEST testUsdUtilsFlattenLayerStack_OldOffsets
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsPipeline
     DEST testUsdUtilsPipeline
 )
@@ -146,6 +151,16 @@ pxr_register_test(testUsdUtilsDependencyExtractor4
 pxr_register_test(testUsdUtilsFlattenLayerStack
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsFlattenLayerStack_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
