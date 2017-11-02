@@ -856,8 +856,10 @@ class TestUsdMetadata(unittest.TestCase):
             assert a == b
 
     def test_AssetPathMetadata(self):
+        '''Test path resolution for asset path-valued metadata'''
         s = Usd.Stage.Open("assetPaths/root.usda")
-        attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPath")
+        prim = s.GetPrimAtPath("/AssetPathTest")
+        attr = prim.GetAttribute("assetPath")
         
         timeSamples = attr.GetMetadata("timeSamples")
         self.assertEqual(timeSamples[0].resolvedPath,
@@ -865,14 +867,30 @@ class TestUsdMetadata(unittest.TestCase):
         self.assertEqual(timeSamples[1].resolvedPath,
                          os.path.abspath("assetPaths/asset.usda"))
         
-        # XXX: Currently broken
-        # self.assertEqual(
-        #    attr.GetMetadata("default").resolvedPath, 
-        #    os.path.abspath("assetPaths/asset.usda"))
-        #
-        # attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
-        # self.assertEqual(attr.GetMetadata("default")[0].resolvedPath,
-        #                  os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            attr.GetMetadata("default").resolvedPath, 
+            os.path.abspath("assetPaths/asset.usda"))
+        
+        attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
+        self.assertEqual(
+            list([p.resolvedPath for p in attr.GetMetadata("default")]),
+            [os.path.abspath("assetPaths/asset.usda")])
+
+        metadataDict = prim.GetMetadata("customData")
+        self.assertEqual(
+            metadataDict["assetPath"].resolvedPath,
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([p.resolvedPath for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+            
+        metadataDict = metadataDict["subDict"]
+        self.assertEqual(
+            metadataDict["assetPath"].resolvedPath,
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([p.resolvedPath for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
 
     def test_TimeSamplesMetadata(self):
         '''Test timeSamples composition, with layer offsets'''

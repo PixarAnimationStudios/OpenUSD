@@ -1,6 +1,15 @@
 #usda 1.0
 
-def "AssetPathTest"
+def "AssetPathTest" (
+    customData = {
+        asset assetPath = @./asset.usda@
+        asset[] assetPathArray = [@./asset.usda@]
+        dictionary subDict = {
+            asset assetPath = @./asset.usda@
+            asset[] assetPathArray = [@./asset.usda@]
+        }    
+    }
+)
 {
     asset assetPath = @./asset.usda@
     asset[] assetPathArray = [@./asset.usda@]
