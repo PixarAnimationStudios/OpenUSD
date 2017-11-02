@@ -1483,26 +1483,7 @@ private:
     // --------------------------------------------------------------------- //
     // Spec Existence & Definition Helpers
     // --------------------------------------------------------------------- //
-    using _MasterToFlattenedPathMap 
-        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
 
-    void _CopyMetadata(const UsdObject &source,
-                       const SdfSpecHandle& dest) const;
-    
-    void _CopyProperty(const UsdProperty &prop,
-                       const SdfPrimSpecHandle& dest,
-                       const _MasterToFlattenedPathMap 
-                            &masterToFlattened) const;
-
-    void _CopyMasterPrim(const UsdPrim &masterPrim,
-                         const SdfLayerHandle &destinationLyer,
-                         const _MasterToFlattenedPathMap 
-                            &masterToFlattened) const;
-
-    void _FlattenPrim(const UsdPrim &usdPrim,
-                      const SdfLayerHandle &layer,
-                      const SdfPath &path,
-                      const _MasterToFlattenedPathMap &masterToFlattened) const;
 
     SdfPropertySpecHandleVector
     _GetPropertyStack(const UsdProperty &prop, UsdTimeCode time) const;

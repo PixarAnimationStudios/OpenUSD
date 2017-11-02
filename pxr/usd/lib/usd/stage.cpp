@@ -104,7 +104,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 using std::pair;
 using std::make_pair;
 using std::map;
@@ -4185,144 +4184,33 @@ _GenerateFlattenedMasterPath(const std::vector<UsdPrim>& masters)
 
     return masterToFlattened;
 }
-} // end anonymous namespace
-
-bool
-UsdStage::ExportToString(std::string *result, bool addSourceFileComment) const
-{
-    SdfLayerRefPtr flatLayer = Flatten(addSourceFileComment);
-    return flatLayer->ExportToString(result);
-}
-
-bool
-UsdStage::Export(const std::string & newFileName, bool addSourceFileComment,
-                 const SdfLayer::FileFormatArguments &args) const
-{
-    SdfLayerRefPtr flatLayer = Flatten(addSourceFileComment);
-    return flatLayer->Export(newFileName, /* comment = */ std::string(), args);
-}
-
-SdfLayerRefPtr
-UsdStage::Flatten(bool addSourceFileComment) const
-{
-    TRACE_FUNCTION();
-
-    SdfLayerHandle rootLayer = GetRootLayer();
-    SdfLayerRefPtr flatLayer = SdfLayer::CreateAnonymous(".usda");
-
-    if (!TF_VERIFY(rootLayer)) {
-        return TfNullPtr;
-    }
-
-    if (!TF_VERIFY(flatLayer)) {
-        return TfNullPtr;
-    }
-
-    // Preemptively populate our mapping. This allows us to populate
-    // nested instances in the destination layer much more simply.
-    const auto masterToFlattened = _GenerateFlattenedMasterPath(GetMasters());
-
-    // We author the master overs first to produce simpler 
-    // assets which have them grouped at the top of the file.
-    for (auto const& master : GetMasters()) {
-        _CopyMasterPrim(master, flatLayer, masterToFlattened);
-    }
-
-    for (UsdPrim prim: UsdPrimRange::AllPrims(GetPseudoRoot())) {
-        _FlattenPrim(prim, flatLayer, prim.GetPath(), masterToFlattened);
-    }
-
-    if (addSourceFileComment) {
-        std::string doc = flatLayer->GetDocumentation();
-
-        if (!doc.empty()) {
-            doc.append("\n\n");
-        }
-
-        doc.append(TfStringPrintf("Generated from Composed Stage "
-                                  "of root layer %s\n",
-                                  GetRootLayer()->GetRealPath().c_str()));
-
-        flatLayer->SetDocumentation(doc);
-    }
-
-    return flatLayer;
-}
-
 
 void
-UsdStage::_FlattenPrim(const UsdPrim &usdPrim,
-                       const SdfLayerHandle &layer,
-                       const SdfPath &path,
-                       const _MasterToFlattenedPathMap &masterToFlattened) const
+_CopyMetadata(const UsdObject &source, const SdfSpecHandle& dest)
 {
-    SdfPrimSpecHandle newPrim;
-    
-    if (!usdPrim.IsActive()) {
-        return;
-    }
-    
-    if (usdPrim.GetPath() == SdfPath::AbsoluteRootPath()) {
-        newPrim = layer->GetPseudoRoot();
-    } else {
-        // Note that the true value for spec will be populated in _CopyMetadata
-        newPrim = SdfPrimSpec::New(layer->GetPrimAtPath(path.GetParentPath()), 
-                                   path.GetName(), SdfSpecifierOver, 
-                                   usdPrim.GetTypeName());
-    }
+    // GetAllMetadata returns all non-private metadata fields (it excludes
+    // composition arcs and values), which is exactly what we want here.
+    UsdMetadataValueMap metadata = source.GetAllAuthoredMetadata();
 
-    if (usdPrim.IsInstance()) {
-        const auto flattenedMasterPath = 
-            masterToFlattened.at(usdPrim.GetMaster().GetPath());
-
-        // Author an internal reference to our flattened master prim
-        newPrim->GetReferenceList().Add(SdfReference(std::string(),
-                                        flattenedMasterPath));
-    }
-    
-    _CopyMetadata(usdPrim, newPrim);
-
-    // In the case of flattening clips, we may have builtin attributes which aren't
-    // declared in the static scene topology, but may have a value in some
-    // clips that we want to relay into the flattened result.
-    // XXX: This should be removed if we fix GetProperties()
-    // and GetAuthoredProperties to consider clips.
-    auto hasValue = [](const UsdProperty& prop){
-        return prop.Is<UsdAttribute>()
-               && prop.As<UsdAttribute>().HasAuthoredValueOpinion();
-    };
-    
-    for (auto const &prop : usdPrim.GetProperties()) {
-        if (prop.IsAuthored() || hasValue(prop)) {
-            _CopyProperty(prop, newPrim, masterToFlattened);
+    // Copy each key/value into the Sdf spec.
+    TfErrorMark m;
+    vector<string> msgs;
+    for (auto const& tokVal : metadata) {
+        dest->SetInfo(tokVal.first, tokVal.second);
+        if (!m.IsClean()) {
+            msgs.clear();
+            for (auto i = m.GetBegin(); i != m.GetEnd(); ++i) {
+                msgs.push_back(i->GetCommentary());
+            }
+            m.Clear();
+            TF_WARN("Failed copying metadata: %s", TfStringJoin(msgs).c_str());
         }
     }
 }
 
-void
-UsdStage::_CopyMasterPrim(const UsdPrim &masterPrim,
-                          const SdfLayerHandle &destinationLayer,
-                          const _MasterToFlattenedPathMap 
-                            &masterToFlattened) const
-{
-    const auto& flattenedMasterPath 
-        = masterToFlattened.at(masterPrim.GetPath());
-
-    for (UsdPrim child: UsdPrimRange::AllPrims(masterPrim)) {
-        // We need to update the child path to use the Flatten name.
-        const auto flattenedChildPath = child.GetPath().ReplacePrefix(
-            masterPrim.GetPath(), flattenedMasterPath);
-
-        _FlattenPrim(child, destinationLayer, flattenedChildPath,
-                     masterToFlattened);
-    }
-}
-
-static 
 void 
 _TranslatePathsToFlattenedMaster(
-    const UsdProperty &prop,
-    SdfPathVector *paths, 
+    const UsdProperty &prop, SdfPathVector *paths, 
     const _MasterToFlattenedPathMap &masterToFlattened)
 {
     if (!prop.GetPrim().IsInMaster()) {
@@ -4345,10 +4233,9 @@ _TranslatePathsToFlattenedMaster(
 }
 
 void 
-UsdStage::_CopyProperty(const UsdProperty &prop,
-                        const SdfPrimSpecHandle &dest,
-                        const _MasterToFlattenedPathMap
-                            &masterToFlattened) const
+_CopyProperty(const UsdProperty &prop, 
+              const SdfPrimSpecHandle &dest,
+              const _MasterToFlattenedPathMap &masterToFlattened)
 {
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
@@ -4420,27 +4307,133 @@ UsdStage::_CopyProperty(const UsdProperty &prop,
 }
 
 void
-UsdStage::_CopyMetadata(const UsdObject &source, 
-                        const SdfSpecHandle& dest) const
+_CopyPrim(const UsdPrim &usdPrim, 
+          const SdfLayerHandle &layer, const SdfPath &path,
+          const _MasterToFlattenedPathMap &masterToFlattened)
 {
-    // GetAllMetadata returns all non-private metadata fields (it excludes
-    // composition arcs and values), which is exactly what we want here.
-    UsdMetadataValueMap metadata = source.GetAllAuthoredMetadata();
+    SdfPrimSpecHandle newPrim;
+    
+    if (!usdPrim.IsActive()) {
+        return;
+    }
+    
+    if (usdPrim.GetPath() == SdfPath::AbsoluteRootPath()) {
+        newPrim = layer->GetPseudoRoot();
+    } else {
+        // Note that the true value for spec will be populated in _CopyMetadata
+        newPrim = SdfPrimSpec::New(layer->GetPrimAtPath(path.GetParentPath()), 
+                                   path.GetName(), SdfSpecifierOver, 
+                                   usdPrim.GetTypeName());
+    }
 
-    // Copy each key/value into the Sdf spec.
-    TfErrorMark m;
-    vector<string> msgs;
-    for (auto const& tokVal : metadata) {
-        dest->SetInfo(tokVal.first, tokVal.second);
-        if (!m.IsClean()) {
-            msgs.clear();
-            for (auto i = m.GetBegin(); i != m.GetEnd(); ++i) {
-                msgs.push_back(i->GetCommentary());
-            }
-            m.Clear();
-            TF_WARN("Failed copying metadata: %s", TfStringJoin(msgs).c_str());
+    if (usdPrim.IsInstance()) {
+        const auto flattenedMasterPath = 
+            masterToFlattened.at(usdPrim.GetMaster().GetPath());
+
+        // Author an internal reference to our flattened master prim
+        newPrim->GetReferenceList().Add(SdfReference(std::string(),
+                                        flattenedMasterPath));
+    }
+    
+    _CopyMetadata(usdPrim, newPrim);
+
+    // In the case of flattening clips, we may have builtin attributes which 
+    // aren't declared in the static scene topology, but may have a value 
+    // in some clips that we want to relay into the flattened result.
+    // XXX: This should be removed if we fix GetProperties()
+    // and GetAuthoredProperties to consider clips.
+    auto hasValue = [](const UsdProperty& prop){
+        return prop.Is<UsdAttribute>()
+               && prop.As<UsdAttribute>().HasAuthoredValueOpinion();
+    };
+    
+    for (auto const &prop : usdPrim.GetProperties()) {
+        if (prop.IsAuthored() || hasValue(prop)) {
+            _CopyProperty(prop, newPrim, masterToFlattened);
         }
     }
+}
+
+void
+_CopyMasterPrim(const UsdPrim &masterPrim,
+                const SdfLayerHandle &destinationLayer,
+                const _MasterToFlattenedPathMap &masterToFlattened)
+{
+    const auto& flattenedMasterPath 
+        = masterToFlattened.at(masterPrim.GetPath());
+
+    for (UsdPrim child: UsdPrimRange::AllPrims(masterPrim)) {
+        // We need to update the child path to use the Flatten name.
+        const auto flattenedChildPath = child.GetPath().ReplacePrefix(
+            masterPrim.GetPath(), flattenedMasterPath);
+
+        _CopyPrim(child, destinationLayer, flattenedChildPath, 
+                  masterToFlattened);
+    }
+}
+
+} // end anonymous namespace
+
+bool
+UsdStage::ExportToString(std::string *result, bool addSourceFileComment) const
+{
+    SdfLayerRefPtr flatLayer = Flatten(addSourceFileComment);
+    return flatLayer->ExportToString(result);
+}
+
+bool
+UsdStage::Export(const std::string & newFileName, bool addSourceFileComment,
+                 const SdfLayer::FileFormatArguments &args) const
+{
+    SdfLayerRefPtr flatLayer = Flatten(addSourceFileComment);
+    return flatLayer->Export(newFileName, /* comment = */ std::string(), args);
+}
+
+SdfLayerRefPtr
+UsdStage::Flatten(bool addSourceFileComment) const
+{
+    TRACE_FUNCTION();
+
+    SdfLayerHandle rootLayer = GetRootLayer();
+    SdfLayerRefPtr flatLayer = SdfLayer::CreateAnonymous(".usda");
+
+    if (!TF_VERIFY(rootLayer)) {
+        return TfNullPtr;
+    }
+
+    if (!TF_VERIFY(flatLayer)) {
+        return TfNullPtr;
+    }
+
+    // Preemptively populate our mapping. This allows us to populate
+    // nested instances in the destination layer much more simply.
+    const auto masterToFlattened = _GenerateFlattenedMasterPath(GetMasters());
+
+    // We author the master overs first to produce simpler 
+    // assets which have them grouped at the top of the file.
+    for (auto const& master : GetMasters()) {
+        _CopyMasterPrim(master, flatLayer, masterToFlattened);
+    }
+
+    for (UsdPrim prim: UsdPrimRange::AllPrims(GetPseudoRoot())) {
+        _CopyPrim(prim, flatLayer, prim.GetPath(), masterToFlattened);
+    }
+
+    if (addSourceFileComment) {
+        std::string doc = flatLayer->GetDocumentation();
+
+        if (!doc.empty()) {
+            doc.append("\n\n");
+        }
+
+        doc.append(TfStringPrintf("Generated from Composed Stage "
+                                  "of root layer %s\n",
+                                  GetRootLayer()->GetRealPath().c_str()));
+
+        flatLayer->SetDocumentation(doc);
+    }
+
+    return flatLayer;
 }
 
 const PcpPrimIndex*
