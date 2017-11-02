@@ -90,6 +90,7 @@
 #include "pxr/base/work/utils.h"
 
 #include <boost/optional.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include <tbb/spin_rw_mutex.h>
@@ -4143,15 +4144,66 @@ _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out)
     return false;
 }
 
-using _MasterToFlattenedPathMap 
-    = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+// Map from path to replacement for remapping target paths during flattening.
+using _PathRemapping = std::map<SdfPath, SdfPath>;
+
+// Apply path remappings to a list of target paths.
+void
+_RemapTargetPaths(SdfPathVector* targetPaths, 
+                  const _PathRemapping& pathRemapping)
+{
+    if (pathRemapping.empty()) {
+        return;
+    }
+
+    struct _Adapter {
+        const SdfPath& operator()(_PathRemapping::const_reference v) const
+            { return v.first; }
+    };
+
+    for (SdfPath& p : *targetPaths) {
+        // XXX: This is not optimal; SdfPathFindLongestPrefix uses
+        // std::lower_bound, which is linear instead of std::map::lower_bound,
+        // which is logarithmic.
+        auto it = SdfPathFindLongestPrefix(
+            boost::make_transform_iterator(pathRemapping.begin(), _Adapter()),
+            boost::make_transform_iterator(pathRemapping.end(), _Adapter()),
+            p);
+        if (it.base() != pathRemapping.end()) {
+            p = p.ReplacePrefix(it.base()->first, it.base()->second);
+        }
+    }
+}
+
+// Remove any paths to master prims or descendants from given target paths
+// for srcProp. Issues a warning if any paths were removed.
+void
+_RemoveMasterTargetPaths(const UsdProperty& srcProp, 
+                         SdfPathVector* targetPaths)
+{
+    auto removeIt = std::remove_if(
+        targetPaths->begin(), targetPaths->end(),
+        Usd_InstanceCache::IsPathMasterOrInMaster);
+    if (removeIt == targetPaths->end()) {
+        return;
+    }
+
+    TF_WARN(
+        "Some %s paths from <%s> could not be flattened because "
+        "they targeted objects within an instancing master.",
+        srcProp.Is<UsdAttribute>() ? 
+            "attribute connection" : "relationship target",
+        srcProp.GetPath().GetText());
+
+    targetPaths->erase(removeIt, targetPaths->end());
+}
 
 // We want to give generated masters in the flattened stage
 // reserved(using '__' as a prefix), unclashing paths, however,
 // we don't want to use the '__Master' paths which have special
 // meaning to UsdStage. So we create a mapping between our generated
 // 'Flattened_Master'-style paths and the '__Master' paths.
-_MasterToFlattenedPathMap
+_PathRemapping
 _GenerateFlattenedMasterPath(const std::vector<UsdPrim>& masters)
 {
     size_t primMasterId = 1;
@@ -4161,7 +4213,7 @@ _GenerateFlattenedMasterPath(const std::vector<UsdPrim>& masters)
                                       primMasterId++));
     };
 
-    _MasterToFlattenedPathMap masterToFlattened;
+    _PathRemapping masterToFlattened;
 
     for (auto const& masterPrim : masters) {
         SdfPath flattenedMasterPath;
@@ -4209,33 +4261,9 @@ _CopyMetadata(const UsdObject &source, const SdfSpecHandle& dest)
 }
 
 void 
-_TranslatePathsToFlattenedMaster(
-    const UsdProperty &prop, SdfPathVector *paths, 
-    const _MasterToFlattenedPathMap &masterToFlattened)
-{
-    if (!prop.GetPrim().IsInMaster()) {
-        return;
-    }
-
-    UsdPrim master = prop.GetPrim();
-    while (!master.IsMaster()) {
-        master = master.GetParent();
-    }
-
-    const SdfPath* flattenedMasterPath = 
-        TfMapLookupPtr(masterToFlattened, master.GetPath());
-    if (TF_VERIFY(flattenedMasterPath)) {
-        for (auto& path : *paths) {
-            path = path.ReplacePrefix(
-                master.GetPath(), *flattenedMasterPath);
-        }
-    }
-}
-
-void 
 _CopyProperty(const UsdProperty &prop, 
               const SdfPrimSpecHandle &dest,
-              const _MasterToFlattenedPathMap &masterToFlattened)
+              const _PathRemapping &pathRemapping)
 {
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
@@ -4276,10 +4304,8 @@ _CopyProperty(const UsdProperty &prop,
         SdfPathVector sources;
         attr.GetConnections(&sources);
         if (!sources.empty()) {
-            // If this attribute is in a master, we need to translate
-            // any sources that point to a prim in this master to the
-            // corresponding flattened master.
-            _TranslatePathsToFlattenedMaster(prop, &sources, masterToFlattened);
+            _RemapTargetPaths(&sources, pathRemapping);
+            _RemoveMasterTargetPaths(prop, &sources);
             sdfAttr->GetConnectionPathList().GetExplicitItems() = sources;
         }
      }
@@ -4297,10 +4323,8 @@ _CopyProperty(const UsdProperty &prop,
          SdfPathVector targets;
          rel.GetTargets(&targets);
          if (!targets.empty()) {
-             // If this relationship is in a master, we need to translate
-             // any targets that point to a prim in this master to the
-             // corresponding flattened master.
-             _TranslatePathsToFlattenedMaster(prop, &targets, masterToFlattened);
+             _RemapTargetPaths(&targets, pathRemapping);
+             _RemoveMasterTargetPaths(prop, &targets);
              sdfRel->GetTargetPathList().GetExplicitItems() = targets;
          }
      }
@@ -4309,7 +4333,7 @@ _CopyProperty(const UsdProperty &prop,
 void
 _CopyPrim(const UsdPrim &usdPrim, 
           const SdfLayerHandle &layer, const SdfPath &path,
-          const _MasterToFlattenedPathMap &masterToFlattened)
+          const _PathRemapping &masterToFlattened)
 {
     SdfPrimSpecHandle newPrim;
     
@@ -4357,7 +4381,7 @@ _CopyPrim(const UsdPrim &usdPrim,
 void
 _CopyMasterPrim(const UsdPrim &masterPrim,
                 const SdfLayerHandle &destinationLayer,
-                const _MasterToFlattenedPathMap &masterToFlattened)
+                const _PathRemapping &masterToFlattened)
 {
     const auto& flattenedMasterPath 
         = masterToFlattened.at(masterPrim.GetPath());
