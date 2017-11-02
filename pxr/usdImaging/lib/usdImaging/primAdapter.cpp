@@ -384,6 +384,12 @@ UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim)
     }
 }
 
+TfToken
+UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
+{
+    return _delegate->_GetModelDrawMode(prim);
+}
+
 SdfPath
 UsdImagingPrimAdapter::GetInstancerBinding(UsdPrim const& prim,
                         UsdImagingInstancerContext const* instancerContext)

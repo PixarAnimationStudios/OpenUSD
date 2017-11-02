@@ -451,6 +451,14 @@ private:
     }
 
     // ---------------------------------------------------------------------- //
+    // Draw mode support
+    // ---------------------------------------------------------------------- //
+    // Determine whether to assign a draw mode adapter to the given prim.
+    bool _IsDrawModeApplied(UsdPrim const& prim);
+    // Get the inherited model:drawMode attribute of the given prim.
+    TfToken _GetModelDrawMode(UsdPrim const& prim);
+
+    // ---------------------------------------------------------------------- //
     // Usd Change Processing / Notice Handlers 
     // ---------------------------------------------------------------------- //
     void _OnObjectsChanged(UsdNotice::ObjectsChanged const&,
@@ -462,7 +470,13 @@ private:
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
-    void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy);
+    //
+    // By default, _ResyncPrim will remove each affected prim and call
+    // Repopulate() on those prims individually. If repopulateFromRoot is
+    // true, Repopulate() will be called on \p rootPath instead. This is slower,
+    // but handles changes in tree topology.
+    void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy,
+                     bool repopulateFromRoot = false);
 
     // Process all pending updates, ensuring that rprims are marked dirty
     // as needed.
@@ -616,6 +630,7 @@ private:
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
+    UsdImaging_DrawModeCache _drawModeCache;
 
     // Pickability
     PickabilityMap _pickablesMap;

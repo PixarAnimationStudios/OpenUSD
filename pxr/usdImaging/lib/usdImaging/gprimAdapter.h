@@ -127,6 +127,11 @@ public:
                       SdfPath const& materialId,
                       UsdImagingInstancerContext const* instancerContext);
 
+    // Helper function: apply gprim name mangling.
+    USDIMAGING_API
+    static SdfPath _ResolveCachePath(SdfPath const& cachePath,
+            UsdImagingInstancerContext const* instancerContext);
+
 protected:
 
     /// This function can be overridden if the gprim adapter wants to have

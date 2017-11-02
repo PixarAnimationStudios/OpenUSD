@@ -596,6 +596,58 @@ struct UsdImaging_MaterialStrategy {
     }
 };
 
+// -------------------------------------------------------------------------- //
+// ModelDrawMode Cache
+// -------------------------------------------------------------------------- //
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#include "pxr/usd/usdGeom/modelAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_DrawModeStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_DrawModeStrategy>
+    UsdImaging_DrawModeCache;
+
+struct UsdImaging_DrawModeStrategy
+{
+    typedef TfToken value_type; // origin, bounds, cards, default
+    typedef UsdAttributeQuery query_type;
+
+    static
+    value_type MakeDefault() { return UsdGeomTokens->default_; }
+
+    static
+    query_type MakeQuery(UsdPrim prim) {
+        if (UsdGeomModelAPI m = UsdGeomModelAPI(prim))
+            if (UsdAttribute a = m.GetModelDrawModeAttr())
+                return query_type(a);
+        return query_type();
+    }
+
+    static
+    value_type
+    Inherit(UsdImaging_DrawModeCache const* owner,
+            UsdPrim prim,
+            query_type const* query)
+    {
+        value_type v = UsdGeomTokens->default_;
+        if (*query) {
+            query->Get(&v);
+            if (v != UsdGeomTokens->default_)
+                return v;
+        }
+        return *owner->_GetValue(prim.GetParent());
+    }
+
+    static
+    value_type
+    ComputeDrawMode(UsdPrim const& prim)
+    {
+        return UsdGeomModelAPI(prim).ComputeModelDrawMode();
+    }
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -99,16 +99,32 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     const UsdImagingPrimAdapterSharedPtr instancedPrimAdapter = 
         _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
 
+    // If this instance prim itself is an imageable prim, we disable
+    // drawing and report the issue to the user. We can not instance
+    // a gprim (or instancer) directly since we can not derive any 
+    // scalability benefit from mesh-to-mesh instancing. 
+    //
+    // This won't happen when processing the instance's master, 
+    // since the master is never a drawable prim.
+    //
+    // IsNativeInstanceable() gives the adapter the option to override this
+    // behavior.
+    if (instancedPrimAdapter &&
+        !instancedPrimAdapter->IsNativeInstanceable(prim)) {
+        TF_WARN("The gprim at path <%s> was directly instanced. "
+                "In order to instance this prim, put the prim under an Xform, "
+                "and instance the Xform parent.",
+                prim.GetPath().GetText());
+
+        return SdfPath();
+    }
+
     // This is a shared_ptr to ourself. The InstancerContext requires the
     // adapter shared_ptr.
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter = 
                         _GetSharedFromThis();
 
-    // If the current prim is drawable (instancedPrimAdapter is non-NULL), we
-    // ask it to give us the material binding.  Otherwise, this
-    // (instancerAdapter) will provide the material binding.
-    const SdfPath& instanceMaterialId = (instancedPrimAdapter
-        ? instancedPrimAdapter : instancerAdapter)->GetMaterialId(prim);
+    const SdfPath& instanceMaterialId = instancerAdapter->GetMaterialId(prim);
 
     // Store away the path of the given instance prim to use as the
     // instancer for Hydra if this is the first time we've seen this 
@@ -122,21 +138,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
     std::vector<UsdPrim> nestedInstances;
 
-    // If this instance prim itself is an imageable prim, we disable
-    // drawing and report the issue to the user. We can not instance
-    // a gprim (or instancer) directly since we can not derive any 
-    // scalability benefit from mesh-to-mesh instancing. 
-    //
-    // This won't happen when processing the instance's master, 
-    // since the master is never a drawable prim.
-    if (instancedPrimAdapter) {
-        instancePath = SdfPath();
-
-        TF_WARN("The gprim at path <%s> was directly instanced. "
-                "In order to instance this prim, put the prim under an Xform, "
-                "and instance the Xform parent.",
-                prim.GetPath().GetText());
-    } else if(instancerData.instancePaths.empty()) {
+    if(instancerData.instancePaths.empty()) {
         instancerData.masterPath = masterPrim.GetPath();
         instancerData.materialId = instanceMaterialId;
 

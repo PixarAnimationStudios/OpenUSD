@@ -60,6 +60,37 @@ UsdImagingGprimAdapter::~UsdImagingGprimAdapter()
 
 /* static */
 SdfPath
+UsdImagingGprimAdapter::_ResolveCachePath(SdfPath const& primPath,
+                                          UsdImagingInstancerContext const*
+                                              instancerContext)
+{
+    SdfPath cachePath = primPath;
+
+    // For non-instanced prims, cachePath and primPath will be the same, however
+    // for instanced prims, cachePath will be something like:
+    //
+    // primPath: /__Master_1/cube
+    // cachePath: /Models/cube_0.proto_cube_id0
+    //
+    // The name-mangling is so that multiple instancers/adapters can track the
+    // same underlying UsdPrim.
+
+    if (instancerContext != nullptr) {
+        SdfPath const& instancer = instancerContext->instancerId;
+        TfToken const& childName = instancerContext->childName;
+
+        if (!instancer.IsEmpty()) {
+            cachePath = instancer;
+        }
+        if (!childName.IsEmpty()) {
+            cachePath = cachePath.AppendProperty(childName);
+        }
+    }
+    return cachePath;
+}
+
+/* static */
+SdfPath
 UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                                   UsdPrim const& usdPrim,
                                   UsdImagingIndexProxy* index,
@@ -67,32 +98,11 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
                                   UsdImagingInstancerContext const*
                                       instancerContext)
 {
-    SdfPath cachePath = usdPrim.GetPath(), instancer;
-    UsdPrim cachePrim = usdPrim;
-
-    // For non-instanced prims, cachePath and usdPath will be the same, however
-    // for instanced prims, cachePath will be something like:
-    //
-    // usdPath: /__Master_1/cube
-    // cachePath: /Models/cube_0.proto_cube_id0
-    //
-    // The name-mangling is so that multiple instancers/adapters can track the
-    // same underlying UsdPrim.
-    if (instancerContext != nullptr) {
-        instancer = instancerContext->instancerId;
-        TfToken const& childName = instancerContext->childName;
-
-        if (!instancer.IsEmpty() || !childName.IsEmpty()) {
-            if (!instancer.IsEmpty()) {
-                cachePath = instancer;
-            }
-            if (!childName.IsEmpty()) {
-                cachePath = cachePath.AppendProperty(childName);
-            }
-            cachePrim = usdPrim.GetStage()->GetPrimAtPath(
-                cachePath.GetAbsoluteRootOrPrimPath());
-        }
-    }
+    SdfPath cachePath = _ResolveCachePath(usdPrim.GetPath(), instancerContext);
+    SdfPath instancer = instancerContext ?
+        instancerContext->instancerId : SdfPath();
+    UsdPrim cachePrim = usdPrim.GetStage()->GetPrimAtPath(
+        cachePath.GetAbsoluteRootOrPrimPath());
 
     index->InsertRprim(primType, cachePath, instancer, cachePrim,
         instancerContext ? instancerContext->instancerAdapter

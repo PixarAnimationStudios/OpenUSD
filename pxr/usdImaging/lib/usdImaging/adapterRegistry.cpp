@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
+#include "pxr/usdImaging/usdImaging/drawModeAdapter.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
@@ -137,6 +138,9 @@ UsdImagingAdapterRegistry::ConstructAdapter(TfToken const& adapterKey)
     if (adapterKey == UsdImagingAdapterKeyTokens->instanceAdapterKey) {
         return UsdImagingPrimAdapterSharedPtr(
             new UsdImagingInstanceAdapter);
+    } else if (adapterKey == UsdImagingAdapterKeyTokens->drawModeAdapterKey) {
+        return UsdImagingPrimAdapterSharedPtr(
+            new UsdImagingDrawModeAdapter);
     }
 
     // Lookup the plug-in type name based on the prim type.

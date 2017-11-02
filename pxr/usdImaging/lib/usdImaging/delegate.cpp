@@ -49,7 +49,10 @@
 
 #include "pxr/usd/usd/primRange.h"
 
+#include "pxr/usd/kind/registry.h"
+
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/modelAPI.h"
 
 #include "pxr/usd/usdHydra/shader.h"
 #include "pxr/usd/usdHydra/uvTexture.h"
@@ -58,6 +61,7 @@
 
 #include "pxr/base/work/loops.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/stl.h"
@@ -82,6 +86,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (texturePath)
 );
 
+// This environment variable matches a set of similar ones in
+// primAdapter.cpp, controlling other attribute caches.
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_DRAWMODE_CACHE, 1,
+                      "Enable a cache for model:drawMode.");
+static bool _IsEnabledDrawModeCache() {
+    static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_DRAWMODE_CACHE) == 1;
+    return _v;
+}
+
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
 // -------------------------------------------------------------------------- //
@@ -102,6 +115,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _xformCache(GetTime(), GetRootCompensation())
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
+    , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _shaderAdapter(new UsdImagingShaderAdapter())
     , _displayGuides(true)
 {
@@ -134,6 +148,50 @@ UsdImagingDelegate::~UsdImagingDelegate()
 }
 
 
+bool
+UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
+{
+    // Draw modes can only be applied to models.
+    if (!prim.IsModel()) { return false; }
+
+    // Draw modes can't be applied to the pseudo-root.
+    if (!prim.GetParent()) { return false; }
+
+    // Draw mode is only applied on models that are components, or which have
+    // applyDrawMode = true.
+
+    UsdGeomModelAPI model(prim);
+    bool applyDrawMode = false;
+    TfToken kind;
+    UsdAttribute attr;
+    if (model.GetKind(&kind) && KindRegistry::IsA(kind, KindTokens->component))
+        applyDrawMode = true;
+    else if (attr = model.GetModelApplyDrawModeAttr())
+        attr.Get(&applyDrawMode);
+
+    if (!applyDrawMode)
+        return false;
+
+    // Compute the inherited drawMode.
+    TfToken drawMode = _GetModelDrawMode(prim);
+
+    // If draw mode is "default", no draw mode is applied.
+    return drawMode != UsdGeomTokens->default_;
+}
+
+
+TfToken
+UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
+{
+    HD_TRACE_FUNCTION();
+
+    if (_IsEnabledDrawModeCache())
+        return _drawModeCache.GetValue(prim);
+    else
+        return UsdImaging_DrawModeStrategy::ComputeDrawMode(prim);
+}
+
+
 UsdImagingDelegate::_AdapterSharedPtr const& 
 UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
 {
@@ -149,8 +207,9 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     TfToken adapterKey;
     if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
-    }
-    else {
+    } else if (_IsDrawModeApplied(prim)) {
+        adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
+    } else {
         adapterKey = prim.GetTypeName();
     }
 
@@ -983,6 +1042,7 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         _xformCache.Clear();
         _materialBindingCache.Clear();
         _visCache.Clear();
+        _drawModeCache.Clear();
     }
 
     if (!_pathsToResync.empty()) {
@@ -1179,7 +1239,8 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
 
 void 
 UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath, 
-                                UsdImagingIndexProxy* proxy) 
+                                UsdImagingIndexProxy* proxy,
+                                bool repopulateFromRoot) 
 {
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Resync Prim]: <%s>\n",
             rootPath.GetText());
@@ -1370,7 +1431,15 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
         //  * Remove the rprim from the index, if it needs to be re-built
         //  * Schedule the prim to be repopulated
         // Note: primInfo may be invalid after this call
-        primInfo->adapter->ProcessPrimResync(usdPath, proxy);
+        if (repopulateFromRoot) {
+            primInfo->adapter->ProcessPrimRemoval(usdPath, proxy);
+        } else {
+            primInfo->adapter->ProcessPrimResync(usdPath, proxy);
+        }
+    }
+
+    if (repopulateFromRoot) {
+        proxy->Repopulate(rootPath);
     }
 }
 
@@ -1391,6 +1460,14 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
 
     SdfPath const& usdPrimPath = usdPath.GetPrimPath();
     TfToken const& attrName = usdPath.GetNameToken();
+
+    // If either model:drawMode or model:applyDrawMode changes, we need to
+    // repopulate the whole subtree starting at the owning prim.
+    if (attrName == UsdGeomTokens->modelDrawMode ||
+        attrName == UsdGeomTokens->modelApplyDrawMode) {
+        _ResyncPrim(usdPath, proxy, true);
+        return;
+    }
 
     // If we're sync'ing a non-inherited property on a parent prim, we should
     // fall through this function without updating anything. The following
@@ -1843,6 +1920,7 @@ UsdImagingDelegate::_ComputeRootCompensation(SdfPath const & usdPath)
     _xformCache.SetRootPath(usdPath);
     _materialBindingCache.SetRootPath(usdPath);
     _visCache.SetRootPath(usdPath);
+    _drawModeCache.SetRootPath(usdPath);
 
     return true;
 }
