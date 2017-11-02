@@ -16,6 +16,7 @@ pxr_library(usdUtils
 
     PUBLIC_CLASSES
         authoring
+        coalescingDiagnosticDelegate
         dependencies
         flattenLayerStack
         introspection
@@ -34,6 +35,7 @@ pxr_library(usdUtils
     PYMODULE_CPPFILES
         module.cpp
         wrapAuthoring.cpp
+        wrapCoalescingDiagnosticDelegate.cpp
         wrapDependencies.cpp
         wrapFlattenLayerStack.cpp
         wrapIntrospection.cpp
@@ -49,6 +51,7 @@ pxr_library(usdUtils
 
 pxr_test_scripts(
     testenv/testUsdUtilsAuthoring.py 
+    testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
     testenv/testUsdUtilsDependencyExtractor.py 
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py 
@@ -57,6 +60,15 @@ pxr_test_scripts(
     testenv/testUsdUtilsStitchClips.py 
     testenv/testUsdUtilsStitch.py 
     testenv/testUsdUtilsVarSelsSessionLayer.py 
+)
+
+pxr_build_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
+    LIBRARIES
+        tf
+        usd
+        usdUtils
+    CPPFILES
+        testenv/testUsdUtilsCoalescingDiagnosticDelegate.cpp
 )
 
 pxr_install_test_dir(
@@ -117,6 +129,17 @@ pxr_install_test_dir(
 pxr_register_test(testUsdUtilsAuthoring
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAuthoring"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegate
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegate"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCoalescingDiagnosticDelegateCpp"
     EXPECTED_RETURN_CODE 0
 )
 
