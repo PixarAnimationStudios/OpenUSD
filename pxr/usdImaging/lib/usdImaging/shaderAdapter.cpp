@@ -71,7 +71,7 @@ UsdImagingShaderAdapter::Populate(UsdPrim const& prim,
 
     index->InsertSprim(HdPrimTypeTokens->shader,
                        cachePath,
-                       prim, index->GetShaderAdapter());
+                       prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     if (index->IsBprimTypeSupported(HdPrimTypeTokens->texture)) {
@@ -92,7 +92,7 @@ UsdImagingShaderAdapter::Populate(UsdPrim const& prim,
             UsdPrim texturePrim = _GetPrim(textureIt->GetPrimPath());
             index->InsertBprim(HdPrimTypeTokens->texture,
                     *textureIt,
-                    texturePrim, index->GetShaderAdapter());
+                    texturePrim, shared_from_this());
             HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
         }
     }
