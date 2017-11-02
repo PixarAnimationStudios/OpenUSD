@@ -32,7 +32,6 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -111,8 +110,8 @@ GlfDrawTarget::GlfDrawTarget( GlfDrawTargetPtr const & drawtarget ) :
     Bind();
 
     // attach the textures to the correct framebuffer mount points
-    TF_FOR_ALL( it, _attachmentsPtr->attachments ) {
-        _BindAttachment( it->second );
+    for (AttachmentsMap::value_type const& p :  _attachmentsPtr->attachments) {
+        _BindAttachment( p.second );
     }
 
     Unbind();
@@ -226,8 +225,8 @@ GlfDrawTarget::CloneAttachments( GlfDrawTargetPtr const & drawtarget )
     // by the RefPtr
     _attachmentsPtr = drawtarget->_attachmentsPtr;
 
-    TF_FOR_ALL( it, _attachmentsPtr->attachments ) {
-        _BindAttachment( it->second );
+    for (AttachmentsMap::value_type const& p :  _attachmentsPtr->attachments) {
+        _BindAttachment( p.second );
     }
 }
 
@@ -261,8 +260,8 @@ GlfDrawTarget::SetSize( GfVec2i size )
 
     AttachmentsMap & attachments = _GetAttachments();
 
-    TF_FOR_ALL ( it, attachments ) {
-        AttachmentRefPtr var = it->second;
+    for (AttachmentsMap::value_type const& p :  attachments) {
+        AttachmentRefPtr var = p.second;
 
         var->ResizeTexture(_size);
 
@@ -460,8 +459,8 @@ GlfDrawTarget::TouchContents()
 {
     AttachmentsMap const & attachments = GetAttachments();
 
-    TF_FOR_ALL ( it, attachments ) {
-        it->second->TouchContents();
+    for (AttachmentsMap::value_type const& p :  attachments) {
+        p.second->TouchContents();
     }
 }
 

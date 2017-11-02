@@ -31,7 +31,6 @@
 
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
@@ -490,8 +489,8 @@ Glf_OIIOImage::Write(StorageSpec const & storage,
     TypeDesc format = _GetOIIOBaseType(storage.type);
     ImageSpec spec(storage.width, storage.height, nchannels, format);
 
-    TF_FOR_ALL(metaIt, metadata) {
-        _SetAttribute(&spec, metaIt->first, metaIt->second);
+    for (const std::pair<std::string, VtValue>& m : metadata) {
+        _SetAttribute(&spec, m.first, m.second);
     }
 
     // Read from storage
