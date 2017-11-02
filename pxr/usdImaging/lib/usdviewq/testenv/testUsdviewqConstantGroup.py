@@ -124,5 +124,31 @@ class TestConstantGroup(unittest.TestCase):
         with self.assertRaises(TypeError):
             obj = Test()
 
+    def test_Functions(self):
+        """Functions and lambdas are ususally converted to methods (which expect
+        a `self` parameter) in classes. This doesn't happen with ConstantGroups.
+        """
+
+        class Test(ConstantGroup):
+            def A():
+                return 1
+            B = lambda: 2
+
+        self.assertEqual(Test.A(), 1)
+        self.assertEqual(Test.B(), 2)
+
+        # Normally, calling functions like this fails.
+
+        class TestNoGroup:
+            def A():
+                return 1
+            B = lambda: 2
+
+        with self.assertRaises(TypeError):
+            TestNoGroup.A()
+        with self.assertRaises(TypeError):
+            TestNoGroup.B()
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+

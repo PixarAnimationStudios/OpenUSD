@@ -47,52 +47,44 @@ from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
 import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
+from constantGroup import ConstantGroup
 
 # Common Utilities
-from common import (NoValueTextColor, TimeSampleTextColor,
-                    DefaultTextColor, RedColor, BoldFont,
-                    GetAttributeColor, GetAttributeTextFont,
+from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttributeColor, GetAttributeTextFont,
                     Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
                     GetInstanceIdForIndex, GetTfErrorExceptionReason,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
-                    INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
-                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON,
-                    ATTR_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
-                    REL_PLAIN_TYPE_ICON, REL_WITH_TARGET_TYPE_ICON,
-                    REL_PLAIN_TYPE_ROLE, REL_WITH_TARGET_TYPE_ROLE,
-                    TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON,
-                    CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
-                    RENDER_MODE_WIREFRAME, RENDER_MODE_WIREFRAME_ON_SURFACE,
-                    RENDER_MODE_SMOOTH_SHADED, RENDER_MODE_FLAT_SHADED,
-                    RENDER_MODE_POINTS, RENDER_MODE_GEOM_ONLY,
-                    RENDER_MODE_GEOM_FLAT, RENDER_MODE_GEOM_SMOOTH,
-                    RENDER_MODE_HIDDEN_SURFACE_WIREFRAME, ALL_RENDER_MODES,
-                    SHADED_RENDER_MODES, PICK_MODE_PRIMS, PICK_MODE_MODELS,
-                    PICK_MODE_INSTANCES, ALL_PICK_MODES, SEL_HIGHLIGHT_NEVER,
-                    SEL_HIGHLIGHT_ONLY_WHEN_PAUSED, SEL_HIGHLIGHT_ALWAYS,
-                    ALL_SEL_HIGHLIGHTS,
+                    PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, RenderModes, ShadedRenderModes,
+                    PickModes, SelectionHighlightModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                     GetPrimsLoadability, GetClosestBoundMaterial)
 
-# Upper HUD entries (declared in variables for abstraction)
-PRIM = "Prims"
-CV = "CVs"
-VERT = "Verts"
-FACE = "Faces"
+class HUDEntries(ConstantGroup):
+    # Upper HUD entries (declared in variables for abstraction)
+    PRIM = "Prims"
+    CV = "CVs"
+    VERT = "Verts"
+    FACE = "Faces"
 
-# Lower HUD entries
-PLAYBACK = "Playback"
-RENDER = "Render"
-GETBOUNDS = "BBox"
+    # Lower HUD entries
+    PLAYBACK = "Playback"
+    RENDER = "Render"
+    GETBOUNDS = "BBox"
 
-# Name for prims that have no type
-NOTYPE = "Typeless"
+    # Name for prims that have no type
+    NOTYPE = "Typeless"
 
-INDEX_VALUE, INDEX_METADATA, INDEX_LAYERSTACK, INDEX_COMPOSITION = range(4)
+class PropertyIndex(ConstantGroup):
+    VALUE, METADATA, LAYERSTACK, COMPOSITION = range(4)
 
-# Tf Debug entries to include in debug menu
-TF_DEBUG_MENU_ENTRIES = ["HD", "HDX", "USD", "USDIMAGING", "USDVIEWQ"]
+class DebugTypes(ConstantGroup):
+    # Tf Debug entries to include in debug menu
+    HD = "HD"
+    HDX = "HDX"
+    USD = "USD"
+    USDIMAGING = "USDIMAGING"
+    USDVIEWQ = "USDVIEWQ"
 
 # Name of the Qt binding being used
 QT_BINDING = QtCore.__name__.split('.')[0]
@@ -220,7 +212,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # cannot know anything about playback state).
             # We store the highlightColorName so that we can compare state during
             # initialization without inverting the name->value logic
-            self._selHighlightMode = SEL_HIGHLIGHT_ONLY_WHEN_PAUSED
+            self._selHighlightMode = SelectionHighlightModes.ONLY_WHEN_PAUSED
             self._drawSelHighlights = True
             self._highlightColorName = "Yellow"
             self._highlightColor = (1.0,1.0,0.0,0.5)
@@ -336,7 +328,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._upperHUDInfo = dict()
 
             # declare dictionary keys for the fps info too
-            self._fpsHUDKeys = (RENDER, PLAYBACK)
+            self._fpsHUDKeys = (HUDEntries.RENDER, HUDEntries.PLAYBACK)
 
             # Initialize fps HUD with empty strings
             self._fpsHUDInfo = dict(zip(self._fpsHUDKeys,
@@ -413,7 +405,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.renderModeActionGroup.addAction(action)
                 action.setChecked(str(action.text()) == self._renderMode)
             self._ui.renderModeActionGroup.setExclusive(True)
-            if self._renderMode not in ALL_RENDER_MODES:
+            if self._renderMode not in RenderModes:
                 print "Warning: Unknown render mode '%s', falling back to '%s'" % (
                             self._renderMode,
                             str(self._ui.renderModeActionGroup.actions()[0].text()))
@@ -428,7 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.pickModeActionGroup.addAction(action)
                 action.setChecked(str(action.text()) == self._pickMode)
             self._ui.pickModeActionGroup.setExclusive(True)
-            if self._pickMode not in ALL_PICK_MODES:
+            if self._pickMode not in PickModes:
                 print "Warning: Unknown pick mode '%s', falling back to '%s'" % (
                             self._pickMode,
                             str(self._ui.pickModeActionGroup.actions()[0].text()))
@@ -1622,7 +1614,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             valString = prettyPrint.prettyPrint(
                                         self._primDict[attrName][2])
                         else:   # no unvarying data
-                            col = RedColor.color()
+                            col = UIBaseColors.RED.color()
                             valString = "Not defined in unvarying section"
 
                         self._valueCache[dictKey] = (valString, col)
@@ -1653,7 +1645,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             valString = prettyPrint.prettyPrint(
                                         self._primDict[attrName][1])
                         else:
-                            col = RedColor.color()
+                            col = UIBaseColors.RED.color()
                             valString = "Not defined in varying section"
 
                         self._valueCache[dictKey] = (valString, col)
@@ -1882,7 +1874,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._attrSearchResults.append(nextResult)
             self._lastPrimSearched = self._currentPrims[0]
 
-            itemName = str(nextResult.text(INDEX_PROPNAME))
+            itemName = str(nextResult.text(PropertyViewIndex.NAME))
             self._ui.attributeValueEditor.populate(itemName, self._currentPrims[0])
             self._updateMetadataView(self._getSelectedObject())
             self._updateLayerStackView(self._getSelectedObject())
@@ -1892,13 +1884,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._attrSearchResults = self._ui.propertyView.findItems(
                 self._ui.attrViewLineEdit.text(),
                 QtCore.Qt.MatchRegExp,
-                INDEX_PROPNAME)
+                PropertyViewIndex.NAME)
 
             # Now just search for the string itself
             otherSearch = self._ui.propertyView.findItems(
                 self._ui.attrViewLineEdit.text(),
                 QtCore.Qt.MatchContains,
-                INDEX_PROPNAME)
+                PropertyViewIndex.NAME)
 
             self._attrSearchResults += otherSearch
 
@@ -1947,8 +1939,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
         self._clearColor = self._clearColorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
-        self._renderMode = self._settings.get("RenderMode", RENDER_MODE_SMOOTH_SHADED)
-        self._pickMode = self._settings.get("PickMode", PICK_MODE_PRIMS)
+        self._renderMode = self._settings.get("RenderMode", RenderModes.SMOOTH_SHADED)
+        self._pickMode = self._settings.get("PickMode", PickModes.PRIMS)
 
         self._ui.actionShow_Inactive_Prims.setChecked(\
                         self._settings.get("actionShow_Inactive_Prims", True))
@@ -1986,7 +1978,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._ui.attributeInspector.\
             setCurrentIndex(self._settings.get("AttributeInspectorCurrentTab",
-                                               INDEX_VALUE))
+                                               PropertyIndex.VALUE))
 
         propertyViewHeaderSettings = self._settings.get('propertyViewHeader', [])
         for i,b in enumerate(propertyViewHeaderSettings):
@@ -2088,11 +2080,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
         self._highlightColor = self._highlightColorsDict[self._highlightColorName]
         self._selHighlightMode = self._settings.get("SelHighlightMode",
-                                                 SEL_HIGHLIGHT_ONLY_WHEN_PAUSED)
-        self._drawSelHighlights = (self._selHighlightMode != SEL_HIGHLIGHT_NEVER)
+                                                 SelectionHighlightModes.ONLY_WHEN_PAUSED)
+        self._drawSelHighlights = (self._selHighlightMode != SelectionHighlightModes.NEVER)
 
         # lighting is not activated until a shaded mode is selected
-        self._ui.menuLights.setEnabled(self._renderMode in SHADED_RENDER_MODES)
+        self._ui.menuLights.setEnabled(self._renderMode in ShadedRenderModes)
 
         self._ui.actionFreeCam._prim = None
         self._ui.actionFreeCam.triggered.connect(
@@ -2205,7 +2197,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _changeRenderMode(self, mode):
         self._renderMode = str(mode.text())
         self._settings.setAndSave(RenderMode=self._renderMode)
-        self._ui.menuLights.setEnabled(self._renderMode in SHADED_RENDER_MODES)
+        self._ui.menuLights.setEnabled(self._renderMode in ShadedRenderModes)
         if self._stageView:
             self._stageView.update()
 
@@ -2216,7 +2208,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _changeSelHighlightMode(self, mode):
         self._settings.setAndSave(SelHighlightMode=str(mode.text()))
         self._selHighlightMode = str(mode.text())
-        self._drawSelHighlights = (self._selHighlightMode != SEL_HIGHLIGHT_NEVER)
+        self._drawSelHighlights = (self._selHighlightMode != SelectionHighlightModes.NEVER)
         if self._stageView:
             self._stageView.update()
 
@@ -2671,8 +2663,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # In the case of connections and targets, we keep their parent as the selected property
         if currentItem:
-            role = currentItem.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
-            if role == CONN_TYPE_ROLE or role == TARGET_TYPE_ROLE:
+            role = currentItem.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+            if role == PropertyViewDataRoles.CONNECTION or role == PropertyViewDataRoles.TARGET:
                 parent = currentItem.parent()
                 self._currentProp = self._getSelectedObject(parent)
 
@@ -2682,7 +2674,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._console.reloadConsole(self)
 
         if currentItem is not None:
-            itemName = str(currentItem.text(INDEX_PROPNAME))
+            itemName = str(currentItem.text(PropertyViewIndex.NAME))
 
             # inform the value editor that we selected a new attribute
             self._ui.attributeValueEditor.populate(itemName, self._currentPrims[0])
@@ -2706,11 +2698,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if obj is None:
             obj = self._getSelectedObject()
 
-        if index == INDEX_METADATA:
+        if index == PropertyIndex.METADATA:
             self._updateMetadataView(obj)
-        elif index == INDEX_LAYERSTACK:
+        elif index == PropertyIndex.LAYERSTACK:
             self._updateLayerStackView(obj)
-        elif index == INDEX_COMPOSITION:
+        elif index == PropertyIndex.COMPOSITION:
             self._updateCompositionView(obj)
 
     def _refreshAttributeValue(self):
@@ -2817,7 +2809,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _tallyPrimStats(self, prim):
         def _GetType(prim):
             typeString = prim.GetTypeName()
-            return NOTYPE if not typeString else typeString
+            return HUDEntries.NOTYPE if not typeString else typeString
 
         childTypeDict = {}
         primCount = 0
@@ -2825,7 +2817,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for child in Usd.PrimRange(prim):
             typeString = _GetType(child)
             # skip pseudoroot
-            if typeString is NOTYPE and not prim.GetParent():
+            if typeString is HUDEntries.NOTYPE and not prim.GetParent():
                 continue
             primCount += 1
             childTypeDict[typeString] = 1 + childTypeDict.get(typeString, 0)
@@ -2988,14 +2980,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # If model picking on, find model and select instead, IFF we are
         # requested to apply picking modes
-        if applyPickMode and self._pickMode == PICK_MODE_MODELS:
+        if applyPickMode and self._pickMode == PickModes.MODELS:
             prim = self._stage.GetPrimAtPath(str(path))
             model = prim if prim.IsModel() else GetEnclosingModelPrim(prim)
             if model:
                 path = model.GetPath()
 
         # If not in instances picking mode, select all instances.
-        if not (applyPickMode and self._pickMode == PICK_MODE_INSTANCES):
+        if not (applyPickMode and self._pickMode == PickModes.INSTANCES):
             if self._stageView:
                 self._stageView.clearInstanceSelection()
             instanceIndex = UsdImagingGL.GL.ALL_INSTANCES
@@ -3146,15 +3138,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self._updateAttributeInspector(obj=self._getSelectedPrim())
 
     def _propertyViewItemClicked(self, item, col):
-        role = item.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
-        if role == CONN_TYPE_ROLE or role == TARGET_TYPE_ROLE:
+        role = item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+        if role == PropertyViewDataRoles.CONNECTION or role == PropertyViewDataRoles.TARGET:
             self._ui.propertyView.setCurrentItem(item.parent())
             item.setSelected(True)
 
         currIndex = self._ui.attributeInspector.currentIndex()
 
-        # The INDEX_VALUE tab is updated through a separate callback.
-        if currIndex != INDEX_VALUE:
+        # The PropertyIndex.VALUE tab is updated through a separate callback.
+        if currIndex != PropertyIndex.VALUE:
             self._updateAttributeInspector(index=currIndex,
                                            obj=self._getSelectedObject())
 
@@ -3242,7 +3234,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # this is the part that renders
             if self._playing:
                 self._stageView.updateForPlayback(self._currentFrame,
-                                 self._selHighlightMode == SEL_HIGHLIGHT_ALWAYS)
+                                 self._selHighlightMode == SelectionHighlightModes.ALWAYS)
             else:
                 self._stageView.setSelectedPrims(self._currentPrims, self._currentFrame)
 
@@ -3290,7 +3282,7 @@ class MainWindow(QtWidgets.QMainWindow):
         previousSelection = treeWidget.selectedItems()
         prevSelectedAttributeNames = set()
         for i in previousSelection:
-            prevSelectedAttributeNames.add(str(i.text(INDEX_PROPNAME)))
+            prevSelectedAttributeNames.add(str(i.text(PropertyViewIndex.NAME)))
 
         # get a dictionary of prim attribs/members and store it in self._attributeDict
         self._attributeDict = self._getAttributeDict()
@@ -3303,32 +3295,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if (isinstance(attribute, BoundingBoxAttribute) or
                 isinstance(attribute, LocalToWorldXformAttribute)):
-                typeContent = CMP_TYPE_ICON()
-                typeRole = CMP_TYPE_ROLE
+                typeContent = PropertyViewIcons.COMPOSED()
+                typeRole = PropertyViewDataRoles.COMPOSED
             elif type(attribute) == Usd.Attribute:
                 if attribute.HasAuthoredConnections():
-                    typeContent = ATTR_WITH_CONN_TYPE_ICON()
-                    typeRole = ATTR_WITH_CONN_TYPE_ROLE
+                    typeContent = PropertyViewIcons.ATTRIBUTE_WITH_CONNECTIONS()
+                    typeRole = PropertyViewDataRoles.ATTRIBUTE_WITH_CONNNECTIONS
                     targets = attribute.GetConnections()
                 else:
-                    typeContent = ATTR_PLAIN_TYPE_ICON()
-                    typeRole = ATTR_PLAIN_TYPE_ROLE
+                    typeContent = PropertyViewIcons.ATTRIBUTE()
+                    typeRole = PropertyViewDataRoles.ATTRIBUTE
             else:
                 # Otherwise we have a RelationshipAttribute
                 targets = attribute._relationship.GetTargets()
 
                 if targets:
-                    typeContent = REL_WITH_TARGET_TYPE_ICON()
-                    typeRole = REL_WITH_TARGET_TYPE_ROLE
+                    typeContent = PropertyViewIcons.RELATIONSHIP_WITH_TARGETS()
+                    typeRole = PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
                 else:
-                    typeContent = REL_PLAIN_TYPE_ICON()
-                    typeRole = REL_PLAIN_TYPE_ROLE
+                    typeContent = PropertyViewIcons.RELATIONSHIP()
+                    typeRole = PropertyViewDataRoles.RELATIONSHIP
 
             attrText = GetShortString(attribute, frame) or ""
             treeWidget.addTopLevelItem(
                 QtWidgets.QTreeWidgetItem(["", str(key), attrText]))
-            treeWidget.topLevelItem(currRow).setIcon(INDEX_PROPTYPE, typeContent)
-            treeWidget.topLevelItem(currRow).setData(INDEX_PROPTYPE,
+            treeWidget.topLevelItem(currRow).setIcon(PropertyViewIndex.TYPE, typeContent)
+            treeWidget.topLevelItem(currRow).setData(PropertyViewIndex.TYPE,
                                                      QtCore.Qt.ItemDataRole.WhatsThisRole,
                                                      typeRole)
 
@@ -3341,35 +3333,35 @@ class MainWindow(QtWidgets.QMainWindow):
 
             valTextFont = GetAttributeTextFont(attribute, frame)
             if valTextFont:
-                currItem.setFont(INDEX_PROPVAL, valTextFont)
-                currItem.setFont(INDEX_PROPNAME, valTextFont)
+                currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
+                currItem.setFont(PropertyViewIndex.NAME, valTextFont)
             else:
-                currItem.setFont(INDEX_PROPNAME, BoldFont)
+                currItem.setFont(PropertyViewIndex.NAME, UIFonts.BOLD)
 
             fgColor = GetAttributeColor(attribute, frame)
-            currItem.setForeground(INDEX_PROPNAME, fgColor)
-            currItem.setForeground(INDEX_PROPVAL, fgColor)
+            currItem.setForeground(PropertyViewIndex.NAME, fgColor)
+            currItem.setForeground(PropertyViewIndex.VALUE, fgColor)
 
             if targets:
                 childRow = 0
                 for t in targets:
-                    valTextFont = GetAttributeTextFont(attribute, frame) or BoldFont
+                    valTextFont = GetAttributeTextFont(attribute, frame) or UIFonts.BOLD
                     # USD does not provide or infer values for relationship or
                     # connection targets, so we don't display them here.
                     currItem.addChild(QtWidgets.QTreeWidgetItem(["", str(t), ""]))
-                    currItem.setFont(INDEX_PROPVAL, valTextFont)
+                    currItem.setFont(PropertyViewIndex.VALUE, valTextFont)
                     child = currItem.child(childRow)
 
-                    if typeRole == REL_WITH_TARGET_TYPE_ROLE:
-                        child.setIcon(INDEX_PROPTYPE, TARGET_TYPE_ICON())
-                        child.setData(INDEX_PROPTYPE,
+                    if typeRole == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
+                        child.setIcon(PropertyViewIndex.TYPE, PropertyViewIcons.TARGET())
+                        child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
-                                      TARGET_TYPE_ROLE)
+                                      PropertyViewDataRoles.TARGET)
                     else:
-                        child.setIcon(INDEX_PROPTYPE, CONN_TYPE_ICON())
-                        child.setData(INDEX_PROPTYPE,
+                        child.setIcon(PropertyViewIndex.TYPE, PropertyViewIcons.CONNECTION())
+                        child.setData(PropertyViewIndex.TYPE,
                                       QtCore.Qt.ItemDataRole.WhatsThisRole,
-                                      CONN_TYPE_ROLE)
+                                      PropertyViewDataRoles.CONNECTION)
 
                     childRow += 1
 
@@ -3395,7 +3387,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 selectedAttribute = attrs[0]
 
         if selectedAttribute:
-            attrName = str(selectedAttribute.text(INDEX_PROPNAME))
+            attrName = str(selectedAttribute.text(PropertyViewIndex.NAME))
 
             if PropTreeWidgetTypeIsRel(selectedAttribute):
                 obj = self._currentPrims[0].GetRelationship(attrName)
@@ -3671,7 +3663,7 @@ class MainWindow(QtWidgets.QMainWindow):
             item.setToolTip(0, layer.identifier)
             if not spec:
                 for i in range(item.columnCount()):
-                    item.setForeground(i, NoValueTextColor)
+                    item.setForeground(i, UIPropertyValueSourceColors.NONE)
             for subtree in layerTree.childTrees:
                 WalkSublayers(item, node, subtree, True)
             return item
@@ -3777,8 +3769,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     valueItem = QtWidgets.QTableWidgetItem(valStr)
                     sampleBased = (spec.HasInfo('timeSamples') and
                         spec.layer.GetNumTimeSamplesForPath(path) != -1)
-                    valueItemColor = (TimeSampleTextColor if
-                        sampleBased else DefaultTextColor)
+                    valueItemColor = (UIPropertyValueSourceColors.TIME_SAMPLE if
+                        sampleBased else UIPropertyValueSourceColors.DEFAULT)
                     valueItem.setForeground(valueItemColor)
                     valueItem.setToolTip(ttStr)
 
@@ -3903,8 +3895,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def _getHUDStatKeys(self):
         ''' returns the keys of the HUD with PRIM and NOTYPE and the top and
          CV, VERT, and FACE at the bottom.'''
-        keys = [k for k in self._upperHUDInfo.keys() if k not in (CV,VERT,FACE,PRIM,NOTYPE)]
-        keys = [PRIM,NOTYPE] + keys + [CV,VERT,FACE]
+        keys = [k for k in self._upperHUDInfo.keys() if k not in (
+            HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE, HUDEntries.PRIM, HUDEntries.NOTYPE)]
+        keys = [HUDEntries.PRIM, HUDEntries.NOTYPE] + keys + [HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE]
         return keys
 
     def _updateHUDPrimStats(self):
@@ -3917,9 +3910,9 @@ class MainWindow(QtWidgets.QMainWindow):
             for pth in currentPaths:
                 count,types = self._tallyPrimStats(self._stage.GetPrimAtPath(pth))
                 # no entry for Prim counts? initilize it
-                if not self._upperHUDInfo.has_key(PRIM):
-                    self._upperHUDInfo[PRIM] = 0
-                self._upperHUDInfo[PRIM] += count
+                if not self._upperHUDInfo.has_key(HUDEntries.PRIM):
+                    self._upperHUDInfo[HUDEntries.PRIM] = 0
+                self._upperHUDInfo[HUDEntries.PRIM] += count
 
                 for type in types.iterkeys():
                     # no entry for this prim type? initilize it
@@ -3941,7 +3934,7 @@ class MainWindow(QtWidgets.QMainWindow):
         geomDicts = [self._getGeomCounts(n, self._currentFrame)
                      for n in self._prunedCurrentPrims]
 
-        for key in (CV, VERT, FACE):
+        for key in (HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE):
             self._upperHUDInfo[key] = 0
             for gDict in geomDicts:
                 self._upperHUDInfo[key] += gDict[key]
@@ -3982,14 +3975,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # that something is happening...
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
         try:
-            thisDict = {CV: 0, VERT: 0, FACE: 0}
+            thisDict = {HUDEntries.CV: 0, HUDEntries.VERT: 0, HUDEntries.FACE: 0}
 
             if prim.IsA(UsdGeom.Curves):
                 curves = UsdGeom.Curves(prim)
                 vertexCounts = curves.GetCurveVertexCountsAttr().Get(frame)
                 if vertexCounts is not None:
                     for count in vertexCounts:
-                        thisDict[CV] += count
+                        thisDict[HUDEntries.CV] += count
 
             elif prim.IsA(UsdGeom.Mesh):
                 mesh = UsdGeom.Mesh(prim)
@@ -3998,15 +3991,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 if faceVertexCount is not None and faceVertexIndices is not None:
                     uniqueVerts = set(faceVertexIndices)
 
-                    thisDict[VERT] += len(uniqueVerts)
-                    thisDict[FACE] += len(faceVertexCount)
+                    thisDict[HUDEntries.VERT] += len(uniqueVerts)
+                    thisDict[HUDEntries.FACE] += len(faceVertexCount)
 
             self._geomCounts[(prim,frame)] = thisDict
 
             for child in prim.GetChildren():
                 childResult = self._getGeomCounts(child, frame)
 
-                for key in (CV, VERT, FACE):
+                for key in (HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE):
                     self._geomCounts[(prim,frame)][key] += childResult[key]
         except Exception as err:
             print "Error encountered while computing prim subtree HUD info: %s" % err
@@ -4018,7 +4011,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def __helper(debugType, menu):
             return lambda: self._createTfDebugMenu(menu, '{0}_'.format(debugType))
 
-        for debugType in TF_DEBUG_MENU_ENTRIES:
+        for debugType in DebugTypes:
             menu = self._ui.menuDebug.addMenu('{0} Flags'.format(debugType))
             menu.aboutToShow.connect(__helper(debugType, menu))
 
@@ -4107,7 +4100,7 @@ class MainWindow(QtWidgets.QMainWindow):
             lookup = self._ui.propertyView.findItems(
                 propName,
                 QtCore.Qt.MatchRegExp | QtCore.Qt.MatchRecursive,
-                INDEX_PROPNAME)
+                PropertyViewIndex.NAME)
 
             if not lookup:
                 return

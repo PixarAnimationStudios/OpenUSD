@@ -25,7 +25,7 @@ from qt import QtWidgets
 
 from primLegendUI import Ui_PrimLegend
 
-from common import (HasArcsColor, NormalColor, MasterColor, InstanceColor,
+from common import (UIPrimTypeColors,
                     ColorizeLabelText, BoldenLabelText, ItalicizeLabelText)
 
 class PrimLegend(QtWidgets.QWidget):
@@ -44,25 +44,25 @@ class PrimLegend(QtWidgets.QWidget):
         self._ui.primLegendColorInstance.setScene(graphicsScene)
         self._ui.primLegendColorMaster.setScene(graphicsScene)
 
-        self._ui.primLegendColorHasArcs.setForegroundBrush(HasArcsColor)
-        self._ui.primLegendColorNormal.setForegroundBrush(NormalColor)
-        self._ui.primLegendColorInstance.setForegroundBrush(InstanceColor)
-        self._ui.primLegendColorMaster.setForegroundBrush(MasterColor)
+        self._ui.primLegendColorHasArcs.setForegroundBrush(UIPrimTypeColors.HAS_ARCS)
+        self._ui.primLegendColorNormal.setForegroundBrush(UIPrimTypeColors.NORMAL)
+        self._ui.primLegendColorInstance.setForegroundBrush(UIPrimTypeColors.INSTANCE)
+        self._ui.primLegendColorMaster.setForegroundBrush(UIPrimTypeColors.MASTER)
 
         legendTextUpdate = lambda t, c: (('<font color=\"%s\">' % c.color().name())
                                              + t.text() + '</font>')
 
         normalLegend = self._ui.primLegendLabelNormal
-        normalLegend.setText(legendTextUpdate(normalLegend, NormalColor))
+        normalLegend.setText(legendTextUpdate(normalLegend, UIPrimTypeColors.NORMAL))
 
         masterLegend = self._ui.primLegendLabelMaster
-        masterLegend.setText(legendTextUpdate(masterLegend, MasterColor))
+        masterLegend.setText(legendTextUpdate(masterLegend, UIPrimTypeColors.MASTER))
 
         instanceLegend = self._ui.primLegendLabelInstance
-        instanceLegend.setText(legendTextUpdate(instanceLegend, InstanceColor))
+        instanceLegend.setText(legendTextUpdate(instanceLegend, UIPrimTypeColors.INSTANCE))
 
         hasArcsLegend = self._ui.primLegendLabelHasArcs
-        hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, HasArcsColor))
+        hasArcsLegend.setText(legendTextUpdate(hasArcsLegend, UIPrimTypeColors.HAS_ARCS))
 
         undefinedFontLegend = self._ui.primLegendLabelFontsUndefined
         undefinedFontLegend.setText(ItalicizeLabelText(undefinedFontLegend.text(),

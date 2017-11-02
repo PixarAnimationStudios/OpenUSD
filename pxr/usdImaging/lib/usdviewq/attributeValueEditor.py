@@ -24,7 +24,7 @@
 from qt import QtCore, QtWidgets
 from attributeValueEditorUI import Ui_AttributeValueEditor
 from pythonExpressionPrompt import PythonExpressionPrompt
-from common import GetAttributeColor, TimeSampleTextColor
+from common import GetAttributeColor, UIPropertyValueSourceColors
 
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
@@ -178,7 +178,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         reply = QtWidgets.QMessageBox.question(self, "Confirm Revert",
                     "Are you sure you want to revert the %s "
                     "<font color='%s'><b>%s</b></font> at %s?"
-                        %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
+                        %(type, UIPropertyValueSourceColors.TIME_SAMPLE.color().name(), self._name, frameStr),
                     QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes,
                     QtWidgets.QMessageBox.Cancel)
 

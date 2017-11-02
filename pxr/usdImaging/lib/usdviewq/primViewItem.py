@@ -25,8 +25,7 @@ from qt import QtCore, QtWidgets
 from pxr import Usd, UsdGeom
 from ._usdviewq import Utils
 
-from common import (HasArcsColor, NormalColor, InstanceColor, MasterColor,
-                    AbstractPrimFont, DefinedPrimFont, OverPrimFont, BoldFont)
+from common import UIPrimTypeColors, UIFonts
 
 HALF_DARKER = 150
 # Pulled out as a wrapper to facilitate cprofile tracking
@@ -143,20 +142,20 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             # to distinguish abstract defined prims from non-abstract
             # defined prims, we check for abstract first.
             if self.abstract:
-                return AbstractPrimFont
+                return UIFonts.ABSRACT_PRIM
             elif not self.defined:
-                return OverPrimFont
+                return UIFonts.OVER_PRIM
             else:
-                return DefinedPrimFont
+                return UIFonts.DEFINED_PRIM
         elif role == QtCore.Qt.ForegroundRole:
             if self.isInstance:
-                color = InstanceColor
+                color = UIPrimTypeColors.INSTANCE
             elif self.hasArcs:
-                color = HasArcsColor
+                color = UIPrimTypeColors.HAS_ARCS
             elif self.isInMaster:
-                color = MasterColor
+                color = UIPrimTypeColors.MASTER
             else:
-                color = NormalColor
+                color = UIPrimTypeColors.NORMAL
 
             return color if self.active else color.color().darker(HALF_DARKER)
         elif role == QtCore.Qt.ToolTipRole:
@@ -196,7 +195,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignCenter
         elif role == QtCore.Qt.FontRole:
-            return BoldFont
+            return UIFonts.BOLD
         elif role == QtCore.Qt.ForegroundRole:
             fgColor = self._nameData(role)
             if (self.imageable and self.active and

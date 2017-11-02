@@ -38,11 +38,7 @@ from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
-from common import (RENDER_MODE_WIREFRAME, RENDER_MODE_WIREFRAME_ON_SURFACE,
-                    RENDER_MODE_SMOOTH_SHADED, RENDER_MODE_FLAT_SHADED,
-                    RENDER_MODE_POINTS, RENDER_MODE_GEOM_ONLY,
-                    RENDER_MODE_GEOM_FLAT, RENDER_MODE_GEOM_SMOOTH,
-                    RENDER_MODE_HIDDEN_SURFACE_WIREFRAME)
+from common import RenderModes, ShadedRenderModes
 
 DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
 
@@ -1103,7 +1099,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._defaultComplexity = 1.0
             self._defaultDrawSelHighlights = True
             self._defaultShowBBoxes = True
-            self._defaultRenderMode = RENDER_MODE_SMOOTH_SHADED
+            self._defaultRenderMode = RenderModes.SMOOTH_SHADED
             self._defaultShowHUD = True
 
         @property
@@ -1457,15 +1453,15 @@ class StageView(QtOpenGL.QGLWidget):
         self._lastY = 0
 
         self._renderer = None
-        self._renderModeDict={RENDER_MODE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME,
-                              RENDER_MODE_WIREFRAME_ON_SURFACE:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
-                              RENDER_MODE_SMOOTH_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_SMOOTH,
-                              RENDER_MODE_POINTS:UsdImagingGL.GL.DrawMode.DRAW_POINTS,
-                              RENDER_MODE_FLAT_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_FLAT,
-                              RENDER_MODE_GEOM_ONLY:UsdImagingGL.GL.DrawMode.DRAW_GEOM_ONLY,
-                              RENDER_MODE_GEOM_SMOOTH:UsdImagingGL.GL.DrawMode.DRAW_GEOM_SMOOTH,
-                              RENDER_MODE_GEOM_FLAT:UsdImagingGL.GL.DrawMode.DRAW_GEOM_FLAT,
-                              RENDER_MODE_HIDDEN_SURFACE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
+        self._renderModeDict={RenderModes.WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME,
+                              RenderModes.WIREFRAME_ON_SURFACE:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
+                              RenderModes.SMOOTH_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_SMOOTH,
+                              RenderModes.POINTS:UsdImagingGL.GL.DrawMode.DRAW_POINTS,
+                              RenderModes.FLAT_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_FLAT,
+                              RenderModes.GEOM_ONLY:UsdImagingGL.GL.DrawMode.DRAW_GEOM_ONLY,
+                              RenderModes.GEOM_SMOOTH:UsdImagingGL.GL.DrawMode.DRAW_GEOM_SMOOTH,
+                              RenderModes.GEOM_FLAT:UsdImagingGL.GL.DrawMode.DRAW_GEOM_FLAT,
+                              RenderModes.HIDDEN_SURFACE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
 
         self._renderParams = UsdImagingGL.GL.RenderParams()
         self._defaultFov = 60
@@ -2111,11 +2107,7 @@ class StageView(QtOpenGL.QGLWidget):
             material = Glf.SimpleMaterial()
             lights = []
             # for renderModes that need lights
-            if self._dataModel.renderMode in (RENDER_MODE_FLAT_SHADED,
-                                              RENDER_MODE_SMOOTH_SHADED,
-                                              RENDER_MODE_WIREFRAME_ON_SURFACE,
-                                              RENDER_MODE_GEOM_SMOOTH,
-                                              RENDER_MODE_GEOM_FLAT):
+            if self._dataModel.renderMode in ShadedRenderModes:
 
                 stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
                                     self._bbcenter[2])
@@ -2182,7 +2174,7 @@ class StageView(QtOpenGL.QGLWidget):
             # modes that want no lighting simply leave lights as an empty list
             self._renderer.SetLightingState(lights, material, sceneAmbient)
 
-            if self._dataModel.renderMode == RENDER_MODE_HIDDEN_SURFACE_WIREFRAME:
+            if self._dataModel.renderMode == RenderModes.HIDDEN_SURFACE_WIREFRAME:
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
                 GL.glPolygonOffset( 1.0, 1.0 )
                 GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )

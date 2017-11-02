@@ -26,6 +26,8 @@
 module, but enum is not available in Python 2's standard library.
 """
 
+import types
+
 class _MetaConstantGroup(type):
     """A meta-class which handles the creation and behavior of ConstantGroups.
     """
@@ -48,6 +50,11 @@ class _MetaConstantGroup(type):
             else:
                 # Found a new constant.
                 allConstants.append(value)
+
+                # If the constant is a function/lambda, ensure that it is not
+                # converted into a method.
+                if isinstance(value, types.FunctionType):
+                    classdict[key] = staticmethod(value)
 
         # All constants discovered, now create the `_all` property.
         classdict["_all"] = tuple(allConstants)

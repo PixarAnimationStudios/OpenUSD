@@ -25,10 +25,7 @@ import sys
 from qt import QtGui, QtWidgets, QtCore
 from pxr import Sdf
 from usdviewContextMenuItem import UsdviewContextMenuItem
-from common import (INDEX_PROPNAME, INDEX_PROPTYPE, INDEX_PROPVAL,
-                    ATTR_PLAIN_TYPE_ROLE, REL_PLAIN_TYPE_ROLE, ATTR_WITH_CONN_TYPE_ROLE,
-                    REL_WITH_TARGET_TYPE_ROLE, CMP_TYPE_ROLE, CONN_TYPE_ROLE, TARGET_TYPE_ROLE,
-                    PrimNotFoundException)
+from common import PropertyViewIndex, PropertyViewDataRoles, PrimNotFoundException
 
 #
 # Specialized context menu for running commands in the attribute viewer.
@@ -67,9 +64,9 @@ class AttributeViewContextMenuItem(UsdviewContextMenuItem):
     def __init__(self, mainWindow, item):
         self._mainWindow = mainWindow
         self._item = item
-        self._role = self._item.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
-        self._name = self._item.text(INDEX_PROPNAME) if self._item else ""
-        self._value = self._item.text(INDEX_PROPVAL) if self._item else ""
+        self._role = self._item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+        self._name = self._item.text(PropertyViewIndex.NAME) if self._item else ""
+        self._value = self._item.text(PropertyViewIndex.VALUE) if self._item else ""
 
     def IsEnabled(self):
         return True
@@ -88,7 +85,7 @@ class AttributeViewContextMenuItem(UsdviewContextMenuItem):
 #
 class CopyAttributeNameMenuItem(AttributeViewContextMenuItem):
     def ShouldDisplay(self):
-        return self._role != TARGET_TYPE_ROLE and self._role != CONN_TYPE_ROLE
+        return self._role not in (PropertyViewDataRoles.TARGET, PropertyViewDataRoles.CONNECTION)
 
     def GetText(self):
         return "Copy Property Name"
@@ -106,7 +103,7 @@ class CopyAttributeNameMenuItem(AttributeViewContextMenuItem):
 #
 class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
     def ShouldDisplay(self):
-        return self._role != TARGET_TYPE_ROLE and self._role != CONN_TYPE_ROLE
+        return self._role not in (PropertyViewDataRoles.TARGET, PropertyViewDataRoles.CONNECTION)
 
     def GetText(self):
         return "Copy Property Value"
@@ -120,7 +117,7 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
         # But when we ask to copy the value, we'd like to get back:
         #    [Sdf.Path('/f'), Sdf.Path('/g/a')]
         # Which is useful for pasting into a python interpreter.
-        if self._role == REL_WITH_TARGET_TYPE_ROLE:
+        if self._role == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS:
             value = str([Sdf.Path("".join(p.split())) \
                           for p in self._value.split(",")])
         else:
@@ -139,21 +136,21 @@ class CopyAttributeValueMenuItem(AttributeViewContextMenuItem):
 #
 class CopyTargetPathMenuItem(AttributeViewContextMenuItem):
     def ShouldDisplay(self):
-        return self._role == TARGET_TYPE_ROLE or self._role == CONN_TYPE_ROLE
+        return self._role in (PropertyViewDataRoles.TARGET, PropertyViewDataRoles.CONNECTION)
 
     def GetText(self):
         return "Copy Target Path As Text"
 
     def GetSelectedOfType(self):
-        getRole = lambda s: s.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+        getRole = lambda s: s.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
         return [s for s in self._item.treeWidget().selectedItems() \
-                    if getRole(s) == TARGET_TYPE_ROLE or getRole(s) == CONN_TYPE_ROLE]
+                    if getRole(s) in (PropertyViewDataRoles.TARGET, PropertyViewDataRoles.CONNECTION)]
 
     def RunCommand(self):
         if not self._item:
             return
 
-        value = ", ".join([s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()])
+        value = ", ".join([s.text(PropertyViewIndex.NAME) for s in self.GetSelectedOfType()])
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)
@@ -167,7 +164,7 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
         return "Select Target Path"
 
     def RunCommand(self):
-        paths = [s.text(INDEX_PROPNAME) for s in self.GetSelectedOfType()]
+        paths = [s.text(PropertyViewIndex.NAME) for s in self.GetSelectedOfType()]
         try:
             self._mainWindow.jumpToTargetPaths(paths)
         except PrimNotFoundException as ex:
@@ -184,7 +181,8 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
 #
 class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
     def ShouldDisplay(self):
-        return self._role == REL_WITH_TARGET_TYPE_ROLE or self._role == ATTR_WITH_CONN_TYPE_ROLE
+        return (self._role == PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS
+                or self._role == PropertyViewDataRoles.ATTRIBUTE_WITH_CONNNECTIONS)
 
     def IsEnabled(self):
         if not self._item:
@@ -203,7 +201,7 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
 
         # Deselect the parent and jump to all of its children
         self._item.setSelected(False)
-        paths = [self._item.child(i).text(INDEX_PROPNAME) for i in range(0, self._item.childCount())]
+        paths = [self._item.child(i).text(PropertyViewIndex.NAME) for i in range(0, self._item.childCount())]
         try:
             self._mainWindow.jumpToTargetPaths(paths)
         except PrimNotFoundException as ex:
@@ -222,7 +220,7 @@ class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
         if not self._item:
             return
 
-        value = ", ".join([self._item.child(i).text(INDEX_PROPNAME) \
+        value = ", ".join([self._item.child(i).text(PropertyViewIndex.NAME) \
                             for i in range(0, self._item.childCount())])
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)

@@ -30,12 +30,7 @@ from qt import QtWidgets
 
 from propertyLegendUI import Ui_PropertyLegend
 
-from common import (DefaultTextColor, TimeSampleTextColor,
-                    NoValueTextColor, ValueClipsTextColor,
-                    RedColor, FallbackTextColor, ItalicizeLabelText,
-                    ATTR_PLAIN_TYPE_ICON, ATTR_WITH_CONN_TYPE_ICON,
-                    REL_PLAIN_TYPE_ICON, REL_WITH_TARGET_TYPE_ICON,
-                    TARGET_TYPE_ICON, CONN_TYPE_ICON, CMP_TYPE_ICON)
+from common import UIBaseColors, UIPropertyValueSourceColors, ItalicizeLabelText, PropertyViewIcons
 
 class PropertyLegend(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -57,44 +52,44 @@ class PropertyLegend(QtWidgets.QWidget):
 
         # set color of attribute viewer legend boxes
         self._ui.propertyLegendColorFallback.setForegroundBrush(
-            FallbackTextColor)
+            UIPropertyValueSourceColors.FALLBACK)
         self._ui.propertyLegendColorDefault.setForegroundBrush(
-            DefaultTextColor)
+            UIPropertyValueSourceColors.DEFAULT)
         self._ui.propertyLegendColorTimeSample.setForegroundBrush(
-            TimeSampleTextColor)
+            UIPropertyValueSourceColors.TIME_SAMPLE)
         self._ui.propertyLegendColorNoValue.setForegroundBrush(
-            NoValueTextColor)
+            UIPropertyValueSourceColors.NONE)
         self._ui.propertyLegendColorValueClips.setForegroundBrush(
-            ValueClipsTextColor)
+            UIPropertyValueSourceColors.VALUE_CLIPS)
         self._ui.propertyLegendColorCustom.setForegroundBrush(
-            RedColor)
+            UIBaseColors.RED)
 
         # set color of attribute viewer text items
         legendTextUpdate = lambda t, c: (
             ('<font color=\"%s\">' % c.color().name()) + t.text() + '</font>')
         timeSampleLegend = self._ui.propertyLegendLabelTimeSample
         timeSampleLegend.setText(
-            legendTextUpdate(timeSampleLegend, TimeSampleTextColor))
+            legendTextUpdate(timeSampleLegend, UIPropertyValueSourceColors.TIME_SAMPLE))
 
         fallbackLegend = self._ui.propertyLegendLabelFallback
         fallbackLegend.setText(
-            legendTextUpdate(fallbackLegend, FallbackTextColor))
+            legendTextUpdate(fallbackLegend, UIPropertyValueSourceColors.FALLBACK))
 
         valueClipLegend = self._ui.propertyLegendLabelValueClips
         valueClipLegend.setText(
-            legendTextUpdate(valueClipLegend, ValueClipsTextColor))
+            legendTextUpdate(valueClipLegend, UIPropertyValueSourceColors.VALUE_CLIPS))
 
         noValueLegend = self._ui.propertyLegendLabelNoValue
         noValueLegend.setText(
-            legendTextUpdate(noValueLegend, NoValueTextColor))
+            legendTextUpdate(noValueLegend, UIPropertyValueSourceColors.NONE))
 
         defaultLegend = self._ui.propertyLegendLabelDefault
         defaultLegend.setText(
-            legendTextUpdate(defaultLegend, DefaultTextColor))
+            legendTextUpdate(defaultLegend, UIPropertyValueSourceColors.DEFAULT))
 
         customLegend = self._ui.propertyLegendLabelCustom
         customLegend.setText(
-            legendTextUpdate(customLegend, RedColor))
+            legendTextUpdate(customLegend, UIBaseColors.RED))
 
         interpolatedStr = 'Interpolated'
         tsLabel = self._ui.propertyLegendLabelTimeSample
@@ -105,19 +100,19 @@ class PropertyLegend(QtWidgets.QWidget):
 
         # Load up and set the icons for the property legend
         self._ui.propertyLegendTargetIcon.setPixmap(
-            TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.TARGET().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendConnIcon.setPixmap(
-            CONN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.CONNECTION().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendAttrPlainIcon.setPixmap(
-            ATTR_PLAIN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.ATTRIBUTE().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendRelPlainIcon.setPixmap(
-            REL_PLAIN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.RELATIONSHIP().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendAttrWithConnIcon.setPixmap(
-            ATTR_WITH_CONN_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.ATTRIBUTE_WITH_CONNECTIONS().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendRelWithTargetIcon.setPixmap(
-            REL_WITH_TARGET_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.RELATIONSHIP_WITH_TARGETS().pixmap(*self._iconDisplaySize))
         self._ui.propertyLegendCompIcon.setPixmap(
-            CMP_TYPE_ICON().pixmap(*self._iconDisplaySize))
+            PropertyViewIcons.COMPOSED().pixmap(*self._iconDisplaySize))
 
     def IsMinimized(self):
         return self._isMinimized

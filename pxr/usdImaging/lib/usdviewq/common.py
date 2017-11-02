@@ -25,44 +25,46 @@ from qt import QtCore, QtGui, QtWidgets
 import os, time, sys, platform
 from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute, RelationshipAttribute
+from constantGroup import ConstantGroup
 
-# Color constants.
+class UIBaseColors(ConstantGroup):
+    RED = QtGui.QBrush(QtGui.QColor(230, 132, 131))
+    LIGHT_SKY_BLUE = QtGui.QBrush(QtGui.QColor(135, 206, 250))
+    DARK_YELLOW = QtGui.QBrush(QtGui.QColor(222, 158, 46))
 
-# We use color in the prim browser to discriminate important scenegraph-state
-# (active, isInstance, isInMaster, has arcs)
-HasArcsColor = QtGui.QBrush(QtGui.QColor(222, 158, 46))
-NormalColor = QtGui.QBrush(QtGui.QColor(227, 227, 227))
-InstanceColor = QtGui.QBrush(QtGui.QColor(135, 206, 250)) # lightskyblue
-MasterColor = QtGui.QBrush(QtGui.QColor(118, 136, 217))
-HeaderColor = QtGui.QBrush(QtGui.QColor(201, 199, 195))
+class UIPrimTypeColors(ConstantGroup):
+    HAS_ARCS = UIBaseColors.DARK_YELLOW
+    NORMAL = QtGui.QBrush(QtGui.QColor(227, 227, 227))
+    INSTANCE = UIBaseColors.LIGHT_SKY_BLUE
+    MASTER = QtGui.QBrush(QtGui.QColor(118, 136, 217))
 
-# We use color in the attribute browser to specify value source
-RedColor = QtGui.QBrush(QtGui.QColor(230, 132, 131))
-FallbackTextColor = HasArcsColor
-TimeSampleTextColor = QtGui.QBrush(QtGui.QColor(177, 207, 153))
-DefaultTextColor = InstanceColor
-NoValueTextColor = QtGui.QBrush(QtGui.QColor(140, 140, 140))
-ValueClipsTextColor = QtGui.QBrush(QtGui.QColor(230, 150, 230))
+class UIPropertyValueSourceColors(ConstantGroup):
+    FALLBACK = UIBaseColors.DARK_YELLOW
+    TIME_SAMPLE = QtGui.QBrush(QtGui.QColor(177, 207, 153))
+    DEFAULT = UIBaseColors.LIGHT_SKY_BLUE
+    NONE = QtGui.QBrush(QtGui.QColor(140, 140, 140))
+    VALUE_CLIPS = QtGui.QBrush(QtGui.QColor(230, 150, 230))
 
-# Font constants.  We use font in the prim browser to distinguish
-# "resolved" prim specifier
-# XXX - the use of weight here may need to be revised depending on font family
-ItalicFont = QtGui.QFont()
-ItalicFont.setWeight(35)
-ItalicFont.setItalic(True)
-OverPrimFont = ItalicFont
+class UIFonts(ConstantGroup):
+    # Font constants.  We use font in the prim browser to distinguish
+    # "resolved" prim specifier
+    # XXX - the use of weight here may need to be revised depending on font family
+    ITALIC = QtGui.QFont()
+    ITALIC.setWeight(35)
+    ITALIC.setItalic(True)
+    OVER_PRIM = ITALIC
 
-BoldFont = QtGui.QFont()
-BoldFont.setWeight(90)
-DefinedPrimFont = BoldFont
-DefinedPrimFont.setWeight(75)
+    BOLD = QtGui.QFont()
+    BOLD.setWeight(90)
+    DEFINED_PRIM = BOLD
+    DEFINED_PRIM.setWeight(75)
 
-NormalFont = QtGui.QFont()
-NormalFont.setWeight(35)
-AbstractPrimFont = NormalFont
+    NORMAL = QtGui.QFont()
+    NORMAL.setWeight(35)
+    ABSTRACT_PRIM = NORMAL
 
-# Property viewer constants
-INDEX_PROPTYPE, INDEX_PROPNAME, INDEX_PROPVAL = range(3)
+class PropertyViewIndex(ConstantGroup):
+    TYPE, NAME, VALUE = range(3)
 
 ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
 
@@ -78,81 +80,62 @@ def _DeferredIconLoad(path):
         _icons[fullPath] = icon
     return icon
 
-ATTR_PLAIN_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-attr-plain-icon.png')
-ATTR_WITH_CONN_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-attr-with-conn-icon.png')
-REL_PLAIN_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-rel-plain-icon.png')
-REL_WITH_TARGET_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-rel-with-target-icon.png')
-TARGET_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-target-icon.png')
-CONN_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-conn-icon.png')
-CMP_TYPE_ICON = lambda: _DeferredIconLoad(
-    'usd-cmp-icon.png')
+class PropertyViewIcons(ConstantGroup):
+    ATTRIBUTE                  = lambda: _DeferredIconLoad('usd-attr-plain-icon.png')
+    ATTRIBUTE_WITH_CONNECTIONS = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.png')
+    RELATIONSHIP               = lambda: _DeferredIconLoad('usd-rel-plain-icon.png')
+    RELATIONSHIP_WITH_TARGETS  = lambda: _DeferredIconLoad('usd-rel-with-target-icon.png')
+    TARGET                     = lambda: _DeferredIconLoad('usd-target-icon.png')
+    CONNECTION                 = lambda: _DeferredIconLoad('usd-conn-icon.png')
+    COMPOSED                   = lambda: _DeferredIconLoad('usd-cmp-icon.png')
 
-ATTR_PLAIN_TYPE_ROLE = "Attr"
-REL_PLAIN_TYPE_ROLE = "Rel"
-ATTR_WITH_CONN_TYPE_ROLE = "Attr_"
-REL_WITH_TARGET_TYPE_ROLE = "Rel_"
-TARGET_TYPE_ROLE = "Tgt"
-CONN_TYPE_ROLE = "Conn"
-CMP_TYPE_ROLE = "Cmp"
+class PropertyViewDataRoles(ConstantGroup):
+    ATTRIBUTE = "Attr"
+    RELATIONSHIP = "Rel"
+    ATTRIBUTE_WITH_CONNNECTIONS = "Attr_"
+    RELATIONSHIP_WITH_TARGETS = "Rel_"
+    TARGET = "Tgt"
+    CONNECTION = "Conn"
+    COMPOSED = "Cmp"
 
-# Render modes
-RENDER_MODE_WIREFRAME = "Wireframe"
-RENDER_MODE_WIREFRAME_ON_SURFACE = "WireframeOnSurface"
-RENDER_MODE_SMOOTH_SHADED = "Smooth Shaded"
-RENDER_MODE_FLAT_SHADED = "Flat Shaded"
-RENDER_MODE_POINTS = "Points"
-RENDER_MODE_GEOM_ONLY = "Geom Only"
-RENDER_MODE_GEOM_FLAT = "Geom Flat"
-RENDER_MODE_GEOM_SMOOTH = "Geom Smooth"
-RENDER_MODE_HIDDEN_SURFACE_WIREFRAME = "Hidden Surface Wireframe"
+class RenderModes(ConstantGroup):
+    # Render modes
+    WIREFRAME = "Wireframe"
+    WIREFRAME_ON_SURFACE = "WireframeOnSurface"
+    SMOOTH_SHADED = "Smooth Shaded"
+    FLAT_SHADED = "Flat Shaded"
+    POINTS = "Points"
+    GEOM_ONLY = "Geom Only"
+    GEOM_FLAT = "Geom Flat"
+    GEOM_SMOOTH = "Geom Smooth"
+    HIDDEN_SURFACE_WIREFRAME = "Hidden Surface Wireframe"
 
-ALL_RENDER_MODES = [RENDER_MODE_WIREFRAME,
-                    RENDER_MODE_WIREFRAME_ON_SURFACE,
-                    RENDER_MODE_SMOOTH_SHADED,
-                    RENDER_MODE_FLAT_SHADED,
-                    RENDER_MODE_POINTS,
-                    RENDER_MODE_GEOM_ONLY,
-                    RENDER_MODE_GEOM_FLAT,
-                    RENDER_MODE_GEOM_SMOOTH,
-                    RENDER_MODE_HIDDEN_SURFACE_WIREFRAME]
+class ShadedRenderModes(ConstantGroup):
+    # Render modes which use shading
+    SMOOTH_SHADED = RenderModes.SMOOTH_SHADED
+    FLAT_SHADED = RenderModes.FLAT_SHADED
+    WIREFRAME_ON_SURFACE = RenderModes.WIREFRAME_ON_SURFACE
+    GEOM_FLAT = RenderModes.GEOM_FLAT
+    GEOM_SMOOTH = RenderModes.GEOM_SMOOTH
 
-# Render modes which use shading
-SHADED_RENDER_MODES = [RENDER_MODE_SMOOTH_SHADED,
-                       RENDER_MODE_FLAT_SHADED,
-                       RENDER_MODE_WIREFRAME_ON_SURFACE,
-                       RENDER_MODE_GEOM_FLAT,
-                       RENDER_MODE_GEOM_SMOOTH]
+class PickModes(ConstantGroup):
+    # Pick modes
+    PRIMS = "Prims"
+    MODELS = "Models"
+    INSTANCES = "Instances"
 
-# Pick modes
-PICK_MODE_PRIMS = "Prims"
-PICK_MODE_MODELS = "Models"
-PICK_MODE_INSTANCES = "Instances"
-
-ALL_PICK_MODES = [PICK_MODE_PRIMS,
-                  PICK_MODE_MODELS,
-                  PICK_MODE_INSTANCES]
-
-# Selection highlight modes
-SEL_HIGHLIGHT_NEVER = "Never"
-SEL_HIGHLIGHT_ONLY_WHEN_PAUSED = "Only when paused"
-SEL_HIGHLIGHT_ALWAYS = "Always"
-
-ALL_SEL_HIGHLIGHTS = [SEL_HIGHLIGHT_NEVER,
-                      SEL_HIGHLIGHT_ONLY_WHEN_PAUSED,
-                      SEL_HIGHLIGHT_ALWAYS]
+class SelectionHighlightModes(ConstantGroup):
+    # Selection highlight modes
+    NEVER = "Never"
+    ONLY_WHEN_PAUSED = "Only when paused"
+    ALWAYS = "Always"
 
 def _PropTreeWidgetGetRole(tw):
-    return tw.data(INDEX_PROPTYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+    return tw.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
 
 def PropTreeWidgetTypeIsRel(tw):
     role = _PropTreeWidgetGetRole(tw)
-    return (role == REL_PLAIN_TYPE_ROLE or role == REL_WITH_TARGET_TYPE_ROLE)
+    return role in (PropertyViewDataRoles.RELATIONSHIP, PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
 
 def _UpdateLabelText(text, substring, mode):
     return text.replace(substring, '<'+mode+'>'+substring+'</'+mode+'>')
@@ -247,7 +230,7 @@ def GetAttributeTextFont(attribute, frame):
     # Note that some attributes return an empty tuple, some None, from
     # GetBracketingTimeSamples(), but all will be fed into this function.
     if bracketing and (len(bracketing) == 2) and (bracketing[0] != frameVal):
-        return ItalicFont
+        return UIFonts.ITALIC
 
     return None
 
@@ -256,13 +239,13 @@ def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
                       valueIsDefault=None):
 
     if isinstance(attribute, CustomAttribute):
-        return RedColor.color()
+        return UIBaseColors.RED.color()
 
-    statusToColor = {Usd.ResolveInfoSourceFallback   : FallbackTextColor,
-                     Usd.ResolveInfoSourceDefault    : DefaultTextColor,
-                     Usd.ResolveInfoSourceValueClips : ValueClipsTextColor,
-                     Usd.ResolveInfoSourceTimeSamples: TimeSampleTextColor,
-                     Usd.ResolveInfoSourceNone       : NoValueTextColor}
+    statusToColor = {Usd.ResolveInfoSourceFallback   : UIPropertyValueSourceColors.FALLBACK,
+                     Usd.ResolveInfoSourceDefault    : UIPropertyValueSourceColors.DEFAULT,
+                     Usd.ResolveInfoSourceValueClips : UIPropertyValueSourceColors.VALUE_CLIPS,
+                     Usd.ResolveInfoSourceTimeSamples: UIPropertyValueSourceColors.TIME_SAMPLE,
+                     Usd.ResolveInfoSourceNone       : UIPropertyValueSourceColors.NONE}
 
     valueSource = GetAttributeStatus(attribute, frame)
 
