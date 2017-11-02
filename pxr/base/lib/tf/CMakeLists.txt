@@ -64,6 +64,7 @@ pxr_library(tf
         refPtrTracker
         regTest
         registryManager
+        safeOutputFile
         scoped
         scopeDescription
         setenv
@@ -142,6 +143,7 @@ pxr_library(tf
         pyStaticTokens.h
 
     PRIVATE_CLASSES
+        atomicRenameUtil
         debugCodes
         noticeRegistry
 
@@ -317,6 +319,7 @@ pxr_build_test(testTf
         testenv/refPtr.cpp
         testenv/registryManager.cpp
         testenv/registryManagerUnload.cpp
+        testenv/safeOutputFile.cpp
         testenv/scoped.cpp
         testenv/scopeDescription.cpp
         testenv/setenv.cpp
@@ -550,6 +553,9 @@ pxr_register_test(TfRegTest_TfScoped
 pxr_register_test(TfRegTest_TfUndefinedTest
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfUndefinedTest"
     EXPECTED_RETURN_CODE 3
+)
+pxr_register_test(TfSafeOutputFile
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSafeOutputFile"
 )
 pxr_register_test(TfScopeDescription
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfScopeDescription"
