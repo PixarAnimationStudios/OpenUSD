@@ -49,6 +49,12 @@ class TestUsdView(Usdviewq.Launcher):
         self.RegisterOptions(parser)
         super(TestUsdView, self).RegisterPositionals(parser)
         arg_parse_result = super(TestUsdView, self).ParseOptions(parser)
+
+        # We always set --defaultsettings to ensure a consistent test 
+        # environment for our test scripts.
+        arg_parse_result.defaultSettings = True
+        super(TestUsdView, self).ValidateOptions(arg_parse_result)
+
         self.__LaunchProcess(arg_parse_result)
 
     def __LaunchProcess(self, arg_parse_result):
