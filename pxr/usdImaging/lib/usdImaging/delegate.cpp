@@ -2809,13 +2809,13 @@ UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
     
     if (!TfPathExists(filePath)) {
         if (isPtex) {
-            TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback" 
+            TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback " 
                     "textures are not supported for ptex", 
                     filePath.GetText(), usdPath.GetText());
 
             return HdTextureResource::ComputeFallbackPtexHash(); 
         } else {
-            TF_WARN("Unable to find Texture '%s' with path '%s'. A black" 
+            TF_WARN("Unable to find Texture '%s' with path '%s'. A black " 
                     "texture will be substituted in its place.", 
                     filePath.GetText(), usdPath.GetText());
 
