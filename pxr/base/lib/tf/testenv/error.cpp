@@ -27,6 +27,8 @@
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
 
+#include "pxr/base/arch/functionLite.h"
+
 #include <tbb/tbb_thread.h>
 
 #define FILENAME   "error.cpp"
@@ -63,7 +65,7 @@ Test_TfError()
     TfErrorMark::Iterator i = m.GetBegin();
     TF_AXIOM(i == TfDiagnosticMgr::GetInstance().GetErrorBegin());
     TfError e = *i;
-    TF_AXIOM(e.GetSourceFileName() == BUILD_COMPONENT_SRC_PREFIX __FILE__);
+    TF_AXIOM(e.GetSourceFileName() == __ARCH_FILE__);
     TF_AXIOM(e.GetSourceLineNumber() == lineNum);
     TF_AXIOM(e.GetCommentary() == "small error");
     TF_AXIOM(e.GetErrorCode() == SMALL);

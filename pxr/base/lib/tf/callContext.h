@@ -41,15 +41,11 @@
 
 #include <stddef.h>
 
-#if !defined(BUILD_COMPONENT_SRC_PREFIX)
-#error -DBUILD_COMPONENT_SRC_PREFIX was not specified.
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define TF_CALL_CONTEXT \
-TfCallContext(BUILD_COMPONENT_SRC_PREFIX __FILE__, __ARCH_FUNCTION__, __LINE__, __ARCH_PRETTY_FUNCTION__)
+TfCallContext(__ARCH_FILE__, __ARCH_FUNCTION__, __LINE__, __ARCH_PRETTY_FUNCTION__)
 
 class TfCallContext
 {
