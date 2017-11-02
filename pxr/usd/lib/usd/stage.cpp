@@ -28,6 +28,7 @@
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/clipCache.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/interpolators.h"
@@ -238,8 +239,8 @@ UsdStage::SetGlobalVariantFallbacks(const PcpVariantFallbackMap &fallbacks)
 // stack of \a node up to the root of the pcp node tree.  Use
 // SdfLayerOffset::GetInverse() to go the other direction.
 static SdfLayerOffset
-_GetLayerOffsetToRoot(const PcpNodeRef& pcpNode,
-                      const SdfLayerHandle& layer)
+_GetLayerToStageOffset(const PcpNodeRef& pcpNode,
+                       const SdfLayerHandle& layer)
 {
     // PERFORMANCE: This is cached in the PcpNode and should be cheap.
     // Get the node-local path and layer offset.
@@ -266,7 +267,7 @@ _GetLayerOffsetToRoot(const PcpNodeRef& pcpNode,
     // it is a validation error to compose mixed frame rates. This was done as a
     // performance optimization.
 
-    return localOffset;
+    return UsdPrepLayerOffset(localOffset);
 }
 
 // Make a copy of paths, but uniqued with a prefix-check, which
@@ -1505,13 +1506,11 @@ UsdStage::_SetValueImpl(
         // across two different reference arcs -- which may have
         // different time offsets.  perhaps we need the map function
         // to track a time offset for each path?
-        const SdfLayerOffset layerOffset = 
-            GetEditTarget().GetMapFunction().GetTimeOffset();
+        const SdfLayerOffset stageToLayerOffset = 
+            UsdPrepLayerOffset(GetEditTarget().GetMapFunction().GetTimeOffset())
+            .GetInverse();
 
-        // XXX Currently USD uses the inverse semantics of Pcp
-        // for applying layer offsets.  So to map a value from
-        // stage back to a layer, we apply the offset (not its inverse).
-        double localTime = layerOffset * time.GetValue();
+        double localTime = stageToLayerOffset * time.GetValue();
 
         attrSpec->GetLayer()->SetTimeSample(
             attrSpec->GetPath(),
@@ -1554,11 +1553,13 @@ UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
         return false;
     }
 
-    const SdfLayerOffset layerOffset = 
-        editTarget.GetMapFunction().GetTimeOffset();
+    const SdfLayerOffset stageToLayerOffset = 
+        UsdPrepLayerOffset(editTarget.GetMapFunction().GetTimeOffset())
+        .GetInverse();
 
-    attrSpec->GetLayer()->EraseTimeSample(
-        attrSpec->GetPath(), layerOffset.GetInverse() * time.GetValue());
+    const double layerTime = stageToLayerOffset * time.GetValue();
+
+    attrSpec->GetLayer()->EraseTimeSample(attrSpec->GetPath(), layerTime);
 
     return true;
 }
@@ -4488,7 +4489,7 @@ static void _ApplyLayerOffset(Storage storage,
                               const PcpNodeRef &node,
                               const SdfLayerRefPtr &layer)
 {
-    SdfLayerOffset offset = _GetLayerOffsetToRoot(node, layer).GetInverse();
+    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
     if (!offset.IsIdentity()) {
         const SdfTimeSampleMap &samples =
             _UncheckedGet<SdfTimeSampleMap>(storage);
@@ -5472,7 +5473,8 @@ public:
             &info._primPathInLayerStack, &attr.GetName());
         const SdfLayerRefPtr& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
-        const double localTime = info._offset * time.GetValue();
+        const double localTime =
+            info._layerToStageOffset.GetInverse() * time.GetValue();
 
         double upper = 0.0;
         double lower = 0.0;
@@ -5773,12 +5775,12 @@ struct UsdStage::_ResolveInfoResolver
     {
         const PcpLayerStackPtr& nodeLayers = node.GetLayerStack();
         const SdfLayerRefPtrVector& layerStack = nodeLayers->GetLayers();
-        const SdfLayerOffset layerOffset = _GetLayerOffsetToRoot(node, 
-            layerStack[layerStackPosition]);
+        const SdfLayerOffset layerToStageOffset =
+            _GetLayerToStageOffset(node, layerStack[layerStackPosition]);
         const SdfLayerRefPtr& layer = layerStack[layerStackPosition];
         boost::optional<double> localTime;
         if (time) {
-            localTime = layerOffset * (*time);
+            localTime = layerToStageOffset.GetInverse() * (*time);
         }
 
         if (_HasTimeSamples(layer, specId, localTime.get_ptr(), 
@@ -5802,7 +5804,7 @@ struct UsdStage::_ResolveInfoResolver
             _resolveInfo->_layerStack = nodeLayers;
             _resolveInfo->_layerIndex = layerStackPosition;
             _resolveInfo->_primPathInLayerStack = node.GetPath();
-            _resolveInfo->_offset = layerOffset;
+            _resolveInfo->_layerToStageOffset = layerToStageOffset;
             _resolveInfo->_node = node;
             return true;
         }
@@ -6170,10 +6172,9 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
         const std::set<double> samples = layer->ListTimeSamplesForPath(specId);
         if (!samples.empty()) {
             copySamplesInInterval(samples, times, interval);
-            const SdfLayerOffset offset = info._offset.GetInverse();
-            if (!offset.IsIdentity()) {
+            if (!info._layerToStageOffset.IsIdentity()) {
                 for (auto &time : *times) {
-                    time = offset * time;
+                    time = info._layerToStageOffset * time;
                 }
             }
         }
@@ -6335,8 +6336,8 @@ UsdStage::_GetBracketingTimeSamples(const UsdAttribute &attr,
         *lower = extraInfo.lowerSample;
         *upper = extraInfo.upperSample;
 
-        if (!resolveInfo._offset.IsIdentity()) {
-            const SdfLayerOffset offset = resolveInfo._offset.GetInverse();
+        const SdfLayerOffset offset = resolveInfo._layerToStageOffset;
+        if (!offset.IsIdentity()) {
             *lower = offset * (*lower);
             *upper = offset * (*upper);
         }
@@ -6364,15 +6365,15 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
             &info._primPathInLayerStack, &attr.GetName());
         const SdfLayerRefPtr& layer = 
             info._layerStack->GetLayers()[info._layerIndex];
-        const double layerTime = info._offset * desiredTime;
+        const double layerTime =
+            info._layerToStageOffset.GetInverse() * desiredTime;
         
         if (layer->GetBracketingTimeSamplesForPath(
                 specId, layerTime, lower, upper)) {
 
-            if (!info._offset.IsIdentity()) {
-                const SdfLayerOffset offset = info._offset.GetInverse();
-                *lower = offset * (*lower);
-                *upper = offset * (*upper);
+            if (!info._layerToStageOffset.IsIdentity()) {
+                *lower = info._layerToStageOffset * (*lower);
+                *upper = info._layerToStageOffset * (*upper);
             }
 
             *hasSamples = true;

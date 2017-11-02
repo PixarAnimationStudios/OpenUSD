@@ -37,6 +37,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clipsAPI.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/tokens.h"
@@ -218,12 +219,13 @@ static VtValue
 _ApplyLayerOffset(const SdfLayerOffset &offset,
                   const TfToken &field, VtValue val)
 {
+    SdfLayerOffset offsetToApply = UsdPrepLayerOffset(offset);
     if (field == SdfFieldKeys->TimeSamples) {
         if (val.IsHolding<SdfTimeSampleMap>()) {
             SdfTimeSampleMap entries = val.UncheckedGet<SdfTimeSampleMap>();
             SdfTimeSampleMap mappedEntries;
             for (const auto &entry: entries) {
-                mappedEntries[offset * entry.first] = entry.second;
+                mappedEntries[offsetToApply * entry.first] = entry.second;
             }
             return VtValue(mappedEntries);
         }
@@ -233,7 +235,7 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
         if (val.IsHolding<VtVec2dArray>()) {
             VtVec2dArray entries = val.UncheckedGet<VtVec2dArray>();
             for (auto &entry: entries) {
-                entry[0] = offset * entry[0];
+                entry[0] = offsetToApply * entry[0];
             }
             return VtValue(entries);
         }
@@ -241,7 +243,7 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     else if (field == UsdTokens->clipTemplateStartTime ||
              field == UsdTokens->clipTemplateEndTime) {
         if (val.IsHolding<double>()) {
-            return VtValue(offset * val.UncheckedGet<double>());
+            return VtValue(offsetToApply * val.UncheckedGet<double>());
         }
     }
     else if (field == UsdTokens->clips) {
@@ -258,9 +260,9 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
                 VtDictionary clipInfo =
                     clipInfoVal.UncheckedGet<VtDictionary>();
                 _ApplyLayerOffsetToClipInfo(
-                    offset, UsdClipsAPIInfoKeys->active, &clipInfo);
+                    offsetToApply, UsdClipsAPIInfoKeys->active, &clipInfo);
                 _ApplyLayerOffsetToClipInfo(
-                    offset, UsdClipsAPIInfoKeys->times, &clipInfo);
+                    offsetToApply, UsdClipsAPIInfoKeys->times, &clipInfo);
                 clipInfoVal = VtValue(clipInfo);
             }
             return VtValue(clips);
@@ -269,13 +271,10 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     else if (field == SdfFieldKeys->References) {
         if (val.IsHolding<SdfReferenceListOp>()) {
             SdfReferenceListOp refs = val.UncheckedGet<SdfReferenceListOp>();
+            // We do not need to call UsdPrepLayerOffset() here since
+            // we want to author a new offset, not apply one.
             refs.ModifyOperations(boost::bind(
-                _ApplyLayerOffsetToReference,
-                // Although the caller already took the inverse of the
-                // SdfLayerOffset (to match USD value resolution), in this
-                // case we want the original offset since we'll be writing 
-                // back to a new layer offset on the reference arc.
-                offset.GetInverse(), _1));
+                _ApplyLayerOffsetToReference, offset, _1));
             return VtValue(refs);
         }
     }
@@ -392,8 +391,7 @@ _ReduceField(const PcpLayerStackRefPtr &layerStack,
         // Apply layer offsets.
         if (const SdfLayerOffset *offset =
             layerStack->GetLayerOffsetForLayer(i)) {
-            // Note: USD applies the *inverse* offset to sublayer data.
-            layerVal = _ApplyLayerOffset(offset->GetInverse(), field, layerVal);
+            layerVal = _ApplyLayerOffset(*offset, field, layerVal);
         }
         // Fix asset paths.
         _FixAssetPaths(layers[i], field, &layerVal);

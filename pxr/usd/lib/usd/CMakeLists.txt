@@ -334,6 +334,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdMetadata
+    DEST testUsdMetadata_OldOffsets
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdNotices.testenv
     DEST testUsdNotices
 )
@@ -394,6 +399,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValueClips
+    DEST testUsdValueClips_OldOffsets
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdValueClips_Legacy
     DEST testUsdValueClips_Legacy
 )
@@ -423,6 +433,16 @@ pxr_register_test(testUsdAttributeConnections
 pxr_register_test(testUsdValueClips
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValueClips_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -457,6 +477,15 @@ pxr_register_test(testUsdVariants
 
 pxr_register_test(testUsdAttributeInterpolationCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeInterpolationCpp"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeInterpolationCpp_OldOffsets
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeInterpolationCpp"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -579,6 +608,16 @@ pxr_register_test(testUsdStage
 pxr_register_test(testUsdTimeOffsets
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeOffsets_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -621,6 +660,16 @@ pxr_register_test(testUsdSpecializes
 pxr_register_test(testUsdMetadata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadata"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdMetadata_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadata"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 

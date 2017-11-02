@@ -44,6 +44,12 @@ TF_DEFINE_ENV_SETTING(
     "Set true if USD Append() API's should author Add operations instead of "
     "Append, to mimic their historical behavior.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_USE_INVERSE_LAYER_OFFSET, true,
+    "Set true if USD should take the inverse of SdfLayerOffset values when "
+    "applying them.  True matches historical behavior; false is the "
+    "intended future setting.");
+
 bool UsdIsRetireLumosEnabled()
 {
     return TfGetEnvSetting(USD_RETIRE_LUMOS);
@@ -52,6 +58,21 @@ bool UsdIsRetireLumosEnabled()
 bool UsdAuthorOldStyleAdd()
 {
     return TfGetEnvSetting(USD_AUTHOR_OLD_STYLE_ADD);
+}
+
+bool UsdUsesInverseLayerOffset()
+{
+    return TfGetEnvSetting(USD_USE_INVERSE_LAYER_OFFSET);
+}
+
+SdfLayerOffset
+UsdPrepLayerOffset(SdfLayerOffset offset)
+{
+    if (UsdUsesInverseLayerOffset()) {
+        return offset.GetInverse();
+    } else {
+        return offset;
+    }
 }
 
 TF_REGISTRY_FUNCTION(TfEnum)

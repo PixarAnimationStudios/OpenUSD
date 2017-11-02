@@ -37,6 +37,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapUsdCommon()
 {
     def("IsRetireLumosEnabled", UsdIsRetireLumosEnabled);
+    def("UsesInverseLayerOffset", UsdUsesInverseLayerOffset);
+    def("PrepLayerOffset", UsdPrepLayerOffset);
 
     def("Describe", (std::string (*)(const UsdObject &)) UsdDescribe);
     def("Describe", (std::string (*)(const UsdStageWeakPtr &)) UsdDescribe);
