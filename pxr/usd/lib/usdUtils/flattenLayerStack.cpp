@@ -44,9 +44,9 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <boost/bind.hpp>
-#include <vector>
 #include <algorithm>
+#include <functional>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -273,8 +273,8 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
             SdfReferenceListOp refs = val.UncheckedGet<SdfReferenceListOp>();
             // We do not need to call UsdPrepLayerOffset() here since
             // we want to author a new offset, not apply one.
-            refs.ModifyOperations(boost::bind(
-                _ApplyLayerOffsetToReference, offset, _1));
+            refs.ModifyOperations(std::bind(
+                _ApplyLayerOffsetToReference, offset, std::placeholders::_1));
             return VtValue(refs);
         }
     }
@@ -326,7 +326,8 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     else if (val->IsHolding<SdfReferenceListOp>()) {
         SdfReferenceListOp refs;
         val->Swap(refs);
-        refs.ModifyOperations(boost::bind(_FixReference, sourceLayer, _1));
+        refs.ModifyOperations(std::bind(_FixReference, sourceLayer,
+                                        std::placeholders::_1));
         val->Swap(refs);
         return;
     }
