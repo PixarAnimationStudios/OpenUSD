@@ -34,18 +34,17 @@
 
 #include <boost/functional/hash.hpp>
 
-// Hash specialization which allows us to coalesce warnings
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// Hash implementation which allows us to coalesce warnings
 // and statuses based on their file name, line number and 
 // function name.
-namespace std {
-    using CoalescedItem = PXR_NS::UsdUtilsCoalescingDiagnosticDelegateSharedItem;
-    using result_type = size_t;
-    using argument_type = CoalescedItem; 
-    using value_type = CoalescedItem;
+namespace {
+    using _CoalescedItem = UsdUtilsCoalescingDiagnosticDelegateSharedItem;
 
-    template <>
-    struct hash<CoalescedItem> {
-        result_type operator()(const CoalescedItem& i) const {
+    struct _CoalescedItemHash {
+        std::size_t operator()(const _CoalescedItem& i) const {
             std::size_t hashVal = 0;
             boost::hash_combine(hashVal, i.sourceLineNumber);
             boost::hash_combine(hashVal, i.sourceFunction);
@@ -54,18 +53,15 @@ namespace std {
         }
     };
 
-    template <>
-    struct equal_to<CoalescedItem> {
-        bool operator()(const CoalescedItem& i1, 
-                        const CoalescedItem& i2) const {
+    struct _CoalescedItemEqualTo {
+        bool operator()(const _CoalescedItem& i1, 
+                        const _CoalescedItem& i2) const {
             return i1.sourceLineNumber == i2.sourceLineNumber
                    && i1.sourceFunction == i2.sourceFunction
                    && i1.sourceFileName == i2.sourceFileName;    
         }
     };
 }
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 UsdUtilsCoalescingDiagnosticDelegate::UsdUtilsCoalescingDiagnosticDelegate() 
 {
@@ -109,8 +105,7 @@ UsdUtilsCoalescingDiagnosticDelegateVector
 UsdUtilsCoalescingDiagnosticDelegate::TakeCoalescedDiagnostics()
 {
     std::unordered_map<UsdUtilsCoalescingDiagnosticDelegateSharedItem, size_t,
-         std::hash<UsdUtilsCoalescingDiagnosticDelegateSharedItem>,
-         std::equal_to<UsdUtilsCoalescingDiagnosticDelegateSharedItem>> existence;
+         _CoalescedItemHash, _CoalescedItemEqualTo> existence;
 
     UsdUtilsCoalescingDiagnosticDelegateVector result;
 
