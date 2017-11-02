@@ -66,7 +66,8 @@ _CopySpec(const T &srcSpec, const T &dstSpec,
 {
     for (const TfToken& key : srcSpec->ListInfoKeys()) {
         const bool isDisallowed = std::binary_search(
-            disallowedFields.begin(), disallowedFields.end(), key);
+            disallowedFields.begin(), disallowedFields.end(), key,
+            TfTokenFastArbitraryLessThan());
         if (!isDisallowed) {
             dstSpec->SetInfo(key, srcSpec->GetInfo(key));
         }
@@ -160,7 +161,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     // Get list of disallowed fields in schemas and sort them so that
     // helper functions in _AddSchema can binary search through them.
     std::vector<TfToken> disallowedFields = GetDisallowedFields();
-    std::sort(disallowedFields.begin(), disallowedFields.end());
+    std::sort(disallowedFields.begin(), disallowedFields.end(),
+              TfTokenFastArbitraryLessThan());
 
     // For each plugin, if it has generated schema, add it to the schematics.
     SdfChangeBlock block;
