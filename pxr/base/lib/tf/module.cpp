@@ -40,8 +40,6 @@ TF_WRAP_MODULE {
     TF_WRAP( Function );
     TF_WRAP( MallocTag );
     TF_WRAP( Notice );
-    // DiagnosticNotice depends on Notice so must come after it.
-    TF_WRAP( DiagnosticNotice );
     TF_WRAP( PathUtils );
     TF_WRAP( PyContainerConversions );
     TF_WRAP( PyDateTime );

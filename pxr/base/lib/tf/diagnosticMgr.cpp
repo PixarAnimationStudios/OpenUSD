@@ -26,7 +26,6 @@
 #include "pxr/base/tf/diagnosticMgr.h"
 
 #include "pxr/base/tf/debugCodes.h"
-#include "pxr/base/tf/diagnosticNotice.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/registryManager.h"
@@ -283,10 +282,6 @@ TfDiagnosticMgr::_ReportError(const TfError &err)
                          err.GetCommentary(),
                          err._data->_info);
     }
-
-    if (ArchIsMainThread()) {
-        TfDiagnosticNotice::IssuedError(err).Send(TfCreateWeakPtr(this));
-    }
 }
 
 void
@@ -322,8 +317,6 @@ TfDiagnosticMgr::PostWarning(
     if (!dispatchedToDelegate && !quiet) {
         _PrintDiagnostic(stderr, warningCode, context, commentary, info);
     }
-
-    TfDiagnosticNotice::IssuedWarning(warning).Send(TfCreateWeakPtr(this));
 }
 
 void
@@ -364,8 +357,6 @@ void TfDiagnosticMgr::PostStatus(
     if (!dispatchedToDelegate && !quiet) {
         _PrintDiagnostic(stderr, statusCode, context, commentary, info);
     }
-
-    TfDiagnosticNotice::IssuedStatus(status).Send(TfCreateWeakPtr(this));
 }
 
 void
@@ -389,17 +380,6 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR) ||
         TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_FATAL_ERROR))
         ArchDebuggerTrap();
-
-    bool isMainThread = ArchIsMainThread();
-
-    // Send out the IssuedFatalError notice if we're in the main thread.
-    if (isMainThread) {
-        TfDiagnosticBase data(statusCode, "", context, msg,
-                              TfDiagnosticInfo(), false /*quiet*/);
-        TfDiagnosticNotice::IssuedFatalError fe(msg, context);
-        fe.SetData(data);
-        fe.Send(TfCreateWeakPtr(this));
-    }
 
     bool dispatchedToDelegate = false;
     {
@@ -703,9 +683,6 @@ static void
 _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
     const std::string& msg, const TfDiagnosticInfo &info)
 {
-    if (!TfDiagnosticNotice::GetStderrOutputState())
-        return;
-
     fprintf(fout, "%s", _FormatDiagnostic(code, context, msg, info).c_str());
 }
 
