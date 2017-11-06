@@ -100,6 +100,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewMetadatatabSelect
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewTimeSamples
+        DEST testusdviewTimeSamples
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -209,6 +214,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewMetadatatabSelect
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewMetadatatabSelect.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewTimeSamples
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewTimeSamples.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 endif()

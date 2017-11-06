@@ -1763,16 +1763,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _rangeBeginChanged(self):
         self.realStartTimeCode = float(self._ui.rangeBegin.text())
-        self._UpdateTimeSamples(resetStageDataOnly=True)
+        self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _stepSizeChanged(self):
         stepStr = self._ui.stepSize.text()
         self.step = float(stepStr)
-        self._UpdateTimeSamples(resetStageDataOnly=True)
+        self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _rangeEndChanged(self):
         self.realEndTimeCode = float(self._ui.rangeEnd.text())
-        self._UpdateTimeSamples(resetStageDataOnly=True)
+        self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
         indexOfFrame = self._findIndexOfFieldContents(self._ui.frameField)
