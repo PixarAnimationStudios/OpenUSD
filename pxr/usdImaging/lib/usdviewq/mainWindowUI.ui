@@ -1572,9 +1572,6 @@
    <property name="text">
     <string>Key</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
   </action>
   <action name="actionFill">
    <property name="checkable">
@@ -1585,9 +1582,6 @@
    </property>
    <property name="text">
     <string>Fill</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
    </property>
   </action>
   <action name="actionBack">
@@ -1600,9 +1594,6 @@
    <property name="text">
     <string>Back</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+F</string>
-   </property>
   </action>
   <action name="actionAmbient_Only">
    <property name="checkable">
@@ -1613,9 +1604,6 @@
    </property>
    <property name="text">
     <string>Camera Light</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="actionLevel_6">
