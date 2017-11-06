@@ -439,18 +439,50 @@ GlfDrawTarget::Unbind()
 }
 
 void 
+GlfDrawTarget::_Resolve()
+{
+    // Resolve MSAA fbo to a regular fbo
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebufferMS);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _framebuffer);
+    glBlitFramebuffer(0, 0, _size[0], _size[1], 
+                      0, 0, _size[0], _size[1], 
+                      GL_COLOR_BUFFER_BIT | 
+                      GL_DEPTH_BUFFER_BIT | 
+                      GL_STENCIL_BUFFER_BIT , 
+                      GL_NEAREST);
+}
+
+void
 GlfDrawTarget::Resolve()
 {
     if (HasMSAA()) {
-        // Resolve MSAA fbo to a regular fbo
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebufferMS);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _framebuffer);
-        glBlitFramebuffer(0, 0, _size[0], _size[1], 
-                          0, 0, _size[0], _size[1], 
-                          GL_COLOR_BUFFER_BIT | 
-                          GL_DEPTH_BUFFER_BIT | 
-                          GL_STENCIL_BUFFER_BIT , 
-                          GL_NEAREST); 
+        _SaveBindingState();
+        _Resolve();
+        _RestoreBindingState();
+    }
+}
+
+/* static */
+void
+GlfDrawTarget::Resolve(const std::vector<GlfDrawTarget*>& drawTargets)
+{
+    bool anyResolved = false;
+
+    for(GlfDrawTarget* dt : drawTargets) {
+        if (dt->HasMSAA()) {
+            if (!anyResolved) {
+                // If this is the first draw target to be resolved,
+                // save the old binding state.
+                anyResolved = true;
+                drawTargets[0]->_SaveBindingState();
+            }
+            dt->_Resolve();
+        }
+    }
+
+    if (anyResolved) {
+        // If any draw targets were resolved, restore the old binding state.
+        drawTargets[0]->_RestoreBindingState();
     }
 }
 

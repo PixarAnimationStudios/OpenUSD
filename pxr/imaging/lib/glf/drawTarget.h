@@ -224,6 +224,11 @@ public:
     GLF_API
     void Resolve();
 
+    /// Resolve several MSAA framebuffers at once. If any framebuffers don't
+    /// have MSAA enabled, nothing happens to them.
+    GLF_API
+    static void Resolve(const std::vector<GlfDrawTarget*>& drawTargets);
+
     /// Updates the contents signature for attached textures
     /// to allow downstream consumers to know that the texture image
     /// data may have changed.
@@ -273,6 +278,8 @@ private:
     void _SaveBindingState();
 
     void _RestoreBindingState();
+
+    void _Resolve();
 
     GLuint _framebuffer;
     GLuint _framebufferMS;
