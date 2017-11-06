@@ -1905,7 +1905,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @classmethod
     def _outputBaseDirectory(cls):
-        baseDir = os.path.join(os.path.expanduser('~'), '.usdview')
+        homeDirRoot = os.getenv('HOME') or os.path.expanduser('~')
+        baseDir = os.path.join(homeDirRoot, '.usdview')
 
         try:
             if not os.path.exists(baseDir):
