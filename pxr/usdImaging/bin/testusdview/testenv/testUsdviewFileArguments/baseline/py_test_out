@@ -1,3 +1,2 @@
-Error: Unable to open layer 'test.py'.
-Reason: Cannot determine file format for @test.py@.
-Exiting.
+Error: Unable to open stage 'test.py'
+Cannot determine file format for @test.py@

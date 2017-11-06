@@ -52,7 +52,7 @@ from constantGroup import ConstantGroup
 # Common Utilities
 from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttributeColor, GetAttributeTextFont,
                     Timer, Drange, BusyContext, DumpMallocTags, GetShortString,
-                    GetInstanceIdForIndex, GetTfErrorExceptionReason,
+                    GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, RenderModes, ShadedRenderModes,
                     PickModes, SelectionHighlightModes,
@@ -902,12 +902,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._pathResolverContext = \
                 Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath)
 
-        err = (lambda e, r: ("Error: %s '%s'.\nReason:%s.\nExiting.\n") %
-                (e, usdFilePath, r))
-        openErr = lambda r: err("Unable to open layer", r)
+        def _GetFormattedError(reasons=[]):
+            err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
+            if reasons:
+                err += "\n".join(reasons) + "\n"
+            return err
 
         if not os.path.isfile(usdFilePath):
-            sys.stderr.write(openErr(' File not found'))
+            sys.stderr.write(_GetFormattedError(["File not found"]))
             sys.exit(1)
 
         if self._mallocTags != 'none':
@@ -924,7 +926,8 @@ class MainWindow(QtWidgets.QMainWindow):
             try:
                 layer = Sdf.Layer.FindOrOpen(usdFilePath)
             except Tf.ErrorException as e:
-                sys.stderr.write(openErr(GetTfErrorExceptionReason(e)))
+                sys.stderr.write(_GetFormattedError(
+                    [err.commentary.strip() for err in e.args]))
                 sys.exit(1)
 
             if popMask:
@@ -987,7 +990,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 stage = stage2
 
         if not stage:
-            sys.stderr.write("Error: Unable to open stage '" + usdFilePath + "'.\n")
+            sys.stderr.write(_GetFormattedError())
         else:
             if self._printTiming:
                 t.PrintTime('open stage "%s"' % usdFilePath)

@@ -150,18 +150,6 @@ def ColorizeLabelText(text, substring, r, g, b):
     return _UpdateLabelText(text, substring,
                             "span style=\"color:rgb(%d, %d, %d);\"" % (r, g, b))
 
-def GetTfErrorExceptionReason(text):
-    # Grab the reason section of the tf error message
-    # which has a format of:
-    # Error in '<function-name>' at line <line-no> in file <file>: '<reason>'
-    reasonSection = str(text).strip().split(':')[-1]
-
-    # Remove any extra lines added in the exception output
-    reasonSection = reasonSection.split('\n')[0]
-
-    # Remove any \' formatting added by Tf
-    return reasonSection.replace("'", "")
-
 def PrintWarning(title, description):
     msg = sys.stderr
     print >> msg, "------------------------------------------------------------"
