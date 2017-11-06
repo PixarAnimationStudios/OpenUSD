@@ -167,13 +167,19 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     
     // For each plugin, if it has generated schema, add it to the schematics.
     std::vector<SdfLayerRefPtr> generatedSchemas(plugins.size());
-    WorkParallelForN(
-        plugins.size(),
-        [&plugins, &generatedSchemas](size_t begin, size_t end) {
-            for (; begin != end; ++begin) {
-                generatedSchemas[begin] = _GetGeneratedSchema(plugins[begin]);
-            }
-        });
+    {
+        WorkArenaDispatcher dispatcher;
+        dispatcher.Run([&plugins, &generatedSchemas]() {
+            WorkParallelForN(
+                plugins.size(), 
+                [&plugins, &generatedSchemas](size_t begin, size_t end) {
+                    for (; begin != end; ++begin) {
+                        generatedSchemas[begin] = 
+                            _GetGeneratedSchema(plugins[begin]);
+                    }
+                });
+            });
+    }
 
     // Get list of disallowed fields in schemas and sort them so that
     // helper functions in _AddSchema can binary search through them.
