@@ -36,7 +36,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapFlattenLayerStack()
 {
-    def("FlattenLayerStack", UsdUtilsFlattenLayerStack,
+    def("FlattenLayerStack",
+        UsdUtilsFlattenLayerStack,
+        (arg("stage"), arg("tag")=std::string()),
         boost::python::return_value_policy<
         TfPyRefPtrFactory<SdfLayerHandle> >());
 }

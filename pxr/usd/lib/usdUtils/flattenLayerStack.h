@@ -38,7 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
-/// Flatten the root layer stack of the given \p stage into a single layer.
+/// Flatten the root layer stack of the given \p stage into a single layer
+/// with the given optional \p tag.
+///
 /// The result layer can be substituted for the original layer stack
 /// while producing the same composed UsdStage.
 ///
@@ -61,7 +63,8 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 USDUTILS_API
 SdfLayerRefPtr
-UsdUtilsFlattenLayerStack(const UsdStagePtr &stage);
+UsdUtilsFlattenLayerStack(const UsdStagePtr &stage,
+                          const std::string& tag = std::string());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

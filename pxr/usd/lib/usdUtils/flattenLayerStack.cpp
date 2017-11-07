@@ -582,22 +582,29 @@ _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
 }
 
 SdfLayerRefPtr
-UsdUtils_FlattenLayerStack(const PcpLayerStackRefPtr &layerStack)
+UsdUtils_FlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
+                           std::string tag)
 {
+    // XXX Currently, SdfLayer::CreateAnonymous() examines the tag
+    // file extension to determine the file type.  Provide an
+    // extension here if needed to ensure that we get a usda file.
+    if (!TfStringEndsWith(tag, ".usda")) {
+        tag += ".usda";
+    }
     ArResolverContextBinder arBinder(
         layerStack->GetIdentifier().pathResolverContext);
     SdfChangeBlock changeBlock;
-    SdfLayerRefPtr outputLayer = SdfLayer::CreateAnonymous(".usda");
+    SdfLayerRefPtr outputLayer = SdfLayer::CreateAnonymous(tag);
     _FlattenFields(layerStack, outputLayer->GetPseudoRoot());
     _FlattenSpec(layerStack, outputLayer->GetPseudoRoot());
     return outputLayer;
 }
 
 SdfLayerRefPtr
-UsdUtilsFlattenLayerStack(const UsdStagePtr &stage)
+UsdUtilsFlattenLayerStack(const UsdStagePtr &stage, const std::string& tag)
 {
     PcpPrimIndex index = stage->GetPseudoRoot().GetPrimIndex();
-    return UsdUtils_FlattenLayerStack(index.GetRootNode().GetLayerStack());
+    return UsdUtils_FlattenLayerStack(index.GetRootNode().GetLayerStack(), tag);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

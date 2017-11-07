@@ -27,8 +27,11 @@ import unittest
 class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
     def test_Basic(self):
         src_stage = Usd.Stage.Open('root.usda')
-        layer = UsdUtils.FlattenLayerStack(src_stage)
+        layer = UsdUtils.FlattenLayerStack(src_stage, tag="test.usda")
         result_stage = Usd.Stage.Open(layer)
+
+        # Confirm that the tag makde it into the display name.
+        self.assertTrue('test.usda' in layer.GetDisplayName())
 
         print '#'*72
         print 'Flattened layer:'
