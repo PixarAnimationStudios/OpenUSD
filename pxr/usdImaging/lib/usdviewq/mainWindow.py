@@ -391,6 +391,7 @@ class MainWindow(QtWidgets.QMainWindow):
                            self._ui.actionBack):
                 self._ui.threePointLights.addAction(action)
             self._ui.threePointLights.setExclusive(False)
+            self._updateLights()
 
             self._ui.renderModeActionGroup = QtWidgets.QActionGroup(self)
             for action in (self._ui.actionWireframe,
@@ -2064,19 +2065,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Three point lights are disabled by default. They turn on when the
         #  "Ambient Only" mode is unchecked
         self._ambientLightOnly = self._settings.get("AmbientOnly", True)
-        self._ui.actionAmbient_Only.setChecked(self._ambientLightOnly)
-        self._ui.threePointLights.setEnabled(not self._ambientLightOnly)
-
         self._keyLightEnabled = self._settings.get("KeyLightEnabled", False)
         self._fillLightEnabled = self._settings.get("FillLightEnabled", False)
         self._backLightEnabled = self._settings.get("BackLightEnabled", False)
-        self._lightsChecked = [
-            self._keyLightEnabled,
-            self._fillLightEnabled,
-            self._backLightEnabled]
-        self._ui.actionKey.setChecked(self._keyLightEnabled)
-        self._ui.actionFill.setChecked(self._fillLightEnabled)
-        self._ui.actionBack.setChecked(self._backLightEnabled)
 
         if self._stageView:
             self._stageView.update()
@@ -2231,57 +2222,53 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._resetSettings()
                 break
 
-    def _ambientOnlyClicked(self, checked):
-        if checked:
-            self._lightsChecked = [self._ui.actionKey.isChecked(),
-                                   self._ui.actionFill.isChecked(),
-                                   self._ui.actionBack.isChecked()]
-            self._ui.actionKey.setChecked(False)
-            self._ui.actionFill.setChecked(False)
-            self._ui.actionBack.setChecked(False)
-            self._ui.threePointLights.setEnabled(False)
-            self._settings.setAndSave(AmbientOnly=True)
-            self._settings.setAndSave(KeyLightEnabled=False,
-                                      BackLightEnabled=False,
-                                      FillLightEnabled=False)
-        else:
-            self._settings.setAndSave(AmbientOnly=False)
-            self._ui.threePointLights.setEnabled(True)
-            if self._lightsChecked == [False, False, False]:
-                self._lightsChecked = [True, True, True]
-            self._ui.actionKey.setChecked(self._lightsChecked[0])
-            self._ui.actionFill.setChecked(self._lightsChecked[1])
-            self._ui.actionBack.setChecked(self._lightsChecked[2])
-            self._settings.setAndSave(KeyLightEnabled=self._lightsChecked[0],
-                                      FillLightEnabled=self._lightsChecked[1],
-                                      BackLightEnabled=self._lightsChecked[2])
-        if self._stageView:
+    def _ambientOnlyClicked(self, checked=None):
+        if self._stageView and checked is not None:
             self._ambientLightOnly = checked
-            self._keyLightEnabled = \
-                not checked or self._lightsChecked[0]
-            self._fillLightEnabled = \
-                not checked or self._lightsChecked[1]
-            self._backLightEnabled = \
-                not checked or self._lightsChecked[2]
+
+            # If all three lights are disabled, re-enable them all.
+            if (not self._keyLightEnabled and not self._fillLightEnabled and
+                    not self._backLightEnabled):
+                self._keyLightEnabled = True
+                self._fillLightEnabled = True
+                self._backLightEnabled = True
+
+            self._updateLights()
             self._stageView.update()
 
     def _onKeyLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._keyLightEnabled = checked
+            self._updateLights()
             self._stageView.update()
-            self._settings.setAndSave(KeyLightEnabled=checked)
 
     def _onFillLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._fillLightEnabled = checked
+            self._updateLights()
             self._stageView.update()
-            self._settings.setAndSave(FillLightEnabled=checked)
 
     def _onBackLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._backLightEnabled = checked
+            self._updateLights()
             self._stageView.update()
-            self._settings.setAndSave(BackLightEnabled=checked)
+
+    def _updateLights(self):
+        """Called whenever any lights settings are modified."""
+
+        # Update all settings.
+        self._settings.setAndSave(AmbientOnly=self._ambientLightOnly,
+                                  KeyLightEnabled=self._keyLightEnabled,
+                                  FillLightEnabled=self._fillLightEnabled,
+                                  BackLightEnabled=self._backLightEnabled)
+
+        # Update the UI and view.
+        self._ui.actionAmbient_Only.setChecked(self._ambientLightOnly)
+        self._ui.threePointLights.setEnabled(not self._ambientLightOnly)
+        self._ui.actionKey.setChecked(self._keyLightEnabled)
+        self._ui.actionFill.setChecked(self._fillLightEnabled)
+        self._ui.actionBack.setChecked(self._backLightEnabled)
 
     def _changeBgColor(self, mode):
         colorText = str(mode.text())
