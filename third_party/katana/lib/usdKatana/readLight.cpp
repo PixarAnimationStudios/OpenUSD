@@ -160,7 +160,7 @@ PxrUsdKatanaReadLight(
             }
             std::string kat_loc =
                 PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(geo[0], data);
-            attrs.set("geometry.areaLightGeometrySource",
+            geomBuilder.set("areaLightGeometrySource",
                       FnKat::StringAttribute(kat_loc));
         }
     }
