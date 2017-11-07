@@ -3781,8 +3781,7 @@ class "GeomModelAPI" (
     - origin - Draw the model-space basis vectors of the replaced prim.
     - bounds - Draw the model-space bounding box of the replaced prim.
     - cards - Draw textured quads as a placeholder for the replaced prim.
-    - default - Equivalent to model:drawMode not being specified: draw
-                     the USD subtree as normal.
+    - default - An explicit opinion to draw the USD subtree as normal.
 
     model:drawMode is inheritable so that a whole scene, a large group, or
     all prototypes of a model hierarchy PointInstancer can be assigned a draw
@@ -3793,6 +3792,9 @@ class "GeomModelAPI" (
     group can be drawn as a single card object. An effects subtree might have
     model:applyDrawMode set at the component level so each particle group
     draws individually in bounding box mode.
+
+    A value for model:drawMode on a child prim takes precedence over a
+    value on a parent prim.
 
     Cards Geometry
 

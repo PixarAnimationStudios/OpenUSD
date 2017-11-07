@@ -635,8 +635,7 @@ struct UsdImaging_DrawModeStrategy
         value_type v = UsdGeomTokens->default_;
         if (*query) {
             query->Get(&v);
-            if (v != UsdGeomTokens->default_)
-                return v;
+            return v;
         }
         return *owner->_GetValue(prim.GetParent());
     }

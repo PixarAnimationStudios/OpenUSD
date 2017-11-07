@@ -79,8 +79,7 @@ class SdfAssetPath;
 /// - \em origin - Draw the model-space basis vectors of the replaced prim.
 /// - \em bounds - Draw the model-space bounding box of the replaced prim.
 /// - \em cards - Draw textured quads as a placeholder for the replaced prim.
-/// - \em default - Equivalent to \em model:drawMode not being specified: draw
-/// the USD subtree as normal.
+/// - \em default - An explicit opinion to draw the USD subtree as normal.
 /// 
 /// \em model:drawMode is inheritable so that a whole scene, a large group, or
 /// all prototypes of a model hierarchy PointInstancer can be assigned a draw
@@ -91,6 +90,9 @@ class SdfAssetPath;
 /// group can be drawn as a single card object. An effects subtree might have
 /// \em model:applyDrawMode set at the component level so each particle group
 /// draws individually in bounding box mode.
+/// 
+/// A value for \em model:drawMode on a child prim takes precedence over a
+/// value on a parent prim.
 /// 
 /// \section UsdGeomModelAPI_cardGeometry Cards Geometry
 /// 
