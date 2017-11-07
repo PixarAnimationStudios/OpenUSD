@@ -439,6 +439,12 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
 {
     vector<UsdGeomXformOp> result;
 
+    if (resetsXformStack) {
+        *resetsXformStack = false;
+    } else {
+        TF_CODING_ERROR("resetsXformStack is NULL.");
+    }
+
     bool xformOpOrderIsAuthored = false;
     VtTokenArray opOrderVec;
     if (!_GetXformOpOrderValue(&opOrderVec, &xformOpOrderIsAuthored)) {
@@ -467,7 +473,6 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
     // Reserve space for the xform ops.
     result.reserve(opOrderVec.size());
 
-    bool foundResetXformStack = false;
     for (VtTokenArray::iterator it = opOrderVec.begin() ; 
          it != opOrderVec.end(); ++it) {
 
@@ -476,7 +481,9 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
         // If this is the special resetXformStack op, then clear the currently
         // accreted xformOps and continue.
         if (opName == UsdGeomXformOpTypes->resetXformStack) { 
-            foundResetXformStack = true;
+            if (resetsXformStack) {
+                *resetsXformStack = true;
+            }
             result.clear();
         } else {
             bool isInverseOp = false;
@@ -493,12 +500,6 @@ UsdGeomXformable::GetOrderedXformOps(bool *resetsXformStack) const
                     opName.GetText(), GetPrim().GetPath().GetText());
             }
         }
-    }
-
-    if (resetsXformStack) {
-        *resetsXformStack = foundResetXformStack;
-    } else {
-        TF_CODING_ERROR("resetsXformStack is NULL.");
     }
 
     return result;
