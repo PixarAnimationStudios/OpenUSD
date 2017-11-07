@@ -862,34 +862,37 @@ class TestUsdMetadata(unittest.TestCase):
         attr = prim.GetAttribute("assetPath")
         
         timeSamples = attr.GetMetadata("timeSamples")
-        self.assertEqual(timeSamples[0].resolvedPath,
+        self.assertEqual(os.path.normpath(timeSamples[0].resolvedPath),
                          os.path.abspath("assetPaths/asset.usda"))
-        self.assertEqual(timeSamples[1].resolvedPath,
+        self.assertEqual(os.path.normpath(timeSamples[1].resolvedPath),
                          os.path.abspath("assetPaths/asset.usda"))
         
         self.assertEqual(
-            attr.GetMetadata("default").resolvedPath, 
+            os.path.normpath(attr.GetMetadata("default").resolvedPath), 
             os.path.abspath("assetPaths/asset.usda"))
         
         attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
         self.assertEqual(
-            list([p.resolvedPath for p in attr.GetMetadata("default")]),
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in attr.GetMetadata("default")]),
             [os.path.abspath("assetPaths/asset.usda")])
 
         metadataDict = prim.GetMetadata("customData")
         self.assertEqual(
-            metadataDict["assetPath"].resolvedPath,
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(
-            list([p.resolvedPath for p in metadataDict["assetPathArray"]]),
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
             
         metadataDict = metadataDict["subDict"]
         self.assertEqual(
-            metadataDict["assetPath"].resolvedPath,
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
             os.path.abspath("assetPaths/asset.usda"))
         self.assertEqual(
-            list([p.resolvedPath for p in metadataDict["assetPathArray"]]),
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
             [os.path.abspath("assetPaths/asset.usda")])
 
     def test_TimeSamplesMetadata(self):

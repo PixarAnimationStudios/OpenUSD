@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 from pxr import UsdUtils, Sdf, Usd, Gf, Vt
-import unittest
+import os, unittest
 
 class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
     def test_Basic(self):
@@ -107,11 +107,11 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
         p = result_stage.GetPrimAtPath('/Sphere')
         a = p.GetAttribute('relativePath')
         # It should have become an absolute path.
-        self.assertTrue( a.Get().path.startswith('/') )
+        self.assertTrue(os.path.isabs(a.Get().path))
         # Check arrays of paths.
         a = p.GetAttribute('relativePathVec')
         for path in a.Get():
-            self.assertTrue( path.path.startswith('/') )
+            self.assertTrue(os.path.isabs(path.path) )
 
         # Confirm Sdf-level result of list-editing.
         p = layer.GetPrimAtPath('/ListOpTest')
