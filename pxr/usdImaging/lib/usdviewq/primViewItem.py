@@ -142,7 +142,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             # to distinguish abstract defined prims from non-abstract
             # defined prims, we check for abstract first.
             if self.abstract:
-                return UIFonts.ABSRACT_PRIM
+                return UIFonts.ABSTRACT_PRIM
             elif not self.defined:
                 return UIFonts.OVER_PRIM
             else:
