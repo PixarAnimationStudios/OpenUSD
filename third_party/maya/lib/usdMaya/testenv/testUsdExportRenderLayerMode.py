@@ -34,8 +34,10 @@ from pxr import Vt
 from maya import cmds
 from maya import standalone
 from maya import OpenMayaRender as OMR
+from maya import OpenMaya as OM
 
-
+@unittest.skipIf(OM.MGlobal.apiVersion() >= 20180000,
+                 "Maya 2018 doesn't support old-style render layers")
 class testUsdExportRenderLayerMode(unittest.TestCase):
 
     @classmethod
