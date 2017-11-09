@@ -237,6 +237,21 @@ def _ExtractNames(sdfPrim, customData):
     return usdPrimTypeName, className, cppClassName, baseFileName
 
 
+# Determines if a prim 'p' inherits from Typed
+def _IsTyped(p):
+    def _FindAllInherits(p):
+        if p.GetMetadata('inheritPaths'):
+            inherits = list(p.GetMetadata('inheritPaths').ApplyOperations([]))
+        else:
+            inherits = []
+        for path in inherits:
+            p2 = p.GetStage().GetPrimAtPath(path)
+            if p2:
+                inherits += _FindAllInherits(p2)
+        return inherits
+
+    return Sdf.Path('/Typed') in set(_FindAllInherits(p))
+
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim):
         # First validate proper class naming...
@@ -297,7 +312,7 @@ class ClassInfo(object):
                     self.typeName = ''
 
         self.isConcrete = 'false' if not self.typeName else 'true'
-
+        self.isTyped = 'true' if _IsTyped(usdPrim) else 'false'
 
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
