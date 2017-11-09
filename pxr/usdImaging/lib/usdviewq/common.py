@@ -130,6 +130,11 @@ class SelectionHighlightModes(ConstantGroup):
     ONLY_WHEN_PAUSED = "Only when paused"
     ALWAYS = "Always"
 
+class CameraMaskModes(ConstantGroup):
+    NONE = "none"
+    PARTIAL = "partial"
+    FULL = "full"
+
 def _PropTreeWidgetGetRole(tw):
     return tw.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
 

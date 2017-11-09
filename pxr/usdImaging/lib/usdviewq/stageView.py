@@ -1171,6 +1171,10 @@ class StageView(QtOpenGL.QGLWidget):
             self._defaultShowBBoxes = value
 
         @property
+        def showBBoxPlayback(self):
+            return False
+
+        @property
         def displayGuide(self):
             return False
 
@@ -2198,7 +2202,8 @@ class StageView(QtOpenGL.QGLWidget):
             if self._dataModel.displayCameraOracles:
                 self.DrawCameraGuides(viewProjectionMatrix)
 
-            if self._dataModel.showBBoxes:
+            if self._dataModel.showBBoxes and\
+                    (self._dataModel.showBBoxPlayback or not self._dataModel.playing):
                 self.DrawBBox(viewProjectionMatrix)
         else:
             GL.glClear(GL.GL_COLOR_BUFFER_BIT)

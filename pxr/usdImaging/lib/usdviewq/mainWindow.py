@@ -55,7 +55,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
                     GetInstanceIdForIndex,
                     ResetSessionVisibility, InvisRootPrims, GetAssetCreationTime,
                     PropertyViewIndex, PropertyViewIcons, PropertyViewDataRoles, RenderModes, ShadedRenderModes,
-                    PickModes, SelectionHighlightModes,
+                    PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                     GetPrimsLoadability, GetClosestBoundMaterial)
@@ -146,6 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent, parserData):
         with Timer() as uiOpenTimer:
             QtWidgets.QMainWindow.__init__(self, parent)
+
             self._primToItemMap = {}
             self._itemsToPush = []
             self._currentPrims = []
@@ -171,6 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._mallocTags = parserData.mallocTagStats
             self._bboxCache = None
             self._complexity = parserData.complexity
+            self._clearColorText = None
             self._clearColor = None
             self._renderMode = None
             self._pickMode = None
@@ -180,6 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._showAABBox = True
             self._showOBBox = False
             self._showBBoxes = True
+            self._showBBoxPlayback = False
 
             self._displayGuide = False
             self._displayProxy = True
@@ -189,8 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._enableHardwareShading = True
             self._cullBackfaces = False
 
-            self._showMask = False
-            self._showMask_Opaque = False
+            self._cameraMaskMode = CameraMaskModes.NONE
             self._showMask_Outline = False
 
             self._showReticles_Inside = False
@@ -216,6 +218,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self._drawSelHighlights = True
             self._highlightColorName = "Yellow"
             self._highlightColor = (1.0,1.0,0.0,0.5)
+
+            self._redrawOnScrub = True
+
+            self._showInactivePrims = True
+            self._showAllMasterPrims = False
+            self._showUndefinedPrims = False
+            self._showAbstractPrims = False
+
+            self._rolloverPrimInfo = False
 
             self._allowViewUpdates = True
 
@@ -376,7 +387,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.propertyView.setHorizontalScrollMode(
                 QtWidgets.QAbstractItemView.ScrollPerPixel)
 
-            self._ui.frameSlider.setTracking(self._ui.redrawOnScrub.isChecked())
+            self._ui.frameSlider.setTracking(self._redrawOnScrub)
 
             for action in (self._ui.actionBlack,
                            self._ui.actionGrey_Dark,
@@ -685,19 +696,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionCollapse_All.triggered.connect(
                 self._ui.primView.collapseAll)
 
-            self._ui.actionShow_Inactive_Prims.triggered.connect(
+            self._ui.actionShow_Inactive_Prims.toggled.connect(
                 self._toggleShowInactivePrims)
 
-            self._ui.actionShow_All_Master_Prims.triggered.connect(
+            self._ui.actionShow_All_Master_Prims.toggled.connect(
                 self._toggleShowMasterPrims)
 
-            self._ui.actionShow_Undefined_Prims.triggered.connect(
+            self._ui.actionShow_Undefined_Prims.toggled.connect(
                 self._toggleShowUndefinedPrims)
 
-            self._ui.actionShow_Abstract_Prims.triggered.connect(
+            self._ui.actionShow_Abstract_Prims.toggled.connect(
                 self._toggleShowAbstractPrims)
 
-            self._ui.actionRollover_Prim_Info.triggered.connect(
+            self._ui.actionRollover_Prim_Info.toggled.connect(
                 self._toggleRolloverPrimInfo)
 
             self._ui.primViewLineEdit.returnPressed.connect(
@@ -742,9 +753,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.actionCameraReticles_Color.triggered.connect(
                 self._pickCameraReticlesColor)
 
-            self._ui.actionHUD.triggered.connect(self._updateHUDMenu)
+            self._ui.actionHUD.triggered.connect(self._HUDMenuChangedInfoRefresh)
 
-            self._ui.actionHUD_Info.triggered.connect(self._updateHUDMenu)
+            self._ui.actionHUD_Info.triggered.connect(self._HUDMenuChangedInfoRefresh)
 
             self._ui.actionHUD_Complexity.triggered.connect(self._HUDMenuChanged)
 
@@ -1221,8 +1232,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self._stageView:
             self._stageView.setFocus(QtCore.Qt.TabFocusReason)
-            self._stageView.rolloverPicking = \
-                self._settings.get("actionRollover_Prim_Info", False)
+            self._stageView.rolloverPicking = self._rolloverPrimInfo
 
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
@@ -1351,7 +1361,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @cameraMaskColor.setter
     def cameraMaskColor(self, color):
         self._cameraMaskColor = color
-        self._settings.setAndSave(cameraMaskColor=color)
+        self._settings.setAndSave(cameraMaskColor=self._cameraMaskColor)
 
     @property
     def cameraReticlesColor(self):
@@ -1360,7 +1370,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @cameraReticlesColor.setter
     def cameraReticlesColor(self, color):
         self._cameraReticlesColor = color
-        self._settings.setAndSave(cameraReticlesColor=color)
+        self._settings.setAndSave(cameraReticlesColor=self._cameraReticlesColor)
 
     @property
     def defaultMaterialAmbient(self):
@@ -1370,7 +1380,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def defaultMaterialAmbient(self, value):
         if value != self._defaultMaterialAmbient:
             self._defaultMaterialAmbient = value
-            self._settings.setAndSave(DefaultMaterialAmbient=value)
+            self._settings.setAndSave(DefaultMaterialAmbient=self._defaultMaterialAmbient)
             self.signalDefaultMaterialChanged.emit()
 
     @property
@@ -1381,7 +1391,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def defaultMaterialSpecular(self, value):
         if value != self._defaultMaterialSpecular:
             self._defaultMaterialSpecular = value
-            self._settings.setAndSave(DefaultMaterialSpecular=value)
+            self._settings.setAndSave(DefaultMaterialSpecular=self._defaultMaterialSpecular)
             self.signalDefaultMaterialChanged.emit()
 
     @property
@@ -1437,6 +1447,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._showBBoxes = value
 
     @property
+    def showBBoxPlayback(self):
+        return self._showBBoxPlayback
+
+    @property
     def displayGuide(self):
         return self._displayGuide
 
@@ -1465,12 +1479,16 @@ class MainWindow(QtWidgets.QMainWindow):
         return self._cullBackfaces
 
     @property
+    def cameraMaskMode(self):
+        return self._cameraMaskMode
+
+    @property
     def showMask(self):
-        return self._showMask
+        return self._cameraMaskMode in (CameraMaskModes.FULL, CameraMaskModes.PARTIAL)
 
     @property
     def showMask_Opaque(self):
-        return self._showMask_Opaque
+        return self._cameraMaskMode == CameraMaskModes.FULL
 
     @property
     def showMask_Outline(self):
@@ -1548,6 +1566,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def drawSelHighlights(self, value):
         self._drawSelHighlights = value
 
+    @property
+    def redrawOnScrub(self):
+        return self._redrawOnScrub
+
+    @redrawOnScrub.setter
+    def redrawOnScrub(self, value):
+        self._redrawOnScrub = value
+
     def ResetDefaultMaterialSettings(self, store=True):
         self._defaultMaterialAmbient = .2
         self._defaultMaterialSpecular = .1
@@ -1567,8 +1593,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._adjustDefaultMaterialDlg.close()
 
     def _redrawOptionToggled(self, checked):
-        self._settings.setAndSave(RedrawOnScrub=checked)
-        self._ui.frameSlider.setTracking(checked)
+        self._redrawOnScrub = checked
+        self._settings.setAndSave(RedrawOnScrub=self._redrawOnScrub)
+        self._ui.frameSlider.setTracking(self._redrawOnScrub)
 
     def _watchWindowToggled(self, checked):
         if (not checked):
@@ -1812,8 +1839,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                              self._displayPredicate)
                    if isMatch(prim.GetName())]
 
-        showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
-        if showMasters:
+        if self._showAllMasterPrims:
             for master in self._stage.GetMasters():
                 matches += [prim.GetPath() for prim
                             in Usd.PrimRange(master, self._displayPredicate)
@@ -1943,19 +1969,23 @@ class MainWindow(QtWidgets.QMainWindow):
     def _resetSettings(self):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
-        self._clearColor = self._clearColorsDict[self._settings.get("ClearColor", "Grey (Dark)")]
+        self._clearColorText = self._settings.get("ClearColor", "Grey (Dark)")
+        self._clearColor = self._clearColorsDict[self._clearColorText]
         self._renderMode = self._settings.get("RenderMode", RenderModes.SMOOTH_SHADED)
         self._pickMode = self._settings.get("PickMode", PickModes.PRIMS)
+        self._redrawOnScrub = self._settings.get("RedrawOnScrub", True)
+        self._showInactivePrims = self._settings.get("actionShow_Inactive_Prims", True)
+        self._showAllMasterPrims = self._settings.get("actionShow_All_Master_Prims", False)
+        self._showUndefinedPrims = self._settings.get("actionShow_Undefined_Prims", False)
+        self._showAbstractPrims = self._settings.get("actionShow_Abstract_Prims", False)
+        self._rolloverPrimInfo = self._settings.get("actionRollover_Prim_Info", False)
 
-        self._ui.actionShow_Inactive_Prims.setChecked(\
-                        self._settings.get("actionShow_Inactive_Prims", True))
-        self._ui.actionShow_All_Master_Prims.setChecked(\
-                        self._settings.get("actionShow_All_Master_Prims", False))
-        self._ui.actionShow_Undefined_Prims.setChecked(\
-                        self._settings.get("actionShow_Undefined_Prims", False))
-        self._ui.actionShow_Abstract_Prims.setChecked(\
-                        self._settings.get("actionShow_Abstract_Prims", False))
-        self._ui.redrawOnScrub.setChecked(self._settings.get("RedrawOnScrub", True))
+        self._ui.redrawOnScrub.setChecked(self._redrawOnScrub)
+        self._ui.actionShow_Inactive_Prims.setChecked(self._showInactivePrims)
+        self._ui.actionShow_All_Master_Prims.setChecked(self._showAllMasterPrims)
+        self._ui.actionShow_Undefined_Prims.setChecked(self._showUndefinedPrims)
+        self._ui.actionShow_Abstract_Prims.setChecked(self._showAbstractPrims)
+        self._ui.actionRollover_Prim_Info.setChecked(self._rolloverPrimInfo)
 
         # Seems like a good time to clear the texture registry
         Glf.TextureRegistry.Reset()
@@ -1991,10 +2021,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._showAABBox = self._settings.get("ShowAABBox", True)
         self._ui.showAABBox.setChecked(self._showAABBox)
+
         self._showOBBox = self._settings.get("ShowOBBox", False)
         self._ui.showOBBox.setChecked(self._showOBBox)
-        self._ui.showBBoxPlayback.setChecked(
-                                self._settings.get("ShowBBoxPlayback", False))
+
+        self._showBBoxPlayback = self._settings.get("ShowBBoxPlayback", False)
+        self._ui.showBBoxPlayback.setChecked(self._showBBoxPlayback)
+
         self._showBBoxes = self._settings.get("ShowBBoxes", True)
         self._ui.showBBoxes.setChecked(self._showBBoxes)
 
@@ -2023,15 +2056,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self._cullBackfaces = self._settings.get("CullBackfaces", False)
         self._ui.actionCull_Backfaces.setChecked(self._cullBackfaces)
 
-        showMaskSetting = self._settings.get("actionCameraMask", "none")
-        self._showMask = (showMaskSetting != "none")
-        self._showMask_Opaque = (showMaskSetting == "full")
+        self._cameraMaskMode = self._settings.get("actionCameraMask", CameraMaskModes.NONE)
         self._showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
         self._cameraMaskColor = self._settings.get("cameraMaskColor",
                 (0.1, 0.1, 0.1, 1.0))
-        self._ui.actionCameraMask_Full.setChecked(showMaskSetting == "full")
-        self._ui.actionCameraMask_Partial.setChecked(showMaskSetting == "partial")
-        self._ui.actionCameraMask_None.setChecked(showMaskSetting == "none")
+        self._ui.actionCameraMask_Full.setChecked(self._cameraMaskMode == CameraMaskModes.FULL)
+        self._ui.actionCameraMask_Partial.setChecked(self._cameraMaskMode == CameraMaskModes.PARTIAL)
+        self._ui.actionCameraMask_None.setChecked(self._cameraMaskMode == CameraMaskModes.NONE)
         self._ui.actionCameraMask_Outline.setChecked(self._showMask_Outline)
 
         self._showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
@@ -2197,21 +2228,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
     def _changePickMode(self, mode):
-        self._settings.setAndSave(PickMode=mode.text())
         self._pickMode = str(mode.text())
+        self._settings.setAndSave(PickMode=self._pickMode)
 
     def _changeSelHighlightMode(self, mode):
-        self._settings.setAndSave(SelHighlightMode=str(mode.text()))
         self._selHighlightMode = str(mode.text())
         self._drawSelHighlights = (self._selHighlightMode != SelectionHighlightModes.NEVER)
+        self._settings.setAndSave(SelHighlightMode=self._selHighlightMode)
         if self._stageView:
             self._stageView.update()
 
     def _changeHighlightColor(self, color):
-        self._settings.setAndSave(HighlightColor=str(color.text()))
-        color = str(color.text())
-        self._highlightColorName = color
-        self._highlightColor = self._highlightColorsDict[color]
+        self._highlightColorName = str(color.text())
+        self._highlightColor = self._highlightColorsDict[self._highlightColorName]
+        self._settings.setAndSave(HighlightColor=self._highlightColorName)
         if self._stageView:
             self._stageView.update()
 
@@ -2271,16 +2301,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui.actionBack.setChecked(self._backLightEnabled)
 
     def _changeBgColor(self, mode):
-        colorText = str(mode.text())
-        self._clearColor = self._clearColorsDict[colorText]
-        self._settings.setAndSave(ClearColor=colorText)
+        self._clearColorText = str(mode.text())
+        self._clearColor = self._clearColorsDict[self._clearColorText]
+        self._settings.setAndSave(ClearColor=self._clearColorText)
         if self._stageView:
             self._stageView.update()
 
     def _toggleShowBBoxPlayback(self, state):
         """Called when the menu item for showing BBoxes
         during playback is activated or deactivated."""
-        self._settings.setAndSave(ShowBBoxPlayback=state)
+        self._showBBoxPlayback = state
+        self._settings.setAndSave(ShowBBoxPlayback=self._showBBoxPlayback)
 
     def _setUseExtentsHint(self, state):
         self._refreshBBoxCache(state)
@@ -2293,24 +2324,24 @@ class MainWindow(QtWidgets.QMainWindow):
     def _toggleShowBBoxes(self, state):
         """Called when the menu item for showing BBoxes
         is activated."""
-        self._settings.setAndSave(ShowBBoxes=state)
         self._showBBoxes = state
+        self._settings.setAndSave(ShowBBoxes=self._showBBoxes)
         #recompute and display bbox
         self._refreshBBox()
 
     def _toggleShowAABBox(self, state):
         """Called when Axis-Aligned bounding boxes
         are activated/deactivated via menu item"""
-        self._settings.setAndSave(ShowAABBox=state)
         self._showAABBox = state
+        self._settings.setAndSave(ShowAABBox=self._showAABBox)
         # recompute and display bbox
         self._refreshBBox()
 
     def _toggleShowOBBox(self, state):
         """Called when Oriented bounding boxes
         are activated/deactivated via menu item"""
-        self._settings.setAndSave(ShowOBBox=state)
         self._showOBBox = state
+        self._settings.setAndSave(ShowOBBox=self._showOBBox)
         # recompute and display bbox
         self._refreshBBox()
 
@@ -2322,8 +2353,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                              forceComputeBBox=True)
 
     def _toggleDisplayGuide(self, checked):
-        self._settings.setAndSave(DisplayGuide=checked)
         self._displayGuide = checked
+        self._settings.setAndSave(DisplayGuide=self._displayGuide)
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
@@ -2331,8 +2362,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
     def _toggleDisplayProxy(self, checked):
-        self._settings.setAndSave(DisplayProxy=checked)
         self._displayProxy = checked
+        self._settings.setAndSave(DisplayProxy=self._displayProxy)
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
@@ -2340,8 +2371,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
     def _toggleDisplayRender(self, checked):
-        self._settings.setAndSave(DisplayRender=checked)
         self._displayRender = checked
+        self._settings.setAndSave(DisplayRender=self._displayRender)
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
@@ -2349,26 +2380,26 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
     def _toggleDisplayCameraOracles(self, checked):
-        self._settings.setAndSave(DisplayCameraGuides=checked)
         self._displayCameraOracles = checked
+        self._settings.setAndSave(DisplayCameraGuides=self._displayCameraOracles)
         if self._stageView:
             self._stageView.update()
 
     def _toggleDisplayPrimId(self, checked):
-        self._settings.setAndSave(DisplayPrimId=checked)
         self._displayPrimId = checked
+        self._settings.setAndSave(DisplayPrimId=self._displayPrimId)
         if self._stageView:
             self._stageView.update()
 
     def _toggleEnableHardwareShading(self, checked):
-        self._settings.setAndSave(EnableHardwareShading=checked)
         self._enableHardwareShading = checked
+        self._settings.setAndSave(EnableHardwareShading=self._enableHardwareShading)
         if self._stageView:
             self._stageView.update()
 
     def _toggleCullBackfaces(self, checked):
-        self._settings.setAndSave(CullBackfaces=checked)
         self._cullBackfaces = checked
+        self._settings.setAndSave(CullBackfaces=self._cullBackfaces)
         if self._stageView:
             self._stageView.update()
 
@@ -2770,32 +2801,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self._populateChildren(self._ui.primView.itemFromIndex(index))
         self._ui.primView.resizeColumnToContents(0)
 
-    def _toggleShowInactivePrims(self):
-        self._settings.setAndSave(actionShow_Inactive_Prims =
-                self._ui.actionShow_Inactive_Prims.isChecked())
+    def _toggleShowInactivePrims(self, checked):
+        self._showInactivePrims = checked
+        self._settings.setAndSave(actionShow_Inactive_Prims=self._showInactivePrims)
         self._resetPrimView()
 
-    def _toggleShowMasterPrims(self):
-        self._settings.setAndSave(actionShow_All_Master_Prims =
-                self._ui.actionShow_All_Master_Prims.isChecked())
+    def _toggleShowMasterPrims(self, checked):
+        self._showAllMasterPrims = checked
+        self._settings.setAndSave(actionShow_All_Master_Prims=self._showAllMasterPrims)
         self._resetPrimView()
 
-    def _toggleShowUndefinedPrims(self):
-        self._settings.setAndSave(actionShow_Undefined_Prims=
-                self._ui.actionShow_Undefined_Prims.isChecked())
+    def _toggleShowUndefinedPrims(self, checked):
+        self._showUndefinedPrims = checked
+        self._settings.setAndSave(actionShow_Undefined_Prims=self._showUndefinedPrims)
         self._resetPrimView()
 
-    def _toggleShowAbstractPrims(self):
-        self._settings.setAndSave(actionShow_Abstract_Prims=
-                self._ui.actionShow_Abstract_Prims.isChecked())
+    def _toggleShowAbstractPrims(self, checked):
+        self._showAbstractPrims = checked
+        self._settings.setAndSave(actionShow_Abstract_Prims=self._showAbstractPrims)
         self._resetPrimView()
 
-    def _toggleRolloverPrimInfo(self):
-        self._settings.setAndSave(actionRollover_Prim_Info=
-                self._ui.actionRollover_Prim_Info.isChecked())
+    def _toggleRolloverPrimInfo(self, checked):
+        self._rolloverPrimInfo = checked
+        self._settings.setAndSave(actionRollover_Prim_Info=self._rolloverPrimInfo)
         if self._stageView:
-            self._stageView.rolloverPicking = \
-                self._settings.get("actionRollover_Prim_Info", False)
+            self._stageView.rolloverPicking = self._rolloverPrimInfo
 
     def _tallyPrimStats(self, prim):
         def _GetType(prim):
@@ -2853,15 +2883,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def _primShouldBeShown(self, prim):
         if not prim:
             return False
-        showInactive = self._ui.actionShow_Inactive_Prims.isChecked()
-        showUndefined = self._ui.actionShow_Undefined_Prims.isChecked()
-        showAbstract = self._ui.actionShow_Abstract_Prims.isChecked()
-        showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
 
-        return ((prim.IsActive() or showInactive) and
-                (prim.IsDefined() or showUndefined) and
-                (not prim.IsAbstract() or showAbstract) and
-                (not prim.IsInMaster() or showMasters))
+        return ((prim.IsActive() or self._showInactivePrims) and
+                (prim.IsDefined() or self._showUndefinedPrims) and
+                (not prim.IsAbstract() or self._showAbstractPrims) and
+                (not prim.IsInMaster() or self._showAllMasterPrims))
 
     def _populateRoots(self):
         invisibleRootItem = self._ui.primView.invisibleRootItem()
@@ -2869,8 +2895,7 @@ class MainWindow(QtWidgets.QMainWindow):
         rootItem = self._populateItem(rootPrim)
         self._populateChildren(rootItem)
 
-        showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
-        if showMasters:
+        if self._showAllMasterPrims:
             self._populateChildren(rootItem,
                                    childrenToAdd=self._stage.GetMasters())
 
@@ -2883,22 +2908,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def _computeDisplayPredicate(self):
         # Take current browser filtering into account when discovering
         # prims while traversing
-        showInactive = self._ui.actionShow_Inactive_Prims.isChecked()
-        showUndefined = self._ui.actionShow_Undefined_Prims.isChecked()
-        showAbstract = self._ui.actionShow_Abstract_Prims.isChecked()
-        showMasters = self._ui.actionShow_All_Master_Prims.isChecked()
 
         self._displayPredicate = None
 
-        if not showInactive:
+        if not self._showInactivePrims:
             self._displayPredicate = Usd.PrimIsActive \
                 if self._displayPredicate is None \
                 else self._displayPredicate & Usd.PrimIsActive
-        if not showUndefined:
+        if not self._showUndefinedPrims:
             self._displayPredicate = Usd.PrimIsDefined \
                 if self._displayPredicate is None \
                 else self._displayPredicate & Usd.PrimIsDefined
-        if not showAbstract:
+        if not self._showAbstractPrims:
             self._displayPredicate = ~Usd.PrimIsAbstract \
                 if self._displayPredicate is None \
                 else self._displayPredicate & ~Usd.PrimIsAbstract
@@ -3202,11 +3223,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._xformCache.SetTime(self._currentFrame)
         self._bboxCache.SetTime(self._currentFrame)
 
-        # grey out the HUD when playing at interactive rates (its disabled)
-        self._showBBoxes = \
-                         self._ui.showBBoxes.isChecked() and \
-                        (not self._playing or self._ui.showBBoxPlayback.isChecked())
-
         if refreshUI: # slow stuff that we do only when not playing
             # topology might have changed, recalculate
             self._updateHUDGeomCounts()
@@ -3228,9 +3244,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                  self._selHighlightMode == SelectionHighlightModes.ALWAYS)
             else:
                 self._stageView.setSelectedPrims(self._currentPrims, self._currentFrame)
-
-    def setHUDVisible(self, hudVisible):
-        self._ui.actionHUD.setChecked(False)
 
     def saveFrame(self, fileName):
         if self._stageView:
@@ -3786,10 +3799,22 @@ class MainWindow(QtWidgets.QMainWindow):
     def _isHUDVisible(self):
         """Checks if the upper HUD is visible by looking at the global HUD
         visibility menu as well as the 'Subtree Info' menu"""
-        return self._ui.actionHUD.isChecked() and self._ui.actionHUD_Info.isChecked()
+        return self._showHUD and self._showHUD_Info
 
     def _updateCameraMaskMenu(self):
-        self._CameraMaskMenuChanged()
+        if self._ui.actionCameraMask_Full.isChecked():
+            self._cameraMaskMode = CameraMaskModes.FULL
+        elif self._ui.actionCameraMask_Partial.isChecked():
+            self._cameraMaskMode = CameraMaskModes.PARTIAL
+        else:
+            self._cameraMaskMode = CameraMaskModes.NONE
+        self._showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
+
+        self._settings.setAndSave(actionCameraMask=self._cameraMaskMode)
+        self._settings.setAndSave(actionCameraMask_Outline=self._showMask_Outline)
+
+        if self._stageView:
+            self._stageView.updateGL()
 
     def _pickCameraMaskColor(self):
         QtWidgets.QColorDialog.setCustomColor(0, 0xFF000000)
@@ -3804,27 +3829,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cameraMaskColor = color
         if self._stageView:
             self._stageView.updateGL()
-
-    def _CameraMaskMenuChanged(self):
-        if self._ui.actionCameraMask_Full.isChecked():
-            showMaskSetting = "full"
-            self._showMask = True
-            self._showMask_Opaque = True
-        elif self._ui.actionCameraMask_Partial.isChecked():
-            showMaskSetting = "partial"
-            self._showMask = True
-            self._showMask_Opaque = False
-        else:
-            showMaskSetting = "none"
-            self._showMask = False
-            self._showMask_Opaque = False
-        self._showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
-
-        if self._stageView:
-            self._stageView.updateGL()
-
-        self._settings.setAndSave(actionCameraMask=showMaskSetting)
-        self._settings.setAndSave(actionCameraMask_Outline=self._showMask_Outline)
 
     def _updateCameraReticlesMenu(self):
         self._CameraReticlesMenuChanged()
@@ -3852,36 +3856,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self._settings.setAndSave(actionCameraReticles_Inside=self._showReticles_Inside)
         self._settings.setAndSave(actionCameraReticles_Outside=self._showReticles_Outside)
 
-    def _updateHUDMenu(self):
-        """updates the upper HUD with both prim info and geom counts
-        this function is called by the UI when the HUD is hidden or shown"""
+    def _HUDMenuChangedInfoRefresh(self):
+        """Called when a HUD menu item that requires info refresh has changed.
+        Updates the upper HUD with both prim info and geom counts.
+        """
+        self._showHUD = self._ui.actionHUD.isChecked()
+        self._showHUD_Info = self._ui.actionHUD_Info.isChecked()
+
+        self._settings.setAndSave(actionHUD=self._showHUD)
+        self._settings.setAndSave(actionHUD_Info=self._showHUD_Info)
+
         if self._isHUDVisible():
             self._updateHUDPrimStats()
             self._updateHUDGeomCounts()
 
-        self._HUDMenuChanged()
-
-    def _HUDMenuChanged(self):
-        """called when a HUD menu item has changed that does not require info refresh"""
-        self._showHUD = self._ui.actionHUD.isChecked()
-        self._showHUD_Info = self._ui.actionHUD_Info.isChecked()
-        self._showHUD_Complexity = \
-            self._ui.actionHUD_Complexity.isChecked()
-        self._showHUD_Performance = \
-            self._ui.actionHUD_Performance.isChecked()
-        self._showHUD_GPUstats = \
-            self._ui.actionHUD_GPUstats.isChecked()
         if self._stageView:
             self._stageView.updateGL()
 
-        self._settings.setAndSave(actionHUD=self._ui.actionHUD.isChecked())
-        self._settings.setAndSave(actionHUD_Info=self._ui.actionHUD_Info.isChecked())
-        self._settings.setAndSave(actionHUD_Complexity=\
-                                        self._ui.actionHUD_Complexity.isChecked())
-        self._settings.setAndSave(actionHUD_Performance=\
-                                        self._ui.actionHUD_Performance.isChecked())
-        self._settings.setAndSave(actionHUD_GPUstats=\
-                                        self._ui.actionHUD_GPUstats.isChecked())
+    def _HUDMenuChanged(self):
+        """Called when a HUD menu item that does not require info refresh has changed."""
+        self._showHUD_Complexity = self._ui.actionHUD_Complexity.isChecked()
+        self._showHUD_Performance = self._ui.actionHUD_Performance.isChecked()
+        self._showHUD_GPUstats = self._ui.actionHUD_GPUstats.isChecked()
+        if self._stageView:
+            self._stageView.updateGL()
+
+        self._settings.setAndSave(actionHUD_Complexity=self._showHUD_Complexity)
+        self._settings.setAndSave(actionHUD_Performance=self._showHUD_Complexity)
+        self._settings.setAndSave(actionHUD_GPUstats=self._showHUD_GPUstats)
 
     def _getHUDStatKeys(self):
         ''' returns the keys of the HUD with PRIM and NOTYPE and the top and
