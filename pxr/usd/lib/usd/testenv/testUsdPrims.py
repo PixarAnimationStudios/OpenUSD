@@ -425,7 +425,7 @@ class TestUsdPrim(unittest.TestCase):
             assert not baz
             assert not foo.HasAuthoredReferences()
             assert foo.GetReferences().AddReference(s1.GetRootLayer().identifier, "/Foo")
-            items = foo.GetMetadata("references").addedItems
+            items = foo.GetMetadata("references").ApplyOperations([])
             assert foo.HasAuthoredReferences()
 
             # Make sure references are detected across composition arcs.

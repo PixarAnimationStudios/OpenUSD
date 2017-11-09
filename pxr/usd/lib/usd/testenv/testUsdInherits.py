@@ -38,16 +38,16 @@ class TestUsdInherits(unittest.TestCase):
             assert not concrete.HasAuthoredInherits()
             assert concrete.GetInherits().AddInherit(classA.GetPath())
             assert concrete.HasAuthoredInherits()
-            self.assertEqual(len(concrete.GetMetadata("inheritPaths").addedItems), 1)
-            self.assertEqual(concrete.GetMetadata("inheritPaths").addedItems[0],
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").prependedItems), 1)
+            self.assertEqual(concrete.GetMetadata("inheritPaths").prependedItems[0],
                         classA.GetPath())
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").explicitItems), 0)
             # This will be used later in the test.
-            items = concrete.GetMetadata("inheritPaths").addedItems
+            items = concrete.GetMetadata("inheritPaths").prependedItems
 
             assert concrete.GetInherits().RemoveInherit(classA.GetPath())
             assert concrete.HasAuthoredInherits()
-            self.assertEqual(len(concrete.GetMetadata("inheritPaths").addedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").prependedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").deletedItems), 1)
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").explicitItems), 0)
 
@@ -58,7 +58,7 @@ class TestUsdInherits(unittest.TestCase):
             # Set the list of added items explicitly.
             assert concrete.GetInherits().SetInherits(items)
             assert concrete.HasAuthoredInherits()
-            self.assertEqual(len(concrete.GetMetadata("inheritPaths").addedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("inheritPaths").prependedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").deletedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("inheritPaths").explicitItems), 1)
 

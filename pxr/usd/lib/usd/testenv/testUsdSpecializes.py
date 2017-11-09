@@ -38,16 +38,16 @@ class TestUsdSpecializes(unittest.TestCase):
             assert not concrete.HasAuthoredSpecializes()
             assert concrete.GetSpecializes().AddSpecialize(specA.GetPath())
             assert concrete.HasAuthoredSpecializes()
-            self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 1)
-            self.assertEqual(concrete.GetMetadata("specializes").addedItems[0],
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 1)
+            self.assertEqual(concrete.GetMetadata("specializes").prependedItems[0],
                         specA.GetPath())
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 0)
             # This will be used later in the test.
-            items = concrete.GetMetadata("specializes").addedItems
+            items = concrete.GetMetadata("specializes").ApplyOperations([])
 
             assert concrete.GetSpecializes().RemoveSpecialize(specA.GetPath())
             assert concrete.HasAuthoredSpecializes()
-            self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 1)
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 0)
 
@@ -58,7 +58,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # Set the list of added items explicitly.
             assert concrete.GetSpecializes().SetSpecializes(items)
             assert concrete.HasAuthoredSpecializes()
-            self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 1)
 

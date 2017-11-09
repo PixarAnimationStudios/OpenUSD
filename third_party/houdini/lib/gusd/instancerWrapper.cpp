@@ -940,7 +940,8 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         if(ctxt.overlayAll) {
             relationshipPaths.push_back(relationshipPath);
         } else {
-            prototypesRel.AddTarget(relationshipPath);
+            // Append items in order to match relIndex counting.
+            prototypesRel.AddTarget(relationshipPath, UsdListPositionBack);
         }
         m_relationshipIndexMap[TfToken(mapKey)] = relIdx++;
     }

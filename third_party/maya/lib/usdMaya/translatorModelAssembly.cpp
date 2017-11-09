@@ -240,18 +240,14 @@ _GetReferenceInfo(
     std::string* assetIdentifier,
     SdfPath* assetPrimPath)
 {
-    SdfReferenceListOp refs;
-    prim.GetMetadata(SdfFieldKeys->References, &refs);
+    SdfReferenceListOp refsOp;
+    SdfReferenceListOp::ItemVector refs;
+    prim.GetMetadata(SdfFieldKeys->References, &refsOp);
+    refsOp.ApplyOperations(&refs);
 
     // this logic is not robust.  awaiting bug 99278.
-    if (!refs.GetAddedItems().empty()) {
-        const SdfReference& ref = refs.GetAddedItems()[0];
-        *assetIdentifier = ref.GetAssetPath();
-        *assetPrimPath = ref.GetPrimPath();
-        return true;
-    }
-    if (!refs.GetExplicitItems().empty()) {
-        const SdfReference& ref = refs.GetExplicitItems()[0];
+    if (!refs.empty()) {
+        const SdfReference& ref = refs[0];
         *assetIdentifier = ref.GetAssetPath();
         *assetPrimPath = ref.GetPrimPath();
         return true;
