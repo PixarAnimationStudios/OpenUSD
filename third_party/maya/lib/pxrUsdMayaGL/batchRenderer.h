@@ -33,6 +33,8 @@
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/arch/hash.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -263,13 +265,14 @@ public:
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
 
         PXRUSDMAYAGL_API
-        void SetCameraState(const GfMatrix4d& viewMatrix,
+        void SetCameraState(const GfMatrix4d& worldToViewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport);
 
         // VP 1.0 only.
         PXRUSDMAYAGL_API
-        void SetLightingStateFromVP1(const MMatrix& viewMatForLights);
+        void SetLightingStateFromVP1(const GfMatrix4d& worldToViewMatrix,
+                                     const GfMatrix4d& projectionMatrix);
 
         // VP 2.0 only.
         PXRUSDMAYAGL_API
@@ -403,9 +406,9 @@ private:
     /// performance hit when no batches are queued.
     void _RenderBatches(
             const MHWRender::MDrawContext* vp2Context,
-            const MMatrix& viewMat,
-            const MMatrix& projectionMat,
-            const GfVec4d& viewport );
+            const GfMatrix4d& worldToViewMatrix,
+            const GfMatrix4d& projectionMatrix,
+            const GfVec4d& viewport);
 
     /// \brief Handler for Maya Viewport 2.0 end render notifications.
     ///
