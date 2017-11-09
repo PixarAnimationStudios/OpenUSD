@@ -47,6 +47,8 @@
 #include "pxr/usd/usdLux/sphereLight.h"
 #include "pxr/usd/usdLux/rectLight.h"
 #include "pxr/usd/usdLux/lightFilter.h"
+#include "pxr/usd/usdRi/pxrAovLight.h"
+#include "pxr/usd/usdRi/pxrEnvDayLight.h"
 #include "pxr/usd/usdRi/pxrIntMultLightFilter.h"
 #include "pxr/usd/usdRi/pxrBarnLightFilter.h"
 #include "pxr/usd/usdRi/pxrCookieLightFilter.h"
@@ -58,6 +60,8 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
+void registerPxrUsdInShippedLightLightListFnc();
+void registerPxrUsdInShippedLightFilterLightListFnc();
 void registerPxrUsdInShippedUiUtils();
 
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInCore_XformOp)
@@ -118,6 +122,8 @@ void registerPlugins()
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdLuxSphereLight>("PxrUsdInCore_LightOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdLuxDiskLight>("PxrUsdInCore_LightOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdLuxRectLight>("PxrUsdInCore_LightOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrAovLight>("PxrUsdInCore_LightOp");
+    PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrEnvDayLight>("PxrUsdInCore_LightOp");
 
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrIntMultLightFilter>("PxrUsdInCore_LightFilterOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterUsdType<UsdRiPxrBarnLightFilter>("PxrUsdInCore_LightFilterOp");
@@ -133,6 +139,8 @@ void registerPlugins()
     PxrUsdKatanaUsdInPluginRegistry::RegisterKind(KindTokens->model, "PxrUsdInCore_ModelOp");
     PxrUsdKatanaUsdInPluginRegistry::RegisterKind(KindTokens->subcomponent, "PxrUsdInCore_ModelOp");
     
+    registerPxrUsdInShippedLightLightListFnc();
+    registerPxrUsdInShippedLightFilterLightListFnc();
     registerPxrUsdInShippedUiUtils();
 
     REGISTER_PLUGIN(MaterialReferenceAttrFnc, "PxrUsdInMaterialReference", 0, 1);

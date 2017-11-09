@@ -191,6 +191,28 @@ void PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
 }
 
 
+typedef std::vector<PxrUsdKatanaUsdInPluginRegistry::LightListFnc>
+        _LightListFncList;
+static _LightListFncList _lightListFncList;
+
+
+void
+PxrUsdKatanaUsdInPluginRegistry::RegisterLightListFnc(LightListFnc fnc)
+{
+    _lightListFncList.push_back(fnc);
+}
+
+void
+PxrUsdKatanaUsdInPluginRegistry::ExecuteLightListFncs(
+        PxrUsdKatanaUtilsLightListAccess& lightList)
+{
+    for (auto i : _lightListFncList)
+    {
+        (*i)(lightList);
+    }
+}
+
+
 typedef std::vector<PxrUsdKatanaUsdInPluginRegistry::OpDirectExecFnc>
         _LocationDecoratorFncList;
 

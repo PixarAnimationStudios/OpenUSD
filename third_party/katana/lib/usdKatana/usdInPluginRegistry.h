@@ -34,6 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class PxrUsdKatanaUtilsLightListAccess;
 
 /// \brief Maintains the registry for usd types and kind.
 class PxrUsdKatanaUsdInPluginRegistry
@@ -122,6 +123,23 @@ public:
             std::string* opName);
 
 
+    /// \brief The signature for a plug-in "light list" function.
+    /// These functions are called for each light path.  The
+    /// argument allows for building the Katana light list.
+    typedef void (*LightListFnc)(PxrUsdKatanaUtilsLightListAccess&);
+
+    /// \brief Register a plug-in function to be called at a light path.
+    /// This allows for modifying the Katana light list.  It should set
+    /// the entry, links, and initial enabled status.  (The linking
+    /// resolver does not necessarily run at the location where this
+    /// function is run so the function needs to establish the initial
+    /// enabled status correctly.)
+    static void RegisterLightListFnc(LightListFnc);
+
+    /// \brief Run the registered plug-in light list functions at a light
+    /// path. This allows for modifying the Katana light list.
+    static void ExecuteLightListFncs(
+                    PxrUsdKatanaUtilsLightListAccess& access);
     
     
     

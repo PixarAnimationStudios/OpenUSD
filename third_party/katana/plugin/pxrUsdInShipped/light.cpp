@@ -25,8 +25,10 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readLight.h"
+#include "usdKatana/usdInPluginRegistry.h"
 #include "usdKatana/utils.h"
 #include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdRi/pxrAovLight.h"
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -100,4 +102,31 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightOp, privateData, opArgs, inte
             }
         }
     }
+}
+
+namespace {
+
+static
+void
+lightListFnc(PxrUsdKatanaUtilsLightListAccess& lightList)
+{
+    UsdPrim prim = lightList.GetPrim();
+    if (prim.IsA<UsdLuxLight>()) {
+        UsdLuxLight light(prim);
+        lightList.Set("path", lightList.GetLocation());
+        bool enabled = lightList.SetLinks(light.GetLightLinkingAPI(), "light");
+        lightList.Set("enable", enabled);
+        lightList.SetLinks(light.GetShadowLinkingAPI(), "shadow");
+    }
+    if (prim.IsA<UsdRiPxrAovLight>()) {
+        lightList.Set("hasAOV", true);
+    }
+}
+
+}
+
+void
+registerPxrUsdInShippedLightLightListFnc()
+{
+    PxrUsdKatanaUsdInPluginRegistry::RegisterLightListFnc(lightListFnc);
 }

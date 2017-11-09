@@ -25,6 +25,8 @@
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
 #include "usdKatana/readLightFilter.h"
+#include "usdKatana/usdInPluginRegistry.h"
+#include "usdKatana/utils.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -39,4 +41,29 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_LightFilterOp, privateData, opArgs
         attrs);
 
     attrs.toInterface(interface);
+}
+
+namespace {
+
+static
+void
+lightListFnc(PxrUsdKatanaUtilsLightListAccess& lightList)
+{
+    UsdPrim prim = lightList.GetPrim();
+    if (prim.IsA<UsdLuxLightFilter>()) {
+        UsdLuxLightFilter filter(prim);
+        lightList.Set("path", lightList.GetLocation());
+        lightList.Set("type", "light filter");
+        bool enabled = lightList.SetLinks(filter.GetFilterLinkingAPI(),
+                                          "lightfilter");
+        lightList.Set("enable", enabled);
+    }
+}
+
+}
+
+void
+registerPxrUsdInShippedLightFilterLightListFnc()
+{
+    PxrUsdKatanaUsdInPluginRegistry::RegisterLightListFnc(lightListFnc);
 }

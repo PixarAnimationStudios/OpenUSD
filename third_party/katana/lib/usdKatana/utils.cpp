@@ -44,6 +44,9 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdRi/statements.h"
 #include "pxr/usd/usdUI/sceneGraphPrimAPI.h"
+#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
+#include "pxr/usd/usdLux/linkingAPI.h"
 #include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/material.h"
@@ -1003,16 +1006,81 @@ PxrUsdKatanaUtils::FindCameraPaths(const UsdStageRefPtr& stage)
     return result;
 }
 
-SdfPathSet
+// This works like UsdLuxListAPI::ComputeLightList() except it tries to
+// maintain the order discovered during traversal.
+static void
+_Traverse(const UsdPrim &prim,
+          UsdLuxListAPI::ComputeMode mode,
+          std::set<SdfPath, SdfPath::FastLessThan> &seen,
+          SdfPathVector *lights)
+{
+    // If requested, check lightList cache.
+    if (mode == UsdLuxListAPI::ComputeModeConsultModelHierarchyCache &&
+        prim.GetPath().IsPrimPath() /* no cache on pseudoRoot */) {
+        UsdLuxListAPI listAPI(prim);
+        TfToken cacheBehavior;
+        if (listAPI.GetLightListCacheBehaviorAttr().Get(&cacheBehavior)) {
+            if (cacheBehavior == UsdLuxTokens->consumeAndContinue ||
+                cacheBehavior == UsdLuxTokens->consumeAndHalt) {
+                // Check stored lightList.
+                UsdRelationship rel = listAPI.GetLightListRel();
+                SdfPathVector targets;
+                rel.GetForwardedTargets(&targets);
+                for (const auto& target: targets) {
+                    if (seen.insert(target).second) {
+                        lights->push_back(target);
+                    }
+                }
+                if (cacheBehavior == UsdLuxTokens->consumeAndHalt) {
+                    return;
+                }
+            }
+        }
+    }
+    // Accumulate discovered prims.
+    if (prim.IsA<UsdLuxLight>() || prim.IsA<UsdLuxLightFilter>()) {
+        if (seen.insert(prim.GetPath()).second) {
+            lights->push_back(prim.GetPath());
+        }
+    }
+    // Traverse descendants.
+    auto flags = UsdPrimIsActive && !UsdPrimIsAbstract && UsdPrimIsDefined;
+    if (mode == UsdLuxListAPI::ComputeModeConsultModelHierarchyCache) {
+        // When consulting the cache we only traverse model hierarchy.
+        flags = flags && UsdPrimIsModel;
+    }
+    for (const UsdPrim &child:
+         prim.GetFilteredChildren(UsdTraverseInstanceProxies(flags))) {
+        _Traverse(child, mode, seen, lights);
+    }
+}
+
+SdfPathVector
 PxrUsdKatanaUtils::FindLightPaths(const UsdStageRefPtr& stage)
 {
-    std::set<SdfPath> allLights;
+/* XXX -- ComputeLightList() doesn't try to maintain an order.  That
+          should be okay for lights but it does cause differences in
+          the Katana lightList and generated RIB.  These differences
+          should have no effect on a render but they do make it more
+          difficult to compare RIB before and after a round-trip
+          through USD so, for now, we maintain the order found during
+          traversal.  If we switch to using this code then this method
+          should return an SdfPathSet and _Traverse() is unnecessary.
+    SdfPathSet allLights;
     for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
         SdfPathSet lights = UsdLuxListAPI(child).ComputeLightList(
             UsdLuxListAPI::ComputeModeConsultModelHierarchyCache);
         allLights.insert(lights.begin(), lights.end());
     }
     return allLights;
+*/
+    SdfPathVector result;
+    std::set<SdfPath, SdfPath::FastLessThan> seen;
+    for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
+        _Traverse(child, UsdLuxListAPI::ComputeModeConsultModelHierarchyCache,
+                  seen, &result);
+    }
+    return result;
 }
 
 std::string
@@ -1660,6 +1728,178 @@ PxrUsdKatanaUtils::BuildInstanceMasterMapping(
     return gb.build();
 }
 
+namespace {
+
+// DataBuilder<>::update() is broken so we roll our own.  Note that we
+// clear the builder first, unlike the update() member function.
+template <typename B, typename A>
+void update(B& builder, const A& attr)
+{
+    // Start clean and set the tuple size.
+    builder = B(attr.getTupleSize());
+
+    // Copy the data.  We make a local copy because a StringAttribute
+    // returns const char* but the builder wants std::string.
+    for (int64_t i = 0, n = attr.getNumberOfTimeSamples(); i != n; ++i) {
+        const auto time = attr.getSampleTime(i);
+        const auto& src = attr.getNearestSample(time);
+        std::vector<typename A::value_type> dst(src.begin(), src.end());
+        builder.set(dst, time);
+    }
+}
+
+}
+
+//
+// PxrUsdKatanaUtilsLightListAccess
+//
+
+PxrUsdKatanaUtilsLightListAccess::PxrUsdKatanaUtilsLightListAccess(
+        FnKat::GeolibCookInterface &interface,
+        const PxrUsdKatanaUsdInArgsRefPtr& usdInArgs) :
+    _interface(interface),
+    _usdInArgs(usdInArgs)
+{
+    // Get the lightList attribute.
+    FnKat::GroupAttribute lightList = _interface.getAttr("lightList");
+    if (lightList.isValid()) {
+        _lightListBuilder.deepUpdate(lightList);
+    }
+}
+
+PxrUsdKatanaUtilsLightListAccess::~PxrUsdKatanaUtilsLightListAccess()
+{
+    // Do nothing
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::SetPath(const SdfPath& lightPath)
+{
+    _lightPath = lightPath;
+    if (_lightPath.IsAbsolutePath()) {
+        _key = TfStringReplace(GetLocation().substr(1), "/", "_") + '.';
+    }
+    else {
+        _key.clear();
+    }
+}
+
+UsdPrim
+PxrUsdKatanaUtilsLightListAccess::GetPrim() const
+{
+    return _usdInArgs->GetStage()->GetPrimAtPath(_lightPath);
+}
+
+std::string
+PxrUsdKatanaUtilsLightListAccess::GetLocation() const
+{
+    return PxrUsdKatanaUtils::
+                ConvertUsdPathToKatLocation(_lightPath, _usdInArgs);
+}
+
+std::string
+PxrUsdKatanaUtilsLightListAccess::GetLocation(const SdfPath& path) const
+{
+    return PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(path, _usdInArgs);
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::_Set(
+    const std::string& name, const VtValue& value)
+{
+    if (TF_VERIFY(!_key.empty(), "Light path not set or not absolute")) {
+        constexpr bool asShaderParam = true;
+        FnKat::Attribute attr =
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(value, asShaderParam);
+        if (TF_VERIFY(attr.isValid(),
+                      "Failed to convert value for %s", name.c_str())) {
+            _lightListBuilder.set(_key + name, attr);
+        }
+    }
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::_Set(
+    const std::string& name, const FnKat::Attribute& attr)
+{
+    if (TF_VERIFY(!_key.empty(), "Light path not set or not absolute")) {
+        _lightListBuilder.set(_key + name, attr);
+    }
+}
+
+bool
+PxrUsdKatanaUtilsLightListAccess::SetLinks(
+    const UsdLuxLinkingAPI &linkAPI,
+    const std::string &linkName)
+{
+    UsdLuxLinkingAPI::LinkMap linkMap = linkAPI.ComputeLinkMap();
+    FnKat::GroupBuilder onBuilder, offBuilder;
+    for (const auto &entry: linkMap) {
+        // By convention, entries are "link.TYPE.{on,off}.HASH" where
+        // HASH is getHash() of the CEL and TYPE is the type of linking
+        // (light, shadow, etc). In this case we can just hash the
+        // string attribute form of the location.
+        const std::string link_loc =
+            PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(entry.first,
+                                                           _usdInArgs);
+        const FnKat::StringAttribute link_loc_attr(link_loc);
+        const std::string link_hash = link_loc_attr.getHash().str();
+        (entry.second ? onBuilder : offBuilder).set(link_hash, link_loc_attr);
+    }
+    // Set off and then on attributes, in order, to ensure
+    // stable override semantics when katana applies these.
+    // (This matches what the Gaffer node does.)
+    FnKat::GroupAttribute offAttr = offBuilder.build();
+    if (offAttr.getNumberOfChildren()) {
+        _Set("link."+linkName+".off", offAttr);
+    }
+    FnKat::GroupAttribute onAttr = onBuilder.build();
+    if (onAttr.getNumberOfChildren()) {
+        _Set("link."+linkName+".on", onAttr);
+    }
+    return UsdLuxLinkingAPI::DoesLinkPath(linkMap, linkAPI.GetPath());
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::AddToCustomStringList(
+    const std::string& tag,
+    const std::string& value)
+{
+    // Append the value.
+    if (_customStringLists.find(tag) == _customStringLists.end()) {
+        // This is the first value.  First copy any existing attribute.
+        auto& builder = _customStringLists[tag];
+        FnKat::StringAttribute attr = _interface.getAttr(tag);
+        if (attr.isValid()) {
+            update(builder, attr);
+        }
+
+        // Then append the value.
+        builder.push_back(value);
+    }
+    else {
+        // We've already seen this tag.  Just append the value.
+        _customStringLists[tag].push_back(value);
+    }
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::Build()
+{
+    FnKat::GroupAttribute lightListAttr = _lightListBuilder.build();
+    if (lightListAttr.getNumberOfChildren() > 0) {
+        _interface.setAttr("lightList", lightListAttr);
+    }
+
+    // Add custom string lists.
+    for (auto& value: _customStringLists) {
+        auto attr = value.second.build();
+        if (attr.getNumberOfValues() > 0) {
+            _interface.setAttr(value.first, attr);
+        }
+    }
+    _customStringLists.clear();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
