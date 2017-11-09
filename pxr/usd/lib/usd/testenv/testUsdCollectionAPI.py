@@ -139,9 +139,9 @@ class TestUsdCollectionAPI(unittest.TestCase):
         combinedColl = Usd.CollectionAPI.AddCollection(testPrim, "combined", 
                 Usd.Tokens.explicitOnly)
         combinedColl.CreateIncludesRel().AddTarget(
-            explicitColl.GetCollectionPath())
-        combinedColl.CreateIncludesRel().AddTarget(
             expandPrimsAndPropertiesColl.GetCollectionPath())
+        combinedColl.CreateIncludesRel().AddTarget(
+            explicitColl.GetCollectionPath())
 
         combinedMquery = combinedColl.ComputeMembershipQuery()
 
@@ -157,7 +157,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
         # collection.
         combinedColl.CreateIncludesRel().AddTarget(
-            expandPrimsColl.GetCollectionPath())
+            expandPrimsColl.GetCollectionPath(), position=Usd.ListPositionBack)
         combinedMquery = combinedColl.ComputeMembershipQuery()
         
         combinedCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
