@@ -35,34 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USD_TOKENS \
-    (clipActive) \
-    (clipAssetPaths) \
-    (clipManifestAssetPath) \
-    (clipPrimPath) \
-    (clips) \
-    (clipSets) \
-    (clipTemplateAssetPath) \
-    (clipTemplateEndTime) \
-    (clipTemplateStartTime) \
-    (clipTemplateStride) \
-    (clipTimes) \
-    (collection) \
-    (exclude) \
-    (expandPrims) \
-    (expandPrimsAndProperties) \
-    (expansionRule) \
-    (explicitOnly)
 
-/// \anchor UsdTokens
+/// \class UsdTokensType
 ///
-/// <b>UsdTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -70,33 +53,92 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdTokens->clipActive);
 /// \endcode
+struct UsdTokensType {
+    USD_API UsdTokensType();
+    /// \brief "clipActive"
+    /// 
+    ///  List of pairs (time, clip index) indicating the time on the stage at which the clip specified by the clip index is active. For instance, a value of [(0.0, 0), (20.0, 1)] indicates that clip 0 is active at time 0 and clip 1 is active at time 20. 
+    const TfToken clipActive;
+    /// \brief "clipAssetPaths"
+    /// 
+    ///  List of asset paths to the clips for this prim. This list is unordered, but elements in this list are referred to by index in other clip-related fields. 
+    const TfToken clipAssetPaths;
+    /// \brief "clipManifestAssetPath"
+    /// 
+    ///  Asset path for the clip manifest. The clip manifest indicates which attributes have time samples authored in the clips specified on this prim. During value resolution, we will only look for time samples  in clips if the attribute exists and is declared as varying in the manifest. Note that the clip manifest is only consulted to check check if an attribute exists and what its variability is. Other values and metadata authored in the manifest will be ignored.  For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim', and we want values for the attribute '/Prim_1.size', we will only look within this prims' clips if the attribute '/Prim.size' exists and is varying in the manifest. 
+    const TfToken clipManifestAssetPath;
+    /// \brief "clipPrimPath"
+    /// 
+    ///  Path to the prim in the clips from which time samples will be read. This prim's path will be substituted with this value to determine the final path in the clip from which to read data. For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim',  and we want to get values for the attribute '/Prim_1.size'. The clip prim path will be substituted in, yielding '/Prim.size', and each clip will be examined for values at that path. 
+    const TfToken clipPrimPath;
+    /// \brief "clips"
+    /// 
+    ///  Dictionary that contains the definition of the clip sets on this prim. See \ref UsdClipsAPI::GetClips. 
+    const TfToken clips;
+    /// \brief "clipSets"
+    /// 
+    ///  ListOp that may be used to affect how opinions from clip sets are applied during value resolution.  See \ref UsdClipsAPI::GetClipSets. 
+    const TfToken clipSets;
+    /// \brief "clipTemplateAssetPath"
+    /// 
+    ///  A template string representing a set of assets. This string can be of two forms: path/basename.###.usd and path/basename.##.##.usd. In either case, the number of hash marks in each section is variable. These control the amount of padding USD will supply when looking up  the assets. For instance, a value of 'foo.###.usd',  with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1: USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd. 
+    const TfToken clipTemplateAssetPath;
+    /// \brief "clipTemplateEndTime"
+    /// 
+    ///  A double which indicates the end of the range USD will use to to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
+    const TfToken clipTemplateEndTime;
+    /// \brief "clipTemplateStartTime"
+    /// 
+    ///  A double which indicates the start of the range USD will use  to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
+    const TfToken clipTemplateStartTime;
+    /// \brief "clipTemplateStride"
+    /// 
+    ///  A double representing the increment value USD will use when searching for asset paths. For example usage see clipTemplateAssetPath. 
+    const TfToken clipTemplateStride;
+    /// \brief "clipTimes"
+    /// 
+    ///  List of pairs (stage time, clip time) indicating the time in the active clip that should be consulted for values at the corresponding stage time.   During value resolution, this list will be sorted by stage time;  times will then be linearly interpolated between consecutive entries. For instance, for clip times [(0.0, 0.0), (10.0, 20.0)],  at stage time 0, values from the active clip at time 0 will be used, at stage time 5, values from the active clip at time 10, and at stage  time 10, clip values at time 20. 
+    const TfToken clipTimes;
+    /// \brief "collection"
+    /// 
+    /// This is the namespace prefix used by  UsdCollectionAPI for authoring collections.
+    const TfToken collection;
+    /// \brief "exclude"
+    /// 
+    ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansonRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
+    const TfToken exclude;
+    /// \brief "expandPrims"
+    /// 
+    ///  Possible value for the "expansionRule" attribute of a  collection. 
+    const TfToken expandPrims;
+    /// \brief "expandPrimsAndProperties"
+    /// 
+    ///  Possible value for the "expansionRule" attribute of a  collection. 
+    const TfToken expandPrimsAndProperties;
+    /// \brief "expansionRule"
+    /// 
+    /// Base name of the attribute used to encode  how the paths included in a collection must be expanded.
+    const TfToken expansionRule;
+    /// \brief "explicitOnly"
+    /// 
+    ///  Possible value for the "expansionRule" attribute of a  collection. 
+    const TfToken explicitOnly;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdTokens
 ///
-/// The tokens are:
-/// \li <b>clipActive</b> -  List of pairs (time, clip index) indicating the time on the stage at which the clip specified by the clip index is active. For instance, a value of [(0.0, 0), (20.0, 1)] indicates that clip 0 is active at time 0 and clip 1 is active at time 20. 
-/// \li <b>clipAssetPaths</b> -  List of asset paths to the clips for this prim. This list is unordered, but elements in this list are referred to by index in other clip-related fields. 
-/// \li <b>clipManifestAssetPath</b> -  Asset path for the clip manifest. The clip manifest indicates which attributes have time samples authored in the clips specified on this prim. During value resolution, we will only look for time samples  in clips if the attribute exists and is declared as varying in the manifest. Note that the clip manifest is only consulted to check check if an attribute exists and what its variability is. Other values and metadata authored in the manifest will be ignored.  For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim', and we want values for the attribute '/Prim_1.size', we will only look within this prims' clips if the attribute '/Prim.size' exists and is varying in the manifest. 
-/// \li <b>clipPrimPath</b> -  Path to the prim in the clips from which time samples will be read. This prim's path will be substituted with this value to determine the final path in the clip from which to read data. For instance, if this prims' path is '/Prim_1', the clip prim path is '/Prim',  and we want to get values for the attribute '/Prim_1.size'. The clip prim path will be substituted in, yielding '/Prim.size', and each clip will be examined for values at that path. 
-/// \li <b>clips</b> -  Dictionary that contains the definition of the clip sets on this prim. See \ref UsdClipsAPI::GetClips. 
-/// \li <b>clipSets</b> -  ListOp that may be used to affect how opinions from clip sets are applied during value resolution.  See \ref UsdClipsAPI::GetClipSets. 
-/// \li <b>clipTemplateAssetPath</b> -  A template string representing a set of assets. This string can be of two forms: path/basename.###.usd and path/basename.##.##.usd. In either case, the number of hash marks in each section is variable. These control the amount of padding USD will supply when looking up  the assets. For instance, a value of 'foo.###.usd',  with clipTemplateStartTime=11, clipTemplateEndTime=15, and clipTemplateStride=1: USD will look for: foo.011.usd, foo.012.usd, foo.013.usd, foo.014.usd and foo.015.usd. 
-/// \li <b>clipTemplateEndTime</b> -  A double which indicates the end of the range USD will use to to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
-/// \li <b>clipTemplateStartTime</b> -  A double which indicates the start of the range USD will use  to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
-/// \li <b>clipTemplateStride</b> -  A double representing the increment value USD will use when searching for asset paths. For example usage see clipTemplateAssetPath. 
-/// \li <b>clipTimes</b> -  List of pairs (stage time, clip time) indicating the time in the active clip that should be consulted for values at the corresponding stage time.   During value resolution, this list will be sorted by stage time;  times will then be linearly interpolated between consecutive entries. For instance, for clip times [(0.0, 0.0), (10.0, 20.0)],  at stage time 0, values from the active clip at time 0 will be used, at stage time 5, values from the active clip at time 10, and at stage  time 10, clip values at time 20. 
-/// \li <b>collection</b> - This is the namespace prefix used by  UsdCollectionAPI for authoring collections.
-/// \li <b>exclude</b> -  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansonRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
-/// \li <b>expandPrims</b> -  Possible value for the "expansionRule" attribute of a  collection. 
-/// \li <b>expandPrimsAndProperties</b> -  Possible value for the "expansionRule" attribute of a  collection. 
-/// \li <b>expansionRule</b> - Base name of the attribute used to encode  how the paths included in a collection must be expanded.
-/// \li <b>explicitOnly</b> -  Possible value for the "expansionRule" attribute of a  collection. 
-TF_DECLARE_PUBLIC_TOKENS(UsdTokens, USD_API, USD_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdTokensType
+extern USD_API TfStaticData<UsdTokensType> UsdTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

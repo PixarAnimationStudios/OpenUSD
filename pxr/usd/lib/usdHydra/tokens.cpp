@@ -25,6 +25,62 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_TOKENS);
+UsdHydraTokensType::UsdHydraTokensType() :
+    black("black"),
+    clamp("clamp"),
+    displayLookBxdf("displayLook:bxdf"),
+    faceIndex("faceIndex"),
+    faceOffset("faceOffset"),
+    frame("frame"),
+    HwPrimvar_1("HwPrimvar_1"),
+    HwPtexTexture_1("HwPtexTexture_1"),
+    HwUvTexture_1("HwUvTexture_1"),
+    infoFilename("info:filename"),
+    infoVarname("info:varname"),
+    linear("linear"),
+    linearMipmapLinear("linearMipmapLinear"),
+    linearMipmapNearest("linearMipmapNearest"),
+    magFilter("magFilter"),
+    minFilter("minFilter"),
+    mirror("mirror"),
+    nearest("nearest"),
+    nearestMipmapLinear("nearestMipmapLinear"),
+    nearestMipmapNearest("nearestMipmapNearest"),
+    repeat("repeat"),
+    textureMemory("textureMemory"),
+    uv("uv"),
+    wrapS("wrapS"),
+    wrapT("wrapT"),
+    allTokens({
+        black,
+        clamp,
+        displayLookBxdf,
+        faceIndex,
+        faceOffset,
+        frame,
+        HwPrimvar_1,
+        HwPtexTexture_1,
+        HwUvTexture_1,
+        infoFilename,
+        infoVarname,
+        linear,
+        linearMipmapLinear,
+        linearMipmapNearest,
+        magFilter,
+        minFilter,
+        mirror,
+        nearest,
+        nearestMipmapLinear,
+        nearestMipmapNearest,
+        repeat,
+        textureMemory,
+        uv,
+        wrapS,
+        wrapT
+    })
+{
+}
+
+TfStaticData<UsdHydraTokensType> UsdHydraTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

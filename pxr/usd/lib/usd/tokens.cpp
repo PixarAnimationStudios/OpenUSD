@@ -25,6 +25,46 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdTokens, USD_TOKENS);
+UsdTokensType::UsdTokensType() :
+    clipActive("clipActive"),
+    clipAssetPaths("clipAssetPaths"),
+    clipManifestAssetPath("clipManifestAssetPath"),
+    clipPrimPath("clipPrimPath"),
+    clips("clips"),
+    clipSets("clipSets"),
+    clipTemplateAssetPath("clipTemplateAssetPath"),
+    clipTemplateEndTime("clipTemplateEndTime"),
+    clipTemplateStartTime("clipTemplateStartTime"),
+    clipTemplateStride("clipTemplateStride"),
+    clipTimes("clipTimes"),
+    collection("collection"),
+    exclude("exclude"),
+    expandPrims("expandPrims"),
+    expandPrimsAndProperties("expandPrimsAndProperties"),
+    expansionRule("expansionRule"),
+    explicitOnly("explicitOnly"),
+    allTokens({
+        clipActive,
+        clipAssetPaths,
+        clipManifestAssetPath,
+        clipPrimPath,
+        clips,
+        clipSets,
+        clipTemplateAssetPath,
+        clipTemplateEndTime,
+        clipTemplateStartTime,
+        clipTemplateStride,
+        clipTimes,
+        collection,
+        exclude,
+        expandPrims,
+        expandPrimsAndProperties,
+        expansionRule,
+        explicitOnly
+    })
+{
+}
+
+TfStaticData<UsdTokensType> UsdTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

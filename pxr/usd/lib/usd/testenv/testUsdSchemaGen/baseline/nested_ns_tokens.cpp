@@ -25,6 +25,74 @@
 
 namespace foo { namespace bar { namespace baz {
 
-TF_DEFINE_PUBLIC_TOKENS(UsdContrivedTokens, USDCONTRIVED_TOKENS);
+UsdContrivedTokensType::UsdContrivedTokensType() :
+    binding("binding"),
+    cornerIndices("cornerIndices"),
+    cornerSharpnesses("cornerSharpnesses"),
+    creaseLengths("creaseLengths"),
+    holeIndices("holeIndices"),
+    justDefault("justDefault"),
+    libraryToken1("libraryToken1"),
+    libraryToken2("/non-identifier-tokenValue!"),
+    myColorFloat("myColorFloat"),
+    myDouble("myDouble"),
+    myFloat("myFloat"),
+    myNormals("myNormals"),
+    myPoints("myPoints"),
+    myUniformBool("myUniformBool"),
+    myVaryingToken("myVaryingToken"),
+    myVecfArray("myVecfArray"),
+    myVelocities("myVelocities"),
+    namespacedProperty("namespaced:property"),
+    newToken("newToken"),
+    pivotPosition("pivotPosition"),
+    relCanShareApiNameWithAttr("relCanShareApiNameWithAttr"),
+    riStatementsAttributesUserGofur_GeomOnHairdensity("riStatements:attributes:user:Gofur_GeomOnHairdensity"),
+    temp("temp"),
+    testingAsset("testingAsset"),
+    transform("transform"),
+    unsignedChar("unsignedChar"),
+    unsignedInt("unsignedInt"),
+    unsignedInt64Array("unsignedInt64Array"),
+    variableTokenAllowed1("VariableTokenAllowed1"),
+    variabletokenAllowed2("VariabletokenAllowed2"),
+    variableTokenDefault("VariableTokenDefault"),
+    allTokens({
+        binding,
+        cornerIndices,
+        cornerSharpnesses,
+        creaseLengths,
+        holeIndices,
+        justDefault,
+        libraryToken1,
+        libraryToken2,
+        myColorFloat,
+        myDouble,
+        myFloat,
+        myNormals,
+        myPoints,
+        myUniformBool,
+        myVaryingToken,
+        myVecfArray,
+        myVelocities,
+        namespacedProperty,
+        newToken,
+        pivotPosition,
+        relCanShareApiNameWithAttr,
+        riStatementsAttributesUserGofur_GeomOnHairdensity,
+        temp,
+        testingAsset,
+        transform,
+        unsignedChar,
+        unsignedInt,
+        unsignedInt64Array,
+        variableTokenAllowed1,
+        variabletokenAllowed2,
+        variableTokenDefault
+    })
+{
+}
+
+TfStaticData<UsdContrivedTokensType> UsdContrivedTokens;
 
 }}}

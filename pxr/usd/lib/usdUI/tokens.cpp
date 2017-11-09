@@ -25,6 +25,36 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdUITokens, USDUI_TOKENS);
+UsdUITokensType::UsdUITokensType() :
+    closed("closed"),
+    minimized("minimized"),
+    open("open"),
+    uiDescription("ui:description"),
+    uiDisplayGroup("ui:displayGroup"),
+    uiDisplayName("ui:displayName"),
+    uiNodegraphNodeDisplayColor("ui:nodegraph:node:displayColor"),
+    uiNodegraphNodeExpansionState("ui:nodegraph:node:expansionState"),
+    uiNodegraphNodeIcon("ui:nodegraph:node:icon"),
+    uiNodegraphNodePos("ui:nodegraph:node:pos"),
+    uiNodegraphNodeSize("ui:nodegraph:node:size"),
+    uiNodegraphNodeStackingOrder("ui:nodegraph:node:stackingOrder"),
+    allTokens({
+        closed,
+        minimized,
+        open,
+        uiDescription,
+        uiDisplayGroup,
+        uiDisplayName,
+        uiNodegraphNodeDisplayColor,
+        uiNodegraphNodeExpansionState,
+        uiNodegraphNodeIcon,
+        uiNodegraphNodePos,
+        uiNodegraphNodeSize,
+        uiNodegraphNodeStackingOrder
+    })
+{
+}
+
+TfStaticData<UsdUITokensType> UsdUITokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

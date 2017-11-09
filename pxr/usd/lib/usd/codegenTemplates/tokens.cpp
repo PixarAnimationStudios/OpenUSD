@@ -27,7 +27,20 @@
 {{ namespaceOpen }}
 
 {% endif %}
-TF_DEFINE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {{ Upper(tokensPrefix) }}_TOKENS);
+{{ tokensPrefix }}TokensType::{{ tokensPrefix }}TokensType() :
+{% for token in tokens %}
+    {{ token.id }}("{{ token.value }}"),
+{% endfor %}
+    allTokens({
+{% for token in tokens %}
+        {{ token.id }}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+    })
+{
+}
+
+TfStaticData<{{ tokensPrefix }}TokensType> {{ tokensPrefix }}Tokens;
 {% if useExportAPI %}
 
 {{ namespaceClose }}

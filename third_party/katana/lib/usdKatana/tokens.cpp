@@ -25,6 +25,26 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_TOKENS);
+UsdKatanaTokensType::UsdKatanaTokensType() :
+    katanaLooksChildNameExclusionAttrName("__UsdIn.skipChild.Looks"),
+    katanaLooksScopeName("Looks"),
+    katanaLooksScopePathSubstring("/Looks/"),
+    katanaPrimName("katana:primName"),
+    katanaSuppressGroupToAssemblyPromotion("katana:suppressGroupToAssemblyPromotion"),
+    katanaType("katana:type"),
+    katanaVisible("katana:visible"),
+    allTokens({
+        katanaLooksChildNameExclusionAttrName,
+        katanaLooksScopeName,
+        katanaLooksScopePathSubstring,
+        katanaPrimName,
+        katanaSuppressGroupToAssemblyPromotion,
+        katanaType,
+        katanaVisible
+    })
+{
+}
+
+TfStaticData<UsdKatanaTokensType> UsdKatanaTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

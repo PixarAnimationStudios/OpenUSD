@@ -35,57 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDLUX_TOKENS \
-    (angle) \
-    (angular) \
-    (automatic) \
-    (color) \
-    (colorTemperature) \
-    (consumeAndContinue) \
-    (consumeAndHalt) \
-    (cubeMapVerticalCross) \
-    (diffuse) \
-    (enableColorTemperature) \
-    (exposure) \
-    (filters) \
-    (geometry) \
-    (height) \
-    (ignore) \
-    (intensity) \
-    (latlong) \
-    (lightList) \
-    ((lightListCacheBehavior, "lightList:cacheBehavior")) \
-    (mirroredBall) \
-    (normalize) \
-    (portals) \
-    (radius) \
-    ((shadowColor, "shadow:color")) \
-    ((shadowDistance, "shadow:distance")) \
-    ((shadowEnable, "shadow:enable")) \
-    ((shadowExclude, "shadow:exclude")) \
-    ((shadowFalloff, "shadow:falloff")) \
-    ((shadowFalloffGamma, "shadow:falloffGamma")) \
-    ((shadowInclude, "shadow:include")) \
-    ((shapingConeAngle, "shaping:cone:angle")) \
-    ((shapingConeSoftness, "shaping:cone:softness")) \
-    ((shapingFocus, "shaping:focus")) \
-    ((shapingFocusTint, "shaping:focusTint")) \
-    ((shapingIesAngleScale, "shaping:ies:angleScale")) \
-    ((shapingIesFile, "shaping:ies:file")) \
-    (specular) \
-    ((textureFile, "texture:file")) \
-    ((textureFormat, "texture:format")) \
-    (width)
 
-/// \anchor UsdLuxTokens
+/// \class UsdLuxTokensType
 ///
-/// <b>UsdLuxTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdLuxTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -93,56 +53,184 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdLuxTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdLuxTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdLuxTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdLuxTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdLuxTokens->angle);
 /// \endcode
+struct UsdLuxTokensType {
+    USDLUX_API UsdLuxTokensType();
+    /// \brief "angle"
+    /// 
+    /// UsdLuxDistantLight
+    const TfToken angle;
+    /// \brief "angular"
+    /// 
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    const TfToken angular;
+    /// \brief "automatic"
+    /// 
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
+    const TfToken automatic;
+    /// \brief "color"
+    /// 
+    /// UsdLuxLight
+    const TfToken color;
+    /// \brief "colorTemperature"
+    /// 
+    /// UsdLuxLight
+    const TfToken colorTemperature;
+    /// \brief "consumeAndContinue"
+    /// 
+    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+    const TfToken consumeAndContinue;
+    /// \brief "consumeAndHalt"
+    /// 
+    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+    const TfToken consumeAndHalt;
+    /// \brief "cubeMapVerticalCross"
+    /// 
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    const TfToken cubeMapVerticalCross;
+    /// \brief "diffuse"
+    /// 
+    /// UsdLuxLight
+    const TfToken diffuse;
+    /// \brief "enableColorTemperature"
+    /// 
+    /// UsdLuxLight
+    const TfToken enableColorTemperature;
+    /// \brief "exposure"
+    /// 
+    /// UsdLuxLight
+    const TfToken exposure;
+    /// \brief "filters"
+    /// 
+    /// UsdLuxLight
+    const TfToken filters;
+    /// \brief "geometry"
+    /// 
+    /// UsdLuxGeometryLight
+    const TfToken geometry;
+    /// \brief "height"
+    /// 
+    /// UsdLuxRectLight
+    const TfToken height;
+    /// \brief "ignore"
+    /// 
+    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+    const TfToken ignore;
+    /// \brief "intensity"
+    /// 
+    /// UsdLuxDistantLight, UsdLuxLight
+    const TfToken intensity;
+    /// \brief "latlong"
+    /// 
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    const TfToken latlong;
+    /// \brief "lightList"
+    /// 
+    /// UsdLuxListAPI
+    const TfToken lightList;
+    /// \brief "lightList:cacheBehavior"
+    /// 
+    /// UsdLuxListAPI
+    const TfToken lightListCacheBehavior;
+    /// \brief "mirroredBall"
+    /// 
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    const TfToken mirroredBall;
+    /// \brief "normalize"
+    /// 
+    /// UsdLuxLight
+    const TfToken normalize;
+    /// \brief "portals"
+    /// 
+    /// UsdLuxDomeLight
+    const TfToken portals;
+    /// \brief "radius"
+    /// 
+    /// UsdLuxSphereLight, UsdLuxDiskLight
+    const TfToken radius;
+    /// \brief "shadow:color"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowColor;
+    /// \brief "shadow:distance"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowDistance;
+    /// \brief "shadow:enable"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowEnable;
+    /// \brief "shadow:exclude"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowExclude;
+    /// \brief "shadow:falloff"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowFalloff;
+    /// \brief "shadow:falloffGamma"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowFalloffGamma;
+    /// \brief "shadow:include"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken shadowInclude;
+    /// \brief "shaping:cone:angle"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingConeAngle;
+    /// \brief "shaping:cone:softness"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingConeSoftness;
+    /// \brief "shaping:focus"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingFocus;
+    /// \brief "shaping:focusTint"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingFocusTint;
+    /// \brief "shaping:ies:angleScale"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingIesAngleScale;
+    /// \brief "shaping:ies:file"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken shapingIesFile;
+    /// \brief "specular"
+    /// 
+    /// UsdLuxLight
+    const TfToken specular;
+    /// \brief "texture:file"
+    /// 
+    /// UsdLuxDomeLight, UsdLuxRectLight
+    const TfToken textureFile;
+    /// \brief "texture:format"
+    /// 
+    /// UsdLuxDomeLight
+    const TfToken textureFormat;
+    /// \brief "width"
+    /// 
+    /// UsdLuxRectLight
+    const TfToken width;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdLuxTokens
 ///
-/// The tokens are:
-/// \li <b>angle</b> - UsdLuxDistantLight
-/// \li <b>angular</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
-/// \li <b>automatic</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
-/// \li <b>color</b> - UsdLuxLight
-/// \li <b>colorTemperature</b> - UsdLuxLight
-/// \li <b>consumeAndContinue</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
-/// \li <b>consumeAndHalt</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
-/// \li <b>cubeMapVerticalCross</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
-/// \li <b>diffuse</b> - UsdLuxLight
-/// \li <b>enableColorTemperature</b> - UsdLuxLight
-/// \li <b>exposure</b> - UsdLuxLight
-/// \li <b>filters</b> - UsdLuxLight
-/// \li <b>geometry</b> - UsdLuxGeometryLight
-/// \li <b>height</b> - UsdLuxRectLight
-/// \li <b>ignore</b> - Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
-/// \li <b>intensity</b> - UsdLuxDistantLight, UsdLuxLight
-/// \li <b>latlong</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
-/// \li <b>lightList</b> - UsdLuxListAPI
-/// \li <b>lightListCacheBehavior</b> - UsdLuxListAPI
-/// \li <b>mirroredBall</b> - Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
-/// \li <b>normalize</b> - UsdLuxLight
-/// \li <b>portals</b> - UsdLuxDomeLight
-/// \li <b>radius</b> - UsdLuxSphereLight, UsdLuxDiskLight
-/// \li <b>shadowColor</b> - UsdLuxShadowAPI
-/// \li <b>shadowDistance</b> - UsdLuxShadowAPI
-/// \li <b>shadowEnable</b> - UsdLuxShadowAPI
-/// \li <b>shadowExclude</b> - UsdLuxShadowAPI
-/// \li <b>shadowFalloff</b> - UsdLuxShadowAPI
-/// \li <b>shadowFalloffGamma</b> - UsdLuxShadowAPI
-/// \li <b>shadowInclude</b> - UsdLuxShadowAPI
-/// \li <b>shapingConeAngle</b> - UsdLuxShapingAPI
-/// \li <b>shapingConeSoftness</b> - UsdLuxShapingAPI
-/// \li <b>shapingFocus</b> - UsdLuxShapingAPI
-/// \li <b>shapingFocusTint</b> - UsdLuxShapingAPI
-/// \li <b>shapingIesAngleScale</b> - UsdLuxShapingAPI
-/// \li <b>shapingIesFile</b> - UsdLuxShapingAPI
-/// \li <b>specular</b> - UsdLuxLight
-/// \li <b>textureFile</b> - UsdLuxDomeLight, UsdLuxRectLight
-/// \li <b>textureFormat</b> - UsdLuxDomeLight
-/// \li <b>width</b> - UsdLuxRectLight
-TF_DECLARE_PUBLIC_TOKENS(UsdLuxTokens, USDLUX_API, USDLUX_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdLuxTokensType
+extern USDLUX_API TfStaticData<UsdLuxTokensType> UsdLuxTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

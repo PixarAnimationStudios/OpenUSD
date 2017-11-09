@@ -25,6 +25,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdSchemaExamplesTokens, USDSCHEMAEXAMPLES_TOKENS);
+UsdSchemaExamplesTokensType::UsdSchemaExamplesTokensType() :
+    complexString("complexString"),
+    intAttr("intAttr"),
+    paramsMass("params:mass"),
+    paramsVelocity("params:velocity"),
+    paramsVolume("params:volume"),
+    target("target"),
+    allTokens({
+        complexString,
+        intAttr,
+        paramsMass,
+        paramsVelocity,
+        paramsVolume,
+        target
+    })
+{
+}
+
+TfStaticData<UsdSchemaExamplesTokensType> UsdSchemaExamplesTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

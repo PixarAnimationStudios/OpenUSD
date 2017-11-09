@@ -25,6 +25,34 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdSkelTokens, USDSKEL_TOKENS);
+UsdSkelTokensType::UsdSkelTokensType() :
+    joints("joints"),
+    primvarsSkelGeomBindTransform("primvars:skel:geomBindTransform"),
+    primvarsSkelJointIndices("primvars:skel:jointIndices"),
+    primvarsSkelJointWeights("primvars:skel:jointWeights"),
+    restTransforms("restTransforms"),
+    rotations("rotations"),
+    scales("scales"),
+    skelAnimationSource("skel:animationSource"),
+    skelJoints("skel:joints"),
+    skelSkeleton("skel:skeleton"),
+    translations("translations"),
+    allTokens({
+        joints,
+        primvarsSkelGeomBindTransform,
+        primvarsSkelJointIndices,
+        primvarsSkelJointWeights,
+        restTransforms,
+        rotations,
+        scales,
+        skelAnimationSource,
+        skelJoints,
+        skelSkeleton,
+        translations
+    })
+{
+}
+
+TfStaticData<UsdSkelTokensType> UsdSkelTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -7,10 +7,10 @@
             "Info": {
                 "SdfMetadata": {
                     "testCustomMetadata": {
-                        "type": "string",
-                        "default": "default value"
+                        "default": "default value", 
+                        "type": "string"
                     }
-                },
+                }, 
                 "Types": {
                     "TestUsdSchemaRegistryMetadataTest": {
                         "alias": {

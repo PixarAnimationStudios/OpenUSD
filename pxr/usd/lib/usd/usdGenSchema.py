@@ -604,7 +604,7 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                    tokensHTemplate.render(tokens=tokenData), validate)
         # tokens.cpp
         _WriteFile(os.path.join(codeGenPath, 'tokens.cpp'),
-                   tokensCppTemplate.render(), validate)
+                   tokensCppTemplate.render(tokens=tokenData), validate)
         # wrapTokens.cpp
         _WriteFile(os.path.join(codeGenPath, 'wrapTokens.cpp'),
                    tokensWrapTemplate.render(tokens=tokenData), validate)

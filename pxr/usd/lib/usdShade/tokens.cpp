@@ -25,6 +25,42 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdShadeTokens, USDSHADE_TOKENS);
+UsdShadeTokensType::UsdShadeTokensType() :
+    connectedSourceFor("connectedSourceFor:"),
+    derivesFrom("derivesFrom"),
+    displacement("displacement"),
+    full("full"),
+    infoId("info:id"),
+    inputs("inputs:"),
+    interface_("interface:"),
+    interfaceOnly("interfaceOnly"),
+    interfaceRecipientsOf("interfaceRecipientsOf:"),
+    lookBinding("look:binding"),
+    materialBind("materialBind"),
+    materialBinding("material:binding"),
+    materialVariant("materialVariant"),
+    outputs("outputs:"),
+    surface("surface"),
+    allTokens({
+        connectedSourceFor,
+        derivesFrom,
+        displacement,
+        full,
+        infoId,
+        inputs,
+        interface_,
+        interfaceOnly,
+        interfaceRecipientsOf,
+        lookBinding,
+        materialBind,
+        materialBinding,
+        materialVariant,
+        outputs,
+        surface
+    })
+{
+}
+
+TfStaticData<UsdShadeTokensType> UsdShadeTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

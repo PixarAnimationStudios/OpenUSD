@@ -35,24 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "usdKatana/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDKATANA_TOKENS \
-    ((katanaLooksChildNameExclusionAttrName, "__UsdIn.skipChild.Looks")) \
-    ((katanaLooksScopeName, "Looks")) \
-    ((katanaLooksScopePathSubstring, "/Looks/")) \
-    ((katanaPrimName, "katana:primName")) \
-    ((katanaSuppressGroupToAssemblyPromotion, "katana:suppressGroupToAssemblyPromotion")) \
-    ((katanaType, "katana:type")) \
-    ((katanaVisible, "katana:visible"))
 
-/// \anchor UsdKatanaTokens
+/// \class UsdKatanaTokensType
 ///
-/// <b>UsdKatanaTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdKatanaTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -60,23 +53,52 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdKatanaTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdKatanaTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdKatanaTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdKatanaTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdKatanaTokens->katanaLooksChildNameExclusionAttrName);
 /// \endcode
+struct UsdKatanaTokensType {
+    USDKATANA_API UsdKatanaTokensType();
+    /// \brief "__UsdIn.skipChild.Looks"
+    /// 
+    /// Special token for the usdKatana library.
+    const TfToken katanaLooksChildNameExclusionAttrName;
+    /// \brief "Looks"
+    /// 
+    /// Special token for the usdKatana library.
+    const TfToken katanaLooksScopeName;
+    /// \brief "/Looks/"
+    /// 
+    /// Special token for the usdKatana library.
+    const TfToken katanaLooksScopePathSubstring;
+    /// \brief "katana:primName"
+    /// 
+    /// UsdKatanaLookAPI
+    const TfToken katanaPrimName;
+    /// \brief "katana:suppressGroupToAssemblyPromotion"
+    /// 
+    /// UsdKatanaBlindDataObject
+    const TfToken katanaSuppressGroupToAssemblyPromotion;
+    /// \brief "katana:type"
+    /// 
+    /// UsdKatanaBlindDataObject
+    const TfToken katanaType;
+    /// \brief "katana:visible"
+    /// 
+    /// UsdKatanaBlindDataObject
+    const TfToken katanaVisible;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdKatanaTokens
 ///
-/// The tokens are:
-/// \li <b>katanaLooksChildNameExclusionAttrName</b> - Special token for the usdKatana library.
-/// \li <b>katanaLooksScopeName</b> - Special token for the usdKatana library.
-/// \li <b>katanaLooksScopePathSubstring</b> - Special token for the usdKatana library.
-/// \li <b>katanaPrimName</b> - UsdKatanaLookAPI
-/// \li <b>katanaSuppressGroupToAssemblyPromotion</b> - UsdKatanaBlindDataObject
-/// \li <b>katanaType</b> - UsdKatanaBlindDataObject
-/// \li <b>katanaVisible</b> - UsdKatanaBlindDataObject
-TF_DECLARE_PUBLIC_TOKENS(UsdKatanaTokens, USDKATANA_API, USDKATANA_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdKatanaTokensType
+extern USDKATANA_API TfStaticData<UsdKatanaTokensType> UsdKatanaTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
