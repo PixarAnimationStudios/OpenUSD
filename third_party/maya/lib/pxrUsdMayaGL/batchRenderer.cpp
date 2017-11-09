@@ -848,17 +848,15 @@ _OnMayaSceneUpdateCallback(void* clientData)
 
 // For Viewport 2.0, we listen for a notification from Maya's rendering
 // pipeline that all render passes have completed and then we do some cleanup.
-static
+/* static */
 void
-_OnMayaEndRenderCallback(MHWRender::MDrawContext& context, void* clientData)
+UsdMayaGLBatchRenderer::_OnMayaEndRenderCallback(
+        MHWRender::MDrawContext& context,
+        void* clientData)
 {
-    UsdMayaGLBatchRenderer* batchRenderer =
-        static_cast<UsdMayaGLBatchRenderer*>(clientData);
-    if (!batchRenderer) {
-        return;
+    if (_sGlobalRendererPtr) {
+        _sGlobalRendererPtr->_MayaRenderDidEnd();
     }
-
-    batchRenderer->MayaRenderDidEnd();
 }
 
 UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
@@ -882,23 +880,19 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     if (!renderer) {
         MGlobal::displayError("Viewport 2.0 renderer not initialized.");
     } else {
+        // Note that we do not ever remove this notification handler. Maya
+        // ensures that only one handler will be registered for a given name
+        // and semantic location.
         renderer->addNotification(
-            _OnMayaEndRenderCallback,
+            UsdMayaGLBatchRenderer::_OnMayaEndRenderCallback,
             _tokens->MayaEndRenderNotificationName.GetText(),
             MHWRender::MPassContext::kEndRenderSemantic,
-            (void*)this);
+            nullptr);
     }
 }
 
 UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
-    MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-    if (renderer) {
-        renderer->removeNotification(
-            _tokens->MayaEndRenderNotificationName.GetText(),
-            MHWRender::MPassContext::kEndRenderSemantic);
-    }
-
     _intersector.reset();
     _taskDelegate.reset();
 
@@ -1018,18 +1012,6 @@ UsdMayaGLBatchRenderer::Draw(
         //
         _RenderBatches( &context, viewMat, projectionMat, viewport );
     }
-}
-
-void
-UsdMayaGLBatchRenderer::MayaRenderDidEnd()
-{
-    // Selection is based on what we have last rendered to the display. The
-    // selection queue is cleared during drawing, so this has the effect of
-    // resetting the render queue and prepping the selection queue without any
-    // significant memory hit.
-    _renderQueue.swap(_selectQueue);
-
-    _drawnMayaRenderPasses.clear();
 }
 
 size_t
@@ -1360,11 +1342,23 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // not receive a notification at the end of rendering, so we do the swap
     // now.
     if (!vp2Context) {
-        MayaRenderDidEnd();
+        _MayaRenderDidEnd();
     }
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
         "^^^^^^^^^^^^ RENDER STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",_renderQueue.size());
+}
+
+void
+UsdMayaGLBatchRenderer::_MayaRenderDidEnd()
+{
+    // Selection is based on what we have last rendered to the display. The
+    // selection queue is cleared during drawing, so this has the effect of
+    // resetting the render queue and prepping the selection queue without any
+    // significant memory hit.
+    _renderQueue.swap(_selectQueue);
+
+    _drawnMayaRenderPasses.clear();
 }
 
 
