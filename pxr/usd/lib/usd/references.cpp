@@ -71,11 +71,12 @@ UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
 
 bool
 UsdReferences::AddReference(const std::string &assetPath,
-                               const SdfPath &primPath,
-                               const SdfLayerOffset &layerOffset,
-                               UsdListPosition position)
+                            const SdfPath &primPath,
+                            const SdfLayerOffset &layerOffset,
+                            UsdListPosition position)
 {
-    return AddReference(SdfReference(assetPath, primPath, layerOffset), position);
+    return AddReference(
+        SdfReference(assetPath, primPath, layerOffset), position);
 }
 
 bool
@@ -142,7 +143,6 @@ UsdReferences::SetReferences(const SdfReferenceVector& items)
     mark.Clear();
     return success;
 }
-
 
 // ---------------------------------------------------------------------- //
 // UsdReferences: Private Methods and Members 
