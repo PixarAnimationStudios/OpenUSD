@@ -52,6 +52,7 @@ pxr_library(usdviewq
         prettyPrint.py
         pythonInterpreter.py
         settings.py
+        settings2.py
         watchWindow.py
         adjustClipping.py
         adjustDefaultMaterial.py
@@ -86,10 +87,17 @@ install(DIRECTORY
 
 pxr_test_scripts(
     testenv/testUsdviewqConstantGroup.py
+    testenv/testUsdviewqSettings2.py
 )
 
 pxr_register_test(testUsdviewqConstantGroup
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqConstantGroup"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqSettings2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSettings2"
     EXPECTED_RETURN_CODE 0
 )

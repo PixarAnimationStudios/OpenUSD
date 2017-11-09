@@ -60,6 +60,11 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                     GetPrimsLoadability, GetClosestBoundMaterial)
 
+import settings2
+from settings2 import StateSource
+
+SETTINGS_VERSION = "1"
+
 class HUDEntries(ConstantGroup):
     # Upper HUD entries (declared in variables for abstraction)
     PRIM = "Prims"
@@ -86,8 +91,212 @@ class DebugTypes(ConstantGroup):
     USDIMAGING = "USDIMAGING"
     USDVIEWQ = "USDVIEWQ"
 
+class UIDefaults(ConstantGroup):
+    STAGE_VIEW_WIDTH = 604
+    PRIM_VIEW_WIDTH = 521
+    ATTRIBUTE_VIEW_WIDTH = 682
+    ATTRIBUTE_INSPECTOR_WIDTH = 443
+    TOP_HEIGHT = 538
+    BOTTOM_HEIGHT = 306
+
 # Name of the Qt binding being used
 QT_BINDING = QtCore.__name__.split('.')[0]
+
+class DataModelProxySource(StateSource):
+    """XXX Temporary class which allows MainWindow to serve as two state sources.
+    All fields here will be moved into an actual data model class in the future.
+    """
+
+    def __init__(self, mainWindow, parent, name):
+        StateSource.__init__(self, parent, name)
+
+        self._mainWindow = mainWindow
+
+        self._mainWindow._cameraMaskColor = tuple(self.stateProperty("cameraMaskColor", default=[0.1, 0.1, 0.1, 1.0]))
+        self._mainWindow._cameraReticlesColor = tuple(self.stateProperty("cameraReticlesColor", default=[0.0, 0.7, 1.0, 1.0]))
+        self._mainWindow._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=0.2)
+        self._mainWindow._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=0.1)
+        self._mainWindow._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
+        self._mainWindow._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
+        self._mainWindow._pickMode = self.stateProperty("pickMode", default=PickModes.PRIMS)
+
+        # We need to store the trinary selHighlightMode state here,
+        # because the stageView only deals in True/False (because it
+        # cannot know anything about playback state).
+        self._mainWindow._selHighlightMode = self.stateProperty("selectionHighlightMode", default=SelectionHighlightModes.ONLY_WHEN_PAUSED)
+
+        # We store the highlightColorName so that we can compare state during
+        # initialization without inverting the name->value logic
+        self._mainWindow._highlightColorName = self.stateProperty("highlightColor", default="Yellow")
+        self._mainWindow._ambientLightOnly = self.stateProperty("cameraLightEnabled", default=True)
+        self._mainWindow._keyLightEnabled = self.stateProperty("keyLightEnabled", default=True)
+        self._mainWindow._fillLightEnabled = self.stateProperty("fillLightEnabled", default=True)
+        self._mainWindow._backLightEnabled = self.stateProperty("backLightEnabled", default=True)
+        self._mainWindow._clearColorText = self.stateProperty("backgroundColor", default="Grey (Dark)")
+        self._mainWindow._showBBoxPlayback = self.stateProperty("showBBoxesDuringPlayback", default=False)
+        self._mainWindow._showBBoxes = self.stateProperty("showBBoxes", default=True)
+        self._mainWindow._showAABBox = self.stateProperty("showAABBox", default=True)
+        self._mainWindow._showOBBox = self.stateProperty("showOBBox", default=True)
+        self._mainWindow._displayGuide = self.stateProperty("displayGuide", default=False)
+        self._mainWindow._displayProxy = self.stateProperty("displayProxy", default=True)
+        self._mainWindow._displayRender = self.stateProperty("displayRender", default=False)
+        self._mainWindow._displayPrimId = self.stateProperty("displayPrimId", default=False)
+        self._mainWindow._enableHardwareShading = self.stateProperty("enableHardwareShading", default=True)
+        self._mainWindow._cullBackfaces = self.stateProperty("cullBackfaces", default=False)
+        self._mainWindow._showInactivePrims = self.stateProperty("showInactivePrims", default=True)
+        self._mainWindow._showAllMasterPrims = self.stateProperty("showAllMasterPrims", default=False)
+        self._mainWindow._showUndefinedPrims = self.stateProperty("showUndefinedPrims", default=False)
+        self._mainWindow._showAbstractPrims = self.stateProperty("showAbstractPrims", default=False)
+        self._mainWindow._rolloverPrimInfo = self.stateProperty("rolloverPrimInfo", default=False)
+        self._mainWindow._displayCameraOracles = self.stateProperty("cameraOracles", default=False)
+        self._mainWindow._cameraMaskMode = self.stateProperty("cameraMaskMode", default=CameraMaskModes.NONE)
+        self._mainWindow._showMask_Outline = self.stateProperty("cameraMaskOutline", default=False)
+        self._mainWindow._showReticles_Inside = self.stateProperty("cameraReticlesInside", default=False)
+        self._mainWindow._showReticles_Outside = self.stateProperty("cameraReticlesOutside", default=False)
+        self._mainWindow._showHUD = self.stateProperty("showHUD", default=True)
+
+        self._mainWindow._showHUD_Info = self.stateProperty("showHUDInfo", default=False)
+        # XXX Until we can make the "Subtree Info" stats-gathering faster
+        # we do not want the setting to persist from session to session.
+        self._mainWindow._showHUD_Info = False
+
+        self._mainWindow._showHUD_Complexity = self.stateProperty("showHUDComplexity", default=True)
+        self._mainWindow._showHUD_Performance = self.stateProperty("showHUDPerformance", default=True)
+        self._mainWindow._showHUD_GPUstats = self.stateProperty("showHUDGPUStats", default=False)
+
+    def onSaveState(self, state):
+        state["cameraMaskColor"] = list(self._mainWindow._cameraMaskColor)
+        state["cameraReticlesColor"] = list(self._mainWindow._cameraReticlesColor)
+        state["defaultMaterialAmbient"] = self._mainWindow._defaultMaterialAmbient
+        state["defaultMaterialSpecular"] = self._mainWindow._defaultMaterialSpecular
+        state["redrawOnScrub"] = self._mainWindow._redrawOnScrub
+        state["renderMode"] = self._mainWindow._renderMode
+        state["pickMode"] = self._mainWindow._pickMode
+        state["selectionHighlightMode"] = self._mainWindow._selHighlightMode
+        state["highlightColor"] = self._mainWindow._highlightColorName
+        state["cameraLightEnabled"] = self._mainWindow._ambientLightOnly
+        state["keyLightEnabled"] = self._mainWindow._keyLightEnabled
+        state["fillLightEnabled"] = self._mainWindow._fillLightEnabled
+        state["backLightEnabled"] = self._mainWindow._backLightEnabled
+        state["backgroundColor"] = self._mainWindow._clearColorText
+        state["showBBoxesDuringPlayback"] = self._mainWindow._showBBoxPlayback
+        state["showBBoxes"] = self._mainWindow._showBBoxes
+        state["showAABBox"] = self._mainWindow._showAABBox
+        state["showOBBox"] = self._mainWindow._showOBBox
+        state["displayGuide"] = self._mainWindow._displayGuide
+        state["displayProxy"] = self._mainWindow._displayProxy
+        state["displayRender"] = self._mainWindow._displayRender
+        state["displayPrimId"] = self._mainWindow._displayPrimId
+        state["enableHardwareShading"] = self._mainWindow._enableHardwareShading
+        state["cullBackfaces"] = self._mainWindow._cullBackfaces
+        state["showInactivePrims"] = self._mainWindow._showInactivePrims
+        state["showAllMasterPrims"] = self._mainWindow._showAllMasterPrims
+        state["showUndefinedPrims"] = self._mainWindow._showUndefinedPrims
+        state["showAbstractPrims"] = self._mainWindow._showAbstractPrims
+        state["rolloverPrimInfo"] = self._mainWindow._rolloverPrimInfo
+        state["cameraOracles"] = self._mainWindow._displayCameraOracles
+        state["cameraMaskMode"] = self._mainWindow._cameraMaskMode
+        state["cameraMaskOutline"] = self._mainWindow._showMask_Outline
+        state["cameraReticlesInside"] = self._mainWindow._showReticles_Inside
+        state["cameraReticlesOutside"] = self._mainWindow._showReticles_Outside
+        state["showHUD"] = self._mainWindow._showHUD
+        state["showHUDInfo"] = self._mainWindow._showHUD_Info
+        state["showHUDComplexity"] = self._mainWindow._showHUD_Complexity
+        state["showHUDPerformance"] = self._mainWindow._showHUD_Performance
+        state["showHUDGPUStats"] = self._mainWindow._showHUD_GPUstats
+
+class UIStateProxySource(StateSource):
+    """XXX Temporary class which allows MainWindow to serve as two state sources.
+    All fields here will be moved back into MainWindow in the future.
+    """
+
+    def __init__(self, mainWindow, parent, name):
+        StateSource.__init__(self, parent, name)
+
+        self._mainWindow = mainWindow
+        primViewColumnVisibility = self.stateProperty("primViewColumnVisibility",
+                default=[True, True, True], validator=lambda value: len(value) == 3)
+        propertyViewColumnVisibility = self.stateProperty("propertyViewColumnVisibility",
+                default=[True, True, True], validator=lambda value: len(value) == 3)
+        attributeInspectorCurrentTab = self.stateProperty("attributeInspectorCurrentTab", default=PropertyIndex.VALUE)
+
+        # UI is different when --norender is used so just save the default splitter sizes.
+        # TODO Save the loaded state so it doesn't disappear after using --norender.
+        if not self._mainWindow._noRender:
+            stageViewWidth = self.stateProperty("stageViewWidth", default=UIDefaults.STAGE_VIEW_WIDTH)
+            primViewWidth = self.stateProperty("primViewWidth", default=UIDefaults.PRIM_VIEW_WIDTH)
+            attributeViewWidth = self.stateProperty("attributeViewWidth", default=UIDefaults.ATTRIBUTE_VIEW_WIDTH)
+            attributeInspectorWidth = self.stateProperty("attributeInspectorWidth", default=UIDefaults.ATTRIBUTE_INSPECTOR_WIDTH)
+            topHeight = self.stateProperty("topHeight", default=UIDefaults.TOP_HEIGHT)
+            bottomHeight = self.stateProperty("bottomHeight", default=UIDefaults.BOTTOM_HEIGHT)
+            viewerMode = self.stateProperty("viewerMode", default=False)
+
+            if viewerMode:
+                self._mainWindow._ui.primStageSplitter.setSizes([0, 1])
+                self._mainWindow._ui.topBottomSplitter.setSizes([1, 0])
+            else:
+                self._mainWindow._ui.primStageSplitter.setSizes(
+                    [primViewWidth, stageViewWidth])
+                self._mainWindow._ui.topBottomSplitter.setSizes(
+                    [topHeight, bottomHeight])
+            self._mainWindow._ui.attribBrowserInspectorSplitter.setSizes(
+                [attributeViewWidth, attributeInspectorWidth])
+            self._mainWindow._viewerModeEscapeSizes = topHeight, bottomHeight, primViewWidth, stageViewWidth
+        else:
+            self._mainWindow._ui.primStageSplitter.setSizes(
+                [UIDefaults.PRIM_VIEW_WIDTH, UIDefaults.STAGE_VIEW_WIDTH])
+            self._mainWindow._ui.attribBrowserInspectorSplitter.setSizes(
+                [UIDefaults.ATTRIBUTE_VIEW_WIDTH, UIDefaults.ATTRIBUTE_INSPECTOR_WIDTH])
+            self._mainWindow._ui.topBottomSplitter.setSizes(
+                [UIDefaults.TOP_HEIGHT, UIDefaults.BOTTOM_HEIGHT])
+
+        for i, visible in enumerate(primViewColumnVisibility):
+            self._mainWindow._ui.primView.setColumnHidden(i, not visible)
+        for i, visible in enumerate(propertyViewColumnVisibility):
+            self._mainWindow._ui.propertyView.setColumnHidden(i, not visible)
+
+        propertyIndex = attributeInspectorCurrentTab
+        if propertyIndex not in PropertyIndex:
+            propertyIndex = PropertyIndex.VALUE
+        self._mainWindow._ui.attributeInspector.setCurrentIndex(propertyIndex)
+
+    def onSaveState(self, state):
+        # UI is different when --norender is used so don't load the splitter sizes.
+        if not self._mainWindow._noRender:
+            primViewWidth, stageViewWidth = self._mainWindow._ui.primStageSplitter.sizes()
+            attributeViewWidth, attributeInspectorWidth = self._mainWindow._ui.attribBrowserInspectorSplitter.sizes()
+            topHeight, bottomHeight = self._mainWindow._ui.topBottomSplitter.sizes()
+            viewerMode = (bottomHeight == 0 and primViewWidth == 0)
+
+            # If viewer mode is active, save the escape sizes instead of the
+            # actual sizes. If there are no escape sizes, just save the defaults.
+            if viewerMode:
+                if self._mainWindow._viewerModeEscapeSizes is not None:
+                    topHeight, bottomHeight, primViewWidth, stageViewWidth = self._mainWindow._viewerModeEscapeSizes
+                else:
+                    primViewWidth = UIDefaults.STAGE_VIEW_WIDTH
+                    stageViewWidth = UIDefaults.PRIM_VIEW_WIDTH
+                    attributeViewWidth = UIDefaults.ATTRIBUTE_VIEW_WIDTH
+                    attributeInspectorWidth = UIDefaults.ATTRIBUTE_INSPECTOR_WIDTH
+                    topHeight = UIDefaults.TOP_HEIGHT
+                    bottomHeight = UIDefaults.BOTTOM_HEIGHT
+
+            state["primViewWidth"] = primViewWidth
+            state["stageViewWidth"] = stageViewWidth
+            state["attributeViewWidth"] = attributeViewWidth
+            state["attributeInspectorWidth"] = attributeInspectorWidth
+            state["topHeight"] = topHeight
+            state["bottomHeight"] = bottomHeight
+            state["viewerMode"] = viewerMode
+
+        state["primViewColumnVisibility"] = [
+            not self._mainWindow._ui.primView.isColumnHidden(c)
+            for c in range(self._mainWindow._ui.primView.columnCount())]
+        state["propertyViewColumnVisibility"] = [
+            not self._mainWindow._ui.propertyView.isColumnHidden(c)
+            for c in range(self._mainWindow._ui.propertyView.columnCount())]
+
+        state["attributeInspectorCurrentTab"] = self._mainWindow._ui.attributeInspector.currentIndex()
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -137,6 +346,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._printTiming and pluginsLoaded:
             t.PrintTime("configure and load plugins.")
 
+    def _openSettings2(self, defaultSettings):
+        settingsPathDir = self._outputBaseDirectory()
+
+        if (settingsPathDir is None) or defaultSettings:
+            # Create an ephemeral settings object by withholding the file path.
+            self._settings2 = settings2.Settings(SETTINGS_VERSION)
+        else:
+            settings2Path = os.path.join(settingsPathDir, "state.json")
+            self._settings2 = settings2.Settings(SETTINGS_VERSION, settings2Path)
+
+        modelProxy = DataModelProxySource(self, self._settings2, "model")
+        uiProxy = UIStateProxySource(self, self._settings2, "ui")
 
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
@@ -172,63 +393,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._mallocTags = parserData.mallocTagStats
             self._bboxCache = None
             self._complexity = parserData.complexity
-            self._clearColorText = None
-            self._clearColor = None
-            self._renderMode = None
-            self._pickMode = None
 
             self._playing = False
 
-            self._showAABBox = True
-            self._showOBBox = False
-            self._showBBoxes = True
-            self._showBBoxPlayback = False
-
-            self._displayGuide = False
-            self._displayProxy = True
-            self._displayRender = False
-            self._displayCameraOracles = False
-            self._displayPrimId = False
-            self._enableHardwareShading = True
-            self._cullBackfaces = False
-
-            self._cameraMaskMode = CameraMaskModes.NONE
-            self._showMask_Outline = False
-
-            self._showReticles_Inside = False
-            self._showReticles_Outside = False
-
-            self._showHUD = True
-            self._showHUD_Info = False
-            self._showHUD_Complexity = True
-            self._showHUD_Performance = True
-            self._showHUD_GPUstats = False
-
-            self._ambientLightOnly = True
-            self._keyLightEnabled = False
-            self._fillLightEnabled = False
-            self._backLightEnabled = False
-
-            # We need to store the trinary selHighlightMode state here,
-            # because the stageView only deals in True/False (because it
-            # cannot know anything about playback state).
-            # We store the highlightColorName so that we can compare state during
-            # initialization without inverting the name->value logic
-            self._selHighlightMode = SelectionHighlightModes.ONLY_WHEN_PAUSED
-            self._drawSelHighlights = True
-            self._highlightColorName = "Yellow"
-            self._highlightColor = (1.0,1.0,0.0,0.5)
-
-            self._redrawOnScrub = True
-
-            self._showInactivePrims = True
-            self._showAllMasterPrims = False
-            self._showUndefinedPrims = False
-            self._showAbstractPrims = False
-
-            self._rolloverPrimInfo = False
-
             self._allowViewUpdates = True
+
+            # When viewer mode is active, the panel sizes are cached so they can
+            # be restored later.
+            self._viewerModeEscapeSizes = None
 
             MainWindow._renderer = parserData.renderer
             if MainWindow._renderer == 'simple':
@@ -268,6 +440,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.setWindowTitle(parserData.usdFile)
             self._statusBar = QtWidgets.QStatusBar(self)
             self.setStatusBar(self._statusBar)
+
+            self._openSettings2(parserData.defaultSettings)
 
             settingsPathDir = self._outputBaseDirectory()
             if settingsPathDir is None or parserData.defaultSettings:
@@ -326,14 +500,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 'White':         (1.0, 1.0, 1.0, 0.5),
                 'Yellow':        (1.0, 1.0, 0.0, 0.5),
                 'Cyan':          (0.0, 1.0, 1.0, 0.5)}
-
-            self.ResetDefaultMaterialSettings(store=False)
-            self._defaultMaterialAmbient = \
-               self._settings.get("DefaultMaterialAmbient",
-                                  self._defaultMaterialAmbient)
-            self._defaultMaterialSpecular = \
-               self._settings.get("DefaultMaterialSpecular",
-                                  self._defaultMaterialSpecular)
 
             # Initialize the upper HUD info
             self._upperHUDInfo = dict()
@@ -569,6 +735,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.actionReset_View.triggered.connect(self._resetView)
 
+            self._ui.topBottomSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
+            self._ui.primStageSplitter.splitterMoved.connect(self._cacheViewerModeEscapeSizes)
             self._ui.actionToggle_Viewer_Mode.triggered.connect(
                 self._toggleViewerMode)
 
@@ -817,20 +985,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._setupDebugMenu()
 
-
             # configure plugins
             self._configurePlugins()
-
-            # save splitter states
-            self._ui.primStageSplitter.splitterMoved.connect(self._splitterMoved)
-            self._ui.topBottomSplitter.splitterMoved.connect(self._splitterMoved)
-            self._ui.attribBrowserInspectorSplitter.splitterMoved.connect(self._splitterMoved)
-
-            #create a timer for saving splitter states only when they stop moving
-            self._splitterTimer = QtCore.QTimer(self)
-            self._splitterTimer.setInterval(500)
-
-            self._splitterTimer.timeout.connect(self._saveSplitterStates)
 
             # timer for slider. when user stops scrubbing for 0.5s, update stuff.
             self._sliderTimer = QtCore.QTimer(self)
@@ -1361,7 +1517,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @cameraMaskColor.setter
     def cameraMaskColor(self, color):
         self._cameraMaskColor = color
-        self._settings.setAndSave(cameraMaskColor=self._cameraMaskColor)
 
     @property
     def cameraReticlesColor(self):
@@ -1370,7 +1525,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @cameraReticlesColor.setter
     def cameraReticlesColor(self, color):
         self._cameraReticlesColor = color
-        self._settings.setAndSave(cameraReticlesColor=self._cameraReticlesColor)
 
     @property
     def defaultMaterialAmbient(self):
@@ -1380,7 +1534,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def defaultMaterialAmbient(self, value):
         if value != self._defaultMaterialAmbient:
             self._defaultMaterialAmbient = value
-            self._settings.setAndSave(DefaultMaterialAmbient=self._defaultMaterialAmbient)
             self.signalDefaultMaterialChanged.emit()
 
     @property
@@ -1391,7 +1544,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def defaultMaterialSpecular(self, value):
         if value != self._defaultMaterialSpecular:
             self._defaultMaterialSpecular = value
-            self._settings.setAndSave(DefaultMaterialSpecular=self._defaultMaterialSpecular)
             self.signalDefaultMaterialChanged.emit()
 
     @property
@@ -1574,12 +1726,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def redrawOnScrub(self, value):
         self._redrawOnScrub = value
 
-    def ResetDefaultMaterialSettings(self, store=True):
+    def ResetDefaultMaterialSettings(self):
         self._defaultMaterialAmbient = .2
         self._defaultMaterialSpecular = .1
-        if store:
-            self._settings.setAndSave(DefaultMaterialAmbient=self._defaultMaterialAmbient)
-            self._settings.setAndSave(DefaultMaterialSpecular=self._defaultMaterialSpecular)
         self.signalDefaultMaterialChanged.emit()
 
     def _adjustDefaultMaterial(self, checked):
@@ -1594,7 +1743,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _redrawOptionToggled(self, checked):
         self._redrawOnScrub = checked
-        self._settings.setAndSave(RedrawOnScrub=self._redrawOnScrub)
         self._ui.frameSlider.setTracking(self._redrawOnScrub)
 
     def _watchWindowToggled(self, checked):
@@ -1969,16 +2117,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def _resetSettings(self):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
-        self._clearColorText = self._settings.get("ClearColor", "Grey (Dark)")
-        self._clearColor = self._clearColorsDict[self._clearColorText]
-        self._renderMode = self._settings.get("RenderMode", RenderModes.SMOOTH_SHADED)
-        self._pickMode = self._settings.get("PickMode", PickModes.PRIMS)
-        self._redrawOnScrub = self._settings.get("RedrawOnScrub", True)
-        self._showInactivePrims = self._settings.get("actionShow_Inactive_Prims", True)
-        self._showAllMasterPrims = self._settings.get("actionShow_All_Master_Prims", False)
-        self._showUndefinedPrims = self._settings.get("actionShow_Undefined_Prims", False)
-        self._showAbstractPrims = self._settings.get("actionShow_Abstract_Prims", False)
-        self._rolloverPrimInfo = self._settings.get("actionRollover_Prim_Info", False)
 
         self._ui.redrawOnScrub.setChecked(self._redrawOnScrub)
         self._ui.actionShow_Inactive_Prims.setChecked(self._showInactivePrims)
@@ -1994,119 +2132,55 @@ class MainWindow(QtWidgets.QMainWindow):
         self._reloadFixedUI()
         self._reloadVaryingUI()
 
-        # restore splitter positions
-        splitterSettings1 = self._settings.get('primStageSplitter')
-        if not splitterSettings1 is None:
-            self._ui.primStageSplitter.restoreState(splitterSettings1)
-
-        splitterSettings2 = self._settings.get('topBottomSplitter')
-        if not splitterSettings2 is None:
-            self._ui.topBottomSplitter.restoreState(splitterSettings2)
-
-        splitterSettings3 = self._settings.get('attribBrowserInspectorSplitter')
-        if not splitterSettings3 is None:
-            self._ui.attribBrowserInspectorSplitter.restoreState(splitterSettings3)
-
-        primViewHeaderSettings = self._settings.get('primViewHeader', [])
-        for i,b in enumerate(primViewHeaderSettings):
-            self._ui.primView.setColumnHidden(i, b)
-
-        self._ui.attributeInspector.\
-            setCurrentIndex(self._settings.get("AttributeInspectorCurrentTab",
-                                               PropertyIndex.VALUE))
-
-        propertyViewHeaderSettings = self._settings.get('propertyViewHeader', [])
-        for i,b in enumerate(propertyViewHeaderSettings):
-            self._ui.propertyView.setColumnHidden(i, b)
-
-        self._showAABBox = self._settings.get("ShowAABBox", True)
         self._ui.showAABBox.setChecked(self._showAABBox)
 
-        self._showOBBox = self._settings.get("ShowOBBox", False)
         self._ui.showOBBox.setChecked(self._showOBBox)
 
-        self._showBBoxPlayback = self._settings.get("ShowBBoxPlayback", False)
         self._ui.showBBoxPlayback.setChecked(self._showBBoxPlayback)
 
-        self._showBBoxes = self._settings.get("ShowBBoxes", True)
         self._ui.showBBoxes.setChecked(self._showBBoxes)
 
-        self._displayGuide = self._settings.get("DisplayGuide", False)
         self._ui.actionDisplay_Guide.setChecked(self._displayGuide)
 
-        self._displayProxy = self._settings.get("DisplayProxy", True)
         self._ui.actionDisplay_Proxy.setChecked(self._displayProxy)
 
-        self._displayRender = self._settings.get("DisplayRender", False)
         self._ui.actionDisplay_Render.setChecked(self._displayRender)
 
         if self._stageView:
             # Called after displayGuide/displayProxy/displayRender are updated.
             self._stageView.updateBboxPurposes()
 
-        self._displayCameraOracles = self._settings.get("DisplayCameraOracles", False)
         self._ui.actionDisplay_Camera_Oracles.setChecked(self._displayCameraOracles)
 
-        self._displayPrimId = self._settings.get("DisplayPrimId", False)
         self._ui.actionDisplay_PrimId.setChecked(self._displayPrimId)
 
-        self._enableHardwareShading = self._settings.get("EnableHardwareShading", True)
         self._ui.actionEnable_Hardware_Shading.setChecked(self._enableHardwareShading)
 
-        self._cullBackfaces = self._settings.get("CullBackfaces", False)
         self._ui.actionCull_Backfaces.setChecked(self._cullBackfaces)
 
-        self._cameraMaskMode = self._settings.get("actionCameraMask", CameraMaskModes.NONE)
-        self._showMask_Outline = self._settings.get("actionCameraMask_Outline", False)
-        self._cameraMaskColor = self._settings.get("cameraMaskColor",
-                (0.1, 0.1, 0.1, 1.0))
         self._ui.actionCameraMask_Full.setChecked(self._cameraMaskMode == CameraMaskModes.FULL)
         self._ui.actionCameraMask_Partial.setChecked(self._cameraMaskMode == CameraMaskModes.PARTIAL)
         self._ui.actionCameraMask_None.setChecked(self._cameraMaskMode == CameraMaskModes.NONE)
         self._ui.actionCameraMask_Outline.setChecked(self._showMask_Outline)
 
-        self._showReticles_Inside = self._settings.get("actionCameraReticles_Inside", False)
-        self._showReticles_Outside = self._settings.get("actionCameraReticles_Outside", False)
-        self._cameraReticlesColor = self._settings.get("cameraReticlesColor",
-                (0.0, 0.7, 1.0, 1.0))
         self._ui.actionCameraReticles_Inside.setChecked(self._showReticles_Inside)
         self._ui.actionCameraReticles_Outside.setChecked(self._showReticles_Outside)
 
-        self._showHUD = self._settings.get("actionHUD", True)
         self._ui.actionHUD.setChecked(self._showHUD)
-        # XXX Until we can make the "Subtree Info" stats-gathering faster,
-        # we do not want the setting to persist from session to session.
-        # self._showHUD_Info = \
-        #     self._settings.get("actionHUD_Info", False)
         self._showHUD_Info = False
         self._ui.actionHUD_Info.setChecked(self._showHUD_Info)
-        self._showHUD_Complexity = \
-            self._settings.get("actionHUD_Complexity", True)
         self._ui.actionHUD_Complexity.setChecked(
             self._showHUD_Complexity)
-        self._showHUD_Performance = \
-            self._settings.get("actionHUD_Performance", True)
         self._ui.actionHUD_Performance.setChecked(
             self._showHUD_Performance)
-        self._showHUD_GPUstats = \
-            self._settings.get("actionHUD_GPUstats", False)
         self._ui.actionHUD_GPUstats.setChecked(
             self._showHUD_GPUstats)
-
-        # Three point lights are disabled by default. They turn on when the
-        #  "Ambient Only" mode is unchecked
-        self._ambientLightOnly = self._settings.get("AmbientOnly", True)
-        self._keyLightEnabled = self._settings.get("KeyLightEnabled", False)
-        self._fillLightEnabled = self._settings.get("FillLightEnabled", False)
-        self._backLightEnabled = self._settings.get("BackLightEnabled", False)
 
         if self._stageView:
             self._stageView.update()
 
-        self._highlightColorName = str(self._settings.get("HighlightColor", "Yellow"))
+        self._clearColor = self._clearColorsDict[self._clearColorText]
         self._highlightColor = self._highlightColorsDict[self._highlightColorName]
-        self._selHighlightMode = self._settings.get("SelHighlightMode",
-                                                 SelectionHighlightModes.ONLY_WHEN_PAUSED)
         self._drawSelHighlights = (self._selHighlightMode != SelectionHighlightModes.NEVER)
 
         # lighting is not activated until a shaded mode is selected
@@ -2134,58 +2208,32 @@ class MainWindow(QtWidgets.QMainWindow):
         # Update the UIs (it gets all of them) and StageView on a timer
         self.UpdatePrimViewContents()
 
-    def _saveSplitterStates(self):
-        # we dont want any of the splitter positions to be saved when using
-        # --norender
-        if self._stageView:
-            self._settings.setAndSave(
-                    primStageSplitter = self._ui.primStageSplitter.saveState())
-
-            self._settings.setAndSave(
-                    topBottomSplitter = self._ui.topBottomSplitter.saveState())
-
-            self._settings.setAndSave(
-                    attribBrowserInspectorSplitter = self._ui.attribBrowserInspectorSplitter.\
-                                                                saveState())
-        self._splitterTimer.stop()
-
-    def _splitterMoved(self, pos, index):
-        # reset the timer every time a splitter moves
-        # when the splitters stop moving for half a second, save state
-        self._splitterTimer.stop()
-        self._splitterTimer.start()
+    def _cacheViewerModeEscapeSizes(self, pos=None, index=None):
+        topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
+        primViewWidth, stageViewWidth = self._ui.primStageSplitter.sizes()
+        if bottomHeight > 0 or primViewWidth > 0:
+            self._viewerModeEscapeSizes = topHeight, bottomHeight, primViewWidth, stageViewWidth
+        else:
+            self._viewerModeEscapeSizes = None
 
     def _toggleViewerMode(self):
-        splitter1 = self._ui.topBottomSplitter
-        splitter2 = self._ui.primStageSplitter
-        sz1 = splitter1.sizes()
-        sz2 = splitter2.sizes()
-        if sz1[1] > 0 or sz2[0] > 0:
-            sz1[0] += sz1[1]
-            sz1[1] = 0
-            sz2[1] += sz2[0]
-            sz2[0] = 0
-            splitter1.setSizes(sz1)
-            splitter2.setSizes(sz2)
+        topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
+        primViewWidth, stageViewWidth = self._ui.primStageSplitter.sizes()
+        if bottomHeight > 0 or primViewWidth > 0:
+            topHeight += bottomHeight
+            bottomHeight = 0
+            stageViewWidth += primViewWidth
+            primViewWidth = 0
         else:
-            # restore saved state
-            splitterSettings1 = self._settings.get('primStageSplitter')
-            if not splitterSettings1 is None:
-                self._ui.primStageSplitter.restoreState(splitterSettings1)
-            splitterSettings2 = self._settings.get('topBottomSplitter')
-            if not splitterSettings2 is None:
-                self._ui.topBottomSplitter.restoreState(splitterSettings2)
-
-            # Make sure the restored state isn't also collapsed
-            sz1 = splitter1.sizes()
-            sz2 = splitter2.sizes()
-            if sz1[1] == 0 and sz2[0] == 0:
-                sz1[1] = .25 * sz1[0]
-                sz1[0] = .75 * sz1[0]
-                splitter1.setSizes(sz1)
-                sz2[0] = .25 * sz2[1]
-                sz2[1] = .75 * sz2[1]
-                splitter2.setSizes(sz2)
+            if self._viewerModeEscapeSizes is not None:
+                topHeight, bottomHeight, primViewWidth, stageViewWidth = self._viewerModeEscapeSizes
+            else:
+                bottomHeight = UIDefaults.BOTTOM_HEIGHT
+                topHeight = UIDefaults.TOP_HEIGHT
+                primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
+                stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
+        self._ui.topBottomSplitter.setSizes([topHeight, bottomHeight])
+        self._ui.primStageSplitter.setSizes([primViewWidth, stageViewWidth])
 
     def _resetView(self,selectPrim = None):
         """ Reverts the GL frame to the initial camera view,
@@ -2222,26 +2270,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _changeRenderMode(self, mode):
         self._renderMode = str(mode.text())
-        self._settings.setAndSave(RenderMode=self._renderMode)
         self._ui.menuLights.setEnabled(self._renderMode in ShadedRenderModes)
         if self._stageView:
             self._stageView.update()
 
     def _changePickMode(self, mode):
         self._pickMode = str(mode.text())
-        self._settings.setAndSave(PickMode=self._pickMode)
 
     def _changeSelHighlightMode(self, mode):
         self._selHighlightMode = str(mode.text())
         self._drawSelHighlights = (self._selHighlightMode != SelectionHighlightModes.NEVER)
-        self._settings.setAndSave(SelHighlightMode=self._selHighlightMode)
         if self._stageView:
             self._stageView.update()
 
     def _changeHighlightColor(self, color):
         self._highlightColorName = str(color.text())
         self._highlightColor = self._highlightColorsDict[self._highlightColorName]
-        self._settings.setAndSave(HighlightColor=self._highlightColorName)
         if self._stageView:
             self._stageView.update()
 
@@ -2287,12 +2331,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def _updateLights(self):
         """Called whenever any lights settings are modified."""
 
-        # Update all settings.
-        self._settings.setAndSave(AmbientOnly=self._ambientLightOnly,
-                                  KeyLightEnabled=self._keyLightEnabled,
-                                  FillLightEnabled=self._fillLightEnabled,
-                                  BackLightEnabled=self._backLightEnabled)
-
         # Update the UI and view.
         self._ui.actionAmbient_Only.setChecked(self._ambientLightOnly)
         self._ui.threePointLights.setEnabled(not self._ambientLightOnly)
@@ -2303,7 +2341,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def _changeBgColor(self, mode):
         self._clearColorText = str(mode.text())
         self._clearColor = self._clearColorsDict[self._clearColorText]
-        self._settings.setAndSave(ClearColor=self._clearColorText)
         if self._stageView:
             self._stageView.update()
 
@@ -2311,7 +2348,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """Called when the menu item for showing BBoxes
         during playback is activated or deactivated."""
         self._showBBoxPlayback = state
-        self._settings.setAndSave(ShowBBoxPlayback=self._showBBoxPlayback)
 
     def _setUseExtentsHint(self, state):
         self._refreshBBoxCache(state)
@@ -2325,7 +2361,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """Called when the menu item for showing BBoxes
         is activated."""
         self._showBBoxes = state
-        self._settings.setAndSave(ShowBBoxes=self._showBBoxes)
         #recompute and display bbox
         self._refreshBBox()
 
@@ -2333,7 +2368,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """Called when Axis-Aligned bounding boxes
         are activated/deactivated via menu item"""
         self._showAABBox = state
-        self._settings.setAndSave(ShowAABBox=self._showAABBox)
         # recompute and display bbox
         self._refreshBBox()
 
@@ -2341,7 +2375,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """Called when Oriented bounding boxes
         are activated/deactivated via menu item"""
         self._showOBBox = state
-        self._settings.setAndSave(ShowOBBox=self._showOBBox)
         # recompute and display bbox
         self._refreshBBox()
 
@@ -2354,7 +2387,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleDisplayGuide(self, checked):
         self._displayGuide = checked
-        self._settings.setAndSave(DisplayGuide=self._displayGuide)
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
@@ -2363,7 +2395,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleDisplayProxy(self, checked):
         self._displayProxy = checked
-        self._settings.setAndSave(DisplayProxy=self._displayProxy)
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
@@ -2372,7 +2403,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleDisplayRender(self, checked):
         self._displayRender = checked
-        self._settings.setAndSave(DisplayRender=self._displayRender)
         self._updateAttributeView()
         if self._stageView:
             self._stageView.updateBboxPurposes()
@@ -2381,25 +2411,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleDisplayCameraOracles(self, checked):
         self._displayCameraOracles = checked
-        self._settings.setAndSave(DisplayCameraGuides=self._displayCameraOracles)
         if self._stageView:
             self._stageView.update()
 
     def _toggleDisplayPrimId(self, checked):
         self._displayPrimId = checked
-        self._settings.setAndSave(DisplayPrimId=self._displayPrimId)
         if self._stageView:
             self._stageView.update()
 
     def _toggleEnableHardwareShading(self, checked):
         self._enableHardwareShading = checked
-        self._settings.setAndSave(EnableHardwareShading=self._enableHardwareShading)
         if self._stageView:
             self._stageView.update()
 
     def _toggleCullBackfaces(self, checked):
         self._cullBackfaces = checked
-        self._settings.setAndSave(CullBackfaces=self._cullBackfaces)
         if self._stageView:
             self._stageView.update()
 
@@ -2462,13 +2488,8 @@ class MainWindow(QtWidgets.QMainWindow):
     # File handling functionality =============================================
 
     def _cleanAndClose(self):
-        self._settings.setAndSave(primViewHeader = \
-                [self._ui.primView.isColumnHidden(c) \
-                    for c in range(self._ui.primView.columnCount())])
 
-        self._settings.setAndSave(propertyViewHeader = \
-                [self._ui.propertyView.isColumnHidden(c) \
-                    for c in range(self._ui.propertyView.columnCount())])
+        self._settings2.save()
 
         # If the current path widget is focused when closing usdview, it can
         # trigger an "editingFinished()" signal, which will look for a prim in
@@ -2714,8 +2735,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # attributeInspector tab widget's currentChanged(int) signal callback
         if index is None:
             index = self._ui.attributeInspector.currentIndex()
-        else:
-            self._settings.setAndSave(AttributeInspectorCurrentTab=index)
 
         if obj is None:
             obj = self._getSelectedObject()
@@ -2803,27 +2822,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _toggleShowInactivePrims(self, checked):
         self._showInactivePrims = checked
-        self._settings.setAndSave(actionShow_Inactive_Prims=self._showInactivePrims)
         self._resetPrimView()
 
     def _toggleShowMasterPrims(self, checked):
         self._showAllMasterPrims = checked
-        self._settings.setAndSave(actionShow_All_Master_Prims=self._showAllMasterPrims)
         self._resetPrimView()
 
     def _toggleShowUndefinedPrims(self, checked):
         self._showUndefinedPrims = checked
-        self._settings.setAndSave(actionShow_Undefined_Prims=self._showUndefinedPrims)
         self._resetPrimView()
 
     def _toggleShowAbstractPrims(self, checked):
         self._showAbstractPrims = checked
-        self._settings.setAndSave(actionShow_Abstract_Prims=self._showAbstractPrims)
         self._resetPrimView()
 
     def _toggleRolloverPrimInfo(self, checked):
         self._rolloverPrimInfo = checked
-        self._settings.setAndSave(actionRollover_Prim_Info=self._rolloverPrimInfo)
         if self._stageView:
             self._stageView.rolloverPicking = self._rolloverPrimInfo
 
@@ -3810,9 +3824,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self._cameraMaskMode = CameraMaskModes.NONE
         self._showMask_Outline = self._ui.actionCameraMask_Outline.isChecked()
 
-        self._settings.setAndSave(actionCameraMask=self._cameraMaskMode)
-        self._settings.setAndSave(actionCameraMask_Outline=self._showMask_Outline)
-
         if self._stageView:
             self._stageView.updateGL()
 
@@ -3853,18 +3864,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._stageView:
             self._stageView.updateGL()
 
-        self._settings.setAndSave(actionCameraReticles_Inside=self._showReticles_Inside)
-        self._settings.setAndSave(actionCameraReticles_Outside=self._showReticles_Outside)
-
     def _HUDMenuChangedInfoRefresh(self):
         """Called when a HUD menu item that requires info refresh has changed.
         Updates the upper HUD with both prim info and geom counts.
         """
         self._showHUD = self._ui.actionHUD.isChecked()
         self._showHUD_Info = self._ui.actionHUD_Info.isChecked()
-
-        self._settings.setAndSave(actionHUD=self._showHUD)
-        self._settings.setAndSave(actionHUD_Info=self._showHUD_Info)
 
         if self._isHUDVisible():
             self._updateHUDPrimStats()
@@ -3880,10 +3885,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._showHUD_GPUstats = self._ui.actionHUD_GPUstats.isChecked()
         if self._stageView:
             self._stageView.updateGL()
-
-        self._settings.setAndSave(actionHUD_Complexity=self._showHUD_Complexity)
-        self._settings.setAndSave(actionHUD_Performance=self._showHUD_Complexity)
-        self._settings.setAndSave(actionHUD_GPUstats=self._showHUD_GPUstats)
 
     def _getHUDStatKeys(self):
         ''' returns the keys of the HUD with PRIM and NOTYPE and the top and
