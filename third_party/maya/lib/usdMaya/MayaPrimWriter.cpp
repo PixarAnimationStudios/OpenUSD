@@ -68,7 +68,8 @@ MayaPrimWriter::MayaPrimWriter(const MDagPath& iDag,
     mWriteJobCtx(jobCtx),
     mDagPath(iDag),
     mUsdPath(uPath),
-    mIsValid(true)
+    mIsValid(true),
+    mExportsVisibility(jobCtx.getArgs().exportVisibility)
 {
 }
 
@@ -97,7 +98,7 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     MFnDependencyNode depFn(getDagPath().node());
     MFnDependencyNode depFnT(dagT.node()); // optionally also scan a shape's transform if merging transforms
 
-    if (mWriteJobCtx.getArgs().exportVisibility) {
+    if (mExportsVisibility) {
         bool isVisible  = true;   // if BOTH shape or xform is animated, then visible
         bool isAnimated = false;  // if either shape or xform is animated, then animated
 
@@ -180,6 +181,12 @@ bool
 MayaPrimWriter::shouldPruneChildren() const
 {
     return false;
+}
+
+void
+MayaPrimWriter::setExportsVisibility(bool exports)
+{
+    mExportsVisibility = exports;
 }
 
 

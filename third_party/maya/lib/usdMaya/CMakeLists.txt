@@ -89,6 +89,7 @@ pxr_shared_library(${PXR_PACKAGE}
         debugCodes
         registryHelper
         MayaCameraWriter
+        MayaInstancerWriter
         MayaMeshWriter
         MayaNurbsCurveWriter
         MayaNurbsSurfaceWriter
