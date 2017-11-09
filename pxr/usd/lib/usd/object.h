@@ -180,6 +180,13 @@ public:
         return !(lhs == rhs);
     }
 
+    /// Less-than operator. Returns true if \a lhs < \a rhs. 
+    /// 
+    /// This simply compares the paths of the objects. 
+    friend bool operator<(const UsdObject &lhs, const UsdObject &rhs) {
+        return lhs.GetPath() < rhs.GetPath();
+    }
+
     // hash_value overload for std/boost hash.
     USD_API
     friend size_t hash_value(const UsdObject &obj);

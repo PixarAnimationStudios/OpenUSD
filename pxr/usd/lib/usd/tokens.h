@@ -51,7 +51,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     (clipTemplateEndTime) \
     (clipTemplateStartTime) \
     (clipTemplateStride) \
-    (clipTimes)
+    (clipTimes) \
+    (collection) \
+    (exclude) \
+    (expandPrims) \
+    (expandPrimsAndProperties) \
+    (expansionRule) \
+    (explicitOnly)
 
 /// \anchor UsdTokens
 ///
@@ -84,6 +90,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>clipTemplateStartTime</b> -  A double which indicates the start of the range USD will use  to search for asset paths. This value is inclusive in that range. For example usage see clipTemplateAssetPath. 
 /// \li <b>clipTemplateStride</b> -  A double representing the increment value USD will use when searching for asset paths. For example usage see clipTemplateAssetPath. 
 /// \li <b>clipTimes</b> -  List of pairs (stage time, clip time) indicating the time in the active clip that should be consulted for values at the corresponding stage time.   During value resolution, this list will be sorted by stage time;  times will then be linearly interpolated between consecutive entries. For instance, for clip times [(0.0, 0.0), (10.0, 20.0)],  at stage time 0, values from the active clip at time 0 will be used, at stage time 5, values from the active clip at time 10, and at stage  time 10, clip values at time 20. 
+/// \li <b>collection</b> - This is the namespace prefix used by  UsdCollectionAPI for authoring collections.
+/// \li <b>exclude</b> -  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansonRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
+/// \li <b>expandPrims</b> -  Possible value for the "expansionRule" attribute of a  collection. 
+/// \li <b>expandPrimsAndProperties</b> -  Possible value for the "expansionRule" attribute of a  collection. 
+/// \li <b>expansionRule</b> - Base name of the attribute used to encode  how the paths included in a collection must be expanded.
+/// \li <b>explicitOnly</b> -  Possible value for the "expansionRule" attribute of a  collection. 
 TF_DECLARE_PUBLIC_TOKENS(UsdTokens, USD_API, USD_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

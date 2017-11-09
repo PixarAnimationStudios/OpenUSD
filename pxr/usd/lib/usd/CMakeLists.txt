@@ -24,6 +24,7 @@ pxr_library(usd
         attribute
         clipsAPI
         attributeQuery
+        collectionAPI
         common
         crateInfo
         debugCodes
@@ -90,6 +91,7 @@ pxr_library(usd
         wrapAttribute.cpp
         wrapAttributeQuery.cpp
         wrapClipsAPI.cpp
+        wrapCollectionAPI.cpp
         wrapCommon.cpp
         wrapCrateInfo.cpp
         wrapEditContext.cpp
@@ -157,6 +159,7 @@ pxr_test_scripts(
     testenv/testUsdBug141491.py
     testenv/testUsdChangeProcessing.py
     testenv/testUsdClasses.py
+    testenv/testUsdCollectionAPI.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdFileFormats.py
@@ -419,6 +422,11 @@ pxr_install_test_dir(
     DEST testUsdVariants
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdCollectionAPI
+    DEST testUsdCollectionAPI
+)
+
 pxr_register_test(testUsdAttributeBlocking
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeBlocking"
@@ -510,6 +518,12 @@ pxr_register_test(testUsdBug141491
 pxr_register_test(testUsdChangeProcessing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdChangeProcessing"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCollectionAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCollectionAPI"
     EXPECTED_RETURN_CODE 0
 )
 
