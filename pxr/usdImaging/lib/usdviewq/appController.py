@@ -46,7 +46,7 @@ from customAttributes import (_GetCustomAttributes, BoundingBoxAttribute,
 from primViewItem import PrimViewItem
 from variantComboBox import VariantComboBox
 from legendUtil import ToggleLegendWithBrowser
-import prettyPrint, watchWindow, adjustClipping, adjustDefaultMaterial, settings
+import prettyPrint, adjustClipping, adjustDefaultMaterial, settings
 from constantGroup import ConstantGroup
 
 # Common Utilities
@@ -758,8 +758,6 @@ class AppController(QtCore.QObject):
 
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
-            self._ui.actionWatch_Window.toggled.connect(self._watchWindowToggled)
-
             if self._stageView:
                 self._ui.actionRecompute_Clipping_Planes.triggered.connect(
                     self._stageView.detachAndReClipFromCurrentCamera)
@@ -810,8 +808,6 @@ class AppController(QtCore.QObject):
 
             self._ui.attributeInspector.currentChanged.connect(
                 self._updateAttributeInspector)
-
-            self._ui.propertyView.itemSelectionChanged.connect(self._refreshWatchWindow)
 
             self._ui.propertyView.itemClicked.connect(self._propertyViewItemClicked)
 
@@ -1749,104 +1745,6 @@ class AppController(QtCore.QObject):
     def _redrawOptionToggled(self, checked):
         self._redrawOnScrub = checked
         self._ui.frameSlider.setTracking(self._redrawOnScrub)
-
-    def _watchWindowToggled(self, checked):
-        if (not checked):
-            self._watchWindow.accept()
-        else:
-            self._watchWindow = watchWindow.WatchWindow(self)
-            # dock the watch window next to the main usdview window
-            self._watchWindow.move(self._mainWindow.x() + self._mainWindow.frameGeometry().width(),
-                                   self._mainWindow.y())
-            self._watchWindow.resize(self._mainWindow.size())
-            self._watchWindow.show()
-            self._refreshWatchWindow()
-
-    # XXX USD WATCH WINDOW DEACTIVATED
-    def _refreshWatchWindow(self, updateVaryingOnly = False):
-        if (self._ui.actionWatch_Window.isChecked()):
-            varyScrollPos = \
-                self._watchWindow._ui.varyingEdit.verticalScrollBar().value()
-            unvaryScrollPos = \
-                self._watchWindow._ui.unvaryingEdit.verticalScrollBar().value()
-
-            self._watchWindow.clearContents()
-            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
-
-            for i in self._ui.propertyView.selectedItems():
-                if i.column() == 0:        # make sure first column is selected
-
-                    attrName = str(i.text())
-                    # index [0] is the the type, which can be:
-                       # attribType.UNVARYING, AUTHORED OR INTERPOLATED
-                    type = self._primDict[attrName][0]
-
-                    # # # # # # # # # # # # # #
-                    # populate UNVARYING side #
-                    dictKey = self._currentPrims[0].GetPath() + \
-                              str(Usd.Scene.FRAME_UNVARYING) + \
-                              attrName + '_UNVARYING'
-
-                    if (dictKey not in self._valueCache or
-                        self._valueCache[dictKey][0].find(
-                            "Pretty-printing canceled") != -1):
-
-                        # unvarying data is in self._primDict[attrName][2],
-                        # so this checks if there is unvarying data
-                        if len(self._primDict[attrName]) > 2:
-                            col = UnvaryingTextColor.color()
-                            valString = prettyPrint.prettyPrint(
-                                        self._primDict[attrName][2])
-                        else:   # no unvarying data
-                            col = UIBaseColors.RED.color()
-                            valString = "Not defined in unvarying section"
-
-                        self._valueCache[dictKey] = (valString, col)
-
-                    text = self._valueCache[dictKey][0]
-                    color = self._valueCache[dictKey][1]
-                    self._watchWindow.appendUnvaryingContents(
-                        attrName + "\n" + text, color)
-
-                    # # # # # # # # # # # # #
-                    # populate VARYING side #
-                    dictKey = self._currentPrims[0].GetPath() + \
-                              str(self._currentFrame) + \
-                              attrName + '_VARYING'
-
-                    if (dictKey not in self._valueCache or
-                        self._valueCache[dictKey][0].find(
-                            "Pretty-printing canceled") != -1):
-
-                        # varying data is stored at index [1],
-                        # in self._primDict[attrName][1]
-                        if type == attribType.AUTHORED:
-                            col = AuthoredTextColor.color()
-                            valString = prettyPrint.prettyPrint(
-                                        self._primDict[attrName][1])
-                        elif type == attribType.INTERPOLATED:
-                            col = InterpolatedTextColor.color()
-                            valString = prettyPrint.prettyPrint(
-                                        self._primDict[attrName][1])
-                        else:
-                            col = UIBaseColors.RED.color()
-                            valString = "Not defined in varying section"
-
-                        self._valueCache[dictKey] = (valString, col)
-
-                    text = self._valueCache[dictKey][0]
-                    color = self._valueCache[dictKey][1]
-                    self._watchWindow.appendContents(
-                        attrName + "\n" + text, color)
-
-                    # tell the watch window to print a "====" separator
-                    self._watchWindow.appendSeparator()
-
-            QtWidgets.QApplication.restoreOverrideCursor()
-            self._watchWindow._ui.varyingEdit.verticalScrollBar().setValue(
-                varyScrollPos)
-            self._watchWindow._ui.unvaryingEdit.verticalScrollBar().setValue(
-                unvaryScrollPos)
 
     # Frame-by-frame/Playback functionality ===================================
 

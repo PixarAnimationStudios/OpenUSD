@@ -53,7 +53,6 @@ pxr_library(usdviewq
         pythonInterpreter.py
         settings.py
         settings2.py
-        watchWindow.py
         adjustClipping.py
         adjustDefaultMaterial.py
         primViewItem.py
@@ -71,7 +70,6 @@ pxr_library(usdviewq
 
     PYSIDE_UI_FILES
         mainWindowUI.ui
-        watchWindowUI.ui
         adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui

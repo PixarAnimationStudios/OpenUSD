@@ -1095,7 +1095,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1335,7 +1335,6 @@
     <property name="title">
      <string>Window</string>
     </property>
-    <addaction name="actionWatch_Window"/>
     <addaction name="showInterpreter"/>
    </widget>
    <widget class="QMenu" name="menuEdit_Prim">
