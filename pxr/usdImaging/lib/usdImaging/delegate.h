@@ -368,8 +368,6 @@ public:
                                             SdfPath *rprimPath=NULL,
                                             SdfPathVector *instanceContext=NULL);
 
-private:
-    typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PathToPathMap;
 public:
     // Converts a UsdStage path to a path in the render index.
     SdfPath GetPathForIndex(SdfPath const& usdPath) {
@@ -382,40 +380,17 @@ public:
             return usdPath;
         }
 
-        tbb::spin_rw_mutex::scoped_lock 
-            lock(_usdToIndexPathMapMutex, /* write = */ false);
-
-        _PathToPathMap::const_iterator it = _usdToIndexPathMap.find(usdPath);
-        if (it != _usdToIndexPathMap.end())
-            return it->second;
-
-        const SdfPath indexPath = 
-            usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
-
-        lock.upgrade_to_writer();
-        _usdToIndexPathMap[usdPath] = indexPath;
-        return indexPath;
+        return usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
     }
 
     SdfPath GetPathForUsd(SdfPath const& indexPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();
-        if (delegateID == SdfPath::AbsoluteRootPath())
+        if (delegateID == SdfPath::AbsoluteRootPath()) {
             return indexPath;
+        }
 
-        tbb::spin_rw_mutex::scoped_lock 
-            lock(_indexToUsdPathMapMutex, /* write = */ false);
-
-        _PathToPathMap::const_iterator it = _indexToUsdPathMap.find(indexPath);
-        if (it != _indexToUsdPathMap.end())
-            return it->second;
-
-        const SdfPath usdPath = 
-            indexPath.ReplacePrefix(delegateID, SdfPath::AbsoluteRootPath());
-
-        lock.upgrade_to_writer();
-        _indexToUsdPathMap[indexPath] = usdPath;
-        return usdPath;
+        return indexPath.ReplacePrefix(delegateID, SdfPath::AbsoluteRootPath());
     }
 
     /// Populate HdxSelection for given \p path (root) and \p instanceIndex
@@ -576,13 +551,6 @@ private:
 
     // Obtain the prim tracking data for the given cache path.
     _PrimInfo *GetPrimInfo(const SdfPath &cachePath);
-
-    // XXX: These maps could be store as individual member paths on the Rprim
-    // itself, which seems like a much nicer way of maintaining the mapping.
-    tbb::spin_rw_mutex _indexToUsdPathMapMutex;
-    _PathToPathMap _indexToUsdPathMap;
-    tbb::spin_rw_mutex _usdToIndexPathMapMutex;
-    _PathToPathMap _usdToIndexPathMap;
 
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _InstancerSet _instancerPrimPaths;
