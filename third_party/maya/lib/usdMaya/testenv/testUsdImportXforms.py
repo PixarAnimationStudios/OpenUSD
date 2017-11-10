@@ -43,12 +43,13 @@ class testUsdImportXforms(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-        usdFile = os.path.abspath('UsdImportXformsTest.usda')
-        cmds.usdImport(file=usdFile, shadingMode='none')
-
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
+
+    def setUp(cls):
+        # Create a new file so each test case starts with a fresh state.
+        cmds.file(new=1, f=1)        
 
     def _GetMayaTransform(self, transformName):
         selectionList = OM.MSelectionList()
@@ -62,6 +63,9 @@ class testUsdImportXforms(unittest.TestCase):
         Tests that importing a USD cube mesh that has XformOps on it all tagged
         as inverse ops results in the correct transform when imported into Maya.
         """
+        usdFile = os.path.abspath('UsdImportXformsTest.usda')
+        cmds.usdImport(file=usdFile, shadingMode='none')
+
         mayaTransform = self._GetMayaTransform('InverseOpsOnlyCube')
         transformationMatrix = mayaTransform.transformation()
 
@@ -112,9 +116,7 @@ class testUsdImportXforms(unittest.TestCase):
         }
         
         rand = Random(3)
-        
-        cmds.file(new=1, f=1)
-        
+
         allNodes = []
         allExpected = {}
         
