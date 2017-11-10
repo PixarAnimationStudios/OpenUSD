@@ -36,9 +36,57 @@ PXR_NAMESPACE_OPEN_SCOPE
 // ------------------------------------------------------------------------- //
 // UsdReferences
 // ------------------------------------------------------------------------- //
-bool
-UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
+
+namespace
 {
+
+bool
+_TranslatePath(SdfReference* ref, const UsdEditTarget& editTarget)
+{
+    // We do not map prim paths across the edit target for non-internal 
+    // references, as these paths are supposed to be in the namespace of
+    // the referenced layer stack.
+    if (!ref->GetAssetPath().empty()) {
+        return true;
+    }
+
+    // Non-sub-root references aren't expected to be mappable across 
+    // non-local edit targets, so we can just use the given reference as-is.
+    if (ref->GetPrimPath().IsEmpty() ||
+        ref->GetPrimPath().IsRootPrimPath()) {
+        return true;
+    }
+
+    const SdfPath mappedPath = editTarget.MapToSpecPath(ref->GetPrimPath());
+    if (mappedPath.IsEmpty()) {
+        TF_CODING_ERROR(
+            "Cannot map <%s> to current edit target.", 
+            ref->GetPrimPath().GetText());
+        return false;
+    }
+
+    // If the edit target points inside a variant, the mapped path may 
+    // contain a variant selection. We need to strip this out, since
+    // inherit paths may not contain variant selections.
+    ref->SetPrimPath(mappedPath.StripAllVariantSelections());
+    return true;
+}
+
+}
+
+bool
+UsdReferences::AddReference(const SdfReference& refIn, UsdListPosition position)
+{
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    SdfReference ref = refIn;
+    if (!_TranslatePath(&ref, _prim.GetStage()->GetEditTarget())) {
+        return false;
+    }
+
     SdfChangeBlock block;
     bool success = false;
     {
@@ -96,8 +144,18 @@ UsdReferences::AddInternalReference(const SdfPath &primPath,
 }
 
 bool
-UsdReferences::RemoveReference(const SdfReference& ref)
+UsdReferences::RemoveReference(const SdfReference& refIn)
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    SdfReference ref = refIn;
+    if (!_TranslatePath(&ref, _prim.GetStage()->GetEditTarget())) {
+        return false;
+    }
+
     SdfChangeBlock block;
     TfErrorMark mark;
     bool success = false;
@@ -114,6 +172,11 @@ UsdReferences::RemoveReference(const SdfReference& ref)
 bool
 UsdReferences::ClearReferences()
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
     SdfChangeBlock block;
     TfErrorMark mark;
     bool success = false;
@@ -127,19 +190,36 @@ UsdReferences::ClearReferences()
 }
 
 bool 
-UsdReferences::SetReferences(const SdfReferenceVector& items)
+UsdReferences::SetReferences(const SdfReferenceVector& itemsIn)
 {
-    SdfChangeBlock block;
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
+
     TfErrorMark mark;
-    bool success = false;
 
-    // Proxy editor has no clear way of setting explicit items in a single
-    // call, so instead, just set the field directly.
-    SdfReferenceListOp refs;
-    refs.SetExplicitItems(items);
-    success = GetPrim().SetMetadata(SdfFieldKeys->References, refs) && 
-        mark.IsClean();
+    SdfReferenceVector items;
+    items.reserve(itemsIn.size());
+    for (SdfReference item : itemsIn) {
+        if (_TranslatePath(&item, editTarget)) {
+            items.push_back(item);
+        }
+    }
 
+    if (!mark.IsClean()) {
+        return false;
+    }
+
+    SdfChangeBlock block;
+    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+        SdfReferencesProxy refs = spec->GetReferenceList();
+        refs.GetExplicitItems() = items;
+    }
+
+    bool success = mark.IsClean();
     mark.Clear();
     return success;
 }
@@ -151,8 +231,7 @@ UsdReferences::SetReferences(const SdfReferenceVector& items)
 SdfPrimSpecHandle
 UsdReferences::_CreatePrimSpecForEditing()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim.");
+    if (!TF_VERIFY(_prim)) {
         return SdfPrimSpecHandle();
     }
 

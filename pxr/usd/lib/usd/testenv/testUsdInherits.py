@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import unittest
-from pxr import Usd, Sdf, Tf
+from pxr import Usd, Pcp, Sdf, Tf
 
 allFormats = ['usd' + x for x in 'ac']
 
@@ -79,6 +79,137 @@ class TestUsdInherits(unittest.TestCase):
 
             assert concrete.GetInherits().RemoveInherit(classA.GetPath())
             assert len(concrete.GetChildren()) == 0
+
+    def test_InheritPathMapping(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+            
+            # Create test scenegraph 
+            stage.DefinePrim("/Ref")
+            stage.DefinePrim("/Ref/Class")
+            stage.DefinePrim("/Ref/Instance")
+
+            stage.DefinePrim("/Ref2")
+            stage.DefinePrim("/Ref2/Class")
+
+            stage.DefinePrim("/Class")
+
+            prim = stage.DefinePrim("/Model")
+            prim.GetReferences().AddInternalReference("/Ref")
+
+            classPrim = stage.GetPrimAtPath("/Model/Class")
+            instancePrim = stage.GetPrimAtPath("/Model/Instance")
+            self.assertEqual(prim.GetChildren(), [classPrim, instancePrim])
+
+            # Set the edit target to point to the referenced prim.
+            refNode = prim.GetPrimIndex().rootNode.children[0]
+            self.assertEqual(refNode.arcType, Pcp.ArcTypeReference)
+
+            stage.SetEditTarget(
+                Usd.EditTarget(refNode.layerStack.layers[0], refNode))
+
+            # Add an inherit path to the instance prim pointing to the 
+            # class prim.
+            instancePrim.GetInherits() \
+                        .AddInherit("/Model/Class", Usd.ListPositionFront)
+
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.prependedItems = [Sdf.Path("/Ref/Class")]
+
+            instancePrimSpec = \
+                stage.GetRootLayer().GetPrimAtPath("/Ref/Instance")
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+            # Remove the inherit path.
+            instancePrim.GetInherits().RemoveInherit(classPrim.GetPath())
+
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.deletedItems = [Sdf.Path("/Ref/Class")]
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+            # Add a global inherit path.
+            instancePrim.GetInherits() \
+                        .AddInherit("/Class", Usd.ListPositionFront)
+
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.prependedItems = [Sdf.Path("/Class")]
+            expectedInheritPaths.deletedItems = [Sdf.Path("/Ref/Class")]
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+            # Remove the global inherit path.
+            instancePrim.GetInherits().RemoveInherit("/Class")
+
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.deletedItems = ["/Ref/Class", "/Class"]
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+            # Try to add a local inherit path pointing to a prim outside the 
+            # scope of reference. This should fail because that path will not
+            # map across the reference edit target.
+            with self.assertRaises(Tf.ErrorException):
+                instancePrim.GetInherits() \
+                            .AddInherit("/Ref2/Class", Usd.ListPositionFront)
+
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+            # Remove the local inherit path. This should fail and raise an
+            # error again because the path will not map across the reference.
+            with self.assertRaises(Tf.ErrorException):
+                instancePrim.GetInherits().RemoveInherit("/Ref2/Class")
+
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+            
+            # Set inherit paths using the SetInherits API
+            instancePrim.GetInherits().SetInherits(
+                ["/Model/Class", "/Class"])
+
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.explicitItems = ["/Ref/Class", "/Class"]
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+            # Try to set unmappable inherit paths using the SetInherits API,
+            # which should fail.
+            with self.assertRaises(Tf.ErrorException):
+                instancePrim.GetInherits().SetInherits(["/Ref2/Class"])
+
+            self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
+                             expectedInheritPaths)
+
+    def test_InheritPathMappingVariants(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+
+            # Create test scenegraph with variant
+            refPrim = stage.DefinePrim("/Root")
+            vset = refPrim.GetVariantSet("v")
+            vset.AddVariant("x")
+            vset.SetVariantSelection("x")
+            with vset.GetVariantEditContext():
+                stage.DefinePrim("/Root/Class")
+                stage.DefinePrim("/Root/Instance")
+
+            # Set edit target inside the variant and add an inherit
+            # to another prim in the same variant.
+            with vset.GetVariantEditContext():
+                instancePrim = stage.GetPrimAtPath("/Root/Instance")
+                instancePrim.GetInherits().AddInherit(
+                    "/Root/Class", Usd.ListPositionFront)
+
+            # Check that authored inherit path does *not* include variant
+            # selection.
+            instancePrimSpec = \
+                stage.GetRootLayer().GetPrimAtPath("/Root{v=x}Instance")
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.prependedItems = [Sdf.Path("/Root/Class")]
+            self.assertEqual(instancePrimSpec.GetInfo('inheritPaths'),
+                             expectedInheritPaths)
 
 if __name__ == '__main__':
     unittest.main()

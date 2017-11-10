@@ -197,6 +197,13 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// UsdStage::ResolveIdentifierToEditTarget() before authoring the
 /// reference.</b>
 ///
+/// When adding an internal reference, the given prim path is expected to 
+/// be in the namespace of the owning prim's stage. Sub-root prim paths
+/// will be translated from this namespace to the namespace of the
+/// current edit target, if necessary. If a path cannot be translated,
+/// a coding error will be issued and no changes will be made. Non-sub-root
+/// paths will not be translated.
+///
 /// Immediately upon successful authoring of the reference (before returning
 /// from AddReference(), RemoveReference(), ClearReferences(), or
 /// SetReferences()), the UsdStage on which the reference was authored will
