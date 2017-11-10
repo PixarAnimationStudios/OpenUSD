@@ -167,6 +167,15 @@ public:
     USD_API
     static std::vector<TfToken> GetDisallowedFields();
 
+    /// Returns true if the prim type \p primType inherits from \ref UsdTyped. 
+    USD_API
+    static bool IsTyped(const TfType& primType);
+
+    /// Returns true if the prim type \p primType is instantiable
+    /// in scene description.
+    USD_API
+    static bool IsConcrete(const TfType& primType);
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 

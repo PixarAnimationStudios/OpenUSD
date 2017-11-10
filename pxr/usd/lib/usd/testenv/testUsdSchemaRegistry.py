@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import os, unittest
-from pxr import Plug, Usd, Vt
+from pxr import Plug, Usd, Vt, Tf
 
 class TestUsdSchemaRegistry(unittest.TestCase):
     @classmethod
@@ -70,6 +70,24 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                          "Testing documentation metadata")
         self.assertEqual(relDef.GetInfo("hidden"), True)
         self.assertEqual(relDef.GetInfo("testCustomMetadata"), "garply")
+
+    def test_IsTyped(self):
+        modelAPI = Tf.Type.FindByName("UsdModelAPI")
+        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
+        collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
+
+        self.assertFalse(Usd.SchemaRegistry.IsTyped(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsTyped(clipsAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsTyped(collectionAPI))
+
+    def test_IsConcrete(self):
+        modelAPI = Tf.Type.FindByName("UsdModelAPI")
+        clipsAPI = Tf.Type.FindByName("UsdClipsAPI")
+        collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
+
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(modelAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(clipsAPI))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(collectionAPI))
 
 if __name__ == "__main__":
     unittest.main()

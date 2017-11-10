@@ -73,5 +73,15 @@ void wrapUsdSchemaRegistry()
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetDisallowedFields")
 
+        .def("IsTyped",
+             &UsdSchemaRegistry::IsTyped,
+             (arg("primType")))
+        .staticmethod("IsTyped")
+
+        .def("IsConcrete",
+             &UsdSchemaRegistry::IsConcrete,
+             (arg("primType")))
+        .staticmethod("IsConcrete")
+
         ;
 }

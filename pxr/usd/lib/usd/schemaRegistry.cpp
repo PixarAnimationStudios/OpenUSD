@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 
 #include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/base/plug/plugin.h"
@@ -347,6 +348,22 @@ UsdSchemaRegistry::GetDisallowedFields()
     result.insert(result.end(), clipFields.begin(), clipFields.end());
 
     return result;
+}
+
+/*static*/
+bool 
+UsdSchemaRegistry::IsTyped(const TfType& primType)
+{
+    return primType.IsA<UsdTyped>();
+}
+
+/*static*/
+bool 
+UsdSchemaRegistry::IsConcrete(const TfType& primType)
+{
+    // XXX: Were relying on the face that schemagen does not
+    // write out prim definitions for non concrete types here (bug 153512)
+    return static_cast<bool>(GetPrimDefinition(primType));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
