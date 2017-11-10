@@ -440,6 +440,137 @@ UsdGeomBBoxCache::ComputeUntransformedBound(
     return result;
 }
 
+
+bool
+UsdGeomBBoxCache::_ComputePointInstanceBoundsHelper(
+    const UsdGeomPointInstancer &instancer,
+    int64_t const *instanceIdBegin,
+    size_t numIds,
+    GfMatrix4d const &xform,
+    GfBBox3d *result)
+{
+    UsdTimeCode time = GetTime(), baseTime = GetBaseTime();
+    VtIntArray protoIndices;
+    if (!instancer.GetProtoIndicesAttr().Get(&protoIndices, time)) {
+        TF_WARN("%s -- no prototype indices",
+                instancer.GetPrim().GetPath().GetText());
+        return false;
+    }
+    VtIntArray const &cprotoIndices = protoIndices;
+
+    const UsdRelationship prototypes = instancer.GetPrototypesRel();
+    SdfPathVector protoPaths;
+    if (!prototypes.GetTargets(&protoPaths) || protoPaths.empty()) {
+        TF_WARN("%s -- no prototypes", instancer.GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    // verify that all the protoIndices are in bounds.
+    for (auto protoIndex: cprotoIndices) {
+        if (protoIndex < 0 ||
+            static_cast<size_t>(protoIndex) >= protoPaths.size()) {
+            TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
+                    instancer.GetPrim().GetPath().GetText(),
+                    protoIndex,
+                    protoPaths.size());
+            return false;
+        }
+    }
+
+    // Note that we do NOT apply any masking when computing the instance
+    // transforms. This is so that for a particular instance we can determine
+    // both its transform and its prototype. Otherwise, the instanceTransforms
+    // array would have masked instances culled out and we would lose the
+    // mapping to the prototypes.
+    // Masked instances will be culled before being applied to the extent below.
+    VtMatrix4dArray instanceTransforms;
+    if (!instancer.ComputeInstanceTransformsAtTime(
+            &instanceTransforms,
+            time,
+            baseTime,
+            UsdGeomPointInstancer::IncludeProtoXform,
+            UsdGeomPointInstancer::IgnoreMask)) {
+        TF_WARN("%s -- could not compute instance transforms",
+                instancer.GetPrim().GetPath().GetText());
+        return false;
+    }
+    VtMatrix4dArray const &cinstanceTransforms = instanceTransforms;
+
+    const UsdStagePtr stage = instancer.GetPrim().GetStage();
+    
+    for (int64_t const *iid = instanceIdBegin, * const iend = iid + numIds;
+         iid != iend; ++iid) {
+
+        const int protoIndex = cprotoIndices[*iid];
+        const SdfPath& protoPath = protoPaths[protoIndex];
+        const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
+
+        // Get the prototype bounding box and apply the instance transform and
+        // the caller's transform.
+        GfBBox3d &thisBounds = *result++;
+        thisBounds = ComputeUntransformedBound(protoPrim);
+        thisBounds.Transform(cinstanceTransforms[*iid] * xform);
+    }
+    
+    return true;
+}
+
+
+bool
+UsdGeomBBoxCache::ComputePointInstanceWorldBounds(
+    UsdGeomPointInstancer const &instancer,
+    int64_t const *instanceIdBegin,
+    size_t numIds,
+    GfBBox3d *result)
+{
+    return _ComputePointInstanceBoundsHelper(
+        instancer, instanceIdBegin, numIds,
+        _ctmCache.GetLocalToWorldTransform(instancer.GetPrim()), result);
+}
+
+bool
+UsdGeomBBoxCache::ComputePointInstanceRelativeBounds(
+    const UsdGeomPointInstancer &instancer,
+    int64_t const *instanceIdBegin,
+    size_t numIds,
+    const UsdPrim &relativeToAncestorPrim,
+    GfBBox3d *result)
+{
+    GfMatrix4d primCtm =
+        _ctmCache.GetLocalToWorldTransform(instancer.GetPrim());
+    GfMatrix4d ancestorCtm =
+        _ctmCache.GetLocalToWorldTransform(relativeToAncestorPrim);
+    GfMatrix4d relativeCtm = ancestorCtm.GetInverse() * primCtm;
+    return _ComputePointInstanceBoundsHelper(
+        instancer, instanceIdBegin, numIds, relativeCtm, result);
+}
+
+bool
+UsdGeomBBoxCache::ComputePointInstanceLocalBounds(
+    const UsdGeomPointInstancer& instancer,
+    int64_t const *instanceIdBegin,
+    size_t numIds,
+    GfBBox3d *result)
+{
+    // The value of resetsXformStack does not affect the local bound.
+    bool resetsXformStack = false;
+    return _ComputePointInstanceBoundsHelper(
+        instancer, instanceIdBegin, numIds,
+        _ctmCache.GetLocalTransformation(
+            instancer.GetPrim(), &resetsXformStack), result);
+}
+
+bool
+UsdGeomBBoxCache::ComputePointInstanceUntransformedBounds(
+    const UsdGeomPointInstancer& instancer,
+    int64_t const *instanceIdBegin,
+    size_t numIds,
+    GfBBox3d *result)
+{
+    return _ComputePointInstanceBoundsHelper(
+        instancer, instanceIdBegin, numIds, GfMatrix4d(1), result);
+}
+
 void
 UsdGeomBBoxCache::Clear()
 {

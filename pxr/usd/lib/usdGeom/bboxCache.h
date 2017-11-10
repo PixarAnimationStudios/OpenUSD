@@ -27,10 +27,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/api.h"
 #include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/tf/hashmap.h"
 
+#include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -171,6 +173,118 @@ public:
         const SdfPathSet &pathsToSkip,
         const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides);
 
+    /// Compute the bound of the given point instances in world space.
+    ///
+    /// The bounds of each instance is computed and then transformed to world
+    /// space.  The \p result pointer must point to \p numIds GfBBox3d instances
+    /// to be filled.
+    USDGEOM_API
+    bool
+    ComputePointInstanceWorldBounds(
+        const UsdGeomPointInstancer& instancer,
+        int64_t const *instanceIdBegin,
+        size_t numIds,
+        GfBBox3d *result);
+
+    /// Compute the bound of the given point instance in world space.
+    ///
+    GfBBox3d
+    ComputePointInstanceWorldBound(
+        const UsdGeomPointInstancer& instancer, int64_t instanceId) {
+        GfBBox3d ret;
+        ComputePointInstanceWorldBounds(instancer, &instanceId, 1, &ret);
+        return ret;
+    }
+
+    /// Compute the bounds of the given point instances in the space of an
+    /// ancestor prim \p relativeToAncestorPrim.  Write the results to
+    /// \p result.
+    ///
+    /// The computed bound excludes the local transform at
+    /// \p relativeToAncestorPrim. The computed bound may be incorrect if
+    /// \p relativeToAncestorPrim is not an ancestor of \p prim.
+    ///
+    /// The \p result pointer must point to \p numIds GfBBox3d instances to be
+    /// filled.
+    USDGEOM_API
+    bool
+    ComputePointInstanceRelativeBounds(
+        const UsdGeomPointInstancer &instancer,
+        int64_t const *instanceIdBegin,
+        size_t numIds,
+        const UsdPrim &relativeToAncestorPrim,
+        GfBBox3d *result);
+
+    /// Compute the bound of the given point instance in the space of an
+    /// ancestor prim \p relativeToAncestorPrim.
+    GfBBox3d
+    ComputePointInstanceRelativeBound(
+        const UsdGeomPointInstancer &instancer,
+        int64_t instanceId,
+        const UsdPrim &relativeToAncestorPrim) {
+        GfBBox3d ret;
+        ComputePointInstanceRelativeBounds(
+            instancer, &instanceId, 1, relativeToAncestorPrim, &ret);
+        return ret;
+    }
+
+    /// Compute the oriented bounding boxes of the given point instances.
+    ///
+    /// The computed bounds include the transform authored on the instancer
+    /// itself, but does not include any ancestor transforms (it does not
+    /// include the local-to-world transform).
+    ///
+    /// The \p result pointer must point to \p numIds GfBBox3d instances to be
+    /// filled.
+    USDGEOM_API
+    bool
+    ComputePointInstanceLocalBounds(
+        const UsdGeomPointInstancer& instancer,
+        int64_t const *instanceIdBegin,
+        size_t numIds,
+        GfBBox3d *result);
+
+    /// Compute the oriented bounding boxes of the given point instances.
+    GfBBox3d
+    ComputePointInstanceLocalBound(
+        const UsdGeomPointInstancer& instancer,
+        int64_t instanceId) {
+        GfBBox3d ret;
+        ComputePointInstanceLocalBounds(instancer, &instanceId, 1, &ret);
+        return ret;
+    }
+            
+
+    /// Computes the bound of the given point instances, but does not include
+    /// the transform (if any) authored on the instancer itself.
+    ///
+    /// \b IMPORTANT: while the BBox does not contain the local transformation,
+    /// in general it may still contain a non-identity transformation matrix to
+    /// put the bounds in the correct space. Therefore, to obtain the correct
+    /// axis-aligned bounding box, the client must call ComputeAlignedRange().
+    ///
+    /// The \p result pointer must point to \p numIds GfBBox3d instances to be
+    /// filled.
+    USDGEOM_API
+    bool
+    ComputePointInstanceUntransformedBounds(
+        const UsdGeomPointInstancer& instancer,
+        int64_t const *instanceIdBegin,
+        size_t numIds,
+        GfBBox3d *result);
+
+    /// Computes the bound of the given point instances, but does not include
+    /// the instancer's transform.
+    GfBBox3d
+    ComputePointInstanceUntransformedBound(
+        const UsdGeomPointInstancer& instancer,
+        int64_t instanceId) {
+        GfBBox3d ret;
+        ComputePointInstanceUntransformedBounds(
+            instancer, &instanceId, 1, &ret);
+        return ret;
+    }
+    
     /// Clears all pre-cached values.
     USDGEOM_API
     void Clear();
@@ -202,7 +316,37 @@ public:
     void SetTime(UsdTimeCode time);
 
     /// Get the current time from which this cache is reading values.
-    UsdTimeCode GetTime() { return _time; }
+    UsdTimeCode GetTime() const { return _time; }
+
+    /// Set the base time value for this bbox cache.  This value is used only
+    /// when computing bboxes for point instancer instances (see
+    /// ComputePointInstanceWorldBounds(), for example).  See
+    /// UsdGeomPointInstancer::ComputeExtentAtTime() for more information.  If
+    /// unset, the bbox cache uses its time (GetTime() / SetTime()) for this
+    /// value.
+    ///
+    /// Note that setting the base time does not invalidate any cache entries.
+    void SetBaseTime(UsdTimeCode baseTime) {
+        _baseTime = baseTime;
+    }
+
+    /// Return the base time if set, otherwise GetTime().  Use HasBaseTime() to
+    /// observe if a base time has been set.
+    UsdTimeCode GetBaseTime() const {
+        return _baseTime.get_value_or(GetTime());
+    }
+
+    /// Clear this cache's baseTime if one has been set.  After calling this,
+    /// the cache will use its time as the baseTime value.
+    void ClearBaseTime() {
+        _baseTime = boost::none;
+    }
+
+    /// Return true if this cache has a baseTime that's been explicitly set,
+    /// false otherwise.
+    bool HasBaseTime() const {
+        return static_cast<bool>(_baseTime);
+    }
 
 private:
     // Worker task.
@@ -214,6 +358,14 @@ private:
     // Map of purpose tokens to associated bboxes.
     typedef std::map<TfToken, GfBBox3d,  TfTokenFastArbitraryLessThan>
         _PurposeToBBoxMap;
+
+    bool
+    _ComputePointInstanceBoundsHelper(
+        const UsdGeomPointInstancer &instancer,
+        int64_t const *instanceIdBegin,
+        size_t numIds,
+        GfMatrix4d const &xform,
+        GfBBox3d *result);
 
     // Returns true if the \p prim should be included during child bounds
     // accumulation.
@@ -302,6 +454,7 @@ private:
     typedef TfHashMap<UsdPrim, _Entry, _UsdPrimHash> _PrimBBoxHashMap;
 
     UsdTimeCode _time;
+    boost::optional<UsdTimeCode> _baseTime;
     TfTokenVector _includedPurposes;
     UsdGeomXformCache _ctmCache;
     _PrimBBoxHashMap _bboxCache;
