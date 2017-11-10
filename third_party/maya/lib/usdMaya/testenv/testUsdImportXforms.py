@@ -191,5 +191,40 @@ class testUsdImportXforms(unittest.TestCase):
                         raise
 
 
+    def testPivot(self):
+        """
+        Tests that pivotPosition attribute doesn't interfere with the matrix
+        that we get in maya when importing a usd file.
+        """
+        def _usdToMayaPath(usdPath):
+            return str(usdPath).replace('/', '|')
+        from maya import cmds
+        cmds.loadPlugin('pxrUsd')
+        usdFile = './pivotTests.usda'
+        from pxr import Usd, UsdGeom
+        stage = Usd.Stage.Open(usdFile)
+        xformCache = UsdGeom.XformCache()
+
+        cmds.usdImport(file=os.path.abspath(usdFile), primPath='/World')
+
+        usdPaths = [
+                '/World/anim/chars/SomeCharacter/Geom/Face/Eyes/LEye',
+                '/World/anim/chars/SomeCharacter/Geom/Face/Eyes/LEye/Sclera_sbdv',
+                '/World/anim/chars/SomeCharacter/Geom/Face/Eyes/REye/Sclera_sbdv',
+                '/World/anim/chars/SomeCharacter/Geom/Hair/HairStandin/Hair/Hair_sbdv',
+                '/World/anim/chars/SomeCharacter/Geom/Hair/HairStandin/Hair/HairFrontPiece_sbdv',
+                ]
+
+        for usdPath in usdPaths:
+            usdMatrix = xformCache.GetLocalToWorldTransform(stage.GetPrimAtPath(usdPath))
+            mayaPath = _usdToMayaPath(usdPath)
+            mayaMatrix = Gf.Matrix4d(*cmds.xform(mayaPath, query=True, matrix=True, worldSpace=True))
+
+            print 'testing matrix at', usdPath
+            self.assertTrue(Gf.IsClose(
+                usdMatrix.ExtractTranslation(), 
+                mayaMatrix.ExtractTranslation(), 
+                self.EPSILON))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
