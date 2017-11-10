@@ -364,26 +364,6 @@ _MakeResolvedAssetPathsImpl(const SdfLayerRefPtr &anchor,
     }
 }
 
-static void
-_MakeResolvedAssetPathsImpl(const SdfLayerRefPtr &anchor,
-                            const ArResolverContext &context,
-                            VtValue *value)
-{
-    if (value->IsHolding<SdfAssetPath>()) {
-        SdfAssetPath assetPath;
-        value->UncheckedSwap(assetPath);
-        _MakeResolvedAssetPathsImpl(anchor, context, &assetPath, 1);
-        value->UncheckedSwap(assetPath);
-    }
-    else if (value->IsHolding<VtArray<SdfAssetPath>>()) {
-        VtArray<SdfAssetPath> assetPaths;
-        value->UncheckedSwap(assetPaths);
-        _MakeResolvedAssetPathsImpl(anchor, context, assetPaths.data(), 
-                                    assetPaths.size());
-        value->UncheckedSwap(assetPaths);
-    }
-}
-
 void
 UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
@@ -404,11 +384,19 @@ UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
                                   VtValue* value) const
 {
-    // Get the layer providing the strongest value and use that to anchor the
-    // resolve.
-    auto anchor = _GetLayerWithStrongestValue(time, attr);
-    if (anchor) {
-        _MakeResolvedAssetPathsImpl(anchor, GetPathResolverContext(), value);
+    if (value->IsHolding<SdfAssetPath>()) {
+        SdfAssetPath assetPath;
+        value->UncheckedSwap(assetPath);
+        _MakeResolvedAssetPaths(time, attr, &assetPath, 1);
+        value->UncheckedSwap(assetPath);
+            
+    }
+    else if (value->IsHolding<VtArray<SdfAssetPath>>()) {
+        VtArray<SdfAssetPath> assetPaths;
+        value->UncheckedSwap(assetPaths);
+        _MakeResolvedAssetPaths(time, attr, assetPaths.data(), 
+                                assetPaths.size());
+        value->UncheckedSwap(assetPaths);
     }
 }
 
@@ -4697,7 +4685,8 @@ static const T &_UncheckedGet(const VtValue *val) {
 
 template <class T>
 void _UncheckedSwap(SdfAbstractDataValue *dv, T& val) {
-    std::swap(*static_cast<T*>(dv->value), val);
+    using namespace std;
+    swap(*static_cast<T*>(dv->value), val);
 }
 template <class T>
 void _UncheckedSwap(VtValue *value, T& val) {
@@ -4727,6 +4716,28 @@ static void _ApplyLayerOffset(Storage storage,
     }
 }
 
+template <class Storage>
+static void _MakeResolvedAssetPaths(Storage storage,
+                                    const PcpNodeRef &node,
+                                    const SdfLayerRefPtr &layer)
+{
+    if (_IsHolding<SdfAssetPath>(storage)) {
+        SdfAssetPath assetPath;
+        _UncheckedSwap(storage, assetPath);
+        _MakeResolvedAssetPathsImpl(
+            layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
+            &assetPath, 1);
+        _UncheckedSwap(storage, assetPath);
+    } else if (_IsHolding<VtArray<SdfAssetPath>>(storage)) {
+        VtArray<SdfAssetPath> assetPaths;
+        _UncheckedSwap(storage, assetPaths);
+        _MakeResolvedAssetPathsImpl(
+            layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
+            assetPaths.data(), assetPaths.size());
+        _UncheckedSwap(storage, assetPaths);
+    }
+}
+
 // If the given dictionary contains any SdfAssetPath or
 // VtArray<SdfAssetPath> as values, fills in those values
 // with their resolved paths.
@@ -4739,14 +4750,12 @@ _ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
         VtValue& v = entry.second;
         if (v.IsHolding<VtDictionary>()) {
             VtDictionary resolvedDict;
-            v.Swap(resolvedDict);
+            v.UncheckedSwap(resolvedDict);
             _ResolveAssetPathsInDictionary(anchor, node, &resolvedDict);
-            v.Swap(resolvedDict);
+            v.UncheckedSwap(resolvedDict);
         }
         else {
-            _MakeResolvedAssetPathsImpl(
-                anchor, 
-                node.GetLayerStack()->GetIdentifier().pathResolverContext, &v);
+            _MakeResolvedAssetPaths(&v, node, anchor);
         }
     }
 }
@@ -4801,22 +4810,8 @@ struct StrongestValueComposer
                 return true;
             } else if (_IsHolding<SdfTimeSampleMap>(_value)) {
                 _ApplyLayerOffset(_value, node, layer);
-            } else if (_IsHolding<SdfAssetPath>(_value)) {
-                SdfAssetPath assetPath;
-                _UncheckedSwap(_value, assetPath);
-                _MakeResolvedAssetPathsImpl(
-                    layer, 
-                    node.GetLayerStack()->GetIdentifier().pathResolverContext,
-                    &assetPath, 1);
-                _UncheckedSwap(_value, assetPath);
-            } else if (_IsHolding<VtArray<SdfAssetPath>>(_value)) {
-                VtArray<SdfAssetPath> assetPaths;
-                _UncheckedSwap(_value, assetPaths);
-                _MakeResolvedAssetPathsImpl(
-                    layer, 
-                    node.GetLayerStack()->GetIdentifier().pathResolverContext,
-                    assetPaths.data(), assetPaths.size());
-                _UncheckedSwap(_value, assetPaths);
+            } else {
+                _MakeResolvedAssetPaths(_value, node, layer);
             }
         }
         return _done;
