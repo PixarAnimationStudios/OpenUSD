@@ -158,7 +158,7 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
         ]
         self._ValidateExtent(self.instancer, expectedExtent)
 
-    def TestExtentOneRotatedCubeInstance(self):
+    def test_ExtentOneRotatedCubeInstance(self):
         """
         Tests that a UsdGeomPointInstancer that instances a single cube
         prototype with rotation on it at a particular location has the correct
@@ -174,7 +174,7 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
         ]
         self._ValidateExtent(self.instancer, expectedExtent)
 
-    def TestExtentMultipleCubeInstances(self):
+    def test_ExtentMultipleCubeInstances(self):
         """
         Tests that a UsdGeomPointInstancer with multiple instances of multiple
         cube prototypes has the correct extent.
