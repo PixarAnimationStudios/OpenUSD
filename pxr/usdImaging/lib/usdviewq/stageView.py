@@ -1315,11 +1315,13 @@ class StageView(QtOpenGL.QGLWidget):
 
     @property
     def _fitCameraInViewport(self):
-       return self._dataModel.showMask or self._dataModel.showMask_Outline or self.showReticles
+       return ((self._dataModel.showMask or self._dataModel.showMask_Outline or self.showReticles)
+               and self._cameraPrim != None)
 
     @property
-    def _cropViewportToCameraViewport(self):
-       return self._dataModel.showMask and self._dataModel.showMask_Opaque
+    def _cropImageToCameraViewport(self):
+       return ((self._dataModel.showMask and self._dataModel.showMask_Opaque)
+               and self._cameraPrim != None)
 
     @property
     def cameraPrim(self):
@@ -1914,7 +1916,7 @@ class StageView(QtOpenGL.QGLWidget):
             super(StageView, self).updateGL()
             self._dataModel.drawSelHighlights = drawHighlights
 
-    def computeGfCameraForCurrentPrim(self):
+    def computeGfCameraForCurrentCameraPrim(self):
         if self._cameraPrim and self._cameraPrim.IsActive():
             gfCamera = UsdGeom.Camera(self._cameraPrim).GetCamera(
                 self._currentFrame)
@@ -1922,35 +1924,35 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             return None
 
-    def computeSize(self):
+    def computeWindowSize(self):
          size = self.size() * QtWidgets.QApplication.instance().devicePixelRatio()
          return (int(size.width()), int(size.height()))
 
-    def computeViewport(self):
-        return (0, 0) + self.computeSize()
+    def computeWindowViewport(self):
+        return (0, 0) + self.computeWindowSize()
 
-    def computeGfCameraAndViewport(self):
-        windowPolicy = CameraUtil.MatchVertically
-        targetAspect = (
-          float(self.size().width()) / max(1.0, self.size().height()))
-        conformCameraWindow = True
+    def resolveCamera(self):
+        """Returns a tuple of the camera to use for rendering (either a scene
+        camera or a free camera) and that camera's original aspect ratio.
+        Depending on camera guide settings, the camera frustum may be conformed
+        to fit the window viewport. Emits a signalFrustumChanged if the
+        camera frustum has changed since the last time resolveCamera was called."""
 
-        camera = self.computeGfCameraForCurrentPrim()
+        # If 'camera' is None, make sure we have a valid freeCamera
+        camera = self.computeGfCameraForCurrentCameraPrim()
         if not camera:
-            # If 'camera' is None, make sure we have a valid freeCamera
             self.switchToFreeCamera()
             camera = self._dataModel.freeCamera.computeGfCamera(self._bbox)
-        elif self._fitCameraInViewport:
-            if targetAspect < camera.aspectRatio:
-                windowPolicy = CameraUtil.MatchHorizontally
-            conformCameraWindow = False
 
-        if conformCameraWindow:
-            CameraUtil.ConformWindow(camera, windowPolicy, targetAspect)
+        cameraAspectRatio = camera.aspectRatio
 
-        viewport = Gf.Range2d(Gf.Vec2d(0, 0),
-                              Gf.Vec2d(self.computeSize()))
-        viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, camera.aspectRatio)
+        # Conform the camera's frustum to the window viewport, if necessary.
+        if not self._cropImageToCameraViewport:
+            targetAspect = float(self.size().width()) / max(1.0, self.size().height())
+            if self._fitCameraInViewport:
+                CameraUtil.ConformWindow(camera, CameraUtil.Fit, targetAspect)
+            else:
+                CameraUtil.ConformWindow(camera, CameraUtil.MatchVertically, targetAspect)
 
         frustumChanged = ((not self._lastComputedGfCamera) or
                           self._lastComputedGfCamera.frustum != camera.frustum)
@@ -1958,8 +1960,26 @@ class StageView(QtOpenGL.QGLWidget):
         self._lastComputedGfCamera = Gf.Camera(camera)
         if frustumChanged:
             self.signalFrustumChanged.emit()
-        return (camera, (viewport.GetMin()[0], viewport.GetMin()[1],
-                         viewport.GetSize()[0], viewport.GetSize()[1]))
+        return (camera, cameraAspectRatio)
+
+    def computeCameraViewport(self, cameraAspectRatio):
+        # Conform the camera viewport to the camera's aspect ratio,
+        # and center the camera viewport in the window viewport.
+        windowPolicy = CameraUtil.MatchVertically
+        targetAspect = (
+          float(self.size().width()) / max(1.0, self.size().height()))
+        if targetAspect < cameraAspectRatio:
+            windowPolicy = CameraUtil.MatchHorizontally
+
+        viewport = Gf.Range2d(Gf.Vec2d(0, 0),
+                              Gf.Vec2d(self.computeWindowSize()))
+        viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, cameraAspectRatio)
+
+        viewport = (viewport.GetMin()[0], viewport.GetMin()[1],
+                    viewport.GetSize()[0], viewport.GetSize()[1])
+        viewport = ViewportMakeCenteredIntegral(viewport)
+
+        return viewport
 
     def copyViewState(self):
         """Returns a copy of this StageView's view-affecting state,
@@ -2071,17 +2091,13 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glEnable(GL.GL_BLEND)
 
-        (gfCamera, cameraViewport) = self.computeGfCameraAndViewport()
+        (gfCamera, cameraAspect) = self.resolveCamera()
         frustum = gfCamera.frustum
+        cameraViewport = self.computeCameraViewport(cameraAspect)
 
-        viewport = self.computeViewport()
-        cameraViewport = ViewportMakeCenteredIntegral(cameraViewport)
-        if self._fitCameraInViewport:
-            if self._cropViewportToCameraViewport:
-                viewport = cameraViewport
-            else:
-                windowAspect = float(viewport[2]) / max(1.0, viewport[3])
-                CameraUtil.ConformWindow(frustum, CameraUtil.Fit, windowAspect)
+        viewport = self.computeWindowViewport()
+        if self._cropImageToCameraViewport:
+            viewport = cameraViewport
 
         cam_pos = frustum.position
         cam_up = frustum.ComputeUpVector()
@@ -2213,7 +2229,7 @@ class StageView(QtOpenGL.QGLWidget):
             self._glTimeElapsedQuery.End()
 
         # reset the viewport for 2D and HUD drawing
-        uiTasks = [ Prim2DSetupTask(self.computeViewport()) ]
+        uiTasks = [ Prim2DSetupTask(self.computeWindowViewport()) ]
         if self._dataModel.showMask:
             color = self._dataModel.cameraMaskColor
             if self._dataModel.showMask_Opaque:
@@ -2458,7 +2474,7 @@ class StageView(QtOpenGL.QGLWidget):
         # range.  We don't expect the worst-case to happen often.
         if not self._dataModel.freeCamera:
             return
-        cameraFrustum = self.computeGfCameraAndViewport()[0].frustum
+        cameraFrustum = self.resolveCamera()[0].frustum
         trueFar = cameraFrustum.nearFar.max
         smallNear = min(FreeCamera.defaultNear,
                         self._dataModel.freeCamera._selSize / 10.0)
@@ -2519,17 +2535,30 @@ class StageView(QtOpenGL.QGLWidget):
 
     def computePickFrustum(self, x, y):
 
-        # normalize position and pick size by the viewport size
-        width, height = self.computeSize()
-        size = Gf.Vec2d(1.0 / width, 1.0 / height)
-
         # compute pick frustum
-        cameraFrustum = self.computeGfCameraAndViewport()[0].frustum
+        (gfCamera, cameraAspect) = self.resolveCamera()
+        cameraFrustum = gfCamera.frustum
 
-        return cameraFrustum.ComputeNarrowedFrustum(
-            Gf.Vec2d((2.0 * x) / width - 1.0,
-                     (2.0 * (height-y)) / height - 1.0),
-            size)
+        viewport = self.computeWindowViewport()
+        if self._cropImageToCameraViewport:
+            viewport = self.computeCameraViewport(cameraAspect)
+
+        # normalize position and pick size by the viewport size
+        point = Gf.Vec2d((x - viewport[0]) / float(viewport[2]),
+                         (y - viewport[1]) / float(viewport[3]))
+        point[0] = (point[0] * 2.0 - 1.0)
+        point[1] = -1.0 * (point[1] * 2.0 - 1.0)
+
+        size = Gf.Vec2d(1.0 / viewport[2], 1.0 / viewport[3])
+
+        # "point" is normalized to the image viewport size, but if the image
+        # is cropped to the camera viewport, the image viewport won't fill the
+        # whole window viewport.  Clicking outside the image will produce
+        # normalized coordinates > 1 or < -1; in this case, we should skip
+        # picking.
+        inImageBounds = (abs(point[0]) <= 1.0 and abs(point[1]) <= 1.0)
+
+        return (inImageBounds, cameraFrustum.ComputeNarrowedFrustum(point, size))
 
     def pickObject(self, x, y, button, modifiers):
         '''
@@ -2540,8 +2569,16 @@ class StageView(QtOpenGL.QGLWidget):
         if not self._stage:
             return
 
-        selectedPoint, selectedPrimPath, selectedInstancerPath, selectedInstanceIndex, selectedElementIndex = \
-            self.pick(self.computePickFrustum(x, y))
+        (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
+
+        if inImageBounds:
+            selectedPoint, selectedPrimPath, selectedInstancerPath, \
+            selectedInstanceIndex, selectedElementIndex = self.pick(pickFrustum)
+        else:
+            # If we're picking outside the image viewport (maybe because camera
+            # guides are on), treat that as a de-select.
+            selectedPoint, selectedPrimPath, selectedInstancerPath, \
+            selectedInstanceIndex, selectedElementIndex = None, Sdf.Path.emptyPath, None, None, None
 
         # The call to TestIntersection will return the path to a master prim
         # (selectedPrimPath) and its instancer (selectedInstancerPath) if the prim is
