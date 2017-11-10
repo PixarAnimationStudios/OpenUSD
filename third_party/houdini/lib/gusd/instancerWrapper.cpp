@@ -99,7 +99,7 @@ void setAngularVelocity(GT_DataArrayHandle houWAttr, std::vector<fpreal32>& houW
     // USD is degrees per second
     const GT_Size numVals = houWAttr->entries() * houWAttr->getTupleSize();
     houWArray = std::vector<fpreal32>(numVals);
-    houWAttr->fillArray(houWArray.data(), 0, numVals, houWAttr->getTupleSize());
+    houWAttr->fillArray(houWArray.data(), 0, houWAttr->entries(), houWAttr->getTupleSize());
     std::transform(
         houWArray.begin(),
         houWArray.end(),
@@ -1119,7 +1119,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                     if (numIndicies == numPoints) {
                         const GT_Size numVals = indexAttr->entries() * indexAttr->getTupleSize();
                         instanceIndexArray = std::vector<exint>(numVals);
-                        indexAttr->fillArray(instanceIndexArray.data(), 0, numVals, indexAttr->getTupleSize());
+                        indexAttr->fillArray(instanceIndexArray.data(), 0, indexAttr->entries(), indexAttr->getTupleSize());
                         
                         // For each instance, grab it's prototype index by
                         // accessing the original proto indices array at the
@@ -1276,7 +1276,7 @@ void GusdInstancerWrapper::setTransformAttrsFromMatrices(const UT_Matrix4D &worl
             !(ctxt.overlayAll || ctxt.overlayPoints) && indexAttr) {
         const GT_Size numVals = indexAttr->entries() * indexAttr->getTupleSize();
         std::vector<exint> instanceIndexArray = std::vector<exint>(numVals);
-        indexAttr->fillArray(instanceIndexArray.data(), 0, numVals, indexAttr->getTupleSize());
+        indexAttr->fillArray(instanceIndexArray.data(), 0, indexAttr->entries(), indexAttr->getTupleSize());
         for (int i =0; i < instanceIndexArray.size(); i++) {
             instanceIndexMap[instanceIndexArray[i]] = i;
         }
