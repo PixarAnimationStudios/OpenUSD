@@ -214,6 +214,12 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
         // to use the specified fallback surface shader.
         if (!_program.CompileShader(firstDrawItem, indirect, resourceRegistry)){
 
+            // While the code should gracefully handle shader compilation
+            // failures, it is also undesirable for shaders to silently fail.
+            TF_CODING_ERROR("Failed to compile shader for prim %s.",
+                            firstDrawItem->GetRprimID().GetText());
+
+
             // If we failed to compile the surface shader, replace it with the
             // fallback surface shader and try again.
             // XXX: Note that we only say "surface shader" here because it is
