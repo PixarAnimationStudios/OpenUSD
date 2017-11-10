@@ -103,7 +103,7 @@ class UIDefaults(ConstantGroup):
 QT_BINDING = QtCore.__name__.split('.')[0]
 
 class DataModelProxySource(StateSource):
-    """XXX Temporary class which allows MainWindow to serve as two state sources.
+    """XXX Temporary class which allows AppController to serve as two state sources.
     All fields here will be moved into an actual data model class in the future.
     """
 
@@ -206,8 +206,8 @@ class DataModelProxySource(StateSource):
         state["showHUDGPUStats"] = self._mainWindow._showHUD_GPUstats
 
 class UIStateProxySource(StateSource):
-    """XXX Temporary class which allows MainWindow to serve as two state sources.
-    All fields here will be moved back into MainWindow in the future.
+    """XXX Temporary class which allows AppController to serve as two state sources.
+    All fields here will be moved back into AppController in the future.
     """
 
     def __init__(self, mainWindow, parent, name):
@@ -298,7 +298,7 @@ class UIStateProxySource(StateSource):
 
         state["attributeInspectorCurrentTab"] = self._mainWindow._ui.attributeInspector.currentIndex()
 
-class MainWindow(QtWidgets.QMainWindow):
+class AppController(QtCore.QObject):
 
     ###########
     # Signals #
@@ -335,7 +335,7 @@ class MainWindow(QtWidgets.QMainWindow):
         with Timer() as t:
             try:
                 from pixar import UsdviewPlug
-                UsdviewPlug.ConfigureView(plugCtx)
+                UsdviewPlug.ConfigureView(plugCtx, self)
                 pluginsLoaded = True
 
             except ImportError:
@@ -364,9 +364,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # assertions without it.
         self._primToItemMap.clear()
 
-    def __init__(self, parent, parserData):
+    def __init__(self, parserData):
+        QtCore.QObject.__init__(self)
+
         with Timer() as uiOpenTimer:
-            QtWidgets.QMainWindow.__init__(self, parent)
 
             self._primToItemMap = {}
             self._itemsToPush = []
@@ -402,14 +403,21 @@ class MainWindow(QtWidgets.QMainWindow):
             # be restored later.
             self._viewerModeEscapeSizes = None
 
-            MainWindow._renderer = parserData.renderer
-            if MainWindow._renderer == 'simple':
+            AppController._renderer = parserData.renderer
+            if AppController._renderer == 'simple':
                 os.environ['HD_ENABLED'] = '0'
 
-            self.show()
+            self._mainWindow = QtWidgets.QMainWindow(None)
+            # Showing the window immediately prevents UI flashing.
+            self._mainWindow.show()
+
             self._ui = Ui_MainWindow()
-            self._ui.setupUi(self)
-            self.installEventFilter(self)
+            self._ui.setupUi(self._mainWindow)
+            self._mainWindow.installEventFilter(self)
+
+            self._mainWindow.setWindowTitle(parserData.usdFile)
+            self._statusBar = QtWidgets.QStatusBar(self._mainWindow)
+            self._mainWindow.setStatusBar(self._statusBar)
 
             # read the stage here
             self._stage = self._openStage(self._parserData.usdFile,
@@ -436,10 +444,6 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self._startingPrimCameraName = parserData.camera
                 self._startingPrimCameraPath = None
-
-            self.setWindowTitle(parserData.usdFile)
-            self._statusBar = QtWidgets.QStatusBar(self)
-            self.setStatusBar(self._statusBar)
 
             self._openSettings2(parserData.defaultSettings)
 
@@ -695,7 +699,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ui.layerStackView.setHorizontalScrollBarPolicy(
                 QtCore.Qt.ScrollBarAlwaysOn)
 
-            self._ui.attributeValueEditor.setMainWindow(self)
+            self._ui.attributeValueEditor.setAppController(self)
 
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
@@ -931,9 +935,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._ui.actionHUD_GPUstats.triggered.connect(self._HUDMenuChanged)
 
-            self.addAction(self._ui.actionIncrementComplexity1)
-            self.addAction(self._ui.actionIncrementComplexity2)
-            self.addAction(self._ui.actionDecrementComplexity)
+            self._mainWindow.addAction(self._ui.actionIncrementComplexity1)
+            self._mainWindow.addAction(self._ui.actionIncrementComplexity2)
+            self._mainWindow.addAction(self._ui.actionDecrementComplexity)
 
             self._ui.actionIncrementComplexity1.triggered.connect(
                 self._incrementComplexity)
@@ -1002,7 +1006,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self._stageView:
                 self._stageView.setUpdatesEnabled(False)
 
-            self.update()
+            self._mainWindow.update()
 
             QtWidgets.QApplication.processEvents()
 
@@ -1035,17 +1039,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if event.type() == QtCore.QEvent.KeyPress:
             key = event.key()
             if key == QtCore.Qt.Key_Escape:
-                self.setFocus()
+                self._mainWindow.setFocus()
                 return True
-        return QtWidgets.QMainWindow.eventFilter(self, widget, event)
+        return QtCore.QObject.eventFilter(self, widget, event)
 
     def statusMessage(self, msg, timeout = 0):
         self._statusBar.showMessage(msg, timeout * 1000)
 
     def editComplete(self, msg):
-        title = self.windowTitle()
+        title = self._mainWindow.windowTitle()
         if title[-1] != '*':
-            self.setWindowTitle(title + ' *')
+            self._mainWindow.setWindowTitle(title + ' *')
 
         self.statusMessage(msg, 12)
         with Timer() as t:
@@ -1362,7 +1366,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._ui.primStageSplitter.addWidget(self._ui.attributeBrowserFrame)
 
             else:
-                self._stageView = StageView(parent=self, dataModel=self)
+                self._stageView = StageView(parent=self._mainWindow, dataModel=self)
                 self._stageView.SetStage(self._stage)
 
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
@@ -1470,7 +1474,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._stageView.update()
 
     def _adjustComplexity(self):
-        complexity= QtWidgets.QInputDialog.getDouble(self,
+        complexity= QtWidgets.QInputDialog.getDouble(self._mainWindow,
             "Adjust complexity", "Enter a value between 1 and 2.\n\n"
             "You can also use ctrl+ or ctrl- to adjust the\n"
             "complexity without invoking this dialog.\n",
@@ -1481,7 +1485,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._stageView.update()
 
     def _adjustFOV(self):
-        fov = QtWidgets.QInputDialog.getDouble(self, "Adjust FOV",
+        fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",
             "Enter a value between 0 and 180", self._freeCamera.fov, 0, 180)
         if (fov[1]):
             self._freeCamera.fov = fov[0]
@@ -1493,7 +1497,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Until then, silently ignore.
         if self._stageView:
             if (checked):
-                self._adjustClippingDlg = adjustClipping.AdjustClipping(self,
+                self._adjustClippingDlg = adjustClipping.AdjustClipping(self._mainWindow,
                                                                      self._stageView)
                 self._adjustClippingDlg.finished.connect(
                     lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
@@ -1733,7 +1737,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _adjustDefaultMaterial(self, checked):
         if (checked):
-            self._adjustDefaultMaterialDlg = adjustDefaultMaterial.AdjustDefaultMaterial(self, self)
+            self._adjustDefaultMaterialDlg = adjustDefaultMaterial.AdjustDefaultMaterial(
+                self._mainWindow, self)
             self._adjustDefaultMaterialDlg.finished.connect(lambda status :
                 self._ui.actionAdjust_Default_Material.setChecked(False))
 
@@ -1751,9 +1756,9 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self._watchWindow = watchWindow.WatchWindow(self)
             # dock the watch window next to the main usdview window
-            self._watchWindow.move(self.x() + self.frameGeometry().width(),
-                                   self.y())
-            self._watchWindow.resize(self.size())
+            self._watchWindow.move(self._mainWindow.x() + self._mainWindow.frameGeometry().width(),
+                                   self._mainWindow.y())
+            self._watchWindow.resize(self._mainWindow.size())
             self._watchWindow.show()
             self._refreshWatchWindow()
 
@@ -2433,16 +2438,16 @@ class MainWindow(QtWidgets.QMainWindow):
         from pythonExpressionPrompt import Myconsole
 
         if self._interpreter is None:
-            self._interpreter = QtWidgets.QDialog(self)
+            self._interpreter = QtWidgets.QDialog(self._mainWindow)
             self._console = Myconsole(self._interpreter)
             lay = QtWidgets.QVBoxLayout()
             lay.addWidget(self._console)
             self._interpreter.setLayout(lay)
 
         # dock the interpreter window next to the main usdview window
-        self._interpreter.move(self.x() + self.frameGeometry().width(),
-                               self.y())
-        self._interpreter.resize(600, self.size().height()/2)
+        self._interpreter.move(self._mainWindow.x() + self._mainWindow.frameGeometry().width(),
+                               self._mainWindow.y())
+        self._interpreter.resize(600, self._mainWindow.size().height()/2)
 
         self._updateInterpreter()
         self._interpreter.show()
@@ -2464,16 +2469,16 @@ class MainWindow(QtWidgets.QMainWindow):
         # generate an image of the window. Due to how Qt's rendering
         # works, this will not pick up the GL Widget(_stageView)'s
         # contents, and we'll need to compose it separately.
-        windowShot = QtGui.QImage(self.size(),
+        windowShot = QtGui.QImage(self._mainWindow.size(),
                                   QtGui.QImage.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(windowShot)
-        self.render(painter, QtCore.QPoint())
+        self._mainWindow.render(painter, QtCore.QPoint())
 
         if self._stageView:
             # overlay the QGLWidget on and return the composed image
             # we offset by a single point here because of Qt.Pos funkyness
             offset = QtCore.QPoint(0,1)
-            pos = self._stageView.mapTo(self, self._stageView.pos()) - offset
+            pos = self._stageView.mapTo(self._mainWindow, self._stageView.pos()) - offset
             painter.drawImage(pos, self.GrabViewportShot())
 
         return windowShot
@@ -2518,23 +2523,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Tear down the UI window.
         with Timer() as t:
-            self.close()
+            self._mainWindow.close()
         if self._printTiming:
             t.PrintTime('tear down the UI')
 
     def _openFile(self):
-        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self, "Select file",".")
+        (filename, _) = QtWidgets.QFileDialog.getOpenFileName(self._mainWindow, "Select file",".")
         if len(filename) > 0:
 
             self._parserData.usdFile = str(filename)
             self._reopenStage()
 
-            self.setWindowTitle(filename)
+            self._mainWindow.setWindowTitle(filename)
 
     def _saveOverridesAs(self):
         recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
         recommendedFilename += '_overrides.usd'
-        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self,
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self._mainWindow,
                                                      "Save file (*.usd)",
                                                      "./" + recommendedFilename,
                                                      'Usd Files (*.usd)')
@@ -2751,17 +2756,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _propertyViewContextMenu(self, point):
         item = self._ui.propertyView.itemAt(point)
-        self.contextMenu = AttributeViewContextMenu(self, item)
+        self.contextMenu = AttributeViewContextMenu(self._mainWindow, item, self)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def _layerStackContextMenu(self, point):
         item = self._ui.layerStackView.itemAt(point)
-        self.contextMenu = LayerStackContextMenu(self, item)
+        self.contextMenu = LayerStackContextMenu(self._mainWindow, item)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def _compositionTreeContextMenu(self, point):
         item = self._ui.compositionTreeWidget.itemAt(point)
-        self.contextMenu = LayerStackContextMenu(self, item)
+        self.contextMenu = LayerStackContextMenu(self._mainWindow, item)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
     # Headers & Columns =================================================
@@ -3085,7 +3090,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # We are making many mutations to the PrimView's selection state.
         # We only want to update once in response, so temporarily disable
         # signals from the TreeWidget and manually sync selection after
-        with MainWindow.UpdateBlocker(self):
+        with AppController.UpdateBlocker(self):
             self._ui.primView.clearSelection()
             first = True
             for prim in primsToSelect:
@@ -3197,7 +3202,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._showPrimContextMenu(item)
 
     def _showPrimContextMenu(self, item):
-        self.contextMenu = PrimContextMenu(self, item)
+        self.contextMenu = PrimContextMenu(self._mainWindow, item, self)
         self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def setFrame(self, frameIndex, forceUpdate=False):
@@ -3594,7 +3599,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 variantSet = obj.GetVariantSet(variantSetName)
                 variantNames = variantSet.GetVariantNames()
                 variantSelection = variantSet.GetVariantSelection()
-                combo = VariantComboBox(None, obj, variantSetName, self)
+                combo = VariantComboBox(None, obj, variantSetName, self._mainWindow)
                 # First index is always empty to indicate no (or invalid)
                 # variant selection.
                 combo.addItem('')

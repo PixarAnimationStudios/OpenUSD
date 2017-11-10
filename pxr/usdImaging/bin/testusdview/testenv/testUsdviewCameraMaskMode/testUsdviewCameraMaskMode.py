@@ -24,45 +24,45 @@
 #
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
 # Set the mask mode and refresh the view.
-def _setCameraMaskModeAction(mainWindow, action, outline=False):
+def _setCameraMaskModeAction(appController, action, outline=False):
     action.setChecked(True)
-    mainWindow._ui.actionCameraMask_Outline.setChecked(outline)
-    mainWindow._updateCameraMaskMenu()
+    appController._ui.actionCameraMask_Outline.setChecked(outline)
+    appController._updateCameraMaskMenu()
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(mainWindow, fileName):
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test with no masking.
-def _testNoMask(mainWindow):
-    _setCameraMaskModeAction(mainWindow, mainWindow._ui.actionCameraMask_None)
-    _takeShot(mainWindow, "none.png")
+def _testNoMask(appController):
+    _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_None)
+    _takeShot(appController, "none.png")
 
 # Test with outline enabled but no masking.
-def _testOutline(mainWindow):
-    _setCameraMaskModeAction(mainWindow, mainWindow._ui.actionCameraMask_None, outline=True)
-    _takeShot(mainWindow, "outline.png")
+def _testOutline(appController):
+    _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_None, outline=True)
+    _takeShot(appController, "outline.png")
 
 # Test with partial masking.
-def _testPartial(mainWindow):
-    _setCameraMaskModeAction(mainWindow, mainWindow._ui.actionCameraMask_Partial)
-    _takeShot(mainWindow, "partial.png")
+def _testPartial(appController):
+    _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_Partial)
+    _takeShot(appController, "partial.png")
 
 # Test with full masking.
-def _testFull(mainWindow):
-    _setCameraMaskModeAction(mainWindow, mainWindow._ui.actionCameraMask_Full)
-    _takeShot(mainWindow, "full.png")
+def _testFull(appController):
+    _setCameraMaskModeAction(appController, appController._ui.actionCameraMask_Full)
+    _takeShot(appController, "full.png")
 
 # Test that the complexity setting works properly in usdview.
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testNoMask(mainWindow)
-    _testOutline(mainWindow)
-    _testPartial(mainWindow)
-    _testFull(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testNoMask(appController)
+    _testOutline(appController)
+    _testPartial(appController)
+    _testFull(appController)

@@ -22,65 +22,65 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-def _testSelectionChangeScrollPosition(mainWindow):
+def _testSelectionChangeScrollPosition(appController):
     # A test to ensure changing the selection in the metadata
     # tab view does not affect the current scroll position in 
     # the property view
-    propView = mainWindow._ui.propertyView
-    inspectorView = mainWindow._ui.attributeInspector
+    propView = appController._ui.propertyView
+    inspectorView = appController._ui.attributeInspector
 
     initialScroll = propView.verticalScrollBar().value()
 
     inspectorView.setCurrentIndex(2)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert propView.verticalScrollBar().value() == initialScroll 
 
     inspectorView.setCurrentIndex(3)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert propView.verticalScrollBar().value() == initialScroll 
 
     inspectorView.setCurrentIndex(2)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert propView.verticalScrollBar().value() == initialScroll 
 
     inspectorView.setCurrentIndex(1)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert propView.verticalScrollBar().value() == initialScroll 
 
     inspectorView.setCurrentIndex(0)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert propView.verticalScrollBar().value() == initialScroll 
 
-def _testBasic(mainWindow):
-    inspectorView = mainWindow._ui.attributeInspector
+def _testBasic(appController):
+    inspectorView = appController._ui.attributeInspector
     
     inspectorView.setCurrentIndex(0)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert inspectorView.tabText(inspectorView.currentIndex()) == 'Value'
  
     inspectorView.setCurrentIndex(1)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert inspectorView.tabText(inspectorView.currentIndex()) == 'Meta Data'
  
     inspectorView.setCurrentIndex(2)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert inspectorView.tabText(inspectorView.currentIndex()) == 'Layer Stack'
  
     inspectorView.setCurrentIndex(3)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert inspectorView.tabText(inspectorView.currentIndex()) == 'Composition'
  
-def testUsdviewInputFunction(mainWindow):
+def testUsdviewInputFunction(appController):
     # select our initial elements(prim and property).
-    mainWindow._ui.primViewLineEdit.setText('Implicits') 
-    mainWindow._primViewFindNext()
-    mainWindow.repaint()
+    appController._ui.primViewLineEdit.setText('Implicits')
+    appController._primViewFindNext()
+    appController._mainWindow.repaint()
 
-    mainWindow._ui.attrViewLineEdit.setText('z')
-    mainWindow._attrViewFindNext()
-    mainWindow._ui.attrViewLineEdit.setText('y')
-    mainWindow._attrViewFindNext()
-    mainWindow.repaint()
+    appController._ui.attrViewLineEdit.setText('z')
+    appController._attrViewFindNext()
+    appController._ui.attrViewLineEdit.setText('y')
+    appController._attrViewFindNext()
+    appController._mainWindow.repaint()
 
-    _testBasic(mainWindow)
-    _testSelectionChangeScrollPosition(mainWindow)      
+    _testBasic(appController)
+    _testSelectionChangeScrollPosition(appController)

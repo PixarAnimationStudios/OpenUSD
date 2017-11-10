@@ -25,6 +25,7 @@ import sys, argparse, os
 
 from qt import QtWidgets
 from common import Timer
+from appController import AppController
 
 class Launcher(object):
     '''
@@ -211,9 +212,8 @@ class Launcher(object):
         from pxr import Work
         Work.SetConcurrencyLimitArgument(arg_parse_result.numThreads)
 
-        from mainWindow import MainWindow
         if arg_parse_result.clearSettings:
-            MainWindow.clearSettings()
+            AppController.clearSettings()
 
         # Find the resource directory
         resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
@@ -229,9 +229,9 @@ class Launcher(object):
                                            resourceDir.replace("\\", "/"))
         app.setStyleSheet(sheetString)
 
-        mainWindow = MainWindow(None, arg_parse_result)
+        appController = AppController(arg_parse_result)
 
-        return (app, mainWindow)
+        return (app, appController)
 
     def __LaunchProcess(self, arg_parse_result):
         '''
@@ -239,14 +239,14 @@ class Launcher(object):
         '''
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
-        (app, mainWindow) = self.LaunchPreamble(arg_parse_result)
+        (app, appController) = self.LaunchPreamble(arg_parse_result)
         
         if arg_parse_result.quitAfterStartup:
             # Before we quit, process events one more time to make sure the
             # UI is fully populated (and to capture all the timing information
             # we'd want).
             app.processEvents()
-            mainWindow._cleanAndClose()
+            appController._cleanAndClose()
             return
 
         app.exec_()

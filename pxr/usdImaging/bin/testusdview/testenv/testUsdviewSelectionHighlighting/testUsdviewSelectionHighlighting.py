@@ -26,61 +26,61 @@
 from pxr import Sdf, UsdImagingGL
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
 # Make a single selection.
-def _testSingleSelection(mainWindow):
-    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    mainWindow._itemSelectionChanged()
+def _testSingleSelection(appController):
+    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    appController._itemSelectionChanged()
 
-    viewportShot = mainWindow.GrabViewportShot()
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight.png", "PNG")
 
 # Make a single selection with selection highlighting disabled.
-def _testNoHighlightSelection(mainWindow):
-    mainWindow._ui.actionNever.setChecked(True)
-    mainWindow._changeSelHighlightMode(mainWindow._ui.actionNever)
+def _testNoHighlightSelection(appController):
+    appController._ui.actionNever.setChecked(True)
+    appController._changeSelHighlightMode(appController._ui.actionNever)
 
-    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    mainWindow._itemSelectionChanged()
+    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    appController._itemSelectionChanged()
 
-    viewportShot = mainWindow.GrabViewportShot()
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_none.png", "PNG")
 
-    mainWindow._ui.actionOnly_when_paused.setChecked(True)
-    mainWindow._changeSelHighlightMode(mainWindow._ui.actionOnly_when_paused)
+    appController._ui.actionOnly_when_paused.setChecked(True)
+    appController._changeSelHighlightMode(appController._ui.actionOnly_when_paused)
 
 # Make two selections.
-def _testDoubleSelection(mainWindow):
-    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    mainWindow._itemSelectionChanged()
-    mainWindow.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "add")
-    mainWindow._itemSelectionChanged()
+def _testDoubleSelection(appController):
+    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    appController._itemSelectionChanged()
+    appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "add")
+    appController._itemSelectionChanged()
 
-    viewportShot = mainWindow.GrabViewportShot()
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_double.png", "PNG")
 
 # Make a single selection with a non-default selection color.
-def _testColorSelection(mainWindow):
-    mainWindow._ui.actionSelCyan.setChecked(True)
-    mainWindow._changeHighlightColor(mainWindow._ui.actionSelCyan)
+def _testColorSelection(appController):
+    appController._ui.actionSelCyan.setChecked(True)
+    appController._changeHighlightColor(appController._ui.actionSelCyan)
 
-    mainWindow.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    mainWindow._itemSelectionChanged()
+    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
+    appController._itemSelectionChanged()
 
-    viewportShot = mainWindow.GrabViewportShot()
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_color.png", "PNG")
 
-    mainWindow._ui.actionSelYellow.setChecked(True)
-    mainWindow._changeHighlightColor(mainWindow._ui.actionSelYellow)
+    appController._ui.actionSelYellow.setChecked(True)
+    appController._changeHighlightColor(appController._ui.actionSelYellow)
 
 # Test that selection highlighting works properly in usdview
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testSingleSelection(mainWindow)
-    _testNoHighlightSelection(mainWindow)
-    _testDoubleSelection(mainWindow)
-    _testColorSelection(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testSingleSelection(appController)
+    _testNoHighlightSelection(appController)
+    _testDoubleSelection(appController)
+    _testColorSelection(appController)
 

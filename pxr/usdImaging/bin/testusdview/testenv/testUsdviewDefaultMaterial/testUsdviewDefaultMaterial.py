@@ -24,66 +24,66 @@
 #
 
 # Set all light settings and refresh the view.
-def _setLights(mainWindow, ambientChecked, keyChecked, fillChecked, backChecked):
-    mainWindow._ui.actionAmbient_Only.setChecked(ambientChecked)
-    mainWindow._ambientOnlyClicked(ambientChecked)
+def _setLights(appController, ambientChecked, keyChecked, fillChecked, backChecked):
+    appController._ui.actionAmbient_Only.setChecked(ambientChecked)
+    appController._ambientOnlyClicked(ambientChecked)
 
-    mainWindow._ui.actionKey.setChecked(keyChecked)
-    mainWindow._onKeyLightClicked(keyChecked)
+    appController._ui.actionKey.setChecked(keyChecked)
+    appController._onKeyLightClicked(keyChecked)
 
-    mainWindow._ui.actionFill.setChecked(fillChecked)
-    mainWindow._onFillLightClicked(fillChecked)
+    appController._ui.actionFill.setChecked(fillChecked)
+    appController._onFillLightClicked(fillChecked)
 
-    mainWindow._ui.actionBack.setChecked(backChecked)
-    mainWindow._onBackLightClicked(backChecked)
+    appController._ui.actionBack.setChecked(backChecked)
+    appController._onBackLightClicked(backChecked)
 
-    mainWindow._stageView.updateGL()
+    appController._stageView.updateGL()
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
     # Ambient isn't visible to perceptual diff with direct camera lighting, so
     # use the key light instead. This makes ambient visible in one half of the
     # sphere and specular visible in the other half.
-    _setLights(mainWindow, False, True, False, False)
+    _setLights(appController, False, True, False, False)
 
 # Set the default material and update the view.
-def _setDefaultMaterial(mainWindow, ambient, specular):
-    mainWindow.defaultMaterialAmbient = ambient
-    mainWindow.defaultMaterialSpecular = specular
-    mainWindow._stageView.updateGL()
+def _setDefaultMaterial(appController, ambient, specular):
+    appController.defaultMaterialAmbient = ambient
+    appController.defaultMaterialSpecular = specular
+    appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(mainWindow, fileName):
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test with no ambient and no specular reflection.
-def _testNone(mainWindow):
-    _setDefaultMaterial(mainWindow, 0, 0)
-    _takeShot(mainWindow, "none.png")
+def _testNone(appController):
+    _setDefaultMaterial(appController, 0, 0)
+    _takeShot(appController, "none.png")
 
 # Test with high ambient and no specular reflection.
-def _testAmbient(mainWindow):
-    _setDefaultMaterial(mainWindow, 1, 0)
-    _takeShot(mainWindow, "ambient.png")
+def _testAmbient(appController):
+    _setDefaultMaterial(appController, 1, 0)
+    _takeShot(appController, "ambient.png")
 
 # Test with no ambient and high specular reflection.
-def _testSpecular(mainWindow):
-    _setDefaultMaterial(mainWindow, 0, 1)
-    _takeShot(mainWindow, "specular.png")
+def _testSpecular(appController):
+    _setDefaultMaterial(appController, 0, 1)
+    _takeShot(appController, "specular.png")
 
 # Test with high ambient and high specular reflection.
-def _testBoth(mainWindow):
-    _setDefaultMaterial(mainWindow, 1, 1)
-    _takeShot(mainWindow, "both.png")
+def _testBoth(appController):
+    _setDefaultMaterial(appController, 1, 1)
+    _takeShot(appController, "both.png")
 
 # Test that default materials work properly in usdview.
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testNone(mainWindow)
-    _testAmbient(mainWindow)
-    _testSpecular(mainWindow)
-    _testBoth(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testNone(appController)
+    _testAmbient(appController)
+    _testSpecular(appController)
+    _testBoth(appController)

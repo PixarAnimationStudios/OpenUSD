@@ -32,9 +32,9 @@ from common import PropertyViewIndex, PropertyViewDataRoles, PrimNotFoundExcepti
 #
 class AttributeViewContextMenu(QtWidgets.QMenu):
 
-    def __init__(self, parent, item):
+    def __init__(self, parent, item, appController):
         QtWidgets.QMenu.__init__(self, parent)
-        self._menuItems = _GetContextMenuItems(parent, item)
+        self._menuItems = _GetContextMenuItems(item, appController)
 
         for menuItem in self._menuItems:
             # create menu actions
@@ -46,23 +46,23 @@ class AttributeViewContextMenu(QtWidgets.QMenu):
                     action.setEnabled(False)
 
 
-def _GetContextMenuItems(mainWindow, item):
+def _GetContextMenuItems(item, appController):
     return [ # Root selection methods
-             CopyAttributeNameMenuItem(mainWindow, item),
-             CopyAttributeValueMenuItem(mainWindow, item),
-             CopyAllTargetPathsMenuItem(mainWindow, item),
-             SelectAllTargetPathsMenuItem(mainWindow, item),
+             CopyAttributeNameMenuItem(appController, item),
+             CopyAttributeValueMenuItem(appController, item),
+             CopyAllTargetPathsMenuItem(appController, item),
+             SelectAllTargetPathsMenuItem(appController, item),
 
              # Individual/multi target selection menus
-             CopyTargetPathMenuItem(mainWindow, item),
-             SelectTargetPathMenuItem(mainWindow, item)]
+             CopyTargetPathMenuItem(appController, item),
+             SelectTargetPathMenuItem(appController, item)]
 
 #
 # The base class for propertyview context menu items.
 #
 class AttributeViewContextMenuItem(UsdviewContextMenuItem):
-    def __init__(self, mainWindow, item):
-        self._mainWindow = mainWindow
+    def __init__(self, appController, item):
+        self._appController = appController
         self._item = item
         self._role = self._item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
         self._name = self._item.text(PropertyViewIndex.NAME) if self._item else ""
@@ -166,7 +166,7 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
     def RunCommand(self):
         paths = [s.text(PropertyViewIndex.NAME) for s in self.GetSelectedOfType()]
         try:
-            self._mainWindow.jumpToTargetPaths(paths)
+            self._appController.jumpToTargetPaths(paths)
         except PrimNotFoundException as ex:
             # jumpToTargetPaths couldn't find one of the prims
             sys.stderr.write("ERROR: %s\n" % ex.message)
@@ -203,7 +203,7 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
         self._item.setSelected(False)
         paths = [self._item.child(i).text(PropertyViewIndex.NAME) for i in range(0, self._item.childCount())]
         try:
-            self._mainWindow.jumpToTargetPaths(paths)
+            self._appController.jumpToTargetPaths(paths)
         except PrimNotFoundException as ex:
             # jumpToTargetPaths couldn't find one of the prims
             sys.stderr.write("ERROR: %s\n" % ex.message)

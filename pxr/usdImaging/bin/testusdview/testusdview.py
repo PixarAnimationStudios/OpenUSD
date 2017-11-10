@@ -25,7 +25,7 @@
 
 # This is a wrapper around Usdview's launcher code to allow injection of a 
 # script for testing purposes. Tests can be supplied in the form of a python
-# script which provides a function testUsdviewInputFunction(mainWindow)
+# script which provides a function testUsdviewInputFunction(appController)
 # as the entry point. This is passed to testusdview with the (required) 
 # --testScript argument. Other than this signature requirement, scripts are
 # free to do whatever they want with mainwindow for testing.
@@ -59,19 +59,19 @@ class TestUsdView(Usdviewq.Launcher):
 
     def __LaunchProcess(self, arg_parse_result):
         callBack = self._ValidateTestFile(arg_parse_result.testScript)
-        (app, mainWindow) = (
+        (app, appController) = (
             super(TestUsdView, self).LaunchPreamble(arg_parse_result))
 
         # Set a fixed size on the stage view so that any image tests get a
         # consistent resolution.
-        mainWindow._stageView.setFixedSize(597,540)
+        appController._stageView.setFixedSize(597,540)
 
         # Process initial loading events
         app.processEvents()
-        callBack(mainWindow)
+        callBack(appController)
         # Process event triggered by the callbacks
         app.processEvents()
-        mainWindow._cleanAndClose()
+        appController._cleanAndClose()
         return
 
     # Verify that we have a valid file as input, and it contains
@@ -101,12 +101,12 @@ class TestUsdView(Usdviewq.Launcher):
         if not callBack:
             sys.stderr.write('Invalid file supplied, must contain a function of '
                              'the signature' + TEST_USD_VIEW_CALLBACK_IDENT +
-                             '(mainWindow) ')
+                             '(appController) ')
             sys.exit(1)
 
         errorMsg = ('Invalid function signature, '
                     'Must be of the form: \n ' +
-                    TEST_USD_VIEW_CALLBACK_IDENT + ' (mainWindow)\n'
+                    TEST_USD_VIEW_CALLBACK_IDENT + ' (appController)\n'
                     'Error: %s')
 
         (args, varargs, keywords, defaults) = inspect.getargspec(callBack)

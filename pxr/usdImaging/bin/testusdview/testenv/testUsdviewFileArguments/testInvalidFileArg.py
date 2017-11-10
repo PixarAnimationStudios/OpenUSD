@@ -23,6 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-def testUsdviewInputFunction(mainWindow):
+def testUsdviewInputFunction(appController):
     # This test tries to ensure we handle invalid files supplied to usdview
-    assert not mainWindow._parserData.usdFile
+    assert not appController._parserData.usdFile

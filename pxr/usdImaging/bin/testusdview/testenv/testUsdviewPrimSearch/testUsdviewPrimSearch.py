@@ -23,39 +23,39 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-def _assertSelectedPrim(mainWindow, primName):
-    selected = mainWindow._ui.primView.selectedItems()
+def _assertSelectedPrim(appController, primName):
+    selected = appController._ui.primView.selectedItems()
     assert len(selected) == 1
     # 0 indicates the first column where we store prim names
     assert primName == selected[0].text(0)
 
-def _search(mainWindow, searchTerm, expectedItems):
+def _search(appController, searchTerm, expectedItems):
     # Repainting isn't necessary at all here, its left in as
     # a visual aid for anyone running this test manually
-    primSearch = mainWindow._ui.primViewLineEdit
+    primSearch = appController._ui.primViewLineEdit
     primSearch.setText(searchTerm)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
 
     for item in expectedItems:
-        mainWindow._primViewFindNext()
-        mainWindow.repaint()
-        _assertSelectedPrim(mainWindow, item)
+        appController._primViewFindNext()
+        appController._mainWindow.repaint()
+        _assertSelectedPrim(appController, item)
 
     # Looping over again will currently cycle through the elements again
     for item in expectedItems:
-        mainWindow._primViewFindNext()
-        mainWindow.repaint()
-        _assertSelectedPrim(mainWindow, item)
+        appController._primViewFindNext()
+        appController._mainWindow.repaint()
+        _assertSelectedPrim(appController, item)
 
-def _testSearchBasic(mainWindow):
-    _search(mainWindow, 'f', ['f', 'foo'])
-    _search(mainWindow, 'g', ['g'])
+def _testSearchBasic(appController):
+    _search(appController, 'f', ['f', 'foo'])
+    _search(appController, 'g', ['g'])
 
     # On an invalid search, the old term will remain
-    _search(mainWindow, 'xxx', ['g'])
+    _search(appController, 'xxx', ['g'])
 
     # Do a regex based search
-    _search(mainWindow, 'f.*', ['f', 'foo'])
+    _search(appController, 'f.*', ['f', 'foo'])
 
-def testUsdviewInputFunction(mainWindow):
-    _testSearchBasic(mainWindow)
+def testUsdviewInputFunction(appController):
+    _testSearchBasic(appController)

@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache # License.
 
 # This class should be the only object that knows about the details of the
-# UsdView mainWindow.  If that API ever changes, we should only need to update
+# UsdView appController.  If that API ever changes, we should only need to update
 # this class.
 class PlugContext(object):
     '''
@@ -32,37 +32,37 @@ class PlugContext(object):
     the core can change without affecting plugins.
     '''
 
-    def __init__(self, mainWindow):
-        self._mainWindow = mainWindow
+    def __init__(self, appController):
+        self._appController = appController
 
     def GetQMainWindow(self):
         ''' Returns a QWidget object that other widgets can use as a parent. '''
 
-        return self._mainWindow
+        return self._appController._mainWindow
 
     def GetUsdStage(self):
         ''' Returns the current Usd stage. '''
 
-        return self._mainWindow._stage
+        return self._appController._stage
 
     def GetCurrentGfCamera(self):
         ''' Returns the last computed Gf Camera. '''
-        if self._mainWindow._stageView:
-            return self._mainWindow._stageView.gfCamera
+        if self._appController._stageView:
+            return self._appController._stageView.gfCamera
         else:
             return None
 
     def GetCurrentFrame(self):
         ''' Returns the current frame. '''
 
-        return self._mainWindow._currentFrame
+        return self._appController._currentFrame
 
     def GetModelsFromSelection(self):
         ''' Returns selected models.  this will walk up to find the nearest model.
         Note, this may return "group"'s if they are selected. '''
 
         models = []
-        items = self._mainWindow.getSelectedItems()
+        items = self._appController.getSelectedItems()
         for item in items:
             currItem = item
             while currItem and not currItem.prim.IsModel():
@@ -75,7 +75,7 @@ class PlugContext(object):
     def GetSelectedPrimsOfType(self, schemaType):
         ''' Returns selected prims of the provided schemaType (TfType).'''
         prims = []
-        items = self._mainWindow.getSelectedItems()
+        items = self._appController.getSelectedItems()
         for item in items:
             if item.prim.IsA(schemaType):
                 prims.append(item.prim)
@@ -85,46 +85,46 @@ class PlugContext(object):
     def GetSelectedPrims(self):
         ''' Returns the current prims. '''
 
-        return self._mainWindow._currentPrims
+        return self._appController._currentPrims
 
     def GetSelectedPaths(self):
         ''' Returns the paths for the current selections. '''
 
         return [item.prim.GetPath()
-                for item in self._mainWindow.getSelectedItems()]
+                for item in self._appController.getSelectedItems()]
 
     def GetConfigDir(self):
         ''' Returns the config dir, typically ~/.usdview/. '''
 
-        return self._mainWindow._outputBaseDirectory()
+        return self._appController._outputBaseDirectory()
 
     def GetInputFilePath(self):
         ''' Returns the file that usdview was called on. '''
 
-        return self._mainWindow._parserData.usdFile
+        return self._appController._parserData.usdFile
 
     def PrintStatus(self, msg):
         ''' Prints a status message. '''
 
-        self._mainWindow.statusMessage(msg)
+        self._appController.statusMessage(msg)
 
     def GetStageView(self):
         ''' Returns the stageView object. '''
 
-        return self._mainWindow._stageView
+        return self._appController._stageView
 
     def GetSettings(self):
         ''' Returns settings object. '''
 
-        return self._mainWindow._settings
+        return self._appController._settings
 
     # Screen capture functionality.
     def GrabWindowShot(self):
         ''' Returns a QImage of the full usdview window. '''
 
-        return self._mainWindow.GrabWindowShot()
+        return self._appController.GrabWindowShot()
 
     def GrabViewportShot(self):
         ''' Returns a QImage of the current stage view in usdview. '''
 
-        return self._mainWindow.GrabViewportShot()
+        return self._appController.GrabViewportShot()

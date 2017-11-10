@@ -24,38 +24,38 @@
 #
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
 # Set the field of view and refresh the view.
-def _setFOV(mainWindow, fov):
-    mainWindow.freeCamera.fov = fov
-    mainWindow._stageView.updateGL()
+def _setFOV(appController, fov):
+    appController.freeCamera.fov = fov
+    appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(mainWindow, fileName):
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test 45 degree FOV.
-def _test45Degree(mainWindow):
-    _setFOV(mainWindow, 45)
-    _takeShot(mainWindow, "fov45.png")
+def _test45Degree(appController):
+    _setFOV(appController, 45)
+    _takeShot(appController, "fov45.png")
 
 # Test 60 degree FOV.
-def _test60Degree(mainWindow):
-    _setFOV(mainWindow, 60)
-    _takeShot(mainWindow, "fov60.png")
+def _test60Degree(appController):
+    _setFOV(appController, 60)
+    _takeShot(appController, "fov60.png")
 
 # Test 90 degree FOV.
-def _test90Degree(mainWindow):
-    _setFOV(mainWindow, 90)
-    _takeShot(mainWindow, "fov90.png")
+def _test90Degree(appController):
+    _setFOV(appController, 90)
+    _takeShot(appController, "fov90.png")
 
 # Test that the FOV setting work properly in usdview.
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _test45Degree(mainWindow)
-    _test60Degree(mainWindow)
-    _test90Degree(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _test45Degree(appController)
+    _test60Degree(appController)
+    _test90Degree(appController)

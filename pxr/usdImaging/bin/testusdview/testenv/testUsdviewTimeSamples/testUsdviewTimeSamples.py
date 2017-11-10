@@ -27,16 +27,16 @@ NUM_TIME_SAMPLES = 6
 START_TIME_TEXT = "101.0"
 END_TIME_TEXT = "106.0"
 
-def _testBasic(mainWindow):
-    stageBegin   = mainWindow._ui.stageBegin
-    stageEnd     = mainWindow._ui.stageEnd
-    rangeBegin   = mainWindow._ui.rangeBegin
-    rangeEnd     = mainWindow._ui.rangeEnd
-    stepSize     = mainWindow._ui.stepSize
-    currentFrame = mainWindow._ui.frameField
+def _testBasic(appController):
+    stageBegin   = appController._ui.stageBegin
+    stageEnd     = appController._ui.stageEnd
+    rangeBegin   = appController._ui.rangeBegin
+    rangeEnd     = appController._ui.rangeEnd
+    stepSize     = appController._ui.stepSize
+    currentFrame = appController._ui.frameField
 
-    forwardControl  = mainWindow._ui.actionFrame_Forward.triggered
-    backwardControl = mainWindow._ui.actionFrame_Backwards.triggered
+    forwardControl  = appController._ui.actionFrame_Forward.triggered
+    backwardControl = appController._ui.actionFrame_Backwards.triggered
 
     # ensure our initial variable time samples are set.
     assert rangeBegin.text() == START_TIME_TEXT 
@@ -50,7 +50,7 @@ def _testBasic(mainWindow):
         for i in expectedRange:
             assert currentFrame.text() == str(float(i))
             control.emit()
-            mainWindow.repaint()
+            appController._mainWindow.repaint()
 
     # iterate through the default time samples by emitting our 
     # forward control signal.
@@ -64,26 +64,26 @@ def _testBasic(mainWindow):
     newBeginValue = "103.0"
     rangeBegin.setText(newBeginValue)
     rangeBegin.editingFinished.emit()
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert rangeBegin.text() == newBeginValue
 
     # set the end time and ensure it takes
     newEndValue = "105.0"
     rangeEnd.setText(newEndValue)
     rangeEnd.editingFinished.emit()
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert rangeEnd.text() == newEndValue
 
     # set the step size and ensure it takes
     newStepSize = "0.5"
     stepSize.setText(newStepSize) 
     stepSize.editingFinished.emit()
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
     assert stepSize.text() == newStepSize
 
     # use newly set values 
     testIterateTimeRange([103.0, 103.5, 104.0, 104.5, 105.0], forwardControl)
     testIterateTimeRange([103.0, 105.0, 104.5, 104.0, 103.5], backwardControl)
 
-def testUsdviewInputFunction(mainWindow):
-    _testBasic(mainWindow)
+def testUsdviewInputFunction(appController):
+    _testBasic(appController)

@@ -24,45 +24,45 @@
 #
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
 # Set the background color and refresh the view.
-def _setBackgroundColorAction(mainWindow, action):
+def _setBackgroundColorAction(appController, action):
     action.setChecked(True)
-    mainWindow._changeBgColor(action)
-    mainWindow._stageView.updateGL()
+    appController._changeBgColor(action)
+    appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(mainWindow, fileName):
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test with a black background color.
-def _testBlackBackground(mainWindow):
-    _setBackgroundColorAction(mainWindow, mainWindow._ui.actionBlack)
-    _takeShot(mainWindow, "black.png")
+def _testBlackBackground(appController):
+    _setBackgroundColorAction(appController, appController._ui.actionBlack)
+    _takeShot(appController, "black.png")
 
 # Test with a dark grey background color.
-def _testGreyDarkBackground(mainWindow):
-    _setBackgroundColorAction(mainWindow, mainWindow._ui.actionGrey_Dark)
-    _takeShot(mainWindow, "grey_dark.png")
+def _testGreyDarkBackground(appController):
+    _setBackgroundColorAction(appController, appController._ui.actionGrey_Dark)
+    _takeShot(appController, "grey_dark.png")
 
 # Test with a light grey background color.
-def _testGreyLightBackground(mainWindow):
-    _setBackgroundColorAction(mainWindow, mainWindow._ui.actionGrey_Light)
-    _takeShot(mainWindow, "grey_light.png")
+def _testGreyLightBackground(appController):
+    _setBackgroundColorAction(appController, appController._ui.actionGrey_Light)
+    _takeShot(appController, "grey_light.png")
 
 # Test with a white background color.
-def _testWhiteBackground(mainWindow):
-    _setBackgroundColorAction(mainWindow, mainWindow._ui.actionWhite)
-    _takeShot(mainWindow, "white.png")
+def _testWhiteBackground(appController):
+    _setBackgroundColorAction(appController, appController._ui.actionWhite)
+    _takeShot(appController, "white.png")
 
 # Test that the background color setting works properly in usdview.
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testBlackBackground(mainWindow)
-    _testGreyDarkBackground(mainWindow)
-    _testGreyLightBackground(mainWindow)
-    _testWhiteBackground(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testBlackBackground(appController)
+    _testGreyDarkBackground(appController)
+    _testGreyLightBackground(appController)
+    _testWhiteBackground(appController)

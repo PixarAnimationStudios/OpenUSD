@@ -33,9 +33,9 @@ from primContextMenuItems import _GetContextMenuItems
 #
 class PrimContextMenu(QtWidgets.QMenu):
 
-    def __init__(self, parent, item):
+    def __init__(self, parent, item, appController):
         QtWidgets.QMenu.__init__(self, parent)
-        self._menuItems = _GetContextMenuItems(parent, item)
+        self._menuItems = _GetContextMenuItems(appController, item)
 
         for menuItem in self._menuItems:
             if menuItem.IsSeparator():

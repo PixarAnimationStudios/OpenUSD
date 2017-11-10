@@ -26,60 +26,60 @@
 from pxr import Gf
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
 # Set the clipping plane overrides and update the view.
-def _setClippingPlaneOverrides(mainWindow, near=None, far=None):
-    mainWindow._stageView.overrideNear = near
-    mainWindow._stageView.overrideFar = far
-    mainWindow._stageView.updateGL()
+def _setClippingPlaneOverrides(appController, near=None, far=None):
+    appController._stageView.overrideNear = near
+    appController._stageView.overrideFar = far
+    appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(mainWindow, fileName):
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test with no overrides (calculated clipping planes are used).
-def _testNoOverride(mainWindow):
-    _setClippingPlaneOverrides(mainWindow)
-    _takeShot(mainWindow, "no_override.png")
+def _testNoOverride(appController):
+    _setClippingPlaneOverrides(appController)
+    _takeShot(appController, "no_override.png")
 
 # Test with a near override.
-def _testOverrideNear(mainWindow):
-    _setClippingPlaneOverrides(mainWindow, near=2.8)
-    _takeShot(mainWindow, "override_near.png")
+def _testOverrideNear(appController):
+    _setClippingPlaneOverrides(appController, near=2.8)
+    _takeShot(appController, "override_near.png")
 
 # Test with a far override.
-def _testOverrideFar(mainWindow):
-    _setClippingPlaneOverrides(mainWindow, far=4.8)
-    _takeShot(mainWindow, "override_far.png")
+def _testOverrideFar(appController):
+    _setClippingPlaneOverrides(appController, far=4.8)
+    _takeShot(appController, "override_far.png")
 
 # Test with overrides for both near and far clipping planes.
-def _testOverrideBoth(mainWindow):
-    _setClippingPlaneOverrides(mainWindow, near=2.8, far=4.8)
-    _takeShot(mainWindow, "override_both.png")
+def _testOverrideBoth(appController):
+    _setClippingPlaneOverrides(appController, near=2.8, far=4.8)
+    _takeShot(appController, "override_both.png")
 
 # Move the camera forward so the front sphere is clipped, then recompute clipping.
-def _testRecomputeClipping(mainWindow):
-    _setClippingPlaneOverrides(mainWindow)
+def _testRecomputeClipping(appController):
+    _setClippingPlaneOverrides(appController)
 
-    mainWindow.freeCamera.dist = 2.7
-    mainWindow._stageView.updateGL()
+    appController.freeCamera.dist = 2.7
+    appController._stageView.updateGL()
 
-    _takeShot(mainWindow, "before_recompute.png")
+    _takeShot(appController, "before_recompute.png")
 
-    mainWindow._stageView.computeAndSetClosestDistance()
-    mainWindow._stageView.updateGL()
+    appController._stageView.computeAndSetClosestDistance()
+    appController._stageView.updateGL()
 
-    _takeShot(mainWindow, "after_recompute.png")
+    _takeShot(appController, "after_recompute.png")
 
 # Test that clipping plane settings work properly in usdview.
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testNoOverride(mainWindow)
-    _testOverrideNear(mainWindow)
-    _testOverrideFar(mainWindow)
-    _testOverrideBoth(mainWindow)
-    _testRecomputeClipping(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testNoOverride(appController)
+    _testOverrideNear(appController)
+    _testOverrideFar(appController)
+    _testOverrideBoth(appController)
+    _testRecomputeClipping(appController)

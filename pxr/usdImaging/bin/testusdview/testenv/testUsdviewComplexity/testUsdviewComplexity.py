@@ -24,39 +24,39 @@
 #
 
 # Remove any unwanted visuals from the view.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
-    mainWindow.renderMode = "Wireframe" # Make image differences clear.
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
+    appController.renderMode = "Wireframe" # Make image differences clear.
 
 # Set the complexity and refresh the view.
-def _setComplexity(mainWindow, complexity):
-    mainWindow.complexity = complexity
-    mainWindow._stageView.updateGL()
+def _setComplexity(appController, complexity):
+    appController.complexity = complexity
+    appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.
-def _takeShot(mainWindow, fileName):
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 # Test with no refinement.
-def _testNoRefinement(mainWindow):
-    _setComplexity(mainWindow, 1.0)
-    _takeShot(mainWindow, "no_refinement.png")
+def _testNoRefinement(appController):
+    _setComplexity(appController, 1.0)
+    _takeShot(appController, "no_refinement.png")
 
 # Test with simple refinement.
-def _testSimpleRefinement(mainWindow):
-    _setComplexity(mainWindow, 1.1)
-    _takeShot(mainWindow, "simple_refinement.png")
+def _testSimpleRefinement(appController):
+    _setComplexity(appController, 1.1)
+    _takeShot(appController, "simple_refinement.png")
 
 # Test with high refinement.
-def _testHighRefinement(mainWindow):
-    _setComplexity(mainWindow, 1.4)
-    _takeShot(mainWindow, "high_refinement.png")
+def _testHighRefinement(appController):
+    _setComplexity(appController, 1.4)
+    _takeShot(appController, "high_refinement.png")
 
 # Test that the complexity setting works properly in usdview.
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testNoRefinement(mainWindow)
-    _testSimpleRefinement(mainWindow)
-    _testHighRefinement(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testNoRefinement(appController)
+    _testSimpleRefinement(appController)
+    _testHighRefinement(appController)

@@ -40,19 +40,19 @@ SECOND_VARIANT = 'b_shapeVariant'
 def _makeFileName(variantInfo, index):
     return variantInfo[1] + str(index) + '.png'
 
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
-def _setupWidgets(mainWindow):
+def _setupWidgets(appController):
     # Select our prim with the variant authored
-    mainWindow._ui.primViewLineEdit.setText('Shapes')
-    mainWindow._primViewFindNext()
-    mainWindow.repaint()
+    appController._ui.primViewLineEdit.setText('Shapes')
+    appController._primViewFindNext()
+    appController._mainWindow.repaint()
 
-def _getVariantSelector(mainWindow, whichVariant):
+def _getVariantSelector(appController, whichVariant):
     # Select the metadata tab in the lower right corner
-    attributeInspector = mainWindow._ui.attributeInspector
+    attributeInspector = appController._ui.attributeInspector
     attributeInspector.setCurrentIndex(1)
 
     # Grab the rows of our metadata tab and select the set containing
@@ -66,56 +66,56 @@ def _getVariantSelector(mainWindow, whichVariant):
 
     return None
 
-def _takeShot(mainWindow, fileName):
-    mainWindow.repaint()
-    mainWindow._stageView.updateGL()
-    viewportShot = mainWindow.GrabViewportShot()
+def _takeShot(appController, fileName):
+    appController._mainWindow.repaint()
+    appController._stageView.updateGL()
+    viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
-def _selectVariant(mainWindow, variantPos, whichVariant):
-    selector = _getVariantSelector(mainWindow, whichVariant)
+def _selectVariant(appController, variantPos, whichVariant):
+    selector = _getVariantSelector(appController, whichVariant)
     selector.setCurrentIndex(variantPos)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
 
-def _testBasic(mainWindow):
+def _testBasic(appController):
     # select items from the first variant
 
     # select capsule
-    _selectVariant(mainWindow, CAPSULE[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CAPSULE, 1))
+    _selectVariant(appController, CAPSULE[VARIANT_INFO_POS], FIRST_VARIANT)
+    _takeShot(appController, _makeFileName(CAPSULE, 1))
 
     # select cone
-    _selectVariant(mainWindow, CONE[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CONE, 1))
+    _selectVariant(appController, CONE[VARIANT_INFO_POS], FIRST_VARIANT)
+    _takeShot(appController, _makeFileName(CONE, 1))
 
     # select cube
-    _selectVariant(mainWindow, CUBE[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CUBE, 1))
+    _selectVariant(appController, CUBE[VARIANT_INFO_POS], FIRST_VARIANT)
+    _takeShot(appController, _makeFileName(CUBE, 1))
 
     # select cylinder 
-    _selectVariant(mainWindow, CYLINDER[VARIANT_INFO_POS], FIRST_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CYLINDER, 1))
+    _selectVariant(appController, CYLINDER[VARIANT_INFO_POS], FIRST_VARIANT)
+    _takeShot(appController, _makeFileName(CYLINDER, 1))
 
     # select items from the second variant
 
     # select capsule
-    _selectVariant(mainWindow, CAPSULE[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CAPSULE, 2))
+    _selectVariant(appController, CAPSULE[VARIANT_INFO_POS], SECOND_VARIANT)
+    _takeShot(appController, _makeFileName(CAPSULE, 2))
 
     # select cone
-    _selectVariant(mainWindow, CONE[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CONE, 2))
+    _selectVariant(appController, CONE[VARIANT_INFO_POS], SECOND_VARIANT)
+    _takeShot(appController, _makeFileName(CONE, 2))
 
     # select cube
-    _selectVariant(mainWindow, CUBE[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CUBE, 2))
+    _selectVariant(appController, CUBE[VARIANT_INFO_POS], SECOND_VARIANT)
+    _takeShot(appController, _makeFileName(CUBE, 2))
 
     # select cylinder 
-    _selectVariant(mainWindow, CYLINDER[VARIANT_INFO_POS], SECOND_VARIANT)
-    _takeShot(mainWindow, _makeFileName(CYLINDER, 2))
+    _selectVariant(appController, CYLINDER[VARIANT_INFO_POS], SECOND_VARIANT)
+    _takeShot(appController, _makeFileName(CYLINDER, 2))
 
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _setupWidgets(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _setupWidgets(appController)
     
-    _testBasic(mainWindow)
+    _testBasic(appController)

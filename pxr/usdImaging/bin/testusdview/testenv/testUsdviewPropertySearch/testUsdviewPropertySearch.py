@@ -23,40 +23,40 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-def _assertSelectedProp(mainWindow, propName):
-    selected = mainWindow._ui.propertyView.selectedItems()
+def _assertSelectedProp(appController, propName):
+    selected = appController._ui.propertyView.selectedItems()
     assert len(selected) == 1
     # 1 indicates the first column where we store prop names
     assert propName == selected[0].text(1), propName + '!=' + selected[0].text(1)
 
-def _selectPrim(mainWindow, primName):
-    mainWindow._ui.primViewLineEdit.setText(primName)
-    mainWindow._primViewFindNext()
+def _selectPrim(appController, primName):
+    appController._ui.primViewLineEdit.setText(primName)
+    appController._primViewFindNext()
 
-def _search(mainWindow, searchTerm, expectedItems):
+def _search(appController, searchTerm, expectedItems):
     # Repainting isn't necessary at all here, its left in as
     # a visual aid for anyone running this test manually
-    propSearch = mainWindow._ui.attrViewLineEdit
+    propSearch = appController._ui.attrViewLineEdit
     propSearch.setText(searchTerm)
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
 
     for item in expectedItems:
-        mainWindow._attrViewFindNext()
-        mainWindow.repaint()
-        _assertSelectedProp(mainWindow, item)
+        appController._attrViewFindNext()
+        appController._mainWindow.repaint()
+        _assertSelectedProp(appController, item)
 
-def _testSearchBasic(mainWindow):
+def _testSearchBasic(appController):
     intPropName = 'a'
     relPropName = 'myRel' 
     stringPropName = 'z'
     floatPropName = 'y'
 
-    _search(mainWindow, 'a', [intPropName, 'Local to World Xform'])
-    _search(mainWindow, 'myR', [relPropName])
-    _search(mainWindow, 'y', [floatPropName, relPropName])
-    _search(mainWindow, 'z', [stringPropName])
+    _search(appController, 'a', [intPropName, 'Local to World Xform'])
+    _search(appController, 'myR', [relPropName])
+    _search(appController, 'y', [floatPropName, relPropName])
+    _search(appController, 'z', [stringPropName])
 
-def testUsdviewInputFunction(mainWindow):
+def testUsdviewInputFunction(appController):
     # Select a prim under which all of our props are authored
-    _selectPrim(mainWindow, 'f')
-    _testSearchBasic(mainWindow)
+    _selectPrim(appController, 'f')
+    _testSearchBasic(appController)

@@ -25,36 +25,36 @@
 
 from pxr import Sdf
 
-def _setPaths(mainWindow, pathStrs):
-    pathWidget = mainWindow._ui.currentPathWidget
+def _setPaths(appController, pathStrs):
+    pathWidget = appController._ui.currentPathWidget
     pathWidget.setText(pathStrs)
-    mainWindow._currentPathChanged()
+    appController._currentPathChanged()
 
     # We dont strictly need to repaint here, but its makes
     # what is happening clearer to anyone obeserving this test
-    mainWindow.repaint()
+    appController._mainWindow.repaint()
 
-def _getPath(mainWindow):
-    return str(mainWindow._ui.currentPathWidget.text())
+def _getPath(appController):
+    return str(appController._ui.currentPathWidget.text())
 
-def _assertPathsEq(mainWindow, pathStr):
-    widgetText = _getPath(mainWindow)
+def _assertPathsEq(appController, pathStr):
+    widgetText = _getPath(appController)
     assert widgetText == pathStr
     for (actual, expected) in zip(map(str.strip, widgetText.split(',')), 
                                   map(str.strip, pathStr.split(','))):
         assert Sdf.Path(actual)
         assert actual == expected
 
-def _assertPathIsPrim(mainWindow):
-    for p in _getPath(mainWindow).split(','):
+def _assertPathIsPrim(appController):
+    for p in _getPath(appController).split(','):
         assert Sdf.Path(p).IsAbsoluteRootOrPrimPath()
 
-def _assertPathIsProp(mainWindow):
-    for p in _getPath(mainWindow).split(','):
-        assert Sdf.Path(_getPath(mainWindow)).IsPropertyPath()
+def _assertPathIsProp(appController):
+    for p in _getPath(appController).split(','):
+        assert Sdf.Path(_getPath(appController)).IsPropertyPath()
 
-def _assertSelectedPrims(mainWindow, primNames):
-    primView = mainWindow._ui.primView
+def _assertSelectedPrims(appController, primNames):
+    primView = appController._ui.primView
     paths = map(str.strip, primNames.split(','))
     selected = primView.selectedItems()
 
@@ -63,8 +63,8 @@ def _assertSelectedPrims(mainWindow, primNames):
         # 0 indicates the first column where we store prim names
         assert p == selected[index].text(0)
 
-def _assertSelectedProp(mainWindow, propName):
-    propView = mainWindow._ui.propertyView
+def _assertSelectedProp(appController, propName):
+    propView = appController._ui.propertyView
     selected = propView.selectedItems()
 
     # Since these tests are exercising the prim bar,
@@ -74,53 +74,53 @@ def _assertSelectedProp(mainWindow, propName):
     # 1 indicates the second column where we store prop names
     assert propName == selected[0].text(1)
 
-def _testGarbageInput(mainWindow):
+def _testGarbageInput(appController):
     # Ensure that sending invalid text gets reset to the 
     # previous path, which is the pseudoroot
-    _setPaths(mainWindow, 'xxx')
-    _assertPathsEq(mainWindow, '/')
+    _setPaths(appController, 'xxx')
+    _assertPathsEq(appController, '/')
 
-    _setPaths(mainWindow, '/f, aisdhioasj')
-    _assertPathsEq(mainWindow, '/')
+    _setPaths(appController, '/f, aisdhioasj')
+    _assertPathsEq(appController, '/')
 
-def _testRootPath(mainWindow):
-    _setPaths(mainWindow, '/')
-    _assertPathsEq(mainWindow, '/')
-    _assertPathIsPrim(mainWindow)
-    _assertSelectedPrims(mainWindow, 'root')
+def _testRootPath(appController):
+    _setPaths(appController, '/')
+    _assertPathsEq(appController, '/')
+    _assertPathIsPrim(appController)
+    _assertSelectedPrims(appController, 'root')
 
-def _testExistingPath(mainWindow):
-    _setPaths(mainWindow, '/f')
-    _assertPathsEq(mainWindow, '/f')
-    _assertSelectedPrims(mainWindow, 'f')
+def _testExistingPath(appController):
+    _setPaths(appController, '/f')
+    _assertPathsEq(appController, '/f')
+    _assertSelectedPrims(appController, 'f')
 
-    _setPaths(mainWindow, '/f.x')
-    _assertPathsEq(mainWindow, '/f')
-    _assertSelectedPrims(mainWindow, 'f')
-    _assertSelectedProp(mainWindow, 'x')
+    _setPaths(appController, '/f.x')
+    _assertPathsEq(appController, '/f')
+    _assertSelectedPrims(appController, 'f')
+    _assertSelectedProp(appController, 'x')
 
-def _testMixedPaths(mainWindow):
+def _testMixedPaths(appController):
     # test all valid paths
-    _setPaths(mainWindow, '/f.x, /g')
-    _assertPathsEq(mainWindow, '/f, /g')
-    _assertSelectedPrims(mainWindow, 'f, g')
+    _setPaths(appController, '/f.x, /g')
+    _assertPathsEq(appController, '/f, /g')
+    _assertSelectedPrims(appController, 'f, g')
 
-    _setPaths(mainWindow, '/f, /g')
-    _assertPathsEq(mainWindow, '/f, /g')
-    _assertSelectedPrims(mainWindow, 'f, g')
+    _setPaths(appController, '/f, /g')
+    _assertPathsEq(appController, '/f, /g')
+    _assertSelectedPrims(appController, 'f, g')
 
     # test all invalid paths
-    _setPaths(mainWindow, '/x, /y')
-    _assertPathsEq(mainWindow, '/f, /g')
+    _setPaths(appController, '/x, /y')
+    _assertPathsEq(appController, '/f, /g')
 
     # test some valid/some invalid
-    _setPaths(mainWindow, '/f, /x')
-    _assertPathsEq(mainWindow, '/f, /g')
+    _setPaths(appController, '/f, /x')
+    _assertPathsEq(appController, '/f, /g')
 
 # Test that the prim path bar works properly in usdview
-def testUsdviewInputFunction(mainWindow):
+def testUsdviewInputFunction(appController):
     # test entering single paths
-    _testGarbageInput(mainWindow)
-    _testRootPath(mainWindow)
-    _testExistingPath(mainWindow)
-    _testMixedPaths(mainWindow)
+    _testGarbageInput(appController)
+    _testRootPath(appController)
+    _testExistingPath(appController)
+    _testMixedPaths(appController)

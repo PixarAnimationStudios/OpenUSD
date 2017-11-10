@@ -32,7 +32,7 @@ class LayerStackContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent, item):
         QtWidgets.QMenu.__init__(self, parent)
-        self._menuItems = _GetContextMenuItems(parent, item)
+        self._menuItems = _GetContextMenuItems(item)
 
         for menuItem in self._menuItems:
             if menuItem.isValid():
@@ -44,20 +44,19 @@ class LayerStackContextMenu(QtWidgets.QMenu):
                     action.setEnabled(False)
 
 
-def _GetContextMenuItems(mainWindow, item):
-    return [OpenLayerMenuItem(mainWindow, item),
-            UsdviewLayerMenuItem(mainWindow, item),
-            CopyLayerPathMenuItem(mainWindow, item),
-            CopyLayerIdentifierMenuItem(mainWindow, item),
-            CopyPathMenuItem(mainWindow, item)]
+def _GetContextMenuItems(item):
+    return [OpenLayerMenuItem(item),
+            UsdviewLayerMenuItem(item),
+            CopyLayerPathMenuItem(item),
+            CopyLayerIdentifierMenuItem(item),
+            CopyPathMenuItem(item)]
 
 #
 # The base class for layer stack context menu items.
 #
 class LayerStackContextMenuItem(UsdviewContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        self._mainWindow = mainWindow
+    def __init__(self, item):
         self._item = item
 
     def IsEnabled(self):

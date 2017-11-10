@@ -36,14 +36,14 @@ def _GetPrimInfo(prim, time):
 # prim data associated with it and populate itself with that data.
 
 class PrimViewItem(QtWidgets.QTreeWidgetItem):
-    def __init__(self, prim, mainWindow, primHasChildren):
+    def __init__(self, prim, appController, primHasChildren):
         # Do *not* pass a parent.  The client must build the hierarchy.
         # This can dramatically improve performance when building a
         # large hierarchy.
         super(PrimViewItem, self).__init__()
 
         self.prim = prim
-        self._mainWindow = mainWindow
+        self._appController = appController
         self._needsPull = True
         self._needsPush = True
         self._needsChildrenPopulated = primHasChildren
@@ -80,7 +80,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
 
             # Get our prim info.
             # To avoid Python overhead, request data in batch from C++.
-            info = _GetPrimInfo(self.prim, self._mainWindow._currentFrame)
+            info = _GetPrimInfo(self.prim, self._appController._currentFrame)
             self._extractInfo(info)
 
     def _extractInfo(self, info):
@@ -224,7 +224,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         if not (self.imageable and self.active):
             return inheritedVis
 
-        time = self._mainWindow._currentFrame
+        time = self._appController._currentFrame
         # If visibility-properties have changed on the stage, then
         # we must re-evaluate our variability before deciding whether
         # we can avoid re-reading our visibility
@@ -249,12 +249,12 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         # We need to completely re-generate the prim tree because making a prim
         # inactive can break a reference chain, and/or make another prim
         # inactive due to inheritance.
-        self._mainWindow.UpdatePrimViewContents()
+        self._appController.UpdatePrimViewContents()
 
     def loadStateChanged(self):
         # We can do better than nuking the whole prim tree, but for now,
         # use what's already handy
-        self._mainWindow.UpdatePrimViewContents()
+        self._appController.UpdatePrimViewContents()
 
     @staticmethod
     def propagateVis(item, authoredVisHasChanged=True):

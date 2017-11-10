@@ -39,7 +39,7 @@ pxr_library(usdviewq
         __init__.py
         arrayAttributeView.py
         customAttributes.py
-        mainWindow.py
+        appController.py
         plugContext.py
         scalarTypes.py
         stageView.py

@@ -32,31 +32,31 @@ import sys
 # Every entry should be an object derived from PrimContextMenuItem,
 # defined below.
 #
-def _GetContextMenuItems(mainWindow, item):
-    return [JumpToEnclosingModelItem(mainWindow, item),
-            JumpToBoundMaterialMenuItem(mainWindow, item),
-            SeparatorMenuItem(mainWindow, item),
-            ToggleVisibilityMenuItem(mainWindow, item),
-            VisOnlyMenuItem(mainWindow, item),
-            RemoveVisMenuItem(mainWindow, item),
-            SeparatorMenuItem(mainWindow, item),
-            LoadOrUnloadMenuItem(mainWindow, item),
-            ActiveMenuItem(mainWindow, item),
-            SeparatorMenuItem(mainWindow, item),
-            CopyPrimPathMenuItem(mainWindow, item),
-	    CopyModelPathMenuItem(mainWindow, item),
-	    SeparatorMenuItem(mainWindow, item),
-	    IsolateAssetMenuItem(mainWindow, item)]
+def _GetContextMenuItems(appController, item):
+    return [JumpToEnclosingModelItem(appController, item),
+            JumpToBoundMaterialMenuItem(appController, item),
+            SeparatorMenuItem(appController, item),
+            ToggleVisibilityMenuItem(appController, item),
+            VisOnlyMenuItem(appController, item),
+            RemoveVisMenuItem(appController, item),
+            SeparatorMenuItem(appController, item),
+            LoadOrUnloadMenuItem(appController, item),
+            ActiveMenuItem(appController, item),
+            SeparatorMenuItem(appController, item),
+            CopyPrimPathMenuItem(appController, item),
+            CopyModelPathMenuItem(appController, item),
+            SeparatorMenuItem(appController, item),
+            IsolateAssetMenuItem(appController, item)]
 
 #
 # The base class for per-prim context menu items.
 #
 class PrimContextMenuItem(UsdviewContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-    	self._currentPrims = mainWindow._currentPrims
-    	self._currentFrame = mainWindow._currentFrame
-        self._mainWindow = mainWindow
+    def __init__(self, appController, item):
+        self._currentPrims = appController._currentPrims
+        self._currentFrame = appController._currentFrame
+        self._appController = appController
         self._item = item
 
     def IsVisible(self):
@@ -100,7 +100,7 @@ class JumpToEnclosingModelItem(PrimContextMenuItem):
         return "Jump to Enclosing Model"
 
     def RunCommand(self):
-        self._mainWindow.jumpToEnclosingModelSelectedPrims()
+        self._appController.jumpToEnclosingModelSelectedPrims()
 
 #
 # Replace each selected prim with the Material it or its closest ancestor is
@@ -108,8 +108,8 @@ class JumpToEnclosingModelItem(PrimContextMenuItem):
 #
 class JumpToBoundMaterialMenuItem(PrimContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        PrimContextMenuItem.__init__(self, mainWindow, item)
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
         from common import GetClosestBoundMaterial
 
         self._material = None
@@ -127,7 +127,7 @@ class JumpToBoundMaterialMenuItem(PrimContextMenuItem):
                                                 self._material else
                                                 "no material bound")
     def RunCommand(self):
-        self._mainWindow.jumpToBoundMaterialSelectedPrims()
+        self._appController.jumpToBoundMaterialSelectedPrims()
 
 
 #
@@ -144,9 +144,9 @@ class ActiveMenuItem(PrimContextMenuItem):
     def RunCommand(self):
         active = self._currentPrims[0].IsActive()
         if active:
-            self._mainWindow.deactivateSelectedPrims()
+            self._appController.deactivateSelectedPrims()
         else:
-            self._mainWindow.activateSelectedPrims()
+            self._appController.activateSelectedPrims()
 
 #
 # Allows you to vis or invis a prim in the graph, based on its current
@@ -154,8 +154,8 @@ class ActiveMenuItem(PrimContextMenuItem):
 #
 class ToggleVisibilityMenuItem(PrimContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        PrimContextMenuItem.__init__(self, mainWindow, item)
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
         from pxr import UsdGeom
         self._imageable = False
         self._isVisible = False
@@ -175,9 +175,9 @@ class ToggleVisibilityMenuItem(PrimContextMenuItem):
 
     def RunCommand(self):
         if self._isVisible:
-            self._mainWindow.invisSelectedPrims()
+            self._appController.invisSelectedPrims()
         else:
-            self._mainWindow.visSelectedPrims()
+            self._appController.visSelectedPrims()
 
 
 #
@@ -196,7 +196,7 @@ class VisOnlyMenuItem(PrimContextMenuItem):
         return "Vis Only"
 
     def RunCommand(self):
-        self._mainWindow.visOnlySelectedPrims()
+        self._appController.visOnlySelectedPrims()
 
 #
 # Remove any vis/invis authored on selected prims
@@ -215,7 +215,7 @@ class RemoveVisMenuItem(PrimContextMenuItem):
         return "Remove Session Visibility"
 
     def RunCommand(self):
-        self._mainWindow.removeVisSelectedPrims()
+        self._appController.removeVisSelectedPrims()
 
 
 #
@@ -223,12 +223,12 @@ class RemoveVisMenuItem(PrimContextMenuItem):
 #
 class LoadOrUnloadMenuItem(PrimContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        PrimContextMenuItem.__init__(self, mainWindow, item)
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
         from common import GetPrimsLoadability
         # Use the descendent-pruned selection set to avoid redundant
         # traversal of the stage to answer isLoaded...
-        self._loadable, self._loaded = GetPrimsLoadability(self._mainWindow._prunedCurrentPrims)
+        self._loadable, self._loaded = GetPrimsLoadability(self._appController._prunedCurrentPrims)
 
     def IsEnabled(self):
         return self._loadable
@@ -238,9 +238,9 @@ class LoadOrUnloadMenuItem(PrimContextMenuItem):
 
     def RunCommand(self):
         if self._loaded:
-            self._mainWindow.unloadSelectedPrims()
+            self._appController.unloadSelectedPrims()
         else:
-            self._mainWindow.loadSelectedPrims()
+            self._appController.loadSelectedPrims()
 
 
 
@@ -268,8 +268,8 @@ class CopyPrimPathMenuItem(PrimContextMenuItem):
 #
 class CopyModelPathMenuItem(PrimContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        PrimContextMenuItem.__init__(self, mainWindow, item)
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
         from common import GetEnclosingModelPrim
 
         self._modelPrim = GetEnclosingModelPrim(self._currentPrims[0]) if \
@@ -335,8 +335,8 @@ class IsolateCopyPrimMenuItem(PrimContextMenuItem):
 #
 class IsolateAssetMenuItem(PrimContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        PrimContextMenuItem.__init__(self, mainWindow, item)
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
 
         self._assetName = None
         if len(self._currentPrims) == 1:

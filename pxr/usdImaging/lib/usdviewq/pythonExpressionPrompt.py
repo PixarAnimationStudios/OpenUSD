@@ -148,18 +148,18 @@ class Myconsole(interpreterView):
         # return the current value of "_"
         return self.locals()['__builtins__']['_']
 
-    def reloadConsole(self, mainWindow, val = None):
+    def reloadConsole(self, appController, val = None):
         # refreshes locals and redirects I/O
         if '__builtins__' in self.locals():
             self.locals()['__builtins__']['_'] = val
 
-        self.locals()['mainWindow'] = mainWindow
-        self.locals()['stage'] = mainWindow._stage
-        self.locals()['frame'] = mainWindow._currentFrame
-        self.locals()['selectedPrims'] = list(mainWindow._currentPrims)
-        self.locals()['selectedInstances'] = mainWindow._stageView._selectedInstances.copy()
-        self.locals()['prim'] = mainWindow._currentPrims[0] if \
-                                        mainWindow._currentPrims else None
-        self.locals()['property'] = mainWindow._currentProp
-        self.locals()['spec'] = mainWindow._currentSpec
-        self.locals()['layer'] = mainWindow._currentLayer
+        self.locals()['mainWindow'] = appController._mainWindow
+        self.locals()['stage'] = appController._stage
+        self.locals()['frame'] = appController._currentFrame
+        self.locals()['selectedPrims'] = list(appController._currentPrims)
+        self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy()
+        self.locals()['prim'] = appController._currentPrims[0] if \
+                                        appController._currentPrims else None
+        self.locals()['property'] = appController._currentProp
+        self.locals()['spec'] = appController._currentSpec
+        self.locals()['layer'] = appController._currentLayer

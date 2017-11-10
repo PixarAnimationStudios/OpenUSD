@@ -55,20 +55,19 @@ class AttributeValueEditor(QtWidgets.QWidget):
 
         self._ui.revertAllButton.clicked.connect(self._revertAll)
 
-    def setMainWindow(self, mainWindow):
-        # pass the mainWindow instance from which to retrieve
+    def setAppController(self, appController):
+        # pass the appController instance from which to retrieve
         # variable data.
-        self._mainWindow = mainWindow
-        self._propertyView = mainWindow._ui.propertyView
+        self._appController = appController
 
     def populate(self, name, prim):
         # called when the selected attribute has changed
         # gets the attribute object and the source prim
         try:
-            self._attribute = self._mainWindow._attributeDict[name]
+            self._attribute = self._appController._attributeDict[name]
         except KeyError:
-            self._mainWindow._attributeDict[name] = ''
-            self._attribute = self._mainWindow._attributeDict[name]
+            self._appController._attributeDict[name] = ''
+            self._attribute = self._appController._attributeDict[name]
 
         self._isSet = True  # an attribute is selected
         self._prim = prim
@@ -105,7 +104,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         if self._attribute == '':
             return
 
-        frame = self._mainWindow._currentFrame
+        frame = self._appController._currentFrame
 
         # get the value of the attribute
         self._val = self._attribute.Get(frame)
@@ -137,7 +136,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
     # XXX USD EDITING DISABLED
     def _edit(self, exception = None):
         # opens the interpreter to receive user input
-        frame = self._mainWindow._currentFrame
+        frame = self._appController._currentFrame
         type = 'member' if self._isMember else 'attribute'
 
         # this call opens the interpreter window and has it return the value of
@@ -153,7 +152,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
             else:
                 self._prim.SetAttribute(frame, self._name, value)
 
-            # send a signal to the mainWindow confirming the edit
+            # send a signal to the appController confirming the edit
             msg = 'Successfully edited %s "%s" at frame %s.' \
                     %(type, self._name, frame)
             self.editComplete.emit(msg)
@@ -168,9 +167,9 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # revert one or all overrides on a member
         type = 'member' if self._isMember else 'attribute'
         frame = Usd.Object.FRAME_INVALID if all else \
-                self._mainWindow._currentFrame
+                self._appController._currentFrame
         frameStr = 'all frames' if all else \
-                   'frame %s' %(self._mainWindow._currentFrame)
+                   'frame %s' %(self._appController._currentFrame)
         section = Usd.USD_SECTION_ALL if all else \
                   Usd.USD_SECTION_INVALID
 
@@ -194,7 +193,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
                     self._prim.RemoveAttribute(frame, section, self._name)
 
                 msg = 'Reverted %s "%s" at %s.' %(type, self._name, frameStr)
-                self._mainWindow._refreshVars()
+                self._appController._refreshVars()
 
             except RuntimeError:
                 msg = 'Failed to revert the %s "%s" at %s. Perhaps this '\
@@ -202,7 +201,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
                             %(type, self._name, frameStr, type)
 
         # display status message
-        self._mainWindow.statusMessage(msg, 12)
+        self._appController.statusMessage(msg, 12)
 
     def _revertAll(self):
         self._revert(True)

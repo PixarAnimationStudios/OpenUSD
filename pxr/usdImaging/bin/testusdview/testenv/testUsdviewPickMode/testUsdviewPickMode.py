@@ -30,29 +30,29 @@ FOO_PATH = "/Foo"
 REPLACE_MODE = "replace"
 
 # Remove any unwanted visuals from the view and set complexity.
-def _modifySettings(mainWindow):
-    mainWindow.showBBoxes = False
-    mainWindow.showHUD = False
+def _modifySettings(appController):
+    appController.showBBoxes = False
+    appController.showHUD = False
 
 # Select a pick mode and update the view.
-def _setPickModeAction(mainWindow, action):
+def _setPickModeAction(appController, action):
     action.setChecked(True)
-    mainWindow._changePickMode(action)
+    appController._changePickMode(action)
 
 # Check that the current selection is the expected selection.
-def _checkPrimSelection(mainWindow, path):
-    primSelection = mainWindow._currentPrims
+def _checkPrimSelection(appController, path):
+    primSelection = appController._currentPrims
     assert len(primSelection) == 1
     assert primSelection[0].GetPath() == path
 
 # Check that no instances are selected.
-def _checkNoInstancesSelected(mainWindow, path):
-    instanceSelection = mainWindow._stageView._selectedInstances
+def _checkNoInstancesSelected(appController, path):
+    instanceSelection = appController._stageView._selectedInstances
     assert len(instanceSelection) == 0
 
 # Check that the specified instance is the only selected instance.
-def _checkInstanceSelection(mainWindow, path, instanceIndex):
-    instanceSelection = mainWindow._stageView._selectedInstances
+def _checkInstanceSelection(appController, path, instanceIndex):
+    instanceSelection = appController._stageView._selectedInstances
     assert len(instanceSelection) == 1
     assert path in instanceSelection
     instanceIndices = instanceSelection[path]
@@ -60,32 +60,32 @@ def _checkInstanceSelection(mainWindow, path, instanceIndex):
     assert instanceIndex in instanceIndices
 
 # Test picking a prim.
-def _testPickPrims(mainWindow):
-    _setPickModeAction(mainWindow, mainWindow._ui.actionPick_Prims)
-    mainWindow.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+def _testPickPrims(appController):
+    _setPickModeAction(appController, appController._ui.actionPick_Prims)
+    appController.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
 
-    _checkPrimSelection(mainWindow, INSTANCER_PATH)
-    _checkNoInstancesSelected(mainWindow, INSTANCER_PATH)
+    _checkPrimSelection(appController, INSTANCER_PATH)
+    _checkNoInstancesSelected(appController, INSTANCER_PATH)
 
 # Test picking a model.
-def _testPickModels(mainWindow):
-    _setPickModeAction(mainWindow, mainWindow._ui.actionPick_Models)
-    mainWindow.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+def _testPickModels(appController):
+    _setPickModeAction(appController, appController._ui.actionPick_Models)
+    appController.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
 
-    _checkPrimSelection(mainWindow, FOO_PATH)
-    _checkNoInstancesSelected(mainWindow, INSTANCER_PATH)
+    _checkPrimSelection(appController, FOO_PATH)
+    _checkNoInstancesSelected(appController, INSTANCER_PATH)
 
 # Test picking an instance.
-def _testPickInstances(mainWindow):
-    _setPickModeAction(mainWindow, mainWindow._ui.actionPick_Instances)
-    mainWindow.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+def _testPickInstances(appController):
+    _setPickModeAction(appController, appController._ui.actionPick_Instances)
+    appController.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
 
-    _checkPrimSelection(mainWindow, INSTANCER_PATH)
-    _checkInstanceSelection(mainWindow, INSTANCER_PATH, 0)
+    _checkPrimSelection(appController, INSTANCER_PATH)
+    _checkInstanceSelection(appController, INSTANCER_PATH, 0)
 
 # Test that selection highlighting works properly in usdview
-def testUsdviewInputFunction(mainWindow):
-    _modifySettings(mainWindow)
-    _testPickPrims(mainWindow)
-    _testPickModels(mainWindow)
-    _testPickInstances(mainWindow)
+def testUsdviewInputFunction(appController):
+    _modifySettings(appController)
+    _testPickPrims(appController)
+    _testPickModels(appController)
+    _testPickInstances(appController)
