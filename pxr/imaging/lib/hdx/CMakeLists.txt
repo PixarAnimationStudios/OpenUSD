@@ -51,6 +51,7 @@ pxr_library(hdx
 
     PRIVATE_HEADERS
         unitTestGLDrawing.h
+        unitTestUtils.h
 
     RESOURCE_FILES
         plugInfo.json
@@ -110,6 +111,7 @@ pxr_build_test(testHdxPickAndHighlight
         tf
     CPPFILES
         unitTestGLDrawing.cpp
+        unitTestUtils.cpp
         testenv/testHdxPickAndHighlight.cpp
 )
 pxr_build_test(testHdxCameraAndLight
