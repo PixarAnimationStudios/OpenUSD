@@ -23,10 +23,6 @@
 //
 #include "usdMaya/usdWriteJobCtx.h"
 
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/resolverContext.h"
-#include "pxr/usd/usdGeom/scope.h"
-
 #include "usdMaya/MayaCameraWriter.h"
 #include "usdMaya/MayaInstancerWriter.h"
 #include "usdMaya/MayaMeshWriter.h"
@@ -34,6 +30,14 @@
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/stageCache.h"
+
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverContext.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/scope.h"
 
 #include <maya/MDagPathArray.h>
 #include <maya/MGlobal.h>
@@ -41,8 +45,11 @@
 #include <maya/MPxNode.h>
 
 #include <sstream>
+#include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace {
     inline
@@ -160,6 +167,14 @@ bool usdWriteJobCtx::openFile(const std::string& filename, bool append)
             return false;
         }
     } else {
+        // If we're exporting over a file that was previously imported, there
+        // may still be stages in the stage cache that have that file as a root
+        // layer. Creating a new stage with that file will fail because the
+        // layer already exists in the layer registry, so we try to clear the
+        // layer from the registry by erasing any stages in the stage cache
+        // with that root layer.
+        UsdMayaStageCache::EraseAllStagesWithRootLayerPath(filename);
+
         mStage = UsdStage::CreateNew(filename, resolverCtx);
         if (!mStage) {
             MGlobal::displayError("Failed to create stage file " + MString(filename.c_str()));

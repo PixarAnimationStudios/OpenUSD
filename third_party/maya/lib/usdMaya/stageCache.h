@@ -24,26 +24,45 @@
 #ifndef PXRUSDMAYA_STAGECACHE_H
 #define PXRUSDMAYA_STAGECACHE_H
 
+/// \file stageCache.h
+
 #include "pxr/pxr.h"
+
 #include "usdMaya/api.h"
+
 #include "pxr/usd/usd/stageCache.h"
+
+#include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdMayaStageCache {
+class UsdMayaStageCache
+{
 public:
 
-    // Return the singleton stage cache for use by all USD clients within Maya.
-    // 2 stage caches are maintained; 1 for stages that have been
-    // force-populated, and 1 for stages that have not been force-populated.
+    /// Return the singleton stage cache for use by all USD clients within Maya.
+    /// 2 stage caches are maintained; 1 for stages that have been
+    /// force-populated, and 1 for stages that have not been force-populated.
     PXRUSDMAYA_API
-    static UsdStageCache &Get(bool forcePopulate=true);
-    // Clear the cache
+    static UsdStageCache& Get(const bool forcePopulate=true);
+
+    /// Clear the cache
     PXRUSDMAYA_API
     static void Clear();
+
+    /// Erase all stages from the stage caches whose root layer path is
+    /// \p layerPath.
+    ///
+    /// The number of stages erased from the caches is returned.
+    PXRUSDMAYA_API
+    static size_t EraseAllStagesWithRootLayerPath(
+            const std::string& layerPath);
 };
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif // PXRUSDMAYA_STAGECACHE_H
