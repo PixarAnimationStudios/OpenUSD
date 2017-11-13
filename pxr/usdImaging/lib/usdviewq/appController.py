@@ -62,6 +62,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
 
 import settings2
 from settings2 import StateSource
+from plugContext import PlugContext
 
 SETTINGS_VERSION = "1"
 
@@ -330,12 +331,11 @@ class AppController(QtCore.QObject):
     def _configurePlugins(self):
         pluginsLoaded = False
 
-        from plugContext import PlugContext
-        plugCtx = PlugContext(self)
+        self._plugCtx = PlugContext(self)
         with Timer() as t:
             try:
                 from pixar import UsdviewPlug
-                UsdviewPlug.ConfigureView(plugCtx, self)
+                UsdviewPlug.ConfigureView(self._plugCtx, self)
                 pluginsLoaded = True
 
             except ImportError:

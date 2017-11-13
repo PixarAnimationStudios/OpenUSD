@@ -22,10 +22,15 @@
 # KIND, either express or implied. See the Apache License for the # specific
 # language governing permissions and limitations under the Apache # License.
 
+import types
+
+# Updates to the plugin API should be made in the _PlugContextInternal class.
+# All methods which do *not* begin with an underscore will be available for
+# plugins to call from a PlugContext object.
 # This class should be the only object that knows about the details of the
 # UsdView appController.  If that API ever changes, we should only need to update
 # this class.
-class PlugContext(object):
+class _PlugContextInternal(object):
     '''
     This class is an interface that provides access to usdview context for
     usdview plugins.  It abstracts away the implementation of usdview so that
@@ -128,3 +133,74 @@ class PlugContext(object):
         ''' Returns a QImage of the current stage view in usdview. '''
 
         return self._appController.GrabViewportShot()
+
+
+# The following code proxies the methods from _PlugContextInternal and
+# preserves names/documentation so the help() function displays useful
+# information about both a PlugContext object and each of its proxy methods.
+
+
+def _apiMethodFilter(name):
+    '''Returns True if the property name belongs to a plugin API method from
+    _PlugContextInternal.
+    '''
+    value = getattr(_PlugContextInternal, name)
+    return isinstance(value, types.MethodType) and not name.startswith("_")
+
+
+# Find all API methods on _PlugContextInternal.
+_apiMethodNames = filter(_apiMethodFilter, dir(_PlugContextInternal))
+
+
+class _PlugContextMeta(type):
+
+    def __new__(metacls, cls, bases, classdict):
+        '''Create a new PlugContext class with placeholder lambdas for all API
+        methods. These placeholders will be replaced with proxy lambdas when a
+        PlugContext is created. Placeholders are added so help(plugCtx) displays
+        all methods and their documentation.
+        '''
+
+        for internalName in _apiMethodNames:
+            method = getattr(_PlugContextInternal, internalName)
+
+            def placeholder(self, *args, **kwargs):
+                raise NotImplemented
+            placeholder.__name__ = method.__name__
+            placeholder.__doc__ = method.__doc__
+
+            classdict[internalName] = placeholder
+
+        return type.__new__(metacls, cls, bases, classdict)
+
+    def __dir__(self):
+        '''Only return a list of the API method names.'''
+        return list(_apiMethodNames)
+
+
+class PlugContext:
+    __doc__ = _PlugContextInternal.__doc__
+    __metaclass__ = _PlugContextMeta
+
+    def __init__(self, appController):
+
+        # Create a new _PlugContextInternal object, but do *not* save it as a
+        # member variable. Otherwise, plugins could easily access it, defeating
+        # the purpose of the proxy.
+        plugContext = _PlugContextInternal(appController)
+
+        # Proxies method calls to hide important data from plugins (such as the
+        # im_self property on methods). The method itself is still stored in the
+        # lambda's closure, but this makes it much more difficult to access it.
+        # Method name and documentation are also copied to the lambda so
+        # help(plugCtx.<API method>) displays the method name and documentation.
+        def proxied(f):
+            proxy = lambda *args, **kwargs: f(*args, **kwargs)
+            proxy.__name__ = f.__name__
+            proxy.__doc__ = f.__doc__
+            return proxy
+
+        # Search for and create proxies for all methods whose names do not begin
+        # with an underscore.
+        for name in _apiMethodNames:
+            self.__dict__[name] = proxied(getattr(plugContext, name))

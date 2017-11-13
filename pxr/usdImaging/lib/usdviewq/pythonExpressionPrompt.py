@@ -120,6 +120,7 @@ class Myconsole(interpreterView):
 
     def __init__(self, parent):
         initialPrompt = ("\nLocal State Variables\n"
+                "    plugCtx: a plugin context object\n"
                 "    stage: the current Usd.Stage object\n"
                 "    frame: the current frame for playback\n"
                 "    selectedPrims: a list of all selected prims\n"
@@ -153,7 +154,7 @@ class Myconsole(interpreterView):
         if '__builtins__' in self.locals():
             self.locals()['__builtins__']['_'] = val
 
-        self.locals()['mainWindow'] = appController._mainWindow
+        self.locals()['plugCtx'] = appController._plugCtx
         self.locals()['stage'] = appController._stage
         self.locals()['frame'] = appController._currentFrame
         self.locals()['selectedPrims'] = list(appController._currentPrims)
