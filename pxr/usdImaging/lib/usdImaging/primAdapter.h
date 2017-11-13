@@ -92,6 +92,11 @@ public:
     // Xforms), but this doesn't take proxy objects (like cards) into account.
     virtual bool IsNativeInstanceable(UsdPrim const& prim) { return false; }
 
+    // Indicates that this adapter populates the render index only when
+    // directed by the population of another prim, e.g. materials are
+    // populated on behalf of prims which use the material.
+    virtual bool IsPopulatedIndirectly();
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

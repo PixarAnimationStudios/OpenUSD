@@ -31,7 +31,6 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
@@ -68,7 +67,6 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingPrimAdapter;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
-class UsdImagingDefaultShaderAdapter;
 
 typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
@@ -603,8 +601,6 @@ private:
     // Pickability
     PickabilityMap _pickablesMap;
 
-    UsdImagingPrimAdapterSharedPtr _shaderAdapter;
-
     // Display guides rendering
     bool _displayGuides;
 
@@ -729,8 +725,8 @@ public:
     USDIMAGING_API
     void Repopulate(SdfPath const& usdPath);
 
-    // XXX: transitional code!
-    UsdImagingPrimAdapterSharedPtr GetShaderAdapter();
+    UsdImagingPrimAdapterSharedPtr GetMaterialAdapter(
+        UsdPrim const& materialPrim);
 
 private:
     friend class UsdImagingDelegate;

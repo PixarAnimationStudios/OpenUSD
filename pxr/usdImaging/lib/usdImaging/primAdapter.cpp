@@ -83,6 +83,14 @@ UsdImagingPrimAdapter::IsInstancerAdapter()
 }
 
 /*virtual*/
+bool
+UsdImagingPrimAdapter::IsPopulatedIndirectly()
+{
+    // By default, do not delay population.
+    return false;
+}
+
+/*virtual*/
 void
 UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath, 
                                          UsdImagingIndexProxy* index) 

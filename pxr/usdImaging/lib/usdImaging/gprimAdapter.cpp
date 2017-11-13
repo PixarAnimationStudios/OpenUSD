@@ -110,14 +110,16 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     // Populate shaders by reference from rprims.
-    SdfPath shaderPath = instancerContext ?
+    SdfPath materialPath = instancerContext ?
         instancerContext->instanceMaterialId : materialId;
-    UsdPrim shaderPrim = usdPrim.GetStage()->GetPrimAtPath(shaderPath);
-    // XXX: transitional code! this should be _GetPrimAdapter.
-    UsdImagingPrimAdapterSharedPtr shaderAdapter = index->GetShaderAdapter();
+    UsdPrim materialPrim = usdPrim.GetStage()->GetPrimAtPath(materialPath);
 
-    if (shaderPrim && shaderAdapter) {
-        shaderAdapter->Populate(shaderPrim, index, nullptr);
+    if (materialPrim) {
+       UsdImagingPrimAdapterSharedPtr materialAdapter =
+           index->GetMaterialAdapter(materialPrim);
+        if (materialAdapter) {
+            materialAdapter->Populate(materialPrim, index, nullptr);
+        }
     }
 
     return cachePath;

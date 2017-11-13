@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_SHADERADAPTER_H
-#define USDIMAGING_SHADERADAPTER_H
+#ifndef USDIMAGING_HYDRAMATERIALADAPTER_H
+#define USDIMAGING_HYDRAMATERIALADAPTER_H
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
@@ -31,19 +31,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdImagingShaderAdapter
+/// \class UsdImagingHydraMaterialAdapter
 /// \brief Provides information that can be used to generate a surface shader in
 /// hydra.
-class UsdImagingShaderAdapter : public UsdImagingPrimAdapter {
+class UsdImagingHydraMaterialAdapter : public UsdImagingPrimAdapter {
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
 
-    UsdImagingShaderAdapter()
+    UsdImagingHydraMaterialAdapter()
         : UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
-    virtual ~UsdImagingShaderAdapter();
+    virtual ~UsdImagingHydraMaterialAdapter();
 
     USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
@@ -52,6 +52,9 @@ public:
 
     USDIMAGING_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+
+    USDIMAGING_API
+    virtual bool IsPopulatedIndirectly();
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -124,4 +127,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_SHADERADAPTER_H
+#endif // USDIMAGING_HYDRAMATERIALADAPTER_H

@@ -27,7 +27,6 @@
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
-#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/glf/ptexTexture.h"
@@ -116,10 +115,8 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _materialBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
-    , _shaderAdapter(new UsdImagingShaderAdapter())
     , _displayGuides(true)
 {
-    _shaderAdapter->SetDelegate(this);
 }
 
 UsdImagingDelegate::~UsdImagingDelegate()
@@ -211,6 +208,12 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else {
         adapterKey = prim.GetTypeName();
+        // XXX: transitional code
+        // For now, we forward handling of shader prims to the adapter
+        // which implements legacy GLSL material networks.
+        if (adapterKey == TfToken("Shader")) {
+            adapterKey = TfToken("HydraPbsSurface");
+        }
     }
 
     _AdapterMap::const_iterator it = _adapterMap.find(adapterKey);
@@ -551,10 +554,15 @@ UsdImagingIndexProxy::MarkInstancerDirty(SdfPath const& cachePath,
 }
 
 UsdImagingPrimAdapterSharedPtr
-UsdImagingIndexProxy::GetShaderAdapter()
+UsdImagingIndexProxy::GetMaterialAdapter(UsdPrim const& materialPrim)
 {
-    return _delegate->_shaderAdapter->IsSupported(this) ?
-        _delegate->_shaderAdapter : UsdImagingPrimAdapterSharedPtr();
+    if (!TF_VERIFY(!materialPrim.IsInstance())) {
+        return nullptr;
+    }
+    UsdImagingPrimAdapterSharedPtr materialAdapter =
+        _delegate->_AdapterLookup(materialPrim, false);
+    return materialAdapter &&
+           materialAdapter->IsSupported(this) ? materialAdapter : nullptr;
 }
 
 bool
@@ -924,6 +932,13 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 continue;
             }
             if (_AdapterSharedPtr adapter = _AdapterLookup(*iter)) {
+                // We delay populating some parts of the scene (e.g. shaders)
+                // until they are needed by some other prim.
+                if (adapter->IsPopulatedIndirectly()) {
+                    continue;
+                }
+                // Schedule the prim for population and discovery
+                // of material bindings.
                 _PopulateMaterialBindingCache wu = 
                     { *iter, &_materialBindingCache };
                 bindingDispatcher.Run(wu);
@@ -938,7 +953,7 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
         }
     }
 
-    // Populate the RenderIndex while we're still discovering shaders.
+    // Populate the RenderIndex while we're still discovering material bindings.
     TF_FOR_ALL(it, leafPaths) {
         it->second->Populate(it->first, proxy);
     }

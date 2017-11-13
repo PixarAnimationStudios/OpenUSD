@@ -49,6 +49,7 @@ pxr_library(usdImaging
         domeLightAdapter
         drawModeAdapter
         gprimAdapter
+        hydraMaterialAdapter
         instanceAdapter
         lightAdapter
         meshAdapter
@@ -57,7 +58,6 @@ pxr_library(usdImaging
         pointInstancerAdapter
         primAdapter
         rectLightAdapter
-        shaderAdapter
         sphereAdapter
         sphereLightAdapter
 
