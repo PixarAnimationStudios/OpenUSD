@@ -232,8 +232,8 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
             //
             if (motionSampleTimesAttr.getType() == kFnKatAttributeTypeFloat)
             {
-                const auto& sampleTimes = FnKat::FloatAttribute(
-                        motionSampleTimesAttr).getNearestSample(0);
+                FnAttribute::FloatAttribute attr(motionSampleTimesAttr);
+                const auto& sampleTimes = attr.getNearestSample(0.0f);;
                 if (!sampleTimes.empty())
                 {
                     for (float sampleTime : sampleTimes)
