@@ -651,6 +651,26 @@ Hdx_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int level)
         id, HdChangeTracker::DirtyRefineLevel);
 }
 
+TfToken
+Hdx_UnitTestDelegate::GetReprName(SdfPath const &id)
+{
+    if (_meshes.find(id) != _meshes.end()) {
+        return _meshes[id].reprName;
+    }
+
+    return TfToken();
+}
+
+void
+Hdx_UnitTestDelegate::SetReprName(SdfPath const &id, TfToken const &reprName)
+{
+   if (_meshes.find(id) != _meshes.end()) {
+        _meshes[id].reprName = reprName;
+        GetRenderIndex().GetChangeTracker().MarkRprimDirty(
+            id, HdChangeTracker::DirtyRepr);
+   }
+}
+
 GfRange3d
 Hdx_UnitTestDelegate::GetExtent(SdfPath const & id)
 {

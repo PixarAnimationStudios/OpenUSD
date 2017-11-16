@@ -126,4 +126,18 @@ pxr_build_test(testHdxCameraAndLight
     CPPFILES
         testenv/testHdxCameraAndLight.cpp
 )
+pxr_build_test(testHdxPickingWithReprAndRefineChanges
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        unitTestUtils.cpp
+        testenv/testHdxPickingWithReprAndRefineChanges.cpp
+)
 endif()
