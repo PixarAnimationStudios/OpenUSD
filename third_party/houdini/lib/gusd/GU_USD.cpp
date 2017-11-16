@@ -400,13 +400,15 @@ _GetStringsFromAttr(const GA_Attribute& attr,
     uniqueStrings.setSize(tableEntries);
 
     for(exint i = 0; i < tableEntries; ++i)
-        uniqueStrings(i) = tuple->getTableString(&attr, i); 
-    
+        uniqueStrings(i) = tuple->getTableString(&attr, i);
+
+    strings.GetArray().setSize(rng.getEntries());
     exint idx = 0;
     for(GA_Offset o : rng) {
         auto handle = tuple->getHandle(&attr, o);
         if(handle != GA_INVALID_STRING_INDEX)
             strings(idx) = uniqueStrings(handle);
+        ++idx;
     }
     return true;
 }
