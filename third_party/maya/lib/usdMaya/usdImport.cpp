@@ -28,6 +28,8 @@
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/usdReadJob.h"
 
+#include "pxr/usd/ar/resolver.h"
+
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
 #include <maya/MFileObject.h>
@@ -108,19 +110,16 @@ MStatus usdImport::doIt(const MArgList & args)
         // Get the value
         MString tmpVal;
         argData.getFlagArgument("file", 0, tmpVal);
+        mFileName = tmpVal.asChar();
 
-        // resolve the path into an absolute path
-        MFileObject absoluteFile;
-        absoluteFile.setRawFullName(tmpVal);
-        absoluteFile.setRawFullName( absoluteFile.resolvedFullName() ); // Make sure an absolute path
-
-        if (!absoluteFile.exists()) {
-            MGlobal::displayError("File does not exist.  Exiting.");
+        // Use the usd resolver for validation (but save the unresolved)
+        if (ArGetResolver().Resolve(mFileName).empty()) {
+            MString msg = MString("File does not exist, or could not be resolved (")
+                    + tmpVal + ") - Exiting.";
+            MGlobal::displayError(msg);
             return MS::kFailure;
         }
 
-        // Set the fileName
-        mFileName = absoluteFile.resolvedFullName().asChar();
         MGlobal::displayInfo(MString("Importing ") + MString(mFileName.c_str()));
     }
     
