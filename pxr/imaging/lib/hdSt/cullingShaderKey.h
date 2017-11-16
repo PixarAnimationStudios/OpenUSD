@@ -21,45 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_GLSLFX_SHADER_H
-#define HD_GLSLFX_SHADER_H
+#ifndef HDST_CULLING_SHADER_KEY_H
+#define HDST_CULLING_SHADER_KEY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/surfaceShader.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/vt/value.h"
-
+#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/base/tf/token.h"
-
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdGLSLFXShader> HdGLSLFXShaderSharedPtr;
-typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+struct HdSt_CullingShaderKey
+{
+    HdSt_CullingShaderKey(bool instancing, bool tinyCull, bool counting);
+    ~HdSt_CullingShaderKey();
 
-// XXX: DOCS!
-class HdGLSLFXShader : public HdSurfaceShader {
-public:
-    HD_API
-    HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx);
-    HD_API
-    virtual ~HdGLSLFXShader();
+    TfToken const &GetGlslfxFile() const { return glslfx; }
+    TfToken const *GetVS() const  { return VS; }
+    TfToken const *GetTCS() const { return NULL; }
+    TfToken const *GetTES() const { return NULL; }
+    TfToken const *GetGS() const  { return NULL; }
+    TfToken const *GetFS() const  { return NULL; }
+    bool IsCullingPass() const { return true; }
+    Hd_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+        return Hd_GeometricShader::PrimitiveType::PRIM_POINTS; 
+    }
+    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
+    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
+    bool IsFaceVarying() const { return false; }
 
-    /// If the prim is based on asset, reload that asset.
-    HD_API
-    virtual void Reload();
-
-private:
-    GlfGLSLFXSharedPtr _glslfx;
+    TfToken glslfx;
+    TfToken VS[6];
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_GLSLFX_SHADER_H
+#endif  // HDST_CULLING_SHADER_KEY_H

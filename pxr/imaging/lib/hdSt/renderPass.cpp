@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/renderPass.h"
+#include "pxr/imaging/hdSt/indirectDrawBatch.h"
+
 #include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/indirectDrawBatch.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
@@ -65,7 +66,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     // renderTags.empty() means draw everything in the collection.
     if (renderTags.empty()) {
-        for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin();
+        for (_HdStCommandBufferMap::iterator it  = _cmdBuffers.begin();
                                            it != _cmdBuffers.end(); it++) {
             it->second.PrepareDraw(renderPassState, resourceRegistry);
             it->second.ExecuteDraw(renderPassState, resourceRegistry);
@@ -115,7 +116,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     const bool 
        skipCulling = TfDebug::IsEnabled(HD_DISABLE_FRUSTUM_CULLING) ||
            (caps.multiDrawIndirectEnabled
-               && Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
+               && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
 
     const bool 
        cameraChanged = true,
@@ -165,7 +166,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     } else {
         // validate command buffer to not include expired drawItems,
         // which could be produced by migrating BARs at the new repr creation.
-        for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+        for (_HdStCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
                                            it != _cmdBuffers.end(); it++) {
             it->second.RebuildDrawBatchesIfNeeded(shaderBindingsVersion);
         }
@@ -174,7 +175,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     if(skipCulling) {
         // Since culling state is stored across renders,
         // we need to update all items visible state
-        for (_HdCommandBufferMap::iterator it = _cmdBuffers.begin(); 
+        for (_HdStCommandBufferMap::iterator it = _cmdBuffers.begin(); 
                                            it != _cmdBuffers.end(); it++) {
             it->second.SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
         }
@@ -182,18 +183,18 @@ HdSt_RenderPass::_PrepareCommandBuffer(
         TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: skipped\n");
     }
     else {
-        // XXX: this process should be moved to Hd_DrawBatch::PrepareDraw
+        // XXX: this process should be moved to HdSt_DrawBatch::PrepareDraw
         //      to be consistent with GPU culling.
         if((!freezeCulling)
             && (collectionChanged || cameraChanged || extentsChanged)) {
             // Re-cull the command buffer. 
-            for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+            for (_HdStCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
                                                it != _cmdBuffers.end(); it++) {
                 it->second.FrustumCull(renderPassState->GetCullMatrix());
             }
         }
 
-        for (_HdCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
+        for (_HdStCommandBufferMap::iterator it  = _cmdBuffers.begin(); 
                                            it != _cmdBuffers.end(); it++) {
             TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: %zu drawItems\n", 
                                                  it->second.GetCulledSize());

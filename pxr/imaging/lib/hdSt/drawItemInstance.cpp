@@ -21,39 +21,45 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/glslfxShader.h"
-
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/glf/glslfx.h"
+#include "pxr/imaging/hdSt/drawItemInstance.h"
+#include "pxr/imaging/hdSt/drawBatch.h"
+#include "pxr/imaging/hd/drawItem.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdGLSLFXShader::HdGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx)
- : HdSurfaceShader()
-    , _glslfx(glslfx)
+HdStDrawItemInstance::HdStDrawItemInstance(HdDrawItem const* drawItem)
+    : _batch(nullptr)
+    , _drawItem(drawItem)
+    , _batchIndex(0)
+    , _visible(drawItem->GetVisible())
 {
-    _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
-    _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
 }
 
-HdGLSLFXShader::~HdGLSLFXShader()
+HdStDrawItemInstance::~HdStDrawItemInstance()
 {
 }
 
 void
-HdGLSLFXShader::Reload()
+HdStDrawItemInstance::SetVisible(bool visible)
 {
-    GlfGLSLFXSharedPtr newGlslFx(new GlfGLSLFX(_glslfx->GetFilePath()));
-
-    if (newGlslFx->IsValid())
-    {
-        _glslfx = newGlslFx;
-
-        _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
-        _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
+    _visible = visible;
+    if(_batch) {
+        _batch->DrawItemInstanceChanged(this);
     }
 }
 
+void
+HdStDrawItemInstance::SetBatchIndex(size_t batchIndex)
+{
+    _batchIndex = batchIndex;
+}
+
+void
+HdStDrawItemInstance::SetBatch(HdSt_DrawBatch *batch)
+{
+    _batch = batch;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

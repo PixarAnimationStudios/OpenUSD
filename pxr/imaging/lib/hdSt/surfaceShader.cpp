@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/surfaceShader.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-HdSurfaceShader::HdSurfaceShader()
+HdStSurfaceShader::HdStSurfaceShader()
  : HdShaderCode()
  , _fragmentSource()
  , _geometrySource()
@@ -49,12 +49,12 @@ HdSurfaceShader::HdSurfaceShader()
 {
 }
 
-HdSurfaceShader::~HdSurfaceShader()
+HdStSurfaceShader::~HdStSurfaceShader()
 {
 }
 
 void
-HdSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
+HdStSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
 {
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         _fragmentSource = source;
@@ -69,7 +69,7 @@ HdSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &so
 
 /*virtual*/
 std::string
-HdSurfaceShader::GetSource(TfToken const &shaderStageKey) const
+HdStSurfaceShader::GetSource(TfToken const &shaderStageKey) const
 {
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         return _fragmentSource;
@@ -81,25 +81,25 @@ HdSurfaceShader::GetSource(TfToken const &shaderStageKey) const
 }
 /*virtual*/
 HdShaderParamVector const&
-HdSurfaceShader::GetParams() const
+HdStSurfaceShader::GetParams() const
 {
     return _params;
 }
 /*virtual*/
 HdBufferArrayRangeSharedPtr const&
-HdSurfaceShader::GetShaderData() const
+HdStSurfaceShader::GetShaderData() const
 {
     return _paramArray;
 }
 /*virtual*/
 HdShaderCode::TextureDescriptorVector
-HdSurfaceShader::GetTextures() const
+HdStSurfaceShader::GetTextures() const
 {
     return _textureDescriptors;
 }
 /*virtual*/
 void
-HdSurfaceShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdStSurfaceShader::BindResources(Hd_ResourceBinder const &binder, int program)
 {
     // XXX: there's an issue where other shaders try to use textures.
     int samplerUnit = binder.GetNumReservedTextureUnits();
@@ -132,7 +132,7 @@ HdSurfaceShader::BindResources(Hd_ResourceBinder const &binder, int program)
 }
 /*virtual*/
 void
-HdSurfaceShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
+HdStSurfaceShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
 {
     binder.UnbindShaderResources(this);
 
@@ -160,13 +160,13 @@ HdSurfaceShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
 }
 /*virtual*/
 void
-HdSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
 {
 }
 
 /*virtual*/
 HdShaderCode::ID
-HdSurfaceShader::ComputeHash() const
+HdStSurfaceShader::ComputeHash() const
 {
     size_t hash = 0;
     
@@ -182,31 +182,31 @@ HdSurfaceShader::ComputeHash() const
 }
 
 void
-HdSurfaceShader::SetFragmentSource(const std::string &source)
+HdStSurfaceShader::SetFragmentSource(const std::string &source)
 {
     _fragmentSource = source;
 }
 
 void
-HdSurfaceShader::SetGeometrySource(const std::string &source)
+HdStSurfaceShader::SetGeometrySource(const std::string &source)
 {
     _geometrySource = source;
 }
 
 void
-HdSurfaceShader::SetParams(const HdShaderParamVector &params)
+HdStSurfaceShader::SetParams(const HdShaderParamVector &params)
 {
     _params = params;
 }
 
 void
-HdSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
+HdStSurfaceShader::SetTextureDescriptors(const TextureDescriptorVector &texDesc)
 {
     _textureDescriptors = texDesc;
 }
 
 void
-HdSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
+HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
                                   HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (bufferSources.empty()) {
@@ -242,7 +242,7 @@ HdSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
 
 /// If the prim is based on asset, reload that asset.
 void
-HdSurfaceShader::Reload()
+HdStSurfaceShader::Reload()
 {
     // Nothing to do, this shader's sources are externally managed.
 }

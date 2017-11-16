@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/cullingShaderKey.h"
+#include "pxr/imaging/hdSt/cullingShaderKey.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,7 +40,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainVS,           "ViewFrustumCull.Vertex"))
 );
 
-Hd_CullingShaderKey::Hd_CullingShaderKey(
+HdSt_CullingShaderKey::HdSt_CullingShaderKey(
     bool instancing, bool tinyCull, bool counting)
     : glslfx(_tokens->baseGLSLFX)
 {
@@ -53,7 +53,7 @@ Hd_CullingShaderKey::Hd_CullingShaderKey(
     VS[5] = TfToken();
 }
 
-Hd_CullingShaderKey::~Hd_CullingShaderKey()
+HdSt_CullingShaderKey::~HdSt_CullingShaderKey()
 {
 }
 

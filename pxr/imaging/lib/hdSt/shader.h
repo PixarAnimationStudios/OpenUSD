@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
+typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 
 class HdStShader final: public HdShader {
 public:
@@ -100,11 +100,11 @@ public:
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
     HDST_API
-    void SetSurfaceShader(HdSurfaceShaderSharedPtr &shaderCode);
+    void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
 
 private:
-    HdSurfaceShaderSharedPtr _surfaceShader;
+    HdStSurfaceShaderSharedPtr _surfaceShader;
 };
 
 inline std::string

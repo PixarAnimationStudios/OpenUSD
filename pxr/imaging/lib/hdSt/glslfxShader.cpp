@@ -21,42 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_CULLING_SHADER_KEY_H
-#define HD_CULLING_SHADER_KEY_H
+#include "pxr/imaging/hdSt/glslfxShader.h"
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/geometricShader.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/glf/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct Hd_CullingShaderKey
+HdStGLSLFXShader::HdStGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx)
+ : HdStSurfaceShader()
+    , _glslfx(glslfx)
 {
-    Hd_CullingShaderKey(bool instancing, bool tinyCull, bool counting);
-    ~Hd_CullingShaderKey();
+    _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
+    _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
+}
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return NULL; }
-    TfToken const *GetTES() const { return NULL; }
-    TfToken const *GetGS() const  { return NULL; }
-    TfToken const *GetFS() const  { return NULL; }
-    bool IsCullingPass() const { return true; }
-    Hd_GeometricShader::PrimitiveType GetPrimitiveType() const { 
-        return Hd_GeometricShader::PrimitiveType::PRIM_POINTS; 
+HdStGLSLFXShader::~HdStGLSLFXShader()
+{
+}
+
+void
+HdStGLSLFXShader::Reload()
+{
+    GlfGLSLFXSharedPtr newGlslFx(new GlfGLSLFX(_glslfx->GetFilePath()));
+
+    if (newGlslFx->IsValid())
+    {
+        _glslfx = newGlslFx;
+
+        _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
+        _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
     }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    bool IsFaceVarying() const { return false; }
-
-    TfToken glslfx;
-    TfToken VS[6];
-};
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif  // HD_CULLING_SHADER_KEY_H

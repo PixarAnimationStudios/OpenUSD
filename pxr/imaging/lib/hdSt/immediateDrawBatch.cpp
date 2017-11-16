@@ -23,11 +23,11 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/immediateDrawBatch.h"
-#include "pxr/imaging/hd/drawItemInstance.h"
+#include "pxr/imaging/hdSt/immediateDrawBatch.h"
+#include "pxr/imaging/hdSt/commandBuffer.h"
+#include "pxr/imaging/hdSt/drawItemInstance.h"
 
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/commandBuffer.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
@@ -44,27 +44,27 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-Hd_ImmediateDrawBatch::Hd_ImmediateDrawBatch(
-    HdDrawItemInstance * drawItemInstance)
-    : Hd_DrawBatch(drawItemInstance)
+HdSt_ImmediateDrawBatch::HdSt_ImmediateDrawBatch(
+    HdStDrawItemInstance * drawItemInstance)
+    : HdSt_DrawBatch(drawItemInstance)
 {
     _Init(drawItemInstance);
 }
 
 void
-Hd_ImmediateDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
+HdSt_ImmediateDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
 {
-    Hd_DrawBatch::_Init(drawItemInstance);
+    HdSt_DrawBatch::_Init(drawItemInstance);
     drawItemInstance->SetBatchIndex(0);
     drawItemInstance->SetBatch(this);
 }
 
-Hd_ImmediateDrawBatch::~Hd_ImmediateDrawBatch()
+HdSt_ImmediateDrawBatch::~HdSt_ImmediateDrawBatch()
 {
 }
 
 bool
-Hd_ImmediateDrawBatch::Validate(bool deepValidation)
+HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
 {
     if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
 
@@ -90,14 +90,14 @@ Hd_ImmediateDrawBatch::Validate(bool deepValidation)
 }
 
 void
-Hd_ImmediateDrawBatch::PrepareDraw(
+HdSt_ImmediateDrawBatch::PrepareDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {
 }
 
 void
-Hd_ImmediateDrawBatch::ExecuteDraw(
+HdSt_ImmediateDrawBatch::ExecuteDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {

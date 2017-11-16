@@ -21,35 +21,45 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DRAW_ITEM_STATE_H
-#define HD_DRAW_ITEM_STATE_H
+#ifndef HDST_GLSLFX_SHADER_H
+#define HDST_GLSLFX_SHADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/base/vt/value.h"
+
+#include "pxr/base/tf/token.h"
+
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdDrawItemState
-///
-/// The GPU state required to execute an HdDrawItem.
-///
-/// State carried by this class is distinct in that it becomes part of the draw
-/// call state sort, other GPU state that is sufficiently cheap to change, or
-/// state that is specific to a single draw call, resides on the HdDrawItem
-/// directly.
-///
-class HdDrawItemState {
+typedef boost::shared_ptr<class HdStGLSLFXShader> HdStGLSLFXShaderSharedPtr;
+typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
+
+// XXX: DOCS!
+class HdStGLSLFXShader : public HdStSurfaceShader {
 public:
-    HD_API
-    HdDrawItemState();
-    HD_API
-    virtual ~HdDrawItemState();
+    HDST_API
+    HdStGLSLFXShader(GlfGLSLFXSharedPtr const& glslfx);
+    HDST_API
+    virtual ~HdStGLSLFXShader();
+
+    /// If the prim is based on asset, reload that asset.
+    HDST_API
+    virtual void Reload();
+
 private:
+    GlfGLSLFXSharedPtr _glslfx;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_DRAW_ITEM_STATE_H
+#endif //HDST_GLSLFX_SHADER_H

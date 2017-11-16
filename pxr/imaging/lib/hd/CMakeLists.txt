@@ -47,7 +47,6 @@ pxr_library(hd
         bufferSpec
         changeTracker
         codeGen
-        commandBuffer
         computation
         computeShader
         conversions
@@ -56,10 +55,7 @@ pxr_library(hd
         dirtyList
         dispatchBuffer
         drawingCoord
-        drawBatch
         drawItem
-        drawItemInstance
-        drawItemState
         engine
         extCompCpuComputation
         extCompGpuComputation
@@ -71,10 +67,7 @@ pxr_library(hd
         fallbackLightingShader
         geometricShader
         glslProgram
-        glslfxShader
         glUtils
-        immediateDrawBatch
-        indirectDrawBatch
         instancer
         instanceRegistry
         interleavedMemoryManager
@@ -112,7 +105,6 @@ pxr_library(hd
         smoothNormals
         sprim
         strategyBase
-        surfaceShader
         task
         texture
         textureResource
@@ -133,7 +125,6 @@ pxr_library(hd
 
     PRIVATE_CLASSES
         compExtCompInputSource
-        cullingShaderKey
         extCompInputSource
         extComputationContextInternal
         sceneExtCompInputSource

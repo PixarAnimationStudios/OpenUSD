@@ -21,50 +21,50 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_IMMEDIATE_DRAW_BATCH_H
-#define HD_IMMEDIATE_DRAW_BATCH_H
+#ifndef HDST_IMMEDIATE_DRAW_BATCH_H
+#define HDST_IMMEDIATE_DRAW_BATCH_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/drawBatch.h"
+#include "pxr/imaging/hdSt/drawBatch.h"
 
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class Hd_ImmediateDrawBatch
+/// \class HdSt_ImmediateDrawBatch
 ///
 /// Drawing batch that is executed immediately.
 ///
-class Hd_ImmediateDrawBatch : public Hd_DrawBatch {
+class HdSt_ImmediateDrawBatch : public HdSt_DrawBatch {
 public:
-    HD_API
-    Hd_ImmediateDrawBatch(HdDrawItemInstance * drawItemInstance);
-    HD_API
-    virtual ~Hd_ImmediateDrawBatch();
+    HDST_API
+    HdSt_ImmediateDrawBatch(HdStDrawItemInstance * drawItemInstance);
+    HDST_API
+    virtual ~HdSt_ImmediateDrawBatch();
 
-    // Hd_DrawBatch overrides
-    HD_API
+    // HdSt_DrawBatch overrides
+    HDST_API
     virtual bool Validate(bool deepValidation);
 
     /// Prepare draw commands and apply view frustum culling for this batch.
-    HD_API
+    HDST_API
     virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
                              HdResourceRegistrySharedPtr const & resourceRegistry);
 
     /// Executes the drawing commands for this batch.
-    HD_API
+    HDST_API
     virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
                              HdResourceRegistrySharedPtr const & resourceRegistry);
 
 protected:
-    HD_API
-    virtual void _Init(HdDrawItemInstance * drawItemInstance);
+    HDST_API
+    virtual void _Init(HdStDrawItemInstance * drawItemInstance);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_IMMEDIATE_DRAW_BATCH_H
+#endif // HDST_IMMEDIATE_DRAW_BATCH_H

@@ -23,15 +23,16 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/commandBuffer.h"
+#include "pxr/imaging/hdSt/cullingShaderKey.h"
+#include "pxr/imaging/hdSt/drawItemInstance.h"
+#include "pxr/imaging/hdSt/indirectDrawBatch.h"
+
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/commandBuffer.h"
-#include "pxr/imaging/hd/cullingShaderKey.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
-#include "pxr/imaging/hd/indirectDrawBatch.h"
-#include "pxr/imaging/hd/drawItemInstance.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -64,9 +65,9 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES, false,
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING, true,
                       "Enable GPU per-instance frustum culling");
 
-Hd_IndirectDrawBatch::Hd_IndirectDrawBatch(
-    HdDrawItemInstance * drawItemInstance)
-    : Hd_DrawBatch(drawItemInstance)
+HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
+    HdStDrawItemInstance * drawItemInstance)
+    : HdSt_DrawBatch(drawItemInstance)
     , _drawCommandBufferDirty(false)
     , _numVisibleItems(0)
     , _numTotalElements(0)
@@ -80,9 +81,9 @@ Hd_IndirectDrawBatch::Hd_IndirectDrawBatch(
 
 /*virtual*/
 void
-Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
+HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
 {
-    Hd_DrawBatch::_Init(drawItemInstance);
+    HdSt_DrawBatch::_Init(drawItemInstance);
     drawItemInstance->SetBatchIndex(0);
     drawItemInstance->SetBatch(this);
 
@@ -106,15 +107,15 @@ Hd_IndirectDrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
     }
 }
 
-Hd_IndirectDrawBatch::_CullingProgram &
-Hd_IndirectDrawBatch::_GetCullingProgram(
+HdSt_IndirectDrawBatch::_CullingProgram &
+HdSt_IndirectDrawBatch::_GetCullingProgram(
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_cullingProgram.GetGLSLProgram() || 
         _lastTinyPrimCulling != IsEnabledGPUTinyPrimCulling()) {
     
         // create a culling shader key
-        Hd_CullingShaderKey shaderKey(_useGpuInstanceCulling,
+        HdSt_CullingShaderKey shaderKey(_useGpuInstanceCulling,
                                       IsEnabledGPUTinyPrimCulling(),
                                       IsEnabledGPUCountVisibleInstances());
 
@@ -134,13 +135,13 @@ Hd_IndirectDrawBatch::_GetCullingProgram(
     return _cullingProgram;
 }
 
-Hd_IndirectDrawBatch::~Hd_IndirectDrawBatch()
+HdSt_IndirectDrawBatch::~HdSt_IndirectDrawBatch()
 {
 }
 
 /* static */
 bool
-Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
+HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
 {
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
     // GPU XFB frustum culling should work since GL 4.0, but for now
@@ -154,7 +155,7 @@ Hd_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
 
 /* static */
 bool
-Hd_IndirectDrawBatch::IsEnabledGPUCountVisibleInstances()
+HdSt_IndirectDrawBatch::IsEnabledGPUCountVisibleInstances()
 {
     static bool isEnabledGPUCountVisibleInstances =
         TfGetEnvSetting(HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES);
@@ -163,7 +164,7 @@ Hd_IndirectDrawBatch::IsEnabledGPUCountVisibleInstances()
 
 /* static */
 bool
-Hd_IndirectDrawBatch::IsEnabledGPUTinyPrimCulling()
+HdSt_IndirectDrawBatch::IsEnabledGPUTinyPrimCulling()
 {
     static bool isEnabledGPUTinyPrimCulling =
         TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING);
@@ -173,7 +174,7 @@ Hd_IndirectDrawBatch::IsEnabledGPUTinyPrimCulling()
 
 /* static */
 bool
-Hd_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
+HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 {
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
@@ -187,7 +188,7 @@ Hd_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 }
 
 void
-Hd_IndirectDrawBatch::_CompileBatch(
+HdSt_IndirectDrawBatch::_CompileBatch(
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
@@ -197,7 +198,7 @@ Hd_IndirectDrawBatch::_CompileBatch(
     if (_drawItemInstances.empty()) return;
 
     // note that when chaging struct definition of XFB culling,
-    // Hd_IndirectDrawBatch::_CullingProgram::_CustomLink should also be
+    // HdSt_IndirectDrawBatch::_CullingProgram::_CustomLink should also be
     // changed accordingly.
 
     // drawcommand is configured as one of followings:
@@ -317,7 +318,7 @@ Hd_IndirectDrawBatch::_CompileBatch(
 
     TF_DEBUG(HD_MDI).Msg(" - Processing Items:\n");
     for (size_t item = 0; item < numDrawItemInstances; ++item) {
-        HdDrawItemInstance const * instance = _drawItemInstances[item];
+        HdStDrawItemInstance const * instance = _drawItemInstances[item];
         HdDrawItem const * drawItem = _drawItemInstances[item]->GetDrawItem();
 
         //
@@ -757,7 +758,7 @@ Hd_IndirectDrawBatch::_CompileBatch(
 }
 
 bool
-Hd_IndirectDrawBatch::Validate(bool deepValidation)
+HdSt_IndirectDrawBatch::Validate(bool deepValidation)
 {
     if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
 
@@ -797,7 +798,7 @@ Hd_IndirectDrawBatch::Validate(bool deepValidation)
 }
 
 void
-Hd_IndirectDrawBatch::_ValidateCompatibility(
+HdSt_IndirectDrawBatch::_ValidateCompatibility(
             HdBufferArrayRangeGLSharedPtr const& constantBar,
             HdBufferArrayRangeGLSharedPtr const& indexBar,
             HdBufferArrayRangeGLSharedPtr const& elementBar,
@@ -809,7 +810,7 @@ Hd_IndirectDrawBatch::_ValidateCompatibility(
 {
     HdDrawItem const* failed = nullptr;
 
-    for (HdDrawItemInstance const* itemInstance : _drawItemInstances) {
+    for (HdStDrawItemInstance const* itemInstance : _drawItemInstances) {
         HdDrawItem const* itm = itemInstance->GetDrawItem();
 
         if (constantBar && !TF_VERIFY(constantBar 
@@ -853,7 +854,7 @@ Hd_IndirectDrawBatch::_ValidateCompatibility(
 }
 
 void
-Hd_IndirectDrawBatch::PrepareDraw(
+HdSt_IndirectDrawBatch::PrepareDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -938,7 +939,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
         }
 
         for (size_t item=0; item<_drawItemInstances.size(); ++item) {
-            HdDrawItemInstance const * drawItemInstance =
+            HdStDrawItemInstance const * drawItemInstance =
                 _drawItemInstances[item];
 
             if(!drawItemInstance->IsVisible()) {
@@ -988,7 +989,7 @@ Hd_IndirectDrawBatch::PrepareDraw(
 }
 
 void
-Hd_IndirectDrawBatch::ExecuteDraw(
+HdSt_IndirectDrawBatch::ExecuteDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -1187,7 +1188,7 @@ Hd_IndirectDrawBatch::ExecuteDraw(
 }
 
 void
-Hd_IndirectDrawBatch::_GPUFrustumCulling(
+HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     HdDrawItem const *batchItem,
     HdRenderPassStateSharedPtr const &renderPassState,
     HdResourceRegistrySharedPtr const &resourceRegistry)
@@ -1337,7 +1338,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCulling(
 }
 
 void
-Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
+HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     HdDrawItem const *batchItem,
     HdRenderPassStateSharedPtr const &renderPassState,
     HdResourceRegistrySharedPtr const &resourceRegistry)
@@ -1410,7 +1411,7 @@ Hd_IndirectDrawBatch::_GPUFrustumCullingXFB(
 }
 
 void
-Hd_IndirectDrawBatch::DrawItemInstanceChanged(HdDrawItemInstance const* instance)
+HdSt_IndirectDrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* instance)
 {
     // We need to check the visiblity and update if needed
     if (_dispatchBuffer) {
@@ -1457,7 +1458,7 @@ Hd_IndirectDrawBatch::DrawItemInstanceChanged(HdDrawItemInstance const* instance
 }
 
 void
-Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
+HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
     HdResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_resultBuffer) {
@@ -1490,7 +1491,7 @@ Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
 }
 
 void
-Hd_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t * result)
+HdSt_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t * result)
 {
     GLenum status = glClientWaitSync(resultSync,
             GL_SYNC_FLUSH_COMMANDS_BIT, HD_CULL_RESULT_TIMEOUT_NS);
@@ -1527,7 +1528,7 @@ Hd_IndirectDrawBatch::_EndGPUCountVisibleInstances(GLsync resultSync, size_t * r
 }
 
 void
-Hd_IndirectDrawBatch::_CullingProgram::Initialize(
+HdSt_IndirectDrawBatch::_CullingProgram::Initialize(
     bool useDrawArrays, bool useInstanceCulling, size_t bufferArrayHash)
 {
     if (useDrawArrays      != _useDrawArrays      ||
@@ -1544,7 +1545,7 @@ Hd_IndirectDrawBatch::_CullingProgram::Initialize(
 
 /* virtual */
 void
-Hd_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
+HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
     HdBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
@@ -1585,7 +1586,7 @@ Hd_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
 
 /* virtual */
 bool
-Hd_IndirectDrawBatch::_CullingProgram::_Link(
+HdSt_IndirectDrawBatch::_CullingProgram::_Link(
         HdGLSLProgramSharedPtr const & glslProgram)
 {
     if (!TF_VERIFY(glslProgram)) return false;
@@ -1632,7 +1633,7 @@ Hd_IndirectDrawBatch::_CullingProgram::_Link(
                                     outputs, GL_INTERLEAVED_ATTRIBS);
     }
 
-    return Hd_DrawBatch::_DrawingProgram::_Link(glslProgram);
+    return HdSt_DrawBatch::_DrawingProgram::_Link(glslProgram);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,7 +26,6 @@
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
-#include "pxr/imaging/hd/drawBatch.h" // XXX: temp
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceGL.h"
 #include "pxr/imaging/hd/shaderCode.h"

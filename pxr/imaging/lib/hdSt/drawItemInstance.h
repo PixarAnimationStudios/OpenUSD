@@ -21,24 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef _HD_DRAW_ITEM_INSTANCE_H_
-#define _HD_DRAW_ITEM_INSTANCE_H_
+#ifndef HDST_DRAW_ITEM_INSTANCE_H
+#define HDST_DRAW_ITEM_INSTANCE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "boost/shared_ptr.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hd_DrawBatch;
-class HdDrawItem;
-class HdDrawItemInstance;
+typedef boost::shared_ptr<class HdSt_DrawBatch> HdDrawBatchSharedPtr;
+typedef boost::shared_ptr<class HdDrawItem> HdDrawItemSharedPtr;
 
-typedef boost::shared_ptr<Hd_DrawBatch> HdDrawBatchSharedPtr;
-typedef boost::shared_ptr<HdDrawItem> HdDrawItemSharedPtr;
-
-/// \class HdDrawItemInstance
+/// \class HdStDrawItemInstance
 ///
 /// A container to store instance state for a drawitem.
 ///
@@ -50,16 +46,16 @@ typedef boost::shared_ptr<HdDrawItem> HdDrawItemSharedPtr;
 /// when adding / appending the instance. If the batch does not require
 /// the DrawItemInstanceChanged callback, then this step can be skipped
 ///
-class HdDrawItemInstance
+class HdStDrawItemInstance
 {
 public:
-    HD_API
-    HdDrawItemInstance(HdDrawItem const *drawItem);
-    HD_API
-    ~HdDrawItemInstance();
+    HDST_API
+    HdStDrawItemInstance(HdDrawItem const *drawItem);
+    HDST_API
+    ~HdStDrawItemInstance();
 
     /// Set visibility state
-    HD_API
+    HDST_API
     void SetVisible(bool visible);
 
     /// Query visibility state
@@ -67,7 +63,7 @@ public:
 
     /// Set index into batch list. Can be used by
     /// batch during DrawItemInstanceChanged callback
-    HD_API
+    HDST_API
     void SetBatchIndex(size_t batchIndex);
 
     /// Query batch index
@@ -76,16 +72,16 @@ public:
     /// Set the batch that will receive the DrawItemInstanceChanged
     /// callback when visibility is updated. Setting batch to NULL
     /// will disable this callback.
-    // HD_API
-    void SetBatch(Hd_DrawBatch *batch);
+    // HDST_API
+    void SetBatch(HdSt_DrawBatch *batch);
 
     /// Return a const pointer to draw item
     HdDrawItem const *GetDrawItem() const { return _drawItem; }
 
 private:
-    HdDrawItemInstance();
+    HdStDrawItemInstance();
 
-    Hd_DrawBatch * _batch;
+    HdSt_DrawBatch * _batch;
     HdDrawItem const * _drawItem;
     size_t _batchIndex;
     bool _visible;
@@ -94,5 +90,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // _HD_DRAW_ITEM_INSTANCE_H_
+#endif // HDST_DRAW_ITEM_INSTANCE_H
 

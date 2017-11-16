@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SURFACESHADER_H
-#define HD_SURFACESHADER_H
+#ifndef HDST_SURFACESHADER_H
+#define HDST_SURFACESHADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -49,10 +49,10 @@ class HdSceneDelegate;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 typedef std::vector<HdTextureResourceSharedPtr> HdTextureResourceSharedPtrVector;
-typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
+typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
-/// \class HdSurfaceShader
+/// \class HdStSurfaceShader
 ///
 /// A scene-based SurfaceShader object.
 ///
@@ -60,53 +60,53 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 /// can use this object to express these surface shaders in Hydra. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
-class HdSurfaceShader : public HdShaderCode {
+class HdStSurfaceShader : public HdShaderCode {
 public:
-    HD_API
-    HdSurfaceShader();
-    HD_API
-    virtual ~HdSurfaceShader();
+    HDST_API
+    HdStSurfaceShader();
+    HDST_API
+    virtual ~HdStSurfaceShader();
 
 
     // ---------------------------------------------------------------------- //
     /// \name HdShader Virtual Interface                                      //
     // ---------------------------------------------------------------------- //
-    HD_API
+    HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
-    HD_API
+    HDST_API
     virtual HdShaderParamVector const& GetParams() const;
-    HD_API
+    HDST_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
-    HD_API
+    HDST_API
     virtual TextureDescriptorVector GetTextures() const;
-    HD_API
+    HDST_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
-    HD_API
+    HDST_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
-    HD_API
+    HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
-    HD_API
+    HDST_API
     virtual ID ComputeHash() const;
 
     /// Setter method for prim
-    HD_API
+    HDST_API
     void SetFragmentSource(const std::string &source);
-    HD_API
+    HDST_API
     void SetGeometrySource(const std::string &source);
-    HD_API
+    HDST_API
     void SetParams(const HdShaderParamVector &params);
-    HD_API
+    HDST_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
-    HD_API
+    HDST_API
     void SetBufferSources(HdBufferSourceVector &bufferSources, 
                           HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// If the prim is based on asset, reload that asset.
-    HD_API
+    HDST_API
     virtual void Reload();
 
 protected:
-    HD_API
+    HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
 
 private:
@@ -121,11 +121,11 @@ private:
     TextureDescriptorVector _textureDescriptors;
 
     // No copying
-    HdSurfaceShader(const HdSurfaceShader &)                     = delete;
-    HdSurfaceShader &operator =(const HdSurfaceShader &)         = delete;
+    HdStSurfaceShader(const HdStSurfaceShader &)                     = delete;
+    HdStSurfaceShader &operator =(const HdStSurfaceShader &)         = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_SURFACESHADER_H
+#endif //HDST_SURFACESHADER_H

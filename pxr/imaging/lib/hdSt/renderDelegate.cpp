@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/basisCurves.h"
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/mesh.h"
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/shader.h"
 
-#include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -245,7 +245,7 @@ HdStRenderDelegate::_CreateFallbackShaderPrim()
 {
     GlfGLSLFXSharedPtr glslfx(new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
 
-    HdSurfaceShaderSharedPtr fallbackShaderCode(new HdGLSLFXShader(glslfx));
+    HdStSurfaceShaderSharedPtr fallbackShaderCode(new HdStGLSLFXShader(glslfx));
 
     HdStShader *shader = new HdStShader(SdfPath::EmptyPath());
     shader->SetSurfaceShader(fallbackShaderCode);

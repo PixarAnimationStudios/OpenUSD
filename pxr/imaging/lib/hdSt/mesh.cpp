@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/mixinShaderCode.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/shader.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -45,7 +46,6 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"

@@ -23,12 +23,14 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/commandBuffer.h"
+#include "pxr/imaging/hdSt/drawBatch.h"
+#include "pxr/imaging/hdSt/glslfxShader.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
+
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/codeGen.h"
-#include "pxr/imaging/hd/commandBuffer.h"
 #include "pxr/imaging/hd/geometricShader.h"
-#include "pxr/imaging/hd/glslfxShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/package.h"
@@ -36,7 +38,6 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -47,14 +48,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-Hd_DrawBatch::Hd_DrawBatch(HdDrawItemInstance * drawItemInstance)
+HdSt_DrawBatch::HdSt_DrawBatch(HdStDrawItemInstance * drawItemInstance)
     : _shaderHash(0)
 {
 }
 
 /*virtual*/
 void
-Hd_DrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
+HdSt_DrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
 {
     _drawItemInstances.push_back(drawItemInstance);
 
@@ -65,12 +66,12 @@ Hd_DrawBatch::_Init(HdDrawItemInstance * drawItemInstance)
     _shaderHash = 0;
 }
 
-Hd_DrawBatch::~Hd_DrawBatch()
+HdSt_DrawBatch::~HdSt_DrawBatch()
 {
 }
 
 void
-Hd_DrawBatch::DrawItemInstanceChanged(HdDrawItemInstance const* /*instance*/)
+HdSt_DrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* /*instance*/)
 {
 }
 
@@ -91,14 +92,14 @@ inline bool isAggregated(HdBufferArrayRangeSharedPtr const &rangeA,
 }
 
 bool
-Hd_DrawBatch::Append(HdDrawItemInstance * drawItemInstance)
+HdSt_DrawBatch::Append(HdStDrawItemInstance * drawItemInstance)
 {
     if (!TF_VERIFY(!_drawItemInstances.empty())) {
         return false;
     }
 
     // XXX: we'll soon refactor this function out and centralize batch
-    // bucketing and reordering logic in HdCommandBuffer.
+    // bucketing and reordering logic in HdStCommandBuffer.
 
     HdDrawItem const* drawItem = drawItemInstance->GetDrawItem();
 
@@ -117,7 +118,7 @@ Hd_DrawBatch::Append(HdDrawItemInstance * drawItemInstance)
 
 /*static*/
 bool
-Hd_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
+HdSt_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
                             HdDrawItem const *drawItem1)
 {
     if (!HdShaderCode::CanAggregate(drawItem0->GetMaterial(),
@@ -152,19 +153,19 @@ Hd_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
 }
 
 bool
-Hd_DrawBatch::Rebuild()
+HdSt_DrawBatch::Rebuild()
 {
-    std::vector<HdDrawItemInstance const*> instances;
+    std::vector<HdStDrawItemInstance const*> instances;
     instances.swap(_drawItemInstances);
     _drawItemInstances.reserve(instances.size());
 
     // Ensure all batch state initialized from items/instances is refreshed.
-    _Init(const_cast<HdDrawItemInstance*>(instances.front()));
+    _Init(const_cast<HdStDrawItemInstance*>(instances.front()));
 
     // Start this loop at i=1 because the 0th element was pushed via _Init
     for (size_t i = 1; i < instances.size(); ++i) {
         if (TF_VERIFY(!_drawItemInstances.empty())) {
-            if (!Append(const_cast<HdDrawItemInstance*>(instances[i]))) {
+            if (!Append(const_cast<HdStDrawItemInstance*>(instances[i]))) {
                 return false;
             }
         } else {
@@ -175,8 +176,8 @@ Hd_DrawBatch::Rebuild()
     return true;
 }
 
-Hd_DrawBatch::_DrawingProgram &
-Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
+HdSt_DrawBatch::_DrawingProgram &
+HdSt_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
                                  bool indirect,
                                  HdResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -236,7 +237,7 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 
             HdShaderCodeSharedPtr fallbackSurface =
                 HdShaderCodeSharedPtr(
-                    new HdGLSLFXShader(glslSurfaceFallback));
+                    new HdStGLSLFXShader(glslSurfaceFallback));
 
             _program.SetSurfaceShader(fallbackSurface);
 
@@ -254,7 +255,7 @@ Hd_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 }
 
 bool
-Hd_DrawBatch::_DrawingProgram::CompileShader(
+HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdDrawItem const *drawItem,
         bool indirect,
         HdResourceRegistrySharedPtr const &resourceRegistry)
@@ -326,7 +327,7 @@ Hd_DrawBatch::_DrawingProgram::CompileShader(
 
 /* virtual */
 void
-Hd_DrawBatch::_DrawingProgram::_GetCustomBindings(
+HdSt_DrawBatch::_DrawingProgram::_GetCustomBindings(
     HdBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
@@ -340,7 +341,7 @@ Hd_DrawBatch::_DrawingProgram::_GetCustomBindings(
 
 /* virtual */
 bool
-Hd_DrawBatch::_DrawingProgram::_Link(
+HdSt_DrawBatch::_DrawingProgram::_Link(
         HdGLSLProgramSharedPtr const & glslProgram)
 {
     if (!TF_VERIFY(glslProgram)) return false;

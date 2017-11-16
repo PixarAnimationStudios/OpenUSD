@@ -25,7 +25,6 @@
 #include "pxr/imaging/hd/codeGen.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/drawBatch.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"

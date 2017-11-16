@@ -149,10 +149,12 @@ public:
     }
 
     /// Return the GL primitive type of the draw item based on _primType
+    HD_API
     GLenum GetPrimitiveMode() const;
 
     // Returns the primitive index size based on the primitive mode
     // 3 for triangles, 4 for quads, 16 for regular b-spline patches etc.
+    HD_API
     int GetPrimitiveIndexSize() const;
 
     // Returns the primitive index size for the geometry shader shade

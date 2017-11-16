@@ -21,66 +21,74 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_COMMAND_BUFFER_H
-#define HD_COMMAND_BUFFER_H
+#ifndef HDST_COMMAND_BUFFER_H
+#define HDST_COMMAND_BUFFER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/drawBatch.h"
-#include "pxr/imaging/hd/drawItemInstance.h"
+#include "pxr/imaging/hdSt/drawItemInstance.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include <boost/shared_ptr.hpp>
+
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdDrawItem;
-class HdDrawItemInstance;
+class HdStDrawItemInstance;
 
-/// \class HdCommandBuffer
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdSt_DrawBatch> HdSt_DrawBatchSharedPtr;
+typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
+
+/// \class HdStCommandBuffer
 ///
 /// A buffer of commands (HdDrawItem or HdComputeItem objects) to be executed.
 ///
-/// The HdCommandBuffer is responsible for accumulating draw items and sorting
+/// The HdStCommandBuffer is responsible for accumulating draw items and sorting
 /// them for correctness (e.g. alpha transparency) and efficiency (e.g. the
 /// fewest number of GPU state changes).
 ///
-class HdCommandBuffer {
+class HdStCommandBuffer {
 public:
-    HD_API
-    HdCommandBuffer();
-    HD_API
-    ~HdCommandBuffer();
+    HDST_API
+    HdStCommandBuffer();
+    HDST_API
+    ~HdStCommandBuffer();
 
     /// Prepare the command buffer for draw
-    HD_API
+    HDST_API
     void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
                      HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Execute the command buffer
-    HD_API
+    HDST_API
     void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
                      HdResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix
-    HD_API
+    HDST_API
     void FrustumCull(GfMatrix4d const &cullMatrix);
 
     /// Sync visibility state from RprimSharedState to DrawItemInstances.
-    HD_API
+    HDST_API
     void SyncDrawItemVisibility(unsigned visChangeCount);
 
     /// Destructively swaps the contents of \p items with the internal list of
     /// all draw items. Culling state is reset, with no items visible.
-    HD_API
+    HDST_API
     void SwapDrawItems(std::vector<HdDrawItem const*>* items,
                        unsigned currentShaderBindingsVersion);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
-    HD_API
+    HDST_API
     void RebuildDrawBatchesIfNeeded(unsigned currentShaderBindingsVersion);
 
     /// Returns the total number of draw items, including culled items.
@@ -98,9 +106,8 @@ private:
     void _RebuildDrawBatches();
 
     std::vector<HdDrawItem const*> _drawItems;
-    std::vector<HdDrawItemInstance> _drawItemInstances;
-    Hd_DrawBatchSharedPtrVector _drawBatches;
-    HdShaderCodeSharedPtrVector _shaders;
+    std::vector<HdStDrawItemInstance> _drawItemInstances;
+    HdSt_DrawBatchSharedPtrVector _drawBatches;
     size_t _visibleSize;
     unsigned _visChangeCount;
     unsigned _shaderBindingsVersion;
@@ -109,4 +116,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_COMMAND_BUFFER_H
+#endif //HDST_COMMAND_BUFFER_H

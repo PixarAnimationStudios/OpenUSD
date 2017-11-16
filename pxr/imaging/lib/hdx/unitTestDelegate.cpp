@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/textureResource.h"
 

@@ -21,10 +21,13 @@ pxr_library(hdSt
     PUBLIC_CLASSES
         basisCurves
         camera
+        commandBuffer
+        drawItemInstance
         drawTarget
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        glslfxShader
         instancer
         light      
         mesh
@@ -33,6 +36,7 @@ pxr_library(hdSt
         renderDelegate
         renderPass
         shader
+        surfaceShader
 
     PUBLIC_HEADERS
         api.h
@@ -41,7 +45,11 @@ pxr_library(hdSt
         basisCurvesComputations
         basisCurvesShaderKey
         basisCurvesTopology
+        cullingShaderKey
+        drawBatch
         drawTargetTextureResource
+        immediateDrawBatch
+        indirectDrawBatch
         meshShaderKey
         meshTopology 
         pointsShaderKey
