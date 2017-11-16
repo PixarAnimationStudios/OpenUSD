@@ -32,6 +32,8 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
+#include <unordered_set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // ------------------------------------------------------------------------- //
@@ -73,7 +75,7 @@ bool
 UsdInherits::AddInherit(const SdfPath &primPathIn, UsdListPosition position)
 {
     if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
         return false;
     }
 
@@ -110,7 +112,7 @@ bool
 UsdInherits::RemoveInherit(const SdfPath &primPathIn)
 {
     if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
         return false;
     }
 
@@ -133,7 +135,7 @@ bool
 UsdInherits::ClearInherits()
 {
     if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
         return false;
     }
 
@@ -149,7 +151,7 @@ bool
 UsdInherits::SetInherits(const SdfPathVector& itemsIn)
 {
     if (!_prim) {
-        TF_CODING_ERROR("Invalid prim");
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
         return false;
     }
 
@@ -175,6 +177,26 @@ UsdInherits::SetInherits(const SdfPathVector& itemsIn)
     }
 
     return m.IsClean();
+}
+
+
+SdfPathVector
+UsdInherits::GetAllDirectInherits() const
+{
+    SdfPathVector ret;
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
+        return ret;
+    }
+
+    std::unordered_set<SdfPath, SdfPath::Hash> seen;
+    for (auto const &node:
+             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeAllInherits)) {
+        if (!node.IsDueToAncestor() && seen.insert(node.GetPath()).second) {
+            ret.push_back(node.GetPath());
+        }
+    }
+    return ret;
 }
 
 // ---------------------------------------------------------------------- //

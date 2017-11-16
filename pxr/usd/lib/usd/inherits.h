@@ -77,6 +77,17 @@ public:
     USD_API
     bool SetInherits(const SdfPathVector& items);
 
+    /// Return all the paths in this prim's stage's local layer stack that would
+    /// compose into this prim via direct inherits (excluding prim specs that
+    /// would be composed into this prim due to inherits authored on ancestral
+    /// prims) in strong-to-weak order.
+    ///
+    /// Note that there currently may not be any scene description at these
+    /// paths on the stage.  This returns all the potential places that such
+    /// opinions could appear.
+    USD_API
+    SdfPathVector GetAllDirectInherits() const;
+    
     /// Return the prim this object is bound to.
     const UsdPrim &GetPrim() const { return _prim; }
     UsdPrim GetPrim() { return _prim; }

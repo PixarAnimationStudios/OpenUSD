@@ -77,6 +77,9 @@ class TestUsdInherits(unittest.TestCase):
             self.assertEqual(concrete.GetChildren()[0].GetPath(),
                         concrete.GetPath().AppendChild("Child"))
 
+            self.assertEqual(concrete.GetInherits().GetAllDirectInherits(),
+                             ['/ClassA'])
+
             assert concrete.GetInherits().RemoveInherit(classA.GetPath())
             assert len(concrete.GetChildren()) == 0
 
@@ -210,6 +213,39 @@ class TestUsdInherits(unittest.TestCase):
             expectedInheritPaths.prependedItems = [Sdf.Path("/Root/Class")]
             self.assertEqual(instancePrimSpec.GetInfo('inheritPaths'),
                              expectedInheritPaths)
+
+    def test_GetAllDirectInherits(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory('x.'+fmt, sessionLayer=None)
+
+            # Create a simple prim hierarchy, /Parent/Child, then add some arcs.
+            child = stage.DefinePrim('/Parent/Child')
+            parent = child.GetParent()
+
+            # Create a few other prims to reference and inherit.
+            AI = stage.OverridePrim('/AI/Child')  # ancestral inherit
+            AR = stage.OverridePrim('/AR/Child')  # ancestral reference
+            ARS = stage.OverridePrim('/AR/Sibling') # local inherit
+            ARI = stage.OverridePrim('/ARI')   # ancestrally referenced inherit
+            DR = stage.OverridePrim('/DR')     # direct reference
+            DRI = stage.OverridePrim('/DRI')   # direct referenced inherit
+            DI = stage.OverridePrim('/DI')     # direct inherit
+
+            parent.GetReferences().AddInternalReference('/AR')
+            parent.GetInherits().AddInherit('/AI')
+            AR.GetInherits().AddInherit('/ARI')
+            AR.GetInherits().AddInherit('/AR/Sibling')
+            child.GetInherits().AddInherit('/DI')
+            child.GetReferences().AddInternalReference('/DR')
+            DR.GetInherits().AddInherit('/DRI')
+
+            # Now check that the direct inherits are what we expect.
+            self.assertEqual(parent.GetInherits().GetAllDirectInherits(),
+                             map(Sdf.Path, ['/AI']))
+
+            self.assertEqual(child.GetInherits().GetAllDirectInherits(),
+                             map(Sdf.Path, ['/Parent/Sibling',
+                                            '/DI', '/DRI', '/ARI']))
 
 if __name__ == '__main__':
     unittest.main()
