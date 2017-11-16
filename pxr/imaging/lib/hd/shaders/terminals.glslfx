@@ -25,7 +25,7 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/termainals.glslfx
+--- #import $TOOLS/hd/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Fragment.Surface
@@ -74,11 +74,44 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Fragment.SurfaceSheer
+
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    return integrateLightsConstant(Peye, Neye, props);
+}
+
+#endif // HD_HAS_definedIntegrateLights
+#endif
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
+
+vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    vec4 surf = surfaceShader(Peye, Neye, color, patchCoord);
+
+    // shade only every 2nd pixel in x and y
+    // creating a thin stippled mesh grid 
+    float factor = step(0.5, fract((gl_FragCoord.x + 1.0) * 0.5))
+                 * step(0.5, fract((gl_FragCoord.y + 0.0) * 0.5));
+    
+    // make the surface translucent so that the lines of
+    // the mesh edges are visible even from the back faces.
+    surf.a = 0.2 * (1.0 - factor);
+    return surf;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Fragment.ConstantColor
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    return color;        
+    return color;
 }
 
 --- --------------------------------------------------------------------------
