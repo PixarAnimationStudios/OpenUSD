@@ -26,17 +26,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdSkelTokensType::UsdSkelTokensType() :
-    joints("joints"),
-    primvarsSkelGeomBindTransform("primvars:skel:geomBindTransform"),
-    primvarsSkelJointIndices("primvars:skel:jointIndices"),
-    primvarsSkelJointWeights("primvars:skel:jointWeights"),
-    restTransforms("restTransforms"),
-    rotations("rotations"),
-    scales("scales"),
-    skelAnimationSource("skel:animationSource"),
-    skelJoints("skel:joints"),
-    skelSkeleton("skel:skeleton"),
-    translations("translations"),
+    joints("joints", TfToken::Immortal),
+    primvarsSkelGeomBindTransform("primvars:skel:geomBindTransform", TfToken::Immortal),
+    primvarsSkelJointIndices("primvars:skel:jointIndices", TfToken::Immortal),
+    primvarsSkelJointWeights("primvars:skel:jointWeights", TfToken::Immortal),
+    restTransforms("restTransforms", TfToken::Immortal),
+    rotations("rotations", TfToken::Immortal),
+    scales("scales", TfToken::Immortal),
+    skelAnimationSource("skel:animationSource", TfToken::Immortal),
+    skelJoints("skel:joints", TfToken::Immortal),
+    skelSkeleton("skel:skeleton", TfToken::Immortal),
+    translations("translations", TfToken::Immortal),
     allTokens({
         joints,
         primvarsSkelGeomBindTransform,

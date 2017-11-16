@@ -26,13 +26,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdKatanaTokensType::UsdKatanaTokensType() :
-    katanaLooksChildNameExclusionAttrName("__UsdIn.skipChild.Looks"),
-    katanaLooksScopeName("Looks"),
-    katanaLooksScopePathSubstring("/Looks/"),
-    katanaPrimName("katana:primName"),
-    katanaSuppressGroupToAssemblyPromotion("katana:suppressGroupToAssemblyPromotion"),
-    katanaType("katana:type"),
-    katanaVisible("katana:visible"),
+    katanaLooksChildNameExclusionAttrName("__UsdIn.skipChild.Looks", TfToken::Immortal),
+    katanaLooksScopeName("Looks", TfToken::Immortal),
+    katanaLooksScopePathSubstring("/Looks/", TfToken::Immortal),
+    katanaPrimName("katana:primName", TfToken::Immortal),
+    katanaSuppressGroupToAssemblyPromotion("katana:suppressGroupToAssemblyPromotion", TfToken::Immortal),
+    katanaType("katana:type", TfToken::Immortal),
+    katanaVisible("katana:visible", TfToken::Immortal),
     allTokens({
         katanaLooksChildNameExclusionAttrName,
         katanaLooksScopeName,

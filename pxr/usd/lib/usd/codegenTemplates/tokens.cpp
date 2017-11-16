@@ -29,7 +29,7 @@
 {% endif %}
 {{ tokensPrefix }}TokensType::{{ tokensPrefix }}TokensType() :
 {% for token in tokens %}
-    {{ token.id }}("{{ token.value }}"),
+    {{ token.id }}("{{ token.value }}", TfToken::Immortal),
 {% endfor %}
     allTokens({
 {% for token in tokens %}

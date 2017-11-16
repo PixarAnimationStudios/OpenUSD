@@ -26,12 +26,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdSchemaExamplesTokensType::UsdSchemaExamplesTokensType() :
-    complexString("complexString"),
-    intAttr("intAttr"),
-    paramsMass("params:mass"),
-    paramsVelocity("params:velocity"),
-    paramsVolume("params:volume"),
-    target("target"),
+    complexString("complexString", TfToken::Immortal),
+    intAttr("intAttr", TfToken::Immortal),
+    paramsMass("params:mass", TfToken::Immortal),
+    paramsVelocity("params:velocity", TfToken::Immortal),
+    paramsVolume("params:volume", TfToken::Immortal),
+    target("target", TfToken::Immortal),
     allTokens({
         complexString,
         intAttr,
