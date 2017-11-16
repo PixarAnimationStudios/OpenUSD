@@ -210,8 +210,12 @@ MayaPrimWriterPtr usdWriteJobCtx::createPrimWriter(
 MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
     const MDagPath& curDag, const SdfPath& usdPath, bool instanceSource)
 {
-    MObject ob = curDag.node();
+    if (curDag.length() == 0) {
+        // This is the world root node. It can't have a prim writer.
+        return nullptr;
+    }
 
+    MObject ob = curDag.node();
     const SdfPath writePath = usdPath.IsEmpty() ?
             getUsdPathFromDagPath(curDag, instanceSource) : usdPath;
 
