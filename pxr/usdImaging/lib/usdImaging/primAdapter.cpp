@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/type.h"
@@ -383,12 +384,24 @@ UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim)
 
     // No need to worry about time here, since relationships do not have time
     // samples.
-    
+
+    // If the renderer supports full material network then this function
+    // will try to return a binding that is compatible..
+    bool useMaterialNetworks = _delegate->GetRenderIndex().
+        GetRenderDelegate()->CanComputeMaterialNetworks();
+
     if (_IsEnabledBindingCache()) {
-        SdfPath binding = _delegate->_materialBindingCache.GetValue(prim);
-        return binding;
+        if (useMaterialNetworks) {
+            return _delegate->_materialNetworkBindingCache.GetValue(prim);
+        } else {
+            return _delegate->_materialBindingCache.GetValue(prim);
+        }
     } else {
-        return UsdImaging_MaterialStrategy::ComputeShaderPath(prim);
+        if (useMaterialNetworks) {
+            return UsdImaging_MaterialNetworkStrategy::ComputeMaterialPath(prim);
+        } else {
+            return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim);
+        }
     }
 }
 

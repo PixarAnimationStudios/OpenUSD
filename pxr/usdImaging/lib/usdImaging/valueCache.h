@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderParam.h"
+#include "pxr/imaging/hd/shaderParam.h" // XXX: Remove with surfaceshader API
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -150,6 +150,10 @@ public:
         }
         static Key MaterialId(SdfPath const& path) {
             static TfToken attr("materialId");
+            return Key(path, attr);
+        }
+        static Key MaterialResource(SdfPath const& path) {
+            static TfToken attr("materialResource");
             return Key(path, attr);
         }
         // XXX: Shader API will be deprecated soon.
@@ -299,6 +303,7 @@ public:
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
         _Erase<VtValue>(Key::MaterialId(path));
+        _Erase<VtValue>(Key::MaterialResource(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
         // access the map directly, if we need to for performance reasons.
@@ -370,6 +375,9 @@ public:
     SdfPath& GetMaterialId(SdfPath const& path) const {
         return _Get<SdfPath>(Key::MaterialId(path));
     }
+    VtValue& GetMaterialResource(SdfPath const& path) const {
+        return _Get<VtValue>(Key::MaterialResource(path));
+    }
     // XXX: Shader API will be deprecated soon
     std::string& GetSurfaceShaderSource(SdfPath const& path) const {
         return _Get<std::string>(Key::SurfaceShaderSource(path));
@@ -432,6 +440,9 @@ public:
     bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
         return _Find(Key::MaterialId(path), value);
     }
+    bool FindMaterialResource(SdfPath const& path, SdfPath* value) const {
+        return _Find(Key::MaterialResource(path), value);
+    }
     // XXX: Shader API will be deprecated soon
     bool FindSurfaceShaderSource(SdfPath const& path, std::string* value) const {
         return _Find(Key::SurfaceShaderSource(path), value);
@@ -490,6 +501,9 @@ public:
     }
     bool ExtractMaterialId(SdfPath const& path, SdfPath* value) {
         return _Extract(Key::MaterialId(path), value);
+    }
+    bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
+        return _Extract(Key::MaterialResource(path), value);
     }
     bool ExtractPrimvar(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
@@ -552,7 +566,7 @@ private:
     typedef _TypedCache<SdfPath> _SdfPathCache;
     mutable _SdfPathCache _sdfPathCache;
 
-    // primvars, topology
+    // primvars, topology, materialResources
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 

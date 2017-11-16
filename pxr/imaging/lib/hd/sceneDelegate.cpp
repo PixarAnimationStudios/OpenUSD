@@ -288,6 +288,16 @@ HdSceneDelegate::GetLightParamValue(SdfPath const &id,
 }
 
 // -----------------------------------------------------------------------//
+/// \name Material Aspects
+// -----------------------------------------------------------------------//
+
+VtValue 
+HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
+{
+    return VtValue();
+}
+
+// -----------------------------------------------------------------------//
 /// \name Camera Aspects
 // -----------------------------------------------------------------------//
 

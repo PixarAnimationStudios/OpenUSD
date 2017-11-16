@@ -524,7 +524,7 @@ struct UsdImaging_VisStrategy {
 };
 
 // -------------------------------------------------------------------------- //
-// MaterialBinding Cache
+// Hydra MaterialBinding Cache
 // -------------------------------------------------------------------------- //
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -563,7 +563,7 @@ struct UsdImaging_MaterialStrategy {
             UsdPrim prim,
             query_type const* query)
     { 
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for shader binding %s\n", 
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
                       prim.GetPath().GetText());
         if (*query) {
             SdfPath binding = GetBinding(*query);
@@ -576,13 +576,12 @@ struct UsdImaging_MaterialStrategy {
 
     static
     value_type
-    ComputeShaderPath(UsdPrim const& prim) {
+    ComputeMaterialPath(UsdPrim const& prim) {
         SdfPath binding;
 
         for (UsdPrim parent=prim;parent.GetParent();parent=parent.GetParent()) {
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for shader binding %s\n", 
+            TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
                       parent.GetPath().GetText());
-
             UsdShadeMaterial mat = UsdShadeMaterial::GetBoundMaterial(parent);
             if (mat) {
                 binding = GetBinding(mat);
@@ -593,6 +592,60 @@ struct UsdImaging_MaterialStrategy {
         }
     
         return binding; 
+    }
+};
+
+// -------------------------------------------------------------------------- //
+// MaterialBinding Cache for full material networks
+// -------------------------------------------------------------------------- //
+
+struct UsdImaging_MaterialNetworkStrategy;
+typedef UsdImaging_InheritedCache<UsdImaging_MaterialNetworkStrategy> 
+    UsdImaging_MaterialNetworkBindingCache;
+
+struct UsdImaging_MaterialNetworkStrategy {
+    typedef SdfPath value_type;         // inherited path to bound shader
+    typedef UsdShadeMaterial query_type;
+
+    static
+    value_type MakeDefault() { return SdfPath(); }
+
+    static
+    query_type MakeQuery(UsdPrim prim) {
+        return UsdShadeMaterial::GetBoundMaterial(prim);
+    }
+
+    static
+    SdfPath GetBinding(UsdShadeMaterial const& material);
+
+    static
+    UsdPrim GetTargetedShader(UsdPrim const& materialPrim,
+                              UsdRelationship const& materialRel) {
+        return UsdImaging_MaterialStrategy::GetTargetedShader(
+            materialPrim, materialRel);
+    }
+ 
+    static 
+    value_type
+    Inherit(UsdImaging_MaterialNetworkBindingCache const* owner,
+            UsdPrim prim,
+            query_type const* query)
+    { 
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
+                      prim.GetPath().GetText());
+        if (*query) {
+            SdfPath binding = GetBinding(*query);
+            if (!binding.IsEmpty()) {
+                return binding;
+            }
+        }
+        return *owner->_GetValue(prim.GetParent());
+    }
+
+    static
+    value_type
+    ComputeMaterialPath(UsdPrim const& prim) {
+        return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim);
     }
 };
 

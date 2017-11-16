@@ -237,6 +237,15 @@ public:
     ///
     virtual void CommitResources(HdChangeTracker *tracker) = 0;
 
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Materials
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Returns true if this renderer can deal with full materials.
+    ///
+    virtual bool CanComputeMaterialNetworks() const { return false; }
 
 protected:
     /// This class must be derived from

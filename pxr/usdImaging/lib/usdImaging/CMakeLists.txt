@@ -20,6 +20,7 @@ pxr_library(usdImaging
         usdGeom
         usdHydra
         usdLux
+        usdRi
         usdShade
         ar
         ${Boost_PYTHON_LIBRARY}
@@ -52,6 +53,7 @@ pxr_library(usdImaging
         hydraMaterialAdapter
         instanceAdapter
         lightAdapter
+        materialAdapter
         meshAdapter
         nurbsPatchAdapter
         pointsAdapter

@@ -304,6 +304,15 @@ public:
                                        TfToken const &paramName);
 
     // -----------------------------------------------------------------------//
+    /// \name Material Aspects
+    // -----------------------------------------------------------------------//
+
+    // Returns a material resource which contains the information 
+    // needed to create a material.
+    HD_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+
+    // -----------------------------------------------------------------------//
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//
 

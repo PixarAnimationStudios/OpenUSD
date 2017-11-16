@@ -40,6 +40,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/primGather.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -113,6 +114,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime(), GetRootCompensation())
     , _materialBindingCache(GetTime(), GetRootCompensation())
+    , _materialNetworkBindingCache(GetTime(), GetRootCompensation())
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _displayGuides(true)
@@ -209,10 +211,20 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     } else {
         adapterKey = prim.GetTypeName();
         // XXX: transitional code
-        // For now, we forward handling of shader prims to the adapter
-        // which implements legacy GLSL material networks.
-        if (adapterKey == TfToken("Shader")) {
-            adapterKey = TfToken("HydraPbsSurface");
+        // If we are using material networks, we want Looks to be 
+        // treated like Materials. When not using networks,
+        // we want Shaders to be treated like HydraPbsSurface
+        // for backwards compatibility.
+        bool useMaterialNetworks = GetRenderIndex().
+            GetRenderDelegate()->CanComputeMaterialNetworks();
+        if (useMaterialNetworks) {
+            if (adapterKey == TfToken("Look")) {
+                adapterKey = TfToken("Material");
+            }
+        } else {
+            if (adapterKey == TfToken("Shader")) {
+                adapterKey = TfToken("HydraPbsSurface");
+            }
         }
     }
 
@@ -875,6 +887,15 @@ namespace {
             materialBindingCache->GetValue(primToBind);
         }
     };
+    struct _PopulateMaterialNetworkBindingCache {
+        UsdPrim primToBind;
+        UsdImaging_MaterialNetworkBindingCache const* materialBindingCache;
+        void operator()() const {
+            // Just calling GetValue will populate the cache for this prim and
+            // potentially all ancestors.
+            materialBindingCache->GetValue(primToBind);
+        }
+    };
 };
 
 void
@@ -890,6 +911,11 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     // Force initialization of SchemaRegistry (doing this in parallel causes all
     // threads to block).
     UsdSchemaRegistry::GetInstance();
+
+    // If we are using material networks the correct binding cache with
+    // the correct binding strategy needs to be updated.
+    bool useMaterialNetworks = GetRenderIndex().
+        GetRenderDelegate()->CanComputeMaterialNetworks();
 
     // Build a TfHashSet of excluded prims for fast rejection.
     TfHashSet<SdfPath, SdfPath::Hash> excludedSet;
@@ -939,9 +965,20 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 }
                 // Schedule the prim for population and discovery
                 // of material bindings.
-                _PopulateMaterialBindingCache wu = 
-                    { *iter, &_materialBindingCache };
-                bindingDispatcher.Run(wu);
+                //
+                // If we are using full networks, we will populate the 
+                // binding cache that has the strategy to compute the correct
+                // bindings.
+                if (useMaterialNetworks) {
+                    _PopulateMaterialNetworkBindingCache wu = 
+                        { *iter, &_materialNetworkBindingCache};
+                    bindingDispatcher.Run(wu);    
+                } else {
+                    _PopulateMaterialBindingCache wu = 
+                        { *iter, &_materialBindingCache};
+                    bindingDispatcher.Run(wu);
+                }
+                
                 leafPaths.push_back(std::make_pair(*iter, adapter));
                 if (adapter->ShouldCullChildren(*iter)) {
                    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] Pruned "
@@ -1056,6 +1093,7 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         // invalidation is overly conservative, but correct.
         _xformCache.Clear();
         _materialBindingCache.Clear();
+        _materialNetworkBindingCache.Clear();
         _visCache.Clear();
         _drawModeCache.Clear();
     }
@@ -1934,6 +1972,7 @@ UsdImagingDelegate::_ComputeRootCompensation(SdfPath const & usdPath)
     _compensationPath = usdPath;
     _xformCache.SetRootPath(usdPath);
     _materialBindingCache.SetRootPath(usdPath);
+    _materialNetworkBindingCache.SetRootPath(usdPath);
     _visCache.SetRootPath(usdPath);
     _drawModeCache.SetRootPath(usdPath);
 
@@ -3072,6 +3111,28 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     // Reading the value may fail, should we warn here when it does?
     attr.Get(&value, GetTime());
     return value;    
+}
+
+VtValue
+UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
+{
+    VtValue vtMatResource;
+
+    if (!TF_VERIFY(materialId != SdfPath())) {
+        return vtMatResource;
+    }
+
+    SdfPath usdPath = GetPathForUsd(materialId);
+
+    if (!_valueCache.ExtractMaterialResource(usdPath, &vtMatResource)) {
+        TF_DEBUG(HD_SAFE_MODE).Msg(
+            "WARNING: Slow material resource fetch for %s\n",
+            materialId.GetText());
+        _UpdateSingleValue(usdPath, HdShader::DirtyResource);
+        TF_VERIFY(_valueCache.ExtractMaterialResource(usdPath, &vtMatResource));
+    }
+
+    return vtMatResource;
 }
 
 

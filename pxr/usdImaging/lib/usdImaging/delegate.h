@@ -334,6 +334,10 @@ public:
     virtual VtValue GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName);
 
+    // Material Support
+    USDIMAGING_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+
     // Instance path resolution
 
     /// Returns the path of the instance prim corresponding to the
@@ -595,6 +599,7 @@ private:
 
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingCache _materialBindingCache;
+    UsdImaging_MaterialNetworkBindingCache _materialNetworkBindingCache;
     UsdImaging_VisCache _visCache;
     UsdImaging_DrawModeCache _drawModeCache;
 

@@ -64,6 +64,11 @@
                         "isInternal": true,
                         "primTypeName": "Cylinder"
                     },
+                    "UsdImagingMaterialAdapter" : {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "Material"
+                    },
                     "UsdImagingMeshAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
