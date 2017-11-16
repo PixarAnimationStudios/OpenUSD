@@ -182,7 +182,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
             UsdImagingPrimAdapterSharedPtr const& adapter =
                 _GetPrimAdapter(*iter);
-            if (!adapter) {
+            if (!adapter || adapter->IsPopulatedIndirectly()) {
                 continue;
             }
                 

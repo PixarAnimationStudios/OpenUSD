@@ -250,6 +250,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         UsdPrimRange &range = treeStack.back();
         UsdPrimRange::iterator iter = range.begin();
         if (UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(*iter)) {
+            if (adapter->IsPopulatedIndirectly()) {
+                range.set_begin(++iter);
+                continue;
+            }
+
             primCount++;
 
             //
