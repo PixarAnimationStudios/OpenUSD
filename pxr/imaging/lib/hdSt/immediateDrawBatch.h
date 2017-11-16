@@ -47,21 +47,21 @@ public:
 
     // HdSt_DrawBatch overrides
     HDST_API
-    virtual bool Validate(bool deepValidation);
+    virtual bool Validate(bool deepValidation) override;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
     virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdResourceRegistrySharedPtr const & resourceRegistry);
+                             HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
     virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdResourceRegistrySharedPtr const & resourceRegistry);
+                             HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
 protected:
     HDST_API
-    virtual void _Init(HdStDrawItemInstance * drawItemInstance);
+    virtual void _Init(HdStDrawItemInstance * drawItemInstance) override;
 };
 
 

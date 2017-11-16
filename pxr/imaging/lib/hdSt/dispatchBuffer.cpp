@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/dispatchBuffer.h"
+#include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 
@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hd_DispatchBufferArrayRange : public HdBufferArrayRangeGL {
 public:
     /// Constructor.
-    Hd_DispatchBufferArrayRange(HdDispatchBuffer *buffer) :
+    Hd_DispatchBufferArrayRange(HdStDispatchBuffer *buffer) :
         _buffer(buffer) {
     }
 
@@ -150,11 +150,11 @@ protected:
     }
 
 private:
-    HdDispatchBuffer *_buffer;
+    HdStDispatchBuffer *_buffer;
 };
 
 
-HdDispatchBuffer::HdDispatchBuffer(TfToken const &role, int count,
+HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
                                    unsigned int commandNumUints)
     : HdBufferArray(role, TfToken()), _count(count), _commandNumUints(commandNumUints)
 {
@@ -188,7 +188,7 @@ HdDispatchBuffer::HdDispatchBuffer(TfToken const &role, int count,
     _bar = HdBufferArrayRangeGLSharedPtr(new Hd_DispatchBufferArrayRange(this));
 }
 
-HdDispatchBuffer::~HdDispatchBuffer()
+HdStDispatchBuffer::~HdStDispatchBuffer()
 {
     GLuint id = _entireResource->GetId();
     glDeleteBuffers(1, &id);
@@ -196,7 +196,7 @@ HdDispatchBuffer::~HdDispatchBuffer()
 }
 
 void
-HdDispatchBuffer::CopyData(std::vector<GLuint> const &data)
+HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
 {
     if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
@@ -218,7 +218,7 @@ HdDispatchBuffer::CopyData(std::vector<GLuint> const &data)
 }
 
 void
-HdDispatchBuffer::AddBufferResourceView(
+HdStDispatchBuffer::AddBufferResourceView(
     TfToken const &name, GLenum glDataType, int numComponents, int offset)
 {
     size_t stride = _commandNumUints * sizeof(GLuint);
@@ -234,27 +234,27 @@ HdDispatchBuffer::AddBufferResourceView(
 
 
 bool
-HdDispatchBuffer::GarbageCollect()
+HdStDispatchBuffer::GarbageCollect()
 {
-    TF_CODING_ERROR("HdDispatchBuffer doesn't support this operation");
+    TF_CODING_ERROR("HdStDispatchBuffer doesn't support this operation");
     return false;
 }
 
 void
-HdDispatchBuffer::Reallocate(std::vector<HdBufferArrayRangeSharedPtr> const &,
+HdStDispatchBuffer::Reallocate(std::vector<HdBufferArrayRangeSharedPtr> const &,
                              HdBufferArraySharedPtr const &)
 {
-    TF_CODING_ERROR("HdDispatchBuffer doesn't support this operation");
+    TF_CODING_ERROR("HdStDispatchBuffer doesn't support this operation");
 }
 
 void
-HdDispatchBuffer::DebugDump(std::ostream &out) const
+HdStDispatchBuffer::DebugDump(std::ostream &out) const
 {
     /*nothing*/
 }
 
 HdBufferResourceGLSharedPtr
-HdDispatchBuffer::GetResource() const
+HdStDispatchBuffer::GetResource() const
 {
     HD_TRACE_FUNCTION();
 
@@ -276,7 +276,7 @@ HdDispatchBuffer::GetResource() const
 }
 
 HdBufferResourceGLSharedPtr
-HdDispatchBuffer::GetResource(TfToken const& name)
+HdStDispatchBuffer::GetResource(TfToken const& name)
 {
     HD_TRACE_FUNCTION();
 
@@ -290,7 +290,7 @@ HdDispatchBuffer::GetResource(TfToken const& name)
 }
 
 HdBufferResourceGLSharedPtr
-HdDispatchBuffer::_AddResource(TfToken const& name,
+HdStDispatchBuffer::_AddResource(TfToken const& name,
                             int glDataType,
                             short numComponents,
                             int arraySize,

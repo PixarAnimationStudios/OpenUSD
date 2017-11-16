@@ -43,7 +43,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdDrawItem;
 class HdStDrawItemInstance;
 
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef boost::shared_ptr<class HdStResourceRegistry>
+    HdStResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdSt_DrawBatch> HdSt_DrawBatchSharedPtr;
 typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
@@ -66,12 +67,12 @@ public:
     /// Prepare the command buffer for draw
     HDST_API
     void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                     HdResourceRegistrySharedPtr const &resourceRegistry);
+                     HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Execute the command buffer
     HDST_API
     void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                     HdResourceRegistrySharedPtr const &resourceRegistry);
+                     HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix
     HDST_API

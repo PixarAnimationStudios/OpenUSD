@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/debugCodes.h"
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -92,14 +92,14 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
 void
 HdSt_ImmediateDrawBatch::PrepareDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
 }
 
 void
 HdSt_ImmediateDrawBatch::ExecuteDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 

@@ -21,12 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_PERSISTENT_BUFFER_H
-#define HD_PERSISTENT_BUFFER_H
+#ifndef HDST_PERSISTENT_BUFFER_H
+#define HDST_PERSISTENT_BUFFER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/resourceGL.h"
 
 #include <boost/shared_ptr.hpp>
@@ -34,19 +33,19 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
+typedef boost::shared_ptr<class HdStPersistentBuffer> HdStPersistentBufferSharedPtr;
 
-/// \class HdPersistentBuffer
+/// \class HdStPersistentBuffer
 ///
 /// A buffer used to prepare data on the GPU that has a persistent mapping
 /// from the CPU.
 ///
-class HdPersistentBuffer : public HdResourceGL {
+class HdStPersistentBuffer : public HdResourceGL {
 public:
-    HD_API
-    HdPersistentBuffer(TfToken const &role, size_t dataSize, void* data);
-    HD_API
-    ~HdPersistentBuffer();
+    HDST_API
+    HdStPersistentBuffer(TfToken const &role, size_t dataSize, void* data);
+    HDST_API
+    ~HdStPersistentBuffer();
 
     /// Returns the mapped address
     void * GetMappedAddress() const { return _mappedAddress; }
@@ -58,4 +57,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_PERSISTENT_BUFFER_H
+#endif  // HDST_PERSISTENT_BUFFER_H

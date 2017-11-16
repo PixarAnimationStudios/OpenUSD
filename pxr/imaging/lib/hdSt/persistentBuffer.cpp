@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/persistentBuffer.h"
+#include "pxr/imaging/hdSt/persistentBuffer.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 
@@ -32,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdPersistentBuffer::HdPersistentBuffer(
+HdStPersistentBuffer::HdStPersistentBuffer(
     TfToken const &role, size_t dataSize, void* data)
     : HdResourceGL(role)
     , _mappedAddress(0)
@@ -72,7 +72,7 @@ HdPersistentBuffer::HdPersistentBuffer(
     SetAllocation(newId, dataSize);
 }
 
-HdPersistentBuffer::~HdPersistentBuffer()
+HdStPersistentBuffer::~HdStPersistentBuffer()
 {
     GLuint id = GetId();
     if (id) {

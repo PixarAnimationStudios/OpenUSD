@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/drawBatch.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/codeGen.h"
@@ -37,7 +38,6 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -179,7 +179,7 @@ HdSt_DrawBatch::Rebuild()
 HdSt_DrawBatch::_DrawingProgram &
 HdSt_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
                                  bool indirect,
-                                 HdResourceRegistrySharedPtr const &resourceRegistry)
+                                 HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -258,7 +258,7 @@ bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdDrawItem const *drawItem,
         bool indirect,
-        HdResourceRegistrySharedPtr const &resourceRegistry)
+        HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

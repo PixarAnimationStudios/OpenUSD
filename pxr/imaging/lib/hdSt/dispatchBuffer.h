@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_DISPATCH_BUFFER_H
-#define HD_DISPATCH_BUFFER_H
+#ifndef HDST_DISPATCH_BUFFER_H
+#define HDST_DISPATCH_BUFFER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
@@ -37,9 +37,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdDispatchBuffer> HdDispatchBufferSharedPtr;
+typedef boost::shared_ptr<class HdStDispatchBuffer> HdStDispatchBufferSharedPtr;
 
-/// \class HdDispatchBuffer
+/// \class HdStDispatchBuffer
 ///
 /// A VBO of a simple array of GLuint.
 ///
@@ -87,23 +87,23 @@ typedef boost::shared_ptr<class HdDispatchBuffer> HdDispatchBufferSharedPtr;
 /// XXX: it would be better to generalize this class not only for dispatch
 /// buffer, if we see other similar use-cases.
 ///
-class HdDispatchBuffer : public HdBufferArray {
+class HdStDispatchBuffer : public HdBufferArray {
 public:
     /// Constructor. commandNumUints is given in how many integers.
-    HD_API
-    HdDispatchBuffer(TfToken const &role, int count,
+    HDST_API
+    HdStDispatchBuffer(TfToken const &role, int count,
                      unsigned int commandNumUints);
 
     /// Destructor.
-    HD_API
-    ~HdDispatchBuffer();
+    HDST_API
+    ~HdStDispatchBuffer();
 
     /// Update entire buffer data
-    HD_API
+    HDST_API
     void CopyData(std::vector<GLuint> const &data);
 
     /// Add an interleaved view to this buffer.
-    HD_API
+    HDST_API
     void AddBufferResourceView(TfToken const &name, GLenum glDataType,
                                int numComponents, int offset);
 
@@ -125,26 +125,26 @@ public:
     }
 
     // HdBufferArray overrides. they are not supported in this class.
-    HD_API
+    HDST_API
     virtual bool GarbageCollect();
-    HD_API
+    HDST_API
     virtual void Reallocate(
         std::vector<HdBufferArrayRangeSharedPtr> const &,
         HdBufferArraySharedPtr const &);
 
-    HD_API
+    HDST_API
     virtual void DebugDump(std::ostream &out) const;
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
-    HD_API
+    HDST_API
     HdBufferResourceGLSharedPtr GetResource() const;
 
     /// Returns the named GPU resource. This method returns the first found
-    /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
+    /// resource. In HDST_SAFE_MODE it checkes all underlying GL buffers
     /// in _resourceMap and raises a coding error if there are more than
     /// one GL buffers exist.
-    HD_API
+    HDST_API
     HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
 
     /// Returns the list of all named GPU resources for this bufferArray.
@@ -152,7 +152,7 @@ public:
 
 protected:
     /// Adds a new, named GPU resource and returns it.
-    HD_API
+    HDST_API
     HdBufferResourceGLSharedPtr _AddResource(TfToken const& name,
                                            int glDataType,
                                            short numComponents,
@@ -171,4 +171,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_DISPATCH_BUFFER_H
+#endif  // HDST_DISPATCH_BUFFER_H

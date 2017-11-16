@@ -53,7 +53,6 @@ pxr_library(hd
         copyComputation
         debugCodes
         dirtyList
-        dispatchBuffer
         drawingCoord
         drawItem
         engine
@@ -78,7 +77,6 @@ pxr_library(hd
         package
         patchIndex
         perfLog
-        persistentBuffer
         points
         primGather
         primTypeIndex

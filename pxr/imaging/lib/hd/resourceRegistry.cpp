@@ -28,8 +28,6 @@
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/copyComputation.h"
-#include "pxr/imaging/hd/dispatchBuffer.h"
-#include "pxr/imaging/hd/persistentBuffer.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/interleavedMemoryManager.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -620,8 +618,14 @@ HdResourceRegistry::GarbageCollect()
     // Cleanup texture registries
     _textureResourceRegistry.GarbageCollect();
 
-    GarbageCollectDispatchBuffers();
-    GarbageCollectPersistentBuffers();
+    // Prompt derived registries to collect their garbage.
+    _GarbageCollect();
+}
+
+void
+HdResourceRegistry::_GarbageCollect()
+{
+    /* NOTHING */
 }
 
 VtDictionary
@@ -667,52 +671,8 @@ HdResourceRegistry::GetResourceAllocation() const
 
         // the role of program and global uniform buffer is always same.
         std::string const &role = program->GetProgram().GetRole().GetString();
-        if (result.count(role)) {
-            size_t currentSize = result[role].Get<size_t>();
-            result[role] = VtValue(currentSize + size);
-        } else {
-            result[role] = VtValue(size);
-        }
-
-        gpuMemoryUsed += size;
-    }
-
-    // dispatch buffers
-    TF_FOR_ALL (bufferIt, _dispatchBufferRegistry) {
-        HdDispatchBufferSharedPtr buffer = (*bufferIt);
-        if (!TF_VERIFY(buffer)) {
-            continue;
-        }
-
-        std::string const & role = buffer->GetRole().GetString();
-        size_t size = size_t(buffer->GetEntireResource()->GetSize());
-
-        if (result.count(role)) {
-            size_t currentSize = result[role].Get<size_t>();
-            result[role] = VtValue(currentSize + size);
-        } else {
-            result[role] = VtValue(size);
-        }
-
-        gpuMemoryUsed += size;
-    }
-
-    // persistent buffers
-    TF_FOR_ALL (bufferIt, _persistentBufferRegistry) {
-        HdPersistentBufferSharedPtr buffer = (*bufferIt);
-        if (!TF_VERIFY(buffer)) {
-            continue;
-        }
-
-        std::string const & role = buffer->GetRole().GetString();
-        size_t size = size_t(buffer->GetSize());
-
-        if (result.count(role)) {
-            size_t currentSize = result[role].Get<size_t>();
-            result[role] = VtValue(currentSize + size);
-        } else {
-            result[role] = VtValue(size);
-        }
+        result[role] = VtDictionaryGet<size_t>(result, role,
+                                               VtDefault = 0) + size;
 
         gpuMemoryUsed += size;
     }
@@ -743,9 +703,22 @@ HdResourceRegistry::GetResourceAllocation() const
 
     result[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 
+    // Prompt derived registries to tally their resources.
+    _TallyResourceAllocation(&result);
+
+    gpuMemoryUsed =
+        VtDictionaryGet<size_t>(result, HdPerfTokens->gpuMemoryUsed.GetString(),
+                                VtDefault = 0);
+
     HD_PERF_COUNTER_SET(HdPerfTokens->gpuMemoryUsed, gpuMemoryUsed);
 
     return result;
+}
+
+void
+HdResourceRegistry::_TallyResourceAllocation(VtDictionary*) const
+{
+    /* NOTHING */
 }
 
 static bool _IsEnabledTopologyInstancing()
@@ -873,57 +846,6 @@ std::ostream &operator <<(std::ostream &out,
     out << self._singleBufferArrayRegistry;
 
     return out;
-}
-
-HdDispatchBufferSharedPtr
-HdResourceRegistry::RegisterDispatchBuffer(
-    TfToken const &role, int count, int commandNumUints)
-{
-    HdDispatchBufferSharedPtr result(
-        new HdDispatchBuffer(role, count, commandNumUints));
-
-    _dispatchBufferRegistry.push_back(result);
-
-    return result;
-}
-
-void
-HdResourceRegistry::GarbageCollectDispatchBuffers()
-{
-    HD_TRACE_FUNCTION();
-
-    _dispatchBufferRegistry.erase(
-        std::remove_if(
-            _dispatchBufferRegistry.begin(), _dispatchBufferRegistry.end(),
-            std::bind(&HdDispatchBufferSharedPtr::unique,
-                      std::placeholders::_1)),
-        _dispatchBufferRegistry.end());
-}
-
-
-HdPersistentBufferSharedPtr
-HdResourceRegistry::RegisterPersistentBuffer(
-        TfToken const &role, size_t dataSize, void *data)
-{
-    HdPersistentBufferSharedPtr result(
-            new HdPersistentBuffer(role, dataSize, data));
-
-    _persistentBufferRegistry.push_back(result);
-
-    return result;
-}
-
-void
-HdResourceRegistry::GarbageCollectPersistentBuffers()
-{
-    HD_TRACE_FUNCTION();
-
-    _persistentBufferRegistry.erase(
-        std::remove_if(
-            _persistentBufferRegistry.begin(), _persistentBufferRegistry.end(),
-            std::bind(&HdPersistentBufferSharedPtr::unique,
-                      std::placeholders::_1)),
-        _persistentBufferRegistry.end());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

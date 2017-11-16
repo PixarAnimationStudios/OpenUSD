@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/shaderCode.h"
@@ -109,7 +109,7 @@ HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
 
 HdSt_IndirectDrawBatch::_CullingProgram &
 HdSt_IndirectDrawBatch::_GetCullingProgram(
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_cullingProgram.GetGLSLProgram() || 
         _lastTinyPrimCulling != IsEnabledGPUTinyPrimCulling()) {
@@ -189,7 +189,7 @@ HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 
 void
 HdSt_IndirectDrawBatch::_CompileBatch(
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -856,7 +856,7 @@ HdSt_IndirectDrawBatch::_ValidateCompatibility(
 void
 HdSt_IndirectDrawBatch::PrepareDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     if (!glBindBuffer) return; // glew initialized
@@ -991,7 +991,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 void
 HdSt_IndirectDrawBatch::ExecuteDraw(
     HdRenderPassStateSharedPtr const &renderPassState,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -1191,7 +1191,7 @@ void
 HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     HdDrawItem const *batchItem,
     HdRenderPassStateSharedPtr const &renderPassState,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
         batchItem->GetConstantPrimVarRange();
@@ -1341,7 +1341,7 @@ void
 HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     HdDrawItem const *batchItem,
     HdRenderPassStateSharedPtr const &renderPassState,
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
         batchItem->GetConstantPrimVarRange();
@@ -1459,7 +1459,7 @@ HdSt_IndirectDrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* inst
 
 void
 HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
-    HdResourceRegistrySharedPtr const &resourceRegistry)
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     if (!_resultBuffer) {
         _resultBuffer = 

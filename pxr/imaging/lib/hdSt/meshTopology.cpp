@@ -29,12 +29,12 @@
 #include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/triangulate.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -108,7 +108,7 @@ HdSt_MeshTopology::GetTriangleIndexBuilderComputation(SdfPath const &id)
 
 HdSt_QuadInfoBuilderComputationSharedPtr
 HdSt_MeshTopology::GetQuadInfoBuilderComputation(
-    bool gpu, SdfPath const &id, HdResourceRegistry *resourceRegistry)
+    bool gpu, SdfPath const &id, HdStResourceRegistry *resourceRegistry)
 {
     HdSt_QuadInfoBuilderComputationSharedPtr builder(
         new HdSt_QuadInfoBuilderComputation(this, id));

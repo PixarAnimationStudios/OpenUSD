@@ -34,10 +34,10 @@
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/shader.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/texture.h"
 
 #include "pxr/imaging/glf/glslfx.h"
@@ -67,7 +67,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
 std::atomic_int HdStRenderDelegate::_counterResourceRegistry;
-HdResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
+HdStResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
 
 HdStRenderDelegate::HdStRenderDelegate()
 {
@@ -77,7 +77,7 @@ HdStRenderDelegate::HdStRenderDelegate()
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
     
     if (_counterResourceRegistry.fetch_add(1) == 0) {
-        _resourceRegistry.reset( new HdResourceRegistry() );
+        _resourceRegistry.reset( new HdStResourceRegistry() );
         HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
     }
 }

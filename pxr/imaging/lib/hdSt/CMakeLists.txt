@@ -22,6 +22,7 @@ pxr_library(hdSt
         basisCurves
         camera
         commandBuffer
+        dispatchBuffer
         drawItemInstance
         drawTarget
         drawTargetAttachmentDesc
@@ -32,9 +33,11 @@ pxr_library(hdSt
         light      
         mesh
         mixinShaderCode
+        persistentBuffer
         points
         renderDelegate
         renderPass
+        resourceRegistry
         shader
         surfaceShader
 

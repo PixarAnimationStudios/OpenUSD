@@ -23,12 +23,12 @@
 //
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -61,8 +61,9 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     _PrepareCommandBuffer(renderPassState);
 
     // Get the resource registry
-    HdResourceRegistrySharedPtr const& resourceRegistry =
-        GetRenderIndex()->GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        boost::static_pointer_cast<HdStResourceRegistry>(
+        GetRenderIndex()->GetResourceRegistry());
 
     // renderTags.empty() means draw everything in the collection.
     if (renderTags.empty()) {

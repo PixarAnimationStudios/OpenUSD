@@ -26,13 +26,13 @@
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/matrix4f.h"
@@ -77,7 +77,7 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 
 void
 HdStCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdResourceRegistrySharedPtr const &resourceRegistry)
+                             HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -88,7 +88,7 @@ HdStCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState
 
 void
 HdStCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdResourceRegistrySharedPtr const &resourceRegistry)
+                             HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 

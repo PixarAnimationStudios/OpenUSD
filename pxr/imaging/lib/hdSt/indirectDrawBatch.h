@@ -27,9 +27,9 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/dispatchBuffer.h"
+#include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
-#include "pxr/imaging/hd/persistentBuffer.h"
+#include "pxr/imaging/hdSt/persistentBuffer.h"
 
 #include <vector>
 
@@ -60,12 +60,12 @@ public:
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
     virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdResourceRegistrySharedPtr const &resourceRegistry);
+                             HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
     virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdResourceRegistrySharedPtr const &resourceRegistry);
+                             HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     HDST_API
     virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance);
@@ -90,7 +90,7 @@ public:
 
 protected:
     HDST_API
-    virtual void _Init(HdStDrawItemInstance * drawItemInstance);
+    virtual void _Init(HdStDrawItemInstance * drawItemInstance) override;
 
 private:
     void _ValidateCompatibility(
@@ -125,32 +125,32 @@ private:
     };
 
     _CullingProgram &_GetCullingProgram(
-        HdResourceRegistrySharedPtr const &resourceRegistry);
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _CompileBatch(HdResourceRegistrySharedPtr const &resourceRegistry);
+    void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCulling(HdDrawItem const *item,
                             HdRenderPassStateSharedPtr const &renderPassState,
-                            HdResourceRegistrySharedPtr const &resourceRegistry);
+                            HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCullingXFB(HdDrawItem const *item,
                                HdRenderPassStateSharedPtr const &renderPassState,
-                               HdResourceRegistrySharedPtr const &resourceRegistry);
+                               HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _BeginGPUCountVisibleInstances(HdResourceRegistrySharedPtr const &resourceRegistry);
+    void _BeginGPUCountVisibleInstances(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     // GLsync is not defined in gl.h. It's defined in spec as an opaque pointer:
     typedef struct __GLsync *GLsync;
     void _EndGPUCountVisibleInstances(GLsync resultSync, size_t * result);
 
-    HdDispatchBufferSharedPtr _dispatchBuffer;
-    HdDispatchBufferSharedPtr _dispatchBufferCullInput;
+    HdStDispatchBufferSharedPtr _dispatchBuffer;
+    HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
 
     std::vector<GLuint> _drawCommandBuffer;
     bool _drawCommandBufferDirty;
     size_t _bufferArraysHash;
 
-    HdPersistentBufferSharedPtr _resultBuffer;
+    HdStPersistentBufferSharedPtr _resultBuffer;
 
     size_t _numVisibleItems;
     size_t _numTotalVertices;

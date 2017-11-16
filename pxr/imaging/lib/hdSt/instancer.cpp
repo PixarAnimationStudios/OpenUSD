@@ -25,10 +25,10 @@
 
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,8 +105,9 @@ HdStInstancer::GetInstancePrimVars()
         // check the dirtyBits of this instancer so that the instance primvar will
         // be updated just once even if there're multiple prototypes.
         if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
-            HdResourceRegistrySharedPtr const& resourceRegistry = 
-                GetDelegate()->GetRenderIndex().GetResourceRegistry();
+            HdStResourceRegistrySharedPtr const& resourceRegistry = 
+                boost::static_pointer_cast<HdStResourceRegistry>(
+                GetDelegate()->GetRenderIndex().GetResourceRegistry());
 
             TfTokenVector primVarNames;
             primVarNames = GetDelegate()->GetPrimVarInstanceNames(instancerId);
@@ -260,8 +261,9 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     // the prototype has DirtyInstanceIndex. There's no need to guard using
     // dirtyBits within this function.
 
-    HdResourceRegistrySharedPtr const& resourceRegistry = 
-        GetDelegate()->GetRenderIndex().GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        boost::static_pointer_cast<HdStResourceRegistry>(
+        GetDelegate()->GetRenderIndex().GetResourceRegistry());
 
     // delegate provides sparse index array for prototypeId.
     std::vector<VtIntArray> instanceIndicesArray;
