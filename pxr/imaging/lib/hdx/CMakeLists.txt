@@ -140,4 +140,18 @@ pxr_build_test(testHdxPickingWithReprAndRefineChanges
         unitTestUtils.cpp
         testenv/testHdxPickingWithReprAndRefineChanges.cpp
 )
+pxr_build_test(testHdxUnpickablesAsOccluders
+    LIBRARIES
+        hdx
+        hd
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestGLDrawing.cpp
+        unitTestUtils.cpp
+        testenv/testHdxUnpickablesAsOccluders.cpp
+)
 endif()

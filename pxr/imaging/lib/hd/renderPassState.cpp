@@ -70,6 +70,8 @@ HdRenderPassState::HdRenderPassState()
     , _depthFunc(HdCmpFuncLEqual)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
+    , _colorMaskUseDefault(true)
+    , _colorMask(HdRenderPassState::ColorMaskRGBA)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -95,6 +97,9 @@ HdRenderPassState::HdRenderPassState(
     , _depthFunc(HdCmpFuncLEqual)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
+    , _colorMaskUseDefault(true)
+    , _colorMask(HdRenderPassState::ColorMaskRGBA)
+
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -362,6 +367,18 @@ HdRenderPassState::SetAlphaToCoverageEnabled(bool enabled)
 }
 
 void
+HdRenderPassState::SetColorMaskUseDefault(bool useDefault)
+{
+    _colorMaskUseDefault = useDefault;
+}
+
+void
+HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
+{
+    _colorMask = mask;
+}
+
+void
 HdRenderPassState::Bind()
 {
     // XXX: this states set will be refactored as hdstream PSO.
@@ -396,6 +413,20 @@ HdRenderPassState::Bind()
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
         glEnable(GL_CLIP_DISTANCE0 + i);
     }
+
+    if (!_colorMaskUseDefault) {
+        switch(_colorMask) {
+            case HdRenderPassState::ColorMaskNone:
+                glColorMask(false, false, false, false);
+                break;
+            case HdRenderPassState::ColorMaskRGB:
+                glColorMask(true, true, true, false);
+                break;
+            case HdRenderPassState::ColorMaskRGBA:
+                glColorMask(true, true, true, true);
+                break;
+        }
+    }
 }
 
 void
@@ -412,6 +443,8 @@ HdRenderPassState::Unbind()
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
         glDisable(GL_CLIP_DISTANCE0 + i);
     }
+
+    glColorMask(true, true, true, true);
 }
 
 size_t
