@@ -1990,9 +1990,10 @@ class StageView(QtOpenGL.QGLWidget):
         with respect to our owner's time.
         """
         viewState = {}
-        for attr in ["_cameraPrim", "_stageIsZup",
-                     "_overrideNear", "_overrideFar" ]:
-            viewState[attr] = getattr(self, attr)
+        viewState["_cameraPrim"] = self._cameraPrim
+        viewState["_stageIsZup"] = self._stageIsZup
+        viewState["_overrideNear"] = self._overrideNear
+        viewState["_overrideFar"] = self._overrideFar
         # Since FreeCamera is a compound/class object, we must copy
         # it more deeply
         viewState["_freeCamera"] = self._dataModel.freeCamera.clone() if self._dataModel.freeCamera else None
@@ -2000,12 +2001,16 @@ class StageView(QtOpenGL.QGLWidget):
 
     def restoreViewState(self, viewState):
         """Restore view parameters from 'viewState', and redraw"""
-        for key,val in viewState.iteritems():
-            setattr(self, key, val)
+        self._cameraPrim = viewState["_cameraPrim"]
+        self._stageIsZup = viewState["_stageIsZup"]
+        self._overrideNear = viewState["_overrideNear"]
+        self._overrideFar = viewState["_overrideFar"]
+
+        restoredCamera = viewState["_freeCamera"]
         # Detach our freeCamera from the given viewState, to
         # insulate against changes to viewState by caller
-        if viewState.has_key("_freeCamera") and self._dataModel.freeCamera:
-            self._dataModel.freeCamera = self._dataModel.freeCamera.clone()
+        self._dataModel.freeCamera = restoredCamera.clone() if restoredCamera else None
+
         self.update()
 
     def drawWireframeCube(self, col, mvpMatrix):
