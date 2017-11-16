@@ -24,6 +24,7 @@
 #
 
 from pxr import UsdImagingGL
+from pxr.Usdviewq.qt import QtWidgets
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
@@ -36,6 +37,14 @@ def _takeShot(appController, fileName):
     viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
+def _emitFrameAction(appController):
+    appController._ui.actionFrame_Selection.triggered.emit() 
+    QtWidgets.QApplication.processEvents()
+
+def _emitToggleFrameAction(appController):
+    appController._ui.actionToggle_Framed_View.triggered.emit() 
+    QtWidgets.QApplication.processEvents()
+
 # Test frame selection and toggling between cached frame views.
 def _testFrameSelection(appController):
 
@@ -43,14 +52,13 @@ def _testFrameSelection(appController):
 
     appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
     appController._itemSelectionChanged()
-    appController._ui.actionFrame_Selection.triggered.emit()
+    _emitFrameAction(appController)
 
     _takeShot(appController, "framed.png")
 
     # Toggle back to the start camera.
 
-    appController._ui.actionToggle_Framed_View.triggered.emit()
-
+    _emitToggleFrameAction(appController)
     _takeShot(appController, "toggleToStart.png")
 
     # Rotate the start camera.
@@ -62,8 +70,7 @@ def _testFrameSelection(appController):
 
     # Toggle back to the framed camera, and make sure it did not rotate as well.
 
-    appController._ui.actionToggle_Framed_View.triggered.emit()
-
+    _emitToggleFrameAction(appController)
     _takeShot(appController, "toggleToFramed.png")
 
 # Test that selection highlighting works properly in usdview
