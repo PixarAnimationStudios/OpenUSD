@@ -40,7 +40,8 @@ PxrUsdMayaShadingModeExporter::DoExport(
     const UsdStageRefPtr& stage,
     const PxrUsdMayaUtil::ShapeSet& bindableRoots,
     bool mergeTransformAndShape,
-    const SdfPath& overrideRootPath) {
+    const SdfPath& overrideRootPath,
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&) {
     MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
     for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
         MObject shadingEngine(shadingEngineIter.thisNode());
