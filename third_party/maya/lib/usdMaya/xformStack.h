@@ -297,6 +297,7 @@ public:
     ///
     /// Returns the first non-empty result it finds; if all stacks
     /// return an empty vector, an empty vector is returned.
+    PXRUSDMAYA_API
     static OpClassList
     FirstMatchingSubstack(
             const std::vector<PxrUsdMayaXformStack const *>& stacks,

@@ -223,7 +223,7 @@ void wrapXformStack()
     boost::python::to_python_converter<PxrUsdMayaXformOpClassification,
             Usd_PyXformOpClassification>();
 
-    class_<PxrUsdMayaXformStack, boost::noncopyable>("XformStack", no_init)
+    class_<PxrUsdMayaXformStack>("XformStack", no_init)
         .def("GetOps", &PxrUsdMayaXformStack::GetOps,
                 return_value_policy<TfPySequenceToList>())
         .def("GetInversionTwins", &Usd_PyXformStack::GetInversionTwins)
