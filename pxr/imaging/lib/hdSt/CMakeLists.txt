@@ -40,6 +40,7 @@ pxr_library(hdSt
         resourceRegistry
         shader
         surfaceShader
+        unitTestGLDrawing
 
     PUBLIC_HEADERS
         api.h

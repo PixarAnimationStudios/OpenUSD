@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_UNIT_TEST_DRAWING_GL
-#define HD_UNIT_TEST_DRAWING_GL
+#ifndef HDST_UNIT_TEST_DRAWING_GL
+#define HDST_UNIT_TEST_DRAWING_GL
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -35,48 +35,48 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hd_UnitTestWindow;
+class HdSt_UnitTestWindow;
 
-/// \class Hd_UnitTestGLDrawing
+/// \class HdSt_UnitTestGLDrawing
 ///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
-class Hd_UnitTestGLDrawing {
+class HdSt_UnitTestGLDrawing {
 public:
-    HD_API
-    Hd_UnitTestGLDrawing();
-    HD_API
-    virtual ~Hd_UnitTestGLDrawing();
+    HDST_API
+    HdSt_UnitTestGLDrawing();
+    HDST_API
+    virtual ~HdSt_UnitTestGLDrawing();
 
-    HD_API
+    HDST_API
     int GetWidth() const;
-    HD_API
+    HDST_API
     int GetHeight() const;
-    HD_API
+    HDST_API
     void RunTest(int argc, char *argv[]);
 
     virtual void InitTest() = 0;
     virtual void DrawTest() = 0;        // interactive mode
     virtual void OffscreenTest() = 0;   // offscreen mode (automated test)
 
-    HD_API
+    HDST_API
     virtual void MousePress(int button, int x, int y);
-    HD_API
+    HDST_API
     virtual void MouseRelease(int button, int x, int y);
-    HD_API
+    HDST_API
     virtual void MouseMove(int x, int y);
-    HD_API
+    HDST_API
     virtual void KeyRelease(int key);
 
-    HD_API
+    HDST_API
     virtual void Idle();
 
-    HD_API
+    HDST_API
     bool WriteToFile(std::string const & attachment,
                      std::string const & filename) const;
 
 protected:
-    HD_API
+    HDST_API
     virtual void ParseArgs(int argc, char *argv[]);
 
     void SetCameraRotate(float rx, float ry) {
@@ -88,15 +88,15 @@ protected:
     GfVec3f GetCameraTranslate() const {
         return _translate;
     }
-    HD_API
+    HDST_API
     GfMatrix4d GetViewMatrix() const;
-    HD_API
+    HDST_API
     GfMatrix4d GetProjectionMatrix() const;
-    HD_API
+    HDST_API
     GfFrustum GetFrustum() const;
 
 private:
-    Hd_UnitTestWindow *_widget;
+    HdSt_UnitTestWindow *_widget;
     float _rotate[2];
     GfVec3f _translate;
 
@@ -107,4 +107,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_UNIT_TEST_DRAWING_GL
+#endif // HDST_UNIT_TEST_DRAWING_GL

@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/unitTestGLDrawing.h"
+#include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
@@ -39,14 +39,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hd_UnitTestWindow : public GarchGLDebugWindow {
+class HdSt_UnitTestWindow : public GarchGLDebugWindow {
 public:
-    typedef Hd_UnitTestWindow This;
+    typedef HdSt_UnitTestWindow This;
 
 public:
-    Hd_UnitTestWindow(Hd_UnitTestGLDrawing * unitTest,
+    HdSt_UnitTestWindow(HdSt_UnitTestGLDrawing * unitTest,
                                 int width, int height);
-    virtual ~Hd_UnitTestWindow();
+    virtual ~HdSt_UnitTestWindow();
 
     void OffscreenTest();
 
@@ -66,26 +66,26 @@ public:
     virtual void OnMouseMove(int x, int y, int modKeys);
 
 private:
-    Hd_UnitTestGLDrawing *_unitTest;
+    HdSt_UnitTestGLDrawing *_unitTest;
     GlfDrawTargetRefPtr _drawTarget;
     bool _animate;
 };
 
-Hd_UnitTestWindow::Hd_UnitTestWindow(
-    Hd_UnitTestGLDrawing * unitTest, int w, int h)
+HdSt_UnitTestWindow::HdSt_UnitTestWindow(
+    HdSt_UnitTestGLDrawing * unitTest, int w, int h)
     : GarchGLDebugWindow("Hd Test", w, h)
     , _unitTest(unitTest)
     , _animate(false)
 {
 }
 
-Hd_UnitTestWindow::~Hd_UnitTestWindow()
+HdSt_UnitTestWindow::~HdSt_UnitTestWindow()
 {
 }
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnInitializeGL()
+HdSt_UnitTestWindow::OnInitializeGL()
 {
     GlfGlewInit();
     GlfRegisterDefaultDebugOutputMessageCallback();
@@ -110,14 +110,14 @@ Hd_UnitTestWindow::OnInitializeGL()
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnUninitializeGL()
+HdSt_UnitTestWindow::OnUninitializeGL()
 {
     _drawTarget = GlfDrawTargetRefPtr();
 }
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnPaintGL()
+HdSt_UnitTestWindow::OnPaintGL()
 {
     //
     // Update the draw target's size and execute the unit test with
@@ -147,7 +147,7 @@ Hd_UnitTestWindow::OnPaintGL()
 }
 
 void
-Hd_UnitTestWindow::OffscreenTest()
+HdSt_UnitTestWindow::OffscreenTest()
 {
     _drawTarget->Bind();
     _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
@@ -158,14 +158,14 @@ Hd_UnitTestWindow::OffscreenTest()
 }
 
 void
-Hd_UnitTestWindow::StartTimer()
+HdSt_UnitTestWindow::StartTimer()
 {
     _animate = true;
 }
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnIdle()
+HdSt_UnitTestWindow::OnIdle()
 {
     if (_animate) {
         _unitTest->Idle();
@@ -173,7 +173,7 @@ Hd_UnitTestWindow::OnIdle()
 }
 
 bool
-Hd_UnitTestWindow::WriteToFile(std::string const & attachment,
+HdSt_UnitTestWindow::WriteToFile(std::string const & attachment,
         std::string const & filename)
 {
     _drawTarget->Unbind();
@@ -184,7 +184,7 @@ Hd_UnitTestWindow::WriteToFile(std::string const & attachment,
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnKeyRelease(int key)
+HdSt_UnitTestWindow::OnKeyRelease(int key)
 {
     switch (key) {
     case 'q':
@@ -196,28 +196,28 @@ Hd_UnitTestWindow::OnKeyRelease(int key)
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnMousePress(int button, int x, int y, int modKeys)
+HdSt_UnitTestWindow::OnMousePress(int button, int x, int y, int modKeys)
 {
     _unitTest->MousePress(button, x, y);
 }
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnMouseRelease(int button, int x, int y, int modKeys)
+HdSt_UnitTestWindow::OnMouseRelease(int button, int x, int y, int modKeys)
 {
     _unitTest->MouseRelease(button, x, y);
 }
 
 /* virtual */
 void
-Hd_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
+HdSt_UnitTestWindow::OnMouseMove(int x, int y, int modKeys)
 {
     _unitTest->MouseMove(x, y);
 }
 
 ////////////////////////////////////////////////////////////
 
-Hd_UnitTestGLDrawing::Hd_UnitTestGLDrawing()
+HdSt_UnitTestGLDrawing::HdSt_UnitTestGLDrawing()
     : _widget(NULL)
 {
     _rotate[0] = _rotate[1] = 0;
@@ -227,31 +227,31 @@ Hd_UnitTestGLDrawing::Hd_UnitTestGLDrawing()
     _mouseButton[0] = _mouseButton[1] = _mouseButton[2] = false;
 }
 
-Hd_UnitTestGLDrawing::~Hd_UnitTestGLDrawing()
+HdSt_UnitTestGLDrawing::~HdSt_UnitTestGLDrawing()
 {
 }
 
 int
-Hd_UnitTestGLDrawing::GetWidth() const
+HdSt_UnitTestGLDrawing::GetWidth() const
 {
     return _widget->GetWidth();
 }
 
 int
-Hd_UnitTestGLDrawing::GetHeight() const
+HdSt_UnitTestGLDrawing::GetHeight() const
 {
     return _widget->GetHeight();
 }
 
 bool
-Hd_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
+HdSt_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
         std::string const & filename) const
 {
     return _widget->WriteToFile(attachment, filename);
 }
 
 void
-Hd_UnitTestGLDrawing::RunTest(int argc, char *argv[])
+HdSt_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 {
     bool offscreen = false;
     bool animate = false;
@@ -266,7 +266,7 @@ Hd_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 
     this->ParseArgs(argc, argv);
 
-    _widget = new Hd_UnitTestWindow(this, 640, 480);
+    _widget = new HdSt_UnitTestWindow(this, 640, 480);
     _widget->Init();
 
     if (offscreen) {
@@ -281,19 +281,19 @@ Hd_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 
 /* virtual */
 void
-Hd_UnitTestGLDrawing::Idle()
+HdSt_UnitTestGLDrawing::Idle()
 {
 }
 
 /* virtual */
 void
-Hd_UnitTestGLDrawing::ParseArgs(int argc, char *argv[])
+HdSt_UnitTestGLDrawing::ParseArgs(int argc, char *argv[])
 {
 }
 
 /* virtual */
 void
-Hd_UnitTestGLDrawing::MousePress(int button, int x, int y)
+HdSt_UnitTestGLDrawing::MousePress(int button, int x, int y)
 {
     _mouseButton[button] = true;
     _mousePos[0] = x;
@@ -302,14 +302,14 @@ Hd_UnitTestGLDrawing::MousePress(int button, int x, int y)
 
 /* virtual */
 void
-Hd_UnitTestGLDrawing::MouseRelease(int button, int x, int y)
+HdSt_UnitTestGLDrawing::MouseRelease(int button, int x, int y)
 {
     _mouseButton[button] = false;
 }
 
 /* virtual */
 void
-Hd_UnitTestGLDrawing::MouseMove(int x, int y)
+HdSt_UnitTestGLDrawing::MouseMove(int x, int y)
 {
     int dx = x - _mousePos[0];
     int dy = y - _mousePos[1];
@@ -330,12 +330,12 @@ Hd_UnitTestGLDrawing::MouseMove(int x, int y)
 
 /* virtual */
 void
-Hd_UnitTestGLDrawing::KeyRelease(int key)
+HdSt_UnitTestGLDrawing::KeyRelease(int key)
 {
 }
 
 GfMatrix4d
-Hd_UnitTestGLDrawing::GetViewMatrix() const
+HdSt_UnitTestGLDrawing::GetViewMatrix() const
 {
     GfMatrix4d viewMatrix;
     viewMatrix.SetIdentity();
@@ -349,13 +349,13 @@ Hd_UnitTestGLDrawing::GetViewMatrix() const
 }
 
 GfMatrix4d
-Hd_UnitTestGLDrawing::GetProjectionMatrix() const
+HdSt_UnitTestGLDrawing::GetProjectionMatrix() const
 {
     return GetFrustum().ComputeProjectionMatrix();
 }
 
 GfFrustum
-Hd_UnitTestGLDrawing::GetFrustum() const
+HdSt_UnitTestGLDrawing::GetFrustum() const
 {
     int width = GetWidth();
     int height = GetHeight();

@@ -109,7 +109,6 @@ pxr_library(hd
         tokens
         topology
         unitTestDelegate
-        unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager
         vertexAdjacency
