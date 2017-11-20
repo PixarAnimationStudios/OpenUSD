@@ -45,4 +45,5 @@ void wrapUsdCommon()
     def("Describe", (std::string (*)(const UsdStageCache &)) UsdDescribe);
 
     TfPyWrapEnum<UsdListPosition>();
+    TfPyWrapEnum<UsdLoadPolicy>();
 }

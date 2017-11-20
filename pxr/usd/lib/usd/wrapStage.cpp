@@ -372,13 +372,15 @@ void wrapUsdStage()
         .staticmethod("SetGlobalVariantFallbacks")
 
         .def("Load", &UsdStage::Load,
-             arg("path")=SdfPath::AbsoluteRootPath())
+             (arg("path")=SdfPath::AbsoluteRootPath(),
+              arg("policy")=UsdLoadWithDescendants))
 
         .def("Unload", &UsdStage::Unload,
              arg("path")=SdfPath::AbsoluteRootPath())
 
         .def("LoadAndUnload", &UsdStage::LoadAndUnload,
-             (arg("loadSet"), arg("unloadSet")))
+             (arg("loadSet"), arg("unloadSet"),
+              arg("policy")=UsdLoadWithDescendants))
 
         .def("GetLoadSet", &UsdStage::GetLoadSet,
              return_value_policy<TfPySequenceToList>())

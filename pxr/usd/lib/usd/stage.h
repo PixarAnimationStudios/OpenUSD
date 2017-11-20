@@ -523,8 +523,9 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Load the prim at \p path along with all descendants, ancestors
-    /// and dependencies (relationship targets).
+    /// Load the prim at \p path, its ancestors, and all of its descendants if
+    /// \p policy is UsdLoadWithDescendants.  If \p policy is
+    /// UsdLoadWithoutDescendants, then descendants are not loaded.
     ///
     /// If an instance prim is encountered during this operation, this
     /// function will also load prims in the instance's master. In other
@@ -537,7 +538,8 @@ public:
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath());
+    UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath(),
+                 UsdLoadPolicy policy=UsdLoadWithDescendants);
 
     /// Unload the prim and its descendants specified by \p path.
     ///
@@ -559,14 +561,16 @@ public:
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
     /// unloadSet followed by UsdStage::Load for each item in the loadSet,
-    /// however this method is more efficient as all operations are committed
-    /// in a single batch.
+    /// however this method is more efficient as all operations are committed in
+    /// a single batch.  The \p policy argument is described in the
+    /// documentation for Load().
     ///
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet);
+    void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet,
+                       UsdLoadPolicy policy=UsdLoadWithDescendants);
 
     /// Returns a set of all loaded paths.
     ///
@@ -709,7 +713,8 @@ private:
 
     // A helper function for LoadAndUnload to aggregate notification data
     void _LoadAndUnload(const SdfPathSet&, const SdfPathSet&, 
-                        SdfPathSet*, SdfPathSet*);
+                        SdfPathSet*, SdfPathSet*,
+                        UsdLoadPolicy policy);
 
 public:
 
@@ -1726,6 +1731,7 @@ private:
     // payload has been included. UsdStage::LoadAndUnload takes this into
     // account.
     void _DiscoverPayloads(const SdfPath& rootPath,
+                           UsdLoadPolicy policy,
                            SdfPathSet* primIndexPaths,
                            bool unloadedOnly = false,
                            SdfPathSet* usdPrimPaths = nullptr) const;

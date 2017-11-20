@@ -82,6 +82,9 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdListPositionTempDefault, "Temporary default; "
                      "consults USD_AUTHOR_OLD_STYLE_ADD.  "
                      "Used for staged rollout of this enum.");
+
+    TF_ADD_ENUM_NAME(UsdLoadWithDescendants, "Load prim and all descendants");
+    TF_ADD_ENUM_NAME(UsdLoadWithoutDescendants, "Load prim and no descendants");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

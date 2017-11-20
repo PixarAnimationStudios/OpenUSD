@@ -669,9 +669,9 @@ UsdPrim::ClearPayload() const
 }
 
 void
-UsdPrim::Load() const
+UsdPrim::Load(UsdLoadPolicy policy) const
 {
-    _GetStage()->Load(GetPath());
+    _GetStage()->Load(GetPath(), policy);
 }
 
 void

@@ -814,11 +814,13 @@ public:
     USD_API
     bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
 
-    /// Loads this prim, all its ancestors, and all its descendants.
+    /// Load this prim, all its ancestors, and by default all its descendants.
+    /// If \p loadPolicy is UsdLoadWithoutDescendants, then load only this prim
+    /// and its ancestors.
     ///
     /// See UsdStage::Load for additional details.
     USD_API
-    void Load() const;
+    void Load(UsdLoadPolicy policy = UsdLoadWithDescendants) const;
 
     /// Unloads this prim and all its descendants.
     ///

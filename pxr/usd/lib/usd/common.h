@@ -129,6 +129,19 @@ enum UsdListPosition {
     UsdListPositionTempDefault,
 };
 
+
+/// \enum UsdLoadPolicy
+///
+/// Controls UsdStage::Load() and UsdPrim::Load() behavior regarding whether or
+/// not descendant prims are loaded.
+///
+enum UsdLoadPolicy {
+    /// Load a prim plus all its descendants.
+    UsdLoadWithDescendants,
+    /// Load a prim by itself with no descendants.
+    UsdLoadWithoutDescendants
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

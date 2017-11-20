@@ -274,7 +274,7 @@ void wrapUsdPrim()
              &UsdPrim::SetPayload, (arg("layer"), arg("primPath")))
         .def("ClearPayload", &UsdPrim::ClearPayload)
 
-        .def("Load", &UsdPrim::Load)
+        .def("Load", &UsdPrim::Load, (arg("policy")=UsdLoadWithDescendants))
         .def("Unload", &UsdPrim::Unload)
 
         .def("GetReferences", &UsdPrim::GetReferences)

@@ -1854,6 +1854,7 @@ UsdStage::_WalkPrimsWithMastersImpl(
 
 void
 UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
+                            UsdLoadPolicy policy,
                             SdfPathSet* primIndexPaths,
                             bool unloadedOnly,
                             SdfPathSet* usdPrimPaths) const
@@ -1861,29 +1862,34 @@ UsdStage::_DiscoverPayloads(const SdfPath& rootPath,
     tbb::concurrent_vector<SdfPath> primIndexPathsVec;
     tbb::concurrent_vector<SdfPath> usdPrimPathsVec;
 
-    _WalkPrimsWithMasters(
-        rootPath,
+    auto addPrimPayload =
         [this, unloadedOnly, primIndexPaths, usdPrimPaths,
          &primIndexPathsVec, &usdPrimPathsVec]
         (UsdPrim const &prim) {
-            // Inactive prims are never included in this query.  Masters are
-            // also never included, since they aren't independently loadable.
-            if (!prim.IsActive() || prim.IsMaster())
-                return;
-            
-            if (prim._GetSourcePrimIndex().HasPayload()) {
-                SdfPath const &payloadIncludePath =
-                    prim._GetSourcePrimIndex().GetPath();
-                if (!unloadedOnly ||
-                    !_cache->IsPayloadIncluded(payloadIncludePath)) {
-                    if (primIndexPaths)
-                        primIndexPathsVec.push_back(payloadIncludePath);
-                    if (usdPrimPaths)
-                        usdPrimPathsVec.push_back(prim.GetPath());
-                }
+        // Inactive prims are never included in this query.  Masters are
+        // also never included, since they aren't independently loadable.
+        if (!prim.IsActive() || prim.IsMaster())
+            return;
+        
+        if (prim._GetSourcePrimIndex().HasPayload()) {
+            SdfPath const &payloadIncludePath =
+                prim._GetSourcePrimIndex().GetPath();
+            if (!unloadedOnly ||
+                !_cache->IsPayloadIncluded(payloadIncludePath)) {
+                if (primIndexPaths)
+                    primIndexPathsVec.push_back(payloadIncludePath);
+                if (usdPrimPaths)
+                    usdPrimPathsVec.push_back(prim.GetPath());
             }
-        });
-
+        }
+    };
+    
+    if (policy == UsdLoadWithDescendants) {
+        _WalkPrimsWithMasters(rootPath, addPrimPayload);
+    } else {
+        addPrimPayload(GetPrimAtPath(rootPath));
+    }
+            
     // Copy stuff out.
     if (primIndexPaths) {
         primIndexPaths->insert(
@@ -1936,14 +1942,14 @@ UsdStage::_DiscoverAncestorPayloads(const SdfPath& rootPath,
 }
 
 UsdPrim
-UsdStage::Load(const SdfPath& path)
+UsdStage::Load(const SdfPath& path, UsdLoadPolicy policy)
 {
     SdfPathSet exclude, include;
     include.insert(path);
 
     // Update the load set; this will trigger recomposition and include any
     // recursive payloads needed.
-    LoadAndUnload(include, exclude);
+    LoadAndUnload(include, exclude, policy);
 
     return GetPrimAtPath(path);
 }
@@ -1961,12 +1967,14 @@ UsdStage::Unload(const SdfPath& path)
 
 void
 UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
-                        const SdfPathSet &unloadSet)
+                        const SdfPathSet &unloadSet,
+                        UsdLoadPolicy policy)
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
     SdfPathSet aggregateLoads, aggregateUnloads;
-    _LoadAndUnload(loadSet, unloadSet, &aggregateLoads, &aggregateUnloads);
+    _LoadAndUnload(loadSet, unloadSet,
+                   &aggregateLoads, &aggregateUnloads, policy);
 
     // send notifications when loading or unloading
     if (aggregateLoads.empty() && aggregateUnloads.empty()) {
@@ -1988,7 +1996,8 @@ void
 UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
                          const SdfPathSet &unloadSet,
                          SdfPathSet *aggregateLoads,
-                         SdfPathSet *aggregateUnloads)
+                         SdfPathSet *aggregateUnloads,
+                         UsdLoadPolicy policy)
 {
     // Include implicit (recursive or ancestral) related payloads in both sets.
     SdfPathSet finalLoadSet, finalUnloadSet;
@@ -2001,7 +2010,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
         if (!_IsValidForLoad(path)) {
             continue;
         }
-        _DiscoverPayloads(path, &finalLoadSet, /*unloadedOnly=*/true);
+        _DiscoverPayloads(path, policy, &finalLoadSet, /*unloadedOnly=*/true);
         _DiscoverAncestorPayloads(path, &finalLoadSet, /*unloadedOnly=*/true);
     }
 
@@ -2103,7 +2112,8 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
         aggregateUnloads->insert(finalUnloadSet.begin(), finalUnloadSet.end());
     }
 
-    _LoadAndUnload(loadSet, SdfPathSet(), aggregateLoads, aggregateUnloads);
+    _LoadAndUnload(loadSet, SdfPathSet(),
+                   aggregateLoads, aggregateUnloads, policy);
 }
 
 SdfPathSet
@@ -2153,7 +2163,8 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
     }
 
     SdfPathSet loadable;
-    _DiscoverPayloads(path, NULL, /* unloadedOnly = */ false, &loadable);
+    _DiscoverPayloads(path, UsdLoadWithDescendants, nullptr,
+                      /* unloadedOnly = */ false, &loadable);
     return loadable;
 }
 
