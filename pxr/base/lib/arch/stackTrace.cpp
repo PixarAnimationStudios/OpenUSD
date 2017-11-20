@@ -65,6 +65,7 @@
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <thread>
 
 /* Darwin/ppc did not do stack traces.  Darwin/i386 still 
    needs some work, this has been stubbed out for now.  */
@@ -155,62 +156,27 @@ static Arch_LogInfoMap _logInfoForErrors;
 static std::mutex _logInfoForErrorsMutex;
 
 static void
-_EmitAnyExtraLogInfo(FILE* outFile)
+_EmitAnyExtraLogInfo(FILE* outFile, size_t max = 0)
 {
     // This function can't cause any heap allocation, be careful.
     // XXX -- std::string::c_str and fprintf can do allocations.
     std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
-    for (Arch_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
-             end = _logInfoForErrors.end(); i != end; ++i) {
-        fprintf(outFile, "\n%s:\n", i->first.c_str());
-        for (std::string const &line: *i->second) {
-            fprintf(outFile, "%s", line.c_str());
-        }
-    }
-}
-
-static void
-_EmitExtraLogMessage(FILE *outFile, char const *message)
-{
-    // This function can't cause any heap allocation, be careful.
-    fputs(message, outFile);
-}
-
-static void
-_EmitAnyExtraLogInfo(FILE* outFile, size_t max)
-{
     size_t n = 0;
-    // This function can't cause any heap allocation, be careful.
-    // XXX -- std::string::c_str and fprintf can do allocations.
-    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
     for (Arch_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
              end = _logInfoForErrors.end(); i != end; ++i) {
-        // We limit the # of errors printed to avoid spam.
-        fprintf(outFile, "%s:\n", i->first.c_str());
+        fputs("\n", outFile);
+        fputs(i->first.c_str(), outFile);
+        fputs(":\n", outFile);
         for (std::string const &line: *i->second) {
-        if (n++ >= max) {
-                fprintf(outFile, "... full diagnostics reported in the "
-                        "stack trace file.\n");
+            if (max && n++ >= max) {
+                fputs("... full diagnostics reported in the stack trace "
+                      "file.\n", outFile);
                 return;
             }
-            fprintf(outFile, "%s", line.c_str());
+            fputs(line.c_str(), outFile);
         }
     }
 }
-
-static void
-_EmitAnyExtraLogInfo(char const *fname, char const *extraMessage=nullptr)
-{
-    // This function can't cause any heap allocation, be careful.
-    // XXX -- fopen() and fclose() will each do at least one heap operation.
-    if (FILE* outFile = ArchOpenFile(fname, "a")) {
-        _EmitAnyExtraLogInfo(outFile);
-        if (extraMessage)
-            _EmitExtraLogMessage(outFile, extraMessage);
-        fclose(outFile);
-    }
-}
-
 
 static void
 _atexitCallback()
@@ -866,7 +832,7 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
         // If we were given a session log, cat it to the end of the stack.
         if (FILE* stackFd = ArchOpenFile(stackTrace, "a")) {
             if (FILE* sessionLogFd = ArchOpenFile(sessionLog, "r")) {
-                fprintf(stackFd,"\n\n********** Session Log **********\n\n");
+                fputs("\n\n********** Session Log **********\n\n", stackFd);
                 // Cat the sesion log
                 char line[4096];
                 while (fgets(line, 4096, sessionLogFd)) {
@@ -919,6 +885,7 @@ ArchLogPostMortem(const char* reason,
     // Disallow recursion and allow only one thread at a time.
     while (busy.test_and_set(std::memory_order_acquire)) {
         // Spin!
+        std::this_thread::yield();
     }
 
     const char* progname = ArchGetProgramNameForErrors();
@@ -942,12 +909,20 @@ ArchLogPostMortem(const char* reason,
     // Write reason for stack trace to logfile.
     if (FILE* stackFd = ArchOpenFile(logfile, "a")) {
         if (reason) {
-            fprintf(stackFd, "This stack trace was requested because: %s\n",
-                    reason);
+            fputs("This stack trace was requested because: ", stackFd);
+            fputs(reason, stackFd);
+            fputs("\n", stackFd);
         }
         if (message) {
-            fprintf(stackFd, "%s\n", message);
+            fputs(message, stackFd);
+            fputs("\n", stackFd);
         }
+        _EmitAnyExtraLogInfo(stackFd);
+        if (extraLogMsg) {
+            fputs(extraLogMsg, stackFd);
+            fputs("\n", stackFd);
+        }
+        fputs("\nPostmortem Stack Trace\n", stackFd);
         fclose(stackFd);
     }
 
@@ -958,10 +933,10 @@ ArchLogPostMortem(const char* reason,
         hostname[0] = '\0';
     }
 
-    fprintf(stderr, "\n");
-    fprintf(stderr,
-            "------------------------ '%s' is dying ------------------------\n",
-            progname);
+    fputs("\n", stderr);
+    fputs("------------------------ '", stderr);
+    fputs(progname, stderr);
+    fputs("' is dying ------------------------\n", stderr);
 
     // print out any registered program info
     {
@@ -972,22 +947,29 @@ ArchLogPostMortem(const char* reason,
     }
 
     if (reason) {
-        fprintf(stderr, "This stack trace was requested because: %s\n", reason);
+        fputs("This stack trace was requested because: ", stderr);
+        fputs(reason, stderr);
+        fputs("\n", stderr);
     }
     if (message) {
-        fprintf(stderr, "%s\n", message);
+        fputs(message, stderr);
+        fputs("\n", stderr);
     }
-    fprintf(stderr, "The stack can be found in %s:%s\n", hostname, logfile);
+    fputs("The stack can be found in ", stderr);
+    fputs(hostname, stderr);
+    fputs(":", stderr);
+    fputs(logfile, stderr);
+    fputs("\n", stderr);
+
     int loggedStack = _LogStackTraceForPid(logfile);
-    fprintf(stderr, "done.\n");
+    fputs("done.\n", stderr);
     // Additionally, print the first few lines of extra log information since
     // developers don't always think to look for it in the stack trace file.
     _EmitAnyExtraLogInfo(stderr, 3 /* max */);
-    fprintf(stderr,
-        "------------------------------------------------------------------\n");
+    fputs("------------------------------------------------------------------\n",
+          stderr);
 
     if (loggedStack) {
-        _EmitAnyExtraLogInfo(logfile, extraLogMsg);
         _FinishLoggingFatalStackTrace(progname, logfile, NULL /*session log*/, 
                                       true /* crashing hard? */);
     }
@@ -1046,10 +1028,12 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
                 "--------------------------------------------------------------"
                 "\n", hostname, tmpFile.c_str());
         ArchPrintStackTrace(fout, progname, reason);
-        fclose(fout);
         /* If this is a fatal stack trace, attempt to add it to the db */
         if (fatal) {
-            _EmitAnyExtraLogInfo(tmpFile.c_str());
+            _EmitAnyExtraLogInfo(fout);
+        }
+        fclose(fout);
+        if (fatal) {
             _FinishLoggingFatalStackTrace(progname.c_str(), tmpFile.c_str(),
                                           sessionLog.empty() ?  
                                           NULL : sessionLog.c_str(),
