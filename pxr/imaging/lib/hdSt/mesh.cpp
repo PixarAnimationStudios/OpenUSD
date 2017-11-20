@@ -1405,19 +1405,12 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
 
     // For the bits geometric shader depends on, reset the geometric shaders
     // for all the draw items of all the reprs.
+    bool needsSetGeometricShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtyMaterialId)) {
-        TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStMesh - Resetting the geometric shader for all draw"
-                " items of all reprs");
-
-        TF_FOR_ALL (it, _reprs) {
-            TF_FOR_ALL (drawItem, *(it->second->GetDrawItems())) {
-                drawItem->SetGeometricShader(Hd_GeometricShaderSharedPtr());
-            }
-        }
+        needsSetGeometricShader = true;
     }
 
     // iterate through all reprdescs for the current repr to figure out if any 
@@ -1434,9 +1427,6 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // Note: We only update/set the geometric shaders for the draw items of 
-    // the incoming 'reprName'. The draw items corresponding to other reprs
-    // may or may not be set.     
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
@@ -1448,19 +1438,45 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
                         requireSmoothNormals);
             } 
-            
-            if (!drawItem->GetGeometricShader()) {
-                // None of the draw items should have an unset geometric shader
-                // Can be the case after a collection rebuild of the draw items.
-                _UpdateDrawItemGeometricShader(sceneDelegate, drawItem, desc);
-            }
         }
+    }
+
+    if (needsSetGeometricShader) {
+        // needsSetGeometricShader is set when all reprs need a refresh of their
+        // geometric shader.
+
+        TF_DEBUG(HD_RPRIM_UPDATED).
+            Msg("HdStMesh - Resetting the geometric shader for all draw"
+                " items of all reprs");
+
+        TF_FOR_ALL (it, _reprs) {
+            _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
+            _UpdateReprGeometricShader(sceneDelegate, descs, it->second);
+        }
+    } else if (*dirtyBits & HdChangeTracker::NewRepr) {
+        // If NewRepr is set, we haven't initialized the geometric shader yet.
+        _UpdateReprGeometricShader(sceneDelegate, reprDescs, curRepr);
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 
 
     return curRepr;
+}
+
+void
+HdStMesh::_UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
+                                     _MeshReprConfig::DescArray const &descs,
+                                     HdReprSharedPtr repr)
+{
+    int drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+        if (descs[descIdx].geomStyle != HdMeshGeomStyleInvalid) {
+            _UpdateDrawItemGeometricShader(sceneDelegate,
+                repr->GetDrawItem(drawItemIndex++),
+                descs[descIdx]);
+        }
+    }
 }
 
 HdDirtyBits
