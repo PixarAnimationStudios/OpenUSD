@@ -152,7 +152,7 @@ private:
 
     HdTopology::ID _topologyId;
     HdTopology::ID _vertexPrimvarId;
-    int _customDirtyBitsInUse;
+    HdDirtyBits _customDirtyBitsInUse;
     bool _doubleSided;
     bool _packedNormals;
     HdCullStyle _cullStyle;
