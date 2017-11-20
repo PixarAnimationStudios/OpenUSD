@@ -1459,6 +1459,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._lastY = 0
 
         self._renderer = None
+        self._reportedContextError = False
         self._renderModeDict={RenderModes.WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME,
                               RenderModes.WIREFRAME_ON_SURFACE:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME_ON_SURFACE,
                               RenderModes.SMOOTH_SHADED:UsdImagingGL.GL.DrawMode.DRAW_SHADED_SMOOTH,
@@ -1515,10 +1516,18 @@ class StageView(QtOpenGL.QGLWidget):
         self._cameraGuidesVBO = None
         self._vao = 0
 
-    def InitRenderer(self):
-        '''Create (or re-create) the imager.'''
-        self._renderer = UsdImagingGL.GL()
-        self._rendererPluginName = ""
+    def _getRenderer(self):
+        # Unfortunately, we cannot assume that initializeGL() was called
+        # before attempts to use the renderer (e.g. pick()), so we must
+        # create the renderer lazily, when we try to do real work with it.
+        if not self._renderer:
+            if self.isValid():
+                self._renderer = UsdImagingGL.GL()
+                self._rendererPluginName = ""
+            elif not self._reportedContextError:
+                self._reportedContextError = True
+                raise RuntimeError("StageView could not initialize renderer without a valid GL context")
+        return self._renderer
 
     def GetRendererPlugins(self):
         if self._renderer:
@@ -1542,23 +1551,14 @@ class StageView(QtOpenGL.QGLWidget):
 
     def SetStage(self, stage):
         '''Set the USD Stage this widget will be displaying. To decommission
-        (even temporarily) this widget, supply None as 'stage' '''
-        if stage is None:
+        (even temporarily) this widget, supply None as 'stage'.'''
+        if stage != self._stage:
             self._renderer = None
-            self._stage = None
             self.allSceneCameras = None
-        else:
-            self.ReloadStage(stage)
+            self._stage = stage
+        if stage:
+            self._stageIsZup = UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.z
             self._dataModel.freeCamera = FreeCamera(self._stageIsZup)
-
-    def ReloadStage(self, stage):
-        self._stage = stage
-        # Since this function gets call on startup as well we need to make it
-        # does not try to create a renderer because there is no OGL context yet
-        if self._renderer != None:
-            self.InitRenderer()
-        self._stageIsZup = UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.z
-        self.allSceneCameras = None
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):
@@ -1811,19 +1811,21 @@ class StageView(QtOpenGL.QGLWidget):
 
     def _updateSelection(self):
         psuRoot = self._stage.GetPseudoRoot()
-        if not self._renderer:
+        renderer = self._getRenderer()
+        if not renderer:
+            # error has already been issued
             return
 
-        self._renderer.ClearSelected()
+        renderer.ClearSelected()
 
         for p in self._selectedPrims:
             if p == psuRoot:
                 continue
             if self._selectedInstances.has_key(p.GetPath()):
                 for instanceIndex in self._selectedInstances[p.GetPath()]:
-                    self._renderer.AddSelected(p.GetPath(), instanceIndex)
+                    renderer.AddSelected(p.GetPath(), instanceIndex)
             else:
-                self._renderer.AddSelected(p.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
+                renderer.AddSelected(p.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
 
     def _getEmptyBBox(self):
         return Gf.BBox3d()
@@ -1863,7 +1865,11 @@ class StageView(QtOpenGL.QGLWidget):
                          "the prim is not a UsdGeom.Camera." %(cameraPrim.GetName()))
 
     def renderSinglePass(self, renderMode, renderSelHighlights):
-        if not self._stage or not self._renderer:
+        if not self._stage:
+            return
+        renderer = self._getRenderer()
+        if not renderer:
+            # error has already been issued
             return
 
         # update rendering parameters
@@ -1885,20 +1891,18 @@ class StageView(QtOpenGL.QGLWidget):
 
         pseudoRoot = self._stage.GetPseudoRoot()
 
-        self._renderer.SetSelectionColor(self._dataModel.highlightColor)
-        self._renderer.Render(pseudoRoot, self._renderParams)
+        renderer.SetSelectionColor(self._dataModel.highlightColor)
+        renderer.Render(pseudoRoot, self._renderParams)
         self._forceRefresh = False
 
 
     def initializeGL(self):
-        if not self.context():
+        if not self.isValid():
             return
         from pxr import Glf
         if not Glf.GlewInit():
             return
         Glf.RegisterDefaultDebugOutputMessageCallback()
-        # Initialize the renderer now since the context is available
-        self.InitRenderer()
 
     def updateGL(self):
         """We override this virtual so that we can make it a no-op during
@@ -2069,7 +2073,11 @@ class StageView(QtOpenGL.QGLWidget):
             GL.glBindVertexArray(0)
 
     def paintGL(self):
-        if not self._stage or not self._renderer:
+        if not self._stage:
+            return
+        renderer = self._getRenderer()
+        if not renderer:
+            # error has already been issued
             return
 
         from OpenGL import GL
@@ -2108,7 +2116,7 @@ class StageView(QtOpenGL.QGLWidget):
         cam_up = frustum.ComputeUpVector()
         cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
 
-        self._renderer.SetCameraState(
+        renderer.SetCameraState(
             frustum.ComputeViewMatrix(),
             frustum.ComputeProjectionMatrix(),
             Gf.Vec4d(*viewport))
@@ -2197,14 +2205,14 @@ class StageView(QtOpenGL.QGLWidget):
                 material.shininess = 32.0
 
             # modes that want no lighting simply leave lights as an empty list
-            self._renderer.SetLightingState(lights, material, sceneAmbient)
+            renderer.SetLightingState(lights, material, sceneAmbient)
 
             if self._dataModel.renderMode == RenderModes.HIDDEN_SURFACE_WIREFRAME:
                 GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
                 GL.glPolygonOffset( 1.0, 1.0 )
                 GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
 
-                self.renderSinglePass( self._renderer.DrawMode.DRAW_GEOM_ONLY,
+                self.renderSinglePass( renderer.DrawMode.DRAW_GEOM_ONLY,
                                        False)
 
                 GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
@@ -2262,14 +2270,14 @@ class StageView(QtOpenGL.QGLWidget):
 
         # ### DRAW HUD ### #
         if self._dataModel.showHUD:
-            self.drawHUD()
+            self.drawHUD(renderer)
 
         GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
-        if (not self._dataModel.playing) & (not self._renderer.IsConverged()):
+        if (not self._dataModel.playing) & (not renderer.IsConverged()):
             QtCore.QTimer.singleShot(5, self.update)
 
-    def drawHUD(self):
+    def drawHUD(self, renderer):
         # compute the time it took to render this frame,
         # so we can display it in the HUD
         ms = self._renderTime * 1000.
@@ -2327,7 +2335,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         # GPU stats (TimeElapsed is in nano seconds)
         if self._dataModel.showHUD_GPUstats:
-            allocInfo = self._renderer.GetResourceAllocation()
+            allocInfo = renderer.GetResourceAllocation()
             gpuMemTotal = 0
             texMem = 0
             if "gpuMemoryUsed" in allocInfo:
@@ -2505,7 +2513,9 @@ class StageView(QtOpenGL.QGLWidget):
           selectedPoint, selectedPrimPath, selectedInstancerPath,
           selectedInstanceIndex, selectedElementIndex
         '''
-        if not self._stage or not self._renderer:
+        renderer = self._getRenderer()
+        if not self._stage or not renderer:
+            # error has already been issued
             return None, Sdf.Path.emptyPath, None, None, None
 
         from OpenGL import GL
@@ -2529,7 +2539,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.enableSampleAlphaToCoverage = False
         self._renderParams.enableHardwareShading = self._dataModel.enableHardwareShading
 
-        results = self._renderer.TestIntersection(
+        results = renderer.TestIntersection(
                 pickFrustum.ComputeViewMatrix(),
                 pickFrustum.ComputeProjectionMatrix(),
                 Gf.Matrix4d(1.0),
@@ -2573,6 +2583,10 @@ class StageView(QtOpenGL.QGLWidget):
         '''
         if not self._stage:
             return
+        renderer = self._getRenderer()
+        if not renderer:
+            # error has already been issued
+            return
 
         (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
@@ -2591,7 +2605,7 @@ class StageView(QtOpenGL.QGLWidget):
         # Figure out which instance was actually picked and use that as our selection
         # in this case.
         if selectedInstancerPath:
-            instancePrimPath, absInstanceIndex = self._renderer.GetPrimPathFromInstanceIndex(
+            instancePrimPath, absInstanceIndex = renderer.GetPrimPathFromInstanceIndex(
                 selectedPrimPath, selectedInstanceIndex)
             if instancePrimPath:
                 selectedPrimPath = instancePrimPath
@@ -2636,8 +2650,11 @@ class StageView(QtOpenGL.QGLWidget):
     def glDraw(self):
         # override glDraw so we can time it.
         startTime = time()
-        if self._renderer:
-            QtOpenGL.QGLWidget.glDraw(self)
+        # Make sure the renderer is created
+        if not self._getRenderer():
+            # error has already been issued
+            return
+        QtOpenGL.QGLWidget.glDraw(self)
         self._renderTime = time() - startTime
 
     def SetForceRefresh(self, val):

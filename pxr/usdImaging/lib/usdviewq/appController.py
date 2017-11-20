@@ -1332,7 +1332,7 @@ class AppController(QtCore.QObject):
         self._clearCaches()
 
         if self._stageView:
-            self._stageView.ReloadStage(self._stage)
+            self._stageView.SetStage(self._stage)
 
         # The difference between these two is related to multi-selection:
         # - currentPrims contains all prims selected
