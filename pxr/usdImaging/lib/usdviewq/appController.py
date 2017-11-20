@@ -2586,18 +2586,22 @@ class AppController(QtCore.QObject):
 
         # Now that we have the current camera and all cameras, build the menu
         self._ui.menuCamera.clear()
-        currCameraPath = None
-        if currCamera:
-            currCameraPath = currCamera.GetPath()
-        for camera in self._allSceneCameras:
-            action = self._ui.menuCamera.addAction(camera.GetName())
-            action.setData(camera.GetPath())
-            action.setToolTip(str(camera.GetPath()))
-            action.setCheckable(True)
+        if len(self._allSceneCameras) == 0:
+            self._ui.menuCamera.setEnabled(False)
+        else:
+            self._ui.menuCamera.setEnabled(True)
+            currCameraPath = None
+            if currCamera:
+                currCameraPath = currCamera.GetPath()
+            for camera in self._allSceneCameras:
+                action = self._ui.menuCamera.addAction(camera.GetName())
+                action.setData(camera.GetPath())
+                action.setToolTip(str(camera.GetPath()))
+                action.setCheckable(True)
 
-            action.triggered.connect(
-                lambda camera = camera: self._cameraSelectionChanged(camera))
-            action.setChecked(action.data() == currCameraPath)
+                action.triggered.connect(
+                    lambda camera = camera: self._cameraSelectionChanged(camera))
+                action.setChecked(action.data() == currCameraPath)
 
     # ===================================================================
     # ==================== Attribute Inspector ==========================
