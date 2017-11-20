@@ -57,6 +57,9 @@ public:
     HD_API
     void SetRefineLevel(int level);
 
+    HD_API
+    void SetVisibility(bool vis);
+
     enum Interpolation { VERTEX, UNIFORM, CONSTANT, FACEVARYING, VARYING };
 
     // -----------------------------------------------------------------------
@@ -236,6 +239,10 @@ public:
     // set per-prim refine level
     HD_API
     void SetRefineLevel(SdfPath const &id, int refineLevel);
+
+    // set per-prim visibility
+    HD_API
+    void SetVisibility(SdfPath const &id, bool vis);
 
     /// Marks an rprim in the RenderIndex as dirty with the given dirty flags.
     HD_API
@@ -481,7 +488,9 @@ private:
 
     bool _hasInstancePrimVars;
     int _refineLevel;
+    bool _visibility;
     std::map<SdfPath, int> _refineLevels;
+    std::map<SdfPath, bool> _visibilities;
 };
 
 

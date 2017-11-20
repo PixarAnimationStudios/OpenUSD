@@ -61,7 +61,7 @@ _BuildArray(T values[], int numValues)
 Hd_UnitTestDelegate::Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
                                          SdfPath const& delegateID)
   : HdSceneDelegate(parentIndex, delegateID)
-  , _hasInstancePrimVars(true), _refineLevel(0)
+  , _hasInstancePrimVars(true), _refineLevel(0), _visibility(true)
 {
 }
 
@@ -79,6 +79,23 @@ Hd_UnitTestDelegate::SetRefineLevel(int level)
     }
     TF_FOR_ALL (it, _refineLevels) {
         it->second = level;
+    }
+}
+
+void
+Hd_UnitTestDelegate::SetVisibility(bool vis)
+{
+    _visibility = vis;
+    TF_FOR_ALL(it, _meshes) {
+        GetRenderIndex().GetChangeTracker().MarkRprimDirty(
+            it->first, HdChangeTracker::DirtyVisibility);
+    }
+    TF_FOR_ALL(it, _meshes) {
+        GetRenderIndex().GetChangeTracker().MarkRprimDirty(
+            it->first, HdChangeTracker::DirtyVisibility);
+    }
+    TF_FOR_ALL(it, _visibilities) {
+        it->second = vis;
     }
 }
 
@@ -292,6 +309,14 @@ Hd_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int refineLevel)
     _refineLevels[id] = refineLevel;
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     tracker.MarkRprimDirty(id, HdChangeTracker::DirtyRefineLevel);
+}
+
+void
+Hd_UnitTestDelegate::SetVisibility(SdfPath const &id, bool vis)
+{
+    _visibilities[id] = vis;
+    GetRenderIndex().GetChangeTracker().MarkRprimDirty(id,
+        HdChangeTracker::DirtyVisibility);
 }
 
 static VtVec3fArray _AnimatePositions(VtVec3fArray const &positions, float time)
@@ -689,7 +714,12 @@ bool
 Hd_UnitTestDelegate::GetVisible(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
-    return true;
+
+    if (_visibilities.find(id) != _visibilities.end()) {
+        return _visibilities[id];
+    }
+    // returns fallback refinelevel
+    return _visibility;
 }
 
 /*virtual*/
