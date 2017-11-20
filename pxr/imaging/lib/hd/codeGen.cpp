@@ -1550,20 +1550,52 @@ Hd_CodeGen::_GenerateInstancePrimVar()
 void
 Hd_CodeGen::_GenerateElementPrimVar()
 {
-    // XXX: We'd like to return here, but can't because stub functions
-    //      must be generated (see XXX comment below).
-    //if (!(_metaData.primitiveParamBinding.binding.IsValid())) return;
-
     /*
-      // --------- uniform (element) data declaration ----------
+    Accessing uniform primvar data:
+    ===============================
+    Uniform primvar data is authored at the subprimitive (also called element or
+    face below) granularity.
+    To access uniform primvar data (say color), there are two indirections in
+    the lookup because of aggregation in the buffer layout.
+          ----------------------------------------------------
+    color | prim0 colors | prim1 colors | .... | primN colors|
+          ----------------------------------------------------
+    For each prim, GetDrawingCoord().elementCoord holds the start index into
+    this buffer.
+
+    For an unrefined prim, the subprimitive ID s simply the gl_PrimitiveID.
+    For a refined prim, gl_PrimitiveID corresponds to the refined element ID.
+
+    To map a refined face to its coarse face, Hydra builds a "primitive param"
+    buffer (more details in the section below). This buffer is also aggregated,
+    and for each subprimitive, GetDrawingCoord().primitiveCoord gives us the
+    index into this buffer (meaning it has already added the gl_PrimitiveID)
+
+    To have a single codepath for both cases, we build the primitive param
+    buffer for unrefined prims as well, and effectively index the uniform
+    primvar using:
+    drawCoord.elementCoord + primitiveParam[ drawCoord.primitiveCoord ]
+
+    The code generated looks something like:
+
+      // --------- primitive param declaration ----------
       struct PrimitiveData { int elementID; }
       layout (std430, binding=?) buffer PrimitiveBuffer {
           PrimtiveData primitiveData[];
       };
+
+      // --------- indirection accessors ---------
+      // Gives us the "coarse" element ID
       int GetElementID() {
           return primitiveData[GetPrimitiveCoord()].elementID;
       }
+      
+      // Adds the offset to the start of the uniform primvar data for the prim
+      int GetAggregatedElementID() {
+          return GetElementID() + GetDrawingCoord().elementCoord;\n"
+      }
 
+      // --------- uniform primvar declaration ---------
       struct ElementData0 {
           vec4 color;
       };
@@ -1571,38 +1603,47 @@ Hd_CodeGen::_GenerateElementPrimVar()
           ElementData0 elementData0[];
       };
 
-      // --------- uniform data accessors ----------
+      // ---------uniform primvar data accessor ---------
       vec4 HdGet_color(int localIndex) {
           return elementData0[GetAggregatedElementID()].color;
       }
 
     */
-    std::stringstream declarations;
-    std::stringstream accessors;
 
-
-    // primitive param buffer can be one of followings:
+    // Primitive Param buffer layout:
+    // ==============================
+    // Depending on the prim, one of following is used:
+    // 
     // 1. basis curves
-    //     1 int  : curve index
-    //
+    //     1 int  : curve index 
+    //     
+    //     This lets us translate a basis curve segment to its curve id.
+    //     A basis curve is made up for 'n' curves, each of which have a varying
+    //     number of segments.
+    //     (see hdSt/basisCurvesComputations.cpp)
+    //     
     // 2. mesh specific
     // a. tris
     //     1 int  : coarse face index + edge flag
-    //
+    //     (see hd/meshUtil.h,cpp)
+    //     
     // b. quads coarse
     //     2 ints : coarse face index + edge flag
     //              ptex index
+    //     (see hd/meshUtil.h,cpp)
     //
     // c. tris & quads uniformly refined
     //     3 ints : coarse face index + edge flag
     //              Far::PatchParam::field0 (includes ptex index)
     //              Far::PatchParam::field1
+    //     (see hdSt/subdivision3.cpp)
     //
     // d. patch adaptively refined
     //     4 ints : coarse face index + edge flag
     //              Far::PatchParam::field0 (includes ptex index)
     //              Far::PatchParam::field1
     //              sharpness (float)
+    //     (see hdSt/subdivision3.cpp)
     // -----------------------------------------------------------------------
     // note: decoding logic of primitiveParam has to match with
     // HdMeshTopology::DecodeFaceIndexFromPrimitiveParam()
@@ -1628,6 +1669,9 @@ Hd_CodeGen::_GenerateElementPrimVar()
     // we need to construct PatchParams for coarse tris and quads.
     // Currently it's enough to fill just faceId for coarse quads for
     // ptex shading.
+
+    std::stringstream declarations;
+    std::stringstream accessors;
 
     if (_metaData.primitiveParamBinding.binding.IsValid()) {
 
@@ -1812,7 +1856,7 @@ Hd_CodeGen::_GenerateElementPrimVar()
 
         _EmitDeclaration(declarations, name, dataType, binding);
         // AggregatedElementID gives us the buffer index post batching, which
-        // is what we need for accessing element primvar data.
+        // is what we need for accessing element (uniform) primvar data.
         _EmitAccessor(accessors, name, dataType, binding,"GetAggregatedElementID()");
     }
 
