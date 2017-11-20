@@ -787,6 +787,10 @@ HdSt_IndirectDrawBatch::Validate(bool deepValidation)
             HdDrawItem const * drawItem
                 = _drawItemInstances[item]->GetDrawItem();
 
+            if (!TF_VERIFY(drawItem->GetGeometricShader())) {
+                return false;
+            }
+
             if (!_IsAggregated(batchItem, drawItem)) {
                 return false;
             }

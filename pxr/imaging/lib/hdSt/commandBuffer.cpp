@@ -164,15 +164,17 @@ HdStCommandBuffer::_RebuildDrawBatches()
     for (size_t i = 0; i < _drawItems.size(); i++) {
         HdDrawItem const * drawItem = _drawItems[i];
 
-        _drawItemInstances.push_back(HdStDrawItemInstance(drawItem));
-        HdStDrawItemInstance* drawItemInstance = &_drawItemInstances[i];
-
-        HdSt_DrawBatchSharedPtr batch;
         HdShaderCodeSharedPtr const &geometricShader
             = drawItem->GetGeometricShader();
-        TF_VERIFY(geometricShader);
+        if (!TF_VERIFY(geometricShader, "%s",
+                       drawItem->GetRprimID().GetText())) {
+            continue;
+        }
 
-        size_t key = geometricShader ? geometricShader->ComputeHash() : 0;
+        _drawItemInstances.push_back(HdStDrawItemInstance(drawItem));
+        HdStDrawItemInstance* drawItemInstance = &_drawItemInstances.back();
+
+        size_t key = geometricShader->ComputeHash();
         boost::hash_combine(key, drawItem->GetBufferArraysHash());
 
         if (!bindlessTexture) {
@@ -188,6 +190,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
                 drawItem->GetBufferArraysHash());
                 //, drawItem->GetRprimID().GetText());
 
+        HdSt_DrawBatchSharedPtr batch;
         TfMapLookup(batchMap, key, &batch);
         if (!batch || !batch->Append(drawItemInstance)) {
             batch = _NewDrawBatch(drawItemInstance);

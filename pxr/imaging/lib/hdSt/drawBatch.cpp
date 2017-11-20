@@ -160,15 +160,24 @@ HdSt_DrawBatch::Rebuild()
     _drawItemInstances.reserve(instances.size());
 
     // Ensure all batch state initialized from items/instances is refreshed.
-    _Init(const_cast<HdStDrawItemInstance*>(instances.front()));
+    HdStDrawItemInstance *batchItem =
+        const_cast<HdStDrawItemInstance*>(instances.front());
+    if (!TF_VERIFY(batchItem->GetDrawItem()->GetGeometricShader())) {
+        return false;
+    }
+    _Init(batchItem);
+    if (!TF_VERIFY(!_drawItemInstances.empty())) {
+        return false;
+    }
 
     // Start this loop at i=1 because the 0th element was pushed via _Init
     for (size_t i = 1; i < instances.size(); ++i) {
-        if (TF_VERIFY(!_drawItemInstances.empty())) {
-            if (!Append(const_cast<HdStDrawItemInstance*>(instances[i]))) {
-                return false;
-            }
-        } else {
+        HdStDrawItemInstance *item =
+            const_cast<HdStDrawItemInstance*>(instances[i]);
+        if (!TF_VERIFY(item->GetDrawItem()->GetGeometricShader())) {
+            return false;
+        }
+        if (!Append(item)) {
             return false;
         }
     }
