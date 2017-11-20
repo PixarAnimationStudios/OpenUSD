@@ -248,30 +248,34 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         bool asShaderParam, bool pathsAsModel, bool resolvePaths)
 {
     if (val.IsHolding<bool>()) {
-        return FnKat::IntAttribute(int(val.Get<bool>()));
+        return FnKat::IntAttribute(int(val.UncheckedGet<bool>()));
     }
     if (val.IsHolding<int>()) {
-        return FnKat::IntAttribute(val.Get<int>());
+        return FnKat::IntAttribute(val.UncheckedGet<int>());
     }
     if (val.IsHolding<float>()) {
-        return FnKat::FloatAttribute(val.Get<float>());
+        return FnKat::FloatAttribute(val.UncheckedGet<float>());
     }
     if (val.IsHolding<double>()) {
-        return FnKat::DoubleAttribute(val.Get<double>());
+        return FnKat::DoubleAttribute(val.UncheckedGet<double>());
     }
     if (val.IsHolding<std::string>()) {
-        if (val.Get<std::string>() == "_NO_VALUE_") {
+        if (val.UncheckedGet<std::string>() == "_NO_VALUE_") {
             return FnKat::NullAttribute();
         }
         else {
-            return FnKat::StringAttribute(val.Get<std::string>());
+            return FnKat::StringAttribute(val.UncheckedGet<std::string>());
         }
     }
     if (val.IsHolding<SdfAssetPath>()) {
-        std::string assetPath = val.Get<SdfAssetPath>().GetAssetPath();
+        std::string assetPath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
         return FnKat::StringAttribute(
             resolvePaths ?  _ResolveAssetPath(assetPath, pathsAsModel)
             : assetPath );
+    }
+    if (val.IsHolding<TfToken>()) {
+        const TfToken &myVal = val.UncheckedGet<TfToken>();
+        return FnKat::StringAttribute(myVal.GetString());
     }
 
     // Compound types require special handling.  Because they do not
@@ -281,8 +285,21 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     FnKat::Attribute valueAttr;
 
     if (val.IsHolding<VtArray<std::string> >()) {
-        const VtArray<std::string> rawVal = val.Get<VtArray<std::string> >();
+        const VtArray<std::string> rawVal = val.UncheckedGet<VtArray<std::string> >();
         std::vector<std::string> vec(rawVal.begin(), rawVal.end());
+        FnKat::StringBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("string [%zu]", rawVal.size()));
+        valueAttr = builder.build();
+    }
+
+    else if (val.IsHolding<VtArray<TfToken> >()) {
+        const auto& rawVal = val.UncheckedGet<VtArray<TfToken> >();
+        std::vector<std::string> vec(rawVal.size());
+        for(size_t i=0; i<rawVal.size(); i++) {
+            vec[i] = rawVal[i].GetString();
+        }
         FnKat::StringBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
         //return builder.build();
@@ -292,7 +309,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     }
 
     else if (val.IsHolding<VtArray<int> >()) {
-        const VtArray<int> rawVal = val.Get<VtArray<int> >();
+        const VtArray<int> rawVal = val.UncheckedGet<VtArray<int> >();
         std::vector<int> vec(rawVal.begin(), rawVal.end());
         FnKat::IntBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
@@ -302,7 +319,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     }
 
     else if (val.IsHolding<VtArray<float> >()) {
-        const VtArray<float> rawVal = val.Get<VtArray<float> >();
+        const VtArray<float> rawVal = val.UncheckedGet<VtArray<float> >();
         std::vector<float> vec(rawVal.begin(), rawVal.end());
         FnKat::FloatBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
@@ -311,7 +328,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         valueAttr = builder.build();
     }
     else if (val.IsHolding<VtArray<double> >()) {
-        const VtArray<double> rawVal = val.Get<VtArray<double> >();
+        const VtArray<double> rawVal = val.UncheckedGet<VtArray<double> >();
         std::vector<double> vec(rawVal.begin(), rawVal.end());
         FnKat::DoubleBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
@@ -325,7 +342,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // a double, and apparently we don't use GfMatrix4f.
     // Shader parameter floats might expect a float matrix?
     if (val.IsHolding<VtArray<GfMatrix4d> >()) {
-        const VtArray<GfMatrix4d> rawVal = val.Get<VtArray<GfMatrix4d> >();
+        const VtArray<GfMatrix4d> rawVal = val.UncheckedGet<VtArray<GfMatrix4d> >();
         std::vector<float> vec;
         TF_FOR_ALL(mat, rawVal) {
              for (int i=0; i < 4; ++i) {
@@ -343,7 +360,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec2f
     else if (val.IsHolding<GfVec2f>()) {
-        const GfVec2f rawVal = val.Get<GfVec2f>();
+        const GfVec2f rawVal = val.UncheckedGet<GfVec2f>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 2);
         std::vector<float> vec;
         vec.resize(2);
@@ -356,7 +373,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec2d
     else if (val.IsHolding<GfVec2d>()) {
-        const GfVec2d rawVal = val.Get<GfVec2d>();
+        const GfVec2d rawVal = val.UncheckedGet<GfVec2d>();
         FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
         std::vector<double> vec;
         vec.resize(2);
@@ -369,7 +386,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec3f
     else if (val.IsHolding<GfVec3f>()) {
-        const GfVec3f rawVal = val.Get<GfVec3f>();
+        const GfVec3f rawVal = val.UncheckedGet<GfVec3f>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 3);
         std::vector<float> vec;
         vec.resize(3);
@@ -383,7 +400,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec3d
     else if (val.IsHolding<GfVec3d>()) {
-        const GfVec3d rawVal = val.Get<GfVec3d>();
+        const GfVec3d rawVal = val.UncheckedGet<GfVec3d>();
         FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
         std::vector<double> vec;
         vec.resize(3);
@@ -397,7 +414,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec4f
     else if (val.IsHolding<GfVec4f>()) {
-        const GfVec4f rawVal = val.Get<GfVec4f>();
+        const GfVec4f rawVal = val.UncheckedGet<GfVec4f>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 4);
         std::vector<float> vec;
         vec.resize(4);
@@ -412,7 +429,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec4d
     else if (val.IsHolding<GfVec4d>()) {
-        const GfVec4d rawVal = val.Get<GfVec4d>();
+        const GfVec4d rawVal = val.UncheckedGet<GfVec4d>();
         FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
         std::vector<double> vec;
         vec.resize(4);
@@ -431,7 +448,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // a double, and apparently we don't use GfMatrix4f.
     // Shader parameter floats might expect a float matrix?
     else if (val.IsHolding<GfMatrix4d>()) {
-        const GfMatrix4d rawVal = val.Get<GfMatrix4d>();
+        const GfMatrix4d rawVal = val.UncheckedGet<GfMatrix4d>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 16);
         std::vector<float> vec;
         vec.resize(16);
@@ -448,61 +465,67 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // TODO: support complex types such as primvars
     // VtArray<GfVec4f>
     else if (val.IsHolding<VtArray<GfVec4f> >()) {
-        const VtArray<GfVec4f> rawVal = val.Get<VtArray<GfVec4f> >();
+        const VtArray<GfVec4f> rawVal = val.UncheckedGet<VtArray<GfVec4f> >();
         std::vector<float> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::FloatBuilder builder(/* tupleSize = */ 4);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec3f>
     else if (val.IsHolding<VtArray<GfVec3f> >()) {
-        const VtArray<GfVec3f> rawVal = val.Get<VtArray<GfVec3f> >();
+        const VtArray<GfVec3f> rawVal = val.UncheckedGet<VtArray<GfVec3f> >();
         std::vector<float> vec;
         PxrUsdKatanaUtils::ConvertArrayToVector(rawVal, &vec);
         FnKat::FloatBuilder builder(/* tupleSize = */ 3);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec2f>
     else if (val.IsHolding<VtArray<GfVec2f> >()) {
-        const VtArray<GfVec2f> rawVal = val.Get<VtArray<GfVec2f> >();
+        const VtArray<GfVec2f> rawVal = val.UncheckedGet<VtArray<GfVec2f> >();
         std::vector<float> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::FloatBuilder builder(/* tupleSize = */ 2);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec4d>
     else if (val.IsHolding<VtArray<GfVec4d> >()) {
-        const VtArray<GfVec4d> rawVal = val.Get<VtArray<GfVec4d> >();
+        const VtArray<GfVec4d> rawVal = val.UncheckedGet<VtArray<GfVec4d> >();
         std::vector<double> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec3d>
     else if (val.IsHolding<VtArray<GfVec3d> >()) {
-        const VtArray<GfVec3d> rawVal = val.Get<VtArray<GfVec3d> >();
+        const VtArray<GfVec3d> rawVal = val.UncheckedGet<VtArray<GfVec3d> >();
         std::vector<double> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec2d>
     else if (val.IsHolding<VtArray<GfVec2d> >()) {
-        const VtArray<GfVec2d> rawVal = val.Get<VtArray<GfVec2d> >();
+        const VtArray<GfVec2d> rawVal = val.UncheckedGet<VtArray<GfVec2d> >();
         std::vector<double> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
@@ -510,7 +533,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
         FnKat::StringBuilder stringBuilder;
         const VtArray<SdfAssetPath> &assetArray = 
-            val.Get<VtArray<SdfAssetPath> >();
+            val.UncheckedGet<VtArray<SdfAssetPath> >();
         TF_FOR_ALL(strItr, assetArray) {
             stringBuilder.push_back(
                 resolvePaths ?
@@ -522,9 +545,10 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
                         FnKat::StringAttribute(
                             TfStringPrintf("string [%zu]",assetArray.size())));
         attrBuilder.set("value", stringBuilder.build());
+        // NOTE: needs typeAttr set?
         valueAttr = attrBuilder.build();
     }
-
+     
     // If being used as a shader param, the type will be provided elsewhere,
     // so simply return the value attribute as-is.
     if (asShaderParam) {
