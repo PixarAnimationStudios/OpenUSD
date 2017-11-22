@@ -114,7 +114,7 @@ GusdGU_USD::ComputeRangeIndexMap(const GA_Range& r,
 
     exint i = 0;
     for(GA_Iterator it(r); !it.atEnd(); ++it, ++i)
-        indexMap(*it) = i;
+        indexMap(*it) = GA_Offset(i);
     return true;
 }
 

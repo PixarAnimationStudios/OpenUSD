@@ -183,7 +183,12 @@ void _AppendTypes(const TfType& type, UT_Array<PRM_Name>& names,
     UT_String label;
     _MakePrefixedName(label, typeName.c_str(), depth, "|   ");
     
-    names.append(PRM_Name(typeName.c_str(), deleter.append(label.steal())));
+    names.append(PRM_Name(typeName.c_str(), deleter.appendCallback(
+#if HDK_API_VERSION >= 16050000
+	hboost::function<void (char *)>(free), label.steal())));
+#else
+	boost::function<void (char *)>(free), label.steal())));
+#endif
     
     for(const auto& derived : type.GetDirectlyDerivedTypes())
         _AppendTypes(derived, names, deleter, depth+1);
@@ -213,7 +218,12 @@ void _AppendKinds(const GusdUSD_Utils::KindNode* kind,
     UT_String label;
     _MakePrefixedName(label, name.c_str(), depth, "|   ");
 
-    names.append(PRM_Name(name.c_str(), deleter.append(label.steal())));
+    names.append(PRM_Name(name.c_str(), deleter.appendCallback(
+#if HDK_API_VERSION >= 16050000
+	hboost::function<void (char *)>(free), label.steal())));
+#else
+	boost::function<void (char *)>(free), label.steal())));
+#endif
     
     for(const auto& derived : kind->children)
         _AppendKinds(derived.get(), names, deleter, depth+1);
