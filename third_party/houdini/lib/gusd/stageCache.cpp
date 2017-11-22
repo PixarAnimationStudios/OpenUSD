@@ -974,8 +974,8 @@ GusdStageCacheReader::GetPrim(const UT_StringRef& path,
     if(path && primPath.IsAbsolutePath() &&
        primPath.IsAbsoluteRootOrPrimPath()) {
 
-        if(pair.second = _cache._impl->FindOrOpenMaskedStage(
-               path, opts, edit, primPath, err)) {
+        if((pair.second = _cache._impl->FindOrOpenMaskedStage(
+               path, opts, edit, primPath, err))) {
 
             pair.first =
                 GusdUSD_Utils::GetPrimFromStage(pair.second, primPath, err);

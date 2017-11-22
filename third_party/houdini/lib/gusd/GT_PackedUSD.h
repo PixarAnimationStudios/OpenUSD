@@ -64,7 +64,7 @@ public:
         const SdfPath& srcPrimPath,
         exint index,
         UsdTimeCode frame,
-        GusdPurposeSet purpose,
+        GusdPurposeSet purpose,	// Unused
         GT_AttributeListHandle pointAttributes,
         GT_AttributeListHandle vertexAttributes,
         GT_AttributeListHandle uniformAttributes,
@@ -121,7 +121,6 @@ private:
     SdfPath         m_srcPrimPath;
     exint           m_instanceIndex;
     UsdTimeCode     m_frame;
-    GusdPurposeSet  m_purpose;
     UT_BoundingBox  m_box;
 
     GT_AttributeListHandle  m_pointAttributes;

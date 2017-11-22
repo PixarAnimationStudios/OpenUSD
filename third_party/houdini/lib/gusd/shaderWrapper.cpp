@@ -256,7 +256,7 @@ _vopGraphToUsdTraversal(const VOP_Node* vopNode,
                 parmDeps[parm] = shadeInput;
 
                 if(!isConnected) {
-                    double val;   
+                    fpreal val;
                     parm->getValue(0, val, 0, SYSgetSTID());
                     shadeInput.Set((float)val);
                 }

@@ -280,7 +280,8 @@ GusdPrimWrapper::GusdPrimWrapper()
 GusdPrimWrapper::GusdPrimWrapper( 
         const UsdTimeCode &time, 
         const GusdPurposeSet &purposes )
-    : m_time( time )
+    : GT_Primitive()
+    , m_time( time )
     , m_purposes( purposes )
     , m_visible( true )
     , m_lastXformSet( UsdTimeCode::Default() )
@@ -289,7 +290,8 @@ GusdPrimWrapper::GusdPrimWrapper(
 }
 
 GusdPrimWrapper::GusdPrimWrapper( const GusdPrimWrapper &in )
-    : m_time( in.m_time )
+    : GT_Primitive(in)
+    , m_time( in.m_time )
     , m_purposes( in.m_purposes )
     , m_visible( in.m_visible )
     , m_lastXformSet( in.m_lastXformSet )
