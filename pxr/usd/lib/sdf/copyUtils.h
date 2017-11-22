@@ -42,6 +42,37 @@ class TfToken;
 class VtValue;
 SDF_DECLARE_HANDLES(SdfLayer);
 
+/// \name Simple Spec Copying API
+/// @{
+
+/// Utility function for copying spec data at \p srcPath in \p srcLayer to
+/// \p destPath in \p destLayer.
+///
+/// Copying is performed recursively: all child specs are copied as well.
+/// Any destination specs that already exist will be overwritten.
+///
+/// Parent specs of the destination are not created, and must exist before
+/// SdfCopySpec is called, or a coding error will result.  For prim parents,
+/// clients may find it convenient to call SdfCreatePrimInLayer before
+/// SdfCopySpec.
+///
+/// As a special case, if the top-level object to be copied is a relationship
+/// target or a connection, the destination spec must already exist.  That is
+/// because we don't want SdfCopySpec to impose any policy on how list edits are
+/// made; client code should arrange for relationship targets and connections to
+/// be specified as prepended, appended, deleted, and/or ordered, as needed.
+///
+/// Attribute connections and relationship targets that target an object
+/// beneath \p srcPath will be remapped to target objects beneath \p dstPath.
+///
+SDF_API
+bool
+SdfCopySpec(
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath);
+
+/// @}
+
 /// \name Advanced Spec Copying API
 /// @{
 

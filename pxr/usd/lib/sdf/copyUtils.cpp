@@ -619,4 +619,115 @@ SdfCopySpec(
     return true;
 }
 
+// ------------------------------------------------------------
+
+namespace
+{
+
+bool
+_ShouldCopyValue(
+    SdfSpecType specType, const TfToken& field,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
+    boost::optional<VtValue>* valueToCopy)
+{
+    if (fieldInSrc) {
+        if (field == SdfFieldKeys->ConnectionPaths || 
+            field == SdfFieldKeys->TargetPaths) {
+            SdfPathListOp srcListOp;
+            if (srcLayer->HasField(srcPath, field, &srcListOp)) {
+                const SdfPath& srcPrimPath = 
+                    srcPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrimPath = 
+                    dstPath.GetPrimPath().StripAllVariantSelections();
+
+                srcListOp.ModifyOperations(
+                    [&srcPrimPath, &dstPrimPath](const SdfPath& path) {
+                        return path.ReplacePrefix(srcPrimPath, dstPrimPath);
+                    });
+
+                *valueToCopy = VtValue::Take(srcListOp);
+            }
+        }
+        else if (field == SdfFieldKeys->Relocates) {
+            SdfRelocatesMap relocates;
+            if (srcLayer->HasField(srcPath, field, &relocates)) {
+                const SdfPath& srcPrimPath = 
+                    srcPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrimPath = 
+                    dstPath.GetPrimPath().StripAllVariantSelections();
+
+                SdfRelocatesMap updatedRelocates;
+                for (const auto& entry : relocates) {
+                    const SdfPath updatedSrcPath = 
+                        entry.first.ReplacePrefix(srcPrimPath, dstPrimPath);
+                    const SdfPath updatedTargetPath = 
+                        entry.second.ReplacePrefix(srcPrimPath, dstPrimPath);
+                    updatedRelocates[updatedSrcPath] = updatedTargetPath;
+                }
+
+                *valueToCopy = VtValue::Take(updatedRelocates);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool
+_ShouldCopyChildren(
+    const TfToken& childrenField,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
+    boost::optional<VtValue>* srcChildren, 
+    boost::optional<VtValue>* dstChildren)
+{
+    if (fieldInSrc) {
+        if (childrenField == SdfChildrenKeys->ConnectionChildren ||
+            childrenField == SdfChildrenKeys->RelationshipTargetChildren ||
+            childrenField == SdfChildrenKeys->MapperChildren) {
+
+            SdfPathVector children;
+            if (srcLayer->HasField(srcPath, childrenField, &children)) {
+                *srcChildren = VtValue(children);
+
+                const SdfPath& srcPrimPath = 
+                    srcPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrimPath = 
+                    dstPath.GetPrimPath().StripAllVariantSelections();
+
+                for (SdfPath& child : children) {
+                    child = child.ReplacePrefix(srcPrimPath, dstPrimPath);
+                }
+
+                *dstChildren = VtValue::Take(children);
+            }
+        }
+    }
+
+    return true;
+}
+
+}
+
+bool
+SdfCopySpec(
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath)
+{
+    namespace ph = std::placeholders;
+
+    return SdfCopySpec(
+        srcLayer, srcPath, dstLayer, dstPath,
+        /* shouldCopyValueFn = */ std::bind(
+            _ShouldCopyValue,
+            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
+            ph::_9),
+        /* shouldCopyChildrenFn = */ std::bind(
+            _ShouldCopyChildren,
+            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
+            ph::_9)
+        );
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

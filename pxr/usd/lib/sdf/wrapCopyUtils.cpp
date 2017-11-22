@@ -169,6 +169,12 @@ Py_SdfCopySpec(
 void
 wrapCopyUtils()
 {
+    def("CopySpec", 
+        (bool(*)(const SdfLayerHandle&, const SdfPath&, 
+                 const SdfLayerHandle&, const SdfPath&))
+        &SdfCopySpec,
+        (arg("srcLayer"), arg("srcPath"), arg("dstLayer"), arg("dstPath")));
+
     TfPyFunctionFromPython<Py_SdfShouldCopyChildrenSig>();
     TfPyFunctionFromPython<Py_SdfShouldCopyValueSig>();
     def("CopySpec", &Py_SdfCopySpec,
