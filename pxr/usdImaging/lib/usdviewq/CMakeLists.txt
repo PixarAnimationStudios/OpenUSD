@@ -37,6 +37,7 @@ pxr_library(usdviewq
 
     PYMODULE_FILES
         __init__.py
+        appEventFilter.py
         arrayAttributeView.py
         customAttributes.py
         appController.py

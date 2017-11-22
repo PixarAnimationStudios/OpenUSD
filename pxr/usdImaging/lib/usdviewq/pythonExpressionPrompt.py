@@ -36,6 +36,7 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
 
     def __init__(self, parent, exception = None, val = None):
         QtWidgets.QDialog.__init__(self, parent)
+        self.setObjectName("PythonExpressionPrompt")
         self._ui = Ui_PythonExpressionPrompt()
         self._ui.setupUi(self)
         self._mainWindow = parent._mainWindow     # get mainWindow instance
@@ -131,6 +132,7 @@ class Myconsole(interpreterView):
                 "    layer: the currently selected sdf layer in the composition tree (if any)\n\n")
 
         interpreterView.__init__(self, parent)
+        self.setObjectName("Myconsole")
 
         from pxr import Usd, UsdGeom, Gf, Tf
         from qt import QtCore, QtGui, QtWidgets

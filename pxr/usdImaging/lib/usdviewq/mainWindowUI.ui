@@ -219,6 +219,9 @@
                <bold>true</bold>
               </font>
              </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="text">
               <string>?</string>
              </property>
@@ -1451,16 +1454,10 @@
    <property name="text">
     <string>Frame Forward</string>
    </property>
-   <property name="shortcut">
-    <string>Right</string>
-   </property>
   </action>
   <action name="actionFrame_Backwards">
    <property name="text">
     <string>Frame Backward</string>
-   </property>
-   <property name="shortcut">
-    <string>Left</string>
    </property>
   </action>
   <action name="actionAdjust_FOV">

@@ -413,11 +413,16 @@ class AppController(QtCore.QObject):
 
             self._ui = Ui_MainWindow()
             self._ui.setupUi(self._mainWindow)
-            self._mainWindow.installEventFilter(self)
 
             self._mainWindow.setWindowTitle(parserData.usdFile)
             self._statusBar = QtWidgets.QStatusBar(self._mainWindow)
             self._mainWindow.setStatusBar(self._statusBar)
+
+            # Install our custom event filter.  The member assignment of the
+            # filter is just for lifetime management
+            from appEventFilter import AppEventFilter
+            self._filterObj = AppEventFilter(self)
+            QtWidgets.QApplication.instance().installEventFilter(self._filterObj)
 
             # read the stage here
             self._stage = self._openStage(self._parserData.usdFile,
@@ -1030,14 +1035,6 @@ class AppController(QtCore.QObject):
 
         if self._mallocTags == 'stageAndImaging':
             DumpMallocTags(self._stage, "stage-loading and imaging")
-
-    def eventFilter(self, widget, event):
-        if event.type() == QtCore.QEvent.KeyPress:
-            key = event.key()
-            if key == QtCore.Qt.Key_Escape:
-                self._mainWindow.setFocus()
-                return True
-        return QtCore.QObject.eventFilter(self, widget, event)
 
     def statusMessage(self, msg, timeout = 0):
         self._statusBar.showMessage(msg, timeout * 1000)
@@ -1810,12 +1807,16 @@ class AppController(QtCore.QObject):
         self._advanceFrame()
 
     def _advanceFrame(self):
+        if not self._playbackAvailable:
+            return
         newValue = self._ui.frameSlider.value() + 1
         if newValue > self._ui.frameSlider.maximum():
             newValue = self._ui.frameSlider.minimum()
         self._ui.frameSlider.setValue(newValue)
 
     def _retreatFrame(self):
+        if not self._playbackAvailable:
+            return
         newValue = self._ui.frameSlider.value() - 1
         if newValue < self._ui.frameSlider.minimum():
             newValue = self._ui.frameSlider.maximum()
@@ -2337,7 +2338,9 @@ class AppController(QtCore.QObject):
 
         if self._interpreter is None:
             self._interpreter = QtWidgets.QDialog(self._mainWindow)
+            self._interpreter.setObjectName("Interpreter")
             self._console = Myconsole(self._interpreter)
+            self._interpreter.setFocusProxy(self._console) # this is important!
             lay = QtWidgets.QVBoxLayout()
             lay.addWidget(self._console)
             self._interpreter.setLayout(lay)
@@ -2350,7 +2353,7 @@ class AppController(QtCore.QObject):
         self._updateInterpreter()
         self._interpreter.show()
         self._interpreter.activateWindow()
-        self._console.setFocus()
+        self._interpreter.setFocus()
 
     def _updateInterpreter(self):
         from pythonExpressionPrompt import Myconsole
@@ -2407,10 +2410,11 @@ class AppController(QtCore.QObject):
         except RuntimeError:
             pass
 
-        # Shut down some timers.
+        # Shut down some timers and our eventFilter
         self._primViewUpdateTimer.stop()
         self._primViewResetTimer.stop()
-
+        QtWidgets.QApplication.instance().removeEventFilter(self._filterObj)
+        
         # If the timer is currently active, stop it from being invoked while
         # the USD stage is being torn down.
         if self._timer.isActive():
@@ -4311,3 +4315,18 @@ class AppController(QtCore.QObject):
         else:
             tip = ""
         QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), tip, self._stageView)
+
+    def processNavKeyEvent(self, kpEvent):
+        # This method is a standin for a hotkey processor... for now greatly
+        # limited in scope, as we mostly use Qt's builtin hotkey dispatch.
+        # Since we want navigation keys to be hover-context-sensitive, we
+        # cannot use the native mechanism.
+        key = kpEvent.key()
+        if key == QtCore.Qt.Key_Right:
+            self._advanceFrame()
+            return True
+        elif key == QtCore.Qt.Key_Left:
+            self._retreatFrame()
+            return True
+        return False
+        

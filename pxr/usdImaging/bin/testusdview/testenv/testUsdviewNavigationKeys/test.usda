@@ -1,0 +1,27 @@
+#usda 1.0
+(
+    endTimeCode = 106
+    startTimeCode = 101
+)
+
+def "World"
+{
+    def "sets"
+    {
+        def "setModel"
+        {
+            def "p"
+            {
+                float x.timeSamples = {
+                    101: 1,
+                    102: 2,
+                    103: 3,
+                    104: 4,
+                    105: 5,
+                    106: 6,
+                }
+            }
+        }
+    }
+}
+
