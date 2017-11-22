@@ -2037,7 +2037,9 @@ CrateFile::_WritePaths(_Writer &w)
         vector<pair<SdfPath, PathIndex>> ppaths;
         ppaths.reserve(_paths.size());
         for (auto const &p: _paths) {
-            ppaths.emplace_back(p, _packCtx->pathToPathIndex[p]);
+            if (!p.IsEmpty()) {
+                ppaths.emplace_back(p, _packCtx->pathToPathIndex[p]);
+            }
         }
         std::sort(ppaths.begin(), ppaths.end(),
                   [](pair<SdfPath, PathIndex> const &l,
@@ -2256,6 +2258,10 @@ CrateFile::_WriteCompressedPathData(_Writer &w, Container const &pathVec)
     // This is vaguely similar to the _PathItemHeader struct used in prior
     // versions.
 
+    // Write the # of encoded paths.  This can differ from the size of _paths
+    // since we do not write out the empty path.
+    w.WriteAs<uint64_t>(pathVec.size());
+    
     vector<uint32_t> pathIndexes;
     vector<int32_t> elementTokenIndexes;
     vector<int32_t> jumps;
@@ -2617,8 +2623,9 @@ CrateFile::_ReadPaths(Reader reader)
 
     reader.Seek(pathsSection->start);
 
-    // Read # of paths.
+    // Read # of paths, and fill the _paths vector with empty paths.
     _paths.resize(reader.template Read<uint64_t>());
+    std::fill(_paths.begin(), _paths.end(), SdfPath());
 
     WorkArenaDispatcher dispatcher;
     // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
@@ -2697,7 +2704,8 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     vector<int32_t> elementTokenIndexes;
     vector<int32_t> jumps;
 
-    size_t numPaths = _paths.size();
+    // Read number of encoded paths.
+    size_t numPaths = reader.template Read<uint64_t>();
     
     pathIndexes.resize(numPaths);
     elementTokenIndexes.resize(numPaths);
