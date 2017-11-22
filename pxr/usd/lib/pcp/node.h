@@ -326,14 +326,17 @@ class PcpNodeRef_ChildrenIterator
 {
 public:
     /// Constructs an invalid iterator.
+    PCP_API
     PcpNodeRef_ChildrenIterator();
 
     /// Constructs an iterator pointing to \p node. Passing a NULL value
     /// for \p node constructs an end iterator.
+    PCP_API
     PcpNodeRef_ChildrenIterator(const PcpNodeRef& node, bool end = false);
 
 private:
     friend class boost::iterator_core_access;
+    PCP_API
     void increment();
     bool equal(const PcpNodeRef_ChildrenIterator& other) const
     {
