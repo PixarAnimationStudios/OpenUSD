@@ -1118,7 +1118,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
 
             // PERFORMANCE: this loop can be expensive.
             for (auto const& sdfPath : hdDirtyList->GetDirtyRprims()) {
-                dirtyIds[sdfPath] |= (1 << reprIndex);
+                dirtyIds[sdfPath] |= (1ULL << reprIndex);
             }
         }
     }
