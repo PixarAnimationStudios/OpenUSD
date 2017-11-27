@@ -1,0 +1,182 @@
+#usda 1.0
+
+def Xform "World"
+{
+    def Xform "City_set" 
+    {
+        def Xform "Vehicles_grp"
+        {
+            def Xform "Cars_grp"
+            {
+                def Xform "CarA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "CarB"
+                {   
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "CarC"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+            }
+
+            def Xform "Bikes_grp"
+            {
+                def Xform "BikeA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "BikeB"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "BikeC"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "BikeD"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+            }
+        }
+
+        def Xform "Misc_grp" 
+        {
+            def Xform "TruckA"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+            def Xform "BicycleA"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+            def Xform "CarD" 
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+            def Xform "BikeE"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+            def Xform "BikeF"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+        }
+    }
+
+    def Xform "Room_set" 
+    {
+        def Xform "Table_grp" 
+        {
+            def "LampA" (
+                references = @./Lamp.usda@</Lamp>
+            ) {
+                
+            }
+
+            def "LampB" (
+                references = @./Lamp.usda@</Lamp>
+            ) {
+                
+            }
+
+            def "LampC" (
+                references = @./Lamp.usda@</Lamp>
+            ) {
+                
+            }
+
+            def Xform "Pencils_grp" 
+            {
+                def Xform "PencilA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "PencilB"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "PencilC"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "EraserA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+            }
+            def Xform "Pens_grp"
+            {
+                def Xform "PenA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+                def Xform "PenB"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+            }
+            def Xform "Table"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+        }
+        def Xform "Chairs_grp" 
+        {
+            def Xform "ChairA"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+            def Xform "ChairB"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+        }
+    }
+}
