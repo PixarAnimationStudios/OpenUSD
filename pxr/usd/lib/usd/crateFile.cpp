@@ -240,13 +240,14 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
-// 0.3.0: Compressed structural sections.
+// 0.4.0: Compressed structural sections.
+// 0.3.0: (broken, unused)
 // 0.2.0: Added support for prepend and append fields of SdfListOp.
 // 0.1.0: Fixed structure layout issue encountered in Windows port.
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 3;
+constexpr uint8_t USDC_MINOR = 4;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -1954,11 +1955,11 @@ CrateFile::_MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const
 void
 CrateFile::_WriteFields(_Writer &w)
 {
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Old-style uncompressed fields.
         w.Write(_fields);
     } else {
-        // Compressed fields in 0.3.0.
+        // Compressed fields in 0.4.0.
 
         // Total # of fields.
         w.WriteAs<uint64_t>(_fields.size());
@@ -1997,7 +1998,7 @@ CrateFile::_WriteFields(_Writer &w)
 void
 CrateFile::_WriteFieldSets(_Writer &w)
 {
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Old-style uncompressed fieldSets.
         w.Write(_fieldSets);
     } else {
@@ -2025,7 +2026,7 @@ CrateFile::_WritePaths(_Writer &w)
     // Write the total # of paths.
     w.WriteAs<uint64_t>(_paths.size());
 
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Old-style uncompressed paths.
         SdfPathTable<PathIndex> pathToIndexTable;
         for (auto const &item: _packCtx->pathToPathIndex)
@@ -2059,10 +2060,10 @@ CrateFile::_WriteSpecs(_Writer &w)
         // Copy and write old-structure specs.
         vector<Spec_0_0_1> old(_specs.begin(), _specs.end());
         w.Write(old);
-    } else if (_packCtx->writeVersion < Version(0,3,0)) {
+    } else if (_packCtx->writeVersion < Version(0,4,0)) {
         w.Write(_specs);
     } else {
-        // Version 0.3.0 introduces compressed specs.  We write three lists of
+        // Version 0.4.0 introduces compressed specs.  We write three lists of
         // integers here, pathIndexes, fieldSetIndexes, specTypes.
         std::unique_ptr<char[]> compBuffer(
             new char[Usd_IntegerCompression::
@@ -2304,7 +2305,7 @@ void
 CrateFile::_WriteTokens(_Writer &w) {
     // # of strings.
     w.WriteAs<uint64_t>(_tokens.size());
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Count total bytes.
         uint64_t totalBytes = 0;
         for (auto const &t: _tokens)
@@ -2316,7 +2317,7 @@ CrateFile::_WriteTokens(_Writer &w) {
             w.WriteContiguous(str.c_str(), str.size() + 1);
         }
     } else {
-        // Version 0.3.0 compresses tokens.
+        // Version 0.4.0 compresses tokens.
         vector<char> tokenData;
         for (auto const &t: _tokens) {
             auto const &str = t.GetString();
@@ -2409,10 +2410,10 @@ CrateFile::_ReadFieldSets(Reader reader)
     if (auto fieldSetsSection = _toc.GetSection(_FieldSetsSectionName)) {
         reader.Seek(fieldSetsSection->start);
 
-        if (Version(_boot) < Version(0,3,0)) {
+        if (Version(_boot) < Version(0,4,0)) {
             _fieldSets = reader.template Read<decltype(_fieldSets)>();
         } else {
-            // Compressed fieldSets in 0.3.0.
+            // Compressed fieldSets in 0.4.0.
             auto numFieldSets = reader.template Read<uint64_t>();
             _fieldSets.resize(numFieldSets);
 
@@ -2444,10 +2445,10 @@ CrateFile::_ReadFields(Reader reader)
     TfAutoMallocTag tag("_ReadFields");
     if (auto fieldsSection = _toc.GetSection(_FieldsSectionName)) {
         reader.Seek(fieldsSection->start);
-        if (Version(_boot) < Version(0,3,0)) {
+        if (Version(_boot) < Version(0,4,0)) {
             _fields = reader.template Read<decltype(_fields)>();
         } else {
-            // Compressed fields in 0.3.0.
+            // Compressed fields in 0.4.0.
             auto numFields = reader.template Read<uint64_t>();
             _fields.resize(numFields);
 
@@ -2493,10 +2494,10 @@ CrateFile::_ReadSpecs(Reader reader)
             vector<Spec_0_0_1> old = reader.template Read<decltype(old)>();
             _specs.resize(old.size());
             copy(old.begin(), old.end(), _specs.begin());
-        } else if (Version(_boot) < Version(0,3,0)) {
+        } else if (Version(_boot) < Version(0,4,0)) {
             _specs = reader.template Read<decltype(_specs)>();
         } else {
-            // Version 0.3.0 specs are compressed
+            // Version 0.4.0 specs are compressed
             auto numSpecs = reader.template Read<uint64_t>();
             _specs.resize(numSpecs);
 
@@ -2571,10 +2572,10 @@ CrateFile::_ReadTokens(Reader reader)
     RawDataPtr chars;
     
     Version fileVer(_boot);
-    if (fileVer < Version(0,3,0)) {
-        // XXX: To support pread(), we need to read the whole thing into memory to
-        // make tokens out of it.  This is a pessimization vs mmap, from which we
-        // can just construct from the chars directly.
+    if (fileVer < Version(0,4,0)) {
+        // XXX: To support pread(), we need to read the whole thing into memory
+        // to make tokens out of it.  This is a pessimization vs mmap, from
+        // which we can just construct from the chars directly.
         auto tokensNumBytes = reader.template Read<uint64_t>();
         chars.reset(new char[tokensNumBytes]);
         reader.ReadContiguous(chars.get(), tokensNumBytes);
@@ -2632,10 +2633,10 @@ CrateFile::_ReadPaths(Reader reader)
     Version fileVer(_boot);
     if (fileVer == Version(0,0,1)) {
         _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
-    } else if (fileVer < Version(0,3,0)) {
+    } else if (fileVer < Version(0,4,0)) {
         _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
     } else {
-        // 0.3.0 has compressed paths.
+        // 0.4.0 has compressed paths.
         _ReadCompressedPaths(reader, dispatcher);
     }
 
