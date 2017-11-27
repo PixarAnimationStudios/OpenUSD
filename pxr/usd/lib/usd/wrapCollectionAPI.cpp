@@ -177,6 +177,10 @@ WRAP_CUSTOM {
         .def("GetName", &This::GetName)
         .def("GetCollectionPath", &This::GetCollectionPath)
 
+        .def("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
+            arg("baseName"))
+            .staticmethod("IsSchemaPropertyBaseName")
+
         .def("IsCollectionPath", _WrapIsCollectionPath)
             .staticmethod("IsCollectionPath")
 

@@ -353,6 +353,11 @@ public:
     SdfPath GetCollectionPath() const;
 
 
+    /// Returns true if a property with the given base-name, \p baseName 
+    /// could be collection schema property.
+    USD_API
+    static bool IsSchemaPropertyBaseName(const TfToken &baseName);
+
     /// Returns true if \p path points to a collection.
     /// i.e., if it is a property path and the property name is of the 
     /// form "collection:{collectionName}.
@@ -389,7 +394,7 @@ public:
     USD_API
     static std::set<UsdObject> ComputeIncludedObjects(
         const MembershipQuery &query,
-        const UsdStagePtr &stage,
+        const UsdStageWeakPtr &stage,
         const Usd_PrimFlagsPredicate &pred=UsdPrimDefaultPredicate);
 
     /// Returns all the paths that satisfy the predicate, \p pred in the
@@ -399,7 +404,7 @@ public:
     USD_API
     static SdfPathSet ComputeIncludedPaths(
         const MembershipQuery &query,
-        const UsdStagePtr &stage,
+        const UsdStageWeakPtr &stage,
         const Usd_PrimFlagsPredicate &pred=UsdPrimDefaultPredicate);
 
     /// \anchor UsdCollectionAPI_RawProperties
@@ -517,7 +522,7 @@ private:
     // ComputeIncludedPaths().
     static void _ComputeIncludedImpl(
         const MembershipQuery &query,
-        const UsdStagePtr &stage,
+        const UsdStageWeakPtr &stage,
         const Usd_PrimFlagsPredicate &pred,
         std::set<UsdObject> *includedObjects,
         SdfPathSet *includedPaths);

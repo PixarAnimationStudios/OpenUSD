@@ -105,6 +105,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 
+#include <set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -124,10 +126,9 @@ UsdCollectionAPI::AddCollection(
     TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
 
     TfToken baseName = *tokens.rbegin();
-    if (baseName == UsdTokens->expansionRule ||
-        baseName == _tokens->includes || 
-        baseName == _tokens->excludes) {
-        TF_CODING_ERROR("Invalid collection name '%s'", name.GetText());
+    if (IsSchemaPropertyBaseName(baseName)) {
+        TF_CODING_ERROR("Invalid collection name '%s'. The base-name '%s' is a "
+            "schema property name.", name.GetText(), baseName.GetText());
         return UsdCollectionAPI();
     }
     
@@ -285,6 +286,16 @@ UsdCollectionAPI::HasNoIncludedPaths() const
 
 /* static */
 bool 
+UsdCollectionAPI::IsSchemaPropertyBaseName(
+    const TfToken &baseName)
+{
+    return baseName == UsdTokens->expansionRule ||
+           baseName == _tokens->includes ||
+           baseName == _tokens->excludes;
+}
+
+/* static */
+bool 
 UsdCollectionAPI::IsCollectionPath(
     const SdfPath &path, 
     TfToken *collectionName)
@@ -300,9 +311,7 @@ UsdCollectionAPI::IsCollectionPath(
     // schema properties. We should validate this in the creation (or apply)
     // API.
     TfToken baseName = *tokens.rbegin();
-    if (baseName == UsdTokens->expansionRule ||
-        baseName == _tokens->includes ||
-        baseName == _tokens->excludes) {
+    if (IsSchemaPropertyBaseName(baseName)) {
         return false;
     }
 
@@ -424,7 +433,7 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
 std::set<UsdObject> 
 UsdCollectionAPI::ComputeIncludedObjects(
     const MembershipQuery &query,
-    const UsdStagePtr &stage,
+    const UsdStageWeakPtr &stage,
     const Usd_PrimFlagsPredicate &pred)
 {
     std::set<UsdObject> result;
@@ -436,7 +445,7 @@ UsdCollectionAPI::ComputeIncludedObjects(
 SdfPathSet
 UsdCollectionAPI::ComputeIncludedPaths(
     const MembershipQuery &query,
-    const UsdStagePtr &stage,
+    const UsdStageWeakPtr &stage,
     const Usd_PrimFlagsPredicate &pred)
 {
     SdfPathSet result;
@@ -448,7 +457,7 @@ UsdCollectionAPI::ComputeIncludedPaths(
 void
 UsdCollectionAPI::_ComputeIncludedImpl(
     const MembershipQuery &query,
-    const UsdStagePtr &stage,
+    const UsdStageWeakPtr &stage,
     const Usd_PrimFlagsPredicate &pred,
     std::set<UsdObject> *includedObjects,
     SdfPathSet *includedPaths)
