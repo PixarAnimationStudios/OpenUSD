@@ -94,13 +94,28 @@ public:
 
     /// Copy constructor.
     TfToken(TfToken const& rhs) : _rep(rhs._rep) { _AddRef(); }
+
+    /// Move constructor.
+    TfToken(TfToken && rhs) : _rep(rhs._rep) {
+        rhs._rep = TfPointerAndBits<const _Rep>();
+    }
     
-    /// Assignment.
+    /// Copy assignment.
     TfToken& operator= (TfToken const& rhs) {
         if (&rhs != this) {
             rhs._AddRef();
             _RemoveRef();
             _rep = rhs._rep;
+        }
+        return *this;
+    }
+
+    /// Move assignment.
+    TfToken& operator= (TfToken && rhs) {
+        if (&rhs != this) {
+            _RemoveRef();
+            _rep = rhs._rep;
+            rhs._rep = TfPointerAndBits<const _Rep>();
         }
         return *this;
     }
