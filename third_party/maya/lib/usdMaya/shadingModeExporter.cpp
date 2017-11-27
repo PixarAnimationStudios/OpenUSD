@@ -23,9 +23,17 @@
 //
 #include "usdMaya/shadingModeExporter.h"
 
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdUtils/authoring.h"
+
 #include <maya/MItDependencyNodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((materialNamespace, "material:"))
+);
 
 PxrUsdMayaShadingModeExporter::PxrUsdMayaShadingModeExporter() {
 
@@ -35,14 +43,41 @@ PxrUsdMayaShadingModeExporter::~PxrUsdMayaShadingModeExporter() {
 
 }
 
+static 
+TfToken 
+_GetCollectionName(const UsdShadeMaterial &mat) 
+{
+    return TfToken(_tokens->materialNamespace.GetString() +
+                   mat.GetPrim().GetName().GetString());
+}
+
 void
 PxrUsdMayaShadingModeExporter::DoExport(
     const UsdStageRefPtr& stage,
     const PxrUsdMayaUtil::ShapeSet& bindableRoots,
     bool mergeTransformAndShape,
     const SdfPath& overrideRootPath,
-    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&) {
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type&,
+    const SdfPath &materialCollectionsPath) 
+{
     MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
+
+    using MaterialAssignments = std::vector<std::pair<TfToken, 
+        SdfPathSet>>;
+
+    UsdPrim materialCollectionsPrim;
+    if (!materialCollectionsPath.IsEmpty()) {
+        materialCollectionsPrim = 
+            stage->OverridePrim(materialCollectionsPath);
+        if (!materialCollectionsPrim) {
+            TF_WARN("Error: could not override prim at path <%s>. One of the "
+                    "ancestors of the path must be inactive or an instance "
+                    "root. Not exporting material collections!",
+                    materialCollectionsPath.GetText());
+        }
+    }
+
+    MaterialAssignments matAssignments;
     for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
         MObject shadingEngine(shadingEngineIter.thisNode());
 
@@ -53,13 +88,21 @@ PxrUsdMayaShadingModeExporter::DoExport(
             bindableRoots,
             overrideRootPath);
 
-        Export(c);
+        UsdShadeMaterial mat;
+        SdfPathSet boundPrimPaths;
+        Export(c, &mat, &boundPrimPaths);
+
+        if (!boundPrimPaths.empty()) {
+            matAssignments.push_back(std::make_pair(
+                _GetCollectionName(mat), boundPrimPaths));
+        }
     }
-}
 
-void
-PxrUsdMayaShadingModeExporter::Export(const PxrUsdMayaShadingModeExportContext& ctx) {
-
+    if (materialCollectionsPrim && !matAssignments.empty()) {
+        std::vector<UsdCollectionAPI> collections = 
+                UsdUtilsCreateCollections(matAssignments, 
+                        materialCollectionsPrim);
+    } 
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

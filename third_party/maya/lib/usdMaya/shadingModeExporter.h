@@ -30,6 +30,8 @@
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
 
+#include "pxr/usd/usdShade/material.h"
+
 #include <functional>
 #include <memory>
 
@@ -43,14 +45,17 @@ public:
     virtual ~PxrUsdMayaShadingModeExporter();
 
     PXRUSDMAYA_API
-    virtual void DoExport(const UsdStageRefPtr& stage,
-                          const PxrUsdMayaUtil::ShapeSet& bindableRoots,
-                          bool mergeTransformAndShape,
-                          const SdfPath& overrideRootPath,
-                          const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap);
+    void DoExport(const UsdStageRefPtr& stage,
+                  const PxrUsdMayaUtil::ShapeSet& bindableRoots,
+                  bool mergeTransformAndShape,
+                  const SdfPath& overrideRootPath,
+                  const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+                  const SdfPath &materialCollectionsPath);
 
     PXRUSDMAYA_API
-    virtual void Export(const PxrUsdMayaShadingModeExportContext& context);
+    virtual void Export(const PxrUsdMayaShadingModeExportContext& context,
+                        UsdShadeMaterial * const mat, 
+                        SdfPathSet * const boundPrimPaths)=0;
 };
 
 using PxrUsdMayaShadingModeExporterPtr = std::shared_ptr<PxrUsdMayaShadingModeExporter>;

@@ -248,13 +248,18 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     }
 
     // Writing Materials/Shading
+    SdfPath matCollectionPath = mJobCtx.mArgs.exportMaterialCollections ? 
+                    SdfPath(mJobCtx.mArgs.materialCollectionsPath) : 
+                    SdfPath::EmptyPath();
+
     PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
                 mJobCtx.mStage,
                 mJobCtx.mArgs.dagPaths,
                 mJobCtx.mArgs.shadingMode,
                 mJobCtx.mArgs.mergeTransformAndShape,
                 mJobCtx.mArgs.usdModelRootOverridePath,
-                mDagPathToUsdPathMap);
+                mDagPathToUsdPathMap,
+                matCollectionPath);
 
     if (!mModelKindWriter.MakeModelHierarchy(mJobCtx.mStage)) {
         return false;
