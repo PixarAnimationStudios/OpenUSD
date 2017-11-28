@@ -66,7 +66,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
-GT_DataArrayHandle newDataArray( GT_Storage storage, GT_Size size, int tupleSize );
+GT_DataArrayHandle newDataArray( GT_Storage storage, GT_Size size,
+                                 int tupleSize, GT_Type typeInfo );
 void copyDataArrayItem( GT_DataArrayHandle dstData, GT_DataArrayHandle srcData, 
                         GT_Offset dstOffset, GT_Offset srcOffset );
 GT_AttributeListHandle findAndAddStringAttribute( GT_AttributeListHandle attrs,
@@ -603,10 +604,11 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                     continue;
                 }
                 GT_Storage storage = instPtAttrs->get( j )->getStorage();
-                GT_Size tupleSize = instPtAttrs->get( j )->getTupleSize();
+                GT_Size tupleSize  = instPtAttrs->get( j )->getTupleSize();
+                GT_Type typeInfo   = instPtAttrs->get( j )->getTypeInfo();
                 pAttrs = pAttrs->addAttribute( 
                             n, 
-                            newDataArray( storage, nprims, tupleSize ), 
+                            newDataArray( storage, nprims, tupleSize, typeInfo ), 
                             true );
             }
         }
@@ -633,10 +635,11 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                 if( !pAttrs->hasName( n ) ) {
 
                     GT_Storage storage = instUniAttrs->get( j )->getStorage();
-                    GT_Size tupleSize = instUniAttrs->get( j )->getTupleSize();
+                    GT_Size tupleSize  = instUniAttrs->get( j )->getTupleSize();
+                    GT_Type typeInfo   = instUniAttrs->get( j )->getTypeInfo();
                     pAttrs = pAttrs->addAttribute( 
                                 n, 
-                                newDataArray( storage, nprims, tupleSize ),
+                                newDataArray( storage, nprims, tupleSize, typeInfo ),
                                 true );
                 }
             }
@@ -791,19 +794,20 @@ GusdRefinerCollector::addInstPrim( const SdfPath &path, GT_PrimitiveHandle p, in
 namespace {
 
 GT_DataArrayHandle
-newDataArray( GT_Storage storage, GT_Size size, int tupleSize )
+newDataArray( GT_Storage storage, GT_Size size, int tupleSize,
+              GT_Type typeInfo=GT_TYPE_NONE )
 {
     if( storage == GT_STORE_REAL32 ) {
-        return new GT_Real32Array( size, tupleSize );
+        return new GT_Real32Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_REAL64 ) {
-        return new GT_Real64Array( size, tupleSize );
+        return new GT_Real64Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_INT32 ) {
-        return new GT_Int32Array( size, tupleSize );
+        return new GT_Int32Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_INT64 ) {
-        return new GT_Int64Array( size, tupleSize );
+        return new GT_Int64Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_STRING ) {
         return new GT_DAIndexedString( size, tupleSize );
