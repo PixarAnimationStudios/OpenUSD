@@ -96,7 +96,6 @@ private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
     bool _mergeTransformAndShape;
-    bool _handleUsdNamespaces;
     SdfPath _overrideRootPath;
 
     SdfPathSet _bindableRoots;

@@ -63,7 +63,11 @@ class MayaTransformWriter : public MayaPrimWriter
 public:
 
     PXRUSDMAYA_API
-    MayaTransformWriter(const MDagPath & iDag, const SdfPath& uPath, bool instanceSource, usdWriteJobCtx& jobCtx);
+    MayaTransformWriter(
+            const MDagPath& iDag,
+            const SdfPath& uPath,
+            bool instanceSource,
+            usdWriteJobCtx& jobCtx);
     virtual ~MayaTransformWriter() {};
 
     PXRUSDMAYA_API
@@ -75,7 +79,7 @@ public:
     PXRUSDMAYA_API
     virtual void write(const UsdTimeCode &usdTime);
 
-    virtual bool isShapeAnimated()     const { return mIsShapeAnimated; };
+    virtual bool isShapeAnimated() const { return mIsShapeAnimated; };
 
     const MDagPath& getTransformDagPath() { return mXformDagPath; };
 
@@ -86,16 +90,10 @@ protected:
             UsdGeomXformable& primSchema);
 
 private:
-    bool mWriteTransformAttrs;
     MDagPath mXformDagPath;
     bool mIsShapeAnimated;
     std::vector<AnimChannel> mAnimChanList;
     bool mIsInstanceSource;
-
-    size_t mJointOrientOpIndex[3];
-    size_t mRotateOpIndex[3];
-    size_t mRotateAxisOpIndex[3];
-
 };
 
 typedef std::shared_ptr<MayaTransformWriter> MayaTransformWriterPtr;

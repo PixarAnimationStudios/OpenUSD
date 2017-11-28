@@ -33,13 +33,12 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 #include <boost/scoped_ptr.hpp>
+#include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 
-class M3dView;
-class MPxSurfaceShape;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

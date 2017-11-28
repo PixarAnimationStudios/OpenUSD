@@ -31,6 +31,11 @@
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/usdPrimProvider.h"
 
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/usd/stage.h"
+
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
 #include <maya/MPxAssembly.h>
@@ -38,17 +43,12 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include <map>
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/envSetting.h"
-
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/usd/stage.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -121,21 +121,19 @@ public:
 
     // Static Member Functions ==
     PXRUSDMAYA_API
-    static void*   creator(
-            const PluginStaticData& psData);
+    static void* creator(const PluginStaticData& psData);
     PXRUSDMAYA_API
-    static MStatus initialize(
-            PluginStaticData* psData);
+    static MStatus initialize(PluginStaticData* psData);
 
     // == Base Class Virtuals ==
     PXRUSDMAYA_API
-    virtual MStatus    compute( const MPlug& plug,
-                                MDataBlock& dataBlock );
+    virtual MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
     PXRUSDMAYA_API
-    virtual bool       setInternalValueInContext( const MPlug& plug,
-                                         const MDataHandle& dataHandle,
-                                         MDGContext& ctx);
+    virtual bool setInternalValueInContext(
+            const MPlug& plug,
+            const MDataHandle& dataHandle,
+            MDGContext& ctx) override;
 
     // Required overrides
     PXRUSDMAYA_API
@@ -143,68 +141,60 @@ public:
             const MString& input,
             const MString& type,
             const MString& representation,
-            MDagModifier*  undoRedo = NULL,
-            MStatus*       ReturnStatus = NULL);
+            MDagModifier* undoRedo = NULL,
+            MStatus* ReturnStatus = NULL) override;
     
     PXRUSDMAYA_API
-    virtual MString      getActive() const;
+    virtual MString getActive() const override;
     PXRUSDMAYA_API
-    virtual MStringArray getRepresentations(MStatus* ReturnStatus = NULL) const;
+    virtual MStringArray getRepresentations(
+            MStatus* ReturnStatus = NULL) const override;
     PXRUSDMAYA_API
-    virtual MString      getRepType(const MString& representation) const;
+    virtual MString getRepType(const MString& representation) const override;
     PXRUSDMAYA_API
-    virtual MString      getRepLabel(const MString& representation) const;
+    virtual MString getRepLabel(const MString& representation) const override;
     PXRUSDMAYA_API
-    virtual MStringArray repTypes() const;
+    virtual MStringArray repTypes() const override;
     PXRUSDMAYA_API
-    virtual MStatus      deleteRepresentation(const MString& representation);
+    virtual MStatus deleteRepresentation(
+            const MString& representation) override;
     PXRUSDMAYA_API
-    virtual MStatus      deleteAllRepresentations();
+    virtual MStatus deleteAllRepresentations() override;
     PXRUSDMAYA_API
-    virtual MString      setRepName(const MString& representation,
-                                    const MString& newName,
-                                    MStatus*       ReturnStatus = NULL);
+    virtual MString setRepName(
+            const MString& representation,
+            const MString& newName,
+            MStatus* ReturnStatus = NULL) override;
     PXRUSDMAYA_API
-    virtual MStatus      setRepLabel(const MString& representation,
-                                     const MString& label);
+    virtual MStatus setRepLabel(
+            const MString& representation,
+            const MString& label) override;
     PXRUSDMAYA_API
-    virtual bool         activateRep(const MString& representation);
+    virtual bool activateRep(const MString& representation) override;
 
     // Optional overrides
     PXRUSDMAYA_API
-    virtual bool         supportsEdits() const { return true;};
+    virtual bool supportsEdits() const override { return true; };
     PXRUSDMAYA_API
-    virtual bool         supportsMemberChanges() const { return false;};
+    virtual bool supportsMemberChanges() const override { return false; };
     PXRUSDMAYA_API
-    virtual bool         canRepApplyEdits(const MString& rep) const {return (rep.length() > 0);};
+    virtual bool canRepApplyEdits(const MString& rep) const override {
+        return (rep.length() > 0);
+    };
 
     PXRUSDMAYA_API
-    virtual void         postLoad();
+    virtual void postLoad() override;
     PXRUSDMAYA_API
-    virtual bool         inactivateRep();
+    virtual bool inactivateRep() override;
     PXRUSDMAYA_API
-    virtual MString      getRepNamespace() const override;
+    virtual MString getRepNamespace() const override;
     PXRUSDMAYA_API
-    virtual void         updateRepNamespace(const MString& repNamespace) override;
-
-    //virtual bool         activate(const MString& representation);
-    //virtual bool         isActive(const MString& representation) const;
-    //virtual bool         handlesApplyEdits() const;
-    //virtual MStatus      applyEdits(MObject& target, MItEdits& edits);
-    //virtual bool         handlesAddEdits() const;
-    //virtual MStatus      addEdits();
-    //virtual void         beforeSave();
-    //virtual void         memberAdded(MObject& member);
-    //virtual void         memberRemoved(MObject& member);
-
-    //virtual void         preApplyEdits();
-    //virtual void         preUnapplyEdits();
-    //virtual MString      getInitialRep(const MObject &assembly,
-    //                                  bool& hasInitialRep,
-    //                                  MStatus* ReturnStatus=NULL) const;
+    virtual void updateRepNamespace(const MString& repNamespace) override;
 
     PXRUSDMAYA_API
-    virtual MStatus      setDependentsDirty( const MPlug& plug, MPlugArray& plugArray);
+    virtual MStatus setDependentsDirty(
+            const MPlug& plug,
+            MPlugArray& plugArray) override;
 
     // PxrUsdMayaUsdPrimProvider overrides:
     PXRUSDMAYA_API

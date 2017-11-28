@@ -68,7 +68,7 @@ public:
 
     // Overrides for MayaTransformWriter
     PXRUSDMAYA_API
-    virtual void write(const UsdTimeCode &usdTime);
+    virtual void write(const UsdTimeCode &usdTime) override;
     
     PXRUSDMAYA_API
     virtual bool exportsGprims() const override;

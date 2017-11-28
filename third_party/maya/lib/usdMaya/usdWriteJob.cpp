@@ -61,6 +61,7 @@
 #include <maya/MItDag.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
+#include <maya/MStatus.h>
 
 #include <limits>
 #include <map>
@@ -172,16 +173,42 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     for (PxrUsdMayaUtil::ShapeSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
             it != end; ++it) {
         MDagPath curDagPath = *it;
-        std::string curDagPathStr(curDagPath.partialPathName().asChar());
+        MStatus status;
+        bool curDagPathIsValid = curDagPath.isValid(&status);
+        if (status != MS::kSuccess || !curDagPathIsValid) {
+            continue;
+        }
+
+        std::string curDagPathStr(curDagPath.partialPathName(&status).asChar());
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
         argDagPaths.insert(curDagPathStr);
 
-        while (curDagPath.pop() && curDagPath.length() >= 0) {
-            curDagPathStr = curDagPath.partialPathName().asChar();
+        status = curDagPath.pop();
+        if (status != MS::kSuccess) {
+            continue;
+        }
+        curDagPathIsValid = curDagPath.isValid(&status);
+
+        while (status == MS::kSuccess && curDagPathIsValid) {
+            curDagPathStr = curDagPath.partialPathName(&status).asChar();
+            if (status != MS::kSuccess) {
+                break;
+            }
+
             if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
                 // We've already traversed up from this path.
                 break;
             }
             argDagPathParents.insert(curDagPathStr);
+
+            status = curDagPath.pop();
+            if (status != MS::kSuccess) {
+                break;
+            }
+            curDagPathIsValid = curDagPath.isValid(&status);
         }
     }
 

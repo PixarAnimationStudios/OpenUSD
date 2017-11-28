@@ -63,7 +63,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-class MDagPath;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
