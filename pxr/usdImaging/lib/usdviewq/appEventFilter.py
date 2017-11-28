@@ -149,5 +149,13 @@ class AppEventFilter(QtCore.QObject):
               not self.JealousFocus(currFocusWidget)):
             self.SetFocusFromMousePos(widget)
             # Note we do not consume the event!
-                
-        return QtCore.QObject.eventFilter(self, widget, event)
+            
+        # During startup, Qt seems to queue up events on objects that may
+        # have disappeared by the time the eventFilter is called upon.  This
+        # is true regardless of how late we install the eventFilter, and
+        # whether we process pending events before installing.  So we 
+        # silently ignore Runtime errors that occur as a result.
+        try:
+            return QtCore.QObject.eventFilter(self, widget, event)
+        except RuntimeError:
+            return True
