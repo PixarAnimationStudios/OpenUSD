@@ -378,10 +378,13 @@ def InstallBoost(context, force):
         Run('{bootstrap} --prefix="{instDir}"'
             .format(bootstrap=bootstrap, instDir=context.instDir))
 
+        # b2 supports at most -j64 and will error if given a higher value.
+        num_procs = min(64, multiprocessing.cpu_count())
+
         b2_settings = [
             '--prefix="{instDir}"'.format(instDir=context.instDir),
             '--build-dir="{buildDir}"'.format(buildDir=context.buildDir),
-            '-j{procs}'.format(procs=multiprocessing.cpu_count()),
+            '-j{procs}'.format(procs=num_procs),
             'address-model=64',
             'link=shared',
             'runtime-link=shared',
