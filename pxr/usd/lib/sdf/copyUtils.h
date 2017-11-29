@@ -62,8 +62,9 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// made; client code should arrange for relationship targets and connections to
 /// be specified as prepended, appended, deleted, and/or ordered, as needed.
 ///
-/// Attribute connections and relationship targets that target an object
-/// beneath \p srcPath will be remapped to target objects beneath \p dstPath.
+/// Attribute connections, relationship targets, inherit and specializes paths,
+/// and internal sub-root references that target an object beneath \p srcPath 
+/// will be remapped to target objects beneath \p dstPath.
 ///
 SDF_API
 bool

@@ -280,6 +280,22 @@ class TestSdfCopyUtils(unittest.TestCase):
         attrSpec.SetConnectionMarker("/Test/Child.attr2", "final")
         Sdf.MapperSpec(attrSpec, "/Test/Child.attr2", "mapper")
 
+        # Copy root prim and verify that connections on the child prim that
+        # point to objects beneath /Test are remapped to /TestCopy.
+        self.assertTrue(Sdf.CopySpec(layer, "/Test", layer, "/TestCopy"))
+
+        dstAttrSpec = layer.GetAttributeAtPath("/TestCopy/Child.attr")
+        self.assertTrue(dstAttrSpec)
+        
+        expectedListOp = Sdf.PathListOp()
+        expectedListOp.explicitItems = \
+            [ "/TestCopy/Child.attr2", "/TestCopy/Child/Subchild.attr3", 
+              "/TestCopy/Sibling.attr" ]
+        self.assertEqual(
+            dstAttrSpec.GetInfo("connectionPaths"), expectedListOp)
+        self.assertEqual(dstAttrSpec.connectionMarkers["/TestCopy/Child.attr2"], 
+                         "final")
+
         # Copy prim with attribute and verify that connections that point
         # to objects beneath the source /Test/Child prim are remapped to
         # /Dest.
@@ -345,6 +361,22 @@ class TestSdfCopyUtils(unittest.TestCase):
               "/Test/Sibling.attr" ]
         relSpec.SetTargetMarker("/Test/Child.attr2", "final")
 
+        # Copy root prim and verify that targets on the child prim that
+        # point to objects beneath /Test are remapped to /TestCopy.
+        self.assertTrue(Sdf.CopySpec(layer, "/Test", layer, "/TestCopy"))
+
+        dstRelSpec = layer.GetRelationshipAtPath("/TestCopy/Child.rel")
+        self.assertTrue(dstRelSpec)
+        
+        expectedListOp = Sdf.PathListOp()
+        expectedListOp.explicitItems = \
+            [ "/TestCopy/Child.attr2", "/TestCopy/Child/Subchild.attr3", 
+              "/TestCopy/Sibling.attr" ]
+        self.assertEqual(
+            dstRelSpec.GetInfo("targetPaths"), expectedListOp)
+        self.assertEqual(dstRelSpec.targetMarkers["/TestCopy/Child.attr2"], 
+                         "final")
+
         # Copy prim with relationship and verify that targets that point
         # to objects beneath the source /Test/Child prim are remapped to
         # /Dest.
@@ -389,6 +421,89 @@ class TestSdfCopyUtils(unittest.TestCase):
         self.assertEqual(
             dstRelSpec.GetInfo("targetPaths"), expectedListOp)
         self.assertEqual(dstRelSpec.targetMarkers["/Variant.attr2"], "final")
+
+    def test_InheritsAndSpecializesRemapping(self):
+        def _TestRemapping(fieldName):
+            layer = Sdf.Layer.CreateAnonymous()
+            srcPrimSpec = Sdf.CreatePrimInLayer(layer, "/Root/Instance")
+        
+            listOp = Sdf.PathListOp()
+            listOp.explicitItems = ["/GlobalClass", "/Root/LocalClass"]
+            srcPrimSpec.SetInfo(fieldName, listOp)
+
+            # Copy the root prim spec. The paths in the listOp on the child 
+            # prim that are beneath the root will be remapped to the new
+            # destination.
+            self.assertTrue(Sdf.CopySpec(layer, "/Root", layer, "/RootCopy"))
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.explicitItems = \
+                ["/GlobalClass", "/RootCopy/LocalClass"]
+            self.assertEqual(
+                layer.GetPrimAtPath("/RootCopy/Instance").GetInfo(fieldName), 
+                expectedListOp)
+
+            # Copy the child prim spec on which the inherit or specializes
+            # list is authored. Since the paths in the listOp are outside the
+            # root of the copy operation, none of them will be remapped.
+            self.assertTrue(
+                Sdf.CopySpec(layer, "/Root/Instance", layer, "/InstanceCopy"))
+
+            expectedListOp = listOp
+            self.assertEqual(
+                layer.GetPrimAtPath("/InstanceCopy").GetInfo(fieldName), 
+                expectedListOp)
+
+        _TestRemapping("inheritPaths")
+        _TestRemapping("specializes")
+
+    def test_ReferenceRemapping(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        srcPrimSpec = Sdf.CreatePrimInLayer(layer, "/Root/Child")
+        srcPrimSpec.referenceList.explicitItems = [
+            # External reference
+            Sdf.Reference("./test.sdf", "/Ref"), 
+            # External sub-root reference
+            Sdf.Reference("./test.sdf", "/Root/Ref"), 
+            # Internal reference
+            Sdf.Reference("", "/Ref"),
+            # Internal sub-root reference
+            Sdf.Reference("", "/Root/Ref")
+        ]
+        
+        # Copy the root prim spec and verify that the internal sub-root 
+        # references on the child prim that target a prim beneath /Root are 
+        # remapped to /RootCopy.
+        self.assertTrue(Sdf.CopySpec(layer, "/Root", layer, "/RootCopy"))
+
+        expectedListOp = Sdf.ReferenceListOp()
+        expectedListOp.explicitItems = [
+            Sdf.Reference("./test.sdf", "/Ref"), 
+            Sdf.Reference("./test.sdf", "/Root/Ref"), 
+            Sdf.Reference("", "/Ref"),
+            Sdf.Reference("", "/RootCopy/Ref")
+        ]
+        
+        self.assertEqual(
+            layer.GetPrimAtPath("/RootCopy/Child").GetInfo("references"), 
+            expectedListOp)
+
+        # Copy the child prim spec. Since all of the internal sub-root
+        # references point outside the root of the copy operation, none
+        # of them will be remapped.
+        self.assertTrue(Sdf.CopySpec(layer, "/Root/Child", layer, "/ChildCopy"))
+
+        expectedListOp = Sdf.ReferenceListOp()
+        expectedListOp.explicitItems = [
+            Sdf.Reference("./test.sdf", "/Ref"), 
+            Sdf.Reference("./test.sdf", "/Root/Ref"), 
+            Sdf.Reference("", "/Ref"),
+            Sdf.Reference("", "/Root/Ref")
+        ]
+        
+        self.assertEqual(
+            layer.GetPrimAtPath("/ChildCopy").GetInfo("references"), 
+            expectedListOp)
 
     def test_Relocates(self):
         """Tests that relocates are remapped to destination prim on copy"""

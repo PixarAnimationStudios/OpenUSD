@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/childrenUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/reference.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
@@ -626,6 +627,7 @@ namespace
 
 bool
 _ShouldCopyValue(
+    const SdfPath& srcRootPath, const SdfPath& dstRootPath,
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
@@ -633,36 +635,65 @@ _ShouldCopyValue(
 {
     if (fieldInSrc) {
         if (field == SdfFieldKeys->ConnectionPaths || 
-            field == SdfFieldKeys->TargetPaths) {
+            field == SdfFieldKeys->TargetPaths ||
+            field == SdfFieldKeys->InheritPaths ||
+            field == SdfFieldKeys->Specializes) {
             SdfPathListOp srcListOp;
             if (srcLayer->HasField(srcPath, field, &srcListOp)) {
-                const SdfPath& srcPrimPath = 
-                    srcPath.GetPrimPath().StripAllVariantSelections();
-                const SdfPath& dstPrimPath = 
-                    dstPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& srcPrefix = 
+                    srcRootPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrefix = 
+                    dstRootPath.GetPrimPath().StripAllVariantSelections();
 
                 srcListOp.ModifyOperations(
-                    [&srcPrimPath, &dstPrimPath](const SdfPath& path) {
-                        return path.ReplacePrefix(srcPrimPath, dstPrimPath);
+                    [&srcPrefix, &dstPrefix](const SdfPath& path) {
+                        return path.ReplacePrefix(srcPrefix, dstPrefix);
                     });
 
                 *valueToCopy = VtValue::Take(srcListOp);
             }
         }
+        else if (field == SdfFieldKeys->References) {
+            SdfReferenceListOp refListOp;
+            if (srcLayer->HasField(srcPath, field, &refListOp)) {
+                const SdfPath& srcPrefix = 
+                    srcRootPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrefix = 
+                    dstRootPath.GetPrimPath().StripAllVariantSelections();
+
+                refListOp.ModifyOperations(
+                    [&srcPrefix, &dstPrefix](const SdfReference& ref) {
+                        // Only try to fix up internal sub-root references.
+                        if (!ref.GetAssetPath().empty() ||
+                            ref.GetPrimPath().IsEmpty() ||
+                            ref.GetPrimPath().IsRootPrimPath()) {
+                            return ref;
+                        }
+                        
+                        SdfReference fixedRef = ref;
+                        fixedRef.SetPrimPath(ref.GetPrimPath()
+                            .ReplacePrefix(srcPrefix, dstPrefix));
+
+                        return fixedRef;
+                    });
+
+                *valueToCopy = VtValue::Take(refListOp);
+            }
+        }
         else if (field == SdfFieldKeys->Relocates) {
             SdfRelocatesMap relocates;
             if (srcLayer->HasField(srcPath, field, &relocates)) {
-                const SdfPath& srcPrimPath = 
-                    srcPath.GetPrimPath().StripAllVariantSelections();
-                const SdfPath& dstPrimPath = 
-                    dstPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& srcPrefix = 
+                    srcRootPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrefix = 
+                    dstRootPath.GetPrimPath().StripAllVariantSelections();
 
                 SdfRelocatesMap updatedRelocates;
                 for (const auto& entry : relocates) {
                     const SdfPath updatedSrcPath = 
-                        entry.first.ReplacePrefix(srcPrimPath, dstPrimPath);
+                        entry.first.ReplacePrefix(srcPrefix, dstPrefix);
                     const SdfPath updatedTargetPath = 
-                        entry.second.ReplacePrefix(srcPrimPath, dstPrimPath);
+                        entry.second.ReplacePrefix(srcPrefix, dstPrefix);
                     updatedRelocates[updatedSrcPath] = updatedTargetPath;
                 }
 
@@ -676,6 +707,7 @@ _ShouldCopyValue(
 
 bool
 _ShouldCopyChildren(
+    const SdfPath& srcRootPath, const SdfPath& dstRootPath,
     const TfToken& childrenField,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
@@ -691,13 +723,13 @@ _ShouldCopyChildren(
             if (srcLayer->HasField(srcPath, childrenField, &children)) {
                 *srcChildren = VtValue(children);
 
-                const SdfPath& srcPrimPath = 
-                    srcPath.GetPrimPath().StripAllVariantSelections();
-                const SdfPath& dstPrimPath = 
-                    dstPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& srcPrefix = 
+                    srcRootPath.GetPrimPath().StripAllVariantSelections();
+                const SdfPath& dstPrefix = 
+                    dstRootPath.GetPrimPath().StripAllVariantSelections();
 
                 for (SdfPath& child : children) {
-                    child = child.ReplacePrefix(srcPrimPath, dstPrimPath);
+                    child = child.ReplacePrefix(srcPrefix, dstPrefix);
                 }
 
                 *dstChildren = VtValue::Take(children);
@@ -721,10 +753,12 @@ SdfCopySpec(
         srcLayer, srcPath, dstLayer, dstPath,
         /* shouldCopyValueFn = */ std::bind(
             _ShouldCopyValue,
+            std::cref(srcPath), std::cref(dstPath),
             ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
             ph::_9),
         /* shouldCopyChildrenFn = */ std::bind(
             _ShouldCopyChildren,
+            std::cref(srcPath), std::cref(dstPath),
             ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
             ph::_9)
         );
