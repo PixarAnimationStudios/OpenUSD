@@ -650,6 +650,41 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Master_2': ['/Instance_1', '/Instance_2'] })
         ValidateExpectedChanges(nl, ['/Instance_2'])
 
+    def test_Deactivated2(self):
+        """Test more complex instancing case involving deactivation."""
+        nl = NoticeListener()
+
+        s = OpenStage('deactivated_2/root.usda')
+
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/World/Set_1/Instance_1', 
+                              '/World/Set_2/Instance_2'] })
+
+        # Deactivate the parent of the prim on the stage that corresponds 
+        # to the source prim index for the master. This will cause the
+        # other instance to be assigned as the master's source index.
+        primPathToDeactivate = \
+            (s.GetPrimAtPath('/__Master_1')._GetSourcePrimIndex()
+             .rootNode.path.GetParentPath())
+
+        if primPathToDeactivate == '/World/Set_1':
+            expectedInstance = '/World/Set_2/Instance_2'
+        elif primPathToDeactivate == '/World/Set_2':
+            expectedInstance = '/World/Set_1/Instance_1'
+
+        s.GetPrimAtPath(primPathToDeactivate).SetActive(False)
+
+        ValidateExpectedInstances(s, { '/__Master_1' : [expectedInstance] })
+        ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Master_1'])
+
+        # Now author a significant change to the prim referenced by both
+        # instances. This should cause a new master to be created and the
+        # old master to be removed.
+        s.GetPrimAtPath('/Reference').GetInherits().AddInherit('/Class')
+        ValidateExpectedInstances(s, { '/__Master_2' : [expectedInstance] })
+        ValidateExpectedChanges(nl, ['/Reference', expectedInstance, 
+                                     '/__Master_1', '/__Master_2'])
+
     def test_VariantSelections(self):
         """Test instancing and change processing with variant selections."""
         nl = NoticeListener()
@@ -799,6 +834,24 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedInstances(s,
             { '/__Master_2': ['/Set/SetB/Model'],
               '/__Master_3': ['/Set/SetA/Model'] })
+    
+    def test_SubrootReferences(self):
+        """Test expected instancing behavior for prims with subroot
+        references"""
+        nl = NoticeListener()
+
+        s = OpenStage('subroot_refs/root.usda')
+
+        # The SubrootRef_1 and SubrootRef_2 prims should share the 
+        # same master, as they both have the same sub-root reference. 
+        # However, note that they do *not* share the same master as 
+        # the nested instance /__Master_1/Ref1_Child, even though
+        # they ultimately have the same child prims. This is something
+        # that could be examined for further optimization in the future.
+        ValidateExpectedInstances(s,
+            { '/__Master_1': ['/Ref_1'],
+              '/__Master_2': ['/__Master_1/Ref1_Child'],
+              '/__Master_3': ['/SubrootRef_1', '/SubrootRef_2'] })
 
     def test_Editing(self):
         """Test that edits cannot be made on objects in masters"""

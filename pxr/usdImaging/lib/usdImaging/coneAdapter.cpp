@@ -54,9 +54,9 @@ UsdImagingConeAdapter::~UsdImagingConeAdapter()
 }
 
 bool
-UsdImagingConeAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingConeAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+    return index->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
 }
 
 SdfPath
@@ -64,12 +64,8 @@ UsdImagingConeAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertMesh(prim.GetPath(),
-                      GetShaderBinding(prim),
-                      instancerContext);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    return prim.GetPath();
+    return _AddRprim(HdPrimTypeTokens->mesh,
+                     prim, index, GetMaterialId(prim), instancerContext);
 }
 
 void 

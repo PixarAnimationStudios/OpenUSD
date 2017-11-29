@@ -30,69 +30,101 @@
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/schema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool
-_ValidateNoSubRootReferences(const SdfReference &ref)
-{
-    if (!ref.GetPrimPath().IsEmpty() &&
-        !ref.GetPrimPath().IsRootPrimPath()) {
-        TF_CODING_ERROR("Cannot make a reference to a non-root prim: "
-                        "@%s@<%s>",
-                        ref.GetAssetPath().c_str(), ref.GetPrimPath().GetText());
-        return false;
-    }
-    return true;
-}
 
 // ------------------------------------------------------------------------- //
 // UsdReferences
 // ------------------------------------------------------------------------- //
-bool
-UsdReferences::AddReference(const SdfReference& ref, UsdListPosition position)
+
+namespace
 {
-    if (!_ValidateNoSubRootReferences(ref))
-        return false;
-    
-    SdfChangeBlock block;
-    TfErrorMark mark;
-    bool success = false;
-    
-    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfReferencesProxy refs = spec->GetReferenceList();
-        switch (position) {
-        case UsdListPositionFront:
-            refs.Prepend(ref);
-            break;
-        case UsdListPositionBack:
-            refs.Append(ref);
-            break;
-        case UsdListPositionTempDefault:
-            if (UsdAuthorOldStyleAdd()) {
-                refs.Add(ref);
-            } else {
-                refs.Prepend(ref);
-            }
-            break;
-        }
-        success = mark.IsClean();
+
+bool
+_TranslatePath(SdfReference* ref, const UsdEditTarget& editTarget)
+{
+    // We do not map prim paths across the edit target for non-internal 
+    // references, as these paths are supposed to be in the namespace of
+    // the referenced layer stack.
+    if (!ref->GetAssetPath().empty()) {
+        return true;
     }
-    // mark *should* contain only errors from adding the reference, NOT
-    // any recomposition errors, because the SdfChangeBlock handily defers
-    // composition till after we leave this scope.
-    mark.Clear();
+
+    // Non-sub-root references aren't expected to be mappable across 
+    // non-local edit targets, so we can just use the given reference as-is.
+    if (ref->GetPrimPath().IsEmpty() ||
+        ref->GetPrimPath().IsRootPrimPath()) {
+        return true;
+    }
+
+    const SdfPath mappedPath = editTarget.MapToSpecPath(ref->GetPrimPath());
+    if (mappedPath.IsEmpty()) {
+        TF_CODING_ERROR(
+            "Cannot map <%s> to current edit target.", 
+            ref->GetPrimPath().GetText());
+        return false;
+    }
+
+    // If the edit target points inside a variant, the mapped path may 
+    // contain a variant selection. We need to strip this out, since
+    // inherit paths may not contain variant selections.
+    ref->SetPrimPath(mappedPath.StripAllVariantSelections());
+    return true;
+}
+
+}
+
+bool
+UsdReferences::AddReference(const SdfReference& refIn, UsdListPosition position)
+{
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    SdfReference ref = refIn;
+    if (!_TranslatePath(&ref, _prim.GetStage()->GetEditTarget())) {
+        return false;
+    }
+
+    SdfChangeBlock block;
+    bool success = false;
+    {
+        TfErrorMark mark;
+        if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+            SdfReferencesProxy refs = spec->GetReferenceList();
+            switch (position) {
+            case UsdListPositionFront:
+                refs.Prepend(ref);
+                break;
+            case UsdListPositionBack:
+                refs.Append(ref);
+                break;
+            case UsdListPositionTempDefault:
+                if (UsdAuthorOldStyleAdd()) {
+                    refs.Add(ref);
+                } else {
+                    refs.Prepend(ref);
+                }
+                break;
+            }
+            // mark *should* contain only errors from adding the reference, NOT
+            // any recomposition errors, because the SdfChangeBlock handily
+            // defers composition till after we leave this scope.
+            success = mark.IsClean();
+        }
+    }
     return success;
 }
 
 bool
 UsdReferences::AddReference(const std::string &assetPath,
-                               const SdfPath &primPath,
-                               const SdfLayerOffset &layerOffset,
-                               UsdListPosition position)
+                            const SdfPath &primPath,
+                            const SdfLayerOffset &layerOffset,
+                            UsdListPosition position)
 {
-    return AddReference(SdfReference(assetPath, primPath, layerOffset), position);
+    return AddReference(
+        SdfReference(assetPath, primPath, layerOffset), position);
 }
 
 bool
@@ -112,8 +144,18 @@ UsdReferences::AddInternalReference(const SdfPath &primPath,
 }
 
 bool
-UsdReferences::RemoveReference(const SdfReference& ref)
+UsdReferences::RemoveReference(const SdfReference& refIn)
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    SdfReference ref = refIn;
+    if (!_TranslatePath(&ref, _prim.GetStage()->GetEditTarget())) {
+        return false;
+    }
+
     SdfChangeBlock block;
     TfErrorMark mark;
     bool success = false;
@@ -130,6 +172,11 @@ UsdReferences::RemoveReference(const SdfReference& ref)
 bool
 UsdReferences::ClearReferences()
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
     SdfChangeBlock block;
     TfErrorMark mark;
     bool success = false;
@@ -143,23 +190,39 @@ UsdReferences::ClearReferences()
 }
 
 bool 
-UsdReferences::SetReferences(const SdfReferenceVector& items)
+UsdReferences::SetReferences(const SdfReferenceVector& itemsIn)
 {
-    SdfChangeBlock block;
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
+
     TfErrorMark mark;
-    bool success = false;
 
-    // Proxy editor has no clear way of setting explicit items in a single
-    // call, so instead, just set the field directly.
-    SdfReferenceListOp refs;
-    refs.SetExplicitItems(items);
-    success = GetPrim().SetMetadata(SdfFieldKeys->References, refs) && 
-        mark.IsClean();
+    SdfReferenceVector items;
+    items.reserve(itemsIn.size());
+    for (SdfReference item : itemsIn) {
+        if (_TranslatePath(&item, editTarget)) {
+            items.push_back(item);
+        }
+    }
 
+    if (!mark.IsClean()) {
+        return false;
+    }
+
+    SdfChangeBlock block;
+    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+        SdfReferencesProxy refs = spec->GetReferenceList();
+        refs.GetExplicitItems() = items;
+    }
+
+    bool success = mark.IsClean();
     mark.Clear();
     return success;
 }
-
 
 // ---------------------------------------------------------------------- //
 // UsdReferences: Private Methods and Members 
@@ -168,8 +231,7 @@ UsdReferences::SetReferences(const SdfReferenceVector& items)
 SdfPrimSpecHandle
 UsdReferences::_CreatePrimSpecForEditing()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim.");
+    if (!TF_VERIFY(_prim)) {
         return SdfPrimSpecHandle();
     }
 

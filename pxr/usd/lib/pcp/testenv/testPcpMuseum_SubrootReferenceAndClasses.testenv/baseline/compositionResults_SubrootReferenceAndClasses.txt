@@ -1,0 +1,47 @@
+Loading @SubrootReferenceAndClasses/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Inherit>
+
+Prim Stack:
+    root.sdf             /Inherit
+
+Child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </Inherit/Model>
+
+Prim Stack:
+    root.sdf             /Inherit/Model
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.sdf             /Specializes
+
+Child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </Specializes/Model>
+
+Prim Stack:
+    root.sdf             /Specializes/Model
+
+------------------------------------------------------------------------
+Results for composing </SubrootRef>
+
+Prim Stack:
+    root.sdf             /SubrootRef
+    root.sdf             /Inherit/Model
+    set.sdf              /Set/Model
+    set.sdf              /Inherit/Model
+    root.sdf             /Specializes/Model
+    set.sdf              /Specializes/Model
+

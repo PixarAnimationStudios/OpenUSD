@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_BasisCurvesOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_BasisCurvesOp, privateData, opArgs, interface)
 {
     PxrUsdKatanaAttrMap attrs;
 

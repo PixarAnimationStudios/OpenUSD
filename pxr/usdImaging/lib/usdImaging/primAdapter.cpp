@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/type.h"
@@ -49,7 +50,7 @@ static bool _IsEnabledXformCache() {
 }
 
 TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_BINDING_CACHE, 1, 
-                      "Enable a cache for shader bindings.");
+                      "Enable a cache for material bindings.");
 static bool _IsEnabledBindingCache() {
     static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_BINDING_CACHE) == 1;
     return _v;
@@ -75,15 +76,31 @@ UsdImagingPrimAdapter::ShouldCullChildren(UsdPrim const&)
 }
 
 /*virtual*/
+bool
+UsdImagingPrimAdapter::IsInstancerAdapter()
+{
+    // By default, opt-out of nested-instancing adapter resolution.
+    return false;
+}
+
+/*virtual*/
+bool
+UsdImagingPrimAdapter::IsPopulatedIndirectly()
+{
+    // By default, do not delay population.
+    return false;
+}
+
+/*virtual*/
 void
 UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath, 
                                          UsdImagingIndexProxy* index) 
 {
     // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the rprim and repopulate as the default
+    // remove the adapter dependency and the prim and repopulate as the default
     // behavior.
-    index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    _RemovePrim(/*cachePath*/usdPath, index);
+    index->RemovePrimInfo(/*usdPrimPath*/usdPath);
 
     if (_GetPrim(usdPath)) {
         // The prim still exists, so repopulate it.
@@ -93,14 +110,53 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& usdPath,
 
 /*virtual*/
 void
-UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& usdPath, 
-                                          UsdImagingIndexProxy* index) 
+UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& primPath,
+                                          UsdImagingIndexProxy* index)
 {
     // In the simple case, the usdPath and cachePath are the same, so here we
-    // remove the adapter dependency and the rprim and repopulate as the default
-    // behavior.
-    index->RemoveRprim(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    // remove the adapter dependency and the prim. We don't repopulate.
+    _RemovePrim(/*cachePath*/primPath, index);
+    index->RemovePrimInfo(/*usdPrimPath*/primPath);
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                            SdfPath const& usdPath,
+                                            UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
+                                     SdfPath const& usdPath,
+                                     UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                          SdfPath const& usdPath,
+                                          UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                           SdfPath const& usdPath,
+                                           UsdImagingIndexProxy* index)
+{
 }
 
 /*virtual*/
@@ -322,19 +378,37 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time)
 }
 
 SdfPath
-UsdImagingPrimAdapter::GetShaderBinding(UsdPrim const& prim)
+UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
 
     // No need to worry about time here, since relationships do not have time
     // samples.
-    
+
+    // If the renderer supports full material network then this function
+    // will try to return a binding that is compatible..
+    bool useMaterialNetworks = _delegate->GetRenderIndex().
+        GetRenderDelegate()->CanComputeMaterialNetworks();
+
     if (_IsEnabledBindingCache()) {
-        SdfPath binding = _delegate->_materialBindingCache.GetValue(prim);
-        return binding;
+        if (useMaterialNetworks) {
+            return _delegate->_materialNetworkBindingCache.GetValue(prim);
+        } else {
+            return _delegate->_materialBindingCache.GetValue(prim);
+        }
     } else {
-        return UsdImaging_MaterialStrategy::ComputeShaderPath(prim);
+        if (useMaterialNetworks) {
+            return UsdImaging_MaterialNetworkStrategy::ComputeMaterialPath(prim);
+        } else {
+            return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim);
+        }
     }
+}
+
+TfToken
+UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
+{
+    return _delegate->_GetModelDrawMode(prim);
 }
 
 SdfPath

@@ -25,10 +25,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/layerStack.h"
-#include "pxr/usd/pcp/site.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/primSpec.h"
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,13 +53,22 @@ _ResolveReference( const SdfLayerHandle& layer,
                    SdfListOpType opType,
                    const SdfReference& ref)
 {
-    SdfReference result( ref.GetAssetPath(),
+    // Fill in the result SdfReference with the anchored asset path
+    // instead of the authored asset path. This ensures that references
+    // with the same relative asset path but anchored to different
+    // locations will not be considered duplicates.
+    const std::string assetPath = ref.GetAssetPath().empty() ? 
+        ref.GetAssetPath() : 
+        SdfComputeAssetPathRelativeToLayer(layer, ref.GetAssetPath());
+
+    SdfReference result( assetPath, 
                         ref.GetPrimPath(), 
                         layerOffset * ref.GetLayerOffset(),
                         ref.GetCustomData() );
     PcpSourceReferenceInfo& info = (*infoMap)[result];
     info.layer       = layer;
     info.layerOffset = ref.GetLayerOffset();
+    info.authoredAssetPath = ref.GetAssetPath();
     return result;
 }
 
@@ -84,9 +95,10 @@ PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
             const SdfLayerOffset* layerOffset =
                 layerStack->GetLayerOffsetForLayer(i);
             curListOp.ApplyOperations(result,
-                boost::bind( &_ResolveReference, boost::ref(layer),
+                  std::bind( &_ResolveReference, std::ref(layer),
                              layerOffset ? *layerOffset : SdfLayerOffset(),
-                             &infoMap, _1, _2));
+                             &infoMap,
+                             std::placeholders::_1, std::placeholders::_2));
         }
     }
 
@@ -275,6 +287,41 @@ PcpComposeSiteVariantSelections(PcpLayerStackRefPtr const &layerStack,
     for (auto const &layer: layerStack->GetLayers()) {
         if (layer->HasField(path, field, &vselMap)) {
             result->insert(vselMap.begin(), vselMap.end());
+        }
+    }
+}
+
+void
+PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
+                         SdfPath const &path,
+                         const TfToken & namesField,
+                         TfTokenVector *nameOrder,
+                         PcpTokenSet *nameSet,
+                         const TfToken *orderField,
+                         const PcpTokenSet* prohibitedNames)
+{
+    TF_REVERSE_FOR_ALL(layer, layers) {
+        VtValue namesVal = (*layer)->GetField(path, namesField);
+        if (namesVal.IsHolding<TfTokenVector>()) {
+            const TfTokenVector & names =
+                namesVal.UncheckedGet<TfTokenVector>();
+            // Append names in order.  Skip names that are prohibited
+            // or already in the nameSet.
+            TF_FOR_ALL(name, names) {
+                if (!prohibitedNames ||
+                    (prohibitedNames->find(*name) == prohibitedNames->end())) { 
+                    if (nameSet->insert(*name).second) {
+                        nameOrder->push_back(*name);
+                    }
+                }
+            }
+        }
+        if (orderField) {
+            VtValue orderVal = (*layer)->GetField(path, *orderField);
+            if (orderVal.IsHolding<TfTokenVector>()) {
+                SdfApplyListOrdering(nameOrder,
+                                     orderVal.UncheckedGet<TfTokenVector>());
+            }
         }
     }
 }

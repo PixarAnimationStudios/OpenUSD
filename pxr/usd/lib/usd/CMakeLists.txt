@@ -24,6 +24,7 @@ pxr_library(usd
         attribute
         clipsAPI
         attributeQuery
+        collectionAPI
         common
         crateInfo
         debugCodes
@@ -70,6 +71,7 @@ pxr_library(usd
         crateFile
         instanceCache
         instanceKey
+        integerCoding
         interpolators
 
     PUBLIC_HEADERS
@@ -89,6 +91,7 @@ pxr_library(usd
         wrapAttribute.cpp
         wrapAttributeQuery.cpp
         wrapClipsAPI.cpp
+        wrapCollectionAPI.cpp
         wrapCommon.cpp
         wrapCrateInfo.cpp
         wrapEditContext.cpp
@@ -117,6 +120,7 @@ pxr_library(usd
         wrapTyped.cpp
         wrapUtils.cpp
         wrapVariantSets.cpp
+        wrapVersion.cpp 
 
     PYMODULE_FILES
         __init__.py
@@ -155,11 +159,13 @@ pxr_test_scripts(
     testenv/testUsdBug141491.py
     testenv/testUsdChangeProcessing.py
     testenv/testUsdClasses.py
+    testenv/testUsdCollectionAPI.py
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
     testenv/testUsdFlatten2.py
+    testenv/testUsdFlattenProperties.py
     testenv/testUsdInherits.py
     testenv/testUsdInstanceProxy.py
     testenv/testUsdInstancing.py
@@ -172,6 +178,7 @@ pxr_test_scripts(
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
+    testenv/testUsdSchemaRegistry.py
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
     testenv/testUsdStageCache.py
@@ -205,6 +212,13 @@ pxr_build_test(testUsdCreateAttributeCpp
         usd
     CPPFILES
         testenv/testUsdCreateAttributeCpp.cpp
+)
+
+pxr_build_test(testUsdIntegerCoding
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdIntegerCoding.cpp
 )
 
 pxr_build_test(testUsdMetadataCpp
@@ -299,6 +313,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdFlattenProperties
+    DEST testUsdFlattenProperties
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdFileFormats
     DEST testUsdFileFormats
 )
@@ -321,6 +340,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdMetadata
     DEST testUsdMetadata
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdMetadata
+    DEST testUsdMetadata_OldOffsets
 )
 
 pxr_install_test_dir(
@@ -354,6 +378,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdSchemaRegistry
+    DEST testUsdSchemaRegistry
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdBug119633.testenv
     DEST testUsdBug119633
 )
@@ -379,6 +408,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValueClips
+    DEST testUsdValueClips_OldOffsets
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdValueClips_Legacy
     DEST testUsdValueClips_Legacy
 )
@@ -386,6 +420,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdVariants
     DEST testUsdVariants
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdCollectionAPI
+    DEST testUsdCollectionAPI
 )
 
 pxr_register_test(testUsdAttributeBlocking
@@ -408,6 +447,16 @@ pxr_register_test(testUsdAttributeConnections
 pxr_register_test(testUsdValueClips
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValueClips_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClips"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -442,6 +491,15 @@ pxr_register_test(testUsdVariants
 
 pxr_register_test(testUsdAttributeInterpolationCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeInterpolationCpp"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeInterpolationCpp_OldOffsets
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeInterpolationCpp"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -460,6 +518,12 @@ pxr_register_test(testUsdBug141491
 pxr_register_test(testUsdChangeProcessing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdChangeProcessing"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCollectionAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCollectionAPI"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -564,6 +628,16 @@ pxr_register_test(testUsdStage
 pxr_register_test(testUsdTimeOffsets
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdTimeOffsets_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -606,6 +680,16 @@ pxr_register_test(testUsdSpecializes
 pxr_register_test(testUsdMetadata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadata"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=0
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdMetadata_OldOffsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadata"
+    ENV
+        USD_USE_INVERSE_LAYER_OFFSET=1
     EXPECTED_RETURN_CODE 0
 )
 
@@ -655,5 +739,11 @@ pxr_register_test(testUsdRelationships
 
 pxr_register_test(testUsdSchemaBase
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaBase"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaRegistry
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
     EXPECTED_RETURN_CODE 0
 )

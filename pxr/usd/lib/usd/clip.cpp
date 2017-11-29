@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/clipsAPI.h"
 #include "pxr/usd/usd/interpolators.h"
@@ -62,12 +63,31 @@ TF_DEFINE_ENV_SETTING(
     "If on, legacy clip metadata will be respected when populating "
     "clips. Otherwise, legacy clip metadata will be ignored.");
 
+static bool
+_IsClipRelatedField(const TfToken& fieldName)
+{
+    return TfStringStartsWith(fieldName.GetString(), "clip");
+}
+
 bool
 UsdIsClipRelatedField(const TfToken& fieldName)
 {
-    return std::find(UsdTokens->allTokens.begin(), 
+    return _IsClipRelatedField(fieldName) && 
+           std::find(UsdTokens->allTokens.begin(), 
                      UsdTokens->allTokens.end(), 
                      fieldName) != UsdTokens->allTokens.end();
+}
+
+std::vector<TfToken>
+UsdGetClipRelatedFields()
+{
+    std::vector<TfToken> result = UsdTokens->allTokens;
+    result.erase(
+        std::remove_if(
+            result.begin(), result.end(),
+            [](const TfToken& field) { return !_IsClipRelatedField(field); }),
+        result.end());
+    return result;
 }
 
 struct Usd_SortByExternalTime
@@ -149,9 +169,9 @@ _ApplyLayerOffsetToExternalTimes(
         return;
     }
 
-    const SdfLayerOffset inverse = layerOffset.GetInverse();
+    const SdfLayerOffset offset = UsdPrepLayerOffset(layerOffset);
     for (auto& time : *array) {
-        time[0] = inverse * time[0]; 
+        time[0] = offset * time[0]; 
     }
 }
 

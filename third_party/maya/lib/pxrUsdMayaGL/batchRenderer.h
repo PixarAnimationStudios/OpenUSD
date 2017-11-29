@@ -33,6 +33,8 @@
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/arch/hash.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -57,6 +59,7 @@
 #include <memory>
 #include <functional>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -262,13 +265,14 @@ public:
         virtual VtValue Get(SdfPath const& id, TfToken const& key);
 
         PXRUSDMAYAGL_API
-        void SetCameraState(const GfMatrix4d& viewMatrix,
+        void SetCameraState(const GfMatrix4d& worldToViewMatrix,
                             const GfMatrix4d& projectionMatrix,
                             const GfVec4d& viewport);
 
         // VP 1.0 only.
         PXRUSDMAYAGL_API
-        void SetLightingStateFromVP1(const MMatrix& viewMatForLights);
+        void SetLightingStateFromVP1(const GfMatrix4d& worldToViewMatrix,
+                                     const GfMatrix4d& projectionMatrix);
 
         // VP 2.0 only.
         PXRUSDMAYAGL_API
@@ -366,7 +370,7 @@ public:
     void Draw(
             const MHWRender::MDrawContext& context,
             const MUserData *userData );
-    
+
 private:
     
     /// \brief Helper function to find a key for the shape in the renderer cache
@@ -402,9 +406,30 @@ private:
     /// performance hit when no batches are queued.
     void _RenderBatches(
             const MHWRender::MDrawContext* vp2Context,
-            const MMatrix& viewMat,
-            const MMatrix& projectionMat,
-            const GfVec4d& viewport );
+            const GfMatrix4d& worldToViewMatrix,
+            const GfMatrix4d& projectionMatrix,
+            const GfVec4d& viewport);
+
+    /// \brief Handler for Maya Viewport 2.0 end render notifications.
+    ///
+    /// Viewport 2.0 may execute a render in multiple passes (shadow, color,
+    /// etc.), and Maya sends a notification when all rendering has finished.
+    /// When this notification is received, this method is invoked to reset
+    /// some state in the batch renderer and prepare it for subsequent
+    /// selection.
+    /// For the legacy viewport, there is no such notification sent by Maya.
+    static void _OnMayaEndRenderCallback(
+            MHWRender::MDrawContext& context,
+            void* clientData);
+
+    /// \brief Perform post-render state cleanup.
+    ///
+    /// For Viewport 2.0, this method gets invoked by
+    /// _OnMayaEndRenderCallback() and is what does the actual cleanup work.
+    /// For the legacy viewport, there is no such notification sent by Maya, so
+    /// this method is called internally at the end of Hydra draws for the
+    /// legacy viewport.
+    void _MayaRenderDidEnd();
 
     /// \brief Cache of hashed \c ShapeRenderer objects for fast lookup
     typedef std::unordered_map<size_t,ShapeRenderer> _ShapeRendererMap;
@@ -427,22 +452,38 @@ private:
     /// \brief container of all batched render calls to be made at next display
     /// refresh.
     _RendererQueueMap _renderQueue;
-        
+
+    /// \brief Container of Maya render pass identifiers of passes drawn so far
+    /// during a Viewport 2.0 render.
+    ///
+    /// Since all Hydra geometry is drawn at once, we only ever want to execute
+    /// the Hydra draw once per Maya render pass (shadow, color, etc.). This
+    /// container keeps track of which passes have been drawn by Hydra, and it
+    /// is reset when the batch renderer is notified that a Maya render has
+    /// ended.
+    std::unordered_set<std::string> _drawnMayaRenderPasses;
+
     /// \brief container of batched render calls made at last display refresh,
     /// to be used at next selection operation.
     _RendererQueueMap _selectQueue;
-    
+
     typedef std::unordered_map<SdfPath, HdxIntersector::Hit, SdfPath::Hash> HitBatch;
     
     /// \brief a cache of all selection results gathered since the last display
     /// refresh.
     HitBatch _selectResults;
-    
-    /// \brief Master \c UsdImagingGL renderer used to render batches.
 
+    /// \brief Hydra engine objects used to render batches.
+    /// Note that the Hydra render index is constructed with and is dependent
+    /// on the render delegate. At destruction time, the render index uses the
+    /// delegate to destroy Hydra prims, so the delegate must be destructed
+    /// *after* the render index. We enforce that ordering by declaring the
+    /// render delegate *before* the render index, since class members are
+    /// destructed in reverse declaration order.
     HdEngine _hdEngine;
-    HdRenderIndex *_renderIndex;
     HdStRenderDelegate _renderDelegate;
+    std::unique_ptr<HdRenderIndex> _renderIndex;
+
     TaskDelegateSharedPtr _taskDelegate;
     HdxIntersectorSharedPtr _intersector;
     UsdMayaGLSoftSelectHelper _softSelectHelper;

@@ -28,19 +28,24 @@
 #include "usdKatana/readMesh.h"
 #include "usdKatana/utils.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+TF_DEFINE_ENV_SETTING(USD_KATANA_IMPORT_FACESET_API, true, 
+                      "Whether face-sets encoded using the deprecated "
+                      "UsdGeomFaceSetAPI schema must be imported by PxrUsdIn.")
+
 static void 
-_CreateFaceSets(
+_CreateFaceSetsFromFaceSetAPI(
         const UsdPrim& prim,
-        const PxrUsdKatanaUsdInPrivateData& data,
+        const PxrUsdKatanaUsdInPrivateData &data,
         FnKat::GeolibCookInterface& interface);
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, opArgs, interface)
 {
     PxrUsdKatanaAttrMap attrs;
 
@@ -51,18 +56,19 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, interface)
 
     attrs.toInterface(interface);
 
-    if (UsdShadeMaterial::HasMaterialFaceSet(prim))
+    if (TfGetEnvSetting(USD_KATANA_IMPORT_FACESET_API) and 
+        UsdShadeMaterial::HasMaterialFaceSet(prim)) 
     {
-        _CreateFaceSets(prim, privateData, interface);
+        _CreateFaceSetsFromFaceSetAPI(prim, privateData, interface);
     }
 }
 
 // For now, this is only used by the mesh op.  If this logic needs to be
 // accessed elsewhere, it should move down into usdKatana.
 static void 
-_CreateFaceSets(
+_CreateFaceSetsFromFaceSetAPI(
         const UsdPrim& prim,
-        const PxrUsdKatanaUsdInPrivateData& data,
+        const PxrUsdKatanaUsdInPrivateData &data,
         FnKat::GeolibCookInterface& interface)
 {
     UsdGeomFaceSetAPI faceSet = UsdShadeMaterial::GetMaterialFaceSet(prim);

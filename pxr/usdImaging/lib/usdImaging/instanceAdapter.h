@@ -54,7 +54,9 @@ public:
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const* instancerContext = NULL);
 
-    virtual bool ShouldCullChildren(UsdPrim const& prim);
+    virtual bool ShouldCullChildren(UsdPrim const& prim) { return true; }
+
+    virtual bool IsInstancerAdapter() { return true; }
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -91,12 +93,47 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
 
     virtual void ProcessPrimResync(SdfPath const& usdPath,
                                    UsdImagingIndexProxy* index);
+
+    virtual void ProcessPrimRemoval(SdfPath const& primPath,
+                                   UsdImagingIndexProxy* index);
+
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+    // As this adapter hijacks the adapter for the child prim
+    // We need to forward these messages on, in case the child
+    // adapter needs them
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
+
 
     // ---------------------------------------------------------------------- //
     /// \name Instancing
@@ -140,6 +177,10 @@ public:
     /// Used for change tracking over subtree boundary (e.g. instancing)
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
 
+protected:
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
+
 private:
 
     struct _ProtoRprim;
@@ -159,16 +200,20 @@ private:
     SdfPath 
     _InsertProtoRprim(UsdPrimRange::iterator *iter,
                       const TfToken& protoName,
-                      SdfPath instanceShaderBinding,
+                      SdfPath instanceMaterialId,
                       SdfPath instancerPath,
                       UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
                       UsdImagingIndexProxy* index,
                       bool *isLeafInstancer);
 
-    // Removes and reloads all instancer data, both locally and from the 
-    // render index.
-    void _ReloadInstancer(SdfPath const& instancerPath,
-                          UsdImagingIndexProxy* index);
+    // For a usd path, collects the instancers to resync.
+    void _ResyncPath(SdfPath const& usdPath,
+                     UsdImagingIndexProxy* index,
+                     bool reload);
+    // Removes and optionally reloads all instancer data, both locally and
+    // from the render index.
+    void _ResyncInstancer(SdfPath const& instancerPath,
+                          UsdImagingIndexProxy* index, bool reload);
 
     // Updates per-frame data in the instancer map. This is primarily used
     // during update to send new instance indices out to Hydra.
@@ -292,8 +337,8 @@ private:
         // The master prim path associated with this instancer.
         SdfPath masterPath;
 
-        // The shader binding path associated with this instancer.
-        SdfPath shaderBindingPath;
+        // The material path associated with this instancer.
+        SdfPath materialId;
 
         // Paths to Usd instance prims. Note that this is not necessarily
         // equivalent to all the instances that will be drawn. See below.
@@ -326,7 +371,7 @@ private:
         _ProtoGroupPtr protoGroup;
 
         // Instancer dirty bits.
-        int dirtyBits;
+        HdDirtyBits dirtyBits;
 
         std::mutex mutex;
     };
@@ -347,23 +392,23 @@ private:
     //
     // For Usd scenegraph instancing, a master prim and its descendents
     // roughly correspond to the instancer and prototype prims. However,
-    // Hd requires a different instancer and rprims for different shader
+    // Hd requires a different instancer and rprims for different material
     // bindings. This means we cannot use the Usd master prim as the
     // instancer, because we can't represent this in the case where multiple
     // Usd instances share the same master but have different bindings.
     //
-    // Instead, we use the first instance of a master with a given shader
+    // Instead, we use the first instance of a master with a given material
     // binding as our instancers. For example, if /A and /B are both
-    // instances of /__Master_1 but /A and /B have different shader
+    // instances of /__Master_1 but /A and /B have different material
     // bindings authored on them, both /A and /B will be instancers,
     // with their own set of rprims and instance indices.
     //
-    // The below is essentially a map from (master path, shader binding)
+    // The below is essentially a map from (master path, material binding)
     // to instancer path. The data for this instancer is located in the
     // _InstancerDataMap above.
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash>
-        _ShaderBindingToInstancerMap;
-    typedef TfHashMap<SdfPath, _ShaderBindingToInstancerMap, SdfPath::Hash>
+        _MaterialIdToInstancerMap;
+    typedef TfHashMap<SdfPath, _MaterialIdToInstancerMap, SdfPath::Hash>
         _MasterToInstancerMap;
     _MasterToInstancerMap _masterToInstancerMap;
 };

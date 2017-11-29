@@ -27,7 +27,7 @@ from adjustDefaultMaterialUI import Ui_AdjustDefaultMaterial
 class AdjustDefaultMaterial(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
     interface:
-    
+
     Editable properties:
        defaultMaterialAmbient (float)
        defaultMaterialSpecular (float)
@@ -64,11 +64,11 @@ class AdjustDefaultMaterial(QtWidgets.QDialog):
         if self._dataModel.defaultMaterialAmbient != self._ambientCache:
             self._ambientCache = self._dataModel.defaultMaterialAmbient
             self._ui.ambientIntSpinBox.setValue(self._ambientCache)
-        
+
         if self._dataModel.defaultMaterialSpecular != self._specularCache:
             self._specularCache = self._dataModel.defaultMaterialSpecular
             self._ui.specularIntSpinBox.setValue(self._specularCache)
-            
+
 
     def _ambientChanged(self, val):
         if val != self._ambientCache:

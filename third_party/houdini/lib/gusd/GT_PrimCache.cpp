@@ -66,14 +66,14 @@ namespace {
         CacheKeyValue() : hash(0) {}
         
         CacheKeyValue(const UsdPrim& prim, UsdTimeCode time,
-                      const GusdPurposeSet& purposes)
+                      GusdPurposeSet purposes)
             : prim(prim)
             , time(time)
             , purposes(purposes)
             , hash(ComputeHash(prim,time,purposes)) {}
 
         static std::size_t  ComputeHash(const UsdPrim& prim, UsdTimeCode time,
-                                        const GusdPurposeSet& purposes)
+                                        GusdPurposeSet purposes)
                             {
                                 std::size_t h = hash_value(prim);
                                 boost::hash_combine(h, time);
@@ -120,18 +120,20 @@ namespace {
 
         GT_PrimitiveHandle prim;
     };
+
+#if HDK_API_VERSION < 16050000
     static inline void intrusive_ptr_add_ref(const CacheEntry *o) { const_cast<CacheEntry *>(o)->incref(); }
     static inline void intrusive_ptr_release(const CacheEntry *o) { const_cast<CacheEntry *>(o)->decref(); }
+#endif
 
     struct CreateEntryFn {
 
         CreateEntryFn( GusdGT_PrimCache &cache ) : m_cache( cache ) {}    
 
         UT_IntrusivePtr<UT_CappedItem> operator()( 
-            const GusdUSD_StageProxyHandle& stageProxy, 
-            GusdUSD_PrimHolder&, 
+            const UsdPrim& prim, 
             UsdTimeCode time, 
-            const GusdPurposeSet& purposes,
+            GusdPurposeSet purposes,
             bool skipRoot ) const;
 
         GusdGT_PrimCache& m_cache;
@@ -220,21 +222,12 @@ GusdGT_PrimCache::~GusdGT_PrimCache()
 }
 
 GT_PrimitiveHandle 
-GusdGT_PrimCache::GetPrim( const GusdUSD_StageProxyHandle& stageProxy, 
-                           GusdUSD_PrimHolder &usdPrimHolder, 
+GusdGT_PrimCache::GetPrim( const UsdPrim &usdPrim, 
                            UsdTimeCode time, 
-                           const GusdPurposeSet& purposes,
+                           GusdPurposeSet purposes,
                            bool skipRoot )
 {
     // We need to skip the root when walking into instance masters.
-
-    if( !stageProxy || !usdPrimHolder ) {
-        return GT_PrimitiveHandle();
-    }
-
-    GusdUSD_PrimHolder::ScopedReadLock lock;
-    lock.Acquire( usdPrimHolder );
-    UsdPrim usdPrim = *lock;
 
     if( !usdPrim.IsValid() ) {
         return GT_PrimitiveHandle();
@@ -243,8 +236,8 @@ GusdGT_PrimCache::GetPrim( const GusdUSD_StageProxyHandle& stageProxy,
     CacheKey key(CacheKeyValue(usdPrim, time, purposes));
 
     CreateEntryFn createFunc(*this);
-    auto entry = _prims.FindOrCreate<CacheEntry>( key, createFunc, stageProxy, 
-                                                  usdPrimHolder, time, 
+    auto entry = _prims.FindOrCreate<CacheEntry>( key, createFunc,
+                                                  usdPrim, time, 
                                                   purposes, skipRoot );
     
     return entry ? entry->prim : NULL;    
@@ -257,7 +250,7 @@ GusdGT_PrimCache::Clear()
 }
 
 int64
-GusdGT_PrimCache::Clear(const UT_Set<std::string>& paths)
+GusdGT_PrimCache::Clear(const UT_StringSet& paths)
 {
     return _prims.ClearEntries(
         [&](const UT_CappedKeyHandle& key,
@@ -272,10 +265,9 @@ GusdGT_PrimCache::Clear(const UT_Set<std::string>& paths)
 
 UT_IntrusivePtr<UT_CappedItem> 
 CreateEntryFn::operator()( 
-    const GusdUSD_StageProxyHandle& stageProxy, 
-    GusdUSD_PrimHolder &primHolder, 
+    const UsdPrim &prim, 
     UsdTimeCode time, 
-    const GusdPurposeSet& purposes,
+    GusdPurposeSet purposes,
     bool skipRoot ) const 
 { 
 
@@ -286,9 +278,9 @@ CreateEntryFn::operator()(
     //
     // USD gprims (leaves in the hierarchy) are just converted to GT_Primitives. 
     //
-    // For USD native instances, find the instance master, and return a GT_Primitive 
-    // that represents that. Note that this is likely to be a GT_PrimCollect (a 
-    // collection of primitives). 
+    // For USD native instances, find the instance's master or the prim in
+    // master corresponding to an instance proxy, and recurse on that. This way
+    // each instance should share a cache with its master.
     //
     // Any other USD primitive represents a branch of the USD hierarchy. Find 
     // all the instances and leaves in this branch and build a GT_PrimCollect 
@@ -297,12 +289,6 @@ CreateEntryFn::operator()(
     // The viewport doesn't seem to like nested collections very much. So we 
     // use a refiner to flatten the collections.
     
-    GusdUSD_PrimHolder::ScopedLock lock;
-
-    lock.Acquire( primHolder, /*write*/false);
-    UsdPrim prim = *lock;
-
-
     Refiner refiner;
 
     // Tell the wrapper classes that we are refining for the viewport. In this case we just load the geometry and color. No
@@ -310,15 +296,15 @@ CreateEntryFn::operator()(
     GT_RefineParms refineParms;
     refineParms.setPackedViewportLOD( true );
 
-    if( prim.IsInstance() )
+    bool isInstance = prim.IsInstance();
+    bool isInstanceProxy = prim.IsInstanceProxy();
+    if( isInstance || isInstanceProxy)
     {
         DBG( cerr << "Create prim cache for instance " << prim.GetPath() << " at " << time << endl; )
-
         // Look for a cache entry from the instance master
-        GusdUSD_PrimHolder masterHolder( prim.GetMaster(), primHolder.GetLock() );
+        UsdPrim masterPrim = isInstance ? prim.GetMaster() : prim.GetPrimInMaster();
         GT_PrimitiveHandle instancePrim = 
-                m_cache.GetPrim( stageProxy, 
-                                 masterHolder,
+                m_cache.GetPrim( masterPrim,
                                  time, 
                                  purposes,
                                  true );
@@ -336,7 +322,6 @@ CreateEntryFn::operator()(
 
         GT_PrimitiveHandle gp = 
             GusdPrimWrapper::defineForRead( 
-                                stageProxy, 
                                 imageable,
                                 time,
                                 purposes );
@@ -347,10 +332,10 @@ CreateEntryFn::operator()(
     else {
 
         DBG( cerr << "Create prim cache for group " << prim.GetPath() << " at " << time << endl; )
-
-        // Find all the gprims and USD native instances in the group.
+        
+        // Find all the gprims in the group.
         UT_Array<UsdPrim> gprims;
-        GusdUSD_StdTraverse::GetBoundableAndInstanceTraversal().FindPrims( 
+        GusdUSD_StdTraverse::GetBoundableTraversal().FindPrims( 
             prim, 
             time,
             purposes,
@@ -375,10 +360,8 @@ CreateEntryFn::operator()(
             {
                 UsdPrim p = *it;
 
-                GusdUSD_PrimHolder gprimHolder( p, primHolder.GetLock() );
                 GT_PrimitiveHandle gtPrim = 
-                    m_cache.GetPrim( stageProxy, 
-                                     gprimHolder,
+                    m_cache.GetPrim( p,
                                      time, 
                                      purposes,
                                      false );

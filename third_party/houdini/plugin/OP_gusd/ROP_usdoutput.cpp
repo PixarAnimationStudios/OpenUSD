@@ -39,7 +39,6 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdUtils/pipeline.h"
-#include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -70,12 +69,12 @@
 #include "gusd/gusd.h"
 #include "gusd/primWrapper.h"
 #include "gusd/refiner.h"
+#include "gusd/stageCache.h"
 #include "gusd/shaderWrapper.h"
+#include "gusd/UT_Error.h"
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_Version.h"
 #include "gusd/context.h"
-#include "gusd/UT_Usd.h"
-#include "gusd/USD_StageCache.h"
 
 #include "boost/foreach.hpp"
 
@@ -840,12 +839,25 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // place, via its SessionLayer. This SessionLayer will
         // later be saved to disk (writing out all overlay edits)
         // and once saved, will then be cleared back out.
+
         std::string err;
-        m_usdStage = GusdUT_GetStage(refFile.buffer(), &err);
+        {
+            GusdUT_StrErrorScope scope(&err);
+            GusdUT_ErrorContext errCtx(scope);
+
+            GusdStageCacheReader cache;
+            m_usdStage = cache.FindOrOpen(refFile, GusdStageOpts::LoadAll(),
+                                          GusdStageEditPtr(), &errCtx);
+        }
         if (!m_usdStage) {
             return abort(err);
         }
 
+        // BUG: Mutating stages returned from the cache is not safe!
+        // Crashes, non-deterministic cooks, cats and dogs living together...
+        // The only safe way to mutate a stage is to make a new stage,
+        // and put locks around it if there's any possibility of other
+        // threads trying to access it at the same time.
         if (m_usdStage->GetSessionLayer()) {
             m_usdStage->GetSessionLayer()->Clear();
         } else {
@@ -1014,8 +1026,8 @@ copyKindMetaDataForOverlays( UsdStageRefPtr stage, SdfPrimSpecHandle p )
 
     // Recurse until we find a model
     if( usdPrim.IsGroup() ) {
-        TF_FOR_ALL( it, p->GetNameChildren() ) {
-            copyKindMetaDataForOverlays( stage, *it );
+        for (const auto& child : p->GetNameChildren()) {
+            copyKindMetaDataForOverlays( stage, child );
         }
     }
 }
@@ -1088,12 +1100,12 @@ closeStage(fpreal tend)
                 return abort("Failed to replace file: " + usdFile.toStdString());
             }
 
-            // Now clear stages with this rootLayer from the stage cache.
-            GusdUSD_StageCache& cache = GusdUSD_StageCache::GetInstance();
-            cache.Unload(TfToken(targetPath));
-            if (SdfLayerHandle rootLayer = SdfLayer::Find(targetPath)) {
-                UsdUtilsStageCache::Get().EraseAll(rootLayer);
-            }
+            // Reload any stages on the cache matching this path.
+            // Note that this is deferred til the main event queue
+            GusdStageCacheWriter cache;
+            UT_StringSet paths;
+            paths.insert(targetPath);
+            cache.ReloadStages(paths);
         }
     }
 
@@ -1457,6 +1469,42 @@ renderFrame(fpreal time,
 
         gprimsProcessedThisFrame.insert(primPath);
 
+        // If we're attempting to overlay instanced geometry, set the root
+        // of the instance to 'instanceable = false'. Recurse on the parent
+        // in case it itself is an instance.
+        SdfPath currPath = primPath;
+        UsdPrim currPrim = m_usdStage->GetPrimAtPath( currPath );
+        std::vector<SdfPath> instancePrimPaths;
+        while ( currPrim.IsInstanceProxy() ) {
+            // Get the master prim which corresponds to each instance
+            UsdPrim masterPrim = currPrim.GetPrimInMaster(); 
+            const SdfPath& masterPath = masterPrim.GetPath();
+            // Removing common suffices results in just the path that was
+            // instance for our prim (and /__master_* for the master path)
+            const pair<SdfPath, SdfPath> pathsPair = currPath.RemoveCommonSuffix(masterPath);
+            currPath = pathsPair.first;
+            if ( currPath.IsEmpty() ) {
+                // We shouldn't get here
+                break;
+            }
+            // Get the prim on the stage (not on the master)
+            UsdPrim instancePrim = m_usdStage->GetPrimAtPath( currPath );
+            // Check to make sure we're deinstancing an instance
+            if ( instancePrim.IsInstance() ) {
+                instancePrimPaths.push_back(currPath);
+            }
+            // Recurse on the parent prim in case it's nested as another instance
+            currPrim = instancePrim;
+        }
+
+        // Reverse the order to actually deinstance, as we can't edit nested
+        // instance proxies without first deinstancing their parent instances.
+        for (int i = instancePrimPaths.size()-1; i >=0; i--) {
+            UsdPrim instancePrim = m_usdStage->GetPrimAtPath( instancePrimPaths[i] );
+            instancePrim.SetInstanceable(false);
+            DBG(cerr << "Deinstanced prim at: " << instancePrimPaths[i].GetText() << endl);
+        }
+
         GT_PrimitiveHandle usdPrim;
 
         // Have we seen this prim on a previous frame?
@@ -1543,34 +1591,6 @@ renderFrame(fpreal time,
                 addShaderToMap(primMaterialPath,
                                SdfPath(gtPrim.path.GetString()),
                                houMaterialMap);
-            }
-            // If we're attempting to overlay instanced geometry, set the root
-            // of the instance to 'instanceable = false'. Recurse on the parent
-            // in case it itself is an instance.
-            SdfPath currPath = primPath;
-            UsdPrim currPrim = m_usdStage->GetPrimAtPath( currPath );
-            while ( currPrim.IsInstanceProxy() ) {
-                // Get the master prim which corresponds to each instance
-                UsdPrim masterPrim = currPrim.GetPrimInMaster(); 
-                const SdfPath& masterPath = masterPrim.GetPath();
-                // Removing common suffices results in just the path that was
-                // instance for our prim (and /__master_* for the master path)
-                const pair<SdfPath, SdfPath> pathsPair = currPath.RemoveCommonSuffix(masterPath);
-                currPath = pathsPair.first;
-                if ( currPath.IsEmpty() ) {
-                    // We shouldn't get here
-                    break;
-                }
-                // Get the prim on the stage (not on the master)
-                UsdPrim instancePrim = m_usdStage->GetPrimAtPath( currPath );
-                // Check to make sure we're deinstancing an instance
-                if ( instancePrim.IsInstance() ) {
-                    DBG(cerr << "Deinstanced prim at: " << currPath.GetText() << endl);
-                    instancePrim.SetInstanceable(false);
-                }
-                // Recurse on the parent prim in case it's nested as another instance
-                currPrim = instancePrim;
-
             }
 
             // Check for a hero prim to operate on.
@@ -1988,10 +2008,10 @@ setCamerasAreZup(UsdStageWeakPtr const &stage, bool isZup)
     }
     bool anySet = false;
     
-    TF_FOR_ALL(prim, stage->GetPseudoRoot().
-                            GetFilteredChildren(UsdPrimIsDefined && 
-                                                !UsdPrimIsAbstract)){
-        prim->SetCustomDataByKey(TfToken("zUp"), VtValue(isZup));
+    for (const auto& prim : stage->GetPseudoRoot().
+                              GetFilteredChildren(UsdPrimIsDefined && 
+                                                  !UsdPrimIsAbstract)) {
+        prim.SetCustomDataByKey(TfToken("zUp"), VtValue(isZup));
         anySet = true;
     }
     return anySet;

@@ -31,8 +31,6 @@
 
 #include <opensubdiv/far/topologyRefinerFactory.h>
 
-#include <boost/bind.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -70,7 +68,7 @@ Converter::GetType() const {
         int numFaces = topology.GetFaceVertexCounts().size();
         int const * numVertsPtr = topology.GetFaceVertexCounts().cdata();
         if (std::find_if(numVertsPtr, numVertsPtr + numFaces,
-                         boost::bind(std::not_equal_to<int>(), _1, 3))
+                         [](int x) { return x != 3; })
             == numVertsPtr + numFaces) {
         } else {
             TF_WARN("Can't apply loop subdivision on prim %s, since "
@@ -383,13 +381,13 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignFaceVaryingTopology(
 
     if (converter.fvarTopologies.empty()) return true;
 
-    TF_FOR_ALL (it, converter.fvarTopologies) {
-        VtIntArray const &fvIndices = *it;
+    for (size_t i = 0; i < converter.fvarTopologies.size(); ++i) {
+        VtIntArray const &fvIndices = converter.fvarTopologies[i];
 
         // find fvardata size
         int maxIndex = -1;
-        for (size_t i = 0; i < fvIndices.size(); ++i) {
-            maxIndex = std::max(maxIndex, fvIndices[i]);
+        for (size_t j = 0; j < fvIndices.size(); ++j) {
+            maxIndex = std::max(maxIndex, fvIndices[j]);
         }
 
         size_t nfaces = getNumBaseFaces(refiner);
@@ -398,8 +396,8 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignFaceVaryingTopology(
         bool flip = (converter.topology.GetOrientation() !=
                      PxOsdOpenSubdivTokens->rightHanded);
 
-        for (size_t i=0, ofs=0; i < nfaces; ++i) {
-            Far::IndexArray faceIndices = getBaseFaceFVarValues(refiner, i, channel);
+        for (size_t j=0, ofs=0; j < nfaces; ++j) {
+            Far::IndexArray faceIndices = getBaseFaceFVarValues(refiner, j, channel);
             size_t numVerts = faceIndices.size();
 
             if (!TF_VERIFY(ofs + numVerts <= fvIndices.size())) {
@@ -408,12 +406,12 @@ TopologyRefinerFactory<PXR_NS::Converter>::assignFaceVaryingTopology(
 
             if (flip) {
                 faceIndices[0] = fvIndices[ofs++];
-                for (int j = numVerts-1; j > 0; --j) {
-                    faceIndices[j] = fvIndices[ofs++];
+                for (int k = numVerts-1; k > 0; --k) {
+                    faceIndices[k] = fvIndices[ofs++];
                 }
             } else {
-                for (size_t j = 0; j < numVerts; ++j) {
-                    faceIndices[j] = fvIndices[ofs++];
+                for (size_t k = 0; k < numVerts; ++k) {
+                    faceIndices[k] = fvIndices[ofs++];
                 }
             }
         }

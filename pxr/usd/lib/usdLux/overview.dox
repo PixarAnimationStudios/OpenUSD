@@ -79,8 +79,9 @@ not the rigging itself.
 
 Colors specified in attributes are in energy-linear terms,
 and obey the USD convention for indicating their color space via \c
-colorConfiguration and \c colorSpace metadata.
-\ref Usd_ColorConfigurationAPI
+colorConfiguration and \c colorSpace metadata.  See
+UsdStage::SetColorConfiguration() for discussion of colorspace
+management in USD.
 
 UsdLux presumes a physically-based lighting model where falloff with
 distance is a consequence of reduced visible solid angle. Environments

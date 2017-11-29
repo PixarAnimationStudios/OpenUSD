@@ -31,7 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef GusdUSD_HolderT<UsdGeomXform> GusdUSD_XformHolder;
 
 class GusdXformWrapper : public GusdGroupBaseWrapper
 {
@@ -42,20 +41,16 @@ public:
             bool isOverride = false );
     GusdXformWrapper( const GusdXformWrapper& in );
     GusdXformWrapper( 
-            const GusdUSD_StageProxyHandle& stage, 
-            const UsdGeomXform&             usdXform, 
-            const UsdTimeCode&              t,
-            const GusdPurposeSet&           purposes );
+            const UsdGeomXform& usdXform, 
+            UsdTimeCode         t,
+            GusdPurposeSet      purposes );
     virtual ~GusdXformWrapper();
 
     // GusdPrimWrapper interface -----------------------------------------------
 
 public:
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdXformForWrite; }
-
-    virtual const UsdGeomImageable 
-        getUsdPrimForRead(GusdUSD_ImageableHolder::ScopedLock &lock) const override;
+    virtual const UsdGeomImageable getUsdPrim() const override { return m_usdXform; }
         
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -97,10 +92,9 @@ public:
                      const GusdContext& ctxt);
 
     static GT_PrimitiveHandle
-    defineForRead( const GusdUSD_StageProxyHandle&  stage,
-                   const UsdGeomImageable&          sourcePrim, 
-                   const UsdTimeCode&               time,
-                   const GusdPurposeSet&            purposes );
+    defineForRead( const UsdGeomImageable&  sourcePrim, 
+                   UsdTimeCode              time,
+                   GusdPurposeSet           purposes );
 
 private:
 
@@ -108,9 +102,7 @@ private:
                      const SdfPath& path,
                      bool asOverride);
 
-    GusdUSD_StageProxyHandle    m_stageProxy;
-    GusdUSD_XformHolder         m_usdXformForRead;
-    UsdGeomXformable            m_usdXformForWrite;
+    UsdGeomXformable    m_usdXform;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

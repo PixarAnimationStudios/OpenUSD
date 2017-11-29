@@ -30,6 +30,12 @@ over "GLOBAL" (
                 described on a UsdShadeMaterial.
                 """
             }
+            dictionary materialBind = {
+                string doc = """The name of the GeomSubset family used to 
+                identify face subsets defined for the purpose of binding 
+                materials to facesets.
+                """
+            }
             dictionary derivesFrom  = {
                 string doc = """A legacy relationship name specifying a
                 specializes composition on a UsdShadeMaterial.
@@ -184,6 +190,7 @@ class Material "Material" (
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 """
     }

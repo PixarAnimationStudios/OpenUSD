@@ -22,13 +22,53 @@
 // language governing permissions and limitations under the Apache License.
 //
 // GENERATED FILE.  DO NOT EDIT.
+#include <boost/python/class.hpp>
 #include "usdKatana/tokens.h"
-#include "pxr/base/tf/pyStaticTokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+// Helper to return a static token as a string.  We wrap tokens as Python
+// strings and for some reason simply wrapping the token using def_readonly
+// bypasses to-Python conversion, leading to the error that there's no
+// Python type for the C++ TfToken type.  So we wrap this functor instead.
+class _WrapStaticToken {
+public:
+    _WrapStaticToken(const TfToken* token) : _token(token) { }
+
+    std::string operator()() const
+    {
+        return _token->GetString();
+    }
+
+private:
+    const TfToken* _token;
+};
+
+template <typename T>
+void
+_AddToken(T& cls, const char* name, const TfToken& token)
+{
+    cls.add_static_property(name,
+                            boost::python::make_function(
+                                _WrapStaticToken(&token),
+                                boost::python::return_value_policy<
+                                    boost::python::return_by_value>(),
+                                boost::mpl::vector1<std::string>()));
+}
+
+} // anonymous
+
 void wrapUsdKatanaTokens()
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdKatanaTokens,
-                             USDKATANA_TOKENS);
+    boost::python::class_<UsdKatanaTokensType, boost::noncopyable>
+        cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "katanaLooksChildNameExclusionAttrName", UsdKatanaTokens->katanaLooksChildNameExclusionAttrName);
+    _AddToken(cls, "katanaLooksScopeName", UsdKatanaTokens->katanaLooksScopeName);
+    _AddToken(cls, "katanaLooksScopePathSubstring", UsdKatanaTokens->katanaLooksScopePathSubstring);
+    _AddToken(cls, "katanaPrimName", UsdKatanaTokens->katanaPrimName);
+    _AddToken(cls, "katanaSuppressGroupToAssemblyPromotion", UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion);
+    _AddToken(cls, "katanaType", UsdKatanaTokens->katanaType);
+    _AddToken(cls, "katanaVisible", UsdKatanaTokens->katanaVisible);
 }

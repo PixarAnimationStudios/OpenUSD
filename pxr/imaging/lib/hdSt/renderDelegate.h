@@ -31,6 +31,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef boost::shared_ptr<class HdStResourceRegistry>
+    HdStResourceRegistrySharedPtr;
 
 ///
 /// HdStRenderDelegate
@@ -104,7 +106,7 @@ private:
     /// Resource registry used in this render delegate
     static std::mutex _mutexResourceRegistry;
     static std::atomic_int _counterResourceRegistry;
-    static HdResourceRegistrySharedPtr _resourceRegistry;
+    static HdStResourceRegistrySharedPtr _resourceRegistry;
 
     HdSprim *_CreateFallbackShaderPrim();
 

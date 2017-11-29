@@ -102,33 +102,6 @@ struct TfTypeFunctions<const T*> {
     static void Class_Object_MUST_Be_Passed_By_Address() { }
 };
 
-template <class T>
-struct TfTypeFunctions<std::auto_ptr<T> > {
-    static T* GetRawPtr(std::auto_ptr<T>& t) {
-        return t.get();
-    }
-
-    static bool IsNull(std::auto_ptr<T>& ptr) {
-        return !ptr.get();
-    }
-
-    static void Class_Object_MUST_Be_Passed_By_Address() { }
-    static void Class_Object_MUST_Not_Be_Const() { }
-};
-
-template <class T>
-struct TfTypeFunctions<std::auto_ptr<const T> > {
-    static const T* GetRawPtr(std::auto_ptr<const T>& t) {
-        return t.get();
-    }
-
-    static bool IsNull(std::auto_ptr<const T>& ptr) {
-        return !ptr.get();
-    }
-
-    static void Class_Object_MUST_Be_Passed_By_Address() { }
-};
-
 /// \class TfCopyIfNotReference
 /// \ingroup group_tf_Internal
 ///

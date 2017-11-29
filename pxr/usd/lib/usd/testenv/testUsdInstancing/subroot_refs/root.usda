@@ -1,0 +1,22 @@
+#usda 1.0
+
+def "Ref_1" (
+    instanceable = true
+    references = @./ref1.usda@</Ref1>
+)
+{
+}
+
+def "SubrootRef_1" (
+    instanceable = true
+    references = @./ref1.usda@</Ref1/Ref1_Child>
+)
+{
+}
+
+def "SubrootRef_2" (
+    instanceable = true
+    references = @./ref1.usda@</Ref1/Ref1_Child>
+)
+{
+}

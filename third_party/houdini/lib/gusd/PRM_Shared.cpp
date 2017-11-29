@@ -31,11 +31,11 @@
 #include <UT/UT_WorkBuffer.h>
 #include <UT/UT_Version.h>
 
+#include "gusd/stageCache.h"
 #include "gusd/GU_USD.h"
 #include "gusd/USD_StdTraverse.h"
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
-#include "gusd/UT_Usd.h"
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/attribute.h"
@@ -72,13 +72,11 @@ void _GenUsdPrimMenu(void* data, PRM_Name* names, int size,
         UT_String file;
         node->evalString(file, fileParm, 0, 0);
 
-        /* XXX: Note that this disregards any session that might
-                be stored on prims/points in the data stream.*/
-        GusdUSD_StageCacheContext cache;
-        GusdUSD_StageProxy::Accessor accessor;
-        if(auto stage = cache.GetStage(accessor, TfToken(file.toStdString())))
+        GusdStageCacheReader cache;
+        if(auto stage = cache.FindOrOpen(UT_StringHolder(file),
+                                         GusdStageOpts::LoadNone()))
         {
-            GusdPurposeSet purposes;
+            GusdPurposeSet purposes = GUSD_PURPOSE_NONE;
             UT_Array<UsdPrim> prims;
             // Only list components (keep the list size small)
             GusdUSD_StdTraverse::GetRecursiveModelTraversal().FindPrims(
@@ -125,11 +123,8 @@ void _GenUsdPrimAttrMenu(void* data, PRM_Name* names, int size,
     node->evalString(file, fileParm, 0, 0);
     node->evalString(primPath, primPathParm, 0, 0);
 
-    GusdUSD_StageCacheContext cache;
-    GusdUSD_StageProxy::Accessor accessor;
-    UsdPrim usdPrim = cache.GetPrim(
-        accessor, TfToken(fileParm.toStdString()),
-        GusdUSD_Utils::PrimIdentifier(primPath.c_str()));
+    GusdStageCacheReader cache;
+    UsdPrim usdPrim = cache.GetPrimWithVariants(fileParm, primPath).first;
     if(!usdPrim)
         return;
 
@@ -188,7 +183,12 @@ void _AppendTypes(const TfType& type, UT_Array<PRM_Name>& names,
     UT_String label;
     _MakePrefixedName(label, typeName.c_str(), depth, "|   ");
     
-    names.append(PRM_Name(typeName.c_str(), deleter.append(label.steal())));
+    names.append(PRM_Name(typeName.c_str(), deleter.appendCallback(
+#if HDK_API_VERSION >= 16050000
+	hboost::function<void (char *)>(free), label.steal())));
+#else
+	boost::function<void (char *)>(free), label.steal())));
+#endif
     
     for(const auto& derived : type.GetDirectlyDerivedTypes())
         _AppendTypes(derived, names, deleter, depth+1);
@@ -218,7 +218,12 @@ void _AppendKinds(const GusdUSD_Utils::KindNode* kind,
     UT_String label;
     _MakePrefixedName(label, name.c_str(), depth, "|   ");
 
-    names.append(PRM_Name(name.c_str(), deleter.append(label.steal())));
+    names.append(PRM_Name(name.c_str(), deleter.appendCallback(
+#if HDK_API_VERSION >= 16050000
+	hboost::function<void (char *)>(free), label.steal())));
+#else
+	boost::function<void (char *)>(free), label.steal())));
+#endif
     
     for(const auto& derived : kind->children)
         _AppendKinds(derived.get(), names, deleter, depth+1);

@@ -52,9 +52,9 @@ UsdImagingSphereAdapter::~UsdImagingSphereAdapter()
 }
 
 bool
-UsdImagingSphereAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingSphereAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+    return index->IsRprimTypeSupported(HdPrimTypeTokens->mesh);
 }
 
 SdfPath
@@ -62,12 +62,8 @@ UsdImagingSphereAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertMesh(prim.GetPath(),
-                      GetShaderBinding(prim),
-                      instancerContext);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    return prim.GetPath();
+    return _AddRprim(HdPrimTypeTokens->mesh,
+                     prim, index, GetMaterialId(prim), instancerContext);
 }
 
 void 
@@ -233,7 +229,12 @@ UsdImagingSphereAdapter::GetMeshTransform(UsdPrim const& prim,
 {
     double radius = 1.0;
     UsdGeomSphere sphere(prim);
-    TF_VERIFY(sphere.GetRadiusAttr().Get(&radius, time));
+    if (!sphere.GetRadiusAttr().Get(&radius, time)) {
+        // XXX:validation
+        TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
+            prim.GetPath().GetText());
+
+    }
     GfMatrix4d xf(GfVec4d(radius, radius, radius, 1.0));   
     return xf;
 }

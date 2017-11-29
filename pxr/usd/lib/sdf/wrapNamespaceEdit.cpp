@@ -28,12 +28,15 @@
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/init.hpp>
 #include <boost/python/scope.hpp>
 #include <boost/python/str.hpp>
 #include <boost/python/tuple.hpp>
+
+#include <functional>
 
 using namespace boost::python;
 
@@ -208,6 +211,7 @@ _Process(
     const object& canEdit,
     bool fixBackpointers)
 {
+    namespace ph = std::placeholders;
     // Return a pair (true,Edits) on success or (false,vector<string>) on
     // failure.
     SdfNamespaceEditVector edits;
@@ -215,12 +219,14 @@ _Process(
     bool result;
     if (TfPyIsNone(hasObjectAtPath)) {
         result = x.Process(&edits, SdfBatchNamespaceEdit::HasObjectAtPath(),
-                           boost::bind(&_TranslateCanEdit, canEdit, _1, _2),
+                           std::bind(&_TranslateCanEdit, canEdit,
+                                     ph::_1, ph::_2),
                            &details, fixBackpointers);
     }
     else {
         result = x.Process(&edits, TfPyCall<bool>(hasObjectAtPath),
-                           boost::bind(&_TranslateCanEdit, canEdit, _1, _2),
+                           std::bind(&_TranslateCanEdit, canEdit,
+                                     ph::_1, ph::_2),
                            &details, fixBackpointers);
     }
     if (result) {

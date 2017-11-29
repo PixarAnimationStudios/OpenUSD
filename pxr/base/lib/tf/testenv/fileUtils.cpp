@@ -52,7 +52,6 @@ typedef int mode_t;
 #endif
 
 #include <boost/assign/list_of.hpp>
-#include <boost/bind.hpp>
 
 ARCH_PRAGMA_DEPRECATED_POSIX_NAME
 
@@ -62,6 +61,7 @@ using std::cout;
 using std::endl;
 using std::vector;
 using boost::assign::list_of;
+using namespace std::placeholders;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -614,7 +614,7 @@ TestTfRmTree()
 
     cout << "+ no such directory, handle errors" << endl;
     TfRmTree("nosuchdirectory",
-             boost::bind(_TestTfRmTreeOnError, _1, _2, "nosuchdirectory"));
+             std::bind(_TestTfRmTreeOnError, _1, _2, "nosuchdirectory"));
 
     // We need the directory structure created in the test setup, as we're
     // about to remove it.  Any tests that require the test structure to exist

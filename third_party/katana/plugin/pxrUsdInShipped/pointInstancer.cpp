@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, opArgs, interface)
 {
     UsdGeomPointInstancer instancer =
         UsdGeomPointInstancer(privateData.GetUsdPrim());
@@ -47,7 +47,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
 
     // Pass along PxrUsdIn op args.
     //
-    inputAttrMap.set("opArgs", interface.getOpArg());
+    inputAttrMap.set("opArgs", opArgs);
 
     // Generate output attr maps.
     //
@@ -66,11 +66,16 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
     //
     instancerAttrMap.toInterface(interface);
 
+    // Tell UsdIn to skip all children; we'll create them ourselves below.
+    //
+    interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
+
     // Early exit if any errors were encountered.
     //
-    if (FnKat::StringAttribute(interface.getOutputAttr("type")
-            ).getValue("", false) == "error")
-    {
+    if (FnKat::StringAttribute(interface.getOutputAttr("errorMessage"))
+            .isValid() or
+        FnKat::StringAttribute(interface.getOutputAttr("warningMessage"))
+            .isValid()) {
         return;
     }
 
@@ -83,10 +88,6 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
         return;
     }
 
-    // Tell UsdIn to skip all children; we'll create them ourselves below.
-    //
-    interface.setAttr("__UsdIn.skipAllChildren", FnKat::IntAttribute(1));
-
     // Create "instance source" children using BuildIntermediate.
     //
     PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData.GetUsdInArgs();
@@ -97,7 +98,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, int
             childAttrs.getChildName(i),
             "PxrUsdIn.BuildIntermediate",
             FnKat::GroupBuilder()
-                .update(interface.getOpArg())
+                .update(opArgs)
                 .set("staticScene", childAttrs.getChildByIndex(i))
                 .build(),
             FnKat::GeolibCookInterface::ResetRootFalse,

@@ -49,7 +49,7 @@ public:
 
     SdfPyWrapListOp(const std::string& name)
     {
-        TfPyWrapOnce<T>(boost::bind(&This::_Wrap, name));
+        TfPyWrapOnce<T>([name]() { SdfPyWrapListOp::_Wrap(name); });
     }
  
 private:

@@ -104,13 +104,6 @@ _CreateInvisibleIdsAttr(UsdGeomPointInstancer &self,
     return self.CreateInvisibleIdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int64Array), writeSparsely);
 }
-        
-static UsdAttribute
-_CreatePrototypeDrawModeAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreatePrototypeDrawModeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -131,6 +124,14 @@ void wrapUsdGeomPointInstancer()
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
+
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -200,13 +201,6 @@ void wrapUsdGeomPointInstancer()
              &_CreateInvisibleIdsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-        
-        .def("GetPrototypeDrawModeAttr",
-             &This::GetPrototypeDrawModeAttr)
-        .def("CreatePrototypeDrawModeAttr",
-             &_CreatePrototypeDrawModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
         
         .def("GetPrototypesRel",
@@ -242,12 +236,16 @@ void wrapUsdGeomPointInstancer()
 namespace {
 
 static
-std::vector<bool>
-_ComputeMaskAtTime(
-    const UsdGeomPointInstancer& self,
-    const UsdTimeCode time)
+boost::python::list
+_ComputeMaskAtTime(const UsdGeomPointInstancer& self,
+                   const UsdTimeCode time)
 {
-    return self.ComputeMaskAtTime(time);
+    boost::python::list items;
+    for (const auto& b : self.ComputeMaskAtTime(time)) {
+        items.append(static_cast<bool>(b));
+    }
+
+    return items;
 }
 
 static

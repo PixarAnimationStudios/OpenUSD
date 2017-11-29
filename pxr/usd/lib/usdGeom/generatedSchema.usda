@@ -1958,6 +1958,65 @@ class Mesh "Mesh" (
     )
 }
 
+class GeomSubset "GeomSubset" (
+    doc = """Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
+    as a set of indices. Currently only supports encoding of face-subsets, but 
+    could be extended in the future to support subsets representing edges, 
+    segments, points etc.
+
+    To apply to a geometric prim, a GeomSubset prim must be defined as a 
+    child of it in namespace. This restriction makes it easy and efficient 
+    to discover subsets of a prim. We might want to relax this restriction if 
+    it's common to have multiple <b>families</b> of subsets on a gprim and if 
+    it's useful to be able to organize subsets belonging to a </b>family</b> 
+    under a common scope. See 'familyName' attribute for more info on defining 
+    a family of subsets.
+
+    Note that a GeomSubset isn't an imageable (i.e. doesn't derive from
+    UsdGeomImageable). So, you can't author <b>visibility</b> for it or 
+    override its <b>purpose</b>.
+
+    Materials are bound to GeomSubsets just as they are for regular 
+    geometry using API available in UsdShade (UsdShadeMaterial::Bind).
+"""
+)
+{
+    uniform token elementType = "face" (
+        allowedTokens = ["face"]
+        doc = '''The type of element that the indices target. Currently only 
+        allows "face" and defaults to it.'''
+    )
+    uniform token familyName = "" (
+        doc = '''The name of the family of subsets that this subset belongs to. 
+        This is optional and is primarily useful when there are multiple 
+        families of subsets under a geometric prim. In some cases, this could 
+        also be used for achieving proper roundtripping of subset data between 
+        DCC apps.
+        When multiple subsets belonging to a prim have the same familyName, they 
+        are said to belong to the family. A <i>familyType</i> value can be 
+        encoded on the owner of a family of subsets as a token using the static 
+        method UsdGeomSubset::SetFamilyType(). "familyType" can have one of the 
+        following values:
+        <ul><li><b>UsdGeomTokens->partition</b>: implies that every element of 
+        the whole geometry appears exactly once in only one of the subsets
+        belonging to the family.</li>
+        <li><b>UsdGeomTokens->nonOverlapping</b>: an element that appears in one 
+        subset may not appear in any other subset belonging to the family.</li>
+        <li><b>UsdGeomTokens->unrestricted</b>: implies that there are no
+        restrictions w.r.t. the membership of elements in the subsets. They 
+        could be overlapping and the union of all subsets in the family may 
+        not represent the whole.</li>
+        </ul>
+        \\note The validity of subset data is not enforced by the authoring 
+        APIs, however they can be checked using UsdGeomSubset::ValidateFamily().
+        '''
+    )
+    int[] indices = [] (
+        doc = """The set of indices included in this subset. The indices need not 
+        be sorted, but the same index should not appear more than once."""
+    )
+}
+
 class NurbsPatch "NurbsPatch" (
     doc = """Encodes a rational or polynomial non-uniform B-spline
     surface, with optional trim curves.
@@ -3269,7 +3328,7 @@ class PointInstancer "PointInstancer" (
 
     The first masking feature encodes a list of IDs in a list-editable metadatum
     called inactiveIds, which, although it does not have any similar 
-    impact to stage poopulation as \"prim activation\",
+    impact to stage population as \"prim activation\",
     it shares with that feature that its application is uniform over all time.
     Because it is list-editable, we can sparsely add and remove instances
     from it in many layers.
@@ -3391,7 +3450,7 @@ class PointInstancer "PointInstancer" (
       binary state on Id'd instances without adding a separate primvar.
       See also \\ref UsdGeomPointInstancer_varyingTopo"""
     )
-    int64[] invisibleIds (
+    int64[] invisibleIds = [] (
         doc = """A list of id's to make invisible at the evaluation time.
       See ."""
     )
@@ -3418,12 +3477,6 @@ class PointInstancer "PointInstancer" (
       prototypes relationship that identifies what geometry should be 
       drawn for each instance.  <b>Topology attribute</b> - can be animated, 
       but at a potential performance impact for streaming."""
-    )
-    uniform token prototypeDrawMode (
-        allowedTokens = ["point", "card", "fullGeom"]
-        doc = """Draw modes that host applications can use as a hint for how each
-      instance of each prototype should be represented.  This hint should only
-      affect interactive/preview representations and is optional."""
     )
     rel prototypes (
         doc = """<b>Required property</b>. Orders and targets the prototype root 
@@ -3711,14 +3764,121 @@ class "GeomModelAPI" (
     lofting process.
    
     As described in GetExtentsHint() below, it is useful to cache extents
-    at the model level.  UsdGeomModelAPI provides schema for computing and storing
-    these cached extents, which can be consumed by UsdGeomBBoxCache to provide
-    fast access to precomputed extents that will be used as the model's bounds
-    (see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
-   
+    at the model level.  UsdGeomModelAPI provides schema for computing and
+    storing these cached extents, which can be consumed by UsdGeomBBoxCache to
+    provide fast access to precomputed extents that will be used as the model's
+    bounds ( see UsdGeomBBoxCache::UsdGeomBBoxCache() ).
+
+    Draw Modes
+
+    Draw modes provide optional alternate imaging behavior for USD subtrees with
+    kind model. model:drawMode (which is inheritable) and
+    model:applyDrawMode (which is not) are resolved into a decision to stop
+    traversing the scene graph at a certain point, and replace a USD subtree
+    with proxy geometry.
+
+    The value of model:drawMode determines the type of proxy geometry:
+    - origin - Draw the model-space basis vectors of the replaced prim.
+    - bounds - Draw the model-space bounding box of the replaced prim.
+    - cards - Draw textured quads as a placeholder for the replaced prim.
+    - default - An explicit opinion to draw the USD subtree as normal.
+
+    model:drawMode is inheritable so that a whole scene, a large group, or
+    all prototypes of a model hierarchy PointInstancer can be assigned a draw
+    mode with a single attribute edit.  model:applyDrawMode is meant to be
+    authored earlier, and provides flexibility for different asset types. For
+    example, a character assembly (composed of character, clothes, etc) might
+    have model:applyDrawMode set at the top of the subtree so the whole
+    group can be drawn as a single card object. An effects subtree might have
+    model:applyDrawMode set at the component level so each particle group
+    draws individually in bounding box mode.
+
+    A value for model:drawMode on a child prim takes precedence over a
+    value on a parent prim.
+
+    Cards Geometry
+
+    The specific geometry used in cards mode is controlled by the
+    model:cardGeometry attribute:
+    - cross - Generate a quad normal to each basis direction and negative.
+                   Locate each quad so that it bisects the model extents.
+    - box   - Generate a quad normal to each basis direction and negative.
+                   Locate each quad on a face of the model extents, facing out.
+    - fromTexture - Generate a quad for each supplied texture by
+                         transforming the range from (-1,-1) to (1,1) by the
+                         inverse of the worldToScreenPos transform, pulled
+                         from texture metadata. The resulting positions are
+                         interpreted as being in model space.
+
+    For cross and box mode, the extents are calculated for purposes
+    default, proxy, and render, at their earliest authored time.
+    If the model has no textures, all six card faces are rendered using
+    model:drawModeColor. If one or more textures are present, only axes
+    with one or more textures assigned are drawn.  For each axis, if both
+    textures (positive and negative) are specified, they'll be used on the
+    corresponding card faces; if only one texture is specified, it will be
+    mapped to the opposite card face after being flipped on the texture's
+    s-axis. Any card faces with invalid asset paths will be drawn with
+    model:drawModeColor.
+
+    For fromTexture mode, only card faces with valid textures assigned
+    are drawn.
+
+    All card faces are drawn and textured as double-sided.
+
     \\todo CreatePayload() """
 )
 {
+    uniform bool model:applyDrawMode (
+        doc = """If true, and this prim or parent prims have model:drawMode
+                 set, apply an alternate imaging mode to this prim. See
+                 \\ref UsdGeomModelAPI_drawMode."""
+    )
+    uniform token model:cardGeometry (
+        allowedTokens = ["cross", "box", "fromTexture"]
+        doc = """The geometry to generate for imaging prims inserted for \\em
+                 cards imaging mode. See for
+                 geometry descriptions. If unspecified, it should be interpreted
+                 as cross."""
+    )
+    asset model:cardTextureXNeg (
+        doc = """In cards imaging mode, the texture applied to the X- quad.
+                 The texture axes (s,t) are mapped to model-space axes (y, -z)."""
+    )
+    asset model:cardTextureXPos (
+        doc = """In cards imaging mode, the texture applied to the X+ quad.
+                 The texture axes (s,t) are mapped to model-space axes (-y, -z)."""
+    )
+    asset model:cardTextureYNeg (
+        doc = """In cards imaging mode, the texture applied to the Y- quad.
+                 The texture axes (s,t) are mapped to model-space axes (-x, -z)."""
+    )
+    asset model:cardTextureYPos (
+        doc = """In cards imaging mode, the texture applied to the Y+ quad.
+                 The texture axes (s,t) are mapped to model-space axes (x, -z)."""
+    )
+    asset model:cardTextureZNeg (
+        doc = """In cards imaging mode, the texture applied to the Z- quad.
+                 The texture axes (s,t) are mapped to model-space axes (-x, -y)."""
+    )
+    asset model:cardTextureZPos (
+        doc = """In cards imaging mode, the texture applied to the Z+ quad.
+                 The texture axes (s,t) are mapped to model-space axes (x, -y)."""
+    )
+    uniform token model:drawMode (
+        allowedTokens = ["origin", "bounds", "cards", "default"]
+        doc = """Alternate imaging mode; applied to this prim or child prims
+                 where model:applyDrawMode is true, or where the prim
+                 has kind component. See \\ref UsdGeomModelAPI_drawMode
+                 for mode descriptions."""
+    )
+    uniform Vec3f model:drawModeColor (
+        doc = """The base color of imaging prims inserted for alternate
+                 imaging modes. For origin and bounds modes, this
+                 controls line color; for cards mode, this controls the
+                 fallback quad color. If unspecified, it should be interpreted
+                 as (0.18, 0.18, 0.18)."""
+    )
 }
 
 class "MotionAPI" (

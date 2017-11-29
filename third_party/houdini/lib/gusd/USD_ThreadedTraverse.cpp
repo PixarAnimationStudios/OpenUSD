@@ -23,9 +23,9 @@
 //
 #include "gusd/USD_ThreadedTraverse.h"
 
-#include "gusd/UT_Usd.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 namespace GusdUSD_ThreadedTraverse {
 

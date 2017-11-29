@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class FlattenPropertyTest "FlattenPropertyTest"
+{
+    string builtinAttr = "default value" (
+        "Test attribute comment"
+        displayName = "display name"
+        doc = "Testing documentation metadata"
+        testCustomMetadata = "garply"
+    )
+}
+

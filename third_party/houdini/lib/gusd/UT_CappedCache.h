@@ -151,7 +151,7 @@ GusdUT_CappedCache::FindOrCreate(const UT_CappedKey& key,
         // Make sure another thread didn't beat us to it.
         a->second = findItem(key);
         if(!a->second) {
-            if(a->second = creator(args...)) {
+            if((a->second = creator(args...))) {
                 addItem(key, a->second);
             } else {
                 _constructMap.erase(a);

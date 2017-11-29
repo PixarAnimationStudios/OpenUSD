@@ -1,0 +1,7 @@
+#sdf 1.4.32
+
+over "Model" (
+    prepend references = @./ref.sdf@</Ref>
+)
+{
+}

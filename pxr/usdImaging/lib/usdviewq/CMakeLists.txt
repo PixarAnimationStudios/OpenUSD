@@ -37,44 +37,66 @@ pxr_library(usdviewq
 
     PYMODULE_FILES
         __init__.py
+        appEventFilter.py
         arrayAttributeView.py
         customAttributes.py
-        mainWindow.py
+        appController.py
         plugContext.py
         scalarTypes.py
         stageView.py
         usdviewContextMenuItem.py
-        nodeContextMenu.py
-        nodeContextMenuItems.py
+        primContextMenu.py
+        primContextMenuItems.py
         headerContextMenu.py
         attributeViewContextMenu.py
         layerStackContextMenu.py
         prettyPrint.py
         pythonInterpreter.py
         settings.py
-        watchWindow.py
+        settings2.py
         adjustClipping.py
         adjustDefaultMaterial.py
-        nodeViewItem.py
+        primViewItem.py
         common.py
+        legendUtil.py
+        primLegend.py
+        propertyLegend.py
         attributeValueEditor.py
         pythonExpressionPrompt.py
-        referenceEditor.py
         overridableLineEdit.py
+        variantComboBox.py
         qt.py
+        constantGroup.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
         mainWindowUI.ui
-        watchWindowUI.ui
         adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
         attributeValueEditorUI.ui
+        primLegendUI.ui
+        propertyLegendUI.ui
         pythonExpressionPromptUI.ui
-        referenceEditorUI.ui
 )
 
 install(DIRECTORY
     icons
     DESTINATION lib/python/pxr/Usdviewq
+)
+
+pxr_test_scripts(
+    testenv/testUsdviewqConstantGroup.py
+    testenv/testUsdviewqSettings2.py
+)
+
+pxr_register_test(testUsdviewqConstantGroup
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqConstantGroup"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqSettings2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSettings2"
+    EXPECTED_RETURN_CODE 0
 )

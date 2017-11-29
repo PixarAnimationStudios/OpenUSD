@@ -25,9 +25,9 @@
 #include "NURBSCurvesWrapper.h"
 
 #include "context.h"
-#include "UT_Gf.h"
-#include "USD_Proxy.h"
 #include "GT_VtArray.h"
+#include "tokens.h"
+#include "UT_Gf.h"
 #include "USD_XformCache.h"
 
 #include <GT/GT_PrimCurveMesh.h>
@@ -91,12 +91,11 @@ GusdCurvesWrapper(
 
 GusdCurvesWrapper::
 GusdCurvesWrapper(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomBasisCurves&       usdCurves, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomBasisCurves&   usdCurves, 
+        UsdTimeCode                 time,
+        GusdPurposeSet              purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdCurvesForRead( usdCurves, stage->GetLock() )
+    , m_usdCurves( usdCurves )
     , m_forceCreateNewGeo( false )
 {
 }
@@ -116,23 +115,23 @@ initUsdPrim(const UsdStagePtr& stage,
         UsdPrim existing = stage->GetPrimAtPath( path );
         if( existing ) {
             newPrim = false;
-            m_usdCurvesForWrite = UsdGeomBasisCurves(stage->OverridePrim( path ));
+            m_usdCurves = UsdGeomBasisCurves(stage->OverridePrim( path ));
         }
         else {
             // When fracturing, we want to override the outside surfaces and create
             // new inside surfaces in one export. So if we don't find an existing prim
             // with the given path, create a new one.
-            m_usdCurvesForWrite = UsdGeomBasisCurves::Define( stage, path );
+            m_usdCurves = UsdGeomBasisCurves::Define( stage, path );
             m_forceCreateNewGeo = true;
         }
     }
     else {
-        m_usdCurvesForWrite = UsdGeomBasisCurves::Define( stage, path );  
+        m_usdCurves = UsdGeomBasisCurves::Define( stage, path );  
     }
-    if( !m_usdCurvesForWrite || !m_usdCurvesForWrite.GetPrim().IsValid() ) {
+    if( !m_usdCurves || !m_usdCurves.GetPrim().IsValid() ) {
         TF_WARN( "Unable to create %s curves '%s'.", newPrim ? "new" : "override", path.GetText() );
     }
-    return bool( m_usdCurvesForWrite );
+    return bool( m_usdCurves );
 }
 
 GT_PrimitiveHandle GusdCurvesWrapper::
@@ -182,13 +181,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdCurvesWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdCurvesWrapper( 
-                    stage,
                     UsdGeomBasisCurves( sourcePrim.GetPrim() ),
                     time, 
                     purposes );
@@ -205,20 +202,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-const UsdGeomImageable 
-GusdCurvesWrapper::getUsdPrimForRead( GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomCurves.
-    GusdUSD_CurvesHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdCurvesForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdCurvesForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool 
 GusdCurvesWrapper::refine( 
     GT_Refine& refiner, 
@@ -229,9 +212,7 @@ GusdCurvesWrapper::refine(
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    GusdUSD_CurvesHolder::ScopedReadLock lock;
-    lock.Acquire(m_usdCurvesForRead);
-    UsdGeomBasisCurves usdCurves = *lock;
+    const UsdGeomBasisCurves& usdCurves = m_usdCurves;
 
     GT_AttributeListHandle gtVertexAttrs = new GT_AttributeList( new GT_AttributeMap() );
     GT_AttributeListHandle gtUniformAttrs = new GT_AttributeList( new GT_AttributeMap() );
@@ -411,14 +392,14 @@ GusdCurvesWrapper::refine(
     } 
     else {
 
-        UsdGeomPrimvar colorPrimvar = usdCurves.GetPrimvar(TfToken("Cd"));
+        UsdGeomPrimvar colorPrimvar = usdCurves.GetPrimvar(GusdTokens->Cd);
         if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            colorPrimvar = usdCurves.GetDisplayColorPrimvar();
+            colorPrimvar = usdCurves.GetPrimvar(GusdTokens->displayColor);
         }
 
         if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
 
-            // cerr << "curve color primvar " << colorPrimvar.GetPrimvarName() << "\t" << colorPrimvar.GetTypeName() << "\t" << colorPrimvar.GetInterpolation() << endl;
+            // cerr << "curve color primvar " << colorPrimvar.GetBaseName() << "\t" << colorPrimvar.GetTypeName() << "\t" << colorPrimvar.GetInterpolation() << endl;
 
             GT_DataArrayHandle gtData = convertPrimvarData( colorPrimvar, m_time );
             if( gtData ) {
@@ -474,14 +455,14 @@ GusdCurvesWrapper::refine(
             }
         }
 
-        UsdGeomPrimvar alphaPrimvar = usdCurves.GetPrimvar(TfToken("Alpha"));
+        UsdGeomPrimvar alphaPrimvar = usdCurves.GetPrimvar(GusdTokens->Alpha);
         if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            alphaPrimvar = usdCurves.GetDisplayOpacityPrimvar();
+            alphaPrimvar = usdCurves.GetPrimvar(GusdTokens->displayOpacity);
         }
 
         if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
 
-            // cerr << "curve color primvar " << alphaPrimvar.GetPrimvarName() << "\t" << alphaPrimvar.GetTypeName() << "\t" << alphaPrimvar.GetInterpolation() << endl;
+            // cerr << "curve color primvar " << alphaPrimvar.GetBaseName() << "\t" << alphaPrimvar.GetTypeName() << "\t" << alphaPrimvar.GetInterpolation() << endl;
 
             GT_DataArrayHandle gtData = convertPrimvarData( alphaPrimvar, m_time );
             if( gtData ) {
@@ -671,7 +652,7 @@ doSoftCopy() const
 
 bool GusdCurvesWrapper::isValid() const
 {
-    return bool( m_usdCurvesForWrite || m_usdCurvesForRead );
+    return bool( m_usdCurves );
 }
 
 
@@ -684,7 +665,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
                  GusdSimpleXformCache&      xformCache
                   )
 {
-    if( !m_usdCurvesForWrite ) {
+    if( !m_usdCurves ) {
         TF_WARN( "Attempting to update invalid curve prim" );
         return false;
     }
@@ -728,7 +709,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
 
     if( !writeOverlay || ctxt.overlayAll ) {
 
-        m_usdCurvesForWrite.CreateTypeAttr().Set( 
+        m_usdCurves.CreateTypeAttr().Set( 
             order == 2 ? UsdGeomTokens->linear : UsdGeomTokens->cubic );
 
         if( order == 4 ) {
@@ -738,10 +719,10 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
                 TF_WARN( "Unsupported curve basis '%s'.", GTbasis( basis ));
                 return false;
             }
-            m_usdCurvesForWrite.CreateBasisAttr().Set( it->second );
+            m_usdCurves.CreateBasisAttr().Set( it->second );
         }
 
-        m_usdCurvesForWrite.CreateWrapAttr().Set( 
+        m_usdCurves.CreateWrapAttr().Set( 
             closed ? UsdGeomTokens->periodic : UsdGeomTokens->nonperiodic );
     }
 
@@ -751,13 +732,13 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     }
 
     GfMatrix4d xform = computeTransform( 
-                            m_usdCurvesForWrite.GetPrim().GetParent(),
+                            m_usdCurves.GetPrim().GetParent(),
                             geoTime,
                             houXform,
                             xformCache );
 
     GfMatrix4d loc_xform = computeTransform( 
-                            m_usdCurvesForWrite.GetPrim(),
+                            m_usdCurves.GetPrim(),
                             geoTime,
                             houXform,
                             xformCache );
@@ -773,7 +754,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     UsdAttribute usdAttr;
     
     if( !writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
-        m_usdCurvesForWrite.GetPurposeAttr().Set( ctxt.purpose );
+        m_usdCurves.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // intrinsic attributes ----------------------------------------------------
@@ -782,7 +763,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
 
         // extent ------------------------------------------------------------------
         houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
-        usdAttr = m_usdCurvesForWrite.GetExtentAttr();
+        usdAttr = m_usdCurves.GetExtentAttr();
         if(houAttr && usdAttr && transformPoints ) {
              houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }
@@ -804,7 +785,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         
         // P
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
-        usdAttr = m_usdCurvesForWrite.GetPointsAttr();
+        usdAttr = m_usdCurves.GetPointsAttr();
         if(houAttr && usdAttr && transformPoints ) {
             houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }
@@ -820,7 +801,7 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
 
         // Vertex counts
         houAttr = gtCurves->getCurveCounts();
-        usdAttr = m_usdCurvesForWrite.GetCurveVertexCountsAttr();
+        usdAttr = m_usdCurves.GetCurveVertexCountsAttr();
 
         // Houdini repeats point for closed beziers so we need to 
         if( order == 4 && closed ) {
@@ -837,12 +818,12 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
     if( !writeOverlay || ctxt.overlayAll || ctxt.overlayPoints ) {
         // N
         houAttr = sourcePrim->findAttribute("N", attrOwner, 0);
-        usdAttr = m_usdCurvesForWrite.GetNormalsAttr();
+        usdAttr = m_usdCurves.GetNormalsAttr();
         updateAttributeFromGTPrim( attrOwner, "N", houAttr, usdAttr, geoTime );
 
         // v
         houAttr = sourcePrim->findAttribute("v", attrOwner, 0);
-        usdAttr = m_usdCurvesForWrite.GetVelocitiesAttr();
+        usdAttr = m_usdCurves.GetVelocitiesAttr();
         updateAttributeFromGTPrim( attrOwner, "v", houAttr, usdAttr, geoTime );
         
         // pscale & width
@@ -851,9 +832,9 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
             houAttr = sourcePrim->findAttribute("pscale", attrOwner, 0);
         }
 
-        usdAttr = m_usdCurvesForWrite.GetWidthsAttr();
+        usdAttr = m_usdCurves.GetWidthsAttr();
         updateAttributeFromGTPrim( attrOwner, "width", houAttr, usdAttr, geoTime );
-        m_usdCurvesForWrite.SetWidthsInterpolation( UsdGeomTokens->vertex );
+        m_usdCurves.SetWidthsInterpolation( UsdGeomTokens->vertex );
     }
 
     // -------------------------------------------------------------------------
@@ -871,21 +852,19 @@ updateFromGTPrim(const GT_PrimitiveHandle&  sourcePrim,
         // facevarying through GT
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
 
-        filter.appendPattern(GT_OWNER_VERTEX, "^P ^N ^v ^width ^pscale ^visible ^usdactive");
+        filter.appendPattern(GT_OWNER_VERTEX, "^P ^N ^v ^width ^pscale");
         if(const GT_AttributeListHandle vtxAttrs = sourcePrim->getVertexAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_VERTEX;
             filter.setActiveOwners(owners);
             updatePrimvarFromGTPrim( vtxAttrs, filter, UsdGeomTokens->vertex, primvarTime );
         }
-        filter.appendPattern(GT_OWNER_CONSTANT, "^visible ^usdactive");
         if(const GT_AttributeListHandle constAttrs = sourcePrim->getDetailAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_CONSTANT;
             filter.setActiveOwners(owners);
             updatePrimvarFromGTPrim( constAttrs, filter, UsdGeomTokens->constant, primvarTime );
         }
-        filter.appendPattern(GT_OWNER_UNIFORM, "^visible ^usdactive");
         if(const GT_AttributeListHandle uniformAttrs = sourcePrim->getUniformAttributes()) {
             GusdGT_AttrFilter::OwnerArgs owners;
             owners << GT_OWNER_UNIFORM;

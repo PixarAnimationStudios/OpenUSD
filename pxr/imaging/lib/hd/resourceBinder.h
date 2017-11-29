@@ -228,6 +228,8 @@ public:
         PrimVarBinding elementData;
         PrimVarBinding vertexData;
         PrimVarBinding fvarData;
+        PrimVarBinding computeReadWriteData;
+        PrimVarBinding computeReadOnlyData;
         NestedPrimVarBinding instanceData;
         int instancerNumLevels;
 
@@ -259,6 +261,14 @@ public:
                          bool instanceDraw,
                          HdBindingRequestVector const &customBindings);
 
+    /// Assign all binding points used in computation.
+    /// Returns metadata to be used for codegen.
+    HD_API
+    void ResolveComputeBindings(HdBufferSpecVector const &readWriteBufferSpecs,
+                                HdBufferSpecVector const &readOnlyBufferSpecs,
+                                HdShaderCodeSharedPtrVector const &shaders,
+                                MetaData *metaDataOut);
+    
     /// call GL introspection APIs and fix up binding locations,
     /// in case if explicit resource location qualifier is not available
     /// (GL 4.2 or before)

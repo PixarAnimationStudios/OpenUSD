@@ -75,6 +75,11 @@ public:
 #endif
 
 	PXRUSDMAYAGL_API
+
+    PXRUSDMAYAGL_API
+    virtual MHWRender::DrawAPI supportedDrawAPIs() const;
+
+    PXRUSDMAYAGL_API
     static MString sm_drawDbClassification;
 	PXRUSDMAYAGL_API
     static MString sm_drawRegistrantId;

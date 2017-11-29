@@ -20,6 +20,7 @@ pxr_library(usdImaging
         usdGeom
         usdHydra
         usdLux
+        usdRi
         usdShade
         ar
         ${Boost_PYTHON_LIBRARY}
@@ -35,29 +36,32 @@ pxr_library(usdImaging
         adapterRegistry
         debugCodes
         delegate
-        domeLightAdapter
         inheritedCache
         instancerContext
-        shaderAdapter
+        package
         tokens
+        unitTestHelper
         valueCache
         basisCurvesAdapter
         capsuleAdapter
         coneAdapter
         cubeAdapter
         cylinderAdapter
+        domeLightAdapter
+        drawModeAdapter
         gprimAdapter
+        hydraMaterialAdapter
         instanceAdapter
         lightAdapter
+        materialAdapter
         meshAdapter
+        nurbsPatchAdapter
         pointsAdapter
         pointInstancerAdapter
         primAdapter
         rectLightAdapter
         sphereAdapter
         sphereLightAdapter
-        nurbsPatchAdapter
-        unitTestHelper
 
     PUBLIC_HEADERS
         api.h
@@ -65,5 +69,6 @@ pxr_library(usdImaging
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/drawMode.glslfx
 )
 

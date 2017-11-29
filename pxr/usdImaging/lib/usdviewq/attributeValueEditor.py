@@ -24,7 +24,7 @@
 from qt import QtCore, QtWidgets
 from attributeValueEditorUI import Ui_AttributeValueEditor
 from pythonExpressionPrompt import PythonExpressionPrompt
-from common import GetAttributeColor, TimeSampleTextColor
+from common import GetAttributeColor, UIPropertyValueSourceColors
 
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
@@ -49,30 +49,22 @@ class AttributeValueEditor(QtWidgets.QWidget):
 
         self.clear()
 
-        self._ui.editButton.clicked.connect(self._edit)
-
-        self._ui.revertButton.clicked.connect(self._revert)
-
-        self._ui.revertAllButton.clicked.connect(self._revertAll)
-
-    def setMainWindow(self, mainWindow):
-        # pass the mainWindow instance from which to retrieve 
+    def setAppController(self, appController):
+        # pass the appController instance from which to retrieve
         # variable data.
-        self._mainWindow = mainWindow
-        self._propertyView = mainWindow._ui.propertyView
+        self._appController = appController
 
-    def populate(self, name, node):
+    def populate(self, name, prim):
         # called when the selected attribute has changed
-        # gets the attribute object and the source node
-        self._attribute = self._mainWindow._attributeDict[name]
-        self._isSet = True  # an attribute is selected
-        self._node = node
+        # gets the attribute object and the source prim
+        try:
+            self._attribute = self._appController._attributeDict[name]
+        except KeyError:
+            self._appController._attributeDict[name] = ''
+            self._attribute = self._appController._attributeDict[name]
 
-        # determine if the attribute is editable, enable or disable buttons
-        # XXX USD DETERMINE EDITABILITY
-        #editable = self._name[0] != ' '
-        #self._ui.editButton.setEnabled(editable)
-        #self._ui.revertAllButton.setEnabled(editable)
+        self._isSet = True  # an attribute is selected
+        self._prim = prim
 
         self.refresh()  # load the value at the current frame
 
@@ -88,11 +80,17 @@ class AttributeValueEditor(QtWidgets.QWidget):
         return None
 
     def refresh(self):
+
         # usually called upon frame change or selected attribute change
         if not self._isSet:
             return
 
-        frame = self._mainWindow._currentFrame
+        # attribute connections and relationship targets have no value to display
+        # in the value viewer.
+        if self._attribute == '':
+            return
+
+        frame = self._appController._currentFrame
 
         # get the value of the attribute
         self._val = self._attribute.Get(frame)
@@ -112,88 +110,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
             rowText = ToString(self._val, self._attribute.GetTypeName())
             self._ui.valueViewer.setText(rowText)
 
-        #XXX USD Determine whether the revert button should be on
-        self._ui.revertButton.setEnabled(False)
-
     def clear(self):
         # set the value editor to 'no attribute selected' mode
         self._isSet = False
         self._ui.valueViewer.setText("")
-
-        self._ui.editButton.setEnabled(False)
-        self._ui.revertButton.setEnabled(False)
-        self._ui.revertAllButton.setEnabled(False)
-
-    # XXX USD EDITING DISABLED
-    def _edit(self, exception = None):
-        # opens the interpreter to receive user input
-        frame = self._mainWindow._currentFrame
-        type = 'member' if self._isMember else 'attribute'
-
-        # this call opens the interpreter window and has it return the value of
-        # "_" when done.
-        value = PythonExpressionPrompt.getValueFromPython(self, exception, self._val)
-        if value is None:   # Cancelled
-            return
-
-        try:
-            # value successfully retrieved. set it.
-            if self._isMember:
-                self._node.SetMember(frame, self._name, value)
-            else:
-                self._node.SetAttribute(frame, self._name, value)
-            
-            # send a signal to the mainWindow confirming the edit
-            msg = 'Successfully edited %s "%s" at frame %s.' \
-                    %(type, self._name, frame)
-            self.editComplete.emit(msg)
-
-        except Exception as e:
-            # if an error occurs, reopen the interpreter and display it
-            self._edit(e)
-
-    def _revert(self, all=False):
-        from pxr import Usd
-
-        # revert one or all overrides on a member
-        type = 'member' if self._isMember else 'attribute'
-        frame = Usd.Object.FRAME_INVALID if all else \
-                self._mainWindow._currentFrame
-        frameStr = 'all frames' if all else \
-                   'frame %s' %(self._mainWindow._currentFrame)
-        section = Usd.USD_SECTION_ALL if all else \
-                  Usd.USD_SECTION_INVALID
-
-        # ask for confirmation before reverting overrides
-        reply = QtWidgets.QMessageBox.question(self, "Confirm Revert",
-                    "Are you sure you want to revert the %s "
-                    "<font color='%s'><b>%s</b></font> at %s?"
-                        %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
-                    QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes,
-                    QtWidgets.QMessageBox.Cancel)
-    
-        msg = ""
-        if reply == QtWidgets.QMessageBox.Yes and self._node is not None:
-            # we got 'yes' as an answer
-            try:
-                # this removes only the value written in the top level stage
-                # which is the writable reference.
-                if self._isMember:
-                    self._node.RemoveMember(frame, section, self._name)
-                else:
-                    self._node.RemoveAttribute(frame, section, self._name)
-
-                msg = 'Reverted %s "%s" at %s.' %(type, self._name, frameStr)
-                self._mainWindow._refreshVars()
-
-            except RuntimeError:
-                msg = 'Failed to revert the %s "%s" at %s. Perhaps this '\
-                      '%s is not authored in the override stage.'\
-                            %(type, self._name, frameStr, type)
-        
-        # display status message
-        self._mainWindow.statusMessage(msg, 12)
-
-    def _revertAll(self):
-        self._revert(True)
-

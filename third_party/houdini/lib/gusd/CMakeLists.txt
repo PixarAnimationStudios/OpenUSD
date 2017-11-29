@@ -23,19 +23,20 @@ pxr_shared_library(${PXR_PACKAGE}
         GU_PackedUSD
         GU_USD
         OP_ParmChangeMicroNode
-        writeCtrlFlags
         primWrapper
         PRM_Shared
+        purpose
         refiner
         scopeWrapper
         shaderWrapper
+        stageCache
+        stageEdit
+        tokens
         GT_PrimCache
-        GT_OldPointInstancer
         GT_PointInstancer
+        GT_OldPointInstancer
         USD_CustomTraverse
         USD_DataCache
-        USD_Proxy
-        USD_StageCache
         USD_StdTraverse
         USD_ThreadedTraverse
         USD_Traverse
@@ -44,16 +45,20 @@ pxr_shared_library(${PXR_PACKAGE}
         USD_VisCache
         UT_Error
         UT_TypeTraits
-        UT_Usd
+        visitor
         groupBaseWrapper
         xformWrapper
+        writeCtrlFlags
+        curvesWrapper
+        NURBSCurvesWrapper
 
     PUBLIC_HEADERS
         context.h
         api.h
+        defaultArray.h
         gusd.h
-        purpose.h
-        USD_Holder.h
+        GU_USD.h
+        stageOpts.h
         USD_PropertyMap.h
         USD_TraverseSimple.h
         UT_Assert.h
@@ -61,9 +66,9 @@ pxr_shared_library(${PXR_PACKAGE}
         UT_StaticInit.h
         UT_Version.h
         UT_Gf.h
+        GT_VtArray.h
 
     PRIVATE_HEADERS
-        GT_VtArray.h
         GT_VtStringArray.h
         UT_VtArray.h
 
@@ -73,12 +78,10 @@ pxr_shared_library(${PXR_PACKAGE}
     PRIVATE_CLASSES
         GEO_IOTranslator
         GT_PackedUSD
-        NURBSCurvesWrapper
         boundsCache
-        curvesWrapper
         meshWrapper
         packedUsdWrapper
-        pointsWrapper  
+        pointsWrapper
         instancerWrapper
 )
 

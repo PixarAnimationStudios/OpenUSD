@@ -22,51 +22,183 @@
 # language governing permissions and limitations under the Apache License.
 #
 from qt import QtCore, QtGui, QtWidgets
-from pxr import Usd
-from customAttributes import CustomAttribute
+import os, time, sys, platform
+from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
+from customAttributes import CustomAttribute, RelationshipAttribute
+from constantGroup import ConstantGroup
 
-# Color constants.  
+class UIBaseColors(ConstantGroup):
+    RED = QtGui.QBrush(QtGui.QColor(230, 132, 131))
+    LIGHT_SKY_BLUE = QtGui.QBrush(QtGui.QColor(135, 206, 250))
+    DARK_YELLOW = QtGui.QBrush(QtGui.QColor(222, 158, 46))
 
-# We use color in the prim browser to discriminate important scenegraph-state
-# (active, isInstance, isInMaster, has arcs)
-HasArcsColor = QtGui.QBrush(QtGui.QColor(222, 158, 46))
-NormalColor = QtGui.QBrush(QtGui.QColor(227, 227, 227))
-InstanceColor = QtGui.QBrush(QtGui.QColor(135, 206, 250)) # lightskyblue
-MasterColor = QtGui.QBrush(QtGui.QColor(118, 136, 217))
-HeaderColor = QtGui.QBrush(QtGui.QColor(201, 199, 195))
+class UIPrimTypeColors(ConstantGroup):
+    HAS_ARCS = UIBaseColors.DARK_YELLOW
+    NORMAL = QtGui.QBrush(QtGui.QColor(227, 227, 227))
+    INSTANCE = UIBaseColors.LIGHT_SKY_BLUE
+    MASTER = QtGui.QBrush(QtGui.QColor(118, 136, 217))
 
-# We use color in the attribute browser to specify value source
-RedColor = QtGui.QBrush(QtGui.QColor(230, 132, 131))
-FallbackTextColor = HasArcsColor
-TimeSampleTextColor = QtGui.QBrush(QtGui.QColor(177, 207, 153))
-DefaultTextColor = InstanceColor
-NoValueTextColor = QtGui.QBrush(QtGui.QColor(140, 140, 140))
-ValueClipsTextColor = QtGui.QBrush(QtGui.QColor(230,150,230))
+class UIPropertyValueSourceColors(ConstantGroup):
+    FALLBACK = UIBaseColors.DARK_YELLOW
+    TIME_SAMPLE = QtGui.QBrush(QtGui.QColor(177, 207, 153))
+    DEFAULT = UIBaseColors.LIGHT_SKY_BLUE
+    NONE = QtGui.QBrush(QtGui.QColor(140, 140, 140))
+    VALUE_CLIPS = QtGui.QBrush(QtGui.QColor(230, 150, 230))
 
-# Font constants.  We use font in the prim browser to distinguish
-# "resolved" prim specifier
-# XXX - the use of weight here may need to be revised depending on font family
-ItalicFont = QtGui.QFont()
-ItalicFont.setWeight(35)
-ItalicFont.setItalic(True)
-OverPrimFont = ItalicFont
+class UIFonts(ConstantGroup):
+    # Font constants.  We use font in the prim browser to distinguish
+    # "resolved" prim specifier
+    # XXX - the use of weight here may need to be revised depending on font family
+    ITALIC = QtGui.QFont()
+    ITALIC.setWeight(35)
+    ITALIC.setItalic(True)
+    OVER_PRIM = ITALIC
 
-BoldFont = QtGui.QFont()
-BoldFont.setWeight(90)
-DefinedPrimFont = BoldFont
-DefinedPrimFont.setWeight(75)
+    BOLD = QtGui.QFont()
+    BOLD.setWeight(90)
+    DEFINED_PRIM = BOLD
+    DEFINED_PRIM.setWeight(75)
 
-NormalFont = QtGui.QFont()
-NormalFont.setWeight(35)
-AbstractPrimFont = NormalFont
+    NORMAL = QtGui.QFont()
+    NORMAL.setWeight(35)
+    ABSTRACT_PRIM = NORMAL
+
+class PropertyViewIndex(ConstantGroup):
+    TYPE, NAME, VALUE = range(3)
+
+ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+
+# We use deferred loading because icons can't be constructed before
+# application initialization time.
+_icons = {}
+def _DeferredIconLoad(path):
+    fullPath = os.path.join(ICON_DIR_ROOT, path)
+    try:
+        icon = _icons[fullPath]
+    except KeyError:
+        icon = QtGui.QIcon(fullPath)
+        _icons[fullPath] = icon
+    return icon
+
+class PropertyViewIcons(ConstantGroup):
+    ATTRIBUTE                  = lambda: _DeferredIconLoad('usd-attr-plain-icon.png')
+    ATTRIBUTE_WITH_CONNECTIONS = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.png')
+    RELATIONSHIP               = lambda: _DeferredIconLoad('usd-rel-plain-icon.png')
+    RELATIONSHIP_WITH_TARGETS  = lambda: _DeferredIconLoad('usd-rel-with-target-icon.png')
+    TARGET                     = lambda: _DeferredIconLoad('usd-target-icon.png')
+    CONNECTION                 = lambda: _DeferredIconLoad('usd-conn-icon.png')
+    COMPOSED                   = lambda: _DeferredIconLoad('usd-cmp-icon.png')
+
+class PropertyViewDataRoles(ConstantGroup):
+    ATTRIBUTE = "Attr"
+    RELATIONSHIP = "Rel"
+    ATTRIBUTE_WITH_CONNNECTIONS = "Attr_"
+    RELATIONSHIP_WITH_TARGETS = "Rel_"
+    TARGET = "Tgt"
+    CONNECTION = "Conn"
+    COMPOSED = "Cmp"
+
+class RenderModes(ConstantGroup):
+    # Render modes
+    WIREFRAME = "Wireframe"
+    WIREFRAME_ON_SURFACE = "WireframeOnSurface"
+    SMOOTH_SHADED = "Smooth Shaded"
+    FLAT_SHADED = "Flat Shaded"
+    POINTS = "Points"
+    GEOM_ONLY = "Geom Only"
+    GEOM_FLAT = "Geom Flat"
+    GEOM_SMOOTH = "Geom Smooth"
+    HIDDEN_SURFACE_WIREFRAME = "Hidden Surface Wireframe"
+
+class ShadedRenderModes(ConstantGroup):
+    # Render modes which use shading
+    SMOOTH_SHADED = RenderModes.SMOOTH_SHADED
+    FLAT_SHADED = RenderModes.FLAT_SHADED
+    WIREFRAME_ON_SURFACE = RenderModes.WIREFRAME_ON_SURFACE
+    GEOM_FLAT = RenderModes.GEOM_FLAT
+    GEOM_SMOOTH = RenderModes.GEOM_SMOOTH
+
+class PickModes(ConstantGroup):
+    # Pick modes
+    PRIMS = "Prims"
+    MODELS = "Models"
+    INSTANCES = "Instances"
+
+class SelectionHighlightModes(ConstantGroup):
+    # Selection highlight modes
+    NEVER = "Never"
+    ONLY_WHEN_PAUSED = "Only when paused"
+    ALWAYS = "Always"
+
+class CameraMaskModes(ConstantGroup):
+    NONE = "none"
+    PARTIAL = "partial"
+    FULL = "full"
+
+def _PropTreeWidgetGetRole(tw):
+    return tw.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
+
+def PropTreeWidgetTypeIsRel(tw):
+    role = _PropTreeWidgetGetRole(tw)
+    return role in (PropertyViewDataRoles.RELATIONSHIP, PropertyViewDataRoles.RELATIONSHIP_WITH_TARGETS)
+
+def _UpdateLabelText(text, substring, mode):
+    return text.replace(substring, '<'+mode+'>'+substring+'</'+mode+'>')
+
+def ItalicizeLabelText(text, substring):
+    return _UpdateLabelText(text, substring, 'i')
+
+def BoldenLabelText(text, substring):
+    return _UpdateLabelText(text, substring, 'b')
+
+def ColorizeLabelText(text, substring, r, g, b):
+    return _UpdateLabelText(text, substring,
+                            "span style=\"color:rgb(%d, %d, %d);\"" % (r, g, b))
 
 def PrintWarning(title, description):
-    import sys
     msg = sys.stderr
     print >> msg, "------------------------------------------------------------"
     print >> msg, "WARNING: %s" % title
     print >> msg, description
     print >> msg, "------------------------------------------------------------"
+
+def GetShortString(prop, frame):
+    if isinstance(prop, RelationshipAttribute):
+        val = ", ".join(str(p) for p in prop.Get(frame))
+    elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
+        val = prop.Get(frame)
+    elif isinstance(prop, Sdf.AttributeSpec):
+        if frame == Usd.TimeCode.Default():
+            val = prop.default
+        else:
+            numTimeSamples = -1
+            if prop.HasInfo('timeSamples'):
+                numTimeSamples = prop.layer.GetNumTimeSamplesForPath(prop.path)
+            if numTimeSamples == -1:
+                val = prop.default
+            elif numTimeSamples == 1:
+                return "1 time sample"
+            else:
+                return str(numTimeSamples) + " time samples"
+    elif isinstance(prop, Sdf.RelationshipSpec):
+        return str(prop.targetPathList)
+
+    from scalarTypes import GetScalarTypeFromAttr
+    scalarType, isArray = GetScalarTypeFromAttr(prop)
+    result = ''
+    if isArray and not isinstance(val, Sdf.ValueBlock):
+        def arrayToStr(a):
+            from itertools import chain
+            elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
+            return '[' + ', '.join(map(str, elems)) + ']'
+        if val is not None and len(val):
+            result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
+        else:
+            result = "%s[]" % scalarType
+    else:
+        result = str(val)
+
+    return result[:500]
 
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
@@ -86,27 +218,27 @@ def GetAttributeTextFont(attribute, frame):
         frame = Usd.TimeCode(frame)
 
     frameVal = frame.GetValue()
-    bracketing = attribute.GetBracketingTimeSamples(frameVal) 
+    bracketing = attribute.GetBracketingTimeSamples(frameVal)
 
     # Note that some attributes return an empty tuple, some None, from
     # GetBracketingTimeSamples(), but all will be fed into this function.
     if bracketing and (len(bracketing) == 2) and (bracketing[0] != frameVal):
-        return ItalicFont
+        return UIFonts.ITALIC
 
-    return None 
+    return None
 
 # Helper function that takes attribute status and returns the display color
 def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
                       valueIsDefault=None):
 
     if isinstance(attribute, CustomAttribute):
-        return RedColor.color()
+        return UIBaseColors.RED.color()
 
-    statusToColor = {Usd.ResolveInfoSourceFallback   : FallbackTextColor,
-                     Usd.ResolveInfoSourceDefault    : DefaultTextColor,
-                     Usd.ResolveInfoSourceValueClips : ValueClipsTextColor,
-                     Usd.ResolveInfoSourceTimeSamples: TimeSampleTextColor,
-                     Usd.ResolveInfoSourceNone       : NoValueTextColor}
+    statusToColor = {Usd.ResolveInfoSourceFallback   : UIPropertyValueSourceColors.FALLBACK,
+                     Usd.ResolveInfoSourceDefault    : UIPropertyValueSourceColors.DEFAULT,
+                     Usd.ResolveInfoSourceValueClips : UIPropertyValueSourceColors.VALUE_CLIPS,
+                     Usd.ResolveInfoSourceTimeSamples: UIPropertyValueSourceColors.TIME_SAMPLE,
+                     Usd.ResolveInfoSourceNone       : UIPropertyValueSourceColors.NONE}
 
     valueSource = GetAttributeStatus(attribute, frame)
 
@@ -138,20 +270,19 @@ class SubLayerInfo(object):
         return self._prefix + self.layer.GetDisplayName()
 
 def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
-    from pxr import Sdf
     offsets = layer.subLayerOffsets
     layers.append(SubLayerInfo(layer, layerOffset, parentLayer, prefix))
     for i, l in enumerate(layer.subLayerPaths):
         offset = offsets[i] if offsets is not None and len(offsets) > i else Sdf.LayerOffset()
         subLayer = Sdf.Layer.FindRelativeToLayer(layer, l)
-        # Due to an unfortunate behavior of the Pixar studio resolver, 
+        # Due to an unfortunate behavior of the Pixar studio resolver,
         # FindRelativeToLayer() may fail to resolve certain paths.  We will
         # remove this extra Find() call as soon as we can retire the behavior;
-        # in the meantime, the extra call does not hurt (but should not, in 
+        # in the meantime, the extra call does not hurt (but should not, in
         # general, be necessary)
         if not subLayer:
             subLayer = Sdf.Layer.Find(l)
-        
+
         if subLayer:
             # This gives a 'tree'-ish presentation, but it looks sad in
             # a QTableWidget.  Just use spaces for now
@@ -162,7 +293,6 @@ def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
             print "Could not find layer " + l
 
 def GetRootLayerStackInfo(layer):
-    from pxr import Sdf
     layers = []
     _AddSubLayers(layer, Sdf.LayerOffset(), "", None, layers)
     return layers
@@ -172,16 +302,16 @@ def PrettyFormatSize(sz):
     meg = k * 1024
     gig = meg * 1024
     ter = gig * 1024
-    
+
     sz = float(sz)
     if sz > ter:
-        return "%.1fT" % ( sz/float(ter) )
+        return "%.1fT" % (sz/float(ter))
     elif sz > gig:
-        return "%.1fG" % ( sz/float(gig) )
+        return "%.1fG" % (sz/float(gig))
     elif sz > meg:
-        return "%.1fM" % ( sz/float(meg) )
+        return "%.1fM" % (sz/float(meg))
     elif sz > k:
-        return "%.1fK" % ( sz/float(k) )
+        return "%.1fK" % (sz/float(k))
     else:
         return "%db" % sz
 
@@ -193,19 +323,17 @@ class Timer(object):
        t.PrintTime("did some stuff")
     """
     def __enter__(self):
-        import time
         self._start = time.time()
         self.interval = 0
         return self
 
     def __exit__(self, *args):
-        import time
         self._end = time.time()
         self.interval = self._end - self._start
 
     def PrintTime(self, action):
         print "Time to %s: %2.3fs" % (action, self.interval)
-        
+
 
 class BusyContext(object):
     """When used as a context object with python's "with" statement,
@@ -221,22 +349,19 @@ class BusyContext(object):
 def InvisRootPrims(stage):
     """Make all defined root prims of stage be invisible,
     at Usd.TimeCode.Default()"""
-    from pxr import UsdGeom
     for p in stage.GetPseudoRoot().GetChildren():
         UsdGeom.Imageable(p).MakeInvisible()
 
 def _RemoveVisibilityRecursive(primSpec):
-    from pxr import UsdGeom
     try:
         primSpec.RemoveProperty(primSpec.attributes[UsdGeom.Tokens.visibility])
     except IndexError:
         pass
     for child in primSpec.nameChildren:
         _RemoveVisibilityRecursive(child)
-    
+
 def ResetSessionVisibility(stage):
     session = stage.GetSessionLayer()
-    from pxr import Sdf
     with Sdf.ChangeBlock():
         _RemoveVisibilityRecursive(session.pseudoRoot)
 
@@ -244,7 +369,6 @@ def ResetSessionVisibility(stage):
 # we have little alternative, other than manually walking prim's PcpPrimIndex
 def HasSessionVis(prim):
     """Is there a session-layer override for visibility for 'prim'?"""
-    from pxr import Sdf, UsdGeom
     session = prim.GetStage().GetSessionLayer()
     primSpec = session.GetPrimAtPath(prim.GetPath())
     return bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes)
@@ -256,10 +380,9 @@ def GetEnclosingModelPrim(prim):
     if prim:
         prim = prim.GetParent()
     while prim:
-        from pxr import Kind
         # We use Kind here instead of prim.IsModel because point instancer
         # prototypes currently don't register as models in IsModel. See
-        # bug: http://bugzilla.pixar.com/show_bug.cgi?id=117137 
+        # bug: http://bugzilla.pixar.com/show_bug.cgi?id=117137
         if Kind.Registry.IsA(Usd.ModelAPI(prim).GetKind(), Kind.Tokens.model):
             break
         prim = prim.GetParent()
@@ -272,7 +395,6 @@ def GetClosestBoundMaterial(prim):
     *closest in namespace* bound Material prim, as well as the prim on which the
     binding was found.  If none of 'prim's ancestors has a binding, return
     (None, None)"""
-    from pxr import UsdShade
     if not prim:
         return (None, None)
     # XXX We should not need to guard against pseudoRoot.  Remove when
@@ -294,7 +416,7 @@ def GetPrimLoadability(prim):
        * prim is a model group
     The latter is useful because loading is recursive on a UsdStage, and it
     is convenient to be able to (e.g.) load everything loadable in a set.
-    
+
     A prim 'isLoaded' only if there are no unloaded prims beneath it, i.e.
     it is stating whether the prim is "fully loaded".  This
     is a debatable definition, but seems useful for usdview's purposes."""
@@ -322,7 +444,6 @@ def GetPrimsLoadability(prims):
 
 def GetFileOwner(path):
     try:
-        import platform
         if platform.system() == 'Windows':
             # This only works if pywin32 is installed.
             # Try "pip install pypiwin32".
@@ -332,7 +453,7 @@ def GetFileOwner(path):
             name, domain, use = w32.LookupAccountSid(None, sdo)
             return "%s\\%s" % (domain, name)
         else:
-            import os, pwd
+            import pwd
             return pwd.getpwuid(os.stat(path).st_uid).pw_name
     except:
         return "<unknown>"
@@ -348,7 +469,7 @@ def GetAssetCreationTime(primStack, assetIdentifier):
     we leverage usdview's plugin mechanism, consulting a function
     GetAssetCreationTime(filePath, layerIdentifier) if it exists, falling
     back to stat'ing the filePath if the plugin does not exist.
-    
+
     Returns a triple of strings: (fileDisplayName, creationTime, owner)"""
     definingLayer = None
     for spec in reversed(primStack):
@@ -367,19 +488,17 @@ def GetAssetCreationTime(primStack, assetIdentifier):
         from pixar import UsdviewPlug
         return UsdviewPlug.GetAssetCreationTime(definingFile, assetIdentifier)
     except:
-        import os, time
         stat_info = os.stat(definingFile)
         return (definingFile.split('/')[-1],
                 time.ctime(stat_info.st_ctime),
                 GetFileOwner(definingFile))
-    
+
 
 def DumpMallocTags(stage, contextStr):
-    from pxr import Tf
     if Tf.MallocTag.IsInitialized():
         callTree = Tf.MallocTag.GetCallTree()
         memInMb = Tf.MallocTag.GetTotalBytes() / (1024.0 * 1024.0)
-        
+
         import os.path as path
         import tempfile
         layerName = path.basename(stage.GetRootLayer().identifier)
@@ -399,8 +518,6 @@ def DumpMallocTags(stage, contextStr):
     else:
         print "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized"
 
-        
-
 def GetInstanceIdForIndex(prim, instanceIndex, time):
     '''Attempt to find an authored Id value for the instance at index
     'instanceIndex' at time 'time', on the given prim 'prim', which we access
@@ -408,10 +525,27 @@ def GetInstanceIdForIndex(prim, instanceIndex, time):
     some dynamic duck-typing for custom instancer types that support Ids.
     Returns 'None' if no ids attribute was found, or if instanceIndex is
     outside the bounds of the ids array.'''
-    from pxr import UsdGeom
     if not prim or instanceIndex < 0:
         return None
     ids = UsdGeom.PointInstancer(prim).GetIdsAttr().Get(time)
     if not ids or instanceIndex >= len(ids):
         return None
     return ids[instanceIndex]
+
+def Drange(start, stop, step):
+    """Like builtin range() but allows decimals and is a closed interval
+        that is, it's inclusive of stop"""
+    r = start
+    lst = []
+    epsilon = 1e-3 * step
+    while r <= stop+epsilon:
+        lst.append(r)
+        r += step
+    return lst
+
+class PrimNotFoundException(Exception):
+    """Raised when a prim does not exist at a valid path."""
+    def __init__(self, path):
+        super(PrimNotFoundException, self).__init__(
+            "Prim not found at path in stage: %s" % str(path))
+

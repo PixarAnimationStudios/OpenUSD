@@ -425,7 +425,7 @@ class TestUsdPrim(unittest.TestCase):
             assert not baz
             assert not foo.HasAuthoredReferences()
             assert foo.GetReferences().AddReference(s1.GetRootLayer().identifier, "/Foo")
-            items = foo.GetMetadata("references").addedItems
+            items = foo.GetMetadata("references").ApplyOperations([])
             assert foo.HasAuthoredReferences()
 
             # Make sure references are detected across composition arcs.
@@ -448,14 +448,13 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_GoodAndBadReferences(self):
         for fmt in allFormats:
-            # Sub-root references not allowed
-            s1 = Usd.Stage.CreateInMemory('GoodAndBadReferences.'+fmt)
+            # Sub-root references are allowed
+            s1 = Usd.Stage.CreateInMemory('References.'+fmt)
             s1.DefinePrim("/Foo", "Mesh")
             s1.DefinePrim("/Bar/Bazzle", "Mesh")
             baz = s1.DefinePrim("/Foo/Baz", "Mesh")
             bazRefs = baz.GetReferences()
-            with self.assertRaises(Tf.ErrorException):
-                bazRefs.AddReference(s1.GetRootLayer().identifier, "/Bar/Bazzle")
+            bazRefs.AddReference(s1.GetRootLayer().identifier, "/Bar/Bazzle")
 
             # Test that both in-memory identifiers, relative paths, and absolute
             # paths all resolve properly
@@ -732,6 +731,27 @@ class TestUsdPrim(unittest.TestCase):
             self.assertFalse(w.IsPseudoRoot())
             self.assertTrue(w.GetParent().IsPseudoRoot())
             self.assertFalse(p.GetParent().IsPseudoRoot())
+
+    def test_Deactivation(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('Deactivation.%s' % fmt)
+            child = s.DefinePrim('/Root/Group/Child')
+
+            group = s.GetPrimAtPath('/Root/Group')
+            self.assertEqual(group.GetAllChildren(), [child])
+            self.assertTrue(s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
+
+            group.SetActive(False)
+
+            # Deactivating a prim removes all of its children from the stage.
+            # Note that the deactivated prim itself still exists on the stage;
+            # this allows users to reactivate it.
+            self.assertEqual(group.GetAllChildren(), [])
+
+            # Deactivating a prim should also cause the underlying prim 
+            # indexes for its children to be removed.
+            self.assertFalse(
+                s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
 
 if __name__ == "__main__":
     unittest.main()

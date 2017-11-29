@@ -1099,11 +1099,12 @@ SdfSchemaBase::IsValidRelationshipTargetPath(const SdfPath& path)
 SdfAllowed 
 SdfSchemaBase::IsValidReference(const SdfReference& ref)
 {
-    if (!ref.GetPrimPath().IsEmpty() &&
-        !ref.GetPrimPath().IsRootPrimPath()) {
+    const SdfPath& path = ref.GetPrimPath();
+    if (!path.IsEmpty() &&
+        !(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Reference prim path <" +
                           ref.GetPrimPath().GetString() + "> must be either "
-                          "empty or an absolute root prim path");
+                          "empty or an absolute prim path");
     }
 
     return true;
@@ -1112,11 +1113,12 @@ SdfSchemaBase::IsValidReference(const SdfReference& ref)
 SdfAllowed
 SdfSchemaBase::IsValidPayload(const SdfPayload& p)
 {
-    if (!p.GetPrimPath().IsEmpty()
-        && !p.GetPrimPath().IsRootPrimPath()) {
-        return SdfAllowed("Payload prim path <" + p.GetPrimPath().GetString()
-                          + "> must be either empty or an absolute root "
-                          "prim path");
+    const SdfPath& path = p.GetPrimPath();
+    if (!path.IsEmpty() &&
+        !(path.IsAbsolutePath() && path.IsPrimPath())) {
+        return SdfAllowed("Payload prim path <" + 
+                          p.GetPrimPath().GetString() + "> must be either "
+                          "empty or an absolute prim path");
     }
 
     if (p.GetAssetPath().empty() && !p.GetPrimPath().IsEmpty()) {

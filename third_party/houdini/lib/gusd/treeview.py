@@ -856,12 +856,17 @@ class TreeView(QFrame):
         qApp.clipboard().setText(selection)
 
     def OnExpandToImported(self):
+        first = True
         for index in self.view.model().GetImportedIndexes():
             parent = index.parent()
             while parent.isValid():
                 if self.view.isRowHidden(index.row(), parent):
                     self.view.setRowHidden(index.row(), parent, False)
                 self.view.expand(parent)
+                if first:
+                    first = False
+                    self.view.scrollTo(index,\
+                                       QAbstractItemView.PositionAtCenter)
                 index = parent
                 parent = index.parent()
 

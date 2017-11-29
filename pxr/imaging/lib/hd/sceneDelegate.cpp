@@ -257,13 +257,6 @@ HdSceneDelegate::GetSurfaceShaderParams(SdfPath const &shaderId)
     return HdShaderParamVector();
 }
 
-/*virtual*/
-SdfPathVector
-HdSceneDelegate::GetSurfaceShaderTextures(SdfPath const &shaderId)
-{
-    return SdfPathVector();
-}
-
 // -----------------------------------------------------------------------//
 /// \name Texture Aspects
 // -----------------------------------------------------------------------//
@@ -290,6 +283,16 @@ HdSceneDelegate::GetTextureResource(SdfPath const& textureId)
 VtValue 
 HdSceneDelegate::GetLightParamValue(SdfPath const &id, 
                                     TfToken const &paramName) 
+{
+    return VtValue();
+}
+
+// -----------------------------------------------------------------------//
+/// \name Material Aspects
+// -----------------------------------------------------------------------//
+
+VtValue 
+HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
 {
     return VtValue();
 }
@@ -403,6 +406,13 @@ HdSceneDelegate::GetExtComputationPrimVarDesc(SdfPath const& id,
                                               TfToken const& varName)
 {
     return HdExtComputationPrimVarDesc();
+}
+
+/*virtual*/
+std::string
+HdSceneDelegate::GetExtComputationKernel(SdfPath const& id)
+{
+    return std::string();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

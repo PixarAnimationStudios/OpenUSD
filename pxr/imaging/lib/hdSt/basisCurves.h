@@ -96,10 +96,9 @@ private:
         InstancePrimVar  // has to be at the very end
     };
 
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
-        DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyNewRepr        = (DirtyHullIndices   << 1),
+        DirtyHullIndices    = (DirtyIndices       << 1)
     };
 
     /// We only support drawing smooth curves for a small subset of all the
@@ -113,17 +112,17 @@ private:
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
-    void _UpdateDrawItemGeometricShader(HdDrawItem *drawItem,
-                                const HdBasisCurvesReprDesc &desc,
-                                HdResourceRegistrySharedPtr const& resourceRegistry);
+    void _UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
+                                 _BasisCurvesReprConfig::DescArray const& descs,
+                                 HdReprSharedPtr repr);
 
-    void _SetGeometricShaders(HdResourceRegistrySharedPtr const& resourceRegistry);
-
-    void _ResetGeometricShaders();
+    void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
+                                        HdDrawItem *drawItem,
+                                        const HdBasisCurvesReprDesc &desc);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;
-    int _customDirtyBitsInUse;
+    HdDirtyBits _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
 };
 

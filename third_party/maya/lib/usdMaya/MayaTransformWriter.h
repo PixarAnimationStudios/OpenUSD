@@ -54,6 +54,7 @@ struct AnimChannel
     UsdGeomXformOp::Precision precision;
     std::string opName;
     bool isInverse;
+    UsdGeomXformOp op;
 };
 
 // Writes an MFnTransform

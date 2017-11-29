@@ -156,7 +156,14 @@ public:
     HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id);
 
-    /// Returns the prim extent in world space (completely untransformed).
+
+    /// Gets the axis aligned bounds of a prim.
+    /// The returned bounds are in the local space of the prim
+    /// (transform is yet to be applied) and should contain the
+    /// bounds of any child prims.
+    ///
+    /// The returned bounds does not include any displacement that
+    /// might occur as the result of running shaders on the prim.
     HD_API
     virtual GfRange3d GetExtent(SdfPath const & id);
 
@@ -275,10 +282,6 @@ public:
     HD_API
     virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const& shaderId);
 
-    /// Returns a vector of texture IDs for the given surface shader ID.
-    HD_API
-    virtual SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
-
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects
     // -----------------------------------------------------------------------//
@@ -299,6 +302,15 @@ public:
     HD_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName);
+
+    // -----------------------------------------------------------------------//
+    /// \name Material Aspects
+    // -----------------------------------------------------------------------//
+
+    // Returns a material resource which contains the information 
+    // needed to create a material.
+    HD_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Camera Aspects
@@ -403,6 +415,12 @@ public:
     virtual HdExtComputationPrimVarDesc GetExtComputationPrimVarDesc(
                                                 SdfPath const& id,
                                                 TfToken const& varName);
+    
+    /// Returns the kernel source assigned to the computation at the path id.
+    /// If the string is empty the computation has no GPU kernel and the
+    /// CPU callback should be used.
+    HD_API
+    virtual std::string GetExtComputationKernel(SdfPath const& id);
 
 private:
     HdRenderIndex *_index;

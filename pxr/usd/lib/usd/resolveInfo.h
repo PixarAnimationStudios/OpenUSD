@@ -143,10 +143,10 @@ private:
     size_t _layerIndex;
 
     /// If \p source is \p UsdResolveInfoTimeSamples, the time 
-    /// offset that maps a given time to the times in the layer
-    /// containing the strongest time sample values.  Otherwise,
-    /// this will be the identity offset.
-    SdfLayerOffset _offset;
+    /// offset that maps time in the strongest resolved layer
+    /// to the stage.
+    /// If no offset applies, this will be the identity offset.
+    SdfLayerOffset _layerToStageOffset;
 
     /// If \p source is \p UsdResolveInfoSourceNone or 
     /// \p UsdResolveInfoSourceFallback, this indicates whether or not

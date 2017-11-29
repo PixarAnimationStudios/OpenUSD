@@ -1,0 +1,16 @@
+#sdf 1.4.32
+
+over "Group" (
+    variants = {
+        string v = "x"
+    }
+)
+{
+}
+
+def "SubrootRef" (
+    references = @./group.sdf@</Group/Model>
+)
+{
+}
+

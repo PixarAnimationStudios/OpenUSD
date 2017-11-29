@@ -25,8 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
-
 
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
@@ -61,21 +59,17 @@ GusdScopeWrapper::GusdScopeWrapper(
 }
 
 GusdScopeWrapper::GusdScopeWrapper( 
-        const GusdUSD_StageProxyHandle& stage, 
-        const UsdGeomScope&             scope, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomScope& scope, 
+        UsdTimeCode         time,
+        GusdPurposeSet      purposes )
     : GusdGroupBaseWrapper( time, purposes )
-    , m_usdScopeForRead( scope, stage->GetLock() )
-    , m_stageProxy( stage )
+    , m_usdScope( scope )
 {
 }
 
 GusdScopeWrapper::GusdScopeWrapper( const GusdScopeWrapper &in )
     : GusdGroupBaseWrapper( in )
-    , m_usdScopeForRead( in.m_usdScopeForRead )
-    , m_usdScopeForWrite( in.m_usdScopeForWrite )
-    , m_stageProxy( in.m_stageProxy )
+    , m_usdScope( in.m_usdScope )
 {
 }
 
@@ -95,20 +89,20 @@ initUsdPrim(const UsdStagePtr& stage,
             // If we are writing an overlay and the ROP sees a geometry packed prim,
             // we want to write just the xform. In that case we can use a xform
             // wrapper to write the xform on any prim type.
-            m_usdScopeForWrite = UsdGeomScope(stage->OverridePrim( path ));
+            m_usdScope = UsdGeomScope(stage->OverridePrim( path ));
             newPrim = false;
         }
         else {
-            m_usdScopeForWrite = UsdGeomScope::Define( stage, path );   
+            m_usdScope = UsdGeomScope::Define( stage, path );   
         }
     }
     else {
-        m_usdScopeForWrite = UsdGeomScope::Define( stage, path );
+        m_usdScope = UsdGeomScope::Define( stage, path );
     }
-    if( !m_usdScopeForWrite || !m_usdScopeForWrite.GetPrim().IsValid() ) {
+    if( !m_usdScope || !m_usdScope.GetPrim().IsValid() ) {
         TF_WARN( "Unable to create %s scope '%s'.", newPrim ? "new" : "override", path.GetText() );
     }
-    return bool(m_usdScopeForWrite);
+    return bool(m_usdScope);
 }
 
 GT_PrimitiveHandle GusdScopeWrapper::
@@ -123,13 +117,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdScopeWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdScopeWrapper( 
-                    stage, 
                     UsdGeomScope( sourcePrim.GetPrim() ),
                     time,
                     purposes );
@@ -194,21 +186,7 @@ doSoftCopy() const
 bool GusdScopeWrapper::
 isValid() const
 {
-    return m_usdScopeForWrite || m_usdScopeForRead;
-}
-
-const UsdGeomImageable 
-GusdScopeWrapper::getUsdPrimForRead( GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomScope.
-    GusdUSD_ScopeHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdScopeForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdScopeForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
+    return m_usdScope;
 }
 
 bool GusdScopeWrapper::
@@ -218,12 +196,7 @@ refine(
 {
     //cerr << "GusdScopeWrapper::refine, enter: " << m_usdScope.GetPath() << endl;
 
-    GusdUSD_ScopeHolder::ScopedReadLock lock;
-    lock.Acquire( m_usdScopeForRead );
-
-    UsdGeomScope scope = *lock;
-
-    return refineGroup( m_stageProxy, (*lock).GetPrim(), refiner, parms );
+    return refineGroup( m_usdScope.GetPrim(), refiner, parms );
 }
 
 
@@ -233,13 +206,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  const GusdContext&        ctxt,
                  GusdSimpleXformCache&     xformCache)
 {
-    if( !m_usdScopeForWrite ) {
+    if( !m_usdScope ) {
         return false;
     }
 
     DBG( cout << "GusdScopeWrapper::updateFromGTPrim, primType = " << sourcePrim->className() << endl );
 
-    return updateGroupFromGTPrim( m_usdScopeForWrite, sourcePrim, localXform, 
+    return updateGroupFromGTPrim( m_usdScope, sourcePrim, localXform, 
                                   ctxt, xformCache );
 }
 

@@ -28,7 +28,6 @@
 
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderIndex.h"
 
 #include "pxr/usd/usdGeom/basisCurves.h"
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -50,9 +49,10 @@ UsdImagingBasisCurvesAdapter::~UsdImagingBasisCurvesAdapter()
 }
 
 bool
-UsdImagingBasisCurvesAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingBasisCurvesAdapter::IsSupported(
+        UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
+    return index->IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);
 }
 
 SdfPath
@@ -60,12 +60,8 @@ UsdImagingBasisCurvesAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertBasisCurves(prim.GetPath(),
-                             GetShaderBinding(prim),
-                             instancerContext);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    return prim.GetPath();
+    return _AddRprim(HdPrimTypeTokens->basisCurves,
+                     prim, index, GetMaterialId(prim), instancerContext);
 }
 
 void 
@@ -190,6 +186,12 @@ UsdImagingBasisCurvesAdapter::_GetBasisCurvesTopology(UsdPrim const& prim,
     }
     else if(curveBasis == UsdGeomTokens->catmullRom) {
         topoCurveBasis = HdTokens->catmullRom;
+    }
+    else if(curveBasis == UsdGeomTokens->hermite) {
+        topoCurveBasis = HdTokens->hermite;
+    }
+    else if(curveBasis == UsdGeomTokens->power) {
+        topoCurveBasis = HdTokens->power;
     }
     else {
         topoCurveBasis = HdTokens->bezier;

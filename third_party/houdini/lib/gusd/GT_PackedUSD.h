@@ -63,8 +63,8 @@ public:
         const SdfPath& primPath,
         const SdfPath& srcPrimPath,
         exint index,
-        const UsdTimeCode& frame,
-        const GusdPurposeSet& purpose,
+        UsdTimeCode frame,
+        GusdPurposeSet purpose,	// Unused
         GT_AttributeListHandle pointAttributes,
         GT_AttributeListHandle vertexAttributes,
         GT_AttributeListHandle uniformAttributes,
@@ -112,6 +112,8 @@ public:
 
     const SdfPath& getSrcPrimPath() const { return m_srcPrimPath; }
 
+    const exint& getInstanceIndex() const { return m_instanceIndex; }
+
 private:
     UT_StringHolder m_fileName;
     UT_StringHolder m_auxFileName;
@@ -119,7 +121,6 @@ private:
     SdfPath         m_srcPrimPath;
     exint           m_instanceIndex;
     UsdTimeCode     m_frame;
-    GusdPurposeSet  m_purpose;
     UT_BoundingBox  m_box;
 
     GT_AttributeListHandle  m_pointAttributes;

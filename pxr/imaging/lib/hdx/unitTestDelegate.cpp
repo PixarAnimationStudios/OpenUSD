@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/textureResource.h"
 
@@ -649,6 +648,26 @@ Hdx_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int level)
     _refineLevels[id] = level;
     GetRenderIndex().GetChangeTracker().MarkRprimDirty(
         id, HdChangeTracker::DirtyRefineLevel);
+}
+
+TfToken
+Hdx_UnitTestDelegate::GetReprName(SdfPath const &id)
+{
+    if (_meshes.find(id) != _meshes.end()) {
+        return _meshes[id].reprName;
+    }
+
+    return TfToken();
+}
+
+void
+Hdx_UnitTestDelegate::SetReprName(SdfPath const &id, TfToken const &reprName)
+{
+   if (_meshes.find(id) != _meshes.end()) {
+        _meshes[id].reprName = reprName;
+        GetRenderIndex().GetChangeTracker().MarkRprimDirty(
+            id, HdChangeTracker::DirtyRepr);
+   }
 }
 
 GfRange3d

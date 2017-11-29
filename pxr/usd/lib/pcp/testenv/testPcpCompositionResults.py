@@ -82,6 +82,13 @@ for layerPath in args.layer:
     rootLayer = Sdf.Layer.FindOrOpen(rootLayerPath)
     assert rootLayer
 
+    def GetLayerLabel(layer):
+        # Convert backslashes to forward slashes so comparisons
+        # against baselines work on Windows
+        return (os.path.relpath(layer.realPath,
+                                os.path.dirname(rootLayer.realPath))
+                .replace("\\", "/"))
+
     def WalkNodes(node):
         yield node
         for child in node.children:
@@ -101,7 +108,7 @@ for layerPath in args.layer:
     print '-'*72
     print 'Layer Stack:'
     for layer in layerStack:
-        print '    ', layer.GetDisplayName()
+        print '    ', GetLayerLabel(layer)
     print ''
 
     if len(layerStackData.localErrors) > 0:
@@ -226,14 +233,14 @@ for layerPath in args.layer:
             print '\nPrim Stack:'
             for primSpec in primIndex.primStack:
                 # Determine a short form of the spec's layer's path.
-                layerLabel = os.path.basename(primSpec.layer.realPath)
+                layerLabel = GetLayerLabel(primSpec.layer)
                 print '    %-20s %s' % (layerLabel, primSpec.path)
 
         if len(nodesWithOffsets) > 0:
             print '\nTime Offsets:'
             for node in nodesWithOffsets:
                 print '    %-20s %-15s %-10s (offset=%.2f, scale=%.2f)' % \
-                    (os.path.basename(node.layerStack.layers[0].realPath),
+                    (GetLayerLabel(node.layerStack.layers[0]),
                      node.path, node.arcType.displayName,
                      node.mapToRoot.timeOffset.offset, 
                      node.mapToRoot.timeOffset.scale)
@@ -243,7 +250,7 @@ for layerPath in args.layer:
                     if not offset.IsIdentity():
                         print '        %-32s %-10s (offset=%.2f, ' \
                             'scale=%.2f)' % \
-                            (os.path.basename(layer.realPath),
+                            (GetLayerLabel(layer),
                              'sublayer',
                              offset.offset, offset.scale)
 
@@ -271,7 +278,7 @@ for layerPath in args.layer:
                 print '%s:' % (propPath)
                 for propSpec in propStackMap[propPath]:
                     # Determine a short form of the spec's layer's path.
-                    layerLabel = os.path.basename(propSpec.layer.realPath)
+                    layerLabel = GetLayerLabel(propSpec.layer)
                     print '    %-20s %s' % (layerLabel, propSpec.path)
 
         def _PrintTargets(targetMap):

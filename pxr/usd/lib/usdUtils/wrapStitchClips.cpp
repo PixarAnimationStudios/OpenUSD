@@ -54,12 +54,16 @@ _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
                     const object pyStartFrame,
-                    const object pyEndFrame)
+                    const object pyEndFrame,
+                    const object pyClipSet)
 {
+    const auto clipSet 
+        = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
     constexpr double dmax = std::numeric_limits<double>::max();
     return UsdUtilsStitchClips(resultLayer, clipLayerFiles, clipPath,
                                _ConvertWithDefault(pyStartFrame, dmax),
-                               _ConvertWithDefault(pyEndFrame, dmax));
+                               _ConvertWithDefault(pyEndFrame, dmax),
+                               clipSet);
 }
 
 bool
@@ -82,12 +86,14 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
                            const std::string& templatePath,
                            const double startFrame,
                            const double endFrame,
-                           const double stride)
+                           const double stride,
+                           const object pyClipSet)
 {
+    const auto clipSet 
+        = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
     return UsdUtilsStitchClipsTemplate(resultLayer, topologyLayer,
                                        clipPath, templatePath, startFrame,
-                                       endFrame, stride);
-
+                                       endFrame, stride, clipSet);
 }
 
 } // anonymous namespace 
@@ -100,7 +106,8 @@ void wrapStitchClips()
          arg("clipLayerFiles"), 
          arg("clipPath"), 
          arg("startFrame")=object(),
-         arg("endFrame")=object()));
+         arg("endFrame")=object(),
+         arg("clipSet")=object()));
 
     def("StitchClipsTopology",
         _ConvertStitchClipsTopology,
@@ -115,7 +122,8 @@ void wrapStitchClips()
          arg("templatePath"),
          arg("startTimeCode"),
          arg("endTimeCode"),
-         arg("stride")));
+         arg("stride"),
+         arg("clipSet")=object()));
 
     def("GenerateClipTopologyName",
         _ConvertGenerateClipTopologyName,

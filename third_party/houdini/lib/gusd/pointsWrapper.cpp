@@ -25,7 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
 #include "GT_VtArray.h"
 
 #include <GT/GT_DANumeric.h>
@@ -50,12 +49,11 @@ GusdPointsWrapper(
 
 GusdPointsWrapper::
 GusdPointsWrapper(
-        const GusdUSD_StageProxyHandle& stage, 
         const UsdGeomPoints& usdPoints, 
-        const UsdTimeCode& time,
-        const GusdPurposeSet& purposes )
+        UsdTimeCode time,
+        GusdPurposeSet purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdPointsForRead( usdPoints, stage->GetLock() )
+    , m_usdPoints( usdPoints )
 {
 }
 
@@ -69,12 +67,12 @@ initUsdPrim(const UsdStagePtr& stage,
             bool asOverride)
 {
     if( asOverride ) {
-        m_usdPointsForWrite = UsdGeomPoints(stage->OverridePrim( path ));
+        m_usdPoints = UsdGeomPoints(stage->OverridePrim( path ));
     }
     else {
-        m_usdPointsForWrite = UsdGeomPoints::Define(stage, path );
+        m_usdPoints = UsdGeomPoints::Define(stage, path );
     }
-    return bool( m_usdPointsForWrite );
+    return bool( m_usdPoints );
 }
 
 GT_PrimitiveHandle GusdPointsWrapper::
@@ -89,13 +87,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdPointsWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdPointsWrapper( 
-                        stage, 
                         UsdGeomPoints( sourcePrim.GetPrim() ),
                         time,
                         purposes );
@@ -112,21 +108,6 @@ redefine( const UsdStagePtr& stage,
     return true;
 }
 
-const UsdGeomImageable 
-GusdPointsWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomPoint.
-    GusdUSD_PointsHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdPointsForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdPointsForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
-}
-
 bool GusdPointsWrapper::
 refine(GT_Refine& refiner, const GT_RefineParms* parms) const
 {
@@ -134,9 +115,7 @@ refine(GT_Refine& refiner, const GT_RefineParms* parms) const
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    GusdUSD_PointsHolder::ScopedReadLock lock;
-    lock.Acquire( m_usdPointsForRead );
-    UsdGeomPoints points = *lock;   
+    const UsdGeomPoints& points = m_usdPoints;
 
     VtFloatArray vtFloatArray;
     VtIntArray   vtIntArray;
@@ -279,7 +258,7 @@ doSoftCopy() const
 
 bool GusdPointsWrapper::isValid() const
 {
-    return m_usdPointsForWrite || m_usdPointsForRead;
+    return m_usdPoints;
 }
 
 bool GusdPointsWrapper::
@@ -288,12 +267,12 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  const GusdContext&        ctxt,
                  GusdSimpleXformCache&     xformCache )
 {
-    if( !m_usdPointsForWrite ) {
+    if( !m_usdPoints ) {
         return false;
     }
 
     GfMatrix4d xform = computeTransform( 
-                            m_usdPointsForWrite.GetPrim().GetParent(),
+                            m_usdPoints.GetPrim().GetParent(),
                             ctxt.time,
                             houXform,
                             xformCache );
@@ -305,7 +284,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // extent ------------------------------------------------------------------
     
     houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
-    usdAttr = m_usdPointsForWrite.GetExtentAttr();
+    usdAttr = m_usdPoints.GetExtentAttr();
     updateAttributeFromGTPrim( GT_OWNER_INVALID, "extents", houAttr, usdAttr, ctxt.time );
 
     // transform ---------------------------------------------------------------
@@ -316,7 +295,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // intrinsic attributes ----------------------------------------------------
 
     if( !ctxt.writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
-        m_usdPointsForWrite.GetPurposeAttr().Set( ctxt.purpose );
+        m_usdPoints.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // visibility
@@ -326,17 +305,17 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
     // P
     houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
-    usdAttr = m_usdPointsForWrite.GetPointsAttr();
+    usdAttr = m_usdPoints.GetPointsAttr();
     updateAttributeFromGTPrim( attrOwner, "P", houAttr, usdAttr, ctxt.time );
     
     // N
     houAttr = sourcePrim->findAttribute("N", attrOwner, 0);
-    usdAttr = m_usdPointsForWrite.GetNormalsAttr();
+    usdAttr = m_usdPoints.GetNormalsAttr();
     updateAttributeFromGTPrim( attrOwner, "N", houAttr, usdAttr, ctxt.time );
 
     // v
     houAttr = sourcePrim->findAttribute("v", attrOwner, 0);
-    usdAttr = m_usdPointsForWrite.GetVelocitiesAttr();
+    usdAttr = m_usdPoints.GetVelocitiesAttr();
     updateAttributeFromGTPrim( attrOwner, "v", houAttr, usdAttr, ctxt.time );    
     
     // pscale & width
@@ -359,7 +338,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             houAttr.reset(new GT_Real32Array(pscaleArray.data(), numVals, 1));
         }
     }
-    usdAttr = m_usdPointsForWrite.GetWidthsAttr();
+    usdAttr = m_usdPoints.GetWidthsAttr();
     updateAttributeFromGTPrim( attrOwner, "widths", houAttr, usdAttr, ctxt.time );    
 
     // -------------------------------------------------------------------------
@@ -367,8 +346,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
     // primvars ----------------------------------------------------------------
 
     GusdGT_AttrFilter filter = ctxt.attributeFilter;
-    filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^widths ^pscale ^usdvisible ^usdactive");
-    filter.appendPattern(GT_OWNER_CONSTANT, "^usdvisible ^usdactive");
+    filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^widths ^pscale");
     if(const GT_AttributeListHandle pointAttrs = sourcePrim->getPointAttributes()) {
         GusdGT_AttrFilter::OwnerArgs owners;
         owners << GT_OWNER_POINT;

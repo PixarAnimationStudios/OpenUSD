@@ -37,9 +37,53 @@ PXR_NAMESPACE_OPEN_SCOPE
 // ------------------------------------------------------------------------- //
 // UsdSpecializes
 // ------------------------------------------------------------------------- //
-bool
-UsdSpecializes::AddSpecialize(const SdfPath &primPath, UsdListPosition position)
+
+namespace
 {
+
+SdfPath 
+_TranslatePath(const SdfPath& path, const UsdEditTarget& editTarget)
+{
+    if (path.IsEmpty()) {
+        TF_CODING_ERROR("Invalid empty path");
+        return SdfPath();
+    }
+
+    // Global specializes aren't expected to be mappable across non-local 
+    // edit targets, so we can just use the given path as-is.
+    if (path.IsRootPrimPath()) {
+        return path;
+    }
+
+    const SdfPath mappedPath = editTarget.MapToSpecPath(path);
+    if (mappedPath.IsEmpty()) {
+        TF_CODING_ERROR(
+            "Cannot map <%s> to current edit target.", path.GetText());
+    }
+
+    // If the edit target points inside a variant, the mapped path may 
+    // contain a variant selection. We need to strip this out, since
+    // inherit paths may not contain variant selections.
+    return mappedPath.StripAllVariantSelections();
+}
+
+}
+
+bool
+UsdSpecializes::AddSpecialize(const SdfPath &primPathIn, 
+                              UsdListPosition position)
+{
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    const SdfPath primPath = 
+        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
+    if (primPath.IsEmpty()) {
+        return false;
+    }
+
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfSpecializesProxy paths = spec->GetSpecializesList();
@@ -64,8 +108,19 @@ UsdSpecializes::AddSpecialize(const SdfPath &primPath, UsdListPosition position)
 }
 
 bool
-UsdSpecializes::RemoveSpecialize(const SdfPath &primPath)
+UsdSpecializes::RemoveSpecialize(const SdfPath &primPathIn)
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    const SdfPath primPath = 
+        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
+    if (primPath.IsEmpty()) {
+        return false;
+    }
+
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfSpecializesProxy paths = spec->GetSpecializesList();
@@ -78,6 +133,11 @@ UsdSpecializes::RemoveSpecialize(const SdfPath &primPath)
 bool
 UsdSpecializes::ClearSpecializes()
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfSpecializesProxy paths = spec->GetSpecializesList();
@@ -87,13 +147,35 @@ UsdSpecializes::ClearSpecializes()
 }
 
 bool 
-UsdSpecializes::SetSpecializes(const SdfPathVector& items)
+UsdSpecializes::SetSpecializes(const SdfPathVector& itemsIn)
 {
-    // Proxy editor has no clear way of setting explicit items in a single
-    // call, so instead, just set the field directly.
-    SdfPathListOp paths;
-    paths.SetExplicitItems(items);
-    return GetPrim().SetMetadata(SdfFieldKeys->Specializes, paths);
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return false;
+    }
+
+    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
+
+    TfErrorMark m;
+
+    SdfPathVector items(itemsIn.size());
+    std::transform(
+        itemsIn.begin(), itemsIn.end(), items.begin(),
+        [&editTarget](const SdfPath& p) { 
+            return _TranslatePath(p, editTarget); 
+        });
+
+    if (!m.IsClean()) {
+        return false;
+    }
+
+    SdfChangeBlock block;
+    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+        SdfSpecializesProxy paths = spec->GetSpecializesList();
+        paths.GetExplicitItems() = items;
+    }
+
+    return m.IsClean();
 }
 
 // ---------------------------------------------------------------------- //
@@ -103,8 +185,7 @@ UsdSpecializes::SetSpecializes(const SdfPathVector& items)
 SdfPrimSpecHandle
 UsdSpecializes::_CreatePrimSpecForEditing()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim.");
+    if (!TF_VERIFY(_prim)) {
         return SdfPrimSpecHandle();
     }
 

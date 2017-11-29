@@ -25,6 +25,7 @@
 
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdHydra/lookAPI.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -72,10 +73,19 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
 {
     TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Look: %s\n", 
         material.GetPath().GetText());
+
+    // ---------------------------------------------------------------------- //
+    // Hydra-only shader style - displayLook:bxdf
+    // ---------------------------------------------------------------------- //
     if (UsdRelationship matRel = UsdHydraLookAPI(material).GetBxdfRel()) {
-         TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                       matRel.GetPath().GetText());
-        UsdShadeShader shader(GetTargetedShader(material.GetPrim(), matRel));
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
+                    matRel.GetPath().GetText());
+
+        UsdShadeShader shader(
+            UsdImaging_MaterialStrategy::GetTargetedShader(
+                material.GetPrim(), 
+                matRel));
+
         if (shader) {
             TF_DEBUG(USDIMAGING_SHADERS).Msg("\t UsdShade binding found: %s\n", 
                     shader.GetPath().GetText());
@@ -84,15 +94,20 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
     }
 
     // ---------------------------------------------------------------------- //
-    // Deprecated shader style 
+    // Deprecated shader style - hydraLook:Surface
     // ---------------------------------------------------------------------- //
-    TfToken hdSurf("hydraLook:surface"),
-            surfType("HydraPbsSurface");
+    TfToken hdSurf("hydraLook:surface");
+    TfToken surfType("HydraPbsSurface");
 
     if (UsdRelationship matRel = material.GetPrim().GetRelationship(hdSurf)) {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                       matRel.GetPath().GetText());
-        if (UsdPrim shader = GetTargetedShader(material.GetPrim(), matRel)) {
+                    matRel.GetPath().GetText());
+
+        if (UsdPrim shader = 
+            UsdImaging_MaterialStrategy::GetTargetedShader(
+                material.GetPrim(), 
+                matRel)) {
+
             if (TF_VERIFY(shader.GetTypeName() == surfType)) {
                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
                         "\t Deprecated binding found: %s\n", 
@@ -101,7 +116,27 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
             }
         }
     }
+
+    return SdfPath::EmptyPath();
+}
+
+/*static*/
+SdfPath
+UsdImaging_MaterialNetworkStrategy::GetBinding(UsdShadeMaterial const& material)
+{
+    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Look: %s\n", 
+        material.GetPath().GetText());
+
     // ---------------------------------------------------------------------- //
+    // Shading networks - riLook:bxdf
+    // ---------------------------------------------------------------------- //
+    if (UsdRelationship matRel = 
+        UsdRiMaterialAPI(material).GetBxdfOutput().GetRel()) {
+
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
+                    matRel.GetPath().GetText());
+        return material.GetPath();
+    }
 
     return SdfPath::EmptyPath();
 }

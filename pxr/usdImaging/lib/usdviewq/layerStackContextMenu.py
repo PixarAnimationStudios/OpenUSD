@@ -32,7 +32,7 @@ class LayerStackContextMenu(QtWidgets.QMenu):
 
     def __init__(self, parent, item):
         QtWidgets.QMenu.__init__(self, parent)
-        self._menuItems = _GetContextMenuItems(parent, item)
+        self._menuItems = _GetContextMenuItems(item)
 
         for menuItem in self._menuItems:
             if menuItem.isValid():
@@ -44,20 +44,19 @@ class LayerStackContextMenu(QtWidgets.QMenu):
                     action.setEnabled(False)
 
 
-def _GetContextMenuItems(mainWindow, item):
-    return [OpenLayerMenuItem(mainWindow, item), 
-            UsdviewLayerMenuItem(mainWindow, item),
-            CopyLayerPathMenuItem(mainWindow, item),
-            CopyLayerIdentifierMenuItem(mainWindow, item),
-            CopyPathMenuItem(mainWindow, item)]
+def _GetContextMenuItems(item):
+    return [OpenLayerMenuItem(item),
+            UsdviewLayerMenuItem(item),
+            CopyLayerPathMenuItem(item),
+            CopyLayerIdentifierMenuItem(item),
+            CopyPathMenuItem(item)]
 
 #
 # The base class for layer stack context menu items.
 #
 class LayerStackContextMenuItem(UsdviewContextMenuItem):
 
-    def __init__(self, mainWindow, item):
-        self._mainWindow = mainWindow
+    def __init__(self, item):
         self._item = item
 
     def IsEnabled(self):
@@ -77,7 +76,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
     # see bug 150247 for centralizing this API.
     def _FindUsdEdit(self):
         import platform
-        from distutils.spawn import find_executable 
+        from distutils.spawn import find_executable
         usdedit = find_executable('usdedit')
 
         if not usdedit and (platform.system() == 'Windows'):
@@ -145,57 +144,57 @@ class UsdviewLayerMenuItem(LayerStackContextMenuItem):
 
 #
 # Copy the layer path to clipboard
-# 
+#
 class CopyLayerPathMenuItem(LayerStackContextMenuItem):
     def GetText(self):
         return "Copy Layer Path"
 
     def RunCommand(self):
         if not self._item:
-            return 
+            return
 
         layerPath = getattr(self._item, "layerPath")
         if not layerPath or not os.path.exists(layerPath):
             return
-    
+
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(layerPath, QtGui.QClipboard.Selection )
         cb.setText(layerPath, QtGui.QClipboard.Clipboard )
 
 #
 # Copy the layer identifier to clipboard
-# 
+#
 class CopyLayerIdentifierMenuItem(LayerStackContextMenuItem):
     def GetText(self):
         return "Copy Layer Identifier"
 
     def RunCommand(self):
         if not self._item:
-            return 
+            return
 
         identifier = getattr(self._item, "identifier")
         if not identifier:
             return
-    
-        cb = QtGui.QApplication.clipboard()
+
+        cb = QtWidgets.QApplication.clipboard()
         cb.setText(identifier, QtGui.QClipboard.Selection )
         cb.setText(identifier, QtGui.QClipboard.Clipboard )
 
 #
 # Copy the prim path to clipboard, if there is one
-# 
+#
 class CopyPathMenuItem(LayerStackContextMenuItem):
     def GetText(self):
         return "Copy Object Path"
 
     def RunCommand(self):
         if not self._item:
-            return 
+            return
 
         path = getattr(self._item, "path")
         if not path:
             return
-        
+
         path = str(path)
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(path, QtGui.QClipboard.Selection )

@@ -63,19 +63,76 @@ Hd_SortedIds::Insert(const SdfPath &id)
 void
 Hd_SortedIds::Remove(const SdfPath &id)
 {
-    _Sort();
+    // The first implementation of this deletion code deleted the
+    // element in place.  This kept the list sorted, but was a
+    // performance issue on unloading a stage as a lot of prims
+    // get removed and the shifting of the vector become a bottleneck
+    // So instead, we do a more efficient removal (by swapping the
+    // element to be removed with the element on the end of the vector).
+    // The down side is that the list is now unsorted, so needs to be
+    // sorted again (which is deferred).
+    //
+    // However, this means that the list is now unsorted in mass removal.
+    // In order to use the binary search, we need a sorted list, but sorting
+    // again would be too expensive in this case, so if the list is not sorted
+    // fallback to a linear search for the id to be removed.
 
-    SdfPathVector::iterator it = std::lower_bound(_ids.begin(),
-                                                  _ids.end(),
-                                                  id);
-    if (it != _ids.end()) {
-        if (*it == id) {
-            _ids.erase(it);
-        }
+    SdfPathVector::iterator idToRemove;
+    if (_sortedCount == _ids.size()) {
+        // Sorted, so use binary search
+        idToRemove = std::lower_bound(_ids.begin(),
+                                      _ids.end(),
+                                      id);
+    } else {
+        // Unsorted, so use linear search
+        idToRemove = std::find(_ids.begin(),
+                               _ids.end(),
+                               id);
     }
 
-    // Update size
-    _sortedCount = _ids.size();
+    if (idToRemove != _ids.end()) {
+        if (*idToRemove == id) {
+            SdfPathVector::iterator lastElement = _ids.end();
+            --lastElement;
+
+            std::iter_swap(idToRemove, lastElement);
+
+            _ids.pop_back();
+
+            // As we've moved an element from the end into the middle
+            // the list is now only sorted up to the place where the element
+            // was removed.
+
+
+            _sortedCount = std::min(_sortedCount,
+                                    static_cast<size_t>(
+                                              (idToRemove - _ids.begin())));
+        }
+    }
+}
+
+
+HD_API
+void Hd_SortedIds::RemoveRange(size_t start, size_t end)
+{
+    size_t numIds = _ids.size();
+    size_t numToRemove = (end - start + 1);
+
+    if (_sortedCount != numIds) {
+        TF_CODING_ERROR("RemoveRange can only be called while list sorted\n");
+        return;
+    }
+
+    if (numToRemove == numIds) {
+        Clear();
+        return;
+    }
+
+    SdfPathVector::iterator itStart = _ids.begin() + start;
+    SdfPathVector::iterator itEnd   = _ids.begin() + (end + 1);
+
+    _ids.erase(itStart, itEnd);
+    _sortedCount -= numToRemove;
 }
 
 void

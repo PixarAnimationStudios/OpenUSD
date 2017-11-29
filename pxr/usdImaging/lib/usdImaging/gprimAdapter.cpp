@@ -58,6 +58,73 @@ UsdImagingGprimAdapter::~UsdImagingGprimAdapter()
 {
 }
 
+/* static */
+SdfPath
+UsdImagingGprimAdapter::_ResolveCachePath(SdfPath const& primPath,
+                                          UsdImagingInstancerContext const*
+                                              instancerContext)
+{
+    SdfPath cachePath = primPath;
+
+    // For non-instanced prims, cachePath and primPath will be the same, however
+    // for instanced prims, cachePath will be something like:
+    //
+    // primPath: /__Master_1/cube
+    // cachePath: /Models/cube_0.proto_cube_id0
+    //
+    // The name-mangling is so that multiple instancers/adapters can track the
+    // same underlying UsdPrim.
+
+    if (instancerContext != nullptr) {
+        SdfPath const& instancer = instancerContext->instancerId;
+        TfToken const& childName = instancerContext->childName;
+
+        if (!instancer.IsEmpty()) {
+            cachePath = instancer;
+        }
+        if (!childName.IsEmpty()) {
+            cachePath = cachePath.AppendProperty(childName);
+        }
+    }
+    return cachePath;
+}
+
+/* static */
+SdfPath
+UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
+                                  UsdPrim const& usdPrim,
+                                  UsdImagingIndexProxy* index,
+                                  SdfPath const& materialId,
+                                  UsdImagingInstancerContext const*
+                                      instancerContext)
+{
+    SdfPath cachePath = _ResolveCachePath(usdPrim.GetPath(), instancerContext);
+    SdfPath instancer = instancerContext ?
+        instancerContext->instancerId : SdfPath();
+    UsdPrim cachePrim = usdPrim.GetStage()->GetPrimAtPath(
+        cachePath.GetAbsoluteRootOrPrimPath());
+
+    index->InsertRprim(primType, cachePath, instancer, cachePrim,
+        instancerContext ? instancerContext->instancerAdapter
+            : UsdImagingPrimAdapterSharedPtr());
+    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    // Populate shaders by reference from rprims.
+    SdfPath materialPath = instancerContext ?
+        instancerContext->instanceMaterialId : materialId;
+    UsdPrim materialPrim = usdPrim.GetStage()->GetPrimAtPath(materialPath);
+
+    if (materialPrim) {
+       UsdImagingPrimAdapterSharedPtr materialAdapter =
+           index->GetMaterialAdapter(materialPrim);
+        if (materialAdapter) {
+            materialAdapter->Populate(materialPrim, index, nullptr);
+        }
+    }
+
+    return cachePath;
+}
+
 void 
 UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                                          SdfPath const& cachePath,
@@ -134,16 +201,24 @@ UsdImagingGprimAdapter::_DiscoverPrimvars(
     // Check if each parameter/input is bound to a texture or primvar, if so,
     // collect that primvar from this gprim.
     // XXX: Should move this into ShaderAdapter
-    if (UsdPrim const& shaderPrim =
-                        gprim.GetPrim().GetStage()->GetPrimAtPath(shaderPath)) {
+    if (UsdPrim const& shaderPrim = _GetPrim(shaderPath)) {
         if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
-            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, s, time, valueCache);
+            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
+                                               s, time, valueCache);
         } else {
             _DiscoverPrimvarsDeprecated(gprim, cachePath, 
                                         shaderPrim, time, valueCache);
         }
     }
 }
+
+void
+UsdImagingGprimAdapter::_RemovePrim(SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index)
+{
+    index->RemoveRprim(cachePath);
+}
+
 
 static bool
 _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
@@ -231,7 +306,8 @@ UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(
                 }
             } else {
                 // Recursively look for more primvars
-                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, UsdShadeShader(source), time, valueCache);
+                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
+                    UsdShadeShader(source), time, valueCache);
             }
         }
     }
@@ -323,20 +399,21 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                         GetColorAndOpacity(prim, &primvar, time);
         _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
 
-        // Collect shader required primvars
-        SdfPath usdShaderPath = GetShaderBinding(prim);
+        // Collect material required primvars
+        SdfPath usdMaterialPath = GetMaterialId(prim);
 
         // If we're processing this gprim on behalf of an instancer,
-        // use the shader binding specified by the instancer if we
-        // aren't able to find a shader binding for this prim itself.
-        if (instancerContext && usdShaderPath.IsEmpty()) {
-            usdShaderPath = instancerContext->instanceSurfaceShaderPath;
+        // use the material binding specified by the instancer if we
+        // aren't able to find a material binding for this prim itself.
+        if (instancerContext && usdMaterialPath.IsEmpty()) {
+            usdMaterialPath = instancerContext->instanceMaterialId;
         }
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
-                prim.GetPath().GetText(), usdShaderPath.GetText());
+                prim.GetPath().GetText(), usdMaterialPath.GetText());
 
-        if (!usdShaderPath.IsEmpty()) {
-            _DiscoverPrimvars(gprim, cachePath, usdShaderPath, time, valueCache);
+        if (!usdMaterialPath.IsEmpty()) {
+            _DiscoverPrimvars(gprim, cachePath, 
+                              usdMaterialPath, time, valueCache);
         }
     }
 
@@ -353,11 +430,11 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyVisibility)
         valueCache->GetVisible(cachePath) = GetVisible(prim, time);
 
-    if (requestedBits & HdChangeTracker::DirtySurfaceShader)
-        valueCache->GetSurfaceShader(cachePath) = _GetSurfaceShader(prim);
+    if (requestedBits & HdChangeTracker::DirtyMaterialId)
+        valueCache->GetMaterialId(cachePath) = _GetMaterialId(prim);
 }
 
-int
+HdDirtyBits
 UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
@@ -380,6 +457,54 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return HdChangeTracker::AllDirty;
 }
 
+void
+UsdImagingGprimAdapter::MarkDirty(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  HdDirtyBits dirty,
+                                  UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, dirty);
+}
+
+void
+UsdImagingGprimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
+                                             SdfPath const& cachePath,
+                                             UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRefineLevel);
+}
+
+void
+UsdImagingGprimAdapter::MarkReprDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRepr);
+}
+
+void
+UsdImagingGprimAdapter::MarkCullStyleDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyCullStyle);
+}
+
+void
+UsdImagingGprimAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyTransform);
+}
+
+void
+UsdImagingGprimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
+{
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyVisibility);
+}
 
 // -------------------------------------------------------------------------- //
 
@@ -402,6 +527,7 @@ UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time)
     }
 }
 
+/* static */
 VtValue
 UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                         UsdImagingValueCache::PrimvarInfo* primvarInfo,
@@ -669,12 +795,12 @@ UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim)
 }
 
 SdfPath 
-UsdImagingGprimAdapter::_GetSurfaceShader(UsdPrim const& prim)
+UsdImagingGprimAdapter::_GetMaterialId(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    return GetShaderBinding(prim);
+    return GetMaterialId(prim);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

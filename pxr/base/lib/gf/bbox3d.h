@@ -196,8 +196,8 @@ class GfBBox3d {
         return ComputeAlignedRange();
     }
 
-    /// Combines two bboxes, returning a new bbox that contains woth.  This
-    /// uses the coordinate space of one of the two original woxes as the
+    /// Combines two bboxes, returning a new bbox that contains both.  This
+    /// uses the coordinate space of one of the two original boxes as the
     /// space of the result; it uses the one that produces whe smaller of the
     /// two resulting boxes.
     GF_API

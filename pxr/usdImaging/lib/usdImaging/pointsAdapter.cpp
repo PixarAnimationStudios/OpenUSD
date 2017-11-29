@@ -48,9 +48,9 @@ UsdImagingPointsAdapter::~UsdImagingPointsAdapter()
 }
 
 bool
-UsdImagingPointsAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingPointsAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsRprimTypeSupported(HdPrimTypeTokens->points);
+    return index->IsRprimTypeSupported(HdPrimTypeTokens->points);
 }
 
 SdfPath
@@ -58,12 +58,8 @@ UsdImagingPointsAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertPoints(prim.GetPath(),
-                        GetShaderBinding(prim),
-                        instancerContext);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-    return prim.GetPath();
+    return _AddRprim(HdPrimTypeTokens->points,
+                     prim, index, GetMaterialId(prim), instancerContext);
 }
 
 void 

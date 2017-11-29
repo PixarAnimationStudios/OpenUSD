@@ -68,18 +68,21 @@ void Arch_Warning(const char* msg, const char* funcName,
 /// \param msg is a literal string, a \c const \c char* (but not
 ///        an \c std::string) that describes why the program is aborting.
 /// \hideinitializer
-#define ARCH_ERROR(msg)    Arch_Error(msg, __ARCH_FUNCTION__, __LINE__, BUILD_COMPONENT_SRC_PREFIX __FILE__)
+#define ARCH_ERROR(msg) \
+    Arch_Error(msg, __ARCH_FUNCTION__, __LINE__, __ARCH_FILE__)
 
 /// Prints a warning message to stderr.
 ///
 /// \param msg is a literal string, a \c const \c char* (but not
 ///        an \c std::string).
 /// \hideinitializer
-#define ARCH_WARNING(msg)  Arch_Warning(msg, __ARCH_FUNCTION__, __LINE__, BUILD_COMPONENT_SRC_PREFIX __FILE__)
+#define ARCH_WARNING(msg) \
+    Arch_Warning(msg, __ARCH_FUNCTION__, __LINE__, __ARCH_FILE__)
 
 /// Aborts the program if \p cond evaluates to false.
 /// \hideinitializer
-#define ARCH_AXIOM(cond)   if (!(cond)) ARCH_ERROR("[" #cond "] axiom failed")
+#define ARCH_AXIOM(cond) \
+    if (!(cond)) ARCH_ERROR("[" #cond "] axiom failed")
 
 ///@}
 

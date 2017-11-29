@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Sdf, Tf, UsdUtils
+from pxr import Sdf, Tf, UsdUtils, Vt, Gf
 import unittest
 
 class TestUsdUtilsStitchClips(unittest.TestCase):
@@ -75,18 +75,13 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
     def test_ValidClipMetadata(self):
         clipPrim = self.rootLayer.GetPrimAtPath(self.clipPath)
         self.assertTrue(clipPrim)
-        if Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
-            self.assertEqual(set(clipPrim.ListInfoKeys()), set(['clipTimes',
-                'clipAssetPaths', 'clipPrimPath', 'clipManifestAssetPath',
-                'clipActive', 'specifier']))
-        else:
-            self.assertEqual(set(clipPrim.ListInfoKeys()), 
-                             set(['clips', 'specifier']))
-            self.assertEqual(set(clipPrim.GetInfo('clips').keys()),
-                             set(['default']))
-            self.assertEqual(set(clipPrim.GetInfo('clips')['default'].keys()),
-                             set(['times', 'assetPaths', 'primPath', 
-                                  'manifestAssetPath', 'active']))
+        self.assertEqual(set(clipPrim.ListInfoKeys()), 
+                         set(['clips', 'specifier']))
+        self.assertEqual(set(clipPrim.GetInfo('clips').keys()),
+                         set(['default']))
+        self.assertEqual(set(clipPrim.GetInfo('clips')['default'].keys()),
+                         set(['times', 'assetPaths', 'primPath', 
+                              'manifestAssetPath', 'active']))
 
     def test_ValidUsdLayerGeneration(self):
         self.assertTrue(self.rootLayer)
@@ -180,7 +175,6 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         self.assertEqual(list(resultLayer.subLayerPaths), 
                          ['./foo.topology.usd'])
  
-
     def test_GenerateTopologyName(self):
         names = [("/foo/bar/baz.foo.usd", "/foo/bar/baz.foo.topology.usd"), 
                  ("foo.usda", "foo.topology.usda"), 
@@ -190,5 +184,81 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
             self.assertEqual(UsdUtils.GenerateClipTopologyName(original), 
                              expected)
 
+    def test_CustomSetName(self):
+        """ Test authoring with a custom set name 'bob' """
+        # template case
+        resultLayer = Sdf.Layer.CreateNew('customSetName.usd')
+        topLayer = Sdf.Layer.CreateNew('customSetName.topology.usd')
+        UsdUtils.StitchClipsTemplate(resultLayer, topLayer, self.clipPath,
+                                     'asset.#.usd', 101, 120, 1, 'bob')
+        self.assertEqual(list(resultLayer.subLayerPaths),
+                         ['./customSetName.topology.usd'])
+        self.assertEqual(resultLayer.endTimeCode, 120)
+        self.assertEqual(resultLayer.startTimeCode, 101)
+
+        prim = resultLayer.GetPrimAtPath('/World/fx/Particles_Splash')
+        self.assertTrue('clips' in prim.GetMetaDataInfoKeys())
+        expectedValues = {'templateStartTime': 101.0, 
+                          'templateStride': 1.0, 
+                          'primPath': '/World/fx/Particles_Splash', 
+                          'templateAssetPath': 'asset.#.usd', 
+                          'templateEndTime': 120.0}
+
+        # Ensure that our custom set name applied
+        actualValues = prim.GetInfo('clips')['bob']
+        self.assertTrue(actualValues is not None)
+
+        # Ensure all of our values were written out
+        for k in ['templateStartTime', 'templateStride', 'templateEndTime',
+                  'primPath', 'templateAssetPath']:
+            self.assertEqual(expectedValues[k], actualValues[k])
+
+        # non template case
+        resultLayer = Sdf.Layer.CreateNew('customSetNameNonTemplate.usd')
+        UsdUtils.StitchClips(resultLayer, self.layerFileNames[:7], 
+                             self.clipPath, clipSet='bob')
+
+        self.assertEqual(resultLayer.startTimeCode, 101)
+        self.assertEqual(resultLayer.endTimeCode, 107)
+        self.assertEqual(list(resultLayer.subLayerPaths),
+                         ['./customSetNameNonTemplate.topology.usd'])
+        
+        prim = resultLayer.GetPrimAtPath('/World/fx/Particles_Splash')
+        expectedValues = {'active': Vt.Vec2dArray( 
+                                     [(101.0, 0.0), 
+                                      (102.0, 1.0), 
+                                      (103.0, 2.0), 
+                                      (104.0, 3.0),
+                                      (105.0, 4.0), 
+                                      (106.0, 5.0), 
+                                      (107.0, 6.0)]), 
+                          'times': Vt.Vec2dArray( 
+                                    [(101.0, 101.0), 
+                                     (102.0, 102.0), 
+                                     (103.0, 103.0), 
+                                     (104.0, 104.0), 
+                                     (105.0, 105.0), 
+                                     (106.0, 106.0), 
+                                     (107.0, 107.0)]), 
+                          'manifestAssetPath': Sdf.AssetPath('./customSetNameNonTemplate.topology.usd'), 
+                          'assetPaths': Sdf.AssetPathArray(
+                                        [Sdf.AssetPath('./src/Particles_Splash.101.usd'), 
+                                         Sdf.AssetPath('./src/Particles_Splash.102.usd'), 
+                                         Sdf.AssetPath('./src/Particles_Splash.103.usd'), 
+                                         Sdf.AssetPath('./src/Particles_Splash.104.usd'), 
+                                         Sdf.AssetPath('./src/Particles_Splash.105.usd'), 
+                                         Sdf.AssetPath('./src/Particles_Splash.106.usd'), 
+                                         Sdf.AssetPath('./src/Particles_Splash.107.usd')]), 
+                          'primPath': '/World/fx/Particles_Splash'}
+        
+        # Ensure that our custom set name applied
+        actualValues = prim.GetInfo('clips')['bob']
+        self.assertTrue(actualValues is not None)
+
+        # Ensure all of our values were written out
+        for k in ['active', 'times', 'manifestAssetPath',
+                  'primPath', 'assetPaths']:
+            self.assertEqual(expectedValues[k], actualValues[k])
+        
 if __name__ == '__main__':
     unittest.main()

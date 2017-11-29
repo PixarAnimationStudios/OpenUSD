@@ -34,8 +34,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/declareHandles.h"
 
-#include <boost/scoped_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    "Test schema file for testUsdFlattenProperties"
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdFlattenProperties"
+        string libraryPath      = "pxr/usd/usd"
+    }
+)
+{
+}
+
+class FlattenPropertyTest "FlattenPropertyTest"
+{
+    string builtinAttr = "default value" (
+        """Test attribute comment"""
+        displayName = "display name"
+        doc = "Testing documentation metadata"
+        testCustomMetadata = "garply"
+    )
+}

@@ -233,23 +233,6 @@ UsdGeomPointInstancer::CreateInvisibleIdsAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-UsdAttribute
-UsdGeomPointInstancer::GetPrototypeDrawModeAttr() const
-{
-    return GetPrim().GetAttribute(UsdGeomTokens->prototypeDrawMode);
-}
-
-UsdAttribute
-UsdGeomPointInstancer::CreatePrototypeDrawModeAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->prototypeDrawMode,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
 UsdRelationship
 UsdGeomPointInstancer::GetPrototypesRel() const
 {
@@ -288,7 +271,6 @@ UsdGeomPointInstancer::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->velocities,
         UsdGeomTokens->angularVelocities,
         UsdGeomTokens->invisibleIds,
-        UsdGeomTokens->prototypeDrawMode,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -313,11 +295,19 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/gf/transform.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX Bug 139215: When we enable this, we can remove
+// SdfListOp::ComposeOperations().
+TF_DEFINE_ENV_SETTING(
+    USDGEOM_POINTINSTANCER_NEW_APPLYOPS, false,
+    "Set to true to use SdfListOp::ApplyOperations() instead of "
+    "ComposeOperations().");
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
@@ -327,10 +317,37 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdGeomPointInstancer::IgnoreMask);
 }
 
-static
+// Convert a list-op to a canonical order, treating it as an
+// operation on a set rather than a list.  A side effect is
+// ensuring that it does not use added or ordered items,
+// and can therefore be used with ApplyOperations().
+template <typename T>
+static SdfListOp<T>
+_CanonicalizeListOp(const SdfListOp<T> &op) {
+    if (op.IsExplicit()) {
+        return op;
+    } else {
+        std::vector<T> items;
+        op.ApplyOperations(&items);
+        std::sort(items.begin(), items.end());
+        SdfListOp<T> r;
+        r.SetPrependedItems(std::vector<T>(items.begin(), items.end()));
+        r.SetDeletedItems(op.GetDeletedItems());
+        return r;
+    }
+}
+
+bool
+UsdGeomPointInstancerApplyNewStyleListOps()
+{
+    return TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS);
+}
+
 bool 
-_SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
-                  UsdPrim const &prim)
+UsdGeomPointInstancerSetOrMergeOverOp(std::vector<int64_t> const &items, 
+                                      SdfListOpType op,
+                                      UsdPrim const &prim,
+                                      TfToken const &metadataName)
 {
     SdfInt64ListOp  proposed, current;
     UsdStagePtr stage = prim.GetStage();
@@ -339,13 +356,20 @@ _SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
         editTarget.GetPrimSpecForScenePath(prim.GetPath());
     
     if (primSpec){
-        VtValue  existingOp = primSpec->GetInfo(UsdGeomTokens->inactiveIds);
+        VtValue  existingOp = primSpec->GetInfo(metadataName);
         if (existingOp.IsHolding<SdfInt64ListOp>()){
             current = existingOp.UncheckedGet<SdfInt64ListOp>();
         }
     }
 
     proposed.SetItems(items, op);
+
+    if (TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS)) {
+        current = _CanonicalizeListOp(current);
+        return prim.SetMetadata(UsdGeomTokens->inactiveIds,
+                                *proposed.ApplyOperations(current));
+    }
+
     if (current.IsExplicit()){
         std::vector<int64_t> explicitItems = current.GetExplicitItems();
         proposed.ApplyOperations(&explicitItems);
@@ -390,21 +414,23 @@ _SetOrMergeOverOp(std::vector<int64_t> const &items, SdfListOpType op,
             }
         }
     }
-    return prim.SetMetadata(UsdGeomTokens->inactiveIds, current);
+    return prim.SetMetadata(metadataName, current);
 }
 
 bool
 UsdGeomPointInstancer::ActivateId(int64_t id) const
 {
     std::vector<int64_t> toRemove(1, id);
-    return _SetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(
+        toRemove, SdfListOpTypeDeleted, GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
 UsdGeomPointInstancer::ActivateIds(VtInt64Array const &ids) const
 {
     std::vector<int64_t> toRemove(ids.begin(), ids.end());
-    return _SetOrMergeOverOp(toRemove, SdfListOpTypeDeleted, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(
+        toRemove, SdfListOpTypeDeleted, GetPrim(), UsdGeomTokens->inactiveIds);
 }
 
 bool
@@ -420,14 +446,20 @@ bool
 UsdGeomPointInstancer::DeactivateId(int64_t id) const
 {
     std::vector<int64_t> toAdd(1, id);
-    return _SetOrMergeOverOp(toAdd, SdfListOpTypeAdded, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd,
+        TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS) ?
+        SdfListOpTypeAppended : SdfListOpTypeAdded, GetPrim(),
+        UsdGeomTokens->inactiveIds);
 }
 
 bool
 UsdGeomPointInstancer::DeactivateIds(VtInt64Array const &ids) const
 {
     std::vector<int64_t> toAdd(ids.begin(), ids.end());
-    return _SetOrMergeOverOp(toAdd, SdfListOpTypeAdded, GetPrim());
+    return UsdGeomPointInstancerSetOrMergeOverOp(toAdd,
+        TfGetEnvSetting(USDGEOM_POINTINSTANCER_NEW_APPLYOPS) ?
+        SdfListOpTypeAppended : SdfListOpTypeAdded, GetPrim(),
+        UsdGeomTokens->inactiveIds);
 }
 
 bool

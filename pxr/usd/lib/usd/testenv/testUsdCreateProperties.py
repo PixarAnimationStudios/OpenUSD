@@ -136,7 +136,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             self.assertEqual(rel.GetTargets(), ['/Parent'])
 
             # Test relative path
-            rel.AddTarget("../../Sibling1")
+            rel.AddTarget("../../Sibling1", position=Usd.ListPositionBack)
             self.assertEqual(rel.GetTargets(), ['/Parent', '/Parent/Sibling1'])
 
             rel.SetCustom(False)
@@ -204,7 +204,6 @@ class TestUsdCreateProperties(unittest.TestCase):
                         "Expected to be able to create an override relationship at <"
                         + str(prim.GetPath()) + "> but failed")
 
-            stage.Close()
             strongLayer._WriteDataFile("strong.txt")
 
             # print "============================================================="

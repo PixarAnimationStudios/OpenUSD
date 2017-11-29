@@ -27,10 +27,28 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hd/shaders/fallbackSurface.glslfx
 
+#import $TOOLS/hd/shaders/terminals.glslfx
+
+---
+--- The fallback shader is used as a replacement shader if the
+--- original "surface" (material) shader failed to compile.
+--- The original shader may or may not have defined the displacementShader
+--- terminal.  If it did, the code expects the "surface" (material) shader to
+--- include it.
+--- 
+--- If it didn't, then the geometeric shader will define the terminal.
+---
+--- To handle this replacement, the fallback shader always includes the
+--- displacementShader terminal.  The code fragment for that terminal handles
+--- the possible case where the terminal was defined twice.
+---
 -- configuration
 {
     "techniques": {
         "default": {
+            "displacementShader": {
+                "source": [ "Geometry.Displacement" ]
+            },
             "surfaceShader": {
                 "source": [ "Fallback.Surface" ]
             }
@@ -38,6 +56,7 @@
     }
 }
 
+--- --------------------------------------------------------------------------
 -- glsl Fallback.Surface
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
@@ -46,3 +65,4 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
     return color;
 }
+--- --------------------------------------------------------------------------

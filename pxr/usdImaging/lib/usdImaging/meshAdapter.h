@@ -56,7 +56,7 @@ public:
                      UsdImagingInstancerContext const* instancerContext = NULL);
 
     USDIMAGING_API
-    virtual bool IsSupported(HdRenderIndex* renderIndex);
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -86,9 +86,9 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath,
-                                      TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& propertyName);
 
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);

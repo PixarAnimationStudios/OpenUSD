@@ -64,8 +64,6 @@ typedef boost::shared_ptr<class HdBasisCurvesTopology>
 typedef boost::weak_ptr<class HdBufferArrayRange> HdBufferArrayRangePtr;
 typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class HdDispatchBuffer> HdDispatchBufferSharedPtr;
-typedef boost::shared_ptr<class HdPersistentBuffer> HdPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
@@ -82,8 +80,7 @@ public:
     HdResourceRegistry();
 
     HD_API
-    ~HdResourceRegistry();
-
+    virtual ~HdResourceRegistry();
     /// Allocate new non uniform buffer array range
     HD_API
     HdBufferArrayRangeSharedPtr AllocateNonUniformBufferArrayRange(
@@ -285,33 +282,23 @@ public:
          HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance, 
          bool *found);
 
-    /// Register a buffer allocated with \a count * \a commandNumUints *
-    /// sizeof(GLuint) to be used as an indirect dispatch buffer.
-    HD_API
-    HdDispatchBufferSharedPtr RegisterDispatchBuffer(
-        TfToken const &role, int count, int commandNumUints);
-
-    /// Register a buffer initialized with \a dataSize bytes of \a data
-    /// to be used as a persistently mapped shader storage buffer.
-    HD_API
-    HdPersistentBufferSharedPtr RegisterPersistentBuffer(
-        TfToken const &role, size_t dataSize, void *data);
-
     HD_API
     void InvalidateGeometricShaderRegistry();
-
-    /// Remove any entries associated with expired dispatch buffers.
-    HD_API
-    void GarbageCollectDispatchBuffers();
-
-    /// Remove any entries associated with expired persistently mapped buffers.
-    HD_API
-    void GarbageCollectPersistentBuffers();
 
     /// Debug dump
     HD_API
     friend std::ostream &operator <<(std::ostream &out,
                                      const HdResourceRegistry& self);
+
+protected:
+    /// A hook for derived registries to perform additional GC when
+    /// GarbageCollect() is invoked.
+    virtual void _GarbageCollect();
+
+    /// A hook for derived registries to tally their resources
+    /// by key into the given dictionary.  Any additions should
+    /// be cumulative with the existing key values. 
+    virtual void _TallyResourceAllocation(VtDictionary *result) const;
 
 private:
 
@@ -409,14 +396,6 @@ private:
     typedef HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
          _TextureResourceRegistry;
     HdInstanceRegistry<_TextureResourceRegistry> _textureResourceRegistry;
-
-    typedef std::vector<HdDispatchBufferSharedPtr>
-        _DispatchBufferRegistry;
-    _DispatchBufferRegistry _dispatchBufferRegistry;
-
-    typedef std::vector<HdPersistentBufferSharedPtr>
-        _PersistentBufferRegistry;
-    _PersistentBufferRegistry _persistentBufferRegistry;
 
 };
 

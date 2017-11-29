@@ -127,7 +127,7 @@ GusdBoundsCache::Clear()
 }
 
 int64 
-GusdBoundsCache::Clear(const UT_Set<std::string>& paths)
+GusdBoundsCache::Clear(const UT_StringSet& paths)
 {
     int64 freed = 0;
 

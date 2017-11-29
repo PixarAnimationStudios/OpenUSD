@@ -30,6 +30,7 @@
 #include "pxr/base/arch/vsnprintf.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/scopeDescriptionPrivate.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
@@ -140,7 +141,9 @@ TfLogCrash(
         fullMessage += additionalInfo + "\n";
     }
 
-    ArchLogPostMortem(nullptr, fullMessage.c_str());
+    Tf_ScopeDescriptionStackReportLock descStackReport;
+    ArchLogPostMortem(
+        nullptr, fullMessage.c_str(), descStackReport.GetMessage());
 }
 
 time_t

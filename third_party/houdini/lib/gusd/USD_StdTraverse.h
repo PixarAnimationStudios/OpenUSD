@@ -47,6 +47,8 @@ namespace GusdUSD_StdTraverse
     @{ */
 const GusdUSD_Traverse& GetComponentTraversal();
 
+const GusdUSD_Traverse& GetComponentAndBoundableTraversal();
+
 const GusdUSD_Traverse& GetAssemblyTraversal();
 
 const GusdUSD_Traverse& GetModelTraversal();
@@ -56,8 +58,6 @@ const GusdUSD_Traverse& GetGroupTraversal();
 const GusdUSD_Traverse& GetBoundableTraversal();
 
 const GusdUSD_Traverse& GetGprimTraversal();
-
-const GusdUSD_Traverse& GetBoundableAndInstanceTraversal();
 
 const GusdUSD_Traverse& GetMeshTraversal();
 /** @} */

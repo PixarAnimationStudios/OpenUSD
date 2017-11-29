@@ -43,7 +43,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 // FACESET API                                                                //
 // -------------------------------------------------------------------------- //
 
+/// \deprecated 
+/// 
 /// \class UsdGeomFaceSetAPI
+/// 
+/// \note This class has been deprecated in favor of the concrete typed-schema 
+/// "UsdGeomSubset" for representing face-sets. 
 /// 
 /// This is a general purpose API schema used to describe many different 
 /// organizations and modifications of a prim's faces' behavior. It's an add-on 

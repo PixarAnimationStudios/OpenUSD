@@ -65,6 +65,11 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = false;
 
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = true;
+
     /// Construct a UsdLuxLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxLight::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -279,10 +284,11 @@ public:
     // --------------------------------------------------------------------- //
     /// Color temperature, in degrees Kelvin, representing the
     /// white point.  The default is a common white point, D65.  Lower
-    /// values are warmer and higher values are cooler.  Only takes effect
-    /// when enableColorTemperature is set to true.  When active, the
+    /// values are warmer and higher values are cooler.  The valid range
+    /// is from 1000 to 10000. Only takes effect when
+    /// enableColorTemperature is set to true.  When active, the
     /// computed result multiplies against the color attribute.
-    /// See UsdLuxBlackbodyColorTemperatureAsRgb().
+    /// See UsdLuxBlackbodyTemperatureAsRgb().
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float

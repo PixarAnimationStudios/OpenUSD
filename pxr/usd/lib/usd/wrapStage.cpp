@@ -46,6 +46,17 @@ using std::string;
 
 using namespace boost::python;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+class Usd_PcpCacheAccess
+{
+public:
+    static const PcpCache* GetPcpCache(const UsdStage& stage)
+    { return stage._GetPcpCache(); }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -348,7 +359,6 @@ void wrapUsdStage()
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("OpenMasked")
         
-        .def("Close", &UsdStage::Close)
         .def("Reload", &UsdStage::Reload)
 
         .def("Save", &UsdStage::Save)
@@ -362,13 +372,15 @@ void wrapUsdStage()
         .staticmethod("SetGlobalVariantFallbacks")
 
         .def("Load", &UsdStage::Load,
-             arg("path")=SdfPath::AbsoluteRootPath())
+             (arg("path")=SdfPath::AbsoluteRootPath(),
+              arg("policy")=UsdLoadWithDescendants))
 
         .def("Unload", &UsdStage::Unload,
              arg("path")=SdfPath::AbsoluteRootPath())
 
         .def("LoadAndUnload", &UsdStage::LoadAndUnload,
-             (arg("loadSet"), arg("unloadSet")))
+             (arg("loadSet"), arg("unloadSet"),
+              arg("policy")=UsdLoadWithDescendants))
 
         .def("GetLoadSet", &UsdStage::GetLoadSet,
              return_value_policy<TfPySequenceToList>())
@@ -497,6 +509,9 @@ void wrapUsdStage()
 
         .def("GetMasters", &UsdStage::GetMasters,
              return_value_policy<TfPySequenceToList>())
+
+        .def("_GetPcpCache", &Usd_PcpCacheAccess::GetPcpCache,
+             return_internal_reference<>())
         ;
 }
 

@@ -58,6 +58,12 @@ public:
     Hd_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
                HdShaderCodeSharedPtrVector const &shaders);
 
+    /// Constructor for non-geometric use cases.
+    /// Don't call compile when constructed this way.
+    /// Call CompileComputeProgram instead.
+    HD_API
+    Hd_CodeGen(HdShaderCodeSharedPtrVector const &shaders);
+    
     /// Return the hash value of glsl shader to be generated.
     HD_API
     ID ComputeHash() const;
@@ -66,6 +72,24 @@ public:
     HD_API
     HdGLSLProgramSharedPtr Compile();
 
+    /// Generate compute shader source and compile it.
+    /// It uses the compute information in the meta data to determine
+    /// layouts needed for a compute program.
+    /// The caller should have populated the meta data before calling this
+    /// using a method like Hd_ResourceBinder::ResolveBindings.
+    ///
+    /// The layout and binding information is combined with the compute stage
+    /// shader code from the shader vector to form a resolved shader for
+    /// compilation.
+    ///
+    /// The generated code that is compiled is available for diagnostic
+    /// purposes from GetComputeShaderSource.
+    ///
+    /// \see GetComputeShaderSource
+    /// \see Hd_ResourceBinder::ResolveBindings
+    HD_API
+    HdGLSLProgramSharedPtr CompileComputeProgram();
+    
     /// Return the generated vertex shader source
     const std::string &GetVertexShaderSource() const { return _vsSource; }
 
@@ -81,6 +105,9 @@ public:
     /// Return the generated fragment shader source
     const std::string &GetFragmentShaderSource() const { return _fsSource; }
 
+    /// Return the generated compute shader source
+    const std::string &GetComputeShaderSource() const { return _csSource; }
+    
     /// Return the pointer of metadata to be populated by resource binder.
     Hd_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
 
@@ -97,7 +124,8 @@ private:
     HdShaderCodeSharedPtrVector _shaders;
 
     // source buckets
-    std::stringstream _genCommon, _genVS, _genTCS, _genTES, _genGS, _genFS;
+    std::stringstream _genCommon, _genVS, _genTCS, _genTES;
+    std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
 
     // generated sources (for diagnostics)
@@ -106,7 +134,7 @@ private:
     std::string _tesSource;
     std::string _gsSource;
     std::string _fsSource;
-
+    std::string _csSource;
 };
 
 

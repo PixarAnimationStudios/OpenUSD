@@ -375,7 +375,7 @@ std::string
 PcpErrorInvalidPrimPath::ToString() const
 {
     return TfStringPrintf("Invalid %s path <%s> on prim %s "
-                          "-- must be a root prim path.", 
+                          "-- must be an absolute prim path.", 
                           TfEnum::GetDisplayName(arcType).c_str(), 
                           primPath.GetText(),
                           TfStringify(site).c_str());

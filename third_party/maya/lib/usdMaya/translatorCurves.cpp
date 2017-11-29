@@ -152,9 +152,8 @@ PxrUsdMayaTranslatorCurves::Create(
             points.swap(tmpPts);
 
             // Cubic curves in Maya have numSpans + 2*3 - 1, and for geometry
-            // that came in as basis curves, we have numCV's - 3 spans.  See the
-            // MFnNurbsCurve documentation and the nurbs curve export
-            // implementation in mojitoplugmaya for more details.
+            // that came in as basis curves, we have numCV's - 3 spans. See the
+            // MFnNurbsCurve documentation for more details.
             curveKnots.resize(points.size() -3 + 5);
             int knotIdx = 0;
             for (size_t i=0; i < curveKnots.size(); ++i) {

@@ -65,6 +65,7 @@ public:
 
     /// Sets the OpenGL name/identifier for this resource and its size.
     /// also caches the gpu address of the buffer.
+    HD_API
     void SetAllocation(GLuint id, size_t size);
 
     /// Returns the OpenGL id for this GPU resource

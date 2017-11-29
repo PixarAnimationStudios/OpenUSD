@@ -25,8 +25,9 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hdSt/light.h" // XXX: Should be base light schema
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,7 +65,7 @@ UsdImagingLightAdapter::UpdateForTime(UsdPrim const& prim,
 {
 }
 
-int
+HdDirtyBits
 UsdImagingLightAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& propertyName)
@@ -73,26 +74,30 @@ UsdImagingLightAdapter::ProcessPropertyChange(UsdPrim const& prim,
 }
 
 void
-UsdImagingLightAdapter::ProcessPrimResync(SdfPath const& usdPath, 
-                                         UsdImagingIndexProxy* index) 
+UsdImagingLightAdapter::MarkDirty(UsdPrim const& prim,
+                                  SdfPath const& cachePath,
+                                  HdDirtyBits dirty,
+                                  UsdImagingIndexProxy* index)
 {
-    // XXX : This will become RemoveSprims when we standarize shaders/lights.
-    index->RemoveLight(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
-
-    if (_GetPrim(usdPath)) {
-        // The prim still exists, so repopulate it.
-        index->Repopulate(/*cachePath*/usdPath);
-    }
+    index->MarkSprimDirty(cachePath, dirty);
 }
 
 void
-UsdImagingLightAdapter::ProcessPrimRemoval(SdfPath const& usdPath, 
-                                          UsdImagingIndexProxy* index) 
+UsdImagingLightAdapter::MarkTransformDirty(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
+                                           UsdImagingIndexProxy* index)
 {
-    // XXX : This will become RemoveSprims when we standarize shaders/lights.
-    index->RemoveLight(/*cachePath*/usdPath);
-    index->RemoveDependency(/*usdPrimPath*/usdPath);
+    // XXX: This should really look at a base light schema for the dirty bits
+    static const HdDirtyBits transformDirty = HdStLight::DirtyTransform;
+    index->MarkSprimDirty(cachePath, transformDirty);
+}
+
+void
+UsdImagingLightAdapter::MarkVisibilityDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
+{
+    // TBD
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

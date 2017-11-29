@@ -6,6 +6,11 @@ The relationship target </PrimOutsideReferenceRoot> from </A.B> in layer @ErrorI
 The attribute connection </Root.x> from </_Class1.prohibitedConnectionToInstance> in layer @ErrorInvalidTargetPath/root.sdf@ refers to a path outside the scope of the global inherit from </Root>.  Ignoring.
 
 ------------------------------------------------------------------------
+Errors while composing </SubrootRef>
+
+The relationship target </B/D> from </B/C.testRel> in layer @ErrorInvalidTargetPath/A.sdf@ refers to a path outside the scope of the reference from </SubrootRef>.  Ignoring.
+
+------------------------------------------------------------------------
 Errors while composing </RootWithReferenceUnderVariant>
 
 The attribute connection </PrimOutsideReferenceRoot.A> from </A.A> in layer @ErrorInvalidTargetPath/A.sdf@ refers to a path outside the scope of the reference from </RootWithReferenceUnderVariant{standin=anim}>.  Ignoring.

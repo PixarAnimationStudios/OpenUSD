@@ -28,14 +28,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-GusdUSD_VisCache::GusdUSD_VisCache(GusdUSD_StageCache& cache)
+GusdUSD_VisCache::GusdUSD_VisCache(GusdStageCache& cache)
   : GusdUSD_DataCache(cache),
     _visInfos(GUSDUT_USDCACHE_NAME, 256)
 {}
 
 
 GusdUSD_VisCache::GusdUSD_VisCache()
-  : GusdUSD_VisCache(GusdUSD_StageCache::GetInstance())
+  : GusdUSD_VisCache(GusdStageCache::GetInstance())
 {}
 
 
@@ -226,7 +226,7 @@ namespace {
 
 template <typename KeyT>
 int64
-_RemoveKeysT(const UT_Set<std::string>& paths, GusdUT_CappedCache& cache)
+_RemoveKeysT(const UT_StringSet& paths, GusdUT_CappedCache& cache)
 {
     return cache.ClearEntries(
         [&](const UT_CappedKeyHandle& key,
@@ -243,7 +243,7 @@ _RemoveKeysT(const UT_Set<std::string>& paths, GusdUT_CappedCache& cache)
 
 
 int64
-GusdUSD_VisCache::Clear(const UT_Set<std::string>& paths)
+GusdUSD_VisCache::Clear(const UT_StringSet& paths)
 {   
     return _RemoveKeysT<_UnvaryingKey>(paths, _visInfos);
 }

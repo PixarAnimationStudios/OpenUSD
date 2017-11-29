@@ -29,7 +29,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP( Authoring );
+    TF_WRAP( CoalescingDiagnosticDelegate );
     TF_WRAP( Dependencies );
+    TF_WRAP( FlattenLayerStack );
     TF_WRAP( Introspection );
     TF_WRAP( Pipeline );
     TF_WRAP( RegisteredVariantSet );

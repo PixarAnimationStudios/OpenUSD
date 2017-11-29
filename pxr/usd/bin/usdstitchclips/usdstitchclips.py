@@ -51,6 +51,8 @@ parser.add_argument('-t', '--templateMetadata', action='store_true',
                     help='author template clip metadata in the root layer.')
 parser.add_argument('-p', '--templatePath', action='store',
                     help='specify a template asset path to author') 
+parser.add_argument('--clipSet', action='store',
+                    help='specify a clipSet to author clip metadata under.')
 
 # useful for debugging with diffs
 parser.add_argument('-n', '--noComment', action='store_true',
@@ -109,10 +111,12 @@ try:
                                      results.templatePath,
                                      results.startTimeCode,
                                      results.endTimeCode,
-                                     results.stride)
+                                     results.stride,
+                                     results.clipSet)
     else:
         UsdUtils.StitchClips(outLayer, results.usdFiles, results.clipPath, 
-                             results.startTimeCode, results.endTimeCode)
+                             results.startTimeCode, results.endTimeCode,
+                             results.clipSet)
 
 
     if not results.noComment:

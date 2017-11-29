@@ -21,31 +21,24 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdKatana/usdInPluginRegistry.h"
-#include <FnAttributeFunction/plugin/FnAttributeFunctionPlugin.h>
 
-extern void registerPrmanGeometryDecorator();
+#include "pxr/pxr.h"
 
-// XXX need to register a katana plug-in for katana to load the .so
-//     If we were a plug-in which was already registering Ops, etc, this
-//     wouldn't be necessary.
-class DummyFnc : public Foundry::Katana::AttributeFunction
-{
-public:
-    static FnAttribute::Attribute run(FnAttribute::Attribute args)
-    {
-        return FnAttribute::Attribute();
-    }
-};
-DEFINE_ATTRIBUTEFUNCTION_PLUGIN(DummyFnc);
+#include "pxrUsdInPrman/declarePackageOps.h"
 
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+
+DEFINE_GEOLIBOP_PLUGIN(PxrUsdInPrman_LocationDecorator);
 
 void registerPlugins()
 {
-    // XXX need to register a katana plug-in for katana to load the .so
-    REGISTER_PLUGIN(DummyFnc, "__noticeMe", 0, 1);
+    USD_OP_REGISTER_PLUGIN(PxrUsdInPrman_LocationDecorator, 
+                       "PxrUsdInPrman_LocationDecorator", 
+                       0, 
+                       1);
     
-    
-    
-    registerPrmanGeometryDecorator();
+    PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorOp(
+            "PxrUsdInPrman_LocationDecorator");
 }

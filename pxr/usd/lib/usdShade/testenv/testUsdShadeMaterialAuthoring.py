@@ -183,8 +183,10 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
         # This is the root prim that a client would target to pull in shading
         refs = rootPrim.GetReferences()
         # XXX We need a better way of specifying self-references
-        refs.AddReference("./"+fileName, "/MaterialBindingVariants")
-        refs.AddReference("./"+fileName, "/ShadingDefs")
+        refs.AddReference("./"+fileName, "/ShadingDefs",
+            position=Usd.ListPositionFront)
+        refs.AddReference("./"+fileName, "/MaterialBindingVariants",
+            position=Usd.ListPositionFront)
 
         stage.GetRootLayer().Save()
 
@@ -205,7 +207,8 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
         SetupShading(stage)
         # Reference the shading directly
         refs = rootPrim.GetReferences()
-        refs.AddReference("./"+fileName, "/ShadingDefs")
+        refs.AddReference("./"+fileName, "/ShadingDefs",
+            position=Usd.ListPositionFront)
 
         # Now pick up the newly composed material prims
         allMaterials = [ stage.GetPrimAtPath("/ModelShading/Materials/HairMaterial"),

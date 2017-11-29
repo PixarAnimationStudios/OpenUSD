@@ -33,7 +33,6 @@
 #include <UT/UT_RWLock.h>
 
 #include "gusd/OP_ParmChangeMicroNode.h"
-#include "gusd/USD_Holder.h"
 
 #include <pxr/pxr.h>
 #include "pxr/usd/usdGeom/camera.h"
@@ -93,11 +92,18 @@ public:
                                     OP_Operator* op);
 
     /** Overridden to modify defaults of scripted properties. */
-    virtual bool            runCreateScript();
+    virtual bool            runCreateScript() override;
 
     /** Evaluate the float value of a variable.
         This is where we hook in most of our USD queries. */
-    virtual bool            evalVariableValue(fpreal& val, int idx, int thread);
+    virtual bool            evalVariableValue(fpreal& val,
+				    int idx, int thread) override;
+    virtual bool            evalVariableValue(UT_String& val,
+				    int idx, int thread) override
+			    {
+				return OP_Network::evalVariableValue(
+						   val, idx, thread);
+			    }
 
 protected:
     GusdOBJ_usdcamera(OP_Network* net, const char* name, OP_Operator* op);
@@ -105,28 +111,25 @@ protected:
     virtual ~GusdOBJ_usdcamera() {}
 
     virtual int             applyInputIndependentTransform(OP_Context& ctx,
-                                                           UT_DMatrix4& mx);
+				UT_DMatrix4& mx) override;
 
-    virtual bool            updateParmsFlags();
+    virtual bool            updateParmsFlags() override;
 
-    virtual void            loadStart();
-    virtual void            loadFinished();
+    virtual void            loadStart() override;
+    virtual void            loadFinished() override;
 
-    virtual OP_ERROR        cookMyObj(OP_Context& ctx);
+    virtual OP_ERROR        cookMyObj(OP_Context& ctx) override;
 
 private:
-    typedef GusdUSD_HolderT<UsdGeomCamera> _CamHolder;
-
     OP_ERROR                _Cook(OP_Context& ctx);
 
-    UsdGeomCamera           _LoadCamera(_CamHolder::ScopedLock& lock,
-                                        fpreal t, int thread);
+    UsdGeomCamera           _LoadCamera(fpreal t, int thread);
 
     bool                    _EvalCamVariable(fpreal& val, int idx, int thread);
     
 private:
     UT_ErrorManager _errors;
-    _CamHolder      _cam;
+    UsdGeomCamera   _cam;
 
     int             _frameIdx;  /*! Cached index of the frame parm.*/
 
@@ -135,7 +138,7 @@ private:
 
     /** Micro node for tracking changes to the parms that affect our
         camera selection.
-        The camera is queried within varaible evaluation, so the
+        The camera is queried within variable evaluation, so the
         lookup needs to be fast.*/
     GusdOP_ParmChangeMicroNode  _camParmsMicroNode;
 

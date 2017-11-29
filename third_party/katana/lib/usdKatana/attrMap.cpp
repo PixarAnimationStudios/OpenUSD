@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "usdKatana/attrMap.h"
+#include "usdKatana/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,6 +34,24 @@ PxrUsdKatanaAttrMap::set(
         const Foundry::Katana::Attribute& attr)
 {
     _groupBuilder.set(path, attr);
+}
+
+PxrUsdKatanaAttrMap&
+PxrUsdKatanaAttrMap::Set(
+        const std::string& path,
+        const UsdAttribute& attr)
+{
+    VtValue val;
+    if (attr.IsValid() && attr.HasAuthoredValueOpinion()
+        && attr.Get(&val, _usdTimeCode)) {
+        FnKat::Attribute kat_attr =
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr( val,
+                                    /* asShaderParam */ true,
+                                    /* pathAsModel */ false,
+                                    /* resolvePath */ false);
+        _groupBuilder.set(path, kat_attr);
+    }
+    return *this;
 }
 
 void

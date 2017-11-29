@@ -1,0 +1,20 @@
+#usda 1.0
+
+def "AssetPathTest" (
+    customData = {
+        asset assetPath = @./asset.usda@
+        asset[] assetPathArray = [@./asset.usda@]
+        dictionary subDict = {
+            asset assetPath = @./asset.usda@
+            asset[] assetPathArray = [@./asset.usda@]
+        }    
+    }
+)
+{
+    asset assetPath = @./asset.usda@
+    asset[] assetPathArray = [@./asset.usda@]
+    asset assetPath.timeSamples = {
+        0: @./asset.usda@,
+        1: @./asset.usda@,
+    }
+}

@@ -38,7 +38,6 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/typeNotice.h"
 
-#include <boost/bind.hpp>
 #include <set>
 
 using namespace std;

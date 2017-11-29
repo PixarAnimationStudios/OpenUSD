@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 from pxr import Sdf, Tf
-import unittest
+import itertools, unittest
 
 class TestSdfPayload(unittest.TestCase):
     def test_Basic(self):
@@ -31,22 +31,23 @@ class TestSdfPayload(unittest.TestCase):
 
         # Generate a bunch of unique payloads
         args = [
-            ['assetPath', '//test/layer.sdf'],
-            ['primPath', '/rootPrim'],
+            ['assetPath', ['', '//test/layer.sdf']],
+            ['primPath', ['', '/rootPrim', '/rootPrim/child']]
         ]
         payloads = []
-        for n in range(1 << len(args)):
+        for values in itertools.product(*[a[1] for a in args]):
+            argvalues = zip([a[0] for a in args], values)
             kw = {}
-            for i in range(len(args)):
-                if (1 << i) & n:
-                    kw[args[i][0]] = args[i][1]
+            for (arg, value) in argvalues:
+                if value:
+                    kw[arg] = value
 
             payload = Sdf.Payload(**kw)
 
             payloads.append( payload )
 
             # Test property access
-            for arg, value in args:
+            for arg, value in argvalues:
                 if kw.has_key(arg):
                     self.assertEqual( getattr(payload, arg), value )
                 else:

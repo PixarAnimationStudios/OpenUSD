@@ -24,11 +24,11 @@
 #ifndef TF_PYLOCK_H
 #define TF_PYLOCK_H
 
+#include "pxr/pxr.h"
+
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 
 #include <Python.h>
-
-#include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
 

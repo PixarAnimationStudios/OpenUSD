@@ -40,6 +40,8 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tracelite/trace.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DEFINE_SPEC(SdfRelationshipSpec, SdfPropertySpec);
@@ -276,7 +278,8 @@ SdfRelationshipSpec::ReplaceTargetPath(
 
     // Update the list op.
     if (targetsListOp.ModifyOperations(
-            boost::bind(_ReplacePath, oldTargetPath, newTargetPath, _1))) {
+            std::bind(_ReplacePath, oldTargetPath, newTargetPath,
+                      std::placeholders::_1))) {
         layer->SetField(relPath, SdfFieldKeys->TargetPaths, targetsListOp);
     }
 }

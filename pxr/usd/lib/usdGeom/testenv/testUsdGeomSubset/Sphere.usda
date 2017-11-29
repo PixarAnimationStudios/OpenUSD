@@ -1,0 +1,301 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+    endFrame = 1
+    startFrame = 1
+)
+
+def Xform "Sphere" (
+    kind = "component"
+)
+{
+    def Mesh "pSphere1"
+    {
+        Vec3f[] extent = [(-7.10811, -7.10811, -7.10811), (7.10811, 7.10811, 7.10811)]
+
+        uniform token subsetFamily:materialBind:familyType = "partition"
+        uniform token subsetFamily:validPartition:familyType = "partition"
+
+        uniform token subsetFamily:badPartition1:familyType = "partition"
+        uniform token subsetFamily:badPartition2:familyType = "partition"
+        uniform token subsetFamily:badPartition3:familyType = "partition"
+
+        uniform token subsetFamily:validNonOverlapping:familyType = "nonOverlapping"
+        uniform token subsetFamily:invalidNonOverlapping:familyType = "nonOverlapping"
+
+        uniform token subsetFamily:validUnrestricted:familyType = "unrestricted"
+        uniform token subsetFamily:invalidUnrestricted:familyType = "unrestricted"
+
+        def GeomSubset "green" 
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "materialBind"
+            int[] indices = [12, 13, 14, 15]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [12, 13, 14, 15],
+                3: [0, 1, 2, 3]
+            }
+            rel material:binding =  </Sphere/Looks/initialShadingGroup>
+        }
+
+
+        def GeomSubset "blue" 
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "materialBind"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11]
+            rel material:binding =  </Sphere/Looks/lambert2SG>
+            int[] indices.timeSamples = {
+                1: [4, 5, 6, 7, 8, 9, 10, 11],
+                2: [0, 1, 2, 3, 8, 9, 10, 11],
+                3: [4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+
+        def GeomSubset "red" 
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "materialBind"
+            int[] indices = [4, 5, 6, 7]
+            rel material:binding =  </Sphere/Looks/lambert3SG>
+            int[] indices.timeSamples = {
+                1: [12, 13, 14, 15],
+                2: [4, 5, 6, 7],
+                3: [12, 13, 14, 15]
+            }
+        }
+
+
+        def GeomSubset "invalidIndices" 
+        # Indices 16 at frame 2 and -1 at frame 3 are invalid.
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidIndices"
+            int[] indices = [4, 5, 6, 7]
+            int[] indices.timeSamples = {
+                1: [12, 13, 14, 15],
+                2: [4, 5, 6, 7, 16],
+                3: [-1, 12, 13, 14, 15]
+            }
+        }
+
+        def GeomSubset "validNonOverlapping_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13, 15]
+            }
+        }
+
+        def GeomSubset "validNonOverlapping_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "invalidNonOverlapping_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13, 15]
+            }
+        }
+
+        def GeomSubset "invalidNonOverlapping_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "validUnrestricted_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validUnrestricted"
+            # index 0 is overlapping
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14, 15]
+            int[] indices.timeSamples = {
+                # index 15 is not included in timeSamples.
+                1: [0, 1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "validUnrestricted_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "invalidUnrestricted_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidUnrestricted"
+            # out of bound index - 16
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14, 16]            
+            int[] indices.timeSamples = {
+                # negative index
+                1: [-1, 1, 3, 5, 7, 9, 11, 13, 15]
+            }
+        }
+
+        def GeomSubset "invalidUnrestricted_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "badPartition1_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "badPartition1"
+            int[] indices = [4, 5, 6, 7]            
+            int[] indices.timeSamples = {
+                1: [12, 13, 14, 15]
+            }
+        }
+
+        def GeomSubset "badPartition1_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "badPartition1"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+        def GeomSubset "badParition2_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "badPartition2"
+            # mising indices 8-15
+            int[] indices = [0, 1, 2, 3, 4, 5, 6, 7]
+        }
+
+        def GeomSubset "badParition3_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "badPartition3"
+            # duplicate indices 0 and 5
+            int[] indices = [0, 1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 5, 15]
+        }
+
+
+        def GeomSubset "validPartition_1"
+        {       
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices = [0, 1, 2, 3, 4, 5]
+            int[] indices.timeSamples = {
+                1: [11, 12, 13, 14, 15],
+                3: [0, 1, 2, 3, 4, 5]
+            }
+        }
+
+        def GeomSubset "validPartition_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices = [6, 7, 8, 9, 10]
+            int[] indices.timeSamples = {
+                1: [6, 7, 8, 9, 10],
+                2: [0, 1, 2, 3, 4, 5],
+                3: [11, 12, 13, 14, 15]
+            }
+        }
+
+        def GeomSubset "validPartition_3"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices = [11, 12, 13, 14, 15]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3, 4, 5],
+                2: [6, 7, 8, 9, 10]
+            }
+        }
+
+        
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
+        int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 7, 4, 8, 11, 1, 0, 12, 2, 1, 12, 3, 2, 12, 0, 3, 12, 8, 9, 13, 9, 10, 13, 10, 11, 13, 11, 8, 13]
+        PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619), (0, -1.57832e-15, -7.10811), (0, 1.57832e-15, 7.10811)]
+        Vec2f[] primvars:st = [(0, 0.25), (0.25, 0.25), (0.25, 0.5), (0, 0.5), (0.25, 0.25), (0.5, 0.25), (0.5, 0.5), (0.25, 0.5), (0.5, 0.25), (0.75, 0.25), (0.75, 0.5), (0.5, 0.5), (0.75, 0.25), (1, 0.25), (1, 0.5), (0.75, 0.5), (0, 0.5), (0.25, 0.5), (0.25, 0.75), (0, 0.75), (0.25, 0.5), (0.5, 0.5), (0.5, 0.75), (0.25, 0.75), (0.5, 0.5), (0.75, 0.5), (0.75, 0.75), (0.5, 0.75), (0.75, 0.5), (1, 0.5), (1, 0.75), (0.75, 0.75), (0.25, 0.25), (0, 0.25), (0.125, 0), (0.5, 0.25), (0.25, 0.25), (0.375, 0), (0.75, 0.25), (0.5, 0.25), (0.625, 0), (1, 0.25), (0.75, 0.25), (0.875, 0), (0, 0.75), (0.25, 0.75), (0.125, 1), (0.25, 0.75), (0.5, 0.75), (0.375, 1), (0.5, 0.75), (0.75, 0.75), (0.625, 1), (0.75, 0.75), (1, 0.75), (0.875, 1)] (
+            interpolation = "faceVarying"
+        )
+        Vec3d xformOp:translate = (0.191260557342787, 0.0415678998936819, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Scope "Looks"
+    {
+        def Look "initialShadingGroup"
+        {
+            ColorFloat interface:displayColor = (0.00902149, 1, 0.0393514)
+            float interface:displayOpacity
+            ColorFloat interface:transparency
+            rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert.diffuseColor>
+            rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/initialShadingGroup/initialShadingGroup_lambert.transmissionColor>
+
+            def RisBxdf "initialShadingGroup_lambert"
+            {
+                ColorFloat diffuseColor
+                asset info:filePath = @PxrDiffuse@
+                ColorFloat transmissionColor
+            }
+        }
+
+        def Look "lambert2SG"
+        {
+            ColorFloat interface:displayColor = (0.0592683, 0.167102, 0.7593)
+            float interface:displayOpacity
+            ColorFloat interface:transparency
+            rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/lambert2SG/lambert2SG_lambert.diffuseColor>
+            rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/lambert2SG/lambert2SG_lambert.transmissionColor>
+
+            def RisBxdf "lambert2SG_lambert"
+            {
+                ColorFloat diffuseColor
+                asset info:filePath = @PxrDiffuse@
+                ColorFloat transmissionColor
+            }
+        }
+
+        def Look "lambert3SG"
+        {
+            ColorFloat interface:displayColor = (0.835528, 0, 0)
+            float interface:displayOpacity
+            ColorFloat interface:transparency
+            rel ri:interfaceRecipientsOf:displayColor = </Sphere/Looks/lambert3SG/lambert3SG_lambert.diffuseColor>
+            rel ri:interfaceRecipientsOf:transparency = </Sphere/Looks/lambert3SG/lambert3SG_lambert.transmissionColor>
+
+            def RisBxdf "lambert3SG_lambert"
+            {
+                ColorFloat diffuseColor
+                asset info:filePath = @PxrDiffuse@
+                ColorFloat transmissionColor
+            }
+        }
+    }
+}
+

@@ -30,13 +30,10 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/reference.h"
-#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
@@ -71,17 +68,6 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// aggregate result by adding to, removing from, or replacing "weaker"
 /// references.
 ///
-/// \li <b>References must target root prims</b> in referenced layers;
-/// this is validated at authoring-time as well as during runtime
-/// composition.  We make this restriction because it keeps the resulting
-/// compositions reasonably straightforward to debug and understand - were we
-/// to allow sub-root references, we can create what is referred to in the
-/// composition engine as "spooky" behavior: resolved opinions that are the
-/// result of composition arcs that are not present for instrospection
-/// anywhere on the composed stage. See \ref Usd_DefaultPrim_References below
-/// for details on how to author and target "defaultPrim" references,
-/// i.e. references that do not express a prim target on the reference.
-///
 /// \li References can target the same LayerStack in which they are authored,
 /// as long as doing so does not introduce a cycle in the composition graph.
 /// See \ref Usd_Internal_References
@@ -114,11 +100,90 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// will be resolved to the root layer of the LayerStack containing the 
 /// layer where the reference was authored.  See AddInternalReference().
 ///
+/// \subsection Usd_Subroot_References Referencing sub-root prims
+///
+/// References may target any prim in a layer. In the simplest and most
+/// common case, a root prim in a layer will be referenced. However, 
+/// referencing sub-root prims can be useful in a variety of other cases;
+/// for example, a user might organize prims into a meaningful hierarchy
+/// in a layer for display purposes, then use sub-root references to
+/// reference a selection from that hierarchy into a scene.
+///
+/// Sub-root references have subtle behaviors with respect to opinions
+/// and composition arcs authored on ancestors of the referenced prim.
+/// Users should carefully consider this when deciding whether to use
+/// sub-root references. These issues can be avoided by not authoring
+/// any properties or metadata on ancestors of prims that are meant to
+/// be referenced.
+///
+/// Consider the following example:
+///
+/// \code
+/// * shot.usda                                 | * asset.usda
+///                                             |
+/// #usda 1.0                                   | #usda 1.0
+///                                             |
+/// over "Class"                                | class "Class"
+/// {                                           | {
+///     over "B"                                | }
+///     {                                       |
+///         over "Model"                        | def "A" (
+///         {                                   |    inherits = </Class>
+///             int a = 3                       | )
+///         }                                   | {
+///     }                                       |     token purpose = "render"
+/// }                                           |
+///                                             |     def "B" (
+/// over "A"                                    |        variantSets = "type"
+/// {                                           |        variants = {
+///     over "B" (                              |             string type = "a"
+///         # variant selection won't be used   |        }
+///         variants = {                        |     )
+///             string type = "b"               |     {
+///         }                                   |         variantSet "type" = {
+///     )                                       |             "a" {
+///     {                                       |                 def "Model"
+///     }                                       |                 {
+/// }                                           |                     int a = 1
+///                                             |                 }
+/// def "ReferencedModel" (                     |             }
+///     references = @./asset.usda@</A/B/Model> |             "b" {
+/// )                                           |                 def "Model"
+/// {                                           |                 {
+/// }                                           |                     int a = 2
+///                                             |                 }
+///                                             |             }
+///                                             |         }
+///                                             |     }
+///                                             | }
+/// \endcode
+///
+/// * Property and metadata opinions on the ancestors of the referenced prim
+///   *are not* present in the composed stage and will never contribute to any
+///   computations. In this example, the opinion for the attribute /A.purpose 
+///   in asset.usda will never be visible in the UsdStage for shot.usda.
+///
+/// * Property and metadata opinions due to ancestral composition arcs
+///   *are* present in the composed stage. In this example, the attribute
+///   /Class/B/Model.a in shot.usda will be present in the UsdStage for
+///   shot.usda, even though the inherit arc is authored on an ancestor
+///   of the referenced prim.
+///
+/// * A consequence of these rules is that users might not be able to 
+///   override ancestral variant selections that affect the referenced prim.
+///   In this example, the Model prim being referenced comes from the 
+///   variant selection {type=a} on prim /A/B in asset.usda. The {type=b}
+///   variant cannot be selected in shot.usda, even if prims with the
+///   same hierarchy happen to exist there. There are various workarounds
+///   for this; in this example, the {type=b} variant selection could be
+///   authored on /Class/B/Model in shot.usda instead because of the
+///   inherit arc that was established on prim /A.
+///
 /// \subsection Usd_Failing_References Reasons why adding a reference may fail, why adding a reference may succeed but still generate errors, and what it all means
 ///
 /// AddReference() and SetReferences() can each fail for a number of
 /// reasons.  If one of the specified prim targets for one of the references
-/// is not a root prim, we will generate an error, fail to author any scene
+/// is not a prim, we will generate an error, fail to author any scene
 /// description, and return \c false.  If anything goes wrong in attempting
 /// to write the reference, we also return false, and the reference will also
 /// remain unauthored.  Otherwise, if the reference was successfully
@@ -132,13 +197,20 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// UsdStage::ResolveIdentifierToEditTarget() before authoring the
 /// reference.</b>
 ///
+/// When adding an internal reference, the given prim path is expected to 
+/// be in the namespace of the owning prim's stage. Sub-root prim paths
+/// will be translated from this namespace to the namespace of the
+/// current edit target, if necessary. If a path cannot be translated,
+/// a coding error will be issued and no changes will be made. Non-sub-root
+/// paths will not be translated.
+///
 /// Immediately upon successful authoring of the reference (before returning
 /// from AddReference(), RemoveReference(), ClearReferences(), or
 /// SetReferences()), the UsdStage on which the reference was authored will
 /// recompose the subtree rooted at the prim hosting the reference.  If the
 /// provided identifer does not resolve to a layer that is already opened or
 /// that can be opened in the usd format, \em or if the provided primPath is
-/// not an actual root prim in that layer, the stage's recomposition will
+/// not an actual prim in that layer, the stage's recomposition will
 /// fail, and pass on composition errors to the client.
 ///
 class UsdReferences {
@@ -147,10 +219,6 @@ class UsdReferences {
     explicit UsdReferences(const UsdPrim& prim) : _prim(prim) {}
 
 public:
-
-    // XXX: should we hide SdfReference here? it seems helpful for
-    // Sd/Mf compatibility
-
     /// Adds a reference to the reference listOp at the current EditTarget,
     /// in the position specified by \p position.
     /// \sa \ref Usd_Failing_References "Why adding references may fail" for
@@ -164,9 +232,9 @@ public:
     /// \overload 
     USD_API
     bool AddReference(const std::string &identifier,
-                         const SdfPath &primPath,
-                         const SdfLayerOffset &layerOffset = SdfLayerOffset(),
-                         UsdListPosition position=UsdListPositionTempDefault);
+                      const SdfPath &primPath,
+                      const SdfLayerOffset &layerOffset = SdfLayerOffset(),
+                      UsdListPosition position=UsdListPositionTempDefault);
 
     /// \overload
     /// \sa \ref Usd_DefaultPrim_References "References Without Prim Paths"
@@ -210,7 +278,6 @@ public:
     /// Return the prim this object is bound to.
     const UsdPrim &GetPrim() const { return _prim; }
 
-    // XXX Is this actually needed?
     /// \overload
     UsdPrim GetPrim() { return _prim; }
 
@@ -222,7 +289,6 @@ private:
     UsdPrim _prim;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //USD_REFERENCES_H
+#endif // USD_REFERENCES_H

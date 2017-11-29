@@ -69,6 +69,14 @@ void wrapUsdShadeMaterial()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -152,12 +160,30 @@ WRAP_CUSTOM {
         .def("HasBaseMaterial",
              &UsdShadeMaterial::HasBaseMaterial)
 
+
+        .def("CreateMaterialBindSubset", 
+             &UsdShadeMaterial::CreateMaterialBindSubset,
+             (arg("geom"), arg("subsetName"), 
+              arg("indices"), arg("elementType")=UsdGeomTokens->face))
+            .staticmethod("CreateMaterialBindSubset")
+        .def("GetMaterialBindSubsets", 
+             &UsdShadeMaterial::GetMaterialBindSubsets, 
+             arg("geom"), return_value_policy<TfPySequenceToList>())
+             .staticmethod("GetMaterialBindSubsets")
+        .def("SetMaterialBindSubsetsFamilyType", 
+             &UsdShadeMaterial::SetMaterialBindSubsetsFamilyType,
+             (arg("geom"), arg("familyType")))
+             .staticmethod("SetMaterialBindSubsetsFamilyType")
+        .def("GetMaterialBindSubsetsFamilyType",
+             &UsdShadeMaterial::GetMaterialBindSubsetsFamilyType,
+             arg("geom"))
+             .staticmethod("GetMaterialBindSubsetsFamilyType")
+        
+        // These are now deprecated.
         .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)
             .staticmethod("CreateMaterialFaceSet")
-
         .def("GetMaterialFaceSet", &UsdShadeMaterial::GetMaterialFaceSet)
             .staticmethod("GetMaterialFaceSet")
-
         .def("HasMaterialFaceSet", &UsdShadeMaterial::HasMaterialFaceSet)
             .staticmethod("HasMaterialFaceSet")
 

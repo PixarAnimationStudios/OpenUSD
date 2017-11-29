@@ -62,7 +62,7 @@ typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 
 /// \class HdRprim
 ///
-/// The render engine state for a given rprim from the scene graph. All data 
+/// The render engine state for a given rprim from the scene graph. All data
 /// access (aside from local caches) is delegated to the HdSceneDelegate.
 ///
 class HdRprim {
@@ -72,14 +72,14 @@ public:
             SdfPath const& instancerId);
     HD_API
     virtual ~HdRprim();
-    
+
     /// Update objects representation based on dirty bits.
     /// @param[in, out]  dirtyBits: On input specifies which state is
     ///                             is dirty and can be pulled from the scene
     ///                             delegate.
     ///                             On output specifies which bits are still
-    ///                             dirty and were not cleaned by the sync. 
-    ///                             
+    ///                             dirty and were not cleaned by the sync.
+    ///
     virtual void Sync(HdSceneDelegate* delegate,
                       HdRenderParam*   renderParam,
                       HdDirtyBits*     dirtyBits,
@@ -109,13 +109,13 @@ public:
 
     /// Returns the identifier of the instancer (if any) for this Rprim. If this
     /// Rprim is not instanced, an empty SdfPath will be returned.
-    SdfPath const& GetInstancerId() const { return _instancerID; }
+    SdfPath const& GetInstancerId() const { return _instancerId; }
 
-    /// Returns the ID of the SurfaceShader to which this Rprim is bound. The
-    /// SurfaceShader object itself can be fetched from the RenderIndex using
+    /// Returns the path of the material to which this Rprim is bound. The
+    /// material object itself can be fetched from the RenderIndex using
     /// this identifier.
-    SdfPath const& GetSurfaceShaderId() const { 
-        return _surfaceShaderID;
+    SdfPath const& GetMaterialId() const {
+        return _materialId;
     }
 
     /// Returns true if any dirty flags are set for this rprim.
@@ -128,6 +128,17 @@ public:
 
     /// Return the unique instance id
     int32_t GetPrimId() const { return _primId; };
+
+    /// Is the prim itself visible
+    bool IsVisible() const { return _sharedData.visible; }
+
+    /// This function gives an Rprim the chance to "early exit" from dirty
+    /// bit propagation, delegate sync and rprim sync altogether. It is
+    /// a temporary measure to prevent unnecessary work, like in the case of
+    /// invisible prims. The dirty bits in the change tracker remain the same.
+    /// See the implementation for the finer details.
+    HD_API
+    bool CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const;
 
     /// Returns the set of dirty bits that should be
     /// added to the change tracker for this prim, when this prim is inserted.
@@ -238,14 +249,22 @@ protected:
     /// need not be empty).
     ///
     /// The caller is expected to pass these computation on these computations
-    /// onto the resource registry (associating them with BAR's if it is
-    /// expected the primVar will be downloaded)
+    /// onto the resource registry (associating them with BARs if it is
+    /// expected the primvar will be downloaded)
+    /// 
+    /// The computation may also need to add sources that are resolved against
+    /// internal BARs that are not to be associated with the primvar BAR. Those
+    /// are returned in the computationSources vector.
+    /// The caller is expected to add them to the resource registry if the
+    /// computation is needed.
     HD_API
     void _GetExtComputationPrimVarsComputations(
-                                              HdSceneDelegate *sceneDelegate,
-                                              HdInterpolation interpolationMode,
-                                              HdDirtyBits dirtyBits,
-                                              HdBufferSourceVector *sources);
+                    HdSceneDelegate *sceneDelegate,
+                    HdInterpolation interpolationMode,
+                    HdDirtyBits dirtyBits,
+                    HdBufferSourceVector *sources,
+                    HdComputationVector *computations,
+                    HdBufferSourceVector *computationSources);
 
     HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,
@@ -263,15 +282,15 @@ protected:
 
 private:
     SdfPath _id;
-    SdfPath _instancerID;
-    SdfPath _surfaceShaderID;
+    SdfPath _instancerId;
+    SdfPath _materialId;
 
     // Used for id renders.
     int32_t _primId;
 
-    /// Sets a new surface shader id to be used by this rprim
-    void _SetSurfaceShaderId(HdChangeTracker &changeTracker,
-                             SdfPath const& surfaceShaderId);
+    /// Sets a new material binding to be used by this rprim
+    void _SetMaterialId(HdChangeTracker &changeTracker,
+                        SdfPath const& materialId);
 
 protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility

@@ -54,9 +54,9 @@ struct GusdUT_StaticValHolder
 {
 public:
     typedef GusdUT_StaticValHolder<Fn> This;
-    using T = typename std::result_of<const Fn& ()>::type;
+    using T = typename std::result_of<Fn& ()>::type;
 
-    GusdUT_StaticValHolder(const Fn& fn)
+    GusdUT_StaticValHolder(Fn& fn)
         : _val(NULL), _fn(fn), _lock() {}
 
     GusdUT_StaticValHolder(This&& o) noexcept
@@ -85,7 +85,7 @@ public:
         }
 
 private:
-    const Fn&   _fn;
+    Fn&         _fn;
     UT_Lock     _lock;
     T*          _val;
 };

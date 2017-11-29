@@ -4,6 +4,17 @@
       <sample size="4" time="0" value="0 3 12 15 "/>
     </attr>
   </attr>
+  <attr name="info" type="GroupAttr">
+    <attr name="usd" type="GroupAttr">
+      <attr name="GeomSubset" type="GroupAttr">
+        <attr name="familyName" tupleSize="1" type="StringAttr">
+          <sample size="1" time="0">
+            <str value="materialBind"/>
+          </sample>
+        </attr>
+      </attr>
+    </attr>
+  </attr>
   <attr name="materialAssign" tupleSize="1" type="StringAttr">
     <sample size="1" time="0">
       <str value="/root/world/geo/World/FaceSet/Looks/lambert2SG"/>

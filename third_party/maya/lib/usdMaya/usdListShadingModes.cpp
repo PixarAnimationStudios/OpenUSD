@@ -1,6 +1,7 @@
 #include "usdMaya/usdListShadingModes.h"
 
 #include "usdMaya/shadingModeRegistry.h"
+#include "usdMaya/registryHelper.h"
 
 #include <maya/MSyntax.h>
 #include <maya/MStatus.h>
@@ -8,6 +9,8 @@
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -20,7 +23,7 @@ usdListShadingModes::~usdListShadingModes() {
 }
 
 MStatus
-usdListShadingModes::doIt(const MArgList& args) {
+usdListShadingModes::doIt(const MArgList& args) {    
     MStatus status;
     MArgDatabase argData(syntax(), args, &status);
 

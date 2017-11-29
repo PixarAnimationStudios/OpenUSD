@@ -25,7 +25,6 @@
 
 #include "context.h"
 #include "UT_Gf.h"
-#include "USD_Proxy.h"
 
 #include <GT/GT_PrimInstance.h>
 #include <GT/GT_GEOPrimPacked.h>
@@ -61,21 +60,17 @@ GusdXformWrapper::GusdXformWrapper(
 }
 
 GusdXformWrapper::GusdXformWrapper( 
-            const GusdUSD_StageProxyHandle& stage, 
-            const UsdGeomXform&             usdXform,
-            const UsdTimeCode&              time,
-            const GusdPurposeSet&           purposes )
+            const UsdGeomXform& usdXform,
+            UsdTimeCode         time,
+            GusdPurposeSet      purposes )
     : GusdGroupBaseWrapper( time, purposes )
-    , m_usdXformForRead( usdXform, stage->GetLock() )
-    , m_stageProxy( stage )
+    , m_usdXform( usdXform )
 {
 }
 
 GusdXformWrapper::GusdXformWrapper( const GusdXformWrapper &in )
     : GusdGroupBaseWrapper( in )
-    , m_usdXformForWrite( in.m_usdXformForWrite )
-    , m_usdXformForRead( in.m_usdXformForRead )
-    , m_stageProxy( in.m_stageProxy )
+    , m_usdXform( in.m_usdXform )
 {
 }
 
@@ -95,14 +90,14 @@ initUsdPrim(const UsdStagePtr& stage,
             // If we are writing an overlay and the ROP sees a geometry packed prim,
             // we want to write just the xform. In that case we can use a xform
             // wrapper to write the xform on any prim type.
-            m_usdXformForWrite = UsdGeomXformable(stage->OverridePrim( path ));
+            m_usdXform = UsdGeomXformable(stage->OverridePrim( path ));
             newPrim = false;
         }
         else {
-            m_usdXformForWrite = UsdGeomXform::Define( stage, path );
+            m_usdXform = UsdGeomXform::Define( stage, path );
 
             // Make sure our ancestors have proper types.
-            UsdPrim p = m_usdXformForWrite.GetPrim().GetParent();
+            UsdPrim p = m_usdXform.GetPrim().GetParent();
             while( p && p.GetTypeName().IsEmpty() ) {
                 UsdGeomXform::Define( stage, p.GetPath() );
                 p = p.GetParent();
@@ -110,12 +105,12 @@ initUsdPrim(const UsdStagePtr& stage,
         }
     }
     else {
-        m_usdXformForWrite = UsdGeomXform::Define( stage, path );
+        m_usdXform = UsdGeomXform::Define( stage, path );
     }
-    if( !m_usdXformForWrite || !m_usdXformForWrite.GetPrim().IsValid() ) {
+    if( !m_usdXform || !m_usdXform.GetPrim().IsValid() ) {
         TF_WARN( "Unable to create %s xform '%s'.", newPrim ? "new" : "override", path.GetText() );
     }
-    return bool(m_usdXformForWrite);
+    return bool(m_usdXform);
 }
 
 GT_PrimitiveHandle GusdXformWrapper::
@@ -133,13 +128,11 @@ defineForWrite(
 
 GT_PrimitiveHandle GusdXformWrapper::
 defineForRead(
-        const GusdUSD_StageProxyHandle& stage,
-        const UsdGeomImageable&         sourcePrim, 
-        const UsdTimeCode&              time,
-        const GusdPurposeSet&           purposes )
+        const UsdGeomImageable& sourcePrim, 
+        UsdTimeCode             time,
+        GusdPurposeSet          purposes )
 {
     return new GusdXformWrapper( 
-                    stage,
                     UsdGeomXform( sourcePrim.GetPrim() ),
                     time,
                     purposes );
@@ -204,22 +197,7 @@ doSoftCopy() const
 bool GusdXformWrapper::
 isValid() const
 {
-    return m_usdXformForWrite || m_usdXformForWrite;
-}
-
-const UsdGeomImageable 
-GusdXformWrapper::getUsdPrimForRead(
-    GusdUSD_ImageableHolder::ScopedLock &lock) const
-{
-    // obtain first lock to get geomtry as UsdGeomCurves.
-    GusdUSD_XformHolder::ScopedReadLock innerLock;
-    innerLock.Acquire( m_usdXformForRead );
-
-    // Build new holder after casting to imageable
-    GusdUSD_ImageableHolder tmp( UsdGeomImageable( (*innerLock).GetPrim() ),
-                                 m_usdXformForRead.GetLock() );
-    lock.Acquire(tmp, /*write*/false);
-    return *lock;
+    return m_usdXform;
 }
 
 bool GusdXformWrapper::
@@ -227,11 +205,7 @@ refine(
     GT_Refine& refiner,
     const GT_RefineParms* parms) const
 {
-    
-    GusdUSD_XformHolder::ScopedReadLock lock;
-    lock.Acquire(m_usdXformForRead);
-
-    return refineGroup( m_stageProxy, (*lock).GetPrim(), refiner, parms );
+    return refineGroup( m_usdXform.GetPrim(), refiner, parms );
 }
 
 
@@ -241,12 +215,12 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  const GusdContext&        ctxt,
                  GusdSimpleXformCache&     xformCache)
 {
-    if( !m_usdXformForWrite )
+    if( !m_usdXform )
         return false;
 
     DBG( cout << "GusdXformWrapper::updateFromGTPrim, primType = " << sourcePrim->className() << endl );
 
-    return updateGroupFromGTPrim( m_usdXformForWrite, sourcePrim, localXform, ctxt, xformCache );
+    return updateGroupFromGTPrim( m_usdXform, sourcePrim, localXform, ctxt, xformCache );
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

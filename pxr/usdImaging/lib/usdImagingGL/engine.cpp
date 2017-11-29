@@ -685,15 +685,22 @@ UsdImagingGLEngine::IsConverged() const
 }
 
 /* virtual */
-std::vector<TfType>
-UsdImagingGLEngine::GetRendererPlugins()
+TfTokenVector
+UsdImagingGLEngine::GetRendererPlugins() const
 {
-    return std::vector<TfType>();
+    return std::vector<TfToken>();
+}
+
+/* virtual */
+std::string
+UsdImagingGLEngine::GetRendererPluginDesc(TfToken const &id) const
+{
+    return std::string();
 }
 
 /* virtual */
 bool
-UsdImagingGLEngine::SetRendererPlugin(TfType const &type)
+UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 {
     return false;
 }

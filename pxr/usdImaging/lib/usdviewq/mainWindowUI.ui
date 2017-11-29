@@ -79,14 +79,14 @@
       <property name="handleWidth">
        <number>2</number>
       </property>
-      <widget class="QSplitter" name="nodeStageSplitter">
+      <widget class="QSplitter" name="primStageSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="handleWidth">
         <number>2</number>
        </property>
-       <widget class="QFrame" name="nodeFrame">
+       <widget class="QFrame" name="primFrame">
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
@@ -110,7 +110,7 @@
           <number>6</number>
          </property>
          <item>
-          <widget class="QTreeWidget" name="nodeView">
+          <widget class="QTreeWidget" name="primView">
            <property name="font">
             <font>
              <family>Gotham Rounded</family>
@@ -154,7 +154,7 @@
             <number>150</number>
            </attribute>
            <attribute name="headerMinimumSectionSize">
-            <number>28</number>
+            <number>20</number>
            </attribute>
            <attribute name="headerStretchLastSection">
             <bool>false</bool>
@@ -180,165 +180,10 @@
           </widget>
          </item>
          <item>
-          <widget class="QWidget" name="nodeLegendContainer" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>400</width>
-             <height>0</height>
-            </size>
-           </property>
-           <layout class="QVBoxLayout" name="nodeLegendLayoutContainer">
-            <item>
-             <layout class="QGridLayout" name="nodeLegendLayout">
-              <item row="0" column="0">
-               <widget class="QGraphicsView" name="nodeLegendColorHasArcs">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLabel" name="nodeLegendLabelHasArcs">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>HasArcs</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QGraphicsView" name="nodeLegendColorInstance">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="3">
-               <widget class="QLabel" name="nodeLegendLabelInstance">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Instance</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="4">
-               <widget class="QGraphicsView" name="nodeLegendColorMaster">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="5">
-               <widget class="QLabel" name="nodeLegendLabelMaster">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Master</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="6">
-               <widget class="QGraphicsView" name="nodeLegendColorNormal">
-                <property name="maximumSize">
-                 <size>
-                  <width>20</width>
-                  <height>15</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="7">
-               <widget class="QLabel" name="nodeLegendLabelNormal">
-                <property name="font">
-                 <font>
-                  <family>Gotham Rounded</family>
-                  <pointsize>9</pointsize>
-                  <weight>50</weight>
-                  <italic>false</italic>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Normal</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="nodeLegendLabelContainer">
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelDimmed">
-                <property name="text">
-                 <string>Dimmed colors denote inactive prims</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelFontsAbstract">
-                <property name="text">
-                 <string>Normal font indicates abstract prims(class and children)</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelFontsUndefined">
-                <property name="text">
-                 <string>Italic font indicates undefined prims(declared with over)</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="nodeLegendLabelFontsDefined">
-                <property name="text">
-                 <string>Bold font indicates defined prims(declared with def)</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
+          <widget class="PrimLegend" name="primLegendContainer" native="true"/>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="nodeFindContainer">
+          <layout class="QHBoxLayout" name="primFindContainer">
            <property name="topMargin">
             <number>0</number>
            </property>
@@ -359,7 +204,7 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="nodeLegendQButton">
+            <widget class="QPushButton" name="primLegendQButton">
              <property name="maximumSize">
               <size>
                <width>32</width>
@@ -370,9 +215,12 @@
               <font>
                <family>Gotham Rounded</family>
                <pointsize>9</pointsize>
-               <weight>50</weight>
+               <weight>75</weight>
                <bold>true</bold>
               </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
              </property>
              <property name="text">
               <string>?</string>
@@ -386,7 +234,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="nodeViewLineEdit">
+            <widget class="QLineEdit" name="primViewLineEdit">
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -408,7 +256,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="nodeViewFindNext">
+            <widget class="QPushButton" name="primViewFindNext">
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -507,7 +355,7 @@
           <number>5</number>
          </property>
          <item>
-          <widget class="QTableWidget" name="propertyView">
+          <widget class="QTreeWidget" name="propertyView">
            <property name="toolTip">
             <string/>
            </property>
@@ -520,57 +368,20 @@
            <property name="frameShadow">
             <enum>QFrame::Plain</enum>
            </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::NoEditTriggers</set>
-           </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="showGrid">
-            <bool>false</bool>
-           </property>
-           <property name="gridStyle">
-            <enum>Qt::SolidLine</enum>
-           </property>
            <property name="columnCount">
-            <number>2</number>
+            <number>3</number>
            </property>
-           <attribute name="horizontalHeaderCascadingSectionResizes">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="horizontalHeaderDefaultSectionSize">
-            <number>220</number>
-           </attribute>
-           <attribute name="horizontalHeaderMinimumSectionSize">
-            <number>30</number>
-           </attribute>
-           <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="verticalHeaderDefaultSectionSize">
-            <number>30</number>
-           </attribute>
-           <attribute name="verticalHeaderMinimumSectionSize">
-            <number>20</number>
-           </attribute>
-           <attribute name="verticalHeaderStretchLastSection">
-            <bool>false</bool>
-           </attribute>
            <column>
             <property name="text">
-             <string>Attribute</string>
+             <string>Type</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Property Name</string>
             </property>
            </column>
            <column>
@@ -581,169 +392,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QWidget" name="propertyLegendContainer" native="true">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>500</width>
-             <height>0</height>
-            </size>
-           </property>
-           <layout class="QGridLayout" name="propertyLegendLayout">
-            <item row="0" column="0">
-             <widget class="QGraphicsView" name="propertyLegendColorFallback">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="propertyLegendLabelFallback">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Fallback</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QGraphicsView" name="propertyLegendColorDefault">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QLabel" name="propertyLegendLabelDefault">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Default</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="4">
-             <widget class="QGraphicsView" name="propertyLegendColorTimeSample">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="5">
-             <widget class="QLabel" name="propertyLegendLabelTimeSample">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Time Samples (Interpolated) </string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QGraphicsView" name="propertyLegendColorNoValue">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="propertyLegendLabelNoValue">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>No Value</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QGraphicsView" name="propertyLegendColorCustom">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QLabel" name="propertyLegendLabelCustom">
-              <property name="text">
-               <string>Custom</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="4">
-             <widget class="QGraphicsView" name="propertyLegendColorValueClips">
-              <property name="maximumSize">
-               <size>
-                <width>20</width>
-                <height>15</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="5">
-             <widget class="QLabel" name="propertyLegendLabelValueClips">
-              <property name="font">
-               <font>
-                <family>Gotham Rounded</family>
-                <pointsize>9</pointsize>
-                <weight>50</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Value Clips (Interpolated)</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
+          <widget class="PropertyLegend" name="propertyLegendContainer" native="true"/>
          </item>
          <item>
           <layout class="QHBoxLayout" name="propertyFindContainer">
@@ -802,7 +451,7 @@
               </font>
              </property>
              <property name="placeholderText">
-              <string>Search for attribute by name</string>
+              <string>Search for property by name</string>
              </property>
             </widget>
            </item>
@@ -827,7 +476,7 @@
               <enum>Qt::NoFocus</enum>
              </property>
              <property name="text">
-              <string>Find Attr</string>
+              <string>Find Prop</string>
              </property>
              <property name="iconSize">
               <size>
@@ -1449,7 +1098,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>27</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1475,7 +1124,7 @@
     <property name="title">
      <string>&amp;Options</string>
     </property>
-    <widget class="QMenu" name="menuNode_View_Depth">
+    <widget class="QMenu" name="menuPrim_View_Depth">
      <property name="title">
       <string>Prim View Depth</string>
      </property>
@@ -1529,8 +1178,8 @@
     </widget>
     <addaction name="menuHUD"/>
     <addaction name="separator"/>
-    <addaction name="menuNode_View_Depth"/>
-    <addaction name="actionShow_Inactive_Nodes"/>
+    <addaction name="menuPrim_View_Depth"/>
+    <addaction name="actionShow_Inactive_Prims"/>
     <addaction name="actionShow_All_Master_Prims"/>
     <addaction name="actionShow_Undefined_Prims"/>
     <addaction name="actionShow_Abstract_Prims"/>
@@ -1689,10 +1338,9 @@
     <property name="title">
      <string>Window</string>
     </property>
-    <addaction name="actionWatch_Window"/>
     <addaction name="showInterpreter"/>
    </widget>
-   <widget class="QMenu" name="menuEdit_Node">
+   <widget class="QMenu" name="menuEdit_Prim">
     <property name="title">
      <string>Edit Prim(s)</string>
     </property>
@@ -1719,7 +1367,7 @@
     </property>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit_Node"/>
+   <addaction name="menuEdit_Prim"/>
    <addaction name="menuOptions"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
@@ -1755,9 +1403,6 @@
   <action name="actionReset_View">
    <property name="text">
     <string>Reset View</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+R</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -1809,16 +1454,10 @@
    <property name="text">
     <string>Frame Forward</string>
    </property>
-   <property name="shortcut">
-    <string>Right</string>
-   </property>
   </action>
   <action name="actionFrame_Backwards">
    <property name="text">
     <string>Frame Backward</string>
-   </property>
-   <property name="shortcut">
-    <string>Left</string>
    </property>
   </action>
   <action name="actionAdjust_FOV">
@@ -1929,9 +1568,6 @@
    <property name="text">
     <string>Key</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
   </action>
   <action name="actionFill">
    <property name="checkable">
@@ -1942,9 +1578,6 @@
    </property>
    <property name="text">
     <string>Fill</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
    </property>
   </action>
   <action name="actionBack">
@@ -1957,9 +1590,6 @@
    <property name="text">
     <string>Back</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+F</string>
-   </property>
   </action>
   <action name="actionAmbient_Only">
    <property name="checkable">
@@ -1970,9 +1600,6 @@
    </property>
    <property name="text">
     <string>Camera Light</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="actionLevel_6">
@@ -2397,7 +2024,7 @@
     <string>Enable Hardware Shading</string>
    </property>
   </action>
-  <action name="actionShow_Inactive_Nodes">
+  <action name="actionShow_Inactive_Prims">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -2554,6 +2181,9 @@
   <action name="actionReload_All_Layers">
    <property name="text">
     <string>Reload All Layers</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionHD_Flags">
@@ -2806,35 +2436,33 @@
     <string>Adjust Default Material...</string>
    </property>
   </action>
-  <actiongroup name="actionGroupCameraReticles">
-   <action name="actionCameraReticles_Inside">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>Camera Reticles Inside</string>
-    </property>
-   </action>
-   <action name="actionCameraReticles_Outside">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>Camera Reticles Outside</string>
-    </property>
-   </action>
-   <action name="actionCameraReticles_Color">
-    <property name="text">
-     <string>Select Color...</string>
-    </property>
-   </action>
-  </actiongroup>
+  <action name="actionCameraReticles_Inside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Inside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Outside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Outside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Color">
+   <property name="text">
+    <string>Select Color...</string>
+   </property>
+  </action>
   <actiongroup name="actionGroupCameraMask">
    <action name="actionCameraMask_Full">
     <property name="checkable">
@@ -2870,11 +2498,11 @@
     </property>
    </action>
    <action name="actionCameraMask_Color">
-    <property name="text">
-     <string>Select Color...</string>
-    </property>
     <property name="checkable">
      <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Select Color...</string>
     </property>
    </action>
   </actiongroup>
@@ -2884,6 +2512,18 @@
    <class>AttributeValueEditor</class>
    <extends>QWidget</extends>
    <header>attributeValueEditor</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PrimLegend</class>
+   <extends>QWidget</extends>
+   <header>primLegend</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PropertyLegend</class>
+   <extends>QWidget</extends>
+   <header>propertyLegend</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

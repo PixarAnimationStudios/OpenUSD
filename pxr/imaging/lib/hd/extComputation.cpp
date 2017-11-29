@@ -26,10 +26,14 @@
 #include "pxr/imaging/hd/extComputationContext.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
 #include "pxr/imaging/hd/extCompCpuComputation.h"
+#include "pxr/imaging/hd/extCompGpuComputationBufferSource.h"
+#include "pxr/imaging/hd/extCompGpuComputation.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
+#include "extCompGpuComputationBufferSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,6 +53,7 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("HdExtComputation::Sync\n");
 
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
@@ -57,6 +62,8 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
     HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyInputDesc) {
+        TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    dirty inputs\n");
+        
         _sceneInputs       = sceneDelegate->GetExtComputationInputNames(_id,
                                                 HdExtComputationInputTypeScene);
         _computationInputs = sceneDelegate->GetExtComputationInputNames(_id,
@@ -91,16 +98,48 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         _elementCount = vtElementCount.Get<size_t>();
     }
 
+    if (bits & DirtyKernel) {
+        _kernel = sceneDelegate->GetExtComputationKernel(_id);
+        TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    _kernel = '%s'\n",
+                _kernel.c_str());
+        // XXX we should update any created GPU computations as well
+        // with the new kernel if we want to provide a good editing flow.
+    }
 
     *dirtyBits = Clean;
 }
 
 
 HdExtCompCpuComputationSharedPtr
-HdExtComputation::GetComputation(HdSceneDelegate *sceneDelegate) const
+HdExtComputation::GetComputation(
+    HdSceneDelegate *sceneDelegate,
+    HdBufferSourceVector *computationSources) const
 {
     // XXX: To do: De-duplication
-    return _CreateCpuComputation(sceneDelegate);
+    return _CreateCpuComputation(sceneDelegate, computationSources);
+}
+
+std::pair<HdExtCompGpuComputationSharedPtr,
+          HdExtCompGpuComputationBufferSourceSharedPtr>
+HdExtComputation::GetGpuComputation(
+        HdSceneDelegate *sceneDelegate,
+        HdBufferSourceVector *computationSources,
+        TfToken const &primvarName,
+        HdBufferSpecVector const &outputSpecs,
+        HdBufferSpecVector const &primInputSpecs) const
+{
+    // Only return a GPU computation if there is a kernel bound.
+    if (_kernel.empty()) {
+        return std::make_pair(HdExtCompGpuComputationSharedPtr(),
+                              HdExtCompGpuComputationBufferSourceSharedPtr());
+    }
+    // XXX: To do: De-duplication
+    return _CreateGpuComputation(
+            sceneDelegate,
+            computationSources,
+            primvarName,
+            outputSpecs,
+            primInputSpecs);
 }
 
 HdDirtyBits
@@ -110,12 +149,11 @@ HdExtComputation::GetInitialDirtyBits() const
 }
 
 HdExtCompCpuComputationSharedPtr
-HdExtComputation::_CreateCpuComputation(HdSceneDelegate *sceneDelegate) const
+HdExtComputation::_CreateCpuComputation(
+        HdSceneDelegate *sceneDelegate,
+        HdBufferSourceVector *computationSources) const
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-    HdResourceRegistrySharedPtr const &resourceRegistry =
-                                              renderIndex.GetResourceRegistry();
-
 
     Hd_ExtCompInputSourceSharedPtrVector inputs;
 
@@ -128,7 +166,7 @@ HdExtComputation::_CreateCpuComputation(HdSceneDelegate *sceneDelegate) const
         Hd_ExtCompInputSourceSharedPtr inputSource(
                          new Hd_SceneExtCompInputSource(inputName, inputValue));
 
-        resourceRegistry->AddSource(inputSource);
+        computationSources->push_back(inputSource);
         inputs.push_back(inputSource);
     }
 
@@ -148,7 +186,9 @@ HdExtComputation::_CreateCpuComputation(HdSceneDelegate *sceneDelegate) const
         if (sourceComp != nullptr) {
 
             HdExtCompCpuComputationSharedPtr sourceCpuComputation =
-                            sourceComp->GetComputation(sourceCompSceneDelegate);
+                    sourceComp->GetComputation(
+                            sourceCompSceneDelegate,
+                            computationSources);
 
             Hd_ExtCompInputSourceSharedPtr inputSource(
                                             new Hd_CompExtCompInputSource(
@@ -156,7 +196,7 @@ HdExtComputation::_CreateCpuComputation(HdSceneDelegate *sceneDelegate) const
                                                  sourceCpuComputation,
                                                  sourceDesc.computationOutput));
 
-            resourceRegistry->AddSource(inputSource);
+            computationSources->push_back(inputSource);
             inputs.push_back(inputSource);
         }
     }
@@ -168,10 +208,64 @@ HdExtComputation::_CreateCpuComputation(HdSceneDelegate *sceneDelegate) const
                                         _elementCount,
                                         sceneDelegate));
 
-    resourceRegistry->AddSource(computation);
+    computationSources->push_back(computation);
 
     return computation;
 }
 
+std::pair<HdExtCompGpuComputationSharedPtr,
+          HdExtCompGpuComputationBufferSourceSharedPtr>
+HdExtComputation::_CreateGpuComputation(
+        HdSceneDelegate *sceneDelegate,
+        HdBufferSourceVector *computationSources,
+        TfToken const &primvarName,
+        HdBufferSpecVector const &outputBufferSpecs,
+        HdBufferSpecVector const &primInputSpecs) const
+{
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
+            "HdExtComputation::_CreateGpuComputation\n");
+    
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdBufferSourceVector inputs;
+
+    size_t numSceneInputs = _sceneInputs.size();
+    for (size_t inputNum = 0; inputNum < numSceneInputs; ++inputNum) {
+        const TfToken &inputName = _sceneInputs[inputNum];
+
+        VtValue inputValue = sceneDelegate->Get(_id, inputName);
+
+        HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(
+                    new HdVtBufferSource(inputName, inputValue));
+
+        inputs.push_back(inputSource);
+    }
+
+    HdComputeShaderSharedPtr shader = HdComputeShaderSharedPtr(
+            new HdComputeShader());
+    shader->SetComputeSource(_kernel);
+    
+    HdExtCompGpuComputationResourceSharedPtr resource(
+            new HdExtCompGpuComputationResource(
+                outputBufferSpecs,
+                shader,
+                renderIndex.GetResourceRegistry()));
+            
+    HdExtCompGpuComputationBufferSourceSharedPtr bufferSource(
+            new HdExtCompGpuComputationBufferSource(
+                _id,
+                primvarName,
+                inputs,
+                _elementCount,
+                resource));
+
+    HdExtCompGpuComputationSharedPtr computation(
+            new HdExtCompGpuComputation(_id,
+                                        resource,
+                                        primvarName,
+                                        outputBufferSpecs,
+                                        _elementCount));
+
+    return std::make_pair(computation, bufferSource);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

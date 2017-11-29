@@ -35,7 +35,6 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/ostreamMethods.h"
-#include <boost/bind.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <Alembic/Abc/ArchiveInfo.h>
@@ -63,6 +62,7 @@
 #include <Alembic/AbcGeom/IXform.h>
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/Visibility.h>
+#include <memory>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -644,6 +644,7 @@ public:
         MetadataMap metadata;
         TimeSamples sampleTimes;
         bool timeSampled;
+        bool uniform;
         Converter converter;
     };
     typedef std::map<TfToken, Property> PropertyMap;
@@ -678,10 +679,10 @@ public:
     /// Close the archive.
     void Close();
 
-    /// Sets the writer schema.
+    /// Sets the reader schema.
     void SetSchema(const _ReaderSchema* schema) { _schema = schema; }
 
-    /// Returns the writer schema.
+    /// Returns the reader schema.
     const _ReaderSchema& GetSchema() const { return *_schema; }
 
     /// Sets or resets the flag named \p flagName.
@@ -1619,7 +1620,11 @@ _ReaderContext::_HasField(
     else if (fieldName == SdfFieldKeys->TypeName) {
         return value.Set(property->typeName.GetAsToken());
     }
-
+    else if (fieldName == SdfFieldKeys->Variability) {
+        return value.Set(property->uniform ? 
+                         SdfVariabilityUniform : SdfVariabilityVarying);
+    }
+    
     TRACE_SCOPE("UsdAbc_AlembicDataReader::_HasField:OtherMetadata");
     MetadataMap::const_iterator j = property->metadata.find(fieldName);
     if (j != property->metadata.end()) {
@@ -1814,6 +1819,15 @@ public:
     template <class T>
     void AddProperty(const TfToken& name, const SdfValueTypeName& typeName,
                      const T& converter);
+
+    /// Adds a uniform property named \p name of type \p typeName with the
+    /// converter \p converter.  \p converter must be a functor object that
+    /// conforms to the \c IsValid, \c Converter, \c GetSampleTimes and
+    /// \c GetMetaData types.  If \p convert is invalid then this does nothing.
+    template <class T>
+    void AddUniformProperty(const TfToken& name, 
+                            const SdfValueTypeName& typeName,
+                            const T& converter);
 
     /// Add an out-of-schema property, which uses the default conversion
     /// for whatever Alembic type the property is.  If \p property is a
@@ -2031,6 +2045,21 @@ _PrimReaderContext::AddProperty(
     }
 }
 
+template <class T>
+void
+_PrimReaderContext::AddUniformProperty(
+    const TfToken& name,
+    const SdfValueTypeName& typeName,
+    const T& converter)
+{
+    if (converter(IsValidTag())) {
+        Property &prop = _AddProperty(name, typeName, converter, converter, false);
+        prop.converter=converter;
+        prop.uniform = true;
+        prop.timeSampled = false;
+    }
+}
+
 void
 _PrimReaderContext::AddOutOfSchemaProperty(
     const std::string& name,
@@ -2092,10 +2121,11 @@ _PrimReaderContext::AddOutOfSchemaProperty(
             _AddProperty(TfToken(name), usdTypeName, header->getMetaData(), 
                      sampleTimes, isOutOfSchema);
 
-        prop.converter = boost::bind(
+        prop.converter = std::bind(
             _context.GetSchema().GetConversions().GetToUsdConverter(
                 alembicType, prop.typeName),
-            property.GetParent(), property.GetName(), _2, _1);
+            property.GetParent(), property.GetName(),
+            std::placeholders::_2, std::placeholders::_1);
     }
     else {
         TF_WARN("No conversion for \"%s\" of type \"%s\" at <%s>",
@@ -2153,13 +2183,14 @@ _PrimReaderContext::_AddProperty(
 
     // Save the time sampling.
     property.sampleTimes = _context.ConvertSampleTimes(sampleTimes);
-    property.timeSampled = (property.sampleTimes.GetSize() > 1);
+    property.timeSampled = (property.sampleTimes.GetSize() > 0);
+
+    // Save metadata.  This may change the value of 'timeSampled'
+    _GetPropertyMetadata(metadata, &property, isOutOfSchemaProperty);
+
     if (property.timeSampled) {
         _context.AddSampleTimes(property.sampleTimes);
     }
-
-    // Save metadata.
-    _GetPropertyMetadata(metadata, &property, isOutOfSchemaProperty);
 
 #ifdef USDABC_ALEMBIC_DEBUG
     fprintf(stdout, "%*s%s%s %s\n",
@@ -2200,9 +2231,11 @@ _PrimReaderContext::_GetPropertyMetadata(
                 alembicMetadata.get(_AmdName(SdfFieldKeys->TypeName)));
     }
 
-    // Note if we're time sampled (regardless of the number of samples).
-    if (alembicMetadata.get(_AmdName(SdfFieldKeys->TimeSamples)) == "true") {
-        property->timeSampled = true;
+    // If there's only one timeSample and we've indicated it should be 
+    // converted into Default, disable timeSampling.
+    if (property->sampleTimes.GetSize() == 1 && 
+        alembicMetadata.get(_AmdName(UsdAbcCustomMetadata->singleSampleAsDefault)) == "true") {
+        property->timeSampled = false;
     }
 
     // Adjust the type name by the interpretation.
@@ -2883,7 +2916,7 @@ _ReadOrientation(_PrimReaderContext* context)
         // Alembic is effectively hardcoded to a left-handed orientation.
         // UsdGeomGprim's fallback is right-handed, so we need to provide
         // a value if none is authored.
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->orientation,
             SdfValueTypeNames->Token,
             _CopySynthetic(UsdGeomTokens->leftHanded));
@@ -2970,7 +3003,7 @@ _ReadXform(_PrimReaderContext* context)
 
         VtTokenArray opOrderVec(1);
         opOrderVec[0] = _tokens->xformOpTransform;
-        context->AddProperty(
+        context->AddUniformProperty(
             UsdGeomTokens->xformOpOrder,
             SdfValueTypeNames->TokenArray,
             _CopySynthetic(opOrderVec));
@@ -3032,7 +3065,7 @@ _ReadPolyMesh(_PrimReaderContext* context)
 
     // Custom subdivisionScheme property.  Alembic doesn't have this since
     // the Alembic schema is PolyMesh.  Usd needs "none" as the scheme.
-    context->AddProperty(
+    context->AddUniformProperty(
         UsdGeomTokens->subdivisionScheme,
         SdfValueTypeNames->Token,
         _CopySynthetic(UsdGeomTokens->none));
@@ -3077,7 +3110,7 @@ _ReadSubD(_PrimReaderContext* context)
         SdfValueTypeNames->IntArray,
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
-    context->AddProperty(
+    context->AddUniformProperty(
         UsdGeomTokens->subdivisionScheme,
         SdfValueTypeNames->Token,
         _CopySubdivisionScheme(context->ExtractSchema(".scheme")));
@@ -3692,7 +3725,6 @@ _ReaderSchemaBuilder::_ReaderSchemaBuilder()
 
     // This handles overs with no type and any unknown prim type.
     schema.AddFallbackType()
-        .AppendReader(_ReadOrientation)
         .AppendReader(_ReadGeomBase)        // Assume GeomBase.
         .AppendReader(_ReadMayaColor)
         .AppendReader(_ReadGprim)

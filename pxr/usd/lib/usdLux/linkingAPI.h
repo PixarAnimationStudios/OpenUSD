@@ -137,26 +137,36 @@ private:
     virtual const TfType &_GetTfType() const;
 
 public:
-    /// An unordered map describing linkage of paths.
+    /// An ordered map describing linkage of paths.
     /// This is a standalone value representing the linkage.
     /// Any path not present in this table is assumed to inherit its
     /// setting from the longest prefix path that is present. If there
     /// is no containing path, the path is assumed to be linked.
-    typedef std::map<SdfPath, bool, SdfPath::FastLessThan> LinkMap;
+    typedef std::map<SdfPath, bool> LinkMap;
 
     /// Return true if the given path (or ancestor) is linked by the linkMap.
     /// It is a coding error to pass a non-absolute path.
     USDLUX_API
     static bool DoesLinkPath(const LinkMap &linkMap, const SdfPath &path);
 
+    /// \deprecated
     /// Return true if the given UsdGeomFaceSetAPI (or ancestor) is linked
     /// by the linkMap.  Linking to faceSets is expressed as a target
     /// path to the faceSet's faceIndices property.
+    /// 
+    /// This method has been deprecated as the new schema for encoding 
+    /// face-(sub)sets as a concrete prim does not require any special API for 
+    /// linking or unlinking a face-set. See \ref UsdGeomSubset.
     USDLUX_API
     static bool DoesLinkFaceSet(const LinkMap &linkMap,
                                 const UsdGeomFaceSetAPI &faceSet );
 
+    /// \deprecated
     /// Return the path used to refer to the given faceset in a LinkMap.
+    /// 
+    /// This method has been deprecated as the new schema for encoding 
+    /// face-(sub)sets as a concrete prim does not require any special API for 
+    /// linking or unlinking a face-set. See \ref UsdGeomSubset.
     USDLUX_API
     static SdfPath GetLinkPathForFaceSet(const UsdGeomFaceSetAPI &faceSet);
 

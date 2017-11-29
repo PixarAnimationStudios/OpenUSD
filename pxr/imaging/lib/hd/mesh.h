@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_MESH_REPR_DESC_TOKENS \
     (surfaceShader)                    \
     (surfaceShaderUnlit)               \
+    (surfaceShaderSheer)               \
     (constantColor)
 
 TF_DECLARE_PUBLIC_TOKENS(HdMeshReprDescTokens, HD_API,

@@ -80,9 +80,36 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual int ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
-                                      TfToken const& property);
+    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
+                                              SdfPath const& cachePath,
+                                              TfToken const& property);
+
+
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index);
+
+    virtual void MarkRefineLevelDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
+
+    virtual void MarkReprDirty(UsdPrim const& prim,
+                               SdfPath const& cachePath,
+                               UsdImagingIndexProxy* index);
+
+    virtual void MarkCullStyleDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkTransformDirty(UsdPrim const& prim,
+                                    SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index);
+
+    virtual void MarkVisibilityDirty(UsdPrim const& prim,
+                                     SdfPath const& cachePath,
+                                     UsdImagingIndexProxy* index);
+
 
     /// Returns the color and opacity for a given prim, taking into account
     /// surface shader colors and explicitly authored color on the prim.
@@ -91,6 +118,20 @@ public:
                         UsdImagingValueCache::PrimvarInfo* primvarInfo,
                         UsdTimeCode time);
    
+    // Helper function: add a given type of rprim, potentially with instancer
+    // name mangling, and add any bound shader.
+    USDIMAGING_API
+    static SdfPath _AddRprim(TfToken const& primType,
+                      UsdPrim const& usdPrim,
+                      UsdImagingIndexProxy* index,
+                      SdfPath const& materialId,
+                      UsdImagingInstancerContext const* instancerContext);
+
+    // Helper function: apply gprim name mangling.
+    USDIMAGING_API
+    static SdfPath _ResolveCachePath(SdfPath const& cachePath,
+            UsdImagingInstancerContext const* instancerContext);
+
 protected:
 
     /// This function can be overridden if the gprim adapter wants to have
@@ -102,6 +143,10 @@ protected:
             SdfPath const& shaderPath,
             UsdTimeCode time,
             UsdImagingValueCache* valueCache);
+
+    USDIMAGING_API
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) final;
 
 private:
 
@@ -138,8 +183,8 @@ private:
     /// inherited purpose. Inherited values are strongest.
     TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time);
 
-    /// Returns the surface shader for this prim
-    SdfPath _GetSurfaceShader(UsdPrim const& prim);
+    /// Returns the path to the material used by this prim
+    SdfPath _GetMaterialId(UsdPrim const& prim);
 };
 
 
