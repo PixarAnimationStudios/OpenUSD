@@ -110,7 +110,8 @@ HdRprimCollection::SetRootPaths(SdfPathVector const& rootPaths)
     }
 
     _rootPaths = rootPaths;
-    std::sort(_rootPaths.begin(), _rootPaths.end());
+	// Remove this line for performance issue.
+    //std::sort(_rootPaths.begin(), _rootPaths.end());
 }
 
 void 

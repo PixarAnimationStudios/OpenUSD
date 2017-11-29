@@ -51,6 +51,7 @@
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MTime.h>
+#include <maya/MViewport2Renderer.h>
 
 #include <mutex>
 
@@ -910,6 +911,14 @@ UsdMayaProxyShape::~UsdMayaProxyShape()
     //
 }
 
+MStatus
+UsdMayaProxyShape::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
+{
+	// Now all the params should refresh the viewport.
+	MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+	return MPxNode::setDependentsDirty(plug, plugArray);
+}
+
 MSelectionMask  
 UsdMayaProxyShape::getShapeSelectionMask() const
 {
@@ -919,7 +928,7 @@ UsdMayaProxyShape::getShapeSelectionMask() const
         MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
         return MSelectionMask(selType);
     }
-    return MPxSurfaceShape::getShapeSelectionMask();
+    return MSelectionMask(MSelectionMask::kSelectObjectsMask);
 }
 
 bool
