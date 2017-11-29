@@ -99,6 +99,12 @@ def GetVisualStudioCompilerAndVersion():
 
 MSVC_2017_COMPILER_VERSION = (19, 10, 00000)
 
+def GetCPUCount():
+    try:
+        return multiprocessing.cpu_count()
+    except NotImplementedError:
+        return 1
+
 def Run(cmd):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
@@ -209,7 +215,7 @@ def RunCMake(context, force, extraArgs = None):
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
         Run("cmake --build . --config Release --target install -- {multiproc}"
             .format(multiproc=("/M:{procs}" if Windows() else "-j{procs}")
-                               .format(procs=multiprocessing.cpu_count())))
+                               .format(procs=context.numJobs)))
 
 def PatchFile(filename, patches):
     """Applies patches to the specified file. patches is a list of tuples
@@ -379,7 +385,7 @@ def InstallBoost(context, force):
             .format(bootstrap=bootstrap, instDir=context.instDir))
 
         # b2 supports at most -j64 and will error if given a higher value.
-        num_procs = min(64, multiprocessing.cpu_count())
+        num_procs = min(64, context.numJobs)
 
         b2_settings = [
             '--prefix="{instDir}"'.format(instDir=context.instDir),
@@ -466,7 +472,7 @@ def InstallTBB_LinuxOrMacOS(context, force):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
         # TBB does not support out-of-source builds in a custom location.
         Run('make -j{procs}'
-            .format(procs=multiprocessing.cpu_count()))
+            .format(procs=context.numJobs))
 
         CopyFiles(context, "build/*_release/libtbb*.*", "lib")
         CopyDirectory(context, "include/serial", "include/serial")
@@ -498,7 +504,7 @@ def InstallJPEG_Lib(context, force):
             '--disable-static --enable-shared'
             .format(instDir=context.instDir))
         Run('make -j{procs} install'
-            .format(procs=multiprocessing.cpu_count()))
+            .format(procs=context.numJobs))
 
 JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
         
@@ -599,7 +605,7 @@ def InstallGLEW_LinuxOrMacOS(context, force):
     with CurrentWorkingDirectory(DownloadURL(GLEW_URL, context, force)):
         Run('make GLEW_DEST="{instDir}" -j{procs} install'
             .format(instDir=context.instDir,
-                    procs=multiprocessing.cpu_count()))
+                    procs=context.numJobs))
 
 GLEW = Dependency("GLEW", InstallGLEW, "include/GL/glew.h")
 
@@ -906,6 +912,10 @@ group.add_argument("-q", "--quiet", action="store_const", const=0,
                    help="Suppress all output except for error messages")
 
 group = parser.add_argument_group(title="Build Options")
+group.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
+                   help=("Number of build jobs to run in parallel. "
+                         "(default: # of processors [{0}])"
+                         .format(GetCPUCount())))
 group.add_argument("--build", type=str,
                    help=("Build directory for USD and 3rd-party dependencies " 
                          "(default: <install_dir>/build)"))
@@ -1055,6 +1065,9 @@ class InstallContext:
         # CMake generator
         self.cmakeGenerator = args.generator
 
+        # Number of jobs
+        self.numJobs = args.jobs
+
         # Build type
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
@@ -1109,6 +1122,10 @@ class InstallContext:
 
 context = InstallContext(args)
 verbosity = args.verbosity
+
+if context.numJobs <= 0:
+    PrintError("Number of jobs must be greater than 0")
+    sys.exit(1)
 
 # Augment PATH on Windows so that 3rd-party dependencies can find libraries
 # they depend on. In particular, this is needed for building IlmBase/OpenEXR.
