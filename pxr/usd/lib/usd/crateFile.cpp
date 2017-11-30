@@ -91,7 +91,7 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
 
-#define DEFAULT_NEW_VERSION "0.0.1"
+#define DEFAULT_NEW_VERSION "0.4.0"
 TF_DEFINE_ENV_SETTING(
     USD_WRITE_NEW_USDC_FILES_AS_VERSION, DEFAULT_NEW_VERSION,
     "When writing new Usd Crate files, write them as this version.  "
