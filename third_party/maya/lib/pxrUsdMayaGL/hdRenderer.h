@@ -38,8 +38,11 @@
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 
+// Maya 2018 has "using" statements for nearly all MFn*/M* objects, and
+// having both "using" and a forward declaration raises a clang error.
+#if MAYA_API_VERSION < 20180000
 class M3dView;
-class MPxSurfaceShape;
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -35,48 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdContrived/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 namespace foo {
 
-/// \hideinitializer
-#define USDCONTRIVED_TOKENS \
-    (binding) \
-    (cornerIndices) \
-    (cornerSharpnesses) \
-    (creaseLengths) \
-    (holeIndices) \
-    (justDefault) \
-    (libraryToken1) \
-    ((libraryToken2, "/non-identifier-tokenValue!")) \
-    (myColorFloat) \
-    (myDouble) \
-    (myFloat) \
-    (myNormals) \
-    (myPoints) \
-    (myUniformBool) \
-    (myVaryingToken) \
-    (myVecfArray) \
-    (myVelocities) \
-    ((namespacedProperty, "namespaced:property")) \
-    (newToken) \
-    (pivotPosition) \
-    (relCanShareApiNameWithAttr) \
-    ((riStatementsAttributesUserGofur_GeomOnHairdensity, "riStatements:attributes:user:Gofur_GeomOnHairdensity")) \
-    (temp) \
-    (testingAsset) \
-    (transform) \
-    (unsignedChar) \
-    (unsignedInt) \
-    (unsignedInt64Array) \
-    ((variableTokenAllowed1, "VariableTokenAllowed1")) \
-    ((variabletokenAllowed2, "VariabletokenAllowed2")) \
-    ((variableTokenDefault, "VariableTokenDefault"))
 
-/// \anchor UsdContrivedTokens
+/// \class UsdContrivedTokensType
 ///
-/// <b>UsdContrivedTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdContrivedTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -84,47 +53,148 @@ namespace foo {
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdContrivedTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdContrivedTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdContrivedTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdContrivedTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdContrivedTokens->binding);
 /// \endcode
+struct UsdContrivedTokensType {
+    USDCONTRIVED_API UsdContrivedTokensType();
+    /// \brief "binding"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken binding;
+    /// \brief "cornerIndices"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken cornerIndices;
+    /// \brief "cornerSharpnesses"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken cornerSharpnesses;
+    /// \brief "creaseLengths"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken creaseLengths;
+    /// \brief "holeIndices"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken holeIndices;
+    /// \brief "justDefault"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken justDefault;
+    /// \brief "libraryToken1"
+    /// 
+    /// Special token for the usdContrived library.
+    const TfToken libraryToken1;
+    /// \brief "/non-identifier-tokenValue!"
+    /// 
+    /// libraryToken2 doc
+    const TfToken libraryToken2;
+    /// \brief "myColorFloat"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myColorFloat;
+    /// \brief "myDouble"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myDouble;
+    /// \brief "myFloat"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myFloat;
+    /// \brief "myNormals"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myNormals;
+    /// \brief "myPoints"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myPoints;
+    /// \brief "myUniformBool"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myUniformBool;
+    /// \brief "myVaryingToken"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myVaryingToken;
+    /// \brief "myVecfArray"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken myVecfArray;
+    /// \brief "myVelocities"
+    /// 
+    /// UsdContrivedBase
+    const TfToken myVelocities;
+    /// \brief "namespaced:property"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken namespacedProperty;
+    /// \brief "newToken"
+    /// 
+    /// Default value for UsdContrivedDerived::GetJustDefaultAttr()
+    const TfToken newToken;
+    /// \brief "pivotPosition"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken pivotPosition;
+    /// \brief "relCanShareApiNameWithAttr"
+    /// 
+    /// UsdContrivedTestHairman
+    const TfToken relCanShareApiNameWithAttr;
+    /// \brief "riStatements:attributes:user:Gofur_GeomOnHairdensity"
+    /// 
+    /// UsdContrivedTestHairman
+    const TfToken riStatementsAttributesUserGofur_GeomOnHairdensity;
+    /// \brief "temp"
+    /// 
+    /// UsdContrivedTestHairman
+    const TfToken temp;
+    /// \brief "testingAsset"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken testingAsset;
+    /// \brief "transform"
+    /// 
+    /// UsdContrivedDerived
+    const TfToken transform;
+    /// \brief "unsignedChar"
+    /// 
+    /// UsdContrivedBase
+    const TfToken unsignedChar;
+    /// \brief "unsignedInt"
+    /// 
+    /// UsdContrivedBase
+    const TfToken unsignedInt;
+    /// \brief "unsignedInt64Array"
+    /// 
+    /// UsdContrivedBase
+    const TfToken unsignedInt64Array;
+    /// \brief "VariableTokenAllowed1"
+    /// 
+    /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
+    const TfToken variableTokenAllowed1;
+    /// \brief "VariabletokenAllowed2"
+    /// 
+    /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
+    const TfToken variabletokenAllowed2;
+    /// \brief "VariableTokenDefault"
+    /// 
+    /// Default value for UsdContrivedBase::GetMyVaryingTokenAttr()
+    const TfToken variableTokenDefault;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdContrivedTokens
 ///
-/// The tokens are:
-/// \li <b>binding</b> - UsdContrivedDerived
-/// \li <b>cornerIndices</b> - UsdContrivedDerived
-/// \li <b>cornerSharpnesses</b> - UsdContrivedDerived
-/// \li <b>creaseLengths</b> - UsdContrivedDerived
-/// \li <b>holeIndices</b> - UsdContrivedDerived
-/// \li <b>justDefault</b> - UsdContrivedDerived
-/// \li <b>libraryToken1</b> - Special token for the usdContrived library.
-/// \li <b>libraryToken2</b> - libraryToken2 doc
-/// \li <b>myColorFloat</b> - UsdContrivedBase
-/// \li <b>myDouble</b> - UsdContrivedBase
-/// \li <b>myFloat</b> - UsdContrivedBase
-/// \li <b>myNormals</b> - UsdContrivedBase
-/// \li <b>myPoints</b> - UsdContrivedBase
-/// \li <b>myUniformBool</b> - UsdContrivedBase
-/// \li <b>myVaryingToken</b> - UsdContrivedBase
-/// \li <b>myVecfArray</b> - UsdContrivedDerived
-/// \li <b>myVelocities</b> - UsdContrivedBase
-/// \li <b>namespacedProperty</b> - UsdContrivedDerived
-/// \li <b>newToken</b> - Default value for UsdContrivedDerived::GetJustDefaultAttr()
-/// \li <b>pivotPosition</b> - UsdContrivedDerived
-/// \li <b>relCanShareApiNameWithAttr</b> - UsdContrivedTestHairman
-/// \li <b>riStatementsAttributesUserGofur_GeomOnHairdensity</b> - UsdContrivedTestHairman
-/// \li <b>temp</b> - UsdContrivedTestHairman
-/// \li <b>testingAsset</b> - UsdContrivedDerived
-/// \li <b>transform</b> - UsdContrivedDerived
-/// \li <b>unsignedChar</b> - UsdContrivedBase
-/// \li <b>unsignedInt</b> - UsdContrivedBase
-/// \li <b>unsignedInt64Array</b> - UsdContrivedBase
-/// \li <b>variableTokenAllowed1</b> - Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
-/// \li <b>variabletokenAllowed2</b> - Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
-/// \li <b>variableTokenDefault</b> - Default value for UsdContrivedBase::GetMyVaryingTokenAttr()
-TF_DECLARE_PUBLIC_TOKENS(UsdContrivedTokens, USDCONTRIVED_API, USDCONTRIVED_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdContrivedTokensType
+extern USDCONTRIVED_API TfStaticData<UsdContrivedTokensType> UsdContrivedTokens;
 
 }
 

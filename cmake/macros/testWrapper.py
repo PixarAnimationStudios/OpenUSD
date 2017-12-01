@@ -46,8 +46,6 @@ import tempfile
 
 def _parseArgs():
     parser = argparse.ArgumentParser(description='USD test wrapper')
-    parser.add_argument('--requires-display', action='store_true',
-            help='This test requires a display to run.')
     parser.add_argument('--stdout-redirect', type=str,
             help='File to redirect stdout to')
     parser.add_argument('--stderr-redirect', type=str,
@@ -182,14 +180,6 @@ def _convertRetCode(retcode):
 def _getRedirects(out_redir, err_redir):
     return (open(out_redir, 'w') if out_redir else None,
             open(err_redir, 'w') if err_redir else None)
-
-def _hasDisplay():
-    if platform.system() == 'Linux':
-        linuxDisplayVar = 'DISPLAY'
-        if (linuxDisplayVar not in os.environ or
-            os.environ[linuxDisplayVar] == ''):
-            return False 
-    return True
     
 def _runCommand(raw_command, stdout_redir, stderr_redir, env,
                 expected_return_code):
@@ -228,10 +218,6 @@ if __name__ == '__main__':
         sys.stderr.write("Error: --diff-compare must be specified with "
                          "--clean-output-paths.")
         sys.exit(1)
-
-    if args.requires_display and not _hasDisplay():
-        sys.stderr.write("Info: test will not be run, no display detected.")
-        sys.exit(0)
 
     testDir = tempfile.mkdtemp()
     os.chdir(testDir)

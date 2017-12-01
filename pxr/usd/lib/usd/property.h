@@ -233,6 +233,44 @@ public:
 
     /// @}
 
+    // --------------------------------------------------------------------- //
+    /// \name Flattening
+    // --------------------------------------------------------------------- //
+
+    /// Flattens this property to a property spec with the same name 
+    /// beneath the given \p parent prim in the current edit target.
+    ///
+    /// Flattening authors all authored resolved values and metadata for 
+    /// this property into the destination property spec. If this property
+    /// is a builtin property, fallback values and metadata will also be
+    /// authored if the destination property has a different fallback 
+    /// value or no fallback value, or if the destination property has an
+    /// authored value that overrides its fallback.
+    /// 
+    /// Attribute connections and relationship targets that target an
+    /// object beneath this property's owning prim will be remapped to
+    /// target objects beneath the destination \p parent prim.
+    ///
+    /// If the destination spec already exists, it will be overwritten.
+    ///
+    /// \sa UsdStage::Flatten
+    USD_API
+    UsdProperty FlattenTo(const UsdPrim &parent) const;
+
+    /// \overload
+    /// Flattens this property to a property spec with the given
+    /// \p propName beneath the given \p parent prim in the current
+    /// edit target.
+    USD_API
+    UsdProperty FlattenTo(const UsdPrim &parent,
+                          const TfToken &propName) const;
+
+    /// \overload
+    /// Flattens this property to a property spec for the given
+    /// \p property in the current edit target.
+    USD_API
+    UsdProperty FlattenTo(const UsdProperty &property) const;
+
 private:
     friend class UsdAttribute;
     friend class UsdObject;

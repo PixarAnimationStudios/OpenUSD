@@ -25,6 +25,74 @@
 
 namespace foo { namespace bar { namespace baz {
 
-TF_DEFINE_PUBLIC_TOKENS(UsdContrivedTokens, USDCONTRIVED_TOKENS);
+UsdContrivedTokensType::UsdContrivedTokensType() :
+    binding("binding", TfToken::Immortal),
+    cornerIndices("cornerIndices", TfToken::Immortal),
+    cornerSharpnesses("cornerSharpnesses", TfToken::Immortal),
+    creaseLengths("creaseLengths", TfToken::Immortal),
+    holeIndices("holeIndices", TfToken::Immortal),
+    justDefault("justDefault", TfToken::Immortal),
+    libraryToken1("libraryToken1", TfToken::Immortal),
+    libraryToken2("/non-identifier-tokenValue!", TfToken::Immortal),
+    myColorFloat("myColorFloat", TfToken::Immortal),
+    myDouble("myDouble", TfToken::Immortal),
+    myFloat("myFloat", TfToken::Immortal),
+    myNormals("myNormals", TfToken::Immortal),
+    myPoints("myPoints", TfToken::Immortal),
+    myUniformBool("myUniformBool", TfToken::Immortal),
+    myVaryingToken("myVaryingToken", TfToken::Immortal),
+    myVecfArray("myVecfArray", TfToken::Immortal),
+    myVelocities("myVelocities", TfToken::Immortal),
+    namespacedProperty("namespaced:property", TfToken::Immortal),
+    newToken("newToken", TfToken::Immortal),
+    pivotPosition("pivotPosition", TfToken::Immortal),
+    relCanShareApiNameWithAttr("relCanShareApiNameWithAttr", TfToken::Immortal),
+    riStatementsAttributesUserGofur_GeomOnHairdensity("riStatements:attributes:user:Gofur_GeomOnHairdensity", TfToken::Immortal),
+    temp("temp", TfToken::Immortal),
+    testingAsset("testingAsset", TfToken::Immortal),
+    transform("transform", TfToken::Immortal),
+    unsignedChar("unsignedChar", TfToken::Immortal),
+    unsignedInt("unsignedInt", TfToken::Immortal),
+    unsignedInt64Array("unsignedInt64Array", TfToken::Immortal),
+    variableTokenAllowed1("VariableTokenAllowed1", TfToken::Immortal),
+    variabletokenAllowed2("VariabletokenAllowed2", TfToken::Immortal),
+    variableTokenDefault("VariableTokenDefault", TfToken::Immortal),
+    allTokens({
+        binding,
+        cornerIndices,
+        cornerSharpnesses,
+        creaseLengths,
+        holeIndices,
+        justDefault,
+        libraryToken1,
+        libraryToken2,
+        myColorFloat,
+        myDouble,
+        myFloat,
+        myNormals,
+        myPoints,
+        myUniformBool,
+        myVaryingToken,
+        myVecfArray,
+        myVelocities,
+        namespacedProperty,
+        newToken,
+        pivotPosition,
+        relCanShareApiNameWithAttr,
+        riStatementsAttributesUserGofur_GeomOnHairdensity,
+        temp,
+        testingAsset,
+        transform,
+        unsignedChar,
+        unsignedInt,
+        unsignedInt64Array,
+        variableTokenAllowed1,
+        variabletokenAllowed2,
+        variableTokenDefault
+    })
+{
+}
+
+TfStaticData<UsdContrivedTokensType> UsdContrivedTokens;
 
 }}}

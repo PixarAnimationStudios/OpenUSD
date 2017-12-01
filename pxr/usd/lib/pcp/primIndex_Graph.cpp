@@ -291,7 +291,7 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
         break;
     case PcpRangeTypeStrongerThanPayload:
         nodeRange = _FindDirectChildRange(
-            boost::bind(std::equal_to<PcpArcType>(), PcpArcTypePayload, _1));
+            [](PcpArcType arcType) { return arcType == PcpArcTypePayload; });
         nodeRange = std::make_pair(0, nodeRange.first);
         break;
 
@@ -300,8 +300,9 @@ PcpPrimIndex_Graph::GetNodeIndexesForRange(PcpRangeType rangeType) const
         break;
     default:
         nodeRange = _FindDirectChildRange(
-            boost::bind(std::equal_to<PcpArcType>(), 
-                         _GetArcTypeForRangeType(rangeType), _1));
+            [rangeType](PcpArcType arcType) {
+                return arcType == _GetArcTypeForRangeType(rangeType);
+            });
         break;
     };
 

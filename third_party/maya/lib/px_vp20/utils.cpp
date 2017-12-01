@@ -29,6 +29,7 @@
 #include "px_vp20/glslProgram.h"
 
 #include "pxr/base/gf/math.h"
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -43,6 +44,7 @@
 #include <maya/MFloatPoint.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MFloatVector.h>
+#include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MMatrix.h>
@@ -76,7 +78,7 @@ px_vp20Utils::setupLightingGL(const MHWRender::MDrawContext& context)
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         const MMatrix worldToView =
-            context.getMatrix(MHWRender::MDrawContext::kViewMtx, &status);
+            context.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
         if (status != MStatus::kSuccess) return false;
         glLoadMatrixd(worldToView.matrix[0]);
 
@@ -300,6 +302,23 @@ bool
 _GetLightingParam(
         const MIntArray& intValues,
         const MFloatArray& floatValues,
+        int& paramValue)
+{
+    bool gotParamValue = false;
+
+    if (intValues.length() > 0) {
+        paramValue = intValues[0];
+        gotParamValue = true;
+    }
+
+    return gotParamValue;
+}
+
+static
+bool
+_GetLightingParam(
+        const MIntArray& intValues,
+        const MFloatArray& floatValues,
         float& paramValue)
 {
     bool gotParamValue = false;
@@ -415,6 +434,17 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         viewDirectionAlongNegZ = true;
     }
 
+    const MMatrix worldToViewMat =
+        context.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
+    CHECK_MSTATUS_AND_RETURN(status, lightingContext);
+
+    const MMatrix projectionMat =
+        context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    CHECK_MSTATUS_AND_RETURN(status, lightingContext);
+
+    lightingContext->SetCamera(GfMatrix4d(worldToViewMat.matrix),
+                               GfMatrix4d(projectionMat.matrix));
+
     GlfSimpleLightVector lights;
 
     for (unsigned int i = 0; i < numMayaLights; ++i) {
@@ -428,8 +458,12 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         // Setup some default values before we read the light parameters.
         bool lightEnabled = true;
 
-        bool    lightHasPosition = false;
-        GfVec4f lightPosition(0.0f, 0.0f, 0.0f, 1.0f);
+        GfMatrix4d lightTransform(1.0);
+
+        // Some Maya lights may have multiple positions (e.g. area lights).
+        // We'll accumulate all the positions and use the average of them.
+        size_t  lightNumPositions = 0;
+        GfVec4f lightPosition(0.0f);
         bool    lightHasDirection = false;
         GfVec3f lightDirection(0.0f, 0.0f, -1.0f);
         if (!viewDirectionAlongNegZ) {
@@ -445,10 +479,17 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         float   lightDropoff = 0.0f;
         // The cone angle is 180 degrees by default.
         GfVec2f lightCosineConeAngle(-1.0f);
+        int     lightShadowResolution = 512;
         float   lightShadowBias = 0.0f;
         bool    lightShadowOn = false;
 
         bool globalShadowOn = false;
+
+        const MDagPath& mayaLightDagPath = mayaLightParamInfo->lightPath();
+        if (mayaLightDagPath.isValid()) {
+            const MMatrix mayaLightMatrix = mayaLightDagPath.inclusiveMatrix();
+            lightTransform.Set(mayaLightMatrix.matrix);
+        }
 
         MStringArray paramNames;
         mayaLightParamInfo->parameterList(paramNames);
@@ -484,11 +525,14 @@ px_vp20Utils::GetLightingContextFromDrawContext(
                 case MHWRender::MLightParameterInformation::kLightEnabled:
                     _GetLightingParam(intValues, floatValues, lightEnabled);
                     break;
-                case MHWRender::MLightParameterInformation::kWorldPosition:
-                    if (_GetLightingParam(intValues, floatValues, lightPosition)) {
-                        lightHasPosition = true;
+                case MHWRender::MLightParameterInformation::kWorldPosition: {
+                    GfVec4f tempPosition(0.0f, 0.0f, 0.0f, 1.0f);
+                    if (_GetLightingParam(intValues, floatValues, tempPosition)) {
+                        lightPosition += tempPosition;
+                        ++lightNumPositions;
                     }
                     break;
+                }
                 case MHWRender::MLightParameterInformation::kWorldDirection:
                     if (_GetLightingParam(intValues, floatValues, lightDirection)) {
                         lightHasDirection = true;
@@ -518,11 +562,14 @@ px_vp20Utils::GetLightingContextFromDrawContext(
                 case MHWRender::MLightParameterInformation::kShadowBias:
                     _GetLightingParam(intValues, floatValues, lightShadowBias);
                     break;
-                case MHWRender::MLightParameterInformation::kShadowOn:
-                    _GetLightingParam(intValues, floatValues, lightShadowOn);
+                case MHWRender::MLightParameterInformation::kShadowMapSize:
+                    _GetLightingParam(intValues, floatValues, lightShadowResolution);
                     break;
                 case MHWRender::MLightParameterInformation::kGlobalShadowOn:
                     _GetLightingParam(intValues, floatValues, globalShadowOn);
+                    break;
+                case MHWRender::MLightParameterInformation::kShadowOn:
+                    _GetLightingParam(intValues, floatValues, lightShadowOn);
                     break;
                 default:
                     // Unsupported paramSemantic.
@@ -539,6 +586,14 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         if (!lightEnabled) {
             // Skip to the next light if this light is disabled.
             continue;
+        }
+
+        // Set position back to the origin if we didn't get one, or average the
+        // positions if we got more than one.
+        if (lightNumPositions == 0) {
+            lightPosition = GfVec4f(0.0f, 0.0f, 0.0f, 1.0f);
+        } else if (lightNumPositions > 1) {
+            lightPosition /= lightNumPositions;
         }
 
         lightColor[0] *= lightIntensity;
@@ -558,13 +613,19 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         float lightCutoff = GfRadiansToDegrees(std::acos(lightCosineConeAngle[0]));
         float lightFalloff = lightDropoff;
 
-        // decayRate is actually an enum in Maya that we receive as a float:
+        // Maya's decayRate is effectively the attenuation exponent, so we
+        // convert that into the three floats the GlfSimpleLight uses:
         // - 0.0 = no attenuation
         // - 1.0 = linear attenuation
         // - 2.0 = quadratic attenuation
-        // - 3.0 = cubic attenuation (not supported by GlfSimpleLight)
+        // - 3.0 = cubic attenuation
         GfVec3f lightAttenuation(0.0f);
-        if (lightDecayRate > 1.5) {
+        if (lightDecayRate > 2.5) {
+            // Cubic attenuation.
+            lightAttenuation[0] = 1.0f;
+            lightAttenuation[1] = 1.0f;
+            lightAttenuation[2] = 1.0f;
+        } else if (lightDecayRate > 1.5) {
             // Quadratic attenuation.
             lightAttenuation[2] = 1.0f;
         } else if (lightDecayRate > 0.5f) {
@@ -575,7 +636,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
             lightAttenuation[0] = 1.0f;
         }
 
-        if (lightHasDirection && !lightHasPosition) {
+        if (lightHasDirection && lightNumPositions == 0) {
             // This is a directional light. Set the direction as its position.
             lightPosition[0] = -lightDirection[0];
             lightPosition[1] = -lightDirection[1];
@@ -589,7 +650,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
             }
         }
 
-        if (!lightHasPosition && !lightHasDirection) {
+        if (lightNumPositions == 0 && !lightHasDirection) {
             // This is an ambient light.
             lightAmbient = lightColor;
         } else {
@@ -603,6 +664,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
             }
         }
 
+        light.SetTransform(lightTransform);
         light.SetAmbient(lightAmbient);
         light.SetDiffuse(lightDiffuse);
         light.SetSpecular(lightSpecular);
@@ -611,6 +673,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         light.SetSpotCutoff(lightCutoff);
         light.SetSpotFalloff(lightFalloff);
         light.SetAttenuation(lightAttenuation);
+        light.SetShadowResolution(lightShadowResolution);
         light.SetShadowBias(lightShadowBias);
         light.SetHasShadow(lightShadowOn && globalShadowOn);
 

@@ -53,8 +53,6 @@ using std::pair;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-char const *TfToken::_emptyStr = "";
-
 struct Tf_TokenRegistry
 {
     typedef TfToken::_Rep const *_RepPtr;
@@ -109,8 +107,6 @@ struct Tf_TokenRegistry
     // Data members.
     _RepSet _sets[_NumSets];
     mutable _CacheLinePadded<tbb::spin_mutex> _locks[_NumSets];
-
-    string _emptyString;
 
     static Tf_TokenRegistry& _GetInstance() {
         return TfSingleton<Tf_TokenRegistry>::GetInstance();
@@ -271,7 +267,8 @@ TfToken::_PossiblyDestroyRep() const
 string const&
 TfToken::_GetEmptyString()
 {
-    return Tf_TokenRegistry::_GetInstance()._emptyString;
+    static std::string empty;
+    return empty;
 }
 
 TfToken::TfToken(const string &s)

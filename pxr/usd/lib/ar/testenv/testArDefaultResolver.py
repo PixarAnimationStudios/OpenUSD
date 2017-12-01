@@ -30,6 +30,12 @@ import unittest
 import shutil
 
 class TestArDefaultResolver(unittest.TestCase):
+    def assertPathsEqual(self, path1, path2):
+        # Flip backslashes to forward slashes to accommodate platform
+        # differences. We don't use os.path.normpath since that might
+        # fix up other differences we'd want to catch in these tests.
+        self.assertEqual(path1.replace("\\", "/"), path2.replace("\\", "/"))
+
     @classmethod
     def setUpClass(cls):
         # Force Ar to use the default resolver implementation.
@@ -69,13 +75,7 @@ class TestArDefaultResolver(unittest.TestCase):
 
         # The resolved path should be absolute.
         self.assertTrue(os.path.isabs(resolvedPath))
-
-        # The resolved path should match the path we constructed.  The
-        # os.path.abspath() would appear to be unnecessary because we
-        # just checked that it's absolute but it also canonicalizes
-        # the path which, on Windows, means the forward slashes
-        # returned by the resolver become backslashes.
-        self.assertEqual(testFilePath, os.path.abspath(resolvedPath))
+        self.assertPathsEqual(testFilePath, resolvedPath)
 
     def test_ResolveSearchPaths(self):
         testDir = os.path.abspath('test1/test2')
@@ -90,11 +90,11 @@ class TestArDefaultResolver(unittest.TestCase):
         
         resolver = Ar.GetResolver()
 
-        self.assertEqual(
+        self.assertPathsEqual(
             os.path.abspath('test1/test2/test_ResolveWithContext.txt'),
             resolver.Resolve('test2/test_ResolveWithContext.txt'))
 
-        self.assertEqual(
+        self.assertPathsEqual(
             os.path.abspath('test1/test2/test_ResolveWithContext.txt'),
             resolver.Resolve('test_ResolveWithContext.txt'))
 

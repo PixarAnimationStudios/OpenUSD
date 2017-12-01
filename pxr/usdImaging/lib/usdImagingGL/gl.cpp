@@ -285,17 +285,24 @@ UsdImagingGL::IsConverged() const
 }
 
 /* virtual */
-std::vector<TfType>
-UsdImagingGL::GetRendererPlugins()
+TfTokenVector
+UsdImagingGL::GetRendererPlugins() const
 {
     return _engine->GetRendererPlugins();
 }
 
 /* virtual */
-bool
-UsdImagingGL::SetRendererPlugin(TfType const &type)
+std::string
+UsdImagingGL::GetRendererPluginDesc(TfToken const &id) const
 {
-    return _engine->SetRendererPlugin(type);
+    return _engine->GetRendererPluginDesc(id);
+}
+
+/* virtual */
+bool
+UsdImagingGL::SetRendererPlugin(TfToken const &id)
+{
+    return _engine->SetRendererPlugin(id);
 }
 
 bool

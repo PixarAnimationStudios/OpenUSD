@@ -33,16 +33,17 @@
 #define TF_HASHSET_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/defines.h"
 
-#if !defined(TF_NO_GNU_EXT) // Use GNU extension.
+#if defined(ARCH_HAS_GNU_STL_EXTENSIONS)
 #include <ext/hash_set>
-#else                       // Use C++11 unordered_map.
+#else
 #include <unordered_set>
-#endif                      // TF_NO_GNU_EXT
+#endif // ARCH_HAS_GNU_STL_EXTENSIONS
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if !defined(TF_NO_GNU_EXT)
+#if defined(ARCH_HAS_GNU_STL_EXTENSIONS)
 
 template<class Key, class HashFn = __gnu_cxx::hash<Key>,
 	 class EqualKey = __gnu_cxx::equal_to<Key>,
@@ -438,7 +439,7 @@ public:
                const TfHashMultiSet<Key2, HashFn2, EqualKey2, Alloc2>&);
 };
 
-#endif // TF_NO_GNU_EXT
+#endif // ARCH_HAS_GNU_STL_EXTENSIONS
 
 template<class Key, class HashFn, class EqualKey, class Alloc>
 inline void

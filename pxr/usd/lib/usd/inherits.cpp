@@ -32,14 +32,59 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
+#include <unordered_set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // ------------------------------------------------------------------------- //
 // UsdInherits
 // ------------------------------------------------------------------------- //
-bool
-UsdInherits::AddInherit(const SdfPath &primPath, UsdListPosition position)
+
+namespace
 {
+
+SdfPath 
+_TranslatePath(const SdfPath& path, const UsdEditTarget& editTarget)
+{
+    if (path.IsEmpty()) {
+        TF_CODING_ERROR("Invalid empty path");
+        return SdfPath();
+    }
+
+    // Global inherits aren't expected to be mappable across non-local 
+    // edit targets, so we can just use the given path as-is.
+    if (path.IsRootPrimPath()) {
+        return path;
+    }
+
+    const SdfPath mappedPath = editTarget.MapToSpecPath(path);
+    if (mappedPath.IsEmpty()) {
+        TF_CODING_ERROR(
+            "Cannot map <%s> to current edit target.", path.GetText());
+    }
+
+    // If the edit target points inside a variant, the mapped path may 
+    // contain a variant selection. We need to strip this out, since
+    // inherit paths may not contain variant selections.
+    return mappedPath.StripAllVariantSelections();
+}
+
+}
+
+bool
+UsdInherits::AddInherit(const SdfPath &primPathIn, UsdListPosition position)
+{
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
+        return false;
+    }
+
+    const SdfPath primPath = 
+        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
+    if (primPath.IsEmpty()) {
+        return false;
+    }
+
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfInheritsProxy inhs = spec->GetInheritPathList();
@@ -64,8 +109,19 @@ UsdInherits::AddInherit(const SdfPath &primPath, UsdListPosition position)
 }
 
 bool
-UsdInherits::RemoveInherit(const SdfPath &primPath)
+UsdInherits::RemoveInherit(const SdfPath &primPathIn)
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
+        return false;
+    }
+
+    const SdfPath primPath = 
+        _TranslatePath(primPathIn, _prim.GetStage()->GetEditTarget());
+    if (primPath.IsEmpty()) {
+        return false;
+    }
+
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfInheritsProxy inhs = spec->GetInheritPathList();
@@ -78,6 +134,11 @@ UsdInherits::RemoveInherit(const SdfPath &primPath)
 bool
 UsdInherits::ClearInherits()
 {
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
+        return false;
+    }
+
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
         SdfInheritsProxy inhs = spec->GetInheritPathList();
@@ -87,13 +148,55 @@ UsdInherits::ClearInherits()
 }
 
 bool 
-UsdInherits::SetInherits(const SdfPathVector& items)
+UsdInherits::SetInherits(const SdfPathVector& itemsIn)
 {
-    // Proxy editor has no clear way of setting explicit items in a single
-    // call, so instead, just set the field directly.
-    SdfPathListOp paths;
-    paths.SetExplicitItems(items);
-    return GetPrim().SetMetadata(SdfFieldKeys->InheritPaths, paths);
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
+        return false;
+    }
+
+    const UsdEditTarget& editTarget = _prim.GetStage()->GetEditTarget();
+
+    TfErrorMark m;
+
+    SdfPathVector items(itemsIn.size());
+    std::transform(
+        itemsIn.begin(), itemsIn.end(), items.begin(),
+        [&editTarget](const SdfPath& path) {
+            return _TranslatePath(path, editTarget);
+        });
+
+    if (!m.IsClean()) {
+        return false;
+    }
+
+    SdfChangeBlock block;
+    if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
+        SdfInheritsProxy paths = spec->GetInheritPathList();
+        paths.GetExplicitItems() = items;
+    }
+
+    return m.IsClean();
+}
+
+
+SdfPathVector
+UsdInherits::GetAllDirectInherits() const
+{
+    SdfPathVector ret;
+    if (!_prim) {
+        TF_CODING_ERROR("Invalid prim: %s", UsdDescribe(_prim).c_str());
+        return ret;
+    }
+
+    std::unordered_set<SdfPath, SdfPath::Hash> seen;
+    for (auto const &node:
+             _prim.GetPrimIndex().GetNodeRange(PcpRangeTypeAllInherits)) {
+        if (!node.IsDueToAncestor() && seen.insert(node.GetPath()).second) {
+            ret.push_back(node.GetPath());
+        }
+    }
+    return ret;
 }
 
 // ---------------------------------------------------------------------- //
@@ -103,8 +206,7 @@ UsdInherits::SetInherits(const SdfPathVector& items)
 SdfPrimSpecHandle
 UsdInherits::_CreatePrimSpecForEditing()
 {
-    if (!_prim) {
-        TF_CODING_ERROR("Invalid prim.");
+    if (!TF_VERIFY(_prim)) {
         return SdfPrimSpecHandle();
     }
 

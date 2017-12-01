@@ -30,9 +30,7 @@
 #include "gusd/gusd.h"
 
 #include <SYS/SYS_Version.h>
-#include <UT/UT_ScopedPtr.h>
 #include <UT/UT_DSOVersion.h>
-#include <UT/UT_ScopedPtr.h>
 
 using std::cerr;
 using std::endl;

@@ -72,13 +72,12 @@ args = [
     (0, PyNoticeDerived, PyNoticeBase()),
     
     # Notices from C++ sender.
-# disabled for now, since Tf_TestBase is now Ctf_TestBase.    
-#    (1, "TfNotice", Tf.Notice(), Tf.Tf_TestBase()),
-#    (1, Tf.Notice, Tf.Notice(), Tf.Tf_TestBase()),
-#    (1, Tf.Notice, PyNoticeBase(), Tf.Tf_TestBase()),
-#    (1, PyNoticeBase, PyNoticeBase(), Tf.Tf_TestBase()),
-#    (1, PyNoticeBase, PyNoticeDerived(), Tf.Tf_TestBase()),
-#    (0, PyNoticeDerived, PyNoticeBase(), Tf.Tf_TestBase()),
+    (1, "TfNotice", Tf.Notice(), Tf._TestBase()),
+    (1, Tf.Notice, Tf.Notice(), Tf._TestBase()),
+    (1, Tf.Notice, PyNoticeBase(), Tf._TestBase()),
+    (1, PyNoticeBase, PyNoticeBase(), Tf._TestBase()),
+    (1, PyNoticeBase, PyNoticeDerived(), Tf._TestBase()),
+    (0, PyNoticeDerived, PyNoticeBase(), Tf._TestBase()),
 
     # Notices from Python sender.
     (1, "TfNotice", Tf.Notice(), testPySender()),

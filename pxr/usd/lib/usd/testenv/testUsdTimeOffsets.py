@@ -88,7 +88,7 @@ def VerifyOffset(adjPrim):
     print "Testing offset:", 
     print offset, "scale:", scale, "prim:", adjPrim.prim.GetPath()
 
-    inverse = adjPrim.layerOffset.GetInverse()
+    offset = Usd.PrepLayerOffset(adjPrim.layerOffset)
 
     # When offset=1.0:
     #
@@ -96,13 +96,13 @@ def VerifyOffset(adjPrim):
     # ----|---|-------------------------------|-------
     # t:  0   1   2   3   4   5   6   7   8   9   10
     #
-    # So we expect value( inverse * t ) = original_t
+    # So we expect value( offset * t ) = original_t
     #
     expectedTimes = []
     attr = prim.GetAttribute("attr")
     for t in (1.,2.,10.):
-        assert t == attr.Get(inverse * t)
-        expectedTimes.append(inverse * t)
+        assert t == attr.Get(offset * t)
+        expectedTimes.append(offset * t)
 
     print "    Expected Times:", tuple(expectedTimes)
     print "    Authored Times:", attr.GetTimeSamples()
@@ -110,26 +110,26 @@ def VerifyOffset(adjPrim):
         assert Gf.IsClose(expectedTimes[index], time, 1e-5)
 
     for t in (1.,2.,10.):
-        stageTime = inverse * t
+        stageTime = offset * t
         print "    Bracketing time samples for t=%s: %s" \
             % (stageTime, attr.GetBracketingTimeSamples(stageTime))
         assert (stageTime, stageTime) == attr.GetBracketingTimeSamples(stageTime)
 
-    stageTime = inverse * 0.
+    stageTime = offset * 0.
     print "    Bracketing time samples for t=%s: %s" \
         % (stageTime, attr.GetBracketingTimeSamples(stageTime))
-    assert (inverse * 1., inverse * 1.) == attr.GetBracketingTimeSamples(stageTime)
+    assert (offset * 1., offset * 1.) == attr.GetBracketingTimeSamples(stageTime)
 
     for (lo, hi) in [(1., 2.), (2., 10.)]:
-        stageTime = ((inverse * lo) + (inverse * hi)) / 2.
+        stageTime = ((offset * lo) + (offset * hi)) / 2.
         print "    Bracketing time samples for t=%s: %s" \
             % (stageTime, attr.GetBracketingTimeSamples(stageTime))
-        assert ((inverse * lo), (inverse *hi)) == attr.GetBracketingTimeSamples(stageTime)
+        assert ((offset * lo), (offset *hi)) == attr.GetBracketingTimeSamples(stageTime)
         
-    stageTime = inverse * 11.
+    stageTime = offset * 11.
     print "    Bracketing time samples for t=%s: %s" \
         % (stageTime, attr.GetBracketingTimeSamples(stageTime))
-    assert (inverse * 10., inverse * 10.) == attr.GetBracketingTimeSamples(stageTime)
+    assert (offset * 10., offset * 10.) == attr.GetBracketingTimeSamples(stageTime)
 
 def BuildReferenceOffsets(rootLyr, testLyr):
     stage = Usd.Stage.Open(rootLyr)
@@ -254,26 +254,32 @@ class TestUsdTimeOffsets(unittest.TestCase):
             with Usd.EditContext(stage, editTarget):
                 attr = foo.CreateAttribute('attr', Sdf.ValueTypeNames.Double)
                 attr.Set(1.0, time=2.0)
-                self.assertEqual(attr.Get(time=2.0), 1.0, (
-                    'expected value 1.0 at time=2.0, got %s' % attr.Get(time=2.0)))
+                self.assertEqual(attr.Get(time=2.0), 1.0,
+                    ('expected value 1.0 at time=2.0, got %s' %
+                     attr.Get(time=2.0)))
                 # Check that the time value in the reference is correctly
                 # transformed.
                 authoredTime = barRef.attributes[
                     'attr'].GetInfo('timeSamples').keys()[0]
-                self.assertEqual(refOffset.GetInverse() * 2.0, authoredTime)
+                self.assertEqual(
+                    Usd.PrepLayerOffset(refOffset).GetInverse() * 2.0,
+                    authoredTime)
 
             # Make an EditTarget to author into the sublayer.
             editTarget = stage.GetEditTargetForLocalLayer(subLayer)
             with Usd.EditContext(stage, editTarget):
                 attr = foo.GetAttribute('attr')
                 attr.Set(1.0, time=2.0)
-                self.assertEqual(attr.Get(time=2.0), 1.0, (
-                    'expected value 1.0 at time=2.0, got %s' % attr.Get(time=2.0)))
+                self.assertEqual(attr.Get(time=2.0), 1.0,
+                        ('expected value 1.0 at time=2.0, got %s' %
+                         attr.Get(time=2.0)))
                 # Check that the time value in the sublayer is correctly
                 # transformed.
                 authoredTime = subLayer.GetAttributeAtPath(
                     '/Foo.attr').GetInfo('timeSamples').keys()[0]
-                self.assertEqual(subOffset.GetInverse() * 2.0, authoredTime)
+                self.assertEqual(
+                    Usd.PrepLayerOffset(subOffset).GetInverse() * 2.0,
+                    authoredTime)
 
 if __name__ == '__main__':
     unittest.main()

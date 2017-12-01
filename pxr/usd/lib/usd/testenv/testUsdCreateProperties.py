@@ -136,7 +136,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             self.assertEqual(rel.GetTargets(), ['/Parent'])
 
             # Test relative path
-            rel.AddTarget("../../Sibling1")
+            rel.AddTarget("../../Sibling1", position=Usd.ListPositionBack)
             self.assertEqual(rel.GetTargets(), ['/Parent', '/Parent/Sibling1'])
 
             rel.SetCustom(False)

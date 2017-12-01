@@ -28,7 +28,9 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/functional/factory.hpp>
+#include <functional>
+#include <memory>
+
 #include <boost/python.hpp>
 
 #include <vector>
@@ -44,17 +46,19 @@ namespace {
 // Expose C++ RAII class as python context manager.
 struct Usd_PyStageCacheContext
 {
-    // Factory utility to instantiate the UsdStageCacheContext class on
-    // __enter__.
-    typedef boost::factory<UsdStageCacheContext *> Factory;
-
     // Constructor stores off arguments to pass to the factory later.
     template <class Arg>
     explicit Usd_PyStageCacheContext(Arg arg) 
-        : _makeContext(boost::bind(Factory(), arg)) {}
+        : _makeContext([arg]() {
+                return new UsdStageCacheContext(arg);
+            })
+        {}
 
     explicit Usd_PyStageCacheContext(UsdStageCache &cache)
-        : _makeContext(boost::bind(Factory(), boost::ref(cache))) {}
+        : _makeContext([&cache]() {
+                return new UsdStageCacheContext(cache);
+            })
+        {}
 
     // Instantiate the C++ class object and hold it by shared_ptr.
     void __enter__() { _context.reset(_makeContext()); }
@@ -64,8 +68,8 @@ struct Usd_PyStageCacheContext
 
 private:
 
-    boost::shared_ptr<UsdStageCacheContext> _context;
-    boost::function<UsdStageCacheContext *()> _makeContext;
+    std::shared_ptr<UsdStageCacheContext> _context;
+    std::function<UsdStageCacheContext *()> _makeContext;
 };
 
 } // anonymous namespace

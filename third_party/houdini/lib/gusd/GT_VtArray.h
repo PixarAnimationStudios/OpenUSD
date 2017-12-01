@@ -267,8 +267,12 @@ GusdGT_VtArray<T>::getArrayT(GT_DataArrayHandle& buf) const
     if(SYS_IsSame<PODType,PODT>::value)
         return reinterpret_cast<const PODT*>(_data);
 
+#if HDK_API_VERSION < 16050000
     typedef GT_DANumeric<PODT,
         GusdGT_Utils::StorageByType<PODT>::value> _GTArrayType;
+#else
+    typedef GT_DANumeric<PODT> _GTArrayType;
+#endif
     
     _GTArrayType* tmpArray = new _GTArrayType(_size, tupleSize, _type);
     fillArrayT(tmpArray->data(), 0, _size, tupleSize);

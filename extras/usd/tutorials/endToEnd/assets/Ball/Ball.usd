@@ -10,7 +10,7 @@ def Xform "Ball" (
         string name = "Ball"
     }
     kind = "component"
-    add references = [
+    prepend references = [
         @./Ball.shadingVariants.usda@,
         @./Ball.maya.usd@
     ]

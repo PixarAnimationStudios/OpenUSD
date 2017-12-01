@@ -54,12 +54,24 @@ HdxIntersector::HdxIntersector(HdRenderIndex *index)
 void
 HdxIntersector::_Init(GfVec2i const& size)
 {
+    // The collection created below is purely for satisfying the HdRenderPass
+    // constructor. The collections for the render passes are set in Query(..)
     HdRprimCollection col(HdTokens->geometry, HdTokens->hull);
-    _renderPass = _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
+    _pickableRenderPass = 
+        _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
+    _unpickableRenderPass = 
+        _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
     // initialize renderPassState with ID render shader
-    _renderPassState = boost::make_shared<HdRenderPassState>(
+    _pickableRenderPassState = boost::make_shared<HdRenderPassState>(
         boost::make_shared<HdRenderPassShader>(HdxPackageRenderPassIdShader()));
+
+    // Turn off color writes for the unpickables (we only want to condition the
+    // depth buffer)
+    _unpickableRenderPassState = boost::make_shared<HdRenderPassState>(
+        boost::make_shared<HdRenderPassShader>(HdxPackageRenderPassIdShader()));
+    _unpickableRenderPassState->SetColorMaskUseDefault(false);
+    _unpickableRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.
@@ -191,7 +203,7 @@ private:
 
 bool
 HdxIntersector::Query(HdxIntersector::Params const& params,
-                      HdRprimCollection const& col,
+                      HdRprimCollection const& pickablesCol,
                       HdEngine* engine,
                       HdxIntersector::Result* result)
 {
@@ -216,17 +228,23 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     GfVec2i size(_drawTarget->GetSize());
     GfVec4i viewport(0, 0, size[0], size[1]);
 
-    if (!TF_VERIFY(_renderPass)) {
+    if (!TF_VERIFY(_pickableRenderPass) || 
+        !TF_VERIFY(_unpickableRenderPass)) {
         return false;
     }
-    _renderPass->SetRprimCollection(col);
 
     // Setup state based on incoming params.
-    _renderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _renderPassState->SetClipPlanes(params.clipPlanes);
-    _renderPassState->SetCullStyle(params.cullStyle);
-    _renderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
-    _renderPassState->SetLightingEnabled(false);
+    _pickableRenderPassState->SetAlphaThreshold(params.alphaThreshold);
+    _pickableRenderPassState->SetClipPlanes(params.clipPlanes);
+    _pickableRenderPassState->SetCullStyle(params.cullStyle);
+    _pickableRenderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
+    _pickableRenderPassState->SetLightingEnabled(false);
+
+    _unpickableRenderPassState->SetAlphaThreshold(params.alphaThreshold);
+    _unpickableRenderPassState->SetClipPlanes(params.clipPlanes);
+    _unpickableRenderPassState->SetCullStyle(params.cullStyle);
+    _unpickableRenderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
+    _unpickableRenderPassState->SetLightingEnabled(false);
 
     // Use a separate drawTarget (framebuffer object) for each GL context
     // that uses this renderer, but the drawTargets share attachments/textures.
@@ -305,14 +323,33 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
             glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
         }
 
+        HdTaskSharedPtrVector tasks;
+        //
+        // Unpickable prims (condition the depth buffer so they can occlude,
+        // but don't write to the attachments of the draw target)
+        //
+        if (pickablesCol.GetExcludePaths().size() > 0)
+        {
+            HdRprimCollection unpickablesCol = 
+                pickablesCol.CreateInverseCollection();
+            _unpickableRenderPass->SetRprimCollection(unpickablesCol);
+
+            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                    _unpickableRenderPass,
+                    _unpickableRenderPassState,
+                    params.renderTags));
+        }
+        
         // 
-        // Execute
+        // Pickable prims (id render)
         //
         // XXX: make intersector a Task
-        HdTaskSharedPtrVector tasks;
-        tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(_renderPass,
-                                                               _renderPassState,
-                                                            params.renderTags));
+        _pickableRenderPass->SetRprimCollection(pickablesCol);
+        tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                _pickableRenderPass,
+                _pickableRenderPassState,
+                params.renderTags));
+
         engine->Execute(*_index, tasks);
 
         glDisable(GL_STENCIL_TEST);

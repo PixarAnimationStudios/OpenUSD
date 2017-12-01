@@ -232,8 +232,8 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
             //
             if (motionSampleTimesAttr.getType() == kFnKatAttributeTypeFloat)
             {
-                const auto& sampleTimes = FnKat::FloatAttribute(
-                        motionSampleTimesAttr).getNearestSample(0);
+                FnAttribute::FloatAttribute attr(motionSampleTimesAttr);
+                const auto& sampleTimes = attr.getNearestSample(0.0f);;
                 if (!sampleTimes.empty())
                 {
                     for (float sampleTime : sampleTimes)
@@ -406,7 +406,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
 }
 
 void PxrUsdKatanaUsdInPrivateData::setExtensionOpArg(
-        const std::string & name, FnAttribute::Attribute attr)
+        const std::string & name, FnAttribute::Attribute attr) const
 {
     if (!_extGb)
     {
@@ -418,7 +418,7 @@ void PxrUsdKatanaUsdInPrivateData::setExtensionOpArg(
 
 
 FnAttribute::Attribute PxrUsdKatanaUsdInPrivateData::getExtensionOpArg(
-        const std::string & name, FnAttribute::GroupAttribute opArgs)
+        const std::string & name, FnAttribute::GroupAttribute opArgs) const
 {
     if (name.empty())
     {
@@ -431,7 +431,7 @@ FnAttribute::Attribute PxrUsdKatanaUsdInPrivateData::getExtensionOpArg(
 
 FnAttribute::GroupAttribute
 PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
-        FnAttribute::GroupAttribute opArgs)
+        FnAttribute::GroupAttribute opArgs) const
 {
     if (!_extGb)
     {
@@ -443,8 +443,14 @@ PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
         .deepUpdate(_extGb->build())
         .build();
 }
-    
-    
+
+PxrUsdKatanaUsdInPrivateData *
+PxrUsdKatanaUsdInPrivateData::GetPrivateData(
+        const FnKat::GeolibCookInterface& interface)
+{
+    return static_cast<PxrUsdKatanaUsdInPrivateData*>(
+            interface.getPrivateData());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

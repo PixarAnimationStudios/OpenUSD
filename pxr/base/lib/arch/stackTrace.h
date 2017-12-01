@@ -61,7 +61,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// because we are trying to use only async-safe function from here on and
 /// malloc() is not async-safe.
 ARCH_API
-void ArchLogPostMortem(const char* reason, const char* message = nullptr);
+void ArchLogPostMortem(
+    const char* reason,
+    const char* message = nullptr,
+    const char* extraLogMsg = nullptr);
 
 /// Sets the command line that gathers call-stack info.
 ///

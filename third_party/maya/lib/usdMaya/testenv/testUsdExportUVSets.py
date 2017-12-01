@@ -69,6 +69,11 @@ class testUsdExportUVSets(unittest.TestCase):
         cmds.file(os.path.abspath('UsdExportUVSetsTest.ma'), open=True,
                        force=True)
 
+        # Make some live edits to the box with weird UVs for the
+        # testExportUvVersusUvIndexFromIterator test.
+        cmds.select("box.map[0:299]", r=True)
+        cmds.polyEditUV(u=1.0, v=1.0)
+
         usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
@@ -330,6 +335,18 @@ class testUsdExportUVSets(unittest.TestCase):
             expectedInterpolation=expectedInterpolation,
             expectedIndices=expectedIndices)
 
+    def testExportUvVersusUvIndexFromIterator(self):
+        """
+        Tests that UVs export properly on a mesh where the UV returned by
+        MItMeshFaceVertex::getUV is known to be different from that
+        returned by MItMeshFaceVertex::getUVIndex and indexed into the UV array.
+        (The latter should return the desired result from the outMesh and is the
+        method currently used by usdMaya.)
+        """
+        brokenBoxMesh = UsdGeom.Mesh(self._stage.GetPrimAtPath(
+                "/UsdExportUVSetsTest/Geom/BrokenUVs/box"))
+        stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
+        self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 1.0))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

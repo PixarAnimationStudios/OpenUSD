@@ -69,6 +69,14 @@ void wrapUsdShadeMaterial()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -153,22 +161,23 @@ WRAP_CUSTOM {
              &UsdShadeMaterial::HasBaseMaterial)
 
 
-        .def("CreateMaterialBindFaceSubset", 
-             &UsdShadeMaterial::CreateMaterialBindFaceSubset,
-             (arg("geom"), arg("subsetName"), arg("indices")))
-            .staticmethod("CreateMaterialBindFaceSubset")
-        .def("GetMaterialBindFaceSubsets", 
-             &UsdShadeMaterial::GetMaterialBindFaceSubsets, 
+        .def("CreateMaterialBindSubset", 
+             &UsdShadeMaterial::CreateMaterialBindSubset,
+             (arg("geom"), arg("subsetName"), 
+              arg("indices"), arg("elementType")=UsdGeomTokens->face))
+            .staticmethod("CreateMaterialBindSubset")
+        .def("GetMaterialBindSubsets", 
+             &UsdShadeMaterial::GetMaterialBindSubsets, 
              arg("geom"), return_value_policy<TfPySequenceToList>())
-             .staticmethod("GetMaterialBindFaceSubsets")
-        .def("SetMaterialBindFaceSubsetsFamilyType", 
-             &UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType,
+             .staticmethod("GetMaterialBindSubsets")
+        .def("SetMaterialBindSubsetsFamilyType", 
+             &UsdShadeMaterial::SetMaterialBindSubsetsFamilyType,
              (arg("geom"), arg("familyType")))
-             .staticmethod("SetMaterialBindFaceSubsetsFamilyType")
-        .def("GetMaterialBindFaceSubsetsFamilyType",
-             &UsdShadeMaterial::GetMaterialBindFaceSubsetsFamilyType,
+             .staticmethod("SetMaterialBindSubsetsFamilyType")
+        .def("GetMaterialBindSubsetsFamilyType",
+             &UsdShadeMaterial::GetMaterialBindSubsetsFamilyType,
              arg("geom"))
-             .staticmethod("GetMaterialBindFaceSubsetsFamilyType")
+             .staticmethod("GetMaterialBindSubsetsFamilyType")
         
         // These are now deprecated.
         .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)

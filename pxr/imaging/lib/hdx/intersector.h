@@ -213,11 +213,12 @@ public:
 private:
     void _Init(GfVec2i const&);
 
-    // A single shared render pass is used internally to avoid render pass
-    // thrashing due to picking.
-    HdRenderPassSharedPtr _renderPass;
+    // Create a shared render pass for pickables and unpickables
+    HdRenderPassSharedPtr _pickableRenderPass;
+    HdRenderPassSharedPtr _unpickableRenderPass;
 
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdRenderPassStateSharedPtr _pickableRenderPassState;
+    HdRenderPassStateSharedPtr _unpickableRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.

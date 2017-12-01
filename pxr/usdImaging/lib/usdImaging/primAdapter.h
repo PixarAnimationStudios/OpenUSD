@@ -82,6 +82,21 @@ public:
     // given prim.
     virtual bool ShouldCullChildren(UsdPrim const& prim);
 
+    // Indicates the adapter is a multiplexing adapter (e.g. PointInstancer),
+    // potentially managing its children. This flag is used in nested
+    // instancer cases to determine which adapter is assigned to which prim.
+    virtual bool IsInstancerAdapter();
+
+    // Indicates whether the prim bound to this adapter is native-instanceable.
+    // By default, NI should only work on prims without bound adapters (like
+    // Xforms), but this doesn't take proxy objects (like cards) into account.
+    virtual bool IsNativeInstanceable(UsdPrim const& prim) { return false; }
+
+    // Indicates that this adapter populates the render index only when
+    // directed by the population of another prim, e.g. materials are
+    // populated on behalf of prims which use the material.
+    virtual bool IsPopulatedIndirectly();
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
@@ -254,9 +269,9 @@ public:
     GfMatrix4d GetTransform(UsdPrim const& prim, UsdTimeCode time,
                             bool ignoreRootTransform = false);
 
-    /// Gets the shader binding for the given prim, walking up namespace if
+    /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
-    SdfPath GetShaderBinding(UsdPrim const& prim);
+    SdfPath GetMaterialId(UsdPrim const& prim);
 
     /// Gets the instancer ID for the given prim and instancerContext.
     SdfPath GetInstancerBinding(UsdPrim const& prim,
@@ -266,12 +281,18 @@ public:
     /// Used for change tracking over subtree boundary (e.g. instancing)
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
 
+    /// Gets the model:drawMode attribute for the given prim, walking up
+    /// the namespace if necessary.
+    TfToken GetModelDrawMode(UsdPrim const& prim);
+
     // ---------------------------------------------------------------------- //
     /// \name Render Index Compatibility
     // ---------------------------------------------------------------------- //
 
-    /// Returns whether the adapter can be populated into the target render index.
-    virtual bool IsSupported(HdRenderIndex* renderIndex) { return true; }
+    /// Returns true if the adapter can be populated into the target index.
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const {
+        return true;
+    }
 
 protected:
     typedef std::vector<UsdImagingValueCache::PrimvarInfo> PrimvarInfoVector;
@@ -285,7 +306,8 @@ protected:
     }
 
     template <typename T>
-    void _GetPtr(UsdPrim const& prim, TfToken const& key, UsdTimeCode time, T* out) {
+    void _GetPtr(UsdPrim const& prim, TfToken const& key, UsdTimeCode time,
+                 T* out) {
         prim.GetAttribute(key).Get<T>(out, time);
     }
 

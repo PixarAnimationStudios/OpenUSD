@@ -524,37 +524,49 @@ UsdShadeMaterial::HasBaseMaterial() const
 
 /* static */
 UsdGeomSubset 
-UsdShadeMaterial::CreateMaterialBindFaceSubset(
+UsdShadeMaterial::CreateMaterialBindSubset(
     const UsdGeomImageable &geom,
     const TfToken &subsetName,
-    const VtIntArray &indices)
+    const VtIntArray &indices,
+    const TfToken &elementType)
 {
-    return UsdGeomSubset::CreateGeomSubset(geom, subsetName, 
-        UsdGeomTokens->face, indices, UsdShadeTokens->materialBind);
+    UsdGeomSubset result = UsdGeomSubset::CreateGeomSubset(geom, subsetName, 
+        elementType, indices, UsdShadeTokens->materialBind);
+
+    TfToken familyType = UsdGeomSubset::GetFamilyType(geom, 
+        UsdShadeTokens->materialBind);
+    // Subsets that have materials bound to them should have 
+    // mutually exclusive sets of indices. Hence, set the familyType 
+    // to "nonOverlapping" if it's unset (or explicitly set to unrestricted).
+    if (familyType == UsdGeomTokens->unrestricted) {
+        SetMaterialBindSubsetsFamilyType(geom, UsdGeomTokens->nonOverlapping);
+    }
+
+    return result;
 }
 
 
 /* static */
 std::vector<UsdGeomSubset> 
-UsdShadeMaterial::GetMaterialBindFaceSubsets(
+UsdShadeMaterial::GetMaterialBindSubsets(
     const UsdGeomImageable &geom)
 {
-    return UsdGeomSubset::GetGeomSubsets(geom, UsdGeomTokens->face, 
+    return UsdGeomSubset::GetGeomSubsets(geom, /* elementType */ TfToken(), 
         UsdShadeTokens->materialBind);
 }
 
 /* static */
-bool UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType(
+bool UsdShadeMaterial::SetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom,
-        const UsdGeomSubset::FamilyType familyType)
+        const TfToken &familyType)
 {
     return UsdGeomSubset::SetFamilyType(geom, UsdShadeTokens->materialBind,
         familyType);
 }
 
 /* static */
-UsdGeomSubset::FamilyType 
-UsdShadeMaterial::GetMaterialBindFaceSubsetsFamilyType(
+TfToken
+UsdShadeMaterial::GetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom)
 {
     return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);

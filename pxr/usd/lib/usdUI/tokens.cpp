@@ -25,6 +25,36 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdUITokens, USDUI_TOKENS);
+UsdUITokensType::UsdUITokensType() :
+    closed("closed", TfToken::Immortal),
+    minimized("minimized", TfToken::Immortal),
+    open("open", TfToken::Immortal),
+    uiDescription("ui:description", TfToken::Immortal),
+    uiDisplayGroup("ui:displayGroup", TfToken::Immortal),
+    uiDisplayName("ui:displayName", TfToken::Immortal),
+    uiNodegraphNodeDisplayColor("ui:nodegraph:node:displayColor", TfToken::Immortal),
+    uiNodegraphNodeExpansionState("ui:nodegraph:node:expansionState", TfToken::Immortal),
+    uiNodegraphNodeIcon("ui:nodegraph:node:icon", TfToken::Immortal),
+    uiNodegraphNodePos("ui:nodegraph:node:pos", TfToken::Immortal),
+    uiNodegraphNodeSize("ui:nodegraph:node:size", TfToken::Immortal),
+    uiNodegraphNodeStackingOrder("ui:nodegraph:node:stackingOrder", TfToken::Immortal),
+    allTokens({
+        closed,
+        minimized,
+        open,
+        uiDescription,
+        uiDisplayGroup,
+        uiDisplayName,
+        uiNodegraphNodeDisplayColor,
+        uiNodegraphNodeExpansionState,
+        uiNodegraphNodeIcon,
+        uiNodegraphNodePos,
+        uiNodegraphNodeSize,
+        uiNodegraphNodeStackingOrder
+    })
+{
+}
+
+TfStaticData<UsdUITokensType> UsdUITokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

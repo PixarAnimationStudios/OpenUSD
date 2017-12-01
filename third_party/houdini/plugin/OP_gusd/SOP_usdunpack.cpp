@@ -41,7 +41,7 @@
 #include <PI/PI_EditScriptedParms.h>
 #include <PRM/PRM_AutoDeleter.h>
 #include <UT/UT_WorkArgs.h>
-#include <UT/UT_ScopedPtr.h>
+#include <UT/UT_UniquePtr.h>
 #include <PY/PY_Python.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -492,7 +492,7 @@ GusdSOP_usdunpack::_Traverse(const UT_String& traversal,
         return false;
     }
 
-    UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
+    UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
     if (opts) {
         if (!opts->Configure(*this, time)) {
             return false;

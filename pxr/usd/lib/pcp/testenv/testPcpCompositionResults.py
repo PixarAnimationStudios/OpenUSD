@@ -83,8 +83,11 @@ for layerPath in args.layer:
     assert rootLayer
 
     def GetLayerLabel(layer):
-        return os.path.relpath(layer.realPath,
-                               os.path.dirname(rootLayer.realPath))
+        # Convert backslashes to forward slashes so comparisons
+        # against baselines work on Windows
+        return (os.path.relpath(layer.realPath,
+                                os.path.dirname(rootLayer.realPath))
+                .replace("\\", "/"))
 
     def WalkNodes(node):
         yield node

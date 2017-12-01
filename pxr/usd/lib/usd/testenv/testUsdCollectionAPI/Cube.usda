@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Xform "Cube" (kind = "component")
+{
+    def "Geom" 
+    {
+        def "cube"
+        {
+        }
+    }
+}

@@ -621,5 +621,25 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertEqual(UsdGeom.ModelAPI(prim).GetExtentsHint()[0], Gf.Vec3f(1,2,2))
         self.assertEqual(UsdGeom.ModelAPI(prim).GetExtentsHint()[1], Gf.Vec3f(1,1,1))
 
+    def test_Typed(self):
+        from pxr import Tf
+        xform = Tf.Type.FindByName("UsdGeomXform")
+        imageable = Tf.Type.FindByName("UsdGeomImageable")
+        geomModelAPI = Tf.Type.FindByName("UsdGeomModelAPI")
+
+        self.assertTrue(Usd.SchemaRegistry.IsTyped(xform))
+        self.assertTrue(Usd.SchemaRegistry.IsTyped(imageable))
+        self.assertFalse(Usd.SchemaRegistry.IsTyped(geomModelAPI))    
+        
+    def test_Concrete(self):
+        from pxr import Tf
+        xform = Tf.Type.FindByName("UsdGeomXform")
+        imageable = Tf.Type.FindByName("UsdGeomImageable")
+        geomModelAPI = Tf.Type.FindByName("UsdGeomModelAPI")
+
+        self.assertTrue(Usd.SchemaRegistry.IsConcrete(xform))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(imageable))
+        self.assertFalse(Usd.SchemaRegistry.IsConcrete(geomModelAPI))
+
 if __name__ == "__main__":
     unittest.main()

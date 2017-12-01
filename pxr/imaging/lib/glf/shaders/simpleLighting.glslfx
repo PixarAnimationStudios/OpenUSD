@@ -371,14 +371,39 @@ vec4
 simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
                vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
 {
+
+    // Get the roughness and metallic values
+
+#if HD_HAS_roughness
+    float roughness = max(0.0, min(1.0, float(HdGet_roughness())));
+#else
+    float roughness = 0.0;
+#endif
+
+#if HD_HAS_metallic
+    float metallic  = max(0.0, min(1.0, float(HdGet_metallic())));
+#else
+    float metallic = 0.0;
+#endif
+    
+    // determine the specular and diffuse intensity
+    float Ks = (1.0 - roughness) + 2.0 * metallic;
+
     LightingInterfaceProperties props;
+
+#if HD_HAS_roughness
+    float specularExp = (1.0 - roughness) * 120.0 + 8.0;
+    props.shininess = specularExp;
+    matSpecular.rgb = mix(vec3(1.0), matDiffuse.rgb, metallic);
+#else
     props.shininess = matShininess;
+#endif
 
     LightingContribution light = integrateLights(Peye, Neye, props);
 
     color.rgb += light.ambient * matAmbient.rgb;
     color.rgb += Ctint.rgb * light.diffuse * matDiffuse.rgb;
-    color.rgb += light.specular * matSpecular.rgb;
+    color.rgb += Ks * light.specular * matSpecular.rgb;
 
     color.a = matDiffuse.a;
 

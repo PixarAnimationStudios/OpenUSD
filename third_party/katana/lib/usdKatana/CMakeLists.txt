@@ -60,6 +60,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PYMODULE_CPPFILES
         wrapBlindDataObject.cpp
+        wrapCache.cpp
         wrapLookAPI.cpp
         module.cpp
 

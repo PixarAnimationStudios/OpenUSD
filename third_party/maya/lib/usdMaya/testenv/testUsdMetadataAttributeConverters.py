@@ -54,9 +54,21 @@ class testUsdMetadataAttributeConverters(unittest.TestCase):
         self.assertEqual(cmds.getAttr('pCube1.USD_kind'), 'potato')
         self.assertEqual(cmds.getAttr('pCube2.USD_kind'), 'bakedpotato')
         
-        # pCube2 and pCube4 have USD_hidden.
+        # pCube2, pCube4, and pCube5 have USD_hidden. pCube1 and pCube3 do not.
+        self.assertTrue(
+            cmds.attributeQuery('USD_hidden', node='pCube2', exists=True))
+        self.assertTrue(
+            cmds.attributeQuery('USD_hidden', node='pCube4', exists=True))
+        self.assertTrue(
+            cmds.attributeQuery('USD_hidden', node='pCube5', exists=True))
+        self.assertFalse(
+            cmds.attributeQuery('USD_hidden', node='pCube1', exists=True))
+        self.assertFalse(
+            cmds.attributeQuery('USD_hidden', node='pCube3', exists=True))
+
         self.assertTrue(cmds.getAttr('pCube2.USD_hidden'))
         self.assertTrue(cmds.getAttr('pCube4.USD_hidden'))
+        self.assertFalse(cmds.getAttr('pCube5.USD_hidden'))
         
         # pCube3 and pCube4 have USD_instanceable.
         self.assertTrue(cmds.getAttr('pCube3.USD_instanceable'))
@@ -78,9 +90,16 @@ class testUsdMetadataAttributeConverters(unittest.TestCase):
         prim2 = newUsdStage.GetPrimAtPath('/World/pCube2')
         self.assertEqual(Usd.ModelAPI(prim2).GetKind(), 'bakedpotato')
         
-        # pCube2 and pCube4 have USD_hidden.
+        # pCube2, pCube4, and pCube5 have USD_hidden. pCube1 and pCube3 do not.
+        self.assertTrue(newUsdStage.GetPrimAtPath('/World/pCube2').HasAuthoredHidden())
+        self.assertTrue(newUsdStage.GetPrimAtPath('/World/pCube4').HasAuthoredHidden())
+        self.assertTrue(newUsdStage.GetPrimAtPath('/World/pCube5').HasAuthoredHidden())
+        self.assertFalse(newUsdStage.GetPrimAtPath('/World/pCube1').HasAuthoredHidden())
+        self.assertFalse(newUsdStage.GetPrimAtPath('/World/pCube3').HasAuthoredHidden())
+
         self.assertTrue(newUsdStage.GetPrimAtPath('/World/pCube2').IsHidden())
         self.assertTrue(newUsdStage.GetPrimAtPath('/World/pCube4').IsHidden())
+        self.assertFalse(newUsdStage.GetPrimAtPath('/World/pCube5').IsHidden())
         
         # pCube3 and pCube4 have USD_instanceable.
         self.assertTrue(newUsdStage.GetPrimAtPath('/World/pCube3').IsInstanceable())

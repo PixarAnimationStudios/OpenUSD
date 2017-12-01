@@ -26,7 +26,7 @@
    \brief Helpers for dealing with versioning in the HDK.
 */
 #ifndef _GUSD_UT_VERSION_H_
-#define _GUSD_UT_UT_VERSION_H_
+#define _GUSD_UT_VERSION_H_
 
 #include <pxr/pxr.h>
 
@@ -108,4 +108,4 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif /* _GUSD_UT_UT_VERSION_H_ */
+#endif /* _GUSD_UT_VERSION_H_ */

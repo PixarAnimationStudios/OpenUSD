@@ -49,6 +49,30 @@ HdVtBufferSource::HdVtBufferSource(TfToken const& name, VtValue const& value,
     : _name(name), _value(value), _staticArray(staticArray)
 {
     HD_TRACE_FUNCTION();
+
+    // The GPU has alignment requirements for bools (each one is 32-bits)
+    // However, VtBufferSource and the Memory Managers make certain assumptions
+    // that the raw buffer in the VtValue matches the requirements of the
+    // the render delegate.
+    //
+    // XXX: For now, scalar bool types are manually converted to
+    // ints for processing.  This follows the same pattern as the matrix cases
+    // below.
+    // Array and componented bools are not currently supported.
+    //
+    if (_value.IsHolding<bool>()) {
+        int intValue = _value.UncheckedGet<bool>() ? 1 : 0;
+
+        _value                = VtValue(intValue);
+        _glComponentDataType  = GL_BOOL;
+        _glElementDataType    = GL_BOOL;
+        _size                 = 4;
+        _numComponents        = 1;
+        _data                 = &_value.UncheckedGet<int>();
+        return;
+    }
+
+
     // Extract element size from value.
     // This also guarantees the VtValue is an accepted type.
     //

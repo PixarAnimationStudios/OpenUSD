@@ -65,9 +65,18 @@ public:
                       SdfPath const& rootPath,
                       bool forcedRepr=false);
 
+    /// Copy constructor.
+    HD_API
+    HdRprimCollection(HdRprimCollection const& col);
+
     // Destructor.
     HD_API
     virtual ~HdRprimCollection();
+
+    /// Constructs and returns a collection with the root and exclude paths
+    /// swapped.
+    HD_API
+    HdRprimCollection CreateInverseCollection() const;
 
     /// Returns the semantic name of this collection.
     ///

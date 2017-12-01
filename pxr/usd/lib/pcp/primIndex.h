@@ -37,13 +37,13 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
-#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <tbb/spin_rw_mutex.h>
 
 #include <functional>
 #include <map>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -264,7 +264,7 @@ private:
 
     // List of errors local to this prim, encountered during computation.
     // NULL if no errors were found (the expected common case).
-    boost::scoped_ptr<PcpErrorVector> _localErrors;
+    std::unique_ptr<PcpErrorVector> _localErrors;
 };
 
 /// Free function version for generic code and ADL.

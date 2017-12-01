@@ -1,0 +1,29 @@
+#usda 1.0
+
+def "OffsetTimeSamples"
+{
+    double a.timeSamples = {
+        0: 100,
+        10: 1000
+    }
+}
+
+def "WeakerTimeSamples"
+{
+    double a.timeSamples = {
+        0: 100,
+        10: 1000
+    }
+}
+
+def "StrongerTimeSamples"
+{
+    double a = 1
+}
+
+def FlattenPropertyTest "FlattenOverSelf"
+{
+    string builtinAttr = "sub authored value" (
+        testCustomMetadata = "sub authored metadata"
+    )
+}

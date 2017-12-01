@@ -47,7 +47,16 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    if (op != SdfListOpTypeAdded && op != SdfListOpTypeExplicit) {
+    // XXX The following code tries to manage lifetime of the target
+    // specs associated with this list, but it slightly buggy: if
+    // multiple lists mention the same target -- ex. if a target is
+    // added, appended, and prepended -- then this proxy for a single
+    // list has no way to know if the target also exists in those
+    // other lists, and so it cannot mangae lifetime on its own.
+
+    if (op == SdfListOpTypeOrdered || op == SdfListOpTypeDeleted) {
+        // These ops do not affect target spec lifetime, so there's
+        // nothing to do.
         return;
     }
 

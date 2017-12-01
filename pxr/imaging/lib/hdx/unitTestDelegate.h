@@ -143,6 +143,8 @@ public:
 
     void SetRefineLevel(SdfPath const &id, int level);
 
+    void SetReprName(SdfPath const &id, TfToken const &reprName);
+
     // delegate methods
     virtual GfRange3d GetExtent(SdfPath const & id);
     virtual GfMatrix4d GetTransform(SdfPath const & id);
@@ -160,6 +162,8 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId,
                                              SdfPath const& prototypeId);
     virtual int GetRefineLevel(SdfPath const& id);
+    virtual TfToken GetReprName(SdfPath const &id);
+
 
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);

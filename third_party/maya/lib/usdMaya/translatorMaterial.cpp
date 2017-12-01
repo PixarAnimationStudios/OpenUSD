@@ -189,7 +189,7 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
     // If the gprim does not have a material faceSet which represents per-face 
     // shader assignments, assign the shading engine to the entire gprim.
     std::vector<UsdGeomSubset> faceSubsets = 
-        UsdShadeMaterial::GetMaterialBindFaceSubsets(primSchema);
+        UsdShadeMaterial::GetMaterialBindSubsets(primSchema);
 
     bool hasOldStyleFaceSets = UsdShadeMaterial::HasMaterialFaceSet(
         primSchema.GetPrim());
@@ -227,8 +227,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 
         std::string reasonWhyNotPartition;
         
-        bool validPartition = UsdGeomSubset::ValidatePartition(
-            faceSubsets, faceCount, &reasonWhyNotPartition);
+        bool validPartition = UsdGeomSubset::ValidateSubsets(
+            faceSubsets, faceCount, UsdGeomTokens->partition, 
+            &reasonWhyNotPartition);
         if (!validPartition) {
             MGlobal::displayWarning(TfStringPrintf("face-subsets on <%s> don't "
                 "form a valid partition: %s", primSchema.GetPath().GetText(), 
@@ -392,7 +393,8 @@ PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
         const PxrUsdMayaUtil::ShapeSet& bindableRoots,
         const TfToken& shadingMode,
         bool mergeTransformAndShape,
-        SdfPath overrideRootPath)
+        SdfPath overrideRootPath,
+        const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap)
 {
     if (shadingMode == PxrUsdMayaShadingModeTokens->none) {
         return;
@@ -401,7 +403,7 @@ PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
     if (auto exporterCreator =
             PxrUsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
         if (auto exporter = exporterCreator()) {
-            exporter->DoExport(stage, bindableRoots, mergeTransformAndShape, overrideRootPath);
+            exporter->DoExport(stage, bindableRoots, mergeTransformAndShape, overrideRootPath, dagPathToUsdMap);
         }
     }
     else {

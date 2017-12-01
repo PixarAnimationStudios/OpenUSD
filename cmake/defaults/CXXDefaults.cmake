@@ -33,10 +33,6 @@ elseif(MSVC)
     include(msvcdefaults)
 endif()
 
-# We don't use this prefix in the open source build
-# because CMake bakes out full paths.
-_add_define(BUILD_COMPONENT_SRC_PREFIX="")
-
 _add_define(GL_GLEXT_PROTOTYPES)
 _add_define(GLX_GLXEXT_PROTOTYPES)
 
@@ -48,13 +44,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     _add_define(LINUX)
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    _add_define(BUILD_OPTLEVEL_OPT)
-elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    _add_define(BUILD_OPTLEVEL_OPT)
-elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    _add_define(BUILD_OPTLEVEL_OPT)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
 endif()
 
@@ -83,6 +73,13 @@ if (PXR_ENABLE_NAMESPACES)
 else()
     set(PXR_USE_NAMESPACES "0")
     message(STATUS "C++ namespaces disabled.")
+endif()
+
+# Set Python configuration
+if (PXR_ENABLE_PYTHON_SUPPORT)
+    set(PXR_PYTHON_SUPPORT_ENABLED "1")
+else()
+    set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
 
 # XXX: This is a workaround for an issue in which Python headers unequivocally

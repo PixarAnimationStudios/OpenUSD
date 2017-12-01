@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    defaultPrim = "SetWithModelingVariants_set"
+)
+
+def Xform "SetWithModelingVariants_set" (
+    kind = "assembly"
+    add variantSets = "modelingVariant"
+    variants = {
+        string modelingVariant = "NoCubes"
+    }
+)
+{
+    variantSet "modelingVariant" = {
+        "Cubes" (
+            add references = @./TwoCubes_set.usda@
+        ) {
+        }
+
+        "NoCubes" {
+        }
+    }
+}

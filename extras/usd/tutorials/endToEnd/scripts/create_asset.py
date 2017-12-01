@@ -104,7 +104,8 @@ def _CreateAsset(assetName, assetDir, assetKind, addShadingVariantLayer):
 
 def _CreateAndReferenceLayers(assetPrim, assetDir, refs):
     from pxr import Usd
-    for refLayerPath in refs:
+    # Prepend references from weak to strong
+    for refLayerPath in refs[::-1]:
         referencedStage = Usd.Stage.CreateNew(os.path.join(assetDir, refLayerPath))
         referencedAssetPrim = referencedStage.DefinePrim(assetPrim.GetPath())
         referencedStage.SetDefaultPrim(referencedAssetPrim)

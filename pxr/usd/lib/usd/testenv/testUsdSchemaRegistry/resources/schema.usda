@@ -1,0 +1,37 @@
+#usda 1.0
+(
+    "Test schema file for testUsdSchemaRegistry"
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdSchemaRegistry"
+        string libraryPath      = "pxr/usd/usd"
+    }
+)
+{
+}
+
+class MetadataTest "MetadataTest" (
+    doc = "Testing documentation metadata"
+    hidden = true
+    testCustomMetadata = "garply"
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        displayName = "Display Name"
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+        hidden = True
+        testCustomMetadata = "garply"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        displayName = "Display Name"
+        doc = "Testing documentation metadata"
+        hidden = true
+        testCustomMetadata = "garply"
+    )
+}

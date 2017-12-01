@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 8
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <glob.h>
@@ -100,7 +101,6 @@
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/assign.hpp>
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/container/vector.hpp>
@@ -216,7 +216,6 @@
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator_range.hpp>
-#include <boost/ref.hpp>
 #include <boost/regex.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -235,7 +234,7 @@
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
-#include <boost/type_traits/is_integral.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_cv.hpp>

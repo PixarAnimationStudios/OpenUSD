@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <glob.h>
@@ -92,7 +93,6 @@
 #include <utility>
 #include <vector>
 #include <boost/any.hpp>
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
@@ -179,6 +179,7 @@
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility.hpp>
@@ -187,6 +188,7 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
+#include <tbb/spin_rw_mutex.h>
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

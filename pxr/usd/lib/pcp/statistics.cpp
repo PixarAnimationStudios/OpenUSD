@@ -31,6 +31,8 @@
 
 #include "pxr/base/arch/defines.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct Pcp_GraphStats
@@ -106,7 +108,7 @@ public:
     static void AccumulateCacheStats(
         const PcpCache* cache, Pcp_CacheStats* stats)
     {
-        typedef boost::shared_ptr<PcpPrimIndex_Graph::_SharedData> 
+        typedef std::shared_ptr<PcpPrimIndex_Graph::_SharedData> 
             _SharedNodePool;
         std::set<_SharedNodePool> seenNodePools;
         TfHashSet<PcpMapFunction, MapFuncHash> allMapFuncs;

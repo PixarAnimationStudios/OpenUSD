@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -56,6 +57,9 @@ public:
 
     HD_API
     void SetRefineLevel(int level);
+
+    HD_API
+    void SetVisibility(bool vis);
 
     enum Interpolation { VERTEX, UNIFORM, CONSTANT, FACEVARYING, VARYING };
 
@@ -188,13 +192,32 @@ public:
                                 VtVec4fArray const &rotate,
                                 VtVec3fArray const &translate);
 
-    /// Shader
+    /// XXX : This will be removed as we integrate materials into the
+    ///       new material resource pipeline.
     HD_API
-    void AddShader(SdfPath const &id,
-                   std::string const &sourceSurface,
-                   std::string const &sourceDisplacement,
-                   HdShaderParamVector const &params);
+    void AddMaterialHydra(SdfPath const &id,
+                          std::string const &sourceSurface,
+                          std::string const &sourceDisplacement,
+                          HdShaderParamVector const &params);
+    
+    /// Material
+    HD_API
+    void AddMaterialResource(SdfPath const &id,
+                             VtValue materialResource);
 
+    /// Update a material resource 
+    HD_API
+    void UpdateMaterialResource(SdfPath const &materialId, 
+                                VtValue materialResource);
+
+    HD_API
+    void BindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
+
+    /// Example to update a material binding on the fly
+    HD_API
+    void RebindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
+
+    /// Texture
     HD_API
     void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
 
@@ -237,6 +260,10 @@ public:
     HD_API
     void SetRefineLevel(SdfPath const &id, int refineLevel);
 
+    // set per-prim visibility
+    HD_API
+    void SetVisibility(SdfPath const &id, bool vis);
+
     /// Marks an rprim in the RenderIndex as dirty with the given dirty flags.
     HD_API
     void MarkRprimDirty(SdfPath path, HdDirtyBits flag);
@@ -251,27 +278,6 @@ public:
     void UpdateInstancerPrototypes(float time);
     HD_API
     void UpdateCurvePrimVarsInterpMode(float time);
-
-    /// Set an initial binding for a prim
-    HD_API
-    void BindShader(SdfPath const &rprimId, SdfPath const &shaderId)
-    {
-        _shaderBindings[rprimId] = shaderId;
-    }
-
-    /// Example to update a shader binding on the fly
-    HD_API
-    void RebindShader(SdfPath const &rprimId, SdfPath const &shaderId)
-    {
-        BindShader(rprimId, shaderId);
-    
-        // Mark the rprim shader binding as dirty so sync gets
-        // called on that rprim and also increase 
-        // the version of the global bindings so batches get rebuild (if needed)
-        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-        tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtySurfaceShader);
-        tracker.MarkShaderBindingsDirty();
-    }
 
     // ---------------------------------------------------------------------- //
     // utility functions generating test case
@@ -328,18 +334,20 @@ public:
                                              SdfPath const& prototypeId);
 
     HD_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
     HD_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);    
+    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);    
     HD_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
+    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &materialId);
     HD_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 
-                                  TfToken const &paramName);
+    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &materialId, 
+                                               TfToken const &paramName);
     HD_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     HD_API
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
+    HD_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
 
 private:
     struct _Mesh {
@@ -434,11 +442,11 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
-    struct _Shader {
-        _Shader() { }
-        _Shader(std::string const &srcSurface, 
-                std::string const &srcDisplacement,
-                HdShaderParamVector const &pms)
+    struct _MaterialHydra {
+        _MaterialHydra() { }
+        _MaterialHydra(std::string const &srcSurface, 
+                       std::string const &srcDisplacement,
+                       HdShaderParamVector const &pms)
             : sourceSurface(srcSurface)
             , sourceDisplacement(srcDisplacement)
             , params(pms) {
@@ -469,7 +477,8 @@ private:
     std::map<SdfPath, _Curves> _curves;
     std::map<SdfPath, _Points> _points;
     std::map<SdfPath, _Instancer> _instancers;
-    std::map<SdfPath, _Shader> _shaders;
+    std::map<SdfPath, _MaterialHydra> _materialsHydra;
+    std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, _Texture> _textures;
     std::map<SdfPath, _Camera> _cameras;
     std::map<SdfPath, _Light> _lights;
@@ -477,11 +486,13 @@ private:
     TfHashSet<SdfPath, SdfPath::Hash> _hiddenRprims;
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
-    SdfPathMap _shaderBindings;
+    SdfPathMap _materialBindings;
 
     bool _hasInstancePrimVars;
     int _refineLevel;
+    bool _visibility;
     std::map<SdfPath, int> _refineLevels;
+    std::map<SdfPath, bool> _visibilities;
 };
 
 

@@ -473,6 +473,31 @@ GlfSimpleLightingContext::SetStateFromOpenGL()
             glGetLightfv(lightName, GL_SPECULAR, color);
             light.SetSpecular(GfVec4f(color));
 
+            GLfloat spotDirection[3];
+            glGetLightfv(lightName, GL_SPOT_DIRECTION, spotDirection);
+            light.SetSpotDirection(
+                viewToWorldMatrix.TransformDir(GfVec3f(spotDirection)));
+
+            GLfloat floatValue;
+
+            glGetLightfv(lightName, GL_SPOT_CUTOFF, &floatValue);
+            light.SetSpotCutoff(floatValue);
+
+            glGetLightfv(lightName, GL_SPOT_EXPONENT, &floatValue);
+            light.SetSpotFalloff(floatValue);
+
+            GfVec3f attenuation;
+            glGetLightfv(lightName, GL_CONSTANT_ATTENUATION, &floatValue);
+            attenuation[0] = floatValue;
+
+            glGetLightfv(lightName, GL_LINEAR_ATTENUATION, &floatValue);
+            attenuation[1] = floatValue;
+
+            glGetLightfv(lightName, GL_QUADRATIC_ATTENUATION, &floatValue);
+            attenuation[2] = floatValue;
+
+            light.SetAttenuation(attenuation);
+
             lights.push_back(light);
         }
     }

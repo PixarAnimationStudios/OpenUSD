@@ -38,14 +38,20 @@ def GetScalarTypeFromAttr(attr):
     else:
         return None, False
 
+_toStringFnCache = {}
+
 def ToString(v, typeName=None):
     """Returns a string representing a "detailed view" of the value v.
     This string is used in the watch window"""
 
     from pxr import Tf, Gf
-
-    if v is None:
-        return 'None'
+    global _toStringFnCache
+    
+    # Check cache.
+    t = type(v)
+    fn = _toStringFnCache.get(t)
+    if fn:
+        return fn(v)
 
     if not typeName:
         typeName = str(v.__class__)
@@ -59,59 +65,74 @@ def ToString(v, typeName=None):
         if tfType != Tf.Type.Unknown:
             typeName = tfType.typeName
 
+    # Cache miss.
+    if v is None:
+        fn = lambda: 'None'
+
     # Pretty-print a bounding box
-    if isinstance(v, Gf.BBox3d):
-        prettyMatrix = ("%s\n%s\n%s\n%s" % (v.matrix[0], v.matrix[1],
-            v.matrix[2], v.matrix[3])).replace("(","").replace(")","")
-        result = "Endpts of box diagonal:\n%s\n%s\n\nTransform matrix:\n%s\n" \
-                 % (v.box.GetCorner(0), v.box.GetCorner(7), prettyMatrix)
-        if (v.hasZeroAreaPrimitives):
-            result += "\nHas zero-area primitives\n"
-        else:
-            result += "\nDoes not have zero-area primitives\n"
-        worldSpaceRange = Gf.Range3d()
-        worldSpaceRange.UnionWith(v.matrix.Transform(v.GetRange().GetMin()))
-        worldSpaceRange.UnionWith(v.matrix.Transform(v.GetRange().GetMax()))
-        result += "\nWorld-space range:\n%s\n%s\n" % \
-            (worldSpaceRange.GetMin(), worldSpaceRange.GetMax())
+    elif isinstance(v, Gf.BBox3d):
+        def bboxToString(v):
+            prettyMatrix = (
+                "%s\n%s\n%s\n%s" %
+                (v.matrix[0], v.matrix[1],
+                 v.matrix[2], v.matrix[3])).replace("(","").replace(")","")
+            result = ("Endpts of box diagonal:\n"
+                      "%s\n%s\n\nTransform matrix:\n%s\n"
+                      % (v.box.GetCorner(0), v.box.GetCorner(7), prettyMatrix))
+            if (v.hasZeroAreaPrimitives):
+                result += "\nHas zero-area primitives\n"
+            else:
+                result += "\nDoes not have zero-area primitives\n"
+            worldSpaceRange = Gf.Range3d()
+            worldSpaceRange.UnionWith(v.matrix.Transform(v.GetRange().GetMin()))
+            worldSpaceRange.UnionWith(v.matrix.Transform(v.GetRange().GetMax()))
+            result += "\nWorld-space range:\n%s\n%s\n" % \
+                      (worldSpaceRange.GetMin(), worldSpaceRange.GetMax())
+            return result
+        fn = lambda b: bboxToString(b)
 
     # Pretty-print a GfMatrix*
     elif typeName.startswith("GfMatrix"):
-        result = ""
-        numRows = int(typeName[8])
-
-        for i in range(numRows):
-            result += str(v[i]) + "\n"
-        result = result.replace("(","").replace(")","")
+        def matrixToString(v):
+            result = ""
+            numRows = int(typeName[8])
+            for i in range(numRows):
+                result += str(v[i]) + "\n"
+            result = result.replace("(","").replace(")","")
+            return result
+        fn = lambda m: matrixToString(m)
 
     # Pretty-print a GfVec*
     elif typeName.startswith("GfVec"):
-        result = "( %s )" % (", ".join([
-            ToString(x) for x in v]))
+        fn = lambda v: str(v)
 
     # Pretty-print a TfTimeStamp
     elif isinstance(v, Tf.TimeStamp):
-        from datetime import datetime
-        dt = datetime.fromtimestamp( v.Get() )
-        result = dt.isoformat(' ')
-
+        def timeStampToString(v):
+            from datetime import datetime
+            dt = datetime.fromtimestamp(v.Get())
+            return dt.isoformat(' ')
+        fn = lambda t: timeStampToString(t)
+        
     # pretty print an int
     elif isinstance(v, int):
-        result = "{:,d}".format(v)
+        fn = lambda i: "{:,d}".format(i)
 
     # pretty print a float
     elif isinstance(v, float):
-        result =  "{:,.6f}".format(v)
+        fn = lambda f: "{:,.6f}".format(f)
 
     # print a string as-is
     elif isinstance(v, str):
-        result = v
+        fn = lambda s: s
 
     else:
         import pprint
-        result = pprint.pformat(v)
+        fn = lambda v: pprint.pformat(v)
 
-    return result
+    # Populate cache and invoke function to produce the string.
+    _toStringFnCache[t] = fn
+    return fn(v)
 
 def ToClipboard(v, typeName=None):
 

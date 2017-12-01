@@ -35,42 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdHydra/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDHYDRA_TOKENS \
-    (black) \
-    (clamp) \
-    ((displayLookBxdf, "displayLook:bxdf")) \
-    (faceIndex) \
-    (faceOffset) \
-    (frame) \
-    (HwPrimvar_1) \
-    (HwPtexTexture_1) \
-    (HwUvTexture_1) \
-    ((infoFilename, "info:filename")) \
-    ((infoVarname, "info:varname")) \
-    (linear) \
-    (linearMipmapLinear) \
-    (linearMipmapNearest) \
-    (magFilter) \
-    (minFilter) \
-    (mirror) \
-    (nearest) \
-    (nearestMipmapLinear) \
-    (nearestMipmapNearest) \
-    (repeat) \
-    (textureMemory) \
-    (uv) \
-    (wrapS) \
-    (wrapT)
 
-/// \anchor UsdHydraTokens
+/// \class UsdHydraTokensType
 ///
-/// <b>UsdHydraTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdHydraTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -78,41 +53,124 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdHydraTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdHydraTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdHydraTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdHydraTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdHydraTokens->black);
 /// \endcode
+struct UsdHydraTokensType {
+    USDHYDRA_API UsdHydraTokensType();
+    /// \brief "black"
+    /// 
+    /// Return black when sampling outside the bounds of the texture., Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
+    const TfToken black;
+    /// \brief "clamp"
+    /// 
+    /// The texture coordinate is clamped to [0,1]. , Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
+    const TfToken clamp;
+    /// \brief "displayLook:bxdf"
+    /// 
+    /// UsdHydraLookAPI
+    const TfToken displayLookBxdf;
+    /// \brief "faceIndex"
+    /// 
+    /// UsdHydraPtexTexture
+    const TfToken faceIndex;
+    /// \brief "faceOffset"
+    /// 
+    /// UsdHydraPtexTexture
+    const TfToken faceOffset;
+    /// \brief "frame"
+    /// 
+    /// UsdHydraTexture
+    const TfToken frame;
+    /// \brief "HwPrimvar_1"
+    /// 
+    /// Special token for the usdHydra library.
+    const TfToken HwPrimvar_1;
+    /// \brief "HwPtexTexture_1"
+    /// 
+    /// Special token for the usdHydra library.
+    const TfToken HwPtexTexture_1;
+    /// \brief "HwUvTexture_1"
+    /// 
+    /// Special token for the usdHydra library.
+    const TfToken HwUvTexture_1;
+    /// \brief "info:filename"
+    /// 
+    /// UsdHydraTexture, UsdHydraShader
+    const TfToken infoFilename;
+    /// \brief "info:varname"
+    /// 
+    /// UsdHydraPrimvar
+    const TfToken infoVarname;
+    /// \brief "linear"
+    /// 
+    /// A weighted linear blend of nearest adjacent samples. , Possible value for UsdHydraUvTexture::GetMinFilterAttr(), Possible value for UsdHydraUvTexture::GetMagFilterAttr()
+    const TfToken linear;
+    /// \brief "linearMipmapLinear"
+    /// 
+    /// See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
+    const TfToken linearMipmapLinear;
+    /// \brief "linearMipmapNearest"
+    /// 
+    /// See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
+    const TfToken linearMipmapNearest;
+    /// \brief "magFilter"
+    /// 
+    /// UsdHydraUvTexture
+    const TfToken magFilter;
+    /// \brief "minFilter"
+    /// 
+    /// UsdHydraUvTexture
+    const TfToken minFilter;
+    /// \brief "mirror"
+    /// 
+    /// The texture coordinate wraps around like a mirror. -0.2 becomes 0.2, -1.2 becomes 0.8, etc. , Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
+    const TfToken mirror;
+    /// \brief "nearest"
+    /// 
+    /// Selects the nearest sample for the given coordinate , Possible value for UsdHydraUvTexture::GetMinFilterAttr(), Possible value for UsdHydraUvTexture::GetMagFilterAttr()
+    const TfToken nearest;
+    /// \brief "nearestMipmapLinear"
+    /// 
+    /// See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
+    const TfToken nearestMipmapLinear;
+    /// \brief "nearestMipmapNearest"
+    /// 
+    /// See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
+    const TfToken nearestMipmapNearest;
+    /// \brief "repeat"
+    /// 
+    /// The texture coordinate wraps around the texture. So a texture coordinate of -0.2 becomes the equivalent of 0.8. , Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
+    const TfToken repeat;
+    /// \brief "textureMemory"
+    /// 
+    /// UsdHydraTexture
+    const TfToken textureMemory;
+    /// \brief "uv"
+    /// 
+    /// UsdHydraUvTexture
+    const TfToken uv;
+    /// \brief "wrapS"
+    /// 
+    /// UsdHydraUvTexture
+    const TfToken wrapS;
+    /// \brief "wrapT"
+    /// 
+    /// UsdHydraUvTexture
+    const TfToken wrapT;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdHydraTokens
 ///
-/// The tokens are:
-/// \li <b>black</b> - Return black when sampling outside the bounds of the texture., Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
-/// \li <b>clamp</b> - The texture coordinate is clamped to [0,1]. , Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
-/// \li <b>displayLookBxdf</b> - UsdHydraLookAPI
-/// \li <b>faceIndex</b> - UsdHydraPtexTexture
-/// \li <b>faceOffset</b> - UsdHydraPtexTexture
-/// \li <b>frame</b> - UsdHydraTexture
-/// \li <b>HwPrimvar_1</b> - Special token for the usdHydra library.
-/// \li <b>HwPtexTexture_1</b> - Special token for the usdHydra library.
-/// \li <b>HwUvTexture_1</b> - Special token for the usdHydra library.
-/// \li <b>infoFilename</b> - UsdHydraTexture, UsdHydraShader
-/// \li <b>infoVarname</b> - UsdHydraPrimvar
-/// \li <b>linear</b> - A weighted linear blend of nearest adjacent samples. , Possible value for UsdHydraUvTexture::GetMinFilterAttr(), Possible value for UsdHydraUvTexture::GetMagFilterAttr()
-/// \li <b>linearMipmapLinear</b> - See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
-/// \li <b>linearMipmapNearest</b> - See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
-/// \li <b>magFilter</b> - UsdHydraUvTexture
-/// \li <b>minFilter</b> - UsdHydraUvTexture
-/// \li <b>mirror</b> - The texture coordinate wraps around like a mirror. -0.2 becomes 0.2, -1.2 becomes 0.8, etc. , Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
-/// \li <b>nearest</b> - Selects the nearest sample for the given coordinate , Possible value for UsdHydraUvTexture::GetMinFilterAttr(), Possible value for UsdHydraUvTexture::GetMagFilterAttr()
-/// \li <b>nearestMipmapLinear</b> - See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
-/// \li <b>nearestMipmapNearest</b> - See https://www.opengl.org/wiki/Sampler_Object , Possible value for UsdHydraUvTexture::GetMinFilterAttr()
-/// \li <b>repeat</b> - The texture coordinate wraps around the texture. So a texture coordinate of -0.2 becomes the equivalent of 0.8. , Possible value for UsdHydraUvTexture::GetWrapTAttr(), Possible value for UsdHydraUvTexture::GetWrapSAttr()
-/// \li <b>textureMemory</b> - UsdHydraTexture
-/// \li <b>uv</b> - UsdHydraUvTexture
-/// \li <b>wrapS</b> - UsdHydraUvTexture
-/// \li <b>wrapT</b> - UsdHydraUvTexture
-TF_DECLARE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_API, USDHYDRA_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdHydraTokensType
+extern USDHYDRA_API TfStaticData<UsdHydraTokensType> UsdHydraTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
