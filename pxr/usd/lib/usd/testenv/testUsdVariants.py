@@ -117,7 +117,7 @@ class TestUsdVariants(unittest.TestCase):
                 with vs_p2.GetVariantEditContext():
                     s.DefinePrim(p2.GetPath().AppendChild('StuffA'), 'Sphere')
 
-            self.assertTrue(vss.GetNames() == ['LOD', 'Costume'])
+            self.assertTrue(vss.GetNames() == ['Costume', 'LOD'])
             self.assertTrue(s.GetPrimAtPath('/Foo/SpookyHat'))
             self.assertTrue(s.GetRootLayer().GetPrimAtPath(
                 '/Foo{LOD=High}{Costume=Spooky}SpookyHat'))

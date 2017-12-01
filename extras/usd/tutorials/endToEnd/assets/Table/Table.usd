@@ -10,7 +10,7 @@ def Xform "Table" (
         string name = "Table"
     }
     kind = "component"
-    prepend references = @./Table.maya.usd@
+    add references = @./Table.maya.usd@
 )
 {
 }

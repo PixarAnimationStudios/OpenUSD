@@ -18,12 +18,12 @@ def Xform "ExampleModelingVariants" (
     }
     variantSet "shadingComplexity" = {
         "display" (
-            prepend references = @./ExampleModelingVariants_slim.gen.usd@</ExampleModelingVariants>
+            add references = @./ExampleModelingVariants_slim.gen.usd@</ExampleModelingVariants>
         ) {
 
         }
         "full" (
-            prepend references = @./ExampleModelingVariants_slim.gen.usd@</ExampleModelingVariants>
+            add references = @./ExampleModelingVariants_slim.gen.usd@</ExampleModelingVariants>
         ) {
 
         }

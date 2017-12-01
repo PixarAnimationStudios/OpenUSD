@@ -49,10 +49,8 @@ class TestUsdShadeBinding(unittest.TestCase):
 
         cr = s.OverridePrim("/composed")
 
-        cr.GetReferences().AddReference(rl.identifier, "/weaker",
-            position=Usd.ListPositionFront)
-        cr.GetReferences().AddReference(rl.identifier, "/stronger",
-            position=Usd.ListPositionFront)
+        cr.GetReferences().AddReference(rl.identifier, "/stronger")
+        cr.GetReferences().AddReference(rl.identifier, "/weaker")
 
         gpc = s.GetPrimAtPath("/composed/gprim")
         lb = UsdShade.Material.GetBindingRel(gpc)
@@ -78,12 +76,15 @@ class TestUsdShadeBinding(unittest.TestCase):
         self.assertTrue(gprim)
 
         self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
+        self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
         look.Bind(gprim)
+        self.assertTrue(UsdShade.Material.GetBoundMaterial(gprim))
         self.assertTrue(UsdShade.Material.GetBoundMaterial(gprim))
 
         # Now add one more target to mess things up
         rel = UsdShade.Material.GetBindingRel(gprim)
         rel.AddTarget(Sdf.Path("/World"))
+        self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
         self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
 
     def test_BlockingOnOver(self):
@@ -97,6 +98,7 @@ class TestUsdShadeBinding(unittest.TestCase):
         look.Bind(gprim)
         # This will compose in gprim's binding, but should still be blocked
         over.GetInherits().AddInherit("/World/gprim")
+        self.assertFalse(UsdShade.Material.GetBoundMaterial(over))
         self.assertFalse(UsdShade.Material.GetBoundMaterial(over))
 
 if __name__ == "__main__":

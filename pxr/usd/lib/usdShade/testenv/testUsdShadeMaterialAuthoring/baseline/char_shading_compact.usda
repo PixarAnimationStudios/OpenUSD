@@ -1,11 +1,11 @@
 #usda 1.0
 
 def "ModelShading" (
-    prepend references = @./char_shading_compact.usda@</ShadingDefs>
+    add references = @./char_shading_compact.usda@</ShadingDefs>
     variants = {
         string materialVariant = "Wet"
     }
-    prepend variantSets = "materialVariant"
+    add variantSets = "materialVariant"
 )
 {
     variantSet "materialVariant" = {
@@ -171,7 +171,7 @@ def "ShadingDefs"
             variants = {
                 string materialVariant = "Dry"
             }
-            prepend variantSets = "materialVariant"
+            add variantSets = "materialVariant"
         )
         {
             variantSet "materialVariant" = {
@@ -200,7 +200,7 @@ def "ShadingDefs"
             variants = {
                 string materialVariant = "Dry"
             }
-            prepend variantSets = "materialVariant"
+            add variantSets = "materialVariant"
         )
         {
             variantSet "materialVariant" = {
@@ -229,7 +229,7 @@ def "ShadingDefs"
             variants = {
                 string materialVariant = "Dry"
             }
-            prepend variantSets = "materialVariant"
+            add variantSets = "materialVariant"
         )
         {
             variantSet "materialVariant" = {

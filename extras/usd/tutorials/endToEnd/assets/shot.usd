@@ -11,7 +11,7 @@ def Xform "World"
     }
 
     def "main_cam" (
-        prepend references = @./main_cam.usd@
+        add references = @./main_cam.usd@
     )
     {
     }

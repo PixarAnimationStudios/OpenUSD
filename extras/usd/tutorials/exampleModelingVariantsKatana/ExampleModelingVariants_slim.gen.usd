@@ -24,7 +24,7 @@ def "ExampleModelingVariants" (
 
         }
         "full" (
-            prepend references = @./ExampleModelingVariants_slim.gen.usd@</ShaderDefs>
+            add references = @./ExampleModelingVariants_slim.gen.usd@</ShaderDefs>
         ) {
 
         }
