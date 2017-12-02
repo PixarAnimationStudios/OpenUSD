@@ -37,8 +37,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrUsdMayaShadingModeExportContext
 {
 public:
+    void SetShadingEngine(MObject shadingEngine) { _shadingEngine = shadingEngine; }
     MObject GetShadingEngine() const { return _shadingEngine; }
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
+    bool GetMergeTransformAndShape() const { return _mergeTransformAndShape; }
+    const SdfPath& GetOverrideRootPath() const { return _overrideRootPath; }
+    const SdfPathSet& GetBindableRoots() const { return _bindableRoots; }
+
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& GetDagPathToUsdMap() const
+    { return _dagPathToUsdMap; }
 
     PXRUSDMAYA_API
     MObject GetSurfaceShader() const;
@@ -91,14 +98,15 @@ public:
             const UsdStageRefPtr& stage,
             bool mergeTransformAndShape,
             const PxrUsdMayaUtil::ShapeSet& bindableRoots,
-            SdfPath overrideRootPath);
+            SdfPath overrideRootPath,
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap);
 private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
     bool _mergeTransformAndShape;
     SdfPath _overrideRootPath;
-
     SdfPathSet _bindableRoots;
+    const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& _dagPathToUsdMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
