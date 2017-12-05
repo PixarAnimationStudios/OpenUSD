@@ -3,7 +3,7 @@
     endTimeCode = 240
     startTimeCode = 1
     subLayers = [
-        @/home/carl/houdiniUSD/Houdini/OVR_house.usda@,
+        @OVR_house.usda@,
         @shot_import.usda@
     ]
 )
