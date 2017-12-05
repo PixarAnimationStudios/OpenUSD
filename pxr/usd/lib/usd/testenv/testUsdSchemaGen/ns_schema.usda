@@ -106,6 +106,7 @@ class Derived "Derived" (
 }
 
 class TestPxHairman "TestPxHairman" (
+    inherits = </Typed>
     customData = {
         string className = "TestHairman"
     }

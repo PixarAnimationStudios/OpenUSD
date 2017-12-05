@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdContrived/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdContrived/tokens.h"
@@ -53,7 +53,7 @@ class SdfAssetPath;
 /// \class UsdContrivedTestHairman
 ///
 ///
-class UsdContrivedTestHairman : public UsdSchemaBase
+class UsdContrivedTestHairman : public UsdTyped
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -65,14 +65,14 @@ public:
     /// Compile-time constant indicating whether or not this class inherits from
     /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
     /// UsdPrim.
-    static const bool IsTyped = false;
+    static const bool IsTyped = true;
 
     /// Construct a UsdContrivedTestHairman on UsdPrim \p prim .
     /// Equivalent to UsdContrivedTestHairman::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdContrivedTestHairman(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdTyped(prim)
     {
     }
 
@@ -80,7 +80,7 @@ public:
     /// Should be preferred over UsdContrivedTestHairman(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdContrivedTestHairman(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdTyped(schemaObj)
     {
     }
 

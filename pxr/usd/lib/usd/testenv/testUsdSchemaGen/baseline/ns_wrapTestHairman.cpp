@@ -69,7 +69,7 @@ void wrapUsdContrivedTestHairman()
 {
     typedef UsdContrivedTestHairman This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdTyped> >
         cls("TestHairman");
 
     cls

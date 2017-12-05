@@ -314,6 +314,16 @@ class ClassInfo(object):
         self.isConcrete = 'false' if not self.typeName else 'true'
         self.isTyped = 'true' if _IsTyped(usdPrim) else 'false'
 
+        if (self.isConcrete == 'true' and self.isTyped == 'false'):
+            errorStr = ('Invalid schema definition at ' 
+                        + '</' + sdfPrim.path.name + '>. '
+                        + 'Schema classes must either inherit Typed(IsA), or '
+                        + 'neither inherit typed nor provide a typename(API). \n'
+                        + '       See '
+                        + 'https://graphics.pixar.com/usd/docs/api/_usd__page__generating_schemas.html#Usd_IsAVsAPISchemas '
+                        + 'for more information.\n')
+            raise Exception(errorStr)
+
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
 
