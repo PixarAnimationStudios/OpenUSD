@@ -40,7 +40,7 @@ TF_DEFINE_ENV_SETTING(
     "Set to usdRi when models can interchange UsdShade prims.");
 
 TF_DEFINE_ENV_SETTING(
-    USD_AUTHOR_OLD_STYLE_ADD, true,
+    USD_AUTHOR_OLD_STYLE_ADD, false,
     "Set true if USD Append() API's should author Add operations instead of "
     "Append, to mimic their historical behavior.");
 
