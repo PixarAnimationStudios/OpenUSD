@@ -1937,20 +1937,53 @@ PxrUsdKatanaUtilsLightListAccess::SetLinks(
     const UsdLuxLinkingAPI &linkAPI,
     const std::string &linkName)
 {
-    UsdLuxLinkingAPI::LinkMap linkMap = linkAPI.ComputeLinkMap();
+    bool isLinked = false;
     FnKat::GroupBuilder onBuilder, offBuilder;
-    for (const auto &entry: linkMap) {
-        // By convention, entries are "link.TYPE.{on,off}.HASH" where
-        // HASH is getHash() of the CEL and TYPE is the type of linking
-        // (light, shadow, etc). In this case we can just hash the
-        // string attribute form of the location.
-        const std::string link_loc =
-            PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(entry.first,
-                                                           _usdInArgs);
-        const FnKat::StringAttribute link_loc_attr(link_loc);
-        const std::string link_hash = link_loc_attr.getHash().str();
-        (entry.second ? onBuilder : offBuilder).set(link_hash, link_loc_attr);
+
+    // See if the prim has special blind data for round-tripping CEL
+    // expressions.
+    UsdPrim prim = linkAPI.GetPrim();
+    UsdAttribute off =
+        prim.GetAttribute(TfToken("katana:CEL:lightLink:" + linkName + ":off"));
+    UsdAttribute on =
+        prim.GetAttribute(TfToken("katana:CEL:lightLink:" + linkName + ":on"));
+    if (off.IsValid() || on.IsValid()) {
+        // We have CEL info.  Use it as-is.
+        VtArray<std::string> patterns;
+        if (off.IsValid() && off.Get(&patterns)) {
+            for (const auto& pattern: patterns) {
+                const FnKat::StringAttribute patternAttr(pattern);
+                offBuilder.set(patternAttr.getHash().str(), patternAttr);
+            }
+        }
+        if (on.IsValid() && on.Get(&patterns)) {
+            for (const auto& pattern: patterns) {
+                const FnKat::StringAttribute patternAttr(pattern);
+                onBuilder.set(patternAttr.getHash().str(), patternAttr);
+            }
+        }
+
+        // We can't know without evaluating if we link the prim's path
+        // so assume that we do.
+        isLinked = true;
     }
+    else {
+        UsdLuxLinkingAPI::LinkMap linkMap = linkAPI.ComputeLinkMap();
+        for (const auto &entry: linkMap) {
+            // By convention, entries are "link.TYPE.{on,off}.HASH" where
+            // HASH is getHash() of the CEL and TYPE is the type of linking
+            // (light, shadow, etc). In this case we can just hash the
+            // string attribute form of the location.
+            const std::string location =
+                PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(entry.first,
+                                                               _usdInArgs);
+            const FnKat::StringAttribute locAttr(location);
+            const std::string linkHash = locAttr.getHash().str();
+            (entry.second ? onBuilder : offBuilder).set(linkHash, locAttr);
+        }
+        isLinked = UsdLuxLinkingAPI::DoesLinkPath(linkMap, linkAPI.GetPath());
+    }
+
     // Set off and then on attributes, in order, to ensure
     // stable override semantics when katana applies these.
     // (This matches what the Gaffer node does.)
@@ -1962,7 +1995,8 @@ PxrUsdKatanaUtilsLightListAccess::SetLinks(
     if (onAttr.getNumberOfChildren()) {
         _Set("link."+linkName+".on", onAttr);
     }
-    return UsdLuxLinkingAPI::DoesLinkPath(linkMap, linkAPI.GetPath());
+
+    return isLinked;
 }
 
 void
