@@ -58,7 +58,16 @@ class testUsdExportPointInstancer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         standalone.initialize('usd')
-        cmds.file(os.path.abspath('InstancerTest.ma'),
+
+        # Choose the test file based on whether the MASH plugin is available.
+        try:
+            cmds.loadPlugin("MASH")
+            cls.hasMash = True
+        except:
+            cls.hasMash = False
+
+        scene = "InstancerTestMash.ma" if cls.hasMash else "InstancerTest.ma"
+        cmds.file(os.path.abspath(scene),
                   open=True,
                   force=True)
 
@@ -99,12 +108,12 @@ class testUsdExportPointInstancer(unittest.TestCase):
                 break
         self.assertEqual(foundInstancerTranslate, hasInstancerTranslate)
 
-    def testPrototypes(self):
+    def _TestPrototypes(self, instancerName):
         """
         Tests that all of the instancer prototypes made it to USD.
         """
         self.assertTrue(self.stage)
-        instancer = OMFX.MFnInstancer(self._GetDagPath("instancer1"))
+        instancer = OMFX.MFnInstancer(self._GetDagPath(instancerName))
 
         # Move to the last frame so that we can ensure all of the prototypes
         # are in use.
@@ -123,7 +132,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
             "|dummyGroup|pCube1|pCubeShape1",
             "|dummyGroup|pCube1|pSphere1|pSphereShape1",
             # 1 (logical 2) - Sphere
-            "|InstancerTest|instancer1|prototypeUnderInstancer|prototypeUnderInstancerShape",
+            "|InstancerTest|%s|prototypeUnderInstancer|prototypeUnderInstancerShape" % instancerName,
             # 2 (logical 3) - Reference
             "|referencePrototype|NS_referencePrototype:Geom|NS_referencePrototype:Cone|NS_referencePrototype:ConeShape"
         ])
@@ -131,7 +140,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
         # Check that the USD prims have correct type name, references, kinds,
         # kinds, instancerTranslate xformOps.
         prototypesPrim = self.stage.GetPrimAtPath(
-                "/InstancerTest/instancer1/Prototypes")
+                "/InstancerTest/%s/Prototypes" % instancerName)
         self.assertEqual(len(prototypesPrim.GetChildren()), 3)
 
         prototype0 = prototypesPrim.GetChild("prototype_0")
@@ -145,6 +154,19 @@ class testUsdExportPointInstancer(unittest.TestCase):
         self.assertEqual(
                 Usd.ModelAPI(prototype2).GetAssetName(),
                 "ConeAssetName")
+
+    def testNParticlePrototypes(self):
+        """
+        Tests that all of the nParticle instancer prototypes made it to USD.
+        """
+        self._TestPrototypes("instancer1")
+
+    def testMashPrototypes(self):
+        """
+        Tests that all of the MASH instancer prototypes made it to USD.
+        """
+        if self.hasMash:
+            self._TestPrototypes("MASH1_Instancer")
 
     def _MayaToGfMatrix(self, mayaMatrix):
         scriptUtil = OM.MScriptUtil()
@@ -190,13 +212,10 @@ class testUsdExportPointInstancer(unittest.TestCase):
         self.assertTrue(Gf.IsClose(quath1.imaginary, quath2.imaginary,
                 self.EPSILON))
 
-    def testTransforms(self):
-        """
-        Check that the point transforms are correct.
-        """
-        mayaInstancer = OMFX.MFnInstancer(self._GetDagPath("instancer1"))
+    def _TestTransforms(self, instancerName):
+        mayaInstancer = OMFX.MFnInstancer(self._GetDagPath(instancerName))
         usdInstancer = UsdGeom.PointInstancer(
-                self.stage.GetPrimAtPath("/InstancerTest/instancer1"))
+                self.stage.GetPrimAtPath("/InstancerTest/%s" % instancerName))
 
         time = self.START_TIMECODE
         while time <= self.END_TIMECODE:
@@ -206,7 +225,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
             # as offsets from prototypes' original world space positions.
             worldPositions = [
                 self._GetWorldSpacePosition("|dummyGroup|pCube1"),
-                self._GetWorldSpacePosition("|InstancerTest|instancer1|prototypeUnderInstancer"),
+                self._GetWorldSpacePosition("|InstancerTest|%s|prototypeUnderInstancer" % instancerName),
                 self._GetWorldSpacePosition("|referencePrototype")
             ]
 
@@ -241,13 +260,23 @@ class testUsdExportPointInstancer(unittest.TestCase):
 
             time += 1.0
 
-    def testInstancePaths(self):
+    def testNParticleTransforms(self):
         """
-        Checks that the proto index assigned for each point is correct.
+        Check that the nParticle point transforms are correct.
         """
-        mayaInstancer = OMFX.MFnInstancer(self._GetDagPath("instancer1"))
+        self._TestTransforms("instancer1")
+
+    def testMashTransforms(self):
+        """
+        Check that the MASH point transforms are correct.
+        """
+        if self.hasMash:
+            self._TestTransforms("MASH1_Instancer")
+
+    def _TestInstancePaths(self, instancerName):
+        mayaInstancer = OMFX.MFnInstancer(self._GetDagPath(instancerName))
         usdInstancer = UsdGeom.PointInstancer(
-                self.stage.GetPrimAtPath("/InstancerTest/instancer1"))
+                self.stage.GetPrimAtPath("/InstancerTest/%s" % instancerName))
 
         time = self.START_TIMECODE
         while time <= self.END_TIMECODE:
@@ -286,6 +315,20 @@ class testUsdExportPointInstancer(unittest.TestCase):
 
             time += 1.0
 
+    def testNParticleInstancePaths(self):
+        """
+        Checks that the proto index assigned for each point is correct
+        in the nParticle instancer.
+        """
+        self._TestInstancePaths("instancer1")
+
+    def testMashInstancePaths(self):
+        """
+        Checks that the proto index assigned for each point is correct
+        in the MASH instancer.
+        """
+        if self.hasMash:
+            self._TestInstancePaths("MASH1_Instancer")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
