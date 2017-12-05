@@ -916,6 +916,7 @@ namespace {
 
     static void
     _PreSyncRPrims(HdSceneDelegate *sceneDelegate,
+                   HdChangeTracker *tracker,
                    _RprimSyncRequestVector *syncReq,
                    _ReprList const& reprs,
                    size_t begin,
@@ -967,6 +968,8 @@ namespace {
                     reprsMask >>= 1;
                 }
                 dirtyBits &= ~HdChangeTracker::InitRepr;
+                // Update the InitRepr bit in the change tracker.
+                tracker->MarkRprimClean(rprim->GetId(), dirtyBits);
             }
 
             if (rprim->CanSkipDirtyBitPropagationAndSync(dirtyBits)) {
@@ -988,13 +991,15 @@ namespace {
 
     static void
     _PreSyncRequestVector(HdSceneDelegate *sceneDelegate,
+                          HdChangeTracker *tracker,
                           _RprimSyncRequestVector *syncReq,
                           _ReprList const &reprs)
     {
         size_t numPrims = syncReq->rprims.size();
         WorkParallelForN(numPrims,
                          std::bind(&_PreSyncRPrims,
-                                   sceneDelegate, syncReq, std::cref(reprs),
+                                   sceneDelegate, tracker,
+                                   syncReq, std::cref(reprs),
                                    std::placeholders::_1,
                                    std::placeholders::_2));
 
@@ -1204,6 +1209,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             dirtyBitDispatcher.Run(
                                    std::bind(&_PreSyncRequestVector,
                                              sceneDelegate,
+                                             &_tracker,
                                              r,
                                              std::cref(reprs)));
 
