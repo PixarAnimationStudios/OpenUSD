@@ -11,6 +11,7 @@ Source can be found at: https://github.com/openexr/openexr/tree/master/IlmBase/H
     ```
     cp openexr/IlmBase/Half/half.h ilmbase_half.h
     cp openexr/IlmBase/Half/half.cpp ilmbase_half.cpp
+    cp openexr/IlmBase/Half/halfLimits.h ilmbase_halfLimits.h
     cp openexr/IlmBase/Half/eLut.h ilmbase_eLut.h
     cp openexr/IlmBase/Half/toFloat.h ilmbase_toFloat.h
     ```
@@ -28,5 +29,6 @@ generate a new patch file, run the following commands
 ```
 diff -ruN openexr/IlmBase/Half/half.cpp ilmbase_half.cpp > ilmbase_half.patch
 diff -ruN openexr/IlmBase/Half/half.h ilmbase_half.h >> ilmbase_half.patch
+diff -ruN openexr/IlmBase/Half/halfLimits.h ilmbase_halfLimits.h >> ilmbase_half.patch
 ```
 

@@ -206,3 +206,36 @@
 +
  #endif
 +
+--- openexr/IlmBase/Half/halfLimits.h	2017-11-22 10:45:00.877107971 -0800
++++ ilmbase_halfLimits.h	2017-11-22 10:43:14.895586372 -0800
+@@ -38,8 +38,8 @@
+ //     Rod Bogart <rgb@ilm.com>
+ 
+ 
+-#ifndef INCLUDED_HALF_LIMITS_H
+-#define INCLUDED_HALF_LIMITS_H
++#ifndef PXR_HALF_LIMITS_H
++#define PXR_HALF_LIMITS_H
+ 
+ 
+ //------------------------------------------------------------------------
+@@ -49,13 +49,17 @@
+ //------------------------------------------------------------------------
+ 
+ #include <limits>
+-#include "half.h"
++#include "pxr/pxr.h"
++#include "pxr/base/gf/ilmbase_half.h"
+ 
+ namespace std {
+ 
+ template <>
+-class numeric_limits <half>
++class numeric_limits <PXR_NS::pxr_half::half>
+ {
++  private:
++    using half = PXR_NS::pxr_half::half;  
++  
+   public:
+ 
+     static const bool is_specialized = true;

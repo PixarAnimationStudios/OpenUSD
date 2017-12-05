@@ -67,6 +67,7 @@ pxr_library(gf
     PUBLIC_HEADERS
         api.h
         declare.h
+        ilmbase_halfLimits.h
         limits.h
         traits.h
 
