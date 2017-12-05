@@ -82,7 +82,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // so later on other tasks can use this information 
     // draw shadows or other purposes
     (*ctx)[HdxTokens->lightingShader] =
-        boost::dynamic_pointer_cast<HdLightingShader>(_lightingShader);
+        boost::dynamic_pointer_cast<HdStLightingShader>(_lightingShader);
 
     _TaskDirtyState dirtyState;
 

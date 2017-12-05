@@ -21,30 +21,44 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_PACKAGE_H
-#define HD_PACKAGE_H
+#ifndef HDST_LIGHTING_SHADER_H
+#define HDST_LIGHTING_SHADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/base/gf/matrix4d.h"
+
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HD_API
-TfToken HdPackageComputeShader();
+typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
 
-HD_API
-TfToken HdPackageLightingIntegrationShader();
+/// \class HdStLightingShader
+///
+/// A lighting shader base class.
+///
+class HdStLightingShader : public HdShaderCode {
+public:
+    HDST_API
+    HdStLightingShader();
+    HDST_API
+    virtual ~HdStLightingShader();
 
-HD_API
-TfToken HdPackageFallbackSurfaceShader();
+    /// Sets camera state.
+    virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
+                           GfMatrix4d const &projectionMatrix) = 0;
 
-HD_API
-TfToken HdPackagePtexTextureShader();
+private:
+
+    // No copying
+    HdStLightingShader(const HdStLightingShader &)                     = delete;
+    HdStLightingShader &operator =(const HdStLightingShader &)         = delete;
+};
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif  // HDST_LIGHTING_SHADER_H

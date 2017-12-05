@@ -25,11 +25,11 @@
 #define HDST_UNIT_TEST_HELPER
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/glf/glslfx.h"
@@ -105,7 +105,7 @@ private:
 ///
 typedef boost::shared_ptr<class HdSt_TestLightingShader> HdSt_TestLightingShaderSharedPtr;
 
-class HdSt_TestLightingShader : public HdLightingShader {
+class HdSt_TestLightingShader : public HdStLightingShader {
 public:
     HdSt_TestLightingShader();
     virtual ~HdSt_TestLightingShader();
@@ -117,7 +117,7 @@ public:
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
-    /// HdLightingShader overrides
+    /// HdStLightingShader overrides
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
                            GfMatrix4d const &projectionMatrix);
 

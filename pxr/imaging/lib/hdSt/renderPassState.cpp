@@ -23,13 +23,13 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/fallbackLightingShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
-#include "pxr/imaging/hd/renderPassShader.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
 
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hd/fallbackLightingShader.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -53,18 +53,18 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 HdStRenderPassState::HdStRenderPassState()
     : HdRenderPassState()
-    , _renderPassShader(new HdRenderPassShader())
-    , _fallbackLightingShader(new Hd_FallbackLightingShader())
+    , _renderPassShader(new HdStRenderPassShader())
+    , _fallbackLightingShader(new HdSt_FallbackLightingShader())
     , _clipPlanesBufferSize(0)
 {
     _lightingShader = _fallbackLightingShader;
 }
 
 HdStRenderPassState::HdStRenderPassState(
-    HdRenderPassShaderSharedPtr const &renderPassShader)
+    HdStRenderPassShaderSharedPtr const &renderPassShader)
     : HdRenderPassState()
     , _renderPassShader(renderPassShader)
-    , _fallbackLightingShader(new Hd_FallbackLightingShader())
+    , _fallbackLightingShader(new HdSt_FallbackLightingShader())
     , _clipPlanesBufferSize(0)
 {
     _lightingShader = _fallbackLightingShader;
@@ -183,7 +183,7 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
 }
 
 void
-HdStRenderPassState::SetLightingShader(HdLightingShaderSharedPtr const &lightingShader)
+HdStRenderPassState::SetLightingShader(HdStLightingShaderSharedPtr const &lightingShader)
 {
     if (lightingShader) {
         _lightingShader = lightingShader;
@@ -193,7 +193,7 @@ HdStRenderPassState::SetLightingShader(HdLightingShaderSharedPtr const &lighting
 }
 
 void 
-HdStRenderPassState::SetRenderPassShader(HdRenderPassShaderSharedPtr const &renderPassShader)
+HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &renderPassShader)
 {
     if (_renderPassShader == renderPassShader) return;
 

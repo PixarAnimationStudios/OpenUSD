@@ -28,16 +28,20 @@ pxr_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        fallbackLightingShader
         glslfxShader
         instancer
         interleavedMemoryManager
         light      
+        lightingShader
         mesh
         mixinShaderCode
+        package
         persistentBuffer
         points
         renderDelegate
         renderPass
+        renderPassShader
         renderPassState
         resourceRegistry
         shader
@@ -68,6 +72,9 @@ pxr_library(hdSt
         unitTestHelper
 
     RESOURCE_FILES
+        plugInfo.json
+        shaders/fallbackLightingShader.glslfx
+        shaders/renderPassShader.glslfx
 )
 
 if (X11_FOUND OR APPLE)

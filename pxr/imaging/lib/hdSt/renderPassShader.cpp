@@ -24,10 +24,10 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -47,9 +47,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((_uint, "uint"))
 );
 
-HdRenderPassShader::HdRenderPassShader()
+HdStRenderPassShader::HdStRenderPassShader()
     : HdShaderCode()
-    , _glslfxFile(HdPackageRenderPassShader())
+    , _glslfxFile(HdStPackageRenderPassShader())
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)
@@ -57,7 +57,7 @@ HdRenderPassShader::HdRenderPassShader()
     _glslfx.reset(new GlfGLSLFX(_glslfxFile));
 }
 
-HdRenderPassShader::HdRenderPassShader(TfToken const &glslfxFile)
+HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
     : HdShaderCode()
     , _glslfxFile(glslfxFile)   // user-defined
     , _hash(0)
@@ -68,14 +68,14 @@ HdRenderPassShader::HdRenderPassShader(TfToken const &glslfxFile)
 }
 
 /*virtual*/
-HdRenderPassShader::~HdRenderPassShader()
+HdStRenderPassShader::~HdStRenderPassShader()
 {
     // nothing
 }
 
 /*virtual*/
-HdRenderPassShader::ID
-HdRenderPassShader::ComputeHash() const
+HdStRenderPassShader::ID
+HdStRenderPassShader::ComputeHash() const
 {
     // if nothing changed, returns the cached hash value
     if (_hashValid) return _hash;
@@ -97,7 +97,7 @@ HdRenderPassShader::ComputeHash() const
 
 /*virtual*/
 std::string
-HdRenderPassShader::GetSource(TfToken const &shaderStageKey) const
+HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -107,7 +107,7 @@ HdRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 
 /*virtual*/
 void
-HdRenderPassShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdStRenderPassShader::BindResources(Hd_ResourceBinder const &binder, int program)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Bind(it->second);
@@ -120,7 +120,7 @@ HdRenderPassShader::BindResources(Hd_ResourceBinder const &binder, int program)
 
 /*virtual*/
 void
-HdRenderPassShader::UnbindResources(Hd_ResourceBinder const &binder,
+HdStRenderPassShader::UnbindResources(Hd_ResourceBinder const &binder,
                                      int program)
 {
     TF_FOR_ALL(it, _customBuffers) {
@@ -129,21 +129,21 @@ HdRenderPassShader::UnbindResources(Hd_ResourceBinder const &binder,
 }
 
 void
-HdRenderPassShader::AddBufferBinding(HdBindingRequest const& req)
+HdStRenderPassShader::AddBufferBinding(HdBindingRequest const& req)
 {
     _customBuffers[req.GetName()] = req;
     _hashValid = false;
 }
 
 void
-HdRenderPassShader::RemoveBufferBinding(TfToken const &name)
+HdStRenderPassShader::RemoveBufferBinding(TfToken const &name)
 {
     _customBuffers.erase(name);
     _hashValid = false;
 }
 
 void
-HdRenderPassShader::ClearBufferBindings()
+HdStRenderPassShader::ClearBufferBindings()
 {
     _customBuffers.clear();
     _hashValid = false;
@@ -151,7 +151,7 @@ HdRenderPassShader::ClearBufferBindings()
 
 /*virtual*/
 void
-HdRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // note: be careful, the logic behind this function is tricky.
     //

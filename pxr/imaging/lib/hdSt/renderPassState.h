@@ -34,11 +34,11 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassShader>
-                HdRenderPassShaderSharedPtr;
-typedef boost::shared_ptr<class Hd_FallbackLightingShader>
-                Hd_FallbackLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassShader>
+                HdStRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdSt_FallbackLightingShader>
+                HdSt_FallbackLightingShaderSharedPtr;
 typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
 /// \class HdStRenderPassState
@@ -52,7 +52,7 @@ public:
     HDST_API
     HdStRenderPassState();
     HDST_API
-    HdStRenderPassState(HdRenderPassShaderSharedPtr const &shader);
+    HdStRenderPassState(HdStRenderPassShaderSharedPtr const &shader);
     HDST_API
     virtual ~HdStRenderPassState();
 
@@ -76,15 +76,15 @@ public:
 
     /// Set lighting shader
     HDST_API
-    void SetLightingShader(HdLightingShaderSharedPtr const &lightingShader);
-    HdLightingShaderSharedPtr const & GetLightingShader() const {
+    void SetLightingShader(HdStLightingShaderSharedPtr const &lightingShader);
+    HdStLightingShaderSharedPtr const & GetLightingShader() const {
         return _lightingShader;
     }
 
     /// renderpass shader
     HDST_API
-    void SetRenderPassShader(HdRenderPassShaderSharedPtr const &renderPassShader);
-    HdRenderPassShaderSharedPtr const &GetRenderPassShader() const {
+    void SetRenderPassShader(HdStRenderPassShaderSharedPtr const &renderPassShader);
+    HdStRenderPassShaderSharedPtr const &GetRenderPassShader() const {
         return _renderPassShader;
     }
 
@@ -106,9 +106,9 @@ private:
     // ---------------------------------------------------------------------- //
     // Shader Objects
     // ---------------------------------------------------------------------- //
-    HdRenderPassShaderSharedPtr _renderPassShader;
-    Hd_FallbackLightingShaderSharedPtr _fallbackLightingShader;
-    HdLightingShaderSharedPtr _lightingShader;
+    HdStRenderPassShaderSharedPtr _renderPassShader;
+    HdSt_FallbackLightingShaderSharedPtr _fallbackLightingShader;
+    HdStLightingShaderSharedPtr _lightingShader;
     HdShaderCodeSharedPtr _overrideShader;
 
     HdBufferArrayRangeSharedPtr _renderPassStateBar;

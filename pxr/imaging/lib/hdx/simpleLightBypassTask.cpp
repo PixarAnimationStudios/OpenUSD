@@ -100,7 +100,7 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
     // Done at end, because the lighting context can be changed above.
     // Also we want the context in the shader as it's only a partial copy
     // of the context we own.
-    (*ctx)[HdxTokens->lightingShader]  = boost::dynamic_pointer_cast<HdLightingShader>(_lightingShader);
+    (*ctx)[HdxTokens->lightingShader]  = boost::dynamic_pointer_cast<HdStLightingShader>(_lightingShader);
     (*ctx)[HdxTokens->lightingContext] = _lightingShader->GetLightingContext();
 
 }

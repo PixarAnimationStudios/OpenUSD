@@ -30,10 +30,11 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+
+#include "pxr/imaging/hdSt/renderPassShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,9 +76,9 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
 
     // it's possible to not set lighting shader to HdRenderPassState.
     // Hd_DefaultLightingShader will be used in that case.
-    if (lightingShader.IsHolding<HdLightingShaderSharedPtr>()) {
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
         renderPassState->SetLightingShader(
-            lightingShader.Get<HdLightingShaderSharedPtr>());
+            lightingShader.Get<HdStLightingShaderSharedPtr>());
     }
 
     // Selection Setup
@@ -86,7 +87,7 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
     VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
     VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
 
-    HdRenderPassShaderSharedPtr renderPassShader
+    HdStRenderPassShaderSharedPtr renderPassShader
         = renderPassState->GetRenderPassShader();
 
     if (!vo.IsEmpty() && !vu.IsEmpty()) {

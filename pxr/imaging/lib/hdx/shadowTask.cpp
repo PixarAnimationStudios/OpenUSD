@@ -28,9 +28,6 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/package.h"
 
-#include "pxr/imaging/hdSt/light.h"
-#include "pxr/imaging/hdSt/renderPass.h"
-
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -38,7 +35,11 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/lightingShader.h"
+
+#include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/lightingShader.h"
+#include "pxr/imaging/hdSt/renderPass.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -206,8 +207,8 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             HdRenderPassSharedPtr p = boost::make_shared<HdSt_RenderPass>
                 (&delegate->GetRenderIndex(), col);
 
-            HdRenderPassShaderSharedPtr renderPassShadowShader
-                (new HdRenderPassShader(HdxPackageRenderPassShadowShader()));
+            HdStRenderPassShaderSharedPtr renderPassShadowShader
+                (new HdStRenderPassShader(HdxPackageRenderPassShadowShader()));
             HdStRenderPassStateSharedPtr renderPassState
                 (new HdStRenderPassState(renderPassShadowShader));
 

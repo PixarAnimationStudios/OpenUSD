@@ -51,27 +51,11 @@ HdPackageComputeShader()
 }
 
 TfToken
-HdPackageRenderPassShader()
-{
-    static TfToken renderPassShader =
-        _GetShaderPath("renderPassShader.glslfx");
-    return renderPassShader;
-}
-
-TfToken
 HdPackageLightingIntegrationShader()
 {
     static TfToken shader =
         _GetShaderPath("lightingIntegrationShader.glslfx");
     return shader;
-}
-
-TfToken
-HdPackageFallbackLightingShader()
-{
-    static TfToken fallbackLightingShader =
-        _GetShaderPath("fallbackLightingShader.glslfx");
-    return fallbackLightingShader;
 }
 
 TfToken

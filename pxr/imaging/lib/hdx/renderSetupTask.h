@@ -39,7 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
@@ -96,8 +96,8 @@ protected:
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;
-    HdRenderPassShaderSharedPtr _colorRenderPassShader;
-    HdRenderPassShaderSharedPtr _idRenderPassShader;
+    HdStRenderPassShaderSharedPtr _colorRenderPassShader;
+    HdStRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
     const HdStCamera *_camera;
     TfTokenVector _renderTags;

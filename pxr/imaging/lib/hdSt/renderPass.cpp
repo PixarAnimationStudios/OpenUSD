@@ -24,11 +24,11 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 

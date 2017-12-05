@@ -26,16 +26,16 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/debugCodes.h"
 
-#include "pxr/imaging/hdSt/camera.h"
-#include "pxr/imaging/hdSt/glslfxShader.h"
-
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/renderPassShader.h"
-#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+
+#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/glslfxShader.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
@@ -54,9 +54,9 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
     , _renderTags()    
 {
     _colorRenderPassShader.reset(
-        new HdRenderPassShader(HdxPackageRenderPassShader()));
+        new HdStRenderPassShader(HdxPackageRenderPassShader()));
     _idRenderPassShader.reset(
-        new HdRenderPassShader(HdxPackageRenderPassIdShader()));
+        new HdStRenderPassShader(HdxPackageRenderPassIdShader()));
 
     HdRenderIndex &index = delegate->GetRenderIndex();
     _renderPassState = index.GetRenderDelegate()->CreateRenderPassState();

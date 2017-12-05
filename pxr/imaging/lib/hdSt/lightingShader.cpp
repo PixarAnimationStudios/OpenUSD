@@ -21,45 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_LIGHTING_SHADER_H
-#define HD_LIGHTING_SHADER_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/base/gf/matrix4d.h"
-
-#include <boost/shared_ptr.hpp>
+#include "pxr/imaging/hdSt/lightingShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
+HdStLightingShader::HdStLightingShader()
+ : HdShaderCode()
+{
+    /*NOTHING*/
+}
 
-/// \class HdLightingShader
-///
-/// A lighting shader base class.
-///
-class HdLightingShader : public HdShaderCode {
-public:
-    HD_API
-    HdLightingShader();
-    HD_API
-    virtual ~HdLightingShader();
-
-    /// Sets camera state.
-    virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
-                           GfMatrix4d const &projectionMatrix) = 0;
-
-private:
-
-    // No copying
-    HdLightingShader(const HdLightingShader &)                     = delete;
-    HdLightingShader &operator =(const HdLightingShader &)         = delete;
-};
-
+HdStLightingShader::~HdStLightingShader()
+{
+    /*NOTHING*/
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_LIGHTING_SHADER_H

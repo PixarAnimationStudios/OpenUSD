@@ -63,13 +63,11 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
-        fallbackLightingShader
         geometricShader
         glslProgram
         glUtils
         instancer
         instanceRegistry
-        lightingShader
         mesh
         meshTopology
         meshUtil
@@ -83,7 +81,6 @@ pxr_library(hd
         renderDelegate
         renderIndex
         renderPass
-        renderPassShader
         renderPassState
         repr
         resource
@@ -133,7 +130,6 @@ pxr_library(hd
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
         shaders/fallbackLighting.glslfx
-        shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
         shaders/frustumCull.glslfx
         shaders/instancing.glslfx
@@ -145,7 +141,6 @@ pxr_library(hd
         shaders/points.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
-        shaders/renderPassShader.glslfx
         shaders/terminals.glslfx
 )
 

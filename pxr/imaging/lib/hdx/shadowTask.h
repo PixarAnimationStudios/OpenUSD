@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/renderPassShader.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -45,7 +44,7 @@ class HdRenderIndex;
 class HdSceneDelegate;
 class GlfSimpleLight;
 
-typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef std::vector<HdRenderPassStateSharedPtr> HdRenderPassStateSharedPtrVector;

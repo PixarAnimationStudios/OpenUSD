@@ -21,12 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_RENDER_PASS_SHADER_H
-#define HD_RENDER_PASS_SHADER_H
+#ifndef HDST_RENDER_PASS_SHADER_H
+#define HDST_RENDER_PASS_SHADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resourceBinder.h"
@@ -41,43 +40,43 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 
-/// \class HdRenderPassShader
+/// \class HdStRenderPassShader
 ///
 /// A shader that supports common renderPass functionality.
 ///
-class HdRenderPassShader : public HdShaderCode {
+class HdStRenderPassShader : public HdShaderCode {
 public:
-    HD_API
-    HdRenderPassShader();
-    HD_API
-    HdRenderPassShader(TfToken const &glslfxFile);
-    HD_API
-    virtual ~HdRenderPassShader() override;
+    HDST_API
+    HdStRenderPassShader();
+    HDST_API
+    HdStRenderPassShader(TfToken const &glslfxFile);
+    HDST_API
+    virtual ~HdStRenderPassShader() override;
 
     /// HdShader overrides
-    HD_API
+    HDST_API
     virtual ID ComputeHash() const override;
-    HD_API
+    HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const override;
-    HD_API
+    HDST_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program) override;
-    HD_API
+    HDST_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program) override;
-    HD_API
+    HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// Add a custom binding request for use when this shader executes.
-    HD_API
+    HDST_API
     void AddBufferBinding(HdBindingRequest const& req);
 
     /// Remove \p name from custom binding.
-    HD_API
+    HDST_API
     void RemoveBufferBinding(TfToken const &name);
 
     /// Clear all custom bindings associated with this shader.
-    HD_API
+    HDST_API
     void ClearBufferBindings();
 
     HdCullStyle GetCullStyle() const {
@@ -99,11 +98,11 @@ private:
 
 
     // No copying
-    HdRenderPassShader(const HdRenderPassShader &)                     = delete;
-    HdRenderPassShader &operator =(const HdRenderPassShader &)         = delete;
+    HdStRenderPassShader(const HdStRenderPassShader &)                     = delete;
+    HdStRenderPassShader &operator =(const HdStRenderPassShader &)         = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_RENDER_PASS_SHADER_H
+#endif // HDST_RENDER_PASS_SHADER_H

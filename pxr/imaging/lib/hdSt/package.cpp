@@ -21,21 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/lightingShader.h"
+#include "pxr/imaging/hdSt/package.h"
+
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/thisPlugin.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdLightingShader::HdLightingShader()
- : HdShaderCode()
+static TfToken
+_GetShaderPath(char const * shader)
 {
-    /*NOTHING*/
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string path =
+        PlugFindPluginResource(plugin, TfStringCatPaths("shaders", shader));
+    TF_VERIFY(!path.empty(), "Could not find shader: %s\n", shader);
+
+    return TfToken(path);
 }
 
-HdLightingShader::~HdLightingShader()
+TfToken
+HdStPackageRenderPassShader()
 {
-    /*NOTHING*/
+    static TfToken renderPassShader =
+        _GetShaderPath("renderPassShader.glslfx");
+    return renderPassShader;
+}
+
+TfToken
+HdStPackageFallbackLightingShader()
+{
+    static TfToken fallbackLightingShader =
+        _GetShaderPath("fallbackLightingShader.glslfx");
+    return fallbackLightingShader;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
