@@ -21,39 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hd/renderPassState.h"
 
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
+#include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/fallbackLightingShader.h"
-#include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/glslProgram.h"
-#include "pxr/imaging/hd/renderPassShader.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/gf/frustum.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (renderPassState)
-);
-
 HdRenderPassState::HdRenderPassState()
-    : _renderPassShader(new HdRenderPassShader())
-    , _fallbackLightingShader(new Hd_FallbackLightingShader())
-    , _worldToViewMatrix(1)
+    : _worldToViewMatrix(1)
     , _projectionMatrix(1)
     , _viewport(0, 0, 1, 1)
     , _cullMatrix(1)
@@ -68,40 +50,12 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasConstantFactor(0.0f)
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
+    , _cullStyle(HdCullStyleNothing)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
     , _colorMask(HdRenderPassState::ColorMaskRGBA)
 {
-    _lightingShader = _fallbackLightingShader;
-}
-
-HdRenderPassState::HdRenderPassState(
-    HdRenderPassShaderSharedPtr const &renderPassShader)
-    : _renderPassShader(renderPassShader)
-    , _fallbackLightingShader(new Hd_FallbackLightingShader())
-    , _worldToViewMatrix(1)
-    , _projectionMatrix(1)
-    , _viewport(0, 0, 1, 1)
-    , _cullMatrix(1)
-    , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
-    , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
-    , _lightingEnabled(true)
-    , _alphaThreshold(0.5f)
-    , _tessLevel(32.0)
-    , _drawRange(0.9, -1.0)
-    , _depthBiasUseDefault(true)
-    , _depthBiasEnabled(false)
-    , _depthBiasConstantFactor(0.0f)
-    , _depthBiasSlopeFactor(1.0f)
-    , _depthFunc(HdCmpFuncLEqual)
-    , _alphaToCoverageUseDefault(true)
-    , _alphaToCoverageEnabled(true)
-    , _colorMaskUseDefault(true)
-    , _colorMask(HdRenderPassState::ColorMaskRGBA)
-
-{
-    _lightingShader = _fallbackLightingShader;
 }
 
 HdRenderPassState::~HdRenderPassState()
@@ -109,101 +63,22 @@ HdRenderPassState::~HdRenderPassState()
     /*NOTHING*/
 }
 
+/* virtual */
 void
 HdRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
+}
 
-    VtVec4fArray clipPlanes;
-    TF_FOR_ALL(it, _clipPlanes) {
-        clipPlanes.push_back(GfVec4f(*it));
-    }
+/* virtual */
+void
+HdRenderPassState::Bind()
+{
+}
 
-    // allocate bar if not exists
-    if (!_renderPassStateBar) {
-        HdBufferSpecVector bufferSpecs;
-
-        // note: InterleavedMemoryManager computes the offsets in the packed
-        // struct of following entries, which CodeGen generates the struct
-        // definition into GLSL source in accordance with.
-        GLenum matType = HdVtBufferSource::GetDefaultMatrixType();
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->worldToViewMatrix, matType, 16));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->worldToViewInverseMatrix, matType, 16));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->projectionMatrix, matType, 16));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->overrideColor, GL_FLOAT, 4));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->wireframeColor, GL_FLOAT, 4));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->lightingBlendAmount, GL_FLOAT, 1));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->alphaThreshold, GL_FLOAT, 1));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->tessLevel, GL_FLOAT, 1));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->viewport, GL_FLOAT, 4));
-
-        if (clipPlanes.size() > 0) {
-            bufferSpecs.push_back(
-                HdBufferSpec(
-                    HdShaderTokens->clipPlanes, GL_FLOAT, 4, clipPlanes.size()));
-        }
-
-        // allocate interleaved buffer
-        _renderPassStateBar = resourceRegistry->AllocateUniformBufferArrayRange(
-            HdTokens->drawingShader, bufferSpecs);
-
-        HdBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            boost::static_pointer_cast<HdBufferArrayRangeGL> (_renderPassStateBar);
-
-        // add buffer binding request
-        _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
-                             _renderPassStateBar_, /*interleaved=*/true));
-    }
-
-    // Lighting hack supports different blending amounts, but we are currently
-    // only using the feature to turn lighting on and off.
-    float lightingBlendAmount = (_lightingEnabled ? 1.0f : 0.0f);
-
-    HdBufferSourceVector sources;
-    sources.push_back(HdBufferSourceSharedPtr(
-                         new HdVtBufferSource(HdShaderTokens->worldToViewMatrix,
-                                              _worldToViewMatrix)));
-    sources.push_back(HdBufferSourceSharedPtr(
-                  new HdVtBufferSource(HdShaderTokens->worldToViewInverseMatrix,
-                                       _worldToViewMatrix.GetInverse())));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->projectionMatrix,
-                                               _projectionMatrix)));
-    // Override color alpha component is used as the amount to blend in the
-    // override color over the top of the regular fragment color.
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->overrideColor,
-                                               VtValue(_overrideColor))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->wireframeColor,
-                                               VtValue(_wireframeColor))));
-
-    sources.push_back(HdBufferSourceSharedPtr(
-                       new HdVtBufferSource(HdShaderTokens->lightingBlendAmount,
-                                            VtValue(lightingBlendAmount))));;
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->alphaThreshold,
-                                               VtValue(_alphaThreshold))));
-    sources.push_back(HdBufferSourceSharedPtr(
-                       new HdVtBufferSource(HdShaderTokens->tessLevel,
-                                            VtValue(_tessLevel))));;
-    sources.push_back(HdBufferSourceSharedPtr(
-                          new HdVtBufferSource(HdShaderTokens->viewport,
-                                               VtValue(_viewport))));
-
-    if (clipPlanes.size() > 0) {
-        sources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(
-                                  HdShaderTokens->clipPlanes,
-                                  VtValue(clipPlanes))));
-    }
-
-    resourceRegistry->AddSources(_renderPassStateBar, sources);
-
-    // notify view-transform to the lighting shader to update its uniform block
-    _lightingShader->SetCamera(_worldToViewMatrix, _projectionMatrix);
+/* virtual */
+void
+HdRenderPassState::Unbind()
+{
 }
 
 void
@@ -235,10 +110,7 @@ HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 void
 HdRenderPassState::SetCullStyle(HdCullStyle cullStyle)
 {
-    // XXX: ideally cullstyle should be moved to renderPassState.
-    //      however, geometric shader also sets cullstyle during
-    //      batch execution. need some refactoring.
-    _renderPassShader->SetCullStyle(cullStyle);
+    _cullStyle = cullStyle;
 }
 
 void
@@ -268,65 +140,13 @@ HdRenderPassState::SetLightingEnabled(bool enabled)
 void
 HdRenderPassState::SetClipPlanes(ClipPlanesVector const & clipPlanes)
 {
-    if (_clipPlanes != clipPlanes) {
-        _clipPlanes = clipPlanes;
-        if (!TF_VERIFY(_clipPlanes.size() < GL_MAX_CLIP_PLANES)) {
-            _clipPlanes.resize(GL_MAX_CLIP_PLANES);
-        }
-        _renderPassStateBar.reset();
-    }
+    _clipPlanes = clipPlanes;
 }
 
 HdRenderPassState::ClipPlanesVector const &
 HdRenderPassState::GetClipPlanes() const
 {
     return _clipPlanes;
-}
-
-void
-HdRenderPassState::SetLightingShader(HdLightingShaderSharedPtr const &lightingShader)
-{
-    if (lightingShader) {
-        _lightingShader = lightingShader;
-    } else {
-        _lightingShader = _fallbackLightingShader;
-    }
-}
-
-void 
-HdRenderPassState::SetRenderPassShader(HdRenderPassShaderSharedPtr const &renderPassShader)
-{
-    if (_renderPassShader == renderPassShader) return;
-
-    // XXX: cullStyle should be moved to RenderPassState.
-    renderPassShader->SetCullStyle(_renderPassShader->GetCullStyle());
-
-    _renderPassShader = renderPassShader;
-    if (_renderPassStateBar) {
-
-        HdBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            boost::static_pointer_cast<HdBufferArrayRangeGL> (_renderPassStateBar);
-
-        _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
-                             _renderPassStateBar_, /*interleaved=*/true));
-    }
-}
-
-void 
-HdRenderPassState::SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader)
-{
-    _overrideShader = overrideShader;
-}
-
-HdShaderCodeSharedPtrVector
-HdRenderPassState::GetShaders() const
-{
-    HdShaderCodeSharedPtrVector shaders;
-    shaders.reserve(2);
-    shaders.push_back(_lightingShader);
-    shaders.push_back(_renderPassShader);
-    return shaders;
 }
 
 void
@@ -377,85 +197,6 @@ HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
 {
     _colorMask = mask;
 }
-
-void
-HdRenderPassState::Bind()
-{
-    // XXX: this states set will be refactored as hdstream PSO.
-
-    // XXX: viewport should be set.
-    // glViewport((GLint)_viewport[0], (GLint)_viewport[1],
-    //            (GLsizei)_viewport[2], (GLsizei)_viewport[3]);
-
-    // when adding another GL state change here, please document
-    // which states to be altered at the comment in the header file
-
-    // Apply polygon offset to whole pass.
-    if (!_depthBiasUseDefault) {
-        if (_depthBiasEnabled) {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(_depthBiasSlopeFactor, _depthBiasConstantFactor);
-        } else {
-            glDisable(GL_POLYGON_OFFSET_FILL);
-        }
-    }
-
-    glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
-
-    if (!_alphaToCoverageUseDefault) {
-        if (_alphaToCoverageEnabled) {
-            glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        } else {
-            glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        }
-    }
-    glEnable(GL_PROGRAM_POINT_SIZE);
-    for (size_t i = 0; i < _clipPlanes.size(); ++i) {
-        glEnable(GL_CLIP_DISTANCE0 + i);
-    }
-
-    if (!_colorMaskUseDefault) {
-        switch(_colorMask) {
-            case HdRenderPassState::ColorMaskNone:
-                glColorMask(false, false, false, false);
-                break;
-            case HdRenderPassState::ColorMaskRGB:
-                glColorMask(true, true, true, false);
-                break;
-            case HdRenderPassState::ColorMaskRGBA:
-                glColorMask(true, true, true, true);
-                break;
-        }
-    }
-}
-
-void
-HdRenderPassState::Unbind()
-{
-    // restore back to the GL defaults
-
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    glDisable(GL_PROGRAM_POINT_SIZE);
-    glDepthFunc(GL_LESS);
-    glPolygonOffset(0, 0);
-
-    for (size_t i = 0; i < _clipPlanes.size(); ++i) {
-        glDisable(GL_CLIP_DISTANCE0 + i);
-    }
-
-    glColorMask(true, true, true, true);
-}
-
-size_t
-HdRenderPassState::GetShaderHash() const
-{
-    size_t hash = _lightingShader->ComputeHash();
-    boost::hash_combine(hash, _renderPassShader->ComputeHash());
-    boost::hash_combine(hash, _clipPlanes.size());
-    return hash;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

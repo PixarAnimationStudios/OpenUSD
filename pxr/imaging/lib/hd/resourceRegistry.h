@@ -210,6 +210,12 @@ public:
         _uniformSsboAggregationStrategy.reset(strategy);
     }
 
+    /// Set the aggregation strategy for single buffers (for nested instancer).
+    /// Takes ownership of the passed in strategy object.
+    void SetSingleStorageAggregationStrategy(HdAggregationStrategy *strategy) {
+        _singleAggregationStrategy.reset(strategy);
+    }
+
     /// Returns a report of resource allocation by role in bytes and
     /// a summary total allocation of GPU memory in bytes for this registry.
     HD_API

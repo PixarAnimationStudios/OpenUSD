@@ -37,7 +37,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vboMemoryManager.h"
+#include "pxr/imaging/hdSt/vboMemoryManager.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -48,27 +48,27 @@ TF_DEFINE_ENV_SETTING(HD_MAX_VBO_SIZE, (1*1024*1024*1024),
                       "Maximum aggregated VBO size");
 
 // ---------------------------------------------------------------------------
-//  HdVBOMemoryManager
+//  HdStVBOMemoryManager
 // ---------------------------------------------------------------------------
 HdBufferArraySharedPtr
-HdVBOMemoryManager::CreateBufferArray(
+HdStVBOMemoryManager::CreateBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs)
 {
-    return boost::make_shared<HdVBOMemoryManager::_StripedBufferArray>(
+    return boost::make_shared<HdStVBOMemoryManager::_StripedBufferArray>(
         role, bufferSpecs, _isImmutable);
 }
 
 
 HdBufferArrayRangeSharedPtr
-HdVBOMemoryManager::CreateBufferArrayRange()
+HdStVBOMemoryManager::CreateBufferArrayRange()
 {
     return boost::make_shared<_StripedBufferArrayRange>();
 }
 
 
 HdAggregationStrategy::AggregationId
-HdVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs) const
+HdStVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs) const
 {
     uint32_t hash = 0;
     TF_FOR_ALL(it, bufferSpecs) {
@@ -84,7 +84,7 @@ HdVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs) 
 
 /// Returns the buffer specs from a given buffer array
 HdBufferSpecVector 
-HdVBOMemoryManager::GetBufferSpecs(
+HdStVBOMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
     _StripedBufferArraySharedPtr bufferArray_ =
@@ -95,7 +95,7 @@ HdVBOMemoryManager::GetBufferSpecs(
 
 /// Returns the size of the GPU memory used by the passed buffer array
 size_t 
-HdVBOMemoryManager::GetResourceAllocation(
+HdStVBOMemoryManager::GetResourceAllocation(
     HdBufferArraySharedPtr const &bufferArray, 
     VtDictionary &result) const 
 { 
@@ -134,7 +134,7 @@ HdVBOMemoryManager::GetResourceAllocation(
 // ---------------------------------------------------------------------------
 //  _StripedBufferArray
 // ---------------------------------------------------------------------------
-HdVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
+HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     bool isImmutable)
@@ -201,7 +201,7 @@ HdVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
+HdStVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
                             int glDataType,
                             short numComponents,
                             int arraySize,
@@ -227,7 +227,7 @@ HdVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
 }
 
 
-HdVBOMemoryManager::_StripedBufferArray::~_StripedBufferArray()
+HdStVBOMemoryManager::_StripedBufferArray::~_StripedBufferArray()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -246,7 +246,7 @@ HdVBOMemoryManager::_StripedBufferArray::~_StripedBufferArray()
 
 
 bool
-HdVBOMemoryManager::_StripedBufferArray::GarbageCollect()
+HdStVBOMemoryManager::_StripedBufferArray::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -273,7 +273,7 @@ HdVBOMemoryManager::_StripedBufferArray::GarbageCollect()
 }
 
 void
-HdVBOMemoryManager::_StripedBufferArray::Reallocate(
+HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     std::vector<HdBufferArrayRangeSharedPtr> const &ranges,
     HdBufferArraySharedPtr const &curRangeOwner)
 {
@@ -447,7 +447,7 @@ HdVBOMemoryManager::_StripedBufferArray::Reallocate(
 }
 
 void
-HdVBOMemoryManager::_StripedBufferArray::_DeallocateResources()
+HdStVBOMemoryManager::_StripedBufferArray::_DeallocateResources()
 {
     TF_FOR_ALL (it, GetResources()) {
         GLuint id = it->second->GetId();
@@ -462,16 +462,16 @@ HdVBOMemoryManager::_StripedBufferArray::_DeallocateResources()
 
 /*virtual*/
 size_t
-HdVBOMemoryManager::_StripedBufferArray::GetMaxNumElements() const
+HdStVBOMemoryManager::_StripedBufferArray::GetMaxNumElements() const
 {
     static size_t vboMaxSize = TfGetEnvSetting(HD_MAX_VBO_SIZE);
     return vboMaxSize / _maxBytesPerElement;
 }
 
 void
-HdVBOMemoryManager::_StripedBufferArray::DebugDump(std::ostream &out) const
+HdStVBOMemoryManager::_StripedBufferArray::DebugDump(std::ostream &out) const
 {
-    out << "  HdVBOMemoryManager\n";
+    out << "  HdStVBOMemoryManager\n";
     out << "  total capacity = " << _totalCapacity << "\n";
     out << "    Range entries " << GetRangeCount() << ":\n";
 
@@ -485,7 +485,7 @@ HdVBOMemoryManager::_StripedBufferArray::DebugDump(std::ostream &out) const
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOMemoryManager::_StripedBufferArray::GetResource() const
+HdStVBOMemoryManager::_StripedBufferArray::GetResource() const
 {
     HD_TRACE_FUNCTION();
 
@@ -507,7 +507,7 @@ HdVBOMemoryManager::_StripedBufferArray::GetResource() const
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOMemoryManager::_StripedBufferArray::GetResource(TfToken const& name)
+HdStVBOMemoryManager::_StripedBufferArray::GetResource(TfToken const& name)
 {
     HD_TRACE_FUNCTION();
 
@@ -521,7 +521,7 @@ HdVBOMemoryManager::_StripedBufferArray::GetResource(TfToken const& name)
 }
 
 HdBufferSpecVector
-HdVBOMemoryManager::_StripedBufferArray::GetBufferSpecs() const
+HdStVBOMemoryManager::_StripedBufferArray::GetBufferSpecs() const
 {
     HdBufferSpecVector result;
     result.reserve(_resourceList.size());
@@ -536,7 +536,7 @@ HdVBOMemoryManager::_StripedBufferArray::GetBufferSpecs() const
 // ---------------------------------------------------------------------------
 //  _StripedBufferArrayRange
 // ---------------------------------------------------------------------------
-HdVBOMemoryManager::_StripedBufferArrayRange::~_StripedBufferArrayRange()
+HdStVBOMemoryManager::_StripedBufferArrayRange::~_StripedBufferArrayRange()
 {
     // Notify that hosting buffer array needs to be garbage collected.
     //
@@ -555,20 +555,20 @@ HdVBOMemoryManager::_StripedBufferArrayRange::~_StripedBufferArrayRange()
 
 
 bool
-HdVBOMemoryManager::_StripedBufferArrayRange::IsAssigned() const
+HdStVBOMemoryManager::_StripedBufferArrayRange::IsAssigned() const
 {
     return (_stripedBufferArray != nullptr);
 }
 
 bool
-HdVBOMemoryManager::_StripedBufferArrayRange::IsImmutable() const
+HdStVBOMemoryManager::_StripedBufferArrayRange::IsImmutable() const
 {
     return (_stripedBufferArray != nullptr)
          && _stripedBufferArray->IsImmutable();
 }
 
 bool
-HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
+HdStVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -635,7 +635,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
     return needsReallocation;
 }
 void
-HdVBOMemoryManager::_StripedBufferArrayRange::CopyData(
+HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
 {
     HD_TRACE_FUNCTION();
@@ -701,7 +701,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::CopyData(
 }
 
 VtValue
-HdVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) const
+HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -732,13 +732,13 @@ HdVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) cons
 }
 
 size_t
-HdVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetMaxNumElements() const
 {
     return _stripedBufferArray->GetMaxNumElements();
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOMemoryManager::_StripedBufferArrayRange::GetResource() const
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetResource() const
 {
     if (!TF_VERIFY(_stripedBufferArray)) return HdBufferResourceGLSharedPtr();
 
@@ -746,7 +746,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::GetResource() const
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOMemoryManager::_StripedBufferArrayRange::GetResource(TfToken const& name)
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetResource(TfToken const& name)
 {
     if (!TF_VERIFY(_stripedBufferArray)) return HdBufferResourceGLSharedPtr();
 
@@ -754,7 +754,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::GetResource(TfToken const& name)
 }
 
 HdBufferResourceGLNamedList const&
-HdVBOMemoryManager::_StripedBufferArrayRange::GetResources() const
+HdStVBOMemoryManager::_StripedBufferArrayRange::GetResources() const
 {
     if (!TF_VERIFY(_stripedBufferArray)) {
         static HdBufferResourceGLNamedList empty;
@@ -764,13 +764,13 @@ HdVBOMemoryManager::_StripedBufferArrayRange::GetResources() const
 }
 
 void
-HdVBOMemoryManager::_StripedBufferArrayRange::SetBufferArray(HdBufferArray *bufferArray)
+HdStVBOMemoryManager::_StripedBufferArrayRange::SetBufferArray(HdBufferArray *bufferArray)
 {
     _stripedBufferArray = static_cast<_StripedBufferArray *>(bufferArray);    
 }
 
 void
-HdVBOMemoryManager::_StripedBufferArrayRange::DebugDump(std::ostream &out) const
+HdStVBOMemoryManager::_StripedBufferArrayRange::DebugDump(std::ostream &out) const
 {
     out << "[StripedBAR] offset = " << _offset
         << ", numElements = " << _numElements
@@ -779,7 +779,7 @@ HdVBOMemoryManager::_StripedBufferArrayRange::DebugDump(std::ostream &out) const
 }
 
 const void *
-HdVBOMemoryManager::_StripedBufferArrayRange::_GetAggregation() const
+HdStVBOMemoryManager::_StripedBufferArrayRange::_GetAggregation() const
 {
     return _stripedBufferArray;
 }

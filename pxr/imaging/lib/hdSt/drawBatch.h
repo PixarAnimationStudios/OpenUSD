@@ -44,7 +44,7 @@ class HdStDrawItemInstance;
 typedef boost::shared_ptr<class HdSt_DrawBatch> HdSt_DrawBatchSharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 typedef boost::shared_ptr<class HdStResourceRegistry>
@@ -83,12 +83,12 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     virtual void PrepareDraw(
-        HdRenderPassStateSharedPtr const &renderPassState,
+        HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
-        HdRenderPassStateSharedPtr const &renderPassState,
+        HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
 
     /// Let the batch know that one of it's draw item instances has changed
@@ -194,7 +194,7 @@ protected:
 
     HDST_API
     _DrawingProgram & _GetDrawingProgram(
-        HdRenderPassStateSharedPtr const &state, 
+        HdStRenderPassStateSharedPtr const &state, 
         bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 

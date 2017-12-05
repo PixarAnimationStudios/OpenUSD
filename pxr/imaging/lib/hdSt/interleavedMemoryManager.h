@@ -21,76 +21,56 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_VBO_SIMPLE_MEMORY_MANAGER_H
-#define HD_VBO_SIMPLE_MEMORY_MANAGER_H
+#ifndef HDST_INTERLEAVED_VBO_MEMORY_MANAGER_H
+#define HDST_INTERLEAVED_VBO_MEMORY_MANAGER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/strategyBase.h"
+#include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hd/strategyBase.h"
+#include "pxr/imaging/hd/tokens.h"
+
+#include <boost/shared_ptr.hpp>
+#include <list>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdVBOSimpleMemoryManager
+/// \class HdStInterleavedMemoryManager
 ///
-/// VBO simple memory manager.
+/// Interleaved memory manager (base class).
 ///
-/// This class doesn't perform any aggregation.
-///
-class HdVBOSimpleMemoryManager : public HdAggregationStrategy {
-public:
-    /// Factory for creating HdBufferArray managed by
-    /// HdVBOSimpleMemoryManager.
-    HD_API
-    virtual HdBufferArraySharedPtr CreateBufferArray(
-        TfToken const &role,
-        HdBufferSpecVector const &bufferSpecs);
-
-    /// Factory for creating HdBufferArrayRange
-    HD_API
-    virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange();
-
-    /// Returns id for given bufferSpecs to be used for aggregation
-    HD_API
-    virtual HdAggregationStrategy::AggregationId ComputeAggregationId(
-        HdBufferSpecVector const &bufferSpecs) const;
-
-    /// Returns the buffer specs from a given buffer array
-    virtual HdBufferSpecVector GetBufferSpecs(
-        HdBufferArraySharedPtr const &bufferArray) const;
-
-    /// Returns the size of the GPU memory used by the passed buffer array
-    virtual size_t GetResourceAllocation(
-        HdBufferArraySharedPtr const &bufferArray, 
-        VtDictionary &result) const;
-
+class HdStInterleavedMemoryManager : public HdAggregationStrategy {
 protected:
-    class _SimpleBufferArray;
+    class _StripedInterleavedBuffer;
 
-    /// \class _SimpleBufferArrayRange
-    ///
-    /// Specialized buffer array range for SimpleBufferArray.
-    ///
-    class _SimpleBufferArrayRange : public HdBufferArrayRangeGL
-    {
+    /// specialized buffer array range
+    class _StripedInterleavedBufferRange : public HdBufferArrayRangeGL {
     public:
         /// Constructor.
-        _SimpleBufferArrayRange() :
-            _bufferArray(nullptr), _numElements(0) {
+        _StripedInterleavedBufferRange() :
+        _stripedBuffer(nullptr), _index(NOT_ALLOCATED), _numElements(1) {
         }
+
+        /// Destructor.
+        HDST_API
+        virtual ~_StripedInterleavedBufferRange();
 
         /// Returns true if this range is valid
         virtual bool IsValid() const {
-            return (bool)_bufferArray;
+            // note: a range is valid even its index is NOT_ALLOCATED.
+            return (bool)_stripedBuffer;
         }
 
         /// Returns true is the range has been assigned to a buffer
-        HD_API
+        HDST_API
         virtual bool IsAssigned() const;
 
         /// Returns true if this range is marked as immutable.
@@ -98,146 +78,142 @@ protected:
 
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
-        virtual bool Resize(int numElements) {
-            _numElements = numElements;
-            return _bufferArray->Resize(numElements);
-        }
+        HDST_API
+        virtual bool Resize(int numElements);
 
         /// Copy source data into buffer
-        HD_API
+        HDST_API
         virtual void CopyData(HdBufferSourceSharedPtr const &bufferSource);
 
         /// Read back the buffer content
-        HD_API
+        HDST_API
         virtual VtValue ReadData(TfToken const &name) const;
 
         /// Returns the relative offset in aggregated buffer
         virtual int GetOffset() const {
-            return 0;
+            if (!TF_VERIFY(_stripedBuffer) ||
+                !TF_VERIFY(_index != NOT_ALLOCATED)) return 0;
+            return _stripedBuffer->GetStride() * _index;
         }
 
-        /// Returns the index in aggregated buffer
+        /// Returns the index for this range
         virtual int GetIndex() const {
-            return 0;
+            return _index;
         }
 
-        /// Returns the number of elements allocated
+        /// Returns the number of elements
         virtual int GetNumElements() const {
             return _numElements;
         }
 
-        /// Returns the capacity of allocated area for this range
-        virtual int GetCapacity() const {
-            return _bufferArray->GetCapacity();
-        }
-
         /// Returns the version of the buffer array.
         virtual size_t GetVersion() const {
-            return _bufferArray->GetVersion();
+            return _stripedBuffer->GetVersion();
         }
 
         /// Increment the version of the buffer array.
         virtual void IncrementVersion() {
-            _bufferArray->IncrementVersion();
+            _stripedBuffer->IncrementVersion();
         }
 
         /// Returns the max number of elements
-        HD_API
+        HDST_API
         virtual size_t GetMaxNumElements() const;
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
-        HD_API
+        HDST_API
         virtual HdBufferResourceGLSharedPtr GetResource() const;
 
         /// Returns the named GPU resource.
-        HD_API
+        HDST_API
         virtual HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
 
         /// Returns the list of all named GPU resources for this bufferArrayRange.
-        HD_API
+        HDST_API
         virtual HdBufferResourceGLNamedList const& GetResources() const;
 
         /// Sets the buffer array assosiated with this buffer;
-        HD_API
+        HDST_API
         virtual void SetBufferArray(HdBufferArray *bufferArray);
 
         /// Debug dump
-        HD_API
+        HDST_API
         virtual void DebugDump(std::ostream &out) const;
+
+        /// Set the relative offset for this range.
+        void SetIndex(int index) {
+            _index = index;
+        }
 
         /// Make this range invalid
         void Invalidate() {
-            _bufferArray = NULL;
+            _stripedBuffer = nullptr;
         }
 
     protected:
         /// Returns the aggregation container
-        HD_API
+        HDST_API
         virtual const void *_GetAggregation() const;
 
-        /// Adds a new, named GPU resource and returns it.
-        HD_API
-        HdBufferResourceGLSharedPtr _AddResource(TfToken const& name,
-                                                int glDataType,
-                                                short numComponents,
-                                                int arraySize,
-                                                int offset,
-                                                int stride);
-
     private:
-        _SimpleBufferArray * _bufferArray;
+        enum { NOT_ALLOCATED = -1 };
+        _StripedInterleavedBuffer *_stripedBuffer;
+        int _index;
         int _numElements;
     };
 
-    typedef boost::shared_ptr<_SimpleBufferArray>
-        _SimpleBufferArraySharedPtr;
-    typedef boost::shared_ptr<_SimpleBufferArrayRange>
-        _SimpleBufferArrayRangeSharedPtr;
-    typedef boost::weak_ptr<_SimpleBufferArrayRange>
-        _SimpleBufferArrayRangePtr;
+    typedef boost::shared_ptr<_StripedInterleavedBuffer>
+        _StripedInterleavedBufferSharedPtr;
+    typedef boost::shared_ptr<_StripedInterleavedBufferRange>
+        _StripedInterleavedBufferRangeSharedPtr;
+    typedef boost::weak_ptr<_StripedInterleavedBufferRange>
+        _StripedInterleavedBufferRangePtr;
 
-    /// \class _SimpleBufferArray
-    ///
-    /// Simple buffer array (non-aggregated).
-    ///
-    class _SimpleBufferArray : public HdBufferArray
-    {
+    /// striped buffer
+    class _StripedInterleavedBuffer : public HdBufferArray {
     public:
         /// Constructor.
-        HD_API
-        _SimpleBufferArray(TfToken const &role, HdBufferSpecVector const &bufferSpecs);
+        HDST_API
+        _StripedInterleavedBuffer(TfToken const &role,
+                                  HdBufferSpecVector const &bufferSpecs,
+                                  int bufferOffsetAlignment,
+                                  int structAlignment,
+                                  size_t maxSize,
+                                  TfToken const &garbageCollectionPerfToken);
 
-        /// Destructor. It invalidates _range
-        HD_API
-        virtual ~_SimpleBufferArray();
+        /// Destructor. It invalidates _rangeList
+        HDST_API
+        virtual ~_StripedInterleavedBuffer();
 
         /// perform compaction if necessary, returns true if it becomes empty.
-        HD_API
+        HDST_API
         virtual bool GarbageCollect();
 
         /// Debug output
-        HD_API
+        HDST_API
         virtual void DebugDump(std::ostream &out) const;
-
-        /// Set to resize buffers. Actual reallocation happens on Reallocate()
-        HD_API
-        bool Resize(int numElements);
 
         /// Performs reallocation.
         /// GLX context has to be set when calling this function.
-        HD_API
+        HDST_API
         virtual void Reallocate(
                 std::vector<HdBufferArrayRangeSharedPtr> const &ranges,
                 HdBufferArraySharedPtr const &curRangeOwner);
 
-        /// Returns the maximum number of elements capacity.
-        HD_API
-        virtual size_t GetMaxNumElements() const;
+        /// Mark to perform reallocation on Reallocate()
+        void SetNeedsReallocation() {
+            _needsReallocation = true;
+        }
 
-        /// Returns current capacity. It could be different from numElements.
-        int GetCapacity() const {
-            return _capacity;
+        /// Mark to perform compaction on GarbageCollect()
+        void SetNeedsCompaction() {
+            _needsCompaction = true;
+        }
+
+        /// Returns the stride.
+        int GetStride() const {
+            return _stride;
         }
 
         /// TODO: We need to distinguish between the primvar types here, we should
@@ -247,49 +223,93 @@ protected:
 
         /// Returns the GPU resource. If the buffer array contains more than one
         /// resource, this method raises a coding error.
-        HD_API
+        HDST_API
         HdBufferResourceGLSharedPtr GetResource() const;
 
         /// Returns the named GPU resource. This method returns the first found
         /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
         /// in _resourceMap and raises a coding error if there are more than
         /// one GL buffers exist.
-        HD_API
+        HDST_API
         HdBufferResourceGLSharedPtr GetResource(TfToken const& name);
 
         /// Returns the list of all named GPU resources for this bufferArray.
         HdBufferResourceGLNamedList const& GetResources() const {return _resourceList;}
 
         /// Reconstructs the bufferspecs and returns it (for buffer splitting)
-        HD_API
+        HDST_API
         HdBufferSpecVector GetBufferSpecs() const;
 
     protected:
-        HD_API
+        HDST_API
         void _DeallocateResources();
 
         /// Adds a new, named GPU resource and returns it.
-        HD_API
+        HDST_API
         HdBufferResourceGLSharedPtr _AddResource(TfToken const& name,
                                             int glDataType,
                                             short numComponents,
                                             int arraySize,
                                             int offset,
                                             int stride);
+
     private:
-        int _capacity;
-        size_t _maxBytesPerElement;
+        bool _needsCompaction;
+        int _stride;
+        int _bufferOffsetAlignment;  // ranged binding offset alignment
+        size_t _maxSize;             // maximum size of single buffer
 
         HdBufferResourceGLNamedList _resourceList;
 
-        _SimpleBufferArrayRangeSharedPtr _GetRangeSharedPtr() const {
-            return GetRangeCount() > 0
-                ? boost::static_pointer_cast<_SimpleBufferArrayRange>(GetRange(0).lock())
-                : _SimpleBufferArrayRangeSharedPtr();
+        _StripedInterleavedBufferRangeSharedPtr _GetRangeSharedPtr(size_t idx) const {
+            return boost::static_pointer_cast<_StripedInterleavedBufferRange>(GetRange(idx).lock());
         }
+
     };
+
+    /// Factory for creating HdBufferArrayRange
+    virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange();
+
+    /// Returns the buffer specs from a given buffer array
+    virtual HdBufferSpecVector GetBufferSpecs(
+        HdBufferArraySharedPtr const &bufferArray) const;
+
+    /// Returns the size of the GPU memory used by the passed buffer array
+    virtual size_t GetResourceAllocation(
+        HdBufferArraySharedPtr const &bufferArray, 
+        VtDictionary &result) const;
+};
+
+class HdStInterleavedUBOMemoryManager : public HdStInterleavedMemoryManager {
+public:
+    /// Factory for creating HdBufferArray managed by
+    /// HdStVBOMemoryManager aggregation.
+    HDST_API
+    virtual HdBufferArraySharedPtr CreateBufferArray(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs);
+
+    /// Returns id for given bufferSpecs to be used for aggregation
+    HDST_API
+    virtual AggregationId ComputeAggregationId(
+        HdBufferSpecVector const &bufferSpecs) const;
+};
+
+class HdStInterleavedSSBOMemoryManager : public HdStInterleavedMemoryManager {
+public:
+    /// Factory for creating HdBufferArray managed by
+    /// HdStVBOMemoryManager aggregation.
+    HDST_API
+    virtual HdBufferArraySharedPtr CreateBufferArray(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs);
+
+    /// Returns id for given bufferSpecs to be used for aggregation
+    HDST_API
+    virtual AggregationId ComputeAggregationId(
+        HdBufferSpecVector const &bufferSpecs) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_VBO_SIMPLE_MEMORY_MANAGER_H
+#endif  // HDST_INTERLEAVED_VBO_MEMORY_MANAGER_H

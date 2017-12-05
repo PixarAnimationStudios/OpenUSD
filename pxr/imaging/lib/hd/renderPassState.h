@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/conversions.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
@@ -39,16 +38,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdLightingShader> HdLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassShader>
-                HdRenderPassShaderSharedPtr;
-typedef boost::shared_ptr<class Hd_FallbackLightingShader>
-                Hd_FallbackLightingShaderSharedPtr;
-typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
+typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class HdRenderPassState
 ///
@@ -61,22 +52,28 @@ public:
     HD_API
     HdRenderPassState();
     HD_API
-    HdRenderPassState(HdRenderPassShaderSharedPtr const &shader);
-    HD_API
     virtual ~HdRenderPassState();
 
     /// Schedule to update renderPassState parameters.
     /// e.g. camera matrix, override color, id blend factor.
-    HD_API
-    void Sync(HdResourceRegistrySharedPtr const &resourceRegistry);
 
-    /// temp.
+    // Sync, called once per frame after RenderPassState is filled in.
+    HD_API
+    virtual void Sync(HdResourceRegistrySharedPtr const &resourceRegistry);
+
+    // Bind, called once per frame before drawing.
+    HD_API
+    virtual void Bind();
+
+    // Unbind, called once per frame after drawing.
+    HD_API
+    virtual void Unbind();
+
     /// Set camera framing of this render pass state.
     HD_API
     void SetCamera(GfMatrix4d const &worldToViewMatrix,
                    GfMatrix4d const &projectionMatrix,
                    GfVec4d const &viewport);
-
     /// temp.
     /// Get camera parameters.
     GfMatrix4d const & GetWorldToViewMatrix() const { return _worldToViewMatrix; }
@@ -102,14 +99,15 @@ public:
     void SetWireframeColor(GfVec4f const &color);
     const GfVec4f& GetWireframeColor() const { return _wireframeColor; }
 
-    /// temp.
-    /// Hacky way of disabling lighting
+    /// XXX: Hacky way of disabling lighting
     HD_API
     void SetLightingEnabled(bool enabled);
     bool GetLightingEnabled() const { return _lightingEnabled; }
 
     HD_API
     void SetCullStyle(HdCullStyle cullStyle);
+    HD_API
+    HdCullStyle GetCullStyle() { return _cullStyle; }
 
     HD_API
     void SetAlphaThreshold(float alphaThreshold);
@@ -126,31 +124,6 @@ public:
         return GfVec2f(2*_drawRange[0]/_viewport[2],
                        2*_drawRange[1]/_viewport[3]);
     }
-
-    /// Set lighting shader
-    HD_API
-    void SetLightingShader(HdLightingShaderSharedPtr const &lightingShader);
-    HdLightingShaderSharedPtr const & GetLightingShader() const {
-        return _lightingShader;
-    }
-
-    /// renderpass shader
-    HD_API
-    void SetRenderPassShader(HdRenderPassShaderSharedPtr const &renderPassShader);
-    HdRenderPassShaderSharedPtr const &GetRenderPassShader() const {
-        return _renderPassShader;
-    }
-
-    /// override shader
-    HD_API
-    void SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader);
-    HdShaderCodeSharedPtr const &GetOverrideShader() const {
-        return _overrideShader;
-    }
-
-    /// returns shaders (lighting/renderpass)
-    HD_API
-    HdShaderCodeSharedPtrVector GetShaders() const;
 
     GfMatrix4d const &GetCullMatrix() const {
         return _cullMatrix;
@@ -193,31 +166,7 @@ public:
     void SetColorMask(ColorMask const& mask);
     ColorMask GetColorMask() const { return _colorMask; }
 
-    /// Apply the GL states.
-    /// Following states may be changed and restored to
-    /// the GL default at Unbind().
-    ///   glEnable(GL_POLYGON_OFFSET_FILL)
-    ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
-    ///   glEnable(GL_PROGRAM_POINT_SIZE);
-    ///   glPolygonOffset()
-    ///   glDepthFunc()
-    HD_API
-    void Bind();
-    HD_API
-    void Unbind();
-
-    HD_API
-    size_t GetShaderHash() const;
-
-private:
-    // ---------------------------------------------------------------------- //
-    // Shader Objects
-    // ---------------------------------------------------------------------- //
-    HdRenderPassShaderSharedPtr _renderPassShader;
-    Hd_FallbackLightingShaderSharedPtr _fallbackLightingShader;
-    HdLightingShaderSharedPtr _lightingShader;
-    HdShaderCodeSharedPtr _overrideShader;
-
+protected:
     // ---------------------------------------------------------------------- //
     // Camera State 
     // ---------------------------------------------------------------------- //
@@ -228,10 +177,6 @@ private:
     // TODO: This is only used for CPU culling, should compute it on the fly.
     GfMatrix4d _cullMatrix; 
 
-    // ---------------------------------------------------------------------- //
-    // Shader Uniform Inputs (should be generalized)
-    // ---------------------------------------------------------------------- //
-    HdBufferArrayRangeSharedPtr _renderPassStateBar;
     GfVec4f _overrideColor;
     GfVec4f _wireframeColor;
     bool _lightingEnabled;
@@ -249,6 +194,7 @@ private:
     float _depthBiasConstantFactor;
     float _depthBiasSlopeFactor;
     HdCompareFunction _depthFunc;
+    HdCullStyle _cullStyle;
 
     // alpha to coverage
     bool _alphaToCoverageUseDefault;

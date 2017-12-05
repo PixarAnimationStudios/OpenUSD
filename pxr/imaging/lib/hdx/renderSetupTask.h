@@ -45,6 +45,7 @@ typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 struct HdxRenderTaskParams;
 class HdStCamera;
+class HdStRenderPassState;
 
 
 /// \class HdxRenderSetupTask
@@ -59,9 +60,10 @@ public:
 
     // compatibility APIs used from HdxRenderTask
     HDX_API
-    void Sync(HdxRenderTaskParams const &params);
+    void SyncParams(HdxRenderTaskParams const &params);
     HDX_API
     void SyncCamera();
+
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
@@ -103,6 +105,9 @@ private:
     static HdShaderCodeSharedPtr _overrideShader;
 
     static void _CreateOverrideShader();
+
+    void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
+                                 HdStRenderPassState *renderPassState);
 };
 
 /// \class HdxRenderTaskParams

@@ -69,7 +69,6 @@ pxr_library(hd
         glUtils
         instancer
         instanceRegistry
-        interleavedMemoryManager
         lightingShader
         mesh
         meshTopology
@@ -109,8 +108,9 @@ pxr_library(hd
         tokens
         topology
         unitTestDelegate
-        vboMemoryManager
-        vboSimpleMemoryManager
+        unitTestHelper
+        unitTestNullRenderPass
+        unitTestNullRenderDelegate
         vertexAdjacency
         vtBufferSource
 
@@ -125,9 +125,6 @@ pxr_library(hd
         extCompInputSource
         extComputationContextInternal
         sceneExtCompInputSource
-        unitTestHelper
-        unitTestNullRenderDelegate
-        unitTestNullRenderPass
         vtExtractor
         ${optionalPrivateClasses}
 

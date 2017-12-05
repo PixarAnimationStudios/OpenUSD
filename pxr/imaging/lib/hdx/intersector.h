@@ -51,7 +51,7 @@ class HdRenderIndex;
 class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
@@ -217,8 +217,8 @@ private:
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _unpickableRenderPass;
 
-    HdRenderPassStateSharedPtr _pickableRenderPassState;
-    HdRenderPassStateSharedPtr _unpickableRenderPassState;
+    HdStRenderPassStateSharedPtr _pickableRenderPassState;
+    HdStRenderPassStateSharedPtr _unpickableRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.

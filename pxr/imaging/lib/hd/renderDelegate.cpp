@@ -22,9 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderPassState.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+
+#include <boost/make_shared.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,6 +50,12 @@ TF_REGISTRY_FUNCTION(TfType)
 // in this compilation unit.
 HdRenderParam::~HdRenderParam() = default;
 HdRenderDelegate::~HdRenderDelegate() = default;
+
+HdRenderPassStateSharedPtr
+HdRenderDelegate::CreateRenderPassState() const
+{
+    return boost::make_shared<HdRenderPassState>();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

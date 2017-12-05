@@ -32,13 +32,14 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/lightingShader.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
@@ -207,8 +208,8 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
 
             HdRenderPassShaderSharedPtr renderPassShadowShader
                 (new HdRenderPassShader(HdxPackageRenderPassShadowShader()));
-            HdRenderPassStateSharedPtr renderPassState
-                (new HdRenderPassState(renderPassShadowShader));
+            HdStRenderPassStateSharedPtr renderPassState
+                (new HdStRenderPassState(renderPassShadowShader));
 
             // Update the rest of the renderpass state parameters for this pass
             renderPassState->SetOverrideColor(params.overrideColor);

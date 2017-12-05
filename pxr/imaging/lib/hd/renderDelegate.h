@@ -43,6 +43,7 @@ class HdRenderPass;
 class HdInstancer;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 ///
@@ -74,12 +75,14 @@ public:
     /// Returns a list of typeId's of all supported Rprims by this render
     /// delegate.
     ///
+    HD_API
     virtual const TfTokenVector &GetSupportedRprimTypes() const = 0;
 
     ///
     /// Returns a list of typeId's of all supported Sprims by this render
     /// delegate.
     ///
+    HD_API
     virtual const TfTokenVector &GetSupportedSprimTypes() const = 0;
 
 
@@ -87,6 +90,7 @@ public:
     /// Returns a list of typeId's of all supported Bprims by this render
     /// delegate.
     ///
+    HD_API
     virtual const TfTokenVector &GetSupportedBprimTypes() const = 0;
 
     ///
@@ -101,12 +105,14 @@ public:
     ///
     /// A render delegate may return null for the param.
     ///
+    HD_API
     virtual HdRenderParam *GetRenderParam() const = 0;
 
     ///
     /// Returns a shared ptr to the resource registry of the current render
     /// delegate.
     ///
+    HD_API
     virtual HdResourceRegistrySharedPtr GetResourceRegistry() const = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -121,8 +127,20 @@ public:
     /// \param collection the rprim collection to bind to the new renderpass.
     /// \return A shared pointer to the new renderpass or empty on error.
     ///
+    HD_API
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                                       HdRprimCollection const& collection) = 0;
+
+    ///
+    /// Request to create a new renderpass state.
+    /// The default implementation creates an HdRenderPassState instance,
+    /// but derived render delegates may instantiate their own state type.
+    /// \param shader The render pass shader to use.  If null, a new
+    ///               HdRenderPassShared will be created.
+    /// \return A shared pointer to the new renderpass state.
+    ///
+    HD_API
+    virtual HdRenderPassStateSharedPtr CreateRenderPassState() const;
 
     ////////////////////////////////////////////////////////////////////////////
     ///
@@ -137,10 +155,12 @@ public:
     ///                    uses this instancer as a prototype (may be empty).
     /// \return A pointer to the new instancer or nullptr on error.
     ///
+    HD_API
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
                                          SdfPath const& id,
                                          SdfPath const& instancerId) = 0;
 
+    HD_API
     virtual void DestroyInstancer(HdInstancer *instancer) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -158,6 +178,7 @@ public:
     ///                    the prim (optional: May be empty).
     /// \return A pointer to the new prim or nullptr on error.
     ///                     
+    HD_API
     virtual HdRprim *CreateRprim(TfToken const& typeId,
                                  SdfPath const& rprimId,
                                  SdfPath const& instancerId) = 0;
@@ -165,6 +186,7 @@ public:
     ///
     /// Request to Destruct and deallocate the prim.
     /// 
+    HD_API
     virtual void DestroyRprim(HdRprim *rPrim) = 0;
 
     ///
@@ -173,6 +195,7 @@ public:
     /// \param sprimId a unique identifier for the prim
     /// \return A pointer to the new prim or nullptr on error.
     ///
+    HD_API
     virtual HdSprim *CreateSprim(TfToken const& typeId,
                                  SdfPath const& sprimId) = 0;
 
@@ -185,11 +208,13 @@ public:
     /// \param typeId the type identifier of the prim to allocate
     /// \return A pointer to the new prim or nullptr on error.
     ///
+    HD_API
     virtual HdSprim *CreateFallbackSprim(TfToken const& typeId) = 0;
 
     ///
     /// Request to Destruct and deallocate the prim.
     ///
+    HD_API
     virtual void DestroySprim(HdSprim *sprim) = 0;
 
     ///
@@ -198,6 +223,7 @@ public:
     /// \param sprimId a unique identifier for the prim
     /// \return A pointer to the new prim or nullptr on error.
     ///
+    HD_API
     virtual HdBprim *CreateBprim(TfToken const& typeId,
                                  SdfPath const& bprimId) = 0;
 
@@ -211,11 +237,13 @@ public:
     /// \param typeId the type identifier of the prim to allocate
     /// \return A pointer to the new prim or nullptr on error.
     ///
+    HD_API
     virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) = 0;
 
     ///
     /// Request to Destruct and deallocate the prim.
     ///
+    HD_API
     virtual void DestroyBprim(HdBprim *bprim) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -235,6 +263,7 @@ public:
     /// For example, the render delegate might fill primvar buffers or texture
     /// memory.
     ///
+    HD_API
     virtual void CommitResources(HdChangeTracker *tracker) = 0;
 
     ////////////////////////////////////////////////////////////////////////////
@@ -245,6 +274,7 @@ public:
     ///
     /// Returns true if this renderer can deal with full materials.
     ///
+    HD_API
     virtual bool CanComputeMaterialNetworks() const { return false; }
 
 protected:

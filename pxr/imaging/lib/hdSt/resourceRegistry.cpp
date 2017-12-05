@@ -26,12 +26,32 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/persistentBuffer.h"
+#include "pxr/imaging/hdSt/interleavedMemoryManager.h"
+#include "pxr/imaging/hdSt/vboMemoryManager.h"
+#include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStResourceRegistry::HdStResourceRegistry()
 {
+    // default aggregation strategies for varying (vertex, varying) primvars
+    SetNonUniformAggregationStrategy(
+        new HdStVBOMemoryManager(/*isImmutable=*/false));
+    SetNonUniformImmutableAggregationStrategy(
+        new HdStVBOMemoryManager(/*isImmutable=*/true));
+
+    // default aggregation strategy for uniform on SSBO (for primvars)
+    SetShaderStorageAggregationStrategy(
+        new HdStInterleavedSSBOMemoryManager());
+
+    // default aggregation strategy for uniform on UBO (for globals)
+    SetUniformAggregationStrategy(
+        new HdStInterleavedUBOMemoryManager());
+
+    // default aggregation strategy for single buffers (for nested instancer)
+    SetSingleStorageAggregationStrategy(
+        new HdStVBOSimpleMemoryManager());
 }
 
 HdStResourceRegistry::~HdStResourceRegistry()

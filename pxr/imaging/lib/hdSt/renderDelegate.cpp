@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/renderPass.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/shader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -124,6 +125,12 @@ HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                         HdRprimCollection const& collection)
 {
     return HdRenderPassSharedPtr(new HdSt_RenderPass(index, collection));
+}
+
+HdRenderPassStateSharedPtr
+HdStRenderDelegate::CreateRenderPassState() const
+{
+    return boost::make_shared<HdStRenderPassState>();
 }
 
 HdInstancer *

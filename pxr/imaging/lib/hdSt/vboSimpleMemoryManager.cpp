@@ -27,6 +27,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 
+#include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
+
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -34,7 +36,6 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hd/conversions.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -51,26 +52,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 extern TfEnvSetting<int> HD_MAX_VBO_SIZE;
 
 // ---------------------------------------------------------------------------
-//  HdVBOSimpleMemoryManager
+//  HdStVBOSimpleMemoryManager
 // ---------------------------------------------------------------------------
 
 HdBufferArraySharedPtr
-HdVBOSimpleMemoryManager::CreateBufferArray(
+HdStVBOSimpleMemoryManager::CreateBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs)
 {
-    return boost::make_shared<HdVBOSimpleMemoryManager::_SimpleBufferArray>(
+    return boost::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArray>(
         role, bufferSpecs);
 }
 
 HdBufferArrayRangeSharedPtr
-HdVBOSimpleMemoryManager::CreateBufferArrayRange()
+HdStVBOSimpleMemoryManager::CreateBufferArrayRange()
 {
-    return boost::make_shared<HdVBOSimpleMemoryManager::_SimpleBufferArrayRange>();
+    return boost::make_shared<HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange>();
 }
 
 HdAggregationStrategy::AggregationId
-HdVBOSimpleMemoryManager::ComputeAggregationId(
+HdStVBOSimpleMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs) const
 {
     // Always returns different value
@@ -83,7 +84,7 @@ HdVBOSimpleMemoryManager::ComputeAggregationId(
 
 /// Returns the buffer specs from a given buffer array
 HdBufferSpecVector 
-HdVBOSimpleMemoryManager::GetBufferSpecs(
+HdStVBOSimpleMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
     _SimpleBufferArraySharedPtr bufferArray_ =
@@ -93,7 +94,7 @@ HdVBOSimpleMemoryManager::GetBufferSpecs(
 
 /// Returns the size of the GPU memory used by the passed buffer array
 size_t 
-HdVBOSimpleMemoryManager::GetResourceAllocation(
+HdStVBOSimpleMemoryManager::GetResourceAllocation(
     HdBufferArraySharedPtr const &bufferArray, 
     VtDictionary &result) const 
 { 
@@ -131,7 +132,7 @@ HdVBOSimpleMemoryManager::GetResourceAllocation(
 // ---------------------------------------------------------------------------
 //  _SimpleBufferArray
 // ---------------------------------------------------------------------------
-HdVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs)
     : HdBufferArray(role, TfToken()), _capacity(0), _maxBytesPerElement(0)
@@ -163,7 +164,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(TfToken const& name,
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(TfToken const& name,
                             int glDataType,
                             short numComponents,
                             int arraySize,
@@ -189,7 +190,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(TfToken const& name,
 }
 
 
-HdVBOSimpleMemoryManager::_SimpleBufferArray::~_SimpleBufferArray()
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::~_SimpleBufferArray()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -204,7 +205,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::~_SimpleBufferArray()
 
 
 bool
-HdVBOSimpleMemoryManager::_SimpleBufferArray::GarbageCollect()
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::GarbageCollect()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -219,20 +220,20 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::GarbageCollect()
 }
 
 void
-HdVBOSimpleMemoryManager::_SimpleBufferArray::DebugDump(std::ostream &out) const
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::DebugDump(std::ostream &out) const
 {
-    out << "  HdVBOSimpleMemoryManager";
+    out << "  HdStVBOSimpleMemoryManager";
     out << "  total capacity = " << _capacity << "\n";
 }
 
 bool
-HdVBOSimpleMemoryManager::_SimpleBufferArray::Resize(int numElements)
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::Resize(int numElements)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     // see the comment in
-    // HdVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
+    // HdStVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
     // this change is for the unit test consistency.
     //
     // if (_capacity < numElements) {
@@ -244,7 +245,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Resize(int numElements)
 }
 
 void
-HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     std::vector<HdBufferArrayRangeSharedPtr> const & ranges,
     HdBufferArraySharedPtr const &curRangeOwner)
 {
@@ -257,12 +258,12 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     HD_PERF_COUNTER_INCR(HdPerfTokens->vboRelocated);
 
     if (!TF_VERIFY(curRangeOwner == shared_from_this())) {
-        TF_CODING_ERROR("HdVBOSimpleMemoryManager can't reassign ranges");
+        TF_CODING_ERROR("HdStVBOSimpleMemoryManager can't reassign ranges");
         return;
     }
 
     if (ranges.size() > 1) {
-        TF_CODING_ERROR("HdVBOSimpleMemoryManager can't take multiple ranges");
+        TF_CODING_ERROR("HdStVBOSimpleMemoryManager can't take multiple ranges");
         return;
     }
     _SetRangeList(ranges);
@@ -360,14 +361,14 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 }
 
 size_t
-HdVBOSimpleMemoryManager::_SimpleBufferArray::GetMaxNumElements() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetMaxNumElements() const
 {
     static size_t vboMaxSize = TfGetEnvSetting(HD_MAX_VBO_SIZE);
     return vboMaxSize / _maxBytesPerElement;
 }
 
 void
-HdVBOSimpleMemoryManager::_SimpleBufferArray::_DeallocateResources()
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::_DeallocateResources()
 {
     TF_FOR_ALL (it, GetResources()) {
         GLuint id = it->second->GetId();
@@ -381,7 +382,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::_DeallocateResources()
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOSimpleMemoryManager::_SimpleBufferArray::GetResource() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetResource() const
 {
     HD_TRACE_FUNCTION();
 
@@ -403,7 +404,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::GetResource() const
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOSimpleMemoryManager::_SimpleBufferArray::GetResource(TfToken const& name)
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetResource(TfToken const& name)
 {
     HD_TRACE_FUNCTION();
 
@@ -417,7 +418,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::GetResource(TfToken const& name)
 }
 
 HdBufferSpecVector
-HdVBOSimpleMemoryManager::_SimpleBufferArray::GetBufferSpecs() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetBufferSpecs() const
 {
     HdBufferSpecVector result;
     result.reserve(_resourceList.size());
@@ -433,20 +434,20 @@ HdVBOSimpleMemoryManager::_SimpleBufferArray::GetBufferSpecs() const
 //  _SimpleBufferArrayRange
 // ---------------------------------------------------------------------------
 bool
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsAssigned() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsAssigned() const
 {
     return (_bufferArray != nullptr);
 }
 
 bool
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsImmutable() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsImmutable() const
 {
     return (_bufferArray != nullptr)
          && _bufferArray->IsImmutable();
 }
 
 void
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)
 {
     HD_TRACE_FUNCTION();
@@ -500,7 +501,7 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
 }
 
 VtValue
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name) const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -524,13 +525,13 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name)
 }
 
 size_t
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetMaxNumElements() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetMaxNumElements() const
 {
     return _bufferArray->GetMaxNumElements();
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource() const
 {
     if (!TF_VERIFY(_bufferArray)) return HdBufferResourceGLSharedPtr();
 
@@ -538,14 +539,14 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource() const
 }
 
 HdBufferResourceGLSharedPtr
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource(TfToken const& name)
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResource(TfToken const& name)
 {
     if (!TF_VERIFY(_bufferArray)) return HdBufferResourceGLSharedPtr();
     return _bufferArray->GetResource(name);
 }
 
 HdBufferResourceGLNamedList const&
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResources() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResources() const
 {
     if (!TF_VERIFY(_bufferArray)) {
         static HdBufferResourceGLNamedList empty;
@@ -555,20 +556,20 @@ HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::GetResources() const
 }
 
 void
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::SetBufferArray(HdBufferArray *bufferArray)
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::SetBufferArray(HdBufferArray *bufferArray)
 {
     _bufferArray = static_cast<_SimpleBufferArray *>(bufferArray);    
 }
 
 void
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::DebugDump(std::ostream &out) const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::DebugDump(std::ostream &out) const
 {
     out << "[SimpleBAR] numElements = " << _numElements
         << "\n";
 }
 
 const void *
-HdVBOSimpleMemoryManager::_SimpleBufferArrayRange::_GetAggregation() const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::_GetAggregation() const
 {
     return _bufferArray;
 }

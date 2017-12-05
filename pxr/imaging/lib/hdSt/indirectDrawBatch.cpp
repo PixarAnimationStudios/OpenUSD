@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/binding.h"
@@ -36,7 +37,6 @@
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -859,7 +859,7 @@ HdSt_IndirectDrawBatch::_ValidateCompatibility(
 
 void
 HdSt_IndirectDrawBatch::PrepareDraw(
-    HdRenderPassStateSharedPtr const &renderPassState,
+    HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
@@ -994,7 +994,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
 void
 HdSt_IndirectDrawBatch::ExecuteDraw(
-    HdRenderPassStateSharedPtr const &renderPassState,
+    HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
@@ -1194,7 +1194,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
 void
 HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     HdDrawItem const *batchItem,
-    HdRenderPassStateSharedPtr const &renderPassState,
+    HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
@@ -1344,7 +1344,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
 void
 HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     HdDrawItem const *batchItem,
-    HdRenderPassStateSharedPtr const &renderPassState,
+    HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =

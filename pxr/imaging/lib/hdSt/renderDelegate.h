@@ -63,6 +63,8 @@ public:
     HDST_API
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                 HdRprimCollection const& collection) override;
+    HDST_API
+    virtual HdRenderPassStateSharedPtr CreateRenderPassState() const override;
 
     HDST_API
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,

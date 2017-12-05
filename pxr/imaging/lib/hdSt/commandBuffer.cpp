@@ -76,8 +76,9 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 }
 
 void
-HdStCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry)
+HdStCommandBuffer::PrepareDraw(
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -87,8 +88,9 @@ HdStCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState
 }
 
 void
-HdStCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry)
+HdStCommandBuffer::ExecuteDraw(
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 

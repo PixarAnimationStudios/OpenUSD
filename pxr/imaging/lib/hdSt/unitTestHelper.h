@@ -26,11 +26,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/glf/glslfx.h"
 
@@ -75,7 +75,7 @@ public:
     HdRenderPassSharedPtr const &GetRenderPass(bool withGuides=false);
 
     /// Returns the renderPassState
-    HdRenderPassStateSharedPtr const &GetRenderPassState() const {
+    HdStRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
 
@@ -96,7 +96,7 @@ private:
     TfToken _reprName;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassStateSharedPtr _renderPassState;
 };
 
 /// \class HdSt_TestLightingShader

@@ -56,7 +56,7 @@ class HdSt_DrawTask final : public HdTask
 {
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                HdRenderPassStateSharedPtr const &renderPassState)
+                  HdStRenderPassStateSharedPtr const &renderPassState)
     : HdTask()
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
@@ -80,7 +80,7 @@ protected:
 
 private:
     HdRenderPassSharedPtr _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassStateSharedPtr _renderPassState;
 };
 
 template <typename T>
@@ -100,7 +100,9 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _reprName()
  , _geomPass()
  , _geomAndGuidePass()
- , _renderPassState(new HdRenderPassState())
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
 {
     TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
@@ -118,7 +120,9 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _reprName()
  , _geomPass()
  , _geomAndGuidePass()
- , _renderPassState(new HdRenderPassState())
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
 {
     _Init(reprName);
 }

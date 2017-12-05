@@ -29,11 +29,8 @@
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/copyComputation.h"
 #include "pxr/imaging/hd/glslProgram.h"
-#include "pxr/imaging/hd/interleavedMemoryManager.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vboMemoryManager.h"
-#include "pxr/imaging/hd/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 
 #include "pxr/imaging/glf/textureRegistry.h"
@@ -58,23 +55,7 @@ HdResourceRegistry::HdResourceRegistry() :
     _singleAggregationStrategy(),
     _numBufferSourcesToResolve(0)
 {
-    // default aggregation strategies for varying (vertex, varying) primvars
-    _nonUniformAggregationStrategy.reset(
-        new HdVBOMemoryManager(/*isImmutable=*/false));
-    _nonUniformImmutableAggregationStrategy.reset(
-        new HdVBOMemoryManager(/*isImmutable=*/true));
-
-    // default aggregation strategy for uniform on SSBO (for primvars)
-    _uniformSsboAggregationStrategy.reset(
-        new HdInterleavedSSBOMemoryManager());
-
-    // default aggregation strategy for uniform on UBO (for globals)
-    _uniformUboAggregationStrategy.reset(
-        new HdInterleavedUBOMemoryManager());
-
-    // default aggregation strategy for single buffers (for nested instancer)
-    _singleAggregationStrategy.reset(
-        new HdVBOSimpleMemoryManager());
+    /*NOTHING*/
 }
 
 HdResourceRegistry::~HdResourceRegistry()

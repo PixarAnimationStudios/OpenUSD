@@ -30,6 +30,7 @@ pxr_library(hdSt
         drawTargetRenderPassState
         glslfxShader
         instancer
+        interleavedMemoryManager
         light      
         mesh
         mixinShaderCode
@@ -37,10 +38,13 @@ pxr_library(hdSt
         points
         renderDelegate
         renderPass
+        renderPassState
         resourceRegistry
         shader
         surfaceShader
         unitTestGLDrawing
+        vboMemoryManager
+        vboSimpleMemoryManager
 
     PUBLIC_HEADERS
         api.h

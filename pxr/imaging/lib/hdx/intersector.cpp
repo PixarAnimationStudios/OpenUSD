@@ -32,9 +32,9 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/diagnostic.h"
@@ -63,12 +63,12 @@ HdxIntersector::_Init(GfVec2i const& size)
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
     // initialize renderPassState with ID render shader
-    _pickableRenderPassState = boost::make_shared<HdRenderPassState>(
+    _pickableRenderPassState = boost::make_shared<HdStRenderPassState>(
         boost::make_shared<HdRenderPassShader>(HdxPackageRenderPassIdShader()));
 
     // Turn off color writes for the unpickables (we only want to condition the
     // depth buffer)
-    _unpickableRenderPassState = boost::make_shared<HdRenderPassState>(
+    _unpickableRenderPassState = boost::make_shared<HdStRenderPassState>(
         boost::make_shared<HdRenderPassShader>(HdxPackageRenderPassIdShader()));
     _unpickableRenderPassState->SetColorMaskUseDefault(false);
     _unpickableRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);

@@ -59,13 +59,15 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
-    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+    virtual void PrepareDraw(
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
-    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+    virtual void ExecuteDraw(
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     HDST_API
     virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance);
@@ -130,11 +132,11 @@ private:
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCulling(HdDrawItem const *item,
-                            HdRenderPassStateSharedPtr const &renderPassState,
+                            HdStRenderPassStateSharedPtr const &renderPassState,
                             HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _GPUFrustumCullingXFB(HdDrawItem const *item,
-                               HdRenderPassStateSharedPtr const &renderPassState,
+                               HdStRenderPassStateSharedPtr const &renderPassState,
                                HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _BeginGPUCountVisibleInstances(HdStResourceRegistrySharedPtr const &resourceRegistry);

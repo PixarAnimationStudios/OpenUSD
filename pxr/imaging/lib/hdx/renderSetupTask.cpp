@@ -32,8 +32,9 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderPassShader.h"
-#include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
@@ -46,7 +47,6 @@ HdShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
-    , _renderPassState()
     , _colorRenderPassShader()
     , _idRenderPassShader()
     , _viewport()
@@ -57,8 +57,9 @@ HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const&
         new HdRenderPassShader(HdxPackageRenderPassShader()));
     _idRenderPassShader.reset(
         new HdRenderPassShader(HdxPackageRenderPassIdShader()));
-    _renderPassState.reset(
-        new HdRenderPassState(_colorRenderPassShader));
+
+    HdRenderIndex &index = delegate->GetRenderIndex();
+    _renderPassState = index.GetRenderDelegate()->CreateRenderPassState();
 }
 
 void
@@ -89,14 +90,33 @@ HdxRenderSetupTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
-        Sync(params);
+        SyncParams(params);
     }
 
     SyncCamera();
 }
 
 void
-HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
+HdxRenderSetupTask::_SetHdStRenderPassState(HdxRenderTaskParams const &params,
+                                        HdStRenderPassState *renderPassState)
+{
+    if (params.enableHardwareShading) {
+        renderPassState->SetOverrideShader(HdShaderCodeSharedPtr());
+    } else {
+        if (!_overrideShader) {
+            _CreateOverrideShader();
+        }
+        renderPassState->SetOverrideShader(_overrideShader);
+    }
+    if (params.enableIdRender) {
+        renderPassState->SetRenderPassShader(_idRenderPassShader);
+    } else {
+        renderPassState->SetRenderPassShader(_colorRenderPassShader);
+    }
+}
+
+void
+HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
 {
     _renderPassState->SetOverrideColor(params.overrideColor);
     _renderPassState->SetWireframeColor(params.wireframeColor);
@@ -105,20 +125,6 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     _renderPassState->SetTessLevel(params.tessLevel);
     _renderPassState->SetDrawingRange(params.drawingRange);
     _renderPassState->SetCullStyle(params.cullStyle);
-    if (params.enableHardwareShading) {
-        _renderPassState->SetOverrideShader(HdShaderCodeSharedPtr());
-    } else {
-        if (!_overrideShader) {
-            _CreateOverrideShader();
-        }
-
-        _renderPassState->SetOverrideShader(_overrideShader);
-    }
-    if (params.enableIdRender) {
-        _renderPassState->SetRenderPassShader(_idRenderPassShader);
-    } else {
-        _renderPassState->SetRenderPassShader(_colorRenderPassShader);
-    }
 
     // XXX TODO: Handle params.geomStyle
     // XXX TODO: Handle params.complexity
@@ -148,6 +154,11 @@ HdxRenderSetupTask::Sync(HdxRenderTaskParams const &params)
     _camera = static_cast<const HdStCamera *>(
                 renderIndex.GetSprim(HdPrimTypeTokens->camera,
                                      params.camera));
+
+    if (HdStRenderPassState* extendedState =
+            dynamic_cast<HdStRenderPassState*>(_renderPassState.get())) {
+        _SetHdStRenderPassState(params, extendedState);
+    }
 }
 
 void
