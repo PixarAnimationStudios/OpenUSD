@@ -36,12 +36,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdKatanaLookAPI,
         TfType::Bases< UsdSchemaBase > >();
     
-    // Register the usd prim typename as an alias under UsdSchemaBase. This
-    // enables one to call
-    // TfType::Find<UsdSchemaBase>().FindDerivedByName("LookAPI")
-    // to find TfType<UsdKatanaLookAPI>, which is how IsA queries are
-    // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdKatanaLookAPI>("LookAPI");
 }
 
 /* virtual */
@@ -60,19 +54,6 @@ UsdKatanaLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdKatanaLookAPI(stage->GetPrimAtPath(path));
 }
 
-/* static */
-UsdKatanaLookAPI
-UsdKatanaLookAPI::Define(
-    const UsdStagePtr &stage, const SdfPath &path)
-{
-    static TfToken usdPrimTypeName("LookAPI");
-    if (!stage) {
-        TF_CODING_ERROR("Invalid stage");
-        return UsdKatanaLookAPI();
-    }
-    return UsdKatanaLookAPI(
-        stage->DefinePrim(path, usdPrimTypeName));
-}
 
 /* static */
 const TfType &

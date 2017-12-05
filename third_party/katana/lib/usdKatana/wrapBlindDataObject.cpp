@@ -76,7 +76,7 @@ void wrapUsdKatanaBlindDataObject()
 {
     typedef UsdKatanaBlindDataObject This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdTyped> >
         cls("BlindDataObject");
 
     cls

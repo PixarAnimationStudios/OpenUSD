@@ -61,7 +61,7 @@ public:
     /// to a concrete instantiable prim type in scene description.  If this is
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
-    static const bool IsConcrete = true;
+    static const bool IsConcrete = false;
 
     /// Compile-time constant indicating whether or not this class inherits from
     /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
@@ -109,31 +109,6 @@ public:
     static UsdKatanaLookAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-    /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
-    /// is defined (according to UsdPrim::IsDefined()) on this stage.
-    ///
-    /// If a prim adhering to this schema at \p path is already defined on this
-    /// stage, return that prim.  Otherwise author an \a SdfPrimSpec with
-    /// \a specifier == \a SdfSpecifierDef and this schema's prim type name for
-    /// the prim at \p path at the current EditTarget.  Author \a SdfPrimSpec s
-    /// with \p specifier == \a SdfSpecifierDef and empty typeName at the
-    /// current EditTarget for any nonexistent, or existing but not \a Defined
-    /// ancestors.
-    ///
-    /// The given \a path must be an absolute prim path that does not contain
-    /// any variant selections.
-    ///
-    /// If it is impossible to author any of the necessary PrimSpecs, (for
-    /// example, in case \a path cannot map to the current UsdEditTarget's
-    /// namespace) issue an error and return an invalid \a UsdPrim.
-    ///
-    /// Note that this method may return a defined prim whose typeName does not
-    /// specify this schema class, in case a stronger typeName opinion overrides
-    /// the opinion at the current EditTarget.
-    ///
-    USDKATANA_API
-    static UsdKatanaLookAPI
-    Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.

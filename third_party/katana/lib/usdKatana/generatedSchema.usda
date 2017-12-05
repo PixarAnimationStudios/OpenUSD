@@ -14,7 +14,7 @@ class BlindDataObject "BlindDataObject" (
     bool katana:visible
 }
 
-class LookAPI "LookAPI" (
+class "LookAPI" (
     doc = "Katana-specific extensions of UsdShadeMaterial."
 )
 {
