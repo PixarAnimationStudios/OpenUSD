@@ -1132,6 +1132,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     if (scheme == PxOsdOpenSubdivTokens->bilinear ||
         scheme == PxOsdOpenSubdivTokens->none) {
         requireSmoothNormals = false;
+        *dirtyBits &= ~DirtySmoothNormals;
     }
 
     if (requireSmoothNormals && !_vertexAdjacency) {
@@ -1285,11 +1286,15 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
                 HdChangeTracker::DirtyRefineLevel;
     }
 
-    // propagate scene-based dirtyBits into rprim-custom dirtyBits
-    if (bits & HdChangeTracker::DirtyPoints) {
+    // If points or topology changed, recompute smooth normals.
+    // Note: we latch on DirtyTopology here, since subdiv scheme affects whether
+    // smooth normals are computed or not.
+    if (bits & (HdChangeTracker::DirtyPoints |
+                HdChangeTracker::DirtyTopology)) {
         bits |= _customDirtyBitsInUse & DirtySmoothNormals;
     }
 
+    // If the topology is dirty, recompute custom indices resources.
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= _customDirtyBitsInUse &
                    (DirtyIndices      |
