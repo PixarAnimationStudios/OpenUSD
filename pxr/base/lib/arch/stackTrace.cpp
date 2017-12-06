@@ -322,6 +322,14 @@ char* asitoa(char* s, long x)
     return end;
 }
 
+// Write a string to a file descriptor.
+void aswrite(int fd, const char* msg)
+{
+    int saved = errno;
+    write(fd, msg, asstrlen(msg));
+    errno = saved;
+}
+
 int _GetStackTraceName(char* buf, size_t len)
 {
     // Take care to avoid non-async-safe functions.
@@ -584,7 +592,7 @@ int _LogStackTraceForPid(const char *logfile)
     const char* argv[maxArgs];
     if (!_MakeArgv(argv, maxArgs, cmd, stackTraceArgv, substitutions, 2)) {
         static const char msg[] = "Too many arguments to postmortem command\n";
-        write(2, msg, sizeof(msg) - 1);
+        aswrite(2, msg);
         return 0;
     }
 
@@ -810,7 +818,7 @@ _InvokeSessionLogger(const char* progname, const char *stackTrace)
     const char* argv[maxArgs];
     if (!_MakeArgv(argv, maxArgs, cmd, srcArgv, substitutions, 4)) {
         static const char msg[] = "Too many arguments to log session command\n";
-        write(2, msg, sizeof(msg) - 1);
+        aswrite(2, msg);
         return;
     }
 
@@ -901,7 +909,7 @@ ArchLogPostMortem(const char* reason,
     if (_GetStackTraceName(logfile, sizeof(logfile)) == -1) {
         // Cannot create the logfile.
         static const char msg[] = "Cannot create a log file\n";
-        write(2, msg, sizeof(msg) - 1);
+        aswrite(2, msg);
         busy.clear(std::memory_order_release);
         return;
     }
@@ -1384,7 +1392,11 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
     pid_t pid = nonLockingFork(); /* use non-locking fork */
     if (pid == -1) {
         /* fork() failed */
-        fprintf(stderr, "FAIL: Unable to fork() crash handler\n");
+        char errBuffer[numericBufferSize];
+        asitoa(errBuffer, errno);
+        aswrite(2, "FAIL: Unable to fork() crash handler: errno=");
+        aswrite(2, errBuffer);
+        aswrite(2, "\n");
         return -1;
     }
     else if (pid == 0) {
@@ -1393,11 +1405,25 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
         // the stack tracing stuff invokes gdb, which wants to fiddle with the
         // tty, and if we're run in the background, that blocks, so we hang
         // trying to take the stacktrace.  This seems to fix that.
-        setsid();
-        nonLockingExecv(pathname, argv);  /* use non-locking execv */
-        /* exec() failed */
-        fprintf(stderr, "FAIL: Unable to exec() crash handler %s: %s\n",
-                pathname, ArchStrerror(errno).c_str());
+        //
+        // If standard input is not a TTY then skip this.  This ensures
+        // the child is part of the same process group as this process,
+        // which is important on the renderfarm.
+        if (isatty(0)) {
+            setsid();
+        }
+
+        // Exec the handler.
+        nonLockingExecv(pathname, argv);
+
+        /* Exec failed */
+        char errBuffer[numericBufferSize];
+        asitoa(errBuffer, errno);
+        aswrite(2, "FAIL: Unable to exec crash handler ");
+        aswrite(2, pathname);
+        aswrite(2, ": errno=");
+        aswrite(2, errBuffer);
+        aswrite(2, "\n");
         _exit(127);
     }
     else {
@@ -1428,6 +1454,11 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                 /* waitpid error.  return if not due to signal. */
                 if (errno != EINTR) {
                     retval = -1;
+                    char errBuffer[numericBufferSize];
+                    asitoa(errBuffer, errno);
+                    aswrite(2, "FAIL: Crash handler wait failed: errno=");
+                    aswrite(2, errBuffer);
+                    aswrite(2, "\n");
                     goto out;
                 }
                 /* continue below */
@@ -1439,9 +1470,11 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                      * if the exec() failed.  we'll set errno to
                      * ENOENT in that case though the actual error
                      * could be something else. */
-                    if (WEXITSTATUS(status) == 127)
-                        errno = ENOENT;
                     retval = WEXITSTATUS(status);
+                    if (retval == 127) {
+                        errno = ENOENT;
+                        aswrite(2, "FAIL: Crash handler failed to exec\n");
+                    }
                     goto out;
                 }
 
@@ -1449,11 +1482,21 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                     /* child died due to uncaught signal */
                     errno = EINTR;
                     retval = -1;
+                    char sigBuffer[numericBufferSize];
+                    asitoa(sigBuffer, WTERMSIG(status));
+                    aswrite(2, "FAIL: Crash handler died: signal=");
+                    aswrite(2, sigBuffer);
+                    aswrite(2, "\n");
                     goto out;
                 }
                 /* child died for an unknown reason */
                 errno = EINTR;
                 retval = -1;
+                char statusBuffer[numericBufferSize];
+                asitoa(statusBuffer, status);
+                aswrite(2, "FAIL: Crash handler unexpected wait status=");
+                aswrite(2, statusBuffer);
+                aswrite(2, "\n");
                 goto out;
             }
 
@@ -1475,6 +1518,7 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
          */
         errno = EBUSY;
         retval = -1;
+        aswrite(2, "FAIL: Crash handler timed out\n");
     }
 
   out:
