@@ -3402,6 +3402,11 @@ UsdStage::_HandleLayersDidChange(
             const SdfPath &path = entryList.first;
             const SdfChangeList::Entry &entry = entryList.second;
 
+            // Skip target paths entirely -- we do not create target objects in
+            // USD.
+            if (path.IsTargetPath())
+                continue;
+
             TF_DEBUG(USD_CHANGES).Msg(
                 "<%s> in @%s@ changed.\n",
                 path.GetText(), 
@@ -3454,23 +3459,11 @@ UsdStage::_HandleLayersDidChange(
                 }
             }
             else {
-                if (path.IsPropertyPath()) {
-                    willRecompose = 
-                        entry.flags.didAddPropertyWithOnlyRequiredFields    ||
-                        entry.flags.didAddProperty                          ||
-                        entry.flags.didRemovePropertyWithOnlyRequiredFields ||
-                        entry.flags.didRemoveProperty;
-                }
-                else if (path.IsTargetPath()) {
-                    // XXX: This will cause us to include target paths like
-                    // /Foo.rel[/Bar] in the resynced path list in the
-                    // ObjectsChanged notice we emit. This is a bug; no such
-                    // object exists in the USD scenegraph. Keeping this here
-                    // for now to maintain current behavior.
-                    willRecompose =
-                        entry.flags.didAddTarget ||
-                        entry.flags.didRemoveTarget;
-                }
+                willRecompose = path.IsPropertyPath() &&
+                    (entry.flags.didAddPropertyWithOnlyRequiredFields ||
+                     entry.flags.didAddProperty ||
+                     entry.flags.didRemovePropertyWithOnlyRequiredFields ||
+                     entry.flags.didRemoveProperty);
 
                 if (willRecompose) {
                     _AddDependentPaths(layerAndChangelist.first, path, 

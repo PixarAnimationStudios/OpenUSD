@@ -155,6 +155,7 @@ endif()
 pxr_test_scripts(
     testenv/testUsdAttributeBlocking.py
     testenv/testUsdAttributeConnections.py
+    testenv/testUsdBugs.py
     testenv/testUsdBug119633.py
     testenv/testUsdBug141491.py
     testenv/testUsdChangeProcessing.py

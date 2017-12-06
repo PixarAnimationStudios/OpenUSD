@@ -299,11 +299,7 @@ TestObjectsChanged()
                     TF_AXIOM(!n.ResyncedObject(rel)) &&
                     TF_AXIOM(n.ChangedInfoOnly(rel)) &&
                     TF_AXIOM(n.AffectedObject(rel)) &&
-                    // XXX: This is a bug -- resynced paths should not include
-                    // the relationship target path, since no such object exists
-                    // in the USD scenegraph.
-                    TF_AXIOM(n.GetResyncedPaths() == 
-                             SdfPathVector{SdfPath("/foo.rel[/bar]")}) &&
+                    TF_AXIOM(n.GetResyncedPaths().empty()) &&
                     TF_AXIOM(n.GetChangedInfoOnlyPaths() == 
                              SdfPathVector{SdfPath("/foo.rel")});
             });
