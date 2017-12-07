@@ -855,6 +855,92 @@ class TestUsdMetadata(unittest.TestCase):
                 print '\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n')))
             assert a == b
 
+    def test_AssetPathMetadata(self):
+        '''Test path resolution for asset path-valued metadata'''
+        s = Usd.Stage.Open("assetPaths/root.usda")
+        prim = s.GetPrimAtPath("/AssetPathTest")
+        attr = prim.GetAttribute("assetPath")
+        
+        timeSamples = attr.GetMetadata("timeSamples")
+        self.assertEqual(os.path.normpath(timeSamples[0].resolvedPath),
+                         os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(os.path.normpath(timeSamples[1].resolvedPath),
+                         os.path.abspath("assetPaths/asset.usda"))
+        
+        self.assertEqual(
+            os.path.normpath(attr.GetMetadata("default").resolvedPath), 
+            os.path.abspath("assetPaths/asset.usda"))
+        
+        attr = s.GetPrimAtPath("/AssetPathTest").GetAttribute("assetPathArray")
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in attr.GetMetadata("default")]),
+            [os.path.abspath("assetPaths/asset.usda")])
+
+        metadataDict = prim.GetMetadata("customData")
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+            
+        metadataDict = metadataDict["subDict"]
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].resolvedPath),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.resolvedPath) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+
+    def test_TimeSamplesMetadata(self):
+        '''Test timeSamples composition, with layer offsets'''
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory(
+                'TestTimeSamplesMetadata.'+fmt)
+
+            # Create two prims, 'weaker' and 'stronger', 'stronger' references
+            # 'weaker'.
+            weaker = s.OverridePrim('/weaker')
+            stronger = s.OverridePrim('/stronger')
+            # Use a layer offset on the reference arc to shift timeSamples
+            # later in time by 10.
+            if Usd.UsesInverseLayerOffset():
+                refOffset = Sdf.LayerOffset(scale=1.0, offset=-10.0)
+            else:
+                refOffset = Sdf.LayerOffset(scale=1.0, offset=10.0)
+            stronger.GetReferences().AddReference(
+                s.GetRootLayer().identifier, weaker.GetPath(), refOffset)
+
+            # Set some time samples on the reference.
+            weaker_attr = \
+                weaker.CreateAttribute("attr", Sdf.ValueTypeNames.String)
+            # We write directly to the weaker_attr, as opposed to
+            # writing to stronger_attr with an edit target (which
+            # would give the same result).
+            weaker_attr.Set("abc_0", 0.0)
+            weaker_attr.Set("def_10", 10.0)
+            stronger_attr = stronger.GetAttribute('attr')
+
+            # Confirm resolved metadata.
+            weaker_expectedTimeSamples = {0.0: 'abc_0', 10.0: 'def_10'}
+            self.assertEqual(
+                weaker_attr.GetTimeSamples(),
+                sorted(weaker_expectedTimeSamples.keys()))
+            self.assertEqual(
+                weaker_attr.GetMetadata('timeSamples'),
+                weaker_expectedTimeSamples)
+            # Stronger attribute will be affected by the offset.
+            stronger_expectedTimeSamples = {10.0: 'abc_0', 20.0: 'def_10'}
+            self.assertEqual(
+                stronger_attr.GetTimeSamples(),
+                sorted(stronger_expectedTimeSamples.keys()))
+            self.assertEqual(
+                stronger_attr.GetMetadata('timeSamples'),
+                stronger_expectedTimeSamples)
+
 if __name__ == '__main__':
     # Register test plugin defining list op metadata fields.
     testDir = os.path.abspath(os.getcwd())

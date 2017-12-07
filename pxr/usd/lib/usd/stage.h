@@ -47,9 +47,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/arenaDispatcher.h"
 
-#include <boost/mpl/assert.hpp>
 #include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
@@ -57,6 +55,7 @@
 
 #include <functional>
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <utility>
 
@@ -524,8 +523,9 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Load the prim at \p path along with all descendants, ancestors
-    /// and dependencies (relationship targets).
+    /// Load the prim at \p path, its ancestors, and all of its descendants if
+    /// \p policy is UsdLoadWithDescendants.  If \p policy is
+    /// UsdLoadWithoutDescendants, then descendants are not loaded.
     ///
     /// If an instance prim is encountered during this operation, this
     /// function will also load prims in the instance's master. In other
@@ -538,7 +538,8 @@ public:
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath());
+    UsdPrim Load(const SdfPath& path=SdfPath::AbsoluteRootPath(),
+                 UsdLoadPolicy policy=UsdLoadWithDescendants);
 
     /// Unload the prim and its descendants specified by \p path.
     ///
@@ -560,14 +561,16 @@ public:
     ///
     /// This is equivalent to calling UsdStage::Unload for each item in the
     /// unloadSet followed by UsdStage::Load for each item in the loadSet,
-    /// however this method is more efficient as all operations are committed
-    /// in a single batch.
+    /// however this method is more efficient as all operations are committed in
+    /// a single batch.  The \p policy argument is described in the
+    /// documentation for Load().
     ///
     /// See the rules under
     /// \ref Usd_workingSetManagement "Working Set Management" for a discussion
     /// of what paths are considered valid.
     USD_API
-    void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet);
+    void LoadAndUnload(const SdfPathSet &loadSet, const SdfPathSet &unloadSet,
+                       UsdLoadPolicy policy=UsdLoadWithDescendants);
 
     /// Returns a set of all loaded paths.
     ///
@@ -710,7 +713,8 @@ private:
 
     // A helper function for LoadAndUnload to aggregate notification data
     void _LoadAndUnload(const SdfPathSet&, const SdfPathSet&, 
-                        SdfPathSet*, SdfPathSet*);
+                        SdfPathSet*, SdfPathSet*,
+                        UsdLoadPolicy policy);
 
 public:
 
@@ -1484,26 +1488,6 @@ private:
     // --------------------------------------------------------------------- //
     // Spec Existence & Definition Helpers
     // --------------------------------------------------------------------- //
-    using _MasterToFlattenedPathMap 
-        = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
-
-    void _CopyMetadata(const UsdObject &source,
-                       const SdfSpecHandle& dest) const;
-    
-    void _CopyProperty(const UsdProperty &prop,
-                       const SdfPrimSpecHandle& dest,
-                       const _MasterToFlattenedPathMap 
-                            &masterToFlattened) const;
-
-    void _CopyMasterPrim(const UsdPrim &masterPrim,
-                         const SdfLayerHandle &destinationLyer,
-                         const _MasterToFlattenedPathMap 
-                            &masterToFlattened) const;
-
-    void _FlattenPrim(const UsdPrim &usdPrim,
-                      const SdfLayerHandle &layer,
-                      const SdfPath &path,
-                      const _MasterToFlattenedPathMap &masterToFlattened) const;
 
     SdfPropertySpecHandleVector
     _GetPropertyStack(const UsdProperty &prop, UsdTimeCode time) const;
@@ -1556,6 +1540,10 @@ private:
     UsdPrim _DefinePrim(const SdfPath &path, const TfToken &typeName);
 
     bool _RemoveProperty(const SdfPath& path);
+
+    UsdProperty _FlattenProperty(const UsdProperty &srcProp,
+                                 const UsdPrim &dstParent, 
+                                 const TfToken &dstName);
 
     // --------------------------------------------------------------------- //
     // Value & Metadata Authoring
@@ -1743,6 +1731,7 @@ private:
     // payload has been included. UsdStage::LoadAndUnload takes this into
     // account.
     void _DiscoverPayloads(const SdfPath& rootPath,
+                           UsdLoadPolicy policy,
                            SdfPathSet* primIndexPaths,
                            bool unloadedOnly = false,
                            SdfPathSet* usdPrimPaths = nullptr) const;
@@ -1947,13 +1936,6 @@ private:
     // Specialized Time Sample I/O
     // --------------------------------------------------------------------- //
 
-    // Returns the TSM, transformed for the current offset & scale.
-    SdfTimeSampleMap _GetTimeSampleMap(const UsdAttribute &attr) const;
-
-    // Same as _GetTimeSampleMap but report whether or not timesamples exist.
-    bool _GetTimeSampleMap(const UsdAttribute &attr,
-                           SdfTimeSampleMap *out) const;
-
     /// Gets the set of time samples authored for a given attribute 
     /// within the \p interval. The interval may have any combination 
     /// of open/infinite and closed/finite endpoints; it may not have 
@@ -2015,9 +1997,9 @@ private:
     // The stage's EditTarget.
     UsdEditTarget _editTarget;
 
-    boost::scoped_ptr<PcpCache> _cache;
-    boost::scoped_ptr<Usd_ClipCache> _clipCache;
-    boost::scoped_ptr<Usd_InstanceCache> _instanceCache;
+    std::unique_ptr<PcpCache> _cache;
+    std::unique_ptr<Usd_ClipCache> _clipCache;
+    std::unique_ptr<Usd_InstanceCache> _instanceCache;
 
     // A map from Path to Prim, for fast random access.
     typedef TfHashMap<
@@ -2046,7 +2028,7 @@ private:
     UsdStagePopulationMask _populationMask;
     
     bool _isClosingStage;
-    
+
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
     friend class UsdEditTarget;
@@ -2059,6 +2041,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
 };

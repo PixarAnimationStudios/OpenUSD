@@ -33,7 +33,6 @@
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 
-#include <boost/bind.hpp>
 #include <boost/mpl/logical.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits.hpp>

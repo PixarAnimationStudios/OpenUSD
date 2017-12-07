@@ -28,6 +28,7 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/sdf/layerOffset.h"
 
 #include "pxr/usd/usd/primDataHandle.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -36,7 +37,6 @@
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 // Forward declare Usd classes.
 class UsdStage;
@@ -90,7 +90,27 @@ bool UsdIsRetireLumosEnabled();
 USD_API
 bool UsdAuthorOldStyleAdd();
 
-PXR_NAMESPACE_CLOSE_SCOPE
+/// Returns true if USD uses the historical behavior of applying
+/// the inverse of composed layer offsets to map layer time to
+/// stage time.  Respects the env setting USD_USE_INVERSE_LAYER_OFFSET.
+USD_API
+bool UsdUsesInverseLayerOffset();
+
+/// Prepare the given offset for application to map layer time to
+/// stage time, respecting the environment variable
+/// USD_USE_INVERSE_LAYER_OFFSET.
+///
+/// Typically, the supplied SdfLayerOffset will come from Pcp -- in
+/// a PcpNodeRef or PcpLayerStack -- and represent the cumulative offset
+/// to transform data from a layer to the Usd stage.
+///
+/// Historically, USD applied the inverse of that offset, flipping
+/// the intended semantics. To address this, this function provides a
+/// temporary measure to control whether to take the inverse or not.
+/// Under the new behavior this function will become a no-op,
+/// and can eventually be phased out.
+USD_API
+SdfLayerOffset UsdPrepLayerOffset(SdfLayerOffset offset);
 
 /// \enum UsdListPosition
 ///
@@ -108,5 +128,20 @@ enum UsdListPosition {
     /// new behavior with a TfEnvSetting.
     UsdListPositionTempDefault,
 };
+
+
+/// \enum UsdLoadPolicy
+///
+/// Controls UsdStage::Load() and UsdPrim::Load() behavior regarding whether or
+/// not descendant prims are loaded.
+///
+enum UsdLoadPolicy {
+    /// Load a prim plus all its descendants.
+    UsdLoadWithDescendants,
+    /// Load a prim by itself with no descendants.
+    UsdLoadWithoutDescendants
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

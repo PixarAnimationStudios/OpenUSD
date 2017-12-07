@@ -1304,8 +1304,7 @@ _AddArc(
              it.node; it.NextFrame()) {
 
             PcpPrimIndex_GraphPtr currentGraph = it.node.GetOwningGraph();
-            if (const PcpNodeRef dupeNode = 
-                currentGraph->GetNodeUsingSite(siteToAddInCurrentGraph)) {
+            if (currentGraph->GetNodeUsingSite(siteToAddInCurrentGraph)) {
                 foundDuplicateNode = true;
                 break;
             }
@@ -4460,49 +4459,6 @@ PcpComputePrimIndex(
 ////////////////////////////////////////////////////////////////////////
 // Name children / property names
 
-static void
-_ComposeChildNames( const PcpPrimIndex& primIndex,
-                    const PcpNodeRef& node,
-                    bool applyListOrdering,
-                    const TfToken & namesField,
-                    const TfToken & orderField,
-                    const PcpTokenSet & prohibitedNames,
-                    TfTokenVector *nameOrder,
-                    PcpTokenSet *nameSet )
-{
-    PcpLayerStackRefPtr const &layerStack = node.GetLayerStack();
-    SdfPath const &sitePath = node.GetPath();
-
-    TF_REVERSE_FOR_ALL(layerIt, layerStack->GetLayers()) {
-        const VtValue& specNamesValue =
-            (*layerIt)->GetField(sitePath, namesField);
-        if (specNamesValue.IsHolding<TfTokenVector>()) {
-            const TfTokenVector & specNames =
-                specNamesValue.UncheckedGet<TfTokenVector>();
-
-            // Append names in order.  Skip names that are prohibited
-            // or already in the nameSet.
-            TF_FOR_ALL(name, specNames) {
-                if (prohibitedNames.find(*name) == prohibitedNames.end()) {
-                    if (nameSet->insert(*name).second) {
-                        nameOrder->push_back(*name);
-                    }
-                }
-            }
-        }
-
-        if (!applyListOrdering)
-            continue;
-
-        const VtValue& orderValue = (*layerIt)->GetField(sitePath, orderField);
-        if (orderValue.IsHolding<TfTokenVector>()) {
-            const TfTokenVector & ordering =
-                orderValue.UncheckedGet<TfTokenVector>();
-            SdfApplyListOrdering(nameOrder, ordering);
-        }
-    }
-}
-
 // Walk the graph, strong-to-weak, composing prim child names.
 // Account for spec children in each layer, list-editing statements,
 // and relocations.
@@ -4635,11 +4591,10 @@ _ComposePrimChildNamesAtNode(
     // Compose the site's local names over the current result,
     // respecting any prohibited names.
     if (node.CanContributeSpecs()) {
-        _ComposeChildNames(
-            primIndex, node, 
-            /*applyListOrdering*/ true,
-            SdfChildrenKeys->PrimChildren, SdfFieldKeys->PrimOrder,
-            *prohibitedNameSet, nameOrder, nameSet);
+        PcpComposeSiteChildNames(
+            node.GetLayerStack()->GetLayers(), node.GetPath(), 
+            SdfChildrenKeys->PrimChildren, nameOrder, nameSet,
+            &SdfFieldKeys->PrimOrder, prohibitedNameSet);
     }
 
     // Post-conditions, for debugging.
@@ -4735,17 +4690,12 @@ _ComposePrimPropertyNames( const PcpPrimIndex& primIndex,
             primIndex, *child, isUsd, nameOrder, nameSet );
     }
 
-    // Prohibited names do not apply to properties, since they are 
-    // an effect of relocates, which only applies to prims.
-    // Just provide an empty list.
-    static const PcpTokenSet noProhibitedNames;
-
     // Compose the site's local names over the current result.
     if (node.CanContributeSpecs()) {
-        _ComposeChildNames(
-            primIndex, node, /*applyListOrdering*/ !isUsd,
-            SdfChildrenKeys->PropertyChildren, SdfFieldKeys->PropertyOrder,
-            noProhibitedNames, nameOrder, nameSet);
+        PcpComposeSiteChildNames(
+            node.GetLayerStack()->GetLayers(), node.GetPath(), 
+            SdfChildrenKeys->PropertyChildren, nameOrder, nameSet,
+            isUsd ? nullptr : &SdfFieldKeys->PropertyOrder);
     }
 }
 

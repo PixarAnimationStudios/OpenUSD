@@ -77,11 +77,6 @@ _add_define("_SCL_SECURE_NO_WARNINGS")
 # will conflict with std::min() and std::max().
 _add_define("NOMINMAX")
 
-# Defining TF_NO_GNU_EXT disables using the gnu hash_set and  hash_map
-# containers on platforms where we can't. The implementation will
-# substitute C++11 containers with equivalent semantics in this case.
-_add_define("TF_NO_GNU_EXT")
-
 # Needed to prevent YY files trying to include unistd.h
 # (which doesn't exist on Windows)
 _add_define("YY_NO_UNISTD_H")

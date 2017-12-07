@@ -78,13 +78,208 @@ UsdGeomModelAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdGeomModelAPI::GetModelDrawModeAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelDrawMode);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelDrawModeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelDrawMode,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelApplyDrawModeAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelApplyDrawMode);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelApplyDrawModeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelApplyDrawMode,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelDrawModeColorAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelDrawModeColor);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelDrawModeColorAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelDrawModeColor,
+                       SdfValueTypeNames->Float3,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardGeometryAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardGeometry);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardGeometryAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardGeometry,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardTextureXPosAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureXPos);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardTextureXPosAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardTextureXPos,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardTextureYPosAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureYPos);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardTextureYPosAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardTextureYPos,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardTextureZPosAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureZPos);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardTextureZPosAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardTextureZPos,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardTextureXNegAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureXNeg);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardTextureXNegAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardTextureXNeg,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardTextureYNegAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureYNeg);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardTextureYNegAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardTextureYNeg,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomModelAPI::GetModelCardTextureZNegAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureZNeg);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardTextureZNegAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardTextureZNeg,
+                       SdfValueTypeNames->Asset,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdGeomModelAPI::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdGeomTokens->modelDrawMode,
+        UsdGeomTokens->modelApplyDrawMode,
+        UsdGeomTokens->modelDrawModeColor,
+        UsdGeomTokens->modelCardGeometry,
+        UsdGeomTokens->modelCardTextureXPos,
+        UsdGeomTokens->modelCardTextureYPos,
+        UsdGeomTokens->modelCardTextureZPos,
+        UsdGeomTokens->modelCardTextureXNeg,
+        UsdGeomTokens->modelCardTextureYNeg,
+        UsdGeomTokens->modelCardTextureZNeg,
+    };
     static TfTokenVector allNames =
-        UsdModelAPI::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdModelAPI::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;
@@ -247,6 +442,32 @@ UsdGeomModelAPI::GetConstraintTargets() const
     }
 
     return constraintTargets;
+}
+
+TfToken
+UsdGeomModelAPI::ComputeModelDrawMode() const
+{
+    // Find the closest applicable model:drawMode among this prim's ancestors.
+    for (UsdPrim curPrim = GetPrim(); curPrim; curPrim = curPrim.GetParent()) {
+        // Only check for the attribute on models; don't check the pseudo-root.
+        if (!curPrim.IsModel() || !curPrim.GetParent()) {
+            continue;
+        }
+
+        // If model:drawMode is set, use its value; we want the first attribute
+        // we find.
+        UsdGeomModelAPI curModel(curPrim);
+        UsdAttribute attr;
+        TfToken drawMode;
+
+        if ((attr = curModel.GetModelDrawModeAttr()) && attr &&
+            attr.Get(&drawMode)) {
+            return drawMode;
+        }
+    }
+
+    // If the attribute isn't set on any ancestors, return "default".
+    return UsdGeomTokens->default_;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,75 @@
+#usda 1.0
+
+def Xform "Implicits" (
+    add variantSets = "shapeVariant"
+)
+{
+    variantSet "shapeVariant" = {
+        "Capsule" {
+            def Capsule "Pill"
+            {
+            }
+        }
+        "Cone" {
+            def Cone "PartyHat"
+            {
+            }
+        }
+        "Cube" {
+            def Cube "Box"
+            {
+            }
+        }
+        "Cylinder" {
+            def Cylinder "Tube"
+            {
+            }
+        }
+        "Sphere" {
+            def Sphere "Ball"
+            {
+            }
+        }
+    }
+
+    int foo = 4
+    
+    float connAttr = 5.5
+
+    add float connAttr.connect = [
+        </foo.bar>,
+        </foo.baz>,
+        </foo.qux>,
+        </otherSphere.x>
+    ] 
+
+    rel myRel = [</otherOtherScope>, </otherSphere>]
+    
+    int x = 0
+    int y = 1
+    int z = 2
+    int q = 3
+    int z = 4
+    int t = 5
+}
+
+def Scope "foo" {
+    float bar = 4.4 
+    string baz = "hello"
+    int qux = 3
+}
+
+def Sphere "otherSphere" {
+    double3 xformOp:translate = (4, 5, 6)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    float x = 333.3
+    float y.timeSamples = {
+        12: 12,
+        13: 1000
+    }
+}
+
+def Sphere "otherOtherScope" {
+    float x = 444.4 
+}

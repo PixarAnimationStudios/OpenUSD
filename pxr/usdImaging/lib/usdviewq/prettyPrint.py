@@ -39,7 +39,7 @@ def prettyPrint(v):
 
     # Pretty-print a dictionary
     if isinstance(v, dict):
-        result = "Dictionary contents:\n" 
+        result = "Dictionary contents:\n"
         for pair in v.items():
             keystring = str(pair[0])
             valstring = prettyPrint(pair[1])

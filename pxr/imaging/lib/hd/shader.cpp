@@ -36,4 +36,43 @@ HdShader::~HdShader()
     // NOTHING
 }
 
+
+// -------------------------------------------------------------------------- //
+// VtValue Requirements
+// -------------------------------------------------------------------------- //
+
+std::ostream& operator<<(std::ostream& out, const HdMaterialNodes& pv)
+{
+    out << "HdMaterialNodes Params: (...) " ;
+    return out;
+}
+
+bool operator==(const HdMaterialRelationship& lhs, 
+                const HdMaterialRelationship& rhs)
+{
+    return lhs.sourceId       == rhs.sourceId && 
+           lhs.sourceTerminal == rhs.sourceTerminal &&
+           lhs.remoteId       == rhs.remoteId &&
+           lhs.remoteTerminal == rhs.remoteTerminal;
+}
+
+bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
+{
+    return lhs.path == rhs.path &&
+           lhs.type == rhs.type &&
+           lhs.parameters == rhs.parameters;
+}
+
+bool operator==(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs) 
+{
+    return lhs.relationships           == rhs.relationships && 
+           lhs.nodes                   == rhs.nodes;
+}
+
+bool operator!=(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs) 
+{
+    return !(lhs == rhs);
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -25,6 +25,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/notice.h"
 
@@ -145,12 +146,38 @@ _TestSdfLayerTransferContents()
              .find(fooPath)->second.flags.didAddInertPrim);
 }
 
+static void
+_TestSdfRelationshipTargetSpecEdits()
+{
+    // Test for a subtle bug where relationship target specs were not
+    // being properly created when using the prepended/appended form.
+    // (Testingin C++ because rel target specs are not accessible from python.)
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
+    SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, SdfPath("/Foo"));
+    SdfRelationshipSpecHandle rel = SdfRelationshipSpec::New(prim, "rel");
+    rel->GetTargetPathList().Prepend(SdfPath("/Target"));
+    TF_AXIOM(layer->GetObjectAtPath(SdfPath("/Foo.rel[/Target]")));
+
+    // XXX Unfortunately, there is another bug where if you add the same
+    // target path via multiple lists, then remove it from only one,
+    // Sdf_ConnectionListEditor will remove the associated spec even
+    // though it should arguably still exist.  See bug 153466.
+    // We demonstrate this busted behavior here.
+    rel->GetTargetPathList().Append(SdfPath("/Target"));
+    TF_AXIOM(layer->GetObjectAtPath(SdfPath("/Foo.rel[/Target]")));
+    rel->GetTargetPathList().GetAppendedItems().clear();
+    // The target spec should still exist, because it is still in the
+    // prepended list, but the appended list proxy has removed it.
+    TF_AXIOM(!layer->GetObjectAtPath(SdfPath("/Foo.rel[/Target]")));
+}
+
 int
 main(int argc, char **argv)
 {
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();
+    _TestSdfRelationshipTargetSpecEdits();
 
     return 0;
 }

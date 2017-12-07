@@ -66,9 +66,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
-GT_DataArrayHandle newDataArray( GT_Storage storage, GT_Size size, int tupleSize );
+GT_DataArrayHandle newDataArray( GT_Storage storage, GT_Size size,
+                                 int tupleSize, GT_Type typeInfo );
 void copyDataArrayItem( GT_DataArrayHandle dstData, GT_DataArrayHandle srcData, 
                         GT_Offset dstOffset, GT_Offset srcOffset );
+GT_AttributeListHandle findAndAddStringAttribute( GT_AttributeListHandle attrs,
+                                            const std::string& attrName,
+                                            const GT_PrimitiveHandle& gtPrim);
 }  
 
 GusdRefiner::GusdRefiner(
@@ -149,7 +153,7 @@ GusdRefiner::refineDetail(
         if( overTransformsAttr ) {
             GA_ROHandleI h( overTransformsAttr );
             if( overTransformsAttr->getOwner() == GA_ATTRIB_DETAIL ) {
-                overlayTransforms = h.get( 0 );
+                overlayTransforms = h.get( GA_Offset(0) );
             }
             else {
                 // assume all prims in the range have the same usdovertransforms
@@ -184,6 +188,33 @@ GusdRefiner::finish() {
     return m_collector.m_gprims;
 }
 
+std::string 
+GusdRefiner::createPrimPath( const std::string& primName) {
+    std::string primPath;
+    if( !primName.empty() && primName[0] == '/' ) {
+        // Use an explicit absolute path
+        primPath = primName;
+    }
+    else {
+        // add prefix to relative path
+        primPath = m_pathPrefix.GetString();
+        if( !primName.empty() ) {
+            if( primPath.empty() || primPath.back() != '/' ) {
+                primPath += "/";
+            }
+            primPath += primName;
+        }
+        else if( !primPath.empty() && primPath.back() != '/' )
+            primPath += '/';
+    }
+
+    // USD is persnikity about having a leading slash
+    if( primPath[0] != '/' ) {
+        primPath = "/" + primPath;
+    }
+    return primPath;
+}
+
 void 
 GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 {
@@ -194,97 +225,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
     GT_PrimitiveHandle gtPrim = gtPrimIn;     // copy to a non-const handle
     int primType = gtPrim->getPrimitiveType();
     DBG( cerr << "GusdRefiner::addPrimitive, " << gtPrim->className() << endl );
-
-    // The following is only necessary for point instancers. Prototypes 
-    // can't be point instancers.
-    if (!m_buildPrototypes) {
-
-        // Check per prim if we are building a point instancer. This may cause
-        // problems for point instancers with discontiguous packed prims.
-        bool localBuildPointInstancer = false;
-        // If we have imported USD geometry get the type to see if it is a
-        // point instancer we need to overlay.
-        if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
-            
-            if(packedUSD->getFileName()) {
-
-                // Get the usd src prim path used for point instancers
-                const SdfPath& instancerPrimPath =
-                    packedUSD->getSrcPrimPath();
-
-                GusdStageCacheReader cache;
-                if(UsdPrim prim = cache.GetPrimWithVariants(
-                    packedUSD->getFileName(), instancerPrimPath).first) {
-                    // Get the type name of the usd file to overlay
-                    m_pointInstancerType = prim.GetTypeName();
-            
-                    // Make sure to set buildPointInstancer to true if we are overlaying a
-                    // point instancer
-                    if (m_pointInstancerType == _tokens->PointInstancer ||
-                        m_pointInstancerType == _tokens->PxPointInstancer) {
-                        localBuildPointInstancer = true;
-                    }
-                }
-            }
-        }
-        
-        // If we find either an instancepath or usdinstancepath attribute, build a
-        // point instancer.
-        GT_Owner owner;
-        if(gtPrim->findAttribute("instancepath", owner, 0) ||
-            gtPrim->findAttribute("usdinstancepath", owner, 0) ) {
-            localBuildPointInstancer = true;
-        }
-
-        if (m_buildPointInstancer || localBuildPointInstancer) {
-            // If we are building point instancer, stash prims that can be 
-            // point instanced. Build the point instancer in the finish method.
-
-            if( auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
-                // Point instancer from packed usd
-                m_collector.addInstPrim( packedUSD->getSrcPrimPath(), gtPrim );
-                return;
-            }
-            else if( gtPrim->getPrimitiveType() == GT_PRIM_INSTANCE ) {
-                // Point instancer from packed primitives
-
-                // A GT_PrimInstance can container more than one instance. Create 
-                // an entry for each.
-                auto instPrim = UTverify_cast<const GT_PrimInstance*>( gtPrim.get() );
-
-                // TODO: If we put all geometry packed prims here, then we break
-                // grouping prims for purpose.
-                for( size_t i = 0; i < instPrim->entries(); ++i ) {
-                    m_collector.addInstPrim( SdfPath(), gtPrim, i );
-                }
-                return;
-            }
-
-            if( primType == GT_PRIM_PARTICLE || primType == GT_PRIM_POINT_MESH ) {
-                // Point instancer from points with instancepath attribute
-
-                // Check for the usdprototypespath attribute in case it is not
-                // a point or primitivie attribute.
-                GT_AttributeListHandle uniformAttrs = gtPrim->getUniformAttributes();
-                GT_Owner owner;
-                if(auto pathattrib = gtPrim->findAttribute("usdprototypespath", owner, 0)){
-                    if (pathattrib->isValid()){
-                        if (!uniformAttrs) {
-                            uniformAttrs = new GT_AttributeList( new GT_AttributeMap() );
-                        }
-                        auto prototypesPathArray = new GT_DAIndexedString(1);
-                        prototypesPathArray->setString( 0, 0, pathattrib->getS(0) );
-                        uniformAttrs = uniformAttrs->addAttribute( "usdprototypespath", prototypesPathArray, true );
-                    }
-                }
-                gtPrim = new GusdGT_PointInstancer( 
-                                    gtPrim->getPointAttributes(), 
-                                    uniformAttrs );
-                primType = gtPrim->getPrimitiveType();
-            }
-        }
-    }
-
+    
     string primName;
     // Types can register a function to provide a prim name. 
     // Volumes do this to return a name stored in the f3d file. This is 
@@ -301,6 +242,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         GT_AttributeListHandle primAttrs;
         if( primType == GT_GEO_PACKED ) {
             primAttrs = UTverify_cast<const GT_GEOPrimPacked*>(gtPrim.get())->getInstanceAttributes();
+
         } 
         if( !primAttrs ) {
             primAttrs = gtPrim->getUniformAttributes();
@@ -331,13 +273,103 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         }
     }
 
+    
+    // The following is only necessary for point instancers. Prototypes 
+    // can't be point instancers.
+    if (!m_buildPrototypes) {
+
+        // Check per prim if we are building a point instancer. This may cause
+        // problems for point instancers with discontiguous packed prims.
+        bool localBuildPointInstancer = false;
+        // If we have imported USD geometry get the type to see if it is a
+        // point instancer we need to overlay.
+        if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
+            if(packedUSD->getFileName()) {
+
+                // Get the usd src prim path used for point instancers
+                const SdfPath& instancerPrimPath =
+                    packedUSD->getSrcPrimPath();
+
+                GusdStageCacheReader cache;
+                if(UsdPrim prim = cache.GetPrimWithVariants(
+                    packedUSD->getFileName(), instancerPrimPath).first) {
+                    // Get the type name of the usd file to overlay
+                    m_pointInstancerType = prim.GetTypeName();
+            
+                    // Make sure to set buildPointInstancer to true if we are overlaying a
+                    // point instancer
+                    if (m_pointInstancerType == _tokens->PointInstancer ||
+                        m_pointInstancerType == _tokens->PxPointInstancer) {
+                        localBuildPointInstancer = true;
+                    }
+                }
+            }
+        }
+        // If we find either an instancepath or usdinstancepath attribute, build a
+        // point instancer.
+        GT_Owner owner;
+        if(gtPrim->findAttribute("instancepath", owner, 0) ||
+            gtPrim->findAttribute("usdinstancepath", owner, 0) ) {
+            localBuildPointInstancer = true;
+        }
+
+        if (m_buildPointInstancer || localBuildPointInstancer) {
+            // If we are building point instancer, stash prims that can be 
+            // point instanced. Build the point instancer in the finish method.
+            
+            // If given a prim path, pass it to the collector for a custom
+            // usd scope. Otherwise pass an empty SdfPath.
+            SdfPath instancerPrimPath;
+            if( !primName.empty() ) {
+                instancerPrimPath = SdfPath(createPrimPath(primName));
+            }
+
+            if( auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( gtPrim.get() )) {
+                // Point instancer from packed usd
+                instancerPrimPath = instancerPrimPath.IsEmpty() ? packedUSD->getSrcPrimPath() : instancerPrimPath;
+                m_collector.addInstPrim( instancerPrimPath, gtPrim );
+                return;
+            }
+            else if( gtPrim->getPrimitiveType() == GT_PRIM_INSTANCE ) {
+                // Point instancer from packed primitives
+
+                // A GT_PrimInstance can container more than one instance. Create 
+                // an entry for each.
+                auto instPrim = UTverify_cast<const GT_PrimInstance*>( gtPrim.get() );
+
+                // TODO: If we put all geometry packed prims here, then we break
+                // grouping prims for purpose
+                for( size_t i = 0; i < instPrim->entries(); ++i ) {
+                    m_collector.addInstPrim( instancerPrimPath, gtPrim, i );
+                }
+                return;
+            }
+
+            if( primType == GT_PRIM_PARTICLE || primType == GT_PRIM_POINT_MESH ) {
+                // Point instancer from points with instancepath attribute
+
+                // Check for the usdprototypespath attribute in case it is not
+                // a point or primitivie attribute.
+                GT_AttributeListHandle uniformAttrs = gtPrim->getUniformAttributes();
+                uniformAttrs = findAndAddStringAttribute(uniformAttrs, "usdprototypespath", gtPrim);
+
+                // Find and add a custom prototype scope attribute.
+                uniformAttrs = findAndAddStringAttribute(uniformAttrs, "usdprototypesscope", gtPrim);
+
+                gtPrim = new GusdGT_PointInstancer( 
+                                    gtPrim->getPointAttributes(), 
+                                    uniformAttrs );
+                primType = gtPrim->getPrimitiveType();
+            }
+        }
+    }
     // We must refine packed prims that don't have a name
     if( !primHasNameAttr && !refinePackedPrims ) {
         refinePackedPrims = true;
     }
 
     if( primName.empty() && 
-       gtPrim->getPrimitiveType() == GusdGT_PackedUSD::getStaticPrimitiveType() ) {
+        gtPrim->getPrimitiveType() == GusdGT_PackedUSD::getStaticPrimitiveType() ) {
 
         auto packedUsdPrim = UTverify_cast<const GusdGT_PackedUSD *>(gtPrim.get());
         SdfPath path = packedUsdPrim->getPrimPath().StripAllVariantSelections();
@@ -350,14 +382,13 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
 
         // We want prototypes to be children of the point instancer, so we make 
         // the usd path a relative scope of just the usd prim name
-        if (  m_buildPrototypes && !primName.empty() && primName[0] == '/' ) {
+        if ( m_buildPrototypes && !primName.empty() && primName[0] == '/' ) {
             size_t idx = primName.find_last_of("/");
             primName = primName.substr(idx+1);
         } 
     }
-
     // If the prim path was not explicitly set, try to come up with a reasonable
-    // default.    
+    // default.
     bool addNumericSuffix = false;
     if( primName.empty() ) {
 
@@ -368,6 +399,8 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
             primName = "mesh";
         else if( t == GT_PRIM_CURVE_MESH )
             primName = "curve";
+        else if( t == GusdGT_PointInstancer::getStaticPrimitiveType() )
+            primName = "instances";
         else if(const char *n = GusdPrimWrapper::getUsdName( t ))
             primName = n;
         else
@@ -378,28 +411,7 @@ GusdRefiner::addPrimitive( const GT_PrimitiveHandle& gtPrimIn )
         }
     }
 
-    string primPath;
-    if( !primName.empty() && primName[0] == '/' ) {
-        // Use an explicit absolute path
-        primPath = primName;
-    }
-    else {
-        // add prefix to relative path
-        primPath = m_pathPrefix.GetString();
-        if( !primName.empty() ) {
-            if( primPath.empty() || primPath.back() != '/' ) {
-                primPath += "/";
-            }
-            primPath += primName;
-        }
-        else if( !primPath.empty() && primPath.back() != '/' )
-            primPath += '/';
-    }
-
-    // USD is persnikity about having a leading slash
-    if( primPath[0] != '/' ) {
-        primPath = "/" + primPath;
-    }
+    string primPath = createPrimPath(primName);
 
     TfToken purpose = UsdGeomTokens->default_;
     {
@@ -573,7 +585,6 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
 
         GT_AttributeListHandle pAttrs = new GT_AttributeList( new GT_AttributeMap() );
 
-
         // Allocate storage for all the attributes we want to copy.
         
         // Assume all entries in the primArray have the same set of attributes.
@@ -593,11 +604,18 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                     continue;
                 }
                 GT_Storage storage = instPtAttrs->get( j )->getStorage();
-                GT_Size tupleSize = instPtAttrs->get( j )->getTupleSize();
+                GT_Size tupleSize  = instPtAttrs->get( j )->getTupleSize();
+                GT_Type typeInfo   = instPtAttrs->get( j )->getTypeInfo();
                 pAttrs = pAttrs->addAttribute( 
                             n, 
-                            newDataArray( storage, nprims, tupleSize ), 
+                            newDataArray( storage, nprims, tupleSize, typeInfo ), 
                             true );
+            }
+        }
+        bool hasInstanceIndices = false;
+        if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( prim.get() )) {
+            if (packedUSD->getInstanceIndex() >= 0) {
+                hasInstanceIndices = true;
             }
         }
 
@@ -617,19 +635,22 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                 if( !pAttrs->hasName( n ) ) {
 
                     GT_Storage storage = instUniAttrs->get( j )->getStorage();
-                    GT_Size tupleSize = instUniAttrs->get( j )->getTupleSize();
+                    GT_Size tupleSize  = instUniAttrs->get( j )->getTupleSize();
+                    GT_Type typeInfo   = instUniAttrs->get( j )->getTypeInfo();
                     pAttrs = pAttrs->addAttribute( 
                                 n, 
-                                newDataArray( storage, nprims, tupleSize ),
+                                newDataArray( storage, nprims, tupleSize, typeInfo ),
                                 true );
                 }
             }
         }
+       
 
         // Allocate xform attribute used to communicate about the instances
         // with the instancerWrapper.
         GT_Real64Array*     xformArray = new GT_Real64Array(nprims, 16);
         bool foundValidTransform = false;
+        GT_Int64Array* instanceIndices = hasInstanceIndices ? new GT_Int64Array(nprims, 1) : NULL;
 
         for( size_t primIndex = 0; primIndex < nprims; ++primIndex ) {
 
@@ -657,6 +678,14 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
                         pivotArray->set( pos->getF32( 0, 0 ), primIndex, 0 );
                         pivotArray->set( pos->getF32( 0, 1 ), primIndex, 1 );
                         pivotArray->set( pos->getF32( 0, 2 ), primIndex, 2 );
+                    }
+                }
+                if (hasInstanceIndices) {
+                    if(auto packedUSD = dynamic_cast<const GusdGT_PackedUSD*>( prim.get() )) {
+                        exint index = packedUSD->getInstanceIndex();
+                        if (index >= 0) {
+                            instanceIndices->setTuple(&index, primIndex);
+                        }
                     }
                 }
             }
@@ -707,6 +736,10 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
             pAttrs = pAttrs->addAttribute( "__instancetransform", xformArray, true );
         }
 
+        if ( hasInstanceIndices ) {
+            pAttrs = pAttrs->addAttribute( "__instanceindex", instanceIndices, true );
+        }
+
         // If the instance prims have a "srcPrimPath" intrinsic (typically 
         // because we are doing an overlay), set the "usdprimpath" attribute on 
         // the point mesh prim so that the point instancer prim gets named properly.
@@ -721,17 +754,10 @@ GusdRefinerCollector::finish( GusdRefiner& refiner )
 
         // Check for the usdprototypespath attribute in case it is not
         // a point or primitivie attribute.
-        GT_Owner owner;
-        if(auto pathattrib = prim->findAttribute("usdprototypespath", owner, 0)){
-            if (pathattrib->isValid()){
-                if (!uniformAttrs) {
-                    uniformAttrs = new GT_AttributeList( new GT_AttributeMap() );
-                }
-                auto prototypesPathArray = new GT_DAIndexedString(1);
-                prototypesPathArray->setString( 0, 0, pathattrib->getS(0) );
-                uniformAttrs = uniformAttrs->addAttribute( "usdprototypespath", prototypesPathArray, true );
-            }
-        }
+        uniformAttrs = findAndAddStringAttribute(uniformAttrs, "usdprototypespath", prim);
+        
+        // Find and add a custom prototype scope attribute.
+        uniformAttrs = findAndAddStringAttribute(uniformAttrs, "usdprototypesscope", prim);
 
         // Add the refined point instancer. If we are overlaying an old point
         // instancer make sure to use the old type (temporary).
@@ -768,19 +794,20 @@ GusdRefinerCollector::addInstPrim( const SdfPath &path, GT_PrimitiveHandle p, in
 namespace {
 
 GT_DataArrayHandle
-newDataArray( GT_Storage storage, GT_Size size, int tupleSize )
+newDataArray( GT_Storage storage, GT_Size size, int tupleSize,
+              GT_Type typeInfo=GT_TYPE_NONE )
 {
     if( storage == GT_STORE_REAL32 ) {
-        return new GT_Real32Array( size, tupleSize );
+        return new GT_Real32Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_REAL64 ) {
-        return new GT_Real64Array( size, tupleSize );
+        return new GT_Real64Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_INT32 ) {
-        return new GT_Int32Array( size, tupleSize );
+        return new GT_Int32Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_INT64 ) {
-        return new GT_Int64Array( size, tupleSize );
+        return new GT_Int64Array( size, tupleSize, typeInfo );
     }
     else if( storage == GT_STORE_STRING ) {
         return new GT_DAIndexedString( size, tupleSize );
@@ -824,6 +851,25 @@ copyDataArrayItem( GT_DataArrayHandle dstData, GT_DataArrayHandle srcData,
             dst->setString( dstOffset, i, srcData->getS( srcOffset, i ) );
         }
     }
+}
+
+GT_AttributeListHandle
+findAndAddStringAttribute( GT_AttributeListHandle attrs,
+                   const std::string& attrName,
+                   const GT_PrimitiveHandle& gtPrim) {
+    // find a string attribute on the prim and add it to the attribute list.
+    GT_Owner owner;
+    if(auto attrib = gtPrim->findAttribute(attrName.c_str(), owner, 0)){
+        if (attrib->isValid()){
+            if (!attrs) {
+                attrs = new GT_AttributeList( new GT_AttributeMap() );
+            }
+            auto array = new GT_DAIndexedString(1);
+            array->setString( 0, 0, attrib->getS(0) );
+            attrs = attrs->addAttribute( attrName.c_str(), array, true );
+        }
+    }
+    return attrs;
 }
 
 } /* close namespace */

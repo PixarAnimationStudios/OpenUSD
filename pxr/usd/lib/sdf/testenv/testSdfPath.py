@@ -182,15 +182,6 @@ class TestSdfPath(unittest.TestCase):
         self.assertTrue(Sdf.Path('.'))
         self.assertTrue(not Sdf.Path())
         
-        # For now, creating a path with Sdf.Path('') emits a warning and returns 
-        # the empty path.
-        warnings = []
-        def _HandleWarning(notice, sender):
-            warnings.append(notice.warning)
-        
-        listener = Tf.Notice.RegisterGlobally(Tf.DiagnosticNotice.IssuedWarning,
-                                              _HandleWarning)
-
         self.assertFalse(Sdf.Path(''))
         
         # ========================================================================

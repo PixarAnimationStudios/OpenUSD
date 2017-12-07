@@ -157,8 +157,10 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         d = stage.DefinePrim('/World/D')
         e = stage.DefinePrim('/World/E')
 
+        cAttr = c.CreateAttribute('attr', Sdf.ValueTypeNames.Float)
+
         a.CreateRelationship('r').AddTarget(b.GetPath())
-        b.CreateRelationship('r').AddTarget(c.GetPath())
+        b.CreateRelationship('r').AddTarget(cAttr.GetPath())
         c.CreateRelationship('r').AddTarget(d.GetPath())
 
         a.CreateRelationship('pred').AddTarget(e.GetPath())

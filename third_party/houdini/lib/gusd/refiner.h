@@ -162,6 +162,10 @@ public:
 
 private:
 
+    // Convert a prim's name into a prim path taking into account prefix and
+    // modifying to be a valid Usd prim path.
+    std::string createPrimPath( const std::string& primName);
+
     // Place to collect refined prims
     GusdRefinerCollector&   m_collector;
 

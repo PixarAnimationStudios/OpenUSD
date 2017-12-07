@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <glob.h>
@@ -164,17 +165,26 @@
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
 #include <boost/python/converter/registered.hpp>
+#include <boost/python/converter/registrations.hpp>
+#include <boost/python/converter/registry.hpp>
 #include <boost/python/converter/rvalue_from_python_data.hpp>
+#include <boost/python/converter/to_python_function_type.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/def_visitor.hpp>
+#include <boost/python/default_call_policies.hpp>
 #include <boost/python/dict.hpp>
+#include <boost/python/errors.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/handle.hpp>
+#include <boost/python/implicit.hpp>
 #include <boost/python/list.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/object.hpp>
+#include <boost/python/object/iterator.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
 #include <boost/python/operators.hpp>
+#include <boost/python/raw_function.hpp>
 #include <boost/python/refcount.hpp>
 #include <boost/python/return_value_policy.hpp>
 #include <boost/python/scope.hpp>
@@ -198,11 +208,13 @@
 #include <boost/type_traits/has_trivial_constructor.hpp>
 #include <boost/type_traits/has_trivial_copy.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
+#include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_class.hpp>
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_cv.hpp>

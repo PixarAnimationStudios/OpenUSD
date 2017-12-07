@@ -47,8 +47,7 @@ public:
 
     virtual ~GusdCurvesWrapper();
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdCurvesForWrite; }
-    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdCurvesForRead; }
+    virtual const UsdGeomImageable getUsdPrim() const override { return m_usdCurves; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -96,7 +95,7 @@ private:
                      const SdfPath& path,
                      bool asOverride);
 
-    UsdGeomBasisCurves  m_usdCurvesForRead, m_usdCurvesForWrite;
+    UsdGeomBasisCurves  m_usdCurves;
     bool                m_forceCreateNewGeo;
 };
 

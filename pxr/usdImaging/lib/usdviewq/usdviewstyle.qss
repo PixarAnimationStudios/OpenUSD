@@ -265,7 +265,7 @@ QTreeView::branch:selected:open:has-children:has-siblings  {
 }
 
 /* give the tables and trees an alternating dark/clear blue background */
-QTableView, QTableWidget, QTreeWidget, #nodeFrame, #attributeFrame{
+QTableView, QTableWidget, QTreeWidget, #primFrame, #attributeFrame{
     background: rgb(55, 55, 55);
     alternate-background-color: rgb(59, 59, 59);
 }
@@ -539,10 +539,10 @@ QComboBox::drop-down {
  * USDVIEW SPECIFIC STYLES
  */
 
-/* Add border around the 4 main panels (node browser,
+/* Add border around the 4 main panels (prim browser,
  * stage view, attribute inspector, attribute editor)
  */
-#nodeFrame, #glFrame {
+#primFrame, #glFrame {
     border-top: 2px solid rgb(32, 32, 32);
 }
 
@@ -550,7 +550,7 @@ QComboBox::drop-down {
     border-bottom: 2px solid rgb(32, 32, 32);
 }
 
-#nodeFrame, #attributeBrowserFrame {
+#primFrame, #attributeBrowserFrame {
     border-left: 2px solid rgb(32, 32, 32);
 }
 
@@ -582,12 +582,12 @@ QToolTip {
 
 /* We want select widgets' tooltips to have the dark background so that
    we can show colored text from the GUI in context */
-QPushButton#nodeViewHelp QToolTip, QTreeWidget#nodeView QHeaderView QToolTip {
+QPushButton#primViewHelp QToolTip, QTreeWidget#primView QHeaderView QToolTip {
     background:  rgb(56, 56, 56);
     color: rgb(227, 227, 227);
 }
 
-QDialog#nodeViewHelpDlg QLabel {
+QDialog#primViewHelpDlg QLabel {
     font-size: 11pt;
 }
 

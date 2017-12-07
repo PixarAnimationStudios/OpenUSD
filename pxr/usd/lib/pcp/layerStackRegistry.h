@@ -31,7 +31,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -133,7 +133,7 @@ private:
     friend class PcpLayerStack;
 
 private:
-    boost::scoped_ptr<Pcp_LayerStackRegistryData> _data;
+    std::unique_ptr<Pcp_LayerStackRegistryData> _data;
 };
 
 /// \class Pcp_MutedLayers

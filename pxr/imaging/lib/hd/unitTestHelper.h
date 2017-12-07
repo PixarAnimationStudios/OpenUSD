@@ -31,7 +31,6 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
-#include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -97,43 +96,6 @@ private:
     HdRenderPassSharedPtr _geomAndGuidePass;
     HdRenderPassStateSharedPtr _renderPassState;
 };
-
-/// \class Hd_TestLightingShader
-///
-/// A custom lighting shader for unit tests.
-///
-typedef boost::shared_ptr<class Hd_TestLightingShader> Hd_TestLightingShaderSharedPtr;
-
-class Hd_TestLightingShader : public HdLightingShader {
-public:
-    Hd_TestLightingShader();
-    virtual ~Hd_TestLightingShader();
-
-    /// HdShaderCode overrides
-    virtual ID ComputeHash() const;
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
-
-    /// HdLightingShader overrides
-    virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
-                           GfMatrix4d const &projectionMatrix);
-
-    void SetSceneAmbient(GfVec3f const &color);
-    void SetLight(int light, GfVec3f const &dir, GfVec3f const &color);
-
-private:
-    struct Light {
-        GfVec3f dir;
-        GfVec3f eyeDir;
-        GfVec3f color;
-    };
-    Light _lights[2];
-    GfVec3f _sceneAmbient;
-    boost::scoped_ptr<GlfGLSLFX> _glslfx;
-};
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

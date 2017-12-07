@@ -56,6 +56,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/safeOutputFile.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tracelite/trace.h"
@@ -90,7 +91,7 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
 
-#define DEFAULT_NEW_VERSION "0.0.1"
+#define DEFAULT_NEW_VERSION "0.4.0"
 TF_DEFINE_ENV_SETTING(
     USD_WRITE_NEW_USDC_FILES_AS_VERSION, DEFAULT_NEW_VERSION,
     "When writing new Usd Crate files, write them as this version.  "
@@ -239,13 +240,14 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
-// 0.3.0: Compressed structural sections.
+// 0.4.0: Compressed structural sections.
+// 0.3.0: (broken, unused)
 // 0.2.0: Added support for prepend and append fields of SdfListOp.
 // 0.1.0: Fixed structure layout issue encountered in Windows port.
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 3;
+constexpr uint8_t USDC_MINOR = 4;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -532,8 +534,6 @@ public:
         }
     }
 
-    inline FILE *GetFile() const { return _file; }
-
     inline void Flush() {
         _FlushBuffer();
         _dispatcher.Wait();
@@ -653,12 +653,14 @@ struct CrateFile::_PackingContext
     _PackingContext(_PackingContext const &) = delete;
     _PackingContext &operator=(_PackingContext const &) = delete;
 
-    _PackingContext(CrateFile *crate, FILE *file, std::string const &fileName) 
+    _PackingContext(CrateFile *crate, TfSafeOutputFile &&outFile,
+                    std::string const &fileName)
         : fileName(fileName)
         , writeVersion(crate->_fileName.empty() ?
                        GetVersionForNewlyCreatedFiles() :
                        Version(crate->_boot))
-        , bufferedOutput(file) {
+        , bufferedOutput(outFile.Get())
+        , safeOutputFile(std::move(outFile)) {
         
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
@@ -719,15 +721,19 @@ struct CrateFile::_PackingContext
         wd.Wait();
     }
 
-    inline FILE *GetFile() const { return bufferedOutput.GetFile(); }
-
+    // Destructively move the output file out of this context.
+    TfSafeOutputFile ExtractOutputFile() {
+        return std::move(safeOutputFile);
+    }
+        
     // Inform the writer that the output stream requires the given version
     // (or newer) to be read back.  This allows the writer to start with
     // a conservative version assumption and promote to newer versions
     // only as required by the data stream contents.
-    bool _RequestWriteVersionUpgrade(Version ver, std::string reason) {
+    bool RequestWriteVersionUpgrade(Version ver, std::string reason) {
         if (!writeVersion.CanRead(ver)) {
-            TF_WARN("Upgrading crate file from version %s to %s because: %s",
+            TF_WARN("Upgrading crate file <%s> from version %s to %s: %s",
+                    fileName.c_str(),
                     writeVersion.AsString().c_str(), ver.AsString().c_str(),
                     reason.c_str());
             writeVersion = ver;
@@ -766,7 +772,8 @@ struct CrateFile::_PackingContext
     Version writeVersion;
     // BufferedOutput helper.
     _BufferedOutput bufferedOutput;
-
+    // Output destination.
+    TfSafeOutputFile safeOutputFile;
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -1125,7 +1132,7 @@ public:
     void Write(SdfListOp<T> const &listOp) {
         _ListOpHeader h(listOp);
         if (h.HasPrependedItems() || h.HasAppendedItems()) {
-            crate->_packCtx->_RequestWriteVersionUpgrade(
+            crate->_packCtx->RequestWriteVersionUpgrade(
                 Version(0, 2, 0),
                 "A SdfListOp value using a prepended or appended value "
                 "was detected, which requires crate version 0.2.0.");
@@ -1600,14 +1607,18 @@ CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
     TF_VERIFY(_fileName.empty() || _fileName == fileName);
-    // We open the file for read/write (update) here in case we already have the
-    // file, since we're not rewriting the whole thing.
-    _UniqueFILE out(ArchOpenFile(fileName.c_str(), _fileName.empty() ? "w+b" : "r+b"));
-    if (!out) {
-        TF_RUNTIME_ERROR("Failed to open '%s' for writing", fileName.c_str());
-    } else {
+    
+    // We open the file using the TfSafeOutputFile helper so that we can avoid
+    // stomping on the file for other processes currently observing it, in the
+    // case that we're replacing it.  In the case where we're actually updating
+    // an existing file, we have no choice but to modify it in place.
+    TfErrorMark m;
+    auto out = _fileName.empty() ?
+        TfSafeOutputFile::Replace(fileName) :
+        TfSafeOutputFile::Update(fileName);
+    if (m.IsClean()) {
         // Create a packing context so we can start writing.
-        _packCtx.reset(new _PackingContext(this, out.release(), fileName));
+        _packCtx.reset(new _PackingContext(this, std::move(out), fileName));
         // Get rid of our local list of specs, if we have one -- the client is
         // required to repopulate it.
         vector<Spec>().swap(_specs);
@@ -1622,43 +1633,46 @@ CrateFile::Packer::operator bool() const {
 bool
 CrateFile::Packer::Close()
 {
-    if (!TF_VERIFY(_crate))
+    if (!TF_VERIFY(_crate && _crate->_packCtx))
         return false;
 
-    if (FILE *fp = _crate->_packCtx->GetFile()) {
+    // Write contents.
+    bool writeResult = _crate->_Write();
+    
+    // If we wrote successfully, store the fileName and size.
+    if (writeResult)
+        _crate->_fileName = _crate->_packCtx->fileName;
 
-        // Write contents.
-        bool writeResult = _crate->_Write();
+    // Pull out the file handle and kill the packing context.
+    TfSafeOutputFile outFile = _crate->_packCtx->ExtractOutputFile();
+    _crate->_packCtx.reset();
 
-        // If we wrote successfully, store the fileName and size.
-        if (writeResult)
-            _crate->_fileName = _crate->_packCtx->fileName;
+    if (!writeResult)
+        return false;
 
-        // Pull out the file handle and kill the packing context.
-        _UniqueFILE file(fp);
-        _crate->_packCtx.reset();
-
-        if (!writeResult)
-            return false;
-
-        // Reset the mapping or file so we can read values from the newly
-        // written file.
-        if (_crate->_useMmap) {
-            // Must remap the file.
-            _crate->_mapStart =
-                _MmapFile(_crate->_fileName.c_str(), file.get());
-            if (!_crate->_mapStart)
-                return false;
-            _crate->_InitMMap();
-        } else {
-            // Must adopt the file handle if we don't already have one.
-            _crate->_inputFile = std::move(file);
-            _crate->_InitPread();
-        }
-
-        return true;
+    // Try to reuse the open FILE * if we can, otherwise open for read.
+    _UniqueFILE file(outFile.IsOpenForUpdate() ?
+                     outFile.ReleaseUpdatedFile() : nullptr);
+    if (!file) {
+        outFile.Close();
+        file.reset(ArchOpenFile(_crate->_fileName.c_str(), "rb"));
     }
-    return false;
+    
+    // Reset the mapping or file so we can read values from the newly
+    // written file.
+    if (_crate->_useMmap) {
+        // Must remap the file.
+        _crate->_mapStart = _MmapFile(_crate->_fileName.c_str(), file.get());
+        if (!_crate->_mapStart)
+            return false;
+        _crate->_InitMMap();
+    } else {
+        // Must adopt the file handle if we don't already have one.
+        _crate->_inputFile = std::move(file);
+        _crate->_InitPread();
+    }
+    
+    return true;
 }
 
 CrateFile::Packer::Packer(Packer &&other) : _crate(other._crate)
@@ -1941,11 +1955,11 @@ CrateFile::_MakeTimeSampleValuesMutableImpl(TimeSamples &ts) const
 void
 CrateFile::_WriteFields(_Writer &w)
 {
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Old-style uncompressed fields.
         w.Write(_fields);
     } else {
-        // Compressed fields in 0.3.0.
+        // Compressed fields in 0.4.0.
 
         // Total # of fields.
         w.WriteAs<uint64_t>(_fields.size());
@@ -1984,7 +1998,7 @@ CrateFile::_WriteFields(_Writer &w)
 void
 CrateFile::_WriteFieldSets(_Writer &w)
 {
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Old-style uncompressed fieldSets.
         w.Write(_fieldSets);
     } else {
@@ -2012,7 +2026,7 @@ CrateFile::_WritePaths(_Writer &w)
     // Write the total # of paths.
     w.WriteAs<uint64_t>(_paths.size());
 
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Old-style uncompressed paths.
         SdfPathTable<PathIndex> pathToIndexTable;
         for (auto const &item: _packCtx->pathToPathIndex)
@@ -2024,7 +2038,9 @@ CrateFile::_WritePaths(_Writer &w)
         vector<pair<SdfPath, PathIndex>> ppaths;
         ppaths.reserve(_paths.size());
         for (auto const &p: _paths) {
-            ppaths.emplace_back(p, _packCtx->pathToPathIndex[p]);
+            if (!p.IsEmpty()) {
+                ppaths.emplace_back(p, _packCtx->pathToPathIndex[p]);
+            }
         }
         std::sort(ppaths.begin(), ppaths.end(),
                   [](pair<SdfPath, PathIndex> const &l,
@@ -2044,10 +2060,10 @@ CrateFile::_WriteSpecs(_Writer &w)
         // Copy and write old-structure specs.
         vector<Spec_0_0_1> old(_specs.begin(), _specs.end());
         w.Write(old);
-    } else if (_packCtx->writeVersion < Version(0,3,0)) {
+    } else if (_packCtx->writeVersion < Version(0,4,0)) {
         w.Write(_specs);
     } else {
-        // Version 0.3.0 introduces compressed specs.  We write three lists of
+        // Version 0.4.0 introduces compressed specs.  We write three lists of
         // integers here, pathIndexes, fieldSetIndexes, specTypes.
         std::unique_ptr<char[]> compBuffer(
             new char[Usd_IntegerCompression::
@@ -2243,6 +2259,10 @@ CrateFile::_WriteCompressedPathData(_Writer &w, Container const &pathVec)
     // This is vaguely similar to the _PathItemHeader struct used in prior
     // versions.
 
+    // Write the # of encoded paths.  This can differ from the size of _paths
+    // since we do not write out the empty path.
+    w.WriteAs<uint64_t>(pathVec.size());
+    
     vector<uint32_t> pathIndexes;
     vector<int32_t> elementTokenIndexes;
     vector<int32_t> jumps;
@@ -2285,7 +2305,7 @@ void
 CrateFile::_WriteTokens(_Writer &w) {
     // # of strings.
     w.WriteAs<uint64_t>(_tokens.size());
-    if (_packCtx->writeVersion < Version(0,3,0)) {
+    if (_packCtx->writeVersion < Version(0,4,0)) {
         // Count total bytes.
         uint64_t totalBytes = 0;
         for (auto const &t: _tokens)
@@ -2297,7 +2317,7 @@ CrateFile::_WriteTokens(_Writer &w) {
             w.WriteContiguous(str.c_str(), str.size() + 1);
         }
     } else {
-        // Version 0.3.0 compresses tokens.
+        // Version 0.4.0 compresses tokens.
         vector<char> tokenData;
         for (auto const &t: _tokens) {
             auto const &str = t.GetString();
@@ -2390,10 +2410,10 @@ CrateFile::_ReadFieldSets(Reader reader)
     if (auto fieldSetsSection = _toc.GetSection(_FieldSetsSectionName)) {
         reader.Seek(fieldSetsSection->start);
 
-        if (Version(_boot) < Version(0,3,0)) {
+        if (Version(_boot) < Version(0,4,0)) {
             _fieldSets = reader.template Read<decltype(_fieldSets)>();
         } else {
-            // Compressed fieldSets in 0.3.0.
+            // Compressed fieldSets in 0.4.0.
             auto numFieldSets = reader.template Read<uint64_t>();
             _fieldSets.resize(numFieldSets);
 
@@ -2425,10 +2445,10 @@ CrateFile::_ReadFields(Reader reader)
     TfAutoMallocTag tag("_ReadFields");
     if (auto fieldsSection = _toc.GetSection(_FieldsSectionName)) {
         reader.Seek(fieldsSection->start);
-        if (Version(_boot) < Version(0,3,0)) {
+        if (Version(_boot) < Version(0,4,0)) {
             _fields = reader.template Read<decltype(_fields)>();
         } else {
-            // Compressed fields in 0.3.0.
+            // Compressed fields in 0.4.0.
             auto numFields = reader.template Read<uint64_t>();
             _fields.resize(numFields);
 
@@ -2474,10 +2494,10 @@ CrateFile::_ReadSpecs(Reader reader)
             vector<Spec_0_0_1> old = reader.template Read<decltype(old)>();
             _specs.resize(old.size());
             copy(old.begin(), old.end(), _specs.begin());
-        } else if (Version(_boot) < Version(0,3,0)) {
+        } else if (Version(_boot) < Version(0,4,0)) {
             _specs = reader.template Read<decltype(_specs)>();
         } else {
-            // Version 0.3.0 specs are compressed
+            // Version 0.4.0 specs are compressed
             auto numSpecs = reader.template Read<uint64_t>();
             _specs.resize(numSpecs);
 
@@ -2552,10 +2572,10 @@ CrateFile::_ReadTokens(Reader reader)
     RawDataPtr chars;
     
     Version fileVer(_boot);
-    if (fileVer < Version(0,3,0)) {
-        // XXX: To support pread(), we need to read the whole thing into memory to
-        // make tokens out of it.  This is a pessimization vs mmap, from which we
-        // can just construct from the chars directly.
+    if (fileVer < Version(0,4,0)) {
+        // XXX: To support pread(), we need to read the whole thing into memory
+        // to make tokens out of it.  This is a pessimization vs mmap, from
+        // which we can just construct from the chars directly.
         auto tokensNumBytes = reader.template Read<uint64_t>();
         chars.reset(new char[tokensNumBytes]);
         reader.ReadContiguous(chars.get(), tokensNumBytes);
@@ -2604,18 +2624,19 @@ CrateFile::_ReadPaths(Reader reader)
 
     reader.Seek(pathsSection->start);
 
-    // Read # of paths.
+    // Read # of paths, and fill the _paths vector with empty paths.
     _paths.resize(reader.template Read<uint64_t>());
+    std::fill(_paths.begin(), _paths.end(), SdfPath());
 
     WorkArenaDispatcher dispatcher;
     // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
     Version fileVer(_boot);
     if (fileVer == Version(0,0,1)) {
         _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
-    } else if (fileVer < Version(0,3,0)) {
+    } else if (fileVer < Version(0,4,0)) {
         _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
     } else {
-        // 0.3.0 has compressed paths.
+        // 0.4.0 has compressed paths.
         _ReadCompressedPaths(reader, dispatcher);
     }
 
@@ -2684,7 +2705,8 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     vector<int32_t> elementTokenIndexes;
     vector<int32_t> jumps;
 
-    size_t numPaths = _paths.size();
+    // Read number of encoded paths.
+    size_t numPaths = reader.template Read<uint64_t>();
     
     pathIndexes.resize(numPaths);
     elementTokenIndexes.resize(numPaths);

@@ -51,6 +51,9 @@ TF_WRAP_MODULE
 
     TF_WRAP(UsdRiRmanUtilities);
 
+    TF_WRAP(UsdRiPxrAovLight);
+    TF_WRAP(UsdRiPxrEnvDayLight);
+
     TF_WRAP(UsdRiPxrBarnLightFilter);
     TF_WRAP(UsdRiPxrIntMultLightFilter);
     TF_WRAP(UsdRiPxrCookieLightFilter);

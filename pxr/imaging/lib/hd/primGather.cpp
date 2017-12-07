@@ -85,23 +85,34 @@ HdPrimGather::Subtree(const SdfPathVector &paths,
 {
     results->clear();
 
-    if (paths.empty()) {
-        return;
-    }
-
-    // Setup simple filter
-    _filterList.clear();
-    _filterList.reserve(1);
-    _filterList.emplace_back(rootPath, true);
-
-    // Enter filter function
-    // End of range is the inclusive.
-    // We start with everything excluded from the results
-    _FilterRange(paths, 0, paths.size() - 1, false);
+    _FilterSubTree(paths, rootPath);
 
     _WriteResults(paths, _gatheredRanges, results);
 }
 
+bool
+HdPrimGather::SubtreeAsRange(const SdfPathVector &paths,
+                             const SdfPath       &rootPath,
+                             size_t              *start,
+                             size_t              *end)
+{
+    _FilterSubTree(paths, rootPath);
+
+    if (_gatheredRanges.empty()) {
+        return false;
+    }
+
+    if (_gatheredRanges.size() > 1) {
+        TF_CODING_ERROR("Subtree produced more than 1 range.  List unsorted?");
+        return false;
+    }
+
+    _Range &range = _gatheredRanges[0];
+    *start = range._start;
+    *end   = range._end;
+
+    return true;
+}
 
 size_t
 HdPrimGather::_FindLowerBound(const SdfPathVector &paths,
@@ -345,6 +356,26 @@ HdPrimGather::_WriteResults(const SdfPathVector &paths,
 
         results->insert(results->end(), rangeStartIt, rangeEndIt);
     }
+}
+
+
+void
+HdPrimGather::_FilterSubTree(const SdfPathVector &paths,
+                             const SdfPath       &rootPath)
+{
+    if (paths.empty()) {
+        return;
+    }
+
+    // Setup simple filter
+    _filterList.clear();
+    _filterList.reserve(1);
+    _filterList.emplace_back(rootPath, true);
+
+    // Enter filter function
+    // End of range is the inclusive.
+    // We start with everything excluded from the results
+    _FilterRange(paths, 0, paths.size() - 1, false);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -48,6 +48,11 @@
           <attr name="metallic" tupleSize="1" type="FloatAttr">
             <sample size="1" time="0" value="0 "/>
           </attr>
+          <attr name="nodeState" tupleSize="1" type="StringAttr">
+            <sample size="1" time="0">
+                <str value="Normal"/>
+            </sample>
+          </attr>
           <attr name="outColor" tupleSize="3" type="FloatAttr">
             <sample size="3" time="0" value="0 0 0 "/>
           </attr>
@@ -129,6 +134,11 @@
           <attr name="isHistoricallyInteresting" tupleSize="1" type="IntAttr">
             <sample size="1" time="0" value="2 "/>
           </attr>
+          <attr name="nodeState" tupleSize="1" type="StringAttr">
+            <sample size="1" time="0">
+                <str value="Normal"/>
+            </sample>
+          </attr>
           <attr name="resultB" tupleSize="1" type="FloatAttr">
             <sample size="1" time="0" value="0 "/>
           </attr>
@@ -201,6 +211,11 @@
           <attr name="manifold" tupleSize="1" type="StringAttr">
             <sample size="1" time="0">
               <str value=""/>
+            </sample>
+          </attr>
+          <attr name="nodeState" tupleSize="1" type="StringAttr">
+            <sample size="1" time="0">
+                <str value="Normal"/>
             </sample>
           </attr>
           <attr name="resultF" tupleSize="1" type="FloatAttr">

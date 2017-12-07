@@ -35,7 +35,7 @@ def _SetAnimValues(anim, a1, a2):
 # A function which takes a two-pane area and transforms it to
 # open or close the bottom pane.
 #
-#    legendHeight       
+#    legendHeight
 #    |   separator height
 #    |   |  browser height
 #    |   |  |->     ___________                ___________

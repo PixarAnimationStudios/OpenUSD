@@ -159,13 +159,13 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         virtual bool setInternalValueInContext(
             const MPlug& plug,
             const MDataHandle& dataHandle,
-            MDGContext& ctx);
+            MDGContext& ctx) override;
         
         PXRUSDMAYA_API
         virtual bool getInternalValueInContext(
             const MPlug& plug,
             MDataHandle& dataHandle,
-            MDGContext& ctx);
+            MDGContext& ctx) override;
 
     protected:
         PXRUSDMAYA_API

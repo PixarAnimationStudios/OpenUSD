@@ -22,12 +22,20 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
 #include "usdMaya/stageCache.h"
+
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/usd/stageCache.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
+#include <string>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 static
 void
@@ -39,7 +47,7 @@ _OnMayaSceneUpdateCallback(void* clientData)
 
 /* static */
 UsdStageCache&
-UsdMayaStageCache::Get(bool forcePopulate)
+UsdMayaStageCache::Get(const bool forcePopulate)
 {
     static UsdStageCache theCacheForcePopulate;
     static UsdStageCache theCache;
@@ -56,12 +64,29 @@ UsdMayaStageCache::Get(bool forcePopulate)
 }
 
 /* static */
-void 
+void
 UsdMayaStageCache::Clear()
 {
-    UsdMayaStageCache::Get(true).Clear();
-    UsdMayaStageCache::Get(false).Clear();
+    Get(true).Clear();
+    Get(false).Clear();
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+/* static */
+size_t
+UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& layerPath)
+{
+    size_t erasedStages = 0u;
 
+    const SdfLayerHandle rootLayer = SdfLayer::Find(layerPath);
+    if (!rootLayer) {
+        return erasedStages;
+    }
+
+    erasedStages += Get(true).EraseAll(rootLayer);
+    erasedStages += Get(false).EraseAll(rootLayer);
+
+    return erasedStages;
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

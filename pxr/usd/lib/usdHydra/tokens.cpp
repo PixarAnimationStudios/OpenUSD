@@ -25,6 +25,62 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdHydraTokens, USDHYDRA_TOKENS);
+UsdHydraTokensType::UsdHydraTokensType() :
+    black("black", TfToken::Immortal),
+    clamp("clamp", TfToken::Immortal),
+    displayLookBxdf("displayLook:bxdf", TfToken::Immortal),
+    faceIndex("faceIndex", TfToken::Immortal),
+    faceOffset("faceOffset", TfToken::Immortal),
+    frame("frame", TfToken::Immortal),
+    HwPrimvar_1("HwPrimvar_1", TfToken::Immortal),
+    HwPtexTexture_1("HwPtexTexture_1", TfToken::Immortal),
+    HwUvTexture_1("HwUvTexture_1", TfToken::Immortal),
+    infoFilename("info:filename", TfToken::Immortal),
+    infoVarname("info:varname", TfToken::Immortal),
+    linear("linear", TfToken::Immortal),
+    linearMipmapLinear("linearMipmapLinear", TfToken::Immortal),
+    linearMipmapNearest("linearMipmapNearest", TfToken::Immortal),
+    magFilter("magFilter", TfToken::Immortal),
+    minFilter("minFilter", TfToken::Immortal),
+    mirror("mirror", TfToken::Immortal),
+    nearest("nearest", TfToken::Immortal),
+    nearestMipmapLinear("nearestMipmapLinear", TfToken::Immortal),
+    nearestMipmapNearest("nearestMipmapNearest", TfToken::Immortal),
+    repeat("repeat", TfToken::Immortal),
+    textureMemory("textureMemory", TfToken::Immortal),
+    uv("uv", TfToken::Immortal),
+    wrapS("wrapS", TfToken::Immortal),
+    wrapT("wrapT", TfToken::Immortal),
+    allTokens({
+        black,
+        clamp,
+        displayLookBxdf,
+        faceIndex,
+        faceOffset,
+        frame,
+        HwPrimvar_1,
+        HwPtexTexture_1,
+        HwUvTexture_1,
+        infoFilename,
+        infoVarname,
+        linear,
+        linearMipmapLinear,
+        linearMipmapNearest,
+        magFilter,
+        minFilter,
+        mirror,
+        nearest,
+        nearestMipmapLinear,
+        nearestMipmapNearest,
+        repeat,
+        textureMemory,
+        uv,
+        wrapS,
+        wrapT
+    })
+{
+}
+
+TfStaticData<UsdHydraTokensType> UsdHydraTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

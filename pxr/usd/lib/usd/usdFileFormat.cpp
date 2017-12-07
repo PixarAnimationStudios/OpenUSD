@@ -257,21 +257,28 @@ UsdUsdFileFormat::Read(
 {
     TRACE_FUNCTION();
 
-    // Try binary usdc format first, since that's most common, then usda text,
-    // then deprecated usdb.
+    // Try binary usdc format first, since that's most common, then usda text.
+    // The deprecated usdb format will be tried later if necessary, via the call
+    // to _GetUnderlyingFileFormat().
     static auto formats = {
         _GetFileFormat(UsdUsdcFileFormatTokens->Id),
         _GetFileFormat(UsdUsdaFileFormatTokens->Id),
-        _GetFileFormat(UsdUsdbFileFormatTokens->Id)
     };
 
+    // Network-friendly path -- just try to read the file and if we get one that
+    // works we're good.
     for (auto const &fmt: formats) {
         TfErrorMark m;
         if (fmt && fmt->Read(layerBase, resolvedPath, metadataOnly))
             return true;
         m.Clear();
     }
-    return false;
+
+    // Failed to load.  Do the slower (for the network) version where we attempt
+    // to determine the underlying format first, and then load using it.
+    auto underlyingFormat = _GetUnderlyingFileFormat(resolvedPath);
+    return underlyingFormat &&
+        underlyingFormat->Read(layerBase, resolvedPath, metadataOnly);
 }
 
 SdfFileFormatConstPtr 

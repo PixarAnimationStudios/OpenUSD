@@ -48,6 +48,13 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateRadiusAttr(UsdLuxSphereLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateRadiusAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -69,6 +76,14 @@ void wrapUsdLuxSphereLight()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -81,6 +96,13 @@ void wrapUsdLuxSphereLight()
 
         .def(!self)
 
+        
+        .def("GetRadiusAttr",
+             &This::GetRadiusAttr)
+        .def("CreateRadiusAttr",
+             &_CreateRadiusAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
     ;
 

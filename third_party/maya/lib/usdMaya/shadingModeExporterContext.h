@@ -61,10 +61,15 @@ public:
     /// Use this function to create a UsdShadeMaterial prim at the "standard"
     /// location.  The "standard" location may change depending on arguments
     /// that are passed to the export script.
+    /// 
+    /// If \p boundPrimPaths is not NULL, it is populated with the set of 
+    /// prim paths that were bound to the created material prim, based on the 
+    /// given \p assignmentsToBind.
     PXRUSDMAYA_API
     UsdPrim MakeStandardMaterialPrim(
             const AssignmentVector& assignmentsToBind,
-            const std::string& name=std::string()) const;
+            const std::string& name=std::string(),
+            SdfPathSet * const boundPrimPaths=nullptr) const;
 
     /// Use this function to get a "standard" usd attr name for \p attrPlug.
     /// The definition of "standard" may depend on arguments passed to the
@@ -91,7 +96,6 @@ private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
     bool _mergeTransformAndShape;
-    bool _handleUsdNamespaces;
     SdfPath _overrideRootPath;
 
     SdfPathSet _bindableRoots;

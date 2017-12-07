@@ -1,0 +1,26 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+over "World" (
+    customData = {
+        bool zUp = 0
+    }
+)
+{
+    over "sets"
+    {
+        over "house"
+        {
+            uniform bool pruning:prunable = 0
+            matrix4d xformOp:transform.timeSamples = {
+                1: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-22.493457794189453, 18.361557006835938, 30.84977912902832, 1) ),
+            }
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+}
+

@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <mach/mach_time.h>
@@ -58,6 +59,7 @@
 #include <inttypes.h>
 #include <iosfwd>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <list>
 #include <map>
@@ -82,7 +84,6 @@
 #include <vector>
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
-#include <boost/bind.hpp>
 #include <boost/container/vector.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
@@ -179,6 +180,7 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
+#include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED

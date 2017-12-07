@@ -157,6 +157,25 @@ public:
         return false;
     }
 
+    /// Returns list of fields that cannot have fallback values
+    /// specified in schemas. 
+    /// 
+    /// Fields are generally in this list because their fallback values
+    /// aren't used. For instance, fallback values for composition arcs
+    /// aren't used during composition, so allowing them to be set in
+    /// schemas would be misleading.
+    USD_API
+    static std::vector<TfToken> GetDisallowedFields();
+
+    /// Returns true if the prim type \p primType inherits from \ref UsdTyped. 
+    USD_API
+    static bool IsTyped(const TfType& primType);
+
+    /// Returns true if the prim type \p primType is instantiable
+    /// in scene description.
+    USD_API
+    static bool IsConcrete(const TfType& primType);
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 

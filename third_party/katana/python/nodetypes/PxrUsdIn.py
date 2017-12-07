@@ -614,3 +614,73 @@ def buildOpChain(self, interface):
 nb.setBuildOpChainFnc(buildOpChain)
 
 nb.build()
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInIsolate')
+
+nb.setInputPortNames(("in",))
+
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('locations', '')
+    .set('mode', 'append')
+    .build(),
+        forceArrayNames=(
+            'locations',
+            ))
+
+nb.setHintsForParameter('locations', {
+    'widget' : 'scenegraphLocationArray',
+})
+
+nb.setHintsForParameter('mode', {
+    'widget' : 'popup',
+    'options' : ['append', 'replace'],
+})
+
+
+def buildOpChain(self, interface):
+    interface.setExplicitInputRequestsEnabled(True)
+    
+    graphState = interface.getGraphState()
+    frameTime = interface.getFrameTime()
+    locationsParam = self.getParameter("locations")
+    
+    locations = [y for y in
+        (x.getValue(frameTime) for x in locationsParam.getChildren()) if y]
+    
+    if locations:
+        existingValue = (
+                graphState.getDynamicEntry("var:pxrUsdInSession")
+                        or FnAttribute.GroupAttribute())
+        
+        # later nodes set to 'replace' win out
+        maskIsFinal = existingValue.getChildByName('maskIsFinal')
+        if not maskIsFinal:
+            
+            gb = FnAttribute.GroupBuilder()
+            
+            gb.update(existingValue)
+            
+            mode = self.getParameter('mode').getValue(frameTime)
+            
+            if mode == 'replace':
+                gb.set('mask', FnAttribute.StringAttribute(locations))
+                gb.set('maskIsFinal', 1)
+            else:
+                existingLocationsAttr = existingValue.getChildByName('mask')
+                if isinstance(existingLocationsAttr, FnAttribute.StringAttribute):
+                    locations.extend(existingLocationsAttr.getNearestSample(0))
+                
+                gb.set('mask', FnAttribute.StringAttribute(locations))
+            
+            graphState = (graphState.edit()
+                .setDynamicEntry("var:pxrUsdInSession", gb.build())
+                .build())
+    
+    interface.addInputRequest("in", graphState)
+
+nb.setBuildOpChainFnc(buildOpChain)
+
+nb.build()

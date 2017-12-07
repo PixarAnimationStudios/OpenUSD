@@ -36,6 +36,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <iosfwd>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -275,7 +276,7 @@ private:
 
     /// The errors, if any, discovered while computing this layer stack.
     /// NULL if no errors were found (the expected common case).
-    boost::scoped_ptr<PcpErrorVector> _localErrors;
+    std::unique_ptr<PcpErrorVector> _localErrors;
 
     /// Pre-computed table of local relocates.
     SdfRelocatesMap _relocatesSourceToTarget;

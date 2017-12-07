@@ -40,43 +40,21 @@ typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 class HdShader : public HdSprim {
 public:
     // change tracking for HdShader prim
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         // XXX: Got to skip varying and force sync bits for now
         DirtySurfaceShader    = 1 << 2,
         DirtyParams           = 1 << 3,
+        DirtyComputeShader    = 1 << 4,
+        DirtyResource         = 1 << 5,
         AllDirty              = (DirtySurfaceShader
-                                 |DirtyParams)
+                                 |DirtyParams
+                                 |DirtyComputeShader
+                                 |DirtyResource)
     };
 
     HD_API
     virtual ~HdShader();
-
-    /// Obtain the source code for the Surface Shader for this prim from
-    /// the scene delegate.
-    inline std::string GetSurfaceShaderSource(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the source code for the Displacement Shader for this prim from
-    /// the scene delegate.
-    inline std::string GetDisplacementShaderSource(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the collection of shader Primvar descriptions for this prim from
-    /// the scene delegate.
-    inline HdShaderParamVector GetSurfaceShaderParams(
-        HdSceneDelegate* sceneDelegate) const;
-
-    /// Obtain the value of the specified Primvar for this prim from the
-    /// scene delegate.
-    inline VtValue GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
-                                              TfToken const &paramName) const;
-
-    /// Obtain the scene delegates's globally unique id for the texture
-    /// resource identified by textureId.
-    inline HdTextureResource::ID GetTextureResourceID(
-        HdSceneDelegate* sceneDelegate,
-        SdfPath const& textureId) const;
 
     /// Causes the shader to be reloaded.
     virtual void Reload() = 0;
@@ -96,37 +74,54 @@ private:
     HdShader &operator =(const HdShader &) = delete;
 };
 
-inline std::string
-HdShader::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetSurfaceShaderSource(GetID());
-}
 
-inline std::string
-HdShader::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetDisplacementShaderSource(GetID());
-}
+/// \struct HdMaterialRelationship
+///
+/// Describes a connection between two nodes/terminals.
+struct HdMaterialRelationship {
+    SdfPath sourceId;
+    TfToken sourceTerminal;
+    SdfPath remoteId;
+    TfToken remoteTerminal;
+};
 
-inline HdShaderParamVector
-HdShader::GetSurfaceShaderParams(HdSceneDelegate* sceneDelegate) const
-{
-    return sceneDelegate->GetSurfaceShaderParams(GetID());
-}
+// VtValue requirements
+bool operator==(const HdMaterialRelationship& lhs, 
+                const HdMaterialRelationship& rhs);
 
-inline VtValue
-HdShader::GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
-                                          TfToken const &paramName) const
-{
-    return sceneDelegate->GetSurfaceShaderParamValue(GetID(), paramName);
-}
 
-inline HdTextureResource::ID
-HdShader::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
-                               SdfPath const& textureId) const
-{
-    return sceneDelegate->GetTextureResourceID(textureId);
-}
+/// \struct HdMaterialNode
+///
+/// Describes a material node which is made of a path, a type and
+/// a list of parameters.
+struct HdMaterialNode {
+    SdfPath path;
+    TfToken type;
+    std::map<TfToken, VtValue> parameters;
+};
+
+// VtValue requirements
+HD_API
+bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs);
+
+
+/// \struct HdMaterialNodes
+///
+/// Describes a material network composed of nodes and relationships
+/// between the nodes and terminals of those nodes.
+struct HdMaterialNodes {
+    std::vector<HdMaterialRelationship> relationships;
+    std::vector<HdMaterialNode> nodes;
+};
+
+// VtValue requirements
+HD_API
+std::ostream& operator<<(std::ostream& out, const HdMaterialNodes& pv);
+HD_API
+bool operator==(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs);
+HD_API
+bool operator!=(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs);
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

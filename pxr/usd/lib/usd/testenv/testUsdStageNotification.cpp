@@ -37,24 +37,20 @@
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <cstdio>
+#include <functional>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using boost::bind;
-using boost::function;
-
 using std::vector;
+using namespace std::placeholders;
 
-typedef boost::function<bool (const UsdNotice::ObjectsChanged &)> TestFn;
+typedef std::function<bool (const UsdNotice::ObjectsChanged &)> TestFn;
 
 struct _NoticeTester : public TfWeakBase
 {
@@ -103,7 +99,9 @@ TestObjectsChanged()
     {
         printf("Changing /foo should resync it\n");
         _NoticeTester tester(stage);
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, foo));
+        tester.AddTest([foo](Notice const &n) {
+                return TF_AXIOM(n.ResyncedObject(foo));                
+            });
         rootLayer->GetPrimAtPath(SdfPath("/foo"))->SetTypeName("Scope");
     }
 
@@ -113,8 +111,11 @@ TestObjectsChanged()
     {
         printf("Changing /foo should consider /foo and /foo/bar resync'd\n");
         _NoticeTester tester(stage);
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, bar));
+        tester.AddTest([foo, bar](Notice const &n) {
+                return
+                    TF_AXIOM(n.ResyncedObject(foo)) &&
+                    TF_AXIOM(n.ResyncedObject(bar));
+            });
         rootLayer->GetPrimAtPath(SdfPath("/foo"))->SetTypeName("");
     }
 
@@ -122,8 +123,10 @@ TestObjectsChanged()
     {
         printf("Changing /foo/bar shouldn't resync /foo\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, bar));
+        tester.AddTest([foo, bar](Notice const &n) {
+                return TF_AXIOM(!n.ResyncedObject(foo)) &&
+                    TF_AXIOM(n.ResyncedObject(bar));
+            });
         rootLayer->GetPrimAtPath(SdfPath("/foo/bar"))->SetTypeName("Scope");
     }
 
@@ -131,11 +134,12 @@ TestObjectsChanged()
     {
         printf("Changing both /foo and /foo/bar should resync just /foo\n");
         _NoticeTester tester(stage);
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, bar));
-        tester.AddTest(
-            bind(&SdfPathVector::size,
-                 bind(&Notice::GetResyncedPaths, _1)) == 1);
+        tester.AddTest([foo, bar](Notice const &n) {
+                return
+                    TF_AXIOM(n.ResyncedObject(foo)) &&
+                    TF_AXIOM(n.ResyncedObject(bar)) &&
+                    TF_AXIOM(n.GetResyncedPaths().size() == 1);
+            });
         { SdfChangeBlock block;
             rootLayer->GetPrimAtPath(SdfPath("/foo"))->SetTypeName("Scope");
             rootLayer->GetPrimAtPath(SdfPath("/foo/bar"))->SetTypeName("");
@@ -152,13 +156,16 @@ TestObjectsChanged()
         printf("adding reference target1 -> target2 should resync target1 and "
                "foo, but not target2\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, target2));
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, target1));
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, bar));
+        tester.AddTest([target1, target2, foo, bar](Notice const &n) {
+                return
+                    TF_AXIOM(!n.ResyncedObject(target2)) &&
+                    TF_AXIOM(n.ResyncedObject(target1)) &&
+                    TF_AXIOM(n.ResyncedObject(foo)) &&
+                    TF_AXIOM(n.ResyncedObject(bar));
+            });
         // Now add the reference.
         target1.GetReferences().AddReference(rootLayer->GetIdentifier(),
-                                                target2.GetPath());
+                                             target2.GetPath());
     }
 
     // Assert that changing an inherited value causes changes to instances.
@@ -168,15 +175,20 @@ TestObjectsChanged()
     {
         printf("changing info in cls should cause info change in foo & bar\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, bar));
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, cls));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, cls));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, foo));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, bar));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, cls));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, foo));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, bar));
+
+        tester.AddTest([foo, bar, cls](Notice const &n) {
+                return
+                    TF_AXIOM(!n.ResyncedObject(foo)) &&
+                    TF_AXIOM(!n.ResyncedObject(bar)) &&
+                    TF_AXIOM(!n.ResyncedObject(cls)) &&
+                    TF_AXIOM(n.AffectedObject(foo)) &&
+                    TF_AXIOM(n.AffectedObject(bar)) &&
+                    TF_AXIOM(n.AffectedObject(cls)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(foo)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(bar)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(cls));
+            });
+
         cls.SetMetadata(SdfFieldKeys->Documentation, "cls doc");
     }
 
@@ -187,16 +199,19 @@ TestObjectsChanged()
     {
         printf("changing info in spec should cause info change in foo & bar\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, bar));
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, cls));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, cls));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, foo));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, bar));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, cls));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, foo));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, bar));
-        cls.SetMetadata(SdfFieldKeys->Documentation, "cls spec doc");
+        tester.AddTest([foo, bar, specialize](Notice const &n) {
+                return
+                    TF_AXIOM(!n.ResyncedObject(foo)) &&
+                    TF_AXIOM(!n.ResyncedObject(bar)) &&
+                    TF_AXIOM(!n.ResyncedObject(specialize)) &&
+                    TF_AXIOM(n.AffectedObject(foo)) &&
+                    TF_AXIOM(n.AffectedObject(bar)) &&
+                    TF_AXIOM(n.AffectedObject(specialize)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(foo)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(bar)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(specialize));
+            });
+        specialize.SetMetadata(SdfFieldKeys->Documentation, "spec doc");
     }
 
     // Assert that changes to non-composition related metadata fields come
@@ -204,9 +219,12 @@ TestObjectsChanged()
     {
         printf("Setting prim doc should cause info change, but no resync\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, foo));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, foo));
+        tester.AddTest([foo](Notice const &n) {
+                return
+                    TF_AXIOM(!n.ResyncedObject(foo)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(foo)) &&
+                    TF_AXIOM(n.AffectedObject(foo));
+            });
         foo.SetMetadata(SdfFieldKeys->Documentation, "hello doc");
     }
 
@@ -215,9 +233,12 @@ TestObjectsChanged()
         printf("Setting prim doc and typename in one go should cause a "
                "resync\n");
         _NoticeTester tester(stage);
-        tester.AddTest(bind(&Notice::ResyncedObject, _1, foo));
-        tester.AddTest(!bind(&Notice::ChangedInfoOnly, _1, foo));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, foo));
+        tester.AddTest([foo](Notice const &n) {
+                return
+                    TF_AXIOM(n.ResyncedObject(foo)) &&
+                    TF_AXIOM(!n.ChangedInfoOnly(foo)) &&
+                    TF_AXIOM(n.AffectedObject(foo));
+            });
         { SdfChangeBlock block;
             rootLayer->GetPrimAtPath(SdfPath("/foo"))->SetTypeName("Cube");
             rootLayer->GetPrimAtPath(
@@ -230,10 +251,12 @@ TestObjectsChanged()
     {
         printf("Creating an attribute should cause a resync\n");
         _NoticeTester tester(stage);
-        tester.AddTest([](const UsdNotice::ObjectsChanged& n) {
-            return (n.GetResyncedPaths() == SdfPathVector{SdfPath("/foo.attr")} 
-                    && n.GetChangedInfoOnlyPaths() == SdfPathVector{});
-        });
+        tester.AddTest([](Notice const &n) {
+                return
+                    TF_AXIOM(n.GetResyncedPaths() ==
+                             SdfPathVector{SdfPath("/foo.attr")}) &&
+                    TF_AXIOM(n.GetChangedInfoOnlyPaths() == SdfPathVector{});
+            });
         attr = foo.CreateAttribute(TfToken("attr"), SdfValueTypeNames->Int);
     }
 
@@ -241,15 +264,15 @@ TestObjectsChanged()
     {
         printf("Setting an attribute value should cause info change\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, attr));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, attr));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, attr));
-        tester.AddTest([](const UsdNotice::ObjectsChanged& n) {
-            return (n.GetResyncedPaths() == SdfPathVector{} 
-                    && n.GetChangedInfoOnlyPaths() == 
-                        SdfPathVector{SdfPath("/foo.attr")});
-        });
-
+        tester.AddTest([attr](Notice const &n) {
+                return
+                    TF_AXIOM(!n.ResyncedObject(attr)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(attr)) &&
+                    TF_AXIOM(n.AffectedObject(attr)) &&
+                    TF_AXIOM(n.GetResyncedPaths() == SdfPathVector{}) &&
+                    TF_AXIOM(n.GetChangedInfoOnlyPaths() == 
+                             SdfPathVector{SdfPath("/foo.attr")});
+            });
         attr.Set(42);
     }
 
@@ -258,10 +281,12 @@ TestObjectsChanged()
     {
         printf("Creating a relationship should cause a resync\n");
         _NoticeTester tester(stage);
-        tester.AddTest([](const UsdNotice::ObjectsChanged& n) {
-            return (n.GetResyncedPaths() == SdfPathVector{SdfPath("/foo.rel")} 
-                    && n.GetChangedInfoOnlyPaths() == SdfPathVector{});
-        });
+        tester.AddTest([](Notice const &n) {
+                return
+                    TF_AXIOM(n.GetResyncedPaths() ==
+                             SdfPathVector{SdfPath("/foo.rel")}) &&
+                    TF_AXIOM(n.GetChangedInfoOnlyPaths() == SdfPathVector{});
+            });
         rel = foo.CreateRelationship(TfToken("rel"));
     }
 
@@ -269,19 +294,19 @@ TestObjectsChanged()
     {
         printf("Changing relationship targets should cause info change\n");
         _NoticeTester tester(stage);
-        tester.AddTest(!bind(&Notice::ResyncedObject, _1, rel));
-        tester.AddTest(bind(&Notice::ChangedInfoOnly, _1, rel));
-        tester.AddTest(bind(&Notice::AffectedObject, _1, rel));
-
-        tester.AddTest([](const UsdNotice::ObjectsChanged& n) {
-            // XXX: This is a bug -- resynced paths should not include
-            // the relationship target path, since no such object exists
-            // in the USD scenegraph.
-            return (n.GetResyncedPaths() == 
-                        SdfPathVector{SdfPath("/foo.rel[/bar]")} 
-                    && n.GetChangedInfoOnlyPaths() == 
-                        SdfPathVector{SdfPath("/foo.rel")});
-        });
+        tester.AddTest([rel](Notice const &n) {
+                return
+                    TF_AXIOM(!n.ResyncedObject(rel)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(rel)) &&
+                    TF_AXIOM(n.AffectedObject(rel)) &&
+                    // XXX: This is a bug -- resynced paths should not include
+                    // the relationship target path, since no such object exists
+                    // in the USD scenegraph.
+                    TF_AXIOM(n.GetResyncedPaths() == 
+                             SdfPathVector{SdfPath("/foo.rel[/bar]")}) &&
+                    TF_AXIOM(n.GetChangedInfoOnlyPaths() == 
+                             SdfPathVector{SdfPath("/foo.rel")});
+            });
         rel.AddTarget(SdfPath("/bar"));
     }
 }

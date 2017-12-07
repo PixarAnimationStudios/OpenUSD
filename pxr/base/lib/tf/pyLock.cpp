@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-
 #include "pxr/pxr.h"
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/diagnosticLite.h"

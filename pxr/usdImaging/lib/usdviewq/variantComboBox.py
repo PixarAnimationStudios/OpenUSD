@@ -43,7 +43,7 @@ class VariantComboBox(QtWidgets.QComboBox):
                 # hierarchy.
                 updateStageFn()
             if printTiming:
-                t.PrintTime("change variantSet %s to %s" % 
+                t.PrintTime("change variantSet %s to %s" %
                             (variantSet.GetName(), newVariantSelection))
 
 

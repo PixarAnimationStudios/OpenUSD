@@ -1,0 +1,36 @@
+<attr type="GroupAttr">
+  <attr name="collections" type="GroupAttr">
+    <attr name="ancestor" type="GroupAttr">
+      <attr name="cel" tupleSize="1" type="StringAttr">
+        <sample size="1" time="0">
+          <str value="((/Geom/LampShade /Geom/LampShade//* ))"/>
+        </sample>
+      </attr>
+    </attr>
+    <attr name="geomExpandPrims" type="GroupAttr">
+      <attr name="cel" tupleSize="1" type="StringAttr">
+        <sample size="1" time="0">
+          <str value="((/Geom /Geom//* ) - (/Geom/LampStem /Geom/LampStem//* ))"/>
+        </sample>
+      </attr>
+    </attr>
+    <attr name="geomExplicit" type="GroupAttr">
+      <attr name="baked" tupleSize="1" type="StringAttr">
+        <sample size="2" time="0">
+          <str value="/Geom/LampBase"/>
+          <str value="/Geom/LampShade"/>
+        </sample>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="kind" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="component"/>
+    </sample>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="component"/>
+    </sample>
+  </attr>
+</attr>

@@ -44,6 +44,12 @@ class BlindDataObject "BlindDataObject" (
             string apiName = "visible"
         }
     )
+    bool katana:suppressGroupToAssemblyPromotion (
+        doc = """If true don't promote a group to an assembly."""
+        customData = { 
+            string apiName = "suppressGroupToAssemblyPromotion"
+        }
+    )
 }
 
 class LookAPI "LookAPI"(

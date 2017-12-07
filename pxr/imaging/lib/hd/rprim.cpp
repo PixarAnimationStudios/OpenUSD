@@ -28,16 +28,21 @@
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
+#include "pxr/imaging/hd/extCompGpuComputation.h"
+#include "pxr/imaging/hd/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
+#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
+#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hd/vtExtractor.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -49,12 +54,12 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
                       "Enable sharing of vertex primvar");
 
 HdRprim::HdRprim(SdfPath const& id,
-                 SdfPath const& instancerID)
+                 SdfPath const& instancerId)
     : _id(id)
-    , _instancerID(instancerID)
-    , _surfaceShaderID()
+    , _instancerId(instancerId)
+    , _materialId()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
-                  /*hasInstancer=*/(!instancerID.IsEmpty()),
+                  /*hasInstancer=*/(!instancerId.IsEmpty()),
                   /*visible=*/true)
 {
     _sharedData.rprimID = id;
@@ -98,20 +103,20 @@ HdRprim::_Sync(HdSceneDelegate* delegate,
     HdRenderIndex   &renderIndex   = delegate->GetRenderIndex();
     HdChangeTracker &changeTracker = renderIndex.GetChangeTracker();
 
-    // Check if the rprim has a new surface shader associated to it,
+    // Check if the rprim has a new material binding associated to it,
     // if so, we will request the binding from the delegate and set it up in
     // this rprim.
-    if(*dirtyBits & HdChangeTracker::DirtySurfaceShader) {
-        VtValue shaderBinding = 
+    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        VtValue materialId = 
             delegate->Get(GetId(), HdShaderTokens->surfaceShader);
 
-        if(shaderBinding.IsHolding<SdfPath>()){
-            _SetSurfaceShaderId(changeTracker, shaderBinding.Get<SdfPath>());
+        if (materialId.IsHolding<SdfPath>()){
+            _SetMaterialId(changeTracker, materialId.Get<SdfPath>());
         } else {
-            _SetSurfaceShaderId(changeTracker, SdfPath());
+            _SetMaterialId(changeTracker, SdfPath());
         }
 
-        *dirtyBits &= ~HdChangeTracker::DirtySurfaceShader;
+        *dirtyBits &= ~HdChangeTracker::DirtyMaterialId;
     }
 }
 
@@ -135,6 +140,44 @@ HdRprim::_GetReprName(HdSceneDelegate* delegate,
         }
     }
     return defaultReprName;
+}
+
+bool
+HdRprim::CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const
+{
+    // For invisible prims, we'd like to avoid syncing data, which involves:
+    // (a) the scene delegate pulling data post dirty-bit propagation 
+    // (b) the rprim processing its dirty bits and
+    // (c) the rprim committing resource updates to the GPU
+    // 
+    // However, the current design adds a draw item for a repr during repr 
+    // initialization (see _InitRepr) even if a prim may be invisible, which
+    // requires us go through the sync process to avoid tripping other checks.
+    // 
+    // XXX: We may want to avoid this altogether, or rethink how we approach
+    // the two workflow scenarios:
+    // ( i) objects that are always invisible (i.e., never loaded by the user or
+    // scene)
+    // (ii) vis-invis'ing objects
+    //  
+    // For now, we take the hit of first repr initialization (+ sync) and avoid
+    // time-varying updates to the invisible prim.
+    // 
+    // Note: If the sync is skipped, the dirty bits in the change tracker
+    // remain the same.
+    bool skip = false;
+
+    HdDirtyBits mask = (HdChangeTracker::DirtyVisibility |
+                        HdChangeTracker::NewRepr);
+
+    if (!IsVisible() && !(bits & mask)) {
+        // By setting the propagated dirty bits to Clean, we effectively 
+        // disable delegate and rprim sync
+        skip = true;
+        HD_PERF_COUNTER_INCR(HdPerfTokens->skipInvisibleRprimSync);
+    }
+
+    return skip;
 }
 
 HdDirtyBits
@@ -200,12 +243,11 @@ HdRprim::GetRenderTag(HdSceneDelegate* delegate, TfToken const& reprName) const
 }
 
 void 
-HdRprim::_SetSurfaceShaderId(HdChangeTracker &changeTracker,
-                             SdfPath const& surfaceShaderId)
+HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
+                        SdfPath const& materialId)
 {
-    if (_surfaceShaderID != surfaceShaderId)
-    {
-        _surfaceShaderID = surfaceShaderId;
+    if (_materialId != materialId) {
+        _materialId = materialId;
 
         // The batches need to be verified and rebuilt if necessary.
         changeTracker.MarkShaderBindingsDirty();
@@ -254,14 +296,14 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
     // XXX: This should be in HdSt getting the HdSt Shader
     const HdShader *shader = static_cast<const HdShader *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->shader,
-                                                       _surfaceShaderID));
+                                                       _materialId));
 
     if (shader == nullptr) {
         shader = static_cast<const HdShader *>(
                         renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
     }
 
-    _sharedData.surfaceShader = _GetShaderCode(delegate, shader);
+    _sharedData.material = _GetShaderCode(delegate, shader);
 
 
     // update uniforms
@@ -280,7 +322,7 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
 
         // if this is a prototype (has instancer),
         // also push the instancer transform separately.
-        if (!_instancerID.IsEmpty()) {
+        if (!_instancerId.IsEmpty()) {
             // gather all instancer transforms in the instancing hierarchy
             VtMatrix4dArray rootTransforms = _GetInstancerTransforms(delegate);
             VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
@@ -408,18 +450,18 @@ VtMatrix4dArray
 HdRprim::_GetInstancerTransforms(HdSceneDelegate* delegate)
 {
     SdfPath const& id = GetId();
-    SdfPath instancerID = _instancerID;
+    SdfPath instancerId = _instancerId;
     VtMatrix4dArray transforms;
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
-    while (!instancerID.IsEmpty()) {
-        transforms.push_back(delegate->GetInstancerTransform(instancerID, id));
-        HdInstancer *instancer = renderIndex.GetInstancer(instancerID);
+    while (!instancerId.IsEmpty()) {
+        transforms.push_back(delegate->GetInstancerTransform(instancerId, id));
+        HdInstancer *instancer = renderIndex.GetInstancer(instancerId);
         if (instancer) {
-            instancerID = instancer->GetParentId();
+            instancerId = instancer->GetParentId();
         } else {
-            instancerID = SdfPath();
+            instancerId = SdfPath();
         }
     }
     return transforms;
@@ -546,14 +588,33 @@ HdRprim::_GetExtComputationPrimVarsComputations(
                                               HdSceneDelegate *sceneDelegate,
                                               HdInterpolation interpolationMode,
                                               HdDirtyBits dirtyBits,
-                                              HdBufferSourceVector *sources)
+                                              HdBufferSourceVector *sources,
+                                              HdComputationVector *computations,
+                                              HdBufferSourceVector *computationSources)
 {
+    TF_VERIFY(sources);
+    TF_VERIFY(computations);
+    
     const SdfPath &id = GetId();
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
     TfTokenVector compPrimVars =
             sceneDelegate->GetExtComputationPrimVarNames(id, interpolationMode);
 
+    // what are the input primvars on the prim,
+    // let the computations know so they can manage creation of internal
+    // ranges if needed.
+    HdBufferSpecVector primBufferSpecs;
+    if (compPrimVars.size() > 0) {
+        // get the buffer specs
+        TF_FOR_ALL(it, (*sources)) {
+            (*it)->AddBufferSpecs(&primBufferSpecs);
+        }
+        TF_FOR_ALL(it, (*computations)) {
+            (*it)->AddBufferSpecs(&primBufferSpecs);
+        }
+    }
+    
     TF_FOR_ALL(compPrimVarIt, compPrimVars) {
         const TfToken &compPrimVarName =  *compPrimVarIt;
 
@@ -569,20 +630,80 @@ HdRprim::_GetExtComputationPrimVarsComputations(
             renderIndex.GetExtComputationInfo(primVarDesc.computationId,
                                               &sourceComp,
                                               &sourceCompSceneDelegate);
+
             if (sourceComp != nullptr) {
-                HdExtCompCpuComputationSharedPtr cpuComputation =
-                            sourceComp->GetComputation(sourceCompSceneDelegate);
+                // combine the primvars as an output buffer specs
+                HdBufferSpecVector outputBufferSpecs;
+                {
+                    Hd_VtExtractor extractor;
+                    extractor.Extract(primVarDesc.defaultValue);
+                    outputBufferSpecs.emplace_back(
+                        primVarDesc.computationOutputName,
+                        extractor.GetGLCompontentType(),
+                        extractor.GetNumComponents(),
+                        1);        
+                }
+                
+                HdExtCompGpuComputationSharedPtr gpuComputation;
+                HdExtCompGpuComputationBufferSourceSharedPtr gpuComputationSource;
+                if (HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
+                    std::pair<HdExtCompGpuComputationSharedPtr,
+                              HdExtCompGpuComputationBufferSourceSharedPtr> comp;
+                    comp = sourceComp->GetGpuComputation(
+                        sourceCompSceneDelegate,
+                        computationSources,
+                        compPrimVarName,
+                        outputBufferSpecs,
+                        primBufferSpecs);
+                    gpuComputation = comp.first;
+                    gpuComputationSource = comp.second;
+                }
+                
+                if (gpuComputation) {
+                    HdComputationSharedPtr comp =
+                        boost::static_pointer_cast<HdComputation>(
+                            gpuComputation);
+                    computations->push_back(comp);
+                    // There is a companion resource that requires allocation
+                    // and resolution.
+                    // Query it for any internal buffer ranges needed.
+                    HdExtCompGpuComputationResourceSharedPtr resource =
+                            gpuComputation->GetResource();
+                    HdResourceRegistrySharedPtr const &resourceRegistry = 
+                        renderIndex.GetResourceRegistry();
+                    // This allocates a range suitable for the computation
+                    // if one is needed. If one is not needed the
+                    // internalSources will be empty.
+                    HdBufferSourceVector internalSources;
+                    resource->AllocateInternalRange(
+                            gpuComputationSource->GetInputs(),
+                            &internalSources,
+                            resourceRegistry);
+                    if (!internalSources.empty()) {
+                        // Only add it if it is actually needed.
+                        // Shortcut here if we are also primvar sharing
+                        // as we may not want to actually add the range
+                        // and the sources.
+                        resourceRegistry->AddSources(
+                            resource->GetInternalRange(),
+                            internalSources);
+                    }
+                    computationSources->push_back(gpuComputationSource);
+                    
+                } else {
+                    HdExtCompCpuComputationSharedPtr cpuComputation =
+                        sourceComp->GetComputation(
+                            sourceCompSceneDelegate,
+                            computationSources);
+                    HdBufferSourceSharedPtr primVarBufferSource(
+                            new HdExtCompPrimvarBufferSource(
+                                compPrimVarName,
+                                cpuComputation,
+                                primVarDesc.computationOutputName,
+                                primVarDesc.defaultValue));
 
-
-                HdBufferSourceSharedPtr primVarBufferSource(
-                    new HdExtCompPrimvarBufferSource(
-                                              compPrimVarName,
-                                              cpuComputation,
-                                              primVarDesc.computationOutputName,
-                                              primVarDesc.defaultValue));
-
-
-                sources->push_back(primVarBufferSource);
+                    sources->push_back(primVarBufferSource);
+                }
             }
         }
     }

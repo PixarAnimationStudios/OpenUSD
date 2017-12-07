@@ -52,11 +52,11 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/bind.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
+#include <functional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -3363,7 +3363,8 @@ bool Sdf_ParseMenva(const std::string & fileContext, FILE *fin,
     context.magicIdentifierToken = magicId;
     context.versionString = versionString;
     context.metadataOnly = metadataOnly;
-    context.values.errorReporter = boost::bind(_ReportParseError, &context, _1);
+    context.values.errorReporter =
+        std::bind(_ReportParseError, &context, std::placeholders::_1);
 
     // Initialize the scanner, allowing it to be reentrant.
     textFileFormatYylex_init(&context.scanner);
@@ -3412,7 +3413,8 @@ bool Sdf_ParseMenvaFromString(const std::string & menvaString,
     context.data = data;
     context.magicIdentifierToken = magicId;
     context.versionString = versionString;
-    context.values.errorReporter = boost::bind(_ReportParseError, &context, _1);
+    context.values.errorReporter =
+        std::bind(_ReportParseError, &context, std::placeholders::_1);
 
     // Initialize the scanner, allowing it to be reentrant.
     textFileFormatYylex_init(&context.scanner);

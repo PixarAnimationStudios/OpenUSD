@@ -27,7 +27,7 @@ from adjustClippingUI import Ui_AdjustClipping
 class AdjustClipping(QtWidgets.QDialog):
     """The dataModel provided to this VC must conform to the following
     interface:
-    
+
     Editable properties:
        overrideNear (float or None, which indicates the override is disabled)
        overrideFar  (float or None, which indicates the override is disabled)

@@ -27,22 +27,17 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 
-#if !defined(__cplusplus)
-#error This include file can be included only in C++ programs.
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct ArchBuildMode {
-
-#if defined(BUILD_OPTLEVEL_DEV)
+// Check if the build system has specified a build mode, falling
+// back to commonly-used macros if it has not. (Typically, _DEBUG
+// is defined by Visual Studio and DEBUG by Xcode for debug-mode builds)
+#if defined(BUILD_OPTLEVEL_DEV) || defined(_DEBUG) || defined(DEBUG)
     enum { DEV_BUILD = 1 };
-#elif defined(BUILD_OPTLEVEL_OPT)
-    enum { DEV_BUILD = 0 };
 #else
-#error Neither -DBUILD_OPTLEVEL_DEV nor -DBUILD_OPTLEVEL_OPT was specified from the Makefile.
-#endif    
-
+    enum { DEV_BUILD = 0 };
+#endif
 };
 
 #define ARCH_DEV_BUILD ArchBuildMode::DEV_BUILD

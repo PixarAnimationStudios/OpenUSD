@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    "This file is a contrived schema file."
+    subLayers = [
+        @baseSchema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+    }
+)
+{
+}
+
+class DisallowedField "DisallowedField" (
+    active = false
+    clips = {
+        dictionary default = { 
+        }
+    }
+)
+{
+    rel myRel = </Foo>
+    double myAttr.connect = </Bar>
+}

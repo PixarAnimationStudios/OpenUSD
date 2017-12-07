@@ -44,6 +44,7 @@
 #include <GT/GT_DASubArray.h>
 #include <GT/GT_GEOPrimPacked.h>
 #include <GT/GT_DAConstant.h>
+#include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,15 +110,14 @@ GusdMeshWrapper::GusdMeshWrapper(
         UsdTimeCode time,
         GusdPurposeSet purposes )
     : GusdPrimWrapper( time, purposes )
-    , m_usdMeshForRead( mesh )
+    , m_usdMesh( mesh )
     , m_forceCreateNewGeo( false )
 {
 }    
 
 GusdMeshWrapper::GusdMeshWrapper( const GusdMeshWrapper &in )
     : GusdPrimWrapper( in )
-    , m_usdMeshForRead( in.m_usdMeshForRead )
-    , m_usdMeshForWrite( in.m_usdMeshForWrite )
+    , m_usdMesh( in.m_usdMesh )
     , m_forceCreateNewGeo( false )
 {
 }
@@ -138,23 +138,23 @@ initUsdPrim(const UsdStagePtr& stage,
         UsdPrim existing = stage->GetPrimAtPath( path );
         if( existing ) {
             newPrim = false;
-            m_usdMeshForWrite = UsdGeomMesh(stage->OverridePrim( path ));
+            m_usdMesh = UsdGeomMesh(stage->OverridePrim( path ));
         }
         else {
             // When fracturing, we want to override the outside surfaces and create
             // new inside surfaces in one export. So if we don't find an existing prim
             // with the given path, create a new one.
-            m_usdMeshForWrite = UsdGeomMesh::Define( stage, path );
+            m_usdMesh = UsdGeomMesh::Define( stage, path );
             m_forceCreateNewGeo = true;
         }
     }
     else {
-        m_usdMeshForWrite = UsdGeomMesh::Define( stage, path );  
+        m_usdMesh = UsdGeomMesh::Define( stage, path );  
     }
-    if( !m_usdMeshForWrite || !m_usdMeshForWrite.GetPrim().IsValid() ) {
+    if( !m_usdMesh || !m_usdMesh.GetPrim().IsValid() ) {
         TF_WARN( "Unable to create %s mesh '%s'.", newPrim ? "new" : "override", path.GetText() );
     }
-    return bool( m_usdMeshForWrite );
+    return bool( m_usdMesh );
 }
 
 GT_PrimitiveHandle GusdMeshWrapper::
@@ -208,7 +208,7 @@ initialize( const GusdContext& ctxt,
         UsdAttribute usdAttr;
 
         // Orientation
-        usdAttr = m_usdMeshForWrite.GetOrientationAttr();
+        usdAttr = m_usdMesh.GetOrientationAttr();
         if( usdAttr ) {
 
             // Houdini uses left handed winding order for mesh vertices.
@@ -247,9 +247,7 @@ GusdMeshWrapper::refine(
 
     bool refineForViewport = GT_GEOPrimPacked::useViewportLOD(parms);
 
-    const UsdGeomMesh& usdMesh = m_usdMeshForRead;
-
-    DBG(cerr << "GusdMeshWrapper::refine, " << usdMesh.GetPrim().GetPath() << endl);
+    DBG(cerr << "GusdMeshWrapper::refine, " << m_usdMesh.GetPrim().GetPath() << endl);
     VtFloatArray vtFloatArray;
     VtIntArray   vtIntArray;
     VtVec3fArray vtVec3Array;
@@ -258,11 +256,11 @@ GusdMeshWrapper::refine(
     // be reversed on import.
     TfToken orientation;
     bool reverseWindingOrder =
-           usdMesh.GetOrientationAttr().Get(&orientation, m_time)
+           m_usdMesh.GetOrientationAttr().Get(&orientation, m_time)
         && orientation == UsdGeomTokens->rightHanded;
 
     // vertex counts
-    UsdAttribute countsAttr = usdMesh.GetFaceVertexCountsAttr();
+    UsdAttribute countsAttr = m_usdMesh.GetFaceVertexCountsAttr();
     if(!countsAttr) {
         TF_WARN( "Invalid vertex count attribute" );
         return false;
@@ -277,10 +275,10 @@ GusdMeshWrapper::refine(
     int numVerticiesExpected = std::accumulate( usdCounts.begin(), usdCounts.end(), 0 );
 
     // vertex indices
-    UsdAttribute faceIndexAttr = usdMesh.GetFaceVertexIndicesAttr();
+    UsdAttribute faceIndexAttr = m_usdMesh.GetFaceVertexIndicesAttr();
     if(!faceIndexAttr) {
         TF_WARN( "Invalid face vertex indicies attribute for %s.",
-                 usdMesh.GetPrim().GetPath().GetText());
+                 m_usdMesh.GetPrim().GetPath().GetText());
         return false;
     }
     VtIntArray usdFaceIndex;
@@ -288,7 +286,7 @@ GusdMeshWrapper::refine(
     if( usdFaceIndex.size() < numVerticiesExpected ) {
         TF_WARN( "Invalid topology found for %s. "
                  "Expected at least %d verticies and only got %zd.",
-                 usdMesh.GetPrim().GetPath().GetText(), numVerticiesExpected, usdFaceIndex.size() );
+                 m_usdMesh.GetPrim().GetPath().GetText(), numVerticiesExpected, usdFaceIndex.size() );
         return false;
     }
 
@@ -305,7 +303,7 @@ GusdMeshWrapper::refine(
     }
 
     // point positions
-    UsdAttribute pointsAttr = usdMesh.GetPointsAttr();
+    UsdAttribute pointsAttr = m_usdMesh.GetPointsAttr();
     if(!pointsAttr) {
         TF_WARN( "Invalid point attribute" );
         return false;
@@ -316,7 +314,7 @@ GusdMeshWrapper::refine(
     if( usdPoints.size() < maxPointIndex ) {
         TF_WARN( "Invalid topology found for %s. "
                  "Expected at least %d points and only got %zd.",
-                 usdMesh.GetPrim().GetPath().GetText(), maxPointIndex, usdPoints.size() ); 
+                 m_usdMesh.GetPrim().GetPath().GetText(), maxPointIndex, usdPoints.size() ); 
         return false;
     }
 
@@ -329,18 +327,34 @@ GusdMeshWrapper::refine(
 
     gtPointAttrs = gtPointAttrs->addAttribute("P", gtPoints, true);
 
-    UsdAttribute normalsAttr = usdMesh.GetNormalsAttr();
+    UsdAttribute normalsAttr = m_usdMesh.GetNormalsAttr();
     if( normalsAttr && normalsAttr.HasAuthoredValueOpinion()) {
         normalsAttr.Get(&vtVec3Array, m_time);
         GT_DataArrayHandle gtNormals = 
                 new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_NORMAL);
-        gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
+        TfToken interp;
+        if (!normalsAttr.GetMetadata(UsdGeomTokens->interpolation, &interp)) {
+            interp = UsdGeomTokens->varying;
+        }
+        if (interp == UsdGeomTokens->varying) {
+            // varying normalsAttr becomes a point attribute.
+            gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
+        } else if (interp == UsdGeomTokens->faceVarying) {
+            // faceVarying normalsAttr becomes a vertex attribute.
+            gtVertexAttrs = gtVertexAttrs->addAttribute("N", gtNormals, true);
+        } else if (interp == UsdGeomTokens->uniform) {
+            // uniform normalsAttr becomes a primitive attribute.
+            gtUniformAttrs = gtUniformAttrs->addAttribute("N", gtNormals, true);
+        } else if (interp == UsdGeomTokens->constant) {
+            // constant normalsAttr becomes a detail attribute.
+            gtDetailAttrs = gtDetailAttrs->addAttribute("N", gtNormals, true);
+        }
     }
 
     if( !refineForViewport ) {
 
         // point velocities
-        UsdAttribute velAttr = usdMesh.GetVelocitiesAttr();
+        UsdAttribute velAttr = m_usdMesh.GetVelocitiesAttr();
         if (velAttr && velAttr.HasAuthoredValueOpinion()) {
             velAttr.Get(&vtVec3Array, m_time);
             GT_DataArrayHandle gtVel = 
@@ -352,7 +366,7 @@ GusdMeshWrapper::refine(
                       usdCounts.size(), 
                       usdPoints.size(),
                       usdFaceIndex.size(),
-                      usdMesh.GetPath().GetString(),
+                      m_usdMesh.GetPath().GetString(),
                       &gtVertexAttrs,
                       &gtPointAttrs,
                       &gtUniformAttrs,
@@ -383,9 +397,9 @@ GusdMeshWrapper::refine(
         // the same attribute owner for the attribute in all meshes. So promote 
         // to vertex.
 
-        UsdGeomPrimvar colorPrimvar = usdMesh.GetPrimvar(GusdTokens->Cd);
+        UsdGeomPrimvar colorPrimvar = m_usdMesh.GetPrimvar(GusdTokens->Cd);
         if( !colorPrimvar || !colorPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            colorPrimvar = usdMesh.GetPrimvar(GusdTokens->displayColor);
+            colorPrimvar = m_usdMesh.GetPrimvar(GusdTokens->displayColor);
         }
 
         if( colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -396,7 +410,7 @@ GusdMeshWrapper::refine(
                 _validateAttrData(
                     "Cd",
                     colorPrimvar.GetBaseName().GetText(),
-                    usdMesh.GetPrim().GetPath().GetText(),
+                    m_usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     colorPrimvar.GetInterpolation(),
                     usdCounts.size(),
@@ -408,9 +422,9 @@ GusdMeshWrapper::refine(
                     &gtDetailAttrs );
             }
         }
-        UsdGeomPrimvar alphaPrimvar = usdMesh.GetPrimvar(GusdTokens->Alpha);
+        UsdGeomPrimvar alphaPrimvar = m_usdMesh.GetPrimvar(GusdTokens->Alpha);
         if( !alphaPrimvar || !alphaPrimvar.GetAttr().HasAuthoredValueOpinion() ) {
-            alphaPrimvar = usdMesh.GetPrimvar(GusdTokens->displayOpacity);
+            alphaPrimvar = m_usdMesh.GetPrimvar(GusdTokens->displayOpacity);
         }
 
         if( alphaPrimvar && alphaPrimvar.GetAttr().HasAuthoredValueOpinion()) {
@@ -421,7 +435,7 @@ GusdMeshWrapper::refine(
                 _validateAttrData(
                     "Alpha",
                     alphaPrimvar.GetBaseName().GetText(),
-                    usdMesh.GetPrim().GetPath().GetText(),
+                    m_usdMesh.GetPrim().GetPath().GetText(),
                     gtData,
                     alphaPrimvar.GetInterpolation(),
                     usdCounts.size(),
@@ -437,7 +451,7 @@ GusdMeshWrapper::refine(
 
     // build GT_Primitive
     TfToken subdScheme;
-    usdMesh.GetSubdivisionSchemeAttr().Get(&subdScheme, m_time);
+    m_usdMesh.GetSubdivisionSchemeAttr().Get(&subdScheme, m_time);
     bool isSubdMesh = (UsdGeomTokens->none != subdScheme);
 
     GT_PrimitiveHandle meshPrim;
@@ -466,8 +480,8 @@ GusdMeshWrapper::refine(
         }
 
         // Corners
-        UsdAttribute cornerIndicesAttr   = usdMesh.GetCornerIndicesAttr();
-        UsdAttribute cornerSharpnessAttr = usdMesh.GetCornerSharpnessesAttr();
+        UsdAttribute cornerIndicesAttr   = m_usdMesh.GetCornerIndicesAttr();
+        UsdAttribute cornerSharpnessAttr = m_usdMesh.GetCornerSharpnessesAttr();
         if (cornerIndicesAttr.IsValid() && cornerSharpnessAttr.IsValid()) {
             cornerIndicesAttr.Get(&vtIntArray, m_time);
             cornerSharpnessAttr.Get(&vtFloatArray, m_time);
@@ -483,9 +497,9 @@ GusdMeshWrapper::refine(
         }
 
         // Creases
-        UsdAttribute creaseIndicesAttr = usdMesh.GetCreaseIndicesAttr();
-        UsdAttribute creaseLengthsAttr = usdMesh.GetCreaseLengthsAttr();
-        UsdAttribute creaseSharpnessesAttr = usdMesh.GetCreaseSharpnessesAttr();
+        UsdAttribute creaseIndicesAttr = m_usdMesh.GetCreaseIndicesAttr();
+        UsdAttribute creaseLengthsAttr = m_usdMesh.GetCreaseLengthsAttr();
+        UsdAttribute creaseSharpnessesAttr = m_usdMesh.GetCreaseSharpnessesAttr();
         if (creaseIndicesAttr.IsValid() &&
             creaseLengthsAttr.IsValid() &&
             creaseSharpnessesAttr.IsValid() &&
@@ -558,7 +572,7 @@ GusdMeshWrapper::refine(
         }
 
         // Interpolation boundaries
-        UsdAttribute interpBoundaryAttr = usdMesh.GetInterpolateBoundaryAttr();
+        UsdAttribute interpBoundaryAttr = m_usdMesh.GetInterpolateBoundaryAttr();
         if(interpBoundaryAttr.IsValid()) {
             TfToken val;
             interpBoundaryAttr.Get(&val, m_time);
@@ -657,11 +671,11 @@ _validateAttrData(
 bool GusdMeshWrapper::
 setSubdivisionScheme(const TfToken& scheme)
 {
-    if(!m_usdMeshForWrite) {
+    if(!m_usdMesh) {
         return false;
     }
 
-    UsdAttribute usdAttr = m_usdMeshForWrite.GetSubdivisionSchemeAttr();
+    UsdAttribute usdAttr = m_usdMesh.GetSubdivisionSchemeAttr();
     if(!usdAttr)   return false;
 
     return usdAttr.Set(scheme, UsdTimeCode::Default());
@@ -672,9 +686,9 @@ TfToken GusdMeshWrapper::
 getSubdivisionScheme() const
 {
     TfToken scheme;
-    if(m_usdMeshForWrite) {
+    if(m_usdMesh) {
 
-        m_usdMeshForWrite.GetSubdivisionSchemeAttr().Get(&scheme, UsdTimeCode::Default());
+        m_usdMesh.GetSubdivisionSchemeAttr().Get(&scheme, UsdTimeCode::Default());
     }
     return scheme;
 }
@@ -729,7 +743,7 @@ doSoftCopy() const
 
 bool GusdMeshWrapper::isValid() const
 {
-    return m_usdMeshForRead || m_usdMeshForWrite;
+    return m_usdMesh;
 }
 
 bool GusdMeshWrapper::
@@ -739,14 +753,14 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  GusdSimpleXformCache&     xformCache )
 {
     if(!isValid()) {
-        TF_WARN( "Can't update USD mesh from GT prim '%s'", m_usdMeshForWrite.GetPrim().GetPath().GetText() );
+        TF_WARN( "Can't update USD mesh from GT prim '%s'", m_usdMesh.GetPrim().GetPath().GetText() );
         return false;
     }
 
     const GT_PrimPolygonMesh* gtMesh
         = dynamic_cast<const GT_PrimPolygonMesh*>(sourcePrim.get());
     if(!gtMesh) {
-        TF_WARN( "source prim is not a mesh. '%s'", m_usdMeshForWrite.GetPrim().GetPath().GetText() );
+        TF_WARN( "source prim is not a mesh. '%s'", m_usdMesh.GetPrim().GetPath().GetText() );
         return false;
     }
 
@@ -769,7 +783,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // the orientation of the underlying prim. All geometry in Houdini is left
         // handed.
         TfToken orientation;
-        m_usdMeshForWrite.GetOrientationAttr().Get(&orientation, geoTime);
+        m_usdMesh.GetOrientationAttr().Get(&orientation, geoTime);
         if( orientation == UsdGeomTokens->rightHanded ) {
             reverseWindingOrder = true;
 
@@ -791,14 +805,14 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
     // Compute transform not including this prims transform.
     GfMatrix4d xform = computeTransform( 
-                            m_usdMeshForWrite.GetPrim().GetParent(),
+                            m_usdMesh.GetPrim().GetParent(),
                             geoTime,
                             houXform,
                             xformCache );
 
     // Compute transform including this prims transform.
     GfMatrix4d loc_xform = computeTransform( 
-                            m_usdMeshForWrite.GetPrim(),
+                            m_usdMesh.GetPrim(),
                             geoTime,
                             houXform,
                             xformCache );
@@ -810,7 +824,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         !GusdUT_Gf::Cast(loc_xform).isIdentity();
 
     if( !writeOverlay && ctxt.purpose != UsdGeomTokens->default_ ) {
-        m_usdMeshForWrite.GetPurposeAttr().Set( ctxt.purpose );
+        m_usdMesh.GetPurposeAttr().Set( ctxt.purpose );
     }
 
     // intrinsic attributes ----------------------------------------------------
@@ -824,7 +838,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         // extent
         houAttr = GusdGT_Utils::getExtentsArray(sourcePrim);
 
-        usdAttr = m_usdMeshForWrite.GetExtentAttr();
+        usdAttr = m_usdMesh.GetExtentAttr();
         if(houAttr && usdAttr && transformPoints ) {
             houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
         }       
@@ -847,7 +861,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         
         // P
         houAttr = sourcePrim->findAttribute("P", attrOwner, 0);
-        usdAttr = m_usdMeshForWrite.GetPointsAttr();
+        usdAttr = m_usdMesh.GetPointsAttr();
         if( houAttr && usdAttr && transformPoints ) {
 
             houAttr = GusdGT_Utils::transformPoints( houAttr, loc_xform );
@@ -862,13 +876,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             TF_WARN( "normals (N) attribute is not a 3 vector. Tuple size = %zd.", 
                      houAttr->getTupleSize() );
         }
-        usdAttr = m_usdMeshForWrite.GetNormalsAttr();
+        usdAttr = m_usdMesh.GetNormalsAttr();
         if( updateAttributeFromGTPrim( attrOwner, "N",
                                        houAttr, usdAttr, geoTime ) ) {
             if(GT_OWNER_VERTEX == attrOwner) {
-                m_usdMeshForWrite.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+                m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
             } else {
-                 m_usdMeshForWrite.SetNormalsInterpolation(UsdGeomTokens->varying);
+                 m_usdMesh.SetNormalsInterpolation(UsdGeomTokens->varying);
             }
         }
 
@@ -878,7 +892,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
             TF_WARN( "velocity (v) attribute is not a 3 vector. Tuple size = %zd.", 
                      houAttr->getTupleSize() );
         }
-        usdAttr = m_usdMeshForWrite.GetVelocitiesAttr();
+        usdAttr = m_usdMesh.GetVelocitiesAttr();
 
         updateAttributeFromGTPrim( attrOwner, "v",
                                    houAttr, usdAttr, geoTime );
@@ -894,7 +908,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
         // FaceVertexCounts
         GT_DataArrayHandle houVertexCounts = gtMesh->getFaceCounts();
-        usdAttr = m_usdMeshForWrite.GetFaceVertexCountsAttr();
+        usdAttr = m_usdMesh.GetFaceVertexCountsAttr();
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "facevertexcounts",
                                    houVertexCounts, usdAttr, topologyTime );
 
@@ -903,7 +917,7 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         if( reverseWindingOrder ) {
             houVertexList = new GT_DAIndirect( vertexIndirect, houVertexList );
         }
-        usdAttr = m_usdMeshForWrite.GetFaceVertexIndicesAttr();
+        usdAttr = m_usdMesh.GetFaceVertexIndicesAttr();
         updateAttributeFromGTPrim( GT_OWNER_INVALID, "facevertexindices",
                                    houVertexList, usdAttr, topologyTime );
 
@@ -940,11 +954,11 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
 
                     // Set usd attributes
                     UsdAttribute creaseIndicesAttr =
-                        m_usdMeshForWrite.GetCreaseIndicesAttr();
+                        m_usdMesh.GetCreaseIndicesAttr();
                     UsdAttribute creaseLengthsAttr =
-                        m_usdMeshForWrite.GetCreaseLengthsAttr();
+                        m_usdMesh.GetCreaseLengthsAttr();
                     UsdAttribute creaseSharpnessesAttr =
-                        m_usdMeshForWrite.GetCreaseSharpnessesAttr();
+                        m_usdMesh.GetCreaseSharpnessesAttr();
                     creaseIndicesAttr.Set(vtCreaseIndices, m_time);
                     creaseLengthsAttr.Set(vtCreaseLengths, m_time);
                     creaseSharpnessesAttr.Set(vtCreaseSharpnesses, m_time);
@@ -965,10 +979,8 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
         }
 
         GusdGT_AttrFilter filter = ctxt.attributeFilter;
-        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v ^visible ^usdactive");
-        filter.appendPattern(GT_OWNER_VERTEX, "^N ^visible ^creaseweight ^usdactive");
-        filter.appendPattern(GT_OWNER_UNIFORM, "^visible ^usdactive");
-        filter.appendPattern(GT_OWNER_CONSTANT, "^visible ^usdactive");
+        filter.appendPattern(GT_OWNER_POINT, "^P ^N ^v");
+        filter.appendPattern(GT_OWNER_VERTEX, "^N ^creaseweight");
         if( !ctxt.primPathAttribute.empty() ) {
             filter.appendPattern(GT_OWNER_UNIFORM, "^" + ctxt.primPathAttribute );
         }

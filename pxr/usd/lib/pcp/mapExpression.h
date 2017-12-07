@@ -28,13 +28,12 @@
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/pcp/mapFunction.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -92,8 +91,11 @@ public:
     /// A Variable is a mutable memory cell that holds a value.
     /// Changing a variable's value invalidates any expressions using
     /// that variable.
-    class Variable : public boost::noncopyable {
+    class Variable {
+        Variable(Variable const &) = delete;
+        Variable &operator=(Variable const &) = delete;
     public:
+        Variable() = default;
         virtual ~Variable();
         /// Return the current value.
         virtual const Value & GetValue() const = 0;
@@ -106,7 +108,7 @@ public:
     };
 
     /// Variables are held by reference.
-    typedef boost::shared_ptr<Variable> VariableRefPtr;
+    typedef std::shared_ptr<Variable> VariableRefPtr;
 
     /// Create a new variable.
     /// The client is expected to retain the reference for as long as

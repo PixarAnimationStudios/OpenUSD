@@ -63,6 +63,11 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = true;
 
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = false;
+
     /// Construct a UsdKatanaBlindDataObject on UsdPrim \p prim .
     /// Equivalent to UsdKatanaBlindDataObject::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -183,6 +188,27 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDKATANA_API
     UsdAttribute CreateVisibleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SUPPRESSGROUPTOASSEMBLYPROMOTION 
+    // --------------------------------------------------------------------- //
+    /// If true don't promote a group to an assembly.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDKATANA_API
+    UsdAttribute GetSuppressGroupToAssemblyPromotionAttr() const;
+
+    /// See GetSuppressGroupToAssemblyPromotionAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDKATANA_API
+    UsdAttribute CreateSuppressGroupToAssemblyPromotionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

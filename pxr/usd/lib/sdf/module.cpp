@@ -33,6 +33,7 @@ TF_WRAP_MODULE
     TF_WRAP( AssetPath );
     TF_WRAP( ChangeBlock );
     TF_WRAP( CleanupEnabler );
+    TF_WRAP( CopyUtils );
     TF_WRAP( TextReferenceParser );
     TF_WRAP( FileFormat );
     TF_WRAP( LayerBase );

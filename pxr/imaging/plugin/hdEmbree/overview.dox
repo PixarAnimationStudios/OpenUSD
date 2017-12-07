@@ -103,7 +103,7 @@ variable, through the HdEmbreeConfig class.
 ## Unit Test
 
 testHdEmbree provides an example of how to write a minimal hydra application.
-It uses Hd_UnitTestGLDrawing to create a window and provide a GL framebuffer,
+It uses HdSt_UnitTestGLDrawing to create a window and provide a GL framebuffer,
 and Hd_UnitTestDelegate to provide a simple scene graph/data source. The scene
 is then rendered by running HdxRenderTask via HdEngine::Execute().
 */

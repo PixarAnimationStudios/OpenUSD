@@ -1,0 +1,16 @@
+<attr type="GroupAttr">
+  <attr name="collections" type="GroupAttr">
+    <attr name="descendant" type="GroupAttr">
+      <attr name="cel" tupleSize="1" type="StringAttr">
+        <sample size="1" time="0">
+          <str value="((/ //* ))"/>
+        </sample>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="type" tupleSize="1" type="StringAttr">
+    <sample size="1" time="0">
+      <str value="group"/>
+    </sample>
+  </attr>
+</attr>

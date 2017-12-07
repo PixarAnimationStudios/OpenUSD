@@ -288,7 +288,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         INT_1_VALUE = 42
         INT_2_VALUE = Gf.Vec2i(1, 2)
         INT_3_VALUE = Gf.Vec3i(1, 2, 3)
-        ENUM_VALUE = 'Two'
+        ENUM_VALUE = 2 # Expect value of enum to be exported, not string
         FLOAT_DOUBLE_1_VALUE = 1.1
         FLOAT_DOUBLE_2_VALUE = Gf.Vec2d(1.1, 2.2)
         FLOAT_DOUBLE_3_VALUE = Gf.Vec3d(1.1, 2.2, 3.3)
@@ -320,7 +320,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
             'myLong':         {'value': INT_1_VALUE,
                                'typeName': Sdf.ValueTypeNames.Int},
             'myEnum':         {'value': ENUM_VALUE,
-                               'typeName': Sdf.ValueTypeNames.Token},
+                               'typeName': Sdf.ValueTypeNames.Int},
             'myFloat':        {'value': FLOAT_DOUBLE_1_VALUE,
                                'typeName': Sdf.ValueTypeNames.Float},
             'myDouble':       {'value': FLOAT_DOUBLE_1_VALUE,

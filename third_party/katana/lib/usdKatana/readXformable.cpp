@@ -41,14 +41,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 FnLogSetup("PxrUsdKatanaReadXformable");
 
-void
+bool
 PxrUsdKatanaReadXformable(
         const UsdGeomXformable& xformable,
         const PxrUsdKatanaUsdInPrivateData& data,
-        PxrUsdKatanaAttrMap& attrs)
+        FnAttribute::GroupAttribute& attr)
 {
-    PxrUsdKatanaReadPrim(xformable.GetPrim(), data, attrs);
-
     //
     // Calculate and set the xform attribute.
     //
@@ -57,7 +55,7 @@ PxrUsdKatanaReadXformable(
 
     // Get the ordered xform ops for the prim.
     //
-    bool resetsXformStack;
+    bool resetsXformStack = false;
     std::vector<UsdGeomXformOp> orderedXformOps =
         xformable.GetOrderedXformOps(&resetsXformStack);
 
@@ -123,7 +121,31 @@ PxrUsdKatanaReadXformable(
 
         xformGb.set("matrix", matrixAttr);
 
-        attrs.set("xform", xformGb.build());
+        attr = xformGb.build();
+        return true;
+    }
+    else if (resetsXformStack) {
+        FnKat::GroupBuilder xformGb;
+        xformGb.setGroupInherit(false);
+        xformGb.set("origin", FnKat::DoubleAttribute(1));
+        attr = xformGb.build();
+        return true;
+    }
+
+    return false;
+}
+
+void
+PxrUsdKatanaReadXformable(
+        const UsdGeomXformable& xformable,
+        const PxrUsdKatanaUsdInPrivateData& data,
+        PxrUsdKatanaAttrMap& attrs)
+{
+    PxrUsdKatanaReadPrim(xformable.GetPrim(), data, attrs);
+
+    FnAttribute::GroupAttribute attr;
+    if (PxrUsdKatanaReadXformable(xformable, data, attr)) {
+        attrs.set("xform", attr);
     }
 }
 

@@ -55,6 +55,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
     ((surfaceFS,               "Fragment.Surface"))
     ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
+    ((surfaceSheerFS,          "Fragment.SurfaceSheer"))
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((mainFS,                  "Mesh.Fragment"))
     ((instancing,              "Instancing.Transform"))
@@ -172,6 +173,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->surfaceFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderUnlit) {
         terminalFS = _tokens->surfaceUnlitFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderSheer) {
+        terminalFS = _tokens->surfaceSheerFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
         terminalFS = _tokens->constantColorFS;
     } else if (!shadingTerminal.IsEmpty()) {

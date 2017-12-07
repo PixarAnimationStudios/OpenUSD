@@ -59,8 +59,6 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_rw_mutex.h>
 
-#include <boost/bind.hpp>
-
 #include <algorithm>
 #include <utility>
 #include <vector>

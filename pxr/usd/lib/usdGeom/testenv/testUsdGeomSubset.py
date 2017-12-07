@@ -39,18 +39,19 @@ class testUsdGeomSubset(unittest.TestCase):
             familyName='materialBind')
         self.assertEqual(len(materialBindSubsets), 3)
         
-        self.assertTrue(UsdGeom.Subset.GetFamilyIsPartition(geom, 
-                                                            'materialBind'))
+        self.assertEqual(UsdGeom.Tokens.partition, 
+            UsdGeom.Subset.GetFamilyType(geom, 'materialBind'))
 
-        (valid, reason) = UsdGeom.Subset.ValidatePartition(materialBindSubsets, 
-                elementCount=16)
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(materialBindSubsets, 
+                elementCount=16, familyType=UsdGeom.Tokens.partition)
 
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName='materialBind')
         self.assertTrue(valid)
         
 
-        validFamilies = ['materialBind', 'validPartition']
+        validFamilies = ['materialBind', 'validPartition', 
+                         'validNonOverlapping', 'validUnrestricted']
         for familyName in validFamilies:
             (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName=familyName)
@@ -59,7 +60,8 @@ class testUsdGeomSubset(unittest.TestCase):
             self.assertEqual(len(reason), 0)
 
         invalidFamilies = ['invalidIndices', 'badPartition1', 'badPartition2', 
-                           'badPartition3']
+                           'badPartition3', 'invalidNonOverlapping',
+                           'invalidUnrestricted']
         for familyName in invalidFamilies:
             (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName=familyName)
@@ -92,7 +94,7 @@ class testUsdGeomSubset(unittest.TestCase):
 
         # By default, a family of subsets is not tagged as a partition.
         self.assertEqual(UsdGeom.Subset.GetFamilyType(geom, 'testFamily'), 
-                         UsdGeom.Subset.FamilyType.NonPartition)
+                         UsdGeom.Tokens.unrestricted)
 
         # Ensure that there's only one subset belonging to 'testFamily'.
         testSubsets = UsdGeom.Subset.GetGeomSubsets(geom, UsdGeom.Tokens.face,
@@ -104,7 +106,7 @@ class testUsdGeomSubset(unittest.TestCase):
         newIndices = Vt.IntArray([0, 1, 2])
         newerSubset = UsdGeom.Subset.CreateGeomSubset(geom, "testSubset", 
             UsdGeom.Tokens.face, newIndices, familyName='testFamily', 
-            familyType=UsdGeom.Subset.FamilyType.Partition)
+            familyType=UsdGeom.Tokens.partition)
         self.assertEqual(newerSubset.GetPrim(), newSubset.GetPrim())
 
         testSubsets = UsdGeom.Subset.GetGeomSubsets(geom, UsdGeom.Tokens.face,
@@ -112,21 +114,22 @@ class testUsdGeomSubset(unittest.TestCase):
         # Count is still one as no new subset was created by the above call. 
         self.assertEqual(len(testSubsets), 1)
 
-        isTaggedAsPartition = UsdGeom.Subset.GetFamilyIsPartition(geom, 
-                                                                  'testFamily')
+        isTaggedAsPartition = (UsdGeom.Tokens.partition ==
+            UsdGeom.Subset.GetFamilyType(geom, 'testFamily'))
         self.assertTrue(isTaggedAsPartition)
         self.assertEqual(UsdGeom.Subset.GetFamilyType(geom, 'testFamily'), 
-                         UsdGeom.Subset.FamilyType.Partition)
+                         UsdGeom.Tokens.partition)
 
-        (valid, reason) = UsdGeom.Subset.ValidatePartition(testSubsets, 
-                                                           elementCount=16)
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(testSubsets, 
+                elementCount=16,
+                familyType=UsdGeom.Tokens.partition)
         self.assertFalse(valid)
         
         # CreateUniqueGeomSubset will create a new subset always!
         unassignedIndices = UsdGeom.Subset.GetUnassignedIndices(testSubsets, 16)
         anotherSubset = UsdGeom.Subset.CreateUniqueGeomSubset(geom, "testSubset", 
             UsdGeom.Tokens.face, unassignedIndices, familyName='testFamily', 
-            familyType=UsdGeom.Subset.FamilyType.Partition)
+            familyType=UsdGeom.Tokens.partition)
 
         self.assertNotEqual(anotherSubset.GetPrim().GetName(), 
                             newSubset.GetPrim().GetName())
@@ -137,14 +140,15 @@ class testUsdGeomSubset(unittest.TestCase):
         # Count is now two after the call to CreateUniqueGeomSubset.
         self.assertEqual(len(testSubsets), 2)
 
-        (valid, reason) = UsdGeom.Subset.ValidatePartition(testSubsets, 
-                                                           elementCount=16)
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(testSubsets, 
+                elementCount=16,
+                familyType=UsdGeom.Tokens.partition)
         self.assertTrue(valid)
         
         # Check total count.
         allGeomSubsets = UsdGeom.Subset.GetAllGeomSubsets(
                 UsdGeom.Imageable(sphere))
-        self.assertEqual(len(allGeomSubsets), 13)
+        self.assertEqual(len(allGeomSubsets), 21)
 
 if __name__ == "__main__":
     unittest.main()

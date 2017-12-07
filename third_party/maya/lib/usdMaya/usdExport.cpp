@@ -64,6 +64,8 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-dsp" , "-exportDisplayColor", MSyntax::kBoolean);
     syntax.addFlag("-shd" , "-shadingMode" , MSyntax::kString);
     syntax.addFlag("-uvs" , "-exportUVs", MSyntax::kBoolean);
+    syntax.addFlag("-mcs" , "-exportMaterialCollections", MSyntax::kBoolean);
+    syntax.addFlag("-mcp" , "-materialCollectionsPath", MSyntax::kString);
     syntax.addFlag("-nuv" , "-normalizeMeshUVs" , MSyntax::kBoolean);
     syntax.addFlag("-nnu" , "-normalizeNurbs" , MSyntax::kBoolean);
     syntax.addFlag("-euv" , "-nurbsExplicitUVType" , MSyntax::kString);
@@ -172,6 +174,17 @@ try
     if (argData.isFlagSet("exportUVs")) {
         argData.getFlagArgument("exportUVs", 0, jobArgs.exportMeshUVs);
         jobArgs.exportNurbsExplicitUV = jobArgs.exportMeshUVs;
+    }
+
+    if (argData.isFlagSet("exportMaterialCollections")) {
+        argData.getFlagArgument("exportMaterialCollections", 0,
+                                jobArgs.exportMaterialCollections);
+    }
+
+    if (argData.isFlagSet("materialCollectionsPath")) {
+        MString stringVal;
+        argData.getFlagArgument("materialCollectionsPath", 0, stringVal);
+        jobArgs.materialCollectionsPath = stringVal.asChar();
     }
 
     if (argData.isFlagSet("normalizeMeshUVs")) {

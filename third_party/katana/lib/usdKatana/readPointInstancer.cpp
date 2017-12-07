@@ -30,6 +30,7 @@
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/kind/registry.h"
 
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -54,7 +55,7 @@ namespace
     typedef std::map<TfToken, GfRange3d, TfTokenFastArbitraryLessThan>
         _PurposeToRangeMap;
 
-    // Log an error and set attrs to create a Katana error location.
+    // Log an error and set attrs to show an error message in the Scene Graph.
     //
     void
     _LogAndSetError(
@@ -62,10 +63,21 @@ namespace
         const std::string message)
     {
         FnLogError(message);
-        attrs.set("type", FnKat::StringAttribute("error"));
         attrs.set("errorMessage",
                   FnKat::StringAttribute(
                       "[ERROR PxrUsdKatanaReadPointInstancer]: " + message));
+    }
+
+    // Log a warning and set attrs to show a warning message in the Scene Graph.
+    void
+    _LogAndSetWarning(
+        PxrUsdKatanaAttrMap &attrs,
+        const std::string message)
+    {
+        FnLogWarn(message);
+        attrs.set("warningMessage",
+                  FnKat::StringAttribute(
+                      "[WARNING PxrUsdKatanaReadPointInstancer]: " + message));
     }
 
     // XXX This is based on
@@ -171,6 +183,24 @@ namespace
             }
         }
 
+        // If we encounter a topology mismatch while sampling, we'll try falling
+        // back on the value for the current (base) time. We'll also continue to
+        // use this fallback value for the remainder of our sampling loop.
+        //
+        bool usePreviousPositions = false;
+        VtVec3fArray basePositions;
+        if (!useVelocity) {
+            positionsAttr.Get(&basePositions, baseTime);
+        }
+        bool usePreviousOrientations = false;
+        VtQuathArray baseOrientations;
+        if (!useAngularVelocity) {
+            orientationsAttr.Get(&baseOrientations, baseTime);
+        }
+        bool usePreviousScales = false;
+        VtVec3fArray baseScales;
+        scalesAttr.Get(&baseScales, baseTime);
+
         size_t validSamples = 0;
 
         for (auto a = decltype(sampleCount){0}; a < sampleCount; ++a) {
@@ -184,8 +214,12 @@ namespace
                         (sampleTimes[a].GetValue() - positionsLowerTimeSample) /
                         timeCodesPerSecond) *
                     velocityScale;
-            } else {
+            } else if (!usePreviousPositions) {
                 positionsAttr.Get(&positions, sampleTimes[a]);
+                if (positions.size() != numInstances) {
+                    positions = basePositions;
+                    usePreviousPositions = true;
+                }
             }
 
             float angularVelocityMultiplier = 1.0f;
@@ -195,42 +229,56 @@ namespace
                                         orientationsLowerTimeSample) /
                                        timeCodesPerSecond) *
                     velocityScale;
-            } else {
+            } else if (!usePreviousOrientations) {
                 orientationsAttr.Get(&orientations, sampleTimes[a]);
+                if (!orientations.empty() and
+                    orientations.size() != numInstances) {
+                    orientations = baseOrientations;
+                    usePreviousOrientations = true;
+                }
             }
 
             if (useVelocity or useAngularVelocity) {
-                scalesAttr.Get(&scales, baseTime);
-            } else {
+                scales = baseScales;
+            } else if (!usePreviousScales) {
                 scalesAttr.Get(&scales, sampleTimes[a]);
+                if (!scales.empty() and scales.size() != numInstances) {
+                    scales = baseScales;
+                    usePreviousScales = true;
+                }
             }
 
-            // Abort if toplogy differs across samples. Note that we permit
-            // unspecified scales and orientations.
+            // Abort if topology still differs despite our resampling attempt.
             //
             if (positions.size() != numInstances) {
                 break;
             }
-            if (scales.size() > 0 and scales.size() != numInstances) {
+            if (!scales.empty() and scales.size() != numInstances) {
                 break;
             }
-            if (orientations.size() > 0 and
-                orientations.size() != numInstances) {
+            if (!orientations.empty() and orientations.size() != numInstances) {
                 break;
             }
 
             for (auto i = decltype(numInstances){0}; i < numInstances; ++i) {
                 GfTransform transform;
+
+                // Apply positions.
+                //
                 if (useVelocity) {
                     transform.SetTranslation(
                         positions[i] + velocities[i] * velocityMultiplier);
                 } else {
                     transform.SetTranslation(positions[i]);
                 }
-                if (scales.size() > 0) {
+
+                // Apply scales and orientations. Note that these can be
+                // unspecified.
+                //
+                if (!scales.empty()) {
                     transform.SetScale(scales[i]);
                 }
-                if (orientations.size() > 0) {
+                if (!orientations.empty()) {
                     if (useAngularVelocity) {
                         transform.SetRotation(
                             GfRotation(orientations[i]) *
@@ -241,6 +289,7 @@ namespace
                         transform.SetRotation(GfRotation(orientations[i]));
                     }
                 }
+
                 curr.push_back(transform.GetMatrix());
             }
 
@@ -387,13 +436,15 @@ PxrUsdKatanaReadPointInstancer(
     VtIntArray protoIndices;
     if (!instancer.GetProtoIndicesAttr().Get(&protoIndices, currentTime))
     {
-        _LogAndSetError(instancerAttrMap, "Instancer has no prototype indices");
+        _LogAndSetWarning(instancerAttrMap,
+                          "Instancer has no prototype indices");
         return;
     }
     const size_t numInstances = protoIndices.size();
     if (numInstances == 0)
     {
-        _LogAndSetError(instancerAttrMap, "Instancer has no prototype indices");
+        _LogAndSetWarning(instancerAttrMap,
+                          "Instancer has no prototype indices");
         return;
     }
     for (auto protoIndex : protoIndices)
@@ -544,47 +595,76 @@ PxrUsdKatanaReadPointInstancer(
             //
             SdfPathVector commonPrefixes;
 
-            UsdRelationship materialBindingsRel =
-                    UsdShadeMaterial::GetBindingRel(protoPrim);
-
-            auto assetAPI = UsdModelAPI(protoPrim);
-            std::string assetName;
-            bool isReferencedModelPrim =
-                    assetAPI.IsModel() and assetAPI.GetAssetName(&assetName);
-
-            if (!materialBindingsRel or isReferencedModelPrim)
+            // If the proto prim itself doesn't have any bindings or isn't a
+            // (sub)component, we'll walk upwards until we find a prim that
+            // does/is. Stop walking if we reach the instancer or the usdInArgs
+            // root.
+            //
+            UsdPrim prim = protoPrim;
+            while (prim and prim != instancer.GetPrim() and
+                   prim != data.GetUsdInArgs()->GetRootPrim())
             {
-                // The prim has no material bindings or is a referenced model
-                // prim (meaning that materials are defined below it); start
-                // building at the prototype path.
-                //
-                commonPrefixes.push_back(protoPath);
-            }
-            else
-            {
+                UsdRelationship materialBindingsRel =
+                        UsdShadeMaterial::GetBindingRel(prim);
                 SdfPathVector materialPaths;
-                materialBindingsRel.GetForwardedTargets(&materialPaths);
-                for (auto materialPath : materialPaths)
+                bool hasMaterialBindings = (materialBindingsRel and
+                        materialBindingsRel.GetForwardedTargets(
+                            &materialPaths) and !materialPaths.empty());
+
+                TfToken kind;
+                std::string assetName;
+                auto assetAPI = UsdModelAPI(prim);
+                // If the prim is a (sub)component, it should have materials
+                // defined below it.
+                bool hasMaterialChildren = (
+                        assetAPI.GetAssetName(&assetName) and
+                        assetAPI.GetKind(&kind) and (
+                            KindRegistry::IsA(kind, KindTokens->component) or
+                            KindRegistry::IsA(kind, KindTokens->subcomponent)));
+
+                if (hasMaterialChildren)
                 {
-                    const SdfPath &commonPrefix =
-                            protoPath.GetCommonPrefix(materialPath);
-                    if (commonPrefix.GetString() == "/")
-                    {
-                        // XXX Unhandled case.
-                        // The prototype prim and its material are not under the
-                        // same parent; start building at the prototype path
-                        // (although it is likely that bindings will be broken).
-                        //
-                        commonPrefixes.push_back(protoPath);
-                    }
-                    else
-                    {
-                        // Start building at the common ancestor between the
-                        // prototype prim and its material.
-                        //
-                        commonPrefixes.push_back(commonPrefix);
-                    }
+                    // The prim has material children, so start building at the
+                    // prim's path.
+                    //
+                    commonPrefixes.push_back(prim.GetPath());
+                    break;
                 }
+
+                if (hasMaterialBindings)
+                {
+                    for (auto materialPath : materialPaths)
+                    {
+                        const SdfPath &commonPrefix =
+                                protoPath.GetCommonPrefix(materialPath);
+                        if (commonPrefix.GetString() == "/")
+                        {
+                            // XXX Unhandled case.
+                            // The prim and its material are not under the same
+                            // parent; start building at the prim's path
+                            // (although it is likely that bindings will be
+                            // broken).
+                            //
+                            commonPrefixes.push_back(prim.GetPath());
+                        }
+                        else
+                        {
+                            // Start building at the common ancestor between the
+                            // prim and its material.
+                            //
+                            commonPrefixes.push_back(commonPrefix);
+                        }
+                    }
+                    break;
+                }
+
+                prim = prim.GetParent();
+            }
+
+            // Fail-safe in case no common prefixes were found.
+            if (commonPrefixes.empty())
+            {
+                commonPrefixes.push_back(protoPath);
             }
 
             // XXX Unhandled case.

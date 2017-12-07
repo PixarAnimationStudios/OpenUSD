@@ -30,13 +30,10 @@
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/reference.h"
-#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 SDF_DECLARE_HANDLES(SdfPrimSpec);
 
@@ -200,6 +197,13 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// UsdStage::ResolveIdentifierToEditTarget() before authoring the
 /// reference.</b>
 ///
+/// When adding an internal reference, the given prim path is expected to 
+/// be in the namespace of the owning prim's stage. Sub-root prim paths
+/// will be translated from this namespace to the namespace of the
+/// current edit target, if necessary. If a path cannot be translated,
+/// a coding error will be issued and no changes will be made. Non-sub-root
+/// paths will not be translated.
+///
 /// Immediately upon successful authoring of the reference (before returning
 /// from AddReference(), RemoveReference(), ClearReferences(), or
 /// SetReferences()), the UsdStage on which the reference was authored will
@@ -215,10 +219,6 @@ class UsdReferences {
     explicit UsdReferences(const UsdPrim& prim) : _prim(prim) {}
 
 public:
-
-    // XXX: should we hide SdfReference here? it seems helpful for
-    // Sd/Mf compatibility
-
     /// Adds a reference to the reference listOp at the current EditTarget,
     /// in the position specified by \p position.
     /// \sa \ref Usd_Failing_References "Why adding references may fail" for
@@ -232,9 +232,9 @@ public:
     /// \overload 
     USD_API
     bool AddReference(const std::string &identifier,
-                         const SdfPath &primPath,
-                         const SdfLayerOffset &layerOffset = SdfLayerOffset(),
-                         UsdListPosition position=UsdListPositionTempDefault);
+                      const SdfPath &primPath,
+                      const SdfLayerOffset &layerOffset = SdfLayerOffset(),
+                      UsdListPosition position=UsdListPositionTempDefault);
 
     /// \overload
     /// \sa \ref Usd_DefaultPrim_References "References Without Prim Paths"
@@ -278,7 +278,6 @@ public:
     /// Return the prim this object is bound to.
     const UsdPrim &GetPrim() const { return _prim; }
 
-    // XXX Is this actually needed?
     /// \overload
     UsdPrim GetPrim() { return _prim; }
 
@@ -290,7 +289,6 @@ private:
     UsdPrim _prim;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //USD_REFERENCES_H
+#endif // USD_REFERENCES_H

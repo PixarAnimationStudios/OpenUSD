@@ -27,7 +27,7 @@
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
 
-#include <boost/bind.hpp>
+#include "pxr/base/arch/functionLite.h"
 
 #include <tbb/tbb_thread.h>
 
@@ -65,7 +65,7 @@ Test_TfError()
     TfErrorMark::Iterator i = m.GetBegin();
     TF_AXIOM(i == TfDiagnosticMgr::GetInstance().GetErrorBegin());
     TfError e = *i;
-    TF_AXIOM(e.GetSourceFileName() == BUILD_COMPONENT_SRC_PREFIX __FILE__);
+    TF_AXIOM(e.GetSourceFileName() == __ARCH_FILE__);
     TF_AXIOM(e.GetSourceLineNumber() == lineNum);
     TF_AXIOM(e.GetCommentary() == "small error");
     TF_AXIOM(e.GetErrorCode() == SMALL);
@@ -195,7 +195,7 @@ Test_TfErrorThreadTransport()
     printf("Creating TfErrorMark\n");
     TfErrorMark m;
     printf("Launching thread\n");
-    tbb::tbb_thread t(boost::bind(_ThreadTask, &transport));
+    tbb::tbb_thread t([&transport]() { _ThreadTask(&transport); });
     TF_AXIOM(m.IsClean());
     t.join();
     printf("Thread completed, posting error.\n");

@@ -26,7 +26,6 @@
 #include "pxr/base/tf/diagnosticMgr.h"
 
 #include "pxr/base/tf/debugCodes.h"
-#include "pxr/base/tf/diagnosticNotice.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/registryManager.h"
@@ -49,11 +48,46 @@
 #include <stdlib.h>
 
 #include <thread>
+#include <memory>
 
 using std::list;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+// Helper RAII struct for ensuring we protect functions
+// that we wish to not have reentrant behaviors from delegates
+// that we call out to.
+struct _ReentrancyGuard {
+    public:
+        _ReentrancyGuard(bool* reentrancyGuardValue) :
+            _reentrancyGuardValue(reentrancyGuardValue),
+            _scopeWasReentered(false)
+        {
+            if (!*_reentrancyGuardValue) {
+                *_reentrancyGuardValue = true;
+            } else {
+                _scopeWasReentered = true; 
+            }
+        }
+
+        bool ScopeWasReentered() {
+            return _scopeWasReentered;
+        }
+        
+        ~_ReentrancyGuard() {
+            if (!_scopeWasReentered) {
+                *_reentrancyGuardValue = false;
+            }
+        } 
+
+    private:
+        bool* _reentrancyGuardValue;
+        bool _scopeWasReentered;
+};
+} // end anonymous namespace
+
 
 // Helper function for printing a diagnostic message. This is used in non-main
 // threads and when a delegate is not available.
@@ -124,16 +158,28 @@ TfDiagnosticMgr::~TfDiagnosticMgr()
 }
 
 void
-TfDiagnosticMgr::SetDelegate( DelegateWeakPtr const &delegate )
+TfDiagnosticMgr::AddDelegate(Delegate* delegate)
 {
-    bool hadDelegate = _delegate;
+    if (delegate == nullptr) { 
+        return; 
+    } 
 
-    _delegate = delegate;
+    tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/true);
+    _delegates.push_back(delegate);
+}
 
-    if(hadDelegate) {
-        TF_WARN("Overwriting existing TfError delegate. This will not be "
-            "allowed in the future.");
+void
+TfDiagnosticMgr::RemoveDelegate(Delegate* delegate)
+{
+    if (delegate == nullptr) {
+        return;
     }
+
+    tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/true);
+    _delegates.erase(std::remove(_delegates.begin(),
+                                 _delegates.end(),
+                                 delegate),
+                     _delegates.end());
 }
 
 void
@@ -213,20 +259,29 @@ TfDiagnosticMgr::PostError(const TfDiagnosticBase& diagnostic)
 void
 TfDiagnosticMgr::_ReportError(const TfError &err)
 {
-    const bool isMainThread = ArchIsMainThread();
+    _ReentrancyGuard guard(&_reentrantGuard.local());
+    if (guard.ScopeWasReentered()) {
+        return;
+    }
 
-    if (isMainThread && _delegate) {
-        _delegate->IssueError(err);
-    } else if (!err.GetQuiet()) {
+    bool dispatchedToDelegate = false;
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/false);
+        for (auto const& delegate : _delegates) {
+            if (delegate) {
+                delegate->IssueError(err);
+            }
+        }
+        dispatchedToDelegate = !_delegates.empty();
+    }
+    
+    if (!dispatchedToDelegate && !err.GetQuiet()) {
         _PrintDiagnostic(stderr,
                          err.GetDiagnosticCode(),
                          err.GetContext(),
                          err.GetCommentary(),
                          err._data->_info);
     }
-
-    if (isMainThread)
-        TfDiagnosticNotice::IssuedError(err).Send(TfCreateWeakPtr(this));
 }
 
 void
@@ -235,25 +290,33 @@ TfDiagnosticMgr::PostWarning(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet) const
 {
-    if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_WARNING))
-        ArchDebuggerTrap();
-
-    if (!ArchIsMainThread()) {
-        _PrintDiagnostic(stderr, warningCode, context, commentary, info);
+    _ReentrancyGuard guard(&_reentrantGuard.local());
+    if (guard.ScopeWasReentered()) {
         return;
     }
+
+    if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_WARNING))
+        ArchDebuggerTrap();
 
     quiet |= _quiet;
 
     TfWarning warning(warningCode, warningCodeString, context, commentary, info,
                       quiet);
 
-    if (_delegate)
-        _delegate->IssueWarning(warning);
-    else if (!quiet)
+    bool dispatchedToDelegate = false;
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/false);
+        for (auto const& delegate : _delegates) {
+            if (delegate) {
+                delegate->IssueWarning(warning);
+            }
+        }
+        dispatchedToDelegate = !_delegates.empty();
+    }
+    
+    if (!dispatchedToDelegate && !quiet) {
         _PrintDiagnostic(stderr, warningCode, context, commentary, info);
-
-    TfDiagnosticNotice::IssuedWarning(warning).Send(TfCreateWeakPtr(this));
+    }
 }
 
 void
@@ -270,8 +333,8 @@ void TfDiagnosticMgr::PostStatus(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet) const
 {
-    if (!ArchIsMainThread()) {
-        _PrintDiagnostic(stdout, statusCode, context, commentary, info);
+    _ReentrancyGuard guard(&_reentrantGuard.local());
+    if (guard.ScopeWasReentered()) {
         return;
     }
 
@@ -280,12 +343,20 @@ void TfDiagnosticMgr::PostStatus(
     TfStatus status(statusCode, statusCodeString, context, commentary, info,
                     quiet);
 
-    if (_delegate)
-        _delegate->IssueStatus(status);
-    else if (!quiet)
-        _PrintDiagnostic(stderr, statusCode, context, commentary, info);
+    bool dispatchedToDelegate = false;
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/false);
+        for (auto const& delegate : _delegates) {
+            if (delegate) {
+                delegate->IssueStatus(status);
+            }
+        }
+        dispatchedToDelegate = !_delegates.empty();
+    }
 
-    TfDiagnosticNotice::IssuedStatus(status).Send(TfCreateWeakPtr(this));
+    if (!dispatchedToDelegate && !quiet) {
+        _PrintDiagnostic(stderr, statusCode, context, commentary, info);
+    }
 }
 
 void
@@ -301,24 +372,27 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
                                 TfEnum statusCode,
                                 std::string const &msg) const
 {
+    _ReentrancyGuard guard(&_reentrantGuard.local());
+    if (guard.ScopeWasReentered()) {
+        return;
+    }
+
     if (TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_ERROR) ||
         TfDebug::IsEnabled(TF_ATTACH_DEBUGGER_ON_FATAL_ERROR))
         ArchDebuggerTrap();
 
-    bool isMainThread = ArchIsMainThread();
-
-    // Send out the IssuedFatalError notice if we're in the main thread.
-    if (isMainThread) {
-        TfDiagnosticBase data(statusCode, "", context, msg,
-                              TfDiagnosticInfo(), false /*quiet*/);
-        TfDiagnosticNotice::IssuedFatalError fe(msg, context);
-        fe.SetData(data);
-        fe.Send(TfCreateWeakPtr(this));
+    bool dispatchedToDelegate = false;
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_delegatesMutex, /*writer=*/false);
+        for (auto const& delegate : _delegates) {
+            if (delegate) {
+                delegate->IssueFatalError(context, msg);
+            }
+        }
+        dispatchedToDelegate = !_delegates.empty();
     }
-
-    if (isMainThread && _delegate) {
-        _delegate->IssueFatalError(context, msg);
-    } else {
+    
+    if (!dispatchedToDelegate) {
         if (statusCode == TF_DIAGNOSTIC_CODING_ERROR_TYPE) {
             fprintf(stderr, "Fatal coding error: %s [%s], in %s(), %s:%zu\n",
                     msg.c_str(), ArchGetProgramNameForErrors(),
@@ -609,9 +683,6 @@ static void
 _PrintDiagnostic(FILE *fout, const TfEnum &code, const TfCallContext &context,
     const std::string& msg, const TfDiagnosticInfo &info)
 {
-    if (!TfDiagnosticNotice::GetStderrOutputState())
-        return;
-
     fprintf(fout, "%s", _FormatDiagnostic(code, context, msg, info).c_str());
 }
 

@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdSurfaceShader> HdSurfaceShaderSharedPtr;
+typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 
 class HdStShader final: public HdShader {
 public:
@@ -70,16 +70,74 @@ public:
     HDST_API
     virtual HdShaderCodeSharedPtr GetShaderCode() const override;
 
+    /// Obtain the source code for the Surface Shader for this prim from
+    /// the scene delegate.
+    inline std::string GetSurfaceShaderSource(
+        HdSceneDelegate* sceneDelegate) const;
+
+    /// Obtain the source code for the Displacement Shader for this prim from
+    /// the scene delegate.
+    inline std::string GetDisplacementShaderSource(
+        HdSceneDelegate* sceneDelegate) const;
+
+    /// Obtain the collection of shader Primvar descriptions for this prim from
+    /// the scene delegate.
+    inline HdShaderParamVector GetSurfaceShaderParams(
+        HdSceneDelegate* sceneDelegate) const;
+
+    /// Obtain the value of the specified Primvar for this prim from the
+    /// scene delegate.
+    inline VtValue GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
+                                              TfToken const &paramName) const;
+
+    /// Obtain the scene delegates's globally unique id for the texture
+    /// resource identified by textureId.
+    inline HdTextureResource::ID GetTextureResourceID(
+        HdSceneDelegate* sceneDelegate,
+        SdfPath const& textureId) const;
+
     /// Replaces the shader code object with an externally created one
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
     HDST_API
-    void SetSurfaceShader(HdSurfaceShaderSharedPtr &shaderCode);
+    void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
 
 private:
-    HdSurfaceShaderSharedPtr _surfaceShader;
+    HdStSurfaceShaderSharedPtr _surfaceShader;
 };
+
+inline std::string
+HdStShader::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
+{
+    return sceneDelegate->GetSurfaceShaderSource(GetID());
+}
+
+inline std::string
+HdStShader::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
+{
+    return sceneDelegate->GetDisplacementShaderSource(GetID());
+}
+
+inline HdShaderParamVector
+HdStShader::GetSurfaceShaderParams(HdSceneDelegate* sceneDelegate) const
+{
+    return sceneDelegate->GetSurfaceShaderParams(GetID());
+}
+
+inline VtValue
+HdStShader::GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
+                                          TfToken const &paramName) const
+{
+    return sceneDelegate->GetSurfaceShaderParamValue(GetID(), paramName);
+}
+
+inline HdTextureResource::ID
+HdStShader::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
+                               SdfPath const& textureId) const
+{
+    return sceneDelegate->GetTextureResourceID(textureId);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

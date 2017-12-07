@@ -27,7 +27,7 @@
 #include "pxr/imaging/glf/drawTarget.h"
 
 #include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/unitTestGLDrawing.h"
+#include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
 
 #include "pxr/imaging/hdx/renderTask.h"
@@ -45,11 +45,11 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // ------------------------------------------------------
-// Hd_UnitTestGLDrawing is test scaffolding; it can create a window
+// HdSt_UnitTestGLDrawing is test scaffolding; it can create a window
 // and render into it, or do a headless render into a PNG file.
 // Extend it to draw a simple embree scene.
 
-class HdEmbree_TestGLDrawing : public Hd_UnitTestGLDrawing {
+class HdEmbree_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     HdEmbree_TestGLDrawing()
         : _smooth(false)

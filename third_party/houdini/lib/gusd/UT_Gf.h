@@ -221,13 +221,9 @@ private:
     /** Our casting tricks assume that the typedefs set in SYS_Types are
         referencing the types we think they are. Let's make sure...*/
     static_assert(std::is_same<fpreal32,float>::value,
-                  "std::issame<fpreal32,float>::value");
+                  "std::is_same<fpreal32,float>::value");
     static_assert(std::is_same<fpreal64,double>::value,
-                  "std::issame<fpreal64,double>::value");
-    static_assert(std::is_same<int32,int>::value,
-                  "std::issame<int32,int>::value");
-    static_assert(std::is_same<int64,long>::value,
-                  "std::issame<int64,long>::value");
+                  "std::is_same<fpreal64,double>::value");
 };
 
 

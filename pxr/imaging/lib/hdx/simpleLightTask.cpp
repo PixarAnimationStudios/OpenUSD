@@ -170,6 +170,16 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // because we need to create an array of shadow maps with the same resolution
     int maxShadowRes = 0;
 
+    // Extract the camera window policy to adjust the frustum correctly for
+    // lights that have shadows.
+    CameraUtilConformWindowPolicy windowPolicy = CameraUtilFit;
+    const VtValue vtWindowPolicy = _camera->Get(HdStCameraTokens->windowPolicy);
+    const bool cameraHasWindowPolicy =
+        vtWindowPolicy.IsHolding<CameraUtilConformWindowPolicy>();
+    if (cameraHasWindowPolicy) {
+        windowPolicy = vtWindowPolicy.Get<CameraUtilConformWindowPolicy>();
+    }
+
     // We rebuild the lights array every time, but avoid reallocating
     // the array every frame as this was showing up as a significant portion
     // of the time in this function.
@@ -237,16 +247,19 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         // Setup the rest of the light parameters necessary 
         // to calculate shadows
         if (glfl.HasShadow()) {
-            // Extract the window policy to adjust the frustum correctly
-            VtValue windowPolicy = _camera->Get(HdStCameraTokens->windowPolicy);
-            if (!TF_VERIFY(windowPolicy.IsHolding<CameraUtilConformWindowPolicy>())) {
-                return;
+            if (!TF_VERIFY(cameraHasWindowPolicy)) {
+                glfl.SetHasShadow(false);
+                continue;
             }
 
-            CameraUtilConformWindowPolicy policy =
-                windowPolicy.Get<CameraUtilConformWindowPolicy>();
+            if (!TF_VERIFY(lightShadowParams.shadowMatrix)) {
+                glfl.SetHasShadow(false);
+                continue;
+            }
 
-            GfMatrix4d shadowMatrix = lightShadowParams.shadowMatrix->Compute(_viewport, policy);
+            GfMatrix4d shadowMatrix =
+                lightShadowParams.shadowMatrix->Compute(_viewport,
+                                                        windowPolicy);
 
             glfl.SetShadowIndex(++shadowIndex);
             glfl.SetShadowMatrix(shadowMatrix);

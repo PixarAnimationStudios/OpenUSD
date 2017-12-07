@@ -44,6 +44,12 @@ TF_DEFINE_ENV_SETTING(
     "Set true if USD Append() API's should author Add operations instead of "
     "Append, to mimic their historical behavior.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_USE_INVERSE_LAYER_OFFSET, false,
+    "Set true if USD should take the inverse of SdfLayerOffset values when "
+    "applying them.  True matches historical behavior; false is the "
+    "intended future setting.");
+
 bool UsdIsRetireLumosEnabled()
 {
     return TfGetEnvSetting(USD_RETIRE_LUMOS);
@@ -54,6 +60,21 @@ bool UsdAuthorOldStyleAdd()
     return TfGetEnvSetting(USD_AUTHOR_OLD_STYLE_ADD);
 }
 
+bool UsdUsesInverseLayerOffset()
+{
+    return TfGetEnvSetting(USD_USE_INVERSE_LAYER_OFFSET);
+}
+
+SdfLayerOffset
+UsdPrepLayerOffset(SdfLayerOffset offset)
+{
+    if (UsdUsesInverseLayerOffset()) {
+        return offset.GetInverse();
+    } else {
+        return offset;
+    }
+}
+
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(UsdListPositionFront, "The front of the list");
@@ -61,6 +82,9 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdListPositionTempDefault, "Temporary default; "
                      "consults USD_AUTHOR_OLD_STYLE_ADD.  "
                      "Used for staged rollout of this enum.");
+
+    TF_ADD_ENUM_NAME(UsdLoadWithDescendants, "Load prim and all descendants");
+    TF_ADD_ENUM_NAME(UsdLoadWithoutDescendants, "Load prim and no descendants");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

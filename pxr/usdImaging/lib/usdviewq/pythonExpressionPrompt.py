@@ -36,12 +36,13 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
 
     def __init__(self, parent, exception = None, val = None):
         QtWidgets.QDialog.__init__(self, parent)
+        self.setObjectName("PythonExpressionPrompt")
         self._ui = Ui_PythonExpressionPrompt()
         self._ui.setupUi(self)
         self._mainWindow = parent._mainWindow     # get mainWindow instance
         self._val = val         # this is the object that is currently authored
         self._oldValID = -1     # this is the ID of the current object at "_"
-        
+
         self._setupConsole()    # get or create a python console widget
 
         # if a exception was passed as an argument, raise it so it prints.
@@ -54,7 +55,7 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
         # get or create an instance of Myconsole
         if Myconsole.instance is None:
             Myconsole.instance = Myconsole(self)
-        
+
         # setting the parent places the Myconsole widget inside this one
         Myconsole.instance.setParent(self)
 
@@ -98,7 +99,7 @@ class PythonExpressionPrompt(QtWidgets.QDialog):
         # stdout, and make exec_ return the last value of "_"
         QtWidgets.QDialog.exec_(self)
         return self._val
-    
+
     def __del__(self):
         # we have to remove the parent from the "Myconsole" instance
         # because the parent (self) is about to be deleted.
@@ -120,6 +121,7 @@ class Myconsole(interpreterView):
 
     def __init__(self, parent):
         initialPrompt = ("\nLocal State Variables\n"
+                "    plugCtx: a plugin context object\n"
                 "    stage: the current Usd.Stage object\n"
                 "    frame: the current frame for playback\n"
                 "    selectedPrims: a list of all selected prims\n"
@@ -130,8 +132,10 @@ class Myconsole(interpreterView):
                 "    layer: the currently selected sdf layer in the composition tree (if any)\n\n")
 
         interpreterView.__init__(self, parent)
+        self.setObjectName("Myconsole")
 
         from pxr import Usd, UsdGeom, Gf, Tf
+        from qt import QtCore, QtGui, QtWidgets
 
         # Make a _Controller
         self._controller = pythonInterpreter.Controller(
@@ -147,18 +151,18 @@ class Myconsole(interpreterView):
         # return the current value of "_"
         return self.locals()['__builtins__']['_']
 
-    def reloadConsole(self, mainWindow, val = None):
+    def reloadConsole(self, appController, val = None):
         # refreshes locals and redirects I/O
         if '__builtins__' in self.locals():
             self.locals()['__builtins__']['_'] = val
 
-        self.locals()['mainWindow'] = mainWindow
-        self.locals()['stage'] = mainWindow._stage
-        self.locals()['frame'] = mainWindow._currentFrame
-        self.locals()['selectedPrims'] = list(mainWindow._currentNodes)
-        self.locals()['selectedInstances'] = mainWindow._stageView._selectedInstances.copy()
-        self.locals()['prim'] = mainWindow._currentNodes[0] if \
-                                        mainWindow._currentNodes else None
-        self.locals()['property'] = mainWindow._currentProp
-        self.locals()['spec'] = mainWindow._currentSpec
-        self.locals()['layer'] = mainWindow._currentLayer
+        self.locals()['plugCtx'] = appController._plugCtx
+        self.locals()['stage'] = appController._stage
+        self.locals()['frame'] = appController._currentFrame
+        self.locals()['selectedPrims'] = list(appController._currentPrims)
+        self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy()
+        self.locals()['prim'] = appController._currentPrims[0] if \
+                                        appController._currentPrims else None
+        self.locals()['property'] = appController._currentProp
+        self.locals()['spec'] = appController._currentSpec
+        self.locals()['layer'] = appController._currentLayer

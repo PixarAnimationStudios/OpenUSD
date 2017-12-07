@@ -33,7 +33,6 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/vec2i.h"
@@ -65,15 +64,8 @@ public:
 
     SdfPath const &GetRprimID() const { return _sharedData->rprimID; }
 
-    HD_API
-    GLenum GetPrimitiveMode() const;
-
     void SetGeometricShader(Hd_GeometricShaderSharedPtr const &geometricShader) {
-        if (!geometricShader) {
-            TF_CODING_ERROR("geometricShader must not be null");
-        } else {
-            _geometricShader = geometricShader;
-        }
+        _geometricShader = geometricShader;
     }
 
     Hd_GeometricShaderSharedPtr const &GetGeometricShader() const {
@@ -81,7 +73,7 @@ public:
     }
 
     HD_API
-    HdShaderCodeSharedPtr GetSurfaceShader() const;
+    HdShaderCodeSharedPtr GetMaterial() const;
 
     GfBBox3d const & GetBounds() const { return _sharedData->bounds; }
 

@@ -29,8 +29,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE {
     TF_WRAP(Assembly);
     TF_WRAP(EditUtil);
+    TF_WRAP(MeshUtil);
     TF_WRAP(Query);
     TF_WRAP(RoundTripUtil);
     TF_WRAP(StageCache);
     TF_WRAP(UserTaggedAttribute);
+    TF_WRAP(XformStack);
 }

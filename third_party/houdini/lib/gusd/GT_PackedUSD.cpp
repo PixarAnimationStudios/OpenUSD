@@ -481,7 +481,7 @@ GusdGT_PackedUSD(
         const SdfPath& srcPrimPath,
         exint instanceIndex,
         UsdTimeCode frame,
-        GusdPurposeSet purpose,
+        GusdPurposeSet,
         GT_AttributeListHandle pointAttributes,
         GT_AttributeListHandle vertexAttributes,
         GT_AttributeListHandle uniformAttributes,
@@ -493,7 +493,6 @@ GusdGT_PackedUSD(
     , m_srcPrimPath(srcPrimPath)
     , m_instanceIndex(instanceIndex)
     , m_frame(frame)
-    , m_purpose(purpose)
     , m_pointAttributes(pointAttributes)
     , m_vertexAttributes(vertexAttributes)
     , m_uniformAttributes(uniformAttributes)

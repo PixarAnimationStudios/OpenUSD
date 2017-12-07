@@ -101,9 +101,9 @@ public:
     HD_API
     int GetNumFaceVaryings() const;
 
-    /// Returns the num points by looking vert indices array
+    /// Returns the num points of the topology vert indices array
     HD_API
-    int ComputeNumPoints() const;
+    int GetNumPoints() const;
 
     /// Returns the num points by looking vert indices array
     HD_API
@@ -186,6 +186,7 @@ public:
 protected:
     PxOsdMeshTopology _topology;
     int _refineLevel;
+    int _numPoints;
 };
 
 

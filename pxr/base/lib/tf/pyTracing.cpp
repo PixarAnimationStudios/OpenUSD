@@ -30,7 +30,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <boost/weak_ptr.hpp>
+#include <memory>
 
 #include <tbb/spin_mutex.h>
 
@@ -44,7 +44,7 @@ using std::list;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef list<boost::weak_ptr<TfPyTraceFn> > TraceFnList;
+typedef list<std::weak_ptr<TfPyTraceFn> > TraceFnList;
 
 static TfStaticData<TraceFnList> _traceFns;
 static bool _traceFnInstalled;

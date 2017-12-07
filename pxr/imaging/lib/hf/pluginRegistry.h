@@ -84,6 +84,13 @@ public:
     void GetPluginDescs(HfPluginDescVector *plugins);
 
     ///
+    /// Returns the description for the given plugin id.
+    /// The plugin may not be loaded or been actually created yet.
+    ///
+    HF_API
+    bool GetPluginDesc(const TfToken &pluginId, HfPluginDesc *desc);
+
+    ///
     /// Increment the reference count on an existing plugin.
     ///
     HF_API

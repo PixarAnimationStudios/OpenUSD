@@ -64,6 +64,11 @@
                         "isInternal": true,
                         "primTypeName": "Cylinder"
                     },
+                    "UsdImagingMaterialAdapter" : {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "Material"
+                    },
                     "UsdImagingMeshAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -98,6 +103,11 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "Sphere"
+                    },
+                    "UsdImagingHydraMaterialAdapter" : {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "HydraPbsSurface"
                     },
                     "UsdImagingDomeLightAdapter": {
                         "bases": [
