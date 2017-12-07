@@ -560,7 +560,7 @@ endfunction() # pxr_install_test_dir
 function(pxr_register_test TEST_NAME)
     if (PXR_BUILD_TESTS)
         cmake_parse_arguments(bt
-            "PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
+            "PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES;RUN_SERIAL"
             "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
             "ENV;PRE_PATH;POST_PATH"
             ${ARGN}
@@ -706,6 +706,10 @@ function(pxr_register_test TEST_NAME)
             COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
                     "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
         )
+
+        if (bt_RUN_SERIAL)
+            set_property(TEST ${TEST_NAME} PROPERTY RUN_SERIAL 1)
+        endif()
     endif()
 endfunction() # pxr_register_test
 
