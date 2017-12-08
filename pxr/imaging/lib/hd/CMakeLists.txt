@@ -129,8 +129,6 @@ pxr_library(hd
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
-        shaders/fallbackLighting.glslfx
-        shaders/fallbackSurface.glslfx
         shaders/frustumCull.glslfx
         shaders/instancing.glslfx
         shaders/lighting.glslfx
@@ -140,7 +138,6 @@ pxr_library(hd
         shaders/meshWire.glslfx
         shaders/points.glslfx
         shaders/ptexTexture.glslfx
-        shaders/renderPass.glslfx
         shaders/terminals.glslfx
 )
 

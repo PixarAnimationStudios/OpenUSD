@@ -27,13 +27,13 @@
 #include "pxr/imaging/hdx/debugCodes.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -204,7 +204,7 @@ HdxRenderSetupTask::_CreateOverrideShader()
             if (!_overrideShader) {
                 GlfGLSLFXSharedPtr glslfx =
                         GlfGLSLFXSharedPtr(
-                               new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+                           new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
                 _overrideShader =
                               HdShaderCodeSharedPtr(

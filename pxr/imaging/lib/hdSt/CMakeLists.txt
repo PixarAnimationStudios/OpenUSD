@@ -73,7 +73,10 @@ pxr_library(hdSt
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
+        shaders/fallbackSurface.glslfx
+        shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
 )
 

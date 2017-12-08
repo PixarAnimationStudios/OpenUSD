@@ -37,6 +37,9 @@ TfToken HdStPackageRenderPassShader();
 HDST_API
 TfToken HdStPackageFallbackLightingShader();
 
+HDST_API
+TfToken HdStPackageFallbackSurfaceShader();
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

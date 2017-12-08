@@ -59,4 +59,11 @@ HdStPackageFallbackLightingShader()
     return fallbackLightingShader;
 }
 
+TfToken
+HdStPackageFallbackSurfaceShader()
+{
+    static TfToken s = _GetShaderPath("fallbackSurface.glslfx");
+    return s;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

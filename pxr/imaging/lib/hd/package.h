@@ -39,9 +39,6 @@ HD_API
 TfToken HdPackageLightingIntegrationShader();
 
 HD_API
-TfToken HdPackageFallbackSurfaceShader();
-
-HD_API
 TfToken HdPackagePtexTextureShader();
 
 

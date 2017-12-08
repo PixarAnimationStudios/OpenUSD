@@ -27,7 +27,7 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hd/shaders/renderPassShader.glslfx
 
-#import $TOOLS/hd/shaders/renderPass.glslfx
+#import $TOOLS/hdSt/shaders/renderPass.glslfx
 
 -- configuration
 {

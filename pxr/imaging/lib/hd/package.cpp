@@ -59,13 +59,6 @@ HdPackageLightingIntegrationShader()
 }
 
 TfToken
-HdPackageFallbackSurfaceShader()
-{
-    static TfToken s = _GetShaderPath("fallbackSurface.glslfx");
-    return s;
-}
-
-TfToken
 HdPackagePtexTextureShader()
 {
     static TfToken s = _GetShaderPath("ptexTexture.glslfx");

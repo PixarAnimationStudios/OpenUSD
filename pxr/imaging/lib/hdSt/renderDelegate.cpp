@@ -31,13 +31,13 @@
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/mesh.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/shader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/texture.h"
 
@@ -250,7 +250,8 @@ HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
 HdSprim *
 HdStRenderDelegate::_CreateFallbackShaderPrim()
 {
-    GlfGLSLFXSharedPtr glslfx(new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+    GlfGLSLFXSharedPtr glslfx(
+        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
     HdStSurfaceShaderSharedPtr fallbackShaderCode(new HdStGLSLFXShader(glslfx));
 

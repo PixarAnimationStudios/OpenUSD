@@ -27,16 +27,16 @@
 #include "pxr/imaging/hdSt/drawBatch.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/codeGen.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -242,7 +242,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
             GlfGLSLFXSharedPtr glslSurfaceFallback = 
                 GlfGLSLFXSharedPtr(
-                        new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+                        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
             HdShaderCodeSharedPtr fallbackSurface =
                 HdShaderCodeSharedPtr(
