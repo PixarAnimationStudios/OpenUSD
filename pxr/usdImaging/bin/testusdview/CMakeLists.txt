@@ -234,6 +234,7 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     )
 
     pxr_register_test(testusdviewNavigationKeys
+        RUN_SERIAL
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewNavigationKeys.py test.usda"
         EXPECTED_RETURN_CODE 0
