@@ -1130,7 +1130,7 @@ class AppController(QtCore.QObject):
                 # while still holding the preload-stage open.  This turns out
                 # to be much, much cheaper for scenes that are properly
                 # payloaded for scalability.
-                sl = Sdf.Layer.CreateAnonymous("usdview-session")
+                sl = Sdf.Layer.CreateAnonymous("usdview-session.usda")
 
                 # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
                 # so gather all the paths from the UsdStage first.
