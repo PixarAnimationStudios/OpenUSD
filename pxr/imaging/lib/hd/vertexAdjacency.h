@@ -148,16 +148,6 @@ public:
         TfToken const &dstName,
         bool packed=false);
 
-    /// Returns the smooth normal computation on GPU.
-    /// This computation requires adjacency table on GPU produced by
-    /// AdjacencyBuilderForGPUComputation.
-    HD_API
-    HdComputationSharedPtr GetSmoothNormalsComputationGPU(
-        TfToken const &srcName, TfToken const &dstName,
-        GLenum srcDataType, GLenum dstDataType);
-
-    /// @}
-
     /// Sets the adjacency range which locates the adjacency table on GPU.
     void SetAdjacencyRange(HdBufferArrayRangeSharedPtr const &range) {
         _adjacencyRange = range;
@@ -212,7 +202,7 @@ private:
 
 /// \class Hd_AdjacencyBuilderForGPUComputation
 ///
-/// Adjacency table computation GPU.
+/// Adjacency table computation on the CPU, for GPU consumption.
 ///
 class Hd_AdjacencyBuilderForGPUComputation : public HdComputedBufferSource {
 public:

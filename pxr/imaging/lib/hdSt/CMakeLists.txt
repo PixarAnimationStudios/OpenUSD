@@ -46,6 +46,7 @@ pxr_library(hdSt
         renderPassState
         resourceRegistry
         shader
+        smoothNormals
         surfaceShader
         unitTestGLDrawing
         vboMemoryManager

@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/smoothNormals.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -711,12 +712,14 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // float? (e.g. when switing flat -> smooth first time).
                 GLenum normalsDataType = usePackedNormals ?
                                          GL_INT_2_10_10_10_REV : pointsDataType;
-                computations.push_back(
-                        _vertexAdjacency->GetSmoothNormalsComputationGPU(
-                                                              HdTokens->points,
-                                                              normalsName,
-                                                              pointsDataType,
-                                                              normalsDataType));
+                HdComputationSharedPtr smoothNormalsComputation(
+                    new HdSt_SmoothNormalsComputationGPU(
+                        _vertexAdjacency.get(),
+                        HdTokens->points,
+                        normalsName,
+                        pointsDataType,
+                        normalsDataType));
+                computations.push_back(smoothNormalsComputation);
 
                 // note: we haven't had explicit dependency for GPU
                 // computations just yet. Currently they are executed

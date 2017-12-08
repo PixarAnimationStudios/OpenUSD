@@ -253,18 +253,6 @@ Hd_VertexAdjacency::GetSmoothNormalsComputation(
             this, points, dstName, _adjacencyBuilder.lock(), packed));
 }
 
-HdComputationSharedPtr
-Hd_VertexAdjacency::GetSmoothNormalsComputationGPU(TfToken const &srcName,
-                                                   TfToken const &dstName,
-                                                   GLenum srcDataType,
-                                                   GLenum dstDataType)
-{
-    return HdComputationSharedPtr(new Hd_SmoothNormalsComputationGPU(
-                                      this, srcName, dstName,
-                                      srcDataType, dstDataType));
-}
-
-
 HdBufferSourceSharedPtr
 Hd_VertexAdjacency::GetAdjacencyBuilderComputation(
     HdMeshTopology const *topology)

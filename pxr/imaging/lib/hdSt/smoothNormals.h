@@ -21,12 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SMOOTH_NORMALS_H
-#define HD_SMOOTH_NORMALS_H
+#ifndef HDST_SMOOTH_NORMALS_H
+#define HDST_SMOOTH_NORMALS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
 
@@ -42,40 +41,39 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 class Hd_VertexAdjacency;
 
-/// \class Hd_SmoothNormalsComputation
+/// smooth normal computation GPU
 ///
-/// Smooth normal computation CPU.
 ///
-class Hd_SmoothNormalsComputation : public HdComputedBufferSource {
+class HdSt_SmoothNormalsComputationGPU : public HdComputation {
 public:
-    HD_API
-    Hd_SmoothNormalsComputation(Hd_VertexAdjacency const *adjacency,
-                                HdBufferSourceSharedPtr const &points,
-                                TfToken const &dstName,
-                                HdBufferSourceSharedPtr const &adjacencyBuilder,
-                                bool packed);
+    /// Constructor
+    /// @param topology 
+    HDST_API
+    HdSt_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
+                                 TfToken const &srcName,
+                                 TfToken const &dstName,
+                                 GLenum srcDataType,
+                                 GLenum dstDataType);
 
-    /// overrides
-    HD_API
+    HDST_API
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    HD_API
-    virtual bool Resolve();
-    HD_API
-    virtual TfToken const &GetName() const;
-    HD_API
-    virtual int GetGLComponentDataType() const;
+    HDST_API
+    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
+                         HdResourceRegistry *resourceRegistry);
 
-protected:
-    HD_API
-    virtual bool _CheckValid() const;
+    /// This computation doesn't generate buffer source (i.e. 2nd phase)
+    /// This is a gpu computation, but no need to resize the destination
+    /// since it belongs the same range as src buffer.
+    virtual int GetNumOutputElements() const { return 0; }
 
 private:
     Hd_VertexAdjacency const *_adjacency;
-    HdBufferSourceSharedPtr _points;
+    TfToken _srcName;
     TfToken _dstName;
-    HdBufferSourceSharedPtr _adjacencyBuilder;
-    bool _packed;
+    GLenum _srcDataType;
+    GLenum _dstDataType;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
