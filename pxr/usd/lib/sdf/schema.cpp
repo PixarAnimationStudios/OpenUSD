@@ -166,11 +166,11 @@ SdfSchemaBase::SpecDefinition::GetFields() const
 {
     TRACE_FUNCTION();
 
-    TfTokenVector rval;
-    TF_FOR_ALL(field, _fields) {
-        rval.push_back(field->first);
+    TfTokenVector rval(_fields.size());
+    TfToken *cur = rval.data();
+    for (auto const &p: _fields) {
+        *cur++ = p.first;
     }
-
     return rval;
 }
 
