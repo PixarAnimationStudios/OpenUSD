@@ -1073,6 +1073,40 @@ HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader)
     return shader->GetShaderCode();
 }
 
+HdBufferArrayRangeSharedPtr
+HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
+    HdBufferSpecVector const &bufferSpecs,
+    HdBufferArrayRangeSharedPtr const &existing,
+    bool * isFirstInstance,
+    HdStResourceRegistrySharedPtr const &resourceRegistry) const
+{
+    HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
+    std::unique_lock<std::mutex> regLock = 
+        resourceRegistry->RegisterPrimvarRange(primvarId, &barInstance);
+
+    HdBufferArrayRangeSharedPtr range;
+
+    if (barInstance.IsFirstInstance()) {
+        if (existing) {
+            range = resourceRegistry->
+                MergeNonUniformImmutableBufferArrayRange(
+                    HdTokens->primVar, bufferSpecs, existing);
+        } else {
+            range = resourceRegistry->
+                AllocateNonUniformImmutableBufferArrayRange(
+                    HdTokens->primVar, bufferSpecs);
+        }
+        barInstance.SetValue(range);
+    } else {
+        range = barInstance.GetValue();
+    }
+
+    if (isFirstInstance) {
+        *isFirstInstance = barInstance.IsFirstInstance();
+    }
+    return range;
+}
+
 void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                           HdDrawItem *drawItem,

@@ -22,6 +22,7 @@ pxr_library(hdSt
         basisCurves
         camera
         commandBuffer
+        copyComputation
         dispatchBuffer
         drawItemInstance
         drawTarget

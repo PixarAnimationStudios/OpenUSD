@@ -50,7 +50,6 @@ pxr_library(hd
         computation
         computeShader
         conversions
-        copyComputation
         debugCodes
         dirtyList
         drawingCoord

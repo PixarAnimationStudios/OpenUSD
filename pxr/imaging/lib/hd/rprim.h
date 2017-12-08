@@ -227,14 +227,6 @@ protected:
                       HdBufferSourceVector const &sources,
                       HdComputationVector const &computations) const;
 
-    HD_API
-    HdBufferArrayRangeSharedPtr
-    _GetSharedPrimvarRange(uint64_t primvarId,
-                    HdBufferSpecVector const &bufferSpecs,
-                    HdBufferArrayRangeSharedPtr const &existing,
-                    bool * isFirstInstance,
-                    HdResourceRegistrySharedPtr const &resourceRegistry) const;
-
     /// For a given interpolation mode, obtains a set of ExtComputation primVar
     /// source computations needed for this Rprim.
     ///

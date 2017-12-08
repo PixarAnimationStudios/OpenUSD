@@ -44,8 +44,6 @@
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/glf/glslfx.h"
-
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/tf/pyLock.h"
@@ -58,9 +56,6 @@
 #include <tbb/concurrent_vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
 
 
 HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)

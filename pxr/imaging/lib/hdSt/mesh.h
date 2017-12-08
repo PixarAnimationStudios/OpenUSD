@@ -84,6 +84,13 @@ protected:
     HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *sceneDelegate,
                                          HdShader const *shader) const override;
 
+    HdBufferArrayRangeSharedPtr
+    _GetSharedPrimvarRange(uint64_t primvarId,
+                HdBufferSpecVector const &bufferSpecs,
+                HdBufferArrayRangeSharedPtr const &existing,
+                bool * isFirstInstance,
+                HdStResourceRegistrySharedPtr const &resourceRegistry) const;
+
     HdDirtyBits _PropagateDirtyBits(
         HdDirtyBits dirtyBits);
 

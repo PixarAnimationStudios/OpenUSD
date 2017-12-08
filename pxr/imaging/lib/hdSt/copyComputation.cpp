@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/copyComputation.h"
+#include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -34,14 +34,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdCopyComputationGPU::HdCopyComputationGPU(
+HdStCopyComputationGPU::HdStCopyComputationGPU(
     HdBufferArrayRangeSharedPtr const &src, TfToken const &name)
     : _src(src), _name(name)
 {
 }
 
 void
-HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
+HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
                               HdResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
@@ -120,13 +120,13 @@ HdCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
 }
 
 int
-HdCopyComputationGPU::GetNumOutputElements() const
+HdStCopyComputationGPU::GetNumOutputElements() const
 {
     return _src->GetNumElements();
 }
 
 void
-HdCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdStCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     HdBufferArrayRangeGLSharedPtr srcRange =
         boost::static_pointer_cast<HdBufferArrayRangeGL> (_src);

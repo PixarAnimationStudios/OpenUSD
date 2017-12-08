@@ -549,40 +549,6 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
     return primvarId;
 }
 
-HdBufferArrayRangeSharedPtr
-HdRprim::_GetSharedPrimvarRange(uint64_t primvarId,
-    HdBufferSpecVector const &bufferSpecs,
-    HdBufferArrayRangeSharedPtr const &existing,
-    bool * isFirstInstance,
-    HdResourceRegistrySharedPtr const &resourceRegistry) const
-{
-    HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
-    std::unique_lock<std::mutex> regLock = 
-        resourceRegistry->RegisterPrimvarRange(primvarId, &barInstance);
-
-    HdBufferArrayRangeSharedPtr range;
-
-    if (barInstance.IsFirstInstance()) {
-        if (existing) {
-            range = resourceRegistry->
-                MergeNonUniformImmutableBufferArrayRange(
-                    HdTokens->primVar, bufferSpecs, existing);
-        } else {
-            range = resourceRegistry->
-                AllocateNonUniformImmutableBufferArrayRange(
-                    HdTokens->primVar, bufferSpecs);
-        }
-        barInstance.SetValue(range);
-    } else {
-        range = barInstance.GetValue();
-    }
-
-    if (isFirstInstance) {
-        *isFirstInstance = barInstance.IsFirstInstance();
-    }
-    return range;
-}
-
 void
 HdRprim::_GetExtComputationPrimVarsComputations(
                                               HdSceneDelegate *sceneDelegate,

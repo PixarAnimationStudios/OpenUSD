@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_COPY_COMPUTATION_H
-#define HD_COPY_COMPUTATION_H
+#ifndef HDST_COPY_COMPUTATION_H
+#define HDST_COPY_COMPUTATION_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
@@ -32,15 +32,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdCopyComputationGPU
+/// \class HdStCopyComputationGPU
 ///
 /// A GPU computation which transfers a vbo range specified by src and name to
 /// the given range.
 ///
-class HdCopyComputationGPU : public HdComputation {
+class HdStCopyComputationGPU : public HdComputation {
 public:
     HD_API
-    HdCopyComputationGPU(HdBufferArrayRangeSharedPtr const &src,
+    HdStCopyComputationGPU(HdBufferArrayRangeSharedPtr const &src,
                           TfToken const &name);
 
     HD_API
@@ -61,4 +61,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_COMPUTATION_H
+#endif  // HDST_COMPUTATION_H

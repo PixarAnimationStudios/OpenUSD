@@ -71,6 +71,46 @@ public:
     HDST_API
     void GarbageCollectPersistentBuffers();
 
+    /// Check if \p range is compatible with \p newBufferSpecs.
+    /// If not, allocate new bufferArrayRange with merged buffer specs,
+    /// register migration computation and return the new range.
+    /// Otherwise just return the same range.
+    HDST_API
+    HdBufferArrayRangeSharedPtr MergeBufferArrayRange(
+        HdAggregationStrategy *strategy,
+        HdBufferArrayRegistry &bufferArrayRegistry,
+        TfToken const &role,
+        HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayRangeSharedPtr const &range);
+
+    /// MergeBufferArrayRange of non uniform buffer.
+    HDST_API
+    HdBufferArrayRangeSharedPtr MergeNonUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayRangeSharedPtr const &range);
+
+    /// MergeBufferArrayRange of non uniform immutable buffer.
+    HDST_API
+    HdBufferArrayRangeSharedPtr MergeNonUniformImmutableBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayRangeSharedPtr const &range);
+
+    /// MergeBufferArrayRange of uniform buffer.
+    HDST_API
+    HdBufferArrayRangeSharedPtr MergeUniformBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayRangeSharedPtr const &range);
+
+    /// MergeBufferArrayRange of shader storage buffer.
+    HDST_API
+    HdBufferArrayRangeSharedPtr MergeShaderStorageBufferArrayRange(
+        TfToken const &role,
+        HdBufferSpecVector const &newBufferSpecs,
+        HdBufferArrayRangeSharedPtr const &range);
+
 protected:
     virtual void _GarbageCollect() override;
     virtual void _TallyResourceAllocation(VtDictionary *result) const override;
