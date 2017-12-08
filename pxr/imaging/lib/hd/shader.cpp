@@ -56,6 +56,11 @@ bool operator==(const HdMaterialRelationship& lhs,
            lhs.remoteTerminal == rhs.remoteTerminal;
 }
 
+bool operator==(const HdValueAndRole& lhs, const HdValueAndRole& rhs) 
+{
+    return lhs.value == rhs.value && lhs.role == rhs.role;
+}
+
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
 {
     return lhs.path == rhs.path &&

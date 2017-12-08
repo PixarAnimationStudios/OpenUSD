@@ -185,8 +185,10 @@ bool visitNode(UsdShadeShader const & shadeNode,
             materialNodes->relationships.push_back(relationship);
         } else {
             // Parameters detected, let's store it
-            shadeNodeInputs[i].Get(&value);
-            node.parameters[shadeNodeInputs[i].GetFullName()] = value;
+            HdValueAndRole entry;
+            shadeNodeInputs[i].Get(&entry.value);
+            entry.role = shadeNodeInputs[i].GetAttr().GetRoleName();
+            node.parameters[shadeNodeInputs[i].GetFullName()] = entry;
         }
     }
 
