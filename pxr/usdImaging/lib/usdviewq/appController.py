@@ -778,6 +778,9 @@ class AppController(QtCore.QObject):
             self._ui.actionSave_Overrides_As.triggered.connect(
                 self._saveOverridesAs)
 
+            self._ui.actionSave_Flattened_As.triggered.connect(
+                self._saveFlattenedAs)
+
             # Setup quit actions to ensure _cleanAndClose is only invoked once.
             self._ui.actionQuit.triggered.connect(QtWidgets.QApplication.instance().quit)
 
@@ -2479,6 +2482,25 @@ class AppController(QtCore.QObject):
                 targetLayer.Save()
             else:
                 self._stage.GetRootLayer().Export(saveName, 'Created by UsdView')
+
+    def _saveFlattenedAs(self):
+        recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
+        recommendedFilename += '_flattened.usd'
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self._mainWindow,
+                                                     "Save file (*.usd)",
+                                                     "./" + recommendedFilename,
+                                                     'Usd Files (*.usd)'
+                                                        ';;Usd Ascii Files (*.usda)'
+                                                        ';;Usd Crate Files (*.usdc)'
+                                                        ';;Any Usd File (*.usd *.usda *.usdc)',
+                                                     'Any Usd File (*.usd *.usda *.usdc)')
+        if len(saveName) <= 0:
+            return
+
+        if (saveName.rsplit('.')[-1] not in ('usd', 'usda', 'usdc')):
+            saveName += '.usd'
+            
+        self._stage.Export(saveName)
 
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)

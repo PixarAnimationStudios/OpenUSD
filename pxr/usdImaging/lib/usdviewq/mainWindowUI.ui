@@ -1117,6 +1117,7 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Overrides_As"/>
     <addaction name="actionSave_Overrides_To_Scene"/>
+    <addaction name="actionSave_Flattened_As"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -1885,6 +1886,20 @@
   <action name="actionLoad_Overrides">
    <property name="text">
     <string>Load Overrides</string>
+   </property>
+  </action>
+  <action name="actionSave_Flattened_As">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Save Flattened As...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Flattened As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save a flattened version of the current stage</string>
    </property>
   </action>
   <action name="showInterpreter">
