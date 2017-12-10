@@ -373,12 +373,10 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
-if Linux():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
-elif Windows() or MacOS():
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
-
 def InstallBoost(context, force):
+    boost_version = context.boost.replace(".", "_")
+    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/" + context.boost + ".0/boost_" + boost_version + "_0.tar.gz"
+
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
         Run('{bootstrap} --prefix="{instDir}"'
@@ -433,15 +431,6 @@ def InstallBoost(context, force):
         b2 = "b2" if Windows() else "./b2"
         Run('{b2} {options} install'
             .format(b2=b2, options=" ".join(b2_settings)))
-
-# The default installation of boost on Windows puts headers in a versioned 
-# subdirectory, which we have to account for here. In theory, specifying 
-# "layout=system" would make the Windows install match Linux/MacOS, but that 
-# causes problems for other dependencies that look for boost.
-if Windows():
-    BOOST = Dependency("boost", InstallBoost, "include/boost-1_61/boost/version.hpp")
-else:
-    BOOST = Dependency("boost", InstallBoost, "include/boost/version.hpp")
 
 ############################################################
 # Intel TBB
@@ -946,6 +935,15 @@ group.add_argument("--force", type=str, action="append", dest="force_build",
 group.add_argument("--force-all", action="store_true",
                    help="Force download and build of all dependencies")
 
+if Linux():
+    group.add_argument("--boost", type=str,
+                       default="1.55",
+                       help=("boost version, default is 1.55"))
+else:
+    group.add_argument("--boost", type=str,
+                       default="1.61",
+                       help=("boost version, default is 1.61"))
+
 group = parser.add_argument_group(title="USD Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tests", dest="build_tests", action="store_true",
@@ -1076,6 +1074,8 @@ class InstallContext:
         self.forceBuildAll = args.force_all
         self.forceBuild = [dep.lower() for dep in args.force_build]
 
+        self.boost = args.boost
+
         # Optional components
         self.buildTests = args.build_tests
         self.buildDocs = args.build_docs
@@ -1142,6 +1142,16 @@ if extraPaths:
 if extraPythonPaths:
     paths = os.environ.get('PYTHONPATH', '').split(os.pathsep) + extraPythonPaths
     os.environ['PYTHONPATH'] = os.pathsep.join(paths)
+
+# The default installation of boost on Windows puts headers in a versioned 
+# subdirectory, which we have to account for here. In theory, specifying 
+# "layout=system" would make the Windows install match Linux/MacOS, but that 
+# causes problems for other dependencies that look for boost.
+if Windows():
+    boost_version = context.boost.replace(".", "_")
+    BOOST = Dependency("boost", InstallBoost, "include/boost-" + boost_version + "/boost/version.hpp")
+else:
+    BOOST = Dependency("boost", InstallBoost, "include/boost/version.hpp")
 
 # Determine list of dependencies that are required based on options
 # user has selected.
