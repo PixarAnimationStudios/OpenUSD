@@ -92,7 +92,7 @@ public:
 
 
 public://TEMP
-    struct _Impl;
+    class _Impl;
     _Impl* const    _impl;
 
     friend class GusdStageCacheReader;

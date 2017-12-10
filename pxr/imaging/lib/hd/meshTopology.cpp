@@ -37,6 +37,7 @@ HdMeshTopology::HdMeshTopology()
  : HdTopology()
  , _topology()
  , _refineLevel(0)
+ , _numPoints()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
 }
@@ -46,6 +47,7 @@ HdMeshTopology::HdMeshTopology(const HdMeshTopology &src,
  : HdTopology(src)
  , _topology(src.GetPxOsdMeshTopology())
  , _refineLevel(refineLevel)
+ , _numPoints(src._numPoints)
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
 }
@@ -55,8 +57,11 @@ HdMeshTopology::HdMeshTopology(const PxOsdMeshTopology &topo,
  : HdTopology()
  , _topology(topo)
  , _refineLevel(refineLevel)
+ , _numPoints()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
+    _numPoints = HdMeshTopology::ComputeNumPoints(
+            _topology.GetFaceVertexIndices());
 }
 
 HdMeshTopology::HdMeshTopology(const TfToken &scheme,
@@ -70,8 +75,11 @@ HdMeshTopology::HdMeshTopology(const TfToken &scheme,
              faceVertexCounts,
              faceVertexIndices)
  , _refineLevel(refineLevel)
+ , _numPoints()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
+    _numPoints = HdMeshTopology::ComputeNumPoints(
+            _topology.GetFaceVertexIndices());
 }
 
 HdMeshTopology::HdMeshTopology(const TfToken &scheme,
@@ -80,15 +88,18 @@ HdMeshTopology::HdMeshTopology(const TfToken &scheme,
                                const VtIntArray &faceVertexIndices,
                                const VtIntArray &holeIndices,
                                int refineLevel /* = 0 */)
-  : HdTopology()
-  , _topology(scheme,
-              orientation,
-              faceVertexCounts,
-              faceVertexIndices,
-              holeIndices)
-  , _refineLevel(refineLevel)
+ : HdTopology()
+ , _topology(scheme,
+             orientation,
+             faceVertexCounts,
+             faceVertexIndices,
+             holeIndices)
+ , _refineLevel(refineLevel)
+ , _numPoints()
 {
     HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
+    _numPoints = HdMeshTopology::ComputeNumPoints(
+            _topology.GetFaceVertexIndices());
 }
 
 HdMeshTopology::~HdMeshTopology()
@@ -103,6 +114,7 @@ HdMeshTopology::operator =(const HdMeshTopology &copy)
 
     _topology    = copy.GetPxOsdMeshTopology();
     _refineLevel = copy._refineLevel;
+    _numPoints = copy._numPoints;
 
     return *this;
 }
@@ -134,9 +146,9 @@ HdMeshTopology::GetNumFaceVaryings() const
 }
 
 int
-HdMeshTopology::ComputeNumPoints() const
+HdMeshTopology::GetNumPoints() const
 {
-    return HdMeshTopology::ComputeNumPoints(_topology.GetFaceVertexIndices());
+    return _numPoints;
 }
 
 /*static*/ int

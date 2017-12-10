@@ -31,9 +31,9 @@
 #include <boost/functional/hash.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <iosfwd>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -123,7 +123,7 @@ private:
     }
 
     // Store a shared_ptr to a python object.
-    boost::shared_ptr<object> _objectPtr;
+    std::shared_ptr<object> _objectPtr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

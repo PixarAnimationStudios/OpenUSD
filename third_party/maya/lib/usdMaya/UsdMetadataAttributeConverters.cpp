@@ -51,22 +51,22 @@ TF_REGISTRY_FUNCTION(AttributeConverterRegistry) {
     FunctionalAttributeConverter* converter = new FunctionalAttributeConverter(
         [](const MFnDependencyNode& srcNode, UsdPrim& destPrim,
                 const UsdTimeCode) {
-            // We only author hidden if it's to set it to true.
             bool hidden = false;
             if (PxrUsdMayaUtil::getPlugValue(srcNode,
-                        _tokens->USD_hidden.GetText(), &hidden) && hidden) {
+                        _tokens->USD_hidden.GetText(), &hidden)) {
                 destPrim.SetHidden(hidden);
             }
             return true;
         },
         [](const UsdPrim& srcPrim, MFnDependencyNode& destNode,
                 const UsdTimeCode) {
-            if (srcPrim.IsHidden()) {
+            if (srcPrim.HasAuthoredHidden()) {
+                const bool hidden = srcPrim.IsHidden();
                 PxrUsdMayaUtil::createNumericAttribute(destNode,
                         _tokens->USD_hidden.GetText(),
                         MFnNumericData::kBoolean);
                 PxrUsdMayaUtil::setPlugValue(destNode,
-                        _tokens->USD_hidden.GetText(), true);
+                        _tokens->USD_hidden.GetText(), hidden);
             }
             return true;
         }

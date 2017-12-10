@@ -116,6 +116,22 @@ class TestPxrOpUsdInShippedBasic(unittest.TestCase):
 
         self.assertEqual(attrs.getHash(), baselineAttrs.getHash())
 
+    def test_collections(self):
+        attrs = self.getLocationData("/World/anim/TestCollections").getAttrs()
+        attrs = stripBlacklistAttrs(attrs, model_blacklist)
+        baselineAttrs = self.getBaselineAttrs('collection.attrs')
+        self.assertEqual(attrs.getHash(), baselineAttrs.getHash())
+    
+        attrs = self.getLocationData(
+            "/World/anim/TestCollections/Geom").getAttrs()
+        baselineAttrs = self.getBaselineAttrs('geomCollection.attrs')
+        self.assertEqual(attrs.getHash(), baselineAttrs.getHash())    
+
+        attrs = self.getLocationData(
+            "/World/anim/TestCollections/Geom/LampBase").getAttrs()
+        baselineAttrs = self.getBaselineAttrs('descendantCollection.attrs')
+        self.assertEqual(attrs.getHash(), baselineAttrs.getHash())
+            
     def test_skippedBindingToLookNotUnderLooks(self):
         attrs = self.getLocationData('/World/Xform').getAttrs()
         self.assertTrue(attrs.getChildByName("materialAssign") is None)

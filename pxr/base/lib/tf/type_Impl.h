@@ -27,7 +27,6 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <boost/bind.hpp>
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/pop_front.hpp>
 #include <boost/mpl/vector.hpp>

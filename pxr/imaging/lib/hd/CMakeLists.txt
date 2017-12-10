@@ -47,30 +47,26 @@ pxr_library(hd
         bufferSpec
         changeTracker
         codeGen
-        commandBuffer
         computation
+        computeShader
         conversions
         copyComputation
         debugCodes
         dirtyList
-        dispatchBuffer
         drawingCoord
-        drawBatch
         drawItem
-        drawItemInstance
-        drawItemState
         engine
         extCompCpuComputation
+        extCompGpuComputation
+        extCompGpuComputationBufferSource
+        extCompGpuComputationResource
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
         fallbackLightingShader
         geometricShader
         glslProgram
-        glslfxShader
         glUtils
-        immediateDrawBatch
-        indirectDrawBatch
         instancer
         instanceRegistry
         interleavedMemoryManager
@@ -81,7 +77,6 @@ pxr_library(hd
         package
         patchIndex
         perfLog
-        persistentBuffer
         points
         primGather
         primTypeIndex
@@ -108,14 +103,12 @@ pxr_library(hd
         smoothNormals
         sprim
         strategyBase
-        surfaceShader
         task
         texture
         textureResource
         tokens
         topology
         unitTestDelegate
-        unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager
         vertexAdjacency
@@ -129,7 +122,6 @@ pxr_library(hd
 
     PRIVATE_CLASSES
         compExtCompInputSource
-        cullingShaderKey
         extCompInputSource
         extComputationContextInternal
         sceneExtCompInputSource

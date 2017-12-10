@@ -63,6 +63,12 @@ public:
     HD_API
     void Remove(const SdfPath &id);
 
+    /// Remove a range of id from the collection.
+    /// Range defined by position index in sorted list.
+    /// end is inclusive.
+    HD_API
+    void RemoveRange(size_t start, size_t end);
+
     /// Removes all ids from the collection.
     HD_API
     void Clear();

@@ -1,0 +1,35 @@
+#usda 1.0
+
+def "Class"
+{
+}
+
+def "Reference"
+{
+    def "Geom"
+    {
+    }
+}
+
+def "World"
+{
+    def "Set_1"
+    {
+        def "Instance_1" (
+            instanceable = true
+            references = </Reference>
+        )
+        {
+        }
+    }
+
+    def "Set_2"
+    {
+        def "Instance_2" (
+            instanceable = true
+            references = </Reference>
+        )
+        {
+        }
+    }
+}

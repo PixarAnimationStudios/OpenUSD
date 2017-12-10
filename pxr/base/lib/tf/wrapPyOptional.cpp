@@ -45,4 +45,5 @@ void wrapPyOptional() {
     TfPyOptional::python_optional<unsigned short>();
     TfPyOptional::python_optional<char>();
     TfPyOptional::python_optional<unsigned char>();
+    TfPyOptional::python_optional<bool>();
 }

@@ -179,6 +179,20 @@ public:
     void SetAlphaToCoverageEnabled(bool enabled);
     bool GetAlphaToCoverageEnabled() const { return _alphaToCoverageEnabled; }
 
+    HD_API
+    void SetColorMaskUseDefault(bool useDefault);
+    bool GetColorMaskUseDefault() const { return _colorMaskUseDefault;}
+
+    enum ColorMask {
+        ColorMaskNone,
+        ColorMaskRGB,
+        ColorMaskRGBA
+    };
+
+    HD_API
+    void SetColorMask(ColorMask const& mask);
+    ColorMask GetColorMask() const { return _colorMask; }
+
     /// Apply the GL states.
     /// Following states may be changed and restored to
     /// the GL default at Unbind().
@@ -239,6 +253,9 @@ private:
     // alpha to coverage
     bool _alphaToCoverageUseDefault;
     bool _alphaToCoverageEnabled;
+
+    bool _colorMaskUseDefault;
+    ColorMask _colorMask;
 
     ClipPlanesVector _clipPlanes;
 };

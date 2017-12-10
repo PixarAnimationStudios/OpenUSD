@@ -45,9 +45,9 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/type_traits/is_base_of.hpp>
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -396,7 +396,7 @@ public:
     /// from schema \c T.
     template <typename T>
     bool IsA() const {
-        BOOST_MPL_ASSERT_MSG((boost::is_base_of<UsdSchemaBase, T>::value),
+        BOOST_MPL_ASSERT_MSG((std::is_base_of<UsdSchemaBase, T>::value),
                              Provided_type_must_derive_UsdSchemaBase,
                              (T));
         return _IsA(TfType::Find<T>());
@@ -814,11 +814,13 @@ public:
     USD_API
     bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;
 
-    /// Loads this prim, all its ancestors, and all its descendants.
+    /// Load this prim, all its ancestors, and by default all its descendants.
+    /// If \p loadPolicy is UsdLoadWithoutDescendants, then load only this prim
+    /// and its ancestors.
     ///
     /// See UsdStage::Load for additional details.
     USD_API
-    void Load() const;
+    void Load(UsdLoadPolicy policy = UsdLoadWithDescendants) const;
 
     /// Unloads this prim and all its descendants.
     ///

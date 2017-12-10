@@ -1,0 +1,159 @@
+#usda 1.0
+(
+    defaultPrim = "Collection"
+    endFrame = 10
+    startFrame = 1
+)
+
+def "CollectionTest" (
+    kind = "prop"
+)
+{
+    # simple explicit collection
+    token collection:leafGeom:expansionRule = "explicitOnly"
+    rel collection:leafGeom:includes  = [
+        </CollectionTest/Geom/Shapes/Cylinder>,
+        </CollectionTest/Geom/Shapes/Cube>,
+    ]
+
+    token collection:allGeom:expansionRule = "expandPrims"
+    rel collection:allGeom:includes  = [
+        </CollectionTest/Geom>,
+    ]
+
+    token collection:allGeomProperties:expansionRule = "expandPrimsAndProperties"
+    rel collection:allGeomProperties:includes  = [
+        </CollectionTest/Geom>,
+    ]
+
+    # Targets of the includes relationships are not forwarded. 
+    # So, if a collection includes a relationship, the targets of the included 
+    # don't become members of the collection (only the relationship itself does).
+    token collection:hasRelationships:expansionRule = "expandPrimsAndProperties"
+    rel collection:hasRelationships:includes = [
+        </CollectionTest/Geom/Shapes/Sphere.cube>,
+        </CollectionTest/Geom/Shapes/Cube.sphere>,
+    ]
+
+    # Collection that includes an instance proxy.
+    token collection:hasInstanceProxy:expansionRule = "expandPrims"
+    rel collection:hasInstanceProxy:includes = [
+        </CollectionTest/Geom/Box/Geom>,
+    ]
+
+
+    # we can include properties explicitly in a collection with expansionRule=
+    # "expandPrims"
+    token collection:coneProperties:expansionRule = "expandPrims"
+    rel collection:coneProperties:includes = [
+        </CollectionTest/Geom/Shapes/Cone.radius>,
+        </CollectionTest/Geom/Shapes/Cone.height>
+    ]
+
+    # Collection that includes another collection
+    token collection:includesCollection:expansionRule = "expandPrims"
+    rel collection:includesCollection:includes = [
+        </CollectionTest/Geom/Shapes.collection:allShapes>,
+        </CollectionTest/Geom/Box>,
+        # Override Sphere's expansionRule to "expandPrims" by adding it here.
+        # This causes Hemisphere2 to be included in the collection.
+        </CollectionTest/Geom/Shapes/Sphere>
+    ]
+
+    # Collection that includes an instance but excludes geometry under it
+    token collection:excludeInstanceGeom:expansionRule = "expandPrims"
+    rel collection:excludeInstanceGeom:includes = [
+        </CollectionTest/Geom/Box>
+    ]
+    rel collection:excludeInstanceGeom:excludes = [
+        </CollectionTest/Geom/Box/Geom/cube>
+    ]
+
+    token collection:invalidExpansionRule:expansionRule = "freeLove"
+
+    token collection:invalidExcludesExplicitOnly:expasionRule = "explicitOnly"
+    rel collection:invalidExcludesExplicitOnly:includes = [
+        </CollectionTest/Geom/Shapes/Cone>,
+        </CollectionTest/Geom/Shapes/Cylinder>
+    ]
+    rel collection:invalidExcludesExplicitOnly:excludes = [
+        </CollectionTest/Geom/Shapes/Cone>,
+        </CollectionTest/Geom/Shapes/Sphere>
+    ]
+
+    token collection:invalidExcludesExpandPrims:expasionRule = "expandPrims"
+    rel collection:invalidExcludesExpandPrims:includes = [
+        </CollectionTest/Geom/Shapes>
+    ]
+    rel collection:invalidExcludesExpandPrims:excludes = [
+        </CollectionTest/Geom/Box>
+    ]
+
+
+    def "Geom"
+    {
+        def "Box" (
+            instanceable = true
+            add references = @./Cube.usda@</Cube>
+        )
+        {
+        }
+ 
+        def "Shapes" 
+        {
+            token collection:allShapes:expansionRule = "explicitOnly"
+            rel collection:allShapes:includes = [
+                </CollectionTest/Geom/Shapes/Cone>,
+                </CollectionTest/Geom/Shapes/Sphere>,
+                </CollectionTest/Geom/Shapes/Cube>,
+                </CollectionTest/Geom/Shapes/Cylinder>,
+            ]
+            rel collection:allShapes:excludes = [
+                </CollectionTest/Geom/Shapes/Sphere/Hemisphere1>,
+            ]
+
+            def "Sphere" 
+            {
+                rel cube = </CollectionTest/Geom/Shapes/Cube>
+                token name = "SimpleSphere"
+                def "Hemisphere1"
+                {
+                    
+                }
+                def "Hemisphere2"
+                {
+                    
+                }
+            }
+            def "Cube" 
+            {
+                rel sphere = </CollectionTest/Geom/Shapes/Sphere>
+                int size = 10
+            }
+            def "Cone" 
+            {
+                double radius = 5.0
+                double height = 12.0
+            }
+            def "Cylinder" 
+            {
+                double radius = 2.0
+                int length = 5.0
+            }
+        }
+    }
+
+    def Xform "Materials" 
+    {
+        def "Plastic"
+        {
+            
+        }
+
+        def "Metal"
+        {
+            
+        }
+    }
+}
+

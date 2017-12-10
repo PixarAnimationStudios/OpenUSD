@@ -49,9 +49,7 @@ public:
 
     // GusdGT_Primitive interface -----------------------------------------------
     
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdPointsForWrite; }
-
-    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdPointsForRead; }
+    virtual const UsdGeomImageable getUsdPrim() const override { return m_usdPoints; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -102,8 +100,7 @@ private:
                      const SdfPath& path,
                      bool asOverride);
 
-    UsdGeomPoints               m_usdPointsForRead;
-    UsdGeomPoints               m_usdPointsForWrite;
+    UsdGeomPoints               m_usdPoints;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

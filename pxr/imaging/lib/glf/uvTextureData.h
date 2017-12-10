@@ -29,8 +29,8 @@
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -203,7 +203,7 @@ private:
 
     size_t _size;
 
-    boost::scoped_ptr<unsigned char> _rawBuffer;
+    std::unique_ptr<unsigned char[]> _rawBuffer;
     std::vector<Mip> _rawBufferMips;
 };
 

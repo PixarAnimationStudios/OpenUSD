@@ -44,12 +44,16 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdRi/statements.h"
 #include "pxr/usd/usdUI/sceneGraphPrimAPI.h"
+#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
+#include "pxr/usd/usdLux/linkingAPI.h"
 #include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "usdKatana/utils.h"
+#include "usdKatana/blindDataObject.h"
 #include "usdKatana/lookAPI.h"
 #include "usdKatana/baseMaterialHelpers.h"
 
@@ -244,30 +248,34 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         bool asShaderParam, bool pathsAsModel, bool resolvePaths)
 {
     if (val.IsHolding<bool>()) {
-        return FnKat::IntAttribute(int(val.Get<bool>()));
+        return FnKat::IntAttribute(int(val.UncheckedGet<bool>()));
     }
     if (val.IsHolding<int>()) {
-        return FnKat::IntAttribute(val.Get<int>());
+        return FnKat::IntAttribute(val.UncheckedGet<int>());
     }
     if (val.IsHolding<float>()) {
-        return FnKat::FloatAttribute(val.Get<float>());
+        return FnKat::FloatAttribute(val.UncheckedGet<float>());
     }
     if (val.IsHolding<double>()) {
-        return FnKat::DoubleAttribute(val.Get<double>());
+        return FnKat::DoubleAttribute(val.UncheckedGet<double>());
     }
     if (val.IsHolding<std::string>()) {
-        if (val.Get<std::string>() == "_NO_VALUE_") {
+        if (val.UncheckedGet<std::string>() == "_NO_VALUE_") {
             return FnKat::NullAttribute();
         }
         else {
-            return FnKat::StringAttribute(val.Get<std::string>());
+            return FnKat::StringAttribute(val.UncheckedGet<std::string>());
         }
     }
     if (val.IsHolding<SdfAssetPath>()) {
-        std::string assetPath = val.Get<SdfAssetPath>().GetAssetPath();
+        std::string assetPath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
         return FnKat::StringAttribute(
             resolvePaths ?  _ResolveAssetPath(assetPath, pathsAsModel)
             : assetPath );
+    }
+    if (val.IsHolding<TfToken>()) {
+        const TfToken &myVal = val.UncheckedGet<TfToken>();
+        return FnKat::StringAttribute(myVal.GetString());
     }
 
     // Compound types require special handling.  Because they do not
@@ -277,8 +285,21 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     FnKat::Attribute valueAttr;
 
     if (val.IsHolding<VtArray<std::string> >()) {
-        const VtArray<std::string> rawVal = val.Get<VtArray<std::string> >();
+        const VtArray<std::string> rawVal = val.UncheckedGet<VtArray<std::string> >();
         std::vector<std::string> vec(rawVal.begin(), rawVal.end());
+        FnKat::StringBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("string [%zu]", rawVal.size()));
+        valueAttr = builder.build();
+    }
+
+    else if (val.IsHolding<VtArray<TfToken> >()) {
+        const auto& rawVal = val.UncheckedGet<VtArray<TfToken> >();
+        std::vector<std::string> vec(rawVal.size());
+        for(size_t i=0; i<rawVal.size(); i++) {
+            vec[i] = rawVal[i].GetString();
+        }
         FnKat::StringBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
         //return builder.build();
@@ -288,7 +309,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     }
 
     else if (val.IsHolding<VtArray<int> >()) {
-        const VtArray<int> rawVal = val.Get<VtArray<int> >();
+        const VtArray<int> rawVal = val.UncheckedGet<VtArray<int> >();
         std::vector<int> vec(rawVal.begin(), rawVal.end());
         FnKat::IntBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
@@ -298,7 +319,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     }
 
     else if (val.IsHolding<VtArray<float> >()) {
-        const VtArray<float> rawVal = val.Get<VtArray<float> >();
+        const VtArray<float> rawVal = val.UncheckedGet<VtArray<float> >();
         std::vector<float> vec(rawVal.begin(), rawVal.end());
         FnKat::FloatBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
@@ -307,7 +328,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         valueAttr = builder.build();
     }
     else if (val.IsHolding<VtArray<double> >()) {
-        const VtArray<double> rawVal = val.Get<VtArray<double> >();
+        const VtArray<double> rawVal = val.UncheckedGet<VtArray<double> >();
         std::vector<double> vec(rawVal.begin(), rawVal.end());
         FnKat::DoubleBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
@@ -321,7 +342,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // a double, and apparently we don't use GfMatrix4f.
     // Shader parameter floats might expect a float matrix?
     if (val.IsHolding<VtArray<GfMatrix4d> >()) {
-        const VtArray<GfMatrix4d> rawVal = val.Get<VtArray<GfMatrix4d> >();
+        const VtArray<GfMatrix4d> rawVal = val.UncheckedGet<VtArray<GfMatrix4d> >();
         std::vector<float> vec;
         TF_FOR_ALL(mat, rawVal) {
              for (int i=0; i < 4; ++i) {
@@ -339,7 +360,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec2f
     else if (val.IsHolding<GfVec2f>()) {
-        const GfVec2f rawVal = val.Get<GfVec2f>();
+        const GfVec2f rawVal = val.UncheckedGet<GfVec2f>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 2);
         std::vector<float> vec;
         vec.resize(2);
@@ -352,7 +373,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec2d
     else if (val.IsHolding<GfVec2d>()) {
-        const GfVec2d rawVal = val.Get<GfVec2d>();
+        const GfVec2d rawVal = val.UncheckedGet<GfVec2d>();
         FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
         std::vector<double> vec;
         vec.resize(2);
@@ -365,7 +386,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec3f
     else if (val.IsHolding<GfVec3f>()) {
-        const GfVec3f rawVal = val.Get<GfVec3f>();
+        const GfVec3f rawVal = val.UncheckedGet<GfVec3f>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 3);
         std::vector<float> vec;
         vec.resize(3);
@@ -379,7 +400,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec3d
     else if (val.IsHolding<GfVec3d>()) {
-        const GfVec3d rawVal = val.Get<GfVec3d>();
+        const GfVec3d rawVal = val.UncheckedGet<GfVec3d>();
         FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
         std::vector<double> vec;
         vec.resize(3);
@@ -393,7 +414,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec4f
     else if (val.IsHolding<GfVec4f>()) {
-        const GfVec4f rawVal = val.Get<GfVec4f>();
+        const GfVec4f rawVal = val.UncheckedGet<GfVec4f>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 4);
         std::vector<float> vec;
         vec.resize(4);
@@ -408,7 +429,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // GfVec4d
     else if (val.IsHolding<GfVec4d>()) {
-        const GfVec4d rawVal = val.Get<GfVec4d>();
+        const GfVec4d rawVal = val.UncheckedGet<GfVec4d>();
         FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
         std::vector<double> vec;
         vec.resize(4);
@@ -427,7 +448,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // a double, and apparently we don't use GfMatrix4f.
     // Shader parameter floats might expect a float matrix?
     else if (val.IsHolding<GfMatrix4d>()) {
-        const GfMatrix4d rawVal = val.Get<GfMatrix4d>();
+        const GfMatrix4d rawVal = val.UncheckedGet<GfMatrix4d>();
         FnKat::FloatBuilder builder(/* tupleSize = */ 16);
         std::vector<float> vec;
         vec.resize(16);
@@ -444,61 +465,67 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     // TODO: support complex types such as primvars
     // VtArray<GfVec4f>
     else if (val.IsHolding<VtArray<GfVec4f> >()) {
-        const VtArray<GfVec4f> rawVal = val.Get<VtArray<GfVec4f> >();
+        const VtArray<GfVec4f> rawVal = val.UncheckedGet<VtArray<GfVec4f> >();
         std::vector<float> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::FloatBuilder builder(/* tupleSize = */ 4);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec3f>
     else if (val.IsHolding<VtArray<GfVec3f> >()) {
-        const VtArray<GfVec3f> rawVal = val.Get<VtArray<GfVec3f> >();
+        const VtArray<GfVec3f> rawVal = val.UncheckedGet<VtArray<GfVec3f> >();
         std::vector<float> vec;
         PxrUsdKatanaUtils::ConvertArrayToVector(rawVal, &vec);
         FnKat::FloatBuilder builder(/* tupleSize = */ 3);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec2f>
     else if (val.IsHolding<VtArray<GfVec2f> >()) {
-        const VtArray<GfVec2f> rawVal = val.Get<VtArray<GfVec2f> >();
+        const VtArray<GfVec2f> rawVal = val.UncheckedGet<VtArray<GfVec2f> >();
         std::vector<float> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::FloatBuilder builder(/* tupleSize = */ 2);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec4d>
     else if (val.IsHolding<VtArray<GfVec4d> >()) {
-        const VtArray<GfVec4d> rawVal = val.Get<VtArray<GfVec4d> >();
+        const VtArray<GfVec4d> rawVal = val.UncheckedGet<VtArray<GfVec4d> >();
         std::vector<double> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec3d>
     else if (val.IsHolding<VtArray<GfVec3d> >()) {
-        const VtArray<GfVec3d> rawVal = val.Get<VtArray<GfVec3d> >();
+        const VtArray<GfVec3d> rawVal = val.UncheckedGet<VtArray<GfVec3d> >();
         std::vector<double> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::DoubleBuilder builder(/* tupleSize = */ 3);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
     // VtArray<GfVec2d>
     else if (val.IsHolding<VtArray<GfVec2d> >()) {
-        const VtArray<GfVec2d> rawVal = val.Get<VtArray<GfVec2d> >();
+        const VtArray<GfVec2d> rawVal = val.UncheckedGet<VtArray<GfVec2d> >();
         std::vector<double> vec;
         _ConvertArrayToVector(rawVal, &vec);
         FnKat::DoubleBuilder builder(/* tupleSize = */ 2);
         builder.set(vec);
+        // NOTE: needs typeAttr set?
         valueAttr = builder.build();
     }
 
@@ -506,7 +533,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
         FnKat::StringBuilder stringBuilder;
         const VtArray<SdfAssetPath> &assetArray = 
-            val.Get<VtArray<SdfAssetPath> >();
+            val.UncheckedGet<VtArray<SdfAssetPath> >();
         TF_FOR_ALL(strItr, assetArray) {
             stringBuilder.push_back(
                 resolvePaths ?
@@ -518,9 +545,10 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
                         FnKat::StringAttribute(
                             TfStringPrintf("string [%zu]",assetArray.size())));
         attrBuilder.set("value", stringBuilder.build());
+        // NOTE: needs typeAttr set?
         valueAttr = attrBuilder.build();
     }
-
+     
     // If being used as a shader param, the type will be provided elsewhere,
     // so simply return the value attribute as-is.
     if (asShaderParam) {
@@ -650,6 +678,31 @@ _KTypeAndSizeFromUsdVec3(TfToken const &roleName,
 }
 
 static bool
+_KTypeAndSizeFromUsdVec4(TfToken const &roleName,
+                         const char *typeStr,
+                         FnKat::Attribute *inputTypeAttr, 
+                         FnKat::Attribute *elementSizeAttr)
+{
+    if (roleName == SdfValueRoleNames->Point) {
+        *inputTypeAttr = FnKat::StringAttribute("point4");
+    } else if (roleName == SdfValueRoleNames->Vector) {
+        *inputTypeAttr = FnKat::StringAttribute("vector4");
+    } else if (roleName == SdfValueRoleNames->Normal) {
+        *inputTypeAttr = FnKat::StringAttribute("normal4");
+    } else if (roleName == SdfValueRoleNames->Color) {
+        *inputTypeAttr = FnKat::StringAttribute("color4");
+    } else if (roleName.IsEmpty()) {
+        // We are mimicking the behavior of
+        // _KTypeAndSizeFromUsdVec3 here.
+        *inputTypeAttr = FnKat::StringAttribute(typeStr);
+        *elementSizeAttr = FnKat::IntAttribute(4);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static bool
 _KTypeAndSizeFromUsdVec2(TfToken const &roleName,
                          FnKat::Attribute *inputTypeAttr, 
                          FnKat::Attribute *elementSizeAttr)
@@ -766,6 +819,22 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         }
         return;
     }
+    if (val.IsHolding<GfVec4f>()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "float",
+                                     inputTypeAttr, elementSizeAttr)){
+            const GfVec4f rawVal = val.Get<GfVec4f>();
+            FnKat::FloatBuilder builder(/* tupleSize = */ 4);
+            std::vector<float> vec;
+            vec.resize(4);
+            vec[0] = rawVal[0];
+            vec[1] = rawVal[1];
+            vec[2] = rawVal[2];
+            vec[3] = rawVal[3];
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
     if (val.IsHolding<GfVec2f>()) {
         if (_KTypeAndSizeFromUsdVec2(roleName, inputTypeAttr, elementSizeAttr)){
             const GfVec2f rawVal = val.Get<GfVec2f>();
@@ -789,6 +858,22 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
             vec[0] = rawVal[0];
             vec[1] = rawVal[1];
             vec[2] = rawVal[2];
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+    if (val.IsHolding<GfVec4d>()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "double",
+                                     inputTypeAttr, elementSizeAttr)){
+            const GfVec4d rawVal = val.Get<GfVec4d>();
+            FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
+            std::vector<double> vec;
+            vec.resize(4);
+            vec[0] = rawVal[0];
+            vec[1] = rawVal[1];
+            vec[2] = rawVal[2];
+            vec[3] = rawVal[3];
             builder.set(vec);
             *valueAttr = builder.build();
         }
@@ -933,6 +1018,30 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         }
         return;
     }
+    if (val.IsHolding<VtArray<GfVec4f> >()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "float",
+                                     inputTypeAttr, elementSizeAttr)){
+            const VtArray<GfVec4f> rawVal = val.Get<VtArray<GfVec4f> >();
+            std::vector<float> vec;
+            _ConvertArrayToVector(rawVal, &vec);
+            FnKat::FloatBuilder builder(/* tupleSize = */ 4);
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<GfVec4d> >()) {
+        if (_KTypeAndSizeFromUsdVec4(roleName, "double",
+                                     inputTypeAttr, elementSizeAttr)){
+            const VtArray<GfVec4d> rawVal = val.Get<VtArray<GfVec4d> >();
+            std::vector<double> vec;
+            _ConvertArrayToVector(rawVal, &vec);
+            FnKat::DoubleBuilder builder(/* tupleSize = */ 4);
+            builder.set(vec);
+            *valueAttr = builder.build();
+        }
+        return;
+    }
     if (val.IsHolding<VtArray<int> >()) {
         const VtArray<int> rawVal = val.Get<VtArray<int> >();
         std::vector<int> vec(rawVal.begin(), rawVal.end());
@@ -1002,16 +1111,81 @@ PxrUsdKatanaUtils::FindCameraPaths(const UsdStageRefPtr& stage)
     return result;
 }
 
-SdfPathSet
+// This works like UsdLuxListAPI::ComputeLightList() except it tries to
+// maintain the order discovered during traversal.
+static void
+_Traverse(const UsdPrim &prim,
+          UsdLuxListAPI::ComputeMode mode,
+          std::set<SdfPath, SdfPath::FastLessThan> &seen,
+          SdfPathVector *lights)
+{
+    // If requested, check lightList cache.
+    if (mode == UsdLuxListAPI::ComputeModeConsultModelHierarchyCache &&
+        prim.GetPath().IsPrimPath() /* no cache on pseudoRoot */) {
+        UsdLuxListAPI listAPI(prim);
+        TfToken cacheBehavior;
+        if (listAPI.GetLightListCacheBehaviorAttr().Get(&cacheBehavior)) {
+            if (cacheBehavior == UsdLuxTokens->consumeAndContinue ||
+                cacheBehavior == UsdLuxTokens->consumeAndHalt) {
+                // Check stored lightList.
+                UsdRelationship rel = listAPI.GetLightListRel();
+                SdfPathVector targets;
+                rel.GetForwardedTargets(&targets);
+                for (const auto& target: targets) {
+                    if (seen.insert(target).second) {
+                        lights->push_back(target);
+                    }
+                }
+                if (cacheBehavior == UsdLuxTokens->consumeAndHalt) {
+                    return;
+                }
+            }
+        }
+    }
+    // Accumulate discovered prims.
+    if (prim.IsA<UsdLuxLight>() || prim.IsA<UsdLuxLightFilter>()) {
+        if (seen.insert(prim.GetPath()).second) {
+            lights->push_back(prim.GetPath());
+        }
+    }
+    // Traverse descendants.
+    auto flags = UsdPrimIsActive && !UsdPrimIsAbstract && UsdPrimIsDefined;
+    if (mode == UsdLuxListAPI::ComputeModeConsultModelHierarchyCache) {
+        // When consulting the cache we only traverse model hierarchy.
+        flags = flags && UsdPrimIsModel;
+    }
+    for (const UsdPrim &child:
+         prim.GetFilteredChildren(UsdTraverseInstanceProxies(flags))) {
+        _Traverse(child, mode, seen, lights);
+    }
+}
+
+SdfPathVector
 PxrUsdKatanaUtils::FindLightPaths(const UsdStageRefPtr& stage)
 {
-    std::set<SdfPath> allLights;
+/* XXX -- ComputeLightList() doesn't try to maintain an order.  That
+          should be okay for lights but it does cause differences in
+          the Katana lightList and generated RIB.  These differences
+          should have no effect on a render but they do make it more
+          difficult to compare RIB before and after a round-trip
+          through USD so, for now, we maintain the order found during
+          traversal.  If we switch to using this code then this method
+          should return an SdfPathSet and _Traverse() is unnecessary.
+    SdfPathSet allLights;
     for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
         SdfPathSet lights = UsdLuxListAPI(child).ComputeLightList(
             UsdLuxListAPI::ComputeModeConsultModelHierarchyCache);
         allLights.insert(lights.begin(), lights.end());
     }
     return allLights;
+*/
+    SdfPathVector result;
+    std::set<SdfPath, SdfPath::FastLessThan> seen;
+    for (const auto &child: stage->GetPseudoRoot().GetChildren()) {
+        _Traverse(child, UsdLuxListAPI::ComputeModeConsultModelHierarchyCache,
+                  seen, &result);
+    }
+    return result;
 }
 
 std::string
@@ -1334,6 +1508,14 @@ PxrUsdKatanaUtils::PrimIsSubcomponent(const UsdPrim &prim)
 bool 
 PxrUsdKatanaUtils::ModelGroupNeedsProxy(const UsdPrim &prim)
 {
+    // No proxy if group-to-assembly promotion is explicitly suppressed.
+    bool suppressProxy;
+    if (UsdKatanaBlindDataObject(prim)
+            .GetSuppressGroupToAssemblyPromotionAttr()
+            .Get(&suppressProxy) && suppressProxy) {
+        return false;
+    }
+
     // Check to see if all children are not group models, if so, we'll make
     // this an assembly as a load/proxy optimization.
     TF_FOR_ALL(childIt, prim.GetChildren()) {
@@ -1651,6 +1833,178 @@ PxrUsdKatanaUtils::BuildInstanceMasterMapping(
     return gb.build();
 }
 
+namespace {
+
+// DataBuilder<>::update() is broken so we roll our own.  Note that we
+// clear the builder first, unlike the update() member function.
+template <typename B, typename A>
+void update(B& builder, const A& attr)
+{
+    // Start clean and set the tuple size.
+    builder = B(attr.getTupleSize());
+
+    // Copy the data.  We make a local copy because a StringAttribute
+    // returns const char* but the builder wants std::string.
+    for (int64_t i = 0, n = attr.getNumberOfTimeSamples(); i != n; ++i) {
+        const auto time = attr.getSampleTime(i);
+        const auto& src = attr.getNearestSample(time);
+        std::vector<typename A::value_type> dst(src.begin(), src.end());
+        builder.set(dst, time);
+    }
+}
+
+}
+
+//
+// PxrUsdKatanaUtilsLightListAccess
+//
+
+PxrUsdKatanaUtilsLightListAccess::PxrUsdKatanaUtilsLightListAccess(
+        FnKat::GeolibCookInterface &interface,
+        const PxrUsdKatanaUsdInArgsRefPtr& usdInArgs) :
+    _interface(interface),
+    _usdInArgs(usdInArgs)
+{
+    // Get the lightList attribute.
+    FnKat::GroupAttribute lightList = _interface.getAttr("lightList");
+    if (lightList.isValid()) {
+        _lightListBuilder.deepUpdate(lightList);
+    }
+}
+
+PxrUsdKatanaUtilsLightListAccess::~PxrUsdKatanaUtilsLightListAccess()
+{
+    // Do nothing
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::SetPath(const SdfPath& lightPath)
+{
+    _lightPath = lightPath;
+    if (_lightPath.IsAbsolutePath()) {
+        _key = TfStringReplace(GetLocation().substr(1), "/", "_") + '.';
+    }
+    else {
+        _key.clear();
+    }
+}
+
+UsdPrim
+PxrUsdKatanaUtilsLightListAccess::GetPrim() const
+{
+    return _usdInArgs->GetStage()->GetPrimAtPath(_lightPath);
+}
+
+std::string
+PxrUsdKatanaUtilsLightListAccess::GetLocation() const
+{
+    return PxrUsdKatanaUtils::
+                ConvertUsdPathToKatLocation(_lightPath, _usdInArgs);
+}
+
+std::string
+PxrUsdKatanaUtilsLightListAccess::GetLocation(const SdfPath& path) const
+{
+    return PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(path, _usdInArgs);
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::_Set(
+    const std::string& name, const VtValue& value)
+{
+    if (TF_VERIFY(!_key.empty(), "Light path not set or not absolute")) {
+        constexpr bool asShaderParam = true;
+        FnKat::Attribute attr =
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(value, asShaderParam);
+        if (TF_VERIFY(attr.isValid(),
+                      "Failed to convert value for %s", name.c_str())) {
+            _lightListBuilder.set(_key + name, attr);
+        }
+    }
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::_Set(
+    const std::string& name, const FnKat::Attribute& attr)
+{
+    if (TF_VERIFY(!_key.empty(), "Light path not set or not absolute")) {
+        _lightListBuilder.set(_key + name, attr);
+    }
+}
+
+bool
+PxrUsdKatanaUtilsLightListAccess::SetLinks(
+    const UsdLuxLinkingAPI &linkAPI,
+    const std::string &linkName)
+{
+    UsdLuxLinkingAPI::LinkMap linkMap = linkAPI.ComputeLinkMap();
+    FnKat::GroupBuilder onBuilder, offBuilder;
+    for (const auto &entry: linkMap) {
+        // By convention, entries are "link.TYPE.{on,off}.HASH" where
+        // HASH is getHash() of the CEL and TYPE is the type of linking
+        // (light, shadow, etc). In this case we can just hash the
+        // string attribute form of the location.
+        const std::string link_loc =
+            PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(entry.first,
+                                                           _usdInArgs);
+        const FnKat::StringAttribute link_loc_attr(link_loc);
+        const std::string link_hash = link_loc_attr.getHash().str();
+        (entry.second ? onBuilder : offBuilder).set(link_hash, link_loc_attr);
+    }
+    // Set off and then on attributes, in order, to ensure
+    // stable override semantics when katana applies these.
+    // (This matches what the Gaffer node does.)
+    FnKat::GroupAttribute offAttr = offBuilder.build();
+    if (offAttr.getNumberOfChildren()) {
+        _Set("link."+linkName+".off", offAttr);
+    }
+    FnKat::GroupAttribute onAttr = onBuilder.build();
+    if (onAttr.getNumberOfChildren()) {
+        _Set("link."+linkName+".on", onAttr);
+    }
+    return UsdLuxLinkingAPI::DoesLinkPath(linkMap, linkAPI.GetPath());
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::AddToCustomStringList(
+    const std::string& tag,
+    const std::string& value)
+{
+    // Append the value.
+    if (_customStringLists.find(tag) == _customStringLists.end()) {
+        // This is the first value.  First copy any existing attribute.
+        auto& builder = _customStringLists[tag];
+        FnKat::StringAttribute attr = _interface.getAttr(tag);
+        if (attr.isValid()) {
+            update(builder, attr);
+        }
+
+        // Then append the value.
+        builder.push_back(value);
+    }
+    else {
+        // We've already seen this tag.  Just append the value.
+        _customStringLists[tag].push_back(value);
+    }
+}
+
+void
+PxrUsdKatanaUtilsLightListAccess::Build()
+{
+    FnKat::GroupAttribute lightListAttr = _lightListBuilder.build();
+    if (lightListAttr.getNumberOfChildren() > 0) {
+        _interface.setAttr("lightList", lightListAttr);
+    }
+
+    // Add custom string lists.
+    for (auto& value: _customStringLists) {
+        auto attr = value.second.build();
+        if (attr.getNumberOfValues() > 0) {
+            _interface.setAttr(value.first, attr);
+        }
+    }
+    _customStringLists.clear();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

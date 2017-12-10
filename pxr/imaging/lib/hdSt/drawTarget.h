@@ -79,7 +79,7 @@ public:
     virtual ~HdStDrawTarget();
 
     /// Dirty bits for the HdStDrawTarget object
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                   = 0,
         DirtyDTEnable           = 1 <<  0,
         DirtyDTCamera           = 1 <<  1,

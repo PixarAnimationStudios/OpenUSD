@@ -1,0 +1,2 @@
+Error: Unable to open stage 'invalidSyntax.usda'
+syntax error at '@HelloWorld.usda@' in </refSphere2> on line 11 in file invalidSyntax.usda

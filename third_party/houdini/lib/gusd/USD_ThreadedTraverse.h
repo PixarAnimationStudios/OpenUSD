@@ -188,8 +188,9 @@ TraverseTaskT<Visitor>::run()
 
     /* Count the children so we can increment the ref count accordingly.*/
     int count = 0;
-    TF_FOR_ALL(it, _prim.GetFilteredChildren(_visitor.TraversalPredicate()))
-        ++count;
+    auto children = _prim.GetFilteredChildren(_visitor.TraversalPredicate());
+    for (auto i = children.begin(); i != children.end(); ++i, ++count) {}
+
     if(count == 0)
         return NULL;
 
@@ -198,9 +199,11 @@ TraverseTaskT<Visitor>::run()
 
     const int last = count - 1;
     int idx = 0;
-    TF_FOR_ALL(it, _prim.GetFilteredChildren(_visitor.TraversalPredicate())) {
+    for (const auto& child : 
+          _prim.GetFilteredChildren(_visitor.TraversalPredicate())) {
         auto& task =
-            *new(allocate_child()) TraverseTaskT(*it, _idx, _time, _purposes, _data,
+            *new(allocate_child()) TraverseTaskT(child, _idx, _time, 
+                                                 _purposes, _data,
                                                  _visitor, /*skip prim*/ false);
         if(idx == last)
             return &task;

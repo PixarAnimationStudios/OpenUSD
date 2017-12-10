@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/commandBuffer.h"
+#include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hd/renderPass.h"
 
 #include <boost/shared_ptr.hpp>
@@ -62,9 +62,9 @@ private:
     // Drawing state
 
     typedef std::unordered_map<TfToken, 
-                               HdCommandBuffer,
-                               boost::hash<TfToken> > _HdCommandBufferMap;
-    _HdCommandBufferMap _cmdBuffers;
+                               HdStCommandBuffer,
+                               boost::hash<TfToken> > _HdStCommandBufferMap;
+    _HdStCommandBufferMap _cmdBuffers;
 
     bool _lastCullingDisabledState;
 

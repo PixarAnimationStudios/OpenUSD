@@ -79,8 +79,10 @@ UsdUtilsGetModelNameFromRootLayer(
     std::string baseName = TfGetBaseName(filePath);
     modelName = TfToken(baseName.substr(0, baseName.find('.')));
 
-    if (!modelName.IsEmpty() && rootLayer->GetPrimAtPath(
-            SdfPath::AbsoluteRootPath().AppendChild(modelName))) {
+    if (!modelName.IsEmpty() &&
+            SdfPath::IsValidIdentifier(modelName) && 
+            rootLayer->GetPrimAtPath(
+                SdfPath::AbsoluteRootPath().AppendChild(modelName))) {
         return modelName;
     }
 

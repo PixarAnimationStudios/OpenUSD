@@ -24,12 +24,12 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/shader.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include <boost/pointer_cast.hpp>
@@ -94,7 +94,7 @@ private:
 
 HdStShader::HdStShader(SdfPath const &id)
  : HdShader(id)
- , _surfaceShader(new HdSurfaceShader)
+ , _surfaceShader(new HdStSurfaceShader)
 {
 }
 
@@ -282,7 +282,7 @@ HdStShader::GetShaderCode() const
 }
 
 void
-HdStShader::SetSurfaceShader(HdSurfaceShaderSharedPtr &shaderCode)
+HdStShader::SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode)
 {
     _surfaceShader = shaderCode;
 }

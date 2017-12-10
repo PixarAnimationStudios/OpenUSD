@@ -193,10 +193,7 @@ public:
     GUSD_API
     virtual bool isValid() const;
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const = 0;
-
-    virtual const UsdGeomImageable getUsdPrimForRead() const = 0; 
-
+    virtual const UsdGeomImageable getUsdPrim() const = 0;
     GUSD_API
     virtual bool unpack(
         GU_Detail&          gdr,

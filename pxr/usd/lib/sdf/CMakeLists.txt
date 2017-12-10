@@ -29,6 +29,7 @@ pxr_library(sdf
         childrenUtils
         childrenView
         cleanupEnabler
+        copyUtils
         data
         declareHandles
         fileFormat
@@ -134,6 +135,7 @@ pxr_library(sdf
         wrapAttributeSpec.cpp
         wrapChangeBlock.cpp
         wrapCleanupEnabler.cpp
+        wrapCopyUtils.cpp
         wrapFileFormat.cpp
         wrapLayer.cpp
         wrapLayerBase.cpp
@@ -190,6 +192,7 @@ endif()
 pxr_test_scripts(
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
+    testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
     testenv/testSdfListOp.py
     testenv/testSdfParsing.py
@@ -293,6 +296,11 @@ pxr_register_test(testSdfAttributeBlocking_Cpp
 pxr_register_test(testSdfBatchNamespaceEdit
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfBatchNamespaceEdit"
+)
+
+pxr_register_test(testSdfCopyUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfCopyUtils"
 )
 
 pxr_register_test(testSdfCustomLayerData

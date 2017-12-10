@@ -42,7 +42,6 @@
 #include "pxr/usd/sdf/relationshipSpec.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sub.usda@
+    ]
+)
+
+over "StrongerDefault"
+{
+    double attr = 1.0
+}
+
+over "StrongerTimeSamples"
+{
+    double attr.timeSamples = {
+        0: 100,
+        1: 101,
+    }
+}

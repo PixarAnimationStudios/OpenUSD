@@ -1816,20 +1816,23 @@ AddTestCasesToPrim(const UsdPrim& prim)
 }
 
 static void
-ScaleAttributeSampledTimes(const UsdPrim& prim, double scale = 0.5)
+ApplyOffsetToSampleTimes(const UsdPrim& prim, SdfLayerOffset offset)
 {
     std::vector<UsdAttribute> attributes = prim.GetAuthoredAttributes();
     for (size_t i = 0; i < attributes.size(); ++i) {
         std::vector<double> times;
         attributes[i].GetTimeSamples(&times);
-
-        for (size_t j = 0; j < times.size(); ++j) {
-            const double currTime = times[j];
-            const double scaledTime = currTime * scale;
+        // Read, clear, and then re-write all samples afterward
+        // to avoid collisions from writing new samples over old.
+        std::map<double, VtValue> offsetSamples;
+        for (double currTime: times) {
             VtValue attrVal;
             attributes[i].Get(&attrVal, UsdTimeCode(currTime));
+            offsetSamples[offset * currTime] = attrVal;
             attributes[i].ClearAtTime(currTime);
-            attributes[i].Set(attrVal, UsdTimeCode(scaledTime));
+        }
+        for (const auto entry: offsetSamples) {
+            attributes[i].Set(entry.second, UsdTimeCode(entry.first));
         }
     }
 
@@ -1907,11 +1910,12 @@ TestInterpolationWithModelClips(const string &layerIdent)
     // Add test cases to the clip stage, then scale all of the time samples
     // by half. This should result in time samples being authored at times
     // 0.0 and 1.0.
+    const SdfLayerOffset testOffset(0.0, 0.5);
     UsdStageRefPtr clipStage = UsdStage::CreateInMemory(layerIdent);
     UsdPrim testClipPrim(clipStage->OverridePrim(SdfPath("/TestPrim")));
     TF_VERIFY(testClipPrim);
     AddTestCasesToPrim(testClipPrim);
-    ScaleAttributeSampledTimes(testClipPrim, 0.5);
+    ApplyOffsetToSampleTimes(testClipPrim, testOffset);
 
     // Create the primary stage and set up model clips on the test prim
     // to refer to the clip stage's root layer and scaling its time samples
@@ -1965,22 +1969,24 @@ static void
 TestInterpolationWithLayerOffsets(const string &layerIdent)
 {
     printf("TestInterpolationWithLayerOffsets... %s\n", layerIdent.c_str());
-    
+
     // Add test cases to the sub stage, then scale all of the time samples
     // by half. This should result in time samples being authored at times
     // 0.0 and 1.0.
+    const SdfLayerOffset testOffset(0.0, 0.5);
     UsdStageRefPtr subStage = UsdStage::CreateInMemory(layerIdent);
     UsdPrim testSubPrim(subStage->OverridePrim(SdfPath("/TestPrim")));
     TF_VERIFY(testSubPrim);
     AddTestCasesToPrim(testSubPrim);
-    ScaleAttributeSampledTimes(testSubPrim, 0.5);
+    ApplyOffsetToSampleTimes(testSubPrim, testOffset);
 
     // Create the primary stage and sublayer the sub stage's root layer,
     // specifying a layer offset that scales time by 2.
     UsdStageRefPtr mainStage = UsdStage::CreateInMemory(layerIdent);
     mainStage->GetRootLayer()->GetSubLayerPaths().push_back(
         subStage->GetRootLayer()->GetIdentifier());
-    mainStage->GetRootLayer()->SetSubLayerOffset(SdfLayerOffset(0.0, 0.5), 0);
+    mainStage->GetRootLayer()->SetSubLayerOffset(
+        UsdPrepLayerOffset(testOffset).GetInverse(), 0);
 
     // Uncomment to dump authored layers for debugging. Note that
     // the root layer will need to be manually fixed up to sublayer

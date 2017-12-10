@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -109,7 +110,7 @@ private:
 
     /// List of errors local to this property, encountered during computation.
     /// NULL if no errors were found (the expected common case).
-    boost::scoped_ptr<PcpErrorVector> _localErrors;
+    std::unique_ptr<PcpErrorVector> _localErrors;
 };
 
 /// Builds a property index for the property at \p path,

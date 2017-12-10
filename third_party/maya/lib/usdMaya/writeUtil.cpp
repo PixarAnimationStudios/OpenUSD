@@ -131,7 +131,7 @@ PxrUsdMayaWriteUtil::GetUsdTypeName(
     }
 
     if (attrObj.hasFn(MFn::kEnumAttribute)) {
-        return SdfValueTypeNames->Token;
+        return SdfValueTypeNames->Int;
     }
 
     MFnNumericData::Type numericDataType;
@@ -465,10 +465,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
     MObject attrObj(attrPlug.attribute());
 
     if (attrObj.hasFn(MFn::kEnumAttribute)) {
-        MFnEnumAttribute enumAttrFn(attrObj);
-        const short enumIndex = attrPlug.asShort();
-        const TfToken enumToken(enumAttrFn.fieldName(enumIndex).asChar());
-        return usdAttr.Set(enumToken, usdTime);
+        return usdAttr.Set(attrPlug.asInt(), usdTime);
     }
 
     MFnNumericData::Type numericDataType;

@@ -56,7 +56,7 @@ typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 class HdTexture final : public HdBprim {
 public:
     // change tracking for HdTexture
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyParams           = 1 << 0,
         DirtyTexture          = 1 << 1,

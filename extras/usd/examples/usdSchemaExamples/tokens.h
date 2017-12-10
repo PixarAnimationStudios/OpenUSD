@@ -35,23 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "./api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDSCHEMAEXAMPLES_TOKENS \
-    (complexString) \
-    (intAttr) \
-    ((paramsMass, "params:mass")) \
-    ((paramsVelocity, "params:velocity")) \
-    ((paramsVolume, "params:volume")) \
-    (target)
 
-/// \anchor UsdSchemaExamplesTokens
+/// \class UsdSchemaExamplesTokensType
 ///
-/// <b>UsdSchemaExamplesTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdSchemaExamplesTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -59,22 +53,48 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdSchemaExamplesTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdSchemaExamplesTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdSchemaExamplesTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdSchemaExamplesTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdSchemaExamplesTokens->complexString);
 /// \endcode
+struct UsdSchemaExamplesTokensType {
+    USDSCHEMAEXAMPLES_API UsdSchemaExamplesTokensType();
+    /// \brief "complexString"
+    /// 
+    /// UsdSchemaExamplesComplex
+    const TfToken complexString;
+    /// \brief "intAttr"
+    /// 
+    /// UsdSchemaExamplesSimple
+    const TfToken intAttr;
+    /// \brief "params:mass"
+    /// 
+    /// UsdSchemaExamplesParamsAPI
+    const TfToken paramsMass;
+    /// \brief "params:velocity"
+    /// 
+    /// UsdSchemaExamplesParamsAPI
+    const TfToken paramsVelocity;
+    /// \brief "params:volume"
+    /// 
+    /// UsdSchemaExamplesParamsAPI
+    const TfToken paramsVolume;
+    /// \brief "target"
+    /// 
+    /// UsdSchemaExamplesSimple
+    const TfToken target;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdSchemaExamplesTokens
 ///
-/// The tokens are:
-/// \li <b>complexString</b> - UsdSchemaExamplesComplex
-/// \li <b>intAttr</b> - UsdSchemaExamplesSimple
-/// \li <b>paramsMass</b> - UsdSchemaExamplesParamsAPI
-/// \li <b>paramsVelocity</b> - UsdSchemaExamplesParamsAPI
-/// \li <b>paramsVolume</b> - UsdSchemaExamplesParamsAPI
-/// \li <b>target</b> - UsdSchemaExamplesSimple
-TF_DECLARE_PUBLIC_TOKENS(UsdSchemaExamplesTokens, USDSCHEMAEXAMPLES_API, USDSCHEMAEXAMPLES_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdSchemaExamplesTokensType
+extern USDSCHEMAEXAMPLES_API TfStaticData<UsdSchemaExamplesTokensType> UsdSchemaExamplesTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

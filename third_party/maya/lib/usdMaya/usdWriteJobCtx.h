@@ -59,6 +59,14 @@ public:
     // Querying the master path for instancing. This also creates the shape if it doesn't exists.
     PXRUSDMAYA_API
     SdfPath getMasterPath(const MDagPath& dg);
+    /// Creates a prim writer that writes the given prim (and descendants) to
+    /// the USD namespace hierarchy anchored at the given path.
+    /// If the given path is empty, then the USD path will be inferred from the
+    /// Maya DAG path.
+    PXRUSDMAYA_API
+    MayaPrimWriterPtr createPrimWriter(
+            const MDagPath& curDag,
+            const SdfPath& usdPath = SdfPath());
     PXRUSDMAYA_API
     bool needToTraverse(const MDagPath& curDag);
 protected:
@@ -66,8 +74,6 @@ protected:
     bool openFile(const std::string& filename, bool append);
     PXRUSDMAYA_API
     void processInstances();
-    PXRUSDMAYA_API
-    MayaPrimWriterPtr createPrimWriter(const MDagPath& curDag);
 
     JobExportArgs mArgs;
     // List of the primitive writers to iterate over
@@ -85,7 +91,10 @@ private:
     };
     std::map<MObjectHandle, SdfPath, MObjectHandleComp> mMasterToUsdPath;
     PXRUSDMAYA_API
-    MayaPrimWriterPtr _createPrimWriter(const MDagPath& curDag, bool instanceSource);
+    MayaPrimWriterPtr _createPrimWriter(
+            const MDagPath& curDag,
+            const SdfPath& usdPath,
+            bool instanceSource);
     UsdPrim mInstancesPrim;
     bool mNoInstances;
 };

@@ -24,7 +24,6 @@
 #include "pxr/imaging/glf/glslfxConfig.h"
 #include "pxr/imaging/glf/debugCodes.h"
 
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
@@ -138,9 +137,9 @@ GlfGLSLFXConfig::_GetSourceKeyMap(VtDictionary const & dict,
 
     const VtDictionary& specDict = techniqueSpec.UncheckedGet<VtDictionary>();
     // get all of the shader stages specified in the spec
-    TF_FOR_ALL(it, specDict) {
-        const string& shaderStageKey = it->first;
-        const VtValue& shaderStageSpec = it->second;
+    for (const std::pair<std::string, VtValue>& p : specDict) {
+        const string& shaderStageKey = p.first;
+        const VtValue& shaderStageSpec = p.second;
 
         // verify that the shaderStageSpec also holds a VtDictionary
         if (!shaderStageSpec.IsHolding<VtDictionary>()) {
@@ -172,9 +171,8 @@ GlfGLSLFXConfig::_GetSourceKeyMap(VtDictionary const & dict,
             return ret;
         }
 
-        vector<VtValue>  sourceList = source.UncheckedGet<vector<VtValue> >();
-        TF_FOR_ALL(sourceIt, sourceList) {
-            const VtValue& val = *sourceIt;
+        vector<VtValue> sourceList = source.UncheckedGet<vector<VtValue>>();
+        for (VtValue const& val : sourceList) {
             // verify that this value is a string
             if (!val.IsHolding<string>()) {
                 *errorStr = TfStringPrintf("%s of %s for spec %s expects a "
@@ -247,8 +245,7 @@ GlfGLSLFXConfig::_GetParameters(VtDictionary const & dict,
 
         const vector<VtValue>& paramOrderList =
             paramOrderAny.UncheckedGet<vector<VtValue> >();
-        TF_FOR_ALL(paramIt, paramOrderList) {
-            const VtValue& val = *paramIt;
+        for (VtValue const& val : paramOrderList) {
             // verify that this value is a string
             if (!val.IsHolding<string>()) {
                 *errorStr = TfStringPrintf("%s declaration expects a list of "
@@ -268,8 +265,8 @@ GlfGLSLFXConfig::_GetParameters(VtDictionary const & dict,
 
     const VtDictionary& paramsDict = params.UncheckedGet<VtDictionary>();
     // pre-process the paramsDict in order to get the merged ordering
-    TF_FOR_ALL(it, paramsDict) {
-        string paramName = it->first;
+    for (const std::pair<std::string, VtValue>& p : paramsDict) {
+        string paramName = p.first;
         if (std::find(paramOrder.begin(), paramOrder.end(), paramName) ==
                 paramOrder.end()) {
             paramOrder.push_back(paramName);
@@ -277,11 +274,9 @@ GlfGLSLFXConfig::_GetParameters(VtDictionary const & dict,
     }
 
     // now go through the params in the specified order
-    TF_FOR_ALL(it, paramOrder) {
-        string paramName = *it;
-
+    for (std::string const& paramName : paramOrder) {
         // ignore anything specified in the order that isn't in the actual dict
-        VtDictionary::const_iterator dictIt = paramsDict.find(*it);
+        VtDictionary::const_iterator dictIt = paramsDict.find(paramName);
         if (dictIt == paramsDict.end()) {
             continue;
         }
@@ -378,9 +373,9 @@ GlfGLSLFXConfig::_GetTextures(VtDictionary const & dict,
     }
 
     const VtDictionary& texturesDict = textures.UncheckedGet<VtDictionary>();
-    TF_FOR_ALL(it, texturesDict) {
-        const string& textureName = it->first;
-        const VtValue& textureData = it->second;
+    for (const std::pair<std::string, VtValue>& p : texturesDict) {
+        const string& textureName = p.first;
+        const VtValue& textureData = p.second;
         if (!textureData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
                                        "dictionary value",
@@ -449,9 +444,9 @@ GlfGLSLFXConfig::_GetAttributes(VtDictionary const & dict,
 
     const VtDictionary& attributesDict =
         attributes.UncheckedGet<VtDictionary>();
-    TF_FOR_ALL(it, attributesDict) {
-        const string& attributeName = it->first;
-        const VtValue& attributeData = it->second;
+    for (const std::pair<std::string, VtValue>& p : attributesDict) {
+        const string& attributeName = p.first;
+        const VtValue& attributeData = p.second;
         if (!attributeData.IsHolding<VtDictionary>()) {
             *errorStr = TfStringPrintf("%s declaration for %s expects a "
                                        "dictionary value",

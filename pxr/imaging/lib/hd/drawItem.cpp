@@ -25,9 +25,7 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 
-#include "pxr/imaging/garch/gl.h"
 #include "pxr/base/gf/frustum.h"
 
 #include <boost/functional/hash.hpp>
@@ -47,18 +45,10 @@ HdDrawItem::~HdDrawItem()
     /*NOTHING*/
 }
 
-GLenum
-HdDrawItem::GetPrimitiveMode() const
-{
-    return _geometricShader
-        ? _geometricShader->GetPrimitiveMode()
-        : GL_POINTS;
-}
-
 HdShaderCodeSharedPtr
-HdDrawItem::GetSurfaceShader() const
+HdDrawItem::GetMaterial() const
 {
-    return _sharedData->surfaceShader;
+    return _sharedData->material;
 }
 
 size_t

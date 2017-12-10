@@ -1,10 +1,7 @@
 <attr type="GroupAttr">
-  <attr name="geometry" type="GroupAttr">
-    <attr name="arbitrary" type="GroupAttr"/>
-  </attr>
   <attr name="kind" tupleSize="1" type="StringAttr">
     <sample size="1" time="0">
-      <str value="model"/>
+      <str value="component"/>
     </sample>
   </attr>
   <attr name="modelInstanceName" tupleSize="1" type="StringAttr">
@@ -33,7 +30,7 @@
               </sample>
             </attr>
             <attr name="currentTime" tupleSize="1" type="DoubleAttr">
-              <sample size="1" time="0" value="1"/>
+              <sample size="1" time="0" value="1 "/>
             </attr>
             <attr name="forcePopulateUsdStage" tupleSize="1" type="FloatAttr">
               <sample size="1" time="0" value="1 "/>

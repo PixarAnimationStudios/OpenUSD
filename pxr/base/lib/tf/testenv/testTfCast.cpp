@@ -23,14 +23,15 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/cxxCast.h"
+#include "pxr/base/arch/functionLite.h"
 #include <stdio.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#define CHECK(cond)                                                      \
-    if (!(cond)) { status = false;                                       \
-        fprintf(stderr, "testTfCxxCast: %s failed (line %d, %s)\n",   \
-                #cond, __LINE__, BUILD_COMPONENT_SRC_PREFIX __FILE__);                              \
+#define CHECK(cond)                                                 \
+    if (!(cond)) { status = false;                                  \
+        fprintf(stderr, "testTfCxxCast: %s failed (line %d, %s)\n", \
+                #cond, __LINE__, __ARCH_FILE__);                    \
     }
 
 struct PolyBase0 {

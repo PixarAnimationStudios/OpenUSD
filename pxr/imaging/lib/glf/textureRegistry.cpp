@@ -30,7 +30,6 @@
 #include "pxr/imaging/glf/textureHandle.h"
 
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stl.h"
 
@@ -288,19 +287,19 @@ GlfTextureRegistry::GetTextureInfos() const
 {
     std::vector<VtDictionary> result;
 
-    TF_FOR_ALL (it, _textureRegistry) {
-        GlfTextureHandlePtr texture = it->second.GetHandle();
+    for (TextureRegistryMap::value_type const& p : _textureRegistry) {
+        GlfTextureHandlePtr texture = p.second.GetHandle();
         VtDictionary info = texture->GetTexture()->GetTextureInfo();
         info["uniqueIdentifier"] = (uint64_t)texture.GetUniqueIdentifier();
         result.push_back(info);
     }
 
-    TF_FOR_ALL (it, _textureRegistryNonShared) {
+    for (TextureRegistryNonSharedMap::value_type const& p : _textureRegistryNonShared) {
         // note: Since textureRegistryNonShared stores weak ptr, we have to 
         // check whether it still exists here.
-        if (!it->second.IsExpired()) {
-            VtDictionary info = it->second->GetTexture()->GetTextureInfo();
-            info["uniqueIdentifier"] = (uint64_t)it->second->GetUniqueIdentifier();
+        if (!p.second.IsExpired()) {
+            VtDictionary info = p.second->GetTexture()->GetTextureInfo();
+            info["uniqueIdentifier"] = (uint64_t)p.second->GetUniqueIdentifier();
             result.push_back(info);
         }
     }
@@ -338,9 +337,8 @@ GlfTextureRegistry::_TextureMetadata::_TextureMetadata(
 {
     TRACE_FUNCTION();
 
-    for (std::uint32_t i=0; i<numTextures; ++i) {
-        const TfToken &tex = textures[i];
-
+    for (std::uint32_t i = 0; i < numTextures; ++i) {
+        const TfToken& tex = textures[i];
         double time;
         if (!ArchGetModificationTime(tex.GetText(), &time)) {
             continue;

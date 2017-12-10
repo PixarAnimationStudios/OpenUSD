@@ -29,7 +29,6 @@
 #include "pxr/imaging/glf/info.h"
 #include "pxr/imaging/glf/glContext.h"
 
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <cstdlib>
@@ -55,8 +54,8 @@ Glf_BuildAvailableExtensions()
     const char *extensions = (const char*) glGetString(GL_EXTENSIONS);
     if ( extensions ) {
         vector<string> extensionsList = TfStringTokenize(extensions);
-        TF_FOR_ALL(i, extensionsList) {
-            availableExtensions.insert(*i);
+        for (std::string const& extension : extensionsList) {
+            availableExtensions.insert(extension);
         }
     }
     return &availableExtensions;
@@ -71,8 +70,8 @@ GlfHasExtensions(string const & queryExtensions)
     vector<string> extensionsList = TfStringTokenize(queryExtensions);
 
     // Return false if any queried extension is not available.
-    TF_FOR_ALL(i, extensionsList) {
-        if (!availableExtensions->count(*i)) {
+    for (std::string const& extension : extensionsList) {
+        if (!availableExtensions->count(extension)) {
             return false;
         }
     }

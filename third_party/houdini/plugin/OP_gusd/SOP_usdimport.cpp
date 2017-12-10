@@ -43,7 +43,7 @@
 #include <PI/PI_EditScriptedParms.h>
 #include <PRM/PRM_AutoDeleter.h>
 #include <UT/UT_WorkArgs.h>
-#include <UT/UT_ScopedPtr.h>
+#include <UT/UT_UniquePtr.h>
 #include <PY/PY_Python.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -195,6 +195,12 @@ PRM_Template*   _CreateTemplates()
     static PRM_Default parmDefaultPrimpaths(0, primPathName.getToken());
     static PRM_Default parmDefaultUiExpandState(0, "");
 
+    // Make the uiExpandState template here, so it can be
+    // configured to not cook this SOP when it changes.
+    PRM_Template uiExpandState(PRM_STRING | PRM_TYPE_INVISIBLE, 1,
+                               &parmUiExpandState, &parmDefaultUiExpandState);
+    uiExpandState.setNoCook(true);
+
     GusdPRM_Shared shared;
 
     static PRM_Template templates[] = {
@@ -234,8 +240,7 @@ PRM_Template*   _CreateTemplates()
                      &parmNameUsdfile, &parmDefaultUsdfile),
         PRM_Template(PRM_STRING | PRM_TYPE_INVISIBLE, 1,
                      &parmNamePrimpaths, &parmDefaultPrimpaths),
-        PRM_Template(PRM_STRING | PRM_TYPE_INVISIBLE, 1,
-                     &parmUiExpandState, &parmDefaultUiExpandState),
+        uiExpandState,
         PRM_Template()
     };
 
@@ -476,7 +481,7 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
 
         UT_Array<GusdUSD_Traverse::PrimIndexPair> primIndexPairs;
 
-        UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
+        UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
         if(opts) {
             if(!opts->Configure(*this, t))
                 return err();
@@ -562,7 +567,7 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
     // Traverse to find a new prim selection.
     UT_Array<GusdUSD_Traverse::PrimIndexPair> expandedPrims;
     {
-        UT_ScopedPtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
+        UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
         if(opts) {
             if(!opts->Configure(*this, t))
                 return err();

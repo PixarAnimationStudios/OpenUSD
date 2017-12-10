@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/inherits.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
 #include <boost/python/operators.hpp>
@@ -42,6 +43,8 @@ void wrapUsdInherits()
         .def("RemoveInherit", &UsdInherits::RemoveInherit, arg("primPath"))
         .def("ClearInherits", &UsdInherits::ClearInherits)
         .def("SetInherits", &UsdInherits::SetInherits)
+        .def("GetAllDirectInherits", &UsdInherits::GetAllDirectInherits,
+             return_value_policy<TfPySequenceToList>())
         .def("GetPrim", (UsdPrim (UsdInherits::*)()) &UsdInherits::GetPrim)
         .def(!self)
         ;

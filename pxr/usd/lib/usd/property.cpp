@@ -177,5 +177,24 @@ UsdProperty::IsAuthoredAt(const UsdEditTarget &editTarget) const
     return false;
 }
 
+UsdProperty 
+UsdProperty::FlattenTo(const UsdPrim &parent) const
+{
+    return _GetStage()->_FlattenProperty(*this, parent, GetName());
+}
+
+UsdProperty 
+UsdProperty::FlattenTo(const UsdPrim &parent, const TfToken &propName) const
+{
+    return _GetStage()->_FlattenProperty(*this, parent, propName);
+}
+
+UsdProperty 
+UsdProperty::FlattenTo(const UsdProperty &property) const
+{
+    return _GetStage()->_FlattenProperty(
+        *this, property.GetPrim(), property.GetName());
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

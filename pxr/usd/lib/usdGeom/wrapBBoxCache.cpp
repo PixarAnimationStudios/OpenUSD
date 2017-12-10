@@ -27,10 +27,85 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/stl_iterator.hpp>
 
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+static object
+_ComputePointInstanceWorldBounds(UsdGeomBBoxCache &self,
+                                 const UsdGeomPointInstancer& instancer,
+                                 object instanceIds)
+{
+    boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
+    std::vector<int64_t> ids(begin, end);
+    std::vector<GfBBox3d> boxes(ids.size());
+    if (!self.ComputePointInstanceWorldBounds(
+            instancer, ids.data(), ids.size(), boxes.data())) {
+        return object();
+    }
+    boost::python::list ret;
+    for (auto const &elem: boxes)
+        ret.append(elem);
+    return ret;
+}
+
+static object
+_ComputePointInstanceRelativeBounds(UsdGeomBBoxCache &self,
+                                    const UsdGeomPointInstancer& instancer,
+                                    object instanceIds,
+                                    UsdPrim relativeToAncestorPrim)
+{
+    boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
+    std::vector<int64_t> ids(begin, end);
+    std::vector<GfBBox3d> boxes(ids.size());
+    if (!self.ComputePointInstanceRelativeBounds(
+            instancer, ids.data(), ids.size(), relativeToAncestorPrim,
+            boxes.data())) {
+        return object();
+    }
+    boost::python::list ret;
+    for (auto const &elem: boxes)
+        ret.append(elem);
+    return ret;
+}
+
+static object
+_ComputePointInstanceLocalBounds(UsdGeomBBoxCache &self,
+                                 const UsdGeomPointInstancer& instancer,
+                                 object instanceIds)
+{
+    boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
+    std::vector<int64_t> ids(begin, end);
+    std::vector<GfBBox3d> boxes(ids.size());
+    if (!self.ComputePointInstanceLocalBounds(
+            instancer, ids.data(), ids.size(), boxes.data())) {
+        return object();
+    }
+    boost::python::list ret;
+    for (auto const &elem: boxes)
+        ret.append(elem);
+    return ret;
+}
+
+static object
+_ComputePointInstanceUntransformedBounds(UsdGeomBBoxCache &self,
+                                         const UsdGeomPointInstancer& instancer,
+                                         object instanceIds)
+{
+    boost::python::stl_input_iterator<int64_t> begin(instanceIds), end;
+    std::vector<int64_t> ids(begin, end);
+    std::vector<GfBBox3d> boxes(ids.size());
+    if (!self.ComputePointInstanceUntransformedBounds(
+            instancer, ids.data(), ids.size(), boxes.data())) {
+        return object();
+    }
+    boost::python::list ret;
+    for (auto const &elem: boxes)
+        ret.append(elem);
+    return ret;
+}
 
 void wrapUsdGeomBBoxCache()
 {
@@ -58,6 +133,33 @@ void wrapUsdGeomBBoxCache()
              (arg("prim"),
               arg("pathsToSkip"),
               arg("ctmOverrides")))
+        .def("ComputePointInstanceWorldBounds",
+             _ComputePointInstanceWorldBounds,
+             (arg("instancer"), arg("instanceIds")))
+        .def("ComputePointInstanceWorldBound",
+             &BBoxCache::ComputePointInstanceWorldBound,
+             (arg("instancer"), arg("instanceId")))
+        .def("ComputePointInstanceRelativeBounds",
+             _ComputePointInstanceRelativeBounds,
+             (arg("instancer"), arg("instanceIds"),
+              arg("relativeToAncestorPrim")))
+        .def("ComputePointInstanceRelativeBound",
+             &BBoxCache::ComputePointInstanceRelativeBound,
+             (arg("instancer"), arg("instanceId"),
+              arg("relativeToAncestorPrim")))
+        .def("ComputePointInstanceLocalBounds",
+             _ComputePointInstanceLocalBounds,
+             (arg("instancer"), arg("instanceIds")))
+        .def("ComputePointInstanceLocalBound",
+             &BBoxCache::ComputePointInstanceLocalBound,
+             (arg("instancer"), arg("instanceId")))
+        .def("ComputePointInstanceUntransformedBounds",
+             _ComputePointInstanceUntransformedBounds,
+             (arg("instancer"), arg("instanceIds")))
+        .def("ComputePointInstanceUntransformedBound",
+             &BBoxCache::ComputePointInstanceUntransformedBound,
+             (arg("instancer"), arg("instanceId")))
+        
         .def("Clear", &BBoxCache::Clear)
         .def("SetIncludedPurposes", &BBoxCache::SetIncludedPurposes,
              arg("includedPurposes"))
@@ -65,6 +167,10 @@ void wrapUsdGeomBBoxCache()
              return_value_policy<TfPySequenceToList>())
         .def("SetTime", &BBoxCache::SetTime, arg("time"))
         .def("GetTime", &BBoxCache::GetTime)
+        .def("SetBaseTime", &BBoxCache::SetBaseTime, arg("time"))
+        .def("GetBaseTime", &BBoxCache::GetBaseTime)
+        .def("HasBaseTime", &BBoxCache::HasBaseTime)
+        .def("ClearBaseTime", &BBoxCache::ClearBaseTime)
         .def("GetUseExtentsHint", &BBoxCache::GetUseExtentsHint)
         ;
 }

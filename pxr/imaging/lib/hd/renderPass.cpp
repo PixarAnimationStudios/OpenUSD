@@ -33,8 +33,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/bind.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdRenderPass::HdRenderPass(HdRenderIndex *index,

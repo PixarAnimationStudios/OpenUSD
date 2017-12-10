@@ -254,5 +254,35 @@ class TestUsdFlatten(unittest.TestCase):
         assert basAttr
         self.assertEqual(basAttr.GetConnections(), [Sdf.Path('/bar.bas')])
 
+    def test_FlattenTimeSamplesAndDefaults(self):
+        testFile = "time_samples/root.usda"
+        resultFile = "time_samples/result.usda"
+
+        stage = Usd.Stage.Open(testFile)
+        resultLayer = stage.Flatten()
+
+        # The flattened result for /StrongerDefault should only
+        # have a default value, since a default value in a stronger
+        # layer will override all time samples in a weaker layer.
+        resultAttrSpec = \
+            resultLayer.GetAttributeAtPath("/StrongerDefault.attr")
+        self.assertEqual(resultAttrSpec.default, 1.0)
+        self.assertEqual(
+            resultLayer.ListTimeSamplesForPath(resultAttrSpec.path), [])
+
+        # The flattened result for /StrongerTimeSamples should have
+        # both time samples and a default value even though the default
+        # is set in a weaker sublayer, since value resolution uses that
+        # when requesting the value at the default time.
+        resultAttrSpec = \
+            resultLayer.GetAttributeAtPath("/StrongerTimeSamples.attr")
+        self.assertEqual(resultAttrSpec.default, 1.0)
+        self.assertEqual(
+            resultLayer.ListTimeSamplesForPath(resultAttrSpec.path), [0.0, 1.0])
+        self.assertEqual(
+            resultLayer.QueryTimeSample(resultAttrSpec.path, 0.0), 100.0)
+        self.assertEqual(
+            resultLayer.QueryTimeSample(resultAttrSpec.path, 1.0), 101.0)
+
 if __name__ == "__main__":
     unittest.main()

@@ -49,9 +49,9 @@ public:
     /// The name of the child prim, typically used for prototypes.
     TfToken childName;
 
-    /// The surface shader path bound to the instance prim
+    /// The path to the material bound to the instance prim
     /// being processed.
-    SdfPath instanceSurfaceShaderPath;
+    SdfPath instanceMaterialId;
 
     /// The instancer's prim Adapter. Useful when an adapter is needed, but the
     /// default adapter may be overriden for the sake of instancing.

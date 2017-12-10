@@ -32,12 +32,11 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/propertySpec.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <iosfwd>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <utility>
 #include <vector>
@@ -51,6 +50,10 @@ class Usd_InterpolatorBase;
 /// associated with value clip functionality.
 bool
 UsdIsClipRelatedField(const TfToken& fieldName);
+
+/// Returns list of all field names associated with value clip functionality.
+std::vector<TfToken>
+UsdGetClipRelatedFields();
 
 /// \class Usd_ResolvedClipInfo
 ///
@@ -139,8 +142,10 @@ constexpr double Usd_ClipTimesLatest = std::numeric_limits<double>::max();
 /// Represents a clip from which time samples may be read during
 /// value resolution.
 ///
-struct Usd_Clip : public boost::noncopyable
+struct Usd_Clip
 {
+    Usd_Clip(Usd_Clip const &) = delete;
+    Usd_Clip &operator=(Usd_Clip const &) = delete;
 public:
     /// A clip has two time domains: an external and an internal domain.
     /// The internal time domain is what is authored in the clip layer.
@@ -314,7 +319,7 @@ private:
     mutable SdfLayerRefPtr _layer;
 };
 
-typedef boost::shared_ptr<Usd_Clip> Usd_ClipRefPtr;
+typedef std::shared_ptr<Usd_Clip> Usd_ClipRefPtr;
 typedef std::vector<Usd_ClipRefPtr> Usd_ClipRefPtrVector;
 
 std::ostream&

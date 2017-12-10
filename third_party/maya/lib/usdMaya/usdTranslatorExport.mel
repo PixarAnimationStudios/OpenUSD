@@ -47,6 +47,11 @@ global proc string usdTranslatorExport_AppendFromIntField(string $currentOptions
     return $currentOptions + ";" + $arg + "=" + $value;
 }
 
+global proc string usdTranslatorExport_AppendFromTextField(string $currentOptions, string $arg, string $widget) {
+    string $value = `textFieldGrp -q -text $widget`;
+    return $currentOptions + ";" + $arg + "=" + $value;
+}
+
 global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $currentOptions, string $arg, string $widget) {
     string $rawValue = `textFieldGrp -q -text $widget`;
 
@@ -64,9 +69,9 @@ global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $cur
 }
 
 global proc int usdTranslatorExport (string $parent,
-                                 string $action,
-                                 string $initialSettings,
-                                 string $resultCallback )
+                                     string $action,
+                                     string $initialSettings,
+                                     string $resultCallback ) 
 //
 //  Description:
 //    This script posts the USDExport file translator options.
@@ -106,8 +111,11 @@ global proc int usdTranslatorExport (string $parent,
             menuItem -l $each;
         }
 
-        checkBox -l "Make References Instanceable" exportReferencesAsInstanceableCheckBox;
+        checkBox -l "Make References Instanceable"      exportReferencesAsInstanceableCheckBox;
 
+        checkBox -l "Export material collections" exportMaterialCollectionsCheckBox;
+        textFieldGrp -l "Material collections path:" materialCollectionsPathField;
+        
         checkBox -l "Export UVs" exportUVsCheckBox;
 
         checkBox -l "Normalize UVs" normalizeUVsCheckBox;
@@ -156,6 +164,10 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferencesAsInstanceableCheckBox");
                 } else if ($optionBreakDown[0] == "exportUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportUVsCheckBox");
+                } else if ($optionBreakDown[0] == "exportMaterialCollections") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportMaterialCollectionsCheckBox");
+                } else if ($optionBreakDown[0] == "materialCollectionsPath") {
+                    textFieldGrp -e -text $optionBreakDown[1] materialCollectionsPathField;
                 } else if ($optionBreakDown[0] == "normalizeUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
@@ -205,6 +217,8 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferencesAsInstanceable", "exportReferencesAsInstanceableCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeUVs", "normalizeUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");

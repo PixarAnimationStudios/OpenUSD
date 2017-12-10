@@ -29,7 +29,6 @@
 #include "pxr/usd/sdf/pathTable.h"
 
 #include <tbb/mutex.h>
-#include <boost/noncopyable.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,8 +41,10 @@ class PcpPrimIndex;
 /// Private helper object for computing and caching clip information for 
 /// a prim on a UsdStage.
 ///
-class Usd_ClipCache : public boost::noncopyable
+class Usd_ClipCache
 {
+    Usd_ClipCache(Usd_ClipCache const &) = delete;
+    Usd_ClipCache &operator=(Usd_ClipCache const &) = delete;
 public:
     Usd_ClipCache();
     ~Usd_ClipCache();

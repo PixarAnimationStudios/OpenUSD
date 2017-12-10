@@ -31,9 +31,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \file work/threadLimits.h
 
-/// Returns the value of the PXR_WORK_THREAD_LIMIT env setting.
-WORK_API unsigned WorkGetThreadLimit();
-
 /// Return the current concurrency limit, always >= 1.
 ///
 /// The initial value is determined by the PXR_WORK_THREAD_LIMIT env setting,

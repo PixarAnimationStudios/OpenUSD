@@ -26,6 +26,7 @@
 #include <DEP/DEP_MicroNode.h>
 #include <UI/UI_Object.h>
 #include <UT/UT_ConcurrentHashMap.h>
+#include <UT/UT_Exit.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_Lock.h>
 #include <UT/UT_ParallelUtil.h>
@@ -362,7 +363,7 @@ private:
 class GusdStageCache::_Impl
 {
 public:
-    ~_Impl() { Clear(); }
+    ~_Impl();
 
     UT_RWLock&      GetMapLock()    { return _mapLock; }
 
@@ -473,6 +474,17 @@ private:
     
     UT_Array<GusdUSD_DataCache*> _dataCaches;
 };
+
+
+GusdStageCache::_Impl::~_Impl()
+{
+    // Clear() entries, so that micro nodes are dirtied as expected. 
+    // Don't let this happen if Houdini is undergoing shutdown,
+    // though, as the UI queue may have already expired.
+    if(!UT_Exit::isExiting()) {
+        Clear();
+    }
+}
 
 
 UsdStageRefPtr
@@ -653,7 +665,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     // XXX: empty paths and invalid prim paths should be caught earlier.
     UT_ASSERT_P(path);
     UT_ASSERT_P(primPath.IsAbsolutePath());
-    UT_ASSERT_P(primPath.IsPrimPath());
+    UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
 
     if(primPath == SdfPath::AbsoluteRootPath()) {
         // Take the cheap path!
@@ -798,7 +810,7 @@ UsdStageRefPtr
 _MaskedStageCache::FindStage(const SdfPath& primPath)
 {
     UT_ASSERT_P(primPath.IsAbsolutePath());
-    UT_ASSERT_P(primPath.IsPrimPath());
+    UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
 
     _StageMap::const_accessor ancestorAcc; 
     if(_map.find(ancestorAcc, primPath))
@@ -962,8 +974,8 @@ GusdStageCacheReader::GetPrim(const UT_StringRef& path,
     if(path && primPath.IsAbsolutePath() &&
        primPath.IsAbsoluteRootOrPrimPath()) {
 
-        if(pair.second = _cache._impl->FindOrOpenMaskedStage(
-               path, opts, edit, primPath, err)) {
+        if((pair.second = _cache._impl->FindOrOpenMaskedStage(
+               path, opts, edit, primPath, err))) {
 
             pair.first =
                 GusdUSD_Utils::GetPrimFromStage(pair.second, primPath, err);
@@ -1092,14 +1104,18 @@ GusdStageCacheReader::GetPrims(
 
     std::atomic_bool workerInterrupt(false);
 
+#if HDK_API_VERSION < 16050000
     UTparallelForHeavyItems(
-        UT_BlockedRange<size_t>(0, count),
-        [&](const UT_BlockedRange<size_t>& r)
+	    UT_BlockedRange<exint>(0, count),
+	    [&](const UT_BlockedRange<exint>& r)
+#else
+    UTparallelForEachNumber(count, [&](const UT_BlockedRange<exint>& r)
+#endif
     {
         auto* boss = UTgetInterrupt();
-        char bcnt;
+        char bcnt = 0;
 
-        for(size_t i = r.begin(); i < r.end(); ++i) {
+        for(exint i = r.begin(); i < r.end(); ++i) {
             if(BOOST_UNLIKELY(!++bcnt && (boss->opInterrupt() || 
                                           workerInterrupt))) {
                 return;

@@ -25,7 +25,6 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,9 +42,9 @@ UsdImagingRectLightAdapter::~UsdImagingRectLightAdapter()
 }
 
 bool
-UsdImagingRectLightAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingRectLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->rectLight);
+    return index->IsSprimTypeSupported(HdPrimTypeTokens->rectLight);
 }
 
 SdfPath
@@ -53,7 +52,7 @@ UsdImagingRectLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(HdPrimTypeTokens->rectLight, prim);
+    index->InsertSprim(HdPrimTypeTokens->rectLight, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();

@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdResourceRegistry;
+class HdStResourceRegistry;
 class HdSt_Subdivision;
 struct HdQuadInfo;
 class SdfPath;
@@ -87,7 +87,7 @@ public:
     /// via the resource registry.
     HdSt_QuadInfoBuilderComputationSharedPtr GetQuadInfoBuilderComputation(
         bool gpu, SdfPath const &id,
-        HdResourceRegistry *resourceRegistry = nullptr);
+        HdStResourceRegistry *resourceRegistry = nullptr);
 
     /// Returns the quad indices (for drawing) buffer source computation.
     HdBufferSourceSharedPtr GetQuadIndexBuilderComputation(SdfPath const &id);

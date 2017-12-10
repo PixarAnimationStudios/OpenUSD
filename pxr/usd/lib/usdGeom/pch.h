@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <mach/mach_time.h>
@@ -85,7 +86,6 @@
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/assign/list_of.hpp>
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/container/vector.hpp>
@@ -191,6 +191,7 @@
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_cv.hpp>

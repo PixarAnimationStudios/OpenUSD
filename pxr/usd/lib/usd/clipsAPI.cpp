@@ -112,7 +112,7 @@ TF_DEFINE_PUBLIC_TOKENS(UsdClipsAPIInfoKeys, USDCLIPS_INFO_KEYS);
 TF_DEFINE_PUBLIC_TOKENS(UsdClipsAPISetNames, USDCLIPS_SET_NAMES);
 
 TF_DEFINE_ENV_SETTING(
-    USD_AUTHOR_LEGACY_CLIPS, true,
+    USD_AUTHOR_LEGACY_CLIPS, false,
     "If on, clip info will be stored in separate metadata fields "
     "instead of in the clips dictionary when using API that does "
     "not specify a clip set.");

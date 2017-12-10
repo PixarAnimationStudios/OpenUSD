@@ -65,25 +65,11 @@ HdxDrawTargetResolveTask::_Execute(HdTaskContext* ctx)
     // regular buffers so use them in the rest of the pipeline.
     size_t numDrawTargets = passes->size();
     if (numDrawTargets > 0) {
-        // Store the current framebuffers so we can set them back after blitting
-        GLuint rfb;
-        GLuint dfb;
-        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, (GLint*)&rfb);
-        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, (GLint*)&dfb);
-
+        std::vector<GlfDrawTarget*> drawTargets(numDrawTargets);
         for (size_t i = 0; i < numDrawTargets; ++i) {
-            HdxDrawTargetRenderPass *pass = (*passes)[i].get();
-            GlfDrawTargetRefPtr drawtarget= pass->GetDrawTarget();
-
-            // If the fbo has msaa attachments let's resolve them now
-            if (drawtarget->HasMSAA()) {
-                drawtarget->Resolve();
-            }
+            drawTargets[i] = boost::get_pointer((*passes)[i]->GetDrawTarget());
         }
-
-        // Restore the FBOs
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, rfb);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dfb);
+        GlfDrawTarget::Resolve(drawTargets);
     }
 }
 

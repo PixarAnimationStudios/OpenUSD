@@ -167,12 +167,11 @@ ExtractPrimPathAndVariants(const SdfPath& path,
             // so that the variants path doesn't include any unnecessary    
             // trailing elements. This is done in part because, in some
             /// contexts, the path will become a cache key.
-            for(variants = path; !variants.IsPrimVariantSelectionPath();
+            for(variants = path; (!variants.IsPrimVariantSelectionPath() &&
+                                  !variants.IsEmpty());
                 variants = variants.GetParentPath()) {
 
                 UT_ASSERT_P(!variants.IsEmpty());
-
-                variants = variants.GetParentPath();
             }
         } else {
             variants = SdfPath();

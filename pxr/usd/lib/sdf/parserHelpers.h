@@ -28,7 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/inttypes.h"
 
-#include <boost/function.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/type_traits/is_floating_point.hpp>
 #include <boost/type_traits/is_integral.hpp>
@@ -37,6 +36,7 @@
 #include <boost/variant.hpp>
 
 #include <climits>
+#include <functional>
 #include <limits>
 #include <map>
 #include <string>
@@ -312,9 +312,9 @@ private:
     _Variant _variant;
 };
 
-typedef boost::function<VtValue (vector<unsigned int> const &,
-                                 vector<Value> const &,
-                                 size_t &, string *)> ValueFactoryFunc;
+typedef std::function<VtValue (vector<unsigned int> const &,
+                               vector<Value> const &,
+                               size_t &, string *)> ValueFactoryFunc;
 
 struct ValueFactory {
     ValueFactory() {}

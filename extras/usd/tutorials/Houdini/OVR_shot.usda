@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    endTimeCode = 240
+    startTimeCode = 1
+    subLayers = [
+        @OVR_house.usda@,
+        @shot_import.usda@
+    ]
+)
+

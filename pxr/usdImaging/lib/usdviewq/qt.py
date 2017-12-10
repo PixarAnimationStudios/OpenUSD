@@ -27,7 +27,7 @@ from attributeValueEditorUI import QtCore
 
 if QtCore.__name__.startswith('PySide.'):
     from PySide import QtGui, QtOpenGL
-    from PySide import QtGui as QtWidgets        
+    from PySide import QtGui as QtWidgets
 
     # Patch missing functions to make PySide look like PySide2
 

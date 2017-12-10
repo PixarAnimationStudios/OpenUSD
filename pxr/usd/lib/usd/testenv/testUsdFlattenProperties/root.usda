@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sub.usda@ (offset = 10)
+    ]
+)
+
+def "Basic"
+{
+    double a = 1 (
+        displayName = "foo"
+    )
+    double a.timeSamples = {
+        0: 100,
+        10: 1000,
+    }
+}
+
+over "WeakerTimeSamples"
+{
+    double a = 1
+}
+
+over "StrongerTimeSamples"
+{
+    double a.timeSamples = {
+        0: 100,
+        10: 1000,
+    }
+}
+
+def FlattenPropertyTest "FlattenPropertyTest"
+{
+}
+
+over "FlattenOverSelf"
+{
+    string builtinAttr (
+        testCustomMetadata = "root authored metadata"
+    )
+}
+
+def "RemapTargetPaths"
+{
+    rel a = [
+        </OutsideTarget>,
+        </RemapTargetPaths/A>, 
+        </RemapTargetPaths/A.b>,
+        </RemapTargetPaths.b>
+    ]
+}
+
+def FlattenPropertyTest "FlattenInstanceRef"
+{
+}
+
+def "FlattenInstances"
+{
+    def "Instance" (
+        instanceable = True
+        references = </FlattenInstanceRef>
+    )
+    {
+        string builtinAttr = "instance authored value"
+        string builtinAttr.connect = [
+            </FlattenInstances/Instance.builtinAttr>
+        ]
+    }
+
+    def "Instance2" (
+        instanceable = True
+        references = </FlattenInstanceRef>
+    )
+    {
+        string builtinAttr = "instance authored value 2"
+        string builtinAttr.connect = [
+            </FlattenInstances/Instance.builtinAttr>
+        ]
+    }
+}
+
+def "FlattenInstanceProperty" (
+    instanceable = True
+    references = </FlattenInstances>
+)
+{
+}

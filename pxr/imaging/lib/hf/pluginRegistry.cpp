@@ -86,6 +86,24 @@ HfPluginRegistry::GetPluginDescs(HfPluginDescVector *plugins)
     }
 }
 
+bool
+HfPluginRegistry::GetPluginDesc(const TfToken &pluginId, HfPluginDesc *desc)
+{
+    if (!_pluginCachePopulated) {
+        _DiscoverPlugins();
+    }
+
+    _TokenMap::const_iterator it = _pluginIndex.find(pluginId);
+    if (it == _pluginIndex.end()) {
+        return false;
+    }
+
+    Hf_PluginEntry &entry = _pluginEntries[it->second];
+    entry.GetDesc(desc);
+
+    return true;
+}
+
 void
 HfPluginRegistry::AddPluginReference(HfPluginBase *plugin)
 {

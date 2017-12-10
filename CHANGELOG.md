@@ -1,5 +1,150 @@
 # Change Log
 
+## [0.8.2] - 2017-12-01
+
+Release 0.8.2 increments the file format version for .usdc files. New .usdc
+files created in this release will not be readable by earlier releases. See
+below for more details.
+
+### Added
+- SdfCopySpec for copying scene description specs in layers.
+- Usd.GetVersion() for retrieving USD version in Python (Issue #306)
+- UsdProperty::FlattenTo for copying a UsdProperty's resolved metadata/values.
+- IsTyped and IsConcrete schema queries on UsdSchemaRegistry and UsdSchemaBase. 
+- UsdCollectionAPI schema for representing collections of objects. This schema
+  is more expressive than UsdGeomCollectionAPI and can represent large numbers
+  of objects compactly.
+- Utility functions in UsdUtils for determining compact representations of
+  objects for UsdCollectionAPI.
+- UsdUtilsCoalescingDiagnosticDelegate, a Tf diagnostic delegate that provides
+  condensed output for diagnostic messages.
+- UsdUtilsFlattenLayerStack for flattening a UsdStage's layer stack into a
+  single layer, as well as a --flattenLayerStack option to usdcat.
+- Support for named clip sets for clip stitching API in UsdUtils.
+- Schema for cards rendering in UsdGeomModelAPI and imaging support. This
+  provides a lightweight way to collapse model hierarchies into simple
+  geometry for visualization of large scenes.
+- Ability to encode familyType on owners of families of UsdGeomSubsets.
+- Size properties for UsdLuxDiskLight, UsdLuxSphereLight, and UsdLuxRectLight. 
+  (Issue #290)
+- Support for computing bounding boxes for UsdGeomPointInstancer instances 
+  using UsdGeomBBoxCache.
+- Support for residual GPU computations in Hydra.
+- Sheer display mode in Hydra, a 'see-through' display mode akin to the
+  mesh being covered in a sheer mesh fabric instead of its regular surface.
+  Implemented as a regular grid stipple pattern of the surface at 20% opacity.
+- Testing framework for usdview.
+- PxrUsdMayaXformStack for representing transform stacks in the Maya plugin.
+- Support for exporting Maya instancers to UsdGeomPointInstancers in the Maya
+  plugin.
+- Support for exporting groups of objects with the same material binding as
+  collections encoded with UsdCollectionAPI in the Maya plugin.
+- Support for vec4 primvars in the Katana plugin.
+- Support for point instancers with varying topology that don't have authored 
+  velocities in the Katana plugin.
+- Support for importing collections encoded with new UsdCollectionAPI schema
+  in the Katana plugin.
+- Support for overriding data on a subset of point instancer instances in
+  the Houdini plugin.
+
+### Changed
+- Build system now checks that the compiler being used supports 64-bit builds. 
+- Tf diagnostic warnings and status messages issued in secondary threads are
+  no longer printed to the terminal.
+- Multiple delegates may now be registered with the Tf diagnostic system.
+- SdfLayer::RemoveInertSceneDescription removes inert overs in variants.
+- When saving a new .usdc file over an existing file, data is first saved to a 
+  temporary file then renamed to the destination file. This provides some 
+  protection for other processes that were reading the old file.
+- Compression for structural sections in .usdc files is now enabled by default.
+  New .usdc files will be marked as version 0.4.0 instead of 0.3.0 to 
+  accommodate a bug fix described below. This means that any new .usdc files 
+  created in this release will not be readable by previous USD releases.
+
+  Users can disable the compression functionality by setting the environment
+  variable `USD_WRITE_NEW_USDC_FILES_AS_VERSION` to "0.0.1". This will ensure 
+  new .usdc files will be readable in older releases.
+
+- UsdStage now uses the composed layer offset instead of its inverse when
+  mapping times in layers to the stage. For example, to shift the time samples
+  in a referenced layer stack forward by 10, users previously authored an
+  offset of -10. Under the new behavior, users need to author an offset of 10
+  instead. 
+
+  Users can revert to the old behavior by setting the environment variable
+  `USD_USE_INVERSE_LAYER_OFFSET` to 1. This will be deprecated in a future 
+  release.
+
+- UsdStage now allows a prim to be loaded without loading its descendants via
+  a new UsdLoadPolicy argument supplied to UsdStage::Load and LoadAndUnload.
+- UsdInherits, UsdSpecializes, and UsdReferences now map non-root prim paths
+  to the namespace of the edit target.
+- UsdAttribute::GetTimeSamplesInInterval now supports open/finite end points.
+- UsdClipsAPI now authors the dictionary-style clips metadata introduced in
+  release 0.7.6 by default.
+- Schemas may now define fallback values for the majority of metadata fields,
+  including custom metadata fields.
+- Schemas may now have more than 256 tokens defined.
+- usdedit now checks `USD_EDITOR` environment variable first when determining
+  which editor to use.
+- Ongoing refactoring to move code from hd to hdSt in preparation for material
+  support in Hydra and use of Hydra in other renderer backends.
+- Several performance optimizations in Hydra and UsdImaging.
+- usdview now uses a new JSON-based format for its settings file. Settings
+  files from older releases will be ignored.
+- Several changes to provide better support for Viewport 2.0 in Maya plugin.
+- Enum attributes in Maya now have their integer values exported to USD 
+  instead of their descriptive names.
+- Improved attribute transfer on USD Unpack node in Houdini plugin.
+- usdvisible and usdactive attributes in Houdini plugin are now integers
+  instead of strings.
+- Several changes to Houdini plugin for compatibility with Houdini 16.5
+  and improved HDK usage.
+
+### Deprecated
+- UsdGeomCollectionAPI, in favor of new UsdCollectionAPI.
+
+### Removed
+- TfDiagnosticNotice. The Tf diagnostic system no longer emits notices; 
+  consumers relying on these notices should use diagnostic delegates instead.
+- UsdGeomPointInstancer prototypeDrawMode attribute. Consumers should use
+  the new drawMode attributes on UsdGeomModelAPI instead.
+
+### Fixed
+- Issue where users were forced to define certain preprocessor macros in 
+  order to build code against USD. In particular, an issue introduced in 0.8.1
+  caused users who did not #define PXR_ENABLE_PYTHON_SUPPORT to run into odd
+  errors at runtime. (Issue #304)
+- Bug that caused invalid .usdc files to be written. This affected all files
+  with version 0.3.0; however, this file version was not enabled by default in
+  release 0.8.1 and would only affect users who had explicitly enabled the
+  new version via the `USD_WRITE_NEW_USDC_FILES_AS_VERSION` environment setting.
+- Precision loss when writing time sample times to .usda files.
+- Performance issue in UsdStage where memory would still be consumed by 
+  child prims after their parent prim had been deactivated.
+- Bug that caused UsdStage::ExpandPopulationMask to add invalid paths.
+- Bug that caused UsdObject::GetMetadata to not fill in resolved paths for
+  asset-valued metadata.
+- Bug where layer offsets were incorrectly applied when authoring time samples.
+- Bug in UsdUtilsStageCache that led to crashes during static destruction.
+- Unpickable objects now act as occluders during picking in Hydra.
+- Bug that caused usdview to stop drawing after "Reopen Stage" or "Open Stage".
+- Bug that caused usdview to not play all frames if the step size was changed.
+  (Issue #321)
+- Several performance and UI issues in usdview.
+- Crash in Maya plugin with nested assemblies and variant set selections.
+  (Issue #288)
+- Bug in Maya plugin where exporting over a previously-imported layer failed.
+- Bug in Maya plugin that caused lights to flip between directional and 
+  non-directional in legacy viewport.
+- Various issues that prevented UsdKatana Python module from being imported.
+  (Issue #323)
+- Material bindings above point instancer prototypes are now preserved in 
+  the Katana plugin.
+- Reworked how USD masters/sources are built in the Katana plugin so 
+  that material bindings use the correct Katana paths.
+- Hang in Houdini plugin when importing from variant paths. (Issue #309)
+
 ## [0.8.1] - 2017-10-02
 
 ### Added

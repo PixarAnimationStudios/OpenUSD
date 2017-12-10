@@ -22,13 +22,57 @@
 // language governing permissions and limitations under the Apache License.
 //
 // GENERATED FILE.  DO NOT EDIT.
+#include <boost/python/class.hpp>
 #include "pxr/usd/usdSkel/tokens.h"
-#include "pxr/base/tf/pyStaticTokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+// Helper to return a static token as a string.  We wrap tokens as Python
+// strings and for some reason simply wrapping the token using def_readonly
+// bypasses to-Python conversion, leading to the error that there's no
+// Python type for the C++ TfToken type.  So we wrap this functor instead.
+class _WrapStaticToken {
+public:
+    _WrapStaticToken(const TfToken* token) : _token(token) { }
+
+    std::string operator()() const
+    {
+        return _token->GetString();
+    }
+
+private:
+    const TfToken* _token;
+};
+
+template <typename T>
+void
+_AddToken(T& cls, const char* name, const TfToken& token)
+{
+    cls.add_static_property(name,
+                            boost::python::make_function(
+                                _WrapStaticToken(&token),
+                                boost::python::return_value_policy<
+                                    boost::python::return_by_value>(),
+                                boost::mpl::vector1<std::string>()));
+}
+
+} // anonymous
+
 void wrapUsdSkelTokens()
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdSkelTokens,
-                             USDSKEL_TOKENS);
+    boost::python::class_<UsdSkelTokensType, boost::noncopyable>
+        cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "joints", UsdSkelTokens->joints);
+    _AddToken(cls, "primvarsSkelGeomBindTransform", UsdSkelTokens->primvarsSkelGeomBindTransform);
+    _AddToken(cls, "primvarsSkelJointIndices", UsdSkelTokens->primvarsSkelJointIndices);
+    _AddToken(cls, "primvarsSkelJointWeights", UsdSkelTokens->primvarsSkelJointWeights);
+    _AddToken(cls, "restTransforms", UsdSkelTokens->restTransforms);
+    _AddToken(cls, "rotations", UsdSkelTokens->rotations);
+    _AddToken(cls, "scales", UsdSkelTokens->scales);
+    _AddToken(cls, "skelAnimationSource", UsdSkelTokens->skelAnimationSource);
+    _AddToken(cls, "skelJoints", UsdSkelTokens->skelJoints);
+    _AddToken(cls, "skelSkeleton", UsdSkelTokens->skelSkeleton);
+    _AddToken(cls, "translations", UsdSkelTokens->translations);
 }
