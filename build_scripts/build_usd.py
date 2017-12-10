@@ -375,7 +375,7 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 
 def InstallBoost(context, force):
     boost_version = context.boost.replace(".", "_")
-    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/" + context.boost + ".0/boost_" + boost_version + "_0.tar.gz"
+    BOOST_URL = "http://downloads.sourceforge.net/project/boost/boost/" + context.boost + "/boost_" + boost_version + ".tar.gz"
 
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
@@ -408,20 +408,24 @@ def InstallBoost(context, force):
             b2_settings.append("-a")
 
         if Windows():
-            b2_settings.append("toolset=msvc-14.0")
-            
-            # Boost 1.61 doesn't support Visual Studio 2017.  If that's what 
-            # we're using then patch the project-config.jam file to hack in 
-            # support. We'll get a lot of messages about an unknown compiler 
-            # version but it will build.
             msvcCompilerAndVersion = GetVisualStudioCompilerAndVersion()
             if msvcCompilerAndVersion:
+            
+                # Boost 1.61 doesn't support Visual Studio 2017.  If that's what 
+                # we're using then patch the project-config.jam file to hack in 
+                # support. We'll get a lot of messages about an unknown compiler 
+                # version but it will build.
+                # Boost 1.65.1 is the lowest version of boost that correctly
+                # supports Visual Studio 2017.
                 compiler, version = msvcCompilerAndVersion
                 if version >= MSVC_2017_COMPILER_VERSION:
                     PatchFile('project-config.jam',
                               [('using msvc', 
-                                'using msvc : 14.0 : "{compiler}"'
+                                'using msvc : 14.1 : "{compiler}"'
                                 .format(compiler=compiler))])
+                    b2_settings.append("toolset=msvc-14.1")
+                else:
+                    b2_settings.append("toolset=msvc-14.0")
 
         if MacOS():
             # Must specify toolset=clang to ensure install_name for boost
@@ -937,12 +941,12 @@ group.add_argument("--force-all", action="store_true",
 
 if Linux():
     group.add_argument("--boost", type=str,
-                       default="1.55",
-                       help=("boost version, default is 1.55"))
+                       default="1.55.0",
+                       help=("boost version, default is 1.55.0"))
 else:
     group.add_argument("--boost", type=str,
-                       default="1.61",
-                       help=("boost version, default is 1.61"))
+                       default="1.61.0",
+                       help=("boost version, default is 1.61.0"))
 
 group = parser.add_argument_group(title="USD Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1075,6 +1079,9 @@ class InstallContext:
         self.forceBuild = [dep.lower() for dep in args.force_build]
 
         self.boost = args.boost
+        # if minor version is not specified, default it to .0
+        if self.boost.count(".") == 1:
+            self.boost += ".0"
 
         # Optional components
         self.buildTests = args.build_tests
@@ -1148,7 +1155,10 @@ if extraPythonPaths:
 # "layout=system" would make the Windows install match Linux/MacOS, but that 
 # causes problems for other dependencies that look for boost.
 if Windows():
-    boost_version = context.boost.replace(".", "_")
+    # .0 versions of boost don't end in _0.
+    boost_version = "_".join(context.boost.split("."))
+    if boost_version[-2:] == ".0":
+        boost_version = boost_version[:-2]
     BOOST = Dependency("boost", InstallBoost, "include/boost-" + boost_version + "/boost/version.hpp")
 else:
     BOOST = Dependency("boost", InstallBoost, "include/boost/version.hpp")
