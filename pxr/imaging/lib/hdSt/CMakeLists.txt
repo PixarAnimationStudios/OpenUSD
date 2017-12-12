@@ -83,6 +83,8 @@ pxr_library(hdSt
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
+        shaders/lighting.glslfx
+        shaders/lightingIntegrationShader.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
 )

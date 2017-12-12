@@ -125,8 +125,6 @@ pxr_library(hd
         shaders/compute.glslfx
         shaders/frustumCull.glslfx
         shaders/instancing.glslfx
-        shaders/lighting.glslfx
-        shaders/lightingIntegrationShader.glslfx
         shaders/mesh.glslfx
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx

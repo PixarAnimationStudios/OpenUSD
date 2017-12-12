@@ -268,12 +268,6 @@ public:
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
 
-    /// Returns the per delegate mixin source code for the given shader stage key.
-    /// This allows per-rprim customization of shading for a given delegate.
-    /// \see GetShadingStyle
-    HD_API
-    virtual std::string GetMixinShaderSource(TfToken const &shaderStageKey);
-
     /// Returns a single value for the given shader and named parameter.
     HD_API
     virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 

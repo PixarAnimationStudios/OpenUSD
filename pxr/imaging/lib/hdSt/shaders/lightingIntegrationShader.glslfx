@@ -27,7 +27,7 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hd/shaders/lightingIntegrationShader.glslfx
 
-#import $TOOLS/hd/shaders/lighting.glslfx
+#import $TOOLS/hdSt/shaders/lighting.glslfx
 
 -- configuration
 {

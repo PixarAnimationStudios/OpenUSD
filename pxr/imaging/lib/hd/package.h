@@ -36,9 +36,6 @@ HD_API
 TfToken HdPackageComputeShader();
 
 HD_API
-TfToken HdPackageLightingIntegrationShader();
-
-HD_API
 TfToken HdPackagePtexTextureShader();
 
 

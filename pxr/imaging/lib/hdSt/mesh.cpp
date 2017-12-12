@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/mixinShaderCode.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/shader.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -1053,6 +1054,26 @@ HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
     return _IsEnabledForceQuadrangulate();
 }
 
+static std::string
+_GetMixinShaderSource(TfToken const &shaderStageKey)
+{
+    if (shaderStageKey.IsEmpty()) {
+        return std::string("");
+    }
+
+    // TODO: each delegate should provide their own package of mixin shaders
+    // the lighting mixins are fallback only.
+    static std::once_flag firstUse;
+    static std::unique_ptr<GlfGLSLFX> mixinFX;
+   
+    std::call_once(firstUse, [](){
+        std::string filePath = HdStPackageLightingIntegrationShader();
+        mixinFX.reset(new GlfGLSLFX(filePath));
+    });
+
+    return mixinFX->GetSource(shaderStageKey);
+}
+
 HdShaderCodeSharedPtr
 HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader) const
 {
@@ -1062,8 +1083,7 @@ HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader)
         /// XXX In the future this could be a place to pull on a surface entry
         /// to get a custom terminal.
         if (!mixin.IsEmpty()) {
-            std::string mixinSource = 
-                sceneDelegate->GetMixinShaderSource(mixin);
+            std::string mixinSource = _GetMixinShaderSource(mixin);
             // Don't create code if the delegate returned an empty mixin source
             // from the given mixin.
             if (!mixinSource.empty()) {

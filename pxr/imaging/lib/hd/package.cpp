@@ -51,14 +51,6 @@ HdPackageComputeShader()
 }
 
 TfToken
-HdPackageLightingIntegrationShader()
-{
-    static TfToken shader =
-        _GetShaderPath("lightingIntegrationShader.glslfx");
-    return shader;
-}
-
-TfToken
 HdPackagePtexTextureShader()
 {
     static TfToken s = _GetShaderPath("ptexTexture.glslfx");
