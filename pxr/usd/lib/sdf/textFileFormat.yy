@@ -2040,7 +2040,7 @@ variantset_stmt:
 
 variant_list:
     variant_stmt
-    | variant_stmt variant_list
+    | variant_list variant_stmt
     ;
 
 variant_stmt:
