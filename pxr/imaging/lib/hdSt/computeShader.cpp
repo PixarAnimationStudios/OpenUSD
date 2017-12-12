@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/computeShader.h"
+#include "pxr/imaging/hdSt/computeShader.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resource.h"
@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-HdComputeShader::HdComputeShader()
+HdStComputeShader::HdStComputeShader()
  : HdShaderCode()
  , _computeSource()
  , _params()
@@ -46,12 +46,12 @@ HdComputeShader::HdComputeShader()
 {
 }
 
-HdComputeShader::~HdComputeShader()
+HdStComputeShader::~HdStComputeShader()
 {
 }
 
 void
-HdComputeShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
+HdStComputeShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
 {
     if (shaderStageKey == HdShaderTokens->computeShader) {
         _computeSource = source;
@@ -64,7 +64,7 @@ HdComputeShader::_SetSource(TfToken const &shaderStageKey, std::string const &so
 
 /*virtual*/
 std::string
-HdComputeShader::GetSource(TfToken const &shaderStageKey) const
+HdStComputeShader::GetSource(TfToken const &shaderStageKey) const
 {
     if (shaderStageKey == HdShaderTokens->computeShader) {
         return _computeSource;
@@ -74,43 +74,43 @@ HdComputeShader::GetSource(TfToken const &shaderStageKey) const
 }
 /*virtual*/
 HdShaderParamVector const&
-HdComputeShader::GetParams() const
+HdStComputeShader::GetParams() const
 {
     return _params;
 }
 /*virtual*/
 HdBufferArrayRangeSharedPtr const&
-HdComputeShader::GetShaderData() const
+HdStComputeShader::GetShaderData() const
 {
     return _paramArray;
 }
 /*virtual*/
 HdShaderCode::TextureDescriptorVector
-HdComputeShader::GetTextures() const
+HdStComputeShader::GetTextures() const
 {
     return _textureDescriptors;
 }
 /*virtual*/
 void
-HdComputeShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdStComputeShader::BindResources(Hd_ResourceBinder const &binder, int program)
 {
     binder.BindShaderResources(this);
 }
 /*virtual*/
 void
-HdComputeShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
+HdStComputeShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
 {
     binder.UnbindShaderResources(this);
 }
 /*virtual*/
 void
-HdComputeShader::AddBindings(HdBindingRequestVector *customBindings)
+HdStComputeShader::AddBindings(HdBindingRequestVector *customBindings)
 {
 }
 
 /*virtual*/
 HdShaderCode::ID
-HdComputeShader::ComputeHash() const
+HdStComputeShader::ComputeHash() const
 {
     size_t hash = 0;
     
@@ -124,14 +124,14 @@ HdComputeShader::ComputeHash() const
 }
 
 void
-HdComputeShader::SetComputeSource(const std::string &source)
+HdStComputeShader::SetComputeSource(const std::string &source)
 {
     _SetSource(HdShaderTokens->computeShader, source);
 }
 
 /// If the prim is based on asset, reload that asset.
 void
-HdComputeShader::Reload()
+HdStComputeShader::Reload()
 {
     // Nothing to do, this shader's sources are externally managed.
 }

@@ -22,6 +22,7 @@ pxr_library(hdSt
         basisCurves
         camera
         commandBuffer
+        computeShader
         copyComputation
         dispatchBuffer
         drawItemInstance
@@ -62,6 +63,7 @@ pxr_library(hdSt
         basisCurvesComputations
         basisCurvesShaderKey
         basisCurvesTopology
+        codeGen
         cullingShaderKey
         drawBatch
         drawTargetTextureResource

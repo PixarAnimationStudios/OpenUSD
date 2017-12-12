@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_CODE_GEN_H
-#define HD_CODE_GEN_H
+#ifndef HDST_CODE_GEN_H
+#define HDST_CODE_GEN_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
@@ -43,26 +43,26 @@ typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderPtr;
 typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
-/// \class Hd_CodeGen
+/// \class HdSt_CodeGen
 ///
 /// A utility class to compose glsl shader sources and compile them
 /// upon request of HdShaderSpec.
 ///
-class Hd_CodeGen
+class HdSt_CodeGen
 {
 public:
     typedef size_t ID;
 
     /// Constructor.
     HD_API
-    Hd_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
+    HdSt_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
                HdShaderCodeSharedPtrVector const &shaders);
 
     /// Constructor for non-geometric use cases.
     /// Don't call compile when constructed this way.
     /// Call CompileComputeProgram instead.
     HD_API
-    Hd_CodeGen(HdShaderCodeSharedPtrVector const &shaders);
+    HdSt_CodeGen(HdShaderCodeSharedPtrVector const &shaders);
     
     /// Return the hash value of glsl shader to be generated.
     HD_API
@@ -140,4 +140,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_CODE_GEN_H
+#endif  // HDST_CODE_GEN_H

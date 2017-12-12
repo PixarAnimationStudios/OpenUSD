@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/codeGen.h"
+#include "pxr/imaging/hdSt/codeGen.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/geometricShader.h"
@@ -78,20 +78,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     (samplerBuffer)
 );
 
-Hd_CodeGen::Hd_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
+HdSt_CodeGen::HdSt_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
                        HdShaderCodeSharedPtrVector const &shaders)
     : _geometricShader(geometricShader), _shaders(shaders)
 {
     TF_VERIFY(geometricShader);
 }
 
-Hd_CodeGen::Hd_CodeGen(HdShaderCodeSharedPtrVector const &shaders)
+HdSt_CodeGen::HdSt_CodeGen(HdShaderCodeSharedPtrVector const &shaders)
     : _geometricShader(), _shaders(shaders)
 {
 }
 
-Hd_CodeGen::ID
-Hd_CodeGen::ComputeHash() const
+HdSt_CodeGen::ID
+HdSt_CodeGen::ComputeHash() const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -323,7 +323,7 @@ namespace {
 }
 
 HdGLSLProgramSharedPtr
-Hd_CodeGen::Compile()
+HdSt_CodeGen::Compile()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -686,7 +686,7 @@ Hd_CodeGen::Compile()
 }
 
 HdGLSLProgramSharedPtr
-Hd_CodeGen::CompileComputeProgram()
+HdSt_CodeGen::CompileComputeProgram()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1135,7 +1135,7 @@ static void _EmitAccessor(std::stringstream &str,
 }
 
 void
-Hd_CodeGen::_GenerateDrawingCoord()
+HdSt_CodeGen::_GenerateDrawingCoord()
 {
     TF_VERIFY(_metaData.drawingCoord0Binding.binding.IsValid());
     TF_VERIFY(_metaData.drawingCoord1Binding.binding.IsValid());
@@ -1399,7 +1399,7 @@ Hd_CodeGen::_GenerateDrawingCoord()
 
 }
 void
-Hd_CodeGen::_GenerateConstantPrimVar()
+HdSt_CodeGen::_GenerateConstantPrimVar()
 {
     /*
       // --------- constant data declaration ----------
@@ -1471,7 +1471,7 @@ Hd_CodeGen::_GenerateConstantPrimVar()
 }
 
 void
-Hd_CodeGen::_GenerateInstancePrimVar()
+HdSt_CodeGen::_GenerateInstancePrimVar()
 {
     /*
       // --------- instance data declaration ----------
@@ -1548,7 +1548,7 @@ Hd_CodeGen::_GenerateInstancePrimVar()
 }
 
 void
-Hd_CodeGen::_GenerateElementPrimVar()
+HdSt_CodeGen::_GenerateElementPrimVar()
 {
     /*
     Accessing uniform primvar data:
@@ -1872,7 +1872,7 @@ Hd_CodeGen::_GenerateElementPrimVar()
 }
 
 void
-Hd_CodeGen::_GenerateVertexPrimVar()
+HdSt_CodeGen::_GenerateVertexPrimVar()
 {
     /*
       // --------- vertex data declaration (VS) ----------
@@ -2106,7 +2106,7 @@ Hd_CodeGen::_GenerateVertexPrimVar()
 }
 
 void
-Hd_CodeGen::_GenerateShaderParameters()
+HdSt_CodeGen::_GenerateShaderParameters()
 {
     /*
       ------------- Declarations -------------

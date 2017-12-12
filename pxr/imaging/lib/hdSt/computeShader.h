@@ -43,9 +43,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdComputeShader> HdComputeShaderSharedPtr;
+typedef boost::shared_ptr<class HdStComputeShader> HdStComputeShaderSharedPtr;
 
-/// \class HdComputeShader
+/// \class HdStComputeShader
 ///
 /// A scene-based ComputeShader object.
 ///
@@ -53,12 +53,12 @@ typedef boost::shared_ptr<class HdComputeShader> HdComputeShaderSharedPtr;
 /// can use this object to express these compute shaders in Hydra.
 /// In addition to the shader itself, a binding from the Computation Sprim
 /// to the ComputeShader must be expressed as well.
-class HdComputeShader : public HdShaderCode {
+class HdStComputeShader : public HdShaderCode {
 public:
     HD_API
-    HdComputeShader();
+    HdStComputeShader();
     HD_API
-    virtual ~HdComputeShader();
+    virtual ~HdStComputeShader();
 
 
     // ---------------------------------------------------------------------- //
@@ -104,8 +104,8 @@ private:
     TextureDescriptorVector _textureDescriptors;
     
     // No copying
-    HdComputeShader(const HdComputeShader &)                     = delete;
-    HdComputeShader &operator =(const HdComputeShader &)         = delete;
+    HdStComputeShader(const HdStComputeShader &)                     = delete;
+    HdStComputeShader &operator =(const HdStComputeShader &)         = delete;
 };
 
 

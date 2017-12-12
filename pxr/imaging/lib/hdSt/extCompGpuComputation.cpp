@@ -38,8 +38,8 @@
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hd/vtExtractor.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include <limits>
 
@@ -255,7 +255,7 @@ HdStExtCompGpuComputation::CreateComputation(
         inputs.push_back(inputSource);
     }
 
-    HdComputeShaderSharedPtr shader(new HdComputeShader());
+    HdStComputeShaderSharedPtr shader(new HdStComputeShader());
     shader->SetComputeSource(computation.GetKernel());
     
     HdStExtCompGpuComputationResourceSharedPtr resource(

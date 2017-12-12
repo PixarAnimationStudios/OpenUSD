@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/codeGen.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/codeGen.h"
+#include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,7 +47,7 @@ static size_t _Hash(HdBufferSpecVector const &specs) {
 
 HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
-        HdComputeShaderSharedPtr const &kernel,
+        HdStComputeShaderSharedPtr const &kernel,
         HdResourceRegistrySharedPtr const &registry)
  : _outputBufferSpecs(outputBufferSpecs)
  , _kernel(kernel)
@@ -96,7 +96,7 @@ HdStExtCompGpuComputationResource::Resolve()
     if (!_computeProgram || _shaderSourceHash != shaderSourceHash) {
         HdShaderCodeSharedPtrVector shaders;
         shaders.push_back(_kernel);
-        Hd_CodeGen codeGen(shaders);
+        HdSt_CodeGen codeGen(shaders);
         
         // let resourcebinder resolve bindings and populate metadata
         // which is owned by codegen.

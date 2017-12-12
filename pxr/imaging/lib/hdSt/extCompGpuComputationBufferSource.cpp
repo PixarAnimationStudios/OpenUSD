@@ -22,24 +22,22 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/codeGen.h"
-#include "pxr/imaging/hd/computeShader.h"
-#include "pxr/imaging/hdSt/extCompGpuComputation.h"
-#include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hdSt/codeGen.h"
+#include "pxr/imaging/hdSt/computeShader.h"
+#include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
+#include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include <limits>

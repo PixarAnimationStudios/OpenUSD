@@ -46,10 +46,8 @@ pxr_library(hd
         bufferSource
         bufferSpec
         changeTracker
-        codeGen
         compExtCompInputSource
         computation
-        computeShader
         conversions
         debugCodes
         dirtyList

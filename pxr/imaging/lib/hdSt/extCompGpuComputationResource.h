@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computeShader.h"
+#include "pxr/imaging/hdSt/computeShader.h"
 #include "pxr/imaging/hd/resourceBinder.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
@@ -64,7 +64,7 @@ public:
     /// for runtime execution happens on a per-registry basis.
     HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
-        HdComputeShaderSharedPtr const &kernel,
+        HdStComputeShaderSharedPtr const &kernel,
         HdResourceRegistrySharedPtr const &registry
     );
     
@@ -105,7 +105,7 @@ public:
     
 private:
     HdBufferSpecVector                    _outputBufferSpecs;
-    HdComputeShaderSharedPtr              _kernel;
+    HdStComputeShaderSharedPtr              _kernel;
     HdResourceRegistrySharedPtr           _registry;
     
     size_t                                _shaderSourceHash;
