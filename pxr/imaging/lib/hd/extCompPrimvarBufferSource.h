@@ -48,6 +48,7 @@ public:
     ///
     /// Default value provides type information for the primVar and may
     /// be used in the event of an error.
+    HD_API
     HdExtCompPrimvarBufferSource(const TfToken &primvarName,
                                  const HdExtCompCpuComputationSharedPtr &source,
                                  const TfToken &sourceOutputName,

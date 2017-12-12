@@ -97,7 +97,7 @@ HdExtComputation: Interface for user or asset defined computations.
   |
   |--- HdExtCompCpuComputation: Runs CPU compute kernels, outputs into HdBufferSources
   |
-  |--- HdExtCompGpuComputation: Runs GPU compute kernels, outputs into HdBufferArrayRange
+  |--- HdStExtCompGpuComputation: Runs GPU compute kernels, outputs into HdBufferArrayRange
 
 </pre>
 

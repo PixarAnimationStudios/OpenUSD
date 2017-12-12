@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/extCompGpuComputationResource.h"
+#include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/codeGen.h"
 #include "pxr/imaging/hd/glslProgram.h"
@@ -45,7 +45,7 @@ static size_t _Hash(HdBufferSpecVector const &specs) {
     return result;
 }
 
-HdExtCompGpuComputationResource::HdExtCompGpuComputationResource(
+HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
         HdComputeShaderSharedPtr const &kernel,
         HdResourceRegistrySharedPtr const &registry)
@@ -61,7 +61,7 @@ HdExtCompGpuComputationResource::HdExtCompGpuComputationResource(
 }
 
 bool
-HdExtCompGpuComputationResource::Resolve()
+HdStExtCompGpuComputationResource::Resolve()
 {
     // Non-in-place sources should have been registered as resource registry
     // sources already and Resolved. They go to an internal buffer range that
@@ -147,7 +147,7 @@ HdExtCompGpuComputationResource::Resolve()
 }
 
 void
-HdExtCompGpuComputationResource::AllocateInternalRange(
+HdStExtCompGpuComputationResource::AllocateInternalRange(
     HdBufferSourceVector const &inputs,
     HdBufferSourceVector *internalSources,
     HdResourceRegistrySharedPtr const &resourceRegistry)

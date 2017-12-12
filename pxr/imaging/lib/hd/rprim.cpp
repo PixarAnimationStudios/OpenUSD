@@ -27,9 +27,6 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
-#include "pxr/imaging/hd/extCompGpuComputation.h"
-#include "pxr/imaging/hd/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
@@ -42,7 +39,6 @@
 #include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hd/vtExtractor.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -547,132 +543,6 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
     }
 
     return primvarId;
-}
-
-void
-HdRprim::_GetExtComputationPrimVarsComputations(
-                                              HdSceneDelegate *sceneDelegate,
-                                              HdInterpolation interpolationMode,
-                                              HdDirtyBits dirtyBits,
-                                              HdBufferSourceVector *sources,
-                                              HdComputationVector *computations,
-                                              HdBufferSourceVector *computationSources)
-{
-    TF_VERIFY(sources);
-    TF_VERIFY(computations);
-    
-    const SdfPath &id = GetId();
-
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-    TfTokenVector compPrimVars =
-            sceneDelegate->GetExtComputationPrimVarNames(id, interpolationMode);
-
-    // what are the input primvars on the prim,
-    // let the computations know so they can manage creation of internal
-    // ranges if needed.
-    HdBufferSpecVector primBufferSpecs;
-    if (compPrimVars.size() > 0) {
-        // get the buffer specs
-        TF_FOR_ALL(it, (*sources)) {
-            (*it)->AddBufferSpecs(&primBufferSpecs);
-        }
-        TF_FOR_ALL(it, (*computations)) {
-            (*it)->AddBufferSpecs(&primBufferSpecs);
-        }
-    }
-    
-    TF_FOR_ALL(compPrimVarIt, compPrimVars) {
-        const TfToken &compPrimVarName =  *compPrimVarIt;
-
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, compPrimVarName)) {
-            HdExtComputationPrimVarDesc primVarDesc =
-                   sceneDelegate->GetExtComputationPrimVarDesc(id,
-                                                               compPrimVarName);
-
-
-            HdExtComputation *sourceComp;
-            HdSceneDelegate *sourceCompSceneDelegate;
-
-            renderIndex.GetExtComputationInfo(primVarDesc.computationId,
-                                              &sourceComp,
-                                              &sourceCompSceneDelegate);
-
-            if (sourceComp != nullptr) {
-                // combine the primvars as an output buffer specs
-                HdBufferSpecVector outputBufferSpecs;
-                {
-                    Hd_VtExtractor extractor;
-                    extractor.Extract(primVarDesc.defaultValue);
-                    outputBufferSpecs.emplace_back(
-                        primVarDesc.computationOutputName,
-                        extractor.GetGLCompontentType(),
-                        extractor.GetNumComponents(),
-                        1);        
-                }
-                
-                HdExtCompGpuComputationSharedPtr gpuComputation;
-                HdExtCompGpuComputationBufferSourceSharedPtr gpuComputationSource;
-                if (HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
-                    std::pair<HdExtCompGpuComputationSharedPtr,
-                              HdExtCompGpuComputationBufferSourceSharedPtr> comp;
-                    comp = sourceComp->GetGpuComputation(
-                        sourceCompSceneDelegate,
-                        computationSources,
-                        compPrimVarName,
-                        outputBufferSpecs,
-                        primBufferSpecs);
-                    gpuComputation = comp.first;
-                    gpuComputationSource = comp.second;
-                }
-                
-                if (gpuComputation) {
-                    HdComputationSharedPtr comp =
-                        boost::static_pointer_cast<HdComputation>(
-                            gpuComputation);
-                    computations->push_back(comp);
-                    // There is a companion resource that requires allocation
-                    // and resolution.
-                    // Query it for any internal buffer ranges needed.
-                    HdExtCompGpuComputationResourceSharedPtr resource =
-                            gpuComputation->GetResource();
-                    HdResourceRegistrySharedPtr const &resourceRegistry = 
-                        renderIndex.GetResourceRegistry();
-                    // This allocates a range suitable for the computation
-                    // if one is needed. If one is not needed the
-                    // internalSources will be empty.
-                    HdBufferSourceVector internalSources;
-                    resource->AllocateInternalRange(
-                            gpuComputationSource->GetInputs(),
-                            &internalSources,
-                            resourceRegistry);
-                    if (!internalSources.empty()) {
-                        // Only add it if it is actually needed.
-                        // Shortcut here if we are also primvar sharing
-                        // as we may not want to actually add the range
-                        // and the sources.
-                        resourceRegistry->AddSources(
-                            resource->GetInternalRange(),
-                            internalSources);
-                    }
-                    computationSources->push_back(gpuComputationSource);
-                    
-                } else {
-                    HdExtCompCpuComputationSharedPtr cpuComputation =
-                        sourceComp->GetComputation(
-                            sourceCompSceneDelegate,
-                            computationSources);
-                    HdBufferSourceSharedPtr primVarBufferSource(
-                            new HdExtCompPrimvarBufferSource(
-                                compPrimVarName,
-                                cpuComputation,
-                                primVarDesc.computationOutputName,
-                                primVarDesc.defaultValue));
-
-                    sources->push_back(primVarBufferSource);
-                }
-            }
-        }
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

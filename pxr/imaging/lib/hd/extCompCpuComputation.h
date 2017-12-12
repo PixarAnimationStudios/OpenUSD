@@ -36,8 +36,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
+class HdExtComputation;
+class HdExtCompCpuComputation;
 
 typedef std::vector<VtValue> VtValueVector;
+typedef boost::shared_ptr<HdExtCompCpuComputation>
+                                HdExtCompCpuComputationSharedPtr;
 
 ///
 /// A Buffer Source that represents a CPU implementation of a ExtComputation.
@@ -71,6 +75,14 @@ public:
                             const TfTokenVector &outputs,
                             int numElements,
                             HdSceneDelegate *sceneDelegate);
+
+    /// Create a CPU computation implementing the given abstract computation. 
+    /// The scene delegate identifies which delegate to pull scene inputs from.
+    HD_API
+    static HdExtCompCpuComputationSharedPtr
+    CreateComputation(HdSceneDelegate *sceneDelegate,
+                      const HdExtComputation &computation,
+                      HdBufferSourceVector *computationSources);
 
     HD_API
     virtual ~HdExtCompCpuComputation() = default;

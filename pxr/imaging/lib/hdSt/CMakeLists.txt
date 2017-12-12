@@ -29,6 +29,9 @@ pxr_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        extCompGpuComputation
+        extCompGpuComputationBufferSource
+        extCompGpuComputationResource
         fallbackLightingShader
         glslfxShader
         instancer

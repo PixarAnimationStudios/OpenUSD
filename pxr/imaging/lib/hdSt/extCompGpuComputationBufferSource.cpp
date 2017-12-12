@@ -31,8 +31,8 @@
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/codeGen.h"
 #include "pxr/imaging/hd/computeShader.h"
-#include "pxr/imaging/hd/extCompGpuComputation.h"
-#include "pxr/imaging/hd/extCompGpuComputationBufferSource.h"
+#include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -46,12 +46,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdExtCompGpuComputationBufferSource::HdExtCompGpuComputationBufferSource(
+HdStExtCompGpuComputationBufferSource::HdStExtCompGpuComputationBufferSource(
         SdfPath const &id,
         TfToken const &primvarName,
         HdBufferSourceVector const &inputs,
         int numElements,
-        HdExtCompGpuComputationResourceSharedPtr const &resource)
+        HdStExtCompGpuComputationResourceSharedPtr const &resource)
  : HdNullBufferSource()
  , _id(id)
  , _primvarName(primvarName)
@@ -62,7 +62,7 @@ HdExtCompGpuComputationBufferSource::HdExtCompGpuComputationBufferSource(
 }
 
 bool
-HdExtCompGpuComputationBufferSource::Resolve()
+HdStExtCompGpuComputationBufferSource::Resolve()
 {
     bool allResolved = true;
     for (size_t i = 0; i < _inputs.size(); ++i) {
@@ -89,7 +89,7 @@ HdExtCompGpuComputationBufferSource::Resolve()
 }
 
 bool
-HdExtCompGpuComputationBufferSource::_CheckValid() const
+HdStExtCompGpuComputationBufferSource::_CheckValid() const
 {
     return true;
 }

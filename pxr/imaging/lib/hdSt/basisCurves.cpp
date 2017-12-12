@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
+#include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -533,12 +534,14 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     }
 
     HdBufferSourceVector computationSources;
-    _GetExtComputationPrimVarsComputations(sceneDelegate,
-                                           HdInterpolationVertex,
-                                           *dirtyBits,
-                                           &sources,
-                                           &computations,
-                                           &computationSources);
+    HdSt_GetExtComputationPrimVarsComputations(
+        id,
+        sceneDelegate,
+        HdInterpolationVertex,
+        *dirtyBits,
+        &sources,
+        &computations,
+        &computationSources);
 
     // XXX: To Do: Check primvar counts against Topology expected counts
     // XXX: To Do: Width / Normal Interpolation

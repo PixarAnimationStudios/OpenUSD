@@ -47,6 +47,7 @@ pxr_library(hd
         bufferSpec
         changeTracker
         codeGen
+        compExtCompInputSource
         computation
         computeShader
         conversions
@@ -56,9 +57,7 @@ pxr_library(hd
         drawItem
         engine
         extCompCpuComputation
-        extCompGpuComputation
-        extCompGpuComputationBufferSource
-        extCompGpuComputationResource
+        extCompInputSource
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
@@ -83,19 +82,20 @@ pxr_library(hd
         renderPassState
         repr
         resource
-        resourceGL
         resourceBinder
+        resourceGL
         resourceRegistry
         rprim
         rprimCollection
         rprimSharedData
         sceneDelegate
+        sceneExtCompInputSource
         shader
         shaderCode
         shaderKey
         shaderParam
-        sortedIds                   
         smoothNormals
+        sortedIds                   
         sprim
         strategyBase
         task
@@ -105,10 +105,11 @@ pxr_library(hd
         topology
         unitTestDelegate
         unitTestHelper
-        unitTestNullRenderPass
         unitTestNullRenderDelegate
+        unitTestNullRenderPass
         vertexAdjacency
         vtBufferSource
+        vtExtractor
 
     PUBLIC_HEADERS
         api.h
@@ -117,11 +118,7 @@ pxr_library(hd
         version.h
 
     PRIVATE_CLASSES
-        compExtCompInputSource
-        extCompInputSource
         extComputationContextInternal
-        sceneExtCompInputSource
-        vtExtractor
         ${optionalPrivateClasses}
 
     RESOURCE_FILES

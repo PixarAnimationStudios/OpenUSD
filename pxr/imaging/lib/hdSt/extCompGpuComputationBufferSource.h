@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_EXT_COMP_GPU_COMPUTATION_BUFFER_SOURCE_H
-#define HD_EXT_COMP_GPU_COMPUTATION_BUFFER_SOURCE_H
+#ifndef HDST_EXT_COMP_GPU_COMPUTATION_BUFFER_SOURCE_H
+#define HDST_EXT_COMP_GPU_COMPUTATION_BUFFER_SOURCE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/extCompGpuComputationResource.h"
+#include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -36,11 +36,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdExtCompGpuComputationBufferSource;
-typedef boost::shared_ptr<class HdExtCompGpuComputationBufferSource>
-    HdExtCompGpuComputationBufferSourceSharedPtr;
+class HdStExtCompGpuComputationBufferSource;
+typedef boost::shared_ptr<class HdStExtCompGpuComputationBufferSource>
+    HdStExtCompGpuComputationBufferSourceSharedPtr;
 
-/// \class HdExtCompGpuComputationBufferSource
+/// \class HdStExtCompGpuComputationBufferSource
 ///
 /// A Buffer Source that represents a GPU implementation of an ExtComputation.
 ///
@@ -62,9 +62,9 @@ typedef boost::shared_ptr<class HdExtCompGpuComputationBufferSource>
 ///   HdSet_points(index, point * 2.0);
 /// }
 ///
-/// \see HdExtCompGpuComputation
+/// \see HdStExtCompGpuComputation
 ///
-class HdExtCompGpuComputationBufferSource final : public HdNullBufferSource {
+class HdStExtCompGpuComputationBufferSource final : public HdNullBufferSource {
 public:
     /// Constructs a new GPU ExtComputation computation.
     /// inputs provides a list of buffer sources that this computation
@@ -72,17 +72,17 @@ public:
     /// outputs is a list of outputs by names that the computation produces.
     ///
     /// numElements specifies the number of elements in the output.
-    HdExtCompGpuComputationBufferSource(
+    HdStExtCompGpuComputationBufferSource(
             SdfPath const &id,
             TfToken const &primvarName,
             HdBufferSourceVector const &inputs,
             int numElements,
-            HdExtCompGpuComputationResourceSharedPtr const &resource);
+            HdStExtCompGpuComputationResourceSharedPtr const &resource);
 
-    HD_API
-    virtual ~HdExtCompGpuComputationBufferSource() = default;
+    HDST_API
+    virtual ~HdStExtCompGpuComputationBufferSource() = default;
 
-    HD_API
+    HDST_API
     virtual bool Resolve() override;
     
     virtual HdBufferSourceVector const &GetInputs() const {
@@ -100,13 +100,13 @@ private:
     HdBufferSourceVector                     _inputs;
     int                                      _numElements;
     
-    HdExtCompGpuComputationResourceSharedPtr _resource;
+    HdStExtCompGpuComputationResourceSharedPtr _resource;
     
-    HdExtCompGpuComputationBufferSource()                = delete;
-    HdExtCompGpuComputationBufferSource(
-            const HdExtCompGpuComputationBufferSource &) = delete;
-    HdExtCompGpuComputationBufferSource &operator = (
-            const HdExtCompGpuComputationBufferSource &) = delete;
+    HdStExtCompGpuComputationBufferSource()                = delete;
+    HdStExtCompGpuComputationBufferSource(
+            const HdStExtCompGpuComputationBufferSource &) = delete;
+    HdStExtCompGpuComputationBufferSource &operator = (
+            const HdStExtCompGpuComputationBufferSource &) = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

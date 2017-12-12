@@ -25,6 +25,8 @@
 #define HD_VT_EXTRACTOR_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
 #include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,13 +39,17 @@ class VtValue;
 ///
 class Hd_VtExtractor final {
 public:
+    HD_API
     Hd_VtExtractor();
+
+    HD_API
     ~Hd_VtExtractor() = default;
 
     ///
     /// Process the pass in value and store the information
     /// about the value in the class members.
     ///
+    HD_API
     void Extract(const VtValue &value);
 
     ///
@@ -54,6 +60,7 @@ public:
     ///
     /// Example: GfVec3f would return a float type.
     ///
+    HD_API
     int GetGLCompontentType() const { return _glComponentType; }
 
     ///
@@ -61,11 +68,13 @@ public:
     ///
     /// Example: GfVec3f would return a float3 type.
     ///
+    HD_API
     int GetGLElementType()    const { return _glElementType;   }
 
     ///
     /// Returns the total size of the contained data in bytes.
     ///
+    HD_API
     size_t GetSize()          const { return _size;            }
 
     ///
@@ -76,6 +85,7 @@ public:
     ///
     /// Example: GfVec3f would return 3.
     ///
+    HD_API
     short GetNumComponents()  const { return _numComponents;   }
 
     ///
@@ -83,6 +93,7 @@ public:
     /// This pointer is valid as long as the VtValue passed to Extract
     /// is still alive.
     ///
+    HD_API
     void const* GetData()     const { return _data;            }
 
 private:

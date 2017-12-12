@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_EXT_COMP_GPU_COMPUTATION_RESOURCE_H
-#define HD_EXT_COMP_GPU_COMPUTATION_RESOURCE_H
+#ifndef HDST_EXT_COMP_GPU_COMPUTATION_RESOURCE_H
+#define HDST_EXT_COMP_GPU_COMPUTATION_RESOURCE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computeShader.h"
 #include "pxr/imaging/hd/resourceBinder.h"
@@ -33,18 +33,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdExtCompGpuComputationResource;
+class HdStExtCompGpuComputationResource;
 class HdGLSLProgram;
-typedef boost::shared_ptr<class HdExtCompGpuComputationResource> 
-    HdExtCompGpuComputationResourceSharedPtr;
+typedef boost::shared_ptr<class HdStExtCompGpuComputationResource> 
+    HdStExtCompGpuComputationResourceSharedPtr;
 typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
 
-/// \class HdExtCompGpuComputationResource
+/// \class HdStExtCompGpuComputationResource
 ///
 /// A Resource that represents the persistent GPP resources of an ExtComputation.
 ///
 /// The persistent resources are shared between the ephemeral
-/// HdExtCompGpuComputationBufferSource and the actual HdExtCompGpuComputation.
+/// HdStExtCompGpuComputationBufferSource and the actual HdStExtCompGpuComputation.
 /// Once the buffer source is resolved the resource is configured for the
 /// computation and it will then persist until the computation is released.
 ///
@@ -52,23 +52,23 @@ typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
 /// internal primvar data is held by this object. The companion source and
 /// computation appeal to this object to get access to the resources.
 ///
-/// \see HdExtCompGpuComputation
-/// \see HdExtCompGpuComputationBufferSource
+/// \see HdStExtCompGpuComputation
+/// \see HdStExtCompGpuComputationBufferSource
 ///
-class HdExtCompGpuComputationResource final {
+class HdStExtCompGpuComputationResource final {
 public:
     /// Creates a GPU computation resource that can bind resources matching
     /// the layout of the compute kernel.
     /// The registry passed is the registry that the kernel program will
     /// be shared amongst. De-duplication of the compiled and linked program
     /// for runtime execution happens on a per-registry basis.
-    HdExtCompGpuComputationResource(
+    HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
         HdComputeShaderSharedPtr const &kernel,
         HdResourceRegistrySharedPtr const &registry
     );
     
-    virtual ~HdExtCompGpuComputationResource() = default;
+    virtual ~HdStExtCompGpuComputationResource() = default;
     
     /// Gets the range that inputs should be loaded into using the
     /// resource binder.
@@ -89,7 +89,7 @@ public:
     }
     
     /// Resolve the resource bindings and program for use by a computation.
-    HD_API
+    HDST_API
     bool Resolve();
     
     /// Allocate the required internal range for holding input data used by
@@ -97,7 +97,7 @@ public:
     /// The passed in inputs are compared against the set of outputs that are
     /// required and an array of actual used internal sources are returned.
     /// If no sources are returned in internalSources no range is allocated.
-    HD_API
+    HDST_API
     void AllocateInternalRange(
             HdBufferSourceVector const &inputs,
             HdBufferSourceVector *internalSources,
@@ -113,11 +113,11 @@ private:
     HdGLSLProgramSharedPtr                _computeProgram;
     Hd_ResourceBinder                     _resourceBinder;
     
-    HdExtCompGpuComputationResource()                = delete;
-    HdExtCompGpuComputationResource(
-            const HdExtCompGpuComputationResource &) = delete;
-    HdExtCompGpuComputationResource &operator = (
-            const HdExtCompGpuComputationResource &) = delete;
+    HdStExtCompGpuComputationResource()                = delete;
+    HdStExtCompGpuComputationResource(
+            const HdStExtCompGpuComputationResource &) = delete;
+    HdStExtCompGpuComputationResource &operator = (
+            const HdStExtCompGpuComputationResource &) = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
