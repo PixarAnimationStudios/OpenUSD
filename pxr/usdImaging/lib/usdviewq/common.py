@@ -484,14 +484,11 @@ def GetAssetCreationTime(primStack, assetIdentifier):
         definingFile = primStack[-1].layer.realPath
         print "Warning: Could not find expected asset-defining layer for %s" %\
             assetIdentifier
-    try:
-        from pixar import UsdviewPlug
-        return UsdviewPlug.GetAssetCreationTime(definingFile, assetIdentifier)
-    except:
-        stat_info = os.stat(definingFile)
-        return (definingFile.split('/')[-1],
-                time.ctime(stat_info.st_ctime),
-                GetFileOwner(definingFile))
+
+    stat_info = os.stat(definingFile)
+    return (definingFile.split('/')[-1],
+            time.ctime(stat_info.st_ctime),
+            GetFileOwner(definingFile))
 
 
 def DumpMallocTags(stage, contextStr):
