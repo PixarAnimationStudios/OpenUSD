@@ -110,6 +110,22 @@ PxrUsdMayaTranslatorModelAssembly::Create(
         return true;
     }
 
+    // Guard against a situation where the prim being referenced has
+    // xformOp's specified in its xformOpOrder but the reference assembly
+    // in Maya has an identity transform. We would normally skip writing out
+    // the xformOpOrder, but that isn't correct since we would inherit the
+    // xformOpOrder, which we don't want.
+    // Instead, always write out an empty xformOpOrder if the transform writer
+    // did not write out an xformOpOrder in its constructor. This guarantees
+    // that we get an identity transform as expected (instead of inheriting).
+    bool resetsXformStack;
+    UsdGeomXformable xformable(prim);
+    std::vector<UsdGeomXformOp> orderedXformOps =
+            xformable.GetOrderedXformOps(&resetsXformStack);
+    if (orderedXformOps.empty() && !resetsXformStack) {
+        xformable.CreateXformOpOrderAttr().Block();
+    }
+
     const MDagPath& currPath = args.GetMDagPath();
 
     // because of how we generate these things and node collapsing, sometimes
