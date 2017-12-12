@@ -325,7 +325,14 @@ public:
         if (path.IsTargetPath()) {
             if (_HasTargetOrConnectionSpec(path)) {
                 SdfPath parentPath = path.GetParentPath();
-                return GetSpecType(SdfAbstractDataSpecId(&parentPath));
+                SdfSpecType parentSpecType = 
+                    GetSpecType(SdfAbstractDataSpecId(&parentPath));
+                if (parentSpecType == SdfSpecTypeRelationship) {
+                    return SdfSpecTypeRelationshipTarget;
+                }
+                else if (parentSpecType == SdfSpecTypeAttribute) {
+                    return SdfSpecTypeConnection;
+                }
             }
             return SdfSpecTypeUnknown;
         }

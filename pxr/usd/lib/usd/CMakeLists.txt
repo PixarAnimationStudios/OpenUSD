@@ -215,6 +215,13 @@ pxr_build_test(testUsdCreateAttributeCpp
         testenv/testUsdCreateAttributeCpp.cpp
 )
 
+pxr_build_test(testUsdHardToReach
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdHardToReach.cpp
+)
+
 pxr_build_test(testUsdIntegerCoding
     LIBRARIES
         usd
