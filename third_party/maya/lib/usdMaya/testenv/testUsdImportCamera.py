@@ -70,7 +70,7 @@ class testUsdImportCamera(unittest.TestCase):
         cmds.usdImport(file=usdFilePath, readAnimData=True)
 
         cls._stage = Usd.Stage.Open(usdFilePath)
-        
+
     def testStageOpens(self):
         self.assertTrue(self._stage)
 
@@ -102,6 +102,7 @@ class testUsdImportCamera(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cameraFn.focalLength(), 50.0, 1e-6))
         self.assertTrue(Gf.IsClose(cameraFn.focusDistance(), 5.0, 1e-6))
         self.assertTrue(Gf.IsClose(cameraFn.fStop(), 8.0, 1e-6))
+        self.assertTrue(Gf.IsClose(cameraFn.orthoWidth(), 3.5, 1e-6))
         self.assertTrue(Gf.IsClose(cameraFn.horizontalFilmAperture(), 1.377953, 1e-6))
         self.assertTrue(Gf.IsClose(cameraFn.horizontalFilmOffset(), 0.0, 1e-6))
         self.assertTrue(cameraFn.isOrtho())

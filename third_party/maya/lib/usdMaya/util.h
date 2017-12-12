@@ -126,6 +126,24 @@ ConvertInchesToMM(double inches) {
     return inches * MillimetersPerInch;
 }
 
+const double MillimetersPerCentimeter = 10.0;
+
+/// Converts the given value \p mm in millimeters to the equivalent value
+/// in centimeters.
+inline
+double
+ConvertMMToCM(double mm) {
+    return mm / MillimetersPerCentimeter;
+}
+
+/// Converts the given value \p cm in centimeters to the equivalent value
+/// in millimeters.
+inline
+double
+ConvertCMToMM(double cm) {
+    return cm * MillimetersPerCentimeter;
+}
+
 // seconds per frame
 PXRUSDMAYA_API
 double spf();

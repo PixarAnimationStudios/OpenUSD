@@ -144,14 +144,53 @@ createNode camera -n "PerspCamAnimShapeShape" -p "PerspCamAnimShape";
 	setAttr ".den" -type "string" "camera1_depth";
 	setAttr ".man" -type "string" "camera1_mask";
 	setAttr ".tp" -type "double3" 0 0 0.5 ;
+createNode transform -n "ViewCheck" -p "Cameras";
+	rename -uid "07528900-0000-3C0A-5A2B-2AA3000002AE";
+createNode transform -n "OrthographicCamera" -p "ViewCheck";
+	rename -uid "760F8900-0000-65D2-5A2B-189700000257";
+	setAttr ".t" -type "double3" 0 -20 0 ;
+	setAttr ".r" -type "double3" 90 0 0 ;
+	setAttr ".s" -type "double3" 0.99999999999999978 0.99999999999999978 0.99999999999999978 ;
+createNode camera -n "OrthographicCameraShape" -p "OrthographicCamera";
+	rename -uid "760F8900-0000-65D2-5A2B-189700000258";
+	setAttr -k off ".v";
+	setAttr ".rnd" no;
+	setAttr ".cap" -type "double2" 1.41732 0.94488 ;
+	setAttr ".ff" 0;
+	setAttr ".ovr" 1.3;
+	setAttr ".ow" 50;
+	setAttr ".imn" -type "string" "camera1";
+	setAttr ".den" -type "string" "camera1_depth";
+	setAttr ".man" -type "string" "camera1_mask";
+	setAttr ".dfg" yes;
+	setAttr ".o" yes;
+createNode transform -n "PerspectiveCamera" -p "ViewCheck";
+	rename -uid "760F8900-0000-65D2-5A2B-181600000252";
+	setAttr ".t" -type "double3" -25 25 25 ;
+	setAttr ".r" -type "double3" 59.999999999999993 0 -135 ;
+createNode camera -n "PerspectiveCameraShape" -p "PerspectiveCamera";
+	rename -uid "760F8900-0000-65D2-5A2B-181600000253";
+	setAttr -k off ".v";
+	setAttr ".rnd" no;
+	setAttr ".cap" -type "double2" 1.1653543307086616 0.62992125984251968 ;
+	setAttr ".ff" 0;
+	setAttr ".ovr" 1.3;
+	setAttr ".coi" 42.172834685340611;
+	setAttr ".ow" 30;
+	setAttr ".imn" -type "string" "camera1";
+	setAttr ".den" -type "string" "camera1_depth";
+	setAttr ".man" -type "string" "camera1_mask";
+	setAttr ".tp" -type "double3" 0 0 2.5 ;
+	setAttr ".dfg" yes;
 createNode transform -n "Geom" -p "UsdExportCameraTest";
 	rename -uid "09543860-0000-27F0-577C-0FA50000027A";
-createNode transform -n "Cube" -p "Geom";
-	rename -uid "09543860-0000-27F0-577C-0F9E00000279";
-	setAttr ".t" -type "double3" 0 0 0.5 ;
-createNode mesh -n "CubeShape" -p "Cube";
-	rename -uid "09543860-0000-27F0-577C-0F9E00000278";
-	addAttr -ci true -sn "mgi" -ln "mayaGprimID" -dt "string";
+createNode transform -n "OrthoCubes" -p "Geom";
+	rename -uid "07528900-0000-3C0A-5A2B-2C9D0000032F";
+createNode transform -n "CubeOrthoTopLeft" -p "OrthoCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2BAB000002F8";
+	setAttr ".t" -type "double3" -22.5 0 22.5 ;
+createNode mesh -n "CubeOrthoTopLeftShape" -p "CubeOrthoTopLeft";
+	rename -uid "07528900-0000-3C0A-5A2B-2BAB000002F7";
 	setAttr -k off ".v";
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
@@ -161,7 +200,278 @@ createNode mesh -n "CubeShape" -p "Cube";
 	setAttr ".ds" no;
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".mgi" -type "string" "ID_8335c1d8-b49f-4767-a16e-639ca6437c66";
+createNode transform -n "CubeOrthoTopRight" -p "OrthoCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2C4500000307";
+	setAttr ".t" -type "double3" 22.5 0 22.5 ;
+createNode mesh -n "CubeOrthoTopRightShape" -p "CubeOrthoTopRight";
+	rename -uid "07528900-0000-3C0A-5A2B-2C4500000308";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "CubeOrthoBottomLeft" -p "OrthoCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2C500000030F";
+	setAttr ".t" -type "double3" -22.5 0 -22.5 ;
+createNode mesh -n "CubeOrthoBottomLeftShape" -p "CubeOrthoBottomLeft";
+	rename -uid "07528900-0000-3C0A-5A2B-2C5000000310";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "CubeOrthoBottomRight" -p "OrthoCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2C6B0000031D";
+	setAttr ".t" -type "double3" 22.5 0 -22.5 ;
+createNode mesh -n "CubeOrthoBottomRightShape" -p "CubeOrthoBottomRight";
+	rename -uid "07528900-0000-3C0A-5A2B-2C6B0000031E";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "PerspectiveCubes" -p "Geom";
+	rename -uid "07528900-0000-3C0A-5A2B-2CA200000336";
+createNode transform -n "CubePerspectiveTopLeft" -p "PerspectiveCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2CA200000337";
+	setAttr ".t" -type "double3" 14.121833645422189 6.5383469372295187 9.287836453125264 ;
+	setAttr ".r" -type "double3" 29.999999999999996 1.5902773407317584e-15 45 ;
+createNode mesh -n "CubePerspectiveTopLeftShape" -p "CubePerspectiveTopLeft";
+	rename -uid "07528900-0000-3C0A-5A2B-2CA200000338";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "CubePerspectiveTopRight" -p "PerspectiveCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2DB400000374";
+	setAttr ".t" -type "double3" -6.5622236608520215 -14.145710369044693 9.287836453125264 ;
+	setAttr ".r" -type "double3" 29.999999999999996 1.5902773407317584e-15 45 ;
+createNode mesh -n "CubePerspectiveTopRightShape" -p "CubePerspectiveTopRight";
+	rename -uid "07528900-0000-3C0A-5A2B-2DB400000375";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "CubePerspectiveBottomLeft" -p "PerspectiveCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2DBF0000037C";
+	setAttr ".t" -type "double3" 9.3561643942479691 11.304016188403736 -2.3856214951231753 ;
+	setAttr ".r" -type "double3" 29.999999999999996 1.5902773407317584e-15 45 ;
+createNode mesh -n "CubePerspectiveBottomLeftShape" -p "CubePerspectiveBottomLeft";
+	rename -uid "07528900-0000-3C0A-5A2B-2DBF0000037D";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "CubePerspectiveBottomRight" -p "PerspectiveCubes";
+	rename -uid "07528900-0000-3C0A-5A2B-2DCB00000384";
+	setAttr ".t" -type "double3" -11.316436964993031 -9.3914970649036853 -2.3575602703714664 ;
+	setAttr ".r" -type "double3" 29.999999999999996 1.5902773407317584e-15 45 ;
+createNode mesh -n "CubePerspectiveBottomRightShape" -p "CubePerspectiveBottomRight";
+	rename -uid "07528900-0000-3C0A-5A2B-2DCB00000385";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".ds" no;
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -2.5 -2.5 2.5 2.5 -2.5 2.5 -2.5 2.5 2.5 2.5 2.5 2.5
+		 -2.5 2.5 -2.5 2.5 2.5 -2.5 -2.5 -2.5 -2.5 2.5 -2.5 -2.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "957F0860-0000-2894-577C-6A590000025A";
 	setAttr -s 2 ".lnk";
@@ -256,6 +566,9 @@ createNode script -n "sceneConfigurationScriptNode";
 	setAttr ".st" 6;
 createNode polyCube -n "polyCube1";
 	rename -uid "09543860-0000-27F0-577C-0F9E00000277";
+	setAttr ".w" 5;
+	setAttr ".h" 5;
+	setAttr ".d" 5;
 	setAttr ".cuv" 4;
 createNode animCurveTL -n "AnimPerspCam_translateX";
 	rename -uid "09543860-0000-27F0-577C-114B00000284";
@@ -310,7 +623,7 @@ connectAttr "AnimPerspCam_translateX.o" "PerspCamAnimTransform.tx";
 connectAttr "AnimPerspCam_translateY.o" "PerspCamAnimTransform.ty";
 connectAttr "AnimPerspCam_rotateZ.o" "PerspCamAnimTransform.rz";
 connectAttr "PerspCamAnimShapeShape_focalLength.o" "PerspCamAnimShapeShape.fl";
-connectAttr "polyCube1.out" "CubeShape.i";
+connectAttr "polyCube1.out" "CubeOrthoTopLeftShape.i";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
@@ -318,5 +631,12 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-connectAttr "CubeShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubeOrthoTopLeftShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubeOrthoTopRightShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubeOrthoBottomLeftShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubeOrthoBottomRightShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubePerspectiveTopLeftShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubePerspectiveTopRightShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubePerspectiveBottomLeftShape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "CubePerspectiveBottomRightShape.iog" ":initialShadingGroup.dsm" -na;
 // End of UsdExportCameraTest.ma
