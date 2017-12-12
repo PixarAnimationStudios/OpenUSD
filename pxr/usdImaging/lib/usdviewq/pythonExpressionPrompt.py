@@ -157,7 +157,7 @@ class Myconsole(interpreterView):
             self.locals()['__builtins__']['_'] = val
 
         self.locals()['plugCtx'] = appController._plugCtx
-        self.locals()['stage'] = appController._stageDataModel.stage
+        self.locals()['stage'] = appController._rootDataModel.stage
         self.locals()['frame'] = appController._currentFrame
         self.locals()['selectedPrims'] = list(appController._currentPrims)
         self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy()

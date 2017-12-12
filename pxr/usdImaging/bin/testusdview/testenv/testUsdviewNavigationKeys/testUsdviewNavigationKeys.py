@@ -78,7 +78,7 @@ def _testBasic(appController):
     
     # Then test that right/left keys sent to other widgets (including the 
     # MainWindow) will result in transport movement
-    startFrame = appController._stageDataModel.stage.GetStartTimeCode()
+    startFrame = appController._rootDataModel.stage.GetStartTimeCode()
     appController._mainWindow.setFocus()
     assert appController._currentFrame == startFrame
 

@@ -67,7 +67,7 @@ pxr_library(usdviewq
         variantComboBox.py
         qt.py
         constantGroup.py
-        stageDataModel.py
+        rootDataModel.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
@@ -88,7 +88,7 @@ install(DIRECTORY
 pxr_test_scripts(
     testenv/testUsdviewqConstantGroup.py
     testenv/testUsdviewqSettings2.py
-    testenv/testUsdviewqStageDataModel.py
+    testenv/testUsdviewqRootDataModel.py
     testenv/testUsdviewqPlugContextProxy.py
 )
 
@@ -104,9 +104,9 @@ pxr_register_test(testUsdviewqSettings2
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdviewqStageDataModel
+pxr_register_test(testUsdviewqRootDataModel
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqStageDataModel"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqRootDataModel"
     EXPECTED_RETURN_CODE 0
 )
 

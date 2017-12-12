@@ -31,7 +31,7 @@ from pxr.Usdviewq.plugContext import _PlugContextInternal, PlugContext
 TEST_STATUS_MESSAGE = "This is a test message."
 
 
-class FakeStageDataModel:
+class FakeRootDataModel:
     """Provides a unique fake stage object for testing."""
 
     def __init__(self):
@@ -49,7 +49,7 @@ class FakeAppController:
         # _mainWindow is set to a unique object to test that it is returned from
         # plugin API calls in test_MethodCallsWork.
         self._mainWindow = object()
-        self._stageDataModel = FakeStageDataModel()
+        self._rootDataModel = FakeRootDataModel()
 
         # _statusMessage holds the message from the last call to statusMessage().
         self._statusMessage = None
@@ -69,7 +69,7 @@ class TestPlugContextProxy(unittest.TestCase):
 
         self.assertEquals(plugCtx.GetQMainWindow(), appController._mainWindow)
         self.assertEquals(plugCtx.GetUsdStage(),
-            appController._stageDataModel.stage)
+            appController._rootDataModel.stage)
 
         plugCtx.PrintStatus(TEST_STATUS_MESSAGE)
         self.assertEquals(appController._statusMessage, TEST_STATUS_MESSAGE)

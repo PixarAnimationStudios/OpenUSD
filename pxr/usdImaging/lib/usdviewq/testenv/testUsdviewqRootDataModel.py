@@ -25,18 +25,18 @@
 
 import unittest
 
-from pxr.Usdviewq.stageDataModel import StageDataModel
+from pxr.Usdviewq.rootDataModel import RootDataModel
 
 
 class SignalCounter(object):
     """This class is used to count the number of signals emitted when a stage is
-    replaced in StageDataModel.
+    replaced in RootDataModel.
     """
 
-    def __init__(self, stageDataModel):
+    def __init__(self, rootDataModel):
 
-        self._stageDataModel = stageDataModel
-        self._stageDataModel.signalStageReplaced.connect(self._stageReplaced)
+        self._rootDataModel = rootDataModel
+        self._rootDataModel.signalStageReplaced.connect(self._stageReplaced)
 
         self._numSignals = 0
 
@@ -55,75 +55,74 @@ class SignalCounter(object):
         return numSignals
 
 
-class TestStageDataModel(unittest.TestCase):
+class TestRootDataModel(unittest.TestCase):
 
     def test_GetAndSetStage(self):
 
-        stageDataModel = StageDataModel()
+        rootDataModel = RootDataModel()
         testStage = Usd.Stage.CreateInMemory()
 
         # Stage should begin as None.
-        self.assertIsNone(stageDataModel.stage)
+        self.assertIsNone(rootDataModel.stage)
 
         # Set the stage to a Usd.Stage object.
-        stageDataModel.stage = testStage
+        rootDataModel.stage = testStage
 
-        self.assertIs(stageDataModel.stage, testStage)
+        self.assertIs(rootDataModel.stage, testStage)
 
         # Try to set the stage to an invalid object. Exception should be raised
         # and the stage should not be modified.
         with self.assertRaises(ValueError):
-            stageDataModel.stage = "not a Usd.Stage object or None"
+            rootDataModel.stage = "not a Usd.Stage object or None"
 
-        self.assertIs(stageDataModel.stage, testStage)
+        self.assertIs(rootDataModel.stage, testStage)
 
         # Set the stage to None.
-        stageDataModel.stage = None
+        rootDataModel.stage = None
 
-        self.assertIsNone(stageDataModel.stage)
+        self.assertIsNone(rootDataModel.stage)
 
     def test_SignalStageReplaced(self):
 
-        stageDataModel = StageDataModel()
-        counter = SignalCounter(stageDataModel)
+        rootDataModel = RootDataModel()
+        counter = SignalCounter(rootDataModel)
 
         testStage1 = Usd.Stage.CreateInMemory()
         testStage2 = Usd.Stage.CreateInMemory()
 
         # Stage should begin as None.
-        self.assertIsNone(stageDataModel.stage)
+        self.assertIsNone(rootDataModel.stage)
 
         # Set the stage to a Usd.Stage object and check that signal was emitted.
-        stageDataModel.stage = testStage1
+        rootDataModel.stage = testStage1
 
-        self.assertIs(stageDataModel.stage, testStage1)
+        self.assertIs(rootDataModel.stage, testStage1)
         self.assertEqual(counter.getAndClearNumSignals(), 1)
 
         # Set the stage to a different Usd.Stage object and check that signal
         # was emitted.
-        stageDataModel.stage = testStage2
+        rootDataModel.stage = testStage2
 
-        self.assertIs(stageDataModel.stage, testStage2)
+        self.assertIs(rootDataModel.stage, testStage2)
         self.assertEqual(counter.getAndClearNumSignals(), 1)
-
 
         # Set the stage to the current Usd.Stage object and check that signal
         # was *not* emitted.
-        stageDataModel.stage = testStage2
+        rootDataModel.stage = testStage2
 
-        self.assertIs(stageDataModel.stage, testStage2)
+        self.assertIs(rootDataModel.stage, testStage2)
         self.assertEqual(counter.getAndClearNumSignals(), 0)
 
         # Set the stage to None and check that the signal was emitted.
-        stageDataModel.stage = None
+        rootDataModel.stage = None
 
-        self.assertIsNone(stageDataModel.stage)
+        self.assertIsNone(rootDataModel.stage)
         self.assertEqual(counter.getAndClearNumSignals(), 1)
 
         # Set the stage to an invalid object and check that the signal was *not*
         # emitted.
         with self.assertRaises(ValueError):
-            stageDataModel.stage = "not a Usd.Stage object or None"
+            rootDataModel.stage = "not a Usd.Stage object or None"
 
-        self.assertIsNone(stageDataModel.stage)
+        self.assertIsNone(rootDataModel.stage)
         self.assertEqual(counter.getAndClearNumSignals(), 0)

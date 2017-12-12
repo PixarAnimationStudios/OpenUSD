@@ -48,7 +48,7 @@ class _PlugContextInternal(object):
     def GetUsdStage(self):
         ''' Returns the current Usd stage. '''
 
-        return self._appController._stageDataModel.stage
+        return self._appController._rootDataModel.stage
 
     def GetCurrentGfCamera(self):
         ''' Returns the last computed Gf Camera. '''

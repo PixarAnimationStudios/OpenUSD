@@ -74,7 +74,7 @@ def _testReloadReopen(appController):
     #
     appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
     appController._itemSelectionChanged()
-    stage = appController._stageDataModel.stage
+    stage = appController._rootDataModel.stage
     sphere = UsdGeom.Sphere(stage.GetPrimAtPath("/frontSphere"))
     with Usd.EditContext(stage, stage.GetRootLayer()):
         sphere.CreateDisplayColorAttr([(1, 0, 0)])

@@ -26,8 +26,9 @@ from pxr import Usd
 from qt import QtCore
 from common import Timer
 
-class StageDataModel(QtCore.QObject):
-    """Holds the application's current Usd.Stage object."""
+class RootDataModel(QtCore.QObject):
+    """Holds the application's current Usd.Stage object and other data important
+    to all parts of Usdview."""
 
     # Emitted when a new stage is set.
     signalStageReplaced = QtCore.Signal()
