@@ -570,12 +570,16 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             HdBufferSourceSharedPtr source(
                 new HdVtBufferSource(*nameIt, value));
 
-            // verify primvar length
-            if (source->GetNumElements() != numPoints) {
-                TF_WARN(
-                    "# of points mismatch (%d != %d) for primvar %s, prim %s",
-                    source->GetNumElements(), numPoints,
-                    nameIt->GetText(), id.GetText());
+            // verify primvar length -- it is alright to have more data than we
+            // index into; the inverse is when we issue a warning and skip
+            // update.
+            if (source->GetNumElements() < numPoints) {
+                TF_CODING_ERROR(
+                    "Vertex primvar %s for prim %s has only %d elements, while"
+                    " its topology expects at least %d elements. Skipping "
+                    " primvar update.",
+                    nameIt->GetText(), id.GetText(),
+                    source->GetNumElements(), numPoints);
 
                 if (*nameIt == HdTokens->points) {
                     // If points data is invalid, it pretty much invalidates
@@ -584,10 +588,26 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                     _sharedData.barContainer.Set(
                            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(),
                            HdBufferArrayRangeSharedPtr());
+
+                    TF_CODING_ERROR(
+                    "Skipping prim %s because its points data is insufficient.",
+                    id.GetText());
+
                     return;
                 }
 
                 continue;
+
+            } else if (source->GetNumElements() > numPoints) {
+                TF_WARN(
+                    "Vertex primvar %s for prim %s has %d elements, while"
+                    " its topology references only upto element index %d.",
+                    nameIt->GetText(), id.GetText(),
+                    source->GetNumElements(), numPoints);
+
+                // If the primvar has more data than needed, we issue a warning,
+                // but don't skip the primvar update. We handle it naively, and
+                // thus will use more GPU memory than needed.
             }
 
             if (refineLevel > 0) {
