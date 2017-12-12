@@ -1061,18 +1061,9 @@ class AppController(QtCore.QObject):
             t.PrintTime("'%s'" % msg)
 
     def _openStage(self, usdFilePath, populationMaskPaths):
-        # Attempt to do specialized asset resolution based on the
-        # UsdviewPlug installed plugin, otherwise use the configured
-        # Ar instance for asset resolution.
-        try:
-            from pixar import UsdviewPlug
-            self._pathResolverContext = \
-                UsdviewPlug.ConfigureAssetResolution(usdFilePath)
-
-        except ImportError:
-            Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
-            self._pathResolverContext = \
-                Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath)
+        Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
+        self._pathResolverContext = \
+            Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath)
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
