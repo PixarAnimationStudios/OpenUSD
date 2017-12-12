@@ -90,6 +90,11 @@ TF_DEFINE_ENV_SETTING(
     "Switch to true to enable writing Alembic uv sets as primvars:st with type "
     "texCoord2fArray to USD");
 
+
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_XFORM_PRIM_COLLAPSE, true,
+    "Collapse Xforms containing a single geometry into a single geom Prim in USD");
+
 namespace {
 
 using namespace ::Alembic::AbcGeom;
@@ -3479,6 +3484,10 @@ _ReadPrim(
         // huge if statement or deep if nesting, we'll use do/while and
         // break to do it.
         do {
+            if (!TfGetEnvSetting(USD_ABC_XFORM_PRIM_COLLAPSE)) {
+                // Transform collapse is specified as unwanted behavior
+                break;
+            }
             // Parent has to be a transform.
             IObject parent = object.getParent();
             if (!IXform::matches(parent.getHeader())) {
