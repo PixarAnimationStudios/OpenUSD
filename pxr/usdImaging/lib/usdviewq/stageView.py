@@ -1534,6 +1534,13 @@ class StageView(QtOpenGL.QGLWidget):
                 raise RuntimeError("StageView could not initialize renderer without a valid GL context")
         return self._renderer
 
+    def closeRenderer(self):
+        '''Close the current renderer.'''
+        with Timer() as t:
+            self._renderer = None
+        if self._printTiming:
+            t.PrintTime('shut down Hydra')
+
     def GetRendererPlugins(self):
         if self._renderer:
             return self._renderer.GetRendererPlugins()
@@ -1556,16 +1563,11 @@ class StageView(QtOpenGL.QGLWidget):
         (even temporarily) this widget, supply None as 'stage'.'''
 
         self.allSceneCameras = None
-        with Timer() as t:
-            self._renderer = None
 
         if self._stageDataModel.stage:
             self._stageIsZup = (
                 UsdGeom.GetStageUpAxis(self._stageDataModel.stage) == UsdGeom.Tokens.z)
             self._dataModel.freeCamera = FreeCamera(self._stageIsZup)
-
-        elif self._printTiming:
-            t.PrintTime('shut down Hydra')
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):

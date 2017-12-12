@@ -1166,6 +1166,8 @@ class AppController(QtCore.QObject):
 
     def _closeStage(self):
         # Close the USD stage.
+        if self._stageView:
+            self._stageView.closeRenderer()
         self._stageDataModel.stage = None
 
     def _setPlayShortcut(self):
