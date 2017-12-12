@@ -1305,7 +1305,15 @@ function(_pxr_library NAME)
     # Set up the install.
     #
 
-    if(NOT isObject)
+    if(isObject)
+        get_target_property(install_headers ${NAME} PUBLIC_HEADER)
+        if (install_headers)
+            install(
+                FILES ${install_headers}
+                DESTINATION ${headerInstallPrefix}
+            )
+        endif()
+    else()
         if(BUILD_SHARED_LIBS AND NOT PXR_BUILD_MONOLITHIC)
             install(
                 TARGETS ${NAME}
