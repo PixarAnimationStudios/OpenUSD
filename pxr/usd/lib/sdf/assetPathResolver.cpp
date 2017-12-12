@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_Tokens,
     ((AnonLayerPrefix,  "anon:"))
+    ((ArgsDelimiter, ":SDF_FORMAT_ARGS:"))
     );
 
 bool
@@ -222,17 +223,6 @@ Sdf_GetAnonLayerIdentifierTemplate(
         (idTag.empty() ? idTag : ":" + idTag);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-// Defined in layerIdentifier.yy
-bool
-Sdf_ParseLayerIdentifier(
-    const string& argumentString,
-    string* layerPath,
-    PXR_NS::SdfLayer::FileFormatArguments* args);
-
-PXR_NAMESPACE_OPEN_SCOPE
-
 string
 Sdf_CreateIdentifier(
     const string& layerPath,
@@ -241,22 +231,68 @@ Sdf_CreateIdentifier(
     return layerPath + arguments;
 }
 
+// XXX: May need to escape characters in the arguments map
+// when encoding arguments and unescape then when decoding?
 static string
 Sdf_EncodeArguments(
     const SdfLayer::FileFormatArguments& args)
 {
-    char delimiter = '?';
+    const char* delimiter = _Tokens->ArgsDelimiter.GetText();
     string argString;
-    TF_FOR_ALL(it, args) {
+    for (const auto& entry : args) {
         argString += delimiter;
-        argString += it->first;
+        argString += entry.first;
         argString += '=';
-        argString += it->second;
+        argString += entry.second;
 
-        delimiter = '&';
+        delimiter = "&";
     }
 
     return argString;
+}
+
+static bool
+Sdf_DecodeArguments(
+    const string& argString,
+    SdfLayer::FileFormatArguments* args)
+{
+    if (argString.empty() || argString.size() == _Tokens->ArgsDelimiter.size()) {
+        args->clear();
+        return true;
+    }
+
+    const size_t argStringLength = argString.size();
+    if (!TF_VERIFY(argStringLength > _Tokens->ArgsDelimiter.size())) {
+        return false;
+    }
+
+    SdfLayer::FileFormatArguments tmpArgs;
+
+    size_t startIdx = _Tokens->ArgsDelimiter.size();
+    while (startIdx < argStringLength) {
+        const size_t eqIdx = argString.find('=', startIdx);
+        if (eqIdx == string::npos) {
+            TF_CODING_ERROR(
+                "Invalid file format arguments: %s", argString.c_str());
+            return false;
+        }
+
+        const string key = argString.substr(startIdx, eqIdx - startIdx);
+        startIdx = eqIdx + 1;
+
+        const size_t sepIdx = argString.find('&', startIdx);
+        if (sepIdx == string::npos) {
+            tmpArgs[key] = argString.substr(startIdx);
+            break;
+        }
+        else {
+            tmpArgs[key] = argString.substr(startIdx, sepIdx - startIdx);
+            startIdx = sepIdx + 1;
+        }
+    }
+
+    args->swap(tmpArgs);
+    return true;
 }
 
 string 
@@ -273,7 +309,7 @@ Sdf_SplitIdentifier(
     string* layerPath,
     string* arguments)
 {
-    size_t argPos = identifier.find('?');
+    size_t argPos = identifier.find(_Tokens->ArgsDelimiter.GetString());
     if (argPos == string::npos) {
         argPos = identifier.size();
     }
@@ -289,12 +325,16 @@ Sdf_SplitIdentifier(
     string* layerPath,
     SdfLayer::FileFormatArguments* args)
 {
-    if (Sdf_IdentifierContainsArguments(identifier)) {
-        return Sdf_ParseLayerIdentifier(identifier, layerPath, args);
+    string tmpLayerPath, tmpArgs;
+    if (!Sdf_SplitIdentifier(identifier, &tmpLayerPath, &tmpArgs)) {
+        return false;
     }
 
-    *layerPath = identifier;
-    args->clear();
+    if (!Sdf_DecodeArguments(tmpArgs, args)) {
+        return false;
+    }
+
+    layerPath->swap(tmpLayerPath);
     return true;
 }
 
@@ -302,7 +342,7 @@ bool
 Sdf_IdentifierContainsArguments(
     const string& identifier)
 {
-    return identifier.find('?') != string::npos;
+    return identifier.find(_Tokens->ArgsDelimiter.GetString()) != string::npos;
 }
 
 string 

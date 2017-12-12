@@ -75,7 +75,6 @@ pxr_library(sdf
         variantSpec
 
         # Flex/Bison generated code
-        layerIdentifier.tab
         path.tab
         textFileFormat.tab
    
@@ -121,7 +120,6 @@ pxr_library(sdf
 
     CPPFILES
         # Flex/Bison generated code
-        layerIdentifier.lex.cpp
         path.lex.cpp
         textFileFormat.lex.cpp
 
@@ -184,7 +182,7 @@ else()
             --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
             --bison ${BISON_EXECUTABLE}
             --flex ${FLEX_EXECUTABLE}
-            --bases textFileFormat path layerIdentifier
+            --bases textFileFormat path 
             --validate
     )
 endif()
@@ -194,6 +192,7 @@ pxr_test_scripts(
     testenv/testSdfBatchNamespaceEdit.py
     testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
+    testenv/testSdfLayer.py
     testenv/testSdfListOp.py
     testenv/testSdfParsing.py
     testenv/testSdfPath.py
@@ -319,6 +318,16 @@ pxr_register_test(testSdfTextReferenceParser
     DIFF_COMPARE result.txt
 )
 
+pxr_register_test(testSdfLayer
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayer"
+)
+
+pxr_register_test(testSdfListOp
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfListOp"
+)
+
 pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
 )
@@ -340,11 +349,6 @@ pxr_register_test(testSdfParsingOld
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
     ENV
         SDF_WRITE_OLD_TYPENAMES=1
-)
-
-pxr_register_test(testSdfListOp
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfListOp"
 )
 
 pxr_register_test(testSdfPath
