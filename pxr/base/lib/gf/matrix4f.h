@@ -266,7 +266,7 @@ public:
     /// Fills a 4x4 array of \c float values with the values in
     /// the matrix, specified in row-major order.
     GF_API
-    float* Get(float m[4][4]);
+    float* Get(float m[4][4]) const;
 
     /// Returns vector components as an array of \c float values.
     float* GetArray()  {
