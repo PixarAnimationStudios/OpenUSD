@@ -560,17 +560,22 @@ def InstallOpenEXR(context, force):
     # don't have the version appended to their filename. USD's
     # FindOpenEXR module can't handle that right now -- see 
     # https://github.com/PixarAnimationStudios/USD/issues/71
+    # Specify INSTALL_RPATH because the OpenEXR need IlmBase as its
+    # runtime dependence.
     ilmbaseSrcDir = os.path.join(srcDir, "IlmBase")
     with CurrentWorkingDirectory(ilmbaseSrcDir):
         RunCMake(context, force,
-                 ['-DNAMESPACE_VERSIONING=OFF'])
+                 ['-DNAMESPACE_VERSIONING=OFF',
+                  '-DCMAKE_INSTALL_RPATH="$ORIGIN/."',
+                  '-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON'])
 
     openexrSrcDir = os.path.join(srcDir, "OpenEXR")
     with CurrentWorkingDirectory(openexrSrcDir):
         RunCMake(context, force,
                  ['-DNAMESPACE_VERSIONING=OFF',
-                  '-DILMBASE_PACKAGE_PREFIX="{instDir}"'
-                  .format(instDir=context.instDir)])
+                  '-DCMAKE_INSTALL_RPATH="$ORIGIN/."',
+                  '-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON',
+                  '-DILMBASE_PACKAGE_PREFIX="{instDir}"'.format(instDir=context.instDir)])
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
