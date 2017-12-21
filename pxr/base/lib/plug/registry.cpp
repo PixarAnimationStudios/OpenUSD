@@ -88,33 +88,15 @@ PlugRegistry::_RegisterPlugin(
         break;
 
     case Plug_RegistrationMetadata::LibraryType:
-        newPlugin =
-            PlugPlugin::_NewDynamicLibraryPlugin(
-                metadata.pluginPath,
-                metadata.pluginName,
-                metadata.libraryPath,
-                metadata.resourcePath,
-                metadata.plugInfo);
+        newPlugin = PlugPlugin::_NewDynamicLibraryPlugin(metadata);
         break;
-
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     case Plug_RegistrationMetadata::PythonType:
-        newPlugin =
-            PlugPlugin::_NewPythonModulePlugin(
-                metadata.pluginPath,
-                metadata.pluginName,
-                metadata.resourcePath,
-                metadata.plugInfo);
+        newPlugin = PlugPlugin::_NewPythonModulePlugin(metadata);
         break;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-
     case Plug_RegistrationMetadata::ResourceType:
-        newPlugin =
-            PlugPlugin::_NewResourcePlugin(
-                metadata.pluginPath,
-                metadata.pluginName,
-                metadata.resourcePath,
-                metadata.plugInfo);
+        newPlugin = PlugPlugin::_NewResourcePlugin(metadata);
         break;
     }
 
