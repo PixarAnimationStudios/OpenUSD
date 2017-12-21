@@ -56,6 +56,15 @@ using std::pair;
 using std::string;
 using std::vector;
 
+// Set this to nonzero to insert a pause for debugging, to make registration
+// collisions more likely
+#define PXRPLUG_TEST_REGISTRATION_SLEEP_MILLISECS 0
+
+#if PXRPLUG_TEST_REGISTRATION_SLEEP_MILLISECS > 0
+#include <chrono>
+#include <thread>
+#endif // PXRPLUG_TEST_REGISTRATION_SLEEP_MILLISECS
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef PlugPlugin::PluginMap _PluginMap;
@@ -94,14 +103,41 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
         // Already registered with the same name but a different path?  Give
         // priority to the path we've registered already and ignore this one.
         it = allPluginsByName.find(name);
-        if (it != allPluginsByName.end())
+        if (it != allPluginsByName.end()) {
+            if (!it->second) {
+                // A null PlugPluginPtr is used to signal that another thread is
+                // attempting to try to register the same plugin
+                TF_DEBUG(PLUG_REGISTRATION).Msg(
+                        "Another thread currently attempting to"
+                        " register %s plugin '%s' - aborting load of '%s'.\n",
+                        pluginTypeName, name.c_str(),
+                        pluginCreationPath.c_str());
+            }
+            else {
+                TF_DEBUG(PLUG_REGISTRATION).Msg(
+                        "Already registered %s plugin '%s' -"
+                        " aborting load of '%s'.\n",
+                        pluginTypeName, name.c_str(),
+                        pluginCreationPath.c_str());
+            }
             return std::make_pair(it->second, false);
+        }
+
+        // While we still have the lock, insert a nullptr into
+        // _allPluginsByDynamicLibraryName, to prevent race condition
+        allPluginsByName[name] = PlugPluginRefPtr();
     }
 
     // Go ahead and create a plugin.
     TF_DEBUG(PLUG_REGISTRATION).Msg("Registering %s plugin '%s' at '%s'.\n",
                                     pluginTypeName, name.c_str(),
                                     pluginCreationPath.c_str());
+
+#if PXRPLUG_TEST_REGISTRATION_SLEEP_MILLISECS > 0
+    // Add a sleep to make collisions more likely, for testing...
+    std::this_thread::sleep_for(std::chrono::milliseconds(PXRPLUG_TEST_REGISTRATION_SLEEP_MILLISECS));
+#endif // PXRPLUG_TEST_REGISTRATION_SLEEP_MILLISECS
+
     PlugPluginRefPtr plugin =
             TfCreateRefPtr(new PlugPlugin(pluginCreationPath, name,
                                           metadata.resourcePath,
@@ -123,6 +159,16 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
             // re-accquiring the lock, which would potentially be slower
             if (allPluginsByCreationPath != nullptr) {
                 (*allPluginsByCreationPath)[pluginCreationPath] = plugin;
+            }
+        }
+        // If we failed, delete the nullptr we inserted earlier
+        else {
+            TF_DEBUG(PLUG_REGISTRATION).Msg(
+                    "Failed registering %s plugin '%s' at '%s'...\n",
+                    pluginTypeName, name.c_str(), pluginCreationPath.c_str());
+            auto it = allPluginsByName.find(name);
+            if (it != allPluginsByName.end() && !it->second) {
+                allPluginsByName.erase(it);
             }
         }
     }
