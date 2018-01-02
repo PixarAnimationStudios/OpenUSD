@@ -25,6 +25,7 @@ pxr_library(hdSt
         computeShader
         copyComputation
         dispatchBuffer
+        drawItem
         drawItemInstance
         drawTarget
         drawTargetAttachmentDesc
@@ -34,6 +35,7 @@ pxr_library(hdSt
         extCompGpuComputationBufferSource
         extCompGpuComputationResource
         fallbackLightingShader
+        geometricShader
         glslfxShader
         instancer
         interleavedMemoryManager

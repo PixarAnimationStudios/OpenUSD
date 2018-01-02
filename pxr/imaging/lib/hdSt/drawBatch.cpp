@@ -35,7 +35,7 @@
 #include "pxr/imaging/hdSt/surfaceShader.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -101,9 +101,10 @@ HdSt_DrawBatch::Append(HdStDrawItemInstance * drawItemInstance)
     // XXX: we'll soon refactor this function out and centralize batch
     // bucketing and reordering logic in HdStCommandBuffer.
 
-    HdDrawItem const* drawItem = drawItemInstance->GetDrawItem();
-
-    HdDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
+    HdStDrawItem const* drawItem = static_cast<const HdStDrawItem*>(
+        drawItemInstance->GetDrawItem());
+    HdStDrawItem const* batchItem = static_cast<const HdStDrawItem*>(
+        _drawItemInstances.front()->GetDrawItem());
     TF_VERIFY(batchItem);
 
     if (_IsAggregated(drawItem, batchItem)) {
@@ -118,8 +119,8 @@ HdSt_DrawBatch::Append(HdStDrawItemInstance * drawItemInstance)
 
 /*static*/
 bool
-HdSt_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
-                            HdDrawItem const *drawItem1)
+HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
+                              HdStDrawItem const *drawItem1)
 {
     if (!HdShaderCode::CanAggregate(drawItem0->GetMaterial(),
                                     drawItem1->GetMaterial())) {
@@ -193,7 +194,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdDrawItem const *firstDrawItem = _drawItemInstances[0]->GetDrawItem();
+    HdStDrawItem const *firstDrawItem = _drawItemInstances[0]->GetDrawItem();
 
     // Calculate unique hash to detect if the shader (composed) has changed
     // recently and we need to recompile it.
@@ -265,7 +266,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
 bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
-        HdDrawItem const *drawItem,
+        HdStDrawItem const *drawItem,
         bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry)
 {

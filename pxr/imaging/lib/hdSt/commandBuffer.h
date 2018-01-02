@@ -40,7 +40,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdDrawItem;
+class HdStDrawItem;
 class HdStDrawItemInstance;
 
 typedef boost::shared_ptr<class HdStResourceRegistry>
@@ -51,7 +51,7 @@ typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
 
 /// \class HdStCommandBuffer
 ///
-/// A buffer of commands (HdDrawItem or HdComputeItem objects) to be executed.
+/// A buffer of commands (HdStDrawItem or HdComputeItem objects) to be executed.
 ///
 /// The HdStCommandBuffer is responsible for accumulating draw items and sorting
 /// them for correctness (e.g. alpha transparency) and efficiency (e.g. the
@@ -85,7 +85,7 @@ public:
     /// Destructively swaps the contents of \p items with the internal list of
     /// all draw items. Culling state is reset, with no items visible.
     HDST_API
-    void SwapDrawItems(std::vector<HdDrawItem const*>* items,
+    void SwapDrawItems(std::vector<HdStDrawItem const*>* items,
                        unsigned currentShaderBindingsVersion);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
@@ -106,7 +106,7 @@ public:
 private:
     void _RebuildDrawBatches();
 
-    std::vector<HdDrawItem const*> _drawItems;
+    std::vector<HdStDrawItem const*> _drawItems;
     std::vector<HdStDrawItemInstance> _drawItemInstances;
     HdSt_DrawBatchSharedPtrVector _drawBatches;
     size_t _visibleSize;

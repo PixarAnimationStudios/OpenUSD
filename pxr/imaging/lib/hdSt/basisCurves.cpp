@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -39,7 +40,7 @@
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
@@ -91,7 +92,7 @@ HdStBasisCurves::Sync(HdSceneDelegate* delegate,
 
 void
 HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                                 HdDrawItem *drawItem,
+                                 HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  const HdBasisCurvesReprDesc &desc)
 {
@@ -145,7 +146,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 void
 HdStBasisCurves::_UpdateDrawItemGeometricShader(
         HdSceneDelegate *sceneDelegate,
-        HdDrawItem *drawItem,
+        HdStDrawItem *drawItem,
         const HdBasisCurvesReprDesc &desc)
 {
     if (!TF_VERIFY(_topology)) return;
@@ -191,9 +192,12 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         hasAuthoredNormals,
                                         (_SupportsSmoothCurves(desc,
                                                                _refineLevel)));
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
 
-    Hd_GeometricShaderSharedPtr geomShader = Hd_GeometricShader::Create(
-            shaderKey, renderIndex.GetResourceRegistry());
+    HdSt_GeometricShaderSharedPtr geomShader =
+        HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
 
     TF_VERIFY(geomShader);
 
@@ -239,7 +243,8 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
                 continue;
             }
 
-            HdDrawItem *drawItem = repr->AddDrawItem(&_sharedData);
+            HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+            repr->AddDrawItem(drawItem);
             if (desc.geomStyle == HdBasisCurvesGeomStyleLine) {
                 HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
                 drawingCoord->SetTopologyIndex(HdStBasisCurves::HullTopology);
@@ -309,7 +314,8 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         const HdBasisCurvesReprDesc &desc = reprDescs[descIdx];
 
         if (desc.geomStyle != HdBasisCurvesGeomStyleInvalid) {
-            HdDrawItem *drawItem = curRepr->GetDrawItem(drawItemIndex++);
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                curRepr->GetDrawItem(drawItemIndex++));
 
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc);
@@ -348,16 +354,17 @@ HdStBasisCurves::_UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
         if (descs[descIdx].geomStyle != HdBasisCurvesGeomStyleInvalid) {
-            _UpdateDrawItemGeometricShader(sceneDelegate,
-                repr->GetDrawItem(drawItemIndex++),
-                descs[descIdx]);
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
+                                           descs[descIdx]);
         }
     }
 }
 
 void
 HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
-                                   HdDrawItem *drawItem,
+                                   HdStDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
                                    const HdBasisCurvesReprDesc &desc)
 {
@@ -470,7 +477,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                         HdDrawItem *drawItem,
+                                         HdStDrawItem *drawItem,
                                          HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
@@ -590,7 +597,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
-                                          HdDrawItem *drawItem,
+                                          HdStDrawItem *drawItem,
                                           HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();

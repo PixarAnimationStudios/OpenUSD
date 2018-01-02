@@ -481,7 +481,6 @@ HdResourceRegistry::GarbageCollect()
     _singleBufferArrayRegistry.GarbageCollect();
 
     // Cleanup Shader registries
-    _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
 
     // Cleanup texture registries
@@ -668,13 +667,6 @@ HdResourceRegistry::RegisterPrimvarRange(HdTopology::ID id,
 }
 
 std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterGeometricShader(HdShaderKey::ID id,
-                        HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr> *instance)
-{
-    return _geometricShaderRegistry.GetInstance(id, instance);
-}
-
-std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterGLSLProgram(HdGLSLProgram::ID id,
                         HdInstance<HdGLSLProgram::ID, HdGLSLProgramSharedPtr> *instance)
 {
@@ -697,9 +689,10 @@ HdResourceRegistry::FindTextureResource(HdTextureResource::ID id,
 }
 
 
-void HdResourceRegistry::InvalidateGeometricShaderRegistry()
+void HdResourceRegistry::InvalidateShaderRegistry()
 {
-    _geometricShaderRegistry.Invalidate();
+    // Derived classes that hold shaders will override this,
+    // but the base registry has nothing to do.
 }
 
 HD_API

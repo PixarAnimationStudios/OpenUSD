@@ -25,7 +25,7 @@
 #include "pxr/imaging/hdSt/codeGen.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
@@ -78,7 +78,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (samplerBuffer)
 );
 
-HdSt_CodeGen::HdSt_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
+HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
                        HdShaderCodeSharedPtrVector const &shaders)
     : _geometricShader(geometricShader), _shaders(shaders)
 {
@@ -511,8 +511,8 @@ HdSt_CodeGen::Compile()
     // geometry shader plumbing
     switch(_geometricShader->GetPrimitiveType())
     {
-        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
         {
             // patch interpolation
             _procGS << "vec4 GetPatchCoord(int index);\n"
@@ -521,7 +521,7 @@ HdSt_CodeGen::Compile()
             break;            
         }
 
-        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
         {
             // quad interpolation
             _procGS  << "void ProcessPrimVars(int index) {\n"
@@ -529,8 +529,8 @@ HdSt_CodeGen::Compile()
             break;            
         }
 
-        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-        case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         {
             // barycentric interpolation
              _procGS  << "void ProcessPrimVars(int index) {\n"
@@ -1703,8 +1703,8 @@ HdSt_CodeGen::_GenerateElementPrimVar()
         else if (_geometricShader->IsPrimTypeMesh()) {
             // GetPatchParam, GetEdgeFlag
             switch (_geometricShader->GetPrimitiveType()) {
-                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
                 {
                     // refined quads or tris (loop subdiv)
                     accessors
@@ -1719,7 +1719,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                     break;
                 }
 
-                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
                 {
                     // refined patches (tessellated triangles)
                     accessors
@@ -1735,7 +1735,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                     break;
                 }
 
-                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
                 {
                     // coarse quads (for ptex)
                     // put ptexIndex into the first element of PatchParam.
@@ -1751,7 +1751,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                     break;
                 }
 
-                case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
                 {
                     // coarse triangles                
                     // note that triangulated meshes don't have ptexIndex.
@@ -1771,7 +1771,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
 
                 default:
                 {
-                    TF_CODING_ERROR("Hd_GeometricShader::PrimitiveType %d is "
+                    TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                       "unexpected in _GenerateElementPrimVar().",
                       _geometricShader->GetPrimitiveType());
                 }
@@ -1812,7 +1812,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                 << "}\n";
         }
         else {
-            TF_CODING_ERROR("Hd_GeometricShader::PrimitiveType %d is "
+            TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                   "unexpected in _GenerateElementPrimVar().",
                   _geometricShader->GetPrimitiveType());
         }
@@ -2027,9 +2027,9 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
 
         switch(_geometricShader->GetPrimitiveType())
         {
-            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
-            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:            
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:            
             {
                 // linear interpolation within a quad.
                 _procGS << "   outPrimVars." << name
@@ -2041,8 +2041,8 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
                 break;
             }
 
-            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
-            case Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
             {
                 // barycentric interpolation within a triangle.
                 _procGS << "   outPrimVars." << name
@@ -2052,7 +2052,7 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
                 break;  
             }
 
-            case Hd_GeometricShader::PrimitiveType::PRIM_POINTS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_POINTS:
             {
                 // do nothing. 
                 // e.g. if a prim's geomstyle is points and it has valid
@@ -2063,7 +2063,7 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
 
             default:
                 TF_CODING_ERROR("Face varing bindings for unexpected for" 
-                                " Hd_GeometricShader::PrimitiveType %d", 
+                                " HdSt_GeometricShader::PrimitiveType %d", 
                                 _geometricShader->GetPrimitiveType());
         }
     }

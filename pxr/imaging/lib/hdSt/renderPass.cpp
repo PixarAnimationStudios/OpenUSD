@@ -27,7 +27,7 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
-#include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -163,8 +163,10 @@ HdSt_RenderPass::_PrepareCommandBuffer(
         _cmdBuffers.clear();
         for (HdRenderIndex::HdDrawItemView::iterator it = items.begin();
                                                     it != items.end(); it++ ) {
-            _cmdBuffers[it->first].SwapDrawItems(&it->second, 
-                                                 shaderBindingsVersion);
+            _cmdBuffers[it->first].SwapDrawItems(
+                // Downcast the HdDrawItem entries to HdStDrawItems:
+                reinterpret_cast<std::vector<HdStDrawItem const*>*>(&it->second),
+                shaderBindingsVersion);
             itemCount += _cmdBuffers[it->first].GetTotalSize();
         }
 

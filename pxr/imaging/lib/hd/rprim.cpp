@@ -71,7 +71,7 @@ HdRprim::Finalize(HdRenderParam *renderParam)
 {
 }
 
-std::vector<HdDrawItem>* 
+const std::vector<HdDrawItem*>*
 HdRprim::GetDrawItems(HdSceneDelegate* delegate,
                       TfToken const &defaultReprName, bool forced)
 {
@@ -83,7 +83,7 @@ HdRprim::GetDrawItems(HdSceneDelegate* delegate,
     HdReprSharedPtr repr = _GetRepr(delegate, reprName, &dirtyBits);
 
     if (repr) {
-        return repr->GetDrawItems();
+        return &repr->GetDrawItems();
     } else {
         return nullptr;
     }

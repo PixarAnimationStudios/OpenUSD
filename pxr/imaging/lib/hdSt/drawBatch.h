@@ -38,11 +38,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdDrawItem;
+class HdStDrawItem;
 class HdStDrawItemInstance;
 
 typedef boost::shared_ptr<class HdSt_DrawBatch> HdSt_DrawBatchSharedPtr;
-typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
 typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
@@ -112,7 +112,7 @@ protected:
 
         HDST_API
         bool CompileShader(
-                HdDrawItem const *drawItem,
+                HdStDrawItem const *drawItem,
                 bool indirect,
                 HdStResourceRegistrySharedPtr const &resourceRegistry);
 
@@ -142,11 +142,11 @@ protected:
             return _surfaceShader; 
         }
 
-        void SetGeometricShader(Hd_GeometricShaderSharedPtr shader) {
+        void SetGeometricShader(HdSt_GeometricShaderSharedPtr shader) {
             _geometricShader = shader;
         }
 
-        const Hd_GeometricShaderSharedPtr &GetGeometricShader() { 
+        const HdSt_GeometricShaderSharedPtr &GetGeometricShader() { 
             return _geometricShader; 
         }
 
@@ -188,7 +188,7 @@ protected:
         HdGLSLProgramSharedPtr _glslProgram;
         Hd_ResourceBinder _resourceBinder;
         HdShaderCodeSharedPtrVector _shaders;
-        Hd_GeometricShaderSharedPtr _geometricShader;
+        HdSt_GeometricShaderSharedPtr _geometricShader;
         HdShaderCodeSharedPtr _surfaceShader;
     };
 
@@ -200,8 +200,8 @@ protected:
 
 protected:
     HDST_API
-    static bool _IsAggregated(HdDrawItem const *drawItem0,
-                              HdDrawItem const *drawItem1);
+    static bool _IsAggregated(HdStDrawItem const *drawItem0,
+                              HdStDrawItem const *drawItem1);
 
     std::vector<HdStDrawItemInstance const*> _drawItemInstances;
 

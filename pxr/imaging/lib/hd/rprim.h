@@ -91,12 +91,14 @@ public:
     HD_API
     virtual void Finalize(HdRenderParam *renderParam);
 
-    /// Returns the draw items for the requested reprName, these draw items
-    /// should be constructed and cached beforehand by Sync().
+    /// Returns the draw items for the requested reprName, if any.
+    /// These draw items should be constructed and cached beforehand by Sync().
+    /// If no draw items exist, or reprName cannot be found, nullptr
+    /// will be returned.
     HD_API
-    std::vector<HdDrawItem>* GetDrawItems(HdSceneDelegate* delegate,
-                                          TfToken const &reprName,
-                                          bool forced);
+    const std::vector<HdDrawItem*>* GetDrawItems(HdSceneDelegate* delegate,
+                                                 TfToken const &reprName,
+                                                 bool forced);
 
     /// Returns the render tag associated to this rprim
     HD_API

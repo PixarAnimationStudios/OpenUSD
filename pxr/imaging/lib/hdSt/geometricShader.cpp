@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/debugCodes.h"
@@ -39,7 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
+HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        PrimitiveType primType,
                                        HdCullStyle cullStyle,
                                        HdPolygonMode polygonMode,
@@ -76,27 +76,27 @@ Hd_GeometricShader::Hd_GeometricShader(std::string const &glslfxString,
     //
 }
 
-Hd_GeometricShader::~Hd_GeometricShader()
+HdSt_GeometricShader::~HdSt_GeometricShader()
 {
     // nothing
 }
 
 /* virtual */
 HdShaderCode::ID
-Hd_GeometricShader::ComputeHash() const
+HdSt_GeometricShader::ComputeHash() const
 {
     return _hash;
 }
 
 /* virtual */
 std::string
-Hd_GeometricShader::GetSource(TfToken const &shaderStageKey) const
+HdSt_GeometricShader::GetSource(TfToken const &shaderStageKey) const
 {
     return _glslfx->GetSource(shaderStageKey);
 }
 
 void
-Hd_GeometricShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdSt_GeometricShader::BindResources(Hd_ResourceBinder const &binder, int program)
 {
     if (_cullStyle != HdCullStyleDontCare) {
         unsigned int cullStyle = _cullStyle;
@@ -115,7 +115,7 @@ Hd_GeometricShader::BindResources(Hd_ResourceBinder const &binder, int program)
 }
 
 void
-Hd_GeometricShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
+HdSt_GeometricShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
 {
     if (_polygonMode == HdPolygonModeLine) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -124,13 +124,13 @@ Hd_GeometricShader::UnbindResources(Hd_ResourceBinder const &binder, int program
 
 /*virtual*/
 void
-Hd_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
 {
     // no-op
 }
 
 GLenum
-Hd_GeometricShader::GetPrimitiveMode() const 
+HdSt_GeometricShader::GetPrimitiveMode() const 
 {
     GLenum primMode = GL_POINTS;
 
@@ -160,7 +160,7 @@ Hd_GeometricShader::GetPrimitiveMode() const
 }
 
 int
-Hd_GeometricShader::GetPrimitiveIndexSize() const
+HdSt_GeometricShader::GetPrimitiveIndexSize() const
 {
     int primIndexSize = 1;
 
@@ -190,7 +190,7 @@ Hd_GeometricShader::GetPrimitiveIndexSize() const
 }
 
 int
-Hd_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
+HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 {
     int numPrimVerts = 1;
 

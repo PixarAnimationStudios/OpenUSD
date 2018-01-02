@@ -58,9 +58,9 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(TfToken const &basis,
     : glslfx(_tokens->baseGLSLFX)
 {
     if (refine) {
-        primType = Hd_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_PATCHES;
+        primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_PATCHES;
     } else {
-        primType = Hd_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
+        primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
     }
 
     VS[0]  = _tokens->instancing;

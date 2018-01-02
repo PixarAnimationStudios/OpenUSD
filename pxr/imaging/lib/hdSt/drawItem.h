@@ -21,42 +21,42 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_CULLING_SHADER_KEY_H
-#define HDST_CULLING_SHADER_KEY_H
+#ifndef HDST_DRAW_ITEM_H
+#define HDST_DRAW_ITEM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/drawItem.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct HdSt_CullingShaderKey
-{
-    HdSt_CullingShaderKey(bool instancing, bool tinyCull, bool counting);
-    ~HdSt_CullingShaderKey();
+typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return NULL; }
-    TfToken const *GetTES() const { return NULL; }
-    TfToken const *GetGS() const  { return NULL; }
-    TfToken const *GetFS() const  { return NULL; }
-    bool IsCullingPass() const { return true; }
-    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
-        return HdSt_GeometricShader::PrimitiveType::PRIM_POINTS; 
+class HdStDrawItem : public HdDrawItem {
+public:
+    HF_MALLOC_TAG_NEW("new HdStDrawItem");
+
+    HDST_API
+    HdStDrawItem(HdRprimSharedData const *sharedData);
+
+    HDST_API
+    ~HdStDrawItem();
+
+    void SetGeometricShader(HdSt_GeometricShaderSharedPtr const &shader) {
+        _geometricShader = shader;
     }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    bool IsFaceVarying() const { return false; }
 
-    TfToken glslfx;
-    TfToken VS[6];
+    HdSt_GeometricShaderSharedPtr const &GetGeometricShader() const {
+        return _geometricShader;
+    }
+
+private:
+    HdSt_GeometricShaderSharedPtr _geometricShader;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDST_CULLING_SHADER_KEY_H
+#endif //HDST_DRAW_ITEM_H

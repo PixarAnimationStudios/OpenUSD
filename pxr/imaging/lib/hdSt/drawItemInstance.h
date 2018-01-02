@@ -26,13 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "boost/shared_ptr.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdSt_DrawBatch> HdDrawBatchSharedPtr;
-typedef boost::shared_ptr<class HdDrawItem> HdDrawItemSharedPtr;
 
 /// \class HdStDrawItemInstance
 ///
@@ -50,7 +49,7 @@ class HdStDrawItemInstance
 {
 public:
     HDST_API
-    HdStDrawItemInstance(HdDrawItem const *drawItem);
+    HdStDrawItemInstance(HdStDrawItem const *drawItem);
     HDST_API
     ~HdStDrawItemInstance();
 
@@ -76,13 +75,13 @@ public:
     void SetBatch(HdSt_DrawBatch *batch);
 
     /// Return a const pointer to draw item
-    HdDrawItem const *GetDrawItem() const { return _drawItem; }
+    HdStDrawItem const *GetDrawItem() const { return _drawItem; }
 
 private:
     HdStDrawItemInstance();
 
     HdSt_DrawBatch * _batch;
-    HdDrawItem const * _drawItem;
+    HdStDrawItem const * _drawItem;
     size_t _batchIndex;
     bool _visible;
 };

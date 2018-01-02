@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
 #include "pxr/imaging/hdSt/instancer.h"
@@ -32,7 +33,7 @@
 #include "pxr/base/tf/getenv.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -78,7 +79,7 @@ HdStPoints::Sync(HdSceneDelegate* delegate,
 
 void
 HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                            HdDrawItem *drawItem,
+                            HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
@@ -103,10 +104,11 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     HdSt_PointsShaderKey shaderKey;
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
     drawItem->SetGeometricShader(
-        Hd_GeometricShader::Create(
-            shaderKey, 
-            sceneDelegate->GetRenderIndex().GetResourceRegistry()));
+        HdSt_GeometricShader::Create(shaderKey, resourceRegistry));
 
     /* PRIMVAR */
     if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
@@ -143,9 +145,9 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
     // points don't have multiple draw items (for now)
     if (HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
-            _UpdateDrawItem(sceneDelegate,
-                            _reprs[0].second->GetDrawItem(0),
-                            dirtyBits);
+            HdStDrawItem *drawItem =
+                static_cast<HdStDrawItem*>(_reprs[0].second->GetDrawItem(0));
+            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
         }
 
         *dirtyBits &= ~HdChangeTracker::NewRepr;
@@ -156,7 +158,7 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
 
 void
 HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                    HdDrawItem *drawItem,
+                                    HdStDrawItem *drawItem,
                                     HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
@@ -279,7 +281,8 @@ HdStPoints::_InitRepr(TfToken const &reprName,
             const HdPointsReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle != HdPointsGeomStyleInvalid) {
-                repr->AddDrawItem(&_sharedData);
+                HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+                repr->AddDrawItem(drawItem);
             }
         }
 

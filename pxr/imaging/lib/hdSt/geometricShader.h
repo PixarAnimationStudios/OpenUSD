@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_GEOMETRIC_SHADER_H
-#define HD_GEOMETRIC_SHADER_H
+#ifndef HDST_GEOMETRIC_SHADER_H
+#define HDST_GEOMETRIC_SHADER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
@@ -38,13 +38,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
 
-/// \class Hd_GeometricShader
+/// \class HdSt_GeometricShader
 ///
 /// A geometric shader -- hydra internal use
 ///
-class Hd_GeometricShader : public HdShaderCode {
+class HdSt_GeometricShader : public HdShaderCode {
 public:
     /// Used in HdSt_CodeGen to generate the appropriate shader source 
     enum class PrimitiveType { 
@@ -91,27 +91,27 @@ public:
                primType == PrimitiveType::PRIM_BASIS_CURVES_PATCHES;
     }
 
-    HD_API
-    Hd_GeometricShader(std::string const &glslfxString,
+    HDST_API
+    HdSt_GeometricShader(std::string const &glslfxString,
                        PrimitiveType primType,
                        HdCullStyle cullStyle,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        SdfPath const &debugId=SdfPath());
 
-    HD_API
-    virtual ~Hd_GeometricShader();
+    HDST_API
+    virtual ~HdSt_GeometricShader();
 
     // HdShader overrides
-    HD_API
+    HDST_API
     virtual ID ComputeHash() const;
-    HD_API
+    HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
-    HD_API
+    HDST_API
     virtual void BindResources(Hd_ResourceBinder const &binder, int program);
-    HD_API
+    HDST_API
     virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
-    HD_API
+    HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
     /// Returns true if this geometric shader is used for GPU frustum culling.
@@ -149,26 +149,26 @@ public:
     }
 
     /// Return the GL primitive type of the draw item based on _primType
-    HD_API
+    HDST_API
     GLenum GetPrimitiveMode() const;
 
     // Returns the primitive index size based on the primitive mode
     // 3 for triangles, 4 for quads, 16 for regular b-spline patches etc.
-    HD_API
+    HDST_API
     int GetPrimitiveIndexSize() const;
 
     // Returns the primitive index size for the geometry shader shade
     // 1 for points, 2 for lines, 3 for triangles, 4 for lines_adjacency    
-    HD_API
+    HDST_API
     int GetNumPrimitiveVertsForGeometryShader() const;
 
     /// template factory for convenience
     template <typename KEY>
-    static Hd_GeometricShaderSharedPtr Create(
+    static HdSt_GeometricShaderSharedPtr Create(
             KEY const &shaderKey, 
-            HdResourceRegistrySharedPtr const &resourceRegistry) {
+            HdStResourceRegistrySharedPtr const &resourceRegistry) {
 
-        HdInstance<HdShaderKey::ID, Hd_GeometricShaderSharedPtr> 
+        HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr> 
             geometricShaderInstance;
 
         // lookup registry
@@ -178,8 +178,8 @@ public:
 
         if (geometricShaderInstance.IsFirstInstance()) {
             geometricShaderInstance.SetValue(
-                Hd_GeometricShaderSharedPtr(
-                    new Hd_GeometricShader(
+                HdSt_GeometricShaderSharedPtr(
+                    new HdSt_GeometricShader(
                         HdShaderKey::GetGLSLFXString(shaderKey),
                         shaderKey.GetPrimitiveType(),
                         shaderKey.GetCullStyle(),
@@ -200,11 +200,11 @@ private:
     ID _hash;
 
     // No copying
-    Hd_GeometricShader(const Hd_GeometricShader &)                     = delete;
-    Hd_GeometricShader &operator =(const Hd_GeometricShader &)         = delete;
+    HdSt_GeometricShader(const HdSt_GeometricShader &)                     = delete;
+    HdSt_GeometricShader &operator =(const HdSt_GeometricShader &)         = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_GEOMETRIC_SHADER_H
+#endif  // HDST_GEOMETRIC_SHADER_H

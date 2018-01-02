@@ -40,6 +40,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdStDrawItem;
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
@@ -97,7 +98,7 @@ protected:
     bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                         HdDrawItem *drawItem,
+                         HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          HdMeshReprDesc desc,
                          bool requireSmoothNormals);
@@ -107,28 +108,28 @@ protected:
                                     HdReprSharedPtr repr);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
-                                        HdDrawItem *drawItem,
+                                        HdStDrawItem *drawItem,
                                         const HdMeshReprDesc &desc);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
-                           HdDrawItem *drawItem,
+                           HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            HdMeshReprDesc desc);
 
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                 HdDrawItem *drawItem,
+                                 HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
-                                      HdDrawItem *drawItem,
+                                      HdStDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
                                       HdMeshReprDesc desc);
 
     void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
-                                  HdDrawItem *drawItem,
+                                  HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   TfTokenVector const &primVarNames);
 

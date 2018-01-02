@@ -131,11 +131,11 @@ private:
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumCulling(HdDrawItem const *item,
+    void _GPUFrustumCulling(HdStDrawItem const *item,
                             HdStRenderPassStateSharedPtr const &renderPassState,
                             HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumCullingXFB(HdDrawItem const *item,
+    void _GPUFrustumCullingXFB(HdStDrawItem const *item,
                                HdStRenderPassStateSharedPtr const &renderPassState,
                                HdStResourceRegistrySharedPtr const &resourceRegistry);
 

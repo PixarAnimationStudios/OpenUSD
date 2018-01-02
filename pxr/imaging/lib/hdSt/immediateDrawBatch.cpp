@@ -25,13 +25,14 @@
 
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -68,7 +69,7 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
 {
     if (!TF_VERIFY(!_drawItemInstances.empty())) return false;
 
-    HdDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
+    HdStDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
 
     // immediate batch doesn't need to verify buffer array hash unlike indirect
     // batch.
@@ -77,7 +78,7 @@ HdSt_ImmediateDrawBatch::Validate(bool deepValidation)
 
         size_t numDrawItemInstances = _drawItemInstances.size();
         for (size_t item = 0; item < numDrawItemInstances; ++item) {
-            HdDrawItem const * drawItem
+            HdStDrawItem const * drawItem
                 = _drawItemInstances[item]->GetDrawItem();
 
             if (!TF_VERIFY(drawItem->GetGeometricShader())) {
@@ -145,7 +146,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
-    Hd_GeometricShaderSharedPtr const &geometricShader
+    HdSt_GeometricShaderSharedPtr const &geometricShader
         = program.GetGeometricShader();
     geometricShader->BindResources(binder, programId);
 
@@ -155,7 +156,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             continue;
         }
 
-        HdDrawItem const * drawItem = (*drawItemIt)->GetDrawItem();
+        HdStDrawItem const * drawItem = (*drawItemIt)->GetDrawItem();
 
         ++numItemsDrawn;
         if (TfDebug::IsEnabled(HD_DRAWITEM_DRAWN)) {

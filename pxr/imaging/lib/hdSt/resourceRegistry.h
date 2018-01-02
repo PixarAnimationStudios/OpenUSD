@@ -36,6 +36,8 @@ typedef boost::shared_ptr<class HdStPersistentBuffer>
     HdStPersistentBufferSharedPtr;
 typedef boost::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
+typedef boost::shared_ptr<class HdSt_GeometricShader>
+    HdSt_GeometricShaderSharedPtr;
 
 /// \class HdStResourceRegistry
 ///
@@ -111,6 +113,13 @@ public:
         HdBufferSpecVector const &newBufferSpecs,
         HdBufferArrayRangeSharedPtr const &range);
 
+    /// Register a geometric shader.
+    HDST_API
+    std::unique_lock<std::mutex> RegisterGeometricShader(HdShaderKey::ID id,
+         HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr> *pInstance);
+
+    void InvalidateShaderRegistry() override;
+
 protected:
     virtual void _GarbageCollect() override;
     virtual void _TallyResourceAllocation(VtDictionary *result) const override;
@@ -125,6 +134,10 @@ private:
         _PersistentBufferRegistry;
     _PersistentBufferRegistry _persistentBufferRegistry;
 
+    // geometric shader registry
+    typedef HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr>
+         _GeometricShaderInstance;
+    HdInstanceRegistry<_GeometricShaderInstance> _geometricShaderRegistry;
 };
 
 

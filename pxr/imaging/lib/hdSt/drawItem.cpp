@@ -21,42 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_CULLING_SHADER_KEY_H
-#define HDST_CULLING_SHADER_KEY_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/base/tf/token.h"
+#include "pxr/imaging/hd/shaderCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-struct HdSt_CullingShaderKey
+HdStDrawItem::HdStDrawItem(HdRprimSharedData const *sharedData)
+    : HdDrawItem(sharedData)
 {
-    HdSt_CullingShaderKey(bool instancing, bool tinyCull, bool counting);
-    ~HdSt_CullingShaderKey();
+    HF_MALLOC_TAG_FUNCTION();
+}
 
-    TfToken const &GetGlslfxFile() const { return glslfx; }
-    TfToken const *GetVS() const  { return VS; }
-    TfToken const *GetTCS() const { return NULL; }
-    TfToken const *GetTES() const { return NULL; }
-    TfToken const *GetGS() const  { return NULL; }
-    TfToken const *GetFS() const  { return NULL; }
-    bool IsCullingPass() const { return true; }
-    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
-        return HdSt_GeometricShader::PrimitiveType::PRIM_POINTS; 
-    }
-    HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
-    HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    bool IsFaceVarying() const { return false; }
-
-    TfToken glslfx;
-    TfToken VS[6];
-};
-
+HdStDrawItem::~HdStDrawItem()
+{
+    /*NOTHING*/
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HDST_CULLING_SHADER_KEY_H

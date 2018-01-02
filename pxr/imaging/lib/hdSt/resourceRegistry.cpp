@@ -65,6 +65,7 @@ HdStResourceRegistry::_GarbageCollect()
 {
     GarbageCollectDispatchBuffers();
     GarbageCollectPersistentBuffers();
+    _geometricShaderRegistry.GarbageCollect();
 }
 
 void
@@ -269,6 +270,18 @@ HdStResourceRegistry::MergeShaderStorageBufferArrayRange(
     return MergeBufferArrayRange(_uniformSsboAggregationStrategy.get(),
                                  _uniformSsboBufferArrayRegistry,
                                  role, newBufferSpecs, range);
+}
+
+std::unique_lock<std::mutex>
+HdStResourceRegistry::RegisterGeometricShader(HdShaderKey::ID id,
+                        HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr> *instance)
+{
+    return _geometricShaderRegistry.GetInstance(id, instance);
+}
+
+void HdStResourceRegistry::InvalidateShaderRegistry()
+{
+    _geometricShaderRegistry.Invalidate();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

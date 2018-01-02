@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
@@ -44,7 +45,7 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/repr.h"
@@ -145,7 +146,7 @@ HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
 
 void
 HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
-                            HdDrawItem *drawItem,
+                            HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits,
                             HdMeshReprDesc desc)
 {
@@ -482,7 +483,7 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
 
 void
 HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                  HdDrawItem *drawItem,
+                                  HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   bool requireSmoothNormals)
 {
@@ -900,7 +901,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
-                                       HdDrawItem *drawItem,
+                                       HdStDrawItem *drawItem,
                                        HdDirtyBits *dirtyBits,
                                        HdMeshReprDesc desc)
 {
@@ -988,7 +989,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
-                                   HdDrawItem *drawItem,
+                                   HdStDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
                                    TfTokenVector const &primVarNames)
 {
@@ -1153,7 +1154,7 @@ HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
 
 void
 HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                          HdDrawItem *drawItem,
+                          HdStDrawItem *drawItem,
                           HdDirtyBits *dirtyBits,
                           HdMeshReprDesc desc,
                           bool requireSmoothNormals)
@@ -1252,7 +1253,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
 void
 HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
-                                         HdDrawItem *drawItem,
+                                         HdStDrawItem *drawItem,
                                          const HdMeshReprDesc &desc)
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
@@ -1262,26 +1263,26 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     int refineLevel = _GetRefineLevelForDesc(desc);
 
-    Hd_GeometricShader::PrimitiveType primType =
-        Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
+    HdSt_GeometricShader::PrimitiveType primType =
+        HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
 
     if (desc.geomStyle == HdMeshGeomStylePoints) {
-        primType = Hd_GeometricShader::PrimitiveType::PRIM_POINTS;
+        primType = HdSt_GeometricShader::PrimitiveType::PRIM_POINTS;
     } else if (refineLevel > 0) {
         if (_topology->RefinesToTriangles()) {
             // e.g. loop subdivision.
             primType =
-                Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
+                HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
         } else if (_topology->RefinesToBSplinePatches()) {
-            primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES;
+            primType = HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES;
         } else {
             // uniform catmark/bilinear subdivision generates quads.
             primType =
-                Hd_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
+                HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
     } else if (_UsePtexIndices(renderIndex)) {
         // quadrangulate coarse mesh (for ptex)
-        primType = Hd_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
+        primType = HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
     }
 
     // resolve geom style, cull style
@@ -1333,8 +1334,12 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  cullStyle,
                                  geomStyle);
 
-    Hd_GeometricShaderSharedPtr geomShader = Hd_GeometricShader::Create(
-            shaderKey, renderIndex.GetResourceRegistry());
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
+
+    HdSt_GeometricShaderSharedPtr geomShader =
+        HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
 
     TF_VERIFY(geomShader);
 
@@ -1416,7 +1421,8 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
             if (desc.geomStyle == HdMeshGeomStyleInvalid) continue;
 
             // redirect hull topology to extra slot
-            HdDrawItem *drawItem = repr->AddDrawItem(&_sharedData);
+            HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+            repr->AddDrawItem(drawItem);
             HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
 
             if (desc.geomStyle == HdMeshGeomStyleHull         ||
@@ -1515,7 +1521,8 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         const HdMeshReprDesc &desc = reprDescs[descIdx];
 
         if (desc.geomStyle != HdMeshGeomStyleInvalid) {
-            HdDrawItem *drawItem = curRepr->GetDrawItem(drawItemIndex++);
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                curRepr->GetDrawItem(drawItemIndex++));
 
             if (HdChangeTracker::IsDirty(*dirtyBits)) {
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
@@ -1555,9 +1562,10 @@ HdStMesh::_UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
         if (descs[descIdx].geomStyle != HdMeshGeomStyleInvalid) {
-            _UpdateDrawItemGeometricShader(sceneDelegate,
-                repr->GetDrawItem(drawItemIndex++),
-                descs[descIdx]);
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
+                                           descs[descIdx]);
         }
     }
 }

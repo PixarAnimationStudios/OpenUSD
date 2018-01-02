@@ -24,7 +24,6 @@
 #include "pxr/imaging/hd/engine.h"
 
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -144,20 +143,18 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
         tracker.MarkSprimDirty(*materialIt, HdChangeTracker::AllDirty);
     }
 
-    // Invalidate Geometry shader cache in Resource Registry.
-    index.GetResourceRegistry()->InvalidateGeometricShaderRegistry();
+    // Invalidate shader cache in Resource Registry.
+    index.GetResourceRegistry()->InvalidateShaderRegistry();
 
     // Fallback material
     HdMaterial *material = static_cast<HdMaterial *>(
                         index.GetFallbackSprim(HdPrimTypeTokens->material));
     material->Reload();
 
-
     // Note: Several Shaders are not currently captured in this
     // - Lighting Shaders
     // - Render Pass Shaders
     // - Culling Shader
-
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

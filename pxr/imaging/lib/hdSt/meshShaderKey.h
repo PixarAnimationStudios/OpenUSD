@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdSt_MeshShaderKey
 {
-    HdSt_MeshShaderKey(Hd_GeometricShader::PrimitiveType primType,
+    HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
                        bool hasCustomDisplacementTerminal,
                        bool smoothNormals,
@@ -61,12 +61,12 @@ struct HdSt_MeshShaderKey
     bool IsCullingPass() const { return false; }
     HdCullStyle GetCullStyle() const { return cullStyle; }
     HdPolygonMode GetPolygonMode() const { return polygonMode; }
-    Hd_GeometricShader::PrimitiveType GetPrimitiveType() const {
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const {
         return primType; 
     }
     bool IsFaceVarying() const {return isFaceVarying;}
 
-    Hd_GeometricShader::PrimitiveType primType;
+    HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
     HdPolygonMode polygonMode;
     bool isFaceVarying;

@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class HdStDrawItem;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
@@ -72,16 +72,16 @@ protected:
                  HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
-                           HdDrawItem *drawItem,
+                           HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            const HdBasisCurvesReprDesc &desc);
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                 HdDrawItem *drawItem,
+                                 HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
-                                  HdDrawItem *drawItem,
+                                  HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
 
@@ -108,7 +108,7 @@ private:
                                int refineLevel);
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                         HdDrawItem *drawItem,
+                         HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
@@ -117,7 +117,7 @@ private:
                                  HdReprSharedPtr repr);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
-                                        HdDrawItem *drawItem,
+                                        HdStDrawItem *drawItem,
                                         const HdBasisCurvesReprDesc &desc);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;

@@ -59,7 +59,6 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
-        geometricShader
         glslProgram
         glUtils
         instancer

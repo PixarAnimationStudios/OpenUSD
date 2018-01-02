@@ -78,7 +78,6 @@ HdCommandBuffer: The work to be performed for a single render pass
 HdDrawItem: Abstraction of an OpenGL draw call.
   |
   |--- HdDrawingCoord
-  |--- Hd_GeometricShader
   |--- HdRprimSharedData
 
 </pre>

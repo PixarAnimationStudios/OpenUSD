@@ -30,7 +30,7 @@
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"

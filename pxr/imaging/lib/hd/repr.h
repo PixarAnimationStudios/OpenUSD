@@ -30,6 +30,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/imaging/hd/drawItem.h"
 #include <vector>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,37 +39,45 @@ struct HdRprimSharedData;
 
 /// \class HdRepr
 ///
-/// One or more draw items for a specific representation of an HdRprim.
+/// An HdRepr owns a collection of draw items (HdDrawItem) that
+/// visually represent an HdRprim.
 ///
 class HdRepr {
 public:
+    typedef std::vector<HdDrawItem*> DrawItems;
+
     HD_API
     HdRepr();
     HD_API
     virtual ~HdRepr();
 
-    /// Returns the cached set of draw items for this representation.
-    HD_API
-    std::vector<HdDrawItem>* GetDrawItems();
+    // Noncopyable
+    HdRepr(const HdRepr&) = delete;
+    HdRepr& operator=(const HdRepr&) = delete;
 
-    /// Allocates a new draw item and returns a pointer to it. 
-    ///
-    /// \note The draw item is owned by this object and need not be deleted.
-    HdDrawItem* AddDrawItem(HdRprimSharedData const *sharedData) {
-        _drawItems.push_back(HdDrawItem(sharedData));
-        return &_drawItems.back();
+    /// Returns the draw items for this representation.
+    HD_API
+    const DrawItems& GetDrawItems() {
+        return _drawItems;
+    }
+
+    /// Transfers ownership of a draw item to this repr.
+    HD_API
+    void AddDrawItem(HdDrawItem *item) {
+        _drawItems.push_back(item);
     }
 
     /// Returns the draw item at the requested index.
     ///
-    /// Note that the pointer returned is owned by this object and need not be
+    /// Note that the pointer returned is owned by this object and must not be
     /// deleted.
+    HD_API
     HdDrawItem* GetDrawItem(size_t index) {
-        return &_drawItems[index];
+        return _drawItems[index];
     }
 
 private:
-    std::vector<HdDrawItem> _drawItems;
+    DrawItems _drawItems;
 };
 
 

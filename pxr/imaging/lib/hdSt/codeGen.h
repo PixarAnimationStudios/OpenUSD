@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderPtr;
+typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderPtr;
 typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
 
 /// \class HdSt_CodeGen
@@ -55,7 +55,7 @@ public:
 
     /// Constructor.
     HD_API
-    HdSt_CodeGen(Hd_GeometricShaderPtr const &geometricShader,
+    HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
                HdShaderCodeSharedPtrVector const &shaders);
 
     /// Constructor for non-geometric use cases.
@@ -120,7 +120,7 @@ private:
     void _GenerateShaderParameters();
 
     Hd_ResourceBinder::MetaData _metaData;
-    Hd_GeometricShaderPtr _geometricShader;
+    HdSt_GeometricShaderPtr _geometricShader;
     HdShaderCodeSharedPtrVector _shaders;
 
     // source buckets
