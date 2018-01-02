@@ -160,7 +160,7 @@ class Myconsole(interpreterView):
         self.locals()['stage'] = appController._rootDataModel.stage
         self.locals()['frame'] = appController._rootDataModel.currentFrame
         self.locals()['selectedPrims'] = list(appController._currentPrims)
-        self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy()
+        self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy() if appController._stageView else None
         self.locals()['prim'] = appController._currentPrims[0] if \
                                         appController._currentPrims else None
         self.locals()['property'] = appController._currentProp
