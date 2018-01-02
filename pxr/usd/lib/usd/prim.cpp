@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
@@ -206,6 +207,16 @@ UsdPrim::_GetPropertyNames(bool onlyAuthored, bool applyOrder) const
         _ApplyOrdering(GetPropertyOrder(), &names);
     }
     return names;
+}
+
+TfTokenVector
+UsdPrim::GetAppliedSchemas() const
+{
+    SdfTokenListOp appliedSchemas;
+    GetMetadata(UsdTokens->apiSchemas, &appliedSchemas);
+    TfTokenVector result;
+    appliedSchemas.ApplyOperations(&result);
+    return result;
 }
 
 TfTokenVector

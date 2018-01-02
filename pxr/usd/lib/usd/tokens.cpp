@@ -26,6 +26,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdTokensType::UsdTokensType() :
+    apiSchemas("apiSchemas", TfToken::Immortal),
     clipActive("clipActive", TfToken::Immortal),
     clipAssetPaths("clipAssetPaths", TfToken::Immortal),
     clipManifestAssetPath("clipManifestAssetPath", TfToken::Immortal),
@@ -44,6 +45,7 @@ UsdTokensType::UsdTokensType() :
     expansionRule("expansionRule", TfToken::Immortal),
     explicitOnly("explicitOnly", TfToken::Immortal),
     allTokens({
+        apiSchemas,
         clipActive,
         clipAssetPaths,
         clipManifestAssetPath,

@@ -179,6 +179,9 @@ void wrapUsdPrim()
              arg("namespaces"),
              return_value_policy<TfPySequenceToList>())
 
+        .def("GetAppliedSchemas", &UsdPrim::GetAppliedSchemas,
+             return_value_policy<TfPySequenceToList>())
+
         .def("GetPropertyOrder", &UsdPrim::GetPropertyOrder,
              return_value_policy<TfPySequenceToList>())
 

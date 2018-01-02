@@ -6,6 +6,10 @@
         {
             "Info": {
                 "SdfMetadata": {
+                    "apiSchemas": {
+                        "appliesTo": "prims", 
+                        "type": "tokenlistop"
+                    }, 
                     "clipActive": {
                         "appliesTo": [
                             "prims"

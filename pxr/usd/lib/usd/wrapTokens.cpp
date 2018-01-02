@@ -64,6 +64,7 @@ void wrapUsdTokens()
 {
     boost::python::class_<UsdTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "apiSchemas", UsdTokens->apiSchemas);
     _AddToken(cls, "clipActive", UsdTokens->clipActive);
     _AddToken(cls, "clipAssetPaths", UsdTokens->clipAssetPaths);
     _AddToken(cls, "clipManifestAssetPath", UsdTokens->clipManifestAssetPath);

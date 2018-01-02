@@ -641,5 +641,20 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertFalse(Usd.SchemaRegistry.IsConcrete(imageable))
         self.assertFalse(Usd.SchemaRegistry.IsConcrete(geomModelAPI))
 
+    def test_Apply(self):
+        s = Usd.Stage.CreateInMemory('AppliedSchemas.usd')
+        root = s.DefinePrim('/hello')
+        self.assertEqual([], root.GetAppliedSchemas())
+
+        # Check duplicates
+        UsdGeom.MotionAPI.Apply(s, '/hello')
+        self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
+        UsdGeom.MotionAPI.Apply(s, '/hello')
+        self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
+        
+        # Ensure duplicates aren't picked up
+        UsdGeom.ModelAPI.Apply(s, '/hello')
+        self.assertEqual(['MotionAPI', 'GeomModelAPI'], root.GetAppliedSchemas())
+
 if __name__ == "__main__":
     unittest.main()

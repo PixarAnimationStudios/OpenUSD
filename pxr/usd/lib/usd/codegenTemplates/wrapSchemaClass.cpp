@@ -83,6 +83,11 @@ void wrap{{ cls.cppClassName }}()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 {% endif %}
+{% if cls.isApi == "true" %}
+
+        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .staticmethod("Apply")
+{% endif %}
 
         .def("IsConcrete",
             static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))

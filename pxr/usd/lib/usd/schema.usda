@@ -154,6 +154,13 @@ def "GLOBAL" (
                 in UsdCollectionAPI::MembershipQuery::IsPathIncluded.
                 """
             }
+            dictionary apiSchemas = {
+                string doc = """
+                A listop metadata containing the API schemas which have
+                been applied to this prim, using the Apply() method on
+                the particular schema class. 
+                """
+            }
         }
     }
 )

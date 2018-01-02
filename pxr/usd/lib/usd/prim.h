@@ -235,6 +235,12 @@ public:
         return _Prim()->HasDefiningSpecifier(); 
     }
 
+    /// Return a vector containing the names of API schemas which have
+    /// been applied to this prim, using the Apply() method on
+    /// the particular schema class. 
+    USD_API
+    TfTokenVector GetAppliedSchemas() const;
+
     /// Return all of this prim's property names (attributes and relationships),
     /// including all builtin properties, ordered according to the strongest
     /// propertyOrder statement in scene description if one exists, otherwise

@@ -284,6 +284,11 @@ class ClassInfo(object):
          self.cppClassName,
          self.baseFileName) = _ExtractNames(sdfPrim, self.customData)
 
+        # We must also hold onto the authored prim name in schema.usda
+        # for cases in which we must differentiate that from the authored
+        # className in customdata. For example, UsdModelAPI vs UsdGeomModelAPI
+        self.primName = sdfPrim.path.name
+
         # Class Parent's Info
         parentClass = inheritsList[0].name if inheritsList else 'SchemaBase'
         (parentLayer,
@@ -311,10 +316,17 @@ class ClassInfo(object):
                 if parentTypeName == self.typeName:
                     self.typeName = ''
 
-        self.isConcrete = 'false' if not self.typeName else 'true'
-        self.isTyped = 'true' if _IsTyped(usdPrim) else 'false'
+        isConcrete = bool(self.typeName)
+        isTyped = _IsTyped(usdPrim)
+        isApi = not isTyped and not isConcrete
 
-        if (self.isConcrete == 'true' and self.isTyped == 'false'):
+        # Jinja deals with strings, so we convert here
+        toJinjaBool = lambda b: str(b).lower()
+        self.isConcrete = toJinjaBool(isConcrete)
+        self.isTyped = toJinjaBool(isTyped)
+        self.isApi = toJinjaBool(isApi)
+
+        if isConcrete and not isTyped:
             errorStr = ('Invalid schema definition at ' 
                         + '</' + sdfPrim.path.name + '>. '
                         + 'Schema classes must either inherit Typed(IsA), or '
@@ -322,6 +334,7 @@ class ClassInfo(object):
                         + '       See '
                         + 'https://graphics.pixar.com/usd/docs/api/_usd__page__generating_schemas.html#Usd_IsAVsAPISchemas '
                         + 'for more information.\n')
+
             raise Exception(errorStr)
 
     def GetHeaderFile(self):
