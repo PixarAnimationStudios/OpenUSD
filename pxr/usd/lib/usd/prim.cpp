@@ -80,13 +80,15 @@ UsdPrim::GetPrimDefinition() const
 }
 
 bool
-UsdPrim::_IsA(const TfType& schemaType) const
+UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
 {
-    // Check Schema TfType
-    if (schemaType.IsUnknown()) {
-        TF_CODING_ERROR("Unknown schema type (%s) is invalid for IsA query",
-                        schemaType.GetTypeName().c_str());
-        return false;
+    if (validateSchemaType) {
+        // Check Schema TfType
+        if (schemaType.IsUnknown()) {
+            TF_CODING_ERROR("Unknown schema type (%s) is invalid for IsA query",
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
     }
 
     // Get Prim TfType
@@ -128,13 +130,14 @@ UsdPrim::_HasAPI(const TfType& schemaType, bool validateSchemaType) const
         return false;
     }
 
+    auto foundMatch = [&appliedSchemas](const std::string& alias) {
+        return std::find(appliedSchemas.begin(), appliedSchemas.end(), alias) 
+               != appliedSchemas.end();
+    };
+
     // See if our schema is directly authored
-    for (const auto& schemaName : appliedSchemas) {
-        for (const auto& alias : usdSchemaBase.GetAliases(schemaType)) {
-            if (schemaName == alias) {
-                return true;
-            } 
-        }
+    for (const auto& alias : usdSchemaBase.GetAliases(schemaType)) {
+        if (foundMatch(alias)) { return true; }
     }
 
     // If we couldn't find it directly authored in apiSchemas, 
@@ -143,13 +146,9 @@ UsdPrim::_HasAPI(const TfType& schemaType, bool validateSchemaType) const
     // apiSchemas = ["UsdGeomModelAPI"], we should return true
     std::set<TfType> derivedTypes;
     schemaType.GetAllDerivedTypes(&derivedTypes);
-    for (const auto& schemaName : appliedSchemas) {
-        for (const auto& derived : derivedTypes) {
-            for (const auto& alias : usdSchemaBase.GetAliases(derived)) {
-                if (schemaName == alias) {
-                    return true;
-                }
-            }
+    for (const auto& derived : derivedTypes) {
+        for (const auto& alias : usdSchemaBase.GetAliases(derived)) {
+            if (foundMatch(alias)) { return true; }
         }
     }
 

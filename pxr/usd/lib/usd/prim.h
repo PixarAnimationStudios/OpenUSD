@@ -43,7 +43,6 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <boost/iterator/iterator_adaptor.hpp>
-#include <boost/mpl/assert.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <string>
@@ -393,14 +392,16 @@ private:
     friend bool Usd_PrimHasAPI(const UsdPrim&, const TfType& schemaType);
 
     /// The non-templated implementation of UsdPrim::IsA using the
-    /// TfType system.
+    /// TfType system. \p validateSchemaType is provided for python clients
+    /// because they can't use compile time assertions on the input type.
     USD_API
-    bool _IsA(const TfType& schemaType) const;
+    bool _IsA(const TfType& schemaType, bool validateSchemaType) const;
 
     /// The non-templated implementation of UsdPrim::HasAPI using the
-    /// TfType system. \p validateSchemaType is provided for python clients.
+    /// TfType system. \p validateSchemaType is provided for python clients
+    /// because they can't use compile time assertions on the input type.
     USD_API
-    bool _HasAPI(const TfType& schemaType, bool validateSchemaType=false) const;
+    bool _HasAPI(const TfType& schemaType, bool validateSchemaType) const;
 
 public:
     /// Return true if the UsdPrim is/inherits a Schema of type T.
@@ -409,10 +410,9 @@ public:
     /// from schema \c T.
     template <typename T>
     bool IsA() const {
-        BOOST_MPL_ASSERT_MSG((std::is_base_of<UsdSchemaBase, T>::value),
-                             Provided_type_must_derive_UsdSchemaBase,
-                             (T));
-        return _IsA(TfType::Find<T>());
+        static_assert(std::is_base_of<UsdSchemaBase, T>::value,
+                      "Provided type must derive UsdSchemaBase.");
+        return _IsA(TfType::Find<T>(), /*validateSchemaType=*/false);
     };
 
     /// Return true if the UsdPrim has had an API schema applied to it
@@ -428,7 +428,7 @@ public:
                       "Provided schema type must be non-concrete."); 
         static_assert(!T::IsTyped,
                       "Provided schema type must be untyped.");
-        return _HasAPI(TfType::Find<T>());
+        return _HasAPI(TfType::Find<T>(), /*validateSchemaType=*/false);
     } 
 
     // --------------------------------------------------------------------- //

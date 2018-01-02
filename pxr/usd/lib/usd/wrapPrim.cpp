@@ -55,13 +55,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool 
 Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
 {
-    return prim._IsA(schemaType);
+    return prim._IsA(schemaType, /*validateSchema=*/true);
 }
 
 bool 
 Usd_PrimHasAPI(const UsdPrim& prim, const TfType& schemaType)
 {
-    return prim._HasAPI(schemaType, /*validateSchema*/true);
+    return prim._HasAPI(schemaType, /*validateSchema=*/true);
 }
 
 const PcpPrimIndex &
