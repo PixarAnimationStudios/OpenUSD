@@ -58,6 +58,12 @@ Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
     return prim._IsA(schemaType);
 }
 
+bool 
+Usd_PrimHasAPI(const UsdPrim& prim, const TfType& schemaType)
+{
+    return prim._HasAPI(schemaType, /*validateSchema*/true);
+}
+
 const PcpPrimIndex &
 Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
 {
@@ -188,6 +194,7 @@ void wrapUsdPrim()
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
 
         .def("IsA", &Usd_PrimIsA, arg("schemaType"))
+        .def("HasAPI", &Usd_PrimHasAPI, arg("schemaType"))
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 

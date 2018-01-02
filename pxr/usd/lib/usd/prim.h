@@ -390,10 +390,17 @@ public:
 
 private:
     friend bool Usd_PrimIsA(const UsdPrim&, const TfType& schemaType);
+    friend bool Usd_PrimHasAPI(const UsdPrim&, const TfType& schemaType);
+
     /// The non-templated implementation of UsdPrim::IsA using the
     /// TfType system.
     USD_API
     bool _IsA(const TfType& schemaType) const;
+
+    /// The non-templated implementation of UsdPrim::HasAPI using the
+    /// TfType system. \p validateSchemaType is provided for python clients.
+    USD_API
+    bool _HasAPI(const TfType& schemaType, bool validateSchemaType=false) const;
 
 public:
     /// Return true if the UsdPrim is/inherits a Schema of type T.
@@ -407,6 +414,22 @@ public:
                              (T));
         return _IsA(TfType::Find<T>());
     };
+
+    /// Return true if the UsdPrim has had an API schema applied to it
+    /// through the Apply() method provided on all API schema classes, such
+    /// as UsdModelAPI and UsdCollectionAPI.
+    template <typename T>
+    bool HasAPI() const {
+        static_assert(std::is_base_of<UsdSchemaBase, T>::value,
+                      "Provided type must derive UsdSchemaBase.");
+        static_assert(!std::is_same<UsdSchemaBase, T>::value,
+                      "Provided type must not be UsdSchemaBase.");
+        static_assert(!T::IsConcrete,
+                      "Provided schema type must be non-concrete."); 
+        static_assert(!T::IsTyped,
+                      "Provided schema type must be untyped.");
+        return _HasAPI(TfType::Find<T>());
+    } 
 
     // --------------------------------------------------------------------- //
     /// \name Prim Children

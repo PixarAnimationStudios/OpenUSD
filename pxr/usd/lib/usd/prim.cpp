@@ -97,6 +97,65 @@ UsdPrim::_IsA(const TfType& schemaType) const
         IsA(schemaType);
 }
 
+bool
+UsdPrim::_HasAPI(const TfType& schemaType, bool validateSchemaType) const 
+{
+    if (validateSchemaType) {
+        if (schemaType.IsUnknown()) {
+            TF_CODING_ERROR("Unknown schema type (%s) is invalid for HasAPI query",
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
+
+        // Note that this is only hit in python code paths,
+        // C++ clients would hit the static_asserts defined in prim.h
+        auto schemaRegistry = UsdSchemaRegistry::GetInstance();
+        if (schemaRegistry.IsConcrete(schemaType)) {
+            TF_CODING_ERROR("Provided schema type must be non-concrete");  
+            return false;
+        }
+
+        if (schemaRegistry.IsTyped(schemaType)) {
+            TF_CODING_ERROR("Provided schema type must be untyped");
+            return false;
+        }
+    }
+
+    // Get our composed set of applied schemas
+    static const auto usdSchemaBase = TfType::FindByName("UsdSchemaBase");
+    auto appliedSchemas = GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return false;
+    }
+
+    // See if our schema is directly authored
+    for (const auto& schemaName : appliedSchemas) {
+        for (const auto& alias : usdSchemaBase.GetAliases(schemaType)) {
+            if (schemaName == alias) {
+                return true;
+            } 
+        }
+    }
+
+    // If we couldn't find it directly authored in apiSchemas, 
+    // consider derived types. For example, if a user queries
+    // prim.HasAPI<UsdModelAPI>() on a prim with 
+    // apiSchemas = ["UsdGeomModelAPI"], we should return true
+    std::set<TfType> derivedTypes;
+    schemaType.GetAllDerivedTypes(&derivedTypes);
+    for (const auto& schemaName : appliedSchemas) {
+        for (const auto& derived : derivedTypes) {
+            for (const auto& alias : usdSchemaBase.GetAliases(derived)) {
+                if (schemaName == alias) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 std::vector<UsdProperty>
 UsdPrim::_MakeProperties(const TfTokenVector &names) const
 {
