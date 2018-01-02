@@ -2660,13 +2660,16 @@ class AppController(QtCore.QObject):
 
     def _propertyViewContextMenu(self, point):
         item = self._ui.propertyView.itemAt(point)
-        self.contextMenu = AttributeViewContextMenu(self._mainWindow, item, self)
-        self.contextMenu.exec_(QtGui.QCursor.pos())
+        if item:
+            self.contextMenu = AttributeViewContextMenu(self._mainWindow, 
+                                                        item, self)
+            self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def _layerStackContextMenu(self, point):
         item = self._ui.layerStackView.itemAt(point)
-        self.contextMenu = LayerStackContextMenu(self._mainWindow, item)
-        self.contextMenu.exec_(QtGui.QCursor.pos())
+        if item:
+            self.contextMenu = LayerStackContextMenu(self._mainWindow, item)
+            self.contextMenu.exec_(QtGui.QCursor.pos())
 
     def _compositionTreeContextMenu(self, point):
         item = self._ui.compositionTreeWidget.itemAt(point)
