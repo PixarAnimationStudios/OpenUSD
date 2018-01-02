@@ -361,9 +361,8 @@ UsdSchemaRegistry::IsTyped(const TfType& primType)
 bool 
 UsdSchemaRegistry::IsConcrete(const TfType& primType)
 {
-    // XXX: Were relying on the face that schemagen does not
-    // write out prim definitions for non concrete types here (bug 153512)
-    return static_cast<bool>(GetPrimDefinition(primType));
+    auto primSpec = GetPrimDefinition(primType);
+    return (primSpec && !primSpec->GetTypeName().IsEmpty());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
