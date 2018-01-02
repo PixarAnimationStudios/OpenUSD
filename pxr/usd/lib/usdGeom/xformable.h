@@ -139,7 +139,7 @@ class SdfAssetPath;
 /// float3 xformOp:rotateXYZ = (30, 60, 90)
 /// float3 xformOp:scale = (2, 2, 2)
 /// double3 xformOp:translate = (0, 100, 0)
-/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale" ]
+/// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale" ]
 /// \endcode
 /// 
 /// The attributes appear in the dictionary order in which USD, by default,
@@ -163,7 +163,7 @@ class SdfAssetPath;
 /// float xformOp:rotateZ = 90
 /// float3 xformOp:scale = (2, 2, 2)
 /// double3 xformOp:translate = (0, 100, 0)
-/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateZ", "xformOp:rotateY", "xformOp:rotateX", "xformOp:scale" ]
+/// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateZ", "xformOp:rotateY", "xformOp:rotateX", "xformOp:scale" ]
 /// \endcode
 /// 
 /// Again, note that although we are encoding an XYZ rotation, the three
@@ -177,7 +177,7 @@ class SdfAssetPath;
 /// float3 xformOp:scale = (2, 2, 2)
 /// double3 xformOp:translate = (0, 100, 0)
 /// double3 xformOp:translate:scalePivot
-/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale" ]
+/// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale" ]
 /// \endcode
 /// 
 /// <b>Paired "Inverted" Ops</b>
