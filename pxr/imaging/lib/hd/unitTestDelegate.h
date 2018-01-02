@@ -129,6 +129,15 @@ public:
                                      bool rightHanded=true, bool doubleSided=false,
                                      SdfPath const &instancerId=SdfPath());
 
+    // Add a grid with division x*y and a custom primvar
+    HD_API
+    void AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
+                            GfMatrix4f const &transform,
+                            VtValue const &primvar,
+                            Interpolation primvarInterpolation,
+                            bool rightHanded=true, bool doubleSided=false,
+                            SdfPath const &instancerId=SdfPath());
+
     /// Add a triangle, quad and pentagon.
     HD_API
     void AddPolygons(SdfPath const &id, GfMatrix4f const &transform,

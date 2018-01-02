@@ -120,22 +120,23 @@ HD_API
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs);
 
 
-/// \struct HdMaterialNodes
+/// \struct HdMaterialNetwork
 ///
-/// Describes a material network composed of nodes and relationships
+/// Describes a material network composed of nodes, primvars, and relationships
 /// between the nodes and terminals of those nodes.
-struct HdMaterialNodes {
+struct HdMaterialNetwork {
     std::vector<HdMaterialRelationship> relationships;
     std::vector<HdMaterialNode> nodes;
+    TfTokenVector primvars;
 };
 
 // VtValue requirements
 HD_API
-std::ostream& operator<<(std::ostream& out, const HdMaterialNodes& pv);
+std::ostream& operator<<(std::ostream& out, const HdMaterialNetwork& pv);
 HD_API
-bool operator==(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs);
+bool operator==(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs);
 HD_API
-bool operator!=(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs);
+bool operator!=(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

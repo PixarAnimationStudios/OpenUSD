@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdMaterialNodes;
+class HdMaterialNetwork;
 
 /// \class UsdImagingMaterialAdapter
 /// \brief Provides information that can be used to generate a material.
@@ -82,7 +82,7 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    /// Returns a bit mask of attributes to be udpated, or
+    /// Returns a bit mask of attributes to be updated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
     USDIMAGING_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
@@ -101,8 +101,8 @@ protected:
                              UsdImagingIndexProxy* index) final;
 
 private:
-    void _GetMaterialNodes(UsdPrim const &prim, 
-                           HdMaterialNodes *materialNodes);
+    void _GetMaterialNetwork(UsdPrim const &prim, 
+                             HdMaterialNetwork *materialNetwork);
 };
 
 

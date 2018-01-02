@@ -306,6 +306,11 @@ public:
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
 
+    // Returns a list of primvars used by the material id passed 
+    // to this function.
+    HD_API 
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
+
     // -----------------------------------------------------------------------//
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//

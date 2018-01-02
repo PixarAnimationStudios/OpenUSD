@@ -41,9 +41,9 @@ HdMaterial::~HdMaterial()
 // VtValue Requirements
 // -------------------------------------------------------------------------- //
 
-std::ostream& operator<<(std::ostream& out, const HdMaterialNodes& pv)
+std::ostream& operator<<(std::ostream& out, const HdMaterialNetwork& pv)
 {
-    out << "HdMaterialNodes Params: (...) " ;
+    out << "HdMaterialNetwork Params: (...) " ;
     return out;
 }
 
@@ -68,13 +68,14 @@ bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
            lhs.parameters == rhs.parameters;
 }
 
-bool operator==(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs) 
+bool operator==(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs) 
 {
     return lhs.relationships           == rhs.relationships && 
-           lhs.nodes                   == rhs.nodes;
+           lhs.nodes                   == rhs.nodes &&
+           lhs.primvars                == rhs.primvars;
 }
 
-bool operator!=(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs) 
+bool operator!=(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs) 
 {
     return !(lhs == rhs);
 }

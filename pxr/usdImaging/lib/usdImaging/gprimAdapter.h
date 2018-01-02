@@ -134,36 +134,11 @@ public:
 
 protected:
 
-    /// This function can be overridden if the gprim adapter wants to have
-    /// control over the primvar discovery.
-    USDIMAGING_API
-    virtual void _DiscoverPrimvars(
-            UsdGeomGprim const& gprim,
-            SdfPath const& cachePath,
-            SdfPath const& shaderPath,
-            UsdTimeCode time,
-            UsdImagingValueCache* valueCache);
-
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) final;
 
 private:
-
-    /// Discover required primvars by searching for primvar inputs connected to
-    /// the shader network.
-    void _DiscoverPrimvarsFromShaderNetwork(UsdGeomGprim const& gprim,
-                           SdfPath const& cachePath, 
-                           UsdShadeShader const& shader,
-                           UsdTimeCode time,
-                           UsdImagingValueCache* valueCache);
-
-    // Deprecated shader discovery.
-    void _DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
-                           SdfPath const& cachePath, 
-                           UsdPrim const& shaderPrim,
-                           UsdTimeCode time,
-                           UsdImagingValueCache* valueCache);
 
     // Helper method for the _DiscoverPrimvars methods above.
     void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,

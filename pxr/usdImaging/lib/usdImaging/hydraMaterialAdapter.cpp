@@ -140,6 +140,142 @@ UsdImagingHydraMaterialAdapter::TrackVariability(UsdPrim const& prim,
     }
 }
 
+static bool
+_IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
+{
+    UsdAttribute attr = shaderInput.GetAttr();
+
+    TfToken baseName = attr.GetBaseName();
+    return  attr.SplitName().size() >= 2 && 
+            (baseName =="texture" || baseName=="primvar");
+}
+
+TfTokenVector
+UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsFromShaderNetwork(
+    UsdShadeShader const& shader) const
+{
+    // TODO: It might be convenient to implicitly wire up PtexFaceOffset and
+    // PtexFaceIndex primvars.
+    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Looking for primvars at <%s>\n",
+                            shader.GetPrim().GetPath().GetText());
+
+    TfTokenVector primvars;
+
+    for (UsdShadeInput const& input : shader.GetInputs()) {
+
+        if (_IsTextureOrPrimvarInput(input))
+            continue;
+
+        UsdShadeConnectableAPI source;
+        TfToken outputName;
+        UsdShadeAttributeType sourceType;
+        if (UsdShadeConnectableAPI::GetConnectedSource(input, &source, 
+                &outputName, &sourceType)) {
+            UsdAttribute attr = UsdShadeShader(source).GetIdAttr();
+            TfToken id;
+            if (!attr || !attr.Get(&id)) {
+                continue;
+            }
+            
+            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t\t Shader input <%s> connected <%s>(%s)\n",
+                            input.GetAttr().GetName().GetText(),
+                            source.GetPath().GetText(),
+                            id.GetText());
+
+            if (id == UsdHydraTokens->HwPrimvar_1) {
+                UsdShadeShader sourceShader(source);
+                TfToken t;
+                if (UsdHydraPrimvar(sourceShader).GetVarnameAttr().Get(&t, 
+                                            UsdTimeCode::Default())) {
+                    primvars.push_back(t);
+                }
+            } else {
+                // Recursively look for more primvars
+                primvars = 
+                    _DiscoverPrimvarsFromShaderNetwork(UsdShadeShader(source));
+            }
+        }
+    }
+
+    return primvars;
+}
+
+TfTokenVector
+UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsDeprecated(
+    UsdPrim const& shaderPrim) const
+{
+    TfTokenVector primvars;
+    UsdImagingValueCache::PrimvarInfo primvar;
+    UsdShadeShader shader(shaderPrim);
+
+    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Looking for deprecated primvars at <%s>\n",
+                            shader.GetPrim().GetPath().GetText());
+
+    std::vector<UsdShadeInput> const &inputs = shader.GetInputs();
+    for (const UsdShadeInput &shaderInput: inputs) {
+        if (_IsTextureOrPrimvarInput(shaderInput))
+            continue;
+
+        UsdAttribute attr = shaderInput.GetAttr();
+        if (!attr) {
+            continue;
+        }
+
+        // Ok this is a parameter, check source input.
+        if (UsdAttribute texAttr = shaderPrim.GetAttribute(
+                                TfToken(attr.GetPath().GetName() 
+                                + ":texture"))) {
+            TfToken t;
+            SdfAssetPath ap;
+            texAttr.Get(&ap, UsdTimeCode::Default());
+
+            bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
+            if (isPtex) {
+
+                t = UsdImagingTokens->ptexFaceIndex;
+                // Allow the client to override this name
+                texAttr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t);
+                primvars.push_back(t);
+
+                t = UsdImagingTokens->ptexFaceOffset;
+                // Allow the client to override this name
+                texAttr.GetMetadata(UsdImagingTokens->faceOffsetPrimvar, &t);
+                primvars.push_back(t);
+
+            } else {
+                texAttr.GetMetadata(UsdImagingTokens->uvPrimvar, &t);
+                primvars.push_back(t);
+            }
+        } else if (UsdAttribute pvAttr = shaderPrim.GetAttribute(
+                                        TfToken(attr.GetPath().GetName() 
+                                                + ":primvar"))) {
+            TfToken t;
+            if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::Default()))) {
+                primvars.push_back(t);
+            }
+        }
+    }
+
+    return primvars;
+}
+
+TfTokenVector
+UsdImagingHydraMaterialAdapter::_DiscoverPrimvars(SdfPath const& shaderPath) const
+{
+    TfTokenVector primvars;
+
+    // Check if each parameter/input is bound to a texture or primvar.
+    if (UsdPrim const& shaderPrim = _GetPrim(shaderPath)) {
+        if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
+            primvars = _DiscoverPrimvarsFromShaderNetwork(s);
+        } else {
+            primvars = _DiscoverPrimvarsDeprecated(shaderPrim);
+        }
+    }
+
+    return primvars;
+}
+
 /* virtual */
 void
 UsdImagingHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
@@ -164,6 +300,10 @@ UsdImagingHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
             _GetShaderSource(prim, _tokens->surfaceShader);
         valueCache->GetDisplacementShaderSource(cachePath) =
             _GetShaderSource(prim, _tokens->displacementShader);
+
+        // Extract the primvars
+        valueCache->GetMaterialPrimvars(cachePath) = 
+            _DiscoverPrimvars(cachePath);
     }
 
     if (requestedBits & HdMaterial::DirtyParams) {
@@ -275,16 +415,6 @@ UsdImagingHydraMaterialAdapter::_GetShaderSource(UsdPrim const& prim,
 
     TF_CODING_ERROR("Unsupported shader type: <%s>\n", shaderType.GetText());
     return std::string();
-}
-
-static bool
-_IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
-{
-    UsdAttribute attr = shaderInput.GetAttr();
-
-    TfToken baseName = attr.GetBaseName();
-    return  attr.SplitName().size() >= 2 && 
-            (baseName =="texture" || baseName=="primvar");
 }
 
 VtValue

@@ -123,6 +123,16 @@ private:
     VtValue _GetMaterialParamValue(UsdPrim const& prim,
                                    TfToken const& paramName,
                                    UsdTimeCode time) const;
+
+    /// Entry point for primvar discovery.
+    TfTokenVector _DiscoverPrimvars(SdfPath const& shaderPath) const;
+
+    /// Discover required primvars by searching for primvar inputs connected to
+    /// the shader network.
+    TfTokenVector _DiscoverPrimvarsFromShaderNetwork(UsdShadeShader const& shader) const;
+
+    // Deprecated shader discovery.
+    TfTokenVector _DiscoverPrimvarsDeprecated(UsdPrim const& shaderPrim) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

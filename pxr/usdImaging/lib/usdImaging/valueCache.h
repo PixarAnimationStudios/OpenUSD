@@ -152,6 +152,10 @@ public:
             static TfToken attr("materialId");
             return Key(path, attr);
         }
+        static Key MaterialPrimvars(SdfPath const& path) {
+            static TfToken attr("materialPrimvars");
+            return Key(path, attr);
+        }
         static Key MaterialResource(SdfPath const& path) {
             static TfToken attr("materialResource");
             return Key(path, attr);
@@ -303,6 +307,7 @@ public:
         _Erase<VtValue>(Key::Widths(path));
         _Erase<VtValue>(Key::Normals(path));
         _Erase<VtValue>(Key::MaterialId(path));
+        _Erase<VtValue>(Key::MaterialPrimvars(path));
         _Erase<VtValue>(Key::MaterialResource(path));
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
@@ -375,6 +380,9 @@ public:
     SdfPath& GetMaterialId(SdfPath const& path) const {
         return _Get<SdfPath>(Key::MaterialId(path));
     }
+    VtValue& GetMaterialPrimvars(SdfPath const& path) const {
+        return _Get<VtValue>(Key::MaterialPrimvars(path));
+    }
     VtValue& GetMaterialResource(SdfPath const& path) const {
         return _Get<VtValue>(Key::MaterialResource(path));
     }
@@ -440,7 +448,10 @@ public:
     bool FindMaterialId(SdfPath const& path, SdfPath* value) const {
         return _Find(Key::MaterialId(path), value);
     }
-    bool FindMaterialResource(SdfPath const& path, SdfPath* value) const {
+    bool FindMaterialPrimvars(SdfPath const& path, VtValue* value) const {
+        return _Find(Key::MaterialPrimvars(path), value);
+    }
+    bool FindMaterialResource(SdfPath const& path, VtValue* value) const {
         return _Find(Key::MaterialResource(path), value);
     }
     // XXX: Shader API will be deprecated soon
@@ -501,6 +512,9 @@ public:
     }
     bool ExtractMaterialId(SdfPath const& path, SdfPath* value) {
         return _Extract(Key::MaterialId(path), value);
+    }
+    bool ExtractMaterialPrimvars(SdfPath const& path, VtValue* value) {
+        return _Extract(Key::MaterialPrimvars(path), value);
     }
     bool ExtractMaterialResource(SdfPath const& path, VtValue* value) {
         return _Extract(Key::MaterialResource(path), value);
@@ -566,7 +580,7 @@ private:
     typedef _TypedCache<SdfPath> _SdfPathCache;
     mutable _SdfPathCache _sdfPathCache;
 
-    // primvars, topology, materialResources
+    // primvars, topology, materialResources, materialPrimvars
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 

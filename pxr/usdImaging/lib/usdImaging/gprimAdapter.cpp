@@ -191,43 +191,10 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 void
-UsdImagingGprimAdapter::_DiscoverPrimvars(
-        UsdGeomGprim const& gprim,
-        SdfPath const& cachePath,
-        SdfPath const& shaderPath,
-        UsdTimeCode time,
-        UsdImagingValueCache* valueCache)
-{
-    // Check if each parameter/input is bound to a texture or primvar, if so,
-    // collect that primvar from this gprim.
-    // XXX: Should move this into ShaderAdapter
-    if (UsdPrim const& shaderPrim = _GetPrim(shaderPath)) {
-        if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
-            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
-                                               s, time, valueCache);
-        } else {
-            _DiscoverPrimvarsDeprecated(gprim, cachePath, 
-                                        shaderPrim, time, valueCache);
-        }
-    }
-}
-
-void
 UsdImagingGprimAdapter::_RemovePrim(SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index)
 {
     index->RemoveRprim(cachePath);
-}
-
-
-static bool
-_IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
-{
-    UsdAttribute attr = shaderInput.GetAttr();
-
-    TfToken baseName = attr.GetBaseName();
-    return  attr.SplitName().size() >= 2 && 
-            (baseName =="texture" || baseName=="primvar");
 }
 
 void 
@@ -263,124 +230,6 @@ UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
-void
-UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(
-    UsdGeomGprim const& gprim,
-    SdfPath const& cachePath, 
-    UsdShadeShader const& shader,
-    UsdTimeCode time,
-    UsdImagingValueCache* valueCache)
-{
-    // TODO: It might be convenient to implicitly wire up PtexFaceOffset and
-    // PtexFaceIndex primvars.
-    
-    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Looking for <%s> primvars at <%s>\n",
-                            gprim.GetPrim().GetPath().GetText(),
-                            shader.GetPrim().GetPath().GetText());
-    for (UsdShadeInput const& input : shader.GetInputs()) {
-
-        if (_IsTextureOrPrimvarInput(input))
-            continue;
-
-        UsdShadeConnectableAPI source;
-        TfToken outputName;
-        UsdShadeAttributeType sourceType;
-        if (UsdShadeConnectableAPI::GetConnectedSource(input, &source, 
-                &outputName, &sourceType)) {
-            UsdAttribute attr = UsdShadeShader(source).GetIdAttr();
-            TfToken id;
-            if (!attr || !attr.Get(&id)) {
-                continue;
-            }
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t\t Shader input <%s> connected <%s>(%s)\n",
-                            input.GetAttr().GetName().GetText(),
-                            source.GetPath().GetText(),
-                            id.GetText());
-            if (id == UsdHydraTokens->HwPrimvar_1) {
-                UsdShadeShader sourceShader(source);
-                TfToken t;
-                if (UsdHydraPrimvar(sourceShader).GetVarnameAttr().Get(&t, 
-                                            UsdTimeCode::Default())) {
-                    _ComputeAndMergePrimvar(
-                        gprim, cachePath, t, time, valueCache);
-                }
-            } else {
-                // Recursively look for more primvars
-                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
-                    UsdShadeShader(source), time, valueCache);
-            }
-        }
-    }
-}
-void
-UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
-                                          SdfPath const& cachePath, 
-                                          UsdPrim const& shaderPrim,
-                                          UsdTimeCode time,
-                                          UsdImagingValueCache* valueCache)
-{
-    UsdImagingValueCache::PrimvarInfo primvar;
-
-    UsdShadeShader shader(shaderPrim);
-    std::vector<UsdShadeInput> const &inputs = shader.GetInputs();
-    for (const UsdShadeInput &shaderInput: inputs) {
-        if (_IsTextureOrPrimvarInput(shaderInput))
-            continue;
-
-        UsdAttribute attr = shaderInput.GetAttr();
-        if (!attr) {
-            continue;
-        }
-
-        // Ok this is a parameter, check source input.
-        if (UsdAttribute texAttr = shaderPrim.GetAttribute(
-                                TfToken(attr.GetPath().GetName() 
-                                + ":texture"))) {
-            TfToken t;
-            SdfAssetPath ap;
-            texAttr.Get(&ap, UsdTimeCode::Default());
-
-            bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
-            if (isPtex) {
-
-                t = UsdImagingTokens->ptexFaceIndex;
-                // Allow the client to override this name
-                texAttr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t);
-                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
-
-                t = UsdImagingTokens->ptexFaceOffset;
-                // Allow the client to override this name
-                texAttr.GetMetadata(UsdImagingTokens->faceOffsetPrimvar, &t);
-                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
-
-            } else {
-                texAttr.GetMetadata(UsdImagingTokens->uvPrimvar, &t);
-                UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(t);
-                if (TF_VERIFY(primvarAttr, "%s\n", t.GetText())) {
-                    VtValue v;
-                    if (TF_VERIFY(primvarAttr.ComputeFlattened(&v, time))) {
-                        primvar.name = t; // does not include primvars:
-                        primvar.interpolation = primvarAttr.GetInterpolation();
-                        // Convert double to float, we don't need double precision.
-                        if (v.IsHolding<VtVec2dArray>()) {
-                            v = VtValue::Cast<VtVec2fArray>(v);
-                        }
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    }
-                }
-            }
-        } else if (UsdAttribute pvAttr = shaderPrim.GetAttribute(
-                                        TfToken(attr.GetPath().GetName() 
-                                                + ":primvar"))) {
-            TfToken t;
-            if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::Default()))) {
-                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
-            }
-        }
-    }
-}
-
 void 
 UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
@@ -408,30 +257,43 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         if (instancerContext && usdMaterialPath.IsEmpty()) {
             usdMaterialPath = instancerContext->instanceMaterialId;
         }
+
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
                 prim.GetPath().GetText(), usdMaterialPath.GetText());
 
         if (!usdMaterialPath.IsEmpty()) {
-            _DiscoverPrimvars(gprim, cachePath, 
-                              usdMaterialPath, time, valueCache);
+            // Obtain the primvars used in the material bound to this prim
+            // and check if they are in this prim, if so, add them to the 
+            // primvars descriptions.
+            TfTokenVector matPrimvars = 
+                _delegate->GetMaterialPrimvars(usdMaterialPath);
+
+            for (auto const &p : matPrimvars) {
+                _ComputeAndMergePrimvar(
+                    gprim, cachePath, p, time, valueCache);
+            }
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyDoubleSided)
+    if (requestedBits & HdChangeTracker::DirtyDoubleSided){
         valueCache->GetDoubleSided(cachePath) = _GetDoubleSided(prim);
+    }
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
         valueCache->GetTransform(cachePath) = GetTransform(prim, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyExtent)
+    if (requestedBits & HdChangeTracker::DirtyExtent) {
         valueCache->GetExtent(cachePath) = _GetExtent(prim, time);
+    }
 
-    if (requestedBits & HdChangeTracker::DirtyVisibility)
+    if (requestedBits & HdChangeTracker::DirtyVisibility){
         valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+    }
 
-    if (requestedBits & HdChangeTracker::DirtyMaterialId)
+    if (requestedBits & HdChangeTracker::DirtyMaterialId){
         valueCache->GetMaterialId(cachePath) = _GetMaterialId(prim);
+    }
 }
 
 HdDirtyBits

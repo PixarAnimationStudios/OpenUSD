@@ -337,6 +337,8 @@ public:
     // Material Support
     USDIMAGING_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    USDIMAGING_API
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // Instance path resolution
 

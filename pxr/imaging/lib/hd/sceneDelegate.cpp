@@ -277,6 +277,12 @@ HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
     return VtValue();
 }
 
+TfTokenVector 
+HdSceneDelegate::GetMaterialPrimvars(SdfPath const &materialId)
+{
+    return TfTokenVector();
+}
+
 // -----------------------------------------------------------------------//
 /// \name Camera Aspects
 // -----------------------------------------------------------------------//

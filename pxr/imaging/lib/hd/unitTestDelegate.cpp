@@ -1145,6 +1145,35 @@ HdUnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
 }
 
 void
+HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
+                                            GfMatrix4f const &transform,
+                                            VtValue const &primvar,
+                                            Interpolation  primvarInterpolation,
+                                            bool rightHanded, bool doubleSided,
+                                            SdfPath const &instancerId)
+{
+    std::vector<GfVec3f> points;
+    std::vector<int> numVerts;
+    std::vector<int> verts;
+    PxOsdSubdivTags subdivTags;
+    _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
+
+    AddMesh(id,
+            transform,
+            _BuildArray(&points[0], points.size()),
+            _BuildArray(&numVerts[0], numVerts.size()),
+            _BuildArray(&verts[0], verts.size()),
+            subdivTags,
+            primvar,
+            primvarInterpolation,
+            false,
+            instancerId,
+            PxOsdOpenSubdivTokens->catmark,
+            rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
+            doubleSided);
+}
+
+void
 HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
                                           GfMatrix4f const &transform,
                                           bool rightHanded, bool doubleSided,

@@ -3137,6 +3137,23 @@ UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
     return vtMatResource;
 }
 
+TfTokenVector 
+UsdImagingDelegate::GetMaterialPrimvars(SdfPath const &materialId)
+{
+    if (!TF_VERIFY(materialId != SdfPath())) {
+        return TfTokenVector();
+    }
+
+    SdfPath usdPath = GetPathForUsd(materialId);
+
+    VtValue vtMaterialPrimvars;
+    if (_valueCache.FindMaterialPrimvars(usdPath, &vtMaterialPrimvars)) {
+        if (vtMaterialPrimvars.IsHolding<TfTokenVector>()) {
+            return vtMaterialPrimvars.Get<TfTokenVector>();
+        }
+    }
+    return TfTokenVector();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
