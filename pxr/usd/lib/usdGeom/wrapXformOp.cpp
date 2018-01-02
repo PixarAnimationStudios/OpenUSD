@@ -63,6 +63,15 @@ _GetTimeSamples(const UsdGeomXformOp &self)
     return result;
 }
 
+static std::vector<double>
+_GetTimeSamplesInInterval(const UsdGeomXformOp &self,
+                          const GfInterval &interval)
+{
+    std::vector<double> result;
+    self.GetTimeSamplesInInterval(interval, &result);
+    return result;
+}
+
 static GfMatrix4d
 _GetOpTransform(const UsdGeomXformOp &self, UsdTimeCode time) 
 {
@@ -109,6 +118,10 @@ void wrapUsdGeomXformOp()
 
         .def("GetTimeSamples", _GetTimeSamples,
             return_value_policy<TfPySequenceToList>())
+
+        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
+            return_value_policy<TfPySequenceToList>())
+
         .def("GetNumTimeSamples", &XformOp::GetNumTimeSamples)
 
         .def("GetOpTransform", _GetOpTransform)

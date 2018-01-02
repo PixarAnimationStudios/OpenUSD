@@ -405,12 +405,21 @@ public:
             /// 
             /// \sa UsdXformable::GetTimeSamples
             USDGEOM_API
-            bool GetTimeSamples(std::vector<double> *times);
+            bool GetTimeSamples(std::vector<double> *times) const;
+
+            /// Sets the vector of times in the \p interval at which xformOp 
+            /// samples have been authored in the cached set of xform ops.
+            /// 
+            /// \sa UsdXformable::GetTimeSamples
+            USDGEOM_API
+            bool GetTimeSamplesInInterval(const GfInterval &interval, 
+                                          std::vector<double> *times) const;
 
             /// Returns whether the given attribute affects the local 
             /// transformation computed for this query.
             USDGEOM_API
-            bool IsAttributeIncludedInLocalTransform(const TfToken &attrName);
+            bool IsAttributeIncludedInLocalTransform(
+                const TfToken &attrName) const;
 
         private:
             // Cached copy of the vector of ordered xform ops.
@@ -698,17 +707,50 @@ public:
     /// Sets \p times to the union of all the timesamples at which xformOps that 
     /// are included in the xformOpOrder attribute are authored. 
     /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from all the xformOps.
+    /// 
     /// \sa UsdAttribute::GetTimeSamples
     USDGEOM_API
-    bool GetTimeSamples(std::vector<double> *timeSamples) const;
+    bool GetTimeSamples(std::vector<double> *times) const;
+
+    /// Sets \p times to the union of all the timesamples in the interval, 
+    /// \p interval, at which xformOps that are included in the xformOpOrder
+    /// attribute are authored. 
+    /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from all the xformOps.
+    /// 
+    /// \sa UsdAttribute::GetTimeSamples
+    USDGEOM_API
+    bool GetTimeSamplesInInterval(const GfInterval &interval,
+                                  std::vector<double> *times) const;
 
     /// Returns the union of all the timesamples at which the attributes 
     /// belonging to the given \p orderedXformOps are authored.
     /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from \p orderedXformOps.
+    /// 
     /// \sa UsdGeomXformable::GetTimeSamples
     USDGEOM_API
-    static bool GetTimeSamples(std::vector<UsdGeomXformOp> const &orderedXformOps,
-                               std::vector<double> *times);
+    static bool GetTimeSamples(
+        std::vector<UsdGeomXformOp> const &orderedXformOps,
+        std::vector<double> *times);
+
+    /// Returns the union of all the timesamples in the \p interval
+    /// at which the attributes belonging to the given \p orderedXformOps 
+    /// are authored.
+    /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from \p orderedXformOps.
+    /// 
+    /// \sa UsdGeomXformable::GetTimeSamplesInInterval
+    USDGEOM_API
+    static bool GetTimeSamplesInInterval(
+        std::vector<UsdGeomXformOp> const &orderedXformOps,
+        const GfInterval &interval,
+        std::vector<double> *times);
 
     /// Computes the fully-combined, local-to-parent transformation for this prim.
     /// 
@@ -730,9 +772,11 @@ public:
     /// \note A coding error is issued if resetsXformStack is NULL. 
     ///
     USDGEOM_API
-    bool GetLocalTransformation(GfMatrix4d *transform,
-                                bool *resetsXformStack,
-                                const UsdTimeCode time = UsdTimeCode::Default()) const;
+    bool GetLocalTransformation(
+        GfMatrix4d *transform,
+        bool *resetsXformStack,
+        const UsdTimeCode time = UsdTimeCode::Default()) const;
+
     /// \overload 
     /// Computes the fully-combined, local-to-parent transformation for this 
     /// prim as efficiently as possible, using a pre-fetched (cached) list of 

@@ -608,22 +608,82 @@ UsdGeomXformable::GetTimeSamples(
     vector<UsdGeomXformOp> const &orderedXformOps,
     vector<double> *times)
 {
-    bool success = true;
-    TF_FOR_ALL(it, orderedXformOps) {
-        success &= it->GetTimeSamples(times);
+    return GetTimeSamplesInInterval(orderedXformOps, 
+            GfInterval::GetFullInterval(), times);
+}
+
+/* static */
+bool 
+UsdGeomXformable::GetTimeSamplesInInterval(
+    std::vector<UsdGeomXformOp> const &orderedXformOps,
+    const GfInterval &interval,
+    std::vector<double> *times)
+{
+    // Optimize for the case where there's a single xformOp (typically a 4x4 
+    // matrix op). 
+    if (orderedXformOps.size() == 1) {
+        return orderedXformOps.front().GetTimeSamplesInInterval(interval, 
+            times);
     }
 
-    // Sort and uniquify times.
-    std::sort(times->begin(), times->end());
-    times->erase(std::unique(times->begin(), times->end()), times->end());
+    vector<UsdAttribute> xformOpAttrs;
+    xformOpAttrs.reserve(orderedXformOps.size());
+    for (auto &xformOp : orderedXformOps) {
+        xformOpAttrs.push_back(xformOp.GetAttr());
+    }
 
-    return success;
+    return UsdAttribute::GetUnionedTimeSamplesInInterval(xformOpAttrs, 
+            interval, times);
 }
 
 bool 
-UsdGeomXformable::XformQuery::GetTimeSamples(vector<double> *times)
+UsdGeomXformable::GetTimeSamplesInInterval(
+    const GfInterval &interval,
+    std::vector<double> *times) const
 {
-    return UsdGeomXformable::GetTimeSamples(_xformOps, times);
+    bool resetsXformStack=false;
+    const vector<UsdGeomXformOp> &orderedXformOps= GetOrderedXformOps(
+        &resetsXformStack);
+
+    // XXX: backwards compatibility
+    if (orderedXformOps.empty() && 
+        TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
+                
+        if (UsdAttribute transformAttr = _GetTransformAttr())
+            return transformAttr.GetTimeSamplesInInterval(interval, times);
+    }
+
+    return UsdGeomXformable::GetTimeSamplesInInterval(orderedXformOps, interval, 
+            times);
+}
+
+bool 
+UsdGeomXformable::XformQuery::GetTimeSamples(vector<double> *times) const
+{
+    return GetTimeSamplesInInterval(GfInterval::GetFullInterval(), times);
+}
+
+bool 
+UsdGeomXformable::XformQuery::GetTimeSamplesInInterval(
+    const GfInterval &interval, 
+    vector<double> *times) const
+{
+    if (_xformOps.size() == 1) {
+        _xformOps.front().GetTimeSamplesInInterval(interval, times);
+    }
+
+    vector<UsdAttributeQuery> xformOpAttrQueries;
+    xformOpAttrQueries.reserve(_xformOps.size());
+    for (auto &xformOp : _xformOps) {
+        // This should never throw and exception because XformQuery's constructor
+        // initializes an attribute query for all its xformOps.
+        const UsdAttributeQuery &attrQuery = 
+            boost::get<UsdAttributeQuery>(xformOp._attr);
+        xformOpAttrQueries.push_back(attrQuery);
+    }
+    
+    return UsdAttributeQuery::GetUnionedTimeSamplesInInterval(
+            xformOpAttrQueries, interval, times);
 }
 
 bool 
@@ -646,7 +706,7 @@ UsdGeomXformable::GetTimeSamples(vector<double> *times) const
 
 bool 
 UsdGeomXformable::XformQuery::IsAttributeIncludedInLocalTransform(
-    const TfToken &attrName)
+    const TfToken &attrName) const
 {
     TF_FOR_ALL(it, _xformOps) {
         if (it->GetName() == attrName)
