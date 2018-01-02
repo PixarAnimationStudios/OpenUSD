@@ -38,19 +38,20 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class Hd_UnitTestDelegate
+/// \class HdUnitTestDelegate
 ///
 /// A simple delegate class for unit test driver.
 ///
-class Hd_UnitTestDelegate : public HdSceneDelegate {
+class HdUnitTestDelegate : public HdSceneDelegate {
 public:
     HD_API
-    Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
+    HdUnitTestDelegate(HdRenderIndex *parentIndex,
                         SdfPath const& delegateID);
 
     void SetUseInstancePrimVars(bool v) { _hasInstancePrimVars = v; }
@@ -131,7 +132,7 @@ public:
     /// Add a triangle, quad and pentagon.
     HD_API
     void AddPolygons(SdfPath const &id, GfMatrix4f const &transform,
-                     Hd_UnitTestDelegate::Interpolation colorInterp,
+                     HdUnitTestDelegate::Interpolation colorInterp,
                      SdfPath const &instancerId=SdfPath());
 
     /// Add a subdiv with various tags
@@ -157,8 +158,8 @@ public:
     HD_API
     void AddCurves(SdfPath const &id, TfToken const &basis,
                    GfMatrix4f const &transform,
-                   Hd_UnitTestDelegate::Interpolation colorInterp=Hd_UnitTestDelegate::CONSTANT,
-                   Hd_UnitTestDelegate::Interpolation widthInterp=Hd_UnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation colorInterp=HdUnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation widthInterp=HdUnitTestDelegate::CONSTANT,
                    bool authoredNormals=false,
                    SdfPath const &instancerId=SdfPath());
 
@@ -175,8 +176,8 @@ public:
     HD_API
     void AddPoints(SdfPath const &id,
                    GfMatrix4f const &transform,
-                   Hd_UnitTestDelegate::Interpolation colorInterp=Hd_UnitTestDelegate::CONSTANT,
-                   Hd_UnitTestDelegate::Interpolation widthInterp=Hd_UnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation colorInterp=HdUnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation widthInterp=HdUnitTestDelegate::CONSTANT,
                    SdfPath const &instancerId=SdfPath());
 
     /// Instancer
@@ -216,10 +217,6 @@ public:
     /// Example to update a material binding on the fly
     HD_API
     void RebindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
-
-    /// Texture
-    HD_API
-    void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
 
     /// Camera
     HD_API
@@ -456,13 +453,6 @@ private:
         std::string sourceDisplacement;
         HdShaderParamVector params;
     };
-    struct _Texture {
-        _Texture() {}
-        _Texture(GlfTextureRefPtr const &tex)
-            : texture(tex) {
-        }
-        GlfTextureRefPtr texture;
-    };
     struct _Camera {
         VtDictionary params;
     };
@@ -479,7 +469,6 @@ private:
     std::map<SdfPath, _Instancer> _instancers;
     std::map<SdfPath, _MaterialHydra> _materialsHydra;
     std::map<SdfPath, VtValue> _materials;
-    std::map<SdfPath, _Texture> _textures;
     std::map<SdfPath, _Camera> _cameras;
     std::map<SdfPath, _Light> _lights;
     std::map<SdfPath, _Task> _tasks;

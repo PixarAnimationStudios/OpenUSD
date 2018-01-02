@@ -28,10 +28,10 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/unitTestDelegate.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/gf/vec4d.h"
@@ -80,7 +80,7 @@ public:
     }
 
     /// Returns the UnitTest delegate
-    Hd_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
+    HdSt_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
     void SetRepr(TfToken const &reprName);
@@ -92,7 +92,7 @@ private:
     HdEngine _engine;
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
-    Hd_UnitTestDelegate *_sceneDelegate;
+    HdSt_UnitTestDelegate *_sceneDelegate;
     TfToken _reprName;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;

@@ -47,8 +47,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-typedef std::vector<HdTextureResourceSharedPtr> HdTextureResourceSharedPtrVector;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 

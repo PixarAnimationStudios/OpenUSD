@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/shader.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/textureResource.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -162,7 +163,7 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
                                  GetTextureResourceID(sceneDelegate,
                                                       paramIt->GetConnection());
 
-                HdTextureResourceSharedPtr texResource;
+                HdStTextureResourceSharedPtr texResource;
                 {
                     HdInstance<HdTextureResource::ID,
                                HdTextureResourceSharedPtr> texInstance;
@@ -177,7 +178,9 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
                         continue;
                     }
 
-                    texResource = texInstance.GetValue();
+                    texResource =
+                        boost::dynamic_pointer_cast<HdStTextureResource>
+                        (texInstance.GetValue());
                     if (!TF_VERIFY(texResource,
                             "Incorrect texture resource with path %s",
                             paramIt->GetConnection().GetText())) {

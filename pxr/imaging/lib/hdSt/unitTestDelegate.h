@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,45 +21,48 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_TEXTURE_RESOURCE_H
-#define HD_TEXTURE_RESOURCE_H
+#ifndef HDST_UNIT_TEST_DELEGATE
+#define HDST_UNIT_TEST_DELEGATE
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/enums.h"
-
-#include "pxr/base/tf/token.h"
-
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-
-#include <cstdint>
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/unitTestDelegate.h"
+#include "pxr/imaging/glf/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-
-class HdTextureResource {
+/// \class HdSt_UnitTestDelegate
+///
+/// A simple delegate class for unit test driver.
+///
+class HdSt_UnitTestDelegate : public HdUnitTestDelegate {
 public:
-    typedef size_t ID;
+    HDST_API
+    HdSt_UnitTestDelegate(HdRenderIndex *parentIndex,
+                          SdfPath const& delegateID);
 
-    /// Returns the hash value of the texture for \a sourceFile
-    HD_API
-    static ID ComputeHash(TfToken const & sourceFile);
-    HD_API
-    static ID ComputeFallbackPtexHash();
-    HD_API
-    static ID ComputeFallbackUVHash();
+    virtual ~HdSt_UnitTestDelegate();
 
-    HD_API
-    virtual ~HdTextureResource();
+    void AddTexture(SdfPath const& id, 
+                    GlfTextureRefPtr const& texture);
 
-    virtual bool IsPtex() const = 0;
+    virtual HdTextureResourceSharedPtr
+    GetTextureResource(SdfPath const& textureId) override;
 
-    virtual size_t GetMemoryUsed() = 0;
+private:
+    struct _Texture {
+        _Texture() {}
+        _Texture(GlfTextureRefPtr const &tex)
+            : texture(tex) {
+        }
+        GlfTextureRefPtr texture;
+    };
+
+    std::map<SdfPath, _Texture> _textures;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_TEXTURE_RESOURCE_H
+#endif  // HDST_UNIT_TEST_DELEGATE

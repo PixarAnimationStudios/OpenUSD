@@ -52,6 +52,8 @@ pxr_library(hdSt
         shader
         smoothNormals
         surfaceShader
+        texture
+        textureResource
         unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager
@@ -76,6 +78,7 @@ pxr_library(hdSt
         subdivision
         subdivision3
         triangulate
+        unitTestDelegate
         unitTestHelper
 
     RESOURCE_FILES

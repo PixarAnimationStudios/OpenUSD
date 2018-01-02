@@ -30,6 +30,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/glf/ptexTexture.h"
+#include "pxr/imaging/glf/textureHandle.h"
 #include "pxr/imaging/glf/textureRegistry.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
@@ -43,6 +44,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/textureResource.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -3051,8 +3053,8 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
                  : HdMinFilterLinear; 
 
     texResource = HdTextureResourceSharedPtr(
-        new HdSimpleTextureResource(texture, isPtex, wrapShd, wrapThd,
-                                    minFilterHd, magFilterHd));
+        new HdStSimpleTextureResource(texture, isPtex, wrapShd, wrapThd,
+                                      minFilterHd, magFilterHd));
     timer.Stop();
 
     TF_DEBUG(USDIMAGING_TEXTURES).Msg("    Load time: %.3f s\n", 

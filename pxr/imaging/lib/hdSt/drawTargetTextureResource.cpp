@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdSt_DrawTargetTextureResource::HdSt_DrawTargetTextureResource()
- : HdTextureResource()
+ : HdStTextureResource()
  , _attachment()
  , _sampler(0)
 {

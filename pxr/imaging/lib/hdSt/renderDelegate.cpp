@@ -36,10 +36,10 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/shader.h"
+#include "pxr/imaging/hdSt/texture.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/texture.h"
 
 #include "pxr/imaging/glf/glslfx.h"
 
@@ -220,7 +220,7 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(bprimId);
+        return new HdStTexture(bprimId);
     } else  {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -233,7 +233,7 @@ HdBprim *
 HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(SdfPath::EmptyPath());
+        return new HdStTexture(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }

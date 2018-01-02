@@ -41,7 +41,6 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/work/arenaDispatcher.h"

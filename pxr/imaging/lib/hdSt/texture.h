@@ -21,45 +21,52 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_TEXTURE_RESOURCE_H
-#define HD_TEXTURE_RESOURCE_H
+#ifndef HDST_TEXTURE_H
+#define HDST_TEXTURE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/texture.h"
 
+#include "pxr/imaging/garch/gl.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdSceneDelegate;
+
 typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 
-class HdTextureResource {
+///
+/// Represents a Texture Buffer Prim.
+/// Texture could be a uv texture or a ptex texture.
+/// Multiple texture prims could represent the same texture buffer resource
+/// and the scene delegate is used to get a global unique id for the texture.
+/// The delegate is also used to obtain a HdStSimpleTextureResource for the texture
+/// represented by that id.
+///
+class HdStTexture : public HdTexture {
 public:
-    typedef size_t ID;
+    HdStTexture(SdfPath const & id);
+    virtual ~HdStTexture();
 
-    /// Returns the hash value of the texture for \a sourceFile
-    HD_API
-    static ID ComputeHash(TfToken const & sourceFile);
-    HD_API
-    static ID ComputeFallbackPtexHash();
-    HD_API
-    static ID ComputeFallbackUVHash();
-
-    HD_API
-    virtual ~HdTextureResource();
-
-    virtual bool IsPtex() const = 0;
-
-    virtual size_t GetMemoryUsed() = 0;
+protected:
+    virtual HdTextureResourceSharedPtr _GetTextureResource(
+        HdSceneDelegate *sceneDelegate,
+        const SdfPath &sceneId,
+        HdTextureResource::ID texID) const override;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_TEXTURE_RESOURCE_H
+#endif //HDST_TEXTURE_H
+

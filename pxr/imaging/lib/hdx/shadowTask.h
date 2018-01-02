@@ -34,6 +34,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/tf/declarePtrs.h"
 
 #include <boost/shared_ptr.hpp>
 

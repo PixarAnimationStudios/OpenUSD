@@ -38,6 +38,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/declarePtrs.h"
 
 #include <boost/shared_ptr.hpp>
 

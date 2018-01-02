@@ -132,7 +132,7 @@ Hd_TestDriver::_Init(TfToken const &reprName)
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
 
-    _sceneDelegate = new Hd_UnitTestDelegate(_renderIndex,
+    _sceneDelegate = new HdUnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
     _reprName = reprName;

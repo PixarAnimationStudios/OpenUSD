@@ -77,7 +77,7 @@ public:
     }
 
     /// Returns the UnitTest delegate
-    Hd_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
+    HdUnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
     void SetRepr(TfToken const &reprName);
@@ -89,7 +89,7 @@ private:
     HdEngine _engine;
     Hd_UnitTestNullRenderDelegate _renderDelegate;
     HdRenderIndex       *_renderIndex;
-    Hd_UnitTestDelegate *_sceneDelegate;
+    HdUnitTestDelegate *_sceneDelegate;
     TfToken _reprName;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
