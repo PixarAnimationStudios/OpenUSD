@@ -91,6 +91,7 @@ struct ValueRep {
 
     static const uint64_t _IsArrayBit = 1ull << 63;
     static const uint64_t _IsInlinedBit = 1ull << 62;
+    static const uint64_t _IsCompressedBit = 1ull << 61;
 
     static const uint64_t _PayloadMask = ((1ull << 48) - 1);
 
@@ -99,6 +100,9 @@ struct ValueRep {
 
     inline bool IsInlined() const { return data & _IsInlinedBit; }
     inline void SetIsInlined() { data |= _IsInlinedBit; }
+
+    inline bool IsCompressed() const { return data & _IsCompressedBit; }
+    inline void SetIsCompressed() { data |= _IsCompressedBit; }
 
     inline TypeEnum GetType() const {
         return static_cast<TypeEnum>((data >> 48) & 0xFF);

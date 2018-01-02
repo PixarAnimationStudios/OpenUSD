@@ -240,6 +240,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
 // 0.4.0: Compressed structural sections.
 // 0.3.0: (broken, unused)
 // 0.2.0: Added support for prepend and append fields of SdfListOp.
@@ -247,7 +248,7 @@ using std::vector;
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 4;
+constexpr uint8_t USDC_MINOR = 5;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -1290,6 +1291,86 @@ struct CrateFile::_ArrayValueHandlerBase : _ScalarValueHandlerBase<T>
     }
 };
 
+// Don't compress arrays smaller than this.
+constexpr size_t MinCompressedArraySize = 16;
+
+template <class Writer, class T>
+static inline ValueRep
+_WriteArray_0_5_0(Writer w, VtArray<T> const &array, ...)
+{
+    auto result = ValueRepForArray<T>(w.Tell());
+    w.template WriteAs<uint32_t>(array.size());
+    w.WriteContiguous(array.cdata(), array.size());
+    return result;
+}
+
+template <class Writer, class T>
+static inline
+typename std::enable_if<
+    std::is_same<T, int>::value ||
+    std::is_same<T, unsigned int>::value ||
+    std::is_same<T, int64_t>::value ||
+    std::is_same<T, uint64_t>::value,
+    ValueRep>::type
+_WriteArray_0_5_0(Writer w, VtArray<T> const &array, int)
+{
+    typedef typename std::conditional<
+        sizeof(T) == 4, Usd_IntegerCompression, Usd_IntegerCompression64>::type
+        Compressor;
+        
+    auto result = ValueRepForArray<T>(w.Tell());
+    // Total elements.
+    w.template WriteAs<uint32_t>(array.size());
+    // If it's small, write uncompressed.
+    if (array.size() < MinCompressedArraySize) {
+        w.WriteContiguous(array.cdata(), array.size());
+    } else {
+        // Make a buffer to compress to, compress, and write.
+        std::unique_ptr<char[]> compBuffer(
+            new char[Compressor::GetCompressedBufferSize(array.size())]);
+        size_t compSize = Compressor::CompressToBuffer(
+            array.cdata(), array.size(), compBuffer.get());
+        w.template WriteAs<uint64_t>(compSize);
+        w.WriteContiguous(compBuffer.get(), compSize);
+        result.SetIsCompressed();
+    }
+    return result;
+}
+
+template <class Reader, class T>
+static inline void
+_ReadArray_0_5_0(Reader reader, ValueRep rep, VtArray<T> *out, ...) {
+    out->resize(reader.template Read<uint32_t>());
+    reader.ReadContiguous(out->data(), out->size());
+}
+
+template <class Reader, class T>
+static inline
+typename std::enable_if<
+    std::is_same<T, int>::value ||
+    std::is_same<T, unsigned int>::value ||
+    std::is_same<T, int64_t>::value ||
+    std::is_same<T, uint64_t>::value>::type
+_ReadArray_0_5_0(Reader reader, ValueRep rep, VtArray<T> *out, int) {
+    typedef typename std::conditional<
+        sizeof(T) == 4, Usd_IntegerCompression, Usd_IntegerCompression64>::type
+        Compressor;
+
+    // Read total elements.
+    out->resize(reader.template Read<uint32_t>());
+    // If it's small, it's uncompressed.
+    if (out->size() <= MinCompressedArraySize || !rep.IsCompressed()) {
+        reader.ReadContiguous(out->data(), out->size());
+    } else {
+        std::unique_ptr<char[]> compBuffer(
+            new char[Compressor::GetCompressedBufferSize(out->size())]);
+        auto compSize = reader.template Read<uint64_t>();
+        reader.ReadContiguous(compBuffer.get(), compSize);
+        Compressor::DecompressFromBuffer(compBuffer.get(), compSize,
+                                         out->data(), out->size());
+    }
+}
+
 // Array handler for types that support arrays -- does deduplication.
 template <class T>
 struct CrateFile::_ArrayValueHandlerBase<
@@ -1312,10 +1393,15 @@ struct CrateFile::_ArrayValueHandlerBase<
         ValueRep &target = iresult.first->second;
         if (iresult.second) {
             // Not yet present.
-            target.SetPayload(w.Tell());
-            w.WriteAs<uint32_t>(1);
-            w.WriteAs<uint32_t>(array.size());
-            w.WriteContiguous(array.data(), array.size());
+            if (w.crate->_packCtx->writeVersion < Version(0,5,0)) {
+                target.SetPayload(w.Tell());
+                w.WriteAs<uint32_t>(1);
+                w.WriteAs<uint32_t>(array.size());
+                w.WriteContiguous(array.cdata(), array.size());
+            } else {
+                // If we're writing 0.5.0, see if we can compress this array.
+                target = _WriteArray_0_5_0(w, array, 0);
+            }                
         }
         return target;
     }
@@ -1328,10 +1414,16 @@ struct CrateFile::_ArrayValueHandlerBase<
             return;
         }
         reader.Seek(rep.GetPayload());
-        // Read and discard shape size.
-        reader.template Read<uint32_t>();
-        out->resize(reader.template Read<uint32_t>());
-        reader.ReadContiguous(out->data(), out->size());
+
+        // Check version
+        if (Version(reader.crate->_boot) < Version(0,5,0)) {
+            // Read and discard shape size.
+            reader.template Read<uint32_t>();
+            out->resize(reader.template Read<uint32_t>());
+            reader.ReadContiguous(out->data(), out->size());
+        } else {
+            _ReadArray_0_5_0(reader, rep, out, 0);
+        }
     }
 
     ValueRep PackVtValue(_Writer w, VtValue const &v) {
