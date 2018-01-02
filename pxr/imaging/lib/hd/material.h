@@ -31,9 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX: Temporary until Rprim moves to HdSt.
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-
 ///
 /// Hydra Schema for a material object.
 ///
@@ -58,10 +55,6 @@ public:
 
     /// Causes the shader to be reloaded.
     virtual void Reload() = 0;
-
-    // XXX: Temporary until Rprim moves to HdSt.
-    // Obtains the render delegate specific representation of the shader.
-    virtual HdShaderCodeSharedPtr GetShaderCode() const = 0;
 
 protected:
     HD_API

@@ -32,7 +32,7 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -209,15 +209,15 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
 }
 
 void 
-HdStRenderPassState::SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader)
+HdStRenderPassState::SetOverrideShader(HdStShaderCodeSharedPtr const &overrideShader)
 {
     _overrideShader = overrideShader;
 }
 
-HdShaderCodeSharedPtrVector
+HdStShaderCodeSharedPtrVector
 HdStRenderPassState::GetShaders() const
 {
-    HdShaderCodeSharedPtrVector shaders;
+    HdStShaderCodeSharedPtrVector shaders;
     shaders.reserve(2);
     shaders.push_back(_lightingShader);
     shaders.push_back(_renderPassShader);

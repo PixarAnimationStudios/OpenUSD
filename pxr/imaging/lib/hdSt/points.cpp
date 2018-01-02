@@ -25,6 +25,7 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
 #include "pxr/imaging/hdSt/instancer.h"
@@ -92,6 +93,10 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
+
+    /* MATERIAL SHADER */
+    drawItem->SetMaterialShaderFromRenderIndex(
+        sceneDelegate->GetRenderIndex(), GetMaterialId());
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {

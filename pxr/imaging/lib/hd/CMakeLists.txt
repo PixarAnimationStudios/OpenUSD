@@ -79,7 +79,6 @@ pxr_library(hd
         renderPassState
         repr
         resource
-        resourceBinder
         resourceGL
         resourceRegistry
         rprim
@@ -87,7 +86,6 @@ pxr_library(hd
         rprimSharedData
         sceneDelegate
         sceneExtCompInputSource
-        shaderCode
         smoothNormals
         sortedIds                   
         sprim

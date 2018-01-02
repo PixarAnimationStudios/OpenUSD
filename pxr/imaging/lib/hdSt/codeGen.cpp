@@ -31,9 +31,9 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -79,13 +79,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
-                       HdShaderCodeSharedPtrVector const &shaders)
+                       HdStShaderCodeSharedPtrVector const &shaders)
     : _geometricShader(geometricShader), _shaders(shaders)
 {
     TF_VERIFY(geometricShader);
 }
 
-HdSt_CodeGen::HdSt_CodeGen(HdShaderCodeSharedPtrVector const &shaders)
+HdSt_CodeGen::HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders)
     : _geometricShader(), _shaders(shaders)
 {
 }
@@ -98,7 +98,7 @@ HdSt_CodeGen::ComputeHash() const
 
     ID hash = _geometricShader ? _geometricShader->ComputeHash() : 0;
     boost::hash_combine(hash, _metaData.ComputeHash());
-    boost::hash_combine(hash, HdShaderCode::ComputeHash(_shaders));
+    boost::hash_combine(hash, HdStShaderCode::ComputeHash(_shaders));
 
     return hash;
 }
@@ -410,7 +410,7 @@ HdSt_CodeGen::Compile()
     std::stringstream declarations;
     std::stringstream accessors;
     TF_FOR_ALL(it, _metaData.customInterleavedBindings) {
-        // note: _constantData has been sorted by offset in Hd_ResourceBinder.
+        // note: _constantData has been sorted by offset in HdSt_ResourceBinder.
         // XXX: not robust enough, should consider padding and layouting rules
         // to match with the logic in HdInterleavedMemoryManager if we
         // want to use a layouting policy other than default padding.
@@ -589,7 +589,7 @@ HdSt_CodeGen::Compile()
 
     // other shaders (renderpass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
-        HdShaderCodeSharedPtr const &shader = *it;
+        HdStShaderCodeSharedPtr const &shader = *it;
         if (hasVS)
             _genVS  << shader->GetSource(HdShaderTokens->vertexShader);
         if (hasTCS)
@@ -791,7 +791,7 @@ HdSt_CodeGen::CompileComputeProgram()
     
     // other shaders (renderpass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
-        HdShaderCodeSharedPtr const &shader = *it;
+        HdStShaderCodeSharedPtr const &shader = *it;
         _genCS  << shader->GetSource(HdShaderTokens->computeShader);
     }
 
@@ -931,7 +931,7 @@ static void _EmitDeclaration(std::stringstream &str,
 
 static void _EmitDeclaration(
     std::stringstream &str,
-    Hd_ResourceBinder::MetaData::BindingDeclaration const &bindingDeclaration,
+    HdSt_ResourceBinder::MetaData::BindingDeclaration const &bindingDeclaration,
     int arraySize=0)
 {
     _EmitDeclaration(str,
@@ -1430,7 +1430,7 @@ HdSt_CodeGen::_GenerateConstantPrimVar()
     std::stringstream declarations;
     std::stringstream accessors;
     TF_FOR_ALL (it, _metaData.constantData) {
-        // note: _constantData has been sorted by offset in Hd_ResourceBinder.
+        // note: _constantData has been sorted by offset in HdSt_ResourceBinder.
         // XXX: not robust enough, should consider padding and layouting rules
         // to match with the logic in HdInterleavedMemoryManager if we
         // want to use a layouting policy other than default padding.

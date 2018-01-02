@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 
 #include "pxr/base/tf/iterator.h"
@@ -31,20 +31,20 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdShaderCode::HdShaderCode()
+HdStShaderCode::HdStShaderCode()
 {
     /*NOTHING*/
 }
 
 /*virtual*/
-HdShaderCode::~HdShaderCode()
+HdStShaderCode::~HdStShaderCode()
 {
     /*NOTHING*/
 }
 
 /* static */
 size_t
-HdShaderCode::ComputeHash(HdShaderCodeSharedPtrVector const &shaders)
+HdStShaderCode::ComputeHash(HdStShaderCodeSharedPtrVector const &shaders)
 {
     size_t hash = 0;
     
@@ -57,7 +57,7 @@ HdShaderCode::ComputeHash(HdShaderCodeSharedPtrVector const &shaders)
 
 /*virtual*/
 HdMaterialParamVector const&
-HdShaderCode::GetParams() const
+HdStShaderCode::GetParams() const
 {
     static HdMaterialParamVector const empty;
     return empty;
@@ -65,23 +65,23 @@ HdShaderCode::GetParams() const
 
 /*virtual*/
 HdBufferArrayRangeSharedPtr const&
-HdShaderCode::GetShaderData() const
+HdStShaderCode::GetShaderData() const
 {
     static HdBufferArrayRangeSharedPtr EMPTY;
     return EMPTY;
 }
 
 /*virtual*/
-HdShaderCode::TextureDescriptorVector
-HdShaderCode::GetTextures() const
+HdStShaderCode::TextureDescriptorVector
+HdStShaderCode::GetTextures() const
 {
-    return HdShaderCode::TextureDescriptorVector();
+    return HdStShaderCode::TextureDescriptorVector();
 }
 
 /*static*/
 bool
-HdShaderCode::CanAggregate(HdShaderCodeSharedPtr const &shaderA,
-                              HdShaderCodeSharedPtr const &shaderB)
+HdStShaderCode::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
+                              HdStShaderCodeSharedPtr const &shaderB)
 {
     bool bindlessTexture = HdRenderContextCaps::GetInstance()
                                                 .bindlessTextureEnabled;

@@ -94,7 +94,7 @@ HdStExtCompGpuComputationResource::Resolve()
     // We save the kernel for future runs to not have to incur the
     // compilation cost each time.
     if (!_computeProgram || _shaderSourceHash != shaderSourceHash) {
-        HdShaderCodeSharedPtrVector shaders;
+        HdStShaderCodeSharedPtrVector shaders;
         shaders.push_back(_kernel);
         HdSt_CodeGen codeGen(shaders);
         

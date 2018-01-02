@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <boost/shared_ptr.hpp>
@@ -40,7 +40,7 @@ typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
 ///
 /// A lighting shader base class.
 ///
-class HdStLightingShader : public HdShaderCode {
+class HdStLightingShader : public HdStShaderCode {
 public:
     HDST_API
     HdStLightingShader();

@@ -29,8 +29,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStMixinShaderCode::HdStMixinShaderCode(std::string mixinSource,
-                                         HdShaderCodeSharedPtr baseShader)
-: HdShaderCode()
+                                         HdStShaderCodeSharedPtr baseShader)
+: HdStShaderCode()
 , _mixinSource(mixinSource)
 , _baseShader(baseShader)
 {
@@ -40,9 +40,9 @@ HdStMixinShaderCode::~HdStMixinShaderCode()
 {
 }
 
-HdShaderCode::ID HdStMixinShaderCode::ComputeHash() const 
+HdStShaderCode::ID HdStMixinShaderCode::ComputeHash() const 
 {
-    HdShaderCode::ID hash = 0;
+    HdStShaderCode::ID hash = 0;
     boost::hash_combine(hash, ArchHash(_mixinSource.c_str(), _mixinSource.size()));
     boost::hash_combine(hash, _baseShader->ComputeHash());
     return hash;
@@ -67,18 +67,18 @@ HdBufferArrayRangeSharedPtr const& HdStMixinShaderCode::GetShaderData() const
     return _baseShader->GetShaderData();
 }
 
-HdShaderCode::TextureDescriptorVector HdStMixinShaderCode::GetTextures() const 
+HdStShaderCode::TextureDescriptorVector HdStMixinShaderCode::GetTextures() const 
 {
     return _baseShader->GetTextures();
 }
 
-void HdStMixinShaderCode::BindResources(Hd_ResourceBinder const &binder,
+void HdStMixinShaderCode::BindResources(HdSt_ResourceBinder const &binder,
                                         int program) 
 {
     _baseShader->BindResources(binder, program);
 }
 
-void HdStMixinShaderCode::UnbindResources(Hd_ResourceBinder const &binder,
+void HdStMixinShaderCode::UnbindResources(HdSt_ResourceBinder const &binder,
                                           int program)
 {
     _baseShader->UnbindResources(binder, program);

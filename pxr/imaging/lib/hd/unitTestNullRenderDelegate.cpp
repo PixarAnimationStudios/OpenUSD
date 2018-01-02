@@ -272,11 +272,6 @@ public:
 
     virtual void Reload() override {};
 
-    virtual HdShaderCodeSharedPtr GetShaderCode() const override {
-        static HdShaderCodeSharedPtr result;
-        return result;
-    }
-
 private:
     Hd_NullMaterial()                                  = delete;
     Hd_NullMaterial(const Hd_NullMaterial &)             = delete;

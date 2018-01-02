@@ -37,7 +37,7 @@
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -131,8 +131,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
-    const Hd_ResourceBinder &binder = program.GetBinder();
-    const HdShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
+    const HdSt_ResourceBinder &binder = program.GetBinder();
+    const HdStShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
     GLuint programId = glslProgram->GetProgram().GetId();
     TF_VERIFY(programId);

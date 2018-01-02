@@ -43,12 +43,6 @@ HdDrawItem::~HdDrawItem()
     /*NOTHING*/
 }
 
-HdShaderCodeSharedPtr
-HdDrawItem::GetMaterial() const
-{
-    return _sharedData->material;
-}
-
 size_t
 HdDrawItem::GetBufferArraysHash() const
 {

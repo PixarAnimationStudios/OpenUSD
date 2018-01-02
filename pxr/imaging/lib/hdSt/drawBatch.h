@@ -28,9 +28,9 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -122,7 +122,7 @@ protected:
 
         /// Returns the resouce binder, which is used for buffer resource
         /// bindings at draw time.
-        const Hd_ResourceBinder &GetBinder() const { 
+        const HdSt_ResourceBinder &GetBinder() const { 
             return _resourceBinder; 
         }
 
@@ -130,15 +130,15 @@ protected:
             _glslProgram.reset();
             _surfaceShader.reset();
             _geometricShader.reset();
-            _resourceBinder = Hd_ResourceBinder();
+            _resourceBinder = HdSt_ResourceBinder();
             _shaders.clear();
         }
         
-        void SetSurfaceShader(HdShaderCodeSharedPtr shader) {
+        void SetSurfaceShader(HdStShaderCodeSharedPtr shader) {
             _surfaceShader = shader;
         }
 
-        const HdShaderCodeSharedPtr &GetSurfaceShader() {
+        const HdStShaderCodeSharedPtr &GetSurfaceShader() {
             return _surfaceShader; 
         }
 
@@ -152,20 +152,20 @@ protected:
 
         /// Set shaders (lighting/renderpass). In the case of Geometric Shaders 
         /// or Surface shaders you can use the specific setters.
-        void SetShaders(HdShaderCodeSharedPtrVector shaders) {
+        void SetShaders(HdStShaderCodeSharedPtrVector shaders) {
             _shaders = shaders; 
         }
 
         /// Returns array of shaders, this will not include the surface shader
         /// passed via SetSurfaceShader (or the geometric shader).
-        const HdShaderCodeSharedPtrVector &GetShaders() const {
+        const HdStShaderCodeSharedPtrVector &GetShaders() const {
             return _shaders; 
         }
 
         /// Returns array of composed shaders, this include the shaders passed
         /// via SetShaders and the shader passed to SetSurfaceShader.
-        HdShaderCodeSharedPtrVector GetComposedShaders() const {
-            HdShaderCodeSharedPtrVector shaders = _shaders;
+        HdStShaderCodeSharedPtrVector GetComposedShaders() const {
+            HdStShaderCodeSharedPtrVector shaders = _shaders;
             if (_surfaceShader) {
                 shaders.push_back(_surfaceShader);
             }
@@ -186,10 +186,10 @@ protected:
 
     private:
         HdStGLSLProgramSharedPtr _glslProgram;
-        Hd_ResourceBinder _resourceBinder;
-        HdShaderCodeSharedPtrVector _shaders;
+        HdSt_ResourceBinder _resourceBinder;
+        HdStShaderCodeSharedPtrVector _shaders;
         HdSt_GeometricShaderSharedPtr _geometricShader;
-        HdShaderCodeSharedPtr _surfaceShader;
+        HdStShaderCodeSharedPtr _surfaceShader;
     };
 
     HDST_API
@@ -207,7 +207,7 @@ protected:
 
 private:
     _DrawingProgram _program;
-    HdShaderCode::ID _shaderHash;
+    HdStShaderCode::ID _shaderHash;
 };
 
 

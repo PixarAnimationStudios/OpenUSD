@@ -33,6 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 
 class HdStMaterial final: public HdMaterial {
@@ -68,7 +69,7 @@ public:
     /// Obtains the render delegate specific representation of the shader.
     /// XXX: Should not be virtual.
     HDST_API
-    virtual HdShaderCodeSharedPtr GetShaderCode() const override;
+    virtual HdStShaderCodeSharedPtr GetShaderCode() const;
 
     /// Obtain the source code for the Surface Shader for this prim from
     /// the scene delegate.

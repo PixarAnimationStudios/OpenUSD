@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/computeShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -84,7 +84,7 @@ public:
     }
     
     /// Gets the resource binder that matches the layout of the compute program.
-    Hd_ResourceBinder const &GetResourceBinder() const {
+    HdSt_ResourceBinder const &GetResourceBinder() const {
         return _resourceBinder;
     }
     
@@ -111,7 +111,7 @@ private:
     size_t                                _shaderSourceHash;
     HdBufferArrayRangeSharedPtr           _internalRange;  
     HdStGLSLProgramSharedPtr                _computeProgram;
-    Hd_ResourceBinder                     _resourceBinder;
+    HdSt_ResourceBinder                     _resourceBinder;
     
     HdStExtCompGpuComputationResource()                = delete;
     HdStExtCompGpuComputationResource(

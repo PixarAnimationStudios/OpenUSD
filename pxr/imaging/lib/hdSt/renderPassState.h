@@ -33,13 +33,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
 typedef boost::shared_ptr<class HdStRenderPassShader>
                 HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdSt_FallbackLightingShader>
                 HdSt_FallbackLightingShaderSharedPtr;
-typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
+typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 
 /// \class HdStRenderPassState
 ///
@@ -90,14 +90,14 @@ public:
 
     /// override shader
     HDST_API
-    void SetOverrideShader(HdShaderCodeSharedPtr const &overrideShader);
-    HdShaderCodeSharedPtr const &GetOverrideShader() const {
+    void SetOverrideShader(HdStShaderCodeSharedPtr const &overrideShader);
+    HdStShaderCodeSharedPtr const &GetOverrideShader() const {
         return _overrideShader;
     }
 
     /// returns shaders (lighting/renderpass)
     HDST_API
-    HdShaderCodeSharedPtrVector GetShaders() const;
+    HdStShaderCodeSharedPtrVector GetShaders() const;
 
     HDST_API
     size_t GetShaderHash() const;
@@ -109,7 +109,7 @@ private:
     HdStRenderPassShaderSharedPtr _renderPassShader;
     HdSt_FallbackLightingShaderSharedPtr _fallbackLightingShader;
     HdStLightingShaderSharedPtr _lightingShader;
-    HdShaderCodeSharedPtr _overrideShader;
+    HdStShaderCodeSharedPtr _overrideShader;
 
     HdBufferArrayRangeSharedPtr _renderPassStateBar;
     size_t _clipPlanesBufferSize;

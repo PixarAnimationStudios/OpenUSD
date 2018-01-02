@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStLightingShader::HdStLightingShader()
- : HdShaderCode()
+ : HdStShaderCode()
 {
     /*NOTHING*/
 }

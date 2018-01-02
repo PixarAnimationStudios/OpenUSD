@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceGL.h"
-#include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -123,15 +123,15 @@ namespace {
     }
 }
 
-Hd_ResourceBinder::Hd_ResourceBinder()
+HdSt_ResourceBinder::HdSt_ResourceBinder()
     : _numReservedTextureUnits(0)
 {
 }
 
 void
-Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
-                                   HdShaderCodeSharedPtrVector const &shaders,
-                                   Hd_ResourceBinder::MetaData *metaDataOut,
+HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
+                                   HdStShaderCodeSharedPtrVector const &shaders,
+                                   HdSt_ResourceBinder::MetaData *metaDataOut,
                                    bool indirect,
                                    bool instanceDraw,
                                    HdBindingRequestVector const &customBindings)
@@ -431,7 +431,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
                 std::make_pair(shaderParamBinding, sblock));
 
             //XXX:hack  we want to generalize materialParams to other shaders.
-            if ((*shader) == drawItem->GetMaterial()) {
+            if ((*shader) == drawItem->GetMaterialShader()) {
                 // shader parameters are interleaved into single struct.
                 _bindingMap[HdTokens->materialParams] = shaderParamBinding;
             }
@@ -440,7 +440,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
         // for primvar and texture accessors
         TF_FOR_ALL(it, params) {
             // renderpass texture should be bindfull (for now)
-            bool bindless = useBindlessForTexture && ((*shader) == drawItem->GetMaterial());
+            bool bindless = useBindlessForTexture && ((*shader) == drawItem->GetMaterialShader());
             if (it->IsFallback()) {
                 metaDataOut->shaderParameterBinding[HdBinding(HdBinding::FALLBACK, shaderFallbackLocation++)]
                     = MetaData::ShaderParameterAccessor(it->GetName(),
@@ -574,10 +574,10 @@ static TfToken const _Type(HdBufferSpec const &spec) {
 }
 
 void
-Hd_ResourceBinder::ResolveComputeBindings(
+HdSt_ResourceBinder::ResolveComputeBindings(
                     HdBufferSpecVector const &readWriteBufferSpecs,
                     HdBufferSpecVector const &readOnlyBufferSpecs,
-                    HdShaderCodeSharedPtrVector const &shaders,
+                    HdStShaderCodeSharedPtrVector const &shaders,
                     MetaData *metaDataOut)
 {
     HD_TRACE_FUNCTION();
@@ -625,14 +625,14 @@ Hd_ResourceBinder::ResolveComputeBindings(
 }
 
 void
-Hd_ResourceBinder::BindBuffer(TfToken const &name,
+HdSt_ResourceBinder::BindBuffer(TfToken const &name,
                               HdBufferResourceGLSharedPtr const &buffer) const
 {
     BindBuffer(name, buffer, buffer->GetOffset(), /*level=*/-1);
 }
 
 void
-Hd_ResourceBinder::BindBuffer(TfToken const &name,
+HdSt_ResourceBinder::BindBuffer(TfToken const &name,
                               HdBufferResourceGLSharedPtr const &buffer,
                               int offset,
                               int level) const
@@ -752,7 +752,7 @@ Hd_ResourceBinder::BindBuffer(TfToken const &name,
 }
 
 void
-Hd_ResourceBinder::UnbindBuffer(TfToken const &name,
+HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
                                 HdBufferResourceGLSharedPtr const &buffer,
                                 int level) const
 {
@@ -819,7 +819,7 @@ Hd_ResourceBinder::UnbindBuffer(TfToken const &name,
 }
 
 void
-Hd_ResourceBinder::BindConstantBuffer(
+HdSt_ResourceBinder::BindConstantBuffer(
     HdBufferArrayRangeGLSharedPtr const &constantBar) const
 {
     if (!constantBar) return;
@@ -829,7 +829,7 @@ Hd_ResourceBinder::BindConstantBuffer(
 }
 
 void
-Hd_ResourceBinder::UnbindConstantBuffer(
+HdSt_ResourceBinder::UnbindConstantBuffer(
     HdBufferArrayRangeGLSharedPtr const &constantBar) const
 {
     if (!constantBar) return;
@@ -838,7 +838,7 @@ Hd_ResourceBinder::UnbindConstantBuffer(
 }
 
 void
-Hd_ResourceBinder::BindInstanceBufferArray(
+HdSt_ResourceBinder::BindInstanceBufferArray(
     HdBufferArrayRangeGLSharedPtr const &bar, int level) const
 {
     if (!bar) return;
@@ -849,7 +849,7 @@ Hd_ResourceBinder::BindInstanceBufferArray(
 }
 
 void
-Hd_ResourceBinder::UnbindInstanceBufferArray(
+HdSt_ResourceBinder::UnbindInstanceBufferArray(
     HdBufferArrayRangeGLSharedPtr const &bar, int level) const
 {
     if (!bar) return;
@@ -860,7 +860,7 @@ Hd_ResourceBinder::UnbindInstanceBufferArray(
 }
 
 void
-Hd_ResourceBinder::BindShaderResources(HdShaderCode const *shader) const
+HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
 {
     // bind fallback values and sampler uniforms (unit#? or bindless address)
 
@@ -868,7 +868,7 @@ Hd_ResourceBinder::BindShaderResources(HdShaderCode const *shader) const
     //BindBufferArray(shader->GetShaderData());
 
     // bind textures
-    HdShaderCode::TextureDescriptorVector textures = shader->GetTextures();
+    HdStShaderCode::TextureDescriptorVector textures = shader->GetTextures();
     TF_FOR_ALL(it, textures) {
         HdBinding binding = GetBinding(it->name);
         HdBinding::Type type = binding.GetType();
@@ -888,11 +888,11 @@ Hd_ResourceBinder::BindShaderResources(HdShaderCode const *shader) const
 }
 
 void
-Hd_ResourceBinder::UnbindShaderResources(HdShaderCode const *shader) const
+HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
 {
 //    UnbindBufferArray(shader->GetShaderData());
 
-    HdShaderCode::TextureDescriptorVector textures = shader->GetTextures();
+    HdStShaderCode::TextureDescriptorVector textures = shader->GetTextures();
     TF_FOR_ALL(it, textures) {
         HdBinding binding = GetBinding(it->name);
         HdBinding::Type type = binding.GetType();
@@ -910,7 +910,7 @@ Hd_ResourceBinder::UnbindShaderResources(HdShaderCode const *shader) const
 }
 
 void
-Hd_ResourceBinder::BindBufferArray(HdBufferArrayRangeGLSharedPtr const &bar) const
+HdSt_ResourceBinder::BindBufferArray(HdBufferArrayRangeGLSharedPtr const &bar) const
 {
     if (!bar) return;
 
@@ -920,7 +920,7 @@ Hd_ResourceBinder::BindBufferArray(HdBufferArrayRangeGLSharedPtr const &bar) con
 }
 
 void
-Hd_ResourceBinder::Bind(HdBindingRequest const& req) const
+HdSt_ResourceBinder::Bind(HdBindingRequest const& req) const
 {
     if (req.IsTypeless()) {
         return;
@@ -945,7 +945,7 @@ Hd_ResourceBinder::Bind(HdBindingRequest const& req) const
 }
 
 void
-Hd_ResourceBinder::Unbind(HdBindingRequest const& req) const
+HdSt_ResourceBinder::Unbind(HdBindingRequest const& req) const
 {
     if (req.IsTypeless()) {
         return;
@@ -972,7 +972,7 @@ Hd_ResourceBinder::Unbind(HdBindingRequest const& req) const
 }
 
 void
-Hd_ResourceBinder::UnbindBufferArray(
+HdSt_ResourceBinder::UnbindBufferArray(
     HdBufferArrayRangeGLSharedPtr const &bar) const
 {
     if (!bar) return;
@@ -983,7 +983,7 @@ Hd_ResourceBinder::UnbindBufferArray(
 }
 
 void
-Hd_ResourceBinder::BindUniformi(TfToken const &name,
+HdSt_ResourceBinder::BindUniformi(TfToken const &name,
                                 int count, const int *value) const
 {
     HdBinding uniformLocation = GetBinding(name);
@@ -1006,7 +1006,7 @@ Hd_ResourceBinder::BindUniformi(TfToken const &name,
 }
 
 void
-Hd_ResourceBinder::BindUniformArrayi(TfToken const &name,
+HdSt_ResourceBinder::BindUniformArrayi(TfToken const &name,
                                  int count, const int *value) const
 {
     HdBinding uniformLocation = GetBinding(name);
@@ -1019,7 +1019,7 @@ Hd_ResourceBinder::BindUniformArrayi(TfToken const &name,
 }
 
 void
-Hd_ResourceBinder::BindUniformui(TfToken const &name,
+HdSt_ResourceBinder::BindUniformui(TfToken const &name,
                                 int count, const unsigned int *value) const
 {
     HdBinding uniformLocation = GetBinding(name);
@@ -1042,7 +1042,7 @@ Hd_ResourceBinder::BindUniformui(TfToken const &name,
 }
 
 void
-Hd_ResourceBinder::BindUniformf(TfToken const &name,
+HdSt_ResourceBinder::BindUniformf(TfToken const &name,
                                 int count, const float *value) const
 {
     HdBinding uniformLocation = GetBinding(name);
@@ -1068,7 +1068,7 @@ Hd_ResourceBinder::BindUniformf(TfToken const &name,
 }
 
 void
-Hd_ResourceBinder::IntrospectBindings(HdResourceGL const & programResource)
+HdSt_ResourceBinder::IntrospectBindings(HdResourceGL const & programResource)
 {
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 
@@ -1126,8 +1126,8 @@ Hd_ResourceBinder::IntrospectBindings(HdResourceGL const & programResource)
     }
 }
 
-Hd_ResourceBinder::MetaData::ID
-Hd_ResourceBinder::MetaData::ComputeHash() const
+HdSt_ResourceBinder::MetaData::ID
+HdSt_ResourceBinder::MetaData::ComputeHash() const
 {
     ID hash = 0;
     

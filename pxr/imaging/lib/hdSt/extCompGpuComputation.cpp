@@ -106,7 +106,7 @@ HdStExtCompGpuComputation::Execute(
     }
 
     HdStGLSLProgramSharedPtr const &computeProgram = _resource->GetProgram();
-    Hd_ResourceBinder const &binder = _resource->GetResourceBinder();
+    HdSt_ResourceBinder const &binder = _resource->GetResourceBinder();
 
     if (!TF_VERIFY(computeProgram)) {
         return;

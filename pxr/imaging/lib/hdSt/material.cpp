@@ -30,7 +30,7 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include <boost/pointer_cast.hpp>
@@ -138,7 +138,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     if(bits & DirtyParams) {
         HdBufferSourceVector sources;
-        HdShaderCode::TextureDescriptorVector textures;
+        HdStShaderCode::TextureDescriptorVector textures;
         const HdMaterialParamVector &params = GetMaterialParams(sceneDelegate);
         _surfaceShader->SetParams(params);
 
@@ -187,12 +187,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                     }
                 }
 
-                HdShaderCode::TextureDescriptor tex;
+                HdStShaderCode::TextureDescriptor tex;
                 tex.name = paramIt->GetName();
 
                 if (texResource->IsPtex()) {
                     tex.type =
-                            HdShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
+                            HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
                     tex.handle =
                                 bindless ? texResource->GetTexelsTextureHandle()
                                          : texResource->GetTexelsTextureId();
@@ -212,7 +212,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                     tex.name =
                             TfToken(paramIt->GetName().GetString() + "_layout");
                     tex.type =
-                           HdShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
+                           HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
                     tex.handle =
                                 bindless ? texResource->GetLayoutTextureHandle()
                                          : texResource->GetLayoutTextureId();
@@ -227,7 +227,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                         sources.push_back(source);
                     }
                 } else {
-                    tex.type = HdShaderCode::TextureDescriptor::TEXTURE_2D;
+                    tex.type = HdStShaderCode::TextureDescriptor::TEXTURE_2D;
                     tex.handle =
                                 bindless ? texResource->GetTexelsTextureHandle()
                                          : texResource->GetTexelsTextureId();
@@ -277,10 +277,10 @@ HdStMaterial::Reload()
 }
 
 // virtual
-HdShaderCodeSharedPtr
+HdStShaderCodeSharedPtr
 HdStMaterial::GetShaderCode() const
 {
-    return boost::static_pointer_cast<HdShaderCode>(_surfaceShader);
+    return boost::static_pointer_cast<HdStShaderCode>(_surfaceShader);
 }
 
 void

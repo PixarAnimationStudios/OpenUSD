@@ -233,10 +233,6 @@ protected:
                          TfToken const &defaultReprName, bool forced,
                          HdDirtyBits *dirtyBits);
 
-    HD_API
-    virtual HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *delegate,
-                                                 HdMaterial const *material) const;
-
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
 

@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 struct HdxRenderTaskParams;
 class HdStCamera;
 class HdStRenderPassState;
@@ -102,7 +102,7 @@ private:
     const HdStCamera *_camera;
     TfTokenVector _renderTags;
 
-    static HdShaderCodeSharedPtr _overrideShader;
+    static HdStShaderCodeSharedPtr _overrideShader;
 
     static void _CreateOverrideShader();
 

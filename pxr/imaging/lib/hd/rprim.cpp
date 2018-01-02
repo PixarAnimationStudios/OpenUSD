@@ -269,13 +269,6 @@ HdRprim::GetInitialDirtyBitsMask() const
     return _GetInitialDirtyBits();
 }
 
-HdShaderCodeSharedPtr
-HdRprim::_GetShaderCode(HdSceneDelegate *delegate,
-                        HdMaterial const *material) const
-{
-    return material->GetShaderCode();
-}
-
 void
 HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
@@ -288,19 +281,6 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdResourceRegistrySharedPtr const &resourceRegistry = 
         renderIndex.GetResourceRegistry();
-
-    // XXX: this should be in a different method
-    // XXX: This should be in HdSt getting the HdSt Material
-    const HdMaterial *material = static_cast<const HdMaterial *>(
-                renderIndex.GetSprim(HdPrimTypeTokens->material, _materialId));
-
-    if (material == nullptr) {
-        material = static_cast<const HdMaterial *>(
-                renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
-    }
-
-    _sharedData.material = _GetShaderCode(delegate, material);
-
 
     // update uniforms
     HdBufferSourceVector sources;

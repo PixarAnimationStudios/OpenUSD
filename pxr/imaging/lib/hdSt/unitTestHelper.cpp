@@ -318,7 +318,7 @@ HdSt_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
 
 /* virtual */
 void
-HdSt_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
+HdSt_TestLightingShader::BindResources(HdSt_ResourceBinder const &binder,
                                       int program)
 {
     binder.BindUniformf(_tokens->l0dir,   3, _lights[0].eyeDir.GetArray());
@@ -330,7 +330,7 @@ HdSt_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
 
 /* virtual */
 void
-HdSt_TestLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
+HdSt_TestLightingShader::UnbindResources(HdSt_ResourceBinder const &binder,
                                         int program)
 {
 }

@@ -53,15 +53,15 @@ public:
     HDST_API
     virtual ~HdSt_FallbackLightingShader();
 
-    // HdShaderCode overrides
+    // HdStShaderCode overrides
     HDST_API
     virtual ID ComputeHash() const;
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 

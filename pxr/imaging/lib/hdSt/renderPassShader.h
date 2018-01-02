@@ -28,8 +28,8 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/resourceBinder.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -46,7 +46,7 @@ typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderShared
 ///
 /// A shader that supports common renderPass functionality.
 ///
-class HdStRenderPassShader : public HdShaderCode {
+class HdStRenderPassShader : public HdStShaderCode {
 public:
     HDST_API
     HdStRenderPassShader();
@@ -61,9 +61,9 @@ public:
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program) override;
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program) override;
     HDST_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program) override;
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program) override;
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings) override;
 

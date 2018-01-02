@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
@@ -44,7 +44,7 @@ typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderShared
 ///
 /// A geometric shader -- hydra internal use
 ///
-class HdSt_GeometricShader : public HdShaderCode {
+class HdSt_GeometricShader : public HdStShaderCode {
 public:
     /// Used in HdSt_CodeGen to generate the appropriate shader source 
     enum class PrimitiveType { 
@@ -108,9 +108,9 @@ public:
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 

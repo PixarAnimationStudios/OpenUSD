@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/imaging/garch/gl.h"
@@ -53,7 +53,7 @@ typedef boost::shared_ptr<class HdStComputeShader> HdStComputeShaderSharedPtr;
 /// can use this object to express these compute shaders in Hydra.
 /// In addition to the shader itself, a binding from the Computation Sprim
 /// to the ComputeShader must be expressed as well.
-class HdStComputeShader : public HdShaderCode {
+class HdStComputeShader : public HdStShaderCode {
 public:
     HDST_API
     HdStComputeShader();
@@ -73,9 +73,9 @@ public:
     HDST_API
     virtual TextureDescriptorVector GetTextures() const;
     HDST_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
     HDST_API

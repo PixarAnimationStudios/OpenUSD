@@ -27,7 +27,7 @@
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/resource.h"
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStComputeShader::HdStComputeShader()
- : HdShaderCode()
+ : HdStShaderCode()
  , _computeSource()
  , _params()
  , _paramSpec()
@@ -85,20 +85,20 @@ HdStComputeShader::GetShaderData() const
     return _paramArray;
 }
 /*virtual*/
-HdShaderCode::TextureDescriptorVector
+HdStShaderCode::TextureDescriptorVector
 HdStComputeShader::GetTextures() const
 {
     return _textureDescriptors;
 }
 /*virtual*/
 void
-HdStComputeShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdStComputeShader::BindResources(HdSt_ResourceBinder const &binder, int program)
 {
     binder.BindShaderResources(this);
 }
 /*virtual*/
 void
-HdStComputeShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
+HdStComputeShader::UnbindResources(HdSt_ResourceBinder const &binder, int program)
 {
     binder.UnbindShaderResources(this);
 }
@@ -109,7 +109,7 @@ HdStComputeShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 /*virtual*/
-HdShaderCode::ID
+HdStShaderCode::ID
 HdStComputeShader::ComputeHash() const
 {
     size_t hash = 0;

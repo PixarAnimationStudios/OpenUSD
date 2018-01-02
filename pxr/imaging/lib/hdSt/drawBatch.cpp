@@ -122,8 +122,8 @@ bool
 HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
                               HdStDrawItem const *drawItem1)
 {
-    if (!HdShaderCode::CanAggregate(drawItem0->GetMaterial(),
-                                    drawItem1->GetMaterial())) {
+    if (!HdStShaderCode::CanAggregate(drawItem0->GetMaterialShader(),
+                                    drawItem1->GetMaterialShader())) {
         return false;
     }
 
@@ -201,9 +201,9 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     size_t shaderHash = state->GetShaderHash();
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
-    HdShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
-    HdShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
-                                       : firstDrawItem->GetMaterial();
+    HdStShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
+    HdStShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
+                                       : firstDrawItem->GetMaterialShader();
     boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
     bool shaderChanged = (_shaderHash != shaderHash);
     
@@ -211,7 +211,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     // We need to do this before checking if the shaderChanged because 
     // it is possible that the shader does not need to 
     // be recompiled but some of the parameters have changed.
-    HdShaderCodeSharedPtrVector shaders = state->GetShaders();
+    HdStShaderCodeSharedPtrVector shaders = state->GetShaders();
     _program.SetShaders(shaders);
     _program.SetGeometricShader(firstDrawItem->GetGeometricShader());
 
@@ -245,8 +245,8 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                 GlfGLSLFXSharedPtr(
                         new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
-            HdShaderCodeSharedPtr fallbackSurface =
-                HdShaderCodeSharedPtr(
+            HdStShaderCodeSharedPtr fallbackSurface =
+                HdStShaderCodeSharedPtr(
                     new HdStGLSLFXShader(glslSurfaceFallback));
 
             _program.SetSurfaceShader(fallbackSurface);
@@ -289,7 +289,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     _GetCustomBindings(&customBindings, &instanceDraw);
 
     // also (surface, renderPass) shaders use their bindings
-    HdShaderCodeSharedPtrVector shaders = GetComposedShaders();
+    HdStShaderCodeSharedPtrVector shaders = GetComposedShaders();
 
     TF_FOR_ALL(it, shaders) {
         (*it)->AddBindings(&customBindings);

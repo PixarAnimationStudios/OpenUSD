@@ -110,11 +110,11 @@ public:
     HdSt_TestLightingShader();
     virtual ~HdSt_TestLightingShader();
 
-    /// HdShaderCode overrides
+    /// HdStShaderCode overrides
     virtual ID ComputeHash() const;
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
     /// HdStLightingShader overrides

@@ -38,7 +38,7 @@
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
@@ -387,7 +387,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // shader parameter
         //
         HdBufferArrayRangeSharedPtr const &
-            shaderBar_ = drawItem->GetMaterial()->GetShaderData();
+            shaderBar_ = drawItem->GetMaterialShader()->GetShaderData();
         HdBufferArrayRangeGLSharedPtr shaderBar =
             boost::static_pointer_cast<HdBufferArrayRangeGL>(shaderBar_);
 
@@ -1030,8 +1030,8 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
 
     glUseProgram(programId);
 
-    const Hd_ResourceBinder &binder = program.GetBinder();
-    const HdShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
+    const HdSt_ResourceBinder &binder = program.GetBinder();
+    const HdStShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
     // XXX: for surfaces shader, we need to iterate all drawItems to
     //      make textures resident, instead of just the first batchItem
@@ -1232,7 +1232,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     // dispatch buffer to 0 for primitives that are culled, skipping
     // over other elements.
 
-    const Hd_ResourceBinder &binder = cullingProgram.GetBinder();
+    const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
 
     GLuint programId = glslProgram->GetProgram().GetId();
     glUseProgram(programId);
@@ -1370,7 +1370,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     GLuint programId = glslProgram->GetProgram().GetId();
     glUseProgram(programId);
 
-    const Hd_ResourceBinder &binder = cullingProgram.GetBinder();
+    const HdSt_ResourceBinder &binder = cullingProgram.GetBinder();
 
     // bind constant
     binder.BindConstantBuffer(constantBar);

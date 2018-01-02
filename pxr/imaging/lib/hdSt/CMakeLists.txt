@@ -53,7 +53,9 @@ pxr_library(hdSt
         renderPass
         renderPassShader
         renderPassState
+        resourceBinder
         resourceRegistry
+        shaderCode
         shaderKey
         smoothNormals
         surfaceShader

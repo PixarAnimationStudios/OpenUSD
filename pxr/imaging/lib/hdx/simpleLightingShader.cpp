@@ -107,10 +107,10 @@ HdxSimpleLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
 
 /* virtual */
 void
-HdxSimpleLightingShader::BindResources(Hd_ResourceBinder const &binder,
+HdxSimpleLightingShader::BindResources(HdSt_ResourceBinder const &binder,
                                       int program)
 {
-    // XXX: we'd like to use Hd_ResourceBinder instead of GlfBindingMap.
+    // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
     //
     _bindingMap->AssignUniformBindingsToProgram(program);
     _lightingContext->BindUniformBlocks(_bindingMap);
@@ -121,10 +121,10 @@ HdxSimpleLightingShader::BindResources(Hd_ResourceBinder const &binder,
 
 /* virtual */
 void
-HdxSimpleLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
+HdxSimpleLightingShader::UnbindResources(HdSt_ResourceBinder const &binder,
                                         int program)
 {
-    // XXX: we'd like to use Hd_ResourceBinder instead of GlfBindingMap.
+    // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
     //
     _lightingContext->UnbindSamplers(_bindingMap);
 }

@@ -45,7 +45,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        SdfPath const &debugId)
-    : HdShaderCode()
+    : HdStShaderCode()
     , _primType(primType)
     , _cullStyle(cullStyle)
     , _polygonMode(polygonMode)
@@ -57,7 +57,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
 
     // XXX
     // we will likely move this (the constructor or the entire class) into
-    // the base class (HdShaderCode) at the end of refactoring, to be able to
+    // the base class (HdStShaderCode) at the end of refactoring, to be able to
     // use same machinery other than geometric shaders.
 
     if (TfDebug::IsEnabled(HD_DUMP_GLSLFX_CONFIG)) {
@@ -82,7 +82,7 @@ HdSt_GeometricShader::~HdSt_GeometricShader()
 }
 
 /* virtual */
-HdShaderCode::ID
+HdStShaderCode::ID
 HdSt_GeometricShader::ComputeHash() const
 {
     return _hash;
@@ -96,7 +96,7 @@ HdSt_GeometricShader::GetSource(TfToken const &shaderStageKey) const
 }
 
 void
-HdSt_GeometricShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdSt_GeometricShader::BindResources(HdSt_ResourceBinder const &binder, int program)
 {
     if (_cullStyle != HdCullStyleDontCare) {
         unsigned int cullStyle = _cullStyle;
@@ -115,7 +115,7 @@ HdSt_GeometricShader::BindResources(Hd_ResourceBinder const &binder, int program
 }
 
 void
-HdSt_GeometricShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
+HdSt_GeometricShader::UnbindResources(HdSt_ResourceBinder const &binder, int program)
 {
     if (_polygonMode == HdPolygonModeLine) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

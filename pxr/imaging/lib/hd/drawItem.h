@@ -62,9 +62,6 @@ public:
     SdfPath const &GetRprimID() const { return _sharedData->rprimID; }
 
     HD_API
-    HdShaderCodeSharedPtr GetMaterial() const;
-
-    HD_API
     GfBBox3d const & GetBounds() const { return _sharedData->bounds; }
 
     HD_API

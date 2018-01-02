@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/glslfx.h"
@@ -66,9 +67,9 @@ public:
     HDX_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDX_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDX_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDX_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 

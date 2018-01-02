@@ -29,7 +29,6 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
-#include "pxr/imaging/hdSt/mixinShaderCode.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -1055,15 +1054,15 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 bool
 HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
-    const HdMaterial *material = static_cast<const HdMaterial *>(
+    const HdStMaterial *material = static_cast<const HdStMaterial *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->material,
                                                        GetMaterialId()));
     if (material == nullptr) {
-        material = static_cast<const HdMaterial *>(
+        material = static_cast<const HdStMaterial *>(
                         renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    HdShaderCodeSharedPtr ss = material->GetShaderCode();
+    HdStShaderCodeSharedPtr ss = material->GetShaderCode();
 
     TF_FOR_ALL(it, ss->GetParams()) {
         if (it->IsPtex())
@@ -1093,29 +1092,6 @@ _GetMixinShaderSource(TfToken const &shaderStageKey)
     });
 
     return mixinFX->GetSource(shaderStageKey);
-}
-
-HdShaderCodeSharedPtr
-HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate,
-                         HdMaterial const *material) const
-{
-    VtValue mixinValue = GetShadingStyle(sceneDelegate);
-    if (!mixinValue.IsEmpty()) {
-        TfToken mixin = mixinValue.GetWithDefault<TfToken>();
-        /// XXX In the future this could be a place to pull on a surface entry
-        /// to get a custom terminal.
-        if (!mixin.IsEmpty()) {
-            std::string mixinSource = _GetMixinShaderSource(mixin);
-            // Don't create code if the delegate returned an empty mixin source
-            // from the given mixin.
-            if (!mixinSource.empty()) {
-                return HdShaderCodeSharedPtr(
-                    new HdStMixinShaderCode(
-                        mixinSource, material->GetShaderCode()));
-            }
-        }
-    }
-    return material->GetShaderCode();
 }
 
 HdBufferArrayRangeSharedPtr
@@ -1167,14 +1143,18 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     /* VISIBILITY */
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
-
     /* CONSTANT PRIMVARS */
-    // This will call _GetShaderCode to resolve per rprim shader mixins
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
+
+    /* MATERIAL SHADER */
+    TfToken mixin = GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
+    drawItem->SetMaterialShaderFromRenderIndex(
+        renderIndex, GetMaterialId(), _GetMixinShaderSource(mixin));
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {

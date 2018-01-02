@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/resource.h"
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStSurfaceShader::HdStSurfaceShader()
- : HdShaderCode()
+ : HdStShaderCode()
  , _fragmentSource()
  , _geometrySource()
  , _params()
@@ -92,14 +92,14 @@ HdStSurfaceShader::GetShaderData() const
     return _paramArray;
 }
 /*virtual*/
-HdShaderCode::TextureDescriptorVector
+HdStShaderCode::TextureDescriptorVector
 HdStSurfaceShader::GetTextures() const
 {
     return _textureDescriptors;
 }
 /*virtual*/
 void
-HdStSurfaceShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdStSurfaceShader::BindResources(HdSt_ResourceBinder const &binder, int program)
 {
     // XXX: there's an issue where other shaders try to use textures.
     int samplerUnit = binder.GetNumReservedTextureUnits();
@@ -132,7 +132,7 @@ HdStSurfaceShader::BindResources(Hd_ResourceBinder const &binder, int program)
 }
 /*virtual*/
 void
-HdStSurfaceShader::UnbindResources(Hd_ResourceBinder const &binder, int program)
+HdStSurfaceShader::UnbindResources(HdSt_ResourceBinder const &binder, int program)
 {
     binder.UnbindShaderResources(this);
 
@@ -165,7 +165,7 @@ HdStSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 /*virtual*/
-HdShaderCode::ID
+HdStShaderCode::ID
 HdStSurfaceShader::ComputeHash() const
 {
     size_t hash = 0;

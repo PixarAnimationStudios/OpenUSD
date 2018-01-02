@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -106,6 +107,10 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
+
+    /* MATERIAL SHADER */
+    drawItem->SetMaterialShaderFromRenderIndex(
+        sceneDelegate->GetRenderIndex(), GetMaterialId());
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {

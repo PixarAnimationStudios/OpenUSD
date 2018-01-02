@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SHADER_CODE_H
-#define HD_SHADER_CODE_H
+#ifndef HDST_SHADER_CODE_H
+#define HDST_SHADER_CODE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/materialParam.h"
-#include "pxr/imaging/hd/resourceBinder.h"  // XXX: including a private class
+#include "pxr/imaging/hdSt/resourceBinder.h"  // XXX: including a private class
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -42,32 +42,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-typedef std::vector<HdShaderCodeSharedPtr> HdShaderCodeSharedPtrVector;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 
 
-/// \class HdShaderCode
+/// \class HdStShaderCode
 ///
 /// A base class representing the implementation (code) of a shader,
 /// used in conjunction with HdRenderPass.
 ///
 /// This interface provides a simple way for clients to affect the
 /// composition of shading programs used for a render pass.
-class HdShaderCode {
+class HdStShaderCode {
 public:
     typedef size_t ID;
 
-    HD_API
-    HdShaderCode();
-    HD_API
-    virtual ~HdShaderCode();
+    HDST_API
+    HdStShaderCode();
+    HDST_API
+    virtual ~HdStShaderCode();
 
     /// Returns the hash value of this shader.
     virtual ID ComputeHash() const = 0;
 
     /// Returns the combined hash values of multiple shaders.
-    HD_API
-    static ID ComputeHash(HdShaderCodeSharedPtrVector const &shaders);
+    HDST_API
+    static ID ComputeHash(HdStShaderCodeSharedPtrVector const &shaders);
 
     /// Returns the shader source provided by this shader
     /// for \a shaderStageKey
@@ -75,7 +75,7 @@ public:
 
     // XXX: Should be pure-virtual
     /// Returns the shader parameters for this shader.
-    HD_API
+    HDST_API
     virtual HdMaterialParamVector const& GetParams() const;
 
     struct TextureDescriptor {
@@ -88,42 +88,42 @@ public:
     typedef std::vector<TextureDescriptor> TextureDescriptorVector;
 
     // XXX: DOC
-    HD_API
+    HDST_API
     virtual TextureDescriptorVector GetTextures() const;
 
     // XXX: Should be pure-virtual
     /// Returns a buffer which stores parameter fallback values and texture
     /// handles.
-    HD_API
+    HDST_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
 
     /// Binds shader-specific resources to \a program
     /// XXX: this interface is meant to be used for bridging
     /// the GlfSimpleLightingContext mechanism, and not for generic use-cases.
-    virtual void BindResources(Hd_ResourceBinder const &binder,
+    virtual void BindResources(HdSt_ResourceBinder const &binder,
                                int program) = 0;
 
     /// Unbinds shader-specific resources.
-    virtual void UnbindResources(Hd_ResourceBinder const &binder,
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder,
                                  int program) = 0;
 
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;
 
     /// Returns if the two shaders can be aggregated in a same drawbatch or not.
-    HD_API
-    static bool CanAggregate(HdShaderCodeSharedPtr const &shaderA,
-                             HdShaderCodeSharedPtr const &shaderB);
+    HDST_API
+    static bool CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
+                             HdStShaderCodeSharedPtr const &shaderB);
 
 
 private:
 
     // No copying
-    HdShaderCode(const HdShaderCode &)                      = delete;
-    HdShaderCode &operator =(const HdShaderCode &)          = delete;
+    HdStShaderCode(const HdStShaderCode &)                      = delete;
+    HdStShaderCode &operator =(const HdStShaderCode &)          = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_SHADER_H
+#endif //HDST_SHADER_H

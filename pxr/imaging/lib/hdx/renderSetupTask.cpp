@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
+HdStShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id)
@@ -101,7 +101,7 @@ HdxRenderSetupTask::_SetHdStRenderPassState(HdxRenderTaskParams const &params,
                                         HdStRenderPassState *renderPassState)
 {
     if (params.enableHardwareShading) {
-        renderPassState->SetOverrideShader(HdShaderCodeSharedPtr());
+        renderPassState->SetOverrideShader(HdStShaderCodeSharedPtr());
     } else {
         if (!_overrideShader) {
             _CreateOverrideShader();
@@ -207,7 +207,7 @@ HdxRenderSetupTask::_CreateOverrideShader()
                            new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
                 _overrideShader =
-                              HdShaderCodeSharedPtr(
+                              HdStShaderCodeSharedPtr(
                                         new HdStGLSLFXShader(glslfx));
             }
         }

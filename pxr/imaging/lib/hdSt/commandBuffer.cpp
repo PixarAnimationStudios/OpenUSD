@@ -166,7 +166,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
     for (size_t i = 0; i < _drawItems.size(); i++) {
         HdStDrawItem const * drawItem = _drawItems[i];
 
-        HdShaderCodeSharedPtr const &geometricShader
+        HdStShaderCodeSharedPtr const &geometricShader
             = drawItem->GetGeometricShader();
         if (!TF_VERIFY(geometricShader, "%s",
                        drawItem->GetRprimID().GetText())) {
@@ -180,11 +180,15 @@ HdStCommandBuffer::_RebuildDrawBatches()
         boost::hash_combine(key, drawItem->GetBufferArraysHash());
 
         if (!bindlessTexture) {
+            if (!TF_VERIFY(drawItem->GetMaterialShader(), "%s",
+                           drawItem->GetRprimID().GetText())) {
+                continue;
+            }
             // Geometric, RenderPass and Lighting shaders should never break
             // batches, however materials can. We consider the material 
             // parameters to be part of the batch key here for that reason.
             boost::hash_combine(key, HdMaterialParam::ComputeHash(
-                                    drawItem->GetMaterial()->GetParams()));
+                            drawItem->GetMaterialShader()->GetParams()));
         }
 
         TF_DEBUG(HD_DRAW_BATCH).Msg("%lu (%lu)\n", 

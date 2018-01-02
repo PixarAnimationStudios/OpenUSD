@@ -48,7 +48,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 HdStRenderPassShader::HdStRenderPassShader()
-    : HdShaderCode()
+    : HdStShaderCode()
     , _glslfxFile(HdStPackageRenderPassShader())
     , _hash(0)
     , _hashValid(false)
@@ -58,7 +58,7 @@ HdStRenderPassShader::HdStRenderPassShader()
 }
 
 HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
-    : HdShaderCode()
+    : HdStShaderCode()
     , _glslfxFile(glslfxFile)   // user-defined
     , _hash(0)
     , _hashValid(false)
@@ -107,7 +107,7 @@ HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 
 /*virtual*/
 void
-HdStRenderPassShader::BindResources(Hd_ResourceBinder const &binder, int program)
+HdStRenderPassShader::BindResources(HdSt_ResourceBinder const &binder, int program)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Bind(it->second);
@@ -120,7 +120,7 @@ HdStRenderPassShader::BindResources(Hd_ResourceBinder const &binder, int program
 
 /*virtual*/
 void
-HdStRenderPassShader::UnbindResources(Hd_ResourceBinder const &binder,
+HdStRenderPassShader::UnbindResources(HdSt_ResourceBinder const &binder,
                                      int program)
 {
     TF_FOR_ALL(it, _customBuffers) {

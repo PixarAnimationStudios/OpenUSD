@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/imaging/garch/gl.h"
@@ -58,7 +58,7 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 /// can use this object to express these surface shaders in Hydra. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
-class HdStSurfaceShader : public HdShaderCode {
+class HdStSurfaceShader : public HdStShaderCode {
 public:
     HDST_API
     HdStSurfaceShader();
@@ -78,9 +78,9 @@ public:
     HDST_API
     virtual TextureDescriptorVector GetTextures() const;
     HDST_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
     HDST_API
