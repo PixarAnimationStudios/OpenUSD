@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -50,7 +50,7 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateFocusRegionAttr(UsdRiStatements &self,
+_CreateFocusRegionAttr(UsdRiStatementsAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateFocusRegionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
@@ -58,12 +58,12 @@ _CreateFocusRegionAttr(UsdRiStatements &self,
 
 } // anonymous namespace
 
-void wrapUsdRiStatements()
+void wrapUsdRiStatementsAPI()
 {
-    typedef UsdRiStatements This;
+    typedef UsdRiStatementsAPI This;
 
     class_<This, bases<UsdSchemaBase> >
-        cls("Statements");
+        cls("StatementsAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -131,7 +131,7 @@ void wrapUsdRiStatements()
 namespace {
 
 static SdfPathVector
-_GetModelCoordinateSystems(const UsdRiStatements &self)
+_GetModelCoordinateSystems(const UsdRiStatementsAPI &self)
 {
     SdfPathVector result;
     self.GetModelCoordinateSystems(&result);
@@ -139,7 +139,7 @@ _GetModelCoordinateSystems(const UsdRiStatements &self)
 }
 
 static SdfPathVector
-_GetModelScopedCoordinateSystems(const UsdRiStatements &self)
+_GetModelScopedCoordinateSystems(const UsdRiStatementsAPI &self)
 {
     SdfPathVector result;
     self.GetModelScopedCoordinateSystems(&result);
@@ -149,43 +149,43 @@ _GetModelScopedCoordinateSystems(const UsdRiStatements &self)
 WRAP_CUSTOM {
     _class
         .def("CreateRiAttribute",
-             (UsdAttribute (UsdRiStatements::*)(
+             (UsdAttribute (UsdRiStatementsAPI::*)(
                  const TfToken &, const TfType &, const std::string &))
-             &UsdRiStatements::CreateRiAttribute,
+             &UsdRiStatementsAPI::CreateRiAttribute,
              (arg("name"), arg("tfType"), arg("nameSpace")="user"))
         .def("CreateRiAttribute",
-             (UsdAttribute (UsdRiStatements::*)(
+             (UsdAttribute (UsdRiStatementsAPI::*)(
                  const TfToken &, const std::string &, const std::string &))
-             &UsdRiStatements::CreateRiAttribute,
+             &UsdRiStatementsAPI::CreateRiAttribute,
              (arg("name"), arg("riType"), arg("nameSpace")="user"))
-        .def("CreateRiAttributeAsRel", &UsdRiStatements::CreateRiAttributeAsRel,
+        .def("CreateRiAttributeAsRel", &UsdRiStatementsAPI::CreateRiAttributeAsRel,
              (arg("name"), arg("nameSpace")="user"))
-        .def("GetRiAttributes", &UsdRiStatements::GetRiAttributes,
+        .def("GetRiAttributes", &UsdRiStatementsAPI::GetRiAttributes,
              (arg("nameSpace")=""),
              return_value_policy<TfPySequenceToList>())
         .def("GetRiAttributeName",
-             UsdRiStatements::GetRiAttributeName, (arg("prop")))
+             UsdRiStatementsAPI::GetRiAttributeName, (arg("prop")))
         .staticmethod("GetRiAttributeName")
         .def("GetRiAttributeNameSpace",
-             &UsdRiStatements::GetRiAttributeNameSpace, (arg("prop")))
+             &UsdRiStatementsAPI::GetRiAttributeNameSpace, (arg("prop")))
         .staticmethod("GetRiAttributeNameSpace")
-        .def("IsRiAttribute", &UsdRiStatements::IsRiAttribute, (arg("prop")))
+        .def("IsRiAttribute", &UsdRiStatementsAPI::IsRiAttribute, (arg("prop")))
         .staticmethod("IsRiAttribute")
         .def("MakeRiAttributePropertyName",
-             &UsdRiStatements::MakeRiAttributePropertyName, (arg("attrName")))
+             &UsdRiStatementsAPI::MakeRiAttributePropertyName, (arg("attrName")))
         .staticmethod("MakeRiAttributePropertyName")
-        .def("SetCoordinateSystem", &UsdRiStatements::SetCoordinateSystem,
+        .def("SetCoordinateSystem", &UsdRiStatementsAPI::SetCoordinateSystem,
              (arg("coordSysName")))
-        .def("GetCoordinateSystem", &UsdRiStatements::GetCoordinateSystem)
-        .def("HasCoordinateSystem", &UsdRiStatements::HasCoordinateSystem)
+        .def("GetCoordinateSystem", &UsdRiStatementsAPI::GetCoordinateSystem)
+        .def("HasCoordinateSystem", &UsdRiStatementsAPI::HasCoordinateSystem)
 
         .def("SetScopedCoordinateSystem",
-             &UsdRiStatements::SetScopedCoordinateSystem,
+             &UsdRiStatementsAPI::SetScopedCoordinateSystem,
              (arg("coordSysName")))
         .def("GetScopedCoordinateSystem",
-             &UsdRiStatements::GetScopedCoordinateSystem)
+             &UsdRiStatementsAPI::GetScopedCoordinateSystem)
         .def("HasScopedCoordinateSystem",
-             &UsdRiStatements::HasScopedCoordinateSystem)
+             &UsdRiStatementsAPI::HasScopedCoordinateSystem)
 
         .def("GetModelCoordinateSystems", _GetModelCoordinateSystems,
              return_value_policy<TfPySequenceToList>())

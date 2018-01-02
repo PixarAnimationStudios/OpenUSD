@@ -38,7 +38,7 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDoubleArray.h>
@@ -401,7 +401,7 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
         return usdAttr;
     }
 
-    UsdRiStatements riStatements(usdPrim);
+    UsdRiStatementsAPI riStatements(usdPrim);
     if (!riStatements) {
         return usdAttr;
     }

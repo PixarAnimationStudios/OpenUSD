@@ -35,7 +35,7 @@ pxr_library(usdRi
         rmanUtilities
         rslShader
         splineAPI
-        statements
+        statementsAPI
         textureAPI
         tokens
 
@@ -69,7 +69,7 @@ pxr_library(usdRi
         wrapRmanUtilities.cpp
         wrapRslShader.cpp
         wrapSplineAPI.cpp
-        wrapStatements.cpp
+        wrapStatementsAPI.cpp
         wrapTextureAPI.cpp
         wrapTokens.cpp
 

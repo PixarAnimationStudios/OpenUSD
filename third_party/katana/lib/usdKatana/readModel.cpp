@@ -31,7 +31,7 @@
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include <FnLogging/FnLogging.h>
@@ -59,15 +59,15 @@ _BuildGlobalCoordinateSystems(
 
     if (prim.GetPath() != SdfPath::AbsoluteRootPath())
     {
-        UsdRiStatements riStatements(prim);
+        UsdRiStatementsAPI riStatements(prim);
         SdfPathVector coordSysPaths;
         if (riStatements.GetModelCoordinateSystems(&coordSysPaths)
             && !coordSysPaths.empty())
         {
             TF_FOR_ALL(itr, coordSysPaths)
             {
-                if (UsdRiStatements coordSysStmt =
-                        UsdRiStatements(prim.GetStage()->GetPrimAtPath(*itr)))
+                if (UsdRiStatementsAPI coordSysStmt =
+                        UsdRiStatementsAPI(prim.GetStage()->GetPrimAtPath(*itr)))
                 {
                     coordSysBuilder->set(
                         coordSysStmt.GetCoordinateSystem(),

@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDRI_GENERATED_STATEMENTS_H
-#define USDRI_GENERATED_STATEMENTS_H
+#ifndef USDRI_GENERATED_STATEMENTSAPI_H
+#define USDRI_GENERATED_STATEMENTSAPI_H
 
-/// \file usdRi/statements.h
+/// \file usdRi/statementsAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRi/api.h"
@@ -47,14 +47,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// STATEMENTS                                                                 //
+// STATEMENTSAPI                                                              //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdRiStatements
+/// \class UsdRiStatementsAPI
 ///
 /// Container namespace schema for all renderman statements
 ///
-class UsdRiStatements : public UsdSchemaBase
+class UsdRiStatementsAPI : public UsdSchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -68,26 +68,26 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
-    /// Construct a UsdRiStatements on UsdPrim \p prim .
-    /// Equivalent to UsdRiStatements::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdRiStatementsAPI on UsdPrim \p prim .
+    /// Equivalent to UsdRiStatementsAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdRiStatements(const UsdPrim& prim=UsdPrim())
+    explicit UsdRiStatementsAPI(const UsdPrim& prim=UsdPrim())
         : UsdSchemaBase(prim)
     {
     }
 
-    /// Construct a UsdRiStatements on the prim held by \p schemaObj .
-    /// Should be preferred over UsdRiStatements(schemaObj.GetPrim()),
+    /// Construct a UsdRiStatementsAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdRiStatementsAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdRiStatements(const UsdSchemaBase& schemaObj)
+    explicit UsdRiStatementsAPI(const UsdSchemaBase& schemaObj)
         : UsdSchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDRI_API
-    virtual ~UsdRiStatements();
+    virtual ~UsdRiStatementsAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -96,17 +96,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdRiStatements holding the prim adhering to this
+    /// Return a UsdRiStatementsAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdRiStatements(stage->GetPrimAtPath(path));
+    /// UsdRiStatementsAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDRI_API
-    static UsdRiStatements
+    static UsdRiStatementsAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -117,7 +117,7 @@ public:
     /// \sa UsdPrim::GetAppliedSchemas()
     ///
     USDRI_API
-    static UsdRiStatements 
+    static UsdRiStatementsAPI 
     Apply(const UsdStagePtr &stage, const SdfPath &path);
 
 private:

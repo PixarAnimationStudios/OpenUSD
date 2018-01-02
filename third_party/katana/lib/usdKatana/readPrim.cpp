@@ -48,7 +48,7 @@
 
 #include "pxr/usd/usdShade/material.h"
 
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/collectionAPI.h"
@@ -175,7 +175,7 @@ _GatherRibAttributes(
     bool hasAttrs = false;
 
     // USD SHADING STYLE ATTRIBUTES
-    UsdRiStatements riStatements(prim);
+    UsdRiStatementsAPI riStatements(prim);
     if (riStatements) {
         const std::vector<UsdProperty> props = 
             riStatements.GetRiAttributes();
@@ -303,7 +303,7 @@ _BuildScopedCoordinateSystems(
 
     TF_FOR_ALL(childIt, prim.GetChildren()) {
 
-        UsdRiStatements riStmts(*childIt);
+        UsdRiStatementsAPI riStmts(*childIt);
 
         if (!riStmts.HasCoordinateSystem()) {
             continue;

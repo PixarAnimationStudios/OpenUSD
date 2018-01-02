@@ -42,7 +42,7 @@
 #include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 #include "pxr/usd/usdUI/sceneGraphPrimAPI.h"
 #include "pxr/usd/usdLux/light.h"
 #include "pxr/usd/usdLux/lightFilter.h"
@@ -1621,7 +1621,7 @@ std::string PxrUsdKatanaUtils::GetModelInstanceName(const UsdPrim& prim)
     if (!isPseudoRoot) {
         std::string modelInstanceName;
         if (prim.GetAttribute(TfToken(
-                        UsdRiStatements::MakeRiAttributePropertyName(
+                        UsdRiStatementsAPI::MakeRiAttributePropertyName(
                             "ModelInstance")))
                 .Get(&modelInstanceName)) {
             return modelInstanceName;

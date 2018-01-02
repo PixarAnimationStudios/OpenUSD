@@ -440,7 +440,7 @@ struct UsdRiTokensType {
     const TfToken riExposure;
     /// \brief "ri:focusRegion"
     /// 
-    /// UsdRiStatements
+    /// UsdRiStatementsAPI
     const TfToken riFocusRegion;
     /// \brief "ri:intensity"
     /// 

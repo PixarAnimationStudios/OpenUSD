@@ -3,7 +3,7 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
-class "Statements" (
+class "StatementsAPI" (
     doc = "Container namespace schema for all renderman statements"
 )
 {

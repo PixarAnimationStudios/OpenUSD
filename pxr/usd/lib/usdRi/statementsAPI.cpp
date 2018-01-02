@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/tokens.h"
@@ -34,50 +34,50 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdRiStatements,
+    TfType::Define<UsdRiStatementsAPI,
         TfType::Bases< UsdSchemaBase > >();
     
 }
 
 /* virtual */
-UsdRiStatements::~UsdRiStatements()
+UsdRiStatementsAPI::~UsdRiStatementsAPI()
 {
 }
 
 /* static */
-UsdRiStatements
-UsdRiStatements::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdRiStatementsAPI
+UsdRiStatementsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdRiStatements();
+        return UsdRiStatementsAPI();
     }
-    return UsdRiStatements(stage->GetPrimAtPath(path));
+    return UsdRiStatementsAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* static */
-UsdRiStatements
-UsdRiStatements::Apply(const UsdStagePtr &stage, const SdfPath &path)
+UsdRiStatementsAPI
+UsdRiStatementsAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
 {
     // Ensure we have a valid stage, path and prim
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdRiStatements();
+        return UsdRiStatementsAPI();
     }
 
     if (path == SdfPath::AbsoluteRootPath()) {
         TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
-        return UsdRiStatements();
+        return UsdRiStatementsAPI();
     }
 
     auto prim = stage->GetPrimAtPath(path);
     if (!prim) {
         TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
-        return UsdRiStatements();
+        return UsdRiStatementsAPI();
     }
 
-    TfToken apiName("Statements");  
+    TfToken apiName("StatementsAPI");  
 
     // Get the current listop at the edit target
     UsdEditTarget editTarget = stage->GetEditTarget();
@@ -88,7 +88,7 @@ UsdRiStatements::Apply(const UsdStagePtr &stage, const SdfPath &path)
     // Append our name to the prepend list, if it doesnt exist locally
     TfTokenVector prepends = listOp.GetPrependedItems();
     if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
-        return UsdRiStatements();
+        return UsdRiStatementsAPI();
     }
 
     SdfTokenListOp prependListOp;
@@ -97,25 +97,25 @@ UsdRiStatements::Apply(const UsdStagePtr &stage, const SdfPath &path)
     auto result = listOp.ApplyOperations(prependListOp);
     if (!result) {
         TF_CODING_ERROR("Failed to prepend api name to current listop.");
-        return UsdRiStatements();
+        return UsdRiStatementsAPI();
     }
 
     // Set the listop at the current edit target and return the API prim
     primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
-    return UsdRiStatements(prim);
+    return UsdRiStatementsAPI(prim);
 }
 
 /* static */
 const TfType &
-UsdRiStatements::_GetStaticTfType()
+UsdRiStatementsAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdRiStatements>();
+    static TfType tfType = TfType::Find<UsdRiStatementsAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdRiStatements::_IsTypedSchema()
+UsdRiStatementsAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -123,19 +123,19 @@ UsdRiStatements::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdRiStatements::_GetTfType() const
+UsdRiStatementsAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdRiStatements::GetFocusRegionAttr() const
+UsdRiStatementsAPI::GetFocusRegionAttr() const
 {
     return GetPrim().GetAttribute(UsdRiTokens->riFocusRegion);
 }
 
 UsdAttribute
-UsdRiStatements::CreateFocusRegionAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdRiStatementsAPI::CreateFocusRegionAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->riFocusRegion,
                        SdfValueTypeNames->Float,
@@ -159,7 +159,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdRiStatements::GetSchemaAttributeNames(bool includeInherited)
+UsdRiStatementsAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdRiTokens->riFocusRegion,
@@ -213,7 +213,7 @@ _MakeRiAttrNamespace(const string &nameSpace, const string &attrName)
 }
 
 UsdAttribute
-UsdRiStatements::CreateRiAttribute(
+UsdRiStatementsAPI::CreateRiAttribute(
     const TfToken& name, 
     const string &riType,
     const string &nameSpace)
@@ -229,7 +229,7 @@ UsdRiStatements::CreateRiAttribute(
 }
 
 UsdAttribute
-UsdRiStatements::CreateRiAttribute(
+UsdRiStatementsAPI::CreateRiAttribute(
     const TfToken &name, 
     const TfType &tfType,
     const string &nameSpace)
@@ -245,7 +245,7 @@ UsdRiStatements::CreateRiAttribute(
 }
 
 UsdRelationship
-UsdRiStatements::CreateRiAttributeAsRel(
+UsdRiStatementsAPI::CreateRiAttributeAsRel(
     const TfToken& name,
     const string &nameSpace)
 {
@@ -254,7 +254,7 @@ UsdRiStatements::CreateRiAttributeAsRel(
 }
 
 std::vector<UsdProperty>
-UsdRiStatements::GetRiAttributes(
+UsdRiStatementsAPI::GetRiAttributes(
     const string &nameSpace) const
 {
     std::vector<UsdProperty> props = 
@@ -277,13 +277,13 @@ UsdRiStatements::GetRiAttributes(
 
 
 bool
-UsdRiStatements::_IsCompatible(const UsdPrim &prim) const
+UsdRiStatementsAPI::_IsCompatible(const UsdPrim &prim) const
 {
     // HasA schemas compatible with all types for now.
     return true;
 }
 
-TfToken UsdRiStatements::GetRiAttributeNameSpace(const UsdProperty &prop)
+TfToken UsdRiStatementsAPI::GetRiAttributeNameSpace(const UsdProperty &prop)
 {
     std::vector<string> names = prop.SplitName();
     if (names.size()<4) {
@@ -294,13 +294,13 @@ TfToken UsdRiStatements::GetRiAttributeNameSpace(const UsdProperty &prop)
 }
 
 bool
-UsdRiStatements::IsRiAttribute(const UsdProperty &attr)
+UsdRiStatementsAPI::IsRiAttribute(const UsdProperty &attr)
 {
     return TfStringStartsWith(attr.GetName(), _tokens->fullAttributeNamespace);
 }
 
 std::string
-UsdRiStatements::MakeRiAttributePropertyName(const std::string &attrName)
+UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
 {
     std::vector<string> names = TfStringTokenize(attrName, ":");
     if (names.size() == 4 && TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
@@ -326,7 +326,7 @@ UsdRiStatements::MakeRiAttributePropertyName(const std::string &attrName)
 }
 
 void
-UsdRiStatements::SetCoordinateSystem(const std::string &coordSysName)
+UsdRiStatementsAPI::SetCoordinateSystem(const std::string &coordSysName)
 {
     UsdAttribute attr = GetPrim().CreateAttribute(_tokens->coordsys, 
                                                   SdfValueTypeNames->String, 
@@ -355,7 +355,7 @@ UsdRiStatements::SetCoordinateSystem(const std::string &coordSysName)
 }
 
 std::string
-UsdRiStatements::GetCoordinateSystem() const
+UsdRiStatementsAPI::GetCoordinateSystem() const
 {
     std::string result;
     UsdAttribute attr = GetPrim().GetAttribute(_tokens->coordsys);
@@ -366,7 +366,7 @@ UsdRiStatements::GetCoordinateSystem() const
 }
 
 bool
-UsdRiStatements::HasCoordinateSystem() const
+UsdRiStatementsAPI::HasCoordinateSystem() const
 {
     std::string result;
     UsdAttribute attr = GetPrim().GetAttribute(_tokens->coordsys);
@@ -377,7 +377,7 @@ UsdRiStatements::HasCoordinateSystem() const
 }
 
 void
-UsdRiStatements::SetScopedCoordinateSystem(const std::string &coordSysName)
+UsdRiStatementsAPI::SetScopedCoordinateSystem(const std::string &coordSysName)
 {
     UsdAttribute attr = GetPrim().CreateAttribute(_tokens->scopedCoordsys, 
                                                   SdfValueTypeNames->String,
@@ -404,7 +404,7 @@ UsdRiStatements::SetScopedCoordinateSystem(const std::string &coordSysName)
 }
 
 std::string
-UsdRiStatements::GetScopedCoordinateSystem() const
+UsdRiStatementsAPI::GetScopedCoordinateSystem() const
 {
     std::string result;
     UsdAttribute attr = GetPrim().GetAttribute(_tokens->scopedCoordsys);
@@ -415,7 +415,7 @@ UsdRiStatements::GetScopedCoordinateSystem() const
 }
 
 bool
-UsdRiStatements::HasScopedCoordinateSystem() const
+UsdRiStatementsAPI::HasScopedCoordinateSystem() const
 {
     std::string result;
     UsdAttribute attr = GetPrim().GetAttribute(_tokens->scopedCoordsys);
@@ -426,7 +426,7 @@ UsdRiStatements::HasScopedCoordinateSystem() const
 }
 
 bool
-UsdRiStatements::GetModelCoordinateSystems(SdfPathVector *targets) const
+UsdRiStatementsAPI::GetModelCoordinateSystems(SdfPathVector *targets) const
 {
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
@@ -438,7 +438,7 @@ UsdRiStatements::GetModelCoordinateSystems(SdfPathVector *targets) const
 }
 
 bool
-UsdRiStatements::GetModelScopedCoordinateSystems(SdfPathVector *targets) const
+UsdRiStatementsAPI::GetModelScopedCoordinateSystems(SdfPathVector *targets) const
 {
     if (GetPrim().IsModel()) {
         UsdRelationship rel =
