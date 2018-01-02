@@ -1033,16 +1033,14 @@ class AppController(QtCore.QObject):
         QtWidgets.QApplication.restoreOverrideCursor()
 
     def _drawFirstImage(self):
-        # _resetView is what triggers the first image to be drawn, so time it
         if self._stageView:
             self._stageView.setUpdatesEnabled(True)
-        with BusyContext(), Timer() as t:
+        with BusyContext():
             try:
                 self._resetView(self._initialSelectPrim)
             except Exception:
                 pass
-        if self._printTiming and self._stageView:
-            t.PrintTime("create first image")
+            QtWidgets.QApplication.processEvents()
 
         # configure render plugins after stageView initialized its renderer.
         self._configureRendererPlugins()

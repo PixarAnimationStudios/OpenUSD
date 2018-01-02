@@ -1423,6 +1423,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._rootDataModel = rootDataModel or RootDataModel()
         self._printTiming = printTiming
 
+        self._isFirstImage = True
+
         self._dataModel.signalDefaultMaterialChanged.connect(self.updateGL)
         self._rootDataModel.signalStageReplaced.connect(self._stageReplaced)
 
@@ -2645,13 +2647,20 @@ class StageView(QtOpenGL.QGLWidget):
 
     def glDraw(self):
         # override glDraw so we can time it.
-        startTime = time()
-        # Make sure the renderer is created
-        if not self._getRenderer():
-            # error has already been issued
-            return
-        QtOpenGL.QGLWidget.glDraw(self)
-        self._renderTime = time() - startTime
+        with Timer() as t:
+            # Make sure the renderer is created
+            if not self._getRenderer():
+                # error has already been issued
+                return
+            QtOpenGL.QGLWidget.glDraw(self)
+
+        self._renderTime = t.interval
+
+        # If timings are being printed and this is the first time an image is
+        # being drawn, report how long it took to do so.
+        if self._printTiming and self._isFirstImage:
+            self._isFirstImage = False
+            t.PrintTime("create first image")
 
     def SetForceRefresh(self, val):
         self._forceRefresh = val or self._forceRefresh
