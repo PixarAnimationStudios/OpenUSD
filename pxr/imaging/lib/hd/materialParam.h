@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SHADER_PARAM_H
-#define HD_SHADER_PARAM_H
+#ifndef HD_MATERIAL_PARAM_H
+#define HD_MATERIAL_PARAM_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
@@ -38,29 +38,29 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef std::vector<class HdShaderParam> HdShaderParamVector;
+typedef std::vector<class HdMaterialParam> HdMaterialParamVector;
 
 bool HdEnabledUV();
 
 // XXX: Docs
-class HdShaderParam {
+class HdMaterialParam {
 public:
     typedef size_t ID;
 
     HD_API
-    HdShaderParam(TfToken const& name, 
+    HdMaterialParam(TfToken const& name, 
                   VtValue const& fallbackValue,
                   SdfPath const& connection=SdfPath(),
                   TfTokenVector const& samplerCoords=TfTokenVector(),
                   bool isPtex = false);
 
     HD_API
-    ~HdShaderParam();
+    ~HdMaterialParam();
 
-    /// Computes a hash for all shader parameters. This hash also includes 
-    /// ShaderParam connections (texture, primvar, etc).
+    /// Computes a hash for all parameters. This hash also includes 
+    /// parameter connections (texture, primvar, etc).
     HD_API
-    static ID ComputeHash(HdShaderParamVector const &shaders);
+    static ID ComputeHash(HdMaterialParamVector const &shaders);
 
     TfToken const& GetName() const { return _name; }
 
@@ -107,4 +107,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_SHADER_PARAM_H
+#endif //HD_MATERIAL_PARAM_H

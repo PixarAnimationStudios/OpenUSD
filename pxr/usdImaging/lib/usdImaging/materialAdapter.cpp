@@ -25,7 +25,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/material.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdRi/materialAPI.h"
@@ -46,7 +46,7 @@ UsdImagingMaterialAdapter::~UsdImagingMaterialAdapter()
 bool
 UsdImagingMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return index->IsSprimTypeSupported(HdPrimTypeTokens->shader);
+    return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
 bool
@@ -62,14 +62,14 @@ UsdImagingMaterialAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    // Since shaders are populated by reference, they need to take care not to
+    // Since material are populated by reference, they need to take care not to
     // be populated multiple times.
     SdfPath cachePath = prim.GetPath();
     if (index->IsPopulated(cachePath)) {
         return cachePath;
     }
 
-    index->InsertSprim(HdPrimTypeTokens->shader,
+    index->InsertSprim(HdPrimTypeTokens->material,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
@@ -99,7 +99,7 @@ UsdImagingMaterialAdapter::UpdateForTime(UsdPrim const& prim,
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdShader::DirtyResource) {
+    if (requestedBits & HdMaterial::DirtyResource) {
         // Walk the material network and generate a HdMaterialNodes structure
         // to store it in the value cache.
         HdMaterialNodes materialNodes;
@@ -134,7 +134,7 @@ void
 UsdImagingMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
                                  UsdImagingIndexProxy* index)
 {
-    index->RemoveSprim(HdPrimTypeTokens->shader, cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
 }
 
 static

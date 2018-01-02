@@ -24,13 +24,13 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/mixinShaderCode.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
-#include "pxr/imaging/hdSt/shader.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -1054,15 +1054,15 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 bool
 HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
 {
-    const HdShader *shader = static_cast<const HdShader *>(
-                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
+    const HdMaterial *material = static_cast<const HdMaterial *>(
+                                  renderIndex.GetSprim(HdPrimTypeTokens->material,
                                                        GetMaterialId()));
-    if (shader == nullptr) {
-        shader = static_cast<const HdShader *>(
-                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    if (material == nullptr) {
+        material = static_cast<const HdMaterial *>(
+                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    HdShaderCodeSharedPtr ss = shader->GetShaderCode();
+    HdShaderCodeSharedPtr ss = material->GetShaderCode();
 
     TF_FOR_ALL(it, ss->GetParams()) {
         if (it->IsPtex())
@@ -1095,7 +1095,8 @@ _GetMixinShaderSource(TfToken const &shaderStageKey)
 }
 
 HdShaderCodeSharedPtr
-HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader) const
+HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate,
+                         HdMaterial const *material) const
 {
     VtValue mixinValue = GetShadingStyle(sceneDelegate);
     if (!mixinValue.IsEmpty()) {
@@ -1109,11 +1110,11 @@ HdStMesh::_GetShaderCode(HdSceneDelegate *sceneDelegate, HdShader const *shader)
             if (!mixinSource.empty()) {
                 return HdShaderCodeSharedPtr(
                     new HdStMixinShaderCode(
-                        mixinSource, shader->GetShaderCode()));
+                        mixinSource, material->GetShaderCode()));
             }
         }
     }
-    return shader->GetShaderCode();
+    return material->GetShaderCode();
 }
 
 HdBufferArrayRangeSharedPtr
@@ -1311,11 +1312,11 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     // if so, we want to make sure the geometric shader does not optimize the
     // geometry shader out of the code.
     bool hasCustomDisplacementTerminal = false;
-    const HdStShader *shader = static_cast<const HdStShader *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->shader, GetMaterialId()));
-    if (shader) {
+    const HdStMaterial *material = static_cast<const HdStMaterial *>(
+        renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
+    if (material) {
         const std::string & displacementShader = 
-            shader->GetDisplacementShaderSource(sceneDelegate);
+            material->GetDisplacementShaderSource(sceneDelegate);
         if (!displacementShader.empty()) {
             hasCustomDisplacementTerminal = true;
         }

@@ -73,7 +73,7 @@ HdStComputeShader::GetSource(TfToken const &shaderStageKey) const
     return std::string();
 }
 /*virtual*/
-HdShaderParamVector const&
+HdMaterialParamVector const&
 HdStComputeShader::GetParams() const
 {
     return _params;

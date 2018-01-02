@@ -26,8 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderParam.h" // XXX: Remove with surfaceshader API
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -165,7 +165,7 @@ public:
             static TfToken attr("displacementShaderSource");
             return Key(path, attr);
         }
-        static Key SurfaceShaderParams(SdfPath const& path) {
+        static Key MaterialParams(SdfPath const& path) {
             static TfToken attr("surfaceShaderParams");
             return Key(path, attr);
         }
@@ -318,12 +318,12 @@ public:
         // XXX: Shader API will be deprecated soon.
         _Erase<std::string>(Key::SurfaceShaderSource(path));
         _Erase<std::string>(Key::DisplacementShaderSource(path));
-        HdShaderParamVector shaderVars;
-        if (FindSurfaceShaderParams(path, &shaderVars)) {
+        HdMaterialParamVector shaderVars;
+        if (FindMaterialParams(path, &shaderVars)) {
             TF_FOR_ALL(pvIt, shaderVars) {
                 _Erase<VtValue>(Key(path, pvIt->GetName()));
             }
-            _Erase<HdShaderParamVector>(Key::SurfaceShaderParams(path));
+            _Erase<HdMaterialParamVector>(Key::MaterialParams(path));
         }
     }
 
@@ -385,10 +385,10 @@ public:
     std::string& GetDisplacementShaderSource(SdfPath const& path) const {
         return _Get<std::string>(Key::DisplacementShaderSource(path));
     }
-    HdShaderParamVector& GetSurfaceShaderParams(SdfPath const& path) const {
-        return _Get<HdShaderParamVector>(Key::SurfaceShaderParams(path));
+    HdMaterialParamVector& GetMaterialParams(SdfPath const& path) const {
+        return _Get<HdMaterialParamVector>(Key::MaterialParams(path));
     }
-    VtValue& GetSurfaceShaderParam(SdfPath const& path, TfToken const& name) const {
+    VtValue& GetMaterialParam(SdfPath const& path, TfToken const& name) const {
         return _Get<VtValue>(Key(path, name));
     }
 
@@ -450,10 +450,10 @@ public:
     bool FindDisplacementShaderSource(SdfPath const& path, std::string* value) const {
         return _Find(Key::DisplacementShaderSource(path), value);
     }
-    bool FindSurfaceShaderParams(SdfPath const& path, HdShaderParamVector* value) const {
-        return _Find(Key::SurfaceShaderParams(path), value);
+    bool FindMaterialParams(SdfPath const& path, HdMaterialParamVector* value) const {
+        return _Find(Key::MaterialParams(path), value);
     }
-    bool FindSurfaceShaderParam(SdfPath const& path, TfToken const& name, VtValue* value) const {
+    bool FindMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) const {
         return _Find(Key(path, name), value);
     }
 
@@ -515,10 +515,10 @@ public:
     bool ExtractDisplacementShaderSource(SdfPath const& path, std::string* value) {
         return _Extract(Key::DisplacementShaderSource(path), value);
     }
-    bool ExtractSurfaceShaderParams(SdfPath const& path, HdShaderParamVector* value) {
-        return _Extract(Key::SurfaceShaderParams(path), value);
+    bool ExtractMaterialParams(SdfPath const& path, HdMaterialParamVector* value) {
+        return _Extract(Key::MaterialParams(path), value);
     }
-    bool ExtractSurfaceShaderParam(SdfPath const& path, TfToken const& name, VtValue* value) {
+    bool ExtractMaterialParam(SdfPath const& path, TfToken const& name, VtValue* value) {
         return _Extract(Key(path, name), value);
     }
 
@@ -580,8 +580,8 @@ private:
     typedef _TypedCache<std::string> _StringCache;
     mutable _StringCache _stringCache;
 
-    typedef _TypedCache<HdShaderParamVector> _ShaderParamCache;
-    mutable _ShaderParamCache _shaderParamCache;
+    typedef _TypedCache<HdMaterialParamVector> _MaterialParamCache;
+    mutable _MaterialParamCache _shaderParamCache;
 
     void _GetCache(_BoolCache **cache) const {
         *cache = &_boolCache;
@@ -614,7 +614,7 @@ private:
     void _GetCache(_StringCache **cache) const {
         *cache = &_stringCache;
     }
-    void _GetCache(_ShaderParamCache **cache) const {
+    void _GetCache(_MaterialParamCache **cache) const {
         *cache = &_shaderParamCache;
     }
 };

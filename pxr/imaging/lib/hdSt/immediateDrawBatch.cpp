@@ -291,13 +291,13 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeGLSharedPtr shaderBar =
             boost::static_pointer_cast<HdBufferArrayRangeGL> (shaderBar_);
 
-        // shaderBar isn't needed when the surfaceShader is overriden
+        // shaderBar isn't needed when the material is overriden
         if (shaderBar && (!shaderBar->IsAggregatedWith(shaderBarCurrent))) {
             if (shaderBarCurrent) {
-                binder.UnbindBuffer(HdTokens->surfaceShaderParams,
+                binder.UnbindBuffer(HdTokens->materialParams,
                                     shaderBarCurrent->GetResource());
             }
-            binder.BindBuffer(HdTokens->surfaceShaderParams,
+            binder.BindBuffer(HdTokens->materialParams,
                               shaderBar->GetResource());
             shaderBarCurrent = shaderBar;
         }
@@ -440,7 +440,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     if (indexBarCurrent)
         binder.UnbindBufferArray(indexBarCurrent);
     if (shaderBarCurrent) {
-        binder.UnbindBuffer(HdTokens->surfaceShaderParams,
+        binder.UnbindBuffer(HdTokens->materialParams,
                             shaderBarCurrent->GetResource());
     }
 

@@ -80,7 +80,7 @@ HdStSurfaceShader::GetSource(TfToken const &shaderStageKey) const
     return std::string();
 }
 /*virtual*/
-HdShaderParamVector const&
+HdMaterialParamVector const&
 HdStSurfaceShader::GetParams() const
 {
     return _params;
@@ -194,7 +194,7 @@ HdStSurfaceShader::SetGeometrySource(const std::string &source)
 }
 
 void
-HdStSurfaceShader::SetParams(const HdShaderParamVector &params)
+HdStSurfaceShader::SetParams(const HdMaterialParamVector &params)
 {
     _params = params;
 }
@@ -224,7 +224,7 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
             // establish a buffer range
             HdBufferArrayRangeSharedPtr range =
                     resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                                                  HdTokens->surfaceShaderParams,
+                                                  HdTokens->materialParams,
                                                   bufferSpecs);
 
             if (!TF_VERIFY(range->IsValid())) {

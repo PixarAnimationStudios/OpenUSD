@@ -110,7 +110,7 @@ private:
     static std::atomic_int _counterResourceRegistry;
     static HdStResourceRegistrySharedPtr _resourceRegistry;
 
-    HdSprim *_CreateFallbackShaderPrim();
+    HdSprim *_CreateFallbackMaterialPrim();
 
     HdStRenderDelegate(const HdStRenderDelegate &)             = delete;
     HdStRenderDelegate &operator =(const HdStRenderDelegate &) = delete;

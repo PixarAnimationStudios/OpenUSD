@@ -28,8 +28,8 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 
+#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/resourceBinder.h"  // XXX: including a private class
-#include "pxr/imaging/hd/shaderParam.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/shared_ptr.hpp>
@@ -76,7 +76,7 @@ public:
     // XXX: Should be pure-virtual
     /// Returns the shader parameters for this shader.
     HD_API
-    virtual HdShaderParamVector const& GetParams() const;
+    virtual HdMaterialParamVector const& GetParams() const;
 
     struct TextureDescriptor {
         TfToken name;

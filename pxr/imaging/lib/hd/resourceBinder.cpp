@@ -405,7 +405,7 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
     // shader parameter bindings
 
     TF_FOR_ALL(shader, shaders) {
-        HdShaderParamVector params = (*shader)->GetParams();
+        HdMaterialParamVector params = (*shader)->GetParams();
 
         // uniform block
         HdBufferArrayRangeSharedPtr const &shaderBar_ = (*shader)->GetShaderData();
@@ -413,11 +413,11 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
             boost::static_pointer_cast<HdBufferArrayRangeGL> (shaderBar_);
         if (shaderBar) {
             HdBinding shaderParamBinding =
-                locator.GetBinding(structBufferBindingType, HdTokens->surfaceShaderParams);
+                locator.GetBinding(structBufferBindingType, HdTokens->materialParams);
 
             // for fallback values and bindless textures
             // XXX: name of sblock must be unique for each shaders.
-            MetaData::StructBlock sblock(HdTokens->surfaceShaderParams);
+            MetaData::StructBlock sblock(HdTokens->materialParams);
             TF_FOR_ALL(it, shaderBar->GetResources()) {
                 sblock.entries.push_back(
                     MetaData::StructEntry(/*name=*/it->first,
@@ -430,10 +430,10 @@ Hd_ResourceBinder::ResolveBindings(HdDrawItem const *drawItem,
             metaDataOut->shaderData.insert(
                 std::make_pair(shaderParamBinding, sblock));
 
-            //XXX:hack  we want to generalize surfaceShaderParams to other shaders.
+            //XXX:hack  we want to generalize materialParams to other shaders.
             if ((*shader) == drawItem->GetMaterial()) {
                 // shader parameters are interleaved into single struct.
-                _bindingMap[HdTokens->surfaceShaderParams] = shaderParamBinding;
+                _bindingMap[HdTokens->materialParams] = shaderParamBinding;
             }
         }
 

@@ -1108,7 +1108,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr shaderBar_ = (*shader)->GetShaderData();
         shaderBar = boost::static_pointer_cast<HdBufferArrayRangeGL>(shaderBar_);
         if (shaderBar) {
-            binder.BindBuffer(HdTokens->surfaceShaderParams, 
+            binder.BindBuffer(HdTokens->materialParams, 
                               shaderBar->GetResource());
         }
     }
@@ -1172,7 +1172,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     binder.UnbindBufferArray(vertexBar);
     binder.UnbindBufferArray(dispatchBar);
     if(shaderBar) {
-        binder.UnbindBuffer(HdTokens->surfaceShaderParams, 
+        binder.UnbindBuffer(HdTokens->materialParams, 
                             shaderBar->GetResource());
     }
 

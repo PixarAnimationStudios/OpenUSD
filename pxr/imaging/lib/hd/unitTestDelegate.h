@@ -26,8 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -199,7 +199,7 @@ public:
     void AddMaterialHydra(SdfPath const &id,
                           std::string const &sourceSurface,
                           std::string const &sourceDisplacement,
-                          HdShaderParamVector const &params);
+                          HdMaterialParamVector const &params);
     
     /// Material
     HD_API
@@ -335,10 +335,10 @@ public:
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);    
     HD_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &materialId);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &materialId);
     HD_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &materialId, 
-                                               TfToken const &paramName);
+    virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
+                                          TfToken const &paramName);
     HD_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     HD_API
@@ -443,7 +443,7 @@ private:
         _MaterialHydra() { }
         _MaterialHydra(std::string const &srcSurface, 
                        std::string const &srcDisplacement,
-                       HdShaderParamVector const &pms)
+                       HdMaterialParamVector const &pms)
             : sourceSurface(srcSurface)
             , sourceDisplacement(srcDisplacement)
             , params(pms) {
@@ -451,7 +451,7 @@ private:
 
         std::string sourceSurface;
         std::string sourceDisplacement;
-        HdShaderParamVector params;
+        HdMaterialParamVector params;
     };
     struct _Camera {
         VtDictionary params;

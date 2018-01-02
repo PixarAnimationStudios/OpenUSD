@@ -30,9 +30,9 @@
 
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/shaderParam.h"
 #include "pxr/imaging/hd/textureResource.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
@@ -257,24 +257,24 @@ public:
                                             SdfPathVector *instanceContext=NULL);
 
     // -----------------------------------------------------------------------//
-    /// \name SurfaceShader Aspects
+    /// \name Material Aspects
     // -----------------------------------------------------------------------//
 
-    /// Returns the source code for the given surface shader ID.
+    /// Returns the surface shader source code for the given material ID.
     HD_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
 
-    /// Returns the displacement source code for the given surface shader ID.
+    /// Returns the displacement shader source code for the given material ID.
     HD_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
+    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);
 
-    /// Returns a single value for the given shader and named parameter.
+    /// Returns a single value for the given material and named parameter.
     HD_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 
-                                  TfToken const &paramName);
+    virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
+                                          TfToken const &paramName);
 
     HD_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const& shaderId);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const& materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects

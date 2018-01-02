@@ -30,8 +30,8 @@
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/shader.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
@@ -62,7 +62,7 @@ UsdImagingHydraMaterialAdapter::~UsdImagingHydraMaterialAdapter()
 bool
 UsdImagingHydraMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return index->IsSprimTypeSupported(HdPrimTypeTokens->shader);
+    return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
 bool
@@ -85,7 +85,7 @@ UsdImagingHydraMaterialAdapter::Populate(UsdPrim const& prim,
         return cachePath;
     }
 
-    index->InsertSprim(HdPrimTypeTokens->shader,
+    index->InsertSprim(HdPrimTypeTokens->material,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
@@ -135,7 +135,7 @@ UsdImagingHydraMaterialAdapter::TrackVariability(UsdPrim const& prim,
     TF_FOR_ALL(attrIter, attrs) {
         const UsdAttribute& attr = *attrIter;
         if (attr.GetNumTimeSamples()>1){
-            *timeVaryingBits |= HdShader::DirtyParams;
+            *timeVaryingBits |= HdMaterial::DirtyParams;
         }
     }
 }
@@ -158,7 +158,7 @@ UsdImagingHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
 
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdShader::DirtySurfaceShader) {
+    if (requestedBits & HdMaterial::DirtySurfaceShader) {
         // DirtySurfaceShader triggers a refresh of both shader sources.
         valueCache->GetSurfaceShaderSource(cachePath) =
             _GetShaderSource(prim, _tokens->surfaceShader);
@@ -166,21 +166,21 @@ UsdImagingHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
             _GetShaderSource(prim, _tokens->displacementShader);
     }
 
-    if (requestedBits & HdShader::DirtyParams) {
+    if (requestedBits & HdMaterial::DirtyParams) {
         // XXX: The param list isn't actually time-varying... we should find
         // a way to only do this once.
-        HdShaderParamVector& shaderParams =
-            valueCache->GetSurfaceShaderParams(cachePath);
-        shaderParams = _GetSurfaceShaderParams(prim);
+        HdMaterialParamVector& materialParams =
+            valueCache->GetMaterialParams(cachePath);
+        materialParams = _GetMaterialParams(prim);
 
         // Hydra expects values in the value cache for any param that's
         // a "fallback" param (constant, as opposed to texture- or
         // primvar-based).
-        TF_FOR_ALL(paramIt, shaderParams) {
+        TF_FOR_ALL(paramIt, materialParams) {
             if (paramIt->IsFallback()) {
-                VtValue& param = valueCache->GetSurfaceShaderParam(
+                VtValue& param = valueCache->GetMaterialParam(
                     cachePath, paramIt->GetName());
-                param = _GetSurfaceShaderParamValue(prim,
+                param = _GetMaterialParamValue(prim,
                             paramIt->GetName(), time);
             }
         }
@@ -219,7 +219,7 @@ UsdImagingHydraMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
     if (IsChildPath(cachePath)) {
         index->RemoveBprim(HdPrimTypeTokens->texture, cachePath);
     } else {
-        index->RemoveSprim(HdPrimTypeTokens->shader, cachePath);
+        index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
     }
 }
 
@@ -288,7 +288,7 @@ _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
 }
 
 VtValue
-UsdImagingHydraMaterialAdapter::_GetSurfaceShaderParamValue(
+UsdImagingHydraMaterialAdapter::_GetMaterialParamValue(
                                                 UsdPrim const &prim, 
                                                 TfToken const &paramName,
                                                 UsdTimeCode time) const
@@ -303,10 +303,10 @@ UsdImagingHydraMaterialAdapter::_GetSurfaceShaderParamValue(
     return value;
 }
 
-HdShaderParamVector
-UsdImagingHydraMaterialAdapter::_GetSurfaceShaderParams(UsdPrim const& prim) const
+HdMaterialParamVector
+UsdImagingHydraMaterialAdapter::_GetMaterialParams(UsdPrim const& prim) const
 {
-    HdShaderParamVector params;
+    HdMaterialParamVector params;
 
     UsdShadeShader shader(prim);
     std::vector<UsdShadeInput> const &inputs = shader.GetInputs();
@@ -434,11 +434,11 @@ UsdImagingHydraMaterialAdapter::_GetSurfaceShaderParams(UsdPrim const& prim) con
         }
 
         attr.Get(&fallbackValue);
-        params.push_back(HdShaderParam(attr.GetName(), 
-                                        fallbackValue,
-                                        connection,
-                                        samplerCoords,
-                                        isPtex));
+        params.push_back(HdMaterialParam(attr.GetName(), 
+                                         fallbackValue,
+                                         connection,
+                                         samplerCoords,
+                                         isPtex));
     }
 
     return params;

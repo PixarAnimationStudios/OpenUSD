@@ -54,7 +54,7 @@ public:
     /// for \a shaderStageKey
     virtual std::string GetSource(TfToken const &shaderStageKey) const override;
 
-    virtual HdShaderParamVector const& GetParams() const override;
+    virtual HdMaterialParamVector const& GetParams() const override;
 
     virtual HdShaderCode::TextureDescriptorVector GetTextures() const override;
 

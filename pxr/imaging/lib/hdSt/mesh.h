@@ -82,7 +82,7 @@ protected:
 
     virtual
     HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *sceneDelegate,
-                                         HdShader const *shader) const override;
+                                         HdMaterial const *material) const override;
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,

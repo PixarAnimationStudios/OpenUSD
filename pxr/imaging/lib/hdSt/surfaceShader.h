@@ -72,7 +72,7 @@ public:
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual HdShaderParamVector const& GetParams() const;
+    virtual HdMaterialParamVector const& GetParams() const;
     HDST_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
     HDST_API
@@ -92,7 +92,7 @@ public:
     HDST_API
     void SetGeometrySource(const std::string &source);
     HDST_API
-    void SetParams(const HdShaderParamVector &params);
+    void SetParams(const HdMaterialParamVector &params);
     HDST_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HDST_API
@@ -112,7 +112,7 @@ private:
     std::string _geometrySource;
 
     // Shader Parameters
-    HdShaderParamVector         _params;
+    HdMaterialParamVector      _params;
     HdBufferSpecVector          _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
 

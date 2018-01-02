@@ -183,7 +183,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
             // Geometric, RenderPass and Lighting shaders should never break
             // batches, however materials can. We consider the material 
             // parameters to be part of the batch key here for that reason.
-            boost::hash_combine(key, HdShaderParam::ComputeHash(
+            boost::hash_combine(key, HdMaterialParam::ComputeHash(
                                     drawItem->GetMaterial()->GetParams()));
         }
 

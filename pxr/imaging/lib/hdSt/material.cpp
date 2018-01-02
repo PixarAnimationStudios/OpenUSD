@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hdSt/shader.h"
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureResource.h"
@@ -93,19 +93,19 @@ private:
     size_t _value;
 };
 
-HdStShader::HdStShader(SdfPath const &id)
- : HdShader(id)
+HdStMaterial::HdStMaterial(SdfPath const &id)
+ : HdMaterial(id)
  , _surfaceShader(new HdStSurfaceShader)
 {
 }
 
-HdStShader::~HdStShader()
+HdStMaterial::~HdStMaterial()
 {
 }
 
 /* virtual */
 void
-HdStShader::Sync(HdSceneDelegate *sceneDelegate,
+HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                  HdRenderParam   *renderParam,
                  HdDirtyBits     *dirtyBits)
 {
@@ -139,8 +139,7 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
     if(bits & DirtyParams) {
         HdBufferSourceVector sources;
         HdShaderCode::TextureDescriptorVector textures;
-        const HdShaderParamVector &params =
-                                          GetSurfaceShaderParams(sceneDelegate);
+        const HdMaterialParamVector &params = GetMaterialParams(sceneDelegate);
         _surfaceShader->SetParams(params);
 
         TF_FOR_ALL(paramIt, params) {
@@ -148,8 +147,8 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
                 // skip -- maybe not necessary, but more memory efficient
                 continue;
             } else if (paramIt->IsFallback()) {
-                VtValue paramVt = GetSurfaceShaderParamValue(sceneDelegate,
-                                                            paramIt->GetName());
+                VtValue paramVt = GetMaterialParamValue(sceneDelegate,
+                                                        paramIt->GetName());
                 HdBufferSourceSharedPtr source(
                              new HdVtBufferSource(paramIt->GetName(), paramVt));
 
@@ -256,7 +255,7 @@ HdStShader::Sync(HdSceneDelegate *sceneDelegate,
 
 // virtual
 VtValue
-HdStShader::Get(TfToken const &token) const
+HdStMaterial::Get(TfToken const &token) const
 {
     TF_CODING_ERROR("Unused Function");
     return VtValue();
@@ -264,7 +263,7 @@ HdStShader::Get(TfToken const &token) const
 
 // virtual
 HdDirtyBits
-HdStShader::GetInitialDirtyBitsMask() const
+HdStMaterial::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
 }
@@ -272,20 +271,20 @@ HdStShader::GetInitialDirtyBitsMask() const
 
 //virtual
 void
-HdStShader::Reload()
+HdStMaterial::Reload()
 {
     _surfaceShader->Reload();
 }
 
 // virtual
 HdShaderCodeSharedPtr
-HdStShader::GetShaderCode() const
+HdStMaterial::GetShaderCode() const
 {
     return boost::static_pointer_cast<HdShaderCode>(_surfaceShader);
 }
 
 void
-HdStShader::SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode)
+HdStMaterial::SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode)
 {
     _surfaceShader = shaderCode;
 }

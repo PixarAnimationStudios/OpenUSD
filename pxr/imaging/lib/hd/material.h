@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SHADER_H
-#define HD_SHADER_H
+#ifndef HD_MATERIAL_H
+#define HD_MATERIAL_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
@@ -35,11 +35,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 
 ///
-/// Hydra Schema for a shader object.
+/// Hydra Schema for a material object.
 ///
-class HdShader : public HdSprim {
+class HdMaterial : public HdSprim {
 public:
-    // change tracking for HdShader prim
+    // change tracking for HdMaterial prim
     enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         // XXX: Got to skip varying and force sync bits for now
@@ -54,7 +54,7 @@ public:
     };
 
     HD_API
-    virtual ~HdShader();
+    virtual ~HdMaterial();
 
     /// Causes the shader to be reloaded.
     virtual void Reload() = 0;
@@ -65,13 +65,13 @@ public:
 
 protected:
     HD_API
-    HdShader(SdfPath const& id);
+    HdMaterial(SdfPath const& id);
 
 private:
     // Class can not be default constructed or copied.
-    HdShader()                             = delete;
-    HdShader(const HdShader &)             = delete;
-    HdShader &operator =(const HdShader &) = delete;
+    HdMaterial()                             = delete;
+    HdMaterial(const HdMaterial &)             = delete;
+    HdMaterial &operator =(const HdMaterial &) = delete;
 };
 
 
@@ -140,4 +140,4 @@ bool operator!=(const HdMaterialNodes& lhs, const HdMaterialNodes& rhs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_SHADER_H
+#endif // HD_MATERIAL_H

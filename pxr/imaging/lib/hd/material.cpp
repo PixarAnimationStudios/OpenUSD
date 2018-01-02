@@ -21,17 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/shader.h"
+#include "pxr/imaging/hd/material.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdShader::HdShader(SdfPath const& id)
+HdMaterial::HdMaterial(SdfPath const& id)
  : HdSprim(id)
 {
     // NOTHING
 }
 
-HdShader::~HdShader()
+HdMaterial::~HdMaterial()
 {
     // NOTHING
 }

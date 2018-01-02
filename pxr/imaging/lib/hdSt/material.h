@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_SHADER_H
-#define HDST_SHADER_H
+#ifndef HDST_MATERIAL_H
+#define HDST_MATERIAL_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
-#include "pxr/imaging/hd/shader.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -35,14 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 
-class HdStShader final: public HdShader {
+class HdStMaterial final: public HdMaterial {
 public:
-    HF_MALLOC_TAG_NEW("new HdStShader");
+    HF_MALLOC_TAG_NEW("new HdStMaterial");
 
     HDST_API
-    HdStShader(SdfPath const& id);
+    HdStMaterial(SdfPath const& id);
     HDST_API
-    virtual ~HdStShader();
+    virtual ~HdStMaterial();
 
     /// Synchronizes state from the delegate to this object.
     HDST_API
@@ -80,15 +80,15 @@ public:
     inline std::string GetDisplacementShaderSource(
         HdSceneDelegate* sceneDelegate) const;
 
-    /// Obtain the collection of shader Primvar descriptions for this prim from
+    /// Obtain the collection of material param descriptions for this prim from
     /// the scene delegate.
-    inline HdShaderParamVector GetSurfaceShaderParams(
+    inline HdMaterialParamVector GetMaterialParams(
         HdSceneDelegate* sceneDelegate) const;
 
-    /// Obtain the value of the specified Primvar for this prim from the
+    /// Obtain the value of the specified material param for this prim from the
     /// scene delegate.
-    inline VtValue GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
-                                              TfToken const &paramName) const;
+    inline VtValue GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
+                                         TfToken const &paramName) const;
 
     /// Obtain the scene delegates's globally unique id for the texture
     /// resource identified by textureId.
@@ -108,32 +108,32 @@ private:
 };
 
 inline std::string
-HdStShader::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
+HdStMaterial::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
 {
     return sceneDelegate->GetSurfaceShaderSource(GetID());
 }
 
 inline std::string
-HdStShader::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
+HdStMaterial::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
 {
     return sceneDelegate->GetDisplacementShaderSource(GetID());
 }
 
-inline HdShaderParamVector
-HdStShader::GetSurfaceShaderParams(HdSceneDelegate* sceneDelegate) const
+inline HdMaterialParamVector
+HdStMaterial::GetMaterialParams(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetSurfaceShaderParams(GetID());
+    return sceneDelegate->GetMaterialParams(GetID());
 }
 
 inline VtValue
-HdStShader::GetSurfaceShaderParamValue(HdSceneDelegate* sceneDelegate,
-                                          TfToken const &paramName) const
+HdStMaterial::GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
+                                  TfToken const &paramName) const
 {
-    return sceneDelegate->GetSurfaceShaderParamValue(GetID(), paramName);
+    return sceneDelegate->GetMaterialParamValue(GetID(), paramName);
 }
 
 inline HdTextureResource::ID
-HdStShader::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
+HdStMaterial::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
                                SdfPath const& textureId) const
 {
     return sceneDelegate->GetTextureResourceID(textureId);
@@ -141,4 +141,4 @@ HdStShader::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_SHADER_H
+#endif // HDST_MATERIAL_H

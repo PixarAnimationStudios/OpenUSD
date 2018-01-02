@@ -95,12 +95,12 @@ public:
                                 VtVec4fArray const &rotate,
                                 VtVec3fArray const &translate);
 
-    /// Shader
-    void AddShader(SdfPath const &id,
+    /// Material
+    void AddMaterial(SdfPath const &id,
                    std::string const &sourceSurface,
                    std::string const &sourceDisplacement,
-                   HdShaderParamVector const &params);
-    void BindShader(SdfPath const &rprimId, SdfPath const &shaderId);
+                   HdMaterialParamVector const &params);
+    void BindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
 
     // prims    
     void AddMesh(SdfPath const &id,
@@ -167,9 +167,9 @@ public:
 
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &shaderId);
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId,
-                                               TfToken const &paramName);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId);
+    virtual VtValue GetMaterialParamValue(SdfPath const &shaderId,
+                                          TfToken const &paramName);
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId);
 
@@ -225,11 +225,11 @@ private:
 
         std::vector<SdfPath> prototypes;
     };
-    struct _Shader {
-        _Shader() { }
-        _Shader(std::string const &srcSurface,
-                std::string const &srcDisplacement, 
-                HdShaderParamVector const &pms)
+    struct _Material {
+        _Material() { }
+        _Material(std::string const &srcSurface,
+                  std::string const &srcDisplacement, 
+                  HdMaterialParamVector const &pms)
             : sourceSurface(srcSurface)
             , sourceDisplacement(srcDisplacement)
             , params(pms) {
@@ -237,19 +237,19 @@ private:
 
         std::string sourceSurface;
         std::string sourceDisplacement;
-        HdShaderParamVector params;
+        HdMaterialParamVector params;
     };
     struct _DrawTarget {
     };
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Instancer> _instancers;
-    std::map<SdfPath, _Shader> _shaders;
+    std::map<SdfPath, _Material> _materials;
     std::map<SdfPath, int> _refineLevels;
     std::map<SdfPath, _DrawTarget> _drawTargets;
     int _refineLevel;
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
-    SdfPathMap _shaderBindings;
+    SdfPathMap _materialBindings;
 
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

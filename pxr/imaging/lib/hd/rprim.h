@@ -45,10 +45,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdBufferSource;
 class HdDrawItem;
+class HdMaterial;
 class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
-class HdShader;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
@@ -234,7 +234,7 @@ protected:
 
     HD_API
     virtual HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *delegate,
-                                                 HdShader const *shader) const;
+                                                 HdMaterial const *material) const;
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;

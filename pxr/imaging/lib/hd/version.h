@@ -38,7 +38,8 @@
 // 28 -> 29: cameras only support matrices.
 // 29 -> 30: added IDRenderColor decode and direct Rprim path fetching.
 // 30 -> 31: added pre-chained buffer sources
-#define HD_API_VERSION 31
+// 31 -> 32: renamed HdShader{Param} to HdMaterial{Param}
+#define HD_API_VERSION 32
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

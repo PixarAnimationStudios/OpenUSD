@@ -56,10 +56,10 @@ HdShaderCode::ComputeHash(HdShaderCodeSharedPtrVector const &shaders)
 }
 
 /*virtual*/
-HdShaderParamVector const&
+HdMaterialParamVector const&
 HdShaderCode::GetParams() const
 {
-    static HdShaderParamVector const empty;
+    static HdMaterialParamVector const empty;
     return empty;
 }
 

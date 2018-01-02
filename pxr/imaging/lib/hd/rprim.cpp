@@ -30,13 +30,13 @@
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -104,7 +104,7 @@ HdRprim::_Sync(HdSceneDelegate* delegate,
     // this rprim.
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         VtValue materialId = 
-            delegate->Get(GetId(), HdShaderTokens->surfaceShader);
+            delegate->Get(GetId(), HdShaderTokens->material);
 
         if (materialId.IsHolding<SdfPath>()){
             _SetMaterialId(changeTracker, materialId.Get<SdfPath>());
@@ -270,9 +270,10 @@ HdRprim::GetInitialDirtyBitsMask() const
 }
 
 HdShaderCodeSharedPtr
-HdRprim::_GetShaderCode(HdSceneDelegate *delegate, HdShader const *shader) const
+HdRprim::_GetShaderCode(HdSceneDelegate *delegate,
+                        HdMaterial const *material) const
 {
-    return shader->GetShaderCode();
+    return material->GetShaderCode();
 }
 
 void
@@ -289,17 +290,16 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
         renderIndex.GetResourceRegistry();
 
     // XXX: this should be in a different method
-    // XXX: This should be in HdSt getting the HdSt Shader
-    const HdShader *shader = static_cast<const HdShader *>(
-                                  renderIndex.GetSprim(HdPrimTypeTokens->shader,
-                                                       _materialId));
+    // XXX: This should be in HdSt getting the HdSt Material
+    const HdMaterial *material = static_cast<const HdMaterial *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, _materialId));
 
-    if (shader == nullptr) {
-        shader = static_cast<const HdShader *>(
-                        renderIndex.GetFallbackSprim(HdPrimTypeTokens->shader));
+    if (material == nullptr) {
+        material = static_cast<const HdMaterial *>(
+                renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    _sharedData.material = _GetShaderCode(delegate, shader);
+    _sharedData.material = _GetShaderCode(delegate, material);
 
 
     // update uniforms

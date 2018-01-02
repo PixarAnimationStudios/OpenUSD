@@ -57,7 +57,7 @@ std::string HdStMixinShaderCode::GetSource(TfToken const &shaderStageKey) const
     return baseSource;
 }
 
-HdShaderParamVector const& HdStMixinShaderCode::GetParams() const 
+HdMaterialParamVector const& HdStMixinShaderCode::GetParams() const 
 {
     return _baseShader->GetParams();
 }

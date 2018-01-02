@@ -83,6 +83,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (layout)                                    \
     (leftHanded)                                \
     (linear)                                    \
+    (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \
     (packedNormals)                             \
@@ -109,7 +110,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rightHanded)                               \
     (segmented)                                 \
     (smoothHull)                                \
-    (surfaceShaderParams)                       \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
@@ -186,9 +186,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (fragmentShader)                            \
     (geometryShader)                            \
     (lightingBlendAmount)                       \
+    (material)                                  \
     (overrideColor)                             \
     (projectionMatrix)                          \
-    (surfaceShader)                             \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (tessLevel)                                 \
@@ -211,7 +211,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* Sprims */                                \
     (camera)                                    \
     (drawTarget)                                \
-    (shader)                                    \
+    (material)                                  \
     /* Sprims Lights */                         \
     (light)                                     \
     (domeLight)                                 \

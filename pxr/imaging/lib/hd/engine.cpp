@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -33,7 +34,6 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -133,24 +133,24 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
     // 1st dirty all rprims, so they will trigger shader reload
     tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
 
-    // Dirty all surface shaders
-    SdfPathVector shaders = index.GetSprimSubtree(HdPrimTypeTokens->shader,
+    // Dirty all materials
+    SdfPathVector materials = index.GetSprimSubtree(HdPrimTypeTokens->material,
                                                   SdfPath::EmptyPath());
 
-    for (SdfPathVector::iterator shaderIt  = shaders.begin();
-                                 shaderIt != shaders.end();
-                               ++shaderIt) {
+    for (SdfPathVector::iterator materialIt  = materials.begin();
+                                 materialIt != materials.end();
+                               ++materialIt) {
 
-        tracker.MarkSprimDirty(*shaderIt, HdChangeTracker::AllDirty);
+        tracker.MarkSprimDirty(*materialIt, HdChangeTracker::AllDirty);
     }
 
     // Invalidate Geometry shader cache in Resource Registry.
     index.GetResourceRegistry()->InvalidateGeometricShaderRegistry();
 
-    // Fallback Shader
-    HdShader *shader = static_cast<HdShader *>(
-                              index.GetFallbackSprim(HdPrimTypeTokens->shader));
-    shader->Reload();
+    // Fallback material
+    HdMaterial *material = static_cast<HdMaterial *>(
+                        index.GetFallbackSprim(HdPrimTypeTokens->material));
+    material->Reload();
 
 
     // Note: Several Shaders are not currently captured in this

@@ -312,16 +312,16 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
                                              SdfPath const &prototypeId);
 
-    // Shader Support
+    // Material Support
     USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     USDIMAGING_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &id);
     USDIMAGING_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &id, 
-                                               TfToken const &paramName);
+    virtual VtValue GetMaterialParamValue(SdfPath const &id,
+                                          TfToken const &paramName);
     USDIMAGING_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &id);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id);
 
     // Texture Support
     USDIMAGING_API

@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/shaderParam.h"
+#include "pxr/imaging/hd/materialParam.h"
 
 #include "pxr/imaging/glf/glew.h"
 
@@ -64,11 +64,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ivec4)
 );
 
-HdShaderParam::HdShaderParam(TfToken const& name, 
-                             VtValue const& fallbackValue,
-                             SdfPath const& connection,
-                             TfTokenVector const& samplerCoords,
-                             bool isPtex)
+HdMaterialParam::HdMaterialParam(TfToken const& name, 
+                                 VtValue const& fallbackValue,
+                                 SdfPath const& connection,
+                                 TfTokenVector const& samplerCoords,
+                                 bool isPtex)
     : _name(name)
     , _fallbackValue(fallbackValue)
     , _connection(connection)
@@ -78,14 +78,14 @@ HdShaderParam::HdShaderParam(TfToken const& name,
     /*NOTHING*/
 }
 
-HdShaderParam::~HdShaderParam()
+HdMaterialParam::~HdMaterialParam()
 {
     /*NOTHING*/
 }
 
 /* static */
 size_t
-HdShaderParam::ComputeHash(HdShaderParamVector const &params)
+HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
 {
     size_t hash = 0;
     TF_FOR_ALL(paramIt, params) {
@@ -201,32 +201,32 @@ TfToken _GetGLTypeName(GLenum elementType)
 // -------------------------------------------------------------------------- //
 
 int
-HdShaderParam::GetGLElementType() const
+HdMaterialParam::GetGLElementType() const
 {
     return _GetGLType(GetFallbackValue()).elementType;
 }
 
 int
-HdShaderParam::GetGLComponentType() const
+HdMaterialParam::GetGLComponentType() const
 {
     return _GetGLType(GetFallbackValue()).componentType;
 }
 
 TfToken
-HdShaderParam::GetGLTypeName() const
+HdMaterialParam::GetGLTypeName() const
 {
     return _GetGLTypeName(GetGLElementType());
 }
 
 TfTokenVector const&
-HdShaderParam::GetSamplerCoordinates() const
+HdMaterialParam::GetSamplerCoordinates() const
 {
     // NOTE: could discover from texture connection.
     return _samplerCoords;
 }
 
 bool
-HdShaderParam::IsPtex() const
+HdMaterialParam::IsPtex() const
 {
     return _isPtex;
 }

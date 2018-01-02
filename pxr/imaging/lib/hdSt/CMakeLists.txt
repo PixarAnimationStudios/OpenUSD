@@ -39,6 +39,7 @@ pxr_library(hdSt
         interleavedMemoryManager
         light      
         lightingShader
+        material
         mesh
         mixinShaderCode
         package
@@ -49,7 +50,6 @@ pxr_library(hdSt
         renderPassShader
         renderPassState
         resourceRegistry
-        shader
         smoothNormals
         surfaceShader
         texture

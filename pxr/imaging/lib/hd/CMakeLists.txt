@@ -64,6 +64,8 @@ pxr_library(hd
         glUtils
         instancer
         instanceRegistry
+        material
+        materialParam
         mesh
         meshTopology
         meshUtil
@@ -88,10 +90,8 @@ pxr_library(hd
         rprimSharedData
         sceneDelegate
         sceneExtCompInputSource
-        shader
         shaderCode
         shaderKey
-        shaderParam
         smoothNormals
         sortedIds                   
         sprim
