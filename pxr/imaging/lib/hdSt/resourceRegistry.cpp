@@ -65,7 +65,10 @@ HdStResourceRegistry::_GarbageCollect()
 {
     GarbageCollectDispatchBuffers();
     GarbageCollectPersistentBuffers();
+
+    // Cleanup Shader registries
     _geometricShaderRegistry.GarbageCollect();
+    _glslProgramRegistry.GarbageCollect();
 }
 
 void
@@ -102,6 +105,22 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         std::string const & role = buffer->GetRole().GetString();
         size_t size = size_t(buffer->GetSize());
 
+        (*result)[role] = VtDictionaryGet<size_t>(*result, role,
+                                                  VtDefault = 0) + size;
+
+        gpuMemoryUsed += size;
+    }
+
+    // glsl program & ubo allocation
+    TF_FOR_ALL (progIt, _glslProgramRegistry) {
+        HdStGLSLProgramSharedPtr const &program = progIt->second;
+        if (!program) continue;
+        size_t size =
+            program->GetProgram().GetSize() +
+            program->GetGlobalUniformBuffer().GetSize();
+
+        // the role of program and global uniform buffer is always same.
+        std::string const &role = program->GetProgram().GetRole().GetString();
         (*result)[role] = VtDictionaryGet<size_t>(*result, role,
                                                   VtDefault = 0) + size;
 
@@ -273,10 +292,17 @@ HdStResourceRegistry::MergeShaderStorageBufferArrayRange(
 }
 
 std::unique_lock<std::mutex>
-HdStResourceRegistry::RegisterGeometricShader(HdShaderKey::ID id,
-                        HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr> *instance)
+HdStResourceRegistry::RegisterGeometricShader(HdStShaderKey::ID id,
+                        HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr> *instance)
 {
     return _geometricShaderRegistry.GetInstance(id, instance);
+}
+
+std::unique_lock<std::mutex>
+HdStResourceRegistry::RegisterGLSLProgram(HdStGLSLProgram::ID id,
+              HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> *instance)
+{
+    return _glslProgramRegistry.GetInstance(id, instance);
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()

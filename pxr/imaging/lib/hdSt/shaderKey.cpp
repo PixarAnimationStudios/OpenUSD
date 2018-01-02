@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/shaderKey.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/token.h"
@@ -58,8 +58,8 @@ _JoinTokens(const char *stage, TfToken const *tokens, bool *firstStage)
 }
 
 /*static*/
-HdShaderKey::ID
-HdShaderKey::ComputeHash(TfToken const &glslfxFile,
+HdStShaderKey::ID
+HdStShaderKey::ComputeHash(TfToken const &glslfxFile,
                          TfToken const *VS,
                          TfToken const *TCS,
                          TfToken const *TES,
@@ -103,7 +103,7 @@ HdShaderKey::ComputeHash(TfToken const &glslfxFile,
 
 /*static*/
 std::string
-HdShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
+HdStShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
                              TfToken const *VS,
                              TfToken const *TCS,
                              TfToken const *TES,

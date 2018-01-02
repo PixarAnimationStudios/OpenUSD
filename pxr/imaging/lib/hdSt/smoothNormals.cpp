@@ -24,14 +24,14 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/smoothNormals.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -91,25 +91,26 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     TfToken shaderToken;
     if (_srcDataType == GL_FLOAT) {
         if (_dstDataType == GL_FLOAT) {
-            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToFloat;
+            shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToFloat;
         } else if (_dstDataType == GL_DOUBLE) {
-            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToDouble;
+            shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToDouble;
         } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
-            shaderToken = HdGLSLProgramTokens->smoothNormalsFloatToPacked;
+            shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToPacked;
         }
     } else if (_srcDataType == GL_DOUBLE) {
         if (_dstDataType == GL_FLOAT) {
-            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToFloat;
+            shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToFloat;
         } else if (_dstDataType == GL_DOUBLE) {
-            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToDouble;
+            shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToDouble;
         } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
-            shaderToken = HdGLSLProgramTokens->smoothNormalsDoubleToPacked;
+            shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToPacked;
         }
     }
     if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
 
-    HdGLSLProgramSharedPtr computeProgram
-        = HdGLSLProgram::GetComputeProgram(shaderToken, resourceRegistry);
+    HdStGLSLProgramSharedPtr computeProgram
+        = HdStGLSLProgram::GetComputeProgram(shaderToken,
+            static_cast<HdStResourceRegistry*>(resourceRegistry));
     if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();

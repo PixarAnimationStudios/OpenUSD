@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/fallbackLightingShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -30,8 +31,6 @@
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hdSt/drawItem.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"

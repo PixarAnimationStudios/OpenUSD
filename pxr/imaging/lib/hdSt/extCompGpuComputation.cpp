@@ -25,7 +25,8 @@
 
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
@@ -35,7 +36,6 @@
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hd/vtExtractor.h"
@@ -105,7 +105,7 @@ HdStExtCompGpuComputation::Execute(
         inputResources = inputRange->GetResources();
     }
 
-    HdGLSLProgramSharedPtr const &computeProgram = _resource->GetProgram();
+    HdStGLSLProgramSharedPtr const &computeProgram = _resource->GetProgram();
     Hd_ResourceBinder const &binder = _resource->GetResourceBinder();
 
     if (!TF_VERIFY(computeProgram)) {
@@ -257,12 +257,17 @@ HdStExtCompGpuComputation::CreateComputation(
 
     HdStComputeShaderSharedPtr shader(new HdStComputeShader());
     shader->SetComputeSource(computation.GetKernel());
+
+    // Downcast the resource registry
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+                              renderIndex.GetResourceRegistry());
     
     HdStExtCompGpuComputationResourceSharedPtr resource(
             new HdStExtCompGpuComputationResource(
                 outputBufferSpecs,
                 shader,
-                renderIndex.GetResourceRegistry()));
+                resourceRegistry));
             
     HdStExtCompGpuComputationBufferSourceSharedPtr bufferSource(
             new HdStExtCompGpuComputationBufferSource(

@@ -25,7 +25,6 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceBinder.h"

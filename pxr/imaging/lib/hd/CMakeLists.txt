@@ -59,7 +59,6 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
-        glslProgram
         glUtils
         instancer
         instanceRegistry
@@ -90,7 +89,6 @@ pxr_library(hd
         sceneDelegate
         sceneExtCompInputSource
         shaderCode
-        shaderKey
         smoothNormals
         sortedIds                   
         sprim

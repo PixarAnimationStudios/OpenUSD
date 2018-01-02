@@ -27,7 +27,6 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -480,9 +479,6 @@ HdResourceRegistry::GarbageCollect()
     _uniformSsboBufferArrayRegistry.GarbageCollect();
     _singleBufferArrayRegistry.GarbageCollect();
 
-    // Cleanup Shader registries
-    _glslProgramRegistry.GarbageCollect();
-
     // Cleanup texture registries
     _textureResourceRegistry.GarbageCollect();
 
@@ -528,22 +524,6 @@ HdResourceRegistry::GetResourceAllocation() const
                      uboSize        +
                      ssboSize       +
                      singleBufferSize;
-
-    // glsl program & ubo allocation
-    TF_FOR_ALL (progIt, _glslProgramRegistry) {
-        HdGLSLProgramSharedPtr const &program = progIt->second;
-        if (!program) continue;
-        size_t size =
-            program->GetProgram().GetSize() +
-            program->GetGlobalUniformBuffer().GetSize();
-
-        // the role of program and global uniform buffer is always same.
-        std::string const &role = program->GetProgram().GetRole().GetString();
-        result[role] = VtDictionaryGet<size_t>(result, role,
-                                               VtDefault = 0) + size;
-
-        gpuMemoryUsed += size;
-    }
 
     // textures
     size_t hydraTexturesMemory = 0;
@@ -664,13 +644,6 @@ HdResourceRegistry::RegisterPrimvarRange(HdTopology::ID id,
 {
     return _Register(id, _primvarRangeRegistry,
                      HdPerfTokens->instPrimvarRange, instance);
-}
-
-std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterGLSLProgram(HdGLSLProgram::ID id,
-                        HdInstance<HdGLSLProgram::ID, HdGLSLProgramSharedPtr> *instance)
-{
-    return _glslProgramRegistry.GetInstance(id, instance);
 }
 
 std::unique_lock<std::mutex>

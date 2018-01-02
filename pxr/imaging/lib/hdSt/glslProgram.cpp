@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -41,12 +41,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_CONTEXT_CHECK, 0,
     "Enable GL context sharing validation");
 
-HdGLSLProgram::HdGLSLProgram(TfToken const &role)
+HdStGLSLProgram::HdStGLSLProgram(TfToken const &role)
     : _program(role), _uniformBuffer(role)
 {
 }
 
-HdGLSLProgram::~HdGLSLProgram()
+HdStGLSLProgram::~HdStGLSLProgram()
 {
     GLuint program = _program.GetId();
     if (program != 0) {
@@ -63,8 +63,8 @@ HdGLSLProgram::~HdGLSLProgram()
 }
 
 /* static */
-HdGLSLProgram::ID
-HdGLSLProgram::ComputeHash(TfToken const &sourceFile)
+HdStGLSLProgram::ID
+HdStGLSLProgram::ComputeHash(TfToken const &sourceFile)
 {
     HD_TRACE_FUNCTION();
 
@@ -76,7 +76,7 @@ HdGLSLProgram::ComputeHash(TfToken const &sourceFile)
 }
 
 bool
-HdGLSLProgram::CompileShader(GLenum type,
+HdStGLSLProgram::CompileShader(GLenum type,
                              std::string const &shaderSource)
 {
     HD_TRACE_FUNCTION();
@@ -152,7 +152,7 @@ HdGLSLProgram::CompileShader(GLenum type,
 }
 
 bool
-HdGLSLProgram::Link()
+HdStGLSLProgram::Link()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -216,7 +216,7 @@ HdGLSLProgram::Link()
 }
 
 bool
-HdGLSLProgram::Validate() const
+HdStGLSLProgram::Validate() const
 {
     GLuint program = _program.GetId();
     if (program == 0) return false;
@@ -240,33 +240,33 @@ HdGLSLProgram::Validate() const
     return true;
 }
 
-HdGLSLProgramSharedPtr
-HdGLSLProgram::GetComputeProgram(
+HdStGLSLProgramSharedPtr
+HdStGLSLProgram::GetComputeProgram(
         TfToken const &shaderToken,
-        HdResourceRegistry *resourceRegistry)
+        HdStResourceRegistry *resourceRegistry)
 {
     // Find the program from registry
-    HdInstance<HdGLSLProgram::ID, HdGLSLProgramSharedPtr> programInstance;
+    HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
 
     std::unique_lock<std::mutex> regLock = 
         resourceRegistry->RegisterGLSLProgram(
-            HdGLSLProgram::ComputeHash(shaderToken), &programInstance);
+            HdStGLSLProgram::ComputeHash(shaderToken), &programInstance);
 
     if (programInstance.IsFirstInstance()) {
         // if not exists, create new one
-        HdGLSLProgramSharedPtr newProgram(
-            new HdGLSLProgram(HdTokens->computeShader));
+        HdStGLSLProgramSharedPtr newProgram(
+            new HdStGLSLProgram(HdTokens->computeShader));
 
         GlfGLSLFX glslfx(HdPackageComputeShader());
         std::string version = "#version 430\n";
         if (!newProgram->CompileShader(
                 GL_COMPUTE_SHADER, version + glslfx.GetSource(shaderToken))) {
             TF_CODING_ERROR("Fail to compile " + shaderToken.GetString());
-            return HdGLSLProgramSharedPtr();
+            return HdStGLSLProgramSharedPtr();
         }
         if (!newProgram->Link()) {
             TF_CODING_ERROR("Fail to link " + shaderToken.GetString());
-            return HdGLSLProgramSharedPtr();
+            return HdStGLSLProgramSharedPtr();
         }
         programInstance.SetValue(newProgram);
     }

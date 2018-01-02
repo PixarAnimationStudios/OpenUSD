@@ -25,11 +25,11 @@
 #define HDST_GEOMETRIC_SHADER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/imaging/hd/shaderKey.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/glf/glslfx.h"
 
@@ -168,19 +168,19 @@ public:
             KEY const &shaderKey, 
             HdStResourceRegistrySharedPtr const &resourceRegistry) {
 
-        HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr> 
+        HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr> 
             geometricShaderInstance;
 
         // lookup registry
         std::unique_lock<std::mutex> regLock =
             resourceRegistry->RegisterGeometricShader(
-                HdShaderKey::ComputeHash(shaderKey), &geometricShaderInstance);
+                HdStShaderKey::ComputeHash(shaderKey), &geometricShaderInstance);
 
         if (geometricShaderInstance.IsFirstInstance()) {
             geometricShaderInstance.SetValue(
                 HdSt_GeometricShaderSharedPtr(
                     new HdSt_GeometricShader(
-                        HdShaderKey::GetGLSLFXString(shaderKey),
+                        HdStShaderKey::GetGLSLFXString(shaderKey),
                         shaderKey.GetPrimitiveType(),
                         shaderKey.GetCullStyle(),
                         shaderKey.GetPolygonMode(),

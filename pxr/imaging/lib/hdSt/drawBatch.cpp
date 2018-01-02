@@ -26,17 +26,17 @@
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -306,17 +306,17 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                     instanceDraw,
                                     customBindings);
 
-    HdGLSLProgram::ID hash = codeGen.ComputeHash();
+    HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
     {
-        HdInstance<HdGLSLProgram::ID, HdGLSLProgramSharedPtr> programInstance;
+        HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
 
         // ask registry to see if there's already compiled program
         std::unique_lock<std::mutex> regLock = 
             resourceRegistry->RegisterGLSLProgram(hash, &programInstance);
 
         if (programInstance.IsFirstInstance()) {
-            HdGLSLProgramSharedPtr glslProgram = codeGen.Compile();
+            HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile();
             if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);
@@ -352,7 +352,7 @@ HdSt_DrawBatch::_DrawingProgram::_GetCustomBindings(
 /* virtual */
 bool
 HdSt_DrawBatch::_DrawingProgram::_Link(
-        HdGLSLProgramSharedPtr const & glslProgram)
+        HdStGLSLProgramSharedPtr const & glslProgram)
 {
     if (!TF_VERIFY(glslProgram)) return false;
 

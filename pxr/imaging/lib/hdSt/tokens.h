@@ -21,52 +21,28 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_TEXTURE_H
-#define HDST_TEXTURE_H
+#ifndef HDST_TOKENS_H
+#define HDST_TOKENS_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/texture.h"
-
-#include "pxr/imaging/garch/gl.h"
-
-#include "pxr/usd/sdf/path.h"
-
-#include "pxr/base/vt/value.h"
-#include "pxr/base/tf/token.h"
-
-#include <boost/shared_ptr.hpp>
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+            
+#define HDST_GLSL_PROGRAM_TOKENS                \
+    (smoothNormalsFloatToFloat)                 \
+    (smoothNormalsFloatToDouble)                \
+    (smoothNormalsFloatToPacked)                \
+    (smoothNormalsDoubleToFloat)                \
+    (smoothNormalsDoubleToDouble)               \
+    (smoothNormalsDoubleToPacked)               \
+    (quadrangulateFloat)                        \
+    (quadrangulateDouble)
 
-
-class HdSceneDelegate;
-
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-
-///
-/// Represents a Texture Buffer Prim.
-/// Texture could be a uv texture or a ptex texture.
-/// Multiple texture prims could represent the same texture buffer resource
-/// and the scene delegate is used to get a global unique id for the texture.
-/// The delegate is also used to obtain a HdStSimpleTextureResource for the texture
-/// represented by that id.
-///
-class HdStTexture : public HdTexture {
-public:
-    HdStTexture(SdfPath const & id);
-    virtual ~HdStTexture();
-
-protected:
-    virtual HdTextureResourceSharedPtr _GetTextureResource(
-        HdSceneDelegate *sceneDelegate,
-        const SdfPath &sceneId,
-        HdTextureResource::ID texID) const override;
-};
-
+TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
+                         HDST_GLSL_PROGRAM_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HDST_TEXTURE_H
-
+#endif //HDST_TOKENS_H

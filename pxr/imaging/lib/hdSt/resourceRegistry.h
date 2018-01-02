@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,6 +40,7 @@ typedef boost::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdSt_GeometricShader>
     HdSt_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 
 /// \class HdStResourceRegistry
 ///
@@ -115,8 +118,14 @@ public:
 
     /// Register a geometric shader.
     HDST_API
-    std::unique_lock<std::mutex> RegisterGeometricShader(HdShaderKey::ID id,
-         HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr> *pInstance);
+    std::unique_lock<std::mutex> RegisterGeometricShader(HdStShaderKey::ID id,
+         HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr> *pInstance);
+
+    /// Register a GLSL program into the program registry.
+    /// note: Currently no garbage collection enforced on the shader registry
+    HDST_API
+    std::unique_lock<std::mutex> RegisterGLSLProgram(HdStGLSLProgram::ID id,
+        HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> *pInstance);
 
     void InvalidateShaderRegistry() override;
 
@@ -135,9 +144,14 @@ private:
     _PersistentBufferRegistry _persistentBufferRegistry;
 
     // geometric shader registry
-    typedef HdInstance<HdShaderKey::ID, HdSt_GeometricShaderSharedPtr>
+    typedef HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr>
          _GeometricShaderInstance;
     HdInstanceRegistry<_GeometricShaderInstance> _geometricShaderRegistry;
+
+    // glsl shader program registry
+    typedef HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr>
+        _GLSLProgramInstance;
+    HdInstanceRegistry<_GLSLProgramInstance> _glslProgramRegistry;
 };
 
 

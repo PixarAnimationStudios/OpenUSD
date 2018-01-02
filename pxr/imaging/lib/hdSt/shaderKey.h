@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_SHADER_KEY_H
-#define HD_SHADER_KEY_H
+#ifndef HDST_SHADER_KEY_H
+#define HDST_SHADER_KEY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/base/tf/token.h"
@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // This is a static utility class to interpret prim specific shaderKeys.
 //
-struct HdShaderKey {
+struct HdStShaderKey {
     typedef size_t ID;
 
     // This hash is being used to distinguish GeometricShader instance,
@@ -63,7 +63,7 @@ struct HdShaderKey {
                            key.IsFaceVarying());
     }
 
-    HD_API
+    HDST_API
     static ID ComputeHash(TfToken const &glslfxFile,
                           TfToken const *VS,
                           TfToken const *TCS,
@@ -86,7 +86,7 @@ struct HdShaderKey {
                                key.GetFS());
     }
 
-    HD_API
+    HDST_API
     static std::string GetGLSLFXString(TfToken const &glslfxFile,
                                        TfToken const *VS,
                                        TfToken const *TCS,
@@ -99,4 +99,4 @@ struct HdShaderKey {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_SHADER_KEY_H
+#endif  // HDST_SHADER_KEY_H

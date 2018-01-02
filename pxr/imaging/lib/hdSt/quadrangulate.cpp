@@ -25,16 +25,17 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/glf/glslfx.h"
 
@@ -420,11 +421,13 @@ HdSt_QuadrangulateComputationGPU::Execute(
 
     // select shader by datatype
     TfToken shaderToken = (_dataType == GL_FLOAT ?
-                           HdGLSLProgramTokens->quadrangulateFloat :
-                           HdGLSLProgramTokens->quadrangulateDouble);
+                           HdStGLSLProgramTokens->quadrangulateFloat :
+                           HdStGLSLProgramTokens->quadrangulateDouble);
 
-    HdGLSLProgramSharedPtr computeProgram =
-        HdGLSLProgram::GetComputeProgram(shaderToken, resourceRegistry);
+    HdStGLSLProgramSharedPtr computeProgram =
+        HdStGLSLProgram::GetComputeProgram(shaderToken,
+            static_cast<HdStResourceRegistry*>(resourceRegistry));
+        
     if (!computeProgram) return;
 
     GLuint program = computeProgram->GetProgram().GetId();

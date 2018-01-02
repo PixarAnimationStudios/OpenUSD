@@ -31,7 +31,6 @@
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/range3d.h"

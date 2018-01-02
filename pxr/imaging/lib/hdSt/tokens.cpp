@@ -21,20 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(HdTokens, HD_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPerfTokens, HD_PERF_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdShaderTokens, HD_SHADER_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
-
-TF_DEFINE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_PRIMTYPE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_GLSL_PROGRAM_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

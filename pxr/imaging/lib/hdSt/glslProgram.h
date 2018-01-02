@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_GLSL_PROGRAM_H
-#define HD_GLSL_PROGRAM_H
+#ifndef HDST_GLSL_PROGRAM_H
+#define HDST_GLSL_PROGRAM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resourceGL.h"
 
@@ -33,38 +33,38 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdResourceRegistry;
-typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
+class HdStResourceRegistry;
+typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 
-/// \class HdGLSLProgram
+/// \class HdStGLSLProgram
 ///
 /// An instance of a glsl program.
 ///
 // XXX: this design is transitional and will be revised soon.
-class HdGLSLProgram
+class HdStGLSLProgram
 {
 public:
     typedef size_t ID;
 
-    HD_API
-    HdGLSLProgram(TfToken const &role);
-    HD_API
-    ~HdGLSLProgram();
+    HDST_API
+    HdStGLSLProgram(TfToken const &role);
+    HDST_API
+    ~HdStGLSLProgram();
 
     /// Returns the hash value of the program for \a sourceFile
-    HD_API
+    HDST_API
     static ID ComputeHash(TfToken const & sourceFile);
 
     /// Compile shader source of type
-    HD_API
+    HDST_API
     bool CompileShader(GLenum type, std::string const & source);
 
     /// Link the compiled shaders together.
-    HD_API
+    HDST_API
     bool Link();
 
     /// Validate if this program is a valid progam in the current context.
-    HD_API
+    HDST_API
     bool Validate() const;
 
     /// Returns HdResource of the program object.
@@ -76,9 +76,10 @@ public:
     }
 
     /// Convenience method to get a shared compute shader program
-    HD_API
-    static HdGLSLProgramSharedPtr GetComputeProgram(TfToken const &shaderToken,
-        HdResourceRegistry *resourceRegistry);
+    HDST_API
+    static HdStGLSLProgramSharedPtr GetComputeProgram(
+        TfToken const &shaderToken,
+        HdStResourceRegistry *resourceRegistry);
 
 private:
     HdResourceGL _program;
@@ -88,4 +89,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HD_COMPUTE_SHADER_H
+#endif  // HDST_GLSL_PROGRAM_H

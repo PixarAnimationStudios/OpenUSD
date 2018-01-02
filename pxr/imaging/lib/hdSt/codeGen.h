@@ -25,10 +25,10 @@
 #define HDST_CODE_GEN_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -54,23 +54,23 @@ public:
     typedef size_t ID;
 
     /// Constructor.
-    HD_API
+    HDST_API
     HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
                HdShaderCodeSharedPtrVector const &shaders);
 
     /// Constructor for non-geometric use cases.
     /// Don't call compile when constructed this way.
     /// Call CompileComputeProgram instead.
-    HD_API
+    HDST_API
     HdSt_CodeGen(HdShaderCodeSharedPtrVector const &shaders);
     
     /// Return the hash value of glsl shader to be generated.
-    HD_API
+    HDST_API
     ID ComputeHash() const;
 
     /// Generate shader source and compile it.
-    HD_API
-    HdGLSLProgramSharedPtr Compile();
+    HDST_API
+    HdStGLSLProgramSharedPtr Compile();
 
     /// Generate compute shader source and compile it.
     /// It uses the compute information in the meta data to determine
@@ -87,8 +87,8 @@ public:
     ///
     /// \see GetComputeShaderSource
     /// \see Hd_ResourceBinder::ResolveBindings
-    HD_API
-    HdGLSLProgramSharedPtr CompileComputeProgram();
+    HDST_API
+    HdStGLSLProgramSharedPtr CompileComputeProgram();
     
     /// Return the generated vertex shader source
     const std::string &GetVertexShaderSource() const { return _vsSource; }

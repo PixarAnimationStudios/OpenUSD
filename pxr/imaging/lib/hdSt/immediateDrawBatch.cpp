@@ -24,16 +24,17 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
+
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/shaderCode.h"
@@ -126,7 +127,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                                                    /*indirect=*/false,
                                                    resourceRegistry);
 
-    HdGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
+    HdStGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 

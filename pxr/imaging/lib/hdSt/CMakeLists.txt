@@ -37,6 +37,7 @@ pxr_library(hdSt
         fallbackLightingShader
         geometricShader
         glslfxShader
+        glslProgram
         instancer
         interleavedMemoryManager
         light      
@@ -52,10 +53,12 @@ pxr_library(hdSt
         renderPassShader
         renderPassState
         resourceRegistry
+        shaderKey
         smoothNormals
         surfaceShader
         texture
         textureResource
+        tokens
         unitTestGLDrawing
         vboMemoryManager
         vboSimpleMemoryManager

@@ -119,7 +119,7 @@ private:
         virtual void _GetCustomBindings(
             HdBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const;
-        virtual bool _Link(HdGLSLProgramSharedPtr const & glslProgram);
+        virtual bool _Link(HdStGLSLProgramSharedPtr const & glslProgram);
     private:
         bool _useDrawArrays;
         bool _useInstanceCulling;

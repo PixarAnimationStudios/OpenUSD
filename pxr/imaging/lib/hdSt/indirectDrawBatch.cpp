@@ -26,19 +26,19 @@
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/shaderKey.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hd/glslProgram.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/shaderCode.h"
-#include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
@@ -1021,7 +1021,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
                                                    /*indirect=*/true,
                                                    resourceRegistry);
-    HdGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
+    HdStGLSLProgramSharedPtr const &glslProgram = program.GetGLSLProgram();
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
@@ -1221,7 +1221,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
 
     _CullingProgram cullingProgram = _GetCullingProgram(resourceRegistry);
 
-    HdGLSLProgramSharedPtr const &
+    HdStGLSLProgramSharedPtr const &
         glslProgram = cullingProgram.GetGLSLProgram();
 
     if (!TF_VERIFY(glslProgram)) return;
@@ -1357,7 +1357,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
 
     _CullingProgram &cullingProgram = _GetCullingProgram(resourceRegistry);
 
-    HdGLSLProgramSharedPtr const &
+    HdStGLSLProgramSharedPtr const &
         glslProgram = cullingProgram.GetGLSLProgram();
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
@@ -1591,7 +1591,7 @@ HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
 /* virtual */
 bool
 HdSt_IndirectDrawBatch::_CullingProgram::_Link(
-        HdGLSLProgramSharedPtr const & glslProgram)
+        HdStGLSLProgramSharedPtr const & glslProgram)
 {
     if (!TF_VERIFY(glslProgram)) return false;
     if (!glTransformFeedbackVaryings) return false; // glew initialized
