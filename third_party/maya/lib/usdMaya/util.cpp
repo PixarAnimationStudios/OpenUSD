@@ -46,10 +46,12 @@
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MObject.h>
+#include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
 #include <string>
@@ -1049,6 +1051,33 @@ PxrUsdMayaUtil::AddUnassignedColorAndAlphaIfNeeded(
     }
 
     return true;
+}
+
+bool
+PxrUsdMayaUtil::IsAuthored(MPlug& plug)
+{
+    MStatus status;
+
+    if (plug.isNull(&status) || status != MS::kSuccess) {
+        return false;
+    }
+
+    // Plugs with connections are considered authored.
+    if (plug.isConnected(&status)) {
+        return true;
+    }
+
+    MStringArray setAttrCmds;
+    status = plug.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    for (unsigned int i = 0u; i < setAttrCmds.length(); ++i) {
+        if (setAttrCmds[i].numChars() > 0u) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 MPlug

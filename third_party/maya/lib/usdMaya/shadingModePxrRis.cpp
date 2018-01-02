@@ -134,6 +134,10 @@ private:
                 continue;
             }
 
+            if (!PxrUsdMayaUtil::IsAuthored(attrPlug)) {
+                continue;
+            }
+
             // For now, we only support arrays of length 1.  if we encounter
             // such an array, we emit it's 0-th element.
             if (attrPlug.isArray()) {

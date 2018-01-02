@@ -315,6 +315,18 @@ bool AddUnassignedColorAndAlphaIfNeeded(
         const PXR_NS::GfVec3f& defaultRGB,
         const float defaultAlpha);
 
+/// Get whether \p plug is authored in the Maya scene.
+///
+/// A plug is considered authored if its value has been changed from the
+/// default (or since being brought in from a reference for plugs on nodes from
+/// referenced files), or if the plug has a connection. Otherwise, it is
+/// considered unauthored.
+///
+/// Note that MPlug::getSetAttrCmds() is currently not declared const, so
+/// IsAuthored() here must take a non-const MPlug.
+PXRUSDMAYA_API
+bool IsAuthored(MPlug& plug);
+
 PXRUSDMAYA_API
 MPlug GetConnected(const MPlug& plug);
 
