@@ -3303,6 +3303,26 @@ class PointInstancer "PointInstancer" (
     multiple threads; the low-level API allows the client to cache unvarying
     inputs so that they need not be read duplicately when computing over
     time.
+    
+    Primvars on PointInstancer
+    
+    \"Primvars\" authored on a PointInstancer prim should
+    always be applied to each instance with constant interpolation at
+    the root of the instance.  When you are authoring primvars on a 
+    PointInstancer, think about it as if you were authoring them on a 
+    point-cloud (e.g. a UsdGeomPoints gprim).  The same 
+    <A HREF=\"http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers\">interpolation rules for points</A> apply here, substituting
+    \"instance\" for \"point\".
+    
+    In other words, the (constant) value extracted for each instance
+    from the authored primvar value depends on the authored interpolation
+    and elementSize of the primvar, as follows:
+    - <b>constant</b> or <b>uniform</b> : the entire authored value of the
+    primvar should be applied exactly to each instance.
+    - <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
+    elementSize elements of the authored primvar array should be assigned to
+    instance zero, the second elementSize elements should be assigned to
+    instance one, and so forth.
 
     
     Masking Instances: \"Deactivating\" and Invising
@@ -3397,26 +3417,7 @@ class PointInstancer "PointInstancer" (
     18     }
     19 }
     \\endcode
-    
-    Primvars on PointInstancer
-    
-    \"Primvars\" authored on a PointInstancer prim should
-    always be applied to each instance with constant interpolation at
-    the root of the instance.  When you are authoring primvars on a 
-    PointInstancer, think about it as if you were authoring them on a 
-    point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-    <A HREF=\"http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers\">interpolation rules for points</A> apply here, substituting
-    \"instance\" for \"point\".
-    
-    In other words, the (constant) value extracted for each instance
-    from the authored primvar value depends on the authored interpolation
-    and elementSize of the primvar, as follows:
-    - <b>constant</b> or <b>uniform</b> : the entire authored value of the
-    primvar should be applied exactly to each instance.
-    - <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
-    elementSize elements of the authored primvar array should be assigned to
-    instance zero, the second elementSize elements should be assigned to
-    instance one, and so forth."""
+    """
 )
 {
     vector3f[] angularVelocities (

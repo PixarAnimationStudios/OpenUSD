@@ -1388,6 +1388,26 @@ class PointInstancer "PointInstancer" (
     multiple threads; the low-level API allows the client to cache unvarying
     inputs so that they need not be read duplicately when computing over
     time.
+    
+    \\section UsdGeomPointInstancer_primvars Primvars on PointInstancer
+    
+    \\ref UsdGeomPrimvar "Primvars" authored on a PointInstancer prim should
+    always be applied to each instance with \\em constant interpolation at
+    the root of the instance.  When you are authoring primvars on a 
+    PointInstancer, think about it as if you were authoring them on a 
+    point-cloud (e.g. a UsdGeomPoints gprim).  The same 
+    <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
+    "instance" for "point".
+    
+    In other words, the (constant) value extracted for each instance
+    from the authored primvar value depends on the authored \\em interpolation
+    and \\em elementSize of the primvar, as follows:
+    \\li <b>constant</b> or <b>uniform</b> : the entire authored value of the
+    primvar should be applied exactly to each instance.
+    \\li <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
+    \\em elementSize elements of the authored primvar array should be assigned to
+    instance zero, the second \\em elementSize elements should be assigned to
+    instance one, and so forth.
 
     
     \\section UsdGeomPointInstancer_masking Masking Instances: "Deactivating" and Invising
@@ -1482,26 +1502,7 @@ class PointInstancer "PointInstancer" (
     18     }
     19 }
     \\endcode
-    
-    \\section UsdGeomPointInstancer_primvars Primvars on PointInstancer
-    
-    \\ref UsdGeomPrimvar "Primvars" authored on a PointInstancer prim should
-    always be applied to each instance with \\em constant interpolation at
-    the root of the instance.  When you are authoring primvars on a 
-    PointInstancer, think about it as if you were authoring them on a 
-    point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-    <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
-    "instance" for "point".
-    
-    In other words, the (constant) value extracted for each instance
-    from the authored primvar value depends on the authored \\em interpolation
-    and \\em elementSize of the primvar, as follows:
-    \\li <b>constant</b> or <b>uniform</b> : the entire authored value of the
-    primvar should be applied exactly to each instance.
-    \\li <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
-    \\em elementSize elements of the authored primvar array should be assigned to
-    instance zero, the second \\em elementSize elements should be assigned to
-    instance one, and so forth."""
+    """
 
     inherits = </Boundable>
 ) {
