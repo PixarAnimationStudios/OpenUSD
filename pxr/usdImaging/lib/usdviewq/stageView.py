@@ -1083,15 +1083,10 @@ class StageView(QtOpenGL.QGLWidget):
     # should be triggered by signals the dataModel emits.
     class DefaultDataModel(QtCore.QObject):
 
-        BBOXPURPOSES = [UsdGeom.Tokens.default_, UsdGeom.Tokens.proxy]
-
         signalDefaultMaterialChanged = QtCore.Signal()
 
         def __init__(self):
             super(StageView.DefaultDataModel, self).__init__()
-            self._bboxCache = UsdGeom.BBoxCache(0,
-                                                StageView.DefaultDataModel.BBOXPURPOSES,
-                                                useExtentsHint=True)
 
             self._defaultMaterialAmbient = 0.2
             self._defaultMaterialSpecular = 0.1
@@ -1102,10 +1097,6 @@ class StageView(QtOpenGL.QGLWidget):
             self._defaultShowBBoxes = True
             self._defaultRenderMode = RenderModes.SMOOTH_SHADED
             self._defaultShowHUD = True
-
-        @property
-        def bboxCache(self):
-            return self._bboxCache
 
         @property
         def defaultMaterialAmbient(self):
@@ -1298,10 +1289,6 @@ class StageView(QtOpenGL.QGLWidget):
     signalFrustumChanged = QtCore.Signal()
 
     @property
-    def currentFrame(self):
-        return self._currentFrame
-
-    @property
     def renderParams(self):
         return self._renderParams
 
@@ -1456,7 +1443,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._hud.addGroup("BottomRight", 200, 32)   # Camera, Complexity
 
         self._stageIsZup = True
-        self._currentFrame = 0
         self._cameraMode = "none"
         self._rolloverPicking = False
         self._dragActive = False
@@ -1691,7 +1677,8 @@ class StageView(QtOpenGL.QGLWidget):
             if camera == self._cameraPrim or not (camera and camera.IsActive()):
                 continue
 
-            gfCamera = UsdGeom.Camera(camera).GetCamera(self._currentFrame)
+            gfCamera = UsdGeom.Camera(camera).GetCamera(
+                self._rootDataModel.currentFrame)
             frustum = gfCamera.frustum
 
             # (Gf documentation seems to be wrong)-- Ordered as
@@ -1737,7 +1724,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def updateBboxPurposes(self):
-        includedPurposes =  set(self._dataModel.bboxCache.GetIncludedPurposes())
+        includedPurposes = self._rootDataModel.includedPurposes
 
         if self._dataModel.displayGuide:
             includedPurposes.add(UsdGeom.Tokens.guide)
@@ -1754,7 +1741,7 @@ class StageView(QtOpenGL.QGLWidget):
         elif UsdGeom.Tokens.render in includedPurposes:
             includedPurposes.remove(UsdGeom.Tokens.render)
 
-        self._dataModel.bboxCache.SetIncludedPurposes(includedPurposes)
+        self._rootDataModel.includedPurposes = includedPurposes
         # force the bbox to refresh
         self._bbox = Gf.BBox3d()
 
@@ -1766,7 +1753,6 @@ class StageView(QtOpenGL.QGLWidget):
         fits the prim's bounding box in the frame with a roughly 10% margin.
         '''
         self._selectedPrims = selectedPrims
-        self._currentFrame = frame
 
         # set highlighted paths to renderer
         self._updateSelection()
@@ -1798,7 +1784,7 @@ class StageView(QtOpenGL.QGLWidget):
                 # This may fail, but we want to keep the UI available,
                 # so print the error and attempt to continue loading
                 self.signalErrorMessage.emit("unable to get bounding box on "
-                   "stage at frame {0}".format(self._currentFrame))
+                   "stage at frame {0}".format(self._rootDataModel.currentFrame))
                 import traceback
                 traceback.print_exc()
                 self._bbox = self._getEmptyBBox()
@@ -1843,7 +1829,7 @@ class StageView(QtOpenGL.QGLWidget):
         return Gf.BBox3d(Gf.Range3d((-10,-10,-10), (10,10,10)))
 
     def getStageBBox(self):
-        bbox = self._dataModel.bboxCache.ComputeWorldBound(
+        bbox = self._rootDataModel.computeWorldBound(
             self._rootDataModel.stage.GetPseudoRoot())
         if bbox.GetRange().IsEmpty():
             bbox = self._getEmptyBBox()
@@ -1853,7 +1839,7 @@ class StageView(QtOpenGL.QGLWidget):
         bbox = Gf.BBox3d()
         for n in self._selectedPrims:
             if n.IsActive() and not n.IsInMaster():
-                primBBox = self._dataModel.bboxCache.ComputeWorldBound(n)
+                primBBox = self._rootDataModel.computeWorldBound(n)
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox
 
@@ -1883,7 +1869,7 @@ class StageView(QtOpenGL.QGLWidget):
             return
 
         # update rendering parameters
-        self._renderParams.frame = self._currentFrame
+        self._renderParams.frame = self._rootDataModel.currentFrame
         self._renderParams.complexity = self._dataModel.complexity
         self._renderParams.drawMode = renderMode
         self._renderParams.showGuides = self._dataModel.displayGuide
@@ -1924,7 +1910,7 @@ class StageView(QtOpenGL.QGLWidget):
     def updateForPlayback(self, currentTime, showHighlights):
         """If playing, update the GL canvas.  Otherwise a no-op"""
         if self._dataModel.playing:
-            self._currentFrame = currentTime
+            self._rootDataModel.currentFrame = currentTime
             drawHighlights = self._dataModel.drawSelHighlights
             self._dataModel.drawSelHighlights = showHighlights
             super(StageView, self).updateGL()
@@ -1933,7 +1919,7 @@ class StageView(QtOpenGL.QGLWidget):
     def computeGfCameraForCurrentCameraPrim(self):
         if self._cameraPrim and self._cameraPrim.IsActive():
             gfCamera = UsdGeom.Camera(self._cameraPrim).GetCamera(
-                self._currentFrame)
+                self._rootDataModel.currentFrame)
             return gfCamera
         else:
             return None
@@ -2534,7 +2520,7 @@ class StageView(QtOpenGL.QGLWidget):
         self.makeCurrent()
 
         # update rendering parameters
-        self._renderParams.frame = self._currentFrame
+        self._renderParams.frame = self._rootDataModel.currentFrame
         self._renderParams.complexity = self._dataModel.complexity
         self._renderParams.drawMode = self._renderModeDict[self._dataModel.renderMode]
         self._renderParams.showGuides = self._dataModel.displayGuide
@@ -2693,8 +2679,8 @@ class StageView(QtOpenGL.QGLWidget):
         CameraUtil.ConformWindow(
             gfCamera, CameraUtil.MatchVertically, targetAspect)
 
-        when = self._currentFrame if stage.HasAuthoredTimeCodeRange() \
-            else Usd.TimeCode.Default()
+        when = (self._rootDataModel.currentFrame
+            if stage.HasAuthoredTimeCodeRange() else Usd.TimeCode.Default())
 
         defcam.SetFromCamera(gfCamera, when)
 

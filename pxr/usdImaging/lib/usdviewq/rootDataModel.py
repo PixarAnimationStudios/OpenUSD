@@ -22,13 +22,15 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Usd
+from pxr import Usd, UsdGeom
 from qt import QtCore
-from common import Timer
+from common import Timer, IncludedPurposes
+
 
 class RootDataModel(QtCore.QObject):
-    """Holds the application's current Usd.Stage object and other data important
-    to all parts of Usdview."""
+    """Data model providing centralized, moderated access to fundamental
+    information used throughout Usdview controllers, data models, and plugins.
+    """
 
     # Emitted when a new stage is set.
     signalStageReplaced = QtCore.Signal()
@@ -39,6 +41,12 @@ class RootDataModel(QtCore.QObject):
 
         self._stage = None
         self._printTiming = printTiming
+
+        self._currentFrame = Usd.TimeCode.Default()
+
+        self._bboxCache = UsdGeom.BBoxCache(self._currentFrame,
+            [IncludedPurposes.DEFAULT, IncludedPurposes.PROXY], True)
+        self._xformCache = UsdGeom.XformCache(self._currentFrame)
 
     @property
     def stage(self):
@@ -67,3 +75,96 @@ class RootDataModel(QtCore.QObject):
                 self._stage = value
 
             self.signalStageReplaced.emit()
+
+    @property
+    def currentFrame(self):
+        """Get a Usd.TimeCode object which represents the current frame being
+        considered in Usdview."""
+
+        return self._currentFrame
+
+    @currentFrame.setter
+    def currentFrame(self, value):
+        """Set the current frame to a new Usd.TimeCode object."""
+
+        if not isinstance(value, Usd.TimeCode):
+            raise ValueError("Expected Usd.TimeCode, got: {}".format(value))
+
+        self._currentFrame = value
+        self._bboxCache.SetTime(self._currentFrame)
+        self._xformCache.SetTime(self._currentFrame)
+
+    # XXX This method should be removed after bug 114225 is resolved. Changes to
+    #     the stage will then be used to trigger the caches to be cleared, so
+    #     RootDataModel clients will not even need to know the caches exist.
+    def _clearCaches(self):
+        """Clears internal caches of bounding box and transform data. Should be
+        called when the current stage is changed in a way which affects this
+        data."""
+
+        self._bboxCache.Clear()
+        self._xformCache.Clear()
+
+    @property
+    def useExtentsHint(self):
+        """Return True if bounding box calculations use extents hints from
+        prims.
+        """
+
+        return self._bboxCache.GetUseExtentsHint()
+
+    @useExtentsHint.setter
+    def useExtentsHint(self, value):
+        """Set whether whether bounding box calculations should use extents
+        from prims.
+        """
+
+        if not isinstance(value, bool):
+            raise ValueError("useExtentsHint must be of type bool.")
+
+        if value != self._bboxCache.GetUseExtentsHint():
+            # Unfortunate that we must blow the entire BBoxCache, but we have no
+            # other alternative, currently.
+            purposes = self._bboxCache.GetIncludedPurposes()
+            self._bboxCache = UsdGeom.BBoxCache(
+                self._currentFrame, purposes, value)
+
+    @property
+    def includedPurposes(self):
+        """Get the set of included purposes used for bounding box calculations.
+        """
+
+        return set(self._bboxCache.GetIncludedPurposes())
+
+    @includedPurposes.setter
+    def includedPurposes(self, value):
+        """Set a new set of included purposes for bounding box calculations."""
+
+        if not isinstance(value, set):
+            raise ValueError(
+                "Expected set of included purposes, got: {}".format(
+                    repr(value)))
+        for purpose in value:
+            if purpose not in IncludedPurposes:
+                raise ValueError("Unknown included purpose: {}".format(
+                    repr(purpose)))
+
+        self._bboxCache.SetIncludedPurposes(value)
+
+    def computeWorldBound(self, prim):
+        """Compute the world-space bounds of a prim."""
+
+        if not isinstance(prim, Usd.Prim):
+            raise ValueError("Expected Usd.Prim object, got: {}".format(
+                repr(prim)))
+
+        return self._bboxCache.ComputeWorldBound(prim)
+
+    def getLocalToWorldTransform(self, prim):
+        """Compute the transformation matrix of a prim."""
+
+        if not isinstance(prim, Usd.Prim):
+            raise ValueError("Expected Usd.Prim object, got: {}".format(
+                repr(prim)))
+
+        return self._xformCache.GetLocalToWorldTransform(prim)

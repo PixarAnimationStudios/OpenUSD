@@ -60,7 +60,7 @@ class _PlugContextInternal(object):
     def GetCurrentFrame(self):
         ''' Returns the current frame. '''
 
-        return self._appController._currentFrame
+        return self._appController._rootDataModel.currentFrame
 
     def GetModelsFromSelection(self):
         ''' Returns selected models.  this will walk up to find the nearest model.

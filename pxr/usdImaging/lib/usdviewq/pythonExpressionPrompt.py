@@ -158,7 +158,7 @@ class Myconsole(interpreterView):
 
         self.locals()['plugCtx'] = appController._plugCtx
         self.locals()['stage'] = appController._rootDataModel.stage
-        self.locals()['frame'] = appController._currentFrame
+        self.locals()['frame'] = appController._rootDataModel.currentFrame
         self.locals()['selectedPrims'] = list(appController._currentPrims)
         self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy()
         self.locals()['prim'] = appController._currentPrims[0] if \

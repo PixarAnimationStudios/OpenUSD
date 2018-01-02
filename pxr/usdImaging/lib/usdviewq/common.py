@@ -135,6 +135,12 @@ class CameraMaskModes(ConstantGroup):
     PARTIAL = "partial"
     FULL = "full"
 
+class IncludedPurposes(ConstantGroup):
+    DEFAULT = UsdGeom.Tokens.default_
+    PROXY = UsdGeom.Tokens.proxy
+    GUIDE = UsdGeom.Tokens.guide
+    RENDER = UsdGeom.Tokens.render
+
 def _PropTreeWidgetGetRole(tw):
     return tw.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
 
@@ -203,8 +209,6 @@ def GetShortString(prop, frame):
 # Return attribute status at a certian frame (is it using the default, or the
 # fallback? Is it authored at this frame? etc.
 def GetAttributeStatus(attribute, frame):
-    if not isinstance(frame, Usd.TimeCode):
-        frame = Usd.TimeCode(frame)
 
     return attribute.GetResolveInfo(frame).GetSource()
 
@@ -213,9 +217,6 @@ def GetAttributeStatus(attribute, frame):
 def GetAttributeTextFont(attribute, frame):
     if isinstance(attribute, CustomAttribute):
         return None
-
-    if not isinstance(frame, Usd.TimeCode):
-        frame = Usd.TimeCode(frame)
 
     frameVal = frame.GetValue()
     bracketing = attribute.GetBracketingTimeSamples(frameVal)

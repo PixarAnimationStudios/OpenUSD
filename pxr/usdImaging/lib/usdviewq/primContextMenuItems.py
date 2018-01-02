@@ -55,7 +55,7 @@ class PrimContextMenuItem(UsdviewContextMenuItem):
 
     def __init__(self, appController, item):
         self._currentPrims = appController._currentPrims
-        self._currentFrame = appController._currentFrame
+        self._currentFrame = appController._rootDataModel.currentFrame
         self._appController = appController
         self._item = item
 

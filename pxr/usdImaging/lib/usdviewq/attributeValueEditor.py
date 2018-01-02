@@ -90,7 +90,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         if self._attribute == '':
             return
 
-        frame = self._appController._currentFrame
+        frame = self._appController._rootDataModel.currentFrame
 
         # get the value of the attribute
         self._val = self._attribute.Get(frame)

@@ -80,7 +80,8 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
 
             # Get our prim info.
             # To avoid Python overhead, request data in batch from C++.
-            info = _GetPrimInfo(self.prim, self._appController._currentFrame)
+            info = _GetPrimInfo(
+                self.prim, self._appController._rootDataModel.currentFrame)
             self._extractInfo(info)
 
     def _extractInfo(self, info):
@@ -224,7 +225,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         if not (self.imageable and self.active):
             return inheritedVis
 
-        time = self._appController._currentFrame
+        time = self._appController._rootDataModel.currentFrame
         # If visibility-properties have changed on the stage, then
         # we must re-evaluate our variability before deciding whether
         # we can avoid re-reading our visibility

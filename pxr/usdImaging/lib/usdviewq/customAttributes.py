@@ -28,9 +28,9 @@
 # Every entry should be an object derived from CustomAttribute,
 # defined below.
 #
-def _GetCustomAttributes(currentPrim, bboxCache, xformCache):
-    return ([BoundingBoxAttribute(currentPrim, bboxCache),
-               LocalToWorldXformAttribute(currentPrim, xformCache)],
+def _GetCustomAttributes(currentPrim, rootDataModel):
+    return ([BoundingBoxAttribute(currentPrim, rootDataModel),
+               LocalToWorldXformAttribute(currentPrim, rootDataModel)],
             [RelationshipAttribute(currentPrim, relationship) \
                     for relationship in currentPrim.GetRelationships()])
 
@@ -60,18 +60,16 @@ class CustomAttribute:
 # Displays the bounding box of a prim
 #
 class BoundingBoxAttribute(CustomAttribute):
-    def __init__(self, currentPrim, bboxCache):
+    def __init__(self, currentPrim, rootDataModel):
         CustomAttribute.__init__(self, currentPrim)
-        # This is transient. The custom attr classes change every frame and
-        # after every new selection.
-        self._bboxCache = bboxCache
+        self.rootDataModel = rootDataModel
 
     def GetName(self):
         return "World Bounding Box"
 
     def Get(self, frame):
         try:
-            bbox = self._bboxCache.ComputeWorldBound(self._currentPrim)
+            bbox = self.rootDataModel.computeWorldBound(self._currentPrim)
 
         except RuntimeError, err:
             bbox = "Invalid: " + str(err)
@@ -82,18 +80,16 @@ class BoundingBoxAttribute(CustomAttribute):
 # Displays the Local to world xform of a prim
 #
 class LocalToWorldXformAttribute(CustomAttribute):
-    def __init__(self, currentPrim, xformCache):
+    def __init__(self, currentPrim, rootDataModel):
         CustomAttribute.__init__(self, currentPrim)
-        # This is transient. The custom attr classes change every frame and
-        # after every new selection.
-        self._xformCache = xformCache
+        self.rootDataModel = rootDataModel
 
     def GetName(self):
         return "Local to World Xform"
 
     def Get(self, frame):
         try:
-            pwt = self._xformCache.GetLocalToWorldTransform(self._currentPrim)
+            pwt = self.rootDataModel.getLocalToWorldTransform(self._currentPrim)
         except RuntimeError, err:
             pwt = "Invalid: " + str(err)
 

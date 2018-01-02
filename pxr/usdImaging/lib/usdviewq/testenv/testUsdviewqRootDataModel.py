@@ -25,7 +25,9 @@
 
 import unittest
 
+from pxr import Usd, Gf
 from pxr.Usdviewq.rootDataModel import RootDataModel
+from pxr.Usdviewq.common import IncludedPurposes
 
 
 class SignalCounter(object):
@@ -126,3 +128,103 @@ class TestRootDataModel(unittest.TestCase):
 
         self.assertIsNone(rootDataModel.stage)
         self.assertEqual(counter.getAndClearNumSignals(), 0)
+
+    def test_CurrentFrame(self):
+
+        rootDataModel = RootDataModel()
+
+        # Default currentFrame should be TimeCode.Default()
+        self.assertEqual(rootDataModel.currentFrame, Usd.TimeCode.Default())
+
+        # Setting a numeric TimeCode works properly.
+        rootDataModel.currentFrame = Usd.TimeCode(1)
+        self.assertEqual(rootDataModel.currentFrame, Usd.TimeCode(1))
+
+        # Setting back to TimeCode.Default() works properly.
+        rootDataModel.currentFrame = Usd.TimeCode.Default()
+        self.assertEqual(rootDataModel.currentFrame, Usd.TimeCode.Default())
+
+        # currentFrame cannot be a number.
+        with self.assertRaises(ValueError):
+            rootDataModel.currentFrame = 1.0
+
+        # currentFrame cannot be None.
+        with self.assertRaises(ValueError):
+            rootDataModel.currentFrame = None
+
+    def test_UseExtentsHint(self):
+
+        rootDataModel = RootDataModel()
+
+        # Default useExtentsHint should be True.
+        self.assertTrue(rootDataModel.useExtentsHint)
+
+        # useExtentsHint can be a bool.
+        rootDataModel.useExtentsHint = False
+        self.assertFalse(rootDataModel.useExtentsHint)
+
+        # useExtentsHint cannot be an int.
+        with self.assertRaises(ValueError):
+            rootDataModel.useExtentsHint = 1
+
+        # useExtentsHint cannot be None.
+        with self.assertRaises(ValueError):
+            rootDataModel.useExtentsHint = None
+
+    def test_IncludedPurposes(self):
+
+        rootDataModel = RootDataModel()
+
+        # Default includedPurposes has DEFAULT and PROXY.
+        self.assertSetEqual(rootDataModel.includedPurposes,
+            {IncludedPurposes.DEFAULT, IncludedPurposes.PROXY})
+
+        # includedPurposes can be empty.
+        rootDataModel.includedPurposes = set()
+        self.assertSetEqual(rootDataModel.includedPurposes, set())
+
+        # includedPurposes can have all properties from IncludedPurposes.
+        allPurposes = {
+            IncludedPurposes.DEFAULT,
+            IncludedPurposes.PROXY,
+            IncludedPurposes.GUIDE,
+            IncludedPurposes.RENDER}
+        rootDataModel.includedPurposes = allPurposes
+        self.assertSetEqual(rootDataModel.includedPurposes, allPurposes)
+
+        # includedPurposes must be a set.
+        with self.assertRaises(ValueError):
+            rootDataModel.includedPurposes = None
+
+        # includedPurposes cannot include anything that is not in
+        # IncludedPurposes, including None.
+        with self.assertRaises(ValueError):
+            rootDataModel.includedPurposes = {IncludedPurposes.RENDER, None}
+
+    def test_BBoxCalculations(self):
+
+        rootDataModel = RootDataModel()
+        stage = Usd.Stage.Open("test.usda")
+        prim = stage.GetPrimAtPath("/frontSphere")
+
+        # Test that the world bounding box computation works.
+        box = rootDataModel.computeWorldBound(prim).GetBox()
+        self.assertEqual(box.GetMin(), Gf.Vec3d(-1, -1, -1))
+        self.assertEqual(box.GetMax(), Gf.Vec3d(1, 1, 1))
+
+    def test_XformCalculations(self):
+
+        rootDataModel = RootDataModel()
+        stage = Usd.Stage.Open("test.usda")
+        prim = stage.GetPrimAtPath("/frontSphere")
+
+        # Test that the world transform computation works.
+        xform = rootDataModel.getLocalToWorldTransform(prim)
+        self.assertEqual(xform,
+            Gf.Matrix4d(1, 0, 0, 0,
+                        0, 1, 0, 0,
+                        0, 0, 1, 0,
+                        2, 2, 2, 1))
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

@@ -90,6 +90,12 @@ pxr_test_scripts(
     testenv/testUsdviewqSettings2.py
     testenv/testUsdviewqRootDataModel.py
     testenv/testUsdviewqPlugContextProxy.py
+    testenv/testUsdviewqRootDataModel.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewqRootDataModel
+    DEST testUsdviewqRootDataModel
 )
 
 pxr_register_test(testUsdviewqConstantGroup

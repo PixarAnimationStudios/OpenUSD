@@ -80,14 +80,13 @@ def _testBasic(appController):
     # MainWindow) will result in transport movement
     startFrame = appController._rootDataModel.stage.GetStartTimeCode()
     appController._mainWindow.setFocus()
-    assert appController._currentFrame == startFrame
+    assert appController._rootDataModel.currentFrame == startFrame
 
     _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
-    assert appController._currentFrame == startFrame + 1
+    assert appController._rootDataModel.currentFrame == startFrame + 1
 
     _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
-    assert appController._currentFrame == startFrame
-
+    assert appController._rootDataModel.currentFrame == startFrame
 
     # Unfortunately, we don't have a good way of testing the "choose focus
     # widget based on mouse position" behavior.  Will keep working on that...
