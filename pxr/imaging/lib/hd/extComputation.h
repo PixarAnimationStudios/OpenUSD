@@ -122,7 +122,9 @@ public:
     const TfTokenVector& GetSceneInputs() const { return _sceneInputs; }
 
     HD_API
-    const TfTokenVector& GetComputationInputs() const { return _sceneInputs; }
+    const TfTokenVector& GetComputationInputs() const {
+        return _computationInputs;
+    }
 
     HD_API
     const SourceComputationDescVector& GetComputationSourceDescs() const {
