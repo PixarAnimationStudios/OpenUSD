@@ -239,5 +239,60 @@ def "Foo" {
         self.assertEqual(
             len(l.GetAttributeAtPath('/foo.test').GetInfo('timeSamples')), 2)
 
+    def test_TimeSamplesWithOffset(self):
+        '''
+        Test the effect of SdfLayerOffset on timesample API.
+        '''
+        stage = Usd.Stage.CreateInMemory()
+
+        # Set up a simple prim </Source>
+        # with an attribute 'x' with a simple linear ramp over frames 0..10.
+        source = stage.DefinePrim('/Source')
+        source_attr = source.CreateAttribute('x', Sdf.ValueTypeNames.Float)
+        source_attr.Set(0.0, 0.0)
+        source_attr.Set(10.0, 10.0)
+        self.assertEqual(source_attr.GetTimeSamples(), [0.0, 10.0])
+        self.assertEqual(source_attr.Get(0.0), 0)
+        self.assertEqual(source_attr.Get(10.0), 10)
+
+        # Reference that prim, with an offset of +100 frames.
+        test1 = stage.DefinePrim('/Test1')
+        test1.GetReferences().AddInternalReference('/Source',
+            Sdf.LayerOffset(offset=100.0, scale=1.0))
+        test1_attr = test1.GetAttribute('x')
+        # Both samples should pass through.
+        # The sample times should be offset.
+        self.assertEqual(test1_attr.GetTimeSamples(), [100.0, 110.0])
+        self.assertEqual(test1_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 10)), [])
+        self.assertEqual(test1_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 110)), [100.0, 110.0])
+        # Value resolution should respect the offset.
+        # Times outside the interval hold at the value of the nearest sample.
+        self.assertEqual(test1_attr.Get(0.0), 0)
+        self.assertEqual(test1_attr.Get(10.0), 0)
+        self.assertEqual(test1_attr.Get(100.0), 0)
+        self.assertEqual(test1_attr.Get(110.0), 10)
+        self.assertEqual(test1_attr.Get(120.0), 10)
+
+        # Reference that prim, with a 2x scale.
+        test2 = stage.DefinePrim('/Test2')
+        test2.GetReferences().AddInternalReference('/Source',
+            Sdf.LayerOffset(offset=0.0, scale=2.0))
+        test2_attr = test2.GetAttribute('x')
+        # Both samples should pass through.
+        # The sample times should be offset.
+        self.assertEqual(test2_attr.GetTimeSamples(), [0.0, 20.0])
+        self.assertEqual(test2_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 10)), [0.0])
+        self.assertEqual(test2_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 20)), [0.0, 20.0])
+        # Value resolution should respect the offset.
+        # Times outside the interval hold at the value of the nearest sample.
+        self.assertEqual(test2_attr.Get(0.0), 0)
+        self.assertEqual(test2_attr.Get(10.0), 5)
+        self.assertEqual(test2_attr.Get(20.0), 10)
+        self.assertEqual(test2_attr.Get(30.0), 10)
+
 if __name__ == "__main__":
     unittest.main()

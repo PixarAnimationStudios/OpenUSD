@@ -6443,8 +6443,19 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
 
         const std::set<double> samples = layer->ListTimeSamplesForPath(specId);
         if (!samples.empty()) {
-            copySamplesInInterval(samples, times, interval);
-            if (!info._layerToStageOffset.IsIdentity()) {
+            if (info._layerToStageOffset.IsIdentity()) {
+                // The layer offset is identity, so we can use the interval
+                // directly, and do not need to remap the sample times.
+                copySamplesInInterval(samples, times, interval);
+            } else {
+                // Map the interval (expressed in stage time) to layer time.
+                const SdfLayerOffset stageToLayer =
+                    info._layerToStageOffset.GetInverse();
+                const GfInterval layerInterval =
+                    interval * stageToLayer.GetScale()
+                    + stageToLayer.GetOffset();
+                copySamplesInInterval(samples, times, layerInterval);
+                // Map the layer sample times to stage times.
                 for (auto &time : *times) {
                     time = info._layerToStageOffset * time;
                 }
