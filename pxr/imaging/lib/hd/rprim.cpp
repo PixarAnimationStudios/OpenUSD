@@ -390,7 +390,13 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                 // XXX Hydra doesn't support string primvar yet
                 if (value.IsHolding<std::string>()) continue;
 
-                if (!value.IsEmpty()) {
+                if (value.IsArrayValued() && value.GetArraySize() == 0) {
+                    // A value holding an empty array does not count as an
+                    // empty value. Catch that case here.
+                    TF_WARN("Empty array value for constant primvar %s "
+                            "on Rprim %s",
+                            nameIt->GetText(), id.GetText());
+                } else if (!value.IsEmpty()) {
                     HdBufferSourceSharedPtr source(
                         new HdVtBufferSource(*nameIt, value,
                             value.IsArrayValued()));
