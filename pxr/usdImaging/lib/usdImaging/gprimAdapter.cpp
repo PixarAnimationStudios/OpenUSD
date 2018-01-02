@@ -548,7 +548,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     TfToken colorPrimvarName, opacityPrimvarName;
 
     // for a prim's color & opacity, we use the following precedence:
-    // material rel >  shader rel > local prim vars   
+    // material rel >  local prim var(s)
     {
         // -- Material --        
         // XXX: Primvar values that come from shaders should not be part of
@@ -598,7 +598,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
         // -- Prim local prim var --
         UsdGeomGprim gprimSchema(prim);
  
-        if (colorInterp.IsEmpty()) {
+        if (colorInterp.IsEmpty()) { // did not get color from material
             VtArray<GfVec3f> colorArray;
                 const UsdGeomPrimvar& primvar = 
                     gprimSchema.GetDisplayColorPrimvar();
@@ -609,13 +609,15 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 result.resize(numColors);
 
                 if (colorInterp == UsdGeomTokens->constant) {
-                    result[0][0] = colorArray[0][0];
-                    result[0][1] = colorArray[0][1];
-                    result[0][2] = colorArray[0][2];
+                    if (numColors > 0) {
+                        result[0][0] = colorArray[0][0];
+                        result[0][1] = colorArray[0][1];
+                        result[0][2] = colorArray[0][2];
+                    }
 
-                    if (numColors > 1) {
+                    if (numColors != 1) {
                         // warn and copy default color for remaining elements
-                         TF_WARN("Prim %s has %lu elements for %s even "
+                         TF_WARN("Prim %s has %lu element(s) for %s even "
                                  "though it is marked constant.",
                                  prim.GetPath().GetText(), numColors,
                                  colorPrimvarName.GetText());
@@ -643,14 +645,17 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 if (colorInterp != UsdGeomTokens->constant) {
                     numColors = 0;
                 }
+
+                static TfToken 
+                    defaultDisplayColorToken("displayColor(default)");
+                colorPrimvarName = defaultDisplayColorToken;
             }
         }
 
-        // Guaranteed to have set either material/shader/primvar/default color
+        // Guaranteed to have set either material/local/default color interp.
         TF_VERIFY(!colorInterp.IsEmpty());
 
-        if (opacityInterp.IsEmpty()) {
-                // did not get opacity from either material or shader
+        if (opacityInterp.IsEmpty()) { // did not get opacity from material
             VtArray<float> opacityArray;
                 const UsdGeomPrimvar& primvar = 
                     gprimSchema.GetDisplayOpacityPrimvar();
@@ -665,11 +670,13 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 // copy just the opacities; color is populated in the 
                 // consolidation step
                 if (opacityInterp == UsdGeomTokens->constant) {
-                    result[0][3] = opacityArray[0];
+                    if (numOpacities > 0) {
+                        result[0][3] = opacityArray[0];
+                    }
 
-                    if (numOpacities > 1) {
+                    if (numOpacities != 1) {
                         // warn and copy default opacity for remaining elements
-                         TF_WARN("Prim %s has %lu elements for %s even "
+                         TF_WARN("Prim %s has %lu element(s) for %s even "
                                  "though it is marked constant.",
                                  prim.GetPath().GetText(), numOpacities,
                                  opacityPrimvarName.GetText());
@@ -693,17 +700,23 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 if (opacityInterp != UsdGeomTokens->constant) {
                     numOpacities = 0;
                 }
+
+                static TfToken
+                    defaultDisplayOpacityToken("displayOpacity(default)");
+                opacityPrimvarName = defaultDisplayOpacityToken;
             }
         }
-        // Guaranteed to have set either material/shader/primvar/default opacity
+        // Guaranteed to have set either material/local/default opacity interp
         TF_VERIFY(!opacityInterp.IsEmpty());
     }
 
     {
         // --  Cases where we can surely issue warnings --
-        if (colorInterp == opacityInterp && numColors != numOpacities) {
-            // interp modes same but lengths different for primvars is surely
-            // an input error
+        if (colorInterp == opacityInterp &&
+            numColors != numOpacities &&
+            (numColors > 0 && numOpacities > 0)) {
+            // interp modes same but (non-zero) lengths different for primvars 
+            // is surely an input error
             TF_WARN("Prim %s has %lu elements for %s and %lu "
                     "elements for %s even though they have the "
                     "same interpolation mode %s", prim.GetPath().GetText(), 
