@@ -332,7 +332,6 @@ class AppController(QtCore.QObject):
     def _configurePlugins(self):
         pluginsLoaded = False
 
-        self._plugCtx = PlugContext(self)
         with Timer() as t:
             try:
                 from pixar import UsdviewPlug
@@ -380,6 +379,7 @@ class AppController(QtCore.QObject):
             self._interpreter = None
             self._parserData = parserData
             self._noRender = parserData.noRender
+            self._noPlugins = parserData.noPlugins
             self._unloaded = parserData.unloaded
             self._currentFrame = Usd.TimeCode.Default()
             self._updateBlock = 0
@@ -996,8 +996,10 @@ class AppController(QtCore.QObject):
 
             self._setupDebugMenu()
 
-            # configure plugins
-            self._configurePlugins()
+            # Setup plug context and optionally load plugins
+            self._plugCtx = PlugContext(self)
+            if not self._noPlugins:
+                self._configurePlugins()
 
             # timer for slider. when user stops scrubbing for 0.5s, update stuff.
             self._sliderTimer = QtCore.QTimer(self)

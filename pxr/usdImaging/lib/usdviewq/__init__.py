@@ -113,6 +113,10 @@ class Launcher(object):
                             dest='noRender',
                             help='Display only hierarchy browser')
 
+        parser.add_argument('--noplugins', action='store_true',
+                            dest='noPlugins',
+                            help='Do not load plugins')
+
         parser.add_argument('--unloaded', action='store_true',
                             dest='unloaded',
                             help='Do not load payloads')
