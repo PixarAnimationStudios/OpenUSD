@@ -326,16 +326,21 @@ class ClassInfo(object):
         self.isTyped = toJinjaBool(isTyped)
         self.isApi = toJinjaBool(isApi)
 
-        if isConcrete and not isTyped:
-            errorStr = ('Invalid schema definition at ' 
-                        + '</' + sdfPrim.path.name + '>. '
-                        + 'Schema classes must either inherit Typed(IsA), or '
-                        + 'neither inherit typed nor provide a typename(API). \n'
-                        + '       See '
-                        + 'https://graphics.pixar.com/usd/docs/api/_usd__page__generating_schemas.html#Usd_IsAVsAPISchemas '
-                        + 'for more information.\n')
+        errorPrefix = ('Invalid schema definition at ' 
+                       + '<' + str(sdfPrim.path) + '>')
+        errorSuffix = ('       See '
+                       'https://graphics.pixar.com/usd/docs/api/'
+                       '_usd__page__generating_schemas.html#Usd_IsAVsAPISchemas '
+                       'for more information.\n')
+        errorMsg = lambda s: errorPrefix + s + '\n' + errorSuffix
 
-            raise Exception(errorStr)
+        if isConcrete and not isTyped:
+            raise Exception(errorMsg('Schema classes must either inherit '
+                                     'Typed(IsA), or neither inherit typed '
+                                     'nor provide a typename(API).'))
+        
+        if isApi and not sdfPrim.path.name.endswith('API'):
+            raise Exception(errorMsg('API Schemas must named with an API suffix'))
 
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
