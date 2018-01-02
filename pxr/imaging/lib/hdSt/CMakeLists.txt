@@ -38,6 +38,7 @@ pxr_library(hdSt
         geometricShader
         glslfxShader
         glslProgram
+        glUtils
         instancer
         interleavedMemoryManager
         light      

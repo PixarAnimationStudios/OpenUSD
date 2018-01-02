@@ -33,11 +33,11 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -442,7 +442,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
             size_t rangeCount = GetRangeCount();
 
             // pre-pass to combine consecutive buffer range relocation
-            HdGLBufferRelocator relocator(curId, newId);
+            HdStGLBufferRelocator relocator(curId, newId);
             for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
                 _StripedInterleavedBufferRangeSharedPtr range = _GetRangeSharedPtr(rangeIdx);
 
@@ -706,7 +706,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
         return result;
     }
 
-    result = HdGLUtils::ReadBuffer(VBO->GetId(),
+    result = HdStGLUtils::ReadBuffer(VBO->GetId(),
                                    VBO->GetGLDataType(),
                                    VBO->GetNumComponents(),
                                    VBO->GetArraySize(),

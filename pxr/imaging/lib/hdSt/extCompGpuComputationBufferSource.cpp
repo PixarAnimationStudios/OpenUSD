@@ -25,7 +25,6 @@
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/resourceBinder.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -37,6 +36,7 @@
 #include "pxr/imaging/hdSt/computeShader.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include <limits>

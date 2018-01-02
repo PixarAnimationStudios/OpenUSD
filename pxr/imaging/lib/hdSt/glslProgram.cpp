@@ -22,11 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/glf/glslfx.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -131,7 +131,7 @@ HdStGLSLProgram::CompileShader(GLenum type,
     glCompileShader(shader);
 
     std::string logString;
-    if (!HdGLUtils::GetShaderCompileStatus(shader, &logString)) {
+    if (!HdStGLUtils::GetShaderCompileStatus(shader, &logString)) {
         // XXX:validation
         TF_WARN("Failed to compile shader (%s): \n%s",
                 shaderType, logString.c_str());
@@ -175,7 +175,7 @@ HdStGLSLProgram::Link()
 
     std::string logString;
     bool success = true;
-    if (!HdGLUtils::GetProgramLinkStatus(program, &logString)) {
+    if (!HdStGLUtils::GetProgramLinkStatus(program, &logString)) {
         // XXX:validation
         TF_WARN("Failed to link shader: \n%s", logString.c_str());
         success = false;

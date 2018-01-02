@@ -25,6 +25,9 @@
 #define HD_TYPES_H
 
 #include "pxr/pxr.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,6 +37,49 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 typedef uint32_t HdDirtyBits;
 
+///
+/// HdVec4f_2_10_10_10_REV is a compact representation of a GfVec4f.
+/// It uses 10 bits for x, y, and z, and 2 bits for w.
+///
+/// XXX We expect this type to move again as we continue work on
+/// refactoring the GL dependencies.
+/// 
+struct HdVec4f_2_10_10_10_REV {
+    // we treat packed type as single-component values
+    static const size_t dimension = 1;
+
+    HdVec4f_2_10_10_10_REV() { }
+
+    template <typename Vec3Type>
+    HdVec4f_2_10_10_10_REV(Vec3Type const &value) {
+        x = to10bits(value[0]);
+        y = to10bits(value[1]);
+        z = to10bits(value[2]);
+        w = 0;
+    }
+
+    // ref. GL spec 2.3.5.2
+    //   Conversion from floating point to normalized fixed point
+    template <typename R>
+    int to10bits(R v) {
+        return int(
+            std::round(
+                std::min(std::max(v, static_cast<R>(-1)), static_cast<R>(1))
+                *static_cast<R>(511)));
+    }
+
+    bool operator==(const HdVec4f_2_10_10_10_REV &other) const {
+        return (other.w == w && 
+                other.z == z && 
+                other.y == y && 
+                other.x == x);
+    }
+
+    int x : 10;
+    int y : 10;
+    int z : 10;
+    int w : 2;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

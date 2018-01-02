@@ -59,7 +59,6 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
-        glUtils
         instancer
         instanceRegistry
         material

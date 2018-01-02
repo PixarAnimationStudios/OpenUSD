@@ -35,10 +35,10 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/base/vt/array.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -72,7 +72,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 }
 
 VtValue
-HdGLUtils::ReadBuffer(GLint vbo,
+HdStGLUtils::ReadBuffer(GLint vbo,
                       int glDataType,
                       int numComponents,
                       int arraySize,
@@ -168,7 +168,7 @@ HdGLUtils::ReadBuffer(GLint vbo,
 }
 
 bool
-HdGLUtils::GetShaderCompileStatus(GLuint shader, std::string * reason)
+HdStGLUtils::GetShaderCompileStatus(GLuint shader, std::string * reason)
 {
     // glew has to be initialized
     if (!glGetShaderiv) return true;
@@ -189,7 +189,7 @@ HdGLUtils::GetShaderCompileStatus(GLuint shader, std::string * reason)
 }
 
 bool
-HdGLUtils::GetProgramLinkStatus(GLuint program, std::string * reason)
+HdStGLUtils::GetProgramLinkStatus(GLuint program, std::string * reason)
 {
     // glew has to be initialized
     if (!glGetProgramiv) return true;
@@ -212,7 +212,7 @@ HdGLUtils::GetProgramLinkStatus(GLuint program, std::string * reason)
 // ---------------------------------------------------------------------------
 
 void
-HdGLBufferRelocator::AddRange(GLintptr readOffset,
+HdStGLBufferRelocator::AddRange(GLintptr readOffset,
                               GLintptr writeOffset,
                               GLsizeiptr copySize)
 {
@@ -223,7 +223,7 @@ HdGLBufferRelocator::AddRange(GLintptr readOffset,
 }
 
 void
-HdGLBufferRelocator::Commit()
+HdStGLBufferRelocator::Commit()
 {
     HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
 

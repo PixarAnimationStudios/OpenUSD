@@ -28,11 +28,11 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -515,7 +515,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &nam
         return VtValue();
     }
 
-    return HdGLUtils::ReadBuffer(VBO->GetId(),
+    return HdStGLUtils::ReadBuffer(VBO->GetId(),
                                  VBO->GetGLDataType(),
                                  VBO->GetNumComponents(),
                                  VBO->GetArraySize(),

@@ -27,7 +27,7 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/glUtils.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
@@ -816,7 +816,7 @@ HdSt_CodeGen::CompileComputeProgram()
             glCompileShader(shader);
 
             std::string logString;
-            HdGLUtils::GetShaderCompileStatus(shader, &logString);
+            HdStGLUtils::GetShaderCompileStatus(shader, &logString);
             TF_WARN("Failed to compile compute shader:\n%s\n",
                     logString.c_str());
             glDeleteShader(shader);

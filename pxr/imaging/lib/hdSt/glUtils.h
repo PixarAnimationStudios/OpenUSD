@@ -21,63 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_GL_UTILS_H
-#define HD_GL_UTILS_H
+#ifndef HDST_GL_UTILS_H
+#define HDST_GL_UTILS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/base/vt/value.h"
-
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-struct HdVec4f_2_10_10_10_REV {
-    // we treat packed type as single-component values
-    static const size_t dimension = 1;
-
-    HdVec4f_2_10_10_10_REV() { }
-
-    template <typename Vec3Type>
-    HdVec4f_2_10_10_10_REV(Vec3Type const &value) {
-        x = to10bits(value[0]);
-        y = to10bits(value[1]);
-        z = to10bits(value[2]);
-        w = 0;
-    }
-
-    // ref. GL spec 2.3.5.2
-    //   Conversion from floating point to normalized fixed point
-    template <typename R>
-    int to10bits(R v) {
-        return int(
-            std::round(
-                std::min(std::max(v, static_cast<R>(-1)), static_cast<R>(1))
-                *static_cast<R>(511)));
-    }
-
-    bool operator==(const HdVec4f_2_10_10_10_REV &other) const {
-        return (other.w == w && 
-                other.z == z && 
-                other.y == y && 
-                other.x == x);
-    }
-
-    int x : 10;
-    int y : 10;
-    int z : 10;
-    int w : 2;
-};
-
-class HdGLUtils {
+class HdStGLUtils {
 public:
     /// Reads the content of VBO back to VtArray.
     /// The \p vboOffset is expressed in bytes.
-    HD_API
+    HDST_API
     static VtValue ReadBuffer(GLint vbo,
                               int glDataType,
                               int numComponents,
@@ -88,36 +45,36 @@ public:
 
     /// Returns true if the shader has been successfully compiled.
     /// if not, returns false and fills the error log into reason.
-    HD_API
+    HDST_API
     static bool GetShaderCompileStatus(GLuint shader,
                                        std::string * reason = NULL);
 
     /// Returns true if the program has been successfully linked.
     /// if not, returns false and fills the error log into reason.
-    HD_API
+    HDST_API
     static bool GetProgramLinkStatus(GLuint program,
                                      std::string * reason = NULL);
 
 };
 
-/// \class HdGLBufferRelocator
+/// \class HdStGLBufferRelocator
 ///
 /// A utility class to perform batched buffer copy.
 ///
-class HdGLBufferRelocator {
+class HdStGLBufferRelocator {
 public:
-    HdGLBufferRelocator(GLint srcBuffer, GLint dstBuffer) :
+    HdStGLBufferRelocator(GLint srcBuffer, GLint dstBuffer) :
         _srcBuffer(srcBuffer), _dstBuffer(dstBuffer) {}
 
     /// Schedule the range to be copied. The consecutive ranges could be
     /// aggregated into a single copy where possible.
-    HD_API
+    HDST_API
     void AddRange(ptrdiff_t readOffset,
                   ptrdiff_t writeOffset,
                   ptrdiff_t copySize);
 
     /// Execute GL buffer copy command to flush all scheduled range copies.
-    HD_API
+    HDST_API
     void Commit();
 
 private:
@@ -147,4 +104,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_GL_UTILS_H
+#endif // HDST_GL_UTILS_H

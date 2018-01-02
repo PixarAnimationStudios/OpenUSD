@@ -33,10 +33,10 @@
 
 #include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/conversions.h"
-#include "pxr/imaging/hd/glUtils.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -373,7 +373,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                 std::vector<size_t>::iterator newOffsetIt = newOffsets.begin();
 
                 // pre-pass to combine consecutive buffer range relocation
-                HdGLBufferRelocator relocator(curId, newId);
+                HdStGLBufferRelocator relocator(curId, newId);
                 TF_FOR_ALL (it, ranges) {
                     _StripedBufferArrayRangeSharedPtr range =
                         boost::static_pointer_cast<_StripedBufferArrayRange>(*it);
@@ -720,7 +720,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) co
         HdConversions::GetComponentSize(VBO->GetGLDataType()) *
         _offset;
 
-    result = HdGLUtils::ReadBuffer(VBO->GetId(),
+    result = HdStGLUtils::ReadBuffer(VBO->GetId(),
                                    VBO->GetGLDataType(),
                                    VBO->GetNumComponents(),
                                    VBO->GetArraySize(),

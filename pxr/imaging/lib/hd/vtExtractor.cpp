@@ -26,6 +26,7 @@
 #include "pxr/imaging/hd/vtExtractor.h"
 
 #include "pxr/imaging/hd/patchIndex.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -41,9 +42,7 @@
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
-
-
-#include "pxr/imaging/hd/glUtils.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/mpl/vector/vector40.hpp>
 
