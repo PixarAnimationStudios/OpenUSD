@@ -53,6 +53,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBezierTES,           "Mesh.TessEval.Bezier"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
+    ((commonFS,                "Fragment.CommonTerminals"))
     ((surfaceFS,               "Fragment.Surface"))
     ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
     ((surfaceSheerFS,          "Fragment.SurfaceSheer"))
@@ -184,8 +185,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
 
     FS[4] = terminalFS;
-    FS[5] = _tokens->mainFS;
-    FS[6] = TfToken();
+    FS[5] = _tokens->commonFS;
+    FS[6] = _tokens->mainFS;
+    FS[7] = TfToken();
 }
 
 HdSt_MeshShaderKey::~HdSt_MeshShaderKey()

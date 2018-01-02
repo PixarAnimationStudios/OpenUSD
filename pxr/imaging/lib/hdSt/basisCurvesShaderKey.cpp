@@ -47,6 +47,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((basisCurvesFS,         "BasisCurves.Fragment"))
     ((lineVS,                "Line.Vertex"))
     ((surfaceFS,             "Fragment.Surface"))
+    ((commonFS,              "Fragment.CommonTerminals"))
     ((lineFS,                "Line.Fragment"))
     ((instancing,            "Instancing.Transform"))
 );
@@ -65,7 +66,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(TfToken const &basis,
     VS[0]  = _tokens->instancing;
     VS[1]  = refine ? _tokens->basisCurvesVS
                     : _tokens->lineVS;
-    VS[2] = authoredNormals ? _tokens->basisCurvesVertNormalAuth 
+    VS[2]  = authoredNormals ? _tokens->basisCurvesVertNormalAuth 
                              : _tokens->basisCurvesVertNormalCam;
     VS[3]  = TfToken();
 
@@ -81,10 +82,11 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(TfToken const &basis,
                              : _tokens->basisCurvesTESNormalCam;
     TES[4] = TfToken();
 
-    FS[0] = _tokens->surfaceFS;
-    FS[1]  = refine ? _tokens->basisCurvesFS
+    FS[0]  = _tokens->surfaceFS;
+    FS[1]  = _tokens->commonFS;
+    FS[2]  = refine ? _tokens->basisCurvesFS
                     : _tokens->lineFS;
-    FS[2]  = TfToken();
+    FS[3]  = TfToken();
 }
 
 HdSt_BasisCurvesShaderKey::~HdSt_BasisCurvesShaderKey()

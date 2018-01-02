@@ -28,6 +28,22 @@
 --- #import $TOOLS/hd/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl Fragment.CommonTerminals
+
+vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    color.rgb = ApplyColorOverrides(color).rgb;
+
+#if defined(HD_HAS_scalarOverride)
+    return color;
+#else
+    return mix(color,
+               _ShadingTerminal(Peye, Neye, color, patchCoord),
+               GetLightingBlendAmount());
+#endif
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Fragment.Surface
 
 #ifdef HD_HAS_integrateLights
@@ -45,7 +61,7 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
-vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     return surfaceShader(Peye, Neye, color, patchCoord);        
 }
@@ -68,7 +84,7 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
-vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     return surfaceShader(Peye, Neye, color, patchCoord);        
 }
@@ -91,7 +107,7 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
-vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     vec4 surf = surfaceShader(Peye, Neye, color, patchCoord);
 
@@ -109,7 +125,7 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 --- --------------------------------------------------------------------------
 -- glsl Fragment.ConstantColor
 
-vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     return color;
 }

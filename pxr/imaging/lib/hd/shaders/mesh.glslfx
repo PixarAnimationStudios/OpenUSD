@@ -401,13 +401,10 @@ void main(void)
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
     vec3 Neye = GetShadingNormal(inData.Neye, isFlipped);
 
-    color.rgb = ApplyColorOverrides(color).rgb;
+    vec4 patchCoord = GetPatchCoord();
+    color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
 
-    color = mix(color,
-                ShadingTerminal(vec4(Peye, 1), Neye, color, GetPatchCoord()),
-                GetLightingBlendAmount());
-
-    color = ApplyEdgeColor(color, GetPatchCoord());
+    color = ApplyEdgeColor(color, patchCoord);
 
     if (ShouldDiscardByAlpha(color)) {
         discard;

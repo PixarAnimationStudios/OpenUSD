@@ -53,7 +53,7 @@ struct HdSt_PointsShaderKey
 
     TfToken glslfx;
     TfToken VS[3];
-    TfToken FS[3];
+    TfToken FS[4];
 };
 
 

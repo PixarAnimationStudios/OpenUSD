@@ -450,16 +450,13 @@ void main(void)
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
 
-    color.rgb = ApplyColorOverrides(color).rgb;
-
     // We would like to have a better oriented normal here, however to keep the
     // shader fast, we use this camera-facing approximation.
     vec3 Neye = vec3(0,0,1);
 
     vec4 patchCoord = vec4(0);
-    color.rgb = mix(color.rgb,
-                    ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
-                    GetLightingBlendAmount());
+
+    color.rgb = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb;
 
     if (ShouldDiscardByAlpha(color)) {
         discard;

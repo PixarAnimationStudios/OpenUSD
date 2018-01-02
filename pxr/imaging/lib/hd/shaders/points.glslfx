@@ -82,12 +82,8 @@ void main(void)
     vec4 color = vec4(1);
 #endif
 
-    color.rgb = ApplyColorOverrides(color).rgb;
-
     vec4 patchCoord = vec4(0);
-    color.rgb = mix(color.rgb, 
-                    ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
-                    GetLightingBlendAmount());
+    color.rgb = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb;
 
     if (ShouldDiscardByAlpha(color)) {
         discard;
