@@ -528,6 +528,14 @@ class AppController(QtCore.QObject):
             self._ui.threePointLights = QtWidgets.QActionGroup(self)
             self._ui.colorGroup = QtWidgets.QActionGroup(self)
 
+            # This timer is used to coalesce the primView resizes
+            # in certain cases. e.g. When you
+            # deactivate/activate a prim.
+            self._primViewResizeTimer = QtCore.QTimer(self)
+            self._primViewResizeTimer.setInterval(0)
+            self._primViewResizeTimer.setSingleShot(True)
+            self._primViewResizeTimer.timeout.connect(self._resizePrimView)
+
             self._primViewResetTimer = QtCore.QTimer(self)
             self._primViewResetTimer.setInterval(250)
             self._primViewResetTimer.timeout.connect(self._resetPrimView)
@@ -1364,6 +1372,18 @@ class AppController(QtCore.QObject):
         if self._stageView:
             self._stageView.setFocus(QtCore.Qt.TabFocusReason)
             self._stageView.rolloverPicking = self._rolloverPrimInfo
+
+    def _scheduleResizePrimView(self):
+        """ Schedules a resize of the primView widget.
+            This will call _resizePrimView when the timer expires
+            (uses timer coalescing to prevent redundant resizes from occurring).
+        """
+        self._primViewResizeTimer.start(0)
+
+    def _resizePrimView(self):
+        """ Used to coalesce excess calls to resizeColumnToContents.
+        """
+        self._ui.primView.resizeColumnToContents(0)
 
     # This appears to be "reasonably" performant in normal sized pose caches.
     # If it turns out to be too slow, or if we want to do a better job of
@@ -2689,7 +2709,7 @@ class AppController(QtCore.QObject):
             self._ui.primView.expandToDepth(depth-1)
             if changed:
                 # Resize column.
-                self._ui.primView.resizeColumnToContents(0)
+                self._scheduleResizePrimView()
 
                 # Start pushing prim data to the UI during idle cycles.
                 # Qt doesn't need the data unless the item is actually
@@ -2708,7 +2728,7 @@ class AppController(QtCore.QObject):
         """Signal handler for expanded(index), facilitates lazy tree population
         """
         self._populateChildren(self._ui.primView.itemFromIndex(index))
-        self._ui.primView.resizeColumnToContents(0)
+        self._scheduleResizePrimView()
 
     def _toggleShowInactivePrims(self, checked):
         self._showInactivePrims = checked
