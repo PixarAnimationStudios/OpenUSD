@@ -27,8 +27,9 @@
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/instanceCache.h"
 
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/interpolators.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -119,6 +120,57 @@ UsdAttribute::GetTimeSamplesInInterval(const GfInterval& interval,
                                        std::vector<double>* times) const
 {
     return _GetStage()->_GetTimeSamplesInInterval(*this, interval, times);  
+}
+
+/* static */
+bool 
+UsdAttribute::GetUnionedTimeSamples(
+    const std::vector<UsdAttribute> &attrs, 
+    std::vector<double> *times)
+{
+    return GetUnionedTimeSamplesInInterval(attrs, 
+        GfInterval::GetFullInterval(), times);
+}
+
+/* static */
+bool 
+UsdAttribute::GetUnionedTimeSamplesInInterval(
+    const std::vector<UsdAttribute> &attrs, 
+    const GfInterval &interval,
+    std::vector<double> *times)
+{
+    // Clear the vector first before proceeding to accumulate sample times.
+    times->clear();
+
+    if (attrs.empty()) {
+        return true;
+    }
+
+    bool success = true;
+
+    // Vector that holds the per-attribute sample times.
+    std::vector<double> attrSampleTimes;
+
+    // Temporary vector used to hold the union of two time-sample vectors.
+    std::vector<double> tempUnionSampleTimes;
+
+    for (const auto &attr : attrs) {
+        if (!attr) {
+            TF_CODING_ERROR("Invalid attribute: %s", UsdDescribe(attr).c_str());
+            success = false;
+            continue;
+        }
+
+        // This will work even if the attributes belong to different 
+        // USD stages.
+        success = attr.GetStage()->_GetTimeSamplesInInterval(attr, interval,
+                &attrSampleTimes) && success;
+
+        // Merge attrSamplesTimes into the times vector.
+        Usd_MergeTimeSamples(times, attrSampleTimes, &tempUnionSampleTimes);
+    }
+    
+    return success;
 }
 
 bool 

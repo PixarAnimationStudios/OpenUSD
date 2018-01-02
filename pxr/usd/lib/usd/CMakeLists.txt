@@ -73,6 +73,7 @@ pxr_library(usd
         instanceKey
         integerCoding
         interpolators
+        valueUtils
 
     PUBLIC_HEADERS
         api.h
@@ -80,7 +81,6 @@ pxr_library(usd
     PRIVATE_HEADERS
         crateDataTypes.h
         crateValueInliners.h
-        valueUtils.h
         wrapUtils.h
 
     PYTHON_CPPFILES

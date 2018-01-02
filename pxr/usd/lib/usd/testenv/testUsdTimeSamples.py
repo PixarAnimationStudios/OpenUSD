@@ -183,6 +183,34 @@ class TestUsdTimeSamples(unittest.TestCase):
             self.assertEqual(sdUnvaryingAttr.HasInfo("timeSamples"), False)
             self.assertEqual(sdVaryingAttr.HasInfo("timeSamples"), True)
 
+    def test_GetUnionedTimeSamples(self):
+        s = Usd.Stage.CreateInMemory()
+        foo = s.DefinePrim('/foo')
+        attr1 = foo.CreateAttribute('attr1', Sdf.ValueTypeNames.Bool)
+        self.assertEqual([], attr1.GetTimeSamples())
+
+        attr1.Set(True, 1.0)
+        attr1.Set(False, 3.0)
+        
+        attr2 = foo.CreateAttribute('attr2', Sdf.ValueTypeNames.Float)
+        attr2.Set(100.0, 2.0)
+        attr2.Set(200.0, 4.0)
+
+        self.assertEqual(Usd.Attribute.GetUnionedTimeSamples(
+                                [attr1, attr2]), 
+                         [1.0, 2.0, 3.0, 4.0])
+
+        self.assertEqual(Usd.Attribute.GetUnionedTimeSamplesInInterval(
+                                [attr1, attr2], Gf.Interval(1.5, 3.5)), 
+                         [2.0, 3.0])
+
+        attrQueries = [Usd.AttributeQuery(attr1), Usd.AttributeQuery(attr2)]
+        self.assertEqual(Usd.AttributeQuery.GetUnionedTimeSamples(
+                attrQueries), [1.0, 2.0, 3.0, 4.0])
+
+        self.assertEqual(Usd.AttributeQuery.GetUnionedTimeSamplesInInterval(
+                attrQueries, Gf.Interval(1.5, 3.5)), [2.0, 3.0])
+
     def test_EmptyTimeSamplesMap(self):
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''#sdf 1.4.32

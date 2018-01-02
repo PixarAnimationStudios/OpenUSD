@@ -60,6 +60,21 @@ _GetTimeSamplesInInterval(const UsdAttribute &self,
     return result;
 }
 
+static vector<double>
+_GetUnionedTimeSamples(const vector<UsdAttribute> &attrs) {
+    vector<double> result;
+    UsdAttribute::GetUnionedTimeSamples(attrs, &result);
+    return result;
+}
+
+static vector<double>
+_GetUnionedTimeSamplesInInterval(const vector<UsdAttribute> &attrs,
+                                 const GfInterval &interval) {
+    vector<double> result;
+    UsdAttribute::GetUnionedTimeSamplesInInterval(attrs, interval, &result);
+    return result;
+}
+
 static object
 _GetBracketingTimeSamples(const UsdAttribute &self, double desiredTime) {
     double lower = 0.0, upper = 0.0;
@@ -128,6 +143,18 @@ void wrapUsdAttribute()
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
              arg("interval"),
              return_value_policy<TfPySequenceToList>())
+
+        .def("GetUnionedTimeSamples", 
+             _GetUnionedTimeSamples,
+             arg("attrs"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetUnionedTimeSamples")
+
+        .def("GetUnionedTimeSamplesInInterval", 
+             _GetUnionedTimeSamplesInInterval,
+             (arg("attrs"), arg("interval")),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetUnionedTimeSamplesInInterval")
 
         .def("GetNumTimeSamples", &UsdAttribute::GetNumTimeSamples)
 

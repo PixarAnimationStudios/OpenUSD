@@ -118,6 +118,17 @@ Usd_QueryTimeSample(
     return clip->QueryTimeSample(specId, time, interpolator, result);
 }
 
+/// Merges sample times in \p additionalTimeSamples into the vector pointed to 
+/// by \p timeSamples. This assumes that the values in \p timeSamples and
+/// \p additionalTimeSamples are already sorted.
+/// 
+/// If \p tempUnionSampleTimes is not null, it is used as temporary storage in 
+/// the call to std::set_union, to hold the union of the two vectors.
+void
+Usd_MergeTimeSamples(std::vector<double> * const timeSamples, 
+                     const std::vector<double> &additionalTimeSamples,
+                     std::vector<double> * tempUnionTimeSamples=nullptr);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // USD_VALUE_UTILS_H
