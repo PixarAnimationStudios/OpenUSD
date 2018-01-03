@@ -62,7 +62,10 @@ class testUsdExportPointInstancer(unittest.TestCase):
         # Choose the test file based on whether the MASH plugin is available.
         try:
             cmds.loadPlugin("MASH")
-            cls.hasMash = True
+            # Even though, ie, maya2016 Ext has MASH, the node attributes / etc
+            # changed enough to be incompatible with InstancerTestMash.ma; also,
+            # the .ma file has a "requires maya "2018" statement
+            cls.hasMash = cmds.about(apiVersion=1) >= 20180000
         except:
             cls.hasMash = False
 
