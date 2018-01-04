@@ -22,6 +22,15 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from constantGroup import ConstantGroup
+
+
+class ComputedPropertyNames(ConstantGroup):
+    """Names of all available computed properties."""
+    WORLD_BBOX = "World Bounding Box"
+    LOCAL_WORLD_XFORM = "Local to World Xform"
+
+
 #
 # Edit the following to alter the set of custom attributes.
 #
@@ -29,17 +38,16 @@
 # defined below.
 #
 def _GetCustomAttributes(currentPrim, rootDataModel):
-    return ([BoundingBoxAttribute(currentPrim, rootDataModel),
-               LocalToWorldXformAttribute(currentPrim, rootDataModel)],
-            [RelationshipAttribute(currentPrim, relationship) \
-                    for relationship in currentPrim.GetRelationships()])
+    return [BoundingBoxAttribute(currentPrim, rootDataModel),
+               LocalToWorldXformAttribute(currentPrim, rootDataModel)]
 
 #
 # The base class for per-prim custom attributes.
 #
 class CustomAttribute:
-    def __init__(self, currentPrim):
+    def __init__(self, currentPrim, rootDataModel):
         self._currentPrim = currentPrim
+        self._rootDataModel = rootDataModel
 
     def IsVisible(self):
         return True
@@ -56,20 +64,23 @@ class CustomAttribute:
     def GetTypeName(self):
         return ""
 
+    # GetPrimPath function to match UsdAttribute API
+    def GetPrimPath(self):
+        return self._currentPrim.GetPath()
+
 #
 # Displays the bounding box of a prim
 #
 class BoundingBoxAttribute(CustomAttribute):
     def __init__(self, currentPrim, rootDataModel):
-        CustomAttribute.__init__(self, currentPrim)
-        self.rootDataModel = rootDataModel
+        CustomAttribute.__init__(self, currentPrim, rootDataModel)
 
     def GetName(self):
-        return "World Bounding Box"
+        return ComputedPropertyNames.WORLD_BBOX
 
     def Get(self, frame):
         try:
-            bbox = self.rootDataModel.computeWorldBound(self._currentPrim)
+            bbox = self._rootDataModel.computeWorldBound(self._currentPrim)
 
         except RuntimeError, err:
             bbox = "Invalid: " + str(err)
@@ -81,30 +92,34 @@ class BoundingBoxAttribute(CustomAttribute):
 #
 class LocalToWorldXformAttribute(CustomAttribute):
     def __init__(self, currentPrim, rootDataModel):
-        CustomAttribute.__init__(self, currentPrim)
-        self.rootDataModel = rootDataModel
+        CustomAttribute.__init__(self, currentPrim, rootDataModel)
 
     def GetName(self):
-        return "Local to World Xform"
+        return ComputedPropertyNames.LOCAL_WORLD_XFORM
 
     def Get(self, frame):
         try:
-            pwt = self.rootDataModel.getLocalToWorldTransform(self._currentPrim)
+            pwt = self._rootDataModel.getLocalToWorldTransform(self._currentPrim)
         except RuntimeError, err:
             pwt = "Invalid: " + str(err)
 
         return pwt
 
-#
-# Displays a relationship on the prim
-#
-class RelationshipAttribute(CustomAttribute):
-    def __init__(self, currentPrim, relationship):
-        CustomAttribute.__init__(self, currentPrim)
-        self._relationship = relationship
 
-    def GetName(self):
-        return self._relationship.GetName()
+class ComputedPropertyFactory:
+    """Creates computed properties."""
 
-    def Get(self, frame):
-        return self._relationship.GetTargets()
+    def __init__(self, rootDataModel):
+
+        self._rootDataModel = rootDataModel
+
+    def getComputedProperty(self, prim, propName):
+        """Create a new computed property from a prim and property name."""
+
+        if propName == ComputedPropertyNames.WORLD_BBOX:
+            return BoundingBoxAttribute(prim, self._rootDataModel)
+        elif propName == ComputedPropertyNames.LOCAL_WORLD_XFORM:
+            return LocalToWorldXformAttribute(prim, self._rootDataModel)
+        else:
+            raise ValueError("Cannot create computed property '{}'.".format(
+                propName))

@@ -159,10 +159,13 @@ class Myconsole(interpreterView):
         self.locals()['plugCtx'] = appController._plugCtx
         self.locals()['stage'] = appController._rootDataModel.stage
         self.locals()['frame'] = appController._rootDataModel.currentFrame
-        self.locals()['selectedPrims'] = list(appController._currentPrims)
-        self.locals()['selectedInstances'] = appController._stageView._selectedInstances.copy() if appController._stageView else None
-        self.locals()['prim'] = appController._currentPrims[0] if \
-                                        appController._currentPrims else None
-        self.locals()['property'] = appController._currentProp
+        self.locals()['selectedPrims'] = (
+            appController._selectionDataModel.getPrims())
+        self.locals()['selectedInstances'] = (
+            appController._selectionDataModel.getPrimInstanceIndices())
+        self.locals()['prim'] = (
+            appController._selectionDataModel.getFocusPrim())
+        self.locals()['property'] = (
+            appController._selectionDataModel.getFocusProp())
         self.locals()['spec'] = appController._currentSpec
         self.locals()['layer'] = appController._currentLayer

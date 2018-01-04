@@ -29,8 +29,10 @@ def GetScalarTypeFromAttr(attr):
     # GetTypeName function, while Sdf.AttributeSpec has a typeName attr.
     if hasattr(attr, 'GetTypeName'):
         typeName = attr.GetTypeName()
-    else:
+    elif hasattr(attr, 'typeName'):
         typeName = attr.typeName
+    else:
+        typeName = ""
 
     from pxr import Sdf
     if isinstance(typeName, Sdf.ValueTypeName):

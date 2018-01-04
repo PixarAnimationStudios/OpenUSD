@@ -25,6 +25,7 @@
 
 from pxr import UsdImagingGL
 from pxr.Usdviewq.qt import QtWidgets
+from pxr.Usdviewq.selectionDataModel import ALL_INSTANCES
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
@@ -50,8 +51,7 @@ def _testFrameSelection(appController):
 
     # Frame the front sphere.
 
-    appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._selectionDataModel.setPrimPath("/frontSphere", ALL_INSTANCES)
     _emitFrameAction(appController)
 
     _takeShot(appController, "framed.png")

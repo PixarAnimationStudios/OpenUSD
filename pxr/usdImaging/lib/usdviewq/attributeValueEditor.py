@@ -21,10 +21,12 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from pxr import Usd
 from qt import QtCore, QtWidgets
 from attributeValueEditorUI import Ui_AttributeValueEditor
 from pythonExpressionPrompt import PythonExpressionPrompt
 from common import GetAttributeColor, UIPropertyValueSourceColors
+from scalarTypes import ToString
 
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
@@ -54,23 +56,22 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # variable data.
         self._appController = appController
 
-    def populate(self, name, prim):
+    def populate(self, primPath, propName):
         # called when the selected attribute has changed
-        # gets the attribute object and the source prim
+        self._primPath = primPath
+
         try:
-            self._attribute = self._appController._attributeDict[name]
+            self._attribute = self._appController._attributeDict[propName]
         except KeyError:
-            self._appController._attributeDict[name] = ''
-            self._attribute = self._appController._attributeDict[name]
+            self._attribute = None
 
         self._isSet = True  # an attribute is selected
-        self._prim = prim
 
         self.refresh()  # load the value at the current frame
 
     def _FindView(self, attr):
-        from customAttributes import CustomAttribute
-        if isinstance(attr, CustomAttribute):
+        # Early-out for CustomAttributes and Relationships
+        if not isinstance(attr, Usd.Attribute):
             return None
 
         for attrView in self._extraAttrViews:
@@ -80,20 +81,28 @@ class AttributeValueEditor(QtWidgets.QWidget):
         return None
 
     def refresh(self):
-
         # usually called upon frame change or selected attribute change
         if not self._isSet:
             return
 
         # attribute connections and relationship targets have no value to display
         # in the value viewer.
-        if self._attribute == '':
+        if self._attribute is None:
+            return
+
+        # If the current attribute doesn't belong to the current prim, don't
+        # display its value.
+        if self._attribute.GetPrimPath() != self._primPath:
+            self._ui.valueViewer.setText("")
             return
 
         frame = self._appController._rootDataModel.currentFrame
 
         # get the value of the attribute
-        self._val = self._attribute.Get(frame)
+        if isinstance(self._attribute, Usd.Relationship):
+            self._val = self._attribute.GetTargets()
+        else: # Usd.Attribute or CustomAttribute
+            self._val = self._attribute.Get(frame)
 
         whichView = self._FindView(self._attribute)
         if whichView:
@@ -106,8 +115,11 @@ class AttributeValueEditor(QtWidgets.QWidget):
             # set text and color in the value viewer
             self._ui.valueViewer.setTextColor(txtColor)
 
-            from scalarTypes import ToString
-            rowText = ToString(self._val, self._attribute.GetTypeName())
+            if isinstance(self._attribute, Usd.Relationship):
+                typeName = None
+            else:
+                typeName = self._attribute.GetTypeName()
+            rowText = ToString(self._val, typeName)
             self._ui.valueViewer.setText(rowText)
 
     def clear(self):

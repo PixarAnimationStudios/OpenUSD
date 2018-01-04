@@ -24,7 +24,7 @@
 from qt import QtCore, QtGui, QtWidgets
 import os, time, sys, platform
 from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
-from customAttributes import CustomAttribute, RelationshipAttribute
+from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
 
 class UIBaseColors(ConstantGroup):
@@ -169,8 +169,8 @@ def PrintWarning(title, description):
     print >> msg, "------------------------------------------------------------"
 
 def GetShortString(prop, frame):
-    if isinstance(prop, RelationshipAttribute):
-        val = ", ".join(str(p) for p in prop.Get(frame))
+    if isinstance(prop, Usd.Relationship):
+        val = ", ".join(str(p) for p in prop.GetTargets())
     elif isinstance(prop, (Usd.Attribute, CustomAttribute)):
         val = prop.Get(frame)
     elif isinstance(prop, Sdf.AttributeSpec):
@@ -215,7 +215,8 @@ def GetAttributeStatus(attribute, frame):
 # Return a Font corresponding to certain attribute properties.
 # Currently this only applies italicization on interpolated time samples.
 def GetAttributeTextFont(attribute, frame):
-    if isinstance(attribute, CustomAttribute):
+    # Early-out for CustomAttributes and Relationships
+    if not isinstance(attribute, Usd.Attribute):
         return None
 
     frameVal = frame.GetValue()
@@ -231,8 +232,8 @@ def GetAttributeTextFont(attribute, frame):
 # Helper function that takes attribute status and returns the display color
 def GetAttributeColor(attribute, frame, hasValue=None, hasAuthoredValue=None,
                       valueIsDefault=None):
-
-    if isinstance(attribute, CustomAttribute):
+    # Early-out for CustomAttributes and Relationships
+    if not isinstance(attribute, Usd.Attribute):
         return UIBaseColors.RED.color()
 
     statusToColor = {Usd.ResolveInfoSourceFallback   : UIPropertyValueSourceColors.FALLBACK,
@@ -547,3 +548,8 @@ class PrimNotFoundException(Exception):
         super(PrimNotFoundException, self).__init__(
             "Prim not found at path in stage: %s" % str(path))
 
+class PropertyNotFoundException(Exception):
+    """Raised when a property does not exist at a valid path."""
+    def __init__(self, path):
+        super(PropertyNotFoundException, self).__init__(
+            "Property not found at path in stage: %s" % str(path))

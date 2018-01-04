@@ -69,6 +69,10 @@ def _testBasic(appController):
     # reroutes it to the focusWidget.
     appObj = QtWidgets.QApplication.instance()
 
+    # Get the stage and selection data model to query selection.
+    stage = appController._rootDataModel.stage
+    selectionDataModel = appController._selectionDataModel
+
     # This test is highly asset-dependent.  Our scene has a single hierarchy
     # chain, so it takes two "move right" actions to select each level of
     # path hierarchy
@@ -76,10 +80,8 @@ def _testBasic(appController):
     for i in xrange(2 * path.pathElementCount):
         _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
 
-    # XXX Change to using selection datamodel when available
-    assert appController._currentPrims and len(appController._currentPrims) == 1
-    selected = appController._currentPrims[0]
-    assert selected.GetPath() == path
+    assert len(selectionDataModel.getPrims()) == 1
+    assert selectionDataModel.getFocusPrim().GetPrimPath() == path
 
     # Now roll it all back up
     for i in xrange(1, 2 * path.pathElementCount):
@@ -87,14 +89,12 @@ def _testBasic(appController):
         # to the focusWidget.
         _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
 
-    # XXX Change to using selection datamodel when available
-    assert appController._currentPrims and len(appController._currentPrims) == 1
-    selected = appController._currentPrims[0]
-    assert selected.IsPseudoRoot()
+    assert len(selectionDataModel.getPrims()) == 1
+    assert selectionDataModel.getFocusPrim().IsPseudoRoot()
     
     # Then test that right/left keys sent to other widgets (including the 
     # MainWindow) will result in transport movement
-    startFrame = appController._rootDataModel.stage.GetStartTimeCode()
+    startFrame = stage.GetStartTimeCode()
     appController._mainWindow.setFocus()
     assert appController._rootDataModel.currentFrame == startFrame
 

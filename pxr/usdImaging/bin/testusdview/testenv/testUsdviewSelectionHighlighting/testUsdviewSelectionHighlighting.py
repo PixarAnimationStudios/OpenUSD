@@ -24,6 +24,7 @@
 #
 
 from pxr import Sdf, UsdImagingGL
+from pxr.Usdviewq.qt import QtWidgets
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
@@ -32,8 +33,8 @@ def _modifySettings(appController):
 
 # Make a single selection.
 def _testSingleSelection(appController):
-    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._selectionDataModel.setPrimPath("/backSphere")
+    QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight.png", "PNG")
@@ -43,8 +44,8 @@ def _testNoHighlightSelection(appController):
     appController._ui.actionNever.setChecked(True)
     appController._changeSelHighlightMode(appController._ui.actionNever)
 
-    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._selectionDataModel.setPrimPath("/backSphere")
+    QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_none.png", "PNG")
@@ -54,10 +55,11 @@ def _testNoHighlightSelection(appController):
 
 # Make two selections.
 def _testDoubleSelection(appController):
-    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
-    appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "add")
-    appController._itemSelectionChanged()
+    with appController._selectionDataModel.batchPrimChanges:
+        appController._selectionDataModel.clearPrims()
+        appController._selectionDataModel.addPrimPath("/backSphere")
+        appController._selectionDataModel.addPrimPath("/frontSphere")
+    QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_double.png", "PNG")
@@ -67,8 +69,8 @@ def _testColorSelection(appController):
     appController._ui.actionSelCyan.setChecked(True)
     appController._changeHighlightColor(appController._ui.actionSelCyan)
 
-    appController.selectPrimByPath("/backSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._selectionDataModel.setPrimPath("/backSphere")
+    QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_color.png", "PNG")

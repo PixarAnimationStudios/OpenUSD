@@ -40,6 +40,7 @@ from pxr import CameraUtil
 
 from common import RenderModes, ShadedRenderModes, Timer
 from rootDataModel import RootDataModel
+from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
 
@@ -1408,7 +1409,7 @@ class StageView(QtOpenGL.QGLWidget):
         return self._lastComputedGfCamera.frustum
 
     def __init__(self, parent=None, dataModel=None, rootDataModel=None,
-            printTiming=False):
+            selectionDataModel=None, printTiming=False):
 
         glFormat = QtOpenGL.QGLFormat()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
@@ -1421,12 +1422,16 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._dataModel = dataModel or StageView.DefaultDataModel()
         self._rootDataModel = rootDataModel or RootDataModel()
+        self._selectionDataModel = (
+            selectionDataModel or SelectionDataModel(self._rootDataModel))
         self._printTiming = printTiming
 
         self._isFirstImage = True
 
         self._dataModel.signalDefaultMaterialChanged.connect(self.updateGL)
         self._rootDataModel.signalStageReplaced.connect(self._stageReplaced)
+        self._selectionDataModel.signalPrimSelectionChanged.connect(
+            self._primSelectionChanged)
 
         self._dataModel.freeCamera = FreeCamera(True)
         self._lastComputedGfCamera = None
@@ -1468,7 +1473,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._dist = 50
         self._oldDist = self._dist
         self._bbox = Gf.BBox3d()
-        self._brange = self._bbox.ComputeAlignedRange()
         self._selectionBBox = Gf.BBox3d()
         self._selectionBrange = Gf.Range3d()
         self._selectionOrientedRange = Gf.Range3d()
@@ -1484,10 +1488,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._overrideFar = None
 
         self._cameraPrim = None
-        self._selectedPrims = []
-
-        # blind state of instance selection (key:path, value:indices)
-        self._selectedInstances = dict()
 
         self._forceRefresh = False
         self._renderTime = 0
@@ -1747,17 +1747,53 @@ class StageView(QtOpenGL.QGLWidget):
         # force the bbox to refresh
         self._bbox = Gf.BBox3d()
 
-    def setSelectedPrims(self, selectedPrims, frame, resetCam=False,
-                forceComputeBBox=False, frameFit=1.1):
-        '''Set the selected prims. resetCam = True causes the camera to reframe
+    def recomputeBBox(self):
+        selectedPrims = self._selectionDataModel.getLCDPrims()
+        try:
+            startTime = time()
+            self._bbox = self.getStageBBox()
+            if len(selectedPrims) == 1 and selectedPrims[0].GetPath() == '/':
+                if self._bbox.GetRange().IsEmpty():
+                    self._selectionBBox = self._getDefaultBBox()
+                else:
+                    self._selectionBBox = self._bbox
+            else:
+                self._selectionBBox = self.getSelectionBBox()
+
+            # BBox computation time for HUD
+            endTime = time()
+            ms = (endTime - startTime) * 1000.
+            self.signalBboxUpdateTimeChanged.emit(ms)
+
+        except RuntimeError:
+            # This may fail, but we want to keep the UI available,
+            # so print the error and attempt to continue loading
+            self.signalErrorMessage.emit("unable to get bounding box on "
+               "stage at frame {0}".format(self._rootDataModel.currentFrame))
+            import traceback
+            traceback.print_exc()
+            self._bbox = self._getEmptyBBox()
+            self._selectionBBox = self._getDefaultBBox()
+
+        self._selectionBrange = self._selectionBBox.ComputeAlignedRange()
+        self._selectionOrientedRange = self._selectionBBox.box
+        self._bbcenterForBoxDraw = self._selectionBBox.ComputeCentroid()
+
+    def resetCam(self, frameFit=1.1):
+        validFrameRange = (not self._selectionBrange.IsEmpty() and
+            self._selectionBrange.GetMax() != self._selectionBrange.GetMin())
+        if validFrameRange:
+            self.switchToFreeCamera()
+            self._dataModel.freeCamera.frameSelection(self._selectionBBox,
+                frameFit)
+            self.computeAndSetClosestDistance()
+
+    def updateView(self, resetCam=False, forceComputeBBox=False, frameFit=1.1):
+        '''Updates bounding boxes and camera. resetCam = True causes the camera to reframe
         the specified prims. frameFit sets the ratio of the camera's frustum's
         relevant dimension to the object's bounding box. 1.1, the default,
         fits the prim's bounding box in the frame with a roughly 10% margin.
         '''
-        self._selectedPrims = selectedPrims
-
-        # set highlighted paths to renderer
-        self._updateSelection()
 
         # Only compute BBox if forced, if needed for drawing,
         # or if this is the first time running.
@@ -1766,48 +1802,13 @@ class StageView(QtOpenGL.QGLWidget):
                       (self._dataModel.showAABBox or self._dataModel.showOBBox))\
                      or self._bbox.GetRange().IsEmpty()
         if computeBBox:
-            try:
-                startTime = time()
-                self._bbox = self.getStageBBox()
-                if len(selectedPrims) == 1 and selectedPrims[0].GetPath() == '/':
-                    if self._bbox.GetRange().IsEmpty():
-                        self._selectionBBox = self._getDefaultBBox()
-                    else:
-                        self._selectionBBox = self._bbox
-                else:
-                    self._selectionBBox = self.getSelectionBBox()
-
-                # BBox computation time for HUD
-                endTime = time()
-                ms = (endTime - startTime) * 1000.
-                self.signalBboxUpdateTimeChanged.emit(ms)
-
-            except RuntimeError:
-                # This may fail, but we want to keep the UI available,
-                # so print the error and attempt to continue loading
-                self.signalErrorMessage.emit("unable to get bounding box on "
-                   "stage at frame {0}".format(self._rootDataModel.currentFrame))
-                import traceback
-                traceback.print_exc()
-                self._bbox = self._getEmptyBBox()
-                self._selectionBBox = self._getDefaultBBox()
-
-        self._brange = self._bbox.ComputeAlignedRange()
-        self._selectionBrange = self._selectionBBox.ComputeAlignedRange()
-        self._selectionOrientedRange = self._selectionBBox.box
-        self._bbcenterForBoxDraw = self._selectionBBox.ComputeCentroid()
-
-        validFrameRange = (not self._selectionBrange.IsEmpty() and
-            self._selectionBrange.GetMax() != self._selectionBrange.GetMin())
-        if resetCam and validFrameRange:
-            self.switchToFreeCamera()
-            self._dataModel.freeCamera.frameSelection(self._selectionBBox, frameFit)
-            self.computeAndSetClosestDistance()
+            self.recomputeBBox()
+        if resetCam:
+            self.resetCam(frameFit)
 
         self.updateGL()
 
     def _updateSelection(self):
-        psuRoot = self._rootDataModel.stage.GetPseudoRoot()
         renderer = self._getRenderer()
         if not renderer:
             # error has already been issued
@@ -1815,14 +1816,17 @@ class StageView(QtOpenGL.QGLWidget):
 
         renderer.ClearSelected()
 
-        for p in self._selectedPrims:
-            if p == psuRoot:
+        psuRoot = self._rootDataModel.stage.GetPseudoRoot()
+        instanceIndices = self._selectionDataModel.getPrimInstanceIndices()
+        for prim in self._selectionDataModel.getLCDPrims():
+            if prim == psuRoot:
                 continue
-            if self._selectedInstances.has_key(p.GetPath()):
-                for instanceIndex in self._selectedInstances[p.GetPath()]:
-                    renderer.AddSelected(p.GetPath(), instanceIndex)
+            primInstanceIndices = instanceIndices[prim]
+            if primInstanceIndices is not ALL_INSTANCES:
+                for instanceIndex in primInstanceIndices:
+                    renderer.AddSelected(prim.GetPath(), instanceIndex)
             else:
-                renderer.AddSelected(p.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
+                renderer.AddSelected(prim.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
 
     def _getEmptyBBox(self):
         return Gf.BBox3d()
@@ -1839,7 +1843,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     def getSelectionBBox(self):
         bbox = Gf.BBox3d()
-        for n in self._selectedPrims:
+        for n in self._selectionDataModel.getLCDPrims():
             if n.IsActive() and not n.IsInMaster():
                 primBBox = self._rootDataModel.computeWorldBound(n)
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
@@ -2133,7 +2137,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
                                          gfCamera.clippingPlanes]
 
-        if self._selectedPrims:
+        if len(self._selectionDataModel.getLCDPrims()) > 0:
             sceneAmbient = (0.01, 0.01, 0.01, 1.0)
             material = Glf.SimpleMaterial()
             lights = []
@@ -2609,41 +2613,16 @@ class StageView(QtOpenGL.QGLWidget):
                 selectedPrimPath = instancePrimPath
                 selectedInstanceIndex = absInstanceIndex
         else:
-            selectedInstanceIndex = UsdImagingGL.GL.ALL_INSTANCES
+            selectedInstanceIndex = ALL_INSTANCES
 
         selectedPrim = self._rootDataModel.stage.GetPrimAtPath(selectedPrimPath)
 
         if button:
-            self.signalPrimSelected.emit(selectedPrimPath, selectedInstanceIndex, button, modifiers)
+            self.signalPrimSelected.emit(
+                selectedPrimPath, selectedInstanceIndex, button, modifiers)
         else:
-            self.signalPrimRollover.emit(selectedPrimPath, selectedInstanceIndex, modifiers)
-
-    def clearInstanceSelection(self):
-        self._selectedInstances.clear()
-
-    def setInstanceSelection(self, path, instanceIndex, selected):
-        if selected:
-            if not self._selectedInstances.has_key(path):
-                self._selectedInstances[path] = set()
-            if instanceIndex == UsdImagingGL.GL.ALL_INSTANCES:
-                del self._selectedInstances[path]
-            else:
-                self._selectedInstances[path].add(instanceIndex)
-        else:
-            if self._selectedInstances.has_key(path):
-                self._selectedInstances[path].remove(instanceIndex)
-                if len(self._selectedInstances[path]) == 0:
-                    del self._selectedInstances[path]
-
-    def getSelectedInstanceIndices(self, path):
-        if self._selectedInstances.has_key(path):
-            return self._selectedInstances[path]
-        return set()
-
-    def getInstanceSelection(self, path, instanceIndex):
-        if instanceIndex in self.getSelectedInstanceIndices(path):
-            return True
-        return False
+            self.signalPrimRollover.emit(
+                selectedPrimPath, selectedInstanceIndex, modifiers)
 
     def glDraw(self):
         # override glDraw so we can time it.
@@ -2724,3 +2703,8 @@ class StageView(QtOpenGL.QGLWidget):
                     self._rootDataModel.stage.GetRootLayer().realPath))
             sdfLayer.Save()
 
+    def _primSelectionChanged(self):
+
+        # set highlighted paths to renderer
+        self._updateSelection()
+        self.update()

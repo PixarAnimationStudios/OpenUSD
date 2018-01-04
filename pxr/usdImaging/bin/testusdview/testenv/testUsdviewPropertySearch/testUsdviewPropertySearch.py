@@ -24,10 +24,17 @@
 #
 
 def _assertSelectedProp(appController, propName):
-    selected = appController._ui.propertyView.selectedItems()
-    assert len(selected) == 1
-    # 1 indicates the first column where we store prop names
-    assert propName == selected[0].text(1), propName + '!=' + selected[0].text(1)
+    selected = appController._selectionDataModel.getProps()
+    selectedComputed = appController._selectionDataModel.getComputedProps()
+
+    if len(selected) == 1:
+        assert len(selectedComputed) == 0
+        selectedPropName = selected[0].GetName()
+    else:
+        assert len(selectedComputed) == 1
+        selectedPropName = selectedComputed[0].GetName()
+    
+    assert propName == selectedPropName, propName + '!=' + selectedPropName
 
 def _selectPrim(appController, primName):
     appController._ui.primViewLineEdit.setText(primName)

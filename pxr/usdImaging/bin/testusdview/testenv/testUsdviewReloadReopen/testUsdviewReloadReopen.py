@@ -23,7 +23,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import UsdImagingGL
 from pxr.Usdviewq.qt import QtWidgets
 
 # XXX We will probably want harness-level facilities for this, as it
@@ -72,16 +71,14 @@ def _testReloadReopen(appController):
     #
     # Frame the front sphere, and color it red
     #
-    appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._selectionDataModel.setPrimPath("/frontSphere")
     stage = appController._rootDataModel.stage
     sphere = UsdGeom.Sphere(stage.GetPrimAtPath("/frontSphere"))
     with Usd.EditContext(stage, stage.GetRootLayer()):
         sphere.CreateDisplayColorAttr([(1, 0, 0)])
     _emitFrameAction(appController)
     # Finally, clear selection so the red really shows
-    appController.selectPrimByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._selectionDataModel.clear()
 
     _takeShot(appController, "coloredAndFramed.png")
 

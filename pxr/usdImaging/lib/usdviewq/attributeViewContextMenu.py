@@ -25,7 +25,8 @@ import sys
 from qt import QtGui, QtWidgets, QtCore
 from pxr import Sdf
 from usdviewContextMenuItem import UsdviewContextMenuItem
-from common import PropertyViewIndex, PropertyViewDataRoles, PrimNotFoundException
+from common import (PropertyViewIndex, PropertyViewDataRoles,
+                    PrimNotFoundException, PropertyNotFoundException)
 
 #
 # Specialized context menu for running commands in the attribute viewer.
@@ -56,6 +57,35 @@ def _GetContextMenuItems(item, appController):
              # Individual/multi target selection menus
              CopyTargetPathMenuItem(appController, item),
              SelectTargetPathMenuItem(appController, item)]
+
+def _selectPrimsAndProps(appController, paths):
+    prims = []
+    props = []
+    for path in paths:
+
+        primPath = path.GetAbsoluteRootOrPrimPath()
+        prim = appController._rootDataModel.stage.GetPrimAtPath(primPath)
+        if not prim:
+            raise PrimNotFoundException(primPath)
+        prims.append(prim)
+
+        if path.IsPropertyPath():
+            prop = prim.GetProperty(path.name)
+            if not prop:
+                raise PropertyNotFoundException(path)
+            props.append(prop)
+
+    with appController._selectionDataModel.batchPrimChanges:
+        appController._selectionDataModel.clearPrims()
+        for prim in prims:
+            appController._selectionDataModel.addPrim(prim)
+
+    with appController._selectionDataModel.batchPropChanges:
+        appController._selectionDataModel.clearProps()
+        for prop in props:
+            appController._selectionDataModel.addProp(prop)
+
+    appController._selectionDataModel.clearComputedProps()
 
 #
 # The base class for propertyview context menu items.
@@ -164,13 +194,10 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
         return "Select Target Path"
 
     def RunCommand(self):
-        paths = [s.text(PropertyViewIndex.NAME) for s in self.GetSelectedOfType()]
-        try:
-            self._appController.jumpToTargetPaths(paths)
-        except PrimNotFoundException as ex:
-            # jumpToTargetPaths couldn't find one of the prims
-            sys.stderr.write("ERROR: %s\n" % ex.message)
-            return
+        paths = [Sdf.Path(s.text(PropertyViewIndex.NAME))
+            for s in self.GetSelectedOfType()]
+
+        _selectPrimsAndProps(self._appController, paths)
 
 # --------------------------------------------------------------------
 # Target owning property selection menus
@@ -199,15 +226,9 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
         if not self._item:
             return
 
-        # Deselect the parent and jump to all of its children
-        self._item.setSelected(False)
-        paths = [self._item.child(i).text(PropertyViewIndex.NAME) for i in range(0, self._item.childCount())]
-        try:
-            self._appController.jumpToTargetPaths(paths)
-        except PrimNotFoundException as ex:
-            # jumpToTargetPaths couldn't find one of the prims
-            sys.stderr.write("ERROR: %s\n" % ex.message)
-            return
+        paths = [Sdf.Path(self._item.child(i).text(PropertyViewIndex.NAME))
+            for i in range(0, self._item.childCount())]
+        _selectPrimsAndProps(self._appController, paths)
 
 #
 # Copy all target paths under the currently selected relationship to the clipboard

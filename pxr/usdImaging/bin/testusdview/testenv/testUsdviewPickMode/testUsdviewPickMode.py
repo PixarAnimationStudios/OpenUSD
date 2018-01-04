@@ -24,10 +24,11 @@
 #
 
 from pxr import Sdf
+from pxr.Usdviewq.selectionDataModel import ALL_INSTANCES
+from pxr.Usdviewq.qt import QtCore
 
 INSTANCER_PATH = "/Foo/Cube/Instancer"
 FOO_PATH = "/Foo"
-REPLACE_MODE = "replace"
 
 # Remove any unwanted visuals from the view and set complexity.
 def _modifySettings(appController):
@@ -41,18 +42,20 @@ def _setPickModeAction(appController, action):
 
 # Check that the current selection is the expected selection.
 def _checkPrimSelection(appController, path):
-    primSelection = appController._currentPrims
+    primSelection = appController._selectionDataModel.getPrimPaths()
     assert len(primSelection) == 1
-    assert primSelection[0].GetPath() == path
+    assert primSelection[0] == path
 
 # Check that no instances are selected.
 def _checkNoInstancesSelected(appController, path):
-    instanceSelection = appController._stageView._selectedInstances
-    assert len(instanceSelection) == 0
+    instanceSelection = appController._selectionDataModel.getPrimPathInstanceIndices()
+    for instanceIndices in instanceSelection.values():
+        assert instanceIndices == ALL_INSTANCES
 
 # Check that the specified instance is the only selected instance.
 def _checkInstanceSelection(appController, path, instanceIndex):
-    instanceSelection = appController._stageView._selectedInstances
+    path = Sdf.Path(str(path))
+    instanceSelection = appController._selectionDataModel.getPrimPathInstanceIndices()
     assert len(instanceSelection) == 1
     assert path in instanceSelection
     instanceIndices = instanceSelection[path]
@@ -62,7 +65,7 @@ def _checkInstanceSelection(appController, path, instanceIndex):
 # Test picking a prim.
 def _testPickPrims(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Prims)
-    appController.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+    appController.onPrimSelected(INSTANCER_PATH, 0, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkNoInstancesSelected(appController, INSTANCER_PATH)
@@ -70,7 +73,7 @@ def _testPickPrims(appController):
 # Test picking a model.
 def _testPickModels(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Models)
-    appController.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+    appController.onPrimSelected(INSTANCER_PATH, 0, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, FOO_PATH)
     _checkNoInstancesSelected(appController, INSTANCER_PATH)
@@ -78,7 +81,7 @@ def _testPickModels(appController):
 # Test picking an instance.
 def _testPickInstances(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Instances)
-    appController.selectPrimByPath(INSTANCER_PATH, 0, REPLACE_MODE, True)
+    appController.onPrimSelected(INSTANCER_PATH, 0, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkInstanceSelection(appController, INSTANCER_PATH, 0)
