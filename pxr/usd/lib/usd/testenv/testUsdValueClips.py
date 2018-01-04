@@ -809,6 +809,14 @@ class TestUsdValueClips(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException) as e:
                 model.SetClipTemplateStride(0)
 
+            # Offsets are not available in legacy mode, so we skip during that test
+            if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+                model.SetClipTemplateActiveOffset(2)
+                self.assertEqual(model.GetClipTemplateActiveOffset(), 2)
+
+                model.SetClipTemplateActiveOffset(-5)
+                self.assertEqual(model.GetClipTemplateActiveOffset(), -5)
+
     def test_ClipSetAuthoring(self):
         """Tests clip authoring API with clip sets on Usd.ClipsAPI"""
         allFormats = ['usd' + x for x in 'ac']
@@ -1007,6 +1015,27 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr, time=33, expected=Vt.Vec3fArray(2, (33,33,33)))
         _Check(self.assertEqual, attr, time=49, expected=Vt.Vec3fArray(2, (49,49,49)))
 
+        # Test with template offsets applied
+        # Offsets are not available in legacy mode, so we skip during that test
+        if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+            stage = Usd.Stage.Open('template/int3/result_int_3.usda')
+            prim = stage.GetPrimAtPath(primPath)
+            attr = prim.GetAttribute(attrName)
+            _Check(self.assertEqual, attr, time=2.5, expected=Vt.Vec3fArray(2, (1,1,1)))
+            _Check(self.assertEqual, attr, time=3.0, expected=Vt.Vec3fArray(2, (1,1,1)))
+            _Check(self.assertEqual, attr, time=3.5, expected=Vt.Vec3fArray(2, (3,3,3)))
+            _Check(self.assertEqual, attr, time=4.0, expected=Vt.Vec3fArray(2, (3,3,3)))
+            _Check(self.assertEqual, attr, time=4.5, expected=Vt.Vec3fArray(2, (3,3,3)))
+
+            # XXX: bug/155441 precludes us from adding the following test case
+            # stage = Usd.Stage.Open('template/int4/result_int_4.usda')
+            # prim = stage.GetPrimAtPath(primPath)
+            # attr = prim.GetAttribute(attrName)
+            # _Check(self.assertEqual, attr, time=0, expected=Vt.Vec3fArray(2, (0,0,0)))
+            # _Check(self.assertEqual, attr, time=1, expected=Vt.Vec3fArray(2, (1,1,1)))
+            # _Check(self.assertEqual, attr, time=3.5, expected=Vt.Vec3fArray(2, (3,3,3)))
+            # _Check(self.assertEqual, attr, time=4.0, expected=Vt.Vec3fArray(2, (4,4,4)))
+
         stage = Usd.Stage.Open('template/subint1/result_subint_1.usda')
         prim = stage.GetPrimAtPath(primPath)
         attr = prim.GetAttribute(attrName)
@@ -1022,6 +1051,21 @@ class TestUsdValueClips(unittest.TestCase):
         _Check(self.assertEqual, attr, time=10.05, expected=Vt.Vec3fArray(2, (10.05, 10.05, 10.05)))
         _Check(self.assertEqual, attr, time=10.10, expected=Vt.Vec3fArray(2, (10.10, 10.10, 10.10)))
         _Check(self.assertEqual, attr, time=10.15, expected=Vt.Vec3fArray(2, (10.15, 10.15, 10.15)))
+
+        # Test with template offsets applied
+        # Offsets are not available in legacy mode, so we skip during that test
+        if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
+            stage = Usd.Stage.Open('template/subint3/result_subint_3.usda')
+            prim = stage.GetPrimAtPath(primPath)
+            attr = prim.GetAttribute(attrName)
+
+            _Check(self.assertEqual, attr, time=9.95,  expected=Vt.Vec3fArray(2, (10, 10, 10)))
+            _Check(self.assertEqual, attr, time=10.00, expected=Vt.Vec3fArray(2, (10, 10, 10)))
+            _Check(self.assertEqual, attr, time=10.05, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
+            _Check(self.assertEqual, attr, time=10.10, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
+            _Check(self.assertEqual, attr, time=10.15, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
+            _Check(self.assertEqual, attr, time=10.20, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
+            _Check(self.assertEqual, attr, time=10.25, expected=Vt.Vec3fArray(2, (10.1, 10.1, 10.1)))
 
     def test_ClipTemplateWithOffsets(self):
         stage = Usd.Stage.Open('template/layerOffsets/root.usda')
@@ -1050,7 +1094,7 @@ class TestUsdValueClips(unittest.TestCase):
             # but since we only have 3 clips we hold the value from the
             # last one.
             _Check(self.assertEqual, attr, time=6.0, expected=3.0)
-    
+
     def test_ClipsWithSparseOverrides(self):
         # This layer overrides the clipActive metadata to flip
         # the active clips
@@ -1095,7 +1139,7 @@ class TestUsdValueClips(unittest.TestCase):
             return
 
         stage = Usd.Stage.Open('clipsets/root.usda')
-        
+
         prim = stage.GetPrimAtPath('/Set/Child_1')
         attr = prim.GetAttribute('attr')
         _Check(self.assertEqual, attr, time=0, expected=-5.0)
@@ -1117,7 +1161,7 @@ class TestUsdValueClips(unittest.TestCase):
         # test asset doesn't exist, just skip over it.
         if not os.path.isdir('clipsetListEdits'):
             return
-        
+
         stage = Usd.Stage.Open('clipsetListEdits/root.usda')
 
         prim = stage.GetPrimAtPath('/DefaultOrderTest')

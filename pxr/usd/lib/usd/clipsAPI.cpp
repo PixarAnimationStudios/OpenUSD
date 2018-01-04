@@ -502,6 +502,38 @@ UsdClipsAPI::SetClipTemplateStride(const double clipTemplateStride,
 }
 
 bool 
+UsdClipsAPI::GetClipTemplateActiveOffset(double* clipTemplateActiveOffset) const
+{
+    return GetClipTemplateActiveOffset(clipTemplateActiveOffset,
+                                       UsdClipsAPISetNames->default_.GetString());
+}
+
+bool 
+UsdClipsAPI::GetClipTemplateActiveOffset(double* clipTemplateActiveOffset,
+                                         const std::string& clipSet) const
+{
+    USD_CLIPS_API_CLIPSET_GETTER(GetClipTemplateActiveOffset,
+        clipTemplateActiveOffset, clipSet, 
+        UsdClipsAPIInfoKeys->templateActiveOffset);
+}
+
+bool
+UsdClipsAPI::SetClipTemplateActiveOffset(const double clipTemplateActiveOffset)
+{
+    return SetClipTemplateActiveOffset(clipTemplateActiveOffset,
+                                       UsdClipsAPISetNames->default_.GetString());
+}
+
+bool
+UsdClipsAPI::SetClipTemplateActiveOffset(const double clipTemplateActiveOffset,
+                                         const std::string& clipSet)
+{
+    USD_CLIPS_API_CLIPSET_SETTER(SetClipTemplateActiveOffset,
+        clipTemplateActiveOffset, clipSet, 
+        UsdClipsAPIInfoKeys->templateActiveOffset);
+}
+
+bool 
 UsdClipsAPI::GetClipTemplateStartTime(double* clipTemplateStartTime) const
 {
     USD_CLIPS_API_GETTER(GetClipTemplateStartTime,
