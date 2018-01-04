@@ -27,16 +27,12 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/tokens.h"
-
+#include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
-
 #include "pxr/imaging/hf/perfLog.h"
-
 #include "pxr/usd/sdf/path.h"
-
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -212,7 +208,7 @@ public:
     public:
         VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
             _resource =
-                boost::static_pointer_cast<HdBufferResourceGL> (resource);
+                boost::static_pointer_cast<HdStBufferResourceGL> (resource);
         }
 
         // bit confusing, osd expects 'GetNumElements()' returns the num components,
@@ -223,7 +219,7 @@ public:
         GLuint BindVBO() {
             return _resource->GetId();
         }
-        HdBufferResourceGLSharedPtr _resource;
+        HdStBufferResourceGLSharedPtr _resource;
     };
 
 private:

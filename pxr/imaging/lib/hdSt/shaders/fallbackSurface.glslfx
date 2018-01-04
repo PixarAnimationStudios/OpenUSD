@@ -25,9 +25,9 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/fallbackSurface.glslfx
+--- #import $TOOLS/hdSt/shaders/fallbackSurface.glslfx
 
-#import $TOOLS/hd/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/terminals.glslfx
 
 ---
 --- The fallback shader is used as a replacement shader if the

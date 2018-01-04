@@ -24,13 +24,13 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/textureResource.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include <boost/pointer_cast.hpp>
@@ -154,7 +154,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
                 sources.push_back(source);
             } else if (paramIt->IsTexture()) {
-                bool bindless = HdRenderContextCaps::GetInstance()
+                bool bindless = HdStRenderContextCaps::GetInstance()
                                                         .bindlessTextureEnabled;
                 // register bindless handle
 
@@ -276,7 +276,6 @@ HdStMaterial::Reload()
     _surfaceShader->Reload();
 }
 
-// virtual
 HdStShaderCodeSharedPtr
 HdStMaterial::GetShaderCode() const
 {

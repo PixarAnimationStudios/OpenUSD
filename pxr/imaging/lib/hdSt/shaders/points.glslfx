@@ -25,10 +25,10 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/points.glslfx
+--- #import $TOOLS/hdSt/shaders/points.glslfx
 
-#import $TOOLS/hd/shaders/instancing.glslfx
-#import $TOOLS/hd/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Point.Vertex

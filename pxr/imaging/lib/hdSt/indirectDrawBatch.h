@@ -25,8 +25,8 @@
 #define HDST_INDIRECT_DRAW_BATCH_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
 #include "pxr/imaging/hdSt/persistentBuffer.h"
@@ -96,14 +96,14 @@ protected:
 
 private:
     void _ValidateCompatibility(
-            HdBufferArrayRangeGLSharedPtr const& constantBar,
-            HdBufferArrayRangeGLSharedPtr const& indexBar,
-            HdBufferArrayRangeGLSharedPtr const& elementBar,
-            HdBufferArrayRangeGLSharedPtr const& fvarBar,
-            HdBufferArrayRangeGLSharedPtr const& vertexBar,
+            HdStBufferArrayRangeGLSharedPtr const& constantBar,
+            HdStBufferArrayRangeGLSharedPtr const& indexBar,
+            HdStBufferArrayRangeGLSharedPtr const& elementBar,
+            HdStBufferArrayRangeGLSharedPtr const& fvarBar,
+            HdStBufferArrayRangeGLSharedPtr const& vertexBar,
             int instancerNumLevels,
-            HdBufferArrayRangeGLSharedPtr const& instanceIndexBar,
-            std::vector<HdBufferArrayRangeGLSharedPtr> const& instanceBars) const;
+            HdStBufferArrayRangeGLSharedPtr const& instanceIndexBar,
+            std::vector<HdStBufferArrayRangeGLSharedPtr> const& instanceBars) const;
 
     // Culling requires custom resource binding.
     class _CullingProgram : public _DrawingProgram {

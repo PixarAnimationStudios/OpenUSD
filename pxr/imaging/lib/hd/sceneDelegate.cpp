@@ -23,10 +23,7 @@
 //
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-#include "pxr/imaging/glf/glslfx.h"
-
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/package.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 

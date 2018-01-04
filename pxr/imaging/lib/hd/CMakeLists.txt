@@ -39,10 +39,8 @@ pxr_library(hd
         bprim
         bufferArray
         bufferArrayRange
-        bufferArrayRangeGL
         bufferArrayRegistry
         bufferResource
-        bufferResourceGL
         bufferSource
         bufferSpec
         changeTracker
@@ -66,20 +64,17 @@ pxr_library(hd
         mesh
         meshTopology
         meshUtil
-        package
         patchIndex
         perfLog
         points
         primGather
         primTypeIndex
-        renderContextCaps
         renderDelegate
         renderIndex
         renderPass
         renderPassState
         repr
         resource
-        resourceGL
         resourceRegistry
         rprim
         rprimCollection
@@ -115,15 +110,5 @@ pxr_library(hd
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/basisCurves.glslfx
-        shaders/compute.glslfx
-        shaders/frustumCull.glslfx
-        shaders/instancing.glslfx
-        shaders/mesh.glslfx
-        shaders/meshNormal.glslfx
-        shaders/meshWire.glslfx
-        shaders/points.glslfx
-        shaders/ptexTexture.glslfx
-        shaders/terminals.glslfx
 )
 

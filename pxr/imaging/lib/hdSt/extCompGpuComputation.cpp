@@ -23,18 +23,18 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
+#include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/bufferResourceGL.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
 #include "pxr/imaging/hd/extCompCpuComputation.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -84,23 +84,23 @@ HdStExtCompGpuComputation::Execute(
         return;
     }
 
-    HdBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdBufferArrayRangeGL>(range_);
+    HdStBufferArrayRangeGLSharedPtr range =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL>(range_);
 
     TF_VERIFY(range);
     // XXX Currently these computations are always meant to be 1:1 to the
     // output range. If that changes in the future we'll need to design some
     // form of expansion or windowed computation extension to this.
     TF_VERIFY(range->GetNumElements() == GetNumOutputElements());
-    HdBufferResourceGLNamedList const &resources = range->GetResources();
+    HdStBufferResourceGLNamedList const &resources = range->GetResources();
 
     // Non-in-place sources should have been registered as resource registry
     // sources already and Resolved. They go to an internal buffer range that
     // was allocated in AllocateInternalBuffers
-    HdBufferArrayRangeGLSharedPtr inputRange;
-    HdBufferResourceGLNamedList inputResources;
+    HdStBufferArrayRangeGLSharedPtr inputRange;
+    HdStBufferResourceGLNamedList inputResources;
     if (_resource->GetInternalRange()) {
-        inputRange = boost::static_pointer_cast<HdBufferArrayRangeGL>(
+        inputRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
                 _resource->GetInternalRange());
         inputResources = inputRange->GetResources();
     }
@@ -115,7 +115,7 @@ HdStExtCompGpuComputation::Execute(
     GLuint kernel = computeProgram->GetProgram().GetId();
     glUseProgram(kernel);
 
-    HdBufferResourceGLSharedPtr outBuffer = range->GetResource(
+    HdStBufferResourceGLSharedPtr outBuffer = range->GetResource(
         _dstName);
     TF_VERIFY(outBuffer);
     TF_VERIFY(outBuffer->GetId());
@@ -132,7 +132,7 @@ HdStExtCompGpuComputation::Execute(
         // No guarantee that we are hiding buffers that
         // shouldn't be written to for example.
         if (binding.IsValid()) {
-            HdBufferResourceGLSharedPtr const &buffer = (*it).second;
+            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
             _uniforms.push_back(buffer->GetOffset() / buffer->GetComponentSize());
             // Assumes non-SSBO allocator for the stride
             _uniforms.push_back(buffer->GetStride() / buffer->GetComponentSize());
@@ -144,7 +144,7 @@ HdStExtCompGpuComputation::Execute(
         HdBinding const &binding = binder.GetBinding(name);
         // These should all be valid as they are required inputs
         if (TF_VERIFY(binding.IsValid())) {
-            HdBufferResourceGLSharedPtr const &buffer = (*it).second;
+            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
             _uniforms.push_back((inputRange->GetOffset() + buffer->GetOffset()) /
                     buffer->GetComponentSize());
             // If allocated with a VBO allocator use the line below instead.
@@ -188,7 +188,7 @@ HdStExtCompGpuComputation::Execute(
         // No guarantee that we are hiding buffers that
         // shouldn't be written to for example.
         if (binding.IsValid()) {
-            HdBufferResourceGLSharedPtr const &buffer = (*it).second;
+            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
             binder.UnbindBuffer(name, buffer);
         } 
     }
@@ -197,7 +197,7 @@ HdStExtCompGpuComputation::Execute(
         HdBinding const &binding = binder.GetBinding(name);
         // These should all be valid as they are required inputs
         if (TF_VERIFY(binding.IsValid())) {
-            HdBufferResourceGLSharedPtr const &buffer = (*it).second;
+            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
             binder.UnbindBuffer(name, buffer);
         }
     }
@@ -349,7 +349,7 @@ HdSt_GetExtComputationPrimVarsComputations(
                 
                 HdStExtCompGpuComputationSharedPtr gpuComputation;
                 HdStExtCompGpuComputationBufferSourceSharedPtr gpuComputationSource;
-                if (HdRenderContextCaps::GetInstance().gpuComputeEnabled) {
+                if (HdStRenderContextCaps::GetInstance().gpuComputeEnabled) {
                     std::pair<HdStExtCompGpuComputationSharedPtr,
                               HdStExtCompGpuComputationBufferSourceSharedPtr> comp =
                         HdStExtCompGpuComputation::CreateComputation(

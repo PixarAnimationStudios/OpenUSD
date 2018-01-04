@@ -22,13 +22,13 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/package.h"
+#include "pxr/imaging/glf/glslfx.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/glf/glslfx.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include <string>
@@ -257,7 +257,7 @@ HdStGLSLProgram::GetComputeProgram(
         HdStGLSLProgramSharedPtr newProgram(
             new HdStGLSLProgram(HdTokens->computeShader));
 
-        GlfGLSLFX glslfx(HdPackageComputeShader());
+        GlfGLSLFX glslfx(HdStPackageComputeShader());
         std::string version = "#version 430\n";
         if (!newProgram->CompileShader(
                 GL_COMPUTE_SHADER, version + glslfx.GetSource(shaderToken))) {

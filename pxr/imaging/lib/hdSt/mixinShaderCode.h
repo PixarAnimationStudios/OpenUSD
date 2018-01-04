@@ -85,5 +85,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_SHADER_H
+#endif // HDST_SHADER_H
 

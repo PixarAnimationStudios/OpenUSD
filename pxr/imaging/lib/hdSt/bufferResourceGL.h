@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_BUFFER_RESOURCE_GL_H
-#define HD_BUFFER_RESOURCE_GL_H
+#ifndef HDST_BUFFER_RESOURCE_GL_H
+#define HDST_BUFFER_RESOURCE_GL_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferResource.h"
 
@@ -39,33 +39,33 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdBufferResourceGL;
+class HdStBufferResourceGL;
 
-typedef boost::shared_ptr<HdBufferResourceGL> HdBufferResourceGLSharedPtr;
+typedef boost::shared_ptr<HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
 
 typedef std::vector<
-    std::pair<TfToken, HdBufferResourceGLSharedPtr> > HdBufferResourceGLNamedList;
+    std::pair<TfToken, HdStBufferResourceGLSharedPtr> > HdStBufferResourceGLNamedList;
 
-/// \class HdBufferResourceGL
+/// \class HdStBufferResourceGL
 ///
 /// A specific type of HdBufferResource (GPU resource) representing an 
 /// OpenGL buffer object.
 ///
-class HdBufferResourceGL : public HdBufferResource {
+class HdStBufferResourceGL : public HdBufferResource {
 public:
-    HD_API
-    HdBufferResourceGL(TfToken const &role,
+    HDST_API
+    HdStBufferResourceGL(TfToken const &role,
                      int glDataType,
                      short numComponents,
                      int arraySize,
                      int offset,
                      int stride);
-    HD_API
-    ~HdBufferResourceGL();
+    HDST_API
+    ~HdStBufferResourceGL();
 
     /// Sets the OpenGL name/identifier for this resource and its size.
     /// also caches the gpu address of the buffer.
-    HD_API
+    HDST_API
     void SetAllocation(GLuint id, size_t size);
 
     /// Returns the OpenGL id for this GPU resource
@@ -75,7 +75,7 @@ public:
     uint64_t GetGPUAddress() const { return _gpuAddr; }
 
     /// Returns the texture buffer view
-    HD_API
+    HDST_API
     GLuint GetTextureBuffer();
 
 private:
@@ -87,4 +87,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_BUFFER_RESOURCE_GL_H
+#endif // HDST_BUFFER_RESOURCE_GL_H

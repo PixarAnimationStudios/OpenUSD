@@ -27,12 +27,11 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
-
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -540,7 +539,7 @@ UsdImagingGLHdEngine::TestIntersection(
     int *outHitInstanceIndex,
     int *outHitElementIndex)
 {
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
 
        return false;
@@ -605,7 +604,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
        return false;
     }
@@ -666,7 +665,7 @@ void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
     // User is responsible for initalizing GL contenxt and glew
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
         return;
     }

@@ -115,7 +115,7 @@ HdStShaderKey::GetGLSLFXString(TfToken const &glslfxFile,
     ss << "-- glslfx version 0.1\n";
 
     if (!glslfxFile.IsEmpty())
-        ss << "#import $TOOLS/hd/shaders/" << glslfxFile.GetText() << "\n";
+        ss << "#import $TOOLS/hdSt/shaders/" << glslfxFile.GetText() << "\n";
 
     ss << "-- configuration\n"
        << "{\"techniques\": {\"default\": {\n";

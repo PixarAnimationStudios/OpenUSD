@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -185,7 +185,7 @@ HdStExtCompGpuComputationResource::AllocateInternalRange(
                              arraySize));
         }
 
-        _internalRange = boost::static_pointer_cast<HdBufferArrayRangeGL>(
+        _internalRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
                 HdTokens->primVar, bufferSpecs));
     }

@@ -39,10 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdStShaderCode;
-class HdResourceGL;
+class HdStResourceGL;
 
-typedef boost::shared_ptr<class HdBufferResourceGL> HdBufferResourceGLSharedPtr;
-typedef boost::shared_ptr<class HdBufferArrayRangeGL> HdBufferArrayRangeGLSharedPtr;
+typedef boost::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
+typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
 
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
@@ -273,7 +273,7 @@ public:
     /// in case if explicit resource location qualifier is not available
     /// (GL 4.2 or before)
     HDST_API
-    void IntrospectBindings(HdResourceGL const & programResource);
+    void IntrospectBindings(HdStResourceGL const & programResource);
 
     HDST_API
     void Bind(HdBindingRequest const& req) const;
@@ -282,25 +282,25 @@ public:
 
     /// bind/unbind BufferArray
     HDST_API
-    void BindBufferArray(HdBufferArrayRangeGLSharedPtr const &bar) const;
+    void BindBufferArray(HdStBufferArrayRangeGLSharedPtr const &bar) const;
     HDST_API
-    void UnbindBufferArray(HdBufferArrayRangeGLSharedPtr const &bar) const;
+    void UnbindBufferArray(HdStBufferArrayRangeGLSharedPtr const &bar) const;
 
     /// bind/unbind interleaved constant buffer
     HDST_API
     void BindConstantBuffer(
-        HdBufferArrayRangeGLSharedPtr const & constantBar) const;
+        HdStBufferArrayRangeGLSharedPtr const & constantBar) const;
     HDST_API
     void UnbindConstantBuffer(
-        HdBufferArrayRangeGLSharedPtr const &constantBar) const;
+        HdStBufferArrayRangeGLSharedPtr const &constantBar) const;
 
     /// bind/unbind nested instance BufferArray
     HDST_API
     void BindInstanceBufferArray(
-        HdBufferArrayRangeGLSharedPtr const &bar, int level) const;
+        HdStBufferArrayRangeGLSharedPtr const &bar, int level) const;
     HDST_API
     void UnbindInstanceBufferArray(
-        HdBufferArrayRangeGLSharedPtr const &bar, int level) const;
+        HdStBufferArrayRangeGLSharedPtr const &bar, int level) const;
 
     /// bind/unbind shader parameters and textures
     HDST_API
@@ -312,14 +312,14 @@ public:
     /// (to be used for frustum culling, draw indirect result)
     HDST_API
     void BindBuffer(TfToken const &name,
-                    HdBufferResourceGLSharedPtr const &resource) const;
+                    HdStBufferResourceGLSharedPtr const &resource) const;
     HDST_API
     void BindBuffer(TfToken const &name,
-                    HdBufferResourceGLSharedPtr const &resource,
+                    HdStBufferResourceGLSharedPtr const &resource,
                     int offset, int level=-1) const;
     HDST_API
     void UnbindBuffer(TfToken const &name,
-                      HdBufferResourceGLSharedPtr const &resource,
+                      HdStBufferResourceGLSharedPtr const &resource,
                       int level=-1) const;
 
     /// bind(update) a standalone uniform (unsigned int)

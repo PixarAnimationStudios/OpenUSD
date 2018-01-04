@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_BUFFER_ARRAY_RANGE_GL_H
-#define HD_BUFFER_ARRAY_RANGE_GL_H
+#ifndef HDST_BUFFER_ARRAY_RANGE_GL_H
+#define HDST_BUFFER_ARRAY_RANGE_GL_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -37,15 +37,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdBufferArrayGL;
 
-typedef boost::shared_ptr<class HdBufferArrayRangeGL> HdBufferArrayRangeGLSharedPtr;
+typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
 
-class HdBufferResourceGL;
+class HdStBufferResourceGL;
 
-typedef boost::shared_ptr<class HdBufferResourceGL> HdBufferResourceGLSharedPtr;
+typedef boost::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
 typedef std::vector<
-    std::pair<TfToken, HdBufferResourceGLSharedPtr> > HdBufferResourceGLNamedList;
+    std::pair<TfToken, HdStBufferResourceGLSharedPtr> > HdStBufferResourceGLNamedList;
 
-/// \class HdBufferArrayRangeGL
+/// \class HdStBufferArrayRangeGL
 ///
 /// Interface class for representing range (subset) locator of HdBufferArray.
 /// 
@@ -53,7 +53,7 @@ typedef std::vector<
 /// inherited of this interface so that client (drawItem) can be agnostic about
 /// the implementation detail of aggregation.
 ///
-class HdBufferArrayRangeGL : public HdBufferArrayRange 
+class HdStBufferArrayRangeGL : public HdBufferArrayRange 
 {
 public:
     /// Destructor (do nothing).
@@ -61,50 +61,50 @@ public:
     /// collection in its destructor. However, be careful not do any
     /// substantial work here (obviously including any kind of GL calls),
     /// since the destructor gets called frequently on various contexts.
-    HD_API
-    virtual ~HdBufferArrayRangeGL();
+    HDST_API
+    virtual ~HdStBufferArrayRangeGL();
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
-    virtual HdBufferResourceGLSharedPtr GetResource() const = 0;
+    virtual HdStBufferResourceGLSharedPtr GetResource() const = 0;
 
     /// Returns the named GPU resource.
-    virtual HdBufferResourceGLSharedPtr GetResource(TfToken const& name) = 0;
+    virtual HdStBufferResourceGLSharedPtr GetResource(TfToken const& name) = 0;
 
     /// Returns the list of all named GPU resources for this bufferArrayRange.
-    virtual HdBufferResourceGLNamedList const& GetResources() const = 0;
+    virtual HdStBufferResourceGLNamedList const& GetResources() const = 0;
 
     /// Sets the bufferSpecs for all resources.
-    HD_API
+    HDST_API
     virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const;
 };
 
-HD_API
+HDST_API
 std::ostream &operator <<(std::ostream &out,
-                          const HdBufferArrayRangeGL &self);
+                          const HdStBufferArrayRangeGL &self);
 
-/// \class HdBufferArrayRangeGLContainer
+/// \class HdStBufferArrayRangeGLContainer
 ///
 /// A resizable container of HdBufferArrayRanges.
 ///
-class HdBufferArrayRangeGLContainer
+class HdStBufferArrayRangeGLContainer
 {
 public:
     /// Constructor
-    HdBufferArrayRangeGLContainer(int size) : _ranges(size) { }
+    HdStBufferArrayRangeGLContainer(int size) : _ranges(size) { }
 
     /// Set \p range into the container at \p index.
     /// If the size of container is smaller than index, resize it.
-    HD_API
-    void Set(int index, HdBufferArrayRangeGLSharedPtr const &range);
+    HDST_API
+    void Set(int index, HdStBufferArrayRangeGLSharedPtr const &range);
 
     /// Returns the bar at \p index. returns null if either the index
     // is out of range or not yet set.
-    HD_API
-    HdBufferArrayRangeGLSharedPtr const &Get(int index) const;
+    HDST_API
+    HdStBufferArrayRangeGLSharedPtr const &Get(int index) const;
 
 private:
-    std::vector<HdBufferArrayRangeGLSharedPtr> _ranges;
+    std::vector<HdStBufferArrayRangeGLSharedPtr> _ranges;
 };
 
 

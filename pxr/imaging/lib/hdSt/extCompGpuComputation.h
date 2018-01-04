@@ -152,4 +152,4 @@ void HdSt_GetExtComputationPrimVarsComputations(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_EXT_COMP_CPU_COMPUTATION_H
+#endif // HDST_EXT_COMP_CPU_COMPUTATION_H

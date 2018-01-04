@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_COMPUTEHADER_H
-#define HD_COMPUTEHADER_H
+#ifndef HDST_COMPUTEHADER_H
+#define HDST_COMPUTEHADER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -111,4 +111,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_SURFACESHADER_H
+#endif // HDST_SURFACESHADER_H

@@ -28,7 +28,7 @@
 #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #include "pxr/usdImaging/usdImagingGL/refEngine.h"
 
-#include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -52,7 +52,7 @@ _IsEnabledHydra()
         TF_CODING_ERROR("OpenGL context required, using reference renderer");
         return false;
     }
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         return false;
     }
     if (TfGetenv("HD_ENABLED", "1") != "1") {

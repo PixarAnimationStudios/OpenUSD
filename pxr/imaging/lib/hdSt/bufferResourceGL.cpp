@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/bufferResourceGL.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdBufferResourceGL::HdBufferResourceGL(TfToken const &role,
+HdStBufferResourceGL::HdStBufferResourceGL(TfToken const &role,
                                    int glDataType,
                                    short numComponents,
                                    int arraySize,
@@ -45,18 +45,18 @@ HdBufferResourceGL::HdBufferResourceGL(TfToken const &role,
     /*NOTHING*/
 }
 
-HdBufferResourceGL::~HdBufferResourceGL()
+HdStBufferResourceGL::~HdStBufferResourceGL()
 {
     TF_VERIFY(_texId == 0);
 }
 
 void
-HdBufferResourceGL::SetAllocation(GLuint id, size_t size)
+HdStBufferResourceGL::SetAllocation(GLuint id, size_t size)
 {
     _id = id;
     HdResource::SetSize(size);
 
-    HdRenderContextCaps const & caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const & caps = HdStRenderContextCaps::GetInstance();
 
     // note: gpu address remains valid until the buffer object is deleted,
     // or when the data store is respecified via BufferData/BufferStorage.
@@ -78,7 +78,7 @@ HdBufferResourceGL::SetAllocation(GLuint id, size_t size)
 }
 
 GLuint
-HdBufferResourceGL::GetTextureBuffer()
+HdStBufferResourceGL::GetTextureBuffer()
 {
     // XXX: need change tracking.
 

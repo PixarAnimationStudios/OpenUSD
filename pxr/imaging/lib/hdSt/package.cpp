@@ -44,6 +44,20 @@ _GetShaderPath(char const * shader)
 }
 
 TfToken
+HdStPackageComputeShader()
+{
+    static TfToken computeShader = _GetShaderPath("compute.glslfx");
+    return computeShader;
+}
+
+TfToken
+HdStPackagePtexTextureShader()
+{
+    static TfToken s = _GetShaderPath("ptexTexture.glslfx");
+    return s;
+}
+
+TfToken
 HdStPackageRenderPassShader()
 {
     static TfToken renderPassShader =

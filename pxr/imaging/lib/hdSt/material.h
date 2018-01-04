@@ -67,9 +67,8 @@ public:
     virtual void Reload() override;
 
     /// Obtains the render delegate specific representation of the shader.
-    /// XXX: Should not be virtual.
     HDST_API
-    virtual HdStShaderCodeSharedPtr GetShaderCode() const;
+    HdStShaderCodeSharedPtr GetShaderCode() const;
 
     /// Obtain the source code for the Surface Shader for this prim from
     /// the scene delegate.

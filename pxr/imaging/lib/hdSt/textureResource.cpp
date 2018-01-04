@@ -24,10 +24,9 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/textureResource.h"
-
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/ptexTexture.h"
 
@@ -103,7 +102,7 @@ HdStSimpleTextureResource::HdStSimpleTextureResource(
     }
 
     bool bindlessTexture = 
-        HdRenderContextCaps::GetInstance().bindlessTextureEnabled;
+        HdStRenderContextCaps::GetInstance().bindlessTextureEnabled;
     if (bindlessTexture) {
         size_t handle = GetTexelsTextureHandle();
         if (handle) {

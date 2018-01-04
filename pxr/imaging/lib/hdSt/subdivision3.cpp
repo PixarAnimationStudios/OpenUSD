@@ -24,11 +24,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/patchIndex.h"
@@ -314,8 +314,8 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
 
     // filling coarse vertices has been done at resource registry.
 
-    HdBufferArrayRangeGLSharedPtr range_ =
-        boost::static_pointer_cast<HdBufferArrayRangeGL> (range);
+    HdStBufferArrayRangeGLSharedPtr range_ =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // vertex buffer wrapper for OpenSubdiv API
     HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(

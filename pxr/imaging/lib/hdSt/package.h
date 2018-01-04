@@ -32,6 +32,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HDST_API
+TfToken HdStPackageComputeShader();
+
+HDST_API
+TfToken HdStPackagePtexTextureShader();
+
+HDST_API
 TfToken HdStPackageRenderPassShader();
 
 HDST_API

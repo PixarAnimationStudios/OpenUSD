@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/glf/glew.h"
@@ -36,7 +36,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_INSTANTIATE_SINGLETON(HdRenderContextCaps);
+TF_INSTANTIATE_SINGLETON(HdStRenderContextCaps);
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SHADER_STORAGE_BUFFER, true,
                       "Use GL shader storage buffer (OpenGL 4.3)");
@@ -67,7 +67,7 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
 #endif
 
 // Initialize members to ensure a sane starting state.
-HdRenderContextCaps::HdRenderContextCaps()
+HdStRenderContextCaps::HdStRenderContextCaps()
     : glVersion(0)
     , maxUniformBlockSize(0)
     , maxShaderStorageBlockSize(0)
@@ -88,8 +88,8 @@ HdRenderContextCaps::HdRenderContextCaps()
 }
 
 /*static*/
-HdRenderContextCaps&
-HdRenderContextCaps::GetInstance()
+HdStRenderContextCaps&
+HdStRenderContextCaps::GetInstance()
 {
     // Make sure the render context caps have been populated.
     // This needs to be called on a thread that has the gl context
@@ -102,13 +102,13 @@ HdRenderContextCaps::GetInstance()
     // XXX: Move this to an render context change event api. (bug #124971)
 
     static std::once_flag renderContextLoad;
-    HdRenderContextCaps& caps = TfSingleton<HdRenderContextCaps>::GetInstance();
+    HdStRenderContextCaps& caps = TfSingleton<HdStRenderContextCaps>::GetInstance();
     std::call_once(renderContextLoad, [&caps](){ caps._LoadCaps(); });
     return caps;
 }
 
 bool
-HdRenderContextCaps::SupportsHydra() const
+HdStRenderContextCaps::SupportsHydra() const
 {
     // Minimum OpenGL version to run Hydra. Currently, OpenGL 4.0.
     if (glVersion >= 400) {
@@ -118,7 +118,7 @@ HdRenderContextCaps::SupportsHydra() const
 }
 
 void
-HdRenderContextCaps::_LoadCaps()
+HdStRenderContextCaps::_LoadCaps()
 {
     // XXX: consider to move this class into glf
 
@@ -274,7 +274,7 @@ HdRenderContextCaps::_LoadCaps()
 
     if (TfDebug::IsEnabled(HD_RENDER_CONTEXT_CAPS)) {
         std::cout
-            << "HdRenderContextCaps: \n"
+            << "HdStRenderContextCaps: \n"
             << "  GL version                         = "
             <<    glVersion << "\n"
             << "  GLSL version                       = "

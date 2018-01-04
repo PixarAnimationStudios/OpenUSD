@@ -25,7 +25,7 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/meshWire.glslfx
+--- #import $TOOLS/hdSt/shaders/meshWire.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Geometry.NoEdge

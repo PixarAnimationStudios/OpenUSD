@@ -26,7 +26,6 @@
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -69,13 +68,6 @@ HdEngine::RemoveTaskContextData(const TfToken &id)
 }
 
 void
-HdEngine::_InitCaps() const
-{
-    // Make sure we initialize caps in main thread.
-    HdRenderContextCaps::GetInstance();
-}
-
-void
 HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 {
     // Note: For Hydra Stream render delegate.
@@ -97,8 +89,6 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // Once we reflect all conditions which provoke the batch recompilation
     // into the collection dirtiness, we can call
     // HdRenderPass::GetCommandBuffer() to get the right batch.
-
-    _InitCaps();
 
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE

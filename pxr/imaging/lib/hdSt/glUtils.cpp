@@ -36,8 +36,8 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/base/vt/array.h"
 
@@ -97,7 +97,7 @@ HdStGLUtils::ReadBuffer(GLint vbo,
 
     GLsizeiptr vboSize = stride * (numElements-1) + bytesPerElement * arraySize;
 
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     // read data
     std::vector<unsigned char> tmp(vboSize);
@@ -225,7 +225,7 @@ HdStGLBufferRelocator::AddRange(GLintptr readOffset,
 void
 HdStGLBufferRelocator::Commit()
 {
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     if (caps.copyBufferEnabled) {
         // glCopyBuffer

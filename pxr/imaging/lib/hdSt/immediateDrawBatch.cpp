@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
@@ -32,12 +33,11 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -109,14 +109,14 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 {
     HD_TRACE_FUNCTION();
 
-    HdBufferArrayRangeGLSharedPtr indexBarCurrent;
-    HdBufferArrayRangeGLSharedPtr elementBarCurrent;
-    HdBufferArrayRangeGLSharedPtr vertexBarCurrent;
-    HdBufferArrayRangeGLSharedPtr constantBarCurrent;
-    HdBufferArrayRangeGLSharedPtr fvarBarCurrent;
-    HdBufferArrayRangeGLSharedPtr instanceIndexBarCurrent;
-    HdBufferArrayRangeGLSharedPtr shaderBarCurrent;
-    std::vector<HdBufferArrayRangeGLSharedPtr> instanceBarCurrents;
+    HdStBufferArrayRangeGLSharedPtr indexBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr elementBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr vertexBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr constantBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr fvarBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr instanceIndexBarCurrent;
+    HdStBufferArrayRangeGLSharedPtr shaderBarCurrent;
+    std::vector<HdStBufferArrayRangeGLSharedPtr> instanceBarCurrents;
 
     if (_drawItemInstances.empty()) return;
 
@@ -173,8 +173,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & indexBar_ =
             drawItem->GetTopologyRange();
 
-        HdBufferArrayRangeGLSharedPtr indexBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL>(indexBar_);
+        HdStBufferArrayRangeGLSharedPtr indexBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
 
         if (indexBar && (!indexBar->IsAggregatedWith(indexBarCurrent))) {
             binder.UnbindBufferArray(indexBarCurrent);
@@ -188,8 +188,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & elementBar_ =
             drawItem->GetElementPrimVarRange();
 
-        HdBufferArrayRangeGLSharedPtr elementBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL>(elementBar_);
+        HdStBufferArrayRangeGLSharedPtr elementBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
 
         if (elementBar && (!elementBar->IsAggregatedWith(elementBarCurrent))) {
             binder.UnbindBufferArray(elementBarCurrent);
@@ -203,8 +203,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & vertexBar_ =
             drawItem->GetVertexPrimVarRange();
 
-        HdBufferArrayRangeGLSharedPtr vertexBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL>(vertexBar_);
+        HdStBufferArrayRangeGLSharedPtr vertexBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
 
         if (vertexBar && (!vertexBar->IsAggregatedWith(vertexBarCurrent))) {
             binder.UnbindBufferArray(vertexBarCurrent);
@@ -218,8 +218,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & constantBar_ =
             drawItem->GetConstantPrimVarRange();
 
-        HdBufferArrayRangeGLSharedPtr constantBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL>(constantBar_);
+        HdStBufferArrayRangeGLSharedPtr constantBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
 
         if (constantBar && (!constantBar->IsAggregatedWith(constantBarCurrent))) {
             binder.UnbindConstantBuffer(constantBarCurrent);
@@ -233,8 +233,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & fvarBar_ =
             drawItem->GetFaceVaryingPrimVarRange();
 
-        HdBufferArrayRangeGLSharedPtr fvarBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL>(fvarBar_);
+        HdStBufferArrayRangeGLSharedPtr fvarBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
 
         if (fvarBar && (!fvarBar->IsAggregatedWith(fvarBarCurrent))) {
             binder.UnbindBufferArray(fvarBarCurrent);
@@ -251,8 +251,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             HdBufferArrayRangeSharedPtr const & instanceBar_ =
                 drawItem->GetInstancePrimVarRange(i);
 
-            HdBufferArrayRangeGLSharedPtr instanceBar =
-                boost::static_pointer_cast<HdBufferArrayRangeGL>(instanceBar_);
+            HdStBufferArrayRangeGLSharedPtr instanceBar =
+                boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceBar_);
 
             if (instanceBar) {
                 if (static_cast<size_t>(i) >= instanceBarCurrents.size()) {
@@ -273,8 +273,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         HdBufferArrayRangeSharedPtr const & instanceIndexBar_ =
             drawItem->GetInstanceIndexRange();
 
-        HdBufferArrayRangeGLSharedPtr instanceIndexBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL>(instanceIndexBar_);
+        HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
 
         if (instanceIndexBar && 
             (!instanceIndexBar->IsAggregatedWith(instanceIndexBarCurrent))) {
@@ -288,10 +288,10 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         HdBufferArrayRangeSharedPtr const & shaderBar_ =
             renderPassState->GetOverrideShader()
-                ? HdBufferArrayRangeGLSharedPtr()
+                ? HdStBufferArrayRangeGLSharedPtr()
                 : program.GetSurfaceShader()->GetShaderData();
-        HdBufferArrayRangeGLSharedPtr shaderBar =
-            boost::static_pointer_cast<HdBufferArrayRangeGL> (shaderBar_);
+        HdStBufferArrayRangeGLSharedPtr shaderBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL> (shaderBar_);
 
         // shaderBar isn't needed when the material is overriden
         if (shaderBar && (!shaderBar->IsAggregatedWith(shaderBarCurrent))) {

@@ -20,6 +20,8 @@ pxr_library(hdSt
 
     PUBLIC_CLASSES
         basisCurves
+        bufferArrayRangeGL
+        bufferResourceGL
         camera
         commandBuffer
         computeShader
@@ -49,11 +51,13 @@ pxr_library(hdSt
         package
         persistentBuffer
         points
+        renderContextCaps
         renderDelegate
         renderPass
         renderPassShader
         renderPassState
         resourceBinder
+        resourceGL
         resourceRegistry
         shaderCode
         shaderKey
@@ -91,13 +95,23 @@ pxr_library(hdSt
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/basisCurves.glslfx
+        shaders/compute.glslfx
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx
+        shaders/frustumCull.glslfx
+        shaders/instancing.glslfx
         shaders/lighting.glslfx
         shaders/lightingIntegrationShader.glslfx
+        shaders/mesh.glslfx
+        shaders/meshNormal.glslfx
+        shaders/meshWire.glslfx
+        shaders/points.glslfx
+        shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/terminals.glslfx
 )
 
 if (X11_FOUND OR APPLE)

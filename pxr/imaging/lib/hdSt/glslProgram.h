@@ -25,9 +25,9 @@
 #define HDST_GLSL_PROGRAM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/resourceGL.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/resourceGL.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -68,10 +68,10 @@ public:
     bool Validate() const;
 
     /// Returns HdResource of the program object.
-    HdResourceGL const &GetProgram() const { return _program; }
+    HdStResourceGL const &GetProgram() const { return _program; }
 
     /// Returns HdResource of the global uniform buffer object for this program.
-    HdResourceGL const &GetGlobalUniformBuffer() const {
+    HdStResourceGL const &GetGlobalUniformBuffer() const {
         return _uniformBuffer;
     }
 
@@ -82,8 +82,8 @@ public:
         HdStResourceRegistry *resourceRegistry);
 
 private:
-    HdResourceGL _program;
-    HdResourceGL _uniformBuffer;
+    HdStResourceGL _program;
+    HdStResourceGL _uniformBuffer;
 };
 
 

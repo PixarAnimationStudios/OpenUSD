@@ -25,23 +25,23 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/basisCurvesComputations.h"
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
-#include "pxr/imaging/hdSt/basisCurvesComputations.h"
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/drawItem.h"
-#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2i.h"
 
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
@@ -167,26 +167,26 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         // Check if we picked up normals on a previous update.
         typedef HdBufferArrayRangeSharedPtr HdBarPtr;
         if (HdBarPtr const& bar = drawItem->GetConstantPrimVarRange()){
-            HdBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdBufferArrayRangeGL> (bar);
+            HdStBufferArrayRangeGLSharedPtr bar_ =
+                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
             hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
         }
         if (HdBarPtr const& bar = drawItem->GetVertexPrimVarRange()) {
-            HdBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdBufferArrayRangeGL> (bar);
+            HdStBufferArrayRangeGLSharedPtr bar_ =
+                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
             hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
         }
         if (HdBarPtr const& bar = drawItem->GetElementPrimVarRange()){
-            HdBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdBufferArrayRangeGL> (bar);
+            HdStBufferArrayRangeGLSharedPtr bar_ =
+                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
             hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
         }
         int instanceNumLevels = drawItem->GetInstancePrimVarNumLevels();
         for (int i = 0; i < instanceNumLevels; ++i) {
             if (HdBarPtr const& bar = drawItem->GetInstancePrimVarRange(i)) {
-                HdBufferArrayRangeGLSharedPtr bar_ =
-                    boost::static_pointer_cast<HdBufferArrayRangeGL> (bar);
+                HdStBufferArrayRangeGLSharedPtr bar_ =
+                    boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
                 hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
             }

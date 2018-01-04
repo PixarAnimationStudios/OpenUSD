@@ -23,10 +23,10 @@
 //
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -51,13 +51,13 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         return;
     }
 
-    HdBufferArrayRangeGLSharedPtr srcRange =
-        boost::static_pointer_cast<HdBufferArrayRangeGL> (_src);
-    HdBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdBufferArrayRangeGL> (range_);
+    HdStBufferArrayRangeGLSharedPtr srcRange =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
+    HdStBufferArrayRangeGLSharedPtr range =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range_);
 
-    HdBufferResourceGLSharedPtr src = srcRange->GetResource(_name);
-    HdBufferResourceGLSharedPtr dst = range->GetResource(_name);
+    HdStBufferResourceGLSharedPtr src = srcRange->GetResource(_name);
+    HdStBufferResourceGLSharedPtr dst = range->GetResource(_name);
 
     if (!TF_VERIFY(src)) {
         return;
@@ -81,7 +81,7 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
          return;
     }
 
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     // Unfortunately at the time the copy computation is added, we don't
     // know if the source buffer has 0 length.  So we can get here with
@@ -128,10 +128,10 @@ HdStCopyComputationGPU::GetNumOutputElements() const
 void
 HdStCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    HdBufferArrayRangeGLSharedPtr srcRange =
-        boost::static_pointer_cast<HdBufferArrayRangeGL> (_src);
+    HdStBufferArrayRangeGLSharedPtr srcRange =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
 
-    HdBufferResourceGLSharedPtr const &resource = srcRange->GetResource(_name);
+    HdStBufferResourceGLSharedPtr const &resource = srcRange->GetResource(_name);
     specs->push_back(HdBufferSpec(_name,
                                   resource->GetGLDataType(),
                                   resource->GetNumComponents()));

@@ -25,12 +25,12 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/mesh.glslfx
+--- #import $TOOLS/hdSt/shaders/mesh.glslfx
 
-#import $TOOLS/hd/shaders/instancing.glslfx
-#import $TOOLS/hd/shaders/meshNormal.glslfx
-#import $TOOLS/hd/shaders/meshWire.glslfx
-#import $TOOLS/hd/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/meshNormal.glslfx
+#import $TOOLS/hdSt/shaders/meshWire.glslfx
+#import $TOOLS/hdSt/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex

@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_RESOURCE_GL_H
-#define HD_RESOURCE_GL_H
+#ifndef HDST_RESOURCE_GL_H
+#define HDST_RESOURCE_GL_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/hd/resource.h"
@@ -38,21 +38,21 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdResourceGL> HdResourceGLSharedPtr;
+typedef boost::shared_ptr<class HdStResourceGL> HdStResourceGLSharedPtr;
 
-/// \class HdResourceGL
+/// \class HdStResourceGL
 ///
 /// Base class for simple OpenGL resource objects.
 ///
-class HdResourceGL : public HdResource {
+class HdStResourceGL : public HdResource {
 public:
-    HD_API
-    HdResourceGL(TfToken const & role);
-    HD_API
-    virtual ~HdResourceGL();
+    HDST_API
+    HdStResourceGL(TfToken const & role);
+    HDST_API
+    virtual ~HdStResourceGL();
 
     /// The OpenGL name/identifier for this resource and its size
-    HD_API
+    HDST_API
     virtual void SetAllocation(GLuint id, size_t size);
 
     /// Returns the id of the GPU resource
@@ -65,4 +65,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_RESOURCE_GL_H
+#endif // HDST_RESOURCE_GL_H

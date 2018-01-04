@@ -25,9 +25,9 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hd/shaders/compute.glslfx
+--- #import $TOOLS/hdSt/shaders/compute.glslfx
 
-#import $TOOLS/hd/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/instancing.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.Counting

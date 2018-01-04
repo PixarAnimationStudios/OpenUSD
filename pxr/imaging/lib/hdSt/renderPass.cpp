@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -113,7 +113,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     // so iterate over each prim, cull it and schedule it to be drawn.
 
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
     HdRprimCollection const &collection = GetRprimCollection();
 
     const int

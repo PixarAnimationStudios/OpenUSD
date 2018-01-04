@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 
 #include "pxr/base/tf/iterator.h"
 
@@ -83,7 +83,7 @@ bool
 HdStShaderCode::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
                               HdStShaderCodeSharedPtr const &shaderB)
 {
-    bool bindlessTexture = HdRenderContextCaps::GetInstance()
+    bool bindlessTexture = HdStRenderContextCaps::GetInstance()
                                                 .bindlessTextureEnabled;
 
     // See if the shaders are same or not. If the bindless texture option

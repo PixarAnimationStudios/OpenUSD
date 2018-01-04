@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_RENDER_CONTEXT_CAPS_H
-#define HD_RENDER_CONTEXT_CAPS_H
+#ifndef HDST_RENDER_CONTEXT_CAPS_H
+#define HDST_RENDER_CONTEXT_CAPS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/noncopyable.hpp>
@@ -33,7 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdRenderContextCaps
+/// \class HdStRenderContextCaps
 ///
 /// This class is intended to be a cache of the capabilites
 /// (resource limits and features) of the underlying
@@ -51,15 +51,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     subscribe to when the caps changes, so they can
 ///     update and invalidate.
 ///
-class HdRenderContextCaps : boost::noncopyable {
+class HdStRenderContextCaps : boost::noncopyable {
 public:
-    HD_API
-    static HdRenderContextCaps &GetInstance();
+    HDST_API
+    static HdStRenderContextCaps &GetInstance();
 
     /// Returns true if the current GL context supports Hydra.
     /// Minimum OpenGL version to run Hydra is currently OpenGL 4.0.
     /// Note that glew needs to be initialized too.
-    HD_API
+    HDST_API
     bool SupportsHydra() const;
 
     // GL version
@@ -93,15 +93,15 @@ public:
 
 private:
     void _LoadCaps();
-    HdRenderContextCaps();
-    ~HdRenderContextCaps() = default;
+    HdStRenderContextCaps();
+    ~HdStRenderContextCaps() = default;
 
-    friend class TfSingleton<HdRenderContextCaps>;
+    friend class TfSingleton<HdStRenderContextCaps>;
 };
 
-HD_API_TEMPLATE_CLASS(TfSingleton<HdRenderContextCaps>);
+HDST_API_TEMPLATE_CLASS(TfSingleton<HdStRenderContextCaps>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_RENDER_CONTEXT_CAPS_H
+#endif // HDST_RENDER_CONTEXT_CAPS_H
 

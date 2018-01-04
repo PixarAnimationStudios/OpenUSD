@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
-#include "pxr/imaging/hd/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
+#include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -31,16 +31,16 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdBufferArrayRangeGL::~HdBufferArrayRangeGL() 
+HdStBufferArrayRangeGL::~HdStBufferArrayRangeGL() 
 {
 }
 
 void
-HdBufferArrayRangeGL::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdStBufferArrayRangeGL::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
     HD_TRACE_FUNCTION();
 
-    HdBufferResourceGLNamedList const &resources = GetResources();
+    HdStBufferResourceGLNamedList const &resources = GetResources();
 
     TF_FOR_ALL(it, resources) {
         specs->push_back(HdBufferSpec(it->first,
@@ -50,7 +50,7 @@ HdBufferArrayRangeGL::AddBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 std::ostream &operator <<(std::ostream &out,
-                          const HdBufferArrayRangeGL &self)
+                          const HdStBufferArrayRangeGL &self)
 {
     // call virtual
     self.DebugDump(out);
@@ -58,13 +58,13 @@ std::ostream &operator <<(std::ostream &out,
 }
 
 void
-HdBufferArrayRangeGLContainer::Set(int index,
-                                 HdBufferArrayRangeGLSharedPtr const &range)
+HdStBufferArrayRangeGLContainer::Set(int index,
+                                 HdStBufferArrayRangeGLSharedPtr const &range)
 {
     HD_TRACE_FUNCTION();
 
     if (index < 0) {
-        TF_CODING_ERROR("Index negative in HdBufferArrayRangeGLContainer::Set()");
+        TF_CODING_ERROR("Index negative in HdStBufferArrayRangeGLContainer::Set()");
         return;
     }
 
@@ -75,13 +75,13 @@ HdBufferArrayRangeGLContainer::Set(int index,
     _ranges[index] = range;
 }
 
-HdBufferArrayRangeGLSharedPtr const &
-HdBufferArrayRangeGLContainer::Get(int index) const
+HdStBufferArrayRangeGLSharedPtr const &
+HdStBufferArrayRangeGLContainer::Get(int index) const
 {
     if (index < 0 || static_cast<size_t>(index) >= _ranges.size()) {
         // out of range access is not an errorneous path.
         // (i.e. element/instance bars can be null if not exists)
-        static HdBufferArrayRangeGLSharedPtr empty;
+        static HdStBufferArrayRangeGLSharedPtr empty;
         return empty;
     }
     return _ranges[index];

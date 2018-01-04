@@ -22,25 +22,25 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/resourceGL.h"
+#include "pxr/imaging/hdSt/resourceGL.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdResourceGL::HdResourceGL(TfToken const & role) 
+HdStResourceGL::HdStResourceGL(TfToken const & role) 
     : HdResource(role)
     , _id(0)
 {
     /*NOTHING*/
 }
 
-HdResourceGL::~HdResourceGL()
+HdStResourceGL::~HdStResourceGL()
 {
     /*NOTHING*/
 }
 
 void
-HdResourceGL::SetAllocation(GLuint id, size_t size)
+HdStResourceGL::SetAllocation(GLuint id, size_t size)
 {
     _id = id;
     HdResource::SetSize(size);
