@@ -87,7 +87,7 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdStitchClipsTemplate1
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdstitchclips --noComment --templateMetadata --startTimeCode 101 --endTimeCode 104 --stride 1 --templatePath p.#.usd --clipPath /World/fx/Particles_Splash/points --out result.usda p.101.usda p.102.usda p.103.usda p.104.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdstitchclips --noComment --templateMetadata --startTimeCode 101 --endTimeCode 104 --activeOffset 0.3 --stride 1 --templatePath p.#.usd --clipPath /World/fx/Particles_Splash/points --out result.usda p.101.usda p.102.usda p.103.usda p.104.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE result.usda result.topology.usda
 )
