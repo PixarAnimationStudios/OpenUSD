@@ -747,7 +747,7 @@ UsdGeomXformable::GetLocalTransformation(
         return false;
 
     if (opOrderVec.size() == 0) {
-        *resetsXformStack = false;
+        if (resetsXformStack) *resetsXformStack = false;
 
         // XXX: backwards compatibility
         if (TfGetEnvSetting(USD_READ_OLD_STYLE_TRANSFORM)) {
