@@ -253,7 +253,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 const PcpLayerStackPtr& sourceLayerStack,
                 const size_t indexOfSourceLayer)
 {
-    if (stride == 0) {
+    if (stride <= 0) {
         TF_WARN("Invalid clipTemplateStride %f for prim <%s>. "
                 "clipTemplateStride must be greater than 0.", 
                 stride, usdPrimPath.GetText());

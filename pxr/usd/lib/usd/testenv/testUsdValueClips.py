@@ -809,6 +809,10 @@ class TestUsdValueClips(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException) as e:
                 model.SetClipTemplateStride(0)
 
+            # Ensure we can't set the clipTemplateStride to <0
+            with self.assertRaises(Tf.ErrorException) as e:
+                model.SetClipTemplateStride(-1)
+
             # Offsets are not available in legacy mode, so we skip during that test
             if not Tf.GetEnvSetting('USD_AUTHOR_LEGACY_CLIPS'):
                 model.SetClipTemplateActiveOffset(2)
