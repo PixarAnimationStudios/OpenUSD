@@ -222,7 +222,7 @@ public:
     /// Fills a 3x3 array of \c double values with the values in
     /// the matrix, specified in row-major order.
     GF_API
-    double* Get(double m[3][3]);
+    double* Get(double m[3][3]) const;
 
     /// Returns vector components as an array of \c double values.
     double* GetArray()  {

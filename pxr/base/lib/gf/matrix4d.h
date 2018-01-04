@@ -266,7 +266,7 @@ public:
     /// Fills a 4x4 array of \c double values with the values in
     /// the matrix, specified in row-major order.
     GF_API
-    double* Get(double m[4][4]);
+    double* Get(double m[4][4]) const;
 
     /// Returns vector components as an array of \c double values.
     double* GetArray()  {

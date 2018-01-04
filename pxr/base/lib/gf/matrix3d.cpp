@@ -126,7 +126,7 @@ GfMatrix3d::SetDiagonal(const GfVec3d& v)
 }
 
 double *
-GfMatrix3d::Get(double m[3][3])
+GfMatrix3d::Get(double m[3][3]) const
 {
     m[0][0] = _mtx[0][0];
     m[0][1] = _mtx[0][1];

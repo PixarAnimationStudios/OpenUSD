@@ -212,7 +212,7 @@ GfMatrix4f::SetDiagonal(const GfVec4f& v)
 }
 
 float *
-GfMatrix4f::Get(float m[4][4])
+GfMatrix4f::Get(float m[4][4]) const
 {
     m[0][0] = _mtx[0][0];
     m[0][1] = _mtx[0][1];

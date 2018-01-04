@@ -188,7 +188,7 @@ public:
     /// Fills a 2x2 array of \c float values with the values in
     /// the matrix, specified in row-major order.
     GF_API
-    float* Get(float m[2][2]);
+    float* Get(float m[2][2]) const;
 
     /// Returns vector components as an array of \c float values.
     float* GetArray()  {
