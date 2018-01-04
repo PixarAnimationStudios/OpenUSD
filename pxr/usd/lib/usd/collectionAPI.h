@@ -121,7 +121,7 @@ class SdfAssetPath;
 /// 
 /// <b>Creating collections in C++</b>
 /// 
-/// \snippet examples.cpp AddCollections
+/// \snippet examples.cpp ApplyCollections
 /// 
 ///
 class UsdCollectionAPI : public UsdSchemaBase
@@ -227,7 +227,7 @@ public:
     /// be the same as one of the core collection schema properties,
     /// i.e. should not be 'expansionRule' or 'includes' or 'excludes'.
     USD_API
-    static UsdCollectionAPI AddCollection(
+    static UsdCollectionAPI ApplyCollection(
         const UsdPrim& prim, 
         const TfToken &name, 
         const TfToken &expansionRule=UsdTokens->expandPrims);

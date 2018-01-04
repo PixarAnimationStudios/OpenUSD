@@ -164,10 +164,10 @@ WRAP_CUSTOM {
         &This::ComputeMembershipQuery;
 
     scope collectionAPI = _class 
-        .def("AddCollection", &This::AddCollection, 
+        .def("ApplyCollection", &This::ApplyCollection, 
              (arg("prim"), arg("name"), 
               arg("expansionRule")=UsdTokens->expandPrims))
-            .staticmethod("AddCollection")
+            .staticmethod("ApplyCollection")
 
         .def("GetCollection", &This::GetCollection,
              (arg("prim"), arg("name")))

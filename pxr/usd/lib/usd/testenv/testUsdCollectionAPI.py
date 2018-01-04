@@ -50,7 +50,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
     def test_AuthorCollections(self):
         # ----------------------------------------------------------
         # Test an explicitOnly collection.
-        explicitColl = Usd.CollectionAPI.AddCollection(testPrim, 
+        explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "testExplicitCollection", Usd.Tokens.explicitOnly)
         self.assertTrue(explicitColl.HasNoIncludedPaths())
 
@@ -88,7 +88,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # ----------------------------------------------------------
         # Test an expandPrims collection.
-        expandPrimsColl = Usd.CollectionAPI.AddCollection(testPrim, 
+        expandPrimsColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "testExpandPrimsColl", Usd.Tokens.expandPrims)
         expandPrimsColl.CreateIncludesRel().AddTarget(geom.GetPath())
         expandPrimsCollMquery = expandPrimsColl.ComputeMembershipQuery()
@@ -117,7 +117,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # ----------------------------------------------------------
         # Test an expandPrimsAndProperties collection.
-        expandPrimsAndPropertiesColl = Usd.CollectionAPI.AddCollection(
+        expandPrimsAndPropertiesColl = Usd.CollectionAPI.ApplyCollection(
                 testPrim, 
                 "testExpandPrimsAndPropertiesColl",
                 Usd.Tokens.expandPrimsAndProperties)
@@ -136,7 +136,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # 
         # Create a collection that combines the explicit collection and 
         # the expandPrimsAndProperties collection.
-        combinedColl = Usd.CollectionAPI.AddCollection(testPrim, "combined", 
+        combinedColl = Usd.CollectionAPI.ApplyCollection(testPrim, "combined", 
                 Usd.Tokens.explicitOnly)
         combinedColl.CreateIncludesRel().AddTarget(
             expandPrimsAndPropertiesColl.GetCollectionPath())
@@ -192,11 +192,11 @@ class TestUsdCollectionAPI(unittest.TestCase):
                                                          stage)),
             2)
 
-        # Calling AddCollection on an already existing collection will update
+        # Calling ApplyCollection on an already existing collection will update
         # the expansionRule.
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.explicitOnly)
-        leafGeom = Usd.CollectionAPI.AddCollection(testPrim, "leafGrom", 
+        leafGeom = Usd.CollectionAPI.ApplyCollection(testPrim, "leafGrom", 
             Usd.Tokens.expandPrims)
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.expandPrims)
@@ -287,14 +287,14 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(len(reason) > 0)
 
     def test_CircularDependency(self):
-        collectionA = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionA = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "A", Usd.Tokens.explicitOnly)
-        collectionB = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionB = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "B")
-        collectionC = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionC = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "C")
 
-        collectionD = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionD = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "D")
                 
         collectionA.CreateIncludesRel().AddTarget(

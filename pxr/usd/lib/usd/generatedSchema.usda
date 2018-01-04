@@ -92,7 +92,7 @@ class "CollectionAPI" (
 
     <b>Creating collections in C++</b>
     
-    \\snippet examples.cpp AddCollections
+    \\snippet examples.cpp ApplyCollections
     """
 )
 {

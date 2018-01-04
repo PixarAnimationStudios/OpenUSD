@@ -167,7 +167,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 /* static */
 UsdCollectionAPI 
-UsdCollectionAPI::AddCollection(
+UsdCollectionAPI::ApplyCollection(
     const UsdPrim& prim, 
     const TfToken &name, 
     const TfToken &expansionRule /*=UsdTokens->expandPrims*/) 

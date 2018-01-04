@@ -324,7 +324,7 @@ UsdUtilsAuthorCollection(
     const SdfPathVector &pathsToInclude,
     const SdfPathVector &pathsToExclude)
 {
-    UsdCollectionAPI collection = UsdCollectionAPI::AddCollection(
+    UsdCollectionAPI collection = UsdCollectionAPI::ApplyCollection(
         usdPrim, collectionName, UsdTokens->expandPrims);
 
     UsdRelationship includesRel = collection.CreateIncludesRel();
