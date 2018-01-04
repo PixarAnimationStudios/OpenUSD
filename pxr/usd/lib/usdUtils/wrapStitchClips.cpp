@@ -87,13 +87,17 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
                            const double startFrame,
                            const double endFrame,
                            const double stride,
+                           const object pyActiveOffset,
                            const object pyClipSet)
 {
     const auto clipSet 
         = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
+    const auto activeOffset 
+        = _ConvertWithDefault(pyActiveOffset, 
+                              std::numeric_limits<double>::max());
     return UsdUtilsStitchClipsTemplate(resultLayer, topologyLayer,
                                        clipPath, templatePath, startFrame,
-                                       endFrame, stride, clipSet);
+                                       endFrame, stride, activeOffset, clipSet);
 }
 
 } // anonymous namespace 
@@ -123,6 +127,7 @@ void wrapStitchClips()
          arg("startTimeCode"),
          arg("endTimeCode"),
          arg("stride"),
+         arg("activeOffset")=object(),
          arg("clipSet")=object()));
 
     def("GenerateClipTopologyName",

@@ -159,7 +159,12 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 /// \p stride                 The stride to be authored at the 
 ///                           clipTemplateStride metadata key.
 ///
-/// \p clipSet            The name of the clipSet in which the
+/// \p activeOffset           The offset to be authored at the 
+///                           clipTemplateActiveOffset metadata key. 
+///                           \note If this parameter is omitted, no value 
+///                           will be authored as the metadata is optional. 
+///
+/// \p clipSet                The name of the clipSet in which the
 ///                           aforementioned metadata will be authored.
 ///                           \note If this parameter is omitted, the default
 ///                           clipSet name("default") will be authored.
@@ -175,6 +180,8 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
                             const double startTime,
                             const double endTime,
                             const double stride,
+                            const double activeOffset
+                                = std::numeric_limits<double>::max(),
                             const TfToken& clipSet
                                 = UsdClipsAPISetNames->default_);
 

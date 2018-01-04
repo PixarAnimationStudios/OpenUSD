@@ -888,6 +888,7 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
                             const double startTime,
                             const double endTime,
                             const double stride,
+                            const double activeOffset,
                             const TfToken& clipSet)
 {
     // XXX: See comment in UsdUtilsStitchClipsTopology above.
@@ -919,6 +920,9 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
     clipSetDict[UsdClipsAPIInfoKeys->templateEndTime] = endTime;
     clipSetDict[UsdClipsAPIInfoKeys->templateStride] = stride;
     clipSetDict[UsdClipsAPIInfoKeys->manifestAssetPath] = SdfAssetPath(topologyId);
+    if (activeOffset != std::numeric_limits<double>::max()) {
+        clipSetDict[UsdClipsAPIInfoKeys->templateActiveOffset] = activeOffset; 
+    }
 
     VtDictionary clips;
     clips[clipSet] = clipSetDict;
