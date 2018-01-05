@@ -78,12 +78,12 @@ void wrap{{ cls.cppClassName }}()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
-{% if cls.isConcrete == "true" %}
+{% if cls.isConcrete %}
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 {% endif %}
-{% if cls.isApi == "true" %}
+{% if cls.isApi %}
 
         .def("Apply", &This::Apply, (arg("stage"), arg("path")))
         .staticmethod("Apply")

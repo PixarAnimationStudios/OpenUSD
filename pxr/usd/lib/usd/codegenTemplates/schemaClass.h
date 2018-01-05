@@ -81,12 +81,12 @@ public:
     /// to a concrete instantiable prim type in scene description.  If this is
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
-    static const bool IsConcrete = {{ cls.isConcrete }};
+    static const bool IsConcrete = {{ "true" if cls.isConcrete else "false" }};
 
     /// Compile-time constant indicating whether or not this class inherits from
     /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
     /// UsdPrim.
-    static const bool IsTyped = {{ cls.isTyped }};
+    static const bool IsTyped = {{ "true" if cls.isTyped else "false" }};
 
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim .
     /// Equivalent to {{ cls.cppClassName }}::Get(prim.GetStage(), prim.GetPath())
@@ -135,7 +135,7 @@ public:
     static {{ cls.cppClassName }}
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-{% if cls.isConcrete == "true" %}
+{% if cls.isConcrete %}
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
@@ -164,7 +164,7 @@ public:
     static {{ cls.cppClassName }}
     Define(const UsdStagePtr &stage, const SdfPath &path);
 {% endif %}
-{% if cls.isApi == "true" %}
+{% if cls.isApi %}
 
     /// Mark this schema class as applied to the prim at \p path in the 
     /// current EditTarget. This information is stored in the apiSchemas
