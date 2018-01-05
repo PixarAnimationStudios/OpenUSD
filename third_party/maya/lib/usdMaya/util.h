@@ -31,11 +31,14 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/refPtr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
@@ -49,6 +52,8 @@
 #include <map>
 #include <set>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace PxrUsdMayaUtil
 {
@@ -67,6 +72,21 @@ template <typename V>
 struct MDagPathMap
 {
     typedef std::map<MDagPath, V, cmpDag> Type;
+};
+
+/// RAII-style helper for destructing an MDataHandle obtained from a plug
+/// once it goes out of scope.
+class MDataHandleHolder : public TfRefBase {
+    MPlug _plug;
+    MDataHandle _dataHandle;
+
+public:
+    static TfRefPtr<MDataHandleHolder> New(const MPlug& plug);
+    MDataHandle GetDataHandle() { return _dataHandle; }
+
+private:
+    MDataHandleHolder(const MPlug& plug, MDataHandle dataHandle);
+    ~MDataHandleHolder();
 };
 
 inline MStatus isFloat(MString str, const MString & usage)
@@ -407,6 +427,13 @@ bool setPlugValue(MFnDependencyNode const &depNode,
     return false;
 }
 
+/// Obtains an RAII helper object for accessing the MDataHandle stored on the
+/// plug. When the helper object goes out of scope, the data handle will be
+/// destructed.
+/// If the plug's data handle could not be obtained, returns nullptr.
+PXRUSDMAYA_API
+TfRefPtr<MDataHandleHolder> GetPlugDataHandle(const MPlug& plug);
+
 PXRUSDMAYA_API
 bool createStringAttribute(
         MFnDependencyNode& depNode,
@@ -419,5 +446,7 @@ bool createNumericAttribute(
         MFnNumericData::Type type);
 
 } // namespace PxrUsdMayaUtil
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_UTIL_H

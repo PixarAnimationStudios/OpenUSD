@@ -201,6 +201,7 @@ MayaInstancerWriter::writeInstancerAttrs(
 {
     MStatus status = MS::kSuccess;
     MFnDagNode dagNode(getDagPath(), &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Note: In this function, we don't read instances using the provided
     // MFnInstancer API. One reason is that it breaks up prototypes into their
@@ -302,9 +303,26 @@ MayaInstancerWriter::writeInstancerAttrs(
     // (This attribute's value must come from a source plug; it isn't
     // directly writeable. Thus reading it directly may not give the right
     // value depending on Maya's execution behavior.)
-    MPlug inputPoints(PxrUsdMayaUtil::GetConnected(
-            dagNode.findPlug("inputPoints", true, &status)));
-    MFnArrayAttrsData inputPointsData(inputPoints.asMDataHandle().data());
+    MPlug inputPointsDest = dagNode.findPlug("inputPoints", true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MPlug inputPointsSrc = PxrUsdMayaUtil::GetConnected(inputPointsDest);
+    if (inputPointsSrc.isNull()) {
+        TF_WARN("inputPoints not connected on instancer '%s'",
+                getDagPath().fullPathName().asChar());
+        return false;
+    }
+
+    auto holder = PxrUsdMayaUtil::GetPlugDataHandle(inputPointsSrc);
+    if (!holder) {
+        TF_WARN("Unable to read inputPoints data handle for instancer '%s'",
+                getDagPath().fullPathName().asChar());
+        return false;
+    }
+
+    MFnArrayAttrsData inputPointsData(holder->GetDataHandle().data(),
+            &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
     // All Maya instancers should provide id's (though this isn't
     // required by UsdGeomPointInstancer). We need to know the id's attr

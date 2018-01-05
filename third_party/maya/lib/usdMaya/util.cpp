@@ -1300,3 +1300,42 @@ PxrUsdMayaUtil::createNumericAttribute(
 
     return true;
 }
+
+PxrUsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
+    const MPlug& plug, MDataHandle dataHandle)
+    : _plug(plug), _dataHandle(dataHandle)
+{
+}
+
+PxrUsdMayaUtil::MDataHandleHolder::~MDataHandleHolder()
+{
+    if (!_plug.isNull()) {
+        _plug.destructHandle(_dataHandle);
+    }
+}
+
+TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
+PxrUsdMayaUtil::MDataHandleHolder::New(const MPlug& plug)
+{
+    MStatus status;
+
+#if MAYA_API_VERSION >= 20180000
+    MDataHandle dataHandle = plug.asMDataHandle(&status);
+#else
+    MDataHandle dataHandle = plug.asMDataHandle(MDGContext::fsNormal, &status);
+#endif
+
+    if (!status.error()) {
+        return TfCreateRefPtr(
+                new PxrUsdMayaUtil::MDataHandleHolder(plug, dataHandle));
+    }
+    else {
+        return nullptr;
+    }
+}
+
+TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
+PxrUsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
+{
+    return PxrUsdMayaUtil::MDataHandleHolder::New(plug);
+}

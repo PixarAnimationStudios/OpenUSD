@@ -1,6 +1,6 @@
 //Maya ASCII 2018 scene
-//Name: InstancerTest.ma
-//Last modified: Mon, Nov 27, 2017 03:25:36 PM
+//Name: InstancerTestMash.ma
+//Last modified: Wed, Jan 03, 2018 01:48:33 PM
 //Codeset: UTF-8
 requires maya "2018";
 requires -nodeType "MASH_Waiter" -nodeType "MASH_Offset" -nodeType "MASH_Random"
@@ -1371,6 +1371,10 @@ createNode mesh -n "prototypeUnderInstancerShape" -p "|InstancerTest|instancer1|
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
 	setAttr ".mgi" -type "string" "ID_6575cd6f-c0cb-4414-96f0-3ff794b46b48";
+createNode instancer -n "instancerBad1" -p "InstancerTest";
+	rename -uid "C39B0900-0000-02EC-5A4D-446B0000028D";
+createNode instancer -n "instancerBad2" -p "InstancerTest";
+	rename -uid "75A3C900-0000-7B5E-5A4D-4FA10000028E";
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "468F9900-0000-525D-5A1C-9E9C000002A8";
 	setAttr -s 3 ".lnk";
@@ -1661,6 +1665,7 @@ connectAttr "|InstancerTest|instancer1|prototypeUnderInstancer.m" "instancer1.in
 connectAttr "referencePrototype.m" "instancer1.inh[3]";
 connectAttr "polySphere2.out" "|InstancerTest|instancer1|prototypeUnderInstancer|prototypeUnderInstancerShape.i"
 		;
+connectAttr "pCube1.m" "instancerBad2.inh[0]";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" "nParticlePointsSE.message" ":defaultLightSet.message";
@@ -1732,4 +1737,4 @@ connectAttr "|InstancerTest|instancer1|prototypeUnderInstancer|prototypeUnderIns
 		 -na;
 connectAttr "|InstancerTest|MASH1_Instancer|prototypeUnderInstancer|prototypeUnderInstancerShape.iog" ":initialShadingGroup.dsm"
 		 -na;
-// End of InstancerTest.ma
+// End of InstancerTestMash.ma
