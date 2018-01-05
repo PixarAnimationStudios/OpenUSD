@@ -217,6 +217,10 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 
         if (prim.IsInstance()) {
             prim.SetInstanceable(false);
+            // When we uninstance the prim, there may be unloaded payloads 
+            // beneath it in namespace due to bug 155392. Load them here as a 
+            // temporary workaround.
+            stage->Load(prefixPath);
         }
     }
 
