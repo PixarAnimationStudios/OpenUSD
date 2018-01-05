@@ -188,6 +188,8 @@ UsdCollectionAPI::ApplyCollection(
             "schema property name.", name.GetText(), baseName.GetText());
         return UsdCollectionAPI();
     }
+
+    UsdCollectionAPI::_Apply(prim.GetStage(), prim.GetPath(), name);
     
     return UsdCollectionAPI(prim, name, expansionRule);
 }

@@ -53,6 +53,8 @@ class TestUsdCollectionAPI(unittest.TestCase):
         explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "testExplicitCollection", Usd.Tokens.explicitOnly)
         self.assertTrue(explicitColl.HasNoIncludedPaths())
+        self.assertEqual(['CollectionAPI:testExplicitCollection'],
+                         testPrim.GetAppliedSchemas())
 
         explicitColl.CreateIncludesRel().AddTarget(sphere.GetPath())
         self.assertFalse(explicitColl.HasNoIncludedPaths())
