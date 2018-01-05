@@ -59,18 +59,20 @@ PxrUsdMayaTranslatorGprim::Write(
 {
     MFnDependencyNode depFn(mayaNode);
 
-    bool opposite = false;
-    // Gprim properties always authored on the shape
-    if (PxrUsdMayaUtil::getPlugValue(depFn, "opposite", &opposite)){
-        TfToken orientation = (opposite ? UsdGeomTokens->leftHanded :
-                                          UsdGeomTokens->rightHanded);
-        gprim.CreateOrientationAttr(VtValue(orientation), true);
-    }
-
     bool doubleSided = false;
     if (PxrUsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)){
         gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
     }
+
+    bool opposite = false;
+    // Gprim properties always authored on the shape
+    if (PxrUsdMayaUtil::getPlugValue(depFn, "opposite", &opposite)){
+        // If mesh is double sided in maya, opposite is disregarded
+        TfToken orientation = (opposite && !doubleSided ? UsdGeomTokens->leftHanded :
+                                                          UsdGeomTokens->rightHanded);
+        gprim.CreateOrientationAttr(VtValue(orientation), true);
+    }
+
 }
 
 
