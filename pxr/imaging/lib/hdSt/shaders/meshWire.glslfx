@@ -228,6 +228,27 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.HullEdgeOnlyNoBlend
+
+in EdgeData
+{
+    noperspective vec3 edgeDistance;
+} inEdgeData;
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    vec3 edgeDistance = inEdgeData.edgeDistance;
+
+    float d = min(edgeDistance.x,
+                  min(edgeDistance.y,
+                      edgeDistance.z));
+    float p = exp2(-4 * d * d);
+    if (p < 0.5) discard;
+
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshPatchWire.Fragment.EdgeOnSurface
 
 in EdgeData

@@ -131,6 +131,18 @@ vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Fragment.HullColor
+
+vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+#if defined(HD_HAS_hullColor)
+    return HdGet_hullColor();
+#else
+    return vec4(vec3(0.006), 0.218);
+#endif
+}
+
+--- --------------------------------------------------------------------------
 ---
 --- The displacement shader terminal could be defined in either the geometric
 --- shader or "surface" (material) shader.  Typically, the one in the 

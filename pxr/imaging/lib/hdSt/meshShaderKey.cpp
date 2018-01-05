@@ -44,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
+    ((hullEdgeOnlyNoBlendFS,   "MeshWire.Fragment.HullEdgeOnlyNoBlend"))
     ((edgeOnSurfGS,            "MeshWire.Geometry.Edge"))
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
@@ -58,6 +59,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
     ((surfaceSheerFS,          "Fragment.SurfaceSheer"))
     ((constantColorFS,         "Fragment.ConstantColor"))
+    ((hullColorFS,             "Fragment.HullColor"))
     ((mainFS,                  "Mesh.Fragment"))
     ((instancing,              "Instancing.Transform"))
     ((displacementGS,          "Geometry.Displacement"))
@@ -157,10 +159,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
                                                               : _tokens->edgeNoneFS));
     } else {
-        if (geomStyle == HdMeshGeomStyleEdgeOnly ||
-            geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+        if (geomStyle == HdMeshGeomStyleEdgeOnly) {
             FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
                                         : _tokens->edgeOnlyNoBlendFS;
+        } else if (geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+            FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
+                                        : _tokens->hullEdgeOnlyNoBlendFS;
         } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                    geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
             FS[3] = _tokens->edgeOnSurfFS;
@@ -178,6 +182,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->surfaceSheerFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
         terminalFS = _tokens->constantColorFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {
+        terminalFS = _tokens->hullColorFS;
     } else if (!shadingTerminal.IsEmpty()) {
         terminalFS = shadingTerminal;
     } else {
