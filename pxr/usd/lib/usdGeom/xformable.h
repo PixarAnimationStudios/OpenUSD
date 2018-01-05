@@ -630,7 +630,7 @@ public:
     /// operations be present in \p orderedXformOps, so this method can be used to
     /// completely change the transformation structure applied to the prim.
     ///
-    /// If \p reserXformStack is set to true, then "!resetXformOp! will be
+    /// If \p resetXformStack is set to true, then "!resetXformOp! will be
     /// set as the first op in xformOpOrder, to indicate that the prim does 
     /// not inherit its parent's transformation.
     /// 
@@ -769,7 +769,8 @@ public:
     /// 
     /// \return true on success, false if there was an error reading data.
     ///
-    /// \note A coding error is issued if resetsXformStack is NULL. 
+    /// \note A coding error is issued if \p transform or \p resetsXformStack 
+    ///       is NULL. 
     ///
     USDGEOM_API
     bool GetLocalTransformation(
@@ -795,7 +796,8 @@ public:
     /// 
     /// \return true on success, false if there was an error reading data.
     /// 
-    /// \note A coding error is issued if resetsXformStack is NULL. 
+    /// \note A coding error is issued if \p transform or \p resetsXformStack 
+    ///       is NULL. 
     ///
     USDGEOM_API
     bool GetLocalTransformation(GfMatrix4d *transform,
