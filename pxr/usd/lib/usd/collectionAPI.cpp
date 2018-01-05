@@ -77,11 +77,6 @@ UsdCollectionAPI::_Apply(const UsdStagePtr &stage, const SdfPath &path, const Tf
         return UsdCollectionAPI();
     }
 
-    if (!TfIsValidIdentifier(name)) {
-        TF_CODING_ERROR("Name %s is not a valid identifier.", name.GetText());
-        return UsdCollectionAPI();
-    }
-
     TfToken apiName(std::string("CollectionAPI") 
                     + std::string(":") 
                     + name.GetString());

@@ -118,11 +118,6 @@ TF_REGISTRY_FUNCTION(TfType)
     }
 
 {% if cls.isMultipleApply %}
-    if (!TfIsValidIdentifier(name)) {
-        TF_CODING_ERROR("Name %s is not a valid identifier.", name.GetText());
-        return {{ cls.cppClassName }}();
-    }
-
     TfToken apiName(std::string("{{ cls.primName }}") 
                     + std::string(":") 
                     + name.GetString());
