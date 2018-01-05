@@ -26,12 +26,12 @@
 #include "usdMaya/translatorMaterial.h"
 
 #include "pxr/base/gf/gamma.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdRi/materialAPI.h"
-#include "pxr/usd/usdRi/risBxdf.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 
 #include <maya/MColor.h>
@@ -42,8 +42,8 @@
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -55,7 +55,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transparency)
 
     ((MayaShaderName, "lambert"))
+    ((DefaultShaderId, "PxrDiffuse"))
 );
+
 
 namespace {
 class DisplayColorShadingModeExporter : public PxrUsdMayaShadingModeExporter {
@@ -67,12 +69,12 @@ private:
                 SdfPathSet * const boundPrimPaths) override 
     {
         MStatus status;
-        MFnDependencyNode ssDepNode(context.GetSurfaceShader(), &status);
-        if (!status) {
+        const MFnDependencyNode ssDepNode(context.GetSurfaceShader(), &status);
+        if (status != MS::kSuccess) {
             return;
         }
-        MFnLambertShader lambertFn(ssDepNode.object(), &status );
-        if (!status) {
+        const MFnLambertShader lambertFn(ssDepNode.object(), &status);
+        if (status != MS::kSuccess) {
             return;
         }
 
@@ -83,11 +85,11 @@ private:
         }
 
         const UsdStageRefPtr& stage = context.GetUsdStage();
-        MColor mayaColor = lambertFn.color();
-        MColor mayaTransparency = lambertFn.transparency();
-        GfVec3f color = GfConvertDisplayToLinear(
+        const MColor mayaColor = lambertFn.color();
+        const MColor mayaTransparency = lambertFn.transparency();
+        const GfVec3f color = GfConvertDisplayToLinear(
             GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
-        GfVec3f transparency = GfConvertDisplayToLinear(
+        const GfVec3f transparency = GfConvertDisplayToLinear(
             GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
 
         VtArray<GfVec3f> displayColorAry;
@@ -99,45 +101,47 @@ private:
         // (of the common graycale conversion) on re-import
         // The average is compute from the Maya color as is
         VtArray<float> displayOpacityAry;
-        float transparencyAvg = (mayaTransparency[0] +
-                                 mayaTransparency[1] +
-                                 mayaTransparency[2]) / 3.0;
-        if (transparencyAvg > 0){
-            displayOpacityAry.push_back(1.0 - transparencyAvg);
+        const float transparencyAvg = (mayaTransparency[0] +
+                                       mayaTransparency[1] +
+                                       mayaTransparency[2]) / 3.0f;
+        if (transparencyAvg > 0.0f) {
+            displayOpacityAry.push_back(1.0f - transparencyAvg);
         }
 
         TF_FOR_ALL(iter, assignments) {
-            const SdfPath &boundPrimPath = iter->first;
-            const VtIntArray &faceIndices = iter->second;
-            if (!faceIndices.empty())
+            const SdfPath& boundPrimPath = iter->first;
+            const VtIntArray& faceIndices = iter->second;
+            if (!faceIndices.empty()) {
                 continue;
+            }
 
             UsdPrim boundPrim = stage->GetPrimAtPath(boundPrimPath);
-            if (boundPrim) {
-                UsdGeomGprim primSchema(boundPrim);
-                // Set color if not already authored
-                //
-                // XXX: Note that this will not update the display color
-                // in the presence of a SdfValueBlock which is a valid
-                // 'authored value opinion' in the eyes of Usd.
-                if (!primSchema.GetDisplayColorAttr()
-                    .HasAuthoredValueOpinion()) {
-                    // not animatable
-                    primSchema.CreateDisplayColorPrimvar().Set(displayColorAry);
-                }
-                if (transparencyAvg > 0 &&
-                    !primSchema.GetDisplayOpacityAttr()
-                        .HasAuthoredValueOpinion()) {
-                    // not animatable
-                    primSchema.CreateDisplayOpacityPrimvar().Set(displayOpacityAry);
-                }
-            } else {
-                MGlobal::displayError("No prim bound to:" + MString(boundPrimPath.GetText()));
+            if (!boundPrim) {
+                MGlobal::displayError("No prim bound to: " +
+                                      MString(boundPrimPath.GetText()));
+                continue;
+            }
+
+            UsdGeomGprim primSchema(boundPrim);
+            // Set color if not already authored
+            //
+            // XXX: Note that this will not update the display color
+            // in the presence of a SdfValueBlock which is a valid
+            // 'authored value opinion' in the eyes of Usd.
+            if (!primSchema.GetDisplayColorAttr().HasAuthoredValueOpinion()) {
+                // not animatable
+                primSchema.CreateDisplayColorPrimvar().Set(displayColorAry);
+            }
+            if (transparencyAvg > 0.0f &&
+                    !primSchema.GetDisplayOpacityAttr().HasAuthoredValueOpinion()) {
+                // not animatable
+                primSchema.CreateDisplayOpacityPrimvar().Set(displayOpacityAry);
             }
         }
 
         UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments,
-                std::string(), boundPrimPaths);
+                                                                std::string(),
+                                                                boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (material) {
             *mat = material;
@@ -151,46 +155,47 @@ private:
             // instead we set the values only on the material's interface,
             // emphasizing that the interface is a value provider for
             // its shading networks.
-            UsdShadeInput dispColorIA = material.CreateInput(
-                _tokens->displayColor, SdfValueTypeNames->Color3f);
-                dispColorIA.Set(VtValue(color));
+            UsdShadeInput dispColorIA =
+                material.CreateInput(_tokens->displayColor,
+                                     SdfValueTypeNames->Color3f);
+            dispColorIA.Set(VtValue(color));
 
-            UsdPrim materialPrim = material.GetPrim();
-            std::string shaderName = TfStringPrintf("%s_lambert",
-                                                    materialPrim.GetName().GetText());
-            TfToken shaderPrimName(shaderName);
-            UsdRiRisBxdf bxdfSchema = UsdRiRisBxdf::Define(
-                stage, materialPrim.GetPath().AppendChild(shaderPrimName));
-            bxdfSchema.CreateFilePathAttr(VtValue(SdfAssetPath("PxrDiffuse")));
-            UsdShadeInput diffuse = bxdfSchema.CreateInput(
-                _tokens->diffuseColor, SdfValueTypeNames->Color3f);
+            const std::string shaderName =
+                TfStringPrintf("%s_lambert", materialPrim.GetName().GetText());
+            const TfToken shaderPrimName(shaderName);
+            UsdShadeShader shaderSchema =
+                UsdShadeShader::Define(
+                    stage,
+                    materialPrim.GetPath().AppendChild(shaderPrimName));
+            shaderSchema.CreateIdAttr(VtValue(_tokens->DefaultShaderId));
+            UsdShadeInput diffuse =
+                shaderSchema.CreateInput(_tokens->diffuseColor,
+                                         SdfValueTypeNames->Color3f);
 
-            UsdRiMaterialAPI(material).SetInterfaceInputConsumer(
-                dispColorIA, diffuse);
+            diffuse.ConnectToSource(dispColorIA);
 
             // Make an interface input for transparency, which we will hook up
             // to the shader, and a displayOpacity, for any shader that might
             // want to consume it.  Only author a *value* if we got a
             // non-zero transparency
-            UsdShadeInput transparencyIA = 
-                material.CreateInput(_tokens->transparency, 
-                                        SdfValueTypeNames->Color3f);
-            UsdShadeInput dispOpacityIA = 
-                material.CreateInput(_tokens->displayOpacity, 
-                                        SdfValueTypeNames->Float);
+            UsdShadeInput transparencyIA =
+                material.CreateInput(_tokens->transparency,
+                                     SdfValueTypeNames->Color3f);
+            UsdShadeInput dispOpacityIA =
+                material.CreateInput(_tokens->displayOpacity,
+                                     SdfValueTypeNames->Float);
 
             // PxrDiffuse's transmissionColor may not produce similar
             // results to MfnLambertShader's transparency, but it's in
             // the general ballpark...
             UsdShadeInput transmission =
-                bxdfSchema.CreateInput(_tokens->transmissionColor, 
-                                        SdfValueTypeNames->Color3f);
-            UsdRiMaterialAPI(material).SetInterfaceInputConsumer(
-                transparencyIA, transmission);
+                shaderSchema.CreateInput(_tokens->transmissionColor,
+                                         SdfValueTypeNames->Color3f);
+            transmission.ConnectToSource(transparencyIA);
 
-            if (transparencyAvg > 0){
+            if (transparencyAvg > 0.0f) {
                 transparencyIA.Set(VtValue(transparency));
-                dispOpacityIA.Set(VtValue((float)(1.0-transparencyAvg)));
+                dispOpacityIA.Set(VtValue(1.0f - transparencyAvg));
             }
         }
     }

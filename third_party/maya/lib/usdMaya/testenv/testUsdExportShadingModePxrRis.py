@@ -61,6 +61,57 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         """
         self.assertTrue(self._stage)
 
+    def testExportPxrRisShading(self):
+        """
+        Tests that exporting a Maya mesh with a simple Maya shading setup
+        results in the correct shading on the USD mesh.
+        """
+        cubePrim = self._stage.GetPrimAtPath('/MarbleCube/Geom/Cube')
+        self.assertTrue(cubePrim)
+
+        # Validate the Material prim bound to the Mesh prim.
+        material = UsdShade.Material.GetBoundMaterial(cubePrim)
+        self.assertTrue(material)
+        materialPath = material.GetPath().pathString
+        self.assertEqual(materialPath, '/MarbleCube/Looks/MarbleCubeSG')
+
+        # Validate the surface shader that is connected to the material.
+        # XXX: Note that the expected number of outputs here is two rather than
+        # one, since we are still authoring the UsdRi Bxdf source in addition
+        # to the surface terminal for backwards compatibility. When consumers
+        # are updated to use the surface terminal instead, this test will have
+        # to be updated.
+        materialOutputs = material.GetOutputs()
+        self.assertEqual(len(materialOutputs), 2)
+        materialOutput = material.GetOutput('surface')
+        (connectableAPI, outputName, outputType) = materialOutput.GetConnectedSource()
+        self.assertEqual(outputName, 'out')
+        shader = UsdShade.Shader(connectableAPI)
+        self.assertTrue(shader)
+
+        # XXX: Validate the UsdRi Bxdf. This must also be removed when we no
+        # longer author it.
+        from pxr import UsdRi
+        usdRiMaterialAPI = UsdRi.MaterialAPI(material.GetPrim())
+        self.assertTrue(usdRiMaterialAPI)
+        bxdf = usdRiMaterialAPI.GetBxdf()
+        self.assertEqual(bxdf.GetPrim(), shader.GetPrim())
+
+        shaderId = shader.GetIdAttr().Get()
+        self.assertEqual(shaderId, 'PxrMayaMarble')
+
+        # Validate the connected input on the surface shader.
+        shaderInput = shader.GetInput('placementMatrix')
+        self.assertTrue(shaderInput)
+
+        (connectableAPI, outputName, outputType) = shaderInput.GetConnectedSource()
+        self.assertEqual(outputName, 'worldInverseMatrix')
+        shader = UsdShade.Shader(connectableAPI)
+        self.assertTrue(shader)
+
+        shaderId = shader.GetIdAttr().Get()
+        self.assertEqual(shaderId, 'PxrMayaPlacement3d')
+
     def testShaderAttrsAuthoredSparsely(self):
         """
         Tests that only the attributes authored in Maya are exported to USD.
@@ -72,10 +123,8 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         shader = UsdShade.Shader(shaderPrim)
         self.assertTrue(shader)
 
-        # XXX: Change this to use shader.GetIdAttr() when we transition from
-        # UsdRi to UsdShade.
-        shaderId = shaderPrim.GetAttribute('info:filePath').Get()
-        self.assertEqual(shaderId.path, 'PxrMayaMarble')
+        shaderId = shader.GetIdAttr().Get()
+        self.assertEqual(shaderId, 'PxrMayaMarble')
 
         shaderInputs = shader.GetInputs()
         self.assertEqual(len(shaderInputs), 3)
@@ -90,6 +139,9 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         (connectableAPI, outputName, outputType) = inputPlacementMatrix.GetConnectedSource()
         self.assertEqual(connectableAPI.GetPath().pathString,
             '/MarbleCube/Looks/MarbleCubeSG/MarbleCubePlace3dTexture')
+
+        shaderOutputs = shader.GetOutputs()
+        self.assertEqual(len(shaderOutputs), 1)
 
 
 if __name__ == '__main__':
