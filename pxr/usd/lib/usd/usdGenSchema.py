@@ -319,6 +319,8 @@ class ClassInfo(object):
         self.isConcrete = bool(self.typeName)
         self.isTyped = _IsTyped(usdPrim)
         self.isApi = not self.isTyped and not self.isConcrete
+        self.isMultipleApply = self.customData.get('isMultipleApply', False)
+        self.isPrivateApply = self.customData.get('isPrivateApply', False)
 
         errorPrefix = ('Invalid schema definition at ' 
                        + '<' + str(sdfPrim.path) + '>')
@@ -334,8 +336,18 @@ class ClassInfo(object):
                                      'nor provide a typename(API).'))
         
         if self.isApi and not sdfPrim.path.name.endswith('API'):
-            raise Exception(errorMsg('API Schemas must named with an API suffix'))
+            raise Exception(errorMsg('API schemas must named with an API suffix.'))
 
+        if not self.isApi and self.isMultipleApply:
+            raise Exception(errorMsg('Non API schemas cannot be marked with '
+                                     'isMultipleApply, only API schemas have an '
+                                     'Apply() method generated. '))
+
+        if not self.isApi and self.isPrivateApply:
+            raise Exception(errorMsg('Non API schemas cannot be marked with '
+                                     'isPrivateApply, only API schemas have an '
+                                     'Apply() method generated. '))
+         
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
 

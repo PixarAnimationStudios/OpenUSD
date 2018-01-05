@@ -164,7 +164,10 @@ public:
     static {{ cls.cppClassName }}
     Define(const UsdStagePtr &stage, const SdfPath &path);
 {% endif %}
-{% if cls.isApi %}
+{% if cls.isPrivateApply %}
+private:
+{% endif %}
+{% if cls.isApi and not cls.isMultipleApply %}
 
     /// Mark this schema class as applied to the prim at \p path in the 
     /// current EditTarget. This information is stored in the apiSchemas
@@ -172,11 +175,35 @@ public:
     ///
     /// \sa UsdPrim::GetAppliedSchemas()
     ///
-    {% if useExportAPI -%}
+    {% if useExportAPI and not cls.isPrivateApply -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
+{% if cls.isPrivateApply %}
+    _Apply(const UsdStagePtr &stage, const SdfPath &path);
+{% else %}
     Apply(const UsdStagePtr &stage, const SdfPath &path);
+{% endif %}
+{% endif %}
+{% if cls.isApi and cls.isMultipleApply %}
+
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget along with the supplied \p name. This information 
+    /// is stored in the apiSchemas metadata on prims.  
+    /// Given a schema, FooAPI, and a name bar, the token stored
+    /// in the apiSchemas metadata would be 'FooAPI:bar'
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    {% if useExportAPI and not cls.isPrivateApply -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static {{ cls.cppClassName }} 
+{% if cls.isPrivateApply %}
+    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+{% else %}
+    Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+{% endif %}
 {% endif %}
 
 private:

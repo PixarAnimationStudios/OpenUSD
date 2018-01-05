@@ -86,7 +86,19 @@ TF_REGISTRY_FUNCTION(TfType)
 
 /* static */
 {{ cls.cppClassName }}
+{% if cls.isPrivateApply %}
+{% if not cls.isMultipleApply %}
+{{ cls.cppClassName }}::_Apply(const UsdStagePtr &stage, const SdfPath &path)
+{% else %}
+{{ cls.cppClassName }}::_Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
+{% endif %}
+{% else %}
+{% if not cls.isMultipleApply %}
 {{ cls.cppClassName }}::Apply(const UsdStagePtr &stage, const SdfPath &path)
+{% else %}
+{{ cls.cppClassName }}::Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
+{% endif %}
+{% endif %}
 {
     // Ensure we have a valid stage, path and prim
     if (!stage) {
@@ -105,7 +117,18 @@ TF_REGISTRY_FUNCTION(TfType)
         return {{ cls.cppClassName }}();
     }
 
+{% if cls.isMultipleApply %}
+    if (!TfIsValidIdentifier(name)) {
+        TF_CODING_ERROR("Name %s is not a valid identifier.", name.GetText());
+        return {{ cls.cppClassName }}();
+    }
+
+    TfToken apiName(std::string("{{ cls.primName }}") 
+                    + std::string(":") 
+                    + name.GetString());
+{% else %}
     TfToken apiName("{{ cls.primName }}");  
+{% endif %}
 
     // Get the current listop at the edit target
     UsdEditTarget editTarget = stage->GetEditTarget();

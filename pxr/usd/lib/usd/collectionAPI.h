@@ -179,16 +179,18 @@ public:
     static UsdCollectionAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+private:
 
     /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
+    /// current EditTarget along with the supplied \p name. This information 
+    /// is stored in the apiSchemas metadata on prims.  
+    /// Given a schema, FooAPI, and a name bar, the token stored
+    /// in the apiSchemas metadata would be 'FooAPI:bar'
     ///
     /// \sa UsdPrim::GetAppliedSchemas()
     ///
-    USD_API
     static UsdCollectionAPI 
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
 
 private:
     // needs to invoke _GetStaticTfType.

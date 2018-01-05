@@ -58,7 +58,7 @@ UsdCollectionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* static */
 UsdCollectionAPI
-UsdCollectionAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
+UsdCollectionAPI::_Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
 {
     // Ensure we have a valid stage, path and prim
     if (!stage) {
@@ -77,7 +77,14 @@ UsdCollectionAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
         return UsdCollectionAPI();
     }
 
-    TfToken apiName("CollectionAPI");  
+    if (!TfIsValidIdentifier(name)) {
+        TF_CODING_ERROR("Name %s is not a valid identifier.", name.GetText());
+        return UsdCollectionAPI();
+    }
+
+    TfToken apiName(std::string("CollectionAPI") 
+                    + std::string(":") 
+                    + name.GetString());
 
     // Get the current listop at the edit target
     UsdEditTarget editTarget = stage->GetEditTarget();

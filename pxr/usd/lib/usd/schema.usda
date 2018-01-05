@@ -278,6 +278,8 @@ class "CollectionAPI"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/tokens.h"
 """
+        bool isMultipleApply = true
+        bool isPrivateApply  = true    
     }
 )
 {
