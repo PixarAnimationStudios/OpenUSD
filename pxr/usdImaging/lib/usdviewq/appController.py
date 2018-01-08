@@ -764,8 +764,12 @@ class AppController(QtCore.QObject):
             self._ui.currentPathWidget.editingFinished.connect(
                 self._currentPathChanged)
 
-            self._ui.primView.selectionModel().selectionChanged.connect(
-                self._selectionChanged)
+            # XXX:
+            # To avoid PYSIDE-79 (https://bugreports.qt.io/browse/PYSIDE-79)
+            # with Qt4/PySide, we must hold the prim view's selectionModel
+            # in a local variable before connecting its signals.
+            primViewSelModel = self._ui.primView.selectionModel()
+            primViewSelModel.selectionChanged.connect(self._selectionChanged)
 
             self._ui.primView.itemClicked.connect(self._itemClicked)
 
