@@ -6,7 +6,7 @@
 
 It is a goal of UsdSkel to provide both a robust means of interchange
 for clients like game studios, as well as to provide the foundation for
-performant, scalable interchange of larg-escale crowds, wherein undeformed
+performant, scalable interchange of large-scale crowds, wherein undeformed
 geometry and skeletal animations directly feed preview and final-quality
 render engines, pulling from sequencing libraries of animations.
 
@@ -63,10 +63,11 @@ common terminology:
 
 - \anchor UsdSkel_Term_SkeletonTopology **Skeleton Topology**:
   
-  The distinct components of a _Skeleton_ that describe a joint hiearchy.
+  The distinct components of a _Skeleton_ that describe a joint hierarchy.
 
 - **Animation**:
 
+  An encoding of the motion of a _Skeleton's_ _Joints_ over time. 
   A skeleton is animated by application of an _Animation_.
 
 - \anchor UsdSkel_Term_SkeletonInstance **Skeleton Instance**:
@@ -79,16 +80,16 @@ common terminology:
 
 - **Binding**:
   
-  An encoding of the binding of a `Skeleton` to a geometry hierarchy.
-  This encoding additionally binds an `Animation Source` into the hierarchy.
-  which applies against a `Skeleton` to drive skinning.
+  An encoding of the binding of a _Skeleton_ to a geometry hierarchy.
+  This encoding additionally binds an _Animation Source_ into the hierarchy.
+  which applies against a _Skeleton_ to drive skinning.
 
 - \anchor UsdSkel_Term_JointInfluences **Joint Influences**:
   
   The set of joint weights and indices used by skinning algorithms to
   describe how each point is influenced by the change in joint transformations.
-  Sometimes influences are rigid, so influences are described as influencing
-  *components* rather than points.
+  Sometimes influences are rigid, so influences are described as 
+  influencing **components** rather than points.
 
 \section UsdSkel_SkinnablePrims What Can Be Skinned?
 

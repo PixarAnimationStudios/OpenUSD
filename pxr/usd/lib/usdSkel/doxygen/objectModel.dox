@@ -4,7 +4,7 @@
 
 \section UsdSkel_OM_Overview Overview
 
-In UsdSkel, skeletons are bound over a geoemtry hierarchy to describe
+In UsdSkel, skeletons are bound over a geometry hierarchy to describe
 how a skeleton is animated, and what primitives those animated skeletons
 affect.
 
@@ -56,7 +56,7 @@ the above concepts as follows:
 
 - **Animations**:
 
-  For each valid animation primitive, a \ref UsdSkel_OM_AnimQuery "anim query"
+  For each valid animation primitive, an \ref UsdSkel_OM_AnimQuery "anim query"
   is produced, which provides a common interface to querying data from that
   animation.
 
@@ -88,8 +88,8 @@ are shared across Usd_ScenegraphInstancing_Overview "instance primitives."
 
 When \ref UsdSkel_CE_PopulateCache
 "populating a skel cache", UsdSkelSkeletonQuery will be defined anywhere
-that a _skel:skeleton_ binding relationship, provided that the target of that
-relationship is a valid UsdSkelSkeleton primitive.
+that a _skel:skeleton_ binding relationship is found, provided that the target 
+of that relationship is a valid UsdSkelSkeleton primitive.
 
 \sa \ref UsdSkel_BindingAPI_Skeletons
 

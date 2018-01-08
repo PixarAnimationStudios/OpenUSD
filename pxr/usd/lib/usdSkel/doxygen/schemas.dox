@@ -13,7 +13,7 @@ adhering to the following design principles:
   maintainability when deploying directly-rendered, skinned crowds at scale
   in VFX pipelines.
 
-- _Animations_ can be published invidually and reference back into scenes.
+- _Animations_ can be published individually and referenced back into scenes.
   This not only allows re-use, but also enables sequencing of animations as
   <a href="http://openusd.org/docs/USD-Glossary.html#USDGlossary-ValueClips">Value Clips</a>.
 
@@ -91,7 +91,7 @@ independently from any skeleton definitions, which will remain valid even if a
 _skeleton_ that the animation is mapped to has a slightly different ordering.
 
 Part of the motivation for this is to allow for more robust, composed assets.
-When orderings are required to remain fixed, maintainenance difficulties
+When orderings are required to remain fixed, maintenance difficulties
 may arise. For example, if animation assets are produced through a process
 independent from the process that produces a shared definition of a
 _skeleton asset_, data can easily get out of sync.
@@ -106,7 +106,7 @@ For example, in the PackedJointAnimation example above, `GetJointOrder()` would
 return `[SdfPath("<A>"), SdfPath("A/B), ...]`.
 
 Data can be remapped from one joint ordering to another using a
-UsdSkelAnimMapper.
+UsdSkelAnimMapper, and is done so via matching joint names.
 
 \sa UsdSkelSkeleton::GetJointOrder, UsdSkelSkeleton::SetJointOrder,
     UsdSkelPackedJointAnimation::GetJointOrder,
@@ -119,7 +119,7 @@ UsdSkelAnimMapper.
 The UsdSkelRoot schema is used to **encapsulate** primitives with
 skelelal skinning behaviors, and is required when authoring skeletal data.
 
-A SkelRoot gives DCC apps a way of identifying what parts of a scene graph
+A SkelRoot gives DCC apps a way of identifying which parts of a scene graph
 require skeletal processing, so that they can take different code paths,
 as is often required to consume skeletal data.
 
@@ -145,7 +145,7 @@ The UsdSkelJoint schema is used to define the joints of a
 
 Currently, a joint has no behavior beyond providing a point in scene graph
 that establishes the existence of a joint, and its relationship to other
-joints. Both for efficiency and to facilitiate future animation blending
+joints. Both for efficiency and to facilitate future animation blending
 workflows, Joint primitives have no transforms. Instead, the _rest_ state
 for joint data is stored in a vectorized form on a
 \ref UsdSkel_Skeleton "Skeleton", while animation is in separate
@@ -161,15 +161,15 @@ both for establishing the _topology_ of a skeleton, as well as for identifying
 a _rest pose_.
 
 A skeleton itself provides only structure. Meshes are posed with a skeleton
-by way of \ref UsdSkel_BindingAPI "skeletal bindings" inside of the
+by way of \ref UsdSkel_BindingAPI "skeletal bindings" inside of 
 the "geometry hierarchy" of primitives.
 
 \subsection UsdSkel_JointHierarchy Skeleton: Joint Hierarchy
 
 The joints of a Skeleton are defined as **descendant** primitives, of type
 \ref UsdSkel_Joint "Joint". These are referenced by the _joints_ relationship,
-which defines the absolute \ref UsdSkel_JointOrder "joint order" of the
-skeleton.
+which defines the absolute flattened \ref UsdSkel_JointOrder "joint order" of 
+the skeleton.
 
 The targets of the _joints_ relationship are required to be authored such
 that all parent joints come before any of their children in the target list.
@@ -189,9 +189,9 @@ Note that even though UsdSkelJoint primitives generally lack meaningful
 information required for geometry processing, they will still be visited by
 conventional traversals.
 
-There _is_ a pattern one can deploy for organizing the joints of a  
+There _is_ a pattern one can deploy for organizing the joints of a
 Skeleton such that they will be automatically skipped by basic
-UsdPrim::GetChildren or UsdPrimRange traversals. Usd prims each have a
+`UsdPrim::GetChildren` or `UsdPrimRange` traversals. USD prims each have a
 \ref Usd_PrimSpecifiers "specifier" of "def", "over", or "class". The
 default traversals skip over prims that are "pure overs" or classes. So
 to protect joints from all generic traversals and processing, place
@@ -342,13 +342,14 @@ over "A" {
 
 In this case, there are two _skeleton instances_: One at `</A>`, referencing
 the animation at `</Anim1>`, and one at `</A/C>`, referencing the animation
-at `</Anim2>`. The binding relationshiop at `</A/B>` has no effect.
+at `</Anim2>`. The _skel:animationSource_ relationship at `</A/B>` has no
+effect.
 
 \subsection UsdSkel_BindingAPI_JointInfluences BindingAPI: Joint Influences
 
 Joint influences for skinning points are defined via primvars,
 _primvars:skel:jointIndices_ and _primvars:skel:jointWeights_.
-The _jointIndices_ primvar provides an array given the joint index of an
+The _jointIndices_ primvar provides an array giving the joint index of an
 influence, while the _jointWeights_ primvar provides a weight value
 corresponding to each of those indices.
 
@@ -363,7 +364,7 @@ and provide a run of N influences per point, where N is the _elementSize_
 of the primvars. See UsdGeomPrimvar for more information on the meaning
 of primvar interpolation and elementSize.
 
-No restriction are placed on the _elementSize_ when defining joint influences.
+No restrictions are placed on the _elementSize_ when defining joint influences.
 Because such a limit may vary among different DCC applications, we feel that
 it is inappropriate to hard-code any such restrictions at the file storage
 level. Instead, for clients that require a strict limit on the number of
@@ -379,8 +380,8 @@ of how resolved joint influences may be read.
 \subsection UsdSkel_BindingAPI_RigidDeformations BindingAPI: Rigid Deformations
 
 In addition to defining influences that vary per point, joint influences may be
-also defined with _constant_ interpolation. In this form, the _joindIndices_
-and _jointWeights_ arrays hold only N references, which apply to all points.
+also defined with _constant_ interpolation. In this form, the _jointIndices_
+and _jointWeights_ arrays hold N scalar values, which apply to all points.
 Constant joint influences are supported both as a form of storage optimization,
 as well as for the sake of encoding _rigid deformations_. By identifying
 rigid deformations, some clients may be able to retain instancing properties
@@ -406,6 +407,6 @@ Additionally, as part of our \ref UsdSkel_BestPractices "best practices",
 we suggest that joint influences be sorted from largest weight value to
 smallest. The \ref UsdSkelSortInfluences utility can be used to do so.
 UsdSkel does not currently *require* sorted joint influences, but may later
-add such restrictions, since they enable some skinning optimizations.
-
+add such restrictions, since they enable some skinning optimizations like 
+\ref UsdSkelTruncateInfluences.
 */

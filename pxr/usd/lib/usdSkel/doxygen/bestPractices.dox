@@ -23,9 +23,9 @@ primitive, **all** of the components are set.
 
 \section UsdSkel_BP_CreatingPrimvars Creating Primvars
 
-When creating primvars using the UsdSkelBindingAPI, it is good practice to
-**always** specify both the primvar _interpolation_ and _elementSize_. Otherwise,
-it is very easy to end up with invalid data in a composed scene.
+When creating primvars using the UsdSkelBindingAPI, it is good practice
+to **always** specify both the primvar _interpolation_ and _elementSize_.
+Otherwise, it is very easy to end up with invalid data in a composed scene.
 
 Users are encouraged to use the UsdSkelBindingAPI::CreateJointIndicesPrimvar and
 UsdSkelBindingAPI::CreateJointWeightsPrimvar helper methods, which ensure that
