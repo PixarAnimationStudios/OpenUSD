@@ -240,6 +240,8 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.6.0: Compressed (scalar) floating point arrays that are either all ints or
+//        can be represented efficiently with a lookup table.
 // 0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
 // 0.4.0: Compressed structural sections.
 // 0.3.0: (broken, unused)
@@ -248,7 +250,7 @@ using std::vector;
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 5;
+constexpr uint8_t USDC_MINOR = 6;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -1296,12 +1298,39 @@ constexpr size_t MinCompressedArraySize = 16;
 
 template <class Writer, class T>
 static inline ValueRep
-_WriteArray_0_5_0(Writer w, VtArray<T> const &array, ...)
+_WriteUncompressedArray(
+    Writer w, VtArray<T> const &array, CrateFile::Version ver)
 {
     auto result = ValueRepForArray<T>(w.Tell());
     w.template WriteAs<uint32_t>(array.size());
     w.WriteContiguous(array.cdata(), array.size());
     return result;
+}
+
+template <class Writer, class T>
+static inline ValueRep
+_WritePossiblyCompressedArray(
+    Writer w, VtArray<T> const &array, CrateFile::Version ver, ...)
+{
+    // Fallback case -- write uncompressed data.
+    return _WriteUncompressedArray(w, array, ver);
+}
+
+template <class Writer, class Int>
+static inline void
+_WriteCompressedInts(Writer w, Int const *begin, size_t size)
+{
+    // Make a buffer to compress to, compress, and write.
+    using Compressor = typename std::conditional<
+        sizeof(Int) == 4,
+        Usd_IntegerCompression,
+        Usd_IntegerCompression64>::type;
+    std::unique_ptr<char[]> compBuffer(
+        new char[Compressor::GetCompressedBufferSize(size)]);
+    size_t compSize =
+        Compressor::CompressToBuffer(begin, size, compBuffer.get());
+    w.template WriteAs<uint64_t>(compSize);
+    w.WriteContiguous(compBuffer.get(), compSize);
 }
 
 template <class Writer, class T>
@@ -1312,36 +1341,123 @@ typename std::enable_if<
     std::is_same<T, int64_t>::value ||
     std::is_same<T, uint64_t>::value,
     ValueRep>::type
-_WriteArray_0_5_0(Writer w, VtArray<T> const &array, int)
+_WritePossiblyCompressedArray(
+    Writer w, VtArray<T> const &array, CrateFile::Version ver, int)
 {
-    typedef typename std::conditional<
-        sizeof(T) == 4, Usd_IntegerCompression, Usd_IntegerCompression64>::type
-        Compressor;
-        
     auto result = ValueRepForArray<T>(w.Tell());
     // Total elements.
     w.template WriteAs<uint32_t>(array.size());
-    // If it's small, write uncompressed.
     if (array.size() < MinCompressedArraySize) {
         w.WriteContiguous(array.cdata(), array.size());
     } else {
-        // Make a buffer to compress to, compress, and write.
-        std::unique_ptr<char[]> compBuffer(
-            new char[Compressor::GetCompressedBufferSize(array.size())]);
-        size_t compSize = Compressor::CompressToBuffer(
-            array.cdata(), array.size(), compBuffer.get());
-        w.template WriteAs<uint64_t>(compSize);
-        w.WriteContiguous(compBuffer.get(), compSize);
+        _WriteCompressedInts(w, array.cdata(), array.size());
         result.SetIsCompressed();
     }
     return result;
 }
 
+template <class Writer, class T>
+static inline
+typename std::enable_if<
+    std::is_same<T, GfHalf>::value ||
+    std::is_same<T, float>::value ||
+    std::is_same<T, double>::value,
+    ValueRep>::type
+_WritePossiblyCompressedArray(
+    Writer w, VtArray<T> const &array, CrateFile::Version ver, int)
+{
+    // Version 0.6.0 introduced compressed floating point arrays.
+    if (ver < CrateFile::Version(0,6,0) ||
+        array.size() < MinCompressedArraySize) {
+        return _WriteUncompressedArray(w, array, ver);
+    }
+    // Write total elements.
+    auto result = ValueRepForArray<T>(w.Tell());
+    w.template WriteAs<uint32_t>(array.size());
+    // Check to see if all the floats are exactly represented as integers.
+    auto isIntegral = [](T fp) {
+        constexpr int32_t max = std::numeric_limits<int32_t>::max();
+        constexpr int32_t min = std::numeric_limits<int32_t>::lowest();
+        return min <= fp && fp <= max &&
+            static_cast<T>(static_cast<int32_t>(fp)) == fp;
+    };    
+    if (std::all_of(array.cdata(), array.cdata() + array.size(), isIntegral)) {
+        // Encode as integers.
+        result.SetIsCompressed();
+        vector<int32_t> ints(array.size());
+        std::copy(array.cdata(), array.cdata() + array.size(), ints.data());
+        // Lowercase 'i' code indicates that the floats are written as
+        // compressed ints.
+        w.template WriteAs<int8_t>('i');
+        _WriteCompressedInts(w, ints.data(), ints.size());
+        return result;
+    }
+    
+    // Otherwise check if there are a small number of distinct values, which we
+    // can then write as a lookup table and indexes into that table.
+    vector<T> lut;
+    // Ensure that we give up soon enough if it doesn't seem like building a
+    // lookup table will be profitable.  Check the first 1024 elements at most.
+    unsigned int maxLutSize = std::min<size_t>(array.size() / 4, 1024);
+    vector<uint32_t> indexes;
+    for (auto elem: array) {
+        auto iter = std::find(lut.begin(), lut.end(), elem);
+        uint32_t index = iter-lut.begin();
+        indexes.push_back(index);
+        if (index == lut.size()) {
+            if (lut.size() != maxLutSize) {
+                lut.push_back(elem);
+            } else {
+                lut.clear();
+                indexes.clear();
+                break;
+            }
+        }
+    }
+    if (!lut.empty()) {
+        // Use the lookup table.  Lowercase 't' code indicates that floats are
+        // written with a lookup table and indexes.
+        result.SetIsCompressed();
+        w.template WriteAs<int8_t>('t');
+        // Write the lookup table itself.
+        w.template WriteAs<uint32_t>(lut.size());
+        w.WriteContiguous(lut.data(), lut.size());
+        // Now write indexes.
+        _WriteCompressedInts(w, indexes.data(), indexes.size());
+        return result;
+    }
+
+    // Otherwise, just write uncompressed floats.  We don't need to write a code
+    // byte here like the 'i' and 't' above since the resulting ValueRep is not
+    // marked compressed -- the reader code will thus just read the uncompressed
+    // values directly.
+    w.WriteContiguous(array.cdata(), array.size());
+    return result;
+}
+
 template <class Reader, class T>
 static inline void
-_ReadArray_0_5_0(Reader reader, ValueRep rep, VtArray<T> *out, ...) {
+_ReadPossiblyCompressedArray(
+    Reader reader, ValueRep rep, VtArray<T> *out, ...)
+{
     out->resize(reader.template Read<uint32_t>());
     reader.ReadContiguous(out->data(), out->size());
+}
+
+// Return true if compressed, false if not.
+template <class Reader, class Int>
+static inline void
+_ReadCompressedInts(Reader reader, Int *out, size_t size)
+{
+    using Compressor = typename std::conditional<
+        sizeof(Int) == 4,
+        Usd_IntegerCompression,
+        Usd_IntegerCompression64>::type;
+    std::unique_ptr<char[]> compBuffer(
+        new char[Compressor::GetCompressedBufferSize(size)]);
+    auto compSize = reader.template Read<uint64_t>();
+    reader.ReadContiguous(compBuffer.get(), compSize);
+        Compressor::DecompressFromBuffer(compBuffer.get(), compSize, out, size);
 }
 
 template <class Reader, class T>
@@ -1351,23 +1467,60 @@ typename std::enable_if<
     std::is_same<T, unsigned int>::value ||
     std::is_same<T, int64_t>::value ||
     std::is_same<T, uint64_t>::value>::type
-_ReadArray_0_5_0(Reader reader, ValueRep rep, VtArray<T> *out, int) {
-    typedef typename std::conditional<
-        sizeof(T) == 4, Usd_IntegerCompression, Usd_IntegerCompression64>::type
-        Compressor;
-
+_ReadPossiblyCompressedArray(
+    Reader reader, ValueRep rep, VtArray<T> *out, CrateFile::Version, int)
+{
     // Read total elements.
     out->resize(reader.template Read<uint32_t>());
-    // If it's small, it's uncompressed.
-    if (out->size() <= MinCompressedArraySize || !rep.IsCompressed()) {
+    if (out->size() < MinCompressedArraySize) {
         reader.ReadContiguous(out->data(), out->size());
     } else {
-        std::unique_ptr<char[]> compBuffer(
-            new char[Compressor::GetCompressedBufferSize(out->size())]);
-        auto compSize = reader.template Read<uint64_t>();
-        reader.ReadContiguous(compBuffer.get(), compSize);
-        Compressor::DecompressFromBuffer(compBuffer.get(), compSize,
-                                         out->data(), out->size());
+        _ReadCompressedInts(reader, out->data(), out->size());
+    }
+}
+
+template <class Reader, class T>
+static inline
+typename std::enable_if<
+    std::is_same<T, GfHalf>::value ||
+    std::is_same<T, float>::value ||
+    std::is_same<T, double>::value>::type
+_ReadPossiblyCompressedArray(
+    Reader reader, ValueRep rep, VtArray<T> *out, CrateFile::Version ver, int)
+{
+    out->resize(reader.template Read<uint32_t>());
+    auto odata = out->data();
+    auto osize = out->size();
+    
+    // Version 0.6.0 introduced compressed floating point arrays.
+    if (ver < CrateFile::Version(0,6,0) ||
+        osize < MinCompressedArraySize || !rep.IsCompressed()) {
+        reader.ReadContiguous(odata, osize);
+        return;
+    }
+
+    // Read the code
+    char code = reader.template Read<int8_t>();
+    if (code == 'i') {
+        // Compressed integers.
+        vector<int32_t> ints(osize);
+        _ReadCompressedInts(reader, ints.data(), ints.size());
+        std::copy(ints.begin(), ints.end(), odata);
+    } else if (code == 't') {
+        // Lookup table & indexes.
+        auto lutSize = reader.template Read<uint32_t>();
+        vector<T> lut(lutSize);
+        reader.ReadContiguous(lut.data(), lut.size());
+        vector<uint32_t> indexes(osize);
+        _ReadCompressedInts(reader, indexes.data(), indexes.size());
+        auto o = odata;
+        for (auto index: indexes) {
+            *o++ = lut[index];
+        }
+    } else {
+        // This is a corrupt data stream.
+        TF_RUNTIME_ERROR("Corrupt data stream detected reading compressed "
+                         "array in <%s>", reader.crate->GetFileName().c_str());
     }
 }
 
@@ -1399,9 +1552,11 @@ struct CrateFile::_ArrayValueHandlerBase<
                 w.WriteAs<uint32_t>(array.size());
                 w.WriteContiguous(array.cdata(), array.size());
             } else {
-                // If we're writing 0.5.0, see if we can compress this array.
-                target = _WriteArray_0_5_0(w, array, 0);
-            }                
+                // If we're writing 0.5.0 or greater, see if we can possibly
+                // compress this array.
+                target = _WritePossiblyCompressedArray(
+                    w, array, w.crate->_packCtx->writeVersion, 0);
+            }
         }
         return target;
     }
@@ -1416,13 +1571,14 @@ struct CrateFile::_ArrayValueHandlerBase<
         reader.Seek(rep.GetPayload());
 
         // Check version
-        if (Version(reader.crate->_boot) < Version(0,5,0)) {
+        Version fileVer(reader.crate->_boot);
+        if (fileVer < Version(0,5,0)) {
             // Read and discard shape size.
             reader.template Read<uint32_t>();
             out->resize(reader.template Read<uint32_t>());
             reader.ReadContiguous(out->data(), out->size());
         } else {
-            _ReadArray_0_5_0(reader, rep, out, 0);
+            _ReadPossiblyCompressedArray(reader, rep, out, fileVer, 0);
         }
     }
 
