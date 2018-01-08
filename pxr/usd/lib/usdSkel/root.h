@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDSKEL_GENERATED_JOINT_H
-#define USDSKEL_GENERATED_JOINT_H
+#ifndef USDSKEL_GENERATED_ROOT_H
+#define USDSKEL_GENERATED_ROOT_H
 
-/// \file usdSkel/joint.h
+/// \file usdSkel/root.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -46,17 +46,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// JOINT                                                                      //
+// SKELROOT                                                                   //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdSkelJoint
+/// \class UsdSkelRoot
 ///
-/// Describes a skeleton joint.
+/// Transformable prim type used to identify a scope beneath which
+/// skeletally-posed primitives are defined.
 /// 
-/// See the extened \ref UsdSkel_Joint "Joint Schema" documentation for
+/// A SkelRoot must be defined at or above a skinned primitive for any skinning
+/// behaviors in UsdSkel.
+/// 
+/// See the extented \ref UsdSkel_SkelRoot "Skel Root Schema" documentation for
 /// more information.
 ///
-class UsdSkelJoint : public UsdTyped
+class UsdSkelRoot : public UsdGeomBoundable
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -70,26 +74,26 @@ public:
     /// UsdPrim.
     static const bool IsTyped = true;
 
-    /// Construct a UsdSkelJoint on UsdPrim \p prim .
-    /// Equivalent to UsdSkelJoint::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdSkelRoot on UsdPrim \p prim .
+    /// Equivalent to UsdSkelRoot::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdSkelJoint(const UsdPrim& prim=UsdPrim())
-        : UsdTyped(prim)
+    explicit UsdSkelRoot(const UsdPrim& prim=UsdPrim())
+        : UsdGeomBoundable(prim)
     {
     }
 
-    /// Construct a UsdSkelJoint on the prim held by \p schemaObj .
-    /// Should be preferred over UsdSkelJoint(schemaObj.GetPrim()),
+    /// Construct a UsdSkelRoot on the prim held by \p schemaObj .
+    /// Should be preferred over UsdSkelRoot(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdSkelJoint(const UsdSchemaBase& schemaObj)
-        : UsdTyped(schemaObj)
+    explicit UsdSkelRoot(const UsdSchemaBase& schemaObj)
+        : UsdGeomBoundable(schemaObj)
     {
     }
 
     /// Destructor.
     USDSKEL_API
-    virtual ~UsdSkelJoint();
+    virtual ~UsdSkelRoot();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -98,17 +102,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdSkelJoint holding the prim adhering to this
+    /// Return a UsdSkelRoot holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdSkelJoint(stage->GetPrimAtPath(path));
+    /// UsdSkelRoot(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDSKEL_API
-    static UsdSkelJoint
+    static UsdSkelRoot
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -134,7 +138,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDSKEL_API
-    static UsdSkelJoint
+    static UsdSkelRoot
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
@@ -160,6 +164,11 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Returns the skel root at or above \p prim, or an invalid schema object  
+    /// if no ancestor prim is defined as a skel root.
+    USDSKEL_API
+    static UsdSkelRoot Find(const UsdPrim& prim);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -140,7 +140,7 @@ UsdSkelBindingAPI::CreateGeomBindTransformAttr(VtValue const &defaultValue, bool
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->primvarsSkelGeomBindTransform,
                        SdfValueTypeNames->Matrix4d,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }
@@ -260,3 +260,84 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+
+#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/tokens.h"
+
+#include "pxr/usd/usdSkel/utils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdSkelBindingAPI::GetJointOrder(SdfPathVector* targets) const
+{
+    return UsdSkelGetJointOrder(GetJointsRel(), targets);
+}
+
+
+bool
+UsdSkelBindingAPI::SetJointOrder(const SdfPathVector& targets) const
+{
+    return UsdSkelSetJointOrder(GetJointsRel(), targets);
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::GetJointIndicesPrimvar() const
+{
+    return UsdGeomPrimvar(GetJointIndicesAttr());
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::CreateJointIndicesPrimvar(bool constant,
+                                             int elementSize) const
+{
+    return UsdGeomImageable(GetPrim()).CreatePrimvar(
+        UsdSkelTokens->primvarsSkelJointIndices,
+        SdfValueTypeNames->IntArray,
+        constant ? UsdGeomTokens->constant : UsdGeomTokens->vertex,
+        elementSize);
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::GetJointWeightsPrimvar() const
+{
+    return UsdGeomPrimvar(GetJointWeightsAttr());
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::CreateJointWeightsPrimvar(bool constant,
+                                             int elementSize) const
+{
+    return UsdGeomImageable(GetPrim()).CreatePrimvar(
+        UsdSkelTokens->primvarsSkelJointWeights,
+        SdfValueTypeNames->FloatArray,
+        constant ? UsdGeomTokens->constant : UsdGeomTokens->vertex,
+        elementSize);
+}
+
+
+
+bool
+UsdSkelBindingAPI::SetRigidJointInfluence(int jointIndex, float weight) const
+{
+    UsdGeomPrimvar jointIndicesPv =
+        CreateJointIndicesPrimvar(/*constant*/ true, /*elementSize*/ 1);
+    UsdGeomPrimvar jointWeightsPv =
+        CreateJointWeightsPrimvar(/*constant*/ true, /*elementSize*/ 1);
+
+    VtIntArray indices(1);
+    indices[0] = jointIndex;
+
+    VtFloatArray weights(1);
+    weights[0] = weight;
+    
+    return jointIndicesPv.Set(indices) && jointWeightsPv.Set(weights);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

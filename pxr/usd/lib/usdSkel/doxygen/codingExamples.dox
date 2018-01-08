@@ -1,0 +1,158 @@
+/*!
+
+\page UsdSkel_CodingExamples Coding Examples
+
+This page provides some basic coding patterns for interacting with UsdSkel data.
+
+\section UsdSkel_CE_PopulateCache Populating a UsdSkelCache
+
+As discussed in the \ref UsdSkel_OM "object model", a UsdSkelSkeletonQuery
+object is associated with each bound \ref UsdSkel_Term_SkeletonInstance
+"skeleton instance". These queries are pre-populated on a UsdSkelCache,
+which resolves the inherited UsdSkelBindingAPI properties to reason
+about resolved skel state.
+
+Before any of these queries can be accessed, a UsdSkelCache must first
+be constructed, and populated for a given skel root.
+
+The following code shows how this can be done in the following manner;
+
+- C++:
+\code{.cpp}
+UsdSkelCache cache;
+cache.Populate(UsdSkelRoot(skelRootPrim));
+\endcode
+
+- Python:
+\code{.py}
+cache = UsdSkel.Cache()
+cache.Populate(UsdSkel.Root(skelRootPrim))
+\endcode
+
+The UsdSkelCache instance is intended to be **shared** and to **persist** over
+the lifetime of a process that is consuming skeletal data. A cache may
+be populated with any number of skel roots.
+
+\note Cache population is thread-safe, and may be populated in parallel.
+
+When populating a cache, the cache is populated with a UsdSkelRoot prim.
+A UsdSkelRoot provides encapsulation of skeletal data in a scene hierarchy,
+so this serves as the obvious choice for where to begin population.
+
+If it was desired that all skel roots be pre-populated on a stage, that
+could be done as follows:
+
+- C++:
+\snippet examples.cpp PopulateAllSkelRoots
+
+- Python:
+\snippet examples.py PopulateAllSkelRoots
+
+
+\section UsdSkel_CE_AccessingSkels Accessing Skels
+
+Once a cache has been populated beneath a UsdSkelRoot, we can search for
+\ref UsdSkel_Term_SkeletonInstance "skeleton instances" bound at or beneath
+that root -- given as UsdSkelSkeletonQuery objects.
+
+The following code shows how _skeleton instances_, and the prims
+at which they are bound, can be discovered as:
+
+- C++:
+\snippet examples.cpp FindSkels
+
+- Python (as an iterator):
+\snippet examples.py IterSkels
+
+
+\section UsdSkel_CE_FindSkinnables Finding Skinnable Prims
+
+If a primitive is skinnable, then UsdSkelCache::GetSkinningQuery will
+return a valid query object that can be used for querying skinning
+information for that primitive. The query will only be valid if there are no
+validation errors in the UsdSkelBindingAPI properties that control skinning,
+and if the joint influences are fully defined. Joint influences are
+fully defined if both the _primvars:skel:jointIndices_ and
+_primvars:skel:jointWeights_ primvars are defined and valid.
+
+Once a cache has been populated, we can check if a prim is skinnable as follows:
+
+- C++:
+\code{.cpp}
+bool isSkinnable = (bool)cache.GetSkinningQuery(prim);
+\endcode
+
+- Python:
+\code{.py}
+isSkinnable = bool(cache.GetSkinningQuery(prim))
+\endcode
+
+The _skeleton instance_ that corresponds to each skinnable primitive is the
+instance bound at the same primitive, or at the nearest ancestor above.
+Usually it is expected that the set of _skeleton instances_ and the
+prims that they skin will be discovered through a top-down hierarchy traversal.
+But we can also discover the skeleton that affects a given skinnable prim
+using UsdSkelCache::GetInheritedSkelQuery.
+
+UsdSkelCache::ComputeSkinnedPrims is often used to collect the set of skinnable
+primitives that correspond to a given skeleton. For example usage, the following
+code shows how we can traverse beneath a skel root to print out each bound
+skeleton, and the set of skinnable primitives that it affects:
+
+- C++:
+\snippet examples.cpp PrintSkelsAndSkinnedPrims
+
+- Python:
+\snippet examples.py PrintSkelsAndSkinnedPrims
+
+\sa \ref UsdSkel_SkinnablePrims
+
+
+\section UsdSkel_CE_Skinning Skinning
+
+Once a skeleton instance and skinnable primitive have been identified --
+as a UsdSkelSkeletonQuery and a UsdSkelSkinningQuery, respectively --
+we can start applying skinning.
+
+It is generally expected that skinning information is transferred into some
+other data structure on the client's end. A client might apply skinning on
+a GPU, or have existing data structures that apply skinning.
+
+However, in the interests of clarifying behavior, the following code shows
+how skinned points can be computed for a UsdGeomPointBased
+(in _skeleton space_):
+
+- C++:
+\snippet examples.cpp ComputeSkinnedPoints
+
+- Python:
+\snippet examples.py ComputeSkinnedPoints
+
+It's important to keep in mind that these examples do _not_ demonstrate
+_efficient_ patterns for applying skinning. For best efficiency, the
+skinning transforms of a skeleton, as computed by
+UsdSkelSkeletonQuery::ComputeSkinningTransforms, should be computed once per
+time sample, with the results being shared by all primitives that are skinned
+by that skeleton. Further, it is also a good idea for clients to cache the
+entire _rest_ state of skinned primitives -- including their joint influences
+and binding transforms -- and reuse that rest state while applying posing
+across different time samples. The UsdSkelSkinningQuery::ComputeSkinnedPoints
+and UsdSkelSkinningQuery::ComputeSkinnedTransform helpers exist primarily
+to apply a convenient facility for computing skinned data for validation and
+debugging purposes, and should not necessarily be used in performance-sensitive
+contexts.
+
+Code for skinning transforms (in _skeleton space_)
+-- I.e., computing rigid deformations -- is similar:
+
+- C++:
+\snippet examples.cpp ComputeSkinnedTransform
+
+- Python:
+\snippet examples.py ComputeSkinnedTransform
+
+For a more complete look at how skeletal data is used to apply skinning, see
+the implementation of \ref UsdSkelBakeSkinningLBS, which provides a complete
+reference implementation of skinning, for testing and validation.
+
+*/

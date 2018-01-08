@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -48,22 +48,15 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateRestTransformsAttr(UsdSkelSkeleton &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRestTransformsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4dArray), writeSparsely);
-}
 
 } // anonymous namespace
 
-void wrapUsdSkelSkeleton()
+void wrapUsdSkelRoot()
 {
-    typedef UsdSkelSkeleton This;
+    typedef UsdSkelRoot This;
 
-    class_<This, bases<UsdGeomImageable> >
-        cls("Skeleton");
+    class_<This, bases<UsdGeomBoundable> >
+        cls("Root");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -96,19 +89,7 @@ void wrapUsdSkelSkeleton()
 
         .def(!self)
 
-        
-        .def("GetRestTransformsAttr",
-             &This::GetRestTransformsAttr)
-        .def("CreateRestTransformsAttr",
-             &_CreateRestTransformsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -133,32 +114,16 @@ void wrapUsdSkelSkeleton()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-
 namespace {
 
-
-SdfPathVector
-_GetJointOrder(const UsdSkelSkeleton& self)
-{
-    // XXX: We're just matching the behavior of the wrapper for
-    // UsdRelationship::GetTargets(), but it should be noted that we won't
-    // be able to distinguish betwen the cases of targets that were
-    // explicitly authored to an emtpy list, and unauthored (or blocked)
-    // targets.
-    SdfPathVector targets;
-    self.GetJointOrder(&targets);
-    return targets;
-}
-
-
 WRAP_CUSTOM {
-    using This = UsdSkelSkeleton;
+
+    using This = UsdSkelRoot;
 
     _class
-        .def("GetJointOrder", &_GetJointOrder)
-
-        .def("SetJointOrder", &This::SetJointOrder)
+        .def("Find", &This::Find)
+        .staticmethod("Find")
         ;
 }
 
-} // namespace
+}

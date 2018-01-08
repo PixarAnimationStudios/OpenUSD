@@ -203,3 +203,26 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+
+#include "pxr/usd/usdSkel/utils.h"
+
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+bool
+UsdSkelPackedJointAnimation::GetJointOrder(SdfPathVector* targets) const
+{
+    return UsdSkelGetJointOrder(GetJointsRel(), targets);
+}
+
+
+bool
+UsdSkelPackedJointAnimation::SetJointOrder(const SdfPathVector& targets) const
+{
+    return UsdSkelSetJointOrder(GetJointsRel(), targets);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

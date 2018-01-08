@@ -21,24 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/usdSkel/debugCodes.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/base/tf/registryManager.h"
 
-TF_WRAP_MODULE
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_REGISTRY_FUNCTION(TfDebug)
 {
-    TF_WRAP(UsdSkelAnimMapper);
-    TF_WRAP(UsdSkelAnimQuery);
-    TF_WRAP(UsdSkelBindingAPI);
-    TF_WRAP(UsdSkelCache);
-    TF_WRAP(UsdSkelJoint);
-    TF_WRAP(UsdSkelPackedJointAnimation);
-    TF_WRAP(UsdSkelSkeleton);
-    TF_WRAP(UsdSkelSkeletonQuery);
-    TF_WRAP(UsdSkelSkinningQuery);
-    TF_WRAP(UsdSkelRoot);
-    TF_WRAP(UsdSkelTokens);
-    TF_WRAP(UsdSkelTopology);
-    TF_WRAP(UsdSkelUtils);
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDSKEL_CACHE, "UsdSkel cache population.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDSKEL_BAKESKINNING,
+                                "UsdSkelBakeSkinningLBS() method.");
 }
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

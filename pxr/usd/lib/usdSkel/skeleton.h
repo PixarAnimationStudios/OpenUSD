@@ -28,10 +28,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
+
+#include "pxr/usd/usdSkel/topology.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -52,9 +54,14 @@ class SdfAssetPath;
 
 /// \class UsdSkelSkeleton
 ///
-/// Describes a skeleton.
+/// Describes a skeleton. A Skeleton is responsible both for establishing
+/// the _topology_ of a skeleton, as well as for identifying a rest pose.
+/// 
+/// See the extended \ref UsdSkel_Skeleton "Skeleton Schema" documentation for
+/// more information.
+/// 
 ///
-class UsdSkelSkeleton : public UsdTyped
+class UsdSkelSkeleton : public UsdGeomImageable
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -73,7 +80,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSkelSkeleton(const UsdPrim& prim=UsdPrim())
-        : UsdTyped(prim)
+        : UsdGeomImageable(prim)
     {
     }
 
@@ -81,7 +88,7 @@ public:
     /// Should be preferred over UsdSkelSkeleton(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSkelSkeleton(const UsdSchemaBase& schemaObj)
-        : UsdTyped(schemaObj)
+        : UsdGeomImageable(schemaObj)
     {
     }
 
@@ -151,8 +158,10 @@ public:
     // --------------------------------------------------------------------- //
     // RESTTRANSFORMS 
     // --------------------------------------------------------------------- //
-    /// specifies rest transforms of each joint in 
+    /// Specifies rest transforms of each joint in 
     /// **joint-local space**, in the ordering imposed by *joints*.
+    /// Joint transforms should all be given as orthogonal, affine
+    /// transformations.
     ///
     /// \n  C++ Type: VtArray<GfMatrix4d>
     /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
@@ -174,9 +183,9 @@ public:
     // JOINTS 
     // --------------------------------------------------------------------- //
     /// A relationship that defines the order of all Skeleton joints 
-    /// for pose evaluation, for a "primary" Skeleton, or provides re-indexing 
-    /// of joints into an ancestor Skeleton's joints for a nested (in namespace)
-    /// Skeleton.
+    /// for pose evaluation, relative to the Skeleton prim itself, so that it
+    /// is self-contained. The targets of the joint are required to be ordered,
+    /// such that parent joints come before children in the target list.
     ///
     USDSKEL_API
     UsdRelationship GetJointsRel() const;
@@ -197,6 +206,25 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get a vector of relative joint paths, describing the ordering of
+    /// joints in the skeleton, as defined by the \em joints rel.
+    /// Paths that do not refer to a child of the animation prim itself
+    /// are invalid, and will be returned as an empty path.
+    USDSKEL_API
+    bool GetJointOrder(SdfPathVector* targets) const;
+
+    /// Author the joint order for this primitive.
+    /// If any target paths are invalid or refer to non-descendant primitives
+    /// of the owning primitive of \p rel, no targets will be authored and this
+    /// function will return false.
+    /// The joint order should be sorted such that all parent joints
+    /// come before their children. This can be achieved by simply sorting
+    /// the target paths.
+    ///
+    /// \sa UsdSkelSetJointOrder
+    USDSKEL_API
+    bool SetJointOrder(const SdfPathVector& targets) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

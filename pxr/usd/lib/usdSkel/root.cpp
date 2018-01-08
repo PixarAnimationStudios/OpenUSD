@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdSkel/skeleton.h"
+#include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -33,58 +33,58 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdSkelSkeleton,
-        TfType::Bases< UsdGeomImageable > >();
+    TfType::Define<UsdSkelRoot,
+        TfType::Bases< UsdGeomBoundable > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
-    // TfType::Find<UsdSchemaBase>().FindDerivedByName("Skeleton")
-    // to find TfType<UsdSkelSkeleton>, which is how IsA queries are
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("SkelRoot")
+    // to find TfType<UsdSkelRoot>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdSkelSkeleton>("Skeleton");
+    TfType::AddAlias<UsdSchemaBase, UsdSkelRoot>("SkelRoot");
 }
 
 /* virtual */
-UsdSkelSkeleton::~UsdSkelSkeleton()
+UsdSkelRoot::~UsdSkelRoot()
 {
 }
 
 /* static */
-UsdSkelSkeleton
-UsdSkelSkeleton::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdSkelRoot
+UsdSkelRoot::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdSkelSkeleton();
+        return UsdSkelRoot();
     }
-    return UsdSkelSkeleton(stage->GetPrimAtPath(path));
+    return UsdSkelRoot(stage->GetPrimAtPath(path));
 }
 
 /* static */
-UsdSkelSkeleton
-UsdSkelSkeleton::Define(
+UsdSkelRoot
+UsdSkelRoot::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
-    static TfToken usdPrimTypeName("Skeleton");
+    static TfToken usdPrimTypeName("SkelRoot");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdSkelSkeleton();
+        return UsdSkelRoot();
     }
-    return UsdSkelSkeleton(
+    return UsdSkelRoot(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* static */
 const TfType &
-UsdSkelSkeleton::_GetStaticTfType()
+UsdSkelRoot::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdSkelSkeleton>();
+    static TfType tfType = TfType::Find<UsdSkelRoot>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdSkelSkeleton::_IsTypedSchema()
+UsdSkelRoot::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -92,64 +92,18 @@ UsdSkelSkeleton::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdSkelSkeleton::_GetTfType() const
+UsdSkelRoot::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
-UsdAttribute
-UsdSkelSkeleton::GetRestTransformsAttr() const
-{
-    return GetPrim().GetAttribute(UsdSkelTokens->restTransforms);
-}
-
-UsdAttribute
-UsdSkelSkeleton::CreateRestTransformsAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->restTransforms,
-                       SdfValueTypeNames->Matrix4dArray,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdRelationship
-UsdSkelSkeleton::GetJointsRel() const
-{
-    return GetPrim().GetRelationship(UsdSkelTokens->joints);
-}
-
-UsdRelationship
-UsdSkelSkeleton::CreateJointsRel() const
-{
-    return GetPrim().CreateRelationship(UsdSkelTokens->joints,
-                       /* custom = */ false);
-}
-
-namespace {
-static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
-{
-    TfTokenVector result;
-    result.reserve(left.size() + right.size());
-    result.insert(result.end(), left.begin(), left.end());
-    result.insert(result.end(), right.begin(), right.end());
-    return result;
-}
-}
-
 /*static*/
 const TfTokenVector&
-UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
+UsdSkelRoot::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames = {
-        UsdSkelTokens->restTransforms,
-    };
+    static TfTokenVector localNames;
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdGeomImageable::GetSchemaAttributeNames(true),
-            localNames);
+        UsdGeomBoundable::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
@@ -168,25 +122,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-
-#include "pxr/usd/usdSkel/utils.h"
-
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-bool
-UsdSkelSkeleton::GetJointOrder(SdfPathVector* targets) const
+UsdSkelRoot
+UsdSkelRoot::Find(const UsdPrim& prim)
 {
-    return UsdSkelGetJointOrder(GetJointsRel(), targets);
+    for(UsdPrim p = prim; p; p = p.GetParent()) {
+        if(p.IsA<UsdSkelRoot>()) {
+            return UsdSkelRoot(p);
+        }
+    }
+    return UsdSkelRoot();
 }
-
-
-bool
-UsdSkelSkeleton::SetJointOrder(const SdfPathVector& targets) const
-{
-    return UsdSkelSetJointOrder(GetJointsRel(), targets);
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

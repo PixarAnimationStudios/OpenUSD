@@ -173,7 +173,42 @@ void wrapUsdSkelBindingAPI()
 
 namespace {
 
-WRAP_CUSTOM {
+
+SdfPathVector
+_GetJointOrder(const UsdSkelBindingAPI& self)
+{
+    // XXX: We're just matching the behavior of the wrapper for
+    // UsdRelationship::GetTargets(), but it should be noted that we won't
+    // be able to distinguish betwen the cases of targets that were
+    // explicitly authored to an emtpy list, and unauthored (or blocked)
+    // targets.
+    SdfPathVector targets;
+    self.GetJointOrder(&targets);
+    return targets;
 }
 
+
+WRAP_CUSTOM {
+    using This = UsdSkelBindingAPI;
+
+    _class
+        .def("GetJointOrder", &_GetJointOrder)
+
+        .def("SetJointOrder", &This::SetJointOrder)
+        
+        .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar)
+
+        .def("CreateJointIndicesPrimvar", &This::CreateJointIndicesPrimvar,
+             (arg("constant"), arg("elementSize")=-1))
+
+        .def("GetJointWeightsPrimvar", &This::GetJointWeightsPrimvar)
+
+        .def("CreateJointWeightsPrimvar", &This::CreateJointWeightsPrimvar,
+             (arg("constant"), arg("elementSize")=-1))
+
+        .def("SetRigidJointInfluence", &This::SetRigidJointInfluence,
+             (arg("jointIndex"), arg("weight")=1.0f))
+        ;
 }
+
+} // namespace

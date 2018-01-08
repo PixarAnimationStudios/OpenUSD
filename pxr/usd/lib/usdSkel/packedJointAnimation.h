@@ -53,6 +53,10 @@ class SdfAssetPath;
 /// \class UsdSkelPackedJointAnimation
 ///
 /// Describes a vectorized collection of joint animations.
+/// 
+/// See the extended \ref UsdSkel_PackedJointAnimation "Packed Joint Animation"
+/// documentation for more information.
+/// 
 ///
 class UsdSkelPackedJointAnimation : public UsdGeomXformable
 {
@@ -174,7 +178,7 @@ public:
     // ROTATIONS 
     // --------------------------------------------------------------------- //
     /// Joint-local unit quaternion rotations of all affected joints, 
-    /// in 32-bit precision.  Array length should match the size of the 
+    /// in 32-bit precision. Array length should match the size of the 
     /// *joints* relationship.
     ///
     /// \n  C++ Type: VtArray<GfQuatf>
@@ -221,7 +225,7 @@ public:
     // --------------------------------------------------------------------- //
     /// A relationship whose targets define the joints to which this
     /// animation's data applies, relative to the animation prim itself, so
-    /// that it is self-contained.  This list of Joints that an animation 
+    /// that it is self-contained. This list of Joints that an animation 
     /// targets need not be identical to any Skeleton to which the animation
     /// will be applied.
     ///
@@ -244,7 +248,27 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get a vector of relative joint paths, describing the ordering of
+    /// joint data in the animation, as defined by the \em joints rel.
+    /// Paths that do not refer to a child of the animation prim itself
+    /// are invalid, and will be returned as an empty path.
+    ///
+    /// \sa UsdSkelGetJointOrder
+    USDSKEL_API
+    bool GetJointOrder(SdfPathVector* targets) const;
+
+    
+    /// Author the joint order for this primitive.
+    /// If any target paths are invalid or refer to non-descendant primitives
+    /// of the owning primitive of \p rel, no targets will be authored and this
+    /// function will return false.
+    ///
+    /// \sa UsdSkelSetJointOrder
+    USDSKEL_API
+    bool SetJointOrder(const SdfPathVector& targets) const;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

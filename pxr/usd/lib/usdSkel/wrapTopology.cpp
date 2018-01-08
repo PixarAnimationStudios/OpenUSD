@@ -21,24 +21,52 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/usdSkel/topology.h"
+
+#include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/wrapTypeHelpers.h"
+
+#include <boost/python.hpp>
+
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+
+namespace {
+
+
+tuple
+_Validate(const UsdSkelTopology& self)
 {
-    TF_WRAP(UsdSkelAnimMapper);
-    TF_WRAP(UsdSkelAnimQuery);
-    TF_WRAP(UsdSkelBindingAPI);
-    TF_WRAP(UsdSkelCache);
-    TF_WRAP(UsdSkelJoint);
-    TF_WRAP(UsdSkelPackedJointAnimation);
-    TF_WRAP(UsdSkelSkeleton);
-    TF_WRAP(UsdSkelSkeletonQuery);
-    TF_WRAP(UsdSkelSkinningQuery);
-    TF_WRAP(UsdSkelRoot);
-    TF_WRAP(UsdSkelTokens);
-    TF_WRAP(UsdSkelTopology);
-    TF_WRAP(UsdSkelUtils);
+    std::string reason;
+    bool success = self.Validate(&reason);
+    return boost::python::make_tuple(success, reason);
 }
+
+
+} // namespace
+
+
+void wrapUsdSkelTopology()
+{
+    using This = UsdSkelTopology;
+
+    class_<This>("Topology", no_init)
+        .def(init<SdfPathVector>())
+        .def(init<VtIntArray>())
+
+        .def("GetParentIndices", &This::GetParentIndices,
+             return_value_policy<return_by_value>())
+        
+        .def("GetNumJoints", &This::GetNumJoints)
+
+        .def("__len__", &This::GetNumJoints)
+
+        .def("Validate", &This::Validate)
+        ;
+}            

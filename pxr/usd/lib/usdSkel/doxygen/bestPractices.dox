@@ -1,0 +1,56 @@
+/*!
+
+\page UsdSkel_BestPractices Best Practices
+
+\section UsdSkel_BP_TransformDecomposition Transform Decomposition
+
+UsdSkel provides its own transform decomposition method, 
+\ref UsdSkelDecomposeTransforms, for decomposing a transform into translate,
+rotate and scale components.
+
+Clients may have their own transform decomposition methods with slightly
+different behavior. As long as \ref UsdSkelMakeTransforms returns the correct
+results, using alternative decomposition methods is _fine_.
+
+However, it is important that the results of decomposition methods are
+not mixed. Two decomposition methods may produce different translate,
+rotate and scale components, but that recombine to form the same transforms,
+so it may not be valid to set, say, rotations but not translations.
+
+To avoid hard to debug transform composition issues, it is recommended that
+whenever any of the transform components is set on a UsdSkelPackedJointAnimation
+primitive, **all** of the components are set.
+
+\section UsdSkel_BP_CreatingPrimvars Creating Primvars
+
+When creating primvars using the UsdSkelBindingAPI, it is good practice to
+**always** specify both the primvar _interpolation_ and _elementSize_. Otherwise,
+it is very easy to end up with invalid data in a composed scene.
+
+Users are encouraged to use the UsdSkelBindingAPI::CreateJointIndicesPrimvar and
+UsdSkelBindingAPI::CreateJointWeightsPrimvar helper methods, which ensure that
+those properties are always correctly defined.
+
+\section UsdSkel_BP_SkinnedPrimTypes Skinned Prim Types
+
+It's easy to fall into the trap of assuming that all \ref UsdSkel_SkinnablePrims
+"skinnable prims" will be UsdGeomMesh types, or similar. This is not true: any
+UsdGeomBoundable primitive may be treated as being skinnable. It is the client's
+responsibility to determine if they know how to skin a given primitive.
+
+\section UsdSkel_BP_NumInfluences Number of Influences
+
+Clients should not assume that the number of influences -- I.e,. the primvar
+_elementSize_ --  will be within some threshold that they consider _reasonable_.
+If it is desired that a maximum number of influences be enforced, the client
+should enforce that by truncating the resulting influences themselves. The
+\ref UsdSkelTruncateInfluences helper method may be used towards that end.
+
+\section UsdSkel_BP_JointInfluences Joint Influences
+
+UsdSkel does not currently require joint weighting to be normalized, or sorted.
+It is, however, recommended. This can be done prior to writing data to USD
+using the \ref UsdSkelNormalizeWeights and \ref UsdSkelSortInfluences helper
+methods.
+
+*/
