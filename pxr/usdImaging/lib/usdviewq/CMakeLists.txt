@@ -92,6 +92,7 @@ pxr_test_scripts(
     testenv/testUsdviewqPlugContextProxy.py
     testenv/testUsdviewqRootDataModel.py
     testenv/testUsdviewqSelectionDataModel.py
+    testenv/testUsdviewqLauncher.py
 )
 
 pxr_install_test_dir(
@@ -126,6 +127,12 @@ pxr_register_test(testUsdviewqPlugContextProxy
 pxr_register_test(testUsdviewqSelectionDataModel
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSelectionDataModel"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqLauncher
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqLauncher"
     EXPECTED_RETURN_CODE 0
 )
 

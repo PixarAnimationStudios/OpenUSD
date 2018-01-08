@@ -22,7 +22,14 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+from __future__ import print_function
+import sys
 import pxr.Usdviewq as Usdviewq
 
 if __name__ == '__main__':
-    Usdviewq.Launcher().Run()
+    try:
+        Usdviewq.Launcher().Run()
+    except Usdviewq.InvalidUsdviewOption as e:
+        print("ERROR: " + e.message, file=sys.stderr)
+        sys.exit(1)
