@@ -1110,8 +1110,9 @@ class AppController(QtCore.QObject):
 
     def _openStage(self, usdFilePath, populationMaskPaths):
         Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
+        fullAssetPath = Ar.GetResolver().Resolve(usdFilePath)
         self._pathResolverContext = \
-            Ar.GetResolver().CreateDefaultContextForAsset(usdFilePath)
+            Ar.GetResolver().CreateDefaultContextForAsset(fullAssetPath)
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
