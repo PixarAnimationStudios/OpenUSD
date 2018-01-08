@@ -38,7 +38,8 @@ from pxr import Sdf, Usd, UsdGeom
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
-from common import RenderModes, ShadedRenderModes, Timer
+from common import (RenderModes, ShadedRenderModes, Timer,
+    GetInstanceIndicesForIds)
 from rootDataModel import RootDataModel
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
@@ -1808,7 +1809,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         self.updateGL()
 
-    def _updateSelection(self):
+    def updateSelection(self):
         renderer = self._getRenderer()
         if not renderer:
             # error has already been issued
@@ -1817,13 +1818,23 @@ class StageView(QtOpenGL.QGLWidget):
         renderer.ClearSelected()
 
         psuRoot = self._rootDataModel.stage.GetPseudoRoot()
-        instanceIndices = self._selectionDataModel.getPrimInstanceIndices()
+        allInstances = self._selectionDataModel.getPrimInstances()
         for prim in self._selectionDataModel.getLCDPrims():
             if prim == psuRoot:
                 continue
-            primInstanceIndices = instanceIndices[prim]
-            if primInstanceIndices is not ALL_INSTANCES:
-                for instanceIndex in primInstanceIndices:
+            primInstances = allInstances[prim]
+            if primInstances != ALL_INSTANCES:
+
+                # If the prim is a point instancer and has authored instance
+                # ids, the selection contains instance ids rather than instance
+                # indices. We need to convert these back to indices before
+                # feeding them to the renderer.
+                instanceIds = GetInstanceIndicesForIds(prim, primInstances,
+                    self._rootDataModel.currentFrame)
+                if instanceIds is not None:
+                    primInstances = instanceIds
+
+                for instanceIndex in primInstances:
                     renderer.AddSelected(prim.GetPath(), instanceIndex)
             else:
                 renderer.AddSelected(prim.GetPath(), UsdImagingGL.GL.ALL_INSTANCES)
@@ -2706,5 +2717,5 @@ class StageView(QtOpenGL.QGLWidget):
     def _primSelectionChanged(self):
 
         # set highlighted paths to renderer
-        self._updateSelection()
+        self.updateSelection()
         self.update()

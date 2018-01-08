@@ -125,7 +125,7 @@ class Myconsole(interpreterView):
                 "    stage: the current Usd.Stage object\n"
                 "    frame: the current frame for playback\n"
                 "    selectedPrims: a list of all selected prims\n"
-                "    selectedInstances: a dictionary of selected prims to selected indices within\n"
+                "    selectedInstances: a dictionary of selected prims to selected instances\n"
                 "    prim: the first selected prim in the selectedPrims list\n"
                 "    property: the currently selected usd property (if any)\n"
                 "    spec: the currently selected sdf spec in the composition tree (if any)\n"
@@ -162,7 +162,7 @@ class Myconsole(interpreterView):
         self.locals()['selectedPrims'] = (
             appController._selectionDataModel.getPrims())
         self.locals()['selectedInstances'] = (
-            appController._selectionDataModel.getPrimInstanceIndices())
+            appController._selectionDataModel.getPrimInstances())
         self.locals()['prim'] = (
             appController._selectionDataModel.getFocusPrim())
         self.locals()['property'] = (

@@ -72,8 +72,8 @@ class Blocker:
 
 class _PrimSelection(object):
     """This class keeps track of the core data for prim selection: paths and
-    instance indices. The methods here can be called in any order required
-    without corrupting the path selection state.
+    instances. The methods here can be called in any order required without
+    corrupting the path selection state.
     """
 
     def __init__(self):
@@ -82,7 +82,7 @@ class _PrimSelection(object):
         # focus path. An OrderedDict is more efficient than a list here since it
         # supports efficient removal of arbitrary paths but still maintains the
         # path order. Sdf.Path objects are the keys in the OrderedDict, and a
-        # set of selected instance indices are the values. If all instances are
+        # set of selected instances are the values. If all instances are
         # selected, None is the value rather than a set.
         self._selection = OrderedDict()
 
@@ -101,14 +101,14 @@ class _PrimSelection(object):
 
         del self._selection[path]
 
-    def _discardInstanceIndex(self, path, instanceIndex):
-        """Discards an instance index from the selection, then deletes the path
-        from the selection if it has no more instances.
+    def _discardInstance(self, path, instance):
+        """Discards an instance from the selection, then deletes the path from
+        the selection if it has no more instances.
         """
 
-        indices = self._selection[path]
-        indices.discard(instanceIndex)
-        if len(indices) == 0:
+        instances = self._selection[path]
+        instances.discard(instance)
+        if len(instances) == 0:
             # Last instance deselected, so path should be deselected.
             self._clearPrimPath(path)
 
@@ -135,10 +135,10 @@ class _PrimSelection(object):
         for path in self._selection.keys():
             self._clearPrimPath(path)
 
-    def addPrimPath(self, path, instanceIndex=ALL_INSTANCES):
-        """Add a path to the selection. If an instance index is given, then only
-        add that instance. If all instances are selected when this happens then
-        the single instance will become the only selected one.
+    def addPrimPath(self, path, instance=ALL_INSTANCES):
+        """Add a path to the selection. If an instance is given, then only add
+        that instance. If all instances are selected when this happens then the
+        single instance will become the only selected one.
         """
 
         # If the path is not already in the selection, update the diff.
@@ -150,44 +150,44 @@ class _PrimSelection(object):
             else:
                 self._added.add(path)
 
-        if instanceIndex == ALL_INSTANCES:
+        if instance == ALL_INSTANCES:
             # Trying to add all instances, make sure all instances are selected.
             self._selection[path] = ALL_INSTANCES
         else:
             # Trying to add a single instance.
             if self._allInstancesSelected(path) or self._noInstancesSelected(path):
-                # Either all indices selected or none selected. Create an empty
-                # set of indices then add the target index.
+                # Either all instances selected or none selected. Create an
+                # empty set of instances then add the target instance.
                 self._selection[path] = set()
-            self._selection[path].add(instanceIndex)
+            self._selection[path].add(instance)
 
-    def removePrimPath(self, path, instanceIndex=ALL_INSTANCES):
-        """Remove a path from the selection. If an instance index is given, then
-        only remove that instance. If all instance are selected when this
-        happens, deselect all instances. If the target does not exist in the
-        selection, do nothing.
+    def removePrimPath(self, path, instance=ALL_INSTANCES):
+        """Remove a path from the selection. If an instance is given, then only
+        remove that instance. If all instances are selected when this happens,
+        deselect all instances. If the target does not exist in the selection,
+        do nothing.
         """
 
         if path in self._selection:
-            if instanceIndex == ALL_INSTANCES or self._allInstancesSelected(path):
+            if instance == ALL_INSTANCES or self._allInstancesSelected(path):
                 # Want to deselect all instances or all instances are selected.
                 # Either way, deselect all.
                 self._clearPrimPath(path)
             else:
                 # Some instances selected and want to deselect one of them.
-                self._discardInstanceIndex(path, instanceIndex)
+                self._discardInstance(path, instance)
 
-    def togglePrimPath(self, path, instanceIndex=ALL_INSTANCES):
-        """Toggle the selection of a path. If an instance index is given, only
-        toggle that instance's selection.
+    def togglePrimPath(self, path, instance=ALL_INSTANCES):
+        """Toggle the selection of a path. If an instance is given, only toggle
+        that instance's selection.
         """
 
         if path not in self._selection:
-            self.addPrimPath(path, instanceIndex)
+            self.addPrimPath(path, instance)
             return
 
         # Path is at least partially selected.
-        if instanceIndex == ALL_INSTANCES:
+        if instance == ALL_INSTANCES:
             # Trying to toggle all instances.
             if self._allInstancesSelected(path):
                 # All instances are already selected, so deselect the path.
@@ -200,29 +200,29 @@ class _PrimSelection(object):
             if self._allInstancesSelected(path):
                 # Currently all instances are selected. Switch selection to
                 # only the new instance.
-                self._selection[path] = set([instanceIndex])
+                self._selection[path] = set([instance])
             else:
                 # Some instances already selected. Toggle the new instance
                 # in the selection.
-                indices = self._selection[path]
-                if instanceIndex in indices:
-                    self._discardInstanceIndex(path, instanceIndex)
+                instances = self._selection[path]
+                if instance in instances:
+                    self._discardInstance(path, instance)
                 else:
-                    indices.add(instanceIndex)
+                    instances.add(instance)
 
     def getPrimPaths(self):
         """Get a list of paths that are at least partially selected."""
 
         return list(self._selection.keys())
 
-    def getPrimPathInstanceIndices(self):
+    def getPrimPathInstances(self):
         """Get the full selection of paths and their corresponding selected
-        indices.
+        instances.
         """
 
         return OrderedDict(
-            (path, set(indices)) if isinstance(indices, set) else (path, indices)
-            for path, indices in self._selection.items())
+            (path, set(instances)) if isinstance(instances, set) else (path, instances)
+            for path, instances in self._selection.items())
 
     def getDiff(self):
         """Get the prims added to or removed from the selection since the last
@@ -420,19 +420,19 @@ class SelectionDataModel(QtCore.QObject):
                 repr(sdfPath)))
         return sdfPath
 
-    def _validateInstanceIndexParameter(self, instanceIndex):
-        """Validate an instance index used as a parameter. This can be any
-        positive int or ALL_INSTANCES."""
+    def _validateInstanceIndexParameter(self, instance):
+        """Validate an instance used as a parameter. This can be any positive
+        int or ALL_INSTANCES."""
 
         validIndex = False
-        if isinstance(instanceIndex, int):
-            if instanceIndex >= 0 or instanceIndex == ALL_INSTANCES:
+        if isinstance(instance, int):
+            if instance >= 0 or instance == ALL_INSTANCES:
                 validIndex = True
 
         if not validIndex:
             raise ValueError(
-                "Instance index must be a positive int or ALL_INSTANCES"
-                ", got: {}".format(repr(instanceIndex)))
+                "Instance must be a positive int or ALL_INSTANCES"
+                ", got: {}".format(repr(instance)))
 
     def _ensureValidPropPath(self, prop):
         """Validate a property."""
@@ -568,48 +568,48 @@ class SelectionDataModel(QtCore.QObject):
         self._primSelection.clear()
         self._primSelectionChanged()
 
-    def addPrimPath(self, path, instanceIndex=ALL_INSTANCES):
-        """Add a path to the path selection. If an instance index is given, only
-        add that instance.
+    def addPrimPath(self, path, instance=ALL_INSTANCES):
+        """Add a path to the path selection. If an instance is given, only add
+        that instance.
         """
 
         path = self._ensureValidPrimPath(path)
-        self._validateInstanceIndexParameter(instanceIndex)
+        self._validateInstanceIndexParameter(instance)
 
-        self._primSelection.addPrimPath(path, instanceIndex)
+        self._primSelection.addPrimPath(path, instance)
         self._primSelectionChanged()
 
-    def removePrimPath(self, path, instanceIndex=ALL_INSTANCES):
-        """Remove a path from the path selection. If an instance index is given,
-        only remove that instance. If the target does not exist in the
-        selection, do nothing.
+    def removePrimPath(self, path, instance=ALL_INSTANCES):
+        """Remove a path from the path selection. If an instance is given, only
+        remove that instance. If the target does not exist in the selection, do
+        nothing.
         """
 
         path = self._ensureValidPrimPath(path)
-        self._validateInstanceIndexParameter(instanceIndex)
+        self._validateInstanceIndexParameter(instance)
 
-        self._primSelection.removePrimPath(path, instanceIndex)
+        self._primSelection.removePrimPath(path, instance)
         self._primSelectionChanged()
 
-    def togglePrimPath(self, path, instanceIndex=ALL_INSTANCES):
-        """Toggle a path in the path selection. If an instance index is given,
-        only that instance is toggled.
+    def togglePrimPath(self, path, instance=ALL_INSTANCES):
+        """Toggle a path in the path selection. If an instance is given, only
+        that instance is toggled.
         """
 
         path = self._ensureValidPrimPath(path)
-        self._validateInstanceIndexParameter(instanceIndex)
+        self._validateInstanceIndexParameter(instance)
 
-        self._primSelection.togglePrimPath(path, instanceIndex)
+        self._primSelection.togglePrimPath(path, instance)
         self._primSelectionChanged()
 
-    def setPrimPath(self, path, instanceIndex=ALL_INSTANCES):
+    def setPrimPath(self, path, instance=ALL_INSTANCES):
         """Clear the prim selection then add a single prim path back to the
-        selection. If an instance index is given, only add that instance.
+        selection. If an instance is given, only add that instance.
         """
 
         with self.batchPrimChanges:
             self.clearPrims()
-            self.addPrimPath(path, instanceIndex)
+            self.addPrimPath(path, instance)
 
     def getFocusPrimPath(self):
         """Get the path currently in focus."""
@@ -631,20 +631,20 @@ class SelectionDataModel(QtCore.QObject):
         self._requireNotBatchingPrims()
         return list(self._lcdPathSelection)
 
-    def getPrimPathInstanceIndices(self):
+    def getPrimPathInstances(self):
         """Get a dictionary which maps each selected prim to a set of its
         selected instances. If all of a path's instances are selected, the value
         is ALL_INSTANCES rather than a set.
         """
 
         self._requireNotBatchingPrims()
-        return self._primSelection.getPrimPathInstanceIndices()
+        return self._primSelection.getPrimPathInstances()
 
-    def switchToPrimPath(self, path, instanceIndex=ALL_INSTANCES):
+    def switchToPrimPath(self, path, instance=ALL_INSTANCES):
         """Select only the given prim path. If only a single prim was selected
         before and all selected properties belong to this prim, select the
-        corresponding properties on the new prim instead. If an instance index
-        is given, only select that instance.
+        corresponding properties on the new prim instead. If an instance is
+        given, only select that instance.
         """
 
         path = self._ensureValidPrimPath(path)
@@ -653,7 +653,7 @@ class SelectionDataModel(QtCore.QObject):
 
         with self.batchPrimChanges:
             self.clearPrims()
-            self.addPrimPath(path, instanceIndex)
+            self.addPrimPath(path, instance)
 
         if len(oldPrimPaths) == 1:
             self._switchProps(oldPrimPaths[0], path)
@@ -662,34 +662,34 @@ class SelectionDataModel(QtCore.QObject):
     # These are all convenience methods which just call their respective path
     # operations.
 
-    def addPrim(self, prim, instanceIndex=ALL_INSTANCES):
-        """Add a prim's path to the path selection. If an instance index is
-        given, only add that instance.
+    def addPrim(self, prim, instance=ALL_INSTANCES):
+        """Add a prim's path to the path selection. If an instance is given,
+        only add that instance.
         """
 
-        self.addPrimPath(prim.GetPath(), instanceIndex)
+        self.addPrimPath(prim.GetPath(), instance)
 
-    def removePrim(self, prim, instanceIndex=ALL_INSTANCES):
-        """Remove a prim from the prim selection. If an instance index is given,
-        only remove that instance. If the target does not exist in the
-        selection, do nothing.
+    def removePrim(self, prim, instance=ALL_INSTANCES):
+        """Remove a prim from the prim selection. If an instance is given, only
+        remove that instance. If the target does not exist in the selection, do
+        nothing.
         """
 
-        self.removePrimPath(prim.GetPath(), instanceIndex)
+        self.removePrimPath(prim.GetPath(), instance)
 
-    def togglePrim(self, prim, instanceIndex=ALL_INSTANCES):
-        """Toggle a prim's path in the path selection. If an instance index is
-        given, only that instance is toggled.
+    def togglePrim(self, prim, instance=ALL_INSTANCES):
+        """Toggle a prim's path in the path selection. If an instance is given,
+        only that instance is toggled.
         """
 
-        self.togglePrimPath(prim.GetPath(), instanceIndex)
+        self.togglePrimPath(prim.GetPath(), instance)
 
-    def setPrim(self, prim, instanceIndex=ALL_INSTANCES):
+    def setPrim(self, prim, instance=ALL_INSTANCES):
         """Clear the prim selection then add a single prim back to the
-        selection. If an instance index is given, only add that instance.
+        selection. If an instance is given, only add that instance.
         """
 
-        self.setPrimPath(prim.GetPath(), instanceIndex)
+        self.setPrimPath(prim.GetPath(), instance)
 
     def getFocusPrim(self):
         """Get the prim whose path is currently in focus."""
@@ -711,23 +711,23 @@ class SelectionDataModel(QtCore.QObject):
         return [self._rootDataModel.stage.GetPrimAtPath(path)
             for path in self.getLCDPaths()]
 
-    def getPrimInstanceIndices(self):
+    def getPrimInstances(self):
         """Get a dictionary which maps each prim whose path is selected to a set
         of its selected instances. If all of a path's instances are selected,
         the value is ALL_INSTANCES rather than a set.
         """
 
         return OrderedDict(
-            (self._rootDataModel.stage.GetPrimAtPath(path), instanceIndex)
-            for path, instanceIndex in self.getPrimPathInstanceIndices().items())
+            (self._rootDataModel.stage.GetPrimAtPath(path), instance)
+            for path, instance in self.getPrimPathInstances().items())
 
-    def switchToPrim(self, prim, instanceIndex=ALL_INSTANCES):
+    def switchToPrim(self, prim, instance=ALL_INSTANCES):
         """Select only the given prim. If only a single prim was selected before
         and all selected properties belong to this prim, select the
         corresponding properties on the new prim instead.
         """
 
-        self.switchToPrimPath(prim.GetPath(), instanceIndex)
+        self.switchToPrimPath(prim.GetPath(), instance)
 
     ### Property Path Operations ###
 

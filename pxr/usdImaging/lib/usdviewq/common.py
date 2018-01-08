@@ -531,6 +531,19 @@ def GetInstanceIdForIndex(prim, instanceIndex, time):
         return None
     return ids[instanceIndex]
 
+def GetInstanceIndicesForIds(prim, instanceIds, time):
+    '''Attempt to find the instance indices of a list of authored instance IDs
+    for prim 'prim' at time 'time'. If the prim is not a PointInstancer or does
+    not have authored IDs, returns None. If any ID from 'instanceIds' does not
+    exist at the given time, its index is not added to the list (because it does
+    not have an index).'''
+    ids = UsdGeom.PointInstancer(prim).GetIdsAttr().Get(time)
+    if ids:
+        return [instanceIndex for instanceIndex, instanceId in enumerate(ids)
+            if instanceId in instanceIds]
+    else:
+        return None
+
 def Drange(start, stop, step):
     """Like builtin range() but allows decimals and is a closed interval
         that is, it's inclusive of stop"""

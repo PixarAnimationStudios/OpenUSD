@@ -64,6 +64,18 @@ def _testDoubleSelection(appController):
     viewportShot = appController.GrabViewportShot()
     viewportShot.save("sel_highlight_double.png", "PNG")
 
+# Make two instance selections, one using authored instance ids and one using
+# instance indices.
+def _testInstanceSelection(appController):
+    with appController._selectionDataModel.batchPrimChanges:
+        appController._selectionDataModel.clearPrims()
+        appController._selectionDataModel.addPrimPath("/Instancer", 1)
+        appController._selectionDataModel.addPrimPath("/Instancer2", 6)
+    QtWidgets.QApplication.processEvents()
+
+    viewportShot = appController.GrabViewportShot()
+    viewportShot.save("sel_highlight_instance.png", "PNG")
+
 # Make a single selection with a non-default selection color.
 def _testColorSelection(appController):
     appController._ui.actionSelCyan.setChecked(True)
@@ -84,5 +96,6 @@ def testUsdviewInputFunction(appController):
     _testSingleSelection(appController)
     _testNoHighlightSelection(appController)
     _testDoubleSelection(appController)
+    _testInstanceSelection(appController)
     _testColorSelection(appController)
 

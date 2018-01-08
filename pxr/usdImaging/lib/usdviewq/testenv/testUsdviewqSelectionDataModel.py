@@ -268,7 +268,7 @@ class TestSelectionDataModel(unittest.TestCase):
         dm.addPrim(stage.bar, 1)
         dm.addPrim(stage.bar, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES,
                                 stage.foo: ALL_INSTANCES,
                                 stage.bar: {1, 2}
@@ -277,7 +277,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # Clear the prim selection.
         dm.clearPrims()
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES
             })
 
@@ -399,14 +399,14 @@ class TestSelectionDataModel(unittest.TestCase):
         rootDataModel = FakeRootDataModel(stage)
         dm = SelectionDataModel(rootDataModel)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES
                             })
 
         # Add a single prim instance.
         dm.addPrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES,
                                 stage.foo: {1}
                             })
@@ -414,7 +414,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # Add a different prim instance.
         dm.addPrim(stage.foo, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES,
                                 stage.foo: {1, 2}
                             })
@@ -422,16 +422,16 @@ class TestSelectionDataModel(unittest.TestCase):
         # Add all instances of the prim.
         dm.addPrim(stage.foo)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES,
                                 stage.foo: ALL_INSTANCES
                             })
 
         # Add a single instance. This should wipe out ALL_INSTANCES and leave
-        # only the single instance in the prim's selected indices.
+        # only the single instance in the prim's selected instances.
         dm.addPrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES,
                                 stage.foo: {1}
                             })
@@ -450,7 +450,7 @@ class TestSelectionDataModel(unittest.TestCase):
         dm.addPrim(stage.bar, 1)
         dm.addPrim(stage.bar, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: ALL_INSTANCES,
                                 stage.bar: {1, 2}
                             })
@@ -458,7 +458,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # Remove a prim instance from the selection.
         dm.removePrim(stage.bar, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: ALL_INSTANCES,
                                 stage.bar: {2}
                             })
@@ -466,7 +466,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # Remove the last instance of a prim from the selection.
         dm.removePrim(stage.bar, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: ALL_INSTANCES,
                             })
 
@@ -474,7 +474,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # Selection should not change.
         dm.removePrim(stage.bar, 3)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: ALL_INSTANCES,
                             })
 
@@ -482,7 +482,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # selected.
         dm.removePrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES
                             })
 
@@ -490,7 +490,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # selected prim. All instances of the root prim should remain selected.
         dm.removePrim(stage.root, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES
                             })
 
@@ -506,21 +506,21 @@ class TestSelectionDataModel(unittest.TestCase):
 
         dm.setPrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: {1}
                             })
 
         # Toggle a prim instance into the selection.
         dm.togglePrim(stage.foo, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: {1, 2}
                             })
 
         # Toggle a prim instance out of the selection.
         dm.togglePrim(stage.foo, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: {1}
                             })
 
@@ -528,7 +528,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # instances should be selected.
         dm.togglePrim(stage.foo)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: ALL_INSTANCES
                             })
 
@@ -536,7 +536,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # The single instance should be selected.
         dm.togglePrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: {1}
                             })
 
@@ -544,7 +544,7 @@ class TestSelectionDataModel(unittest.TestCase):
         # the root prim should be selected.
         dm.togglePrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES
                             })
 
@@ -558,28 +558,28 @@ class TestSelectionDataModel(unittest.TestCase):
         rootDataModel = FakeRootDataModel(stage)
         dm = SelectionDataModel(rootDataModel)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.root: ALL_INSTANCES
                             })
 
         # Set a prim instance as the selection.
         dm.setPrim(stage.foo, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: {1}
                             })
 
         # Set a different instance of the same prim as the selection.
         dm.setPrim(stage.foo, 2)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.foo: {2}
                             })
 
         # Set a different prim's instance as the selection.
         dm.setPrim(stage.bar, 1)
 
-        self.assertDictEqual(dm.getPrimInstanceIndices(), {
+        self.assertDictEqual(dm.getPrimInstances(), {
                                 stage.bar: {1}
                             })
 

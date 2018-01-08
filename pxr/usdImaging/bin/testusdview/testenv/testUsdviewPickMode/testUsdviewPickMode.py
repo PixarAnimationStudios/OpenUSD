@@ -48,19 +48,19 @@ def _checkPrimSelection(appController, path):
 
 # Check that no instances are selected.
 def _checkNoInstancesSelected(appController, path):
-    instanceSelection = appController._selectionDataModel.getPrimPathInstanceIndices()
-    for instanceIndices in instanceSelection.values():
-        assert instanceIndices == ALL_INSTANCES
+    instanceSelection = appController._selectionDataModel.getPrimPathInstances()
+    for instances in instanceSelection.values():
+        assert instances == ALL_INSTANCES
 
 # Check that the specified instance is the only selected instance.
-def _checkInstanceSelection(appController, path, instanceIndex):
+def _checkInstanceSelection(appController, path, instance):
     path = Sdf.Path(str(path))
-    instanceSelection = appController._selectionDataModel.getPrimPathInstanceIndices()
+    instanceSelection = appController._selectionDataModel.getPrimPathInstances()
     assert len(instanceSelection) == 1
     assert path in instanceSelection
-    instanceIndices = instanceSelection[path]
-    assert len(instanceIndices) == 1
-    assert instanceIndex in instanceIndices
+    instances = instanceSelection[path]
+    assert len(instances) == 1
+    assert instance in instances
 
 # Test picking a prim.
 def _testPickPrims(appController):
