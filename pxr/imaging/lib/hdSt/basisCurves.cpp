@@ -309,7 +309,8 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     // for all the draw items of all the reprs.
     bool needsSetGeometricShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel |
-                      HdChangeTracker::DirtyMaterialId)) {
+                      HdChangeTracker::DirtyMaterialId |
+                      HdChangeTracker::NewRepr)) {
         needsSetGeometricShader = true;
     }
 
@@ -341,9 +342,6 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
                 _GetReprDesc(it->first);
             _UpdateReprGeometricShader(sceneDelegate, descs, it->second);
         }
-    } else if (*dirtyBits & HdChangeTracker::NewRepr) {
-        // If NewRepr is set, we haven't initialized the geometric shader yet.
-        _UpdateReprGeometricShader(sceneDelegate, reprDescs, curRepr);
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
