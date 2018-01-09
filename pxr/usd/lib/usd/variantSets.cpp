@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
@@ -195,36 +196,19 @@ UsdVariantSet::_AddVariantSet(UsdListPosition position)
     SdfVariantSetSpecHandle result;
     SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(); 
     if (primSpec){
-        // One can only create a VariantSet on a primPath.  If our current
-        // EditTarget has us sitting right on a VariantSet, 
-        // AppendVariantSelection() will fail with a coding error and return
-        // the empty path
         SdfPath varSetPath = primSpec->GetPath()
             .AppendVariantSelection(_variantSetName, string());
-        if (!varSetPath.IsEmpty()) {
-            SdfLayerHandle layer = primSpec->GetLayer();
-            if (SdfSpecHandle spec = layer->GetObjectAtPath(varSetPath)){
-                result = TfDynamic_cast<SdfVariantSetSpecHandle>(spec);
-            } else {
-                result = SdfVariantSetSpec::New(primSpec, _variantSetName);
-                switch (position) {
-                case UsdListPositionFront:
-                    primSpec->GetVariantSetNameList().Prepend(_variantSetName);
-                    break;
-                case UsdListPositionBack:
-                    primSpec->GetVariantSetNameList().Append(_variantSetName);
-                    break;
-                case UsdListPositionTempDefault:
-                    if (UsdAuthorOldStyleAdd()) {
-                        primSpec->GetVariantSetNameList().Add(_variantSetName);
-                    } else {
-                        primSpec->GetVariantSetNameList()
-                            .Prepend(_variantSetName);
-                    }
-                    break;
-                }
-            }
+        if (varSetPath.IsEmpty()) {
+            return result;
         }
+        SdfLayerHandle layer = primSpec->GetLayer();
+        if (SdfSpecHandle spec = layer->GetObjectAtPath(varSetPath)){
+            result = TfDynamic_cast<SdfVariantSetSpecHandle>(spec);
+        } else {
+            result = SdfVariantSetSpec::New(primSpec, _variantSetName);
+        }
+        Usd_InsertListItem( primSpec->GetVariantSetNameList(), _variantSetName,
+                            position );
     }
     return result;
 }

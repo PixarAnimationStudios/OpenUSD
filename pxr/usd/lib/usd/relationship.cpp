@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/instanceCache.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/pcp/targetIndex.h"
 #include "pxr/usd/sdf/attributeSpec.h"
@@ -123,22 +124,8 @@ UsdRelationship::AddTarget(const SdfPath& target,
     if (!relSpec)
         return false;
 
-    switch (position) {
-    case UsdListPositionFront:
-        relSpec->GetTargetPathList().Prepend(targetToAuthor);
-        break;
-    case UsdListPositionBack:
-        relSpec->GetTargetPathList().Append(targetToAuthor);
-        break;
-    case UsdListPositionTempDefault:
-        if (UsdAuthorOldStyleAdd()) {
-            relSpec->GetTargetPathList().Add(targetToAuthor);
-        } else {
-            relSpec->GetTargetPathList().Prepend(targetToAuthor);
-        }
-        break;
-    }
-
+    Usd_InsertListItem( relSpec->GetTargetPathList(), targetToAuthor,
+                        position );
     return true;
 }
 

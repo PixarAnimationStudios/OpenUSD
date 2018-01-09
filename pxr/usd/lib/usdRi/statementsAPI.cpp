@@ -344,7 +344,7 @@ UsdRiStatementsAPI::SetCoordinateSystem(const std::string &coordSysName)
                 if (TF_VERIFY(rel)) {
                     // Order should not matter, since these are a set,
                     // but historically we have appended these.
-                    rel.AddTarget(GetPrim().GetPath(), UsdListPositionBack);
+                    rel.AddTarget(GetPrim().GetPath());
                 }
                 break;
             }
@@ -393,7 +393,7 @@ UsdRiStatementsAPI::SetScopedCoordinateSystem(const std::string &coordSysName)
                     currPrim.CreateRelationship(_tokens->modelScopedCoordsys,
                                                 /* custom = */ false);
                 if (TF_VERIFY(rel)) {
-                    rel.AddTarget(GetPrim().GetPath(), UsdListPositionBack);
+                    rel.AddTarget(GetPrim().GetPath());
                 }
                 break;
             }

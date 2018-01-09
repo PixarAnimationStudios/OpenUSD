@@ -159,7 +159,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
         # collection.
         combinedColl.CreateIncludesRel().AddTarget(
-            expandPrimsColl.GetCollectionPath(), position=Usd.ListPositionBack)
+            expandPrimsColl.GetCollectionPath(), position=Usd.ListPositionBackOfAppendList)
         combinedMquery = combinedColl.ComputeMembershipQuery()
         
         combinedCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(

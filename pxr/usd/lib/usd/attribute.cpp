@@ -447,22 +447,8 @@ UsdAttribute::AddConnection(const SdfPath& source,
     if (!attrSpec)
         return false;
 
-    switch (position) {
-    case UsdListPositionFront:
-        attrSpec->GetConnectionPathList().Prepend(pathToAuthor);
-        break;
-    case UsdListPositionBack:
-        attrSpec->GetConnectionPathList().Append(pathToAuthor);
-        break;
-    case UsdListPositionTempDefault:
-        if (UsdAuthorOldStyleAdd()) {
-            attrSpec->GetConnectionPathList().Add(pathToAuthor);
-        } else {
-            attrSpec->GetConnectionPathList().Prepend(pathToAuthor);
-        }
-        break;
-    }
-
+    Usd_InsertListItem( attrSpec->GetConnectionPathList(), pathToAuthor,
+                        position );
     return true;
 }
 

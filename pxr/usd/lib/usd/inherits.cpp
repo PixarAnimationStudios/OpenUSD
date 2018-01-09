@@ -26,6 +26,7 @@
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
@@ -87,22 +88,7 @@ UsdInherits::AddInherit(const SdfPath &primPathIn, UsdListPosition position)
 
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfInheritsProxy inhs = spec->GetInheritPathList();
-        switch (position) {
-        case UsdListPositionFront:
-            inhs.Prepend(primPath);
-            break;
-        case UsdListPositionBack:
-            inhs.Append(primPath);
-            break;
-        case UsdListPositionTempDefault:
-            if (UsdAuthorOldStyleAdd()) {
-                inhs.Add(primPath);
-            } else {
-                inhs.Prepend(primPath);
-            }
-            break;
-        }
+        Usd_InsertListItem( spec->GetInheritPathList(), primPath, position );
         return true;
     }
     return false;

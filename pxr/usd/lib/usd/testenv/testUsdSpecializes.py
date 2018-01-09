@@ -110,7 +110,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # Add a specializes path to the instance prim pointing to the 
             # class prim.
             instancePrim.GetSpecializes() \
-                        .AddSpecialize("/Model/Class", Usd.ListPositionFront)
+                        .AddSpecialize("/Model/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedSpecializePaths = Sdf.PathListOp()
             expectedSpecializePaths.prependedItems = [Sdf.Path("/Ref/Class")]
@@ -130,7 +130,7 @@ class TestUsdSpecializes(unittest.TestCase):
 
             # Add a global specialize path.
             instancePrim.GetSpecializes() \
-                        .AddSpecialize("/Class", Usd.ListPositionFront)
+                        .AddSpecialize("/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedSpecializePaths = Sdf.PathListOp()
             expectedSpecializePaths.prependedItems = [Sdf.Path("/Class")]
@@ -151,7 +151,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # map across the reference edit target.
             with self.assertRaises(Tf.ErrorException):
                 instancePrim.GetSpecializes() \
-                            .AddSpecialize("/Ref2/Class", Usd.ListPositionFront)
+                            .AddSpecialize("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
@@ -199,7 +199,7 @@ class TestUsdSpecializes(unittest.TestCase):
             with vset.GetVariantEditContext():
                 instancePrim = stage.GetPrimAtPath("/Root/Instance")
                 instancePrim.GetSpecializes().AddSpecialize(
-                    "/Root/Class", Usd.ListPositionFront)
+                    "/Root/Class", Usd.ListPositionFrontOfPrependList)
 
             # Check that authored specializes path does *not* include variant
             # selection.

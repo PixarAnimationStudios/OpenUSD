@@ -237,9 +237,9 @@ class TestUsdReferences(unittest.TestCase):
             # Prepend target1, and then prepend target2:
             # target2 ends up stronger.
             prim.GetReferences().AddInternalReference('/target1',
-                position = Usd.ListPositionFront)
+                position = Usd.ListPositionFrontOfPrependList)
             prim.GetReferences().AddInternalReference('/target2',
-                position = Usd.ListPositionFront)
+                position = Usd.ListPositionFrontOfPrependList)
             self.assertTrue(prim)
             self.assertEqual(prim.GetAttribute('attr').Get(), 2.345)
 
@@ -250,9 +250,9 @@ class TestUsdReferences(unittest.TestCase):
             # Append target1, and then append target2:
             # target1 ends up stronger.
             prim.GetReferences().AddInternalReference('/target1',
-                position = Usd.ListPositionBack)
+                position = Usd.ListPositionBackOfAppendList)
             prim.GetReferences().AddInternalReference('/target2',
-                position = Usd.ListPositionBack)
+                position = Usd.ListPositionBackOfAppendList)
             self.assertTrue(prim)
             self.assertEqual(prim.GetAttribute('attr').Get(), 1.234)
 
@@ -280,7 +280,7 @@ class TestUsdReferences(unittest.TestCase):
             # referenced prim. 
             childPrim = stage.GetPrimAtPath('/Root/Child')
             childPrim.GetReferences().AddInternalReference(
-                '/Root/SubrootRef', position=Usd.ListPositionFront)
+                '/Root/SubrootRef', position=Usd.ListPositionFrontOfPrependList)
 
             expectedRefs = Sdf.ReferenceListOp()
             expectedRefs.prependedItems = [
@@ -299,7 +299,7 @@ class TestUsdReferences(unittest.TestCase):
 
             # Add an internal reference.
             childPrim.GetReferences().AddInternalReference(
-                '/Ref2', position=Usd.ListPositionFront)
+                '/Ref2', position=Usd.ListPositionFrontOfPrependList)
             expectedRefs = Sdf.ReferenceListOp()
             expectedRefs.deletedItems = [
                 Sdf.Reference(primPath='/Ref/SubrootRef')
@@ -342,7 +342,7 @@ class TestUsdReferences(unittest.TestCase):
             with vset.GetVariantEditContext():
                 instancePrim = stage.GetPrimAtPath("/Root/Child")
                 instancePrim.GetReferences().AddInternalReference(
-                    "/Root/SubrootRef", position=Usd.ListPositionFront)
+                    "/Root/SubrootRef", position=Usd.ListPositionFrontOfPrependList)
 
             # Check that authored reference does *not* include variant
             # selection.

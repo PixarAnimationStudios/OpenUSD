@@ -26,6 +26,7 @@
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
@@ -86,22 +87,7 @@ UsdSpecializes::AddSpecialize(const SdfPath &primPathIn,
 
     SdfChangeBlock block;
     if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-        SdfSpecializesProxy paths = spec->GetSpecializesList();
-        switch (position) {
-        case UsdListPositionFront:
-            paths.Prepend(primPath);
-            break;
-        case UsdListPositionBack:
-            paths.Append(primPath);
-            break;
-        case UsdListPositionTempDefault:
-            if (UsdAuthorOldStyleAdd()) {
-                paths.Add(primPath);
-            } else {
-                paths.Prepend(primPath);
-            }
-            break;
-        }
+        Usd_InsertListItem( spec->GetSpecializesList(), primPath, position );
         return true;
     }
     return false;

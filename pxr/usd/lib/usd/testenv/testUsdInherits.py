@@ -114,7 +114,7 @@ class TestUsdInherits(unittest.TestCase):
             # Add an inherit path to the instance prim pointing to the 
             # class prim.
             instancePrim.GetInherits() \
-                        .AddInherit("/Model/Class", Usd.ListPositionFront)
+                        .AddInherit("/Model/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedInheritPaths = Sdf.PathListOp()
             expectedInheritPaths.prependedItems = [Sdf.Path("/Ref/Class")]
@@ -134,7 +134,7 @@ class TestUsdInherits(unittest.TestCase):
 
             # Add a global inherit path.
             instancePrim.GetInherits() \
-                        .AddInherit("/Class", Usd.ListPositionFront)
+                        .AddInherit("/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedInheritPaths = Sdf.PathListOp()
             expectedInheritPaths.prependedItems = [Sdf.Path("/Class")]
@@ -155,7 +155,7 @@ class TestUsdInherits(unittest.TestCase):
             # map across the reference edit target.
             with self.assertRaises(Tf.ErrorException):
                 instancePrim.GetInherits() \
-                            .AddInherit("/Ref2/Class", Usd.ListPositionFront)
+                            .AddInherit("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
@@ -203,7 +203,7 @@ class TestUsdInherits(unittest.TestCase):
             with vset.GetVariantEditContext():
                 instancePrim = stage.GetPrimAtPath("/Root/Instance")
                 instancePrim.GetInherits().AddInherit(
-                    "/Root/Class", Usd.ListPositionFront)
+                    "/Root/Class", Usd.ListPositionFrontOfPrependList)
 
             # Check that authored inherit path does *not* include variant
             # selection.
@@ -246,6 +246,43 @@ class TestUsdInherits(unittest.TestCase):
             self.assertEqual(child.GetInherits().GetAllDirectInherits(),
                              map(Sdf.Path, ['/Parent/Sibling',
                                             '/DI', '/DRI', '/ARI']))
+
+    def test_ListPosition(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory("x."+fmt, sessionLayer=None)
+
+            prim = stage.DefinePrim('/prim')
+            for c in 'abcde':
+                stage.DefinePrim('/'+c)
+
+            inh = prim.GetInherits()
+
+            # Default behavior: ListPositionBackOfPrependList
+            self.assertEqual(inh.GetAllDirectInherits(), [])
+            inh.AddInherit('/a')
+            self.assertEqual(inh.GetAllDirectInherits(), ['/a'])
+            inh.AddInherit('/b')
+            self.assertEqual(inh.GetAllDirectInherits(), ['/a', '/b'])
+
+            # ListPositionFrontOfPrependList
+            inh.AddInherit('/c', Usd.ListPositionFrontOfPrependList)
+            self.assertEqual(inh.GetAllDirectInherits(),
+                    ['/c', '/a', '/b'])
+
+            # Adding a redundant entry moves it to the requested position
+            inh.AddInherit('/a', Usd.ListPositionFrontOfPrependList)
+            self.assertEqual(inh.GetAllDirectInherits(),
+                    ['/a', '/c', '/b'])
+
+            # ListPositionBackOfAppendList
+            inh.AddInherit('/d', Usd.ListPositionBackOfAppendList)
+            self.assertEqual(inh.GetAllDirectInherits(),
+                    ['/a', '/c', '/b', '/d'])
+
+            # ListPositionFrontOfAppendList
+            inh.AddInherit('/e', Usd.ListPositionFrontOfAppendList)
+            self.assertEqual(inh.GetAllDirectInherits(),
+                    ['/a', '/c', '/b', '/e', '/d'])
 
 if __name__ == '__main__':
     unittest.main()

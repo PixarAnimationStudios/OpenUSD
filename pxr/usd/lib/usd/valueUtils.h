@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/common.h"
 
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/layer.h"
@@ -128,6 +129,59 @@ void
 Usd_MergeTimeSamples(std::vector<double> * const timeSamples, 
                      const std::vector<double> &additionalTimeSamples,
                      std::vector<double> * tempUnionTimeSamples=nullptr);
+
+// Helper that implements the various options for adding items to lists
+// enumerated by UsdListPosition.
+// If the item already exists in the list, but not in the requested
+// position, it will be moved to the requested position.
+template <class PROXY>
+void
+Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
+                   UsdListPosition position)
+{
+    typename PROXY::ListProxy list(/* unused */ SdfListOpTypeExplicit);
+    bool atFront;
+    switch (position) {
+    case UsdListPositionTempDefault:
+        if (UsdAuthorOldStyleAdd()) {
+            proxy.Add(item);
+            return;
+        } else {
+            // Fall through to UsdListPositionBackOfPrependList case.
+        }
+    case UsdListPositionBackOfPrependList:
+        list = proxy.GetPrependedItems();
+        atFront = false;
+        break;
+    case UsdListPositionFrontOfPrependList:
+        list = proxy.GetPrependedItems();
+        atFront = true;
+        break;
+    case UsdListPositionBackOfAppendList:
+        list = proxy.GetAppendedItems();
+        atFront = false;
+        break;
+    case UsdListPositionFrontOfAppendList:
+        list = proxy.GetAppendedItems();
+        atFront = true;
+        break;
+    }
+
+    if (list.empty()) {
+        list.Insert(-1, item);
+    } else {
+        const size_t pos = list.Find(item);
+        if (pos != -1) {
+            const size_t targetPos = atFront ? 0 : list.size()-1;
+            if (pos == targetPos) {
+                // Item already exists in the right position.
+                return;
+            }
+            list.Erase(pos);
+        }
+        list.Insert(atFront ? 0 : -1, item);
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
