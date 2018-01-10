@@ -394,5 +394,16 @@ UsdUtilsCreateCollections(
     return result;
 }
 
+USDUTILS_API
+SdfLayerHandleVector 
+UsdUtilsGetDirtyLayers(UsdStagePtr stage, bool includeClipLayers) {
+    SdfLayerHandleVector usedLayers = stage->GetUsedLayers(includeClipLayers);
+    auto newEnd = std::remove_if(
+        usedLayers.begin(), usedLayers.end(),
+        [](const SdfLayerHandle &layer) { return !layer->IsDirty(); });
+    usedLayers.erase(newEnd, usedLayers.end());
+    return usedLayers;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

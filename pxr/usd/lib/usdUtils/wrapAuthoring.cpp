@@ -112,4 +112,8 @@ void wrapAuthoring()
          arg("minInclusionRatio")=0.75, 
          arg("maxNumExcludesBelowInclude")=5u,
          arg("minIncludeExcludeCollectionSize")=3u));
+
+    def("GetDirtyLayers", UsdUtilsGetDirtyLayers,
+        (arg("stage"), arg("includeClipLayers")=true),
+        return_value_policy<TfPySequenceToList>());
 }

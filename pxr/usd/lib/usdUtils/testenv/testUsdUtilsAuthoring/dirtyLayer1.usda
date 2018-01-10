@@ -1,0 +1,9 @@
+#usda 1.0
+
+(
+    subLayers = [@./dirtyLayer2.usda@, @./dirtyLayer3.usda@]
+)
+
+def "Root"{
+    string hello = "world"
+}

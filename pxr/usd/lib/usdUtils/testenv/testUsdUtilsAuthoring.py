@@ -281,6 +281,44 @@ class TestUsdUtilsAuthoring(unittest.TestCase):
                 for p in lampCPaths: 
                     self.assertTrue(p in includedPaths)
 
+    def test_GetDirtyLayers(self):
+        """Validates that we get all modified layers from a UsdStage"""
+        layer1 = Sdf.Layer.FindOrOpen("dirtyLayer1.usda")
+        layer2 = Sdf.Layer.FindOrOpen("dirtyLayer2.usda")
+        layer3 = Sdf.Layer.FindOrOpen("dirtyLayer3.usda")
+        fakeLayer = Sdf.Layer.FindOrOpen("123fake.usda")
+        self.assertIsNotNone(layer1)
+        self.assertIsNotNone(layer2)
+        self.assertIsNotNone(layer3)
+        self.assertIsNone(fakeLayer)
+
+        stage = Usd.Stage.Open(layer1)
+        sessionLayer = stage.GetSessionLayer()
+        prim = stage.GetPrimAtPath('/Root')
+        hello = prim.GetAttribute('hello')
+        dirtyLayers = UsdUtils.GetDirtyLayers(stage)
+        self.assertEqual(len(dirtyLayers), 0)
+
+        stage.SetEditTarget(Usd.EditTarget(layer3))
+        hello.Set('edit')
+        dirtyLayers = UsdUtils.GetDirtyLayers(stage)
+        self.assertEqual(len(dirtyLayers), 1)
+        self.assertIn(layer3, dirtyLayers)
+
+        stage.SetEditTarget(Usd.EditTarget(layer1))
+        hello.Set('edit')
+        dirtyLayers = UsdUtils.GetDirtyLayers(stage)
+        self.assertEqual(len(dirtyLayers), 2)
+        self.assertIn(layer1, dirtyLayers)
+        self.assertIn(layer3, dirtyLayers)
+
+        stage.SetEditTarget(Usd.EditTarget(sessionLayer))
+        hello.Set('edit')
+        dirtyLayers = UsdUtils.GetDirtyLayers(stage)
+        self.assertEqual(len(dirtyLayers), 3)
+        self.assertIn(layer1, dirtyLayers)
+        self.assertIn(layer3, dirtyLayers)
+        self.assertIn(sessionLayer, dirtyLayers)
 
 if __name__=="__main__":
     unittest.main()
