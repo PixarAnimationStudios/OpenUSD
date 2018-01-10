@@ -151,7 +151,7 @@ public:
                               VtVec3fArray* points,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
 
-    /// Compute a skinnint transform using linear blend skinning.
+    /// Compute a skinning transform using linear blend skinning.
     /// The \p xforms are given in _skeleton space_, using the joint order of
     /// the bound skeleton.
     /// Joint influences and the (optional) binding transform are computed

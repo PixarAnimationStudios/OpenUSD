@@ -34,7 +34,8 @@ schema types:
 
 - \ref UsdSkel_SkelRoot "Skel Root":
 
-  Identifies where in a scene graph skeletal processing takes place.
+  Identifies where in a scene graph skeletal processing takes place,
+  in addition to providing bounds for skinned models.
 
 - \ref UsdSkel_Skeleton "Skeleton":
   
@@ -119,9 +120,14 @@ UsdSkelAnimMapper, and is done so via matching joint names.
 The UsdSkelRoot schema is used to **encapsulate** primitives with
 skelelal skinning behaviors, and is required when authoring skeletal data.
 
-A SkelRoot gives DCC apps a way of identifying which parts of a scene graph
-require skeletal processing, so that they can take different code paths,
-as is often required to consume skeletal data.
+A SkelRoot is a boundable primitive, and provides a place to encode the
+extents of all skinned primitives beneath it. It is neither expected nor
+required the descendent primitives that are being skinned will encode
+their own skinned extents.
+
+A SkelRoot additionally gives DCC apps a way of identifying which parts of a
+scene graph require skeletal processing, so that they can take different code
+paths, as is often required to consume skeletal data.
 
 Because a UsdSkelRoot prim encapsulates skeletal behavior, it is also the case
 that the inherited bindings set through the \ref UsdSkel_BindingAPI

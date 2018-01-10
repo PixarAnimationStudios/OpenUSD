@@ -15,7 +15,7 @@ about resolved skel state.
 Before any of these queries can be accessed, a UsdSkelCache must first
 be constructed, and populated for a given skel root.
 
-The following code shows how this can be done in the following manner;
+The following code shows how this can be done:
 
 - C++:
 \code{.cpp}
@@ -56,7 +56,7 @@ Once a cache has been populated beneath a UsdSkelRoot, we can search for
 that root -- given as UsdSkelSkeletonQuery objects.
 
 The following code shows how _skeleton instances_, and the prims
-at which they are bound, can be discovered as:
+at which they are bound, can be discovered:
 
 - C++:
 \snippet examples.cpp FindSkels
@@ -119,7 +119,7 @@ other data structure on the client's end. A client might apply skinning on
 a GPU, or have existing data structures that apply skinning.
 
 However, in the interests of clarifying behavior, the following code shows
-how skinned points can be computed for a UsdGeomPointBased
+how skinned points can be computed for a UsdGeomPointBased primitive
 (in _skeleton space_):
 
 - C++:
