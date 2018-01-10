@@ -424,10 +424,31 @@ UsdImagingHydraMaterialAdapter::_GetMaterialParamValue(
                                                 UsdTimeCode time) const
 {
     VtValue value;
-    UsdAttribute attr = prim.GetAttribute(paramName);
-    if (TF_VERIFY(attr)) {
-        // XXX: Reading the value may fail, should we warn here when it does?
-        attr.Get(&value, time);
+
+    if (UsdShadeShader shaderPrim = UsdShadeShader(prim)){
+        UsdShadeInput shaderInput = shaderPrim.GetInput(paramName);
+        if (TF_VERIFY(shaderInput)) {
+            // XXX: Reading the value may fail, should we warn here if it does?
+            shaderInput.Get(&value, time);
+        }
+    } else {
+        // ------------------------------------------------------------------ //
+        // Deprecated
+        // ------------------------------------------------------------------ //
+
+        // First we try to read the attribute prefixed by "inputs:", if
+        // that fails then we try the legacy name without "inputs:".
+        TfToken inputAttr = 
+            UsdShadeUtils::GetFullName(paramName, UsdShadeAttributeType::Input);
+        UsdAttribute attr = prim.GetAttribute(inputAttr);
+        if (!attr) {
+            attr = prim.GetAttribute(paramName);
+        }
+
+        if (TF_VERIFY(attr)) {
+            attr.Get(&value, time);
+        }
+        // ------------------------------------------------------------------ //
     }
 
     return value;
@@ -563,8 +584,8 @@ UsdImagingHydraMaterialAdapter::_GetMaterialParams(UsdPrim const& prim) const
             // ---------------------------------------------------------- //
         }
 
-        attr.Get(&fallbackValue);
-        params.push_back(HdMaterialParam(attr.GetName(), 
+        shaderInput.Get(&fallbackValue);
+        params.push_back(HdMaterialParam(shaderInput.GetBaseName(),
                                          fallbackValue,
                                          connection,
                                          samplerCoords,
