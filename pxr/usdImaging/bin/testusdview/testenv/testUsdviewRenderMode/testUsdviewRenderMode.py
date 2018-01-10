@@ -27,8 +27,8 @@ from pxr import Sdf, UsdImagingGL
 
 # Remove any unwanted visuals from the view and set complexity.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
+    appController._viewSettingsDataModel.showBBoxes = False
+    appController._viewSettingsDataModel.showHUD = False
 
 # Select a render mode and update the view.
 def _setRenderModeAction(appController, action):

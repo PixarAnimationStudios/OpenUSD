@@ -43,6 +43,7 @@ class RootDataModel(QtCore.QObject):
         self._printTiming = printTiming
 
         self._currentFrame = Usd.TimeCode.Default()
+        self._playing = False
 
         self._bboxCache = UsdGeom.BBoxCache(self._currentFrame,
             [IncludedPurposes.DEFAULT, IncludedPurposes.PROXY], True)
@@ -93,6 +94,14 @@ class RootDataModel(QtCore.QObject):
         self._currentFrame = value
         self._bboxCache.SetTime(self._currentFrame)
         self._xformCache.SetTime(self._currentFrame)
+
+    @property
+    def playing(self):
+        return self._playing
+
+    @playing.setter
+    def playing(self, value):
+        self._playing = value
 
     # XXX This method should be removed after bug 114225 is resolved. Changes to
     #     the stage will then be used to trigger the caches to be cleared, so

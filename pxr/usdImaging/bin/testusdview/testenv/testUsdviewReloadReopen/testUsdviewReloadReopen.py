@@ -24,6 +24,7 @@
 #
 
 from pxr.Usdviewq.qt import QtWidgets
+from pxr.Usdviewq.common import SelectionHighlightModes
 
 # XXX We will probably want harness-level facilities for this, as it
 # will be required for any tests that do stage mutations, as we only
@@ -35,9 +36,10 @@ def _waitForRefresh():
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
-    appController.drawSelHighlights = False
+    appController._viewSettingsDataModel.showBBoxes = False
+    appController._viewSettingsDataModel.showHUD = False
+    appController._viewSettingsDataModel.selHighlightMode = (
+        SelectionHighlightModes.NEVER)
 
 # Take a shot of the viewport and save it to a file.
 def _takeShot(appController, fileName):

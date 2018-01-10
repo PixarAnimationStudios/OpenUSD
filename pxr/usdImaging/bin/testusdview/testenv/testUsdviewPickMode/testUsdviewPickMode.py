@@ -32,8 +32,8 @@ FOO_PATH = "/Foo"
 
 # Remove any unwanted visuals from the view and set complexity.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
+    appController._viewSettingsDataModel.showBBoxes = False
+    appController._viewSettingsDataModel.showHUD = False
 
 # Select a pick mode and update the view.
 def _setPickModeAction(appController, action):

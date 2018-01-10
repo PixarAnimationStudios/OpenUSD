@@ -41,8 +41,8 @@ def _setLights(appController, ambientChecked, keyChecked, fillChecked, backCheck
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
+    appController._viewSettingsDataModel.showBBoxes = False
+    appController._viewSettingsDataModel.showHUD = False
 
     # Ambient isn't visible to perceptual diff with direct camera lighting, so
     # use the key light instead. This makes ambient visible in one half of the
@@ -51,8 +51,8 @@ def _modifySettings(appController):
 
 # Set the default material and update the view.
 def _setDefaultMaterial(appController, ambient, specular):
-    appController.defaultMaterialAmbient = ambient
-    appController.defaultMaterialSpecular = specular
+    appController._viewSettingsDataModel.defaultMaterialAmbient = ambient
+    appController._viewSettingsDataModel.defaultMaterialSpecular = specular
     appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.

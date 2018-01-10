@@ -41,8 +41,8 @@ def _makeFileName(variantInfo, index):
     return variantInfo[1] + str(index) + '.png'
 
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
+    appController._viewSettingsDataModel.showBBoxes = False
+    appController._viewSettingsDataModel.showHUD = False
 
 def _setupWidgets(appController):
     # Select our prim with the variant authored

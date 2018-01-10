@@ -69,6 +69,7 @@ pxr_library(usdviewq
         constantGroup.py
         rootDataModel.py
         selectionDataModel.py
+        viewSettingsDataModel.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
@@ -93,6 +94,7 @@ pxr_test_scripts(
     testenv/testUsdviewqRootDataModel.py
     testenv/testUsdviewqSelectionDataModel.py
     testenv/testUsdviewqLauncher.py
+    testenv/testUsdviewqViewSettingsDataModel.py
 )
 
 pxr_install_test_dir(
@@ -133,6 +135,12 @@ pxr_register_test(testUsdviewqSelectionDataModel
 pxr_register_test(testUsdviewqLauncher
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqLauncher"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqViewSettingsDataModel
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqViewSettingsDataModel"
     EXPECTED_RETURN_CODE 0
 )
 

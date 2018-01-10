@@ -1921,17 +1921,13 @@ class StageView(QtOpenGL.QGLWidget):
         """We override this virtual so that we can make it a no-op during
         playback.  The client driving playback at a particular rate should
         instead call updateForPlayback() to image the next frame."""
-        if not self._dataModel.playing:
+        if not self._rootDataModel.playing:
             super(StageView, self).updateGL()
 
-    def updateForPlayback(self, currentTime, showHighlights):
+    def updateForPlayback(self):
         """If playing, update the GL canvas.  Otherwise a no-op"""
-        if self._dataModel.playing:
-            self._rootDataModel.currentFrame = currentTime
-            drawHighlights = self._dataModel.drawSelHighlights
-            self._dataModel.drawSelHighlights = showHighlights
+        if self._rootDataModel.playing:
             super(StageView, self).updateGL()
-            self._dataModel.drawSelHighlights = drawHighlights
 
     def computeGfCameraForCurrentCameraPrim(self):
         if self._cameraPrim and self._cameraPrim.IsActive():
@@ -2245,7 +2241,7 @@ class StageView(QtOpenGL.QGLWidget):
                 self.DrawCameraGuides(viewProjectionMatrix)
 
             if self._dataModel.showBBoxes and\
-                    (self._dataModel.showBBoxPlayback or not self._dataModel.playing):
+                    (self._dataModel.showBBoxPlayback or not self._rootDataModel.playing):
                 self.DrawBBox(viewProjectionMatrix)
         else:
             GL.glClear(GL.GL_COLOR_BUFFER_BIT)
@@ -2287,7 +2283,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
 
-        if (not self._dataModel.playing) & (not renderer.IsConverged()):
+        if (not self._rootDataModel.playing) & (not renderer.IsConverged()):
             QtCore.QTimer.singleShot(5, self.update)
 
     def drawHUD(self, renderer):
@@ -2303,7 +2299,7 @@ class StageView(QtOpenGL.QGLWidget):
         col = Gf.ConvertDisplayToLinear(Gf.Vec3f(.733,.604,.333))
 
         # the subtree info does not update while animating, grey it out
-        if not self._dataModel.playing:
+        if not self._rootDataModel.playing:
             subtreeCol = col
         else:
             subtreeCol = Gf.ConvertDisplayToLinear(Gf.Vec3f(.6,.6,.6))
