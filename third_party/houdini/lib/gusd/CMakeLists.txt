@@ -14,6 +14,15 @@ pxr_shared_library(${PXR_PACKAGE}
         usdRi
         usdShade
         usdUtils
+        ${HOUDINI_UI_LIBRARY}
+        ${HOUDINI_OPZ_LIBRARY}
+        ${HOUDINI_OP3_LIBRARY}
+        ${HOUDINI_OP2_LIBRARY}
+        ${HOUDINI_OP1_LIBRARY}
+        ${HOUDINI_SIM_LIBRARY}
+        ${HOUDINI_GEO_LIBRARY}
+        ${HOUDINI_PRM_LIBRARY}
+        ${HOUDINI_UT_LIBRARY}
 
     INCLUDE_DIRS
         ${HOUDINI_INCLUDE_DIRS}
