@@ -60,6 +60,11 @@ _HIGHLIGHT_COLORS_DICT = {
     HighlightColors.CYAN:    (0.0, 1.0, 1.0, 0.5)}
 
 
+# Default values for default material components.
+DEFAULT_AMBIENT = 0.2
+DEFAULT_SPECULAR = 0.1
+
+
 class ViewSettingsDataModel(QtCore.QObject, StateSource):
     """Data model containing settings related to the rendered view of a USD
     file.
@@ -68,16 +73,14 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     # emitted when any aspect of the defaultMaterial changes
     signalDefaultMaterialChanged = QtCore.Signal()
 
-    def __init__(self, rootDataModel, parent):
+    def __init__(self, parent):
         QtCore.QObject.__init__(self)
         StateSource.__init__(self, parent, "model")
 
-        self._rootDataModel = rootDataModel
-
         self._cameraMaskColor = tuple(self.stateProperty("cameraMaskColor", default=[0.1, 0.1, 0.1, 1.0]))
         self._cameraReticlesColor = tuple(self.stateProperty("cameraReticlesColor", default=[0.0, 0.7, 1.0, 1.0]))
-        self._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=0.2)
-        self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=0.1)
+        self._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=DEFAULT_AMBIENT)
+        self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
         self._pickMode = self.stateProperty("pickMode", default=PickModes.PRIMS)
@@ -211,6 +214,9 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
             self._defaultMaterialAmbient = ambient
             self._defaultMaterialSpecular = specular
             self.signalDefaultMaterialChanged.emit()
+
+    def resetDefaultMaterial(self):
+        self.setDefaultMaterial(DEFAULT_AMBIENT, DEFAULT_SPECULAR)
 
     @property
     def complexity(self):
@@ -519,16 +525,6 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         if value not in SelectionHighlightModes:
             raise ValueError("Unknown highlight mode: '{}'".format(value))
         self._selHighlightMode = value
-
-    @property
-    def drawSelHighlights(self):
-        if self._rootDataModel.playing:
-            # Highlight mode must be ALWAYS to draw highlights during playback.
-            return (self._selHighlightMode == SelectionHighlightModes.ALWAYS)
-        else:
-            # Highlight mode can be ONLY_WHEN_PAUSED or ALWAYS to draw
-            # highlights when paused.
-            return (self._selHighlightMode != SelectionHighlightModes.NEVER)
 
     @property
     def redrawOnScrub(self):

@@ -389,8 +389,7 @@ class AppController(QtCore.QObject):
                 self._startingPrimCameraPath = None
 
             self._openSettings2(parserData.defaultSettings)
-            self._viewSettingsDataModel = ViewSettingsDataModel(
-                self._rootDataModel, self._settings2)
+            self._viewSettingsDataModel = ViewSettingsDataModel(self._settings2)
             self._viewSettingsDataModel.complexity = parserData.complexity
 
             settingsPathDir = self._outputBaseDirectory()
@@ -2889,7 +2888,8 @@ class AppController(QtCore.QObject):
         if self._stageView:
             # this is the part that renders
             if self._rootDataModel.playing:
-                if self._viewSettingsDataModel.drawSelHighlights:
+                highlightMode = self._viewSettingsDataModel.selHighlightMode
+                if highlightMode == SelectionHighlightModes.ALWAYS:
                     # We don't want to resend the selection to the renderer
                     # every frame during playback unless we are actually going
                     # to see the selection (which is only when highlight mode is

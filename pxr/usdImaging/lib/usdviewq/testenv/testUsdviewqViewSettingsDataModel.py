@@ -30,13 +30,6 @@ from pxr.Usdviewq.viewSettingsDataModel import (ClearColors, HighlightColors,
 from pxr.Usdviewq.common import CameraMaskModes, SelectionHighlightModes
 
 
-class FakeRootDataModel(object):
-
-    def __init__(self):
-
-        self.playing = False
-
-
 class SignalCounter(object):
     """Counts the number of times a signal is emitted."""
 
@@ -68,7 +61,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
         signalDefaultMaterialChanged is emitted properly.
         """
 
-        vsDM = ViewSettingsDataModel(FakeRootDataModel(), None)
+        vsDM = ViewSettingsDataModel(None)
         counter = SignalCounter(vsDM.signalDefaultMaterialChanged)
 
 
@@ -138,7 +131,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
     def test_Complexity(self):
         """Test that complexity stays within 1.0 and 2.0."""
 
-        vsDM = ViewSettingsDataModel(FakeRootDataModel(), None)
+        vsDM = ViewSettingsDataModel(None)
 
         vsDM.complexity = 1.5
         self.assertEquals(vsDM.complexity, 1.5)
@@ -158,7 +151,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
         showMask_Opaque.
         """
 
-        vsDM = ViewSettingsDataModel(FakeRootDataModel(), None)
+        vsDM = ViewSettingsDataModel(None)
 
         # Check default.
         self.assertEquals(vsDM.cameraMaskMode, CameraMaskModes.NONE)
@@ -180,7 +173,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
     def test_ClearColor(self):
         """Test that setting clearColorText changes the value of clearColor."""
 
-        vsDM = ViewSettingsDataModel(FakeRootDataModel(), None)
+        vsDM = ViewSettingsDataModel(None)
 
         # Check default.
         self.assertEquals(vsDM.clearColorText, ClearColors.DARK_GREY)
@@ -202,7 +195,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
         highlightColor.
         """
 
-        vsDM = ViewSettingsDataModel(FakeRootDataModel(), None)
+        vsDM = ViewSettingsDataModel(None)
 
         # Check default.
         self.assertEquals(vsDM.highlightColorName, HighlightColors.YELLOW)
@@ -218,42 +211,6 @@ class TestViewSettingsDataModel(unittest.TestCase):
             vsDM.highlightColorName = "Octarine"
         self.assertEquals(vsDM.highlightColorName, HighlightColors.CYAN)
         self.assertEquals(vsDM.highlightColor, (0.0, 1.0, 1.0, 0.5))
-
-    def test_DrawSelHighlights(self):
-        """Test that drawSelHighlights is set properly based on the highlight
-        mode and the playing state.
-        """
-
-        rootDM = FakeRootDataModel()
-        vsDM = ViewSettingsDataModel(rootDM, None)
-
-
-        # Check all states while paused.
-
-        rootDM.playing = False
-
-        vsDM.selHighlightMode = SelectionHighlightModes.NEVER
-        self.assertEquals(vsDM.drawSelHighlights, False)
-
-        vsDM.selHighlightMode = SelectionHighlightModes.ONLY_WHEN_PAUSED
-        self.assertEquals(vsDM.drawSelHighlights, True)
-
-        vsDM.selHighlightMode = SelectionHighlightModes.ALWAYS
-        self.assertEquals(vsDM.drawSelHighlights, True)
-
-
-        # Check all states while paused.
-
-        rootDM.playing = True
-
-        vsDM.selHighlightMode = SelectionHighlightModes.NEVER
-        self.assertEquals(vsDM.drawSelHighlights, False)
-
-        vsDM.selHighlightMode = SelectionHighlightModes.ONLY_WHEN_PAUSED
-        self.assertEquals(vsDM.drawSelHighlights, False)
-
-        vsDM.selHighlightMode = SelectionHighlightModes.ALWAYS
-        self.assertEquals(vsDM.drawSelHighlights, True)
 
 
 if __name__ == "__main__":

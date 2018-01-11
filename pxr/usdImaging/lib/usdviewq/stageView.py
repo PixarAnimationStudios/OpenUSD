@@ -39,7 +39,7 @@ from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 from common import (RenderModes, ShadedRenderModes, Timer,
-    GetInstanceIndicesForIds)
+    GetInstanceIndicesForIds, SelectionHighlightModes)
 from rootDataModel import RootDataModel
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
@@ -1260,14 +1260,6 @@ class StageView(QtOpenGL.QGLWidget):
         def highlightColor(self):
             return (1.0,1.0,0.0,0.8) # Yellow
 
-        @property
-        def drawSelHighlights(self):
-            return self._defaultDrawSelHighlights
-
-        @drawSelHighlights.setter
-        def drawSelHighlights(self, value):
-            self._defaultDrawSelHighlights = value
-
     ###########
     # Signals #
     ###########
@@ -2228,8 +2220,20 @@ class StageView(QtOpenGL.QGLWidget):
                 GL.glDepthFunc(GL.GL_LEQUAL)
                 GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-            self.renderSinglePass(self._renderModeDict[self._dataModel.renderMode],
-                                  self._dataModel.drawSelHighlights)
+            highlightMode = self._dataModel.selHighlightMode
+            if self._rootDataModel.playing:
+                # Highlight mode must be ALWAYS to draw highlights during playback.
+                drawSelHighlights = (
+                    highlightMode == SelectionHighlightModes.ALWAYS)
+            else:
+                # Highlight mode can be ONLY_WHEN_PAUSED or ALWAYS to draw
+                # highlights when paused.
+                drawSelHighlights = (
+                    highlightMode != SelectionHighlightModes.NEVER)
+
+            self.renderSinglePass(
+                self._renderModeDict[self._dataModel.renderMode],
+                drawSelHighlights)
 
             self.DrawAxis(viewProjectionMatrix)
 

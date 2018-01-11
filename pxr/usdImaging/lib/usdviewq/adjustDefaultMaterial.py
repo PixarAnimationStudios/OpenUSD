@@ -73,7 +73,7 @@ class AdjustDefaultMaterial(QtWidgets.QDialog):
             self._dataModel.defaultMaterialSpecular = val
 
     def _reset(self, unused):
-        self._dataModel.setDefaultMaterial(0.2, 0.1)
+        self._dataModel.resetDefaultMaterial()
 
     def _done(self, unused):
         self.close()
