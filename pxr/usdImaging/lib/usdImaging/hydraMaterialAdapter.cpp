@@ -428,7 +428,6 @@ UsdImagingHydraMaterialAdapter::_GetMaterialParamValue(
     if (UsdShadeShader shaderPrim = UsdShadeShader(prim)){
         UsdShadeInput shaderInput = shaderPrim.GetInput(paramName);
         if (TF_VERIFY(shaderInput)) {
-            // XXX: Reading the value may fail, should we warn here if it does?
             shaderInput.Get(&value, time);
         }
     } else {
