@@ -260,8 +260,6 @@ PcpComposeSiteVariantSelections(PcpNodeRef const &node,
 
 /// Compose child names.
 /// If the optional \p orderField is provided, its order will be applied.
-/// If the optional \p prohibitedNames is provided, it will be used to
-/// restrict the set of allowed names.
 PCP_API
 void
 PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
@@ -269,8 +267,7 @@ PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
                          const TfToken & namesField,
                          TfTokenVector *nameOrder,
                          PcpTokenSet *nameSet,
-                         const TfToken *orderField = nullptr,
-                         const PcpTokenSet* prohibitedNames = nullptr);
+                         const TfToken *orderField = nullptr);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

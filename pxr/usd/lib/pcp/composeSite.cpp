@@ -297,22 +297,18 @@ PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
                          const TfToken & namesField,
                          TfTokenVector *nameOrder,
                          PcpTokenSet *nameSet,
-                         const TfToken *orderField,
-                         const PcpTokenSet* prohibitedNames)
+                         const TfToken *orderField)
 {
     TF_REVERSE_FOR_ALL(layer, layers) {
         VtValue namesVal = (*layer)->GetField(path, namesField);
         if (namesVal.IsHolding<TfTokenVector>()) {
             const TfTokenVector & names =
                 namesVal.UncheckedGet<TfTokenVector>();
-            // Append names in order.  Skip names that are prohibited
-            // or already in the nameSet.
+            // Append names in order.  Skip names that are 
+            // already in the nameSet.
             TF_FOR_ALL(name, names) {
-                if (!prohibitedNames ||
-                    (prohibitedNames->find(*name) == prohibitedNames->end())) { 
-                    if (nameSet->insert(*name).second) {
-                        nameOrder->push_back(*name);
-                    }
+                if (nameSet->insert(*name).second) {
+                    nameOrder->push_back(*name);
                 }
             }
         }

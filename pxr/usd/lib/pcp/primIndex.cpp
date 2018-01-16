@@ -1827,6 +1827,38 @@ _ElideSubtree(
     }
 }
 
+static void
+_ElideRelocatedSubtrees(
+    const Pcp_PrimIndexer& indexer,
+    PcpNodeRef node)
+{
+    TF_FOR_ALL(it, Pcp_GetChildrenRange(node)) {
+        const PcpNodeRef& childNode = *it;
+
+        // We can cut off the traversal if this is a relocate node, since we
+        // would have done this work when the node was originally added to
+        // the graph.
+        if (childNode.GetArcType() == PcpArcTypeRelocate) {
+            continue;
+        }
+
+        // Elide the subtree rooted at this node if there's a relocate 
+        // statement that would move its opinions to a different prim.
+        if (childNode.CanContributeSpecs()) {
+            const PcpLayerStackRefPtr& layerStack = childNode.GetLayerStack();
+            const SdfRelocatesMap& relocatesSrcToTarget = 
+                layerStack->GetIncrementalRelocatesSourceToTarget();
+            if (relocatesSrcToTarget.find(childNode.GetPath()) !=
+                relocatesSrcToTarget.end()) {
+                _ElideSubtree(indexer, childNode);
+                continue;
+            }
+        }
+
+        _ElideRelocatedSubtrees(indexer, childNode);
+    }
+}
+
 // Account for relocations that affect existing nodes in the graph.
 // This method is how we handle the effects of relocations, as we walk
 // down namespace.  For each prim, we start by using the parent's graph,
@@ -2005,6 +2037,14 @@ _EvalNodeRelocations(
             err->path  = site->path;
             indexer->RecordError(err);
         }
+
+        // Scan the added subtree to see it contains any opinions that would
+        // be moved to a different prim by other relocate statements. If so,
+        // we need to elide those opinions, or else we'll wind up with multiple
+        // prims with opinions from the same site. 
+        //
+        // See RelocatePrimsWithSameName test case for an example of this.
+        _ElideRelocatedSubtrees(*indexer, newNode);
     }
 }
 
@@ -4588,13 +4628,12 @@ _ComposePrimChildNamesAtNode(
         nameSet->insert(namesToAdd.begin(), namesToAdd.end());
     }
 
-    // Compose the site's local names over the current result,
-    // respecting any prohibited names.
+    // Compose the site's local names over the current result.
     if (node.CanContributeSpecs()) {
         PcpComposeSiteChildNames(
             node.GetLayerStack()->GetLayers(), node.GetPath(), 
             SdfChildrenKeys->PrimChildren, nameOrder, nameSet,
-            &SdfFieldKeys->PrimOrder, prohibitedNameSet);
+            &SdfFieldKeys->PrimOrder);
     }
 
     // Post-conditions, for debugging.
@@ -4722,6 +4761,17 @@ PcpPrimIndex::ComputePrimChildNames( TfTokenVector *nameOrder,
         _ComposePrimChildNames(
             *this, GetRootNode(), IsUsd(),
             nameOrder, &nameSet, prohibitedNameSet);
+    }
+
+    // Remove prohibited names from the composed prim child names.
+    if (!prohibitedNameSet->empty()) {
+        nameOrder->erase(
+            std::remove_if(nameOrder->begin(), nameOrder->end(),
+                [prohibitedNameSet](const TfToken& name) {
+                    return prohibitedNameSet->find(name) 
+                        != prohibitedNameSet->end();
+                }),
+            nameOrder->end());
     }
 }
 
