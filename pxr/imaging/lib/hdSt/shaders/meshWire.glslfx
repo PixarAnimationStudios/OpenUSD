@@ -129,13 +129,13 @@ void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
                              int triCounter)
 {
     //  0---3
-    //  |0 .|
+    //  |. 0|
     //  | . |
-    //  |. 1|
+    //  |1 .|
     //  1---2
     //
-    // triCounter == 0 : skip the second edge (1-3)
-    // triCounter == 1 : skip the first edge  (3-1)
+    // triCounter == 0 : skip the second edge of (3,0,2), i.e., (0-2)
+    // triCounter == 1 : skip the first  edge of (2,0,1), i.e., (2-0)
     vec3 edgeClip = triCounter == 0 ? vec3(0, 1000.0, 0) : vec3(1000.0, 0, 0);
 
     ProcessEdgeDistance(Peye0, Peye1, Peye2, Peye3, edgeClip);

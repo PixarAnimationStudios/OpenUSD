@@ -49,12 +49,17 @@ vec3 GetQuadGeometryNormal(vec3 vertexNormal,
                            vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
                            bool isFlipped)
 {
+    //  0---3
+    //  |.  |
+    //  | . |
+    //  |  .|
+    //  1---2
     // ignore vertex normal and compute flat facing normal
     // average diagonal cross products to deal with co-linear edges
-    vec3 A0 = Peye0.xyz - Peye1.xyz;
-    vec3 B0 = Peye2.xyz - Peye1.xyz;
-    vec3 A1 = Peye2.xyz - Peye3.xyz;
-    vec3 B1 = Peye0.xyz - Peye3.xyz;
+    vec3 A0 = Peye2.xyz - Peye3.xyz;
+    vec3 B0 = Peye0.xyz - Peye3.xyz;
+    vec3 A1 = Peye0.xyz - Peye1.xyz;
+    vec3 B1 = Peye2.xyz - Peye1.xyz;
     vec3 n = normalize(cross(B0, A0) + cross(B1, A1));
 
     // flip if needed by negative-scaled transform
@@ -66,14 +71,20 @@ vec3 GetQuadGeometryNormal(vec3 vertexNormal,
 
 vec3 GetVertexNormal()
 {
-    // get normal from vertex attribute
+    // get normal from vertex attribute and normalize it.
+    // XXX: Quadrangulated normals for edge/center vertices that come in are
+    // _not_ normalized. Hence, we forcibly normalize all incoming normals.
+    // We might want to fix this at the source instead.
+    vec3 normal = vec3(0);
 #if defined(HD_HAS_normals)
-    return vec3(HdGet_normals().xyz);
+    normal = vec3(HdGet_normals().xyz);
 #elif defined(HD_HAS_packedNormals)
-    return vec3(HdGet_packedNormals().xyz);
-#else
-    return vec3(0);
+    normal = vec3(HdGet_packedNormals().xyz);
 #endif
+    if (length(normal) > 0.0)
+        return normalize(normal);
+
+    return normal;
 }
 
 vec3 GetTriGeometryNormal(vec3 vertexNormal,

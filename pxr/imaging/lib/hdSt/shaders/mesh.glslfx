@@ -53,7 +53,7 @@ void main(void)
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
     vec4 point        = vec4(HdGet_points().xyz, 1);
-    vec4 normal       = vec4(GetVertexNormal(), 0);
+    vec4 normal       = vec4(GetVertexNormal(), 0); // normalized
 
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
     outData.Neye = vec4(transpose(transformInv *
@@ -169,7 +169,7 @@ void main(void)
     OsdEvalPatchBezier(patchParam, UV, cv, P, dPu, dPv, N, dNu, dNv);
 
     outData.Peye = vec4(P, 1);
-    outData.Neye = N;
+    outData.Neye = N; // normalized
 
     tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
     tesTessCoord = UV;
@@ -341,20 +341,31 @@ void main(void)
         inData[0].Peye, inData[1].Peye, inData[2].Peye, inData[3].Peye,
         isFlipped);
 
+    // Generate triangles (3,0,2) and (2,0,1)
     //  0---3
-    //  |  .|
-    //  | . |
     //  |.  |
+    //  | . |
+    //  |  .|
     //  1---2
+    // The indices post-quadrangulation/subdivision follow the convention:
+    // 0   -> original (hull) vertex
+    // 1,3 -> edge vertices
+    // 2   -> center vertex
+    // 
+    // By having index 2 in both the triangles, we ensure the pre-quadrangulated
+    // face's normal (at the center) is part of the rasterizer interpolation,
+    // which matters when we use smooth/limit normals. 
+    // In the case of flat normals, we use the vertex positions, so it doesn't
+    // matter.
 
-    emit(0, 0, 1, 3, normal0, 0);
-    emit(1, 0, 1, 3, normal1, 0);
-    emit(3, 0, 1, 3, normal3, 0);
+    emit(3, 3, 0, 2, normal3, 0);
+    emit(0, 3, 0, 2, normal0, 0);
+    emit(2, 3, 0, 2, normal2, 0);
     EndPrimitive();
 
-    emit(3, 3, 1, 2, normal3, 1);
-    emit(1, 3, 1, 2, normal1, 1);
-    emit(2, 3, 1, 2, normal2, 1);
+    emit(2, 2, 0, 1, normal2, 1);
+    emit(0, 2, 0, 1, normal0, 1);
+    emit(1, 2, 0, 1, normal1, 1);
     EndPrimitive();
 }
 
@@ -399,6 +410,8 @@ void main(void)
 #endif
 
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+    // Neye may be un-normalized, post rasterizer interpolation.
+    // We do _not_ normalize it, intentionally, for legacy testing reasons.
     vec3 Neye = GetShadingNormal(inData.Neye, isFlipped);
 
     vec4 patchCoord = GetPatchCoord();
