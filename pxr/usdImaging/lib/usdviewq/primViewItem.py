@@ -250,12 +250,15 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         # We need to completely re-generate the prim tree because making a prim
         # inactive can break a reference chain, and/or make another prim
         # inactive due to inheritance.
-        self._appController.UpdatePrimViewContents()
+        # In the future this will be handled by notices from the USD stage.
+        self._appController.updateGUI()
 
     def loadStateChanged(self):
-        # We can do better than nuking the whole prim tree, but for now,
+        # We can do better than nuking the whole GUI, but for now,
         # use what's already handy
-        self._appController.UpdatePrimViewContents()
+        # In the future this will be handled by notices from the USD stage and
+        # do a better job of partial updates.
+        self._appController.updateGUI()
 
     @staticmethod
     def propagateVis(item, authoredVisHasChanged=True):

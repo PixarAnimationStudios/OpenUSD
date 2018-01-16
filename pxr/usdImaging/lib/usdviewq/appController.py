@@ -68,6 +68,7 @@ from rootDataModel import RootDataModel
 from viewSettingsDataModel import ViewSettingsDataModel
 
 SETTINGS_VERSION = "1"
+GUI_RESET_DELAY = 250 # milliseconds
 
 class HUDEntries(ConstantGroup):
     # Upper HUD entries (declared in variables for abstraction)
@@ -480,9 +481,9 @@ class AppController(QtCore.QObject):
             self._primViewResizeTimer.setSingleShot(True)
             self._primViewResizeTimer.timeout.connect(self._resizePrimView)
 
-            self._primViewResetTimer = QtCore.QTimer(self)
-            self._primViewResetTimer.setInterval(250)
-            self._primViewResetTimer.timeout.connect(self._resetPrimView)
+            self._guiResetTimer = QtCore.QTimer(self)
+            self._guiResetTimer.setInterval(GUI_RESET_DELAY)
+            self._guiResetTimer.timeout.connect(self._resetGUI)
 
             # Idle timer to push off-screen data to the UI.
             self._primViewUpdateTimer = QtCore.QTimer(self)
@@ -1327,7 +1328,6 @@ class AppController(QtCore.QObject):
     def _resetPrimView(self, restoreSelection=True):
         with Timer() as t, BusyContext():
             startingDepth = 3
-            self._primViewResetTimer.stop()
             self._computeDisplayPredicate()
             with self._primViewSelectionBlocker:
                 self._ui.primView.setUpdatesEnabled(False)
@@ -1348,12 +1348,33 @@ class AppController(QtCore.QObject):
         if self._printTiming:
             t.PrintTime("reset Prim Browser to depth %d" % startingDepth)
 
-    def UpdatePrimViewContents(self):
-        """Will schedule a full refresh/resync of the Prim Browser's contents.
-        Prefer this to calling _resetPrimView() directly, since it will
-        coalesce multiple calls to this method in to a single refresh"""
-        self._primViewResetTimer.stop()
-        self._primViewResetTimer.start(250)
+    def _resetGUI(self):
+        """Perform a full refresh/resync of all GUI contents. This should be
+        called whenever the USD stage is modified, and assumes that all data
+        previously fetched from the stage is invalid. In the future, more
+        granular updates will be supported by listening to UsdNotice objects on
+        the active stage.
+        """
+        self._guiResetTimer.stop()
+
+        self._resetPrimView()
+        self._updateAttributeView()
+
+        self._populateAttributeInspector()
+        self._updateMetadataView()
+        self._updateLayerStackView()
+        self._updateCompositionView()
+
+        if self._stageView:
+            self._stageView.update()
+
+    def updateGUI(self):
+        """Will schedule a full refresh/resync of the GUI contents.
+        Prefer this to calling _resetGUI() directly, since it will
+        coalesce multiple calls to this method in to a single refresh.
+        """
+        self._guiResetTimer.stop()
+        self._guiResetTimer.start(GUI_RESET_DELAY)
 
     def _resetPrimViewVis(self, selItemsOnly=True,
                           authoredVisHasChanged=True):
@@ -1814,7 +1835,7 @@ class AppController(QtCore.QObject):
         self._clearCaches(preserveCamera=True)
 
         # Update the UIs (it gets all of them) and StageView on a timer
-        self.UpdatePrimViewContents()
+        self.updateGUI()
 
     def _cacheViewerModeEscapeSizes(self, pos=None, index=None):
         topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
@@ -2110,7 +2131,7 @@ class AppController(QtCore.QObject):
 
         # Shut down some timers and our eventFilter
         self._primViewUpdateTimer.stop()
-        self._primViewResetTimer.stop()
+        self._guiResetTimer.stop()
         QtWidgets.QApplication.instance().removeEventFilter(self._filterObj)
         
         # If the timer is currently active, stop it from being invoked while
