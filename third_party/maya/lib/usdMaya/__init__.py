@@ -58,6 +58,21 @@ def GetReferenceAssemblies(parentNodes=None):
 
     return refAssemblies or []
 
+def _GetMainProgressBar():
+    """
+    Returns the name of Maya's main progress bar, or None if the main progress
+    bar is not available.
+
+    The main progress bar may be unavailable in non-interactive/Python-only
+    sessions of Maya.
+    """
+    whatIsProgressBar = mel.eval('whatIs \"$gMainProgressBar\";')
+    if whatIsProgressBar != 'string variable':
+        return None
+
+    mainProgressBar = mel.eval('$tmp = $gMainProgressBar')
+    return mainProgressBar
+
 def LoadReferenceAssemblies(parentNodes=None):
     """
     Loads USD reference assembly nodes in the scene.
@@ -70,23 +85,27 @@ def LoadReferenceAssemblies(parentNodes=None):
     if numRefAssemblies < 1:
         return
 
-    gMainProgressBar = mel.eval('$tmp = $gMainProgressBar')
-    cmds.progressBar(gMainProgressBar, edit=True, beginProgress=True,
-        isInterruptable=True, minValue=0, maxValue=numRefAssemblies,
-        status='Loading USD reference assemblies...')
+    mainProgressBar = _GetMainProgressBar()
+
+    if mainProgressBar:
+        cmds.progressBar(mainProgressBar, edit=True, beginProgress=True,
+            isInterruptable=True, minValue=0, maxValue=numRefAssemblies,
+            status='Loading USD reference assemblies...')
 
     for i in xrange(numRefAssemblies):
-        shouldStop = cmds.progressBar(gMainProgressBar, query=True,
-            isCancelled=True)
-        if shouldStop:
-            cmds.warning('Cancelled loading USD reference assemblies')
-            break
-
         refAssembly = refAssemblies[i]
 
-        cmds.progressBar(gMainProgressBar, edit=True,
-            status='Loading "%s" (%d of %d)' % (refAssembly, i, numRefAssemblies))
-        cmds.progressBar(gMainProgressBar, edit=True, step=1)
+        if mainProgressBar:
+            shouldStop = cmds.progressBar(mainProgressBar, query=True,
+                isCancelled=True)
+            if shouldStop:
+                cmds.warning('Cancelled loading USD reference assemblies')
+                break
+
+            cmds.progressBar(mainProgressBar, edit=True,
+                status='Loading "%s" (%d of %d)' % (refAssembly, i,
+                    numRefAssemblies))
+            cmds.progressBar(mainProgressBar, edit=True, step=1)
 
         activeRep = cmds.assembly(refAssembly, query=True, active=True)
         if activeRep:
@@ -98,7 +117,8 @@ def LoadReferenceAssemblies(parentNodes=None):
             cmds.warning('Failed to load USD reference assembly: %s' %
                 refAssembly)
 
-    cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
+    if mainProgressBar:
+        cmds.progressBar(mainProgressBar, edit=True, endProgress=True)
 
 def UnloadReferenceAssemblies(parentNodes=None):
     """
