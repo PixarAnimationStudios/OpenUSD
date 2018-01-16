@@ -593,6 +593,7 @@ public:
     /// 
     /// \note This method exists only for testing equality of the old and new
     /// encoding of shading networks in USD. 
+    USDSHADE_API
     static bool AreBidirectionalInterfaceConnectionsEnabled();
 
     /// @}
