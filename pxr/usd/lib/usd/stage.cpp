@@ -514,11 +514,22 @@ namespace {
 // We don't populate such prims in Usd.
 struct _NameChildrenPred
 {
-    explicit _NameChildrenPred(Usd_InstanceCache* instanceCache)
-        : _instanceCache(instanceCache)
+    explicit _NameChildrenPred(const UsdStagePopulationMask* mask,
+                               Usd_InstanceCache* instanceCache)
+        : _mask(mask)
+        , _instanceCache(instanceCache)
     { }
 
-    bool operator()(const PcpPrimIndex &index) const {
+    bool operator()(const PcpPrimIndex &index, 
+                    TfTokenVector* childNamesToCompose) const 
+    {
+        // Compose only the child prims that are included in the population
+        // mask, if any.
+        if (_mask && !_mask->GetIncludedChildNames(
+                index.GetPath(), childNamesToCompose)) {
+            return false;
+        }
+
         // Use a resolver to walk the index and find the strongest active
         // opinion.
         Usd_Resolver res(&index);
@@ -548,6 +559,7 @@ struct _NameChildrenPred
     }
 
 private:
+    const UsdStagePopulationMask* _mask;
     Usd_InstanceCache* _instanceCache;
 };
 
@@ -3959,17 +3971,12 @@ UsdStage::_ComposePrimIndexesInParallel(
         TF_DEBUG(USD_COMPOSITION).Msg("%s", msg.c_str());
     }
 
-    std::vector<SdfPath> const *pathsToCompose = &primIndexPaths;
-
-    // If we have a population mask, take the intersection of the requested
-    // paths with the stage's population mask, and only compute those.
+    // We only want to compute prim indexes included by the stage's 
+    // population mask. As an optimization, if all prims are included the 
+    // name children predicate doesn't need to consider the mask at all.
     static auto allMask = UsdStagePopulationMask::All();
-    vector<SdfPath> maskedPaths;
-    if (GetPopulationMask() != allMask) {
-        maskedPaths = UsdStagePopulationMask(primIndexPaths).
-            GetIntersection(GetPopulationMask()).GetPaths();
-        pathsToCompose = &maskedPaths;
-    }
+    const UsdStagePopulationMask* mask = 
+        _populationMask == allMask ? nullptr : &_populationMask;
 
     // Ask Pcp to compute all the prim indexes in parallel, stopping at
     // prim indexes that won't be used by the stage.
@@ -3977,19 +3984,22 @@ UsdStage::_ComposePrimIndexesInParallel(
 
     if (includeRule == _IncludeAllDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
-            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
+            primIndexPaths, &errs, 
+            _NameChildrenPred(mask, _instanceCache.get()),
             [](const SdfPath &) { return true; },
             "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNoDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
-            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
+            primIndexPaths, &errs, 
+            _NameChildrenPred(mask, _instanceCache.get()),
             [](const SdfPath &) { return false; },
             "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
         _cache->ComputePrimIndexesInParallel(
-            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
+            primIndexPaths, &errs, 
+            _NameChildrenPred(mask, _instanceCache.get()),
             _IncludeNewlyDiscoveredPayloadsPredicate(this),
             "Usd", _mallocTagID);
     }
