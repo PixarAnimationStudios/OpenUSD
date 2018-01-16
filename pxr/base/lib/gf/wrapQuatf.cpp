@@ -26,6 +26,7 @@
 // wrapQuat.template.cpp file to make changes.
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
 
@@ -88,11 +89,13 @@ void wrapQuatf()
                           
         .def(TfTypePythonClass())
 
+        .def(init<GfQuatf>())
         .def(init<float>(arg("real")))
         .def(init<float, const GfVec3f &>(
                  (arg("real"), arg("imaginary"))))
         .def(init<float, float, float, float>(
                  (arg("real"), arg("i"), arg("j"), arg("k"))))
+        .def(init<const GfQuatd & >())
 
         .def("GetIdentity", &GfQuatf::GetIdentity)
         .staticmethod("GetIdentity")
