@@ -276,10 +276,8 @@ bool usdReadJob::_DoImport(UsdPrimRange& range,
                 assetPrimPath = prim.GetPath();
             }
 
-            // XXX: At some point, if assemblyRep == "import" we'd like
-            // to import everything instead of just making an assembly.
-            // Note: We may need to load the model if it isn't already.
-
+            // Note that if assemblyRep == "Import", the assembly reader will
+            // NOT run and we will fall through to the prim reader below.
             MObject parentNode = ctx.GetMayaNode(prim.GetPath().GetParentPath(), false);
             if (PxrUsdMayaTranslatorModelAssembly::Read(prim,
                                                         assetIdentifier,

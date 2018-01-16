@@ -55,12 +55,9 @@ class testUsdImportAsAssemblies(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     @staticmethod
-    def _ImportPrimPathFromSet(primPath=None):
+    def _ImportPrimPathFromSet(*args, **kwargs):
         usdFile = os.path.abspath(testUsdImportAsAssemblies.SET_USD_FILE)
-        if primPath:
-            cmds.usdImport(file=usdFile, primPath=primPath)
-        else:
-            cmds.usdImport(file=usdFile)
+        cmds.usdImport(file=usdFile, **kwargs)
 
     @staticmethod
     def _GetNodeHierarchy(nodeName):
@@ -92,7 +89,7 @@ class testUsdImportAsAssemblies(unittest.TestCase):
         USD file results in the contents of that model being imported (i.e. NO
         reference assembly node is created).
         """
-        self._ImportPrimPathFromSet('/Cubes_set/Cubes_grp/Cube_3')
+        self._ImportPrimPathFromSet(primPath='/Cubes_set/Cubes_grp/Cube_3')
 
         expectedHierarchy = {
             '|Cube_3': self.TRANSFORM_TYPE_NAME,
@@ -111,7 +108,7 @@ class testUsdImportAsAssemblies(unittest.TestCase):
         reference prims out of a set USD file results in a Maya transform node
         with the corresponding number of model reference assembly node beneath it.
         """
-        self._ImportPrimPathFromSet('/Cubes_set/Cubes_grp')
+        self._ImportPrimPathFromSet(primPath='/Cubes_set/Cubes_grp')
 
         expectedHierarchy = {
             '|Cubes_grp': self.TRANSFORM_TYPE_NAME,
@@ -157,7 +154,7 @@ class testUsdImportAsAssemblies(unittest.TestCase):
         the correct hierarchy of Maya transforms and model reference assembly
         nodes.
         """
-        self._ImportPrimPathFromSet('/Cubes_set')
+        self._ImportPrimPathFromSet(primPath='/Cubes_set')
         self._ValidateFullSetImport()
 
     def testImportSetNoPrimPath(self):
@@ -168,6 +165,39 @@ class testUsdImportAsAssemblies(unittest.TestCase):
         """
         self._ImportPrimPathFromSet()
         self._ValidateFullSetImport()
+
+    def testImportGroupAssemblyRepImport(self):
+        """
+        Tests that importing a group prim from a set USD file with
+        assemblyRep="Import" specified to usdImport results in the correct
+        hierarchy of Maya transforms and mesh nodes. No model reference
+        assembly nodes should be created in this case.
+        """
+        self._ImportPrimPathFromSet(primPath='/Cubes_set/Cubes_grp',
+            assemblyRep='Import')
+
+        expectedHierarchy = {
+            '|Cubes_grp': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_1': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_1|Geom': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_1|Geom|Cube': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_1|Geom|Cube|CubeShape': self.MESH_TYPE_NAME,
+            '|Cubes_grp|Cube_2': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_2|Geom': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_2|Geom|Cube': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_2|Geom|Cube|CubeShape': self.MESH_TYPE_NAME,
+            '|Cubes_grp|Cube_3': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_3|Geom': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_3|Geom|Cube': self.TRANSFORM_TYPE_NAME,
+            '|Cubes_grp|Cube_3|Geom|Cube|CubeShape': self.MESH_TYPE_NAME
+        }
+
+        nodeName = '|Cubes_grp'
+        nodeHierarchy = self._GetNodeHierarchy(nodeName)
+        self.assertEqual(nodeHierarchy, expectedHierarchy)
+
+        assemblyNodes = cmds.ls(dag=True, type=self.ASSEMBLY_TYPE_NAME)
+        self.assertEqual(assemblyNodes, [])
 
 
 if __name__ == '__main__':

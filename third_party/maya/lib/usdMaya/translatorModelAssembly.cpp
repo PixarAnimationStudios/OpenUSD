@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorModelAssembly.h"
 
+#include "usdMaya/JobArgs.h"
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primWriterArgs.h"
@@ -333,8 +334,13 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     const PxrUsdMayaPrimReaderArgs& args,
     PxrUsdMayaPrimReaderContext* context,
     const std::string& assemblyTypeName,
-    const std::string& assemblyRep)
+    const TfToken& assemblyRep)
 {
+    // This translator does not apply if assemblyRep == "Import".
+    if (assemblyRep == PxrUsdMayaTranslatorTokens->Import) {
+        return false;
+    }
+
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr usdStage = UsdStage::Open(assetIdentifier);
     if (!usdStage) {
@@ -449,11 +455,11 @@ PxrUsdMayaTranslatorModelAssembly::Read(
     }
 
     // If a representation was supplied, activate it.
-    if (!assemblyRep.empty()) {
+    if (!assemblyRep.IsEmpty()) {
         MFnAssembly assemblyFn(assemblyObj, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         if (assemblyFn.canActivate(&status)) {
-            status = assemblyFn.activate(assemblyRep.c_str());
+            status = assemblyFn.activate(assemblyRep.GetText());
             CHECK_MSTATUS_AND_RETURN(status, false);
         }
     }
