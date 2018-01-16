@@ -66,24 +66,26 @@ _animation_ may have another order, representing either a different
 ordering of joints, or a sparse subset of joints.
 
 These data orderings are referred to as a primitive's **joint order**, and
-are defined using relationships.
+are defined using token arrays.
 
-When defining joint orderings, most primitives use 'virtual' paths to
-descendant scopes. By 'virtual', we mean that the corresponding primitive
-need not exist. For example:
+The tokens in a joint array are given as Sdf-style paths, where parent-child
+relationships in the ggiven paths establish a
+\ref UsdSkel_jointHierarch "joint hierarchy." Note that these paths do not
+need to refer to actual primitives in the scene. They are used as a way to
+name and order joints in vectorized data. For example:
 
 \code
 def PackedJointAnimation "Anim" {
-    rel joints = [<A>, <A/B>, ...]
+    uniform token[] = ["A", "A/B"]
+}
+def Skeleton "Skel" {
+    uniform token[] = ["A/B", "A"]
 }
 \endcode
 
-In the above example, observe that the relative paths, which resolve to
-`</Anim/A>`, and so forth, are not defined, nor do they need to be. These
-relationships are used to describe joint orderings only, which does not require
-the joints to be valid.
-The exception to this is that the joint order targets of a UsdSkelSkeleton are
-expected to be valid \ref UsdSkel_Joint "Joint" primitives.
+Note that in both example primitives above, the given paths do not reference
+any real primitives. Also note that each primitive has its own joint ordering,
+and that those orders need not be identical.
 
 The purpose of encoding orderings in this manner to allow for the creation
 of **self-contained** assets. For example, it is possible to construct
@@ -100,14 +102,8 @@ _skeleton asset_, data can easily get out of sync.
 On top of allowing for more robust assets, these flexible joint orderings allow
 for additional features like sparse authoring of animation data.
 
-For each schema type that defines joint orderings, the schema APIs define a
-corresponding `GetJointOrder` helper method. These methods each return the
-resolved joint targets as paths relative to the prim itself.
-For example, in the PackedJointAnimation example above, `GetJointOrder()` would
-return `[SdfPath("<A>"), SdfPath("A/B), ...]`.
-
 Data can be remapped from one joint ordering to another using a
-UsdSkelAnimMapper, and is done so via matching joint names.
+UsdSkelAnimMapper, and is done so by matching joint names.
 
 \sa UsdSkelSkeleton::GetJointOrder, UsdSkelSkeleton::SetJointOrder,
     UsdSkelPackedJointAnimation::GetJointOrder,
@@ -144,22 +140,6 @@ to either enable or disable skeletal processing. For example:
     UsdGeomTransform.Define(prim.GetStage(), prim.GetPath());
 \endcode
 
-\section UsdSkel_Joint Joint Schema
-
-The UsdSkelJoint schema is used to define the joints of a
-\ref UsdSkel_Skeleton "Skeleton".
-
-Currently, a joint has no behavior beyond providing a point in scene graph
-that establishes the existence of a joint, and its relationship to other
-joints. Both for efficiency and to facilitate future animation blending
-workflows, Joint primitives have no transforms. Instead, the _rest_ state
-for joint data is stored in a vectorized form on a
-\ref UsdSkel_Skeleton "Skeleton", while animation is in separate
-primitives, such as a \ref UsdSkel_PackedJointAnimation "Packed Joint Animation."
-
-Although a Joint has no special behavior, it is defined as a concrete type with
-the expectation that additional behavior may be defined later.
-
 \section UsdSkel_Skeleton Skeleton Schema
 
 The UsdSkelSkeleton schema describes a skeleton. This schema is responsible
@@ -172,56 +152,40 @@ the "geometry hierarchy" of primitives.
 
 \subsection UsdSkel_JointHierarchy Skeleton: Joint Hierarchy
 
-The joints of a Skeleton are defined as **descendant** primitives, of type
-\ref UsdSkel_Joint "Joint". These are referenced by the _joints_ relationship,
-which defines the absolute flattened \ref UsdSkel_JointOrder "joint order" of 
-the skeleton.
+The joints of a Skeleton are defined by the _joints_ attribute. This attribute
+encodes joints paths -- which must be valid SdfPath strings. The parent-child
+relationships of these paths establish parent-child relationships.
 
-The targets of the _joints_ relationship are required to be authored such
-that all parent joints come before any of their children in the target list.
+For example:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = ["A", "A/B",  "C", "C/D/E"]
+}
+
+In the above example, there are four joints:
+- `A`: A root joint (no parent)
+- `A/B`: A joint parented beneath joint `A`
+- `C`: Another root joint (no parent). There can be any number of root joints.
+- `C/D/E`: A joint which, since `C/D` has not been defined, will be parented
+   beneath joint `C`.
+
+In addition to providing parent-child relationships, this token array also
+establishes the \ref UsdSkel_JointOrder "joint order" of the skeleton.
+
+The targets of the _joints_ attribute are required to be authored such
+that all parent joints come before any of their children in the array.
 This is a requirement because it simplifies some computations without
 necessitating the creation of additional data structures. This ordering
-can most easily be achieved by simply sorting the target paths.
+can most easily be achieved by simply sorting the array.
 
-It's possible to test whether or not a vector of joint targets defines a
+It's possible to test whether or not an array of joint paths defines a
 valid topology as follows:
 
 \code{.cpp}
 std::string whyNot;
-bool isValid = UsdSkelTopology(targets).Validate(&whyNot);
+bool isValid = UsdSkelTopology(paths).Validate(&whyNot);
 \endcode
-
-Note that even though UsdSkelJoint primitives generally lack meaningful
-information required for geometry processing, they will still be visited by
-conventional traversals.
-
-There _is_ a pattern one can deploy for organizing the joints of a
-Skeleton such that they will be automatically skipped by basic
-`UsdPrim::GetChildren` or `UsdPrimRange` traversals. USD prims each have a
-\ref Usd_PrimSpecifiers "specifier" of "def", "over", or "class". The
-default traversals skip over prims that are "pure overs" or classes. So
-to protect joints from all generic traversals and processing, place
-them under a prim that is just an "over". For example,
-
-\code
-def Skeleton "Skel"
-{
-    rel joints = [Joints/A, Joints/B]   
-
-    over "Joints" {
-        def Joint "A" {}
-        def Joint "B" {}
-    }
-}
-\endcode
-
-However, be aware that use of such patterns may prevent naive DCCs from
-importing _Joint_ primitives. The Joint primitives also will not appear
-in _usdview_ unless display of undefined primitives has been enabled.
-Note also that when using this pattern, the relationship targets must
-still be relative to the _Skeleton_, so the undefined intermediate
-scope -- `<Joints>` in the above example -- must still be included
-in the target paths.
 
 \section UsdSkel_PackedJointAnimation Packed Joint Animation Schema
 
@@ -236,7 +200,7 @@ scale-rotate-translate. Client code may make use of the
 converting transforms to and from this component form.
 
 Joint data is stored in arrays, using the \ref UsdSkel_JointOrder
-"joint order" specified by the _joints_ relationship. This ordering may be
+"joint order" specified by the _joints_ attribute. This ordering may be
 different from the Skeletons that the animation maps to, and may also
 only identify a sparse subset of the joints in a skeleton. When an animation
 provides sparse data, fallback values are taken from the rest pose on the
@@ -361,8 +325,8 @@ corresponding to each of those indices.
 
 The indices in the _jointIndices_ primvar refer to joints based on the
 bound \ref UsdSkel_JointOrder "joint order". If the _skel:joints_
-relationship has been set, each index refers to the corresponding target
-of that relationship. Otherwise, each index refers to a joint using the
+attribute has been set, each index refers to the corresponding target
+of that token array. Otherwise, each index refers to a joint using the
 joint order of the bound _Skeleton_.
 
 In the common case, these primvars are configured with _vertex_ interpolation,

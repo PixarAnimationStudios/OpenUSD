@@ -3,15 +3,6 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
-class Joint "Joint" (
-    doc = '''Describes a skeleton joint.
-    
-    See the extened "Joint Schema" documentation for
-    more information.'''
-)
-{
-}
-
 class SkelRoot "SkelRoot" (
     doc = '''Transformable prim type used to identify a scope beneath which
     skeletally-posed primitives are defined.
@@ -127,11 +118,12 @@ class Skeleton "Skeleton" (
     '''
 )
 {
-    rel joints (
-        doc = """A relationship that defines the order of all Skeleton joints 
-        for pose evaluation, relative to the Skeleton prim itself, so that it
-        is self-contained. The targets of the joint are required to be ordered,
-        such that parent joints come before children in the target list."""
+    uniform token[] joints (
+        doc = """An array of path tokens identifying the set of joints that make
+        up the skeleton, and their order. Each token in the array must be valid
+        when parsed as an SdfPath. The parent-child relationships of the
+        corresponding paths determine the parent-child relationships of each
+        joint."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -218,12 +210,11 @@ class PackedJointAnimation "PackedJointAnimation" (
     '''
 )
 {
-    rel joints (
-        doc = """A relationship whose targets define the joints to which this
-        animation's data applies, relative to the animation prim itself, so
-        that it is self-contained. This list of Joints that an animation 
-        targets need not be identical to any Skeleton to which the animation
-        will be applied."""
+    uniform token[] joints (
+        doc = """Array of tokens identifying which joints this animation's
+        data applies to. The tokens for joints correspond to the tokens of
+        Skeleton primitives. The order of the joints as listed here may
+        vary from the order of joints on the Skeleton itself."""
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -288,16 +279,16 @@ class PackedJointAnimation "PackedJointAnimation" (
     quatf[] rotations (
         doc = """Joint-local unit quaternion rotations of all affected joints, 
         in 32-bit precision. Array length should match the size of the 
-        *joints* relationship."""
+        *joints* attribute."""
     )
     half3[] scales (
         doc = """Joint-local quaternion scaling of all affected joints, in
         16 bit precision. Array length should match the size of the *joints* 
-        relationship."""
+        attribute."""
     )
     float3[] translations (
         doc = """Joint-local translations of all affected joints. Array length 
-        should match the size of the *joints* relationship."""
+        should match the size of the *joints* attribute."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -342,7 +333,7 @@ class "BindingAPI" (
         is used instead."""
     )
     int[] primvars:skel:jointIndices (
-        doc = """Indices into the *joints* relationship of the closest
+        doc = """Indices into the *joints* attribute of the closest
         (in namespace) bound Skeleton that affect each point of a PointBased
         gprim. The primvar can have either *constant* or *vertex* interpolation.
         This primvar's *elementSize* will determine how many joint influences
@@ -368,12 +359,11 @@ class "BindingAPI" (
         bound on an ancestor scope.
         """
     )
-    rel skel:joints (
-        doc = """An (optional) relationship whose targets define the list of
-        joints to which jointIndices apply, relative to the gprim itself, so
-        that it is self-contained. If not defined, jointIndices applies to
-        the ordered list of joints defined in the bound Skeleton's *joints*
-        relationship."""
+    uniform token[] skel:joints (
+        doc = """An (optional) array of tokens defining the list of
+        joints to which jointIndices apply. If not defined, jointIndices applies
+        to the ordered list of joints defined in the bound Skeleton's *joints*
+        attribute."""
     )
     rel skel:skeleton (
         doc = """Skeleton to be bound to this prim and its descendents that

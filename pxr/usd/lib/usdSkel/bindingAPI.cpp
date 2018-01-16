@@ -146,6 +146,23 @@ UsdSkelBindingAPI::CreateGeomBindTransformAttr(VtValue const &defaultValue, bool
 }
 
 UsdAttribute
+UsdSkelBindingAPI::GetJointsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->skelJoints);
+}
+
+UsdAttribute
+UsdSkelBindingAPI::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->skelJoints,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelBindingAPI::GetJointIndicesAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->primvarsSkelJointIndices);
@@ -205,19 +222,6 @@ UsdSkelBindingAPI::CreateSkeletonRel() const
                        /* custom = */ false);
 }
 
-UsdRelationship
-UsdSkelBindingAPI::GetJointsRel() const
-{
-    return GetPrim().GetRelationship(UsdSkelTokens->skelJoints);
-}
-
-UsdRelationship
-UsdSkelBindingAPI::CreateJointsRel() const
-{
-    return GetPrim().CreateRelationship(UsdSkelTokens->skelJoints,
-                       /* custom = */ false);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -236,6 +240,7 @@ UsdSkelBindingAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->primvarsSkelGeomBindTransform,
+        UsdSkelTokens->skelJoints,
         UsdSkelTokens->primvarsSkelJointIndices,
         UsdSkelTokens->primvarsSkelJointWeights,
     };
@@ -268,19 +273,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdSkel/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-bool
-UsdSkelBindingAPI::GetJointOrder(SdfPathVector* targets) const
-{
-    return UsdSkelGetJointOrder(GetJointsRel(), targets);
-}
-
-
-bool
-UsdSkelBindingAPI::SetJointOrder(const SdfPathVector& targets) const
-{
-    return UsdSkelSetJointOrder(GetJointsRel(), targets);
-}
 
 
 UsdGeomPrimvar

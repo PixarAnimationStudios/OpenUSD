@@ -25,7 +25,6 @@ pxr_library(usdSkel
         bindingAPI
         cache
         debugCodes
-        joint
         packedJointAnimation
         root
         skeleton
@@ -55,7 +54,6 @@ pxr_library(usdSkel
         wrapAnimQuery.cpp
         wrapBindingAPI.cpp
         wrapCache.cpp
-        wrapJoint.cpp
         wrapPackedJointAnimation.cpp
         wrapRoot.cpp
         wrapSkeleton.cpp

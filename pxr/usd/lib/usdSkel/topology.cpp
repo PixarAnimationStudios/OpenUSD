@@ -79,11 +79,32 @@ _ComputeParentIndices(const SdfPathVector& paths)
 }
 
 
+SdfPathVector
+_GetJointPathsFromTokens(const VtTokenArray& tokens)
+{
+    const TfToken* tokensData = tokens.cdata();
+
+    SdfPathVector paths(tokens.size());
+    for(size_t i = 0; i < tokens.size(); ++i) {
+        paths[i] = SdfPath(tokensData[i].GetString());
+    }
+    return paths;
+}
+
+
 } // namespace
 
 
 UsdSkelTopology::UsdSkelTopology()
     : _parentIndicesData(nullptr)
+{}
+
+
+/// TODO: It's convenient to provide this constructor, but
+/// do we require any common methods to handle the token->path
+/// conversion?
+UsdSkelTopology::UsdSkelTopology(const VtTokenArray& paths)
+    : UsdSkelTopology(_GetJointPathsFromTokens(paths))
 {}
 
 

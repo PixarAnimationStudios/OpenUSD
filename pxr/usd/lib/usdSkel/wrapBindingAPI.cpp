@@ -57,6 +57,13 @@ _CreateGeomBindTransformAttr(UsdSkelBindingAPI &self,
 }
         
 static UsdAttribute
+_CreateJointsAttr(UsdSkelBindingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateJointIndicesAttr(UsdSkelBindingAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateJointIndicesAttr(
@@ -118,6 +125,13 @@ void wrapUsdSkelBindingAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
+        .def("GetJointsAttr",
+             &This::GetJointsAttr)
+        .def("CreateJointsAttr",
+             &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetJointIndicesAttr",
              &This::GetJointIndicesAttr)
         .def("CreateJointIndicesAttr",
@@ -142,11 +156,6 @@ void wrapUsdSkelBindingAPI()
              &This::GetSkeletonRel)
         .def("CreateSkeletonRel",
              &This::CreateSkeletonRel)
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -174,28 +183,10 @@ void wrapUsdSkelBindingAPI()
 namespace {
 
 
-SdfPathVector
-_GetJointOrder(const UsdSkelBindingAPI& self)
-{
-    // XXX: We're just matching the behavior of the wrapper for
-    // UsdRelationship::GetTargets(), but it should be noted that we won't
-    // be able to distinguish betwen the cases of targets that were
-    // explicitly authored to an emtpy list, and unauthored (or blocked)
-    // targets.
-    SdfPathVector targets;
-    self.GetJointOrder(&targets);
-    return targets;
-}
-
-
 WRAP_CUSTOM {
     using This = UsdSkelBindingAPI;
 
     _class
-        .def("GetJointOrder", &_GetJointOrder)
-
-        .def("SetJointOrder", &This::SetJointOrder)
-        
         .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar)
 
         .def("CreateJointIndicesPrimvar", &This::CreateJointIndicesPrimvar,

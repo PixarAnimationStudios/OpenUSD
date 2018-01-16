@@ -146,13 +146,12 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
     _SkinningQueryMap::accessor a;
     if(_cache->_skinningQueryCache.insert(a, key)) {
 
-        static const SdfPathVector emptyPathVec;
-
         a->second = UsdSkelSkinningQuery(
             skinnedPrim,
-            key.skelQuery ? key.skelQuery.GetJointOrder() : emptyPathVec,
+            key.skelQuery ? key.skelQuery.GetJointOrder() : VtTokenArray(),
             key.jointIndicesAttr, key.jointWeightsAttr,
-            key.geomBindTransformAttr, key.jointOrder);
+            key.geomBindTransformAttr,
+            key.jointOrder ? &(*key.jointOrder) : nullptr);
     }
     return a->second;
 }
@@ -283,10 +282,10 @@ UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
     if(UsdAttribute attr = binding.GetGeomBindTransformAttr())
         key.geomBindTransformAttr = attr;
 
-    if(UsdRelationship rel = binding.GetJointsRel()) {
-        key.jointOrder.reset(new SdfPathVector);
-        if(!binding.GetJointOrder(key.jointOrder.get())) {
-            key.jointOrder.reset();
+    if(UsdAttribute attr = binding.GetJointsAttr()) {
+        VtTokenArray jointOrder;
+        if(attr.Get(&jointOrder)) {
+            key.jointOrder = jointOrder;
         }
     }
 
@@ -346,21 +345,20 @@ UsdSkel_CacheImpl::_HashSkinningQueryKey::equal(const SkinningQueryKey& a,
            a.jointWeightsAttr == b.jointWeightsAttr &&
            a.geomBindTransformAttr == b.geomBindTransformAttr &&
            a.skelQuery == b.skelQuery &&
-           (a.jointOrder == b.jointOrder ||
-            (a.jointOrder && b.jointOrder &&
-             (*a.jointOrder) == (*b.jointOrder)));
+           a.jointOrder == b.jointOrder;
 }
 
 
 size_t
 UsdSkel_CacheImpl::_HashSkinningQueryKey::hash(const SkinningQueryKey& key)
 {
-    size_t hash = key.jointOrder ?
-        boost::hash_range(key.jointOrder->begin(), key.jointOrder->end()) : 0;
-    boost::hash_combine(hash, key.jointIndicesAttr);
+    size_t hash = hash_value(key.jointIndicesAttr);
     boost::hash_combine(hash, key.jointWeightsAttr);
     boost::hash_combine(hash, key.geomBindTransformAttr);
     boost::hash_combine(hash, key.skelQuery);
+    if(key.jointOrder) {
+        boost::hash_combine(hash, *key.jointOrder);
+    }
     return hash;
 }
 

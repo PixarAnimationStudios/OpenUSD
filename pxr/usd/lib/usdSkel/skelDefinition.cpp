@@ -54,10 +54,11 @@ UsdSkel_SkelDefinition::_Init(const UsdSkelSkeleton& skel)
 {
     TRACE_FUNCTION();
 
-    skel.GetJointOrder(&_jointOrder);
+    skel.GetJointsAttr().Get(&_jointOrder);
     skel.GetRestTransformsAttr().Get(&_jointLocalRestXforms);
 
     if(_jointLocalRestXforms.size() == _jointOrder.size()) {
+
         _topology = UsdSkelTopology(_jointOrder);
 
         std::string reason;

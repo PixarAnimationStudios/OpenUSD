@@ -118,8 +118,7 @@ void wrapUsdSkelSkeletonQuery()
         .def("GetTopology", &This::GetTopology,
              return_value_policy<return_by_value>())
 
-        .def("GetJointOrder", &This::GetJointOrder,
-             return_value_policy<return_by_value>())
+        .def("GetJointOrder", &This::GetJointOrder)
         
         .def("ComputeRootTransform", &_ComputeRootTransform,
              (arg("xfCache")))

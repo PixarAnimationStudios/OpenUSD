@@ -31,6 +31,7 @@
 #include "pxr/base/vt/types.h"
 
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/types.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -78,10 +79,10 @@ public:
     ComputeRootTransform(GfMatrix4d* xform,
                          UsdGeomXformCache* xfCache) const = 0;
 
-    const SdfPathVector& GetJointOrder() const { return _jointOrder; }
+    const VtTokenArray& GetJointOrder() const { return _jointOrder; }
 
 protected:
-    SdfPathVector _jointOrder;
+    VtTokenArray _jointOrder;
 };
 
 

@@ -55,8 +55,8 @@ UsdSkelAnimMapper::UsdSkelAnimMapper()
 {}
 
 
-UsdSkelAnimMapper::UsdSkelAnimMapper(const SdfPathVector& sourceOrder,
-                                     const SdfPathVector& targetOrder)
+UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
+                                     const VtTokenArray& targetOrder)
     : _targetSize(targetOrder.size()), _offset(0)
 {
     if(sourceOrder.size() == 0 || targetOrder.size() == 0) {
@@ -96,7 +96,7 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const SdfPathVector& sourceOrder,
     // Settle for an unordered, indexed mapping.
 
     // Need a map of path->targetIndex.
-    std::map<SdfPath,int> targetMap;
+    std::map<TfToken,int> targetMap;
     for(size_t i = 0; i < targetOrder.size(); ++i) {
         targetMap[targetOrder[i]] = static_cast<int>(i);
     }

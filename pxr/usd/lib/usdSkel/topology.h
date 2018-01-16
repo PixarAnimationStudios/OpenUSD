@@ -47,6 +47,11 @@ public:
     USDSKEL_API
     UsdSkelTopology();
 
+    /// Construct a skel topology from an ordered set of joint paths,
+    /// given as tokens.
+    USDSKEL_API
+    UsdSkelTopology(const VtTokenArray& paths);
+
     /// Construct a skel topology from an ordered set of joint paths.
     USDSKEL_API
     UsdSkelTopology(const SdfPathVector& paths);

@@ -93,16 +93,13 @@ UsdSkelAnimQuery::JointTransformsMightBeTimeVarying() const
 }
 
 
-const SdfPathVector&
+VtTokenArray
 UsdSkelAnimQuery::GetJointOrder() const
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
         return _impl->GetJointOrder();
     }
-    // XXX: using a static temporary so that the vector above can be
-    // returned by reference.
-    static const SdfPathVector null;
-    return null;
+    return VtTokenArray();
 }
 
 

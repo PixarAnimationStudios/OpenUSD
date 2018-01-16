@@ -156,6 +156,31 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// An array of path tokens identifying the set of joints that make
+    /// up the skeleton, and their order. Each token in the array must be valid
+    /// when parsed as an SdfPath. The parent-child relationships of the
+    /// corresponding paths determine the parent-child relationships of each
+    /// joint.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointsAttr() const;
+
+    /// See GetJointsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // RESTTRANSFORMS 
     // --------------------------------------------------------------------- //
     /// Specifies rest transforms of each joint in 
@@ -179,23 +204,6 @@ public:
     UsdAttribute CreateRestTransformsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// A relationship that defines the order of all Skeleton joints 
-    /// for pose evaluation, relative to the Skeleton prim itself, so that it
-    /// is self-contained. The targets of the joint are required to be ordered,
-    /// such that parent joints come before children in the target list.
-    ///
-    USDSKEL_API
-    UsdRelationship GetJointsRel() const;
-
-    /// See GetJointsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateJointsRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -206,25 +214,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-
-    /// Get a vector of relative joint paths, describing the ordering of
-    /// joints in the skeleton, as defined by the \em joints rel.
-    /// Paths that do not refer to a child of the animation prim itself
-    /// are invalid, and will be returned as an empty path.
-    USDSKEL_API
-    bool GetJointOrder(SdfPathVector* targets) const;
-
-    /// Author the joint order for this primitive.
-    /// If any target paths are invalid or refer to non-descendant primitives
-    /// of the owning primitive of \p rel, no targets will be authored and this
-    /// function will return false.
-    /// The joint order should be sorted such that all parent joints
-    /// come before their children. This can be achieved by simply sorting
-    /// the target paths.
-    ///
-    /// \sa UsdSkelSetJointOrder
-    USDSKEL_API
-    bool SetJointOrder(const SdfPathVector& targets) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

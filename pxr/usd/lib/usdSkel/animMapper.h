@@ -29,7 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
 
-#include "pxr/usd/sdf/path.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/usd/sdf/types.h"
 
 #include <type_traits>
@@ -45,7 +45,7 @@ using UsdSkelAnimMapperRefPtr = std::shared_ptr<class UsdSkelAnimMapper>;
 /// \class UsdSkelAnimMap
 ///
 /// Helper class for remapping vectorized animation data from
-/// one ordering of Sdf paths to another.
+/// one ordering of tokens to another.
 class UsdSkelAnimMapper {
 public:
     /// Construct a null mapper.
@@ -55,8 +55,8 @@ public:
     /// Construct a mapper for mapping data from \p sourceOrder to
     /// \p targetOrder.
     USDSKEL_API
-    UsdSkelAnimMapper(const SdfPathVector& sourceOrder,
-                      const SdfPathVector& targetOrder);
+    UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
+                      const VtTokenArray& targetOrder);
 
     /// Typed remapping of data from \p source into \p target.
     /// The \p source array provides a run of \p elementSize elements for each

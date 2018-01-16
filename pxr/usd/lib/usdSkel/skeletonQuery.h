@@ -121,14 +121,12 @@ public:
     USDSKEL_API
     const UsdSkelTopology& GetTopology() const;
 
-    /// Get a vector of relative joint paths, describing the ordering of
-    /// joints in the animation.
-    /// Paths that do not refer to a child of the animation prim itself
-    /// are invalid, and will be returned as an empty path.
+    /// Returns an arrray of joint paths, given as tokens, describing
+    /// the order and parent-child relationships of joints in the skeleton.
     ///
     /// \sa UsdSkelSkeleton::GetJointOrder
     USDSKEL_API
-    const SdfPathVector& GetJointOrder() const;
+    VtTokenArray GetJointOrder() const;
 
     /// Compute the root transform of the bound skeleton instance.
     /// The root transform is the local to world transform as computed

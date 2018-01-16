@@ -153,10 +153,34 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// Array of tokens identifying which joints this animation's
+    /// data applies to. The tokens for joints correspond to the tokens of
+    /// Skeleton primitives. The order of the joints as listed here may
+    /// vary from the order of joints on the Skeleton itself.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointsAttr() const;
+
+    /// See GetJointsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // TRANSLATIONS 
     // --------------------------------------------------------------------- //
     /// Joint-local translations of all affected joints. Array length 
-    /// should match the size of the *joints* relationship.
+    /// should match the size of the *joints* attribute.
     ///
     /// \n  C++ Type: VtArray<GfVec3f>
     /// \n  Usd Type: SdfValueTypeNames->Float3Array
@@ -179,7 +203,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Joint-local unit quaternion rotations of all affected joints, 
     /// in 32-bit precision. Array length should match the size of the 
-    /// *joints* relationship.
+    /// *joints* attribute.
     ///
     /// \n  C++ Type: VtArray<GfQuatf>
     /// \n  Usd Type: SdfValueTypeNames->QuatfArray
@@ -202,7 +226,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Joint-local quaternion scaling of all affected joints, in
     /// 16 bit precision. Array length should match the size of the *joints* 
-    /// relationship.
+    /// attribute.
     ///
     /// \n  C++ Type: VtArray<GfVec3h>
     /// \n  Usd Type: SdfValueTypeNames->Half3Array
@@ -220,24 +244,6 @@ public:
     UsdAttribute CreateScalesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// A relationship whose targets define the joints to which this
-    /// animation's data applies, relative to the animation prim itself, so
-    /// that it is self-contained. This list of Joints that an animation 
-    /// targets need not be identical to any Skeleton to which the animation
-    /// will be applied.
-    ///
-    USDSKEL_API
-    UsdRelationship GetJointsRel() const;
-
-    /// See GetJointsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateJointsRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -248,25 +254,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-
-    /// Get a vector of relative joint paths, describing the ordering of
-    /// joint data in the animation, as defined by the \em joints rel.
-    /// Paths that do not refer to a child of the animation prim itself
-    /// are invalid, and will be returned as an empty path.
-    ///
-    /// \sa UsdSkelGetJointOrder
-    USDSKEL_API
-    bool GetJointOrder(SdfPathVector* targets) const;
-
-    
-    /// Author the joint order for this primitive.
-    /// If any target paths are invalid or refer to non-descendant primitives
-    /// of the owning primitive of \p rel, no targets will be authored and this
-    /// function will return false.
-    ///
-    /// \sa UsdSkelSetJointOrder
-    USDSKEL_API
-    bool SetJointOrder(const SdfPathVector& targets) const;
 };
 
 

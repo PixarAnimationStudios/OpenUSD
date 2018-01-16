@@ -66,7 +66,7 @@ public:
 
     const UsdSkelSkeleton& GetSkeleton() const { return _skel; }
 
-    const SdfPathVector&   GetJointOrder() const { return _jointOrder; }
+    const VtTokenArray&   GetJointOrder() const { return _jointOrder; }
 
     const UsdSkelTopology& GetTopology() const { return _topology; }
 
@@ -90,7 +90,7 @@ private:
 
 private:
     UsdSkelSkeleton _skel;
-    SdfPathVector   _jointOrder;
+    VtTokenArray    _jointOrder;
     UsdSkelTopology _topology;
     VtMatrix4dArray _jointLocalRestXforms;
     // Properties computed (and cached) on-demand.

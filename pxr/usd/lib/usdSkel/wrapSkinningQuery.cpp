@@ -90,13 +90,13 @@ _GetTimeSamplesInInterval(const UsdSkelSkinningQuery& self,
 }
 
 
-SdfPathVector
+object
 _GetJointOrder(const UsdSkelSkinningQuery& self)
 {
-    if(const auto& order = self.GetJointOrder()) {
-        return *order;
-    }
-    return SdfPathVector();
+    VtTokenArray jointOrder;
+    if(self.GetJointOrder(&jointOrder))
+        return object(jointOrder);
+    return object();
 }
 
 

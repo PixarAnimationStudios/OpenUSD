@@ -50,6 +50,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateJointsAttr(UsdSkelPackedJointAnimation &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateTranslationsAttr(UsdSkelPackedJointAnimation &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTranslationsAttr(
@@ -111,6 +118,13 @@ void wrapUsdSkelPackedJointAnimation()
         .def(!self)
 
         
+        .def("GetJointsAttr",
+             &This::GetJointsAttr)
+        .def("CreateJointsAttr",
+             &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetTranslationsAttr",
              &This::GetTranslationsAttr)
         .def("CreateTranslationsAttr",
@@ -132,11 +146,6 @@ void wrapUsdSkelPackedJointAnimation()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -163,29 +172,7 @@ void wrapUsdSkelPackedJointAnimation()
 
 namespace {
 
-
-SdfPathVector
-_GetJointOrder(const UsdSkelPackedJointAnimation& self)
-{
-    // XXX: We're just matching the behavior of the wrapper for
-    // UsdRelationship::GetTargets(), but it should be noted that we won't
-    // be able to distinguish betwen the cases of targets that were
-    // explicitly authored to an emtpy list, and unauthored (or blocked)
-    // targets.
-    SdfPathVector targets;
-    self.GetJointOrder(&targets);
-    return targets;
-}
-
-
 WRAP_CUSTOM {
-    using This = UsdSkelPackedJointAnimation;
-
-    _class
-        .def("GetJointOrder", &_GetJointOrder)
-
-        .def("SetJointOrder", &This::SetJointOrder)
-        ;
 }
 
-} // namespace
+} // anonymous namespace 

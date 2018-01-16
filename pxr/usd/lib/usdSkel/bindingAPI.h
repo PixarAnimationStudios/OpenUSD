@@ -170,9 +170,33 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// An (optional) array of tokens defining the list of
+    /// joints to which jointIndices apply. If not defined, jointIndices applies
+    /// to the ordered list of joints defined in the bound Skeleton's *joints*
+    /// attribute.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointsAttr() const;
+
+    /// See GetJointsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // JOINTINDICES 
     // --------------------------------------------------------------------- //
-    /// Indices into the *joints* relationship of the closest
+    /// Indices into the *joints* attribute of the closest
     /// (in namespace) bound Skeleton that affect each point of a PointBased
     /// gprim. The primvar can have either *constant* or *vertex* interpolation.
     /// This primvar's *elementSize* will determine how many joint influences
@@ -259,24 +283,6 @@ public:
     UsdRelationship CreateSkeletonRel() const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// An (optional) relationship whose targets define the list of
-    /// joints to which jointIndices apply, relative to the gprim itself, so
-    /// that it is self-contained. If not defined, jointIndices applies to
-    /// the ordered list of joints defined in the bound Skeleton's *joints*
-    /// relationship.
-    ///
-    USDSKEL_API
-    UsdRelationship GetJointsRel() const;
-
-    /// See GetJointsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateJointsRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -287,25 +293,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-
-    /// Get a vector of relative joint paths, describing the ordering of
-    /// joints at the binding, as defined by the \em joints rel.
-    /// Paths that do not refer to a child of the animation prim itself
-    /// are invalid, and will be returned as an empty path.
-    /// The indices of the \em jointIndices primvar index joints with
-    /// respect to this joint ordering, if specified, or using the
-    /// joint order from the UsdSkelSkeleton otherwise.
-    USDSKEL_API
-    bool GetJointOrder(SdfPathVector* targets) const;
-
-    /// Author the joint order for this primitive.
-    /// If any target paths are invalid or refer to non-descendant primitives
-    /// of the owning primitive of \p rel, no targets will be authored and this
-    /// function will return false.
-    ///
-    /// \sa UsdSkelSetJointOrder
-    USDSKEL_API
-    bool SetJointOrder(const SdfPathVector& targets) const;
 
     /// Convenience function to get the jointIndices attribute as a primvar.
     ///

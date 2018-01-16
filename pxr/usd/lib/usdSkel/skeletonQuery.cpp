@@ -37,15 +37,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// XXX: Need an empty path vector 
-const SdfPathVector&
-_GetEmptyPathVector()
-{
-    static const SdfPathVector vec;
-    return vec;
-}
-
-
 UsdSkelSkeletonQuery::UsdSkelSkeletonQuery(
     const UsdSkel_SkelDefinitionRefPtr& definition,
     const UsdSkelAnimQuery& animQuery)
@@ -331,14 +322,13 @@ UsdSkelSkeletonQuery::GetTopology() const
 }
 
 
-const SdfPathVector&
+VtTokenArray
 UsdSkelSkeletonQuery::GetJointOrder() const
 {
     if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         return _definition->GetJointOrder();
     }
-    static const SdfPathVector null;
-    return null;
+    return VtTokenArray();
 }
 
 

@@ -53,58 +53,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-bool
-UsdSkelGetJointOrder(const UsdRelationship& rel, SdfPathVector* targets)
-{
-    TRACE_FUNCTION();
-
-    if(rel && rel.GetTargets(targets)) {
-        const SdfPath& primPath = rel.GetPrim().GetPath();
-        for(SdfPath& path : (*targets)) {
-            // XXX: Are there more efficient ways of doing this?
-            // Using ReplacePrefix() would probably be better, but
-            // it can't be used to produce *relative* paths.
-            if(path.HasPrefix(primPath)) {
-                if(path != primPath) {
-                    path = path.MakeRelativePath(primPath);
-                } else {
-                    path = SdfPath();
-                }
-            } else {
-                TF_WARN("%s -- joint target <%s> refers to a "
-                        "non-descendent primitive.",
-                        primPath.GetText(), path.GetText());
-                path = SdfPath();
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-
-bool
-UsdSkelSetJointOrder(const UsdRelationship& rel, const SdfPathVector& targets)
-{
-    TRACE_FUNCTION();
-    if(rel) {
-        const SdfPath& primPath = rel.GetPrim().GetPath();
-        for(const auto& path : targets) {
-            if(path.IsAbsolutePath() && !path.HasPrefix(primPath)) {
-                TF_CODING_ERROR("Cannot set target <%s> on joint order "
-                                "relationship <%s>: the target is "
-                                "not a descendant path of <%s>.",
-                                path.GetText(), rel.GetPath().GetText(),
-                                primPath.GetText());
-                return false;
-            }
-        }
-        return rel.SetTargets(targets);
-    }
-    return false;
-}
-
-
 namespace {
 
 

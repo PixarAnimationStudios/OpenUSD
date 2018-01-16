@@ -72,9 +72,8 @@ void wrapUsdSkelAnimMapper()
     using This = UsdSkelAnimMapper;
 
     class_<This,UsdSkelAnimMapperRefPtr>("AnimMapper", no_init)
-        .def(init<SdfPathVector,SdfPathVector>(
-                 (arg("sourceOrder"),
-                  arg("targetOrder"))))
+        .def(init<VtTokenArray,VtTokenArray>(
+                 (arg("sourceOrder"), arg("targetOrder"))))
         .def("Remap", &_Remap,
              (arg("source"),
               arg("target")=VtValue(),

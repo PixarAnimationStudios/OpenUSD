@@ -50,6 +50,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateJointsAttr(UsdSkelSkeleton &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateRestTransformsAttr(UsdSkelSkeleton &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRestTransformsAttr(
@@ -97,6 +104,13 @@ void wrapUsdSkelSkeleton()
         .def(!self)
 
         
+        .def("GetJointsAttr",
+             &This::GetJointsAttr)
+        .def("CreateJointsAttr",
+             &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetRestTransformsAttr",
              &This::GetRestTransformsAttr)
         .def("CreateRestTransformsAttr",
@@ -104,11 +118,6 @@ void wrapUsdSkelSkeleton()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -133,32 +142,9 @@ void wrapUsdSkelSkeleton()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-
 namespace {
 
-
-SdfPathVector
-_GetJointOrder(const UsdSkelSkeleton& self)
-{
-    // XXX: We're just matching the behavior of the wrapper for
-    // UsdRelationship::GetTargets(), but it should be noted that we won't
-    // be able to distinguish betwen the cases of targets that were
-    // explicitly authored to an emtpy list, and unauthored (or blocked)
-    // targets.
-    SdfPathVector targets;
-    self.GetJointOrder(&targets);
-    return targets;
-}
-
-
 WRAP_CUSTOM {
-    using This = UsdSkelSkeleton;
-
-    _class
-        .def("GetJointOrder", &_GetJointOrder)
-
-        .def("SetJointOrder", &This::SetJointOrder)
-        ;
 }
 
-} // namespace
+} // anonymous namespace 

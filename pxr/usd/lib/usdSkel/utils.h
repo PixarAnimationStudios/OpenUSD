@@ -63,25 +63,6 @@ class UsdSkelTopology;
 /// @{
 
 
-/// Get a vector of relative joint paths, describing an ordering of
-/// joints targeted by \p rel.
-/// Paths that do not refer to a descendant of the owning primitive of \p rel
-/// are invalid, and will be returned as an empty path.
-USDSKEL_API
-bool
-UsdSkelGetJointOrder(const UsdRelationship& rel, SdfPathVector* targets);
-
-
-/// Author a joint order target list onto \p rel.
-/// If any target paths are invalid or refer to non-descendant primitives
-/// of the owning primitive of \p rel, no targets will be authored and this
-/// function will return false.
-USDSKEL_API
-bool
-UsdSkelSetJointOrder(const UsdRelationship& rel, const SdfPathVector& targets);
-
-
-
 /// Compute joint transforms in joint-local space.
 /// Transforms are computed from \p xforms, holding concatenated
 /// joint transforms, and \p inverseXforms, providing the inverse

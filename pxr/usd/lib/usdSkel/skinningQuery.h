@@ -58,11 +58,11 @@ public:
     /// as is not otherwise important.
     USDSKEL_API
     UsdSkelSkinningQuery(const UsdPrim& prim,
-                         const SdfPathVector& skelJointOrder,
+                         const VtTokenArray& skelJointOrder,
                          const UsdAttribute& jointIndices,
                          const UsdAttribute& jointWeights,
                          const UsdAttribute& geomBindTransform,
-                         const std::shared_ptr<SdfPathVector>& jointOrder);
+                         const VtTokenArray* jointOrder=nullptr);
 
     /// Returns true if this query is valid.
     bool IsValid() const { return _valid; }
@@ -97,9 +97,9 @@ public:
     /// \em skel:joints relationships, set inside the hierarchy.
     const UsdSkelAnimMapperRefPtr& GetMapper() const { return _mapper; }
 
-    const std::shared_ptr<SdfPathVector>& GetJointOrder() const {
-        return _jointOrder;
-    }
+    /// Get the custom joint order for this skinning site, if any.
+    USDSKEL_API
+    bool GetJointOrder(VtTokenArray* jointOrder) const;
 
     /// Populate \p times with the union of time samples for all properties
     /// that affect skinning, independent of joint transforms and any
@@ -181,7 +181,7 @@ private:
     UsdGeomPrimvar _jointWeightsPrimvar;
     UsdAttribute _geomBindTransformAttr;
     UsdSkelAnimMapperRefPtr _mapper;
-    std::shared_ptr<SdfPathVector> _jointOrder;
+    boost::optional<VtTokenArray> _jointOrder;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

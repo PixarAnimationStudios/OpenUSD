@@ -79,7 +79,7 @@ UsdSkel_PackedJointAnimationQueryImpl::UsdSkel_PackedJointAnimationQueryImpl(
       _scales(anim.GetScalesAttr())
 {
     if(TF_VERIFY(anim)) {
-        anim.GetJointOrder(&_jointOrder);
+        anim.GetJointsAttr().Get(&_jointOrder);
     }
 }
 

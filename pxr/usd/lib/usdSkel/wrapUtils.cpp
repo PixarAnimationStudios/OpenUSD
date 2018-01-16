@@ -48,20 +48,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 
-SdfPathVector
-_GetJointOrder(const UsdRelationship& rel)
-{
-    // XXX: We're just matching the behavior of the wrapper for
-    // UsdRelationship::GetTargets(), but it should be noted that we won't
-    // be able to distinguish betwen the cases of targets that were
-    // explicitly authored to an emtpy list, and unauthored (or blocked)
-    // targets.
-    SdfPathVector targets;
-    UsdSkelGetJointOrder(rel, &targets);
-    return targets;
-}
-
-
 VtMatrix4dArray
 _ComputeJointLocalTransforms(const UsdSkelTopology& topology,
                              const VtMatrix4dArray& xforms,
@@ -238,11 +224,6 @@ _SkinTransformLBS(const GfMatrix4d& geomBindTransform,
 
 void wrapUsdSkelUtils()
 {
-    def("GetJointOrder", &_GetJointOrder, (arg("rel")));
-
-    def("SetJointOrder", &UsdSkelSetJointOrder,
-        (arg("rel"), arg("targets")));
-
     def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
         (arg("topology"), arg("xforms"), arg("inverseXforms"),
          arg("rootInverseXform")=object()));

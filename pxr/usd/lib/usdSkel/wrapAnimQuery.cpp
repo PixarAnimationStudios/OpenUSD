@@ -116,7 +116,6 @@ void wrapUsdSkelAnimQuery()
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
 
-        .def("GetJointOrder", &This::GetJointOrder,
-             return_value_policy<return_by_value>())
+        .def("GetJointOrder", &This::GetJointOrder)
         ;
 }            

@@ -128,14 +128,12 @@ public:
     USDSKEL_API
     bool JointTransformsMightBeTimeVarying() const;
 
-    /// Get a vector of relative joint paths, describing the ordering of
-    /// joints in the animation.
-    /// Paths that do not refer to a child of the animation prim itself
-    /// are invalid, and will be returned as an empty path.
+    /// Returns an array of tokens describing the ordering of joints in the
+    /// animation.
     ///
     /// \sa UsdSkelSkeleton::GetJointOrder
     USDSKEL_API
-    const SdfPathVector& GetJointOrder() const;
+    VtTokenArray GetJointOrder() const;
 
     USDSKEL_API
     std::string GetDescription() const;

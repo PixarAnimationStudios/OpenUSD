@@ -59,7 +59,7 @@ public:
         UsdAttribute jointIndicesAttr;
         UsdAttribute jointWeightsAttr;
         UsdAttribute geomBindTransformAttr;
-        std::shared_ptr<SdfPathVector> jointOrder;
+        boost::optional<VtTokenArray> jointOrder;
         UsdSkelSkeletonQuery skelQuery;
     };
     

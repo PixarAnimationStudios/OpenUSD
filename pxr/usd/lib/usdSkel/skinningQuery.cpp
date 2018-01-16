@@ -43,21 +43,22 @@ UsdSkelSkinningQuery::UsdSkelSkinningQuery()
 
 UsdSkelSkinningQuery::UsdSkelSkinningQuery(
     const UsdPrim& prim,
-    const SdfPathVector& skelJointOrder,
+    const VtTokenArray& skelJointOrder,
     const UsdAttribute& jointIndices,
     const UsdAttribute& jointWeights,
     const UsdAttribute& geomBindTransform,
-    const std::shared_ptr<SdfPathVector>& jointOrder)
+    const VtTokenArray* jointOrder)
     : _valid(false), _numInfluencesPerComponent(1),
       _interpolation(UsdGeomTokens->constant),
       _jointIndicesPrimvar(jointIndices),
       _jointWeightsPrimvar(jointWeights),
-      _geomBindTransformAttr(geomBindTransform),
-      _jointOrder(jointOrder)
+      _geomBindTransformAttr(geomBindTransform)
 {
-    if(_jointOrder) {
+    if(jointOrder) {
+        _jointOrder = *jointOrder;
+
         _mapper = std::make_shared<UsdSkelAnimMapper>(
-            skelJointOrder, *_jointOrder);
+            skelJointOrder, *jointOrder);
     }
 
     if(!jointIndices) {
@@ -118,6 +119,21 @@ bool
 UsdSkelSkinningQuery::IsRigidlyDeformed() const
 {   
     return _interpolation == UsdGeomTokens->constant;
+}
+
+
+bool
+UsdSkelSkinningQuery::GetJointOrder(VtTokenArray* jointOrder) const
+{
+    if(jointOrder) {
+        if(_jointOrder) {
+            *jointOrder = *_jointOrder;
+        }
+        return true;
+    } else {
+        TF_CODING_ERROR("'jointOrder' pointer is null.");
+        return false;
+    }
 }
 
 

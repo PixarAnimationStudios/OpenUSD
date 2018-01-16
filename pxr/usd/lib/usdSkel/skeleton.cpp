@@ -98,6 +98,23 @@ UsdSkelSkeleton::_GetTfType() const
 }
 
 UsdAttribute
+UsdSkelSkeleton::GetJointsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->joints);
+}
+
+UsdAttribute
+UsdSkelSkeleton::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->joints,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelSkeleton::GetRestTransformsAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->restTransforms);
@@ -112,19 +129,6 @@ UsdSkelSkeleton::CreateRestTransformsAttr(VtValue const &defaultValue, bool writ
                        SdfVariabilityUniform,
                        defaultValue,
                        writeSparsely);
-}
-
-UsdRelationship
-UsdSkelSkeleton::GetJointsRel() const
-{
-    return GetPrim().GetRelationship(UsdSkelTokens->joints);
-}
-
-UsdRelationship
-UsdSkelSkeleton::CreateJointsRel() const
-{
-    return GetPrim().CreateRelationship(UsdSkelTokens->joints,
-                       /* custom = */ false);
 }
 
 namespace {
@@ -144,6 +148,7 @@ const TfTokenVector&
 UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdSkelTokens->joints,
         UsdSkelTokens->restTransforms,
     };
     static TfTokenVector allNames =
@@ -167,26 +172,3 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
-
-
-#include "pxr/usd/usdSkel/utils.h"
-
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-bool
-UsdSkelSkeleton::GetJointOrder(SdfPathVector* targets) const
-{
-    return UsdSkelGetJointOrder(GetJointsRel(), targets);
-}
-
-
-bool
-UsdSkelSkeleton::SetJointOrder(const SdfPathVector& targets) const
-{
-    return UsdSkelSetJointOrder(GetJointsRel(), targets);
-}
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
