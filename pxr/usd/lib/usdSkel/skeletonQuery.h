@@ -59,17 +59,17 @@ TF_DECLARE_REF_PTRS(UsdSkel_SkelDefinition);
 /// In most cases, however, a UsdSkelSkeletonQuery is built out and accessed
 /// through a UsdSkelBindingMap. A basic coding pattern for this is as follows:
 ///
-/// \\code
-/// 01 // Global cache, intended to persist.
-/// 02 UsdSkelCache skelCache;
-/// 03 UsdSkelBindingMap bindingMap;
-/// 04 if(bindingMap.Populate(skelRoot)) {
-/// 05     for(const auto& pair : bindingMap) {
-/// 06         UsdSkelSkeletonQuery = pair.first;
-/// 07         ...
-/// 08     }
-/// 09 }
-/// \\code
+/// \code
+/// // Global cache, intended to persist.
+/// UsdSkelCache skelCache;
+/// UsdSkelBindingMap bindingMap;
+/// if(bindingMap.Populate(skelRoot)) {
+///     for(const auto& pair : bindingMap) {
+///         UsdSkelSkeletonQuery = pair.first;
+///         ...
+///     }
+/// }
+/// \endcode
 ///
 /// If constructing a query through a cache, the caller is on the hook for
 /// resolving the inherited properties that a define a skeletal binding.
