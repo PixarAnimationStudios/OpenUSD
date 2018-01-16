@@ -33,9 +33,9 @@ from common import (PropertyViewIndex, PropertyViewDataRoles,
 #
 class AttributeViewContextMenu(QtWidgets.QMenu):
 
-    def __init__(self, parent, item, appController):
+    def __init__(self, parent, item, dataModel):
         QtWidgets.QMenu.__init__(self, parent)
-        self._menuItems = _GetContextMenuItems(item, appController)
+        self._menuItems = _GetContextMenuItems(item, dataModel)
 
         for menuItem in self._menuItems:
             # create menu actions
@@ -47,24 +47,24 @@ class AttributeViewContextMenu(QtWidgets.QMenu):
                     action.setEnabled(False)
 
 
-def _GetContextMenuItems(item, appController):
+def _GetContextMenuItems(item, dataModel):
     return [ # Root selection methods
-             CopyAttributeNameMenuItem(appController, item),
-             CopyAttributeValueMenuItem(appController, item),
-             CopyAllTargetPathsMenuItem(appController, item),
-             SelectAllTargetPathsMenuItem(appController, item),
+             CopyAttributeNameMenuItem(dataModel, item),
+             CopyAttributeValueMenuItem(dataModel, item),
+             CopyAllTargetPathsMenuItem(dataModel, item),
+             SelectAllTargetPathsMenuItem(dataModel, item),
 
              # Individual/multi target selection menus
-             CopyTargetPathMenuItem(appController, item),
-             SelectTargetPathMenuItem(appController, item)]
+             CopyTargetPathMenuItem(dataModel, item),
+             SelectTargetPathMenuItem(dataModel, item)]
 
-def _selectPrimsAndProps(appController, paths):
+def _selectPrimsAndProps(dataModel, paths):
     prims = []
     props = []
     for path in paths:
 
         primPath = path.GetAbsoluteRootOrPrimPath()
-        prim = appController._rootDataModel.stage.GetPrimAtPath(primPath)
+        prim = dataModel.stage.GetPrimAtPath(primPath)
         if not prim:
             raise PrimNotFoundException(primPath)
         prims.append(prim)
@@ -75,24 +75,24 @@ def _selectPrimsAndProps(appController, paths):
                 raise PropertyNotFoundException(path)
             props.append(prop)
 
-    with appController._selectionDataModel.batchPrimChanges:
-        appController._selectionDataModel.clearPrims()
+    with dataModel.selection.batchPrimChanges:
+        dataModel.selection.clearPrims()
         for prim in prims:
-            appController._selectionDataModel.addPrim(prim)
+            dataModel.selection.addPrim(prim)
 
-    with appController._selectionDataModel.batchPropChanges:
-        appController._selectionDataModel.clearProps()
+    with dataModel.selection.batchPropChanges:
+        dataModel.selection.clearProps()
         for prop in props:
-            appController._selectionDataModel.addProp(prop)
+            dataModel.selection.addProp(prop)
 
-    appController._selectionDataModel.clearComputedProps()
+    dataModel.selection.clearComputedProps()
 
 #
 # The base class for propertyview context menu items.
 #
 class AttributeViewContextMenuItem(UsdviewContextMenuItem):
-    def __init__(self, appController, item):
-        self._appController = appController
+    def __init__(self, dataModel, item):
+        self._dataModel = dataModel
         self._item = item
         self._role = self._item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
         self._name = self._item.text(PropertyViewIndex.NAME) if self._item else ""
@@ -197,7 +197,7 @@ class SelectTargetPathMenuItem(CopyTargetPathMenuItem):
         paths = [Sdf.Path(s.text(PropertyViewIndex.NAME))
             for s in self.GetSelectedOfType()]
 
-        _selectPrimsAndProps(self._appController, paths)
+        _selectPrimsAndProps(self._dataModel, paths)
 
 # --------------------------------------------------------------------
 # Target owning property selection menus
@@ -228,7 +228,7 @@ class SelectAllTargetPathsMenuItem(AttributeViewContextMenuItem):
 
         paths = [Sdf.Path(self._item.child(i).text(PropertyViewIndex.NAME))
             for i in range(0, self._item.childCount())]
-        _selectPrimsAndProps(self._appController, paths)
+        _selectPrimsAndProps(self._dataModel, paths)
 
 #
 # Copy all target paths under the currently selected relationship to the clipboard

@@ -70,8 +70,8 @@ def _testBasic(appController):
     appObj = QtWidgets.QApplication.instance()
 
     # Get the stage and selection data model to query selection.
-    stage = appController._rootDataModel.stage
-    selectionDataModel = appController._selectionDataModel
+    stage = appController._dataModel.stage
+    selectionDataModel = appController._dataModel.selection
 
     # This test is highly asset-dependent.  Our scene has a single hierarchy
     # chain, so it takes two "move right" actions to select each level of
@@ -96,13 +96,13 @@ def _testBasic(appController):
     # MainWindow) will result in transport movement
     startFrame = stage.GetStartTimeCode()
     appController._mainWindow.setFocus()
-    assert appController._rootDataModel.currentFrame == startFrame
+    assert appController._dataModel.currentFrame == startFrame
 
     _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj)
-    assert appController._rootDataModel.currentFrame == startFrame + 1
+    assert appController._dataModel.currentFrame == startFrame + 1
 
     _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj)
-    assert appController._rootDataModel.currentFrame == startFrame
+    assert appController._dataModel.currentFrame == startFrame
 
     # Regression tests for bugs #154716, 154665: Make sure we don't try
     # to filter events while popups or modal dialogs are active.  The best

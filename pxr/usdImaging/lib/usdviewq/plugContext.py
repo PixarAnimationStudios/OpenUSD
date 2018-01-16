@@ -40,6 +40,11 @@ class _PlugContextInternal(object):
     def __init__(self, appController):
         self._appController = appController
 
+    def GetDataModel(self):
+        ''' Returns a UsdviewDataModel object. '''
+
+        return self._appController._dataModel
+
     def GetQMainWindow(self):
         ''' Returns a QWidget object that other widgets can use as a parent. '''
 
@@ -48,7 +53,7 @@ class _PlugContextInternal(object):
     def GetUsdStage(self):
         ''' Returns the current Usd stage. '''
 
-        return self._appController._rootDataModel.stage
+        return self._appController._dataModel.stage
 
     def GetCurrentGfCamera(self):
         ''' Returns the last computed Gf Camera. '''
@@ -60,7 +65,7 @@ class _PlugContextInternal(object):
     def GetCurrentFrame(self):
         ''' Returns the current frame. '''
 
-        return self._appController._rootDataModel.currentFrame
+        return self._appController._dataModel.currentFrame
 
     def GetModelsFromSelection(self):
         ''' Returns selected models.  this will walk up to find the nearest model.
@@ -90,7 +95,7 @@ class _PlugContextInternal(object):
     def GetSelectedPrims(self):
         ''' Returns the current prims. '''
 
-        return self._appController._selectionDataModel.getPrims()
+        return self._appController._dataModel.selection.getPrims()
 
     def GetSelectedPaths(self):
         ''' Returns the paths for the current selections. '''
@@ -133,11 +138,6 @@ class _PlugContextInternal(object):
         ''' Returns a QImage of the current stage view in usdview. '''
 
         return self._appController.GrabViewportShot()
-
-    def GetSelectionDataModel(self):
-        ''' Returns the selection data model. '''
-
-        return self._appController._selectionDataModel
 
 
 # The following code proxies the methods from _PlugContextInternal and

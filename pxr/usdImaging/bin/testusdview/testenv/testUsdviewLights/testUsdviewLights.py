@@ -25,8 +25,8 @@
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
 
 # Set all light settings and refresh the view.
 def _setLights(appController, ambientChecked, keyChecked, fillChecked, backChecked):

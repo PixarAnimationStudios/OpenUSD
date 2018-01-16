@@ -96,7 +96,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
             self._ui.valueViewer.setText("")
             return
 
-        frame = self._appController._rootDataModel.currentFrame
+        frame = self._appController._dataModel.currentFrame
 
         # get the value of the attribute
         if isinstance(self._attribute, Usd.Relationship):

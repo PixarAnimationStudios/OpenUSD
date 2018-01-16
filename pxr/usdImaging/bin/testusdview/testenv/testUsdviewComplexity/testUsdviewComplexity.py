@@ -29,15 +29,15 @@ from pxr.Usdviewq.common import RenderModes
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
 
     # Make image differences clear.
-    appController._viewSettingsDataModel.renderMode = RenderModes.WIREFRAME
+    appController._dataModel.viewSettings.renderMode = RenderModes.WIREFRAME
 
 # Set the complexity and refresh the view.
 def _setComplexity(appController, complexity):
-    appController._viewSettingsDataModel.complexity = complexity
+    appController._dataModel.viewSettings.complexity = complexity
     appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.

@@ -27,8 +27,8 @@ from pxr import Gf
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
 
 # Set the clipping plane overrides and update the view.
 def _setClippingPlaneOverrides(appController, near=None, far=None):
@@ -65,7 +65,7 @@ def _testOverrideBoth(appController):
 def _testRecomputeClipping(appController):
     _setClippingPlaneOverrides(appController)
 
-    appController._viewSettingsDataModel.freeCamera.dist = 2.7
+    appController._dataModel.viewSettings.freeCamera.dist = 2.7
     appController._stageView.updateGL()
 
     _takeShot(appController, "before_recompute.png")

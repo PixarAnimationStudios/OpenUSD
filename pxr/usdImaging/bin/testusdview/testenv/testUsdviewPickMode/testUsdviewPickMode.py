@@ -32,8 +32,8 @@ FOO_PATH = "/Foo"
 
 # Remove any unwanted visuals from the view and set complexity.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
 
 # Select a pick mode and update the view.
 def _setPickModeAction(appController, action):
@@ -42,20 +42,20 @@ def _setPickModeAction(appController, action):
 
 # Check that the current selection is the expected selection.
 def _checkPrimSelection(appController, path):
-    primSelection = appController._selectionDataModel.getPrimPaths()
+    primSelection = appController._dataModel.selection.getPrimPaths()
     assert len(primSelection) == 1
     assert primSelection[0] == path
 
 # Check that no instances are selected.
 def _checkNoInstancesSelected(appController, path):
-    instanceSelection = appController._selectionDataModel.getPrimPathInstances()
+    instanceSelection = appController._dataModel.selection.getPrimPathInstances()
     for instances in instanceSelection.values():
         assert instances == ALL_INSTANCES
 
 # Check that the specified instance is the only selected instance.
 def _checkInstanceSelection(appController, path, instance):
     path = Sdf.Path(str(path))
-    instanceSelection = appController._selectionDataModel.getPrimPathInstances()
+    instanceSelection = appController._dataModel.selection.getPrimPathInstances()
     assert len(instanceSelection) == 1
     assert path in instanceSelection
     instances = instanceSelection[path]

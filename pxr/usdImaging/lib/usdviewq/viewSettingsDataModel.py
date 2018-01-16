@@ -129,6 +129,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._showHUD_Performance = self.stateProperty("showHUDPerformance", default=True)
         self._showHUD_GPUstats = self.stateProperty("showHUDGPUStats", default=False)
 
+        self._complexity = 1.0
         self._freeCamera = None
 
     def onSaveState(self, state):

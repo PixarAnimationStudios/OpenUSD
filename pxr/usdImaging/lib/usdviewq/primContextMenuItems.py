@@ -54,8 +54,8 @@ def _GetContextMenuItems(appController, item):
 class PrimContextMenuItem(UsdviewContextMenuItem):
 
     def __init__(self, appController, item):
-        self._selectionDataModel = appController._selectionDataModel
-        self._currentFrame = appController._rootDataModel.currentFrame
+        self._selectionDataModel = appController._dataModel.selection
+        self._currentFrame = appController._dataModel.currentFrame
         self._appController = appController
         self._item = item
 

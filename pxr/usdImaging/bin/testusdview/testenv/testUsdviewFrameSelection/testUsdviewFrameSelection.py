@@ -30,9 +30,9 @@ from pxr.Usdviewq.common import SelectionHighlightModes
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
-    appController._viewSettingsDataModel.selHighlightMode = (
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.selHighlightMode = (
         SelectionHighlightModes.NEVER)
 
 # Take a shot of the viewport and save it to a file.
@@ -53,7 +53,7 @@ def _testFrameSelection(appController):
 
     # Frame the front sphere.
 
-    appController._selectionDataModel.setPrimPath("/frontSphere", ALL_INSTANCES)
+    appController._dataModel.selection.setPrimPath("/frontSphere", ALL_INSTANCES)
     _emitFrameAction(appController)
 
     _takeShot(appController, "framed.png")
@@ -65,7 +65,7 @@ def _testFrameSelection(appController):
 
     # Rotate the start camera.
 
-    appController._viewSettingsDataModel.freeCamera.rotTheta = 90
+    appController._dataModel.viewSettings.freeCamera.rotTheta = 90
     appController._stageView.updateGL()
 
     _takeShot(appController, "rotatedStart.png")

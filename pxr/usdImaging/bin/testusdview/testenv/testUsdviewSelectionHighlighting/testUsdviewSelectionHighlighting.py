@@ -28,12 +28,12 @@ from pxr.Usdviewq.qt import QtWidgets
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
 
 # Make a single selection.
 def _testSingleSelection(appController):
-    appController._selectionDataModel.setPrimPath("/backSphere")
+    appController._dataModel.selection.setPrimPath("/backSphere")
     QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
@@ -44,7 +44,7 @@ def _testNoHighlightSelection(appController):
     appController._ui.actionNever.setChecked(True)
     appController._changeSelHighlightMode(appController._ui.actionNever)
 
-    appController._selectionDataModel.setPrimPath("/backSphere")
+    appController._dataModel.selection.setPrimPath("/backSphere")
     QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
@@ -55,10 +55,10 @@ def _testNoHighlightSelection(appController):
 
 # Make two selections.
 def _testDoubleSelection(appController):
-    with appController._selectionDataModel.batchPrimChanges:
-        appController._selectionDataModel.clearPrims()
-        appController._selectionDataModel.addPrimPath("/backSphere")
-        appController._selectionDataModel.addPrimPath("/frontSphere")
+    with appController._dataModel.selection.batchPrimChanges:
+        appController._dataModel.selection.clearPrims()
+        appController._dataModel.selection.addPrimPath("/backSphere")
+        appController._dataModel.selection.addPrimPath("/frontSphere")
     QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
@@ -67,10 +67,10 @@ def _testDoubleSelection(appController):
 # Make two instance selections, one using authored instance ids and one using
 # instance indices.
 def _testInstanceSelection(appController):
-    with appController._selectionDataModel.batchPrimChanges:
-        appController._selectionDataModel.clearPrims()
-        appController._selectionDataModel.addPrimPath("/Instancer", 1)
-        appController._selectionDataModel.addPrimPath("/Instancer2", 6)
+    with appController._dataModel.selection.batchPrimChanges:
+        appController._dataModel.selection.clearPrims()
+        appController._dataModel.selection.addPrimPath("/Instancer", 1)
+        appController._dataModel.selection.addPrimPath("/Instancer2", 6)
     QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()
@@ -81,7 +81,7 @@ def _testColorSelection(appController):
     appController._ui.actionSelCyan.setChecked(True)
     appController._changeHighlightColor(appController._ui.actionSelCyan)
 
-    appController._selectionDataModel.setPrimPath("/backSphere")
+    appController._dataModel.selection.setPrimPath("/backSphere")
     QtWidgets.QApplication.processEvents()
 
     viewportShot = appController.GrabViewportShot()

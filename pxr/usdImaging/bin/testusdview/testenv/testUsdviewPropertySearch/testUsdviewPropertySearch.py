@@ -24,8 +24,8 @@
 #
 
 def _assertSelectedProp(appController, propName):
-    selected = appController._selectionDataModel.getProps()
-    selectedComputed = appController._selectionDataModel.getComputedProps()
+    selected = appController._dataModel.selection.getProps()
+    selectedComputed = appController._dataModel.selection.getComputedProps()
 
     if len(selected) == 1:
         assert len(selectedComputed) == 0

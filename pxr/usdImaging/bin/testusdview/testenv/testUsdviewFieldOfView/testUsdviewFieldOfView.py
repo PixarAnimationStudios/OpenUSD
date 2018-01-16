@@ -25,12 +25,12 @@
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController._viewSettingsDataModel.showBBoxes = False
-    appController._viewSettingsDataModel.showHUD = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
 
 # Set the field of view and refresh the view.
 def _setFOV(appController, fov):
-    appController._viewSettingsDataModel.freeCamera.fov = fov
+    appController._dataModel.viewSettings.freeCamera.fov = fov
     appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.

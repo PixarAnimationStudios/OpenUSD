@@ -157,15 +157,15 @@ class Myconsole(interpreterView):
             self.locals()['__builtins__']['_'] = val
 
         self.locals()['plugCtx'] = appController._plugCtx
-        self.locals()['stage'] = appController._rootDataModel.stage
-        self.locals()['frame'] = appController._rootDataModel.currentFrame
+        self.locals()['stage'] = appController._dataModel.stage
+        self.locals()['frame'] = appController._dataModel.currentFrame
         self.locals()['selectedPrims'] = (
-            appController._selectionDataModel.getPrims())
+            appController._dataModel.selection.getPrims())
         self.locals()['selectedInstances'] = (
-            appController._selectionDataModel.getPrimInstances())
+            appController._dataModel.selection.getPrimInstances())
         self.locals()['prim'] = (
-            appController._selectionDataModel.getFocusPrim())
+            appController._dataModel.selection.getFocusPrim())
         self.locals()['property'] = (
-            appController._selectionDataModel.getFocusProp())
+            appController._dataModel.selection.getFocusProp())
         self.locals()['spec'] = appController._currentSpec
         self.locals()['layer'] = appController._currentLayer
