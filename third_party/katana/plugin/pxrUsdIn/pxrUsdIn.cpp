@@ -978,6 +978,68 @@ public:
 };
 
 
+
+/*
+ * This op bootstraps the primary PxrUsdIn op in order to have
+ * GeolibPrivateData available at the root op location in PxrUsdIn. Since the 
+ * GeolibCookInterface API does not currently have the ability to pass 
+ * GeolibPrivateData via execOp, and we must exec all of the registered plugins
+ * to process USD prims, we instead pre-build the GeolibPrivateData for the
+ * root location to ensure it is available.
+ */
+class PxrUsdInMaterialGroupBootstrapOp : public FnKat::GeolibOp
+{
+
+public:
+
+    static void setup(FnKat::GeolibSetupInterface &interface)
+    {
+        interface.setThreading(
+                FnKat::GeolibSetupInterface::ThreadModeConcurrent);
+    }
+
+    static void cook(FnKat::GeolibCookInterface &interface)
+    {
+        interface.stopChildTraversal();
+
+        boost::shared_lock<boost::upgrade_mutex> 
+            readerLock(UsdKatanaGetStageLock());
+            
+        FnKat::GroupAttribute additionalOpArgs;
+        PxrUsdKatanaUsdInArgsRefPtr usdInArgs =
+                PxrUsdInOp::InitUsdInArgs(interface, additionalOpArgs);
+        
+        if (!usdInArgs) {
+            ERROR("Could not initialize PxrUsdIn usdInArgs.");
+            return;
+        }
+        
+        if (!usdInArgs->GetErrorMessage().empty())
+        {
+            ERROR(usdInArgs->GetErrorMessage().c_str());
+            return;
+        }
+
+        FnKat::GroupAttribute opArgs = FnKat::GroupBuilder()
+            .update(interface.getOpArg())
+            .deepUpdate(additionalOpArgs)
+            .build();
+
+        PxrUsdKatanaUsdInPrivateData privateData(
+                usdInArgs->GetRootPrim(),
+                usdInArgs,
+                NULL /* parentData */);
+
+        PxrUsdKatanaUsdInPluginRegistry::ExecuteOpDirectExecFnc(
+            "UsdInCore_LooksGroupOp", 
+            privateData,
+            opArgs, 
+            interface);
+    }
+
+};
+
+
 class PxrUsdInBuildIntermediateOp : public FnKat::GeolibOp
 {
 public:
@@ -1110,12 +1172,15 @@ public:
 
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInBootstrapOp)
+DEFINE_GEOLIBOP_PLUGIN(PxrUsdInMaterialGroupBootstrapOp)
 DEFINE_GEOLIBOP_PLUGIN(PxrUsdInBuildIntermediateOp)
 
 void registerPlugins()
 {
     REGISTER_PLUGIN(PxrUsdInOp, "PxrUsdIn", 0, 1);
     REGISTER_PLUGIN(PxrUsdInBootstrapOp, "PxrUsdIn.Bootstrap", 0, 1);
+    REGISTER_PLUGIN(PxrUsdInMaterialGroupBootstrapOp, 
+        "PxrUsdIn.BootstrapMaterialGroup", 0, 1);
     REGISTER_PLUGIN(PxrUsdInBuildIntermediateOp,
         "PxrUsdIn.BuildIntermediate", 0, 1);
 }
