@@ -68,7 +68,6 @@ from rootDataModel import RootDataModel
 from viewSettingsDataModel import ViewSettingsDataModel
 
 SETTINGS_VERSION = "1"
-GUI_RESET_DELAY = 250 # milliseconds
 
 class HUDEntries(ConstantGroup):
     # Upper HUD entries (declared in variables for abstraction)
@@ -481,8 +480,11 @@ class AppController(QtCore.QObject):
             self._primViewResizeTimer.setSingleShot(True)
             self._primViewResizeTimer.timeout.connect(self._resizePrimView)
 
+            # This timer coalesces GUI resets when the USD stage is modified or
+            # reloaded.
             self._guiResetTimer = QtCore.QTimer(self)
-            self._guiResetTimer.setInterval(GUI_RESET_DELAY)
+            self._guiResetTimer.setInterval(0)
+            self._guiResetTimer.setSingleShot(True)
             self._guiResetTimer.timeout.connect(self._resetGUI)
 
             # Idle timer to push off-screen data to the UI.
@@ -1355,8 +1357,6 @@ class AppController(QtCore.QObject):
         granular updates will be supported by listening to UsdNotice objects on
         the active stage.
         """
-        self._guiResetTimer.stop()
-
         self._resetPrimView()
         self._updateAttributeView()
 
@@ -1373,8 +1373,7 @@ class AppController(QtCore.QObject):
         Prefer this to calling _resetGUI() directly, since it will
         coalesce multiple calls to this method in to a single refresh.
         """
-        self._guiResetTimer.stop()
-        self._guiResetTimer.start(GUI_RESET_DELAY)
+        self._guiResetTimer.start()
 
     def _resetPrimViewVis(self, selItemsOnly=True,
                           authoredVisHasChanged=True):
