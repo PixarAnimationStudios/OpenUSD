@@ -67,31 +67,31 @@ public:
         HdStComputeShaderSharedPtr const &kernel,
         HdStResourceRegistrySharedPtr const &registry
     );
-    
+
     virtual ~HdStExtCompGpuComputationResource() = default;
-    
+
     /// Gets the range that inputs should be loaded into using the
     /// resource binder.
     HdBufferArrayRangeSharedPtr const &GetInternalRange() const {
         return _internalRange;
     }
-    
+
     /// Gets the GPU program to run to execute the computation.
     /// This may have been shared with many other instances in the same
     /// registry.
     HdStGLSLProgramSharedPtr const &GetProgram() const {
         return _computeProgram;
     }
-    
+
     /// Gets the resource binder that matches the layout of the compute program.
     HdSt_ResourceBinder const &GetResourceBinder() const {
         return _resourceBinder;
     }
-    
+
     /// Resolve the resource bindings and program for use by a computation.
     HDST_API
     bool Resolve();
-    
+
     /// Allocate the required internal range for holding input data used by
     /// a computation.
     /// The passed in inputs are compared against the set of outputs that are
@@ -110,8 +110,8 @@ private:
     
     size_t                                _shaderSourceHash;
     HdBufferArrayRangeSharedPtr           _internalRange;  
-    HdStGLSLProgramSharedPtr                _computeProgram;
-    HdSt_ResourceBinder                     _resourceBinder;
+    HdStGLSLProgramSharedPtr              _computeProgram;
+    HdSt_ResourceBinder                   _resourceBinder;
     
     HdStExtCompGpuComputationResource()                = delete;
     HdStExtCompGpuComputationResource(
@@ -122,5 +122,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_EXT_COMP_CPU_COMPUTATION_RESOURCE_H
+#endif // HDST_EXT_COMP_GPU_COMPUTATION_RESOURCE_H
 

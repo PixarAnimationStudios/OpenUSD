@@ -271,10 +271,7 @@ HdStExtCompGpuComputation::CreateComputation(
             
     HdStExtCompGpuComputationBufferSourceSharedPtr bufferSource(
             new HdStExtCompGpuComputationBufferSource(
-                id,
-                primvarName,
                 inputs,
-                computation.GetElementCount(),
                 resource));
 
     HdStExtCompGpuComputationSharedPtr gpuComp(

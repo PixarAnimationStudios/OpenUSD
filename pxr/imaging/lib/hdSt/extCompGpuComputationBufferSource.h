@@ -70,13 +70,8 @@ public:
     /// inputs provides a list of buffer sources that this computation
     /// requires.
     /// outputs is a list of outputs by names that the computation produces.
-    ///
-    /// numElements specifies the number of elements in the output.
     HdStExtCompGpuComputationBufferSource(
-            SdfPath const &id,
-            TfToken const &primvarName,
             HdBufferSourceVector const &inputs,
-            int numElements,
             HdStExtCompGpuComputationResourceSharedPtr const &resource);
 
     HDST_API
@@ -94,12 +89,7 @@ protected:
     
 private:
     
-    SdfPath                                  _id;
-    TfToken                                  _primvarName;
-    
-    HdBufferSourceVector                     _inputs;
-    int                                      _numElements;
-    
+    HdBufferSourceVector                       _inputs;
     HdStExtCompGpuComputationResourceSharedPtr _resource;
     
     HdStExtCompGpuComputationBufferSource()                = delete;
@@ -111,4 +101,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_EXT_COMP_CPU_COMPUTATION_BUFFER_SOURCE_H
+#endif // HDST_EXT_COMP_GPU_COMPUTATION_BUFFER_SOURCE_H

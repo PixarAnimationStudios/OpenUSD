@@ -44,16 +44,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtCompGpuComputationBufferSource::HdStExtCompGpuComputationBufferSource(
-        SdfPath const &id,
-        TfToken const &primvarName,
         HdBufferSourceVector const &inputs,
-        int numElements,
         HdStExtCompGpuComputationResourceSharedPtr const &resource)
  : HdNullBufferSource()
- , _id(id)
- , _primvarName(primvarName)
  , _inputs(inputs)
- , _numElements(numElements)
  , _resource(resource)
 {
 }

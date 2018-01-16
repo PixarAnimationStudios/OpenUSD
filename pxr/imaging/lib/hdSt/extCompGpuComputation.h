@@ -57,8 +57,6 @@ typedef boost::shared_ptr<HdStExtCompGpuComputation>
 /// A GPU computation can write only to its own BAR.
 class HdStExtCompGpuComputation final : public HdComputation {
 public:
-    static const size_t INVALID_OUTPUT_INDEX;
-
     /// Constructs a new GPU ExtComputation computation.
     /// inputs provides a list of buffer sources that this computation
     /// requires.
@@ -104,15 +102,15 @@ public:
 
 private:
     SdfPath                                      _id;
-    HdStExtCompGpuComputationResourceSharedPtr     _resource;
+    HdStExtCompGpuComputationResourceSharedPtr   _resource;
     TfToken                                      _dstName;
     HdBufferSpecVector                           _outputSpecs;
     int                                          _numElements;
 
     std::vector<int32_t>                         _uniforms;
     
-    HdStExtCompGpuComputation()                                          = delete;
-    HdStExtCompGpuComputation(const HdStExtCompGpuComputation &)           = delete;
+    HdStExtCompGpuComputation()                                        = delete;
+    HdStExtCompGpuComputation(const HdStExtCompGpuComputation &)       = delete;
     HdStExtCompGpuComputation &operator = (const HdStExtCompGpuComputation &)
                                                                        = delete;
 };
@@ -152,4 +150,4 @@ void HdSt_GetExtComputationPrimVarsComputations(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_EXT_COMP_CPU_COMPUTATION_H
+#endif // HDST_EXT_COMP_GPU_COMPUTATION_H
