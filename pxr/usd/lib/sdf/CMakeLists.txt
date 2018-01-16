@@ -193,6 +193,7 @@ pxr_test_scripts(
     testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
     testenv/testSdfLayer.py
+    testenv/testSdfLayerMuting.py
     testenv/testSdfListOp.py
     testenv/testSdfParsing.py
     testenv/testSdfPath.py
@@ -259,6 +260,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testSdfLayerMuting.testenv
+    DEST testSdfLayerMuting/testSdfLayerMuting.testenv
+)
+
+pxr_install_test_dir(
     SRC testenv/testSdfMetaDataPlugInfo.testenv
     DEST testSdfMetaDataPlugInfo/testSdfMetaDataPlugInfo.testenv
 )
@@ -321,6 +327,11 @@ pxr_register_test(testSdfTextReferenceParser
 pxr_register_test(testSdfLayer
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayer"
+)
+
+pxr_register_test(testSdfLayerMuting
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerMuting"
 )
 
 pxr_register_test(testSdfListOp
