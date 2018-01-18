@@ -115,6 +115,8 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         virtual MBoundingBox boundingBox() const override;
         PXRUSDMAYA_API
         virtual MSelectionMask getShapeSelectionMask() const override;
+		PXRUSDMAYA_API
+		virtual MStatus	setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;
 
         // PxrUsdMayaUsdPrimProvider overrides:
         PXRUSDMAYA_API
