@@ -2221,6 +2221,25 @@ class AppController(QtCore.QObject):
             
         self._dataModel.stage.Export(saveName)
 
+    def _saveFlattenedAs(self):
+        recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
+        recommendedFilename += '_flattened.usd'
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self._mainWindow,
+                                                     "Save file (*.usd)",
+                                                     "./" + recommendedFilename,
+                                                     'Usd Files (*.usd)'
+                                                        ';;Usd Ascii Files (*.usda)'
+                                                        ';;Usd Crate Files (*.usdc)'
+                                                        ';;Any Usd File (*.usd *.usda *.usdc)',
+                                                     'Any Usd File (*.usd *.usda *.usdc)')
+        if len(saveName) <= 0:
+            return
+
+        if (saveName.rsplit('.')[-1] not in ('usd', 'usda', 'usdc')):
+            saveName += '.usd'
+            
+        self._stage.Export(saveName)
+
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
 
