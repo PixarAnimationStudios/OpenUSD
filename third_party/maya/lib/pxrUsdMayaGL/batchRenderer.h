@@ -21,12 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file batchRenderer.h
-///
+#ifndef PXRUSDMAYAGL_BATCH_RENDERER_H
+#define PXRUSDMAYAGL_BATCH_RENDERER_H
 
-#ifndef PXRUSDMAYAGL_BATCHRENDERER_H
-#define PXRUSDMAYAGL_BATCHRENDERER_H
+/// \file batchRenderer.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
@@ -100,7 +98,7 @@ public:
     static void Init();
 
     PXRUSDMAYAGL_API
-    static UsdMayaGLBatchRenderer& GetGlobalRenderer();
+    static UsdMayaGLBatchRenderer& Get();
 
     struct RenderParams
     {
@@ -113,7 +111,7 @@ public:
         // Raster Params
         //
         bool enableLighting = true;
-        
+
         // Geometry Params
         //
         HdCullStyle cullStyle = HdCullStyleNothing;
@@ -122,42 +120,43 @@ public:
 
         // Color Params
         //
-        GfVec4f overrideColor = {.0f, .0f, .0f, .0f};
-        GfVec4f wireframeColor = {.0f, .0f, .0f, .0f};
-        
+        GfVec4f overrideColor = {0.0f, 0.0f, 0.0f, 0.0f};
+        GfVec4f wireframeColor = {0.0f, 0.0f, 0.0f, 0.0f};
+
         /// \brief Helper function to find a batch key for the render params
         size_t Hash() const
         {
-            size_t hash = (refineLevel<<1)+enableLighting;
-            boost::hash_combine( hash, frame );
-            boost::hash_combine( hash, geometryCol );
-            boost::hash_combine( hash, cullStyle );
-            boost::hash_combine( hash, drawRepr );
-            boost::hash_combine( hash, overrideColor );
-            boost::hash_combine( hash, wireframeColor );
-            
+            size_t hash = (refineLevel << 1) + enableLighting;
+            boost::hash_combine(hash, frame);
+            boost::hash_combine(hash, geometryCol);
+            boost::hash_combine(hash, cullStyle);
+            boost::hash_combine(hash, drawRepr);
+            boost::hash_combine(hash, overrideColor);
+            boost::hash_combine(hash, wireframeColor);
+
             return hash;
         }
     };
-    
+
     /// \brief Class to manage rendering of single Maya shape with a single
     /// non-instanced transform.
     class ShapeRenderer
     {
         friend class UsdMayaGLBatchRenderer;
-        
+
     public:
-            
+
         /// \brief Construct a new uninitialized \c ShapeRenderer.
         PXRUSDMAYAGL_API
         ShapeRenderer();
 
         PXRUSDMAYAGL_API
-        void Init(HdRenderIndex *renderIndex,
-                  const SdfPath& sharedId,
-                  const UsdPrim& rootPrim,
-                  const SdfPathVector& excludedPaths);
-    
+        void Init(
+                HdRenderIndex* renderIndex,
+                const SdfPath& sharedId,
+                const UsdPrim& rootPrim,
+                const SdfPathVector& excludedPaths);
+
         /// \brief Register the \c ShapeRenderer with the specific DAG object
         /// in question. This should be called once per frame, per
         /// \c ShapeRenderer in use.
@@ -169,8 +168,8 @@ public:
                 bool showGuides,
                 bool showRenderGuides,
                 bool tint,
-                GfVec4f tintColor );
-    
+                GfVec4f tintColor);
+
         /// \brief Get a set of RenderParams from the VP 1.0 display state.
         ///
         /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
@@ -181,7 +180,7 @@ public:
                 const M3dView::DisplayStyle& displayStyle,
                 const M3dView::DisplayStatus& displayStatus,
                 bool* drawShape,
-                bool* drawBoundingBox );
+                bool* drawBoundingBox);
 
         /// \brief Get a set of RenderParams from the VP 1.0 display state.
         ///
@@ -193,60 +192,33 @@ public:
                 const unsigned int& displayStyle,
                 const MHWRender::DisplayStatus& displayStatus,
                 bool* drawShape,
-                bool* drawBoundingBox );
-
-        /// \brief Queue a batch draw call, to be executed later in the
-        /// specified \p mode.
-        /// 
-        /// \p boxToDraw may be set to NULL if no box is desired to be drawn.
-        ///
-        PXRUSDMAYAGL_API
-        void QueueShapeForDraw(
-                MPxSurfaceShapeUI *shapeUI,
-                MDrawRequest& drawRequest,
-                const RenderParams& params,
-                bool drawShape,
-                MBoundingBox *boxToDraw = NULL );
-
-        /// \brief Queue a batch draw call, to be executed later in the
-        /// specified \p mode.
-        /// 
-        /// \p userData should be the same parameter \c oldData passed into the
-        /// caller: the overriden \c prepareForDraw(...) call. The \p userData
-        /// pointer must also be returned from the overridden caller.
-        /// 
-        /// \p boxToDraw may be set to NULL if no box is desired to be drawn.
-        ///
-        PXRUSDMAYAGL_API
-        void QueueShapeForDraw(
-                MUserData* &userData,
-                const RenderParams& params,
-                bool drawShape,
-                MBoundingBox *boxToDraw = NULL );
+                bool* drawBoundingBox);
 
         /// \brief Tests an object for intersection with a given view.
-        /// 
+        ///
         /// \p hitPoint yields the point of interesection if \c true is returned.
         ///
         PXRUSDMAYAGL_API
         bool TestIntersection(
-                M3dView& aView, 
+                M3dView& aView,
                 unsigned int pickResolution,
                 bool singleSelection,
-                GfVec3d* hitPoint) const; 
+                GfVec3d* hitPoint) const;
+
+        const SdfPath& GetSharedId() const { return _sharedId; }
 
         /// \brief Returns base params as set previously by \c PrepareForQueue(...)
         ///
-        const RenderParams& GetBaseParams() { return _baseParams; }
-            
+        const RenderParams& GetBaseParams() const { return _baseParams; }
+
     private:
         SdfPath _sharedId;
         UsdPrim _rootPrim;
         SdfPathVector _excludedPaths;
         GfMatrix4d _rootXform;
-        
+
         RenderParams _baseParams;
-        
+
         bool _isPopulated;
         std::shared_ptr<UsdImagingDelegate> _delegate;
         UsdMayaGLBatchRenderer* _batchRenderer;
@@ -256,22 +228,23 @@ public:
     class TaskDelegate : public HdSceneDelegate {
     public:
         PXRUSDMAYAGL_API
-        TaskDelegate(HdRenderIndex *renderIndex,
-                     SdfPath const& delegateID);
+        TaskDelegate(HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
         // HdSceneDelegate interface
         PXRUSDMAYAGL_API
-        virtual VtValue Get(SdfPath const& id, TfToken const& key);
+        virtual VtValue Get(const SdfPath& id, const TfToken& key);
 
         PXRUSDMAYAGL_API
-        void SetCameraState(const GfMatrix4d& worldToViewMatrix,
-                            const GfMatrix4d& projectionMatrix,
-                            const GfVec4d& viewport);
+        void SetCameraState(
+                const GfMatrix4d& worldToViewMatrix,
+                const GfMatrix4d& projectionMatrix,
+                const GfVec4d& viewport);
 
         // VP 1.0 only.
         PXRUSDMAYAGL_API
-        void SetLightingStateFromVP1(const GfMatrix4d& worldToViewMatrix,
-                                     const GfMatrix4d& projectionMatrix);
+        void SetLightingStateFromVP1(
+                const GfMatrix4d& worldToViewMatrix,
+                const GfMatrix4d& projectionMatrix);
 
         // VP 2.0 only.
         PXRUSDMAYAGL_API
@@ -282,26 +255,26 @@ public:
         HdTaskSharedPtrVector GetSetupTasks();
 
         PXRUSDMAYAGL_API
-        HdTaskSharedPtr GetRenderTask(size_t hash,
-                                      RenderParams const &params,
-                                      SdfPathVector const &roots);
+        HdTaskSharedPtr GetRenderTask(const size_t hash,
+                                      const RenderParams& params,
+                                      const SdfPathVector& roots);
 
     protected:
         PXRUSDMAYAGL_API
-        void _InsertRenderTask(SdfPath const &id);
+        void _InsertRenderTask(const SdfPath& id);
 
         PXRUSDMAYAGL_API
         void _SetLightingStateFromLightingContext();
 
         template <typename T>
-        T const &_GetValue(SdfPath const &id, TfToken const &key) {
+        const T& _GetValue(const SdfPath& id, const TfToken& key) {
             VtValue vParams = _valueCacheMap[id][key];
             TF_VERIFY(vParams.IsHolding<T>());
             return vParams.Get<T>();
         }
 
         template <typename T>
-        void _SetValue(SdfPath const &id, TfToken const &key, T const &value) {
+        void _SetValue(const SdfPath& id, const TfToken& key, const T& value) {
             _valueCacheMap[id][key] = value;
         }
 
@@ -323,7 +296,7 @@ public:
         _ValueCacheMap _valueCacheMap;
     };
     typedef std::shared_ptr<TaskDelegate> TaskDelegateSharedPtr;
-    
+
     /// \brief Gets a pointer to the \c ShapeRenderer associated with a certain
     /// set of parameters.
     ///
@@ -331,23 +304,52 @@ public:
     /// \c UsdMayaGLBatchRenderer and will be valid for as long as the
     /// \c UsdMayaGLBatchRenderer object is valid.
     PXRUSDMAYAGL_API
-    ShapeRenderer *GetShapeRenderer(
-                    const UsdPrim& usdPrim, 
-                    const SdfPathVector& excludePrimPaths,
-                    const MDagPath& objPath );
-    
+    ShapeRenderer* GetShapeRenderer(
+            const UsdPrim& usdPrim,
+            const SdfPathVector& excludePrimPaths,
+            const MDagPath& objPath);
+
+    /// \brief Queue a batch draw call, to be executed later.
+    ///
+    /// \p boxToDraw may be set to nullptr if no box is desired to be drawn.
+    ///
+    PXRUSDMAYAGL_API
+    void QueueShapeForDraw(
+            const SdfPath& shapeRendererSharedId,
+            MPxSurfaceShapeUI* shapeUI,
+            MDrawRequest& drawRequest,
+            const RenderParams& params,
+            const bool drawShape,
+            const MBoundingBox* boxToDraw = nullptr);
+
+    /// \brief Queue a batch draw call, to be executed later.
+    ///
+    /// \p userData should be the same parameter \c oldData passed into the
+    /// caller: the overriden \c prepareForDraw(...) call. The \p userData
+    /// pointer must also be returned from the overridden caller.
+    ///
+    /// \p boxToDraw may be set to nullptr if no box is desired to be drawn.
+    ///
+    PXRUSDMAYAGL_API
+    void QueueShapeForDraw(
+            const SdfPath& shapeRendererSharedId,
+            MUserData*& userData,
+            const RenderParams& params,
+            const bool drawShape,
+            const MBoundingBox* boxToDraw = nullptr);
+
     /// \brief Gets UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
     /// This should only be used by ShapeRenderer::GetRenderParams
     PXRUSDMAYAGL_API
     const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
 
     /// \brief Construct a new, unique BatchRenderer. In almost all cases,
-    /// this should not be used -- use \c GetGlobalRenderer() instead.
+    /// this should not be used -- use \c Get() instead.
     PXRUSDMAYAGL_API
     UsdMayaGLBatchRenderer();
 
     PXRUSDMAYAGL_API
-    ~UsdMayaGLBatchRenderer();
+    virtual ~UsdMayaGLBatchRenderer();
 
 
     /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
@@ -360,46 +362,37 @@ public:
 
     /// \brief Render batch or bounds in VP1 based on \p request
     PXRUSDMAYAGL_API
-    void Draw(
-            const MDrawRequest& request,
-            M3dView &view );
-    
+    void Draw(const MDrawRequest& request, M3dView& view);
+
     /// \brief Render batch or bounds in VP2 based on \p userData
     PXRUSDMAYAGL_API
     void Draw(
             const MHWRender::MDrawContext& context,
-            const MUserData *userData );
+            const MUserData* userData);
 
 private:
-    
+
     /// \brief Helper function to find a key for the shape in the renderer cache
     static size_t _ShapeHash(
-            const UsdPrim& usdPrim, 
+            const UsdPrim& usdPrim,
             const SdfPathVector& excludePrimPaths,
             const MDagPath& objPath );
 
-    /// \brief Helper function for a \c ShapeRenderer to register a batch
-    /// render call.
+    /// \brief Private helper function for registering a batch render call.
     void _QueueShapeForDraw(
             const SdfPath& sharedId,
-            const RenderParams &params );
-    
-    /// \brief Helper function for a \c ShapeRenderer to register a batch
-    /// render call.
-    void _QueuePathForDraw(
-            const SdfPath& sharedId,
-            const RenderParams &params );
-    
+            const RenderParams& params);
+
     /// \brief Tests an object for intersection with a given view.
-    /// 
+    ///
     /// \returns Hydra Hit info for instance associated with \p sharedId
     ///
-    const HdxIntersector::Hit *_GetHitInfo(
-            M3dView& aView, 
+    const HdxIntersector::Hit* _GetHitInfo(
+            M3dView& aView,
             unsigned int pickResolution,
             bool singleSelection,
             const SdfPath& sharedId,
-            const GfMatrix4d &localToWorldSpace ); 
+            const GfMatrix4d& localToWorldSpace);
 
      /// \brief Call to render all queued batches. May be called safely w/o
     /// performance hit when no batches are queued.
@@ -433,20 +426,20 @@ private:
     /// \brief Cache of hashed \c ShapeRenderer objects for fast lookup
     typedef std::unordered_map<size_t,ShapeRenderer> _ShapeRendererMap;
     _ShapeRendererMap _shapeRendererMap;
-        
+
     /// \brief container of all delegates to be populated at next display
     /// refresh.
-    std::unordered_set<ShapeRenderer *> _populateQueue;
-        
+    std::unordered_set<ShapeRenderer*> _populateQueue;
+
     /// \brief Cache of \c SdfPath objects to be rendered
     typedef std::unordered_set<SdfPath, SdfPath::Hash> _SdfPathSet;
-    
+
     /// \brief Associative pair of \c RenderParams and \c SdfPath objects to be
     /// rendered with said params
     typedef std::pair<RenderParams, _SdfPathSet> _RenderParamSet;
-    
+
     /// \brief Lookup table to to find \c _RenderParamSet given a param hash key.
-    typedef std::unordered_map<size_t,_RenderParamSet> _RendererQueueMap;
+    typedef std::unordered_map<size_t, _RenderParamSet> _RendererQueueMap;
 
     /// \brief container of all batched render calls to be made at next display
     /// refresh.
@@ -467,7 +460,7 @@ private:
     _RendererQueueMap _selectQueue;
 
     typedef std::unordered_map<SdfPath, HdxIntersector::Hit, SdfPath::Hash> HitBatch;
-    
+
     /// \brief a cache of all selection results gathered since the last display
     /// refresh.
     HitBatch _selectResults;
@@ -494,4 +487,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYAGL_BATCHRENDERER_H
+
+#endif // PXRUSDMAYAGL_BATCH_RENDERER_H

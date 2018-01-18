@@ -21,16 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXRUSDMAYAGL_PROXYSHAPEUI_H
-#define PXRUSDMAYAGL_PROXYSHAPEUI_H
+#ifndef PXRUSDMAYAGL_PROXY_SHAPE_UI_H
+#define PXRUSDMAYAGL_PROXY_SHAPE_UI_H
+
+/// \file proxyShapeUI.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
-#include "usdMaya/proxyShape.h"
 
 #include <maya/M3dView.h>
-#include <maya/MDagPath.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
@@ -39,64 +39,46 @@
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
 {
- public:
-    /**
-     * method to construct node
-     */
-    PXRUSDMAYAGL_API
-    static void* creator();
+    public:
 
-    /**
-     * method to handle draw requests
-     */
-    PXRUSDMAYAGL_API
-    void getDrawRequests(
-        const MDrawInfo& drawInfo,
-        bool isObjectAndActiveOnly,
-        MDrawRequestQueue& requests);
+        PXRUSDMAYAGL_API
+        static void* creator();
 
-    /**
-     * draw method
-     */
-    PXRUSDMAYAGL_API
-    void draw(
-        const MDrawRequest& request,
-        M3dView& view) const;
+        PXRUSDMAYAGL_API
+        virtual void getDrawRequests(
+                const MDrawInfo& drawInfo,
+                bool isObjectAndActiveOnly,
+                MDrawRequestQueue& requests) override;
 
-    /**
-     * select method
-     */
-    PXRUSDMAYAGL_API
-    bool select(
-        MSelectInfo& selectInfo,
-        MSelectionList& selectionList,
-        MPointArray& worldSpaceSelectPts) const;
+        PXRUSDMAYAGL_API
+        virtual void draw(
+                const MDrawRequest& request,
+                M3dView& view) const override;
 
- private:
+        PXRUSDMAYAGL_API
+        virtual bool select(
+                MSelectInfo& selectInfo,
+                MSelectionList& selectionList,
+                MPointArray& worldSpaceSelectPts) const override;
 
-    /**
-     * method to prepare renderer, used in both draw and select...
-     */
-    UsdMayaGLBatchRenderer::ShapeRenderer* _GetShapeRenderer(
-         const MDagPath &objPath,
-         bool prepareForQueue) const;
+    private:
 
-    UsdMayaProxyShapeUI();
-    UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&);
+        UsdMayaProxyShapeUI();
+        UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&);
 
-    ~UsdMayaProxyShapeUI();
+        virtual ~UsdMayaProxyShapeUI();
 
-    UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
+        UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
 };
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYAGL_PROXYSHAPEUI_H
+
+#endif // PXRUSDMAYAGL_PROXY_SHAPE_UI_H

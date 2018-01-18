@@ -37,6 +37,11 @@
 #include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/base/gf/gamma.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/registryManager.h"
 
@@ -54,7 +59,6 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSceneMessage.h>
 
-#include <bitset>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,22 +87,23 @@ UsdMayaGLBatchRenderer::Init()
 {
     GlfGlewInit();
 
-    GetGlobalRenderer();
+    Get();
 }
 
 /* static */
 UsdMayaGLBatchRenderer&
-UsdMayaGLBatchRenderer::GetGlobalRenderer()
+UsdMayaGLBatchRenderer::Get()
 {
     if (!_sGlobalRendererPtr) {
         Reset();
     }
+
     return *_sGlobalRendererPtr;
 }
 
 std::unique_ptr<UsdMayaGLBatchRenderer> UsdMayaGLBatchRenderer::_sGlobalRendererPtr;
 
-/// \brief struct to hold all the information needed for a 
+/// \brief struct to hold all the information needed for a
 /// draw request in vp1 or vp2, without requiring shape querying at
 /// draw time.
 ///
@@ -133,19 +138,19 @@ public:
 };
 
 
-UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer()
-    : _isPopulated(false)
-    , _batchRenderer( NULL )
+UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer() :
+        _isPopulated(false),
+        _batchRenderer(nullptr)
 {
-    // _batchRenderer is NULL to signify an uninitialized ShapeRenderer.
+    // _batchRenderer is nullptr to signify an uninitialized ShapeRenderer.
 }
 
 void
 UsdMayaGLBatchRenderer::ShapeRenderer::Init(
-    HdRenderIndex *renderIndex,
-    const SdfPath& sharedId,
-    const UsdPrim& rootPrim,
-    const SdfPathVector& excludedPaths)
+        HdRenderIndex* renderIndex,
+        const SdfPath& sharedId,
+        const UsdPrim& rootPrim,
+        const SdfPathVector& excludedPaths)
 {
     _sharedId = sharedId;
     _rootPrim = rootPrim;
@@ -156,13 +161,13 @@ UsdMayaGLBatchRenderer::ShapeRenderer::Init(
 
 void
 UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
-    const MDagPath &objPath,
-    UsdTimeCode time,
-    uint8_t refineLevel,
-    bool showGuides,
-    bool showRenderGuides,
-    bool tint,
-    GfVec4f tintColor )
+        const MDagPath& objPath,
+        UsdTimeCode time,
+        uint8_t refineLevel,
+        bool showGuides,
+        bool showRenderGuides,
+        bool tint,
+        GfVec4f tintColor)
 {
     // Initialization of default parameters go here. These parameters get used
     // in all viewports and for selection.
@@ -177,20 +182,19 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
     _baseParams.renderTags.push_back(HdTokens->proxy);
     if (showGuides) {
         _baseParams.renderTags.push_back(HdTokens->guide);
-    } 
+    }
     if (showRenderGuides) {
         _baseParams.renderTags.push_back(_tokens->render);
     }
-    
-    if( tint )
-        _baseParams.overrideColor = tintColor;
 
-    if( _delegate )
-    {
+    if (tint) {
+        _baseParams.overrideColor = tintColor;
+    }
+
+    if (_delegate) {
         MStatus status;
         MMatrix transform = objPath.inclusiveMatrix( &status );
-        if( status )
-        {
+        if (status) {
             _rootXform = GfMatrix4d( transform.matrix );
             _delegate->SetRootTransform(_rootXform);
         }
@@ -202,8 +206,9 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
 
         _delegate->SetRootCompensation(_rootPrim.GetPath());
 
-        if( !_isPopulated )
+        if (!_isPopulated) {
             _batchRenderer->_populateQueue.insert(this);
+        }
     }
 }
 
@@ -215,8 +220,8 @@ MHWRender::DisplayStatus
 _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus& displayStatus)
 {
     // these enums are equivalent, but statically checking just in case.
-    static_assert(((int)M3dView::kActive == (int)MHWRender::kActive) 
-            && ((int)M3dView::kLive == (int)MHWRender::kLive) 
+    static_assert(((int)M3dView::kActive == (int)MHWRender::kActive)
+            && ((int)M3dView::kLive == (int)MHWRender::kLive)
             && ((int)M3dView::kDormant == (int)MHWRender::kDormant)
             && ((int)M3dView::kInvisible == (int)MHWRender::kInvisible)
             && ((int)M3dView::kHilite == (int)MHWRender::kHilite)
@@ -244,7 +249,7 @@ _GetWireframeColor(
         return softSelectHelper.GetFalloffColor(objPath, mayaWireColor);
     }
     else if ((displayStatus == MHWRender::kActive) ||
-            (displayStatus == MHWRender::kLead)    || 
+            (displayStatus == MHWRender::kLead)    ||
             (displayStatus == MHWRender::kHilite)) {
         *mayaWireColor = MHWRender::MGeometryUtilities::wireframeColor(objPath);
         return true;
@@ -255,35 +260,34 @@ _GetWireframeColor(
 
 UsdMayaGLBatchRenderer::RenderParams
 UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
-    const MDagPath& objPath,
-    const M3dView::DisplayStyle& displayStyle,
-    const M3dView::DisplayStatus& displayStatus,
-    bool* drawShape,
-    bool* drawBoundingBox )
+        const MDagPath& objPath,
+        const M3dView::DisplayStyle& displayStyle,
+        const M3dView::DisplayStatus& displayStatus,
+        bool* drawShape,
+        bool* drawBoundingBox)
 {
     // VP 1.0 Implementation
     //
-    RenderParams params( _baseParams );
-    
+    RenderParams params(_baseParams);
+
     // VP 1.0 deos not allow shapes and bounding boxes to be drawn at the
     // same time...
     //
     *drawBoundingBox = (displayStyle == M3dView::kBoundingBox);
     *drawShape = !*drawBoundingBox;
-    
+
     // If obj is selected, we set selected and the wireframe color.
     // QueueShapeForDraw(...) will later break this single param set into
     // two, to perform a two-pass render.
     //
     MColor mayaWireframeColor;
-    bool needsWire = _GetWireframeColor(
-            _batchRenderer->GetSoftSelectHelper(),
-            objPath, 
-            _ToMHWRenderDisplayStatus(displayStatus), 
-            &mayaWireframeColor);
+    const bool needsWire = _GetWireframeColor(
+        _batchRenderer->GetSoftSelectHelper(),
+        objPath,
+        _ToMHWRenderDisplayStatus(displayStatus),
+        &mayaWireframeColor);
 
-    if( needsWire )
-    {
+    if (needsWire) {
         // The legacy viewport does not support color management,
         // so we roll our own gamma correction via framebuffer effect.
         // But that means we need to pre-linearize the wireframe color
@@ -296,9 +300,8 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
                         mayaWireframeColor.b,
                         1.f ));
     }
-    
-    switch( displayStyle )
-    {
+
+    switch (displayStyle) {
         case M3dView::kWireFrame:
         {
             params.drawRepr = HdTokens->refinedWire;
@@ -307,18 +310,20 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
         }
         case M3dView::kGouraudShaded:
         {
-            if( needsWire )
+            if (needsWire) {
                 params.drawRepr = HdTokens->refinedWireOnSurf;
-            else
+            } else {
                 params.drawRepr = HdTokens->refined;
+            }
             break;
         }
         case M3dView::kFlatShaded:
         {
-            if( needsWire )
+            if (needsWire) {
                 params.drawRepr = HdTokens->wireOnSurf;
-            else
+            } else {
                 params.drawRepr = HdTokens->hull;
+            }
             break;
         }
         case M3dView::kPoints:
@@ -330,25 +335,25 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
             *drawShape = false;
         }
     };
-    
+
     return params;
 }
 
 UsdMayaGLBatchRenderer::RenderParams
 UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
-    const MDagPath& objPath,
-    const unsigned int& displayStyle,
-    const MHWRender::DisplayStatus& displayStatus,
-    bool* drawShape,
-    bool* drawBoundingBox )
+        const MDagPath& objPath,
+        const unsigned int& displayStyle,
+        const MHWRender::DisplayStatus& displayStatus,
+        bool* drawShape,
+        bool* drawBoundingBox)
 {
     // VP 2.0 Implementation
     //
-    RenderParams params( _baseParams );
-    
+    RenderParams params(_baseParams);
+
     *drawShape = true;
-    *drawBoundingBox = (displayStyle
-                            & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
+    *drawBoundingBox =
+        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
     // If obj is selected, we set the wireframe color.
     // QueueShapeForDraw(...) will later break this single param set into
@@ -356,43 +361,41 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     //
     MColor mayaWireframeColor;
     bool needsWire = _GetWireframeColor(
-            _batchRenderer->GetSoftSelectHelper(),
-            objPath, displayStatus,
-            &mayaWireframeColor);
-    
-    if( needsWire )
-    {
-        params.wireframeColor =
-                    GfVec4f(
-                        mayaWireframeColor.r,
-                        mayaWireframeColor.g,
-                        mayaWireframeColor.b,
-                        1.f );
+        _batchRenderer->GetSoftSelectHelper(),
+        objPath, displayStatus,
+        &mayaWireframeColor);
+
+    if (needsWire) {
+        params.wireframeColor = GfVec4f(mayaWireframeColor.r,
+                                        mayaWireframeColor.g,
+                                        mayaWireframeColor.b,
+                                        1.0f);
     }
-    
+
 // Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for whatever reason...
-    bool flatShaded =
+    const bool flatShaded =
 #if MAYA_API_VERSION >= 201600
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
 #else
         false;
 #endif
-    
-    if( flatShaded )
-    {
-        if( needsWire )
+
+    if (flatShaded) {
+        if (needsWire) {
             params.drawRepr = HdTokens->wireOnSurf;
-        else
+        } else {
             params.drawRepr = HdTokens->hull;
+        }
     }
-    else if( displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded )
+    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
     {
-        if( needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) )
+        if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
             params.drawRepr = HdTokens->refinedWireOnSurf;
-        else
+        } else {
             params.drawRepr = HdTokens->refined;
+        }
     }
-    else if( displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame )
+    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
     {
         params.drawRepr = HdTokens->refinedWire;
         params.enableLighting = false;
@@ -401,92 +404,34 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     {
         *drawShape = false;
     }
-    
+
 // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling for whatever reason...
     params.cullStyle = HdCullStyleNothing;
 #if MAYA_API_VERSION >= 201603
-    if( displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling )
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
         params.cullStyle = HdCullStyleBackUnlessDoubleSided;
+    }
 #endif
-    
+
     return params;
 }
 
-void
-UsdMayaGLBatchRenderer::ShapeRenderer::QueueShapeForDraw(
-    MPxSurfaceShapeUI *shapeUI,
-    MDrawRequest &drawRequest,
-    const RenderParams &params,
-    bool drawShape,
-    MBoundingBox *boxToDraw )
-{
-    // VP 1.0 Implementation
-    //
-    // In Viewport 1.0, we can use MDrawData to communicate between the
-    // draw prep and draw call itself. Since the internal data is open
-    // to the client, we choose to use a MUserData object, so that the
-    // internal data will mimic the the VP 2.0 implementation. This
-    // allow for more code reuse.
-    //
-    // The one caveat here is that VP 1.0 does not manage the data allocated
-    // in the MDrawData object, so we must remember to delete the MUserData
-    // object in our Draw call. 
-    
-    MUserData* userData;
-    
-    QueueShapeForDraw( userData, params, drawShape, boxToDraw );
-    
-    MDrawData drawData;
-    shapeUI->getDrawData( userData, drawData );
-    
-    drawRequest.setDrawData( drawData );
-}
-
-void
-UsdMayaGLBatchRenderer::ShapeRenderer::QueueShapeForDraw(
-    MUserData* &userData,
-    const RenderParams &params,
-    bool drawShape,
-    MBoundingBox *boxToDraw )
-{
-    // VP 2.0 Implementation (also called by VP 1.0 Implementation)
-    //
-    // Our internal _BatchDrawUserData can be used to signify whether we are
-    // requesting a shape to be rendered, a bounding box, both, or neither.
-    //
-    // If we aren't drawing the Shape, the userData object, passed by reference,
-    // still gets set for the caller. In the VP 2.0 prepareForDraw(...) usage,
-    // any MUserData object passed into the function will be deleted by Maya.
-    // In the VP 1.0 usage, the object gets deleted in
-    // UsdMayaGLBatchRenderer::Draw(...)
-    
-    if( boxToDraw )
-        userData = new _BatchDrawUserData( drawShape, *boxToDraw, params.wireframeColor );
-    else if( drawShape )
-        userData = new _BatchDrawUserData();
-    else
-        userData = NULL;
-    
-    if( drawShape && _batchRenderer )
-        _batchRenderer->_QueueShapeForDraw( _sharedId, params );
-}
-
-bool 
+bool
 UsdMayaGLBatchRenderer::ShapeRenderer::TestIntersection(
-    M3dView& view,
-    unsigned int pickResolution,
-    bool singleSelection,
-    GfVec3d* hitPoint) const
+        M3dView& view,
+        unsigned int pickResolution,
+        bool singleSelection,
+        GfVec3d* hitPoint) const
 {
     const HdxIntersector::Hit *hitInfo =
             _batchRenderer->_GetHitInfo(
                 view, pickResolution, singleSelection, _sharedId, _rootXform );
     if( !hitInfo )
         return false;
-    
+
     if( hitPoint )
         *hitPoint = hitInfo->worldSpaceHitPoint;
-    
+
     if( TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO) )
     {
         cout << "FOUND HIT: " << endl;
@@ -494,13 +439,14 @@ UsdMayaGLBatchRenderer::ShapeRenderer::TestIntersection(
         cout << "\tobjectId: " << hitInfo->objectId << endl;
         cout << "\tndcDepth: " << hitInfo->ndcDepth << endl;
     }
-    
+
     return true;
 }
 
 UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
-    HdRenderIndex *renderIndex, SdfPath const& delegateID)
-    : HdSceneDelegate(renderIndex, delegateID)
+        HdRenderIndex* renderIndex,
+        const SdfPath& delegateID) :
+    HdSceneDelegate(renderIndex, delegateID)
 {
     _lightingContext = GlfSimpleLightingContext::New();
 
@@ -539,7 +485,7 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
 }
 
 void
-UsdMayaGLBatchRenderer::TaskDelegate::_InsertRenderTask(SdfPath const &id)
+UsdMayaGLBatchRenderer::TaskDelegate::_InsertRenderTask(const SdfPath& id)
 {
     GetRenderIndex().InsertTask<HdxRenderTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
@@ -554,11 +500,11 @@ UsdMayaGLBatchRenderer::TaskDelegate::_InsertRenderTask(SdfPath const &id)
     cache[HdTokens->collection] = VtValue();
 }
 
-/*virtual*/
+/* virtual */
 VtValue
 UsdMayaGLBatchRenderer::TaskDelegate::Get(
-    SdfPath const& id,
-    TfToken const &key)
+        const SdfPath& id,
+        const TfToken& key)
 {
     _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
     VtValue ret;
@@ -572,9 +518,9 @@ UsdMayaGLBatchRenderer::TaskDelegate::Get(
 
 void
 UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
-    const GfMatrix4d& worldToViewMatrix,
-    const GfMatrix4d& projectionMatrix,
-    const GfVec4d& viewport)
+        const GfMatrix4d& worldToViewMatrix,
+        const GfMatrix4d& projectionMatrix,
+        const GfVec4d& viewport)
 {
     // cache the camera matrices
     _ValueCache &cache = _valueCacheMap[_cameraId];
@@ -723,14 +669,13 @@ UsdMayaGLBatchRenderer::TaskDelegate::GetSetupTasks()
 
 HdTaskSharedPtr
 UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
-    size_t hash,
-    RenderParams const &renderParams,
-    SdfPathVector const &roots)
+        const size_t hash,
+        const RenderParams& renderParams,
+        const SdfPathVector& roots)
 {
     // select bucket
     SdfPath renderTaskId;
-    if( !TfMapLookup(_renderTaskIdMap, hash, &renderTaskId) )
-    {
+    if (!TfMapLookup(_renderTaskIdMap, hash, &renderTaskId)) {
         // create new render task if not exists
         renderTaskId = _rootId.AppendChild(
             TfToken(TfStringPrintf("renderTask%zx", hash)));
@@ -814,26 +759,24 @@ UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
 }
 
 
-UsdMayaGLBatchRenderer::ShapeRenderer *
+UsdMayaGLBatchRenderer::ShapeRenderer*
 UsdMayaGLBatchRenderer::GetShapeRenderer(
-    const UsdPrim& usdPrim, 
-    const SdfPathVector& excludePrimPaths,
-    const MDagPath& objPath )
+        const UsdPrim& usdPrim,
+        const SdfPathVector& excludePrimPaths,
+        const MDagPath& objPath)
 {
-    const size_t hash = _ShapeHash( usdPrim, excludePrimPaths, objPath );
-    
+    const size_t hash = _ShapeHash(usdPrim, excludePrimPaths, objPath);
+
     // We can get away with this because the spec for std::unordered_map
-    // guarantees that data pairs remain valid even if other objects are inserted.
-    //
-    ShapeRenderer *toReturn = &_shapeRendererMap[ hash ];
-    
-    if( !toReturn->_batchRenderer )
-    {
+    // guarantees that data pairs remain valid even if other objects are
+    // inserted.
+    ShapeRenderer* toReturn = &_shapeRendererMap[hash];
+
+    if (!toReturn->_batchRenderer) {
         // Create a simple hash string to put into a flat SdfPath "hierarchy".
         // This is much faster than more complicated pathing schemes.
-        //
-        std::string idString = TfStringPrintf("/x%zx", hash);
-        
+        const std::string idString = TfStringPrintf("/x%zx", hash);
+
         toReturn->Init(_renderIndex.get(),
                        SdfPath(idString),
                        usdPrim,
@@ -841,12 +784,81 @@ UsdMayaGLBatchRenderer::GetShapeRenderer(
 
         toReturn->_batchRenderer = this;
     }
-    
+
     return toReturn;
 }
 
-const UsdMayaGLSoftSelectHelper& 
-UsdMayaGLBatchRenderer::GetSoftSelectHelper() 
+void
+UsdMayaGLBatchRenderer::QueueShapeForDraw(
+        const SdfPath& shapeRendererSharedId,
+        MPxSurfaceShapeUI* shapeUI,
+        MDrawRequest& drawRequest,
+        const RenderParams& params,
+        const bool drawShape,
+        const MBoundingBox* boxToDraw)
+{
+    // VP 1.0 Implementation
+    //
+    // In Viewport 1.0, we can use MDrawData to communicate between the
+    // draw prep and draw call itself. Since the internal data is open
+    // to the client, we choose to use a MUserData object, so that the
+    // internal data will mimic the the VP 2.0 implementation. This
+    // allow for more code reuse.
+    //
+    // The one caveat here is that VP 1.0 does not manage the data allocated
+    // in the MDrawData object, so we must remember to delete the MUserData
+    // object in our Draw call.
+
+    MUserData* userData;
+
+    QueueShapeForDraw(shapeRendererSharedId,
+                      userData,
+                      params,
+                      drawShape,
+                      boxToDraw);
+
+    MDrawData drawData;
+    shapeUI->getDrawData(userData, drawData);
+
+    drawRequest.setDrawData(drawData);
+}
+
+void
+UsdMayaGLBatchRenderer::QueueShapeForDraw(
+        const SdfPath& shapeRendererSharedId,
+        MUserData*& userData,
+        const RenderParams& params,
+        const bool drawShape,
+        const MBoundingBox* boxToDraw)
+{
+    // VP 2.0 Implementation (also called by VP 1.0 Implementation)
+    //
+    // Our internal _BatchDrawUserData can be used to signify whether we are
+    // requesting a shape to be rendered, a bounding box, both, or neither.
+    //
+    // If we aren't drawing the Shape, the userData object, passed by reference,
+    // still gets set for the caller. In the VP 2.0 prepareForDraw(...) usage,
+    // any MUserData object passed into the function will be deleted by Maya.
+    // In the VP 1.0 usage, the object gets deleted in
+    // UsdMayaGLBatchRenderer::Draw(...)
+
+    if (boxToDraw) {
+        userData = new _BatchDrawUserData(drawShape,
+                                          *boxToDraw,
+                                          params.wireframeColor);
+    } else if (drawShape) {
+        userData = new _BatchDrawUserData();
+    } else {
+        userData = nullptr;
+    }
+
+    if (drawShape) {
+        _QueueShapeForDraw(shapeRendererSharedId, params);
+    }
+}
+
+const UsdMayaGLSoftSelectHelper&
+UsdMayaGLBatchRenderer::GetSoftSelectHelper()
 {
     _softSelectHelper.Populate();
     return _softSelectHelper;
@@ -906,6 +918,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     }
 }
 
+/* virtual */
 UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
     _intersector.reset();
@@ -917,7 +930,8 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 }
 
 /* static */
-void UsdMayaGLBatchRenderer::Reset()
+void
+UsdMayaGLBatchRenderer::Reset()
 {
     if (_sGlobalRendererPtr) {
         MGlobal::displayInfo("Resetting USD Batch Renderer");
@@ -983,7 +997,7 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 void
 UsdMayaGLBatchRenderer::Draw(
         const MHWRender::MDrawContext& context,
-        const MUserData *userData)
+        const MUserData* userData)
 {
     // VP 2.0 Implementation
     //
@@ -1043,9 +1057,9 @@ UsdMayaGLBatchRenderer::Draw(
 
 size_t
 UsdMayaGLBatchRenderer::_ShapeHash(
-    const UsdPrim& usdPrim, 
-    const SdfPathVector& excludePrimPaths,
-    const MDagPath& objPath )
+        const UsdPrim& usdPrim,
+        const SdfPathVector& excludePrimPaths,
+        const MDagPath& objPath)
 {
     size_t hash( MObjectHandle(objPath.transform()).hashCode() );
     boost::hash_combine( hash, usdPrim );
@@ -1056,49 +1070,41 @@ UsdMayaGLBatchRenderer::_ShapeHash(
 
 void
 UsdMayaGLBatchRenderer::_QueueShapeForDraw(
-    const SdfPath& sharedId,
-    const RenderParams &params )
-{
-    _QueuePathForDraw( sharedId, params );
-}
-
-void
-UsdMayaGLBatchRenderer::_QueuePathForDraw(
-    const SdfPath& sharedId,
-    const RenderParams &params )
+        const SdfPath& sharedId,
+        const RenderParams& params)
 {
     const size_t paramKey = params.Hash();
-    
-    auto renderSetIter = _renderQueue.find( paramKey );
+
+    auto renderSetIter = _renderQueue.find(paramKey);
     if (renderSetIter == _renderQueue.end()) {
         // If we had no _SdfPathSet for this particular RenderParam combination,
         // create a new one.
-        _renderQueue[paramKey] = _RenderParamSet( params, _SdfPathSet( {sharedId} ) );
+        _renderQueue[paramKey] = _RenderParamSet(params,
+                                                 _SdfPathSet({sharedId}));
     } else {
-        _SdfPathSet &renderPaths = renderSetIter->second.second;
-        renderPaths.insert( sharedId );
+        _SdfPathSet& renderPaths = renderSetIter->second.second;
+        renderPaths.insert(sharedId);
     }
 }
 
-const HdxIntersector::Hit * 
+const HdxIntersector::Hit*
 UsdMayaGLBatchRenderer::_GetHitInfo(
-    M3dView& view,
-    unsigned int pickResolution,
-    bool singleSelection,
-    const SdfPath& sharedId,
-    const GfMatrix4d &localToWorldSpace)
+        M3dView& view,
+        unsigned int pickResolution,
+        bool singleSelection,
+        const SdfPath& sharedId,
+        const GfMatrix4d& localToWorldSpace)
 {
     // Guard against user clicking in viewer before renderer is setup
     if (!_renderIndex) {
-        return NULL;
+        return nullptr;
     }
 
     // Selection only occurs once per display refresh, with all usd objects
     // simulataneously. If the selectQueue is not empty, that means that
     // a refresh has occurred, and we need to perform a new selection operation.
-    
-    if( !_selectQueue.empty() )
-    {
+
+    if (!_selectQueue.empty()) {
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "____________ SELECTION STAGE START ______________ (singleSelect = %d)\n",
             singleSelection );
@@ -1118,12 +1124,12 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         GfMatrix4d worldToLocalSpace(localToWorldSpace.GetInverse());
 
         _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
-        
+
         HdxIntersector::Params qparams;
         qparams.viewMatrix = worldToLocalSpace * viewMatrix;
         qparams.projectionMatrix = projectionMatrix;
         qparams.alphaThreshold = 0.1;
-        
+
         _selectResults.clear();
 
         for( const auto &renderSetIter : _selectQueue )
@@ -1131,11 +1137,11 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             const RenderParams &renderParams = renderSetIter.second.first;
             const _SdfPathSet &renderPaths = renderSetIter.second.second;
             SdfPathVector roots(renderPaths.begin(), renderPaths.end());
-            
+
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
                     "--- pickQueue, batch %zx, size %zu\n",
                     renderSetIter.first, renderPaths.size());
-            
+
             TfToken colName = renderParams.geometryCol;
             HdRprimCollection rprims(colName, renderParams.drawRepr);
             rprims.SetRootPaths(roots);
@@ -1159,7 +1165,7 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             if( !r ) {
                 continue;
             }
-            
+
             if( singleSelection )
             {
                 hits.resize(1);
@@ -1175,23 +1181,23 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                 auto itIfExists =
                     _selectResults.insert(
                         std::pair<SdfPath, HdxIntersector::Hit>(hit.delegateId, hit));
-                
+
                 const bool &inserted = itIfExists.second;
                 if( inserted )
                     continue;
-                                
+
                 HdxIntersector::Hit& existingHit = itIfExists.first->second;
                 if( hit.ndcDepth < existingHit.ndcDepth )
                     existingHit = hit;
             }
         }
-        
+
         if( singleSelection && _selectResults.size()>1 )
         {
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
                     "!!! multiple singleSel hits found: %zu\n",
                     _selectResults.size());
-            
+
             auto minIt=_selectResults.begin();
             for( auto curIt=minIt; curIt!=_selectResults.end(); curIt++ )
             {
@@ -1200,14 +1206,14 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                 if( curHit.ndcDepth < minHit.ndcDepth )
                     minIt = curIt;
             }
-            
+
             if( minIt!=_selectResults.begin() )
                 _selectResults.erase(_selectResults.begin(),minIt);
             minIt++;
             if( minIt!=_selectResults.end() )
                 _selectResults.erase(minIt,_selectResults.end());
         }
-        
+
         if( TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO) )
         {
             for ( const auto &selectPair : _selectResults)
@@ -1220,7 +1226,7 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                 cout << "\tndcDepth: " << hit.ndcDepth << endl;
             }
         }
-        
+
         // As we've cached the results in pickBatches, we
         // can clear out the selection queue.
         _selectQueue.clear();
@@ -1233,15 +1239,15 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         // means _selectQueue will not get processed again even if the
         // user attempts another selection. We fix the renderer state by
         // scheduling another refresh when the view is next idle.
-        
+
         if( _selectResults.empty() )
             view.scheduleRefresh();
-        
+
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "^^^^^^^^^^^^ SELECTION STAGE FINISH ^^^^^^^^^^^^^\n");
     }
-    
-    return TfMapLookupPtr( _selectResults, sharedId );
+
+    return TfMapLookupPtr(_selectResults, sharedId);
 }
 
 void
