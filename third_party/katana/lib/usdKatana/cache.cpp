@@ -765,6 +765,8 @@ SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
 
 SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
     const std::string& cacheKey) {
+    boost::upgrade_lock<boost::upgrade_mutex>
+                readerLock(UsdKatanaGetSessionCacheLock());
     const auto& it = _sessionKeyCache.find(cacheKey);
     if (it != _sessionKeyCache.end()) {
         return it->second;
