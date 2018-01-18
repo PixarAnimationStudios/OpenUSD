@@ -95,7 +95,7 @@ void ProcessEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
 
 void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int inEdgeFlag)
 {
-    // see hd/triangulate.cpp
+    // see hd/meshUtil.cpp
     //
     //          0__                0  0   0__
     //        _/|\ \_            _/.  ..   . \_
@@ -128,6 +128,14 @@ void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int 
 void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
                              int triCounter)
 {
+    // see hd/meshUtil.cpp
+    //  Case                   EdgeFlag    Draw
+    //  Quad/Refined face         0        hide common edge for the tri-pair
+    //  Non-Quad face             1        hide common edge for the tri-pair & 
+    //                                     hide interior quadrangulated edges
+
+    int edgeFlag = GetEdgeFlag(0);
+    
     //  0---3
     //  |. 0|
     //  | . |
@@ -137,6 +145,16 @@ void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
     // triCounter == 0 : skip the second edge of (3,0,2), i.e., (0-2)
     // triCounter == 1 : skip the first  edge of (2,0,1), i.e., (2-0)
     vec3 edgeClip = triCounter == 0 ? vec3(0, 1000.0, 0) : vec3(1000.0, 0, 0);
+
+    if (edgeFlag == 1) {
+        // the quad face stems from quadrangulation
+        // 0   - original (coarse) vertex
+        // 1,3 - edge vertices
+        // 2   - center vertex
+        
+        // skip the third edge (i.e. edge-center / center-edge)
+        edgeClip.z = 1000.0;
+    }
 
     ProcessEdgeDistance(Peye0, Peye1, Peye2, Peye3, edgeClip);
 }

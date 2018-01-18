@@ -501,8 +501,13 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
                 (*indices)[qv][2] = (vertsPtr[v+2]);
                 (*indices)[qv][3] = (vertsPtr[v+3]);
             }
+
+            //  Case               EdgeFlag               Draw
+            //  authored quad face    0      hide common edge for the tri-pair
+            //  non-quad face         1      hide common edge for the tri-pair & 
+            //                               hide interior quadrangulated edges
             (*primitiveParams)[qv] = GfVec2i(
-                EncodeCoarseFaceParam(i, 0), qv);
+                EncodeCoarseFaceParam(i, /*edgeFlag=*/0), qv);
             ++qv;
         } else {
             // quadrangulate non-quad faces
@@ -534,8 +539,10 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
                     // edge prev
                     (*indices)[qv][3] = vertIndex + (j+nv-1)%nv;
                 }
+                // edge flag = 1 => quad face is from quadrangulation
+                // it is used to hide internal edges (edge-center) of the quad
                 (*primitiveParams)[qv] = GfVec2i(
-                    EncodeCoarseFaceParam(i, 0), qv);
+                    EncodeCoarseFaceParam(i, /*edgeFlag=*/1), qv);
                 ++qv;
             }
             vertIndex += nv + 1;

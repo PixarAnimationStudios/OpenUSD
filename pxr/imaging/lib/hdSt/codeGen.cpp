@@ -1706,12 +1706,14 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
                 {
-                    // refined quads or tris (loop subdiv)
+                    // refined quads ("uniform" subdiv) or
+                    // refined tris (loop subdiv)
                     accessors
                         << "ivec3 GetPatchParam() {\n"
                         << "  return ivec3(HdGet_primitiveParam().y, \n"
                         << "               HdGet_primitiveParam().z, 0);\n"
                         << "}\n";
+                    // XXX: Is the edge flag returned actually used?
                     accessors
                         << "int GetEdgeFlag(int localIndex) {\n"
                         << "  return (HdGet_primitiveParam().x & 3);\n"
@@ -1721,13 +1723,17 @@ HdSt_CodeGen::_GenerateElementPrimVar()
 
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
                 {
-                    // refined patches (tessellated triangles)
+                    // "adaptive" subdivision generates refined patches 
+                    // (tessellated triangles)
                     accessors
                         << "ivec3 GetPatchParam() {\n"
                         << "  return ivec3(HdGet_primitiveParam().y, \n"
                         << "               HdGet_primitiveParam().z, \n"
                         << "               HdGet_primitiveParam().w);\n"
                         << "}\n";
+                    // use the edge flag calculated in the geometry shader
+                    // (i.e., not from primitiveParam)
+                    // see mesh.glslfx Mesh.Geometry.Triangle
                     accessors
                         << "int GetEdgeFlag(int localIndex) {\n"
                         << "  return localIndex;\n"
@@ -1744,9 +1750,12 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                         << "ivec3 GetPatchParam() {\n"
                         << "  return ivec3(HdGet_primitiveParam().y, 0, 0);\n"
                         << "}\n";
+                    // the edge flag for coarse quads tells us if the quad face
+                    // is the result of quadrangulation (1) or from the authored
+                    // topology (0).
                     accessors
                         << "int GetEdgeFlag(int localIndex) {\n"
-                        << "  return localIndex; \n"
+                        << "  return (HdGet_primitiveParam().x & 3); \n"
                         << "}\n";
                     break;
                 }
