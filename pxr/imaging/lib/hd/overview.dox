@@ -100,6 +100,41 @@ HdExtComputation: Interface for user or asset defined computations.
 
 </pre>
 
+HdExtComputation Usage
+<p>
+To create a computation that generates primvar data the following steps need to be taken:
+<br />
+<ol>
+    <li>Insert and create an HdExtComputation into the renderIndex by calling
+ HdRenderIndex::InsertExtComputation with the given id for the computation.</li>
+    <li>Ensure your scene delegate implements the 7 methods needed to query for
+ ExtComputation data and resolve scene inputs</li>
+    <ul>
+        <li>HdSceneDelegate::GetExtComputationInputNames</li>
+        <li>HdSceneDelegate::GetExtComputationInputParams</li>
+        <li>HdSceneDelegate::GetExtComputationOutputNames</li>
+        <li>HdSceneDelegate::GetExtComputationPrimVarNames</li>
+        <li>HdSceneDelegate::GetExtComputationPrimVarDesc</li>
+        <li>HdSceneDelegate::GetExtComputationKernel</li>
+        <li>HdSceneDelegate::InvokeExtComputation</li>
+    </ul>
+    <li>As each Rprim gathers their primvars they ask the scene delegate
+ if there are any computation primvars for them by calling
+ HdSceneDelegate::GetExtComputationPrimvarNames. If that returns a non-empty
+ token vector it will then ask for the descriptions of those primvars
+ by calling HdSceneDelegate::GetExtComputationPrimVarDesc. Each primvarDesc
+ references an ExtComputation by id that is fetched by id from the 
+ render index. The Rprim adds the computations as sources for its primvars.
+ The rest of the information flow happens during HdResourceRegistry::Commit</li>
+    <li>The resource registry resolves the ExtComputation which calls the
+ remaining delegate methods to get all the information needed to resolve input
+ scene sources and computation local inputs and outputs.</li>
+    <li>If the computation returns a compute kernel source the computation is
+ treated as a GPU computation and executed on the GPU. Otherwise the computation
+ is invoked on the CPU by calling HdSceneDelegate::InvokeExtComputation</li>
+</ol>
+</p>
+
 \b The \b Scenegraph \b Index
 
 The scenegraph index is a mapping from the source scenegraph's prim to a prim
