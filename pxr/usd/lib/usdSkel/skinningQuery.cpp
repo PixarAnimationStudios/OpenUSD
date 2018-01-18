@@ -273,7 +273,6 @@ UsdSkelSkinningQuery::ComputeSkinnedPoints(const VtMatrix4dArray& xforms,
         VtMatrix4dArray orderedXforms(xforms);
         if(_mapper) {
             if(!_mapper->Remap(xforms, &orderedXforms)) {
-                std::cerr << "can't remap?\n";
                 return false;
             }
         }
