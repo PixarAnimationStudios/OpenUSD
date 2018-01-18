@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdxSimpleLightBypassTask::HdxSimpleLightBypassTask(HdSceneDelegate* delegate,
                                                    SdfPath const& id)
     : HdSceneTask(delegate, id)
+    , _cameraId()
     , _lightingShader(new HdxSimpleLightingShader())
     , _simpleLightingContext()
 {
@@ -67,20 +68,21 @@ HdxSimpleLightBypassTask::_Sync(HdTaskContext* ctx)
         }
 
         _simpleLightingContext = params.simpleLightingContext;
-        const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-        _camera = static_cast<const HdStCamera *>(
-                    renderIndex.GetSprim(HdPrimTypeTokens->camera,
-                                         params.cameraPath));
+        _cameraId = params.cameraPath;
     }
 
     if (_simpleLightingContext) {
-        if (!TF_VERIFY(_camera)) {
+        const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
+        const HdStCamera *camera = static_cast<const HdStCamera *>(
+            renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
+
+        if (!TF_VERIFY(camera)) {
             return;
         }
 
-        VtValue modelViewMatrix = _camera->Get(HdShaderTokens->worldToViewMatrix);
+        VtValue modelViewMatrix = camera->Get(HdShaderTokens->worldToViewMatrix);
         if (!TF_VERIFY(modelViewMatrix.IsHolding<GfMatrix4d>())) return;
-        VtValue projectionMatrix = _camera->Get(HdShaderTokens->projectionMatrix);
+        VtValue projectionMatrix = camera->Get(HdShaderTokens->projectionMatrix);
         if (!TF_VERIFY(projectionMatrix.IsHolding<GfMatrix4d>())) return;
 
         // need camera matrices to compute lighting paramters in the eye-space.

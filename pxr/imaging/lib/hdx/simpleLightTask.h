@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
-#include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -47,7 +46,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 class HdSceneDelegate;
-class HdStCamera;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
@@ -71,8 +69,8 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
-    const HdStCamera *_camera;
-    HdStLightPtrConstVector _lights;
+    SdfPath _cameraId;
+    SdfPathVector _lightIds;
 
     // Should be weak ptrs
     HdxSimpleLightingShaderSharedPtr _lightingShader;

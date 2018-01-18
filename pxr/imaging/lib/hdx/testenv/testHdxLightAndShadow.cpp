@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/engine.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"

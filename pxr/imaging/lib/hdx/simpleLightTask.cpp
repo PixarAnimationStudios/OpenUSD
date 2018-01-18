@@ -52,8 +52,8 @@ static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
 
 HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdSceneTask(delegate, id) 
-    , _camera()
-    , _lights()
+    , _cameraId()
+    , _lightIds()
     , _lightingShader(new HdxSimpleLightingShader())
     , _collectionVersion(0)
     , _enableShadows(false)
@@ -92,6 +92,8 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // that we should extract the lights again from the render index.
     const bool collectionChanged = (_collectionVersion != dirtyState.collectionVersion);
 
+    HdSceneDelegate* delegate = GetDelegate();
+    HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     if ((dirtyState.bits & HdChangeTracker::DirtyParams) ||
         collectionChanged) {
@@ -103,13 +105,8 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
-        HdSceneDelegate* delegate = GetDelegate();
-        HdRenderIndex &renderIndex = delegate->GetRenderIndex();
-        _camera = static_cast<const HdStCamera *>(
-                    renderIndex.GetSprim(HdPrimTypeTokens->camera,
-                                         params.cameraPath));
+        _cameraId = params.cameraPath;
 
-        SdfPathVector lights;
         if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light)) {
             // XXX: This is inefficient, need to be optimized
             SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
@@ -120,18 +117,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             gather.Filter(sprimPaths,
                           params.lightIncludePaths,
                           params.lightExcludePaths,
-                          &lights);
-        }
-
-        _lights.clear();
-        _lights.reserve(lights.size());
-        TF_FOR_ALL (it, lights) {
-            HdStLight const *light = static_cast<const HdStLight *>(
-                renderIndex.GetSprim(HdPrimTypeTokens->light, *it));
-
-            if (light != nullptr) {
-                _lights.push_back(light);
-            }
+                          &_lightIds);
         }
 
         _enableShadows = params.enableShadows;
@@ -144,7 +130,9 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         _viewport = params.viewport;
     }
 
-    if (!TF_VERIFY(_camera)) {
+    const HdStCamera *camera = static_cast<const HdStCamera *>(
+        renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
+    if (!TF_VERIFY(camera)) {
         return;
     }
 
@@ -157,9 +145,9 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // Place lighting context in task context
     (*ctx)[HdxTokens->lightingContext] = lightingContext;
 
-    VtValue modelViewMatrix = _camera->Get(HdShaderTokens->worldToViewMatrix);
+    VtValue modelViewMatrix = camera->Get(HdShaderTokens->worldToViewMatrix);
     TF_VERIFY(modelViewMatrix.IsHolding<GfMatrix4d>());
-    VtValue projectionMatrix = _camera->Get(HdShaderTokens->projectionMatrix);
+    VtValue projectionMatrix = camera->Get(HdShaderTokens->projectionMatrix);
     TF_VERIFY(projectionMatrix.IsHolding<GfMatrix4d>());
     GfMatrix4d invCamXform = modelViewMatrix.Get<GfMatrix4d>().GetInverse();
 
@@ -173,7 +161,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // Extract the camera window policy to adjust the frustum correctly for
     // lights that have shadows.
     CameraUtilConformWindowPolicy windowPolicy = CameraUtilFit;
-    const VtValue vtWindowPolicy = _camera->Get(HdStCameraTokens->windowPolicy);
+    const VtValue vtWindowPolicy = camera->Get(HdStCameraTokens->windowPolicy);
     const bool cameraHasWindowPolicy =
         vtWindowPolicy.IsHolding<CameraUtilConformWindowPolicy>();
     if (cameraHasWindowPolicy) {
@@ -186,7 +174,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     //
     // clear() is guaranteed by spec to not change the capacity of the
     // vector.
-    size_t numLights = _lights.size();
+    size_t numLights = _lightIds.size();
 
     _glfSimpleLights.clear();
     if (numLights != _glfSimpleLights.capacity()) {
@@ -198,9 +186,17 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     }
 
     for (size_t lightId = 0; lightId < numLights; ++lightId) {
+
+        HdStLight const *light = static_cast<const HdStLight *>(
+            renderIndex.GetSprim(HdPrimTypeTokens->light, _lightIds[lightId]));
+        if (!TF_VERIFY(light)) {
+            _glfSimpleLights.push_back(GlfSimpleLight());
+           continue;
+        }
+
         // Take a copy of the simple light into our temporary array and
         // update it with viewer-dependant values.
-        VtValue vtLightParams = _lights[lightId]->Get(HdStLightTokens->params);
+        VtValue vtLightParams = light->Get(HdStLightTokens->params);
 
         if (TF_VERIFY(vtLightParams.IsHolding<GlfSimpleLight>())) {
             _glfSimpleLights.push_back(
@@ -214,15 +210,16 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 
         // XXX: Pass id of light to Glf simple light, so that
         // glim can get access back to the light prim
-        glfl.SetID(_lights[lightId]->GetID());
+        glfl.SetID(light->GetID());
 
         // If the light is in camera space we need to transform
         // the position and spot direction to the right
         // space
         if (glfl.IsCameraSpaceLight()) {
-            VtValue vtXform = _lights[lightId]->Get(HdStLightTokens->transform);
+            VtValue vtXform = light->Get(HdStLightTokens->transform);
             const GfMatrix4d &lightXform =
-                vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>() : GfMatrix4d(1);
+                vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>()
+                                                : GfMatrix4d(1);
 
             GfVec4f lightPos(lightXform.GetRow(2));
             lightPos[3] = 0.0f;
@@ -231,7 +228,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             glfl.SetSpotDirection(GfVec3f(invCamXform.TransformDir(lightDir)));
         }
 
-        VtValue vLightShadowParams =  _lights[lightId]->Get(HdStLightTokens->shadowParams);
+        VtValue vLightShadowParams =  light->Get(HdStLightTokens->shadowParams);
         TF_VERIFY(vLightShadowParams.IsHolding<HdxShadowParams>());
         HdxShadowParams lightShadowParams = 
             vLightShadowParams.GetWithDefault<HdxShadowParams>(HdxShadowParams());
@@ -293,13 +290,6 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             if (!_glfSimpleLights[lightId].HasShadow()) {
                 continue;
             }
-
-            VtValue vLightShadowParams =  _lights[lightId]->Get(HdStLightTokens->shadowParams);
-            TF_VERIFY(vLightShadowParams.IsHolding<HdxShadowParams>());
-            HdxShadowParams lightShadowParams = 
-                vLightShadowParams.GetWithDefault<HdxShadowParams>(
-                                                             HdxShadowParams());
-
             // Complete the shadow setup for this light
             int shadowId = _glfSimpleLights[lightId].GetShadowIndex();
 
