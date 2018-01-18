@@ -42,6 +42,7 @@ pxr_library(usdviewq
         customAttributes.py
         appController.py
         plugContext.py
+        plugin.py
         scalarTypes.py
         stageView.py
         usdviewContextMenuItem.py

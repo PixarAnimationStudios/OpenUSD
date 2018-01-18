@@ -66,6 +66,7 @@ from settings2 import StateSource
 from plugContext import PlugContext
 from rootDataModel import RootDataModel
 from viewSettingsDataModel import ViewSettingsDataModel
+import plugin
 
 SETTINGS_VERSION = "1"
 
@@ -277,20 +278,11 @@ class AppController(QtCore.QObject):
         print 'INFO: Settings restored to default.'
 
     def _configurePlugins(self):
-        pluginsLoaded = False
 
         with Timer() as t:
-            try:
-                from pixar import UsdviewPlug
-                UsdviewPlug.ConfigureView(self._plugCtx, self)
-                pluginsLoaded = True
+            plugin.loadPlugins(self._plugCtx, self._mainWindow)
 
-            except ImportError:
-                # Fails silently if UsdviewPlug is found but a sub-module is not.
-                # See bug 152226
-                pass
-
-        if self._printTiming and pluginsLoaded:
+        if self._printTiming:
             t.PrintTime("configure and load plugins.")
 
     def _openSettings2(self, defaultSettings):
