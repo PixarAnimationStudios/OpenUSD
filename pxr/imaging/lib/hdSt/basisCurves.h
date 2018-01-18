@@ -112,10 +112,6 @@ private:
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
-    void _UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
-                                 _BasisCurvesReprConfig::DescArray const& descs,
-                                 HdReprSharedPtr repr);
-
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdStDrawItem *drawItem,
                                         const HdBasisCurvesReprDesc &desc);

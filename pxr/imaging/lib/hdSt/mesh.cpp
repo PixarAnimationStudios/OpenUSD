@@ -1143,18 +1143,12 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     /* VISIBILITY */
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS */
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
-
-    /* MATERIAL SHADER */
-    TfToken mixin = GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
-    drawItem->SetMaterialShaderFromRenderIndex(
-        renderIndex, GetMaterialId(), _GetMixinShaderSource(mixin));
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
@@ -1472,8 +1466,13 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // For the bits geometric shader depends on, reset the geometric shaders
-    // for all the draw items of all the reprs.
+    // Check if either the material or geometric shaders need updating.
+    bool needsSetMaterialShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId|
+                      HdChangeTracker::NewRepr)) {
+        needsSetMaterialShader = true;
+    }
+
     bool needsSetGeometricShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
                       HdChangeTracker::DirtyCullStyle|
@@ -1497,6 +1496,7 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    // For each relevant draw item, update dirty buffer sources.
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
@@ -1512,40 +1512,53 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    if (needsSetGeometricShader) {
-        // needsSetGeometricShader is set when all reprs need a refresh of their
-        // geometric shader.
-
+    // If either the material or geometric shaders need updating, do so.
+    if (needsSetMaterialShader || needsSetGeometricShader) {
         TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStMesh - Resetting the geometric shader for all draw"
-                " items of all reprs");
+            Msg("HdStMesh(%s) - Resetting shaders for all draw items",
+                GetId().GetText());
+
+        // Look up the mixin source if necessary. This is a per-rprim glsl
+        // snippet, to be mixed into the surface shader.
+        SdfPath materialId;
+        std::string mixinSource;
+        if (needsSetMaterialShader) {
+            materialId = GetMaterialId();
+
+            TfToken mixinKey =
+                GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
+            mixinSource = _GetMixinShaderSource(mixinKey);
+        }
+
+        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         TF_FOR_ALL (it, _reprs) {
             _MeshReprConfig::DescArray descs = _GetReprDesc(it->first);
-            _UpdateReprGeometricShader(sceneDelegate, descs, it->second);
+            HdReprSharedPtr repr = it->second;
+
+            int drawItemIndex = 0;
+            for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+                if (descs[descIdx].geomStyle == HdMeshGeomStyleInvalid) {
+                    continue;
+                }
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItem(drawItemIndex++));
+
+                if (needsSetMaterialShader) {
+                    drawItem->SetMaterialShaderFromRenderIndex(
+                        renderIndex, materialId, mixinSource);
+                }
+                if (needsSetGeometricShader) {
+                    _UpdateDrawItemGeometricShader(sceneDelegate,
+                        drawItem, descs[descIdx]);
+                }
+            }
         }
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 
-
     return curRepr;
-}
-
-void
-HdStMesh::_UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
-                                     _MeshReprConfig::DescArray const &descs,
-                                     HdReprSharedPtr repr)
-{
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        if (descs[descIdx].geomStyle != HdMeshGeomStyleInvalid) {
-            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
-                repr->GetDrawItem(drawItemIndex++));
-            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
-                                           descs[descIdx]);
-        }
-    }
 }
 
 HdDirtyBits

@@ -108,10 +108,6 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
-    /* MATERIAL SHADER */
-    drawItem->SetMaterialShaderFromRenderIndex(
-        sceneDelegate->GetRenderIndex(), GetMaterialId());
-
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
@@ -305,8 +301,13 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // For the bits geometric shader depends on, reset the geometric shaders
-    // for all the draw items of all the reprs.
+    // Check if either the material or geometric shaders need updating.
+    bool needsSetMaterialShader = false;
+    if (*dirtyBits & (HdChangeTracker::DirtyMaterialId |
+                      HdChangeTracker::NewRepr)) {
+        needsSetMaterialShader = true;
+    }
+
     bool needsSetGeometricShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel |
                       HdChangeTracker::DirtyMaterialId |
@@ -329,40 +330,46 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    if (needsSetGeometricShader) {
-        // needsSetGeometricShader is set when all reprs need a refresh of their
-        // geometric shader.
-
+    // If either the material or geometric shaders need updating, do so.
+    if (needsSetMaterialShader || needsSetGeometricShader) {
         TF_DEBUG(HD_RPRIM_UPDATED).
-            Msg("HdStBasisCurves - Resetting the geometric shader for all draw"
-                " items (currently only 1 per repr) of all reprs");
+            Msg("HdStBasisCurves(%s) - Resetting shaders for all draw items",
+                GetId().GetText());
+
+        SdfPath materialId;
+        if (needsSetMaterialShader) {
+            materialId = GetMaterialId();
+        }
+
+        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
         TF_FOR_ALL (it, _reprs) {
             _BasisCurvesReprConfig::DescArray const &descs =
                 _GetReprDesc(it->first);
-            _UpdateReprGeometricShader(sceneDelegate, descs, it->second);
+            HdReprSharedPtr repr = it->second;
+            int drawItemIndex = 0;
+            for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+                if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
+                    continue;
+                }
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItem(drawItemIndex++));
+
+                if (needsSetMaterialShader) {
+                    drawItem->SetMaterialShaderFromRenderIndex(
+                        renderIndex, materialId);
+                }
+                if (needsSetGeometricShader) {
+                    _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
+                        descs[descIdx]);
+                }
+            }
         }
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
 
     return curRepr;
-}
-
-void
-HdStBasisCurves::_UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
-                                 _BasisCurvesReprConfig::DescArray const &descs,
-                                 HdReprSharedPtr repr)
-{
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        if (descs[descIdx].geomStyle != HdBasisCurvesGeomStyleInvalid) {
-            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
-                repr->GetDrawItem(drawItemIndex++));
-            _UpdateDrawItemGeometricShader(sceneDelegate, drawItem,
-                                           descs[descIdx]);
-        }
-    }
 }
 
 void

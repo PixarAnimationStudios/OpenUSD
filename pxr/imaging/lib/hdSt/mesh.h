@@ -101,10 +101,6 @@ protected:
                          HdMeshReprDesc desc,
                          bool requireSmoothNormals);
 
-    void _UpdateReprGeometricShader(HdSceneDelegate *sceneDelegate,
-                                    _MeshReprConfig::DescArray const &descs,
-                                    HdReprSharedPtr repr);
-
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdStDrawItem *drawItem,
                                         const HdMeshReprDesc &desc);
