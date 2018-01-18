@@ -48,7 +48,6 @@ def _setupWidgets(appController):
     # Select our prim with the variant authored
     appController._ui.primViewLineEdit.setText('Shapes')
     appController._primViewFindNext()
-    appController._mainWindow.repaint()
 
 def _getVariantSelector(appController, whichVariant):
     # Select the metadata tab in the lower right corner
@@ -67,15 +66,17 @@ def _getVariantSelector(appController, whichVariant):
     return None
 
 def _takeShot(appController, fileName):
-    appController._mainWindow.repaint()
-    appController._stageView.updateGL()
     viewportShot = appController.GrabViewportShot()
     viewportShot.save(fileName, "PNG")
 
 def _selectVariant(appController, variantPos, whichVariant):
     selector = _getVariantSelector(appController, whichVariant)
     selector.setCurrentIndex(variantPos)
-    appController._mainWindow.repaint()
+
+    # Variant selection changes the USD stage. Since all stage changes are
+    # coalesced using the guiResetTimer, we need to process events here to give
+    # the timer a chance to fire.
+    QtWidgets.QApplication.processEvents()
 
 def _testBasic(appController):
     # select items from the first variant
