@@ -1230,10 +1230,12 @@ if context.buildDocs:
                    "PATH")
         sys.exit(1)
 
-if context.buildUsdImaging:
+if context.buildUsdImaging and context.buildPython:
     # The USD build will skip building usdview if pyside-uic or pyside2-uic is 
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
+    # Note that we don't check if python is disabled, as it won't be added
+    # to the list of dependencies to fetch/install
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     found_pysideUic = any([find_executable(p) for p in pysideUic])
     pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
