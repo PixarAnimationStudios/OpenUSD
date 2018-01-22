@@ -133,7 +133,7 @@ protected:
         HDST_API
         virtual HdStBufferResourceGLNamedList const& GetResources() const;
 
-        /// Sets the buffer array assosiated with this buffer;
+        /// Sets the buffer array associated with this buffer;
         HDST_API
         virtual void SetBufferArray(HdBufferArray *bufferArray);
 
@@ -227,7 +227,7 @@ protected:
         HdStBufferResourceGLSharedPtr GetResource() const;
 
         /// Returns the named GPU resource. This method returns the first found
-        /// resource. In HD_SAFE_MODE it checkes all underlying GL buffers
+        /// resource. In HD_SAFE_MODE it checks all underlying GL buffers
         /// in _resourceMap and raises a coding error if there are more than
         /// one GL buffers exist.
         HDST_API

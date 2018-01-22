@@ -147,7 +147,7 @@ public:
     void RemoveSubtree(const SdfPath &root, HdSceneDelegate* sceneDelegate);
 
     // ---------------------------------------------------------------------- //
-    /// Given a prim id, returns the path of the correspoding rprim
+    /// Given a prim id, returns the path of the corresponding rprim
     /// or an empty path if none is found.
     HD_API
     SdfPath GetRprimPathFromPrimId(int primId) const;
@@ -272,7 +272,7 @@ public:
     /// \name Task Support
     // ---------------------------------------------------------------------- //
 
-    /// Inserts a new task into the render index with an identifer of \p id.
+    /// Inserts a new task into the render index with an identifier of \p id.
     template <typename T>
     void InsertTask(HdSceneDelegate* delegate, SdfPath const& id);
 

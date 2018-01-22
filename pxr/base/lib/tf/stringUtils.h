@@ -65,7 +65,7 @@ class TfToken;
 /// \endcode
 ///
 /// The function is safe only to the extent that the arguments match the
-/// formatting string.  In particular, be careful to pass strings themselve
+/// formatting string.  In particular, be careful to pass strings themselves
 /// into \c TfStringPrintf() as in the above example (i.e. \c caller.c_str()
 /// as opposed to just passing \c caller).
 ///
@@ -325,7 +325,7 @@ std::string TfStringGetCommonPrefix(std::string a, std::string b);
 TF_API
 std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 
-/// Returns the everthing up to the suffix of a string
+/// Returns everything up to the suffix of a string
 ///
 /// Returns characters before the final character \c delimiter (default ".")
 /// of a string.  Thus not-suffix of "abc.def" is "abc" using "." as the
@@ -348,18 +348,18 @@ std::string TfGetBaseName(const std::string& fileName);
 TF_API
 std::string TfGetPathName(const std::string& fileName);
 
-/// Replaces all occurences of string \p from with \p to in \p source
+/// Replaces all occurrences of string \p from with \p to in \p source
 ///
 /// Returns a new string which is created by copying \p string and replacing
-/// every occurence of \p from with \p to. Correctly handles the case in which
+/// every occurrence of \p from with \p to. Correctly handles the case in which
 /// \p to contains \p from.
 TF_API
 std::string TfStringReplace(const std::string& source, const std::string& from,
                             const std::string& to);
 
-/// Catenates the strings (\p begin, \p end), with default separator.
+/// Concatenates the strings (\p begin, \p end), with default separator.
 ///
-/// Returns the catenation of the strings in the range \p begin to \p end,
+/// Returns the concatenation of the strings in the range \p begin to \p end,
 /// with \p separator (by default, a space) added between each successive pair
 /// of strings.
 template <class ForwardIterator>
@@ -392,17 +392,17 @@ std::string TfStringJoin(
     return retVal;
 }
 
-/// Catenates \p strings, with default separator.
+/// Concatenates \p strings, with default separator.
 ///
-/// Returns the catenation of the strings in \p strings, with \p separator
+/// Returns the concatenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
 TF_API
 std::string TfStringJoin(const std::vector<std::string>& strings,
                          const char* separator = " ");
 
-/// Catenates \p strings, with default separator.
+/// Concatenates \p strings, with default separator.
 ///
-/// Returns the catenation of the strings in \p strings, with \p separator
+/// Returns the concatenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
 TF_API
 std::string TfStringJoin(const std::set<std::string>& strings,
@@ -452,10 +452,10 @@ TfQuotedStringTokenize(const std::string& source,
 ///
 /// The string \p source is broken apart into individual words, where a word
 /// begins with \p openDelimiter and ends with a matching \p closeDelimiter.
-/// Any delimiters within the matching delimeters become part of the word, and
-/// anything outside matching delimeters gets dropped. For example, \c
+/// Any delimiters within the matching delimiters become part of the word, and
+/// anything outside matching delimiters gets dropped. For example, \c
 /// TfMatchedStringTokenize("{a} string {to {be} split}", '{', '}') would
-/// return a vector containig "a" and "to {be} split". If \p openDelimiter and
+/// return a vector containing "a" and "to {be} split". If \p openDelimiter and
 /// \p closeDelimiter cannot be the same. \p errors, if provided, contains any
 /// error messages.
 TF_API
@@ -632,7 +632,7 @@ TF_API void TfEscapeStringReplaceChar(const char** in, char** out);
 /// Concatenate two strings containing '/' and '..' tokens like a file path or
 /// scope name.
 ///
-/// Tokenize the input strings using a '/' delimeter. Look for '..' tokens in
+/// Tokenize the input strings using a '/' delimiter. Look for '..' tokens in
 /// the suffix and construct the appropriate result.
 ///
 /// Examples:

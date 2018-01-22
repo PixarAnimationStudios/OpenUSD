@@ -75,7 +75,7 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// \li The \c identifier component of a reference in the provided API
 /// can be a resolvable asset-path to some external layer, empty, in which case 
 /// the reference targets the root layer of the LayerStack containing the 
-/// referencing layer, or the identifer of an existing anonymous, in-memory-only
+/// referencing layer, or the identifier of an existing anonymous, in-memory-only
 /// SdfLayer.  Care should be exercised in the latter case: calling Export() on 
 /// an anonymous layer to serialize it to a file will not attempt to replace 
 /// any references to anonymous layers with references to file-backed layers.
@@ -187,7 +187,7 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// description, and return \c false.  If anything goes wrong in attempting
 /// to write the reference, we also return false, and the reference will also
 /// remain unauthored.  Otherwise, if the reference was successfully
-/// authored, we will return \c true.  <b>A succesful reference authoring
+/// authored, we will return \c true.  <b>A successful reference authoring
 /// operation may still generate composition errors!</b> Just because the
 /// reference you specified was syntactically correct and therefore
 /// successfully authored, does not imply it was meaningful. If you wish to
@@ -208,7 +208,7 @@ SDF_DECLARE_HANDLES(SdfPrimSpec);
 /// from AddReference(), RemoveReference(), ClearReferences(), or
 /// SetReferences()), the UsdStage on which the reference was authored will
 /// recompose the subtree rooted at the prim hosting the reference.  If the
-/// provided identifer does not resolve to a layer that is already opened or
+/// provided identifier does not resolve to a layer that is already opened or
 /// that can be opened in the usd format, \em or if the provided primPath is
 /// not an actual prim in that layer, the stage's recomposition will
 /// fail, and pass on composition errors to the client.

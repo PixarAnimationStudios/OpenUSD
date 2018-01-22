@@ -139,7 +139,7 @@ public:
     /// Return the layer this EditTarget contains.
     const SdfLayerHandle &GetLayer() const { return _layer; }
 
-    /// Map the provided \a scenePath into the a SdfSpec path for the
+    /// Map the provided \a scenePath into a SdfSpec path for the
     /// EditTarget's layer, according to the EditTarget's mapping.  Null edit
     /// targets and EditTargets for which \a IsLocalLayer are true return
     /// scenePath unchanged.

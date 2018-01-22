@@ -237,7 +237,7 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
 
     // For various reasons, initialization may have failed.
     // For example, the menva parser may have hit a syntax error,
-    // or transfering content from a source layer may have failed.
+    // or transferring content from a source layer may have failed.
     // In this case _initializationWasSuccessful will be set to false.
     // The callers of this method are responsible for checking the result
     // and dropping any references they hold.  As a convenience to them,
@@ -2561,7 +2561,7 @@ SdfLayer::RemoveFromMutedLayers(const string &path)
 bool
 SdfLayer::_ShouldNotify() const
 {
-    // Only notify if this layer has been succesfully initialized.
+    // Only notify if this layer has been successfully initialized.
     // (If initialization is not yet complete, do not notify.)
     return _initializationWasSuccessful.get_value_or(false);
 }

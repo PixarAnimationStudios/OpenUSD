@@ -559,7 +559,7 @@ private:
     _CollectionStateMap _collectionState;
     bool _needsGarbageCollection;
 
-    // Provides reverse-assosiation between instancers and the rprims that use
+    // Provides reverse-association between instancers and the rprims that use
     // them.
     _InstancerRprimMap _instancerRprimMap;
 
@@ -572,7 +572,7 @@ private:
     // Used for coarse grain invalidation of all RprimCollections.
     unsigned _indexVersion;
 
-    // Used to detect that no changes have occured when building dirty lists.
+    // Used to detect that no changes have occurred when building dirty lists.
     unsigned _changeCount;
 
     // Used to detect that visibility changed somewhere in the render index.

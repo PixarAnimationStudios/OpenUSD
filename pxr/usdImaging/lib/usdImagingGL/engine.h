@@ -238,14 +238,14 @@ public:
     USDIMAGINGGL_API
     virtual void SetSelectionColor(GfVec4f const& color);
 
-    /// Finds closest point of interesection with a frustum by rendering.
+    /// Finds closest point of intersection with a frustum by rendering.
     ///	
     /// This method uses a PickRender and a customized depth buffer to find an
     /// approximate point of intersection by rendering. This is less accurate
     /// than implicit methods or rendering with GL_SELECT, but leverages any data
     /// already cached in the renderer.
     ///
-    /// Returns whether a hit occured and if so, \p outHitPoint will contain the
+    /// Returns whether a hit occurred and if so, \p outHitPoint will contain the
     /// intersection point in world space (i.e. \p projectionMatrix and
     /// \p viewMatrix factored back out of the result).
     ///
@@ -266,7 +266,7 @@ public:
     /// See the documentation for TestIntersectionBatch() below for more detail.
     typedef std::function< SdfPath(const SdfPath&, const SdfPath&, const int) > PathTranslatorCallback;
 
-    /// Finds closest point of interesection with a frustum by rendering a batch.
+    /// Finds closest point of intersection with a frustum by rendering a batch.
     ///
     /// This method uses a PickRender and a customized depth buffer to find an
     /// approximate point of intersection by rendering. This is less accurate

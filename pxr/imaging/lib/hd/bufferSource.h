@@ -103,7 +103,7 @@ public:
         return _state >= RESOLVED;
     }
 
-    /// Returns true if an error occured during resolve.
+    /// Returns true if an error occurred during resolve.
     bool HasResolveError() const {
         return _state == RESOLVE_ERROR;
     }

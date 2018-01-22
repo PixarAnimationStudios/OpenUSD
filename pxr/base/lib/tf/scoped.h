@@ -61,7 +61,7 @@ public:
     ~TfScoped() { _onExit(); }
 
 private:
-    // Can't put these on the heap.  No implemention needed.
+    // Can't put these on the heap.  No implementation needed.
     static void *operator new(::std::size_t size);
 
 private:
@@ -84,7 +84,7 @@ public:
     ~TfScoped() { (_obj->*_onExit)(); }
 
 private:
-    // Can't put these on the heap.  No implemention needed.
+    // Can't put these on the heap.  No implementation needed.
     static void *operator new(::std::size_t size);
 
 private:
@@ -108,7 +108,7 @@ public:
     ~TfScoped() { _onExit(_obj); }
 
 private:
-    // Can't put these on the heap.  No implemention needed.
+    // Can't put these on the heap.  No implementation needed.
     static void *operator new(::std::size_t size);
 
 private:
@@ -148,7 +148,7 @@ public:
     ~TfScopedVar() { *_x = _old; }
 
 private:
-    // Can't put these on the heap.  No implemention needed.
+    // Can't put these on the heap.  No implementation needed.
     static void *operator new(::std::size_t size);
 
 private:
@@ -200,7 +200,7 @@ private:
         *x = val;
     }
 
-    // Can't put these on the heap.  No implemention needed.
+    // Can't put these on the heap.  No implementation needed.
     static void *operator new(::std::size_t size);
 
 private:

@@ -103,7 +103,7 @@ public:
         return _rprimCollectionVersion;
     }
 
-    /// Returns the collection assosiated with this draw target.
+    /// Returns the collection associated with this draw target.
     const HdRprimCollection &GetRprimCollection() const
     {
         return _rprimCollection;

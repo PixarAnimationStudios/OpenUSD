@@ -168,7 +168,7 @@ public:
     // --------------------------------------------------------------------- //
     /// When publishing a nodegraph or a material, it can be useful to
     /// provide an optional display group, for organizational purposes and 
-    /// readability. This is because often the usd shading hiearchy is rather 
+    /// readability. This is because often the usd shading hierarchy is rather
     /// flat while we want to display it in organized groups.
     /// 
     ///

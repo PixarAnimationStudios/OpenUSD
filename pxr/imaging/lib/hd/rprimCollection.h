@@ -130,7 +130,7 @@ public:
 
     /// Sets all root paths for this collection, replacing any existing paths
     /// that were present previously. All paths must be absolute. Duplicate
-    /// paths are allowed, but may result in peformance degradation.
+    /// paths are allowed, but may result in performance degradation.
     HD_API
     void SetRootPaths(SdfPathVector const& rootPaths);
 
@@ -141,7 +141,7 @@ public:
     void SetRootPath(SdfPath const& rootPath);
 
     /// Sets all exclude paths for this collection. All paths must be absolute. 
-    /// Duplicate paths are allowed, but may result in peformance degradation.
+    /// Duplicate paths are allowed, but may result in performance degradation.
     HD_API
     void SetExcludePaths(SdfPathVector const& excludePaths);
 

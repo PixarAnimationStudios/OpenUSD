@@ -200,7 +200,7 @@ PxrUsdKatanaReadCamera(
 
     // XXX
     // Record isZUp until all code site/nodes that prerotate the camera
-    // node to accomodate potential z-Up cameras has been removed.
+    // node to accommodate potential z-Up cameras has been removed.
     geoBuilder.set("isZUp", FnKat::IntAttribute(0));
     
     attrs.set("geometry", geoBuilder.build());

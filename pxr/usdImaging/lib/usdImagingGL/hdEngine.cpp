@@ -180,7 +180,7 @@ UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& para
         return;
 
     // The delegate may have been populated from somewhere other than
-    // where we are drawing. This applys a compensating transformation that
+    // where we are drawing. This applies a compensating transformation that
     // cancels out any accumulated transformation from the population root.
     _delegate->SetRootCompensation(root.GetPath());
 }
@@ -664,7 +664,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
 void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
-    // User is responsible for initalizing GL contenxt and glew
+    // User is responsible for initializing GL context and glew
     if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
         return;

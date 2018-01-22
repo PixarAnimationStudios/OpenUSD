@@ -43,7 +43,7 @@ ARCH_CONSTRUCTOR(Arch_InitConfig, 2, void)
     // possible to the real start time.
     Arch_SetAppLaunchTime();
 
-    // Initialize the temp directory.  Early so other initialiation
+    // Initialize the temp directory.  Early so other initialization
     // functions can use it.
     Arch_InitTmpDir();
 
