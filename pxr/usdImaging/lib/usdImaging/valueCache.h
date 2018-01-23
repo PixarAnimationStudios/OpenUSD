@@ -38,8 +38,6 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
-
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_queue.h>
 
@@ -51,8 +49,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A heterogeneous value container without type erasure.
 ///
-class UsdImagingValueCache : boost::noncopyable {
+class UsdImagingValueCache {
 public:
+    UsdImagingValueCache(const UsdImagingValueCache&) = delete;
+    UsdImagingValueCache& operator=(const UsdImagingValueCache&) = delete;
+
     typedef PxOsdSubdivTags SubdivTags;
 
     struct PrimvarInfo {
