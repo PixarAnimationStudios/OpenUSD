@@ -301,16 +301,16 @@ UsdMayaReferenceAssembly::UsdMayaReferenceAssembly(
     //           if adding a new Representation
     //
     _representations[std::string(UsdMayaRepresentationCollapsed::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationCollapsed(this, UsdMayaRepresentationCollapsed::_assemblyType) );
+        std::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationCollapsed(this, UsdMayaRepresentationCollapsed::_assemblyType) );
 
     _representations[std::string(UsdMayaRepresentationPlayback::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationPlayback(this, UsdMayaRepresentationPlayback::_assemblyType) );
+        std::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationPlayback(this, UsdMayaRepresentationPlayback::_assemblyType) );
 
     _representations[std::string(UsdMayaRepresentationExpanded::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationExpanded(this, UsdMayaRepresentationExpanded::_assemblyType) );
+        std::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationExpanded(this, UsdMayaRepresentationExpanded::_assemblyType) );
 
     _representations[std::string(UsdMayaRepresentationFull::_assemblyType.asChar())] = 
-        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationFull(this, UsdMayaRepresentationFull::_assemblyType) );
+        std::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationFull(this, UsdMayaRepresentationFull::_assemblyType) );
 }
 
 
@@ -346,7 +346,7 @@ MString UsdMayaReferenceAssembly::getActive() const
 MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus* status) const
 {
     MStringArray repTypes;
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator it;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator it;
     for (it=_representations.begin(); it != _representations.end(); ++it) {
         repTypes.append(MString(it->first.c_str()));
     }
@@ -356,7 +356,7 @@ MStringArray UsdMayaReferenceAssembly::getRepresentations(MStatus* status) const
 MString UsdMayaReferenceAssembly::getRepType(const MString& rep) const
 {
     std::string tmpRep(rep.asChar());
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator repIt;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator repIt;
     repIt = _representations.find(tmpRep);
     if (repIt != _representations.end()) {
         return repIt->second->getType();
@@ -374,7 +374,7 @@ MString UsdMayaReferenceAssembly::getRepLabel(const MString& rep) const
 MStringArray UsdMayaReferenceAssembly::repTypes() const 
 {
     MStringArray repTypes;
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator it;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator it;
     for (it=_representations.begin(); it != _representations.end(); ++it) {
         repTypes.append(MString(it->first.c_str()));
     }
@@ -412,7 +412,7 @@ bool UsdMayaReferenceAssembly::activateRep(const MString& repMStr)
     }
     std::string rep(std::string(repMStr.asChar()));
 
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> >::const_iterator repIt;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> >::const_iterator repIt;
     repIt = _representations.find(rep);
     if (repIt == _representations.end()) {
         return false;

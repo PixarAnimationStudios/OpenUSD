@@ -1700,7 +1700,7 @@ SdfLayer::ApplyRootPrimOrder( vector<TfToken>* vec ) const
 SdfSubLayerProxy
 SdfLayer::GetSubLayerPaths() const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfSubLayerTypePolicy> > editor(
+    std::shared_ptr<Sdf_ListEditor<SdfSubLayerTypePolicy> > editor(
         new Sdf_SubLayerListEditor(SdfCreateNonConstHandle(this)));
     
     return SdfSubLayerProxy(editor, SdfListOpTypeOrdered);

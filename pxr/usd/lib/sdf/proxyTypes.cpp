@@ -32,8 +32,6 @@
 
 #include "pxr/base/tf/registryManager.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -59,19 +57,19 @@ template <>
 struct Sdf_ListEditorProxyTraits<SdfPathEditorProxy> {
     typedef SdfPathEditorProxy::TypePolicy TypePolicy;
 
-    static boost::shared_ptr<Sdf_ListEditor<TypePolicy> > GetListEditor(
+    static std::shared_ptr<Sdf_ListEditor<TypePolicy> > GetListEditor(
         const SdfSpecHandle& o, const TfToken& n)
     {
         if (n == SdfFieldKeys->TargetPaths) {
-            return boost::shared_ptr<Sdf_ListEditor<TypePolicy> >(
+            return std::shared_ptr<Sdf_ListEditor<TypePolicy> >(
                 new Sdf_RelationshipTargetListEditor(o, TypePolicy(o)));
         }
         else if (n == SdfFieldKeys->ConnectionPaths) {
-            return boost::shared_ptr<Sdf_ListEditor<TypePolicy> >(
+            return std::shared_ptr<Sdf_ListEditor<TypePolicy> >(
                 new Sdf_AttributeConnectionListEditor(o, TypePolicy(o)));
         }
 
-        return boost::shared_ptr<Sdf_ListEditor<TypePolicy> >(
+        return std::shared_ptr<Sdf_ListEditor<TypePolicy> >(
             new Sdf_ListOpListEditor<TypePolicy>(o, n, TypePolicy(o)));
     }
 };
@@ -80,10 +78,10 @@ template <>
 struct Sdf_ListEditorProxyTraits<SdfReferenceEditorProxy> {
     typedef SdfReferenceEditorProxy::TypePolicy TypePolicy;
 
-    static boost::shared_ptr<Sdf_ListEditor<TypePolicy> > GetListEditor(
+    static std::shared_ptr<Sdf_ListEditor<TypePolicy> > GetListEditor(
         const SdfSpecHandle& o, const TfToken& n)
     {
-        return boost::shared_ptr<Sdf_ListEditor<TypePolicy> >(
+        return std::shared_ptr<Sdf_ListEditor<TypePolicy> >(
             new Sdf_ListOpListEditor<SdfReferenceTypePolicy>(o, n));
     }
 };

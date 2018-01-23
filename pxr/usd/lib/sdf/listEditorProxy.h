@@ -34,7 +34,6 @@
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 
 #include <boost/mpl/logical.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
 
@@ -78,7 +77,7 @@ public:
 
     /// Creates a new proxy object backed by the supplied list editor.
     explicit SdfListEditorProxy(
-        const boost::shared_ptr<Sdf_ListEditor<TypePolicy> >& listEditor)
+        const std::shared_ptr<Sdf_ListEditor<TypePolicy> >& listEditor)
         : _listEditor(listEditor)
     {
     }
@@ -381,7 +380,7 @@ public:
     }
 
 #if !defined(doxygen)
-    typedef boost::shared_ptr<Sdf_ListEditor<TypePolicy> >
+    typedef std::shared_ptr<Sdf_ListEditor<TypePolicy> >
         This::*UnspecifiedBoolType;
 #endif
 
@@ -473,7 +472,7 @@ private:
     }
 
 private:
-    boost::shared_ptr<Sdf_ListEditor<TypePolicy> > _listEditor;
+    std::shared_ptr<Sdf_ListEditor<TypePolicy> > _listEditor;
 
     friend class Sdf_ListEditorProxyAccess;
     template <class T> friend class SdfPyWrapListEditorProxy;

@@ -86,7 +86,6 @@
 #include <boost/any.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/container/vector.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
@@ -94,7 +93,6 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/iterator_adaptors.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/bool.hpp>
@@ -144,7 +142,6 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/type_traits/decay.hpp>
@@ -162,7 +159,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/value_init.hpp>
-#include <boost/weak_ptr.hpp>
 #include <opensubdiv/far/patchTable.h>
 #include <opensubdiv/far/patchTableFactory.h>
 #include <opensubdiv/far/stencilTable.h>

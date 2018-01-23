@@ -181,10 +181,10 @@ private:
 //
 
 template <class T>
-boost::shared_ptr<Sdf_MapEditor<T> > 
+std::shared_ptr<Sdf_MapEditor<T> > 
 Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field)
 {
-    return boost::shared_ptr<Sdf_MapEditor<T> >(
+    return std::shared_ptr<Sdf_MapEditor<T> >(
         new Sdf_LsdMapEditor<T>(owner, field));
 }
 
@@ -195,7 +195,7 @@ Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field)
 #define SDF_INSTANTIATE_MAP_EDITOR(MapType)                          \
     template class Sdf_MapEditor<MapType>;                           \
     template class Sdf_LsdMapEditor<MapType>;                        \
-    template boost::shared_ptr<Sdf_MapEditor<MapType> >              \
+    template std::shared_ptr<Sdf_MapEditor<MapType> >              \
         Sdf_CreateMapEditor(const SdfSpecHandle&, const TfToken&);   \
 
 #include "pxr/base/vt/dictionary.h"

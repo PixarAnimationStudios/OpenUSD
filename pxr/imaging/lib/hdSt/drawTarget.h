@@ -36,8 +36,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -60,7 +58,7 @@ class HdStCamera;
 class HdStDrawTargetAttachmentDescArray;
 
 
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
+typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 typedef std::vector<class HdStDrawTarget const *> HdStDrawTargetPtrConstVector;
 

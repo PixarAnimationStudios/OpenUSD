@@ -143,7 +143,6 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/range/iterator.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/type_traits/decay.hpp>
@@ -161,7 +160,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/value_init.hpp>
-#include <boost/weak_ptr.hpp>
 #include <tbb/atomic.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>

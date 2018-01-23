@@ -164,17 +164,17 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         typedef HdBufferArrayRangeSharedPtr HdBarPtr;
         if (HdBarPtr const& bar = drawItem->GetConstantPrimVarRange()){
             HdStBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+                std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
             hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
         }
         if (HdBarPtr const& bar = drawItem->GetVertexPrimVarRange()) {
             HdStBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+                std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
             hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
         }
         if (HdBarPtr const& bar = drawItem->GetElementPrimVarRange()){
             HdStBufferArrayRangeGLSharedPtr bar_ =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+                std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
             hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
         }
@@ -182,7 +182,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         for (int i = 0; i < instanceNumLevels; ++i) {
             if (HdBarPtr const& bar = drawItem->GetInstancePrimVarRange(i)) {
                 HdStBufferArrayRangeGLSharedPtr bar_ =
-                    boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
+                    std::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
                 hasAuthoredNormals |= bool(bar_->GetResource(HdTokens->normals));
             }
@@ -194,7 +194,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         (_SupportsSmoothCurves(desc,
                                                                _refineLevel)));
     HdStResourceRegistrySharedPtr resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex.GetResourceRegistry());
 
     HdSt_GeometricShaderSharedPtr geomShader =
@@ -231,7 +231,7 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
         _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprName);
 
         // add new repr
-        _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprName, std::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         *dirtyBits |= HdChangeTracker::NewRepr;
@@ -383,7 +383,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     if (*dirtyBits & HdChangeTracker::DirtyRefineLevel) {
@@ -420,14 +420,14 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             // XXX: Registry is currently in core Hd, so doesn't have access
             // to the St version of the topology,
             HdBasisCurvesTopologySharedPtr baseTopology =
-                    boost::static_pointer_cast<HdBasisCurvesTopology>(topology);
+                    std::static_pointer_cast<HdBasisCurvesTopology>(topology);
 
             topologyInstance.SetValue(baseTopology);
         }
 
         // XXX: Registry is currently in core Hd, so doesn't have access
         // to the St version of the topology,
-        _topology = boost::static_pointer_cast<HdSt_BasisCurvesTopology>(
+        _topology = std::static_pointer_cast<HdSt_BasisCurvesTopology>(
                                                    topologyInstance.GetValue());
         TF_VERIFY(_topology);
 
@@ -495,7 +495,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
@@ -615,7 +615,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     TfTokenVector primVarNames = GetPrimVarUniformNames(sceneDelegate);

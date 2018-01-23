@@ -35,13 +35,11 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
+typedef std::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
 
 /// \class HdStBasisCurves

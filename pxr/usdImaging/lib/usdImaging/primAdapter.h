@@ -39,9 +39,6 @@
 
 #include "pxr/base/tf/type.h"
 
-#include <boost/enable_shared_from_this.hpp> 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
@@ -51,7 +48,7 @@ class UsdImagingDelegate;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 
-typedef boost::shared_ptr<class UsdImagingPrimAdapter> 
+typedef std::shared_ptr<class UsdImagingPrimAdapter> 
                                                 UsdImagingPrimAdapterSharedPtr;
 
 /// \class UsdImagingPrimAdapter
@@ -59,7 +56,7 @@ typedef boost::shared_ptr<class UsdImagingPrimAdapter>
 /// Base class for all PrimAdapters.
 ///
 class UsdImagingPrimAdapter 
-            : public boost::enable_shared_from_this<UsdImagingPrimAdapter> {
+            : public std::enable_shared_from_this<UsdImagingPrimAdapter> {
 public:
     
     // ---------------------------------------------------------------------- //

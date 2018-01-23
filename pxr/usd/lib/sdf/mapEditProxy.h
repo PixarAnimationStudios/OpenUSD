@@ -635,7 +635,7 @@ public:
     }
 
 #if !defined(doxygen)
-    typedef boost::shared_ptr<Sdf_MapEditor<Type> > This::*UnspecifiedBoolType;
+    typedef std::shared_ptr<Sdf_MapEditor<Type> > This::*UnspecifiedBoolType;
 #endif
 
     /// Returns \c true in a boolean context if the value is valid,
@@ -926,7 +926,7 @@ private:
 private:
     template <class ProxyT> friend class SdfPyWrapMapEditProxy;
 
-    boost::shared_ptr<Sdf_MapEditor<T> > _editor;
+    std::shared_ptr<Sdf_MapEditor<T> > _editor;
 };
 
 // Cannot get from a VtValue except as the correct type.

@@ -36,12 +36,11 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include <string>
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
+typedef std::shared_ptr<HdRenderPass> HdRenderPassSharedPtr;
 
 /// \class UsdImaging_TestDriver
 ///

@@ -41,14 +41,13 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
 
 #include <tbb/enumerable_thread_specific.h>
 
+#include <memory>
 #include <vector>
 #include <unordered_map>
-#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,9 +64,9 @@ class VtValue;
 class HdInstancer;
 
 
-typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::shared_ptr<class HdTask> HdTaskSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
+typedef std::shared_ptr<class HdTask> HdTaskSharedPtr;
+typedef std::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef std::vector<HdTaskSharedPtr> HdTaskSharedPtrVector;
 typedef std::unordered_map<TfToken,
                            VtValue,
@@ -467,7 +466,7 @@ HdRenderIndex::InsertTask(HdSceneDelegate* delegate, SdfPath const& id)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdTaskSharedPtr task = boost::make_shared<T>(delegate, id);
+    HdTaskSharedPtr task = std::make_shared<T>(delegate, id);
     _TrackDelegateTask(delegate, id, task);
 }
 

@@ -33,10 +33,9 @@
 #include "pxr/base/vt/value.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,10 +43,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdBufferArrayRange;
 
-typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
-typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::weak_ptr<HdBufferArrayRange> HdBufferArrayRangePtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
+typedef std::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::weak_ptr<HdBufferArrayRange> HdBufferArrayRangePtr;
+typedef std::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 
 /// \class HdBufferArray
 ///
@@ -55,7 +54,7 @@ typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 /// can be shared across multiple HdRprims, in the context of buffer
 /// aggregation.
 ///
-class HdBufferArray : public boost::enable_shared_from_this<HdBufferArray>,
+class HdBufferArray : public std::enable_shared_from_this<HdBufferArray>,
     boost::noncopyable {
 public:
     HD_API

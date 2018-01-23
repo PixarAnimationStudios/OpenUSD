@@ -103,7 +103,7 @@ private:
 ///
 /// A custom lighting shader for unit tests.
 ///
-typedef boost::shared_ptr<class HdSt_TestLightingShader> HdSt_TestLightingShaderSharedPtr;
+typedef std::shared_ptr<class HdSt_TestLightingShader> HdSt_TestLightingShaderSharedPtr;
 
 class HdSt_TestLightingShader : public HdStLightingShader {
 public:

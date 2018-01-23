@@ -52,15 +52,13 @@
 #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #include "pxr/usdImaging/usdImagingGL/refEngine.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
+typedef std::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
 
 class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {
 public:

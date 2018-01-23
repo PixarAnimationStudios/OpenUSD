@@ -147,7 +147,7 @@ void
 UsdImaging_TestDriver::Draw()
 {
     HdTaskSharedPtrVector tasks = {
-        boost::make_shared<UsdImaging_DrawTask>(_geometryPass, _renderPassState)
+        std::make_shared<UsdImaging_DrawTask>(_geometryPass, _renderPassState)
     };
     _engine.Execute(_delegate->GetRenderIndex(), tasks);
 }

@@ -185,7 +185,6 @@
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/decay.hpp>
 #include <boost/type_traits/has_left_shift.hpp>
@@ -206,7 +205,6 @@
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/utility/value_init.hpp>
-#include <boost/weak_ptr.hpp>
 #include <tbb/atomic.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_rw_mutex.h>

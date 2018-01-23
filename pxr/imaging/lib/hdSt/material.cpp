@@ -184,7 +184,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                     }
 
                     texResource =
-                        boost::dynamic_pointer_cast<HdStTextureResource>
+                        std::dynamic_pointer_cast<HdStTextureResource>
                         (texInstance.GetValue());
                     if (!TF_VERIFY(texResource,
                             "Incorrect texture resource with path %s",
@@ -285,7 +285,7 @@ HdStMaterial::Reload()
 HdStShaderCodeSharedPtr
 HdStMaterial::GetShaderCode() const
 {
-    return boost::static_pointer_cast<HdStShaderCode>(_surfaceShader);
+    return std::static_pointer_cast<HdStShaderCode>(_surfaceShader);
 }
 
 void

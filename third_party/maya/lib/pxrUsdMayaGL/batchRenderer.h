@@ -69,8 +69,7 @@ TF_DEBUG_CODES(
     PXRUSDMAYAGL_QUEUE_INFO
 );
 
-
-typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
+typedef std::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 
 
 /// \brief This is an helper object that shapes can hold to get consistent usd

@@ -31,8 +31,6 @@
 #include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -41,8 +39,8 @@ class SdfPath;
 typedef std::vector<SdfPath> SdfPathVector;
 typedef std::vector<UsdPrim> UsdPrimVector;
 
-typedef boost::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
-typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
+typedef std::shared_ptr<class UsdImagingGLEngine> UsdImagingGLEngineSharedPtr;
+typedef std::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
 typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 
 /// \class UsdImagingGL

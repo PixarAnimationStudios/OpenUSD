@@ -40,9 +40,9 @@ class HdSceneDelegate;
 class HdExtComputation;
 class HdStExtCompGpuComputation;
 class HdStGLSLProgram;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+typedef std::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 
-typedef boost::shared_ptr<HdStExtCompGpuComputation>
+typedef std::shared_ptr<HdStExtCompGpuComputation>
                                 HdStExtCompGpuComputationSharedPtr;
 
 /// \class HdStExtCompGpuComputation

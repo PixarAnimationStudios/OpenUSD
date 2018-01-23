@@ -37,8 +37,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,9 +44,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
+typedef std::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class HdStSurfaceShader
 ///

@@ -32,12 +32,10 @@
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdStDispatchBuffer> HdStDispatchBufferSharedPtr;
+typedef std::shared_ptr<class HdStDispatchBuffer> HdStDispatchBufferSharedPtr;
 
 /// \class HdStDispatchBuffer
 ///

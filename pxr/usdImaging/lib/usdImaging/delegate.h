@@ -69,7 +69,7 @@ class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 
 typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
-typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+typedef std::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 
 /// \class UsdImagingDelegate
 ///
@@ -527,7 +527,7 @@ private:
     // ---------------------------------------------------------------------- //
 
     // Usd Prim Type to Adapter lookup table.
-    typedef boost::shared_ptr<UsdImagingPrimAdapter> _AdapterSharedPtr;
+    typedef std::shared_ptr<UsdImagingPrimAdapter> _AdapterSharedPtr;
     typedef TfHashMap<TfToken, 
                          _AdapterSharedPtr, TfToken::HashFunctor> _AdapterMap;
     _AdapterMap _adapterMap;

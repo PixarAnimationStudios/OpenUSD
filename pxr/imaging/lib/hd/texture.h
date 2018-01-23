@@ -36,14 +36,14 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
+typedef std::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 
 ///
 /// Represents a Texture Buffer Prim.

@@ -317,7 +317,7 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
     // filling coarse vertices has been done at resource registry.
 
     HdStBufferArrayRangeGLSharedPtr range_ =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
+        std::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // vertex buffer wrapper for OpenSubdiv API
     HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(

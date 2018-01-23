@@ -32,7 +32,8 @@
 #include "pxr/imaging/hd/bufferResource.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,8 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdBufferArray;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
 /// \class HdBufferArrayRange
 ///

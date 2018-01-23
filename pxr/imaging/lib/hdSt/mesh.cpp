@@ -154,7 +154,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // note: there's a potential optimization if _topology is already registered
@@ -215,7 +215,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             if (topologyInstance.IsFirstInstance()) {
                 // if this is the first instance, set this topology to registry.
                 topologyInstance.SetValue(
-                        boost::static_pointer_cast<HdMeshTopology>(topology));
+                        std::static_pointer_cast<HdMeshTopology>(topology));
 
                 // if refined, we submit a subdivision preprocessing
                 // no matter what desc says
@@ -239,7 +239,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     resourceRegistry->AddSource(quadInfoBuilder);
                 }
             }
-            _topology = boost::static_pointer_cast<HdSt_MeshTopology>(
+            _topology = std::static_pointer_cast<HdSt_MeshTopology>(
                                                    topologyInstance.GetValue());
         }
         TF_VERIFY(_topology);
@@ -493,7 +493,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     HdStResourceRegistrySharedPtr const &resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         renderIndex.GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
@@ -709,7 +709,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                     drawItem->GetVertexPrimVarRange()) {
                     if (bar->IsValid()) {
                         HdStBufferArrayRangeGLSharedPtr bar_ =
-                            boost::static_pointer_cast<HdStBufferArrayRangeGL>
+                            std::static_pointer_cast<HdStBufferArrayRangeGL>
                                                                           (bar);
                         HdStBufferResourceGLSharedPtr pointsResource =
                                             bar_->GetResource(HdTokens->points);
@@ -910,7 +910,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
     if (primVarNames.empty()) return;
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdBufferSourceVector sources;
@@ -995,7 +995,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
     SdfPath const& id = GetId();
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
 
@@ -1139,7 +1139,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     SdfPath const& id = GetId();
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     /* VISIBILITY */
@@ -1307,7 +1307,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  geomStyle);
 
     HdStResourceRegistrySharedPtr resourceRegistry =
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex.GetResourceRegistry());
 
     HdSt_GeometricShaderSharedPtr geomShader =
@@ -1377,7 +1377,7 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
-        _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprName, std::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         // set dirty bit to say we need to sync a new repr (buffer array

@@ -370,8 +370,8 @@ HdRenderIndex::_RemoveTaskSubtree(const SdfPath &root,
         ++nextIt;
 
         // Yuck!!!
-        const boost::shared_ptr<HdSceneTask> sceneTask =
-                                 boost::dynamic_pointer_cast<HdSceneTask>(task);
+        const std::shared_ptr<HdSceneTask> sceneTask =
+                                 std::dynamic_pointer_cast<HdSceneTask>(task);
 
         if (sceneTask) {
             if ((sceneTask->GetDelegate() == sceneDelegate) &&

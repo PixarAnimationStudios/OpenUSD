@@ -31,16 +31,16 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef std::shared_ptr<class HdDirtyList> HdDirtyListSharedPtr;
+typedef std::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef std::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 
 /// \class HdRenderPass
 ///

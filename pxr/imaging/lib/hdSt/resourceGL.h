@@ -31,14 +31,12 @@
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdStResourceGL> HdStResourceGLSharedPtr;
+typedef std::shared_ptr<class HdStResourceGL> HdStResourceGLSharedPtr;
 
 /// \class HdStResourceGL
 ///

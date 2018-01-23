@@ -45,8 +45,6 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 #include <map>
 #include <memory>
 #include <atomic>
@@ -55,14 +53,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
-typedef boost::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
-typedef boost::shared_ptr<class HdBasisCurvesTopology> 
+typedef std::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
+typedef std::shared_ptr<class HdMeshTopology> HdMeshTopologySharedPtr;
+typedef std::shared_ptr<class HdBasisCurvesTopology>
                                                  HdBasisCurvesTopologySharedPtr;
-typedef boost::weak_ptr<class HdBufferArrayRange> HdBufferArrayRangePtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::weak_ptr<class HdBufferArrayRange> HdBufferArrayRangePtr;
+typedef std::shared_ptr<class HdComputation> HdComputationSharedPtr;
+typedef std::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
+typedef std::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 /// \class HdResourceRegistry
 ///

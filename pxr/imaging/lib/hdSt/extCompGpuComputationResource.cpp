@@ -184,7 +184,7 @@ HdStExtCompGpuComputationResource::AllocateInternalRange(
             bufferSpecs.emplace_back(source->GetName(), tupleType);
         }
 
-        _internalRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
+        _internalRange = std::static_pointer_cast<HdStBufferArrayRangeGL>(
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
                 HdTokens->primVar, bufferSpecs));
     }

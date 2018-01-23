@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdExtCompCpuComputation;
 
-typedef boost::shared_ptr<HdExtCompCpuComputation>
+typedef std::shared_ptr<HdExtCompCpuComputation>
                                                HdExtCompCpuComputationSharedPtr;
 
 /// Hd Buffer Source that binds a PrimVar to a Ext Computation output.

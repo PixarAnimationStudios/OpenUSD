@@ -205,7 +205,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
 
             // Creates a pass with the right geometry that will be
             // use during Execute phase to draw the maps
-            HdRenderPassSharedPtr p = boost::make_shared<HdSt_RenderPass>
+            HdRenderPassSharedPtr p = std::make_shared<HdSt_RenderPass>
                 (&delegate->GetRenderIndex(), col);
 
             HdStRenderPassShaderSharedPtr renderPassShadowShader

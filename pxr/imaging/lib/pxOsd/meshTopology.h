@@ -35,13 +35,10 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class PxOsdMeshTopology> PxOsdMeshTopologySharedPtr;
+typedef std::shared_ptr<class PxOsdMeshTopology> PxOsdMeshTopologySharedPtr;
 
 /// \class PxOsdMeshTopology
 ///

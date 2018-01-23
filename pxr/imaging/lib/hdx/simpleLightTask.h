@@ -39,17 +39,15 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdRenderIndex;
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixComputationSharedPtr;
+typedef std::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef std::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShaderSharedPtr;
+typedef std::shared_ptr<class HdxShadowMatrixComputation> HdxShadowMatrixComputationSharedPtr;
 
 TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 

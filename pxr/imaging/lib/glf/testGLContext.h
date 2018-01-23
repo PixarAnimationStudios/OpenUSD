@@ -30,13 +30,11 @@
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/glContext.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Glf_TestGLContextPrivate;
 
-typedef boost::shared_ptr<class GlfTestGLContext> GlfTestGLContextSharedPtr;
+typedef std::shared_ptr<class GlfTestGLContext> GlfTestGLContextSharedPtr;
 
 /// \class GlfTestGLContext
 ///

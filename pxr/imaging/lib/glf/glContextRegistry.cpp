@@ -29,13 +29,12 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include <boost/unordered_map.hpp>
-#include <boost/weak_ptr.hpp>
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::weak_ptr<class GlfGLContext> GlfGLContextWeakPtr;
+typedef std::weak_ptr<class GlfGLContext> GlfGLContextWeakPtr;
 
 static GlfGLContextSharedPtr _nullContext;
 

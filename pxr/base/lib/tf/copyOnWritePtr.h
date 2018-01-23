@@ -81,7 +81,6 @@
 
 #include <boost/mpl/if.hpp>
 #include <boost/operators.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -89,7 +88,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // General case -- use shared_ptr.
 template <typename Pointee>
 struct Tf_CowSharedPtrHelper {
-    typedef boost::shared_ptr<Pointee> PtrType;
+    typedef std::shared_ptr<Pointee> PtrType;
     static PtrType New(Pointee const *p = 0) {
         return p ? PtrType(new Pointee(*p)) : PtrType(new Pointee());
     }

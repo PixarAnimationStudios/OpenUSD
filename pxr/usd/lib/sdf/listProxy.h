@@ -211,7 +211,7 @@ public:
 
     /// Create a new proxy wrapping the list operation vector specified by
     /// \p op in the underlying \p listEditor.
-    SdfListProxy(const boost::shared_ptr<Sdf_ListEditor<TypePolicy> >& editor,
+    SdfListProxy(const std::shared_ptr<Sdf_ListEditor<TypePolicy> >& editor,
                 SdfListOpType op) :
         _listEditor(editor),
         _op(op)
@@ -425,7 +425,7 @@ public:
     }
 
 #if !defined(doxygen)
-    typedef boost::shared_ptr<Sdf_ListEditor<TypePolicy> >
+    typedef std::shared_ptr<Sdf_ListEditor<TypePolicy> >
         This::*UnspecifiedBoolType;
 #endif
 
@@ -604,7 +604,7 @@ private:
     }
 
 private:
-    boost::shared_ptr<Sdf_ListEditor<TypePolicy> > _listEditor;
+    std::shared_ptr<Sdf_ListEditor<TypePolicy> > _listEditor;
     SdfListOpType _op;
 
     template <class> friend class SdfPyWrapListProxy;

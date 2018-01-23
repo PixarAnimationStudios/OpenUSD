@@ -39,22 +39,21 @@
 #include <iostream>
 #include <string>
 #include <boost/assign/list_of.hpp>
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static boost::shared_ptr<PcpCache>
+static std::shared_ptr<PcpCache>
 _CreateCacheForRootLayer(const std::string& rootLayerPath)
 {
     SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(rootLayerPath);
 
     if (!rootLayer) {
-        return boost::shared_ptr<PcpCache>();
+        return std::shared_ptr<PcpCache>();
     }
 
     const PcpLayerStackIdentifier layerStackID(
         rootLayer, SdfLayerRefPtr(), ArResolverContext());
-    return boost::shared_ptr<PcpCache>(new PcpCache(layerStackID));
+    return std::shared_ptr<PcpCache>(new PcpCache(layerStackID));
 }
 
 static void
@@ -109,7 +108,7 @@ TestReverseTranslation_1()
     std::cout << "========== TestReverseTranslation_1..."  << std::endl;
 
     const std::string rootLayer = "TestReverseTranslation_1/1.sdf";
-    boost::shared_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
+    std::shared_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
     if (!pcpCache) {
         TF_FATAL_ERROR("Unable to open @%s@", rootLayer.c_str());
     }
@@ -216,7 +215,7 @@ TestReverseTranslation_2()
               << std::endl;
 
     const std::string rootLayer = "TestReverseTranslation_1/1.sdf";
-    boost::shared_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
+    std::shared_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
     if (!pcpCache) {
         TF_FATAL_ERROR("Unable to open @%s@", rootLayer.c_str());
     }
@@ -274,7 +273,7 @@ TestReverseTranslation_3()
     std::cout << "========== TestReverseTranslation_3..." << std::endl;
 
     const std::string rootLayer = "TestReverseTranslation_3/root.sdf";
-    boost::shared_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
+    std::shared_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
     if (!pcpCache) {
         TF_FATAL_ERROR("Unable to open @%s@", rootLayer.c_str());
     }

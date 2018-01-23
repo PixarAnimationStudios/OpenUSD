@@ -50,7 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdBufferArrayRangeSharedPtr
 HdStInterleavedMemoryManager::CreateBufferArrayRange()
 {
-    return (boost::make_shared<_StripedInterleavedBufferRange>());
+    return (std::make_shared<_StripedInterleavedBufferRange>());
 }
 
 /// Returns the buffer specs from a given buffer array
@@ -59,7 +59,7 @@ HdStInterleavedMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
     _StripedInterleavedBufferSharedPtr bufferArray_ =
-        boost::static_pointer_cast<_StripedInterleavedBuffer> (bufferArray);
+        std::static_pointer_cast<_StripedInterleavedBuffer> (bufferArray);
     return bufferArray_->GetBufferSpecs();
 }
 
@@ -73,7 +73,7 @@ HdStInterleavedMemoryManager::GetResourceAllocation(
     size_t gpuMemoryUsed = 0;
 
     _StripedInterleavedBufferSharedPtr bufferArray_ =
-        boost::static_pointer_cast<_StripedInterleavedBuffer> (bufferArray);
+        std::static_pointer_cast<_StripedInterleavedBuffer> (bufferArray);
 
     TF_FOR_ALL(resIt, bufferArray_->GetResources()) {
         HdStBufferResourceGLSharedPtr const & resource = resIt->second;
@@ -110,7 +110,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
 {
     HdStRenderContextCaps &caps = HdStRenderContextCaps::GetInstance();
 
-    return boost::make_shared<
+    return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
             role, bufferSpecs,
             caps.uniformBufferOffsetAlignment,
@@ -148,7 +148,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
 {
     HdStRenderContextCaps &caps = HdStRenderContextCaps::GetInstance();
 
-    return boost::make_shared<
+    return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
             role, bufferSpecs,
             /*bufferOffsetAlignment=*/0,
@@ -418,7 +418,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     GLuint oldId = GetResources().begin()->second->GetId();
 
     _StripedInterleavedBufferSharedPtr curRangeOwner_ =
-        boost::static_pointer_cast<_StripedInterleavedBuffer> (curRangeOwner);
+        std::static_pointer_cast<_StripedInterleavedBuffer> (curRangeOwner);
 
     GLuint curId = curRangeOwner_->GetResources().begin()->second->GetId();
 

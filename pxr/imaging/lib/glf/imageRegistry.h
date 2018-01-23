@@ -30,14 +30,13 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
+typedef std::shared_ptr<class GlfImage> GlfImageSharedPtr;
 
 class GlfRankedTypeMap;
 

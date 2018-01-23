@@ -219,7 +219,7 @@ GlfTestGLContext::_IsSharing(GlfGLContextSharedPtr const & otherContext)const
 {
 #ifdef MENV30
     GlfTestGLContextSharedPtr otherGlfTestGLContext =
-        boost::dynamic_pointer_cast<GlfTestGLContext>(otherContext);
+        std::dynamic_pointer_cast<GlfTestGLContext>(otherContext);
     return (otherGlfTestGLContext &&
             Glf_TestGLContextPrivate::areSharing(_context, otherGlfTestGLContext->_context));
 #else

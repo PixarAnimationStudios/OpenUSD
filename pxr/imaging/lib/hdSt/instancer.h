@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdDrawItem;
 struct HdRprimSharedData;
 
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 
 /// \class HdStInstancer
 ///

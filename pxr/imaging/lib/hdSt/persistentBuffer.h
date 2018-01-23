@@ -28,12 +28,10 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/resourceGL.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdStPersistentBuffer> HdStPersistentBufferSharedPtr;
+typedef std::shared_ptr<class HdStPersistentBuffer> HdStPersistentBufferSharedPtr;
 
 /// \class HdStPersistentBuffer
 ///

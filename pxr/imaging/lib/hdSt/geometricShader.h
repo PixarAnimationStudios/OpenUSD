@@ -38,7 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
+typedef std::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
 
 /// \class HdSt_GeometricShader
 ///

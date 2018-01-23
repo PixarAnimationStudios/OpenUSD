@@ -31,16 +31,14 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
 #include "pxr/imaging/hdSt/renderPassState.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdSceneDelegate;
 
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
+typedef std::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef std::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef std::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
 typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 /// \class HdxRenderTask

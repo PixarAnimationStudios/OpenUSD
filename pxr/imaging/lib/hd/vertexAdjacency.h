@@ -36,15 +36,14 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
-typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationSharedPtr;
-typedef boost::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationPtr;
+typedef std::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
+typedef std::shared_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationSharedPtr;
+typedef std::weak_ptr<class Hd_AdjacencyBuilderComputation> Hd_AdjacencyBuilderComputationPtr;
 
 class HdMeshTopology;
 
@@ -206,7 +205,7 @@ private:
 ///
 class Hd_AdjacencyBuilderForGPUComputation : public HdComputedBufferSource {
 public:
-    typedef boost::shared_ptr<class Hd_AdjacencyBuilderComputation>
+    typedef std::shared_ptr<class Hd_AdjacencyBuilderComputation>
         Hd_AdjacencyBuilderComputationSharedPtr;
 
     HD_API

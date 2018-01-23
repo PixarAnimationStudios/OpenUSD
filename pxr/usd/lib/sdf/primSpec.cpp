@@ -291,10 +291,10 @@ SdfPrimSpec::RemoveNameChild(const SdfPrimSpecHandle& child)
             GetLayer(), GetPath(), child->GetNameToken());
 }
 
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
+std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
 SdfPrimSpec::_GetNameChildrenOrderEditor() const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor( 
+    std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor( 
             new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>( 
                 SdfCreateHandle(this),
                 SdfFieldKeys->PrimOrder, SdfListOpTypeOrdered));
@@ -412,10 +412,10 @@ SdfPrimSpec::GetRelationships() const
         GetLayer(), GetPath(), SdfChildrenKeys->PropertyChildren);
 }
 
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
+std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
 SdfPrimSpec::_GetPropertyOrderEditor() const
 {
-    return boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >( 
+    return std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >( 
             new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>( 
                 SdfCreateHandle(this),
                 SdfFieldKeys->PropertyOrder, SdfListOpTypeOrdered));
@@ -678,7 +678,7 @@ SdfPrimSpec::ClearReferenceList()
 SdfVariantSetNamesProxy
 SdfPrimSpec::GetVariantSetNameList() const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfNameKeyPolicy> > editor( 
+    std::shared_ptr<Sdf_ListEditor<SdfNameKeyPolicy> > editor( 
             new Sdf_ListOpListEditor<SdfNameKeyPolicy>( 
                 SdfCreateHandle(this), SdfFieldKeys->VariantSetNames));
     return SdfVariantSetNamesProxy(editor);

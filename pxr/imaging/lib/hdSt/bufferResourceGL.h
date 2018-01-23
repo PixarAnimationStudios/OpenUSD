@@ -33,7 +33,6 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -43,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStBufferResourceGL;
 
-typedef boost::shared_ptr<HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
+typedef std::shared_ptr<HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
 
 typedef std::vector<
     std::pair<TfToken, HdStBufferResourceGLSharedPtr> > HdStBufferResourceGLNamedList;

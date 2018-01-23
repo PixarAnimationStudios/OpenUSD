@@ -35,8 +35,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -44,12 +42,12 @@ class HdStDrawItem;
 class HdSceneDelegate;
 class HdStMaterial;
 
-typedef boost::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
-typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<class HdStResourceRegistry>
+typedef std::shared_ptr<class Hd_VertexAdjacency> Hd_VertexAdjacencySharedPtr;
+typedef std::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
+typedef std::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
 /// A subdivision surface or poly-mesh object.
 ///

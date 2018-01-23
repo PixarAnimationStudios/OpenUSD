@@ -457,10 +457,10 @@ SdfRelationshipSpec::GetTargetPathForAttribute(
 // Relational Attribute Ordering
 //
 
-boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
+std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
 SdfRelationshipSpec::_GetTargetAttributeOrderEditor(const SdfPath& path) const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor;
+    std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor;
     SdfSpecHandle relTargetSpec = _GetTargetSpec(path);
     if (relTargetSpec) {
         editor.reset(new Sdf_VectorListEditor<SdfNameTokenKeyPolicy>(
@@ -563,7 +563,7 @@ SdfRelationshipSpec::ApplyAttributeOrderForTargetPath(
     const SdfPath& path,
     std::vector<TfToken>* vec) const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor = 
+    std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> > editor = 
         _GetTargetAttributeOrderEditor(path);
     if (editor) {
         editor->ApplyEdits(vec);

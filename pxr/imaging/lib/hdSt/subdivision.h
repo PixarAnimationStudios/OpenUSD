@@ -204,7 +204,7 @@ public:
     public:
         VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
             _resource =
-                boost::static_pointer_cast<HdStBufferResourceGL> (resource);
+                std::static_pointer_cast<HdStBufferResourceGL> (resource);
         }
 
         // bit confusing, osd expects 'GetNumElements()' returns the num components,

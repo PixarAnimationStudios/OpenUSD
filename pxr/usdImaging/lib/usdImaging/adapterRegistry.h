@@ -30,7 +30,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class TfType;
 class UsdImagingPrimAdapter;
-typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
+typedef std::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \

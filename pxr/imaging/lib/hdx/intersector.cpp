@@ -63,13 +63,13 @@ HdxIntersector::_Init(GfVec2i const& size)
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
     // initialize renderPassState with ID render shader
-    _pickableRenderPassState = boost::make_shared<HdStRenderPassState>(
-        boost::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
+    _pickableRenderPassState = std::make_shared<HdStRenderPassState>(
+        std::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
 
     // Turn off color writes for the unpickables (we only want to condition the
     // depth buffer)
-    _unpickableRenderPassState = boost::make_shared<HdStRenderPassState>(
-        boost::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
+    _unpickableRenderPassState = std::make_shared<HdStRenderPassState>(
+        std::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
     _unpickableRenderPassState->SetColorMaskUseDefault(false);
     _unpickableRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
 
@@ -334,7 +334,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
                 pickablesCol.CreateInverseCollection();
             _unpickableRenderPass->SetRprimCollection(unpickablesCol);
 
-            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+            tasks.push_back(std::make_shared<HdxIntersector_DrawTask>(
                     _unpickableRenderPass,
                     _unpickableRenderPassState,
                     params.renderTags));
@@ -345,7 +345,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         //
         // XXX: make intersector a Task
         _pickableRenderPass->SetRprimCollection(pickablesCol);
-        tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+        tasks.push_back(std::make_shared<HdxIntersector_DrawTask>(
                 _pickableRenderPass,
                 _pickableRenderPassState,
                 params.renderTags));

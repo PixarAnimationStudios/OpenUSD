@@ -29,12 +29,13 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/arch/inttypes.h"
 
-#include <boost/shared_ptr.hpp>
+#include <iostream>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdTopology> HdTopologySharedPtr;
+typedef std::shared_ptr<class HdTopology> HdTopologySharedPtr;
 
 class HdTopology {
 public:

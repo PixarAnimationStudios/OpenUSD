@@ -247,7 +247,7 @@ private:
 
     SdfSpecHandle _FindOrCreateTargetSpec(const SdfPath& path);
 
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
+    std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
     _GetTargetAttributeOrderEditor(const SdfPath& path) const;
 
     SdfSpecHandle _FindOrCreateChildSpecForMarker(const SdfPath& key);

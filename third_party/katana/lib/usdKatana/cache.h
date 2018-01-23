@@ -29,8 +29,6 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <map>
 #include <string>
 
@@ -42,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Forward declare pointers.
 SDF_DECLARE_HANDLES(SdfLayer);
 typedef TfRefPtr<class UsdStage> UsdStageRefPtr;
-typedef boost::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
+typedef std::shared_ptr<class UsdImagingGL> UsdImagingGLSharedPtr;
 class SdfPath;
 class UsdPrim;
 

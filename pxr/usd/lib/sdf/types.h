@@ -79,7 +79,6 @@
 #include <boost/preprocessor/seq/size.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/shared_ptr.hpp>
 #include <iosfwd>
 #include <list>
 #include <map>

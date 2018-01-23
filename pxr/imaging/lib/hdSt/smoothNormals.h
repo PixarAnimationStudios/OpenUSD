@@ -32,12 +32,11 @@
 #include "pxr/base/tf/token.h"
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
 class Hd_VertexAdjacency;
 

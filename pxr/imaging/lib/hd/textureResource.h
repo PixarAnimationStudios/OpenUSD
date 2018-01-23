@@ -31,14 +31,14 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <cstdint>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
+typedef std::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 
 class HdTextureResource {
 public:

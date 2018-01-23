@@ -40,9 +40,9 @@ class TfToken;
 class SdfPath;
 class VtValue;
 
-typedef boost::shared_ptr<class HdxSelection> HdxSelectionSharedPtr;
-typedef boost::shared_ptr<class HdxSelectionTracker> HdxSelectionTrackerSharedPtr;
-typedef boost::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
+typedef std::shared_ptr<class HdxSelection> HdxSelectionSharedPtr;
+typedef std::shared_ptr<class HdxSelectionTracker> HdxSelectionTrackerSharedPtr;
+typedef std::weak_ptr<class HdxSelectionTracker> HdxSelectionTrackerWeakPtr;
 
 
 enum HdxSelectionHighlightMode {

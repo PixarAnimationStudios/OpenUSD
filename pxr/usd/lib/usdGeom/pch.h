@@ -176,7 +176,6 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_array.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/type_traits/add_reference.hpp>

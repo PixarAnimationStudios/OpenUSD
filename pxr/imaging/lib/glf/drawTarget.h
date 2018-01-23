@@ -42,13 +42,11 @@
 #include <set>
 #include <string>
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
+typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 /// \class GlfDrawTarget
 ///

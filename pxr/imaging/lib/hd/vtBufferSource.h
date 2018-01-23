@@ -34,8 +34,8 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/value.h"
 
+#include <memory>
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
 #include <iosfwd>
 

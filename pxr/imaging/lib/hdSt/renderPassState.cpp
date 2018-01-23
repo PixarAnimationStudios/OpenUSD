@@ -137,7 +137,7 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
             HdTokens->drawingShader, bufferSpecs);
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
@@ -220,7 +220,7 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
     if (_renderPassStateBar) {
 
         HdStBufferArrayRangeGLSharedPtr _renderPassStateBar_ =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
+            std::static_pointer_cast<HdStBufferArrayRangeGL> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
             HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,

@@ -33,10 +33,9 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <atomic>
+#include <memory>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/weak_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

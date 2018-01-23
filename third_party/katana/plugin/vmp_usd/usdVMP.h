@@ -31,8 +31,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-#include <boost/shared_ptr.hpp>
-
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
@@ -55,7 +53,7 @@ FnLogSetup("USDVMP")
 namespace FnKat = Foundry::Katana;
 
 
-typedef boost::shared_ptr<PXR_NS::UsdImagingGL> UsdImagingGLSharedPtr;
+typedef std::shared_ptr<PXR_NS::UsdImagingGL> UsdImagingGLSharedPtr;
 
 //--------------------------------------------------------------------------------
 // USDVMP

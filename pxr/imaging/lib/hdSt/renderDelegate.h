@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStResourceRegistry>
+typedef std::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
 
 ///

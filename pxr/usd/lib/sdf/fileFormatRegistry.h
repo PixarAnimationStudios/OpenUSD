@@ -34,7 +34,6 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <atomic>
 #include <mutex>
 #include <vector>
@@ -105,7 +104,7 @@ private:
         mutable SdfFileFormatRefPtr _format;
     };
 
-    typedef boost::shared_ptr<_Info> _InfoSharedPtr;
+    typedef std::shared_ptr<_Info> _InfoSharedPtr;
     typedef std::vector<_InfoSharedPtr> _InfoSharedPtrVector;
 
     // 1-to-1 mapping from file format Id -> file format info

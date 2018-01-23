@@ -32,19 +32,18 @@
 #include "pxr/base/tf/token.h"
 
 #include <atomic>
+#include <memory>
 #include <vector>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdBufferSource;
-typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<HdBufferSource const> HdBufferSourceConstSharedPtr;
+typedef std::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<HdBufferSource const> HdBufferSourceConstSharedPtr;
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
-typedef boost::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
+typedef std::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
 
 /// \class HdBufferSource
 ///

@@ -326,7 +326,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             indexBar_ = drawItem->GetTopologyRange();
         HdStBufferArrayRangeGLSharedPtr indexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
 
         //
         // element (per-face) buffer data
@@ -334,7 +334,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             elementBar_ = drawItem->GetElementPrimVarRange();
         HdStBufferArrayRangeGLSharedPtr elementBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
 
         //
         // vertex attrib buffer data
@@ -342,7 +342,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             vertexBar_ = drawItem->GetVertexPrimVarRange();
         HdStBufferArrayRangeGLSharedPtr vertexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
 
         //
         // constant buffer data
@@ -350,7 +350,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             constantBar_ = drawItem->GetConstantPrimVarRange();
         HdStBufferArrayRangeGLSharedPtr constantBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
 
         //
         // face varying buffer data
@@ -358,7 +358,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             fvarBar_ = drawItem->GetFaceVaryingPrimVarRange();
         HdStBufferArrayRangeGLSharedPtr fvarBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
 
         //
         // instance buffer data
@@ -369,7 +369,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             HdBufferArrayRangeSharedPtr const &
                 ins_ = drawItem->GetInstancePrimVarRange(i);
             HdStBufferArrayRangeGLSharedPtr ins =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL>(ins_);
+                std::static_pointer_cast<HdStBufferArrayRangeGL>(ins_);
 
             instanceBars[i] = ins;
         }
@@ -380,7 +380,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             instanceIndexBar_ = drawItem->GetInstanceIndexRange();
         HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
 
         //
         // shader parameter
@@ -388,7 +388,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         HdBufferArrayRangeSharedPtr const &
             shaderBar_ = drawItem->GetMaterialShader()->GetShaderData();
         HdStBufferArrayRangeGLSharedPtr shaderBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(shaderBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(shaderBar_);
 
         // 3 for triangles, 4 for quads, n for patches
         GLuint numIndicesPerPrimitive
@@ -1049,31 +1049,31 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     // constant buffer bind
     HdBufferArrayRangeSharedPtr constantBar_ = batchItem->GetConstantPrimVarRange();
     HdStBufferArrayRangeGLSharedPtr constantBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
     binder.BindConstantBuffer(constantBar);
 
     // index buffer bind
     HdBufferArrayRangeSharedPtr indexBar_ = batchItem->GetTopologyRange();
     HdStBufferArrayRangeGLSharedPtr indexBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(indexBar_);
     binder.BindBufferArray(indexBar);
 
     // element buffer bind
     HdBufferArrayRangeSharedPtr elementBar_ = batchItem->GetElementPrimVarRange();
     HdStBufferArrayRangeGLSharedPtr elementBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
     binder.BindBufferArray(elementBar);
 
     // fvar buffer bind
     HdBufferArrayRangeSharedPtr fvarBar_ = batchItem->GetFaceVaryingPrimVarRange();
     HdStBufferArrayRangeGLSharedPtr fvarBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
     binder.BindBufferArray(fvarBar);
 
     // vertex buffer bind
     HdBufferArrayRangeSharedPtr vertexBar_ = batchItem->GetVertexPrimVarRange();
     HdStBufferArrayRangeGLSharedPtr vertexBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
     binder.BindBufferArray(vertexBar);
 
     // instance buffer bind
@@ -1083,7 +1083,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     // intance index indirection
     HdBufferArrayRangeSharedPtr instanceIndexBar_ = batchItem->GetInstanceIndexRange();
     HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
     if (instanceIndexBar) {
         // note that while instanceIndexBar is mandatory for instancing but
         // instanceBar can technically be empty (it doesn't make sense though)
@@ -1091,7 +1091,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
         for (int i = 0; i < instancerNumLevels; ++i) {
             HdBufferArrayRangeSharedPtr ins_ = batchItem->GetInstancePrimVarRange(i);
             HdStBufferArrayRangeGLSharedPtr ins =
-                boost::static_pointer_cast<HdStBufferArrayRangeGL>(ins_);
+                std::static_pointer_cast<HdStBufferArrayRangeGL>(ins_);
             instanceBars[i] = ins;
             binder.BindInstanceBufferArray(instanceBars[i], i);
         }
@@ -1113,7 +1113,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     HdStBufferArrayRangeGLSharedPtr shaderBar;
     TF_FOR_ALL(shader, shaders) {
         HdBufferArrayRangeSharedPtr shaderBar_ = (*shader)->GetShaderData();
-        shaderBar = boost::static_pointer_cast<HdStBufferArrayRangeGL>(shaderBar_);
+        shaderBar = std::static_pointer_cast<HdStBufferArrayRangeGL>(shaderBar_);
         if (shaderBar) {
             binder.BindBuffer(HdTokens->materialParams, 
                               shaderBar->GetResource());
@@ -1207,21 +1207,21 @@ HdSt_IndirectDrawBatch::_GPUFrustumCulling(
     HdBufferArrayRangeSharedPtr constantBar_ =
         batchItem->GetConstantPrimVarRange();
     HdStBufferArrayRangeGLSharedPtr constantBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
     int instancerNumLevels = batchItem->GetInstancePrimVarNumLevels();
     std::vector<HdStBufferArrayRangeGLSharedPtr> instanceBars(instancerNumLevels);
     for (int i = 0; i < instancerNumLevels; ++i) {
         HdBufferArrayRangeSharedPtr ins_ = batchItem->GetInstancePrimVarRange(i);
 
         HdStBufferArrayRangeGLSharedPtr ins =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(ins_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(ins_);
 
         instanceBars[i] = ins;
     }
     HdBufferArrayRangeSharedPtr instanceIndexBar_ =
         batchItem->GetInstanceIndexRange();
     HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
 
     HdStBufferArrayRangeGLSharedPtr cullDispatchBar =
         _dispatchBufferCullInput->GetBufferArrayRange();
@@ -1357,7 +1357,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
     HdBufferArrayRangeSharedPtr constantBar_ =
         batchItem->GetConstantPrimVarRange();
     HdStBufferArrayRangeGLSharedPtr constantBar =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
 
     HdStBufferArrayRangeGLSharedPtr cullDispatchBar =
         _dispatchBufferCullInput->GetBufferArrayRange();
@@ -1446,7 +1446,7 @@ HdSt_IndirectDrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* inst
         HdBufferArrayRangeSharedPtr const &instanceIndexBar_ =
             instance->GetDrawItem()->GetInstanceIndexRange();
         HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
-            boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
+            std::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
 
         int newInstanceCount = instanceIndexBar
                              ? instanceIndexBar->GetNumElements() : 1;

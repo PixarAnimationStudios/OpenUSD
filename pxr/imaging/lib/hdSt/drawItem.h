@@ -32,8 +32,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdRenderIndex;
-typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
+typedef std::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 
 class HdStDrawItem : public HdDrawItem {
 public:

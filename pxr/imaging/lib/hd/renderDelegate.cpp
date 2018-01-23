@@ -54,7 +54,7 @@ HdRenderDelegate::~HdRenderDelegate() = default;
 HdRenderPassStateSharedPtr
 HdRenderDelegate::CreateRenderPassState() const
 {
-    return boost::make_shared<HdRenderPassState>();
+    return std::make_shared<HdRenderPassState>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

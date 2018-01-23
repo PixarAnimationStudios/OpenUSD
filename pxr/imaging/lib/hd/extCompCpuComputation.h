@@ -40,7 +40,7 @@ class HdExtComputation;
 class HdExtCompCpuComputation;
 
 typedef std::vector<VtValue> VtValueVector;
-typedef boost::shared_ptr<HdExtCompCpuComputation>
+typedef std::shared_ptr<HdExtCompCpuComputation>
                                 HdExtCompCpuComputationSharedPtr;
 
 ///

@@ -30,14 +30,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassShader>
+typedef std::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
+typedef std::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
+typedef std::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
+typedef std::shared_ptr<class HdStRenderPassShader>
                 HdStRenderPassShaderSharedPtr;
-typedef boost::shared_ptr<class HdSt_FallbackLightingShader>
+typedef std::shared_ptr<class HdSt_FallbackLightingShader>
                 HdSt_FallbackLightingShaderSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 

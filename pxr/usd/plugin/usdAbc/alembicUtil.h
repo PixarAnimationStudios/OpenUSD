@@ -42,7 +42,6 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_reference.hpp>
@@ -352,7 +351,7 @@ public:
 #endif
 
     typedef std::vector<uint32_t> IndexArray;
-    typedef boost::shared_ptr<IndexArray> IndexArrayPtr;
+    typedef std::shared_ptr<IndexArray> IndexArrayPtr;
 
     class Error {
     public:
@@ -409,7 +408,7 @@ public:
 
     /// A sample using raw data from a shared pointer to a T.
     template <class T>
-    _SampleForAlembic(const boost::shared_ptr<T>& value) :
+    _SampleForAlembic(const std::shared_ptr<T>& value) :
         _numSamples(1),
         _value(_HolderValue(new _ScalarHolder<T>(value)))
     {
@@ -532,7 +531,7 @@ private:
         virtual const void* Get() const { return _ptr; }
 
     private:
-        boost::shared_ptr<VtValue> _value;
+        std::shared_ptr<VtValue> _value;
         const void* _ptr;
     };
 
@@ -540,12 +539,12 @@ private:
     template <class T>
     class _ScalarHolder : public _Holder {
     public:
-        _ScalarHolder(const boost::shared_ptr<T>& ptr) : _ptr(ptr) { }
+        _ScalarHolder(const std::shared_ptr<T>& ptr) : _ptr(ptr) { }
         virtual ~_ScalarHolder() { }
         virtual const void* Get() const { return _ptr.get(); }
 
     private:
-        boost::shared_ptr<T> _ptr;
+        std::shared_ptr<T> _ptr;
     };
 
     // Hold a shared_array.
@@ -569,7 +568,7 @@ private:
         bool IsError(std::string* msg) const { return _holder->Error(msg); }
 
     private:
-        boost::shared_ptr<_Holder> _holder;
+        std::shared_ptr<_Holder> _holder;
     };
 
     template <class T>
@@ -605,7 +604,7 @@ template <class UsdType, class AlembicType>
 struct _SampleForAlembicConstructConverter {
     _SampleForAlembic operator()(const VtValue& value) const
     {
-        return _SampleForAlembic(boost::shared_ptr<AlembicType>(
+        return _SampleForAlembic(std::shared_ptr<AlembicType>(
             new AlembicType(value.UncheckedGet<UsdType>())));
     }
 };

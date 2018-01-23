@@ -106,7 +106,7 @@ HdStInstancer::GetInstancePrimVars()
         // be updated just once even if there're multiple prototypes.
         if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
             HdStResourceRegistrySharedPtr const& resourceRegistry = 
-                boost::static_pointer_cast<HdStResourceRegistry>(
+                std::static_pointer_cast<HdStResourceRegistry>(
                 GetDelegate()->GetRenderIndex().GetResourceRegistry());
 
             TfTokenVector primVarNames;
@@ -262,7 +262,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
     // dirtyBits within this function.
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::static_pointer_cast<HdStResourceRegistry>(
+        std::static_pointer_cast<HdStResourceRegistry>(
         GetDelegate()->GetRenderIndex().GetResourceRegistry());
 
     // delegate provides sparse index array for prototypeId.

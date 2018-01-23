@@ -43,8 +43,6 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
-#include <boost/shared_ptr.hpp>
-
 #include <map>
 #include <string>
 #include <vector>
@@ -268,9 +266,9 @@ public:
     // was edited directly (in which case _updatingRepNamespace == false).
     bool _updatingRepNamespace;
 
-    std::map<std::string, boost::shared_ptr<MPxRepresentation> > _representations;
+    std::map<std::string, std::shared_ptr<MPxRepresentation> > _representations;
     bool _activateRepOnFileLoad; 
-    boost::shared_ptr<MPxRepresentation> _activeRep;
+    std::shared_ptr<MPxRepresentation> _activeRep;
     bool _inSetInternalValue;
     bool _hasEdits;
 };

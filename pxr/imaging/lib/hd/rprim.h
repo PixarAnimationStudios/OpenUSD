@@ -36,7 +36,7 @@
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/arch/inttypes.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -49,14 +49,14 @@ class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
 
-typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
-typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<HdRepr> HdReprSharedPtr;
+typedef std::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
 
 typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceVector;
-typedef boost::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
+typedef std::shared_ptr<HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::shared_ptr<class HdComputation> HdComputationSharedPtr;
 typedef std::vector<HdComputationSharedPtr> HdComputationVector;
 
 /// \class HdRprim

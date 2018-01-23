@@ -30,14 +30,14 @@
 #include "pxr/base/tf/token.h"
 
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <cstddef>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdResource> HdResourceSharedPtr;
+typedef std::shared_ptr<class HdResource> HdResourceSharedPtr;
 
 /// \class HdResource
 ///

@@ -161,7 +161,7 @@ public:
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs) override
     {
-        return boost::make_shared<Hd_NullStrategy::_BufferArray>(
+        return std::make_shared<Hd_NullStrategy::_BufferArray>(
                 role, bufferSpecs);
     }
 
@@ -183,7 +183,7 @@ public:
         HdBufferArraySharedPtr const &bufferArray) const override
     {
         const auto ba =
-            boost::static_pointer_cast<_BufferArray>(bufferArray);
+            std::static_pointer_cast<_BufferArray>(bufferArray);
         return ba->GetBufferSpecs();
     }
 
@@ -240,7 +240,7 @@ protected:
         _GetRepr(HdSceneDelegate *sceneDelegate,
                  TfToken const &reprName,
                  HdDirtyBits *dirtyBits) override  {
-        static HdReprSharedPtr result = boost::make_shared<HdRepr>();
+        static HdReprSharedPtr result = std::make_shared<HdRepr>();
         return result;
     };
 

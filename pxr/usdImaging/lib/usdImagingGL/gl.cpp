@@ -151,7 +151,7 @@ UsdImagingGL::PrepareBatch(
     hdEngines.reserve(renderers.size());
     TF_FOR_ALL(it, renderers) {
         hdEngines.push_back(
-            boost::dynamic_pointer_cast<UsdImagingGLHdEngine>(
+            std::dynamic_pointer_cast<UsdImagingGLHdEngine>(
                 (*it)->_engine));
     }
 

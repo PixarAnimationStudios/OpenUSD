@@ -744,11 +744,11 @@ private:
     bool _ValidateEdit(const TfToken& key) const;
 
     // Returns a list editor object for name children order list edits.
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
+    std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
     _GetNameChildrenOrderEditor() const;
 
     // Returns a list editor object for property order list edits.
-    boost::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
+    std::shared_ptr<Sdf_ListEditor<SdfNameTokenKeyPolicy> >
     _GetPropertyOrderEditor() const;
 
 private:

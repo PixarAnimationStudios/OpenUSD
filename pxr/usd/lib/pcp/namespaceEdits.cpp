@@ -39,7 +39,7 @@ using std::make_pair;
 using std::pair;
 using std::vector;
 
-using boost::dynamic_pointer_cast;
+using std::dynamic_pointer_cast;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

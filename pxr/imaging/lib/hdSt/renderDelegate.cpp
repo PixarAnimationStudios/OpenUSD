@@ -132,7 +132,7 @@ HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
 HdRenderPassStateSharedPtr
 HdStRenderDelegate::CreateRenderPassState() const
 {
-    return boost::make_shared<HdStRenderPassState>();
+    return std::make_shared<HdStRenderPassState>();
 }
 
 HdInstancer *

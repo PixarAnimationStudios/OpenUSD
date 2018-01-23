@@ -1209,7 +1209,7 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
 UsdImagingPrimAdapterSharedPtr
 UsdImagingInstanceAdapter::_GetSharedFromThis()
 {
-    boost::shared_ptr<class UsdImagingPrimAdapter> a = shared_from_this();
+    std::shared_ptr<class UsdImagingPrimAdapter> a = shared_from_this();
     return a;
 }
 

@@ -29,9 +29,6 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/types.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -40,15 +37,15 @@ class HdSt_Subdivision;
 struct HdQuadInfo;
 class SdfPath;
 
-typedef boost::weak_ptr<class HdBufferSource> HdBufferSourceWeakPtr;
-typedef boost::weak_ptr<class HdSt_AdjacencyBuilderComputation> HdSt_AdjacencyBuilderComputationPtr;
-typedef boost::weak_ptr<class HdSt_QuadInfoBuilderComputation> HdSt_QuadInfoBuilderComputationPtr;
-typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
-typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdComputation> HdComputationSharedPtr;
-typedef boost::shared_ptr<class HdSt_AdjacencyBuilderComputation> HdSt_AdjacencyBuilderComputationSharedPtr;
-typedef boost::shared_ptr<class HdSt_QuadInfoBuilderComputation> HdSt_QuadInfoBuilderComputationSharedPtr;
-typedef boost::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
+typedef std::weak_ptr<class HdBufferSource> HdBufferSourceWeakPtr;
+typedef std::weak_ptr<class HdSt_AdjacencyBuilderComputation> HdSt_AdjacencyBuilderComputationPtr;
+typedef std::weak_ptr<class HdSt_QuadInfoBuilderComputation> HdSt_QuadInfoBuilderComputationPtr;
+typedef std::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
+typedef std::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
+typedef std::shared_ptr<class HdComputation> HdComputationSharedPtr;
+typedef std::shared_ptr<class HdSt_AdjacencyBuilderComputation> HdSt_AdjacencyBuilderComputationSharedPtr;
+typedef std::shared_ptr<class HdSt_QuadInfoBuilderComputation> HdSt_QuadInfoBuilderComputationSharedPtr;
+typedef std::shared_ptr<class HdSt_MeshTopology> HdSt_MeshTopologySharedPtr;
 
 /// \class HdSt_MeshTopology
 ///

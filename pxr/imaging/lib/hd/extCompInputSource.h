@@ -64,7 +64,7 @@ private:
     Hd_ExtCompInputSource &operator = (const Hd_ExtCompInputSource &)  = delete;
 };
 
-typedef boost::shared_ptr<Hd_ExtCompInputSource> Hd_ExtCompInputSourceSharedPtr;
+typedef std::shared_ptr<Hd_ExtCompInputSource> Hd_ExtCompInputSourceSharedPtr;
 typedef std::vector<Hd_ExtCompInputSourceSharedPtr>
                                            Hd_ExtCompInputSourceSharedPtrVector;
 

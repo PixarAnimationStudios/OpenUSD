@@ -41,10 +41,10 @@ class HdStDrawItem;
 class HdStShaderCode;
 class HdStResourceGL;
 
-typedef boost::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
-typedef boost::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
+typedef std::shared_ptr<class HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
+typedef std::shared_ptr<class HdStBufferArrayRangeGL> HdStBufferArrayRangeGLSharedPtr;
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 

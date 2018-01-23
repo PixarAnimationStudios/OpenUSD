@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -113,7 +112,7 @@ protected:
     virtual void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const;
 
 private:
-    boost::shared_ptr<class UsdAbc_AlembicDataReader> _reader;
+    std::shared_ptr<class UsdAbc_AlembicDataReader> _reader;
 };
 
 

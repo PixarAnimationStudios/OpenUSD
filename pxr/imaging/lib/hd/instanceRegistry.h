@@ -30,9 +30,9 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
+#include <memory>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -145,7 +145,7 @@ public:
 
 private:
     template <typename T>
-    static bool _IsUnique(boost::shared_ptr<T> const &value) {
+    static bool _IsUnique(std::shared_ptr<T> const &value) {
         return value.unique();
     }
 

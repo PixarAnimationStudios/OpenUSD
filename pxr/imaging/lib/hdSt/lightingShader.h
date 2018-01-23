@@ -29,12 +29,10 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/base/gf/matrix4d.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
+typedef std::shared_ptr<class HdStLightingShader> HdStLightingShaderSharedPtr;
 
 /// \class HdStLightingShader
 ///

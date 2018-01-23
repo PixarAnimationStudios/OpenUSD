@@ -29,12 +29,10 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <boost/shared_ptr.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
-typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
+typedef std::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 
 class HdStMaterial final: public HdMaterial {
 public:

@@ -84,7 +84,7 @@ HdStExtCompGpuComputation::Execute(
     }
 
     HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(range_);
+        std::static_pointer_cast<HdStBufferArrayRangeGL>(range_);
 
     TF_VERIFY(range);
     // XXX Currently these computations are always meant to be 1:1 to the
@@ -99,7 +99,7 @@ HdStExtCompGpuComputation::Execute(
     HdStBufferArrayRangeGLSharedPtr inputRange;
     HdStBufferResourceGLNamedList inputResources;
     if (_resource->GetInternalRange()) {
-        inputRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
+        inputRange = std::static_pointer_cast<HdStBufferArrayRangeGL>(
                 _resource->GetInternalRange());
         inputResources = inputRange->GetResources();
     }
@@ -261,7 +261,7 @@ HdStExtCompGpuComputation::CreateComputation(
 
     // Downcast the resource registry
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::dynamic_pointer_cast<HdStResourceRegistry>(
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
                               renderIndex.GetResourceRegistry());
     
     HdStExtCompGpuComputationResourceSharedPtr resource(
@@ -366,7 +366,7 @@ HdSt_GetExtComputationPrimVarsComputations(
                 
                 if (gpuComputation) {
                     HdComputationSharedPtr comp =
-                        boost::static_pointer_cast<HdComputation>(
+                        std::static_pointer_cast<HdComputation>(
                             gpuComputation);
                     computations->push_back(comp);
                     // There is a companion resource that requires allocation

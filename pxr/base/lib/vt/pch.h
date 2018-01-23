@@ -158,7 +158,6 @@
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/decay.hpp>

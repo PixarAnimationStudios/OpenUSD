@@ -35,8 +35,6 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <functional>
 #include <memory>
 #include <vector>
@@ -50,8 +48,8 @@ class HdEngine;
 class HdRenderIndex;
 class HdRprimCollection;
 
-typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
+typedef std::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
+typedef std::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 

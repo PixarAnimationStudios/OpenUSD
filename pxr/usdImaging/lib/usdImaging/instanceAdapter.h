@@ -30,8 +30,6 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <boost/unordered_map.hpp> 
-#include <boost/shared_ptr.hpp> 
-#include <boost/enable_shared_from_this.hpp> 
 
 #include <mutex>
 
@@ -296,7 +294,7 @@ private:
         // draw call (though this is a detail of the renderer implementation).
         VtIntArray indices;
     };
-    typedef boost::shared_ptr<_ProtoGroup> _ProtoGroupPtr;
+    typedef std::shared_ptr<_ProtoGroup> _ProtoGroupPtr;
 
     // A proto rprim represents a single rprim under a prototype root declared
     // on the instancer. For example, a character may be targeted by the

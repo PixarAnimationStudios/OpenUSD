@@ -96,7 +96,7 @@ static void CameraAndLightTest()
         new HdSt_RenderPass(index.get(), collection));
     HdEngine engine;
 
-    HdTaskSharedPtr drawTask = boost::make_shared<Hd_TestTask>(renderPass,
+    HdTaskSharedPtr drawTask = std::make_shared<Hd_TestTask>(renderPass,
                                                                renderPassState);
     HdTaskSharedPtrVector tasks = { drawTask };
 

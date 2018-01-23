@@ -101,7 +101,7 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 {
     TfToken reprName = HdTokens->hull;
@@ -121,7 +121,7 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _geomPass()
  , _geomAndGuidePass()
  , _renderPassState(
-    boost::dynamic_pointer_cast<HdStRenderPassState>(
+    std::dynamic_pointer_cast<HdStRenderPassState>(
         _renderDelegate.CreateRenderPassState()))
 {
     _Init(reprName);
@@ -168,7 +168,7 @@ void
 HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass)
 {
     HdTaskSharedPtrVector tasks = {
-        boost::make_shared<HdSt_DrawTask>(renderPass, _renderPassState)
+        std::make_shared<HdSt_DrawTask>(renderPass, _renderPassState)
     };
     _engine.Execute(_sceneDelegate->GetRenderIndex(), tasks);
 

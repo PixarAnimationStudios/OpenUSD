@@ -32,8 +32,6 @@
 #include "pxr/imaging/hdSt/resourceBinder.h"  // XXX: including a private class
 #include "pxr/base/tf/token.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <string>
 #include <vector>
 
@@ -42,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 
-typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
+typedef std::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef std::vector<HdStShaderCodeSharedPtr> HdStShaderCodeSharedPtrVector;
 
 

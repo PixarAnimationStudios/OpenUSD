@@ -44,7 +44,7 @@
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/hash.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

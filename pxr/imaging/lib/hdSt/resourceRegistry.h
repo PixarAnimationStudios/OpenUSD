@@ -32,15 +32,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::shared_ptr<class HdStDispatchBuffer>
+typedef std::shared_ptr<class HdStDispatchBuffer>
     HdStDispatchBufferSharedPtr;
-typedef boost::shared_ptr<class HdStPersistentBuffer>
+typedef std::shared_ptr<class HdStPersistentBuffer>
     HdStPersistentBufferSharedPtr;
-typedef boost::shared_ptr<class HdStResourceRegistry>
+typedef std::shared_ptr<class HdStResourceRegistry>
     HdStResourceRegistrySharedPtr;
-typedef boost::shared_ptr<class HdSt_GeometricShader>
+typedef std::shared_ptr<class HdSt_GeometricShader>
     HdSt_GeometricShaderSharedPtr;
-typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+typedef std::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 
 /// \class HdStResourceRegistry
 ///

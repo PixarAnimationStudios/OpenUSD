@@ -31,7 +31,6 @@
 
 #include <mutex>
 #include <boost/unordered_map.hpp> 
-#include <boost/shared_ptr.hpp> 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -273,7 +272,7 @@ private:
         // gprim and not actually a prototype from Hydra's perspective.
         SdfPath protoRootPath;
     };
-    typedef boost::shared_ptr<_Prototype> _PrototypeSharedPtr;
+    typedef std::shared_ptr<_Prototype> _PrototypeSharedPtr;
 
     // A proto rprim represents a single rprim under a prototype root declared
     // on the instancer. For example, a character may be targeted by the
