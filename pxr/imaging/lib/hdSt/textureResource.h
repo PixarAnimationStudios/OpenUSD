@@ -37,7 +37,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/gf/vec4f.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <cstdint>
@@ -49,10 +48,17 @@ typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPt
 typedef boost::shared_ptr<class HdStSimpleTextureResource> HdStSimpleTextureResourceSharedPtr;
 
 /// HdStTextureResource is an interface to a GL-backed texture.
-class HdStTextureResource : public HdTextureResource, boost::noncopyable {
+class HdStTextureResource : public HdTextureResource {
 public:
     HDST_API
     virtual ~HdStTextureResource();
+
+    HDST_API
+    HdStTextureResource() = default; 
+
+    // Disallow copies
+    HdStTextureResource(const HdStTextureResource&) = delete;
+    HdStTextureResource& operator=(const HdStTextureResource&) = delete;
 
     // Access to underlying GL storage.
     HDST_API virtual GLuint GetTexelsTextureId() = 0;

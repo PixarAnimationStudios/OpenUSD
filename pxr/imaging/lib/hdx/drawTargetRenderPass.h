@@ -48,7 +48,7 @@ class HdStDrawTargetRenderPassState;
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdxDrawTargetRenderPass : boost::noncopyable {
+class HdxDrawTargetRenderPass {
 public:
     HDX_API
     HdxDrawTargetRenderPass(HdRenderIndex *index);

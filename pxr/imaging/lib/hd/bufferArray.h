@@ -32,7 +32,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
@@ -55,8 +54,7 @@ typedef boost::shared_ptr<class HdBufferSource> HdBufferSourceSharedPtr;
 /// can be shared across multiple HdRprims, in the context of buffer
 /// aggregation.
 ///
-class HdBufferArray : public boost::enable_shared_from_this<HdBufferArray>,
-    boost::noncopyable {
+class HdBufferArray : public boost::enable_shared_from_this<HdBufferArray> {
 public:
     HD_API
     HdBufferArray(TfToken const &role,
@@ -65,6 +63,10 @@ public:
 
     HD_API
     virtual ~HdBufferArray();
+
+    // Disallow copies
+    HdBufferArray(const HdBufferArray&) = delete;
+    HdBufferArray& operator=(const HdBufferArray&) = delete;
 
     /// Returns the role of the GPU data in this bufferArray.
     TfToken const& GetRole() const {return _role;}

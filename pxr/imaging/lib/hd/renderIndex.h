@@ -42,7 +42,6 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/hashmap.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
 
@@ -116,7 +115,7 @@ typedef std::unordered_map<TfToken,
 /// If two viewers use different HdRenderDelegate's, then it may unfortunately 
 /// require populating two HdRenderIndex's.
 ///
-class HdRenderIndex final : public boost::noncopyable {
+class HdRenderIndex final {
 public:
     typedef std::vector<HdDrawItem const*> HdDrawItemPtrVector;
     typedef std::unordered_map<TfToken, HdDrawItemPtrVector,
@@ -136,6 +135,10 @@ public:
 
     HD_API
     ~HdRenderIndex();
+
+    // Disallow copies
+    HdRenderIndex(const HdRenderIndex&) = delete;
+    HdRenderIndex& operator=(const HdRenderIndex&) = delete;
 
     /// Clear all r (render), s (state) and b (buffer) prims.
     HD_API

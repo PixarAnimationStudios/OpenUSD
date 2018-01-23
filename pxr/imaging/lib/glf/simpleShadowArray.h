@@ -36,20 +36,22 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/imaging/garch/gl.h"
 
-#include <boost/noncopyable.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 class GlfSimpleShadowArray : public TfRefBase,
-                             public TfWeakBase,
-                             boost::noncopyable {
+                             public TfWeakBase {
 public:
     GLF_API
     GlfSimpleShadowArray(GfVec2i const & size, size_t numLayers);
     GLF_API
     virtual ~GlfSimpleShadowArray();
+
+    // Disallow copies
+    GlfSimpleShadowArray(const GlfSimpleShadowArray&) = delete;
+    GlfSimpleShadowArray& operator=(const GlfSimpleShadowArray&) = delete;
 
     GLF_API
     GfVec2i GetSize() const;

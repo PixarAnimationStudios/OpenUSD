@@ -35,7 +35,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <string>
@@ -51,18 +50,23 @@ typedef boost::shared_ptr<class GlfImage> GlfImageSharedPtr;
 ///
 /// The class allows basic access to texture image file data.
 ///
-class GlfImage : public boost::noncopyable {
-
+class GlfImage {
 public:
+    GLF_API
+    GlfImage() = default;
+
+    // Disallow copies
+    GlfImage(const GlfImage&) = delete;
+    GlfImage& operator=(const GlfImage&) = delete;
 
     /// Specifies whether to treat the image origin as the upper-left corner
     /// or the lower left
     enum ImageOriginLocation
     {
-        OriginUpperLeft, 
+        OriginUpperLeft,
         OriginLowerLeft
-    }; 
-   
+    };
+
     /// \class StorageSpec
     ///
     /// Describes the memory layout and storage of a texture image
