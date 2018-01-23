@@ -33,7 +33,6 @@
 
 #include <atomic>
 #include <vector>
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -54,9 +53,13 @@ typedef boost::weak_ptr<HdBufferSource> HdBufferSourceWeakPtr;
 /// resource registry with the buffer array range that specifies the
 /// destination resource.
 ///
-class HdBufferSource : public boost::noncopyable {
+class HdBufferSource {
 public:
     HdBufferSource() : _state(UNRESOLVED) { }
+
+    // Disallow copies
+    HdBufferSource(const HdBufferSource&) = delete;
+    HdBufferSource& operator=(const HdBufferSource&) = delete;
 
     HD_API
     virtual ~HdBufferSource();

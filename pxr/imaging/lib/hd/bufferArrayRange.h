@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArray.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,7 +49,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 /// inherited of this interface so that client (drawItem) can be agnostic about
 /// the implementation detail of aggregation.
 ///
-class HdBufferArrayRange : boost::noncopyable {
+class HdBufferArrayRange {
 public:
     /// Destructor (do nothing).
     /// The specialized range class may want to do something for garbage
@@ -59,6 +58,13 @@ public:
     /// since the destructor gets called frequently on various contexts.
     HD_API
     virtual ~HdBufferArrayRange();
+
+    /// Default constructor
+    HdBufferArrayRange() = default;
+
+    /// Disallow copies
+    HdBufferArrayRange(const HdBufferArrayRange&) = delete;
+    HdBufferArrayRange& operator=(const HdBufferArrayRange&) = delete;
 
     /// Returns true if this range is valid
     virtual bool IsValid() const = 0;

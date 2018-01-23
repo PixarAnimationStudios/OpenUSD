@@ -33,7 +33,6 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <atomic>
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/weak_ptr.hpp>
@@ -52,7 +51,7 @@ class TfToken;
 /// with the change is required, at which point the resource is updated and the
 /// flag is cleared.
 ///
-class HdChangeTracker : public boost::noncopyable {
+class HdChangeTracker {
 public:
 
     enum RprimDirtyBits : HdDirtyBits {
@@ -99,8 +98,13 @@ public:
 
     HD_API
     HdChangeTracker();
+
     HD_API
     virtual ~HdChangeTracker();
+
+    // Disallow copies
+    HdChangeTracker(const HdChangeTracker&) = delete;
+    HdChangeTracker& operator=(const HdChangeTracker&) = delete;
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Object Tracking

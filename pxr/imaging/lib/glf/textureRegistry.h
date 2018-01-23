@@ -36,7 +36,6 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <functional>
 #include <map>
@@ -52,8 +51,12 @@ class GlfTextureFactoryBase;
 
 /// \class GlfTextureRegistry
 ///
-class GlfTextureRegistry : boost::noncopyable {
+class GlfTextureRegistry {
 public:
+    // Disallow copies
+    GlfTextureRegistry(const GlfTextureRegistry&) = delete;
+    GlfTextureRegistry& operator=(const GlfTextureRegistry&) = delete;
+
     GLF_API
     static GlfTextureRegistry & GetInstance();
 

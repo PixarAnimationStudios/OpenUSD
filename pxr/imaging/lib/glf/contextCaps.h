@@ -28,8 +28,6 @@
 #include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <boost/noncopyable.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -56,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     subscribe to when the caps changes, so they can
 ///     update and invalidate.
 ///
-class GlfContextCaps : boost::noncopyable {
+class GlfContextCaps {
 public:
 
     /// InitInstance queries the GL context for its capabilities.
@@ -73,6 +71,10 @@ public:
     static const GlfContextCaps &GetInstance();
 
 
+
+    // Disallow copies
+    GlfContextCaps(const GlfContextCaps&) = delete;
+    GlfContextCaps& operator=(const GlfContextCaps&) = delete;
 
     // GL version
     int glVersion;                    // 400 (4.0), 410 (4.1), ...

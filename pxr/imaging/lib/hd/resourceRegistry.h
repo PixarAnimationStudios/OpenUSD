@@ -44,7 +44,6 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <map>
@@ -68,12 +67,16 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 ///
 /// A central registry of all GPU resources.
 ///
-class HdResourceRegistry : public boost::noncopyable  {
+class HdResourceRegistry {
 public:
     HF_MALLOC_TAG_NEW("new HdResourceRegistry");
 
     HD_API
     HdResourceRegistry();
+
+    // Disallow copies
+    HdResourceRegistry(const HdResourceRegistry&) = delete;
+    HdResourceRegistry& operator=(const HdResourceRegistry&) = delete;
 
     HD_API
     virtual ~HdResourceRegistry();

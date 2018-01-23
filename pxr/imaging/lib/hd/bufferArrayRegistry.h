@@ -38,7 +38,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <tbb/concurrent_unordered_map.h>
 
@@ -54,13 +53,16 @@ typedef boost::shared_ptr<class HdBufferArray> HdBufferArraySharedPtr;
 ///
 /// Manages the pool of buffer arrays.
 ///
-class HdBufferArrayRegistry : public boost::noncopyable {
+class HdBufferArrayRegistry {
 public:
     HF_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
 
     HD_API
     HdBufferArrayRegistry();
     ~HdBufferArrayRegistry()   = default;
+
+    HdBufferArrayRegistry(const HdBufferArrayRegistry&) = delete;
+    HdBufferArrayRegistry& operator=(const HdBufferArrayRegistry&) = delete;
 
     /// Allocate new buffer array range using strategy
     /// Thread-Safe
