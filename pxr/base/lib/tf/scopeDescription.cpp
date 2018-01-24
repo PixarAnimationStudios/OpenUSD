@@ -87,7 +87,7 @@ struct _StackRegistry
     // Lock class used by clients that read stacks.
     friend class StackLock;
     class StackLock {
-        friend class _StackRegistry;
+        friend struct _StackRegistry;
         StackLock(StackLock const &) = delete;
         StackLock &operator=(StackLock const &) = delete;
         inline StackLock(_Stack *stack, _StackRegistry *reg)
