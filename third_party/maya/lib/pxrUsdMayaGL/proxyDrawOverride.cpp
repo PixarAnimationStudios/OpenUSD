@@ -26,6 +26,7 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
 #include <maya/MBoundingBox.h>
@@ -115,24 +116,23 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-    // shapeRenderer is owned by the global mayaBatchRenderer, which is
-    // a singleton.
-    UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        UsdMayaGLBatchRenderer::Get().GetShapeRenderer(objPath,
-                                                       usdPrim,
-                                                       excludePaths);
+    // The shape adapter is owned by the global batch renderer, which is a
+    // singleton.
+    PxrMayaHdShapeAdapter* shapeAdapter =
+        UsdMayaGLBatchRenderer::Get().GetShapeAdapter(objPath,
+                                                      usdPrim,
+                                                      excludePaths);
 
-    shapeRenderer->PrepareForQueue(timeCode,
-                                   subdLevel,
-                                   showGuides,
-                                   showRenderGuides,
-                                   tint,
-                                   tintColor);
+    shapeAdapter->PrepareForQueue(timeCode,
+                                  subdLevel,
+                                  showGuides,
+                                  showRenderGuides,
+                                  tint,
+                                  tintColor);
 
     bool drawShape, drawBoundingBox;
     PxrMayaHdRenderParams params =
-        shapeRenderer->GetRenderParams(
-            objPath,
+        shapeAdapter->GetRenderParams(
             frameContext.getDisplayStyle(),
             MHWRender::MGeometryUtilities::displayStatus(objPath),
             &drawShape,
@@ -146,7 +146,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
         // Note that drawShape is still passed through here.
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer,
+            shapeAdapter,
             userData,
             params,
             drawShape,
@@ -156,7 +156,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     // Like above but with no bounding box...
     else if (drawShape) {
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer,
+            shapeAdapter,
             userData,
             params,
             drawShape,

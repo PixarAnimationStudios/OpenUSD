@@ -30,12 +30,12 @@
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/sceneDelegate.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4d.h"
-#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -43,15 +43,12 @@
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MDrawRequest.h>
-#include <maya/MHWGeometryUtilities.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MUserData.h>
 
@@ -81,13 +78,13 @@ typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 ///
 /// Typical usage is as follows:
 ///
-/// Every batched object can request a \c UsdMayaGLBatchRenderer::ShapeRenderer
+/// Every batched object can request a \c PxrMayaHdShapeAdapter
 /// object constructed from and cached within a shared batchRenderer.
 ///
-/// At every refresh, in the prepare for draw stage, each ShapeRenderer should
-/// first call \c PrepareForQueue(...) and then \c QueueShapeForDraw(...) for every
-/// batch draw pass desired. \c GetRenderParams(...) should be used to construct
-/// the render params used for consistency.
+/// At every refresh, in the prepare for draw stage, the shape adapter should
+/// be populated with Maya scene graph and viewport display data. It should
+/// then be passed along to \c QueueShapeForDraw(...) for every batch draw pass
+/// desired.
 ///
 /// In the draw stage, \c Draw(...) must be called for each draw request to
 /// complete the render.
@@ -105,111 +102,14 @@ public:
     PXRUSDMAYAGL_API
     static UsdMayaGLBatchRenderer& Get();
 
-    /// \brief Class to manage rendering of single Maya shape with a single
-    /// non-instanced transform.
-    class ShapeRenderer
-    {
-        friend class UsdMayaGLBatchRenderer;
-
-    public:
-
-        /// \brief Construct a new uninitialized \c ShapeRenderer.
-        PXRUSDMAYAGL_API
-        ShapeRenderer(
-                const MDagPath& shapeDagPath,
-                const UsdPrim& rootPrim,
-                const SdfPathVector& excludedPrimPaths);
-
-        PXRUSDMAYAGL_API
-        size_t GetHash() const;
-
-        PXRUSDMAYAGL_API
-        void Init(HdRenderIndex* renderIndex);
-
-        /// \brief Prepare the shape renderer for being added to the batch
-        /// renderer's queues. This should be called once per frame, per
-        /// \c ShapeRenderer in use.
-        PXRUSDMAYAGL_API
-        void PrepareForQueue(
-                const UsdTimeCode time,
-                const uint8_t refineLevel,
-                const bool showGuides,
-                const bool showRenderGuides,
-                const bool tint,
-                const GfVec4f& tintColor);
-
-        /// \brief Get a set of render params from the VP 1.0 display state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        PXRUSDMAYAGL_API
-        PxrMayaHdRenderParams GetRenderParams(
-                const MDagPath& objPath,
-                const M3dView::DisplayStyle& displayStyle,
-                const M3dView::DisplayStatus& displayStatus,
-                bool* drawShape,
-                bool* drawBoundingBox);
-
-        /// \brief Get a set of render params from the VP 2.0 display state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        PXRUSDMAYAGL_API
-        PxrMayaHdRenderParams GetRenderParams(
-                const MDagPath& objPath,
-                const unsigned int& displayStyle,
-                const MHWRender::DisplayStatus& displayStatus,
-                bool* drawShape,
-                bool* drawBoundingBox);
-
-        const UsdPrim& GetRootPrim() const { return _rootPrim; }
-
-        const SdfPathVector& GetExcludedPrimPaths() const {
-            return _excludedPrimPaths;
-        }
-
-        const GfMatrix4d& GetRootXform() const { return _rootXform; }
-
-        /// \brief Returns base params as set previously by \c PrepareForQueue(...)
-        ///
-        const PxrMayaHdRenderParams& GetBaseParams() const { return _baseParams; }
-
-        const SdfPath& GetSharedId() const { return _sharedId; }
-
-        bool IsPopulated() const { return _isPopulated; }
-        void SetPopulated(const bool isPopulated = true) {
-            _isPopulated = isPopulated;
-        }
-
-        UsdImagingDelegate* GetDelegate() const {
-            if (_delegate) {
-                return _delegate.get();
-            }
-
-            return nullptr;
-        }
-
-    private:
-        MDagPath _shapeDagPath;
-        UsdPrim _rootPrim;
-        SdfPathVector _excludedPrimPaths;
-        GfMatrix4d _rootXform;
-
-        PxrMayaHdRenderParams _baseParams;
-
-        SdfPath _sharedId;
-        bool _isPopulated;
-        std::shared_ptr<UsdImagingDelegate> _delegate;
-    };
-
-    /// \brief Gets a pointer to the \c ShapeRenderer associated with a certain
-    /// set of parameters.
+    /// Gets a pointer to the \c PxrMayaHdShapeAdapter associated with a
+    /// certain set of parameters.
     ///
     /// The object pointed to is owned by the \c UsdMayaGLBatchRenderer and
     /// will be valid for as long as the \c UsdMayaGLBatchRenderer object is
     /// valid.
     PXRUSDMAYAGL_API
-    ShapeRenderer* GetShapeRenderer(
+    PxrMayaHdShapeAdapter* GetShapeAdapter(
             const MDagPath& shapeDagPath,
             const UsdPrim& rootPrim,
             const SdfPathVector& excludedPrimPaths);
@@ -220,7 +120,7 @@ public:
     ///
     PXRUSDMAYAGL_API
     void QueueShapeForDraw(
-            ShapeRenderer* shapeRenderer,
+            PxrMayaHdShapeAdapter* shapeAdapter,
             MPxSurfaceShapeUI* shapeUI,
             MDrawRequest& drawRequest,
             const PxrMayaHdRenderParams& params,
@@ -237,19 +137,15 @@ public:
     ///
     PXRUSDMAYAGL_API
     void QueueShapeForDraw(
-            ShapeRenderer* shapeRenderer,
+            PxrMayaHdShapeAdapter* shapeAdapter,
             MUserData*& userData,
             const PxrMayaHdRenderParams& params,
             const bool drawShape,
             const MBoundingBox* boxToDraw = nullptr);
 
-    /// \brief Gets UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
-    /// This should only be used by ShapeRenderer::GetRenderParams
-    PXRUSDMAYAGL_API
-    const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
-
-    /// \brief Construct a new, unique BatchRenderer. In almost all cases,
-    /// this should not be used -- use \c Get() instead.
+    /// Construct a new, unique BatchRenderer.
+    ///
+    /// In almost all cases, this should not be used. Use \c Get() instead.
     PXRUSDMAYAGL_API
     UsdMayaGLBatchRenderer();
 
@@ -258,7 +154,7 @@ public:
 
     /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
     /// In particular, it's important that this happen when switching to a new
-    /// Maya scene so that any UsdImagingDelegates held by ShapeRenderers that
+    /// Maya scene so that any UsdImagingDelegates held by shape adapters that
     /// have been populated with USD stages can have those stages released,
     /// since the delegates hold a strong pointers to their stages.
     PXRUSDMAYAGL_API
@@ -281,7 +177,7 @@ public:
     ///
     PXRUSDMAYAGL_API
     bool TestIntersection(
-            const ShapeRenderer* shapeRenderer,
+            const PxrMayaHdShapeAdapter* shapeAdapter,
             M3dView& view,
             const unsigned int pickResolution,
             const bool singleSelection,
@@ -289,9 +185,18 @@ public:
 
 private:
 
-    /// \brief Private helper function for registering a batch render call.
+    /// Gets the UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
+    ///
+    /// This should only be used by PxrMayaHdShapeAdapter.
+    PXRUSDMAYAGL_API
+    const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
+
+    /// Allow shape adapters access to the soft selection helper.
+    friend PxrMayaHdShapeAdapter;
+
+    /// Private helper function for registering a batch render call.
     void _QueueShapeForDraw(
-            ShapeRenderer* shapeRenderer,
+            PxrMayaHdShapeAdapter* shapeAdapter,
             const PxrMayaHdRenderParams& params);
 
     /// \brief Tests an object for intersection with a given view.
@@ -334,13 +239,13 @@ private:
     /// legacy viewport.
     void _MayaRenderDidEnd();
 
-    /// \brief Cache of hashed \c ShapeRenderer objects for fast lookup
-    typedef std::unordered_map<size_t, ShapeRenderer> _ShapeRendererMap;
-    _ShapeRendererMap _shapeRendererMap;
+    /// \brief Cache of hashed shape adapaters for fast lookup
+    typedef std::unordered_map<size_t, PxrMayaHdShapeAdapter> _ShapeAdapterMap;
+    _ShapeAdapterMap _shapeAdapterMap;
 
     /// \brief container of all delegates to be populated at next display
     /// refresh.
-    std::unordered_set<ShapeRenderer*> _populateQueue;
+    std::unordered_set<PxrMayaHdShapeAdapter*> _populateQueue;
 
     /// \brief Cache of \c SdfPath objects to be rendered
     typedef std::unordered_set<SdfPath, SdfPath::Hash> _SdfPathSet;

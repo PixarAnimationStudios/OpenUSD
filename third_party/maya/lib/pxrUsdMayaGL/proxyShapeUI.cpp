@@ -26,6 +26,7 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -60,8 +61,8 @@ UsdMayaProxyShapeUI::creator()
 }
 
 static
-UsdMayaGLBatchRenderer::ShapeRenderer*
-_GetShapeRenderer(
+PxrMayaHdShapeAdapter*
+_GetShapeAdapter(
         UsdMayaProxyShape* shape,
         const MDagPath& objPath,
         const bool prepareForQueue)
@@ -88,22 +89,22 @@ _GetShapeRenderer(
         return nullptr;
     }
 
-    UsdMayaGLBatchRenderer::ShapeRenderer* outShapeRenderer =
-        UsdMayaGLBatchRenderer::Get().GetShapeRenderer(
+    PxrMayaHdShapeAdapter* outShapeAdapter =
+        UsdMayaGLBatchRenderer::Get().GetShapeAdapter(
             objPath,
             usdPrim,
             excludePaths);
 
     if (prepareForQueue) {
-        outShapeRenderer->PrepareForQueue(timeCode,
-                                          subdLevel,
-                                          showGuides,
-                                          showRenderGuides,
-                                          tint,
-                                          tintColor);
+        outShapeAdapter->PrepareForQueue(timeCode,
+                                         subdLevel,
+                                         showGuides,
+                                         showRenderGuides,
+                                         tint,
+                                         tintColor);
     }
 
-    return outShapeRenderer;
+    return outShapeAdapter;
 }
 
 /* virtual */
@@ -118,21 +119,20 @@ UsdMayaProxyShapeUI::getDrawRequests(
     const MDagPath shapeDagPath = drawInfo.multiPath();
     UsdMayaProxyShape* shape =
         UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
-    UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        _GetShapeRenderer(shape,
-                          shapeDagPath,
-                          /*prepareForQueue= */ true);
-    if (!shapeRenderer) {
+    PxrMayaHdShapeAdapter* shapeAdapter =
+        _GetShapeAdapter(shape,
+                         shapeDagPath,
+                         /*prepareForQueue= */ true);
+    if (!shapeAdapter) {
         return;
     }
 
     bool drawShape, drawBoundingBox;
     PxrMayaHdRenderParams params =
-        shapeRenderer->GetRenderParams(drawInfo.multiPath(),
-                                       drawInfo.displayStyle(),
-                                       drawInfo.displayStatus(),
-                                       &drawShape,
-                                       &drawBoundingBox);
+        shapeAdapter->GetRenderParams(drawInfo.displayStyle(),
+                                      drawInfo.displayStatus(),
+                                      &drawShape,
+                                      &drawBoundingBox);
 
     // Only query bounds if we're drawing bounds...
     //
@@ -141,7 +141,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
 
         // Note that drawShape is still passed through here.
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer,
+            shapeAdapter,
             this,
             request,
             params,
@@ -152,7 +152,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
     // Like above but with no bounding box...
     else if (drawShape) {
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer,
+            shapeAdapter,
             this,
             request,
             params,
@@ -201,11 +201,11 @@ UsdMayaProxyShapeUI::select(
     // the shape node, so we don't have the shape node's path readily available.
     UsdMayaProxyShape* shape = static_cast<UsdMayaProxyShape*>(surfaceShape());
 
-    UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        _GetShapeRenderer(shape,
-                          selectInfo.selectPath(),
-                          /*prepareForQueue= */ false);
-    if (!shapeRenderer) {
+    PxrMayaHdShapeAdapter* shapeAdapter =
+        _GetShapeAdapter(shape,
+                         selectInfo.selectPath(),
+                         /*prepareForQueue= */ false);
+    if (!shapeAdapter) {
         return false;
     }
 
@@ -218,7 +218,7 @@ UsdMayaProxyShapeUI::select(
     GfVec3d hitPoint;
     const bool didHit =
         UsdMayaGLBatchRenderer::Get().TestIntersection(
-            shapeRenderer,
+            shapeAdapter,
             view,
             selectRes,
             selectInfo.singleSelection(),

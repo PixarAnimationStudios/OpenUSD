@@ -29,12 +29,12 @@
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/sceneDelegate.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "px_vp20/utils.h"
 #include "px_vp20/utils_legacy.h"
 
-#include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec3d.h"
@@ -49,21 +49,17 @@
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
-#include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MFrameContext.h>
-#include <maya/MHWGeometryUtilities.h>
 #include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
-#include <maya/MObjectHandle.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MStatus.h>
@@ -71,11 +67,9 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/functional/hash.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -85,8 +79,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
-    (render)
 
     ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
 );
@@ -155,314 +147,30 @@ class _BatchDrawUserData : public MUserData
 };
 
 
-UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer(
-        const MDagPath& shapeDagPath,
-        const UsdPrim& rootPrim,
-        const SdfPathVector& excludedPrimPaths) :
-    _shapeDagPath(shapeDagPath),
-    _rootPrim(rootPrim),
-    _excludedPrimPaths(excludedPrimPaths),
-    _isPopulated(false)
-{
-}
-
-size_t
-UsdMayaGLBatchRenderer::ShapeRenderer::GetHash() const
-{
-    size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
-    boost::hash_combine(shapeHash, _rootPrim);
-    boost::hash_combine(shapeHash, _excludedPrimPaths);
-
-    return shapeHash;
-}
-
-void
-UsdMayaGLBatchRenderer::ShapeRenderer::Init(HdRenderIndex* renderIndex)
-{
-    const size_t shapeHash = GetHash();
-
-    // Create a simple hash string to put into a flat SdfPath "hierarchy".
-    // This is much faster than more complicated pathing schemes.
-    const std::string idString = TfStringPrintf("/x%zx", shapeHash);
-    _sharedId = SdfPath(idString);
-
-    _delegate.reset(new UsdImagingDelegate(renderIndex, _sharedId));
-}
-
-void
-UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
-        const UsdTimeCode time,
-        const uint8_t refineLevel,
-        const bool showGuides,
-        const bool showRenderGuides,
-        const bool tint,
-        const GfVec4f& tintColor)
-{
-    // Initialization of default parameters go here. These parameters get used
-    // in all viewports and for selection.
-    //
-    _baseParams.timeCode = time;
-    _baseParams.refineLevel = refineLevel;
-
-    // XXX Not yet adding ability to turn off display of proxy geometry, but
-    // we should at some point, as in usdview
-    _baseParams.renderTags.clear();
-    _baseParams.renderTags.push_back(HdTokens->geometry);
-    _baseParams.renderTags.push_back(HdTokens->proxy);
-    if (showGuides) {
-        _baseParams.renderTags.push_back(HdTokens->guide);
-    }
-    if (showRenderGuides) {
-        _baseParams.renderTags.push_back(_tokens->render);
-    }
-
-    if (tint) {
-        _baseParams.overrideColor = tintColor;
-    }
-
-    if (_delegate) {
-        MStatus status;
-        const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
-        if (status == MS::kSuccess) {
-            _rootXform = GfMatrix4d(transform.matrix);
-            _delegate->SetRootTransform(_rootXform);
-        }
-
-        _delegate->SetRefineLevelFallback(refineLevel);
-
-        // Will only react if time actually changes.
-        _delegate->SetTime(time);
-
-        _delegate->SetRootCompensation(_rootPrim.GetPath());
-    }
-}
-
-
-// Helper function that converts the M3dView::DisplayStatus (viewport 1.0)
-// into the MHWRender::DisplayStatus (viewport 2.0)
-static inline
-MHWRender::DisplayStatus
-_ToMHWRenderDisplayStatus(const M3dView::DisplayStatus& displayStatus)
-{
-    // these enums are equivalent, but statically checking just in case.
-    static_assert(((int)M3dView::kActive == (int)MHWRender::kActive)
-            && ((int)M3dView::kLive == (int)MHWRender::kLive)
-            && ((int)M3dView::kDormant == (int)MHWRender::kDormant)
-            && ((int)M3dView::kInvisible == (int)MHWRender::kInvisible)
-            && ((int)M3dView::kHilite == (int)MHWRender::kHilite)
-            && ((int)M3dView::kTemplate == (int)MHWRender::kTemplate)
-            && ((int)M3dView::kActiveTemplate == (int)MHWRender::kActiveTemplate)
-            && ((int)M3dView::kActiveComponent == (int)MHWRender::kActiveComponent)
-            && ((int)M3dView::kLead == (int)MHWRender::kLead)
-            && ((int)M3dView::kIntermediateObject == (int)MHWRender::kIntermediateObject)
-            && ((int)M3dView::kActiveAffected == (int)MHWRender::kActiveAffected)
-            && ((int)M3dView::kNoStatus == (int)MHWRender::kNoStatus),
-            "M3dView::DisplayStatus == MHWRender::DisplayStatus");
-    return MHWRender::DisplayStatus((int)displayStatus);
-}
-
-static
-bool
-_GetWireframeColor(
-        const UsdMayaGLSoftSelectHelper& softSelectHelper,
-        const MDagPath& objPath,
-        const MHWRender::DisplayStatus& displayStatus,
-        MColor* mayaWireColor)
-{
-    // dormant objects may be included in soft selection.
-    if (displayStatus == MHWRender::kDormant) {
-        return softSelectHelper.GetFalloffColor(objPath, mayaWireColor);
-    }
-    else if ((displayStatus == MHWRender::kActive) ||
-             (displayStatus == MHWRender::kLead) ||
-             (displayStatus == MHWRender::kHilite)) {
-        *mayaWireColor = MHWRender::MGeometryUtilities::wireframeColor(objPath);
-        return true;
-    }
-
-    return false;
-}
-
-PxrMayaHdRenderParams
-UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
-        const MDagPath& objPath,
-        const M3dView::DisplayStyle& displayStyle,
-        const M3dView::DisplayStatus& displayStatus,
-        bool* drawShape,
-        bool* drawBoundingBox)
-{
-    // VP 1.0 Implementation
-    //
-    PxrMayaHdRenderParams params(_baseParams);
-
-    // VP 1.0 deos not allow shapes and bounding boxes to be drawn at the
-    // same time...
-    //
-    *drawBoundingBox = (displayStyle == M3dView::kBoundingBox);
-    *drawShape = !*drawBoundingBox;
-
-    // If obj is selected, we set selected and the wireframe color.
-    // QueueShapeForDraw(...) will later break this single param set into
-    // two, to perform a two-pass render.
-    //
-    MColor mayaWireframeColor;
-    const bool needsWire = _GetWireframeColor(
-        UsdMayaGLBatchRenderer::Get().GetSoftSelectHelper(),
-        objPath,
-        _ToMHWRenderDisplayStatus(displayStatus),
-        &mayaWireframeColor);
-
-    if (needsWire) {
-        // The legacy viewport does not support color management,
-        // so we roll our own gamma correction via framebuffer effect.
-        // But that means we need to pre-linearize the wireframe color
-        // from Maya.
-        params.wireframeColor =
-            GfConvertDisplayToLinear(GfVec4f(mayaWireframeColor.r,
-                                             mayaWireframeColor.g,
-                                             mayaWireframeColor.b,
-                                             1.0f));
-    }
-
-    switch (displayStyle) {
-        case M3dView::kWireFrame:
-        {
-            params.drawRepr = HdTokens->refinedWire;
-            params.enableLighting = false;
-            break;
-        }
-        case M3dView::kGouraudShaded:
-        {
-            if (needsWire) {
-                params.drawRepr = HdTokens->refinedWireOnSurf;
-            } else {
-                params.drawRepr = HdTokens->refined;
-            }
-            break;
-        }
-        case M3dView::kFlatShaded:
-        {
-            if (needsWire) {
-                params.drawRepr = HdTokens->wireOnSurf;
-            } else {
-                params.drawRepr = HdTokens->hull;
-            }
-            break;
-        }
-        case M3dView::kPoints:
-        {
-            // Points mode is not natively supported by Hydra, so skip it...
-        }
-        default:
-        {
-            *drawShape = false;
-        }
-    };
-
-    return params;
-}
-
-PxrMayaHdRenderParams
-UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
-        const MDagPath& objPath,
-        const unsigned int& displayStyle,
-        const MHWRender::DisplayStatus& displayStatus,
-        bool* drawShape,
-        bool* drawBoundingBox)
-{
-    // VP 2.0 Implementation
-    //
-    PxrMayaHdRenderParams params(_baseParams);
-
-    *drawShape = true;
-    *drawBoundingBox =
-        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
-
-    // If obj is selected, we set the wireframe color.
-    // QueueShapeForDraw(...) will later break this single param set into
-    // two, to perform a two-pass render.
-    //
-    MColor mayaWireframeColor;
-    bool needsWire = _GetWireframeColor(
-        UsdMayaGLBatchRenderer::Get().GetSoftSelectHelper(),
-        objPath,
-        displayStatus,
-        &mayaWireframeColor);
-
-    if (needsWire) {
-        params.wireframeColor = GfVec4f(mayaWireframeColor.r,
-                                        mayaWireframeColor.g,
-                                        mayaWireframeColor.b,
-                                        1.0f);
-    }
-
-// Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for whatever reason...
-    const bool flatShaded =
-#if MAYA_API_VERSION >= 201600
-        displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
-#else
-        false;
-#endif
-
-    if (flatShaded) {
-        if (needsWire) {
-            params.drawRepr = HdTokens->wireOnSurf;
-        } else {
-            params.drawRepr = HdTokens->hull;
-        }
-    }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
-    {
-        if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
-            params.drawRepr = HdTokens->refinedWireOnSurf;
-        } else {
-            params.drawRepr = HdTokens->refined;
-        }
-    }
-    else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
-    {
-        params.drawRepr = HdTokens->refinedWire;
-        params.enableLighting = false;
-    }
-    else
-    {
-        *drawShape = false;
-    }
-
-// Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling for whatever reason...
-    params.cullStyle = HdCullStyleNothing;
-#if MAYA_API_VERSION >= 201603
-    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
-        params.cullStyle = HdCullStyleBackUnlessDoubleSided;
-    }
-#endif
-
-    return params;
-}
-
-
-UsdMayaGLBatchRenderer::ShapeRenderer*
-UsdMayaGLBatchRenderer::GetShapeRenderer(
+PxrMayaHdShapeAdapter*
+UsdMayaGLBatchRenderer::GetShapeAdapter(
         const MDagPath& shapeDagPath,
         const UsdPrim& rootPrim,
         const SdfPathVector& excludedPrimPaths)
 {
-    ShapeRenderer shapeRenderer(shapeDagPath, rootPrim, excludedPrimPaths);
-    const size_t shapeHash = shapeRenderer.GetHash();
+    PxrMayaHdShapeAdapter shapeAdapter(shapeDagPath,
+                                       rootPrim,
+                                       excludedPrimPaths);
+    const size_t shapeHash = shapeAdapter.GetHash();
 
-    auto inserted = _shapeRendererMap.insert({shapeHash, shapeRenderer});
-    ShapeRenderer* shapeRendererPtr = &inserted.first->second;
+    auto inserted = _shapeAdapterMap.insert({shapeHash, shapeAdapter});
+    PxrMayaHdShapeAdapter* shapeAdapterPtr = &inserted.first->second;
 
     if (inserted.second) {
-        shapeRendererPtr->Init(_renderIndex.get());
+        shapeAdapterPtr->Init(_renderIndex.get());
     }
 
-    return shapeRendererPtr;
+    return shapeAdapterPtr;
 }
 
 void
 UsdMayaGLBatchRenderer::QueueShapeForDraw(
-        ShapeRenderer* shapeRenderer,
+        PxrMayaHdShapeAdapter* shapeAdapter,
         MPxSurfaceShapeUI* shapeUI,
         MDrawRequest& drawRequest,
         const PxrMayaHdRenderParams& params,
@@ -483,7 +191,7 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
 
     MUserData* userData;
 
-    QueueShapeForDraw(shapeRenderer,
+    QueueShapeForDraw(shapeAdapter,
                       userData,
                       params,
                       drawShape,
@@ -497,7 +205,7 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
 
 void
 UsdMayaGLBatchRenderer::QueueShapeForDraw(
-        ShapeRenderer* shapeRenderer,
+        PxrMayaHdShapeAdapter* shapeAdapter,
         MUserData*& userData,
         const PxrMayaHdRenderParams& params,
         const bool drawShape,
@@ -525,19 +233,19 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
     }
 
     if (drawShape) {
-        _QueueShapeForDraw(shapeRenderer, params);
+        _QueueShapeForDraw(shapeAdapter, params);
     }
 }
 
 void
 UsdMayaGLBatchRenderer::_QueueShapeForDraw(
-        ShapeRenderer* shapeRenderer,
+        PxrMayaHdShapeAdapter* shapeAdapter,
         const PxrMayaHdRenderParams& params)
 {
-    if (!shapeRenderer->IsPopulated()) {
-        // Populate this shape renderer on the next draw if it hasn't yet been
+    if (!shapeAdapter->IsPopulated()) {
+        // Populate this shape adapter on the next draw if it hasn't yet been
         // populated.
-        _populateQueue.insert(shapeRenderer);
+        _populateQueue.insert(shapeAdapter);
     }
 
     const size_t paramKey = params.Hash();
@@ -547,10 +255,10 @@ UsdMayaGLBatchRenderer::_QueueShapeForDraw(
         // If we had no _SdfPathSet for this particular RenderParam combination,
         // create a new one.
         _renderQueue[paramKey] =
-            _RenderParamSet(params, _SdfPathSet({shapeRenderer->GetSharedId()}));
+            _RenderParamSet(params, _SdfPathSet({shapeAdapter->GetSharedId()}));
     } else {
         _SdfPathSet& renderPaths = renderSetIter->second.second;
-        renderPaths.insert(shapeRenderer->GetSharedId());
+        renderPaths.insert(shapeAdapter->GetSharedId());
     }
 }
 
@@ -621,9 +329,9 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
     _intersector.reset();
     _taskDelegate.reset();
 
-    // the _shapeRendererMap has UsdImagingDelegate objects which need to be
-    // deleted before _renderIndex is deleted.
-    _shapeRendererMap.clear();
+    // The cache of shape adapters may have UsdImagingDelegate objects which
+    // need to be deleted before _renderIndex is deleted.
+    _shapeAdapterMap.clear();
 }
 
 /* static */
@@ -754,7 +462,7 @@ UsdMayaGLBatchRenderer::Draw(
 
 bool
 UsdMayaGLBatchRenderer::TestIntersection(
-        const ShapeRenderer* shapeRenderer,
+        const PxrMayaHdShapeAdapter* shapeAdapter,
         M3dView& view,
         const unsigned int pickResolution,
         const bool singleSelection,
@@ -764,8 +472,8 @@ UsdMayaGLBatchRenderer::TestIntersection(
         _GetHitInfo(view,
                     pickResolution,
                     singleSelection,
-                    shapeRenderer->GetSharedId(),
-                    shapeRenderer->GetRootXform());
+                    shapeAdapter->GetSharedId(),
+                    shapeAdapter->GetRootXform());
     if (!hitInfo) {
         return false;
     }
@@ -969,17 +677,17 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         std::vector<SdfPathVector> excludedPrimPaths;
         std::vector<SdfPathVector> invisedPrimPaths;
 
-        for (ShapeRenderer* shapeRenderer : _populateQueue) {
-            if (shapeRenderer->IsPopulated()) {
+        for (PxrMayaHdShapeAdapter* shapeAdapter : _populateQueue) {
+            if (shapeAdapter->IsPopulated()) {
                 continue;
             }
 
-            delegates.push_back(shapeRenderer->GetDelegate());
-            rootPrims.push_back(shapeRenderer->GetRootPrim());
-            excludedPrimPaths.push_back(shapeRenderer->GetExcludedPrimPaths());
+            delegates.push_back(shapeAdapter->GetDelegate());
+            rootPrims.push_back(shapeAdapter->GetRootPrim());
+            excludedPrimPaths.push_back(shapeAdapter->GetExcludedPrimPaths());
             invisedPrimPaths.push_back(SdfPathVector());
 
-            shapeRenderer->SetPopulated(true);
+            shapeAdapter->SetPopulated(true);
         }
 
         UsdImagingDelegate::Populate(delegates,
