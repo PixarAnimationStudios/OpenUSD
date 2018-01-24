@@ -67,6 +67,118 @@ class TestUsdBugs(unittest.TestCase):
         p = asciiLayer.GetPrimAtPath('/Prim')
         p.RemoveProperty(p.relationships['myRel'])
 
+    def test_155392(self):
+        from pxr import Sdf, Usd
+        # Usd should maintain load state across instancing changes.
+        l1 = Sdf.Layer.CreateAnonymous('.usda')
+        l2 = Sdf.Layer.CreateAnonymous('.usda')
+
+        xpay = Sdf.CreatePrimInLayer(l2, '/xpay')
+        ypay = Sdf.CreatePrimInLayer(l2, '/ypay')
+
+        p1 = Sdf.CreatePrimInLayer(l1, '/p1')
+        p1.specifier = Sdf.SpecifierDef
+        p1.referenceList.Add(Sdf.Reference('','/x'))
+
+        p2 = Sdf.CreatePrimInLayer(l1, '/p2')
+        p2.specifier = Sdf.SpecifierDef
+        p2.referenceList.Add(Sdf.Reference('','/x'))
+
+        x = Sdf.CreatePrimInLayer(l1, '/x')
+        x.instanceable = True
+        x.specifier = Sdf.SpecifierDef
+        x.payload = Sdf.Payload(l2.identifier, '/xpay')
+
+        y = Sdf.CreatePrimInLayer(l1, '/x/y')
+        y.specifier = Sdf.SpecifierDef
+        y.payload = Sdf.Payload(l2.identifier, '/ypay');
+
+        s = Usd.Stage.Open(l1, Usd.Stage.LoadAll)
+
+        self.assertTrue(
+            all([x.IsLoaded() for x in [
+                s.GetPrimAtPath('/p1'),
+                s.GetPrimAtPath('/p1/y'),
+                s.GetPrimAtPath('/p2'),
+                s.GetPrimAtPath('/p2/y')]]))
+
+        # Now uninstance, and assert that load state is preserved.
+        s.GetPrimAtPath('/p2').SetInstanceable(False)
+
+        self.assertTrue(
+            all([x.IsLoaded() for x in [
+                s.GetPrimAtPath('/p1'),
+                s.GetPrimAtPath('/p1/y'),
+                s.GetPrimAtPath('/p2'),
+                s.GetPrimAtPath('/p2/y')]]))
+
+        # Reinstance /p2 for next test.
+        s.GetPrimAtPath('/p2').SetInstanceable(True)
+
+        self.assertTrue(
+            all([x.IsLoaded() for x in [
+                s.GetPrimAtPath('/p1'),
+                s.GetPrimAtPath('/p1/y'),
+                s.GetPrimAtPath('/p2'),
+                s.GetPrimAtPath('/p2/y')]]))
+
+        # Now do the same but nested-instance everything.
+        l3 = Sdf.Layer.CreateAnonymous('.usda')
+        l3.comment = 'l3'
+
+        outer = Sdf.CreatePrimInLayer(l3, '/outer')
+        outer.specifier = Sdf.SpecifierDef
+        outer.instanceable = True
+
+        outerc = Sdf.CreatePrimInLayer(l3, '/outer/c')
+        outerc.specifier = Sdf.SpecifierDef
+        outerc.referenceList.Add(Sdf.Reference(l1.identifier, '/p1'))
+
+        i1 = Sdf.CreatePrimInLayer(l3, '/i1')
+        i1.specifier = Sdf.SpecifierDef
+        i1.referenceList.Add(Sdf.Reference('', '/outer'))
+
+        i2 = Sdf.CreatePrimInLayer(l3, '/i2')
+        i2.specifier = Sdf.SpecifierDef
+        i2.referenceList.Add(Sdf.Reference('', '/outer'))
+
+        s2 = Usd.Stage.Open(l3, Usd.Stage.LoadAll)
+
+        self.assertTrue(
+            all([x.IsLoaded() for x in [
+                s2.GetPrimAtPath('/i1'),
+                s2.GetPrimAtPath('/i1/c'), 
+                s2.GetPrimAtPath('/i1/c/y'),
+                s2.GetPrimAtPath('/i2'),
+                s2.GetPrimAtPath('/i2/c'), 
+                s2.GetPrimAtPath('/i2/c/y')
+            ]]))
+
+        # Uninstance outer.
+        s2.GetPrimAtPath('/i1').SetInstanceable(False)
         
+        self.assertTrue(
+            all([x.IsLoaded() for x in [
+                s2.GetPrimAtPath('/i1'),
+                s2.GetPrimAtPath('/i1/c'), 
+                s2.GetPrimAtPath('/i1/c/y'),
+                s2.GetPrimAtPath('/i2'),
+                s2.GetPrimAtPath('/i2/c'), 
+                s2.GetPrimAtPath('/i2/c/y')
+            ]]))
+
+        # Uninstance inner.
+        s2.GetPrimAtPath('/i1/c').SetInstanceable(False)
+
+        self.assertTrue(
+            all([x.IsLoaded() for x in [
+                s2.GetPrimAtPath('/i1'),
+                s2.GetPrimAtPath('/i1/c'), 
+                s2.GetPrimAtPath('/i1/c/y'),
+                s2.GetPrimAtPath('/i2'),
+                s2.GetPrimAtPath('/i2/c'), 
+                s2.GetPrimAtPath('/i2/c/y')
+            ]]))
+
 if __name__ == '__main__':
     unittest.main()

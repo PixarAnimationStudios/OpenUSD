@@ -116,6 +116,8 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
 
 
     // Remove unregistered prim indexes from the cache.
+    std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
+        masterToOldSourceIndexPath;
     for (_InstanceKeyToPrimIndexesMap::value_type &v:
              _pendingRemovedPrimIndexes) {
         const Usd_InstanceKey& key = v.first;
@@ -137,7 +139,8 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
                                 std::back_inserter(primIndexes));
         }
 
-        _RemoveInstances(key, primIndexes, changes);
+        _RemoveInstances(key, primIndexes, changes,
+                         &masterToOldSourceIndexPath);
     }
 
     // Add newly-registered prim indexes to the cache.
@@ -161,13 +164,15 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
         for (const _PrimIndexPathToKey::value_type& v: keysToProcess) {
             const Usd_InstanceKey& key = v.second;
             _PrimIndexPaths& primIndexes = _pendingAddedPrimIndexes[key];
-            _CreateOrUpdateMasterForInstances(key, &primIndexes, changes);
+            _CreateOrUpdateMasterForInstances(key, &primIndexes, changes,
+                                              masterToOldSourceIndexPath);
         }
     }
     else {
         for(_InstanceKeyToPrimIndexesMap::value_type& v:
                 _pendingAddedPrimIndexes) {
-            _CreateOrUpdateMasterForInstances(v.first, &v.second, changes);
+            _CreateOrUpdateMasterForInstances(v.first, &v.second, changes,
+                                              masterToOldSourceIndexPath);
         }
     }
 
@@ -185,7 +190,9 @@ void
 Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
     const Usd_InstanceKey& key,
     _PrimIndexPaths* primIndexPaths,
-    Usd_InstanceChanges* changes)
+    Usd_InstanceChanges* changes,
+    std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> const &
+    masterToOldSourceIndexPath)
 {
     pair<_InstanceKeyToMasterMap::iterator, bool> result = 
         _instanceKeyToMasterMap.insert(make_pair(key, SdfPath()));
@@ -234,10 +241,15 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
 
             changes->changedMasterPrims.push_back(masterPath);
             changes->changedMasterPrimIndexes.push_back(sourcePrimIndexPath);
+            SdfPath const &oldSourcePath =
+                masterToOldSourceIndexPath.find(masterPath)->second;
+            changes->associatedIndexOld.push_back(oldSourcePath);
+            changes->associatedIndexNew.push_back(sourcePrimIndexPath);
 
             TF_DEBUG(USD_INSTANCING).Msg(
-                "Instancing: Master <%s> assigned new source prim index <%s>\n",
-                masterPath.GetText(), sourcePrimIndexPath.GetText());
+                "Instancing: Changing source <%s> -> <%s> for <%s>\n",
+                oldSourcePath.GetText(), sourcePrimIndexPath.GetText(),
+                masterPath.GetText());
         }
     }
 
@@ -246,6 +258,15 @@ Usd_InstanceCache::_CreateOrUpdateMasterForInstances(
     for (const SdfPath& primIndexPath: *primIndexPaths) {
         _primIndexToMasterMap[primIndexPath] = masterPath;
     }
+
+    // Record mappings from all of primIndexPaths to the new master
+    // sourcePrimIndexPath.
+    changes->associatedIndexOld.insert(
+        changes->associatedIndexOld.end(),
+        primIndexPaths->begin(), primIndexPaths->end());
+    changes->associatedIndexNew.insert(
+        changes->associatedIndexNew.end(),
+        primIndexPaths->size(), _masterToSourcePrimIndexMap[masterPath]);
 
     _PrimIndexPaths& primIndexesForMaster = _masterToPrimIndexesMap[masterPath];
     std::sort(primIndexPaths->begin(), primIndexPaths->end());
@@ -275,7 +296,9 @@ void
 Usd_InstanceCache::_RemoveInstances(
     const Usd_InstanceKey& instanceKey,
     const _PrimIndexPaths& primIndexPaths,
-    Usd_InstanceChanges* changes)
+    Usd_InstanceChanges* changes,
+    std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> *
+    masterToOldSourceIndexPath)
 {
     _InstanceKeyToMasterMap::iterator keyToMasterIt = 
         _instanceKeyToMasterMap.find(instanceKey);
@@ -284,7 +307,10 @@ Usd_InstanceCache::_RemoveInstances(
     }
 
     const SdfPath& masterPath = keyToMasterIt->second;
-    bool masterNeedsNewPrimIndex = false;
+    // This will be set to the prim index path that the master was formerly
+    // using if we wind up removing it.  In this case, we'll need to select a
+    // new prim index path for the master.
+    SdfPath removedMasterPrimIndexPath;
 
     // Remove the prim indexes from the prim index <-> master bidirectional
     // mapping.
@@ -297,9 +323,15 @@ Usd_InstanceCache::_RemoveInstances(
             _primIndexToMasterMap.erase(path);
         }
 
+        // This path is no longer instanced under this master, so record the old
+        // source index path and the prim's index path.
+        changes->associatedIndexOld.push_back(
+            _masterToSourcePrimIndexMap[masterPath]);
+        changes->associatedIndexNew.push_back(path);
+
         if (_sourcePrimIndexToMasterMap.erase(path)) {
             TF_VERIFY(_masterToSourcePrimIndexMap.erase(masterPath));
-            masterNeedsNewPrimIndex = true;
+            removedMasterPrimIndexPath = path;
         }
     }
 
@@ -310,18 +342,31 @@ Usd_InstanceCache::_RemoveInstances(
     // Otherwise, do nothing; we defer removal of this master until
     // the end of instance change processing (see _RemoveMasterIfNoInstances)
     // in case a new instance for this master was registered.
-    if (masterNeedsNewPrimIndex && !primIndexesForMaster.empty()) {
-        const SdfPath& newSourceIndexPath = primIndexesForMaster.front();
-
-        TF_DEBUG(USD_INSTANCING).Msg(
-            "Instancing: Assigning new source <%s> for <%s>\n",
-            newSourceIndexPath.GetText(), masterPath.GetText());
-
-        _sourcePrimIndexToMasterMap[newSourceIndexPath] = masterPath;
-        _masterToSourcePrimIndexMap[masterPath] = newSourceIndexPath;
-
-        changes->changedMasterPrims.push_back(masterPath);
-        changes->changedMasterPrimIndexes.push_back(newSourceIndexPath);
+    if (!removedMasterPrimIndexPath.IsEmpty()) {
+        if (!primIndexesForMaster.empty()) {
+            const SdfPath& newSourceIndexPath = primIndexesForMaster.front();
+            
+            TF_DEBUG(USD_INSTANCING).Msg(
+                "Instancing: Changing source <%s> -> <%s> for <%s>\n",
+                removedMasterPrimIndexPath.GetText(),
+                newSourceIndexPath.GetText(), masterPath.GetText());
+            
+            _sourcePrimIndexToMasterMap[newSourceIndexPath] = masterPath;
+            _masterToSourcePrimIndexMap[masterPath] = newSourceIndexPath;
+            
+            changes->changedMasterPrims.push_back(masterPath);
+            changes->changedMasterPrimIndexes.push_back(newSourceIndexPath);
+            
+            // This master changed source indexes.
+            changes->associatedIndexOld.push_back(removedMasterPrimIndexPath);
+            changes->associatedIndexNew.push_back(newSourceIndexPath);
+        } else {
+            // Fill a data structure with the removedMasterPrimIndexPath for the
+            // master so that we can fill in the right "before" path in
+            // changedMasterPrimIndexes in _CreateOrUpdateMasterForInstances().
+            (*masterToOldSourceIndexPath)[masterPath] =
+                removedMasterPrimIndexPath;
+        }
     }
 }
 
@@ -360,7 +405,7 @@ Usd_InstanceCache::_RemoveMasterIfNoInstances(
 }
 
 bool 
-Usd_InstanceCache::IsPathMasterOrInMaster(const SdfPath& path)
+Usd_InstanceCache::IsPathInMaster(const SdfPath& path)
 {
     if (path.IsEmpty() || path == SdfPath::AbsoluteRootPath()) {
         return false;
@@ -368,7 +413,7 @@ Usd_InstanceCache::IsPathMasterOrInMaster(const SdfPath& path)
     if (!path.IsAbsolutePath()) {
         // We require an absolute path because there is no way for us
         // to walk to the root prim level from a relative path.
-        TF_CODING_ERROR("IsPathMasterOrInMaster() requires an absolute path "
+        TF_CODING_ERROR("IsPathInMaster() requires an absolute path "
                         "but was given <%s>", path.GetText());
         return false;
     }
@@ -407,7 +452,7 @@ Usd_InstanceCache::GetNumMasters() const
 }
 
 SdfPath 
-Usd_InstanceCache::GetMasterUsingPrimIndexAtPath(
+Usd_InstanceCache::GetMasterUsingPrimIndexPath(
     const SdfPath& primIndexPath) const
 {
     _SourcePrimIndexToMasterMap::const_iterator it = 
@@ -445,23 +490,22 @@ _FindEntryForAncestor(const PathMap& map, const SdfPath& path)
 }
 
 bool 
-Usd_InstanceCache::IsPrimInMasterUsingPrimIndexAtPath(
-    const SdfPath& primIndexPath) const
+Usd_InstanceCache::MasterUsesPrimIndexPath(const SdfPath& primIndexPath) const
 {
-    return _IsPrimInMasterUsingPrimIndexAtPath(primIndexPath);
+    return _MasterUsesPrimIndexPath(primIndexPath);
 }
 
 vector<SdfPath> 
-Usd_InstanceCache::GetPrimsInMastersUsingPrimIndexAtPath(
+Usd_InstanceCache::GetPrimsInMastersUsingPrimIndexPath(
     const SdfPath& primIndexPath) const
 {
     vector<SdfPath> masterPaths;
-    _IsPrimInMasterUsingPrimIndexAtPath(primIndexPath, &masterPaths);
+    _MasterUsesPrimIndexPath(primIndexPath, &masterPaths);
     return masterPaths;
 }
 
 bool
-Usd_InstanceCache::_IsPrimInMasterUsingPrimIndexAtPath(
+Usd_InstanceCache::_MasterUsesPrimIndexPath(
     const SdfPath& primIndexPath,
     vector<SdfPath>* masterPaths) const
 {
@@ -482,7 +526,7 @@ Usd_InstanceCache::_IsPrimInMasterUsingPrimIndexAtPath(
     // The naive implementation that looks through _sourcePrimIndexToMasterMap
     // would wind up returning true for both of these.
 
-    bool primIndexIsUsedByMaster = false;
+    bool masterUsesPrimIndex = false;
 
     SdfPath curIndexPath = primIndexPath;
     while (curIndexPath != SdfPath::AbsoluteRootPath()) {
@@ -511,7 +555,7 @@ Usd_InstanceCache::_IsPrimInMasterUsingPrimIndexAtPath(
         if (curIndexPath.HasPrefix(sourcePrimIndexPath)) {
             // If we don't need to collect all the master paths using this
             // prim index, we can bail out immediately.
-            primIndexIsUsedByMaster = true;
+            masterUsesPrimIndex = true;
             if (masterPaths) {
                 masterPaths->push_back(primIndexPath.ReplacePrefix(
                     sourcePrimIndexPath, masterPath));
@@ -522,7 +566,7 @@ Usd_InstanceCache::_IsPrimInMasterUsingPrimIndexAtPath(
         }
 
         // If we found an entry for an ancestor of curIndexPath in 
-        // _primIndexToMasterMap, the index must be a descendent of an
+        // _primIndexToMasterMap, the index must be a descendant of an
         // instanceable prim index. These indexes can only ever be used by
         // a single master prim, so we can stop here. 
         // 
@@ -537,22 +581,21 @@ Usd_InstanceCache::_IsPrimInMasterUsingPrimIndexAtPath(
         curIndexPath = it->first.GetParentPath();
     }
 
-    return primIndexIsUsedByMaster;
+    return masterUsesPrimIndex;
 }
 
 bool 
-Usd_InstanceCache::IsPrimInMasterForPrimIndexAtPath(
-    const SdfPath& primIndexPath) const
+Usd_InstanceCache::IsPathDescendantToAnInstance(
+    const SdfPath& usdPrimPath) const
 {
-    // If any ancestor of primIndexPath is in _primIndexToMasterMap, it's
+    // If any ancestor of usdPrimPath is in _primIndexToMasterMap, it's
     // a descendent of an instance.
-    _PrimIndexToMasterMap::const_iterator it = _FindEntryForAncestor(
-        _primIndexToMasterMap, primIndexPath);
-    return it != _primIndexToMasterMap.end();
+    return _FindEntryForAncestor(
+        _primIndexToMasterMap, usdPrimPath) != _primIndexToMasterMap.end();
 }
 
 SdfPath 
-Usd_InstanceCache::GetMasterForPrimIndexAtPath(
+Usd_InstanceCache::GetMasterForInstanceablePrimIndexPath(
     const SdfPath& primIndexPath) const
 {
     // Search the mapping from instance prim index to master prim
@@ -563,10 +606,41 @@ Usd_InstanceCache::GetMasterForPrimIndexAtPath(
 }
 
 SdfPath
-Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
-    const SdfPath& primIndexPath) const
+Usd_InstanceCache::GetPathInMasterForInstancePath(const SdfPath& primPath) const
 {
-    SdfPath primInMasterPath;
+    SdfPath primIndexPath;
+
+    // Without instancing, the path of a prim on a stage will be the same
+    // as the path for its prim index. However, this is not the case for
+    // prims in masters (e.g., /__Master_1/Instance/Child). In this case,
+    // we need to figure out what the source prim index path would be.
+    if (IsPathInMaster(primPath)) {
+        // If primPath is prefixed by a master prim path, replace it
+        // with that master's source index path to produce a prim index
+        // path.
+        _MasterToSourcePrimIndexMap::const_iterator it = 
+            _masterToSourcePrimIndexMap.upper_bound(primPath);
+        if (it != _masterToSourcePrimIndexMap.begin()) {
+            --it;
+            const SdfPath& masterPath = it->first;
+            const SdfPath& sourcePrimIndexPath = it->second;
+
+            // Just try the prefix replacement instead of doing a separate
+            // HasPrefix check. If it does nothing, we know primPath wasn't
+            // a prim in a master that this cache knows about.
+            const SdfPath p = 
+                primPath.ReplacePrefix(masterPath, sourcePrimIndexPath);
+            if (p != primPath) {
+                primIndexPath = p;
+            }
+        }
+    }
+    else {
+        primIndexPath = primPath;
+    }
+
+    if (primIndexPath.IsEmpty())
+        return primIndexPath;
 
     // This function is trickier than you might expect because it has
     // to deal with nested instances. Consider this case:
@@ -590,6 +664,7 @@ Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
     // This is because the prim index /World/Set_2/Prop_1/Scope has never been 
     // computed in this example!
 
+    SdfPath primInMasterPath;
     SdfPath curPrimIndexPath = primIndexPath;
     while (!curPrimIndexPath.IsEmpty()) {
         // Find the instance prim index that is closest to the current
@@ -633,44 +708,6 @@ Usd_InstanceCache::GetPrimInMasterForPrimIndexAtPath(
     }
 
     return primInMasterPath;
-}
-
-SdfPath 
-Usd_InstanceCache::GetPrimInMasterForPath(const SdfPath& primPath) const
-{
-    SdfPath primIndexPath;
-
-    // Without instancing, the path of a prim on a stage will be the same
-    // as the path for its prim index. However, this is not the case for
-    // prims in masters (e.g., /__Master_1/Instance/Child). In this case,
-    // we need to figure out what the source prim index path would be.
-    if (IsPathMasterOrInMaster(primPath)) {
-        // If primPath is prefixed by a master prim path, replace it
-        // with that master's source index path to produce a prim index
-        // path.
-        _MasterToSourcePrimIndexMap::const_iterator it = 
-            _masterToSourcePrimIndexMap.upper_bound(primPath);
-        if (it != _masterToSourcePrimIndexMap.begin()) {
-            --it;
-            const SdfPath& masterPath = it->first;
-            const SdfPath& sourcePrimIndexPath = it->second;
-
-            // Just try the prefix replacement instead of doing a separate
-            // HasPrefix check. If it does nothing, we know primPath wasn't
-            // a prim in a master that this cache knows about.
-            const SdfPath p = 
-                primPath.ReplacePrefix(masterPath, sourcePrimIndexPath);
-            if (p != primPath) {
-                primIndexPath = p;
-            }
-        }
-    }
-    else {
-        primIndexPath = primPath;
-    }
-
-    return primIndexPath.IsEmpty() ? 
-        SdfPath() : GetPrimInMasterForPrimIndexAtPath(primIndexPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

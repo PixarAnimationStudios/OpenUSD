@@ -550,7 +550,7 @@ struct _NameChildrenPred
         if (index.IsInstanceable()) {
             const bool indexUsedAsMasterSource = 
                 _instanceCache->RegisterInstancePrimIndex(index)
-                || !_instanceCache->GetMasterUsingPrimIndexAtPath(
+                || !_instanceCache->GetMasterUsingPrimIndexPath(
                     index.GetPath()).IsEmpty();
             return indexUsedAsMasterSource;
         }
@@ -1191,7 +1191,7 @@ bool
 UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath, 
                                   const char* operation) const
 {
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(primPath))) {
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInMaster(primPath))) {
         TF_CODING_ERROR("Cannot %s at path <%s>; "
                         "authoring to an instancing master is not allowed.",
                         operation, primPath.GetText());
@@ -1763,7 +1763,7 @@ UsdStage::_GetPrimDataAtPathOrInMaster(const SdfPath &path) const
     // in the master.
     if (!primData) {
         const SdfPath primInMasterPath = 
-            _instanceCache->GetPrimInMasterForPath(path);
+            _instanceCache->GetPathInMasterForInstancePath(path);
         if (!primInMasterPath.IsEmpty()) {
             primData = _GetPrimDataAtPath(primInMasterPath);
         }
@@ -2166,9 +2166,9 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
     // convert it to the path of the prim in the corresponding master.
     // This ensures _DiscoverPayloads will always return paths to 
     // prims in masters for loadable prims in instances.
-    if (!Usd_InstanceCache::IsPathMasterOrInMaster(path)) {
+    if (!Usd_InstanceCache::IsPathInMaster(path)) {
         const SdfPath pathInMaster = 
-            _instanceCache->GetPrimInMasterForPath(path);
+            _instanceCache->GetPathInMasterForInstancePath(path);
         if (!pathInMaster.IsEmpty()) {
             path = pathInMaster;
         }
@@ -2250,8 +2250,8 @@ UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
         return NULL;
     }
 
-    const SdfPath masterPath = 
-        _instanceCache->GetMasterForPrimIndexAtPath(
+    const SdfPath masterPath =
+        _instanceCache->GetMasterForInstanceablePrimIndexPath(
             prim->GetPrimIndex().GetPath());
     return masterPath.IsEmpty() ? NULL : _GetPrimDataAtPath(masterPath);
 }
@@ -2263,7 +2263,7 @@ UsdStage::_IsObjectDescendantOfInstance(const SdfPath& path) const
     // prim index, it would not be computed during composition unless
     // it is also serving as the source prim index for a master prim
     // on this stage.
-    return (_instanceCache->IsPrimInMasterForPrimIndexAtPath(
+    return (_instanceCache->IsPathDescendantToAnInstance(
             path.GetAbsoluteRootOrPrimPath()));
 }
 
@@ -2282,7 +2282,7 @@ UsdStage::_GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const
     } 
     else if (_instanceCache->GetNumMasters() != 0) {
         const vector<SdfPath> mastersUsingPrimIndex = 
-            _instanceCache->GetPrimsInMastersUsingPrimIndexAtPath(
+            _instanceCache->GetPrimsInMastersUsingPrimIndexPath(
                 primIndexPath);
 
         for (const auto& pathInMaster : mastersUsingPrimIndex) {
@@ -2378,7 +2378,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         const SdfPath& sourceIndexPath = 
             prim->GetSourcePrimIndex().GetPath();
         const SdfPath masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexAtPath(sourceIndexPath);
+            _instanceCache->GetMasterUsingPrimIndexPath(sourceIndexPath);
 
         if (!masterPath.IsEmpty()) {
             Usd_PrimDataPtr masterPrim = _GetPrimDataAtPath(masterPath);
@@ -3684,9 +3684,9 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // need to recompose any prim index beneath instance prim 
         // indexes *unless* they are being used as the source index
         // for a master.
-        if (_instanceCache->IsPrimInMasterForPrimIndexAtPath(path)) {
+        if (_instanceCache->IsPathDescendantToAnInstance(path)) {
             const bool primIndexUsedByMaster = 
-                _instanceCache->IsPrimInMasterUsingPrimIndexAtPath(path);
+                _instanceCache->MasterUsesPrimIndexPath(path);
             if (!primIndexUsedByMaster) {
                 TF_DEBUG(USD_CHANGES).Msg(
                     "Ignoring elided prim <%s>\n", path.GetText());
@@ -3714,7 +3714,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     SdfPathVector masterPrimsToRecompose;
     for (const SdfPath& path : primPathsToRecompose) {
         for (const SdfPath& masterPath :
-                 _instanceCache->GetPrimsInMastersUsingPrimIndexAtPath(path)) {
+                 _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
             masterPrimsToRecompose.push_back(masterPath);
             masterToPrimIndexMap[masterPath] = path;
         }
@@ -3775,6 +3775,42 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         _ComposeSubtreesInParallel(
             subtreesToRecompose, &primIndexPathsForSubtrees);
     }
+
+    // If the instancing changes produced old/new associated indexes, we need to
+    // square up payload inclusion, and recurse.
+    if (!instanceChanges.associatedIndexOld.empty()) {
+
+        // Walk the old and new, and if the old has payloads included strictly
+        // descendent to the old path, find the equivalent relative path on the
+        // new and include that payload.
+        SdfPathSet curLoadSet = _cache->GetIncludedPayloads();
+        SdfPathSet newPayloads;
+
+        for (size_t i = 0;
+             i != instanceChanges.associatedIndexOld.size(); ++i) {
+            SdfPath const &oldPath = instanceChanges.associatedIndexOld[i];
+            SdfPath const &newPath = instanceChanges.associatedIndexNew[i];
+            for (auto iter = curLoadSet.lower_bound(oldPath);
+                 iter != curLoadSet.end() && iter->HasPrefix(oldPath); ++iter) {
+                if (*iter == oldPath)
+                    continue;
+                SdfPath payloadPath = iter->ReplacePrefix(oldPath, newPath);
+                newPayloads.insert(payloadPath);
+                TF_DEBUG(USD_INSTANCING).Msg(
+                    "Including equivalent payload <%s> -> <%s> for instancing "
+                    "changes.\n",
+                    iter->GetText(), payloadPath.GetText());
+            }
+        }
+        if (!newPayloads.empty()) {
+            // Request payloads and recurse.
+            PcpChanges pcpChanges;
+            _cache->RequestPayloads(newPayloads, SdfPathSet(), &pcpChanges);
+            SdfPathSet toRecompose;
+            _RecomposePrims(pcpChanges, &toRecompose);
+            pathsToRecompose->insert(toRecompose.begin(), toRecompose.end());
+        }
+    }
 }
 
 template <class PrimIndexPathMap>
@@ -3806,7 +3842,7 @@ UsdStage::_RemoveMasterSubtreesSubsumedByInstances(
         const SdfPath* sourceIndexPath = 
             TfMapLookupPtr(primPathToSourceIndexPathMap, p->GetPath());
         const SdfPath& masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexAtPath(
+            _instanceCache->GetMasterUsingPrimIndexPath(
                 sourceIndexPath ? *sourceIndexPath : p->GetPath());
         if (!masterPath.IsEmpty()) {
             if (!mastersForSubtrees) {
@@ -4206,7 +4242,7 @@ _RemoveMasterTargetPaths(const UsdProperty& srcProp,
 {
     auto removeIt = std::remove_if(
         targetPaths->begin(), targetPaths->end(),
-        Usd_InstanceCache::IsPathMasterOrInMaster);
+        Usd_InstanceCache::IsPathInMaster);
     if (removeIt == targetPaths->end()) {
         return;
     }

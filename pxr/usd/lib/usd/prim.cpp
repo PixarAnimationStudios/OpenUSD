@@ -786,7 +786,7 @@ UsdPrim::GetMaster() const
 bool 
 UsdPrim::_PrimPathIsInMaster() const
 {
-    return Usd_InstanceCache::IsPathMasterOrInMaster(GetPrimPath());
+    return Usd_InstanceCache::IsPathInMaster(GetPrimPath());
 }
 
 SdfPrimSpecHandleVector 

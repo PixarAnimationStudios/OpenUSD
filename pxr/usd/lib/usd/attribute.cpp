@@ -385,7 +385,7 @@ UsdAttribute::_GetPathForAuthoring(const SdfPath &path,
     if (!path.IsEmpty()) {
         SdfPath absPath =
             path.MakeAbsolutePath(GetPath().GetAbsoluteRootOrPrimPath());
-        if (Usd_InstanceCache::IsPathMasterOrInMaster(absPath)) {
+        if (Usd_InstanceCache::IsPathInMaster(absPath)) {
             if (whyNot) { 
                 *whyNot = "Cannot refer to a master or an object within a "
                     "master.";
