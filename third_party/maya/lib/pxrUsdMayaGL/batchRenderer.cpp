@@ -155,30 +155,42 @@ class _BatchDrawUserData : public MUserData
 };
 
 
-UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer() :
-        _isPopulated(false),
-        _batchRenderer(nullptr)
+UsdMayaGLBatchRenderer::ShapeRenderer::ShapeRenderer(
+        const MDagPath& shapeDagPath,
+        const UsdPrim& rootPrim,
+        const SdfPathVector& excludedPrimPaths) :
+    _shapeDagPath(shapeDagPath),
+    _rootPrim(rootPrim),
+    _excludedPrimPaths(excludedPrimPaths),
+    _isPopulated(false)
 {
-    // _batchRenderer is nullptr to signify an uninitialized ShapeRenderer.
+}
+
+size_t
+UsdMayaGLBatchRenderer::ShapeRenderer::GetHash() const
+{
+    size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
+    boost::hash_combine(shapeHash, _rootPrim);
+    boost::hash_combine(shapeHash, _excludedPrimPaths);
+
+    return shapeHash;
 }
 
 void
-UsdMayaGLBatchRenderer::ShapeRenderer::Init(
-        HdRenderIndex* renderIndex,
-        const SdfPath& sharedId,
-        const UsdPrim& rootPrim,
-        const SdfPathVector& excludedPaths)
+UsdMayaGLBatchRenderer::ShapeRenderer::Init(HdRenderIndex* renderIndex)
 {
-    _sharedId = sharedId;
-    _rootPrim = rootPrim;
-    _excludedPaths = excludedPaths;
+    const size_t shapeHash = GetHash();
+
+    // Create a simple hash string to put into a flat SdfPath "hierarchy".
+    // This is much faster than more complicated pathing schemes.
+    const std::string idString = TfStringPrintf("/x%zx", shapeHash);
+    _sharedId = SdfPath(idString);
 
     _delegate.reset(new UsdImagingDelegate(renderIndex, _sharedId));
 }
 
 void
 UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
-        const MDagPath& objPath,
         const UsdTimeCode time,
         const uint8_t refineLevel,
         const bool showGuides,
@@ -210,9 +222,9 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
 
     if (_delegate) {
         MStatus status;
-        MMatrix transform = objPath.inclusiveMatrix( &status );
-        if (status) {
-            _rootXform = GfMatrix4d( transform.matrix );
+        const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
+        if (status == MS::kSuccess) {
+            _rootXform = GfMatrix4d(transform.matrix);
             _delegate->SetRootTransform(_rootXform);
         }
 
@@ -222,10 +234,6 @@ UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
         _delegate->SetTime(time);
 
         _delegate->SetRootCompensation(_rootPrim.GetPath());
-
-        if (!_isPopulated) {
-            _batchRenderer->_populateQueue.insert(this);
-        }
     }
 }
 
@@ -299,7 +307,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     //
     MColor mayaWireframeColor;
     const bool needsWire = _GetWireframeColor(
-        _batchRenderer->GetSoftSelectHelper(),
+        UsdMayaGLBatchRenderer::Get().GetSoftSelectHelper(),
         objPath,
         _ToMHWRenderDisplayStatus(displayStatus),
         &mayaWireframeColor);
@@ -376,7 +384,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     //
     MColor mayaWireframeColor;
     bool needsWire = _GetWireframeColor(
-        _batchRenderer->GetSoftSelectHelper(),
+        UsdMayaGLBatchRenderer::Get().GetSoftSelectHelper(),
         objPath,
         displayStatus,
         &mayaWireframeColor);
@@ -435,38 +443,26 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
 
 UsdMayaGLBatchRenderer::ShapeRenderer*
 UsdMayaGLBatchRenderer::GetShapeRenderer(
-        const UsdPrim& usdPrim,
-        const SdfPathVector& excludePrimPaths,
-        const MDagPath& objPath)
+        const MDagPath& shapeDagPath,
+        const UsdPrim& rootPrim,
+        const SdfPathVector& excludedPrimPaths)
 {
-    size_t hash(MObjectHandle(objPath.transform()).hashCode());
-    boost::hash_combine(hash, usdPrim);
-    boost::hash_combine(hash, excludePrimPaths);
+    ShapeRenderer shapeRenderer(shapeDagPath, rootPrim, excludedPrimPaths);
+    const size_t shapeHash = shapeRenderer.GetHash();
 
-    // We can get away with this because the spec for std::unordered_map
-    // guarantees that data pairs remain valid even if other objects are
-    // inserted.
-    ShapeRenderer* toReturn = &_shapeRendererMap[hash];
+    auto inserted = _shapeRendererMap.insert({shapeHash, shapeRenderer});
+    ShapeRenderer* shapeRendererPtr = &inserted.first->second;
 
-    if (!toReturn->_batchRenderer) {
-        // Create a simple hash string to put into a flat SdfPath "hierarchy".
-        // This is much faster than more complicated pathing schemes.
-        const std::string idString = TfStringPrintf("/x%zx", hash);
-
-        toReturn->Init(_renderIndex.get(),
-                       SdfPath(idString),
-                       usdPrim,
-                       excludePrimPaths);
-
-        toReturn->_batchRenderer = this;
+    if (inserted.second) {
+        shapeRendererPtr->Init(_renderIndex.get());
     }
 
-    return toReturn;
+    return shapeRendererPtr;
 }
 
 void
 UsdMayaGLBatchRenderer::QueueShapeForDraw(
-        const SdfPath& shapeRendererSharedId,
+        ShapeRenderer* shapeRenderer,
         MPxSurfaceShapeUI* shapeUI,
         MDrawRequest& drawRequest,
         const PxrMayaHdRenderParams& params,
@@ -487,7 +483,7 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
 
     MUserData* userData;
 
-    QueueShapeForDraw(shapeRendererSharedId,
+    QueueShapeForDraw(shapeRenderer,
                       userData,
                       params,
                       drawShape,
@@ -501,7 +497,7 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
 
 void
 UsdMayaGLBatchRenderer::QueueShapeForDraw(
-        const SdfPath& shapeRendererSharedId,
+        ShapeRenderer* shapeRenderer,
         MUserData*& userData,
         const PxrMayaHdRenderParams& params,
         const bool drawShape,
@@ -529,26 +525,32 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
     }
 
     if (drawShape) {
-        _QueueShapeForDraw(shapeRendererSharedId, params);
+        _QueueShapeForDraw(shapeRenderer, params);
     }
 }
 
 void
 UsdMayaGLBatchRenderer::_QueueShapeForDraw(
-        const SdfPath& sharedId,
+        ShapeRenderer* shapeRenderer,
         const PxrMayaHdRenderParams& params)
 {
+    if (!shapeRenderer->IsPopulated()) {
+        // Populate this shape renderer on the next draw if it hasn't yet been
+        // populated.
+        _populateQueue.insert(shapeRenderer);
+    }
+
     const size_t paramKey = params.Hash();
 
     auto renderSetIter = _renderQueue.find(paramKey);
     if (renderSetIter == _renderQueue.end()) {
         // If we had no _SdfPathSet for this particular RenderParam combination,
         // create a new one.
-        _renderQueue[paramKey] = _RenderParamSet(params,
-                                                 _SdfPathSet({sharedId}));
+        _renderQueue[paramKey] =
+            _RenderParamSet(params, _SdfPathSet({shapeRenderer->GetSharedId()}));
     } else {
         _SdfPathSet& renderPaths = renderSetIter->second.second;
-        renderPaths.insert(sharedId);
+        renderPaths.insert(shapeRenderer->GetSharedId());
     }
 }
 
@@ -752,18 +754,18 @@ UsdMayaGLBatchRenderer::Draw(
 
 bool
 UsdMayaGLBatchRenderer::TestIntersection(
-        const SdfPath& shapeRendererSharedId,
-        const GfMatrix4d& shapeRootXform,
+        const ShapeRenderer* shapeRenderer,
         M3dView& view,
         const unsigned int pickResolution,
         const bool singleSelection,
         GfVec3d* hitPoint)
 {
-    const HdxIntersector::Hit* hitInfo = _GetHitInfo(view,
-                                                     pickResolution,
-                                                     singleSelection,
-                                                     shapeRendererSharedId,
-                                                     shapeRootXform);
+    const HdxIntersector::Hit* hitInfo =
+        _GetHitInfo(view,
+                    pickResolution,
+                    singleSelection,
+                    shapeRenderer->GetSharedId(),
+                    shapeRenderer->GetRootXform());
     if (!hitInfo) {
         return false;
     }
@@ -968,12 +970,16 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         std::vector<SdfPathVector> invisedPrimPaths;
 
         for (ShapeRenderer* shapeRenderer : _populateQueue) {
-            delegates.push_back(shapeRenderer->_delegate.get());
-            rootPrims.push_back(shapeRenderer->_rootPrim);
-            excludedPrimPaths.push_back(shapeRenderer->_excludedPaths);
+            if (shapeRenderer->IsPopulated()) {
+                continue;
+            }
+
+            delegates.push_back(shapeRenderer->GetDelegate());
+            rootPrims.push_back(shapeRenderer->GetRootPrim());
+            excludedPrimPaths.push_back(shapeRenderer->GetExcludedPrimPaths());
             invisedPrimPaths.push_back(SdfPathVector());
 
-            shapeRenderer->_isPopulated = true;
+            shapeRenderer->SetPopulated(true);
         }
 
         UsdImagingDelegate::Populate(delegates,

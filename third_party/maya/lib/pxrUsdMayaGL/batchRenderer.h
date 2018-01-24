@@ -115,21 +115,22 @@ public:
 
         /// \brief Construct a new uninitialized \c ShapeRenderer.
         PXRUSDMAYAGL_API
-        ShapeRenderer();
+        ShapeRenderer(
+                const MDagPath& shapeDagPath,
+                const UsdPrim& rootPrim,
+                const SdfPathVector& excludedPrimPaths);
 
         PXRUSDMAYAGL_API
-        void Init(
-                HdRenderIndex* renderIndex,
-                const SdfPath& sharedId,
-                const UsdPrim& rootPrim,
-                const SdfPathVector& excludedPaths);
+        size_t GetHash() const;
 
-        /// \brief Register the \c ShapeRenderer with the specific DAG object
-        /// in question. This should be called once per frame, per
+        PXRUSDMAYAGL_API
+        void Init(HdRenderIndex* renderIndex);
+
+        /// \brief Prepare the shape renderer for being added to the batch
+        /// renderer's queues. This should be called once per frame, per
         /// \c ShapeRenderer in use.
         PXRUSDMAYAGL_API
         void PrepareForQueue(
-                const MDagPath& objPath,
                 const UsdTimeCode time,
                 const uint8_t refineLevel,
                 const bool showGuides,
@@ -161,7 +162,11 @@ public:
                 bool* drawShape,
                 bool* drawBoundingBox);
 
-        const SdfPath& GetSharedId() const { return _sharedId; }
+        const UsdPrim& GetRootPrim() const { return _rootPrim; }
+
+        const SdfPathVector& GetExcludedPrimPaths() const {
+            return _excludedPrimPaths;
+        }
 
         const GfMatrix4d& GetRootXform() const { return _rootXform; }
 
@@ -169,30 +174,45 @@ public:
         ///
         const PxrMayaHdRenderParams& GetBaseParams() const { return _baseParams; }
 
+        const SdfPath& GetSharedId() const { return _sharedId; }
+
+        bool IsPopulated() const { return _isPopulated; }
+        void SetPopulated(const bool isPopulated = true) {
+            _isPopulated = isPopulated;
+        }
+
+        UsdImagingDelegate* GetDelegate() const {
+            if (_delegate) {
+                return _delegate.get();
+            }
+
+            return nullptr;
+        }
+
     private:
-        SdfPath _sharedId;
+        MDagPath _shapeDagPath;
         UsdPrim _rootPrim;
-        SdfPathVector _excludedPaths;
+        SdfPathVector _excludedPrimPaths;
         GfMatrix4d _rootXform;
 
         PxrMayaHdRenderParams _baseParams;
 
+        SdfPath _sharedId;
         bool _isPopulated;
         std::shared_ptr<UsdImagingDelegate> _delegate;
-        UsdMayaGLBatchRenderer* _batchRenderer;
     };
 
     /// \brief Gets a pointer to the \c ShapeRenderer associated with a certain
     /// set of parameters.
     ///
-    /// The objected pointed to is owned by the
-    /// \c UsdMayaGLBatchRenderer and will be valid for as long as the
-    /// \c UsdMayaGLBatchRenderer object is valid.
+    /// The object pointed to is owned by the \c UsdMayaGLBatchRenderer and
+    /// will be valid for as long as the \c UsdMayaGLBatchRenderer object is
+    /// valid.
     PXRUSDMAYAGL_API
     ShapeRenderer* GetShapeRenderer(
-            const UsdPrim& usdPrim,
-            const SdfPathVector& excludePrimPaths,
-            const MDagPath& objPath);
+            const MDagPath& shapeDagPath,
+            const UsdPrim& rootPrim,
+            const SdfPathVector& excludedPrimPaths);
 
     /// \brief Queue a batch draw call, to be executed later.
     ///
@@ -200,7 +220,7 @@ public:
     ///
     PXRUSDMAYAGL_API
     void QueueShapeForDraw(
-            const SdfPath& shapeRendererSharedId,
+            ShapeRenderer* shapeRenderer,
             MPxSurfaceShapeUI* shapeUI,
             MDrawRequest& drawRequest,
             const PxrMayaHdRenderParams& params,
@@ -210,14 +230,14 @@ public:
     /// \brief Queue a batch draw call, to be executed later.
     ///
     /// \p userData should be the same parameter \c oldData passed into the
-    /// caller: the overriden \c prepareForDraw(...) call. The \p userData
+    /// caller: the overridden \c prepareForDraw(...) call. The \p userData
     /// pointer must also be returned from the overridden caller.
     ///
     /// \p boxToDraw may be set to nullptr if no box is desired to be drawn.
     ///
     PXRUSDMAYAGL_API
     void QueueShapeForDraw(
-            const SdfPath& shapeRendererSharedId,
+            ShapeRenderer* shapeRenderer,
             MUserData*& userData,
             const PxrMayaHdRenderParams& params,
             const bool drawShape,
@@ -254,15 +274,14 @@ public:
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
 
-    /// \brief Tests an object from a shape renderer with the given sharedId
-    /// and root transform for intersection with a given view.
+    /// \brief Tests the object from the given shape renderer for intersection
+    /// with a given view.
     ///
     /// \p hitPoint yields the point of intersection if \c true is returned.
     ///
     PXRUSDMAYAGL_API
     bool TestIntersection(
-            const SdfPath& shapeRendererSharedId,
-            const GfMatrix4d& shapeRootXform,
+            const ShapeRenderer* shapeRenderer,
             M3dView& view,
             const unsigned int pickResolution,
             const bool singleSelection,
@@ -272,7 +291,7 @@ private:
 
     /// \brief Private helper function for registering a batch render call.
     void _QueueShapeForDraw(
-            const SdfPath& sharedId,
+            ShapeRenderer* shapeRenderer,
             const PxrMayaHdRenderParams& params);
 
     /// \brief Tests an object for intersection with a given view.

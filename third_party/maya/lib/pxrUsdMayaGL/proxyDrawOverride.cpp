@@ -118,12 +118,11 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     // shapeRenderer is owned by the global mayaBatchRenderer, which is
     // a singleton.
     UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        UsdMayaGLBatchRenderer::Get().GetShapeRenderer(usdPrim,
-                                                       excludePaths,
-                                                       objPath);
+        UsdMayaGLBatchRenderer::Get().GetShapeRenderer(objPath,
+                                                       usdPrim,
+                                                       excludePaths);
 
-    shapeRenderer->PrepareForQueue(objPath,
-                                   timeCode,
+    shapeRenderer->PrepareForQueue(timeCode,
                                    subdLevel,
                                    showGuides,
                                    showRenderGuides,
@@ -147,7 +146,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
         // Note that drawShape is still passed through here.
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer->GetSharedId(),
+            shapeRenderer,
             userData,
             params,
             drawShape,
@@ -157,7 +156,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     // Like above but with no bounding box...
     else if (drawShape) {
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer->GetSharedId(),
+            shapeRenderer,
             userData,
             params,
             drawShape,

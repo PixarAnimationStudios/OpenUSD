@@ -90,13 +90,12 @@ _GetShapeRenderer(
 
     UsdMayaGLBatchRenderer::ShapeRenderer* outShapeRenderer =
         UsdMayaGLBatchRenderer::Get().GetShapeRenderer(
+            objPath,
             usdPrim,
-            excludePaths,
-            objPath);
+            excludePaths);
 
     if (prepareForQueue) {
-        outShapeRenderer->PrepareForQueue(objPath,
-                                          timeCode,
+        outShapeRenderer->PrepareForQueue(timeCode,
                                           subdLevel,
                                           showGuides,
                                           showRenderGuides,
@@ -142,7 +141,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
 
         // Note that drawShape is still passed through here.
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer->GetSharedId(),
+            shapeRenderer,
             this,
             request,
             params,
@@ -153,7 +152,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
     // Like above but with no bounding box...
     else if (drawShape) {
         UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
-            shapeRenderer->GetSharedId(),
+            shapeRenderer,
             this,
             request,
             params,
@@ -219,8 +218,7 @@ UsdMayaProxyShapeUI::select(
     GfVec3d hitPoint;
     const bool didHit =
         UsdMayaGLBatchRenderer::Get().TestIntersection(
-            shapeRenderer->GetSharedId(),
-            shapeRenderer->GetRootXform(),
+            shapeRenderer,
             view,
             selectRes,
             selectInfo.singleSelection(),
