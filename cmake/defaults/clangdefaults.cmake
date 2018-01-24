@@ -30,3 +30,5 @@ set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
 if(CMAKE_USE_PTHREADS_INIT)
     _disable_warning("unused-command-line-argument")
 endif()
+
+_disable_warning("undefined-var-template")
