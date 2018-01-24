@@ -55,7 +55,7 @@ public:
 
     // HdSt_DrawBatch overrides
     HDST_API
-    virtual bool Validate(bool deepValidation);
+    virtual bool Validate(bool deepValidation) override;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
@@ -70,7 +70,7 @@ public:
         HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     HDST_API
-    virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance);
+    virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance) override;
 
     /// Returns whether to do frustum culling on the GPU
     HDST_API
