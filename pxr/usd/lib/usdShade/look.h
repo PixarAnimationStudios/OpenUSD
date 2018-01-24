@@ -56,49 +56,7 @@ class SdfAssetPath;
 /// \class UsdShadeLook
 ///
 /// \deprecated Deprecated in favor of Material.
-/// 
-/// A Look provides a container into which multiple "render targets"
-/// can add data that defines a "shading look" for a renderer.  Typically
-/// this consists of one or more UsdRelationship properties that target
-/// other prims of type \em Shader - though a target/client is free to add
-/// any data that is suitable.  We <b>strongly advise</b> that all targets
-/// adopt the convention that all properties be prefixed with a namespace
-/// that identifies the target, e.g. "rel ri:surface = </Shaders/mySurf>".
-/// 
-/// <b>Binding Looks</b>
-/// 
-/// In the UsdShading model, geometry expresses a binding to a single Look or
-/// to a set of Looks partitioned by face-sets defined on the geometry;
-/// it is legal to bind a Look at the root (or other sub-prim) of a model,
-/// and then bind a different Look to individual gprims, but the meaning of
-/// inheritance and "ancestral overriding" of Look bindings is left to each
-/// render-target to determine.  Since UsdGeom has no concept of shading,
-/// we provide the API for binding and unbinding geometry here, on UsdShadeLook.
-/// Please see Bind(), Unbind(), GetBindingRel(), GetBoundLook().
-/// 
-/// <b>Look Variation</b>
-/// 
-/// The entire power of Usd variantSets and all the other composition 
-/// operators can be brought to bear on encoding shading variation.  
-/// UsdShadeLook provides facilities for a particular way of building
-/// "Look variants" in which neither the identity of the Looks themselves
-/// nor the geometry Look-bindings need to change - instead we vary the
-/// targetted networks, interface values, and even parameter values within
-/// a single variantSet.  
-/// See \ref UsdShadeLook_Variations "Authoring Look Variations" for more.
-/// 
-/// <b>Authoring Looks for Referenced Re-use</b>
-/// 
-/// The shading networks that a Look may target can live anywhere in a layer's
-/// namespace.  However, it is advantageous to place all of the shaders that 
-/// "belong" to the Look under it in namespace, particularly when building
-/// "shading libraries/palettes" that you intend to reference into other,
-/// composite, more specialized Looks.  This is because Usd references compose
-/// all descendant prims of the reference target into the referencer's namespace.
-/// This means that all of the library Look's shader network will come along 
-/// with the Look when the Look gets referenced as a sub-component of another
-/// Look.
-/// 
+/// Please refer to UsdMaterial
 /// 
 ///
 class UsdShadeLook : public UsdShadeMaterial

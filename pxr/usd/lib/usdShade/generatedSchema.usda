@@ -34,39 +34,43 @@ class Material "Material" (
     adopt the convention that all properties be prefixed with a namespace
     that identifies the target, e.g. \"rel ri:surface = </Shaders/mySurf>\".
     
-    <b>Binding Materials</b>
+    ## Binding Materials
     
-    In the UsdShading model, geometry expresses a binding to a single Material or
-    to a set of Materials partitioned by face-sets defined on the geometry;
+    In the USD shading model, geometry expresses a binding to a single Material 
+    or to a set of Materials partitioned by face-sets defined on the geometry;
     it is legal to bind a Material at the root (or other sub-prim) of a model,
     and then bind a different Material to individual gprims, but the meaning of
     inheritance and \"ancestral overriding\" of Material bindings is left to each
     render-target to determine.  Since UsdGeom has no concept of shading,
-    we provide the API for binding and unbinding geometry here, on UsdShadeMaterial.
+    we provide the API for binding and unbinding geometry here, on 
+    UsdShadeMaterial.
     Please see Bind(), Unbind(), GetBindingRel(), GetBoundMaterial().
     
-    <b>Material Variation</b>
+    ## Material Variation
     
-    The entire power of Usd variantSets and all the other composition 
-    operators can be brought to bear on encoding shading variation.  
+    The entire power of USD VariantSets and all the other composition 
+    operators can leveraged when encoding shading variation.  
     UsdShadeMaterial provides facilities for a particular way of building
     \"Material variants\" in which neither the identity of the Materials themselves
     nor the geometry Material-bindings need to change - instead we vary the
-    targetted networks, interface values, and even parameter values within
+    targeted networks, interface values, and even parameter values within
     a single variantSet.  
-    See \"Authoring Material Variations\" for more.
+    See \"Authoring Material Variations\" 
+    for more details.
+
+    ## Materials Encapsulate their Networks in Namespace
     
-    <b>Authoring Materials for Referenced Re-use</b>
-    
-    The shading networks that a Material may target can live anywhere in a layer's
-    namespace.  However, it is advantageous to place all of the shaders that 
-    \"belong\" to the Material under it in namespace, particularly when building
-    \"shading libraries/palettes\" that you intend to reference into other,
-    composite, more specialized Materials.  This is because Usd references compose
-    all descendant prims of the reference target into the referencer's namespace.
-    This means that all of the library Material's shader network will come along 
-    with the Material when the Material gets referenced as a sub-component of another
-    Material.
+    UsdShade requires that all of the shaders that \"belong\" to the Material 
+    live under the Material in namespace. This supports powerful, easy reuse
+    of Materials, because it allows us to *reference* a Material from one
+    asset (the asset might be a library of Materials) into another asset: USD 
+    references compose all descendant prims of the reference target into the 
+    referencer's namespace, which means that all of the referenced Material's 
+    shader networks will come along with the Material. When referenced in this
+    way, Materials can also be [instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing), for ease of deduplication and compactness.
+    Finally, Material encapsulation also allows us to 
+    \"specialize\" child materials from 
+    parent materials.
     
     """
 )
@@ -75,66 +79,31 @@ class Material "Material" (
 
 class Look "Look" (
     doc = """\\deprecated Deprecated in favor of Material.
-
-    A Look provides a container into which multiple \"render targets\"
-    can add data that defines a \"shading look\" for a renderer.  Typically
-    this consists of one or more UsdRelationship properties that target
-    other prims of type Shader - though a target/client is free to add
-    any data that is suitable.  We <b>strongly advise</b> that all targets
-    adopt the convention that all properties be prefixed with a namespace
-    that identifies the target, e.g. \"rel ri:surface = </Shaders/mySurf>\".
-    
-    <b>Binding Looks</b>
-    
-    In the UsdShading model, geometry expresses a binding to a single Look or
-    to a set of Looks partitioned by face-sets defined on the geometry;
-    it is legal to bind a Look at the root (or other sub-prim) of a model,
-    and then bind a different Look to individual gprims, but the meaning of
-    inheritance and \"ancestral overriding\" of Look bindings is left to each
-    render-target to determine.  Since UsdGeom has no concept of shading,
-    we provide the API for binding and unbinding geometry here, on UsdShadeLook.
-    Please see Bind(), Unbind(), GetBindingRel(), GetBoundLook().
-    
-    <b>Look Variation</b>
-    
-    The entire power of Usd variantSets and all the other composition 
-    operators can be brought to bear on encoding shading variation.  
-    UsdShadeLook provides facilities for a particular way of building
-    \"Look variants\" in which neither the identity of the Looks themselves
-    nor the geometry Look-bindings need to change - instead we vary the
-    targetted networks, interface values, and even parameter values within
-    a single variantSet.  
-    See \"Authoring Look Variations\" for more.
-    
-    <b>Authoring Looks for Referenced Re-use</b>
-    
-    The shading networks that a Look may target can live anywhere in a layer's
-    namespace.  However, it is advantageous to place all of the shaders that 
-    \"belong\" to the Look under it in namespace, particularly when building
-    \"shading libraries/palettes\" that you intend to reference into other,
-    composite, more specialized Looks.  This is because Usd references compose
-    all descendant prims of the reference target into the referencer's namespace.
-    This means that all of the library Look's shader network will come along 
-    with the Look when the Look gets referenced as a sub-component of another
-    Look.
-    
+    Please refer to UsdMaterial
     """
 )
 {
 }
 
 class Shader "Shader" (
-    doc = '''Base class for all usd shaders. This is not target specific,
-    although usually each render target will derive its own, renderer-specific
-    shader object types from this base.
+    doc = '''Base class for all USD shaders. Shaders are the building blocks
+    of shading networks. While UsdShadeShader objects are not target specific,
+    each renderer or application target may derive its own renderer-specific 
+    shader object types from this base, if needed.
     
-    Shader objects generally (but need not) represent a one-to-one 
-    correspondence with shader objects of some kind in the target renderer.
+    Objects of this class generally represent a single shading object, whether
+    it exists in the target renderer or not. For example, a texture, a fractal,
+    or a mix node.
+
+    The main property of this class is the info:id token, which uniquely 
+    identifies the type of this node. The id resolution into a renderable 
+    shader target is deferred to the consuming application.
+
     The purpose of representing them in Usd is two-fold:
     - To represent, via "connections" the topology of the shading network
     that must be reconstructed in the renderer. Facilities for authoring and 
     manipulating connections are encapsulated in the Has-A schema 
-    \ref UsdShadeConnectableAPI.
+    UsdShadeConnectableAPI.
     - To present a (partial or full) interface of typed input parameters 
     whose values can be set and overridden in Usd, to be provided later at 
     render-time as parameter values to the actual render shader objects. Shader 
@@ -144,8 +113,8 @@ class Shader "Shader" (
 {
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
-        shader. E.g.: Texture or FractalFloat. 
-        The use of this id will depend on the renderer: some will turn it
+        shader. E.g.: Texture or FractalFloat.
+        The use of this id will depend on the render target: some will turn it
         into an actual shader path, some will use it to generate dynamically
         a shader source code.
         """
@@ -155,7 +124,23 @@ class Shader "Shader" (
 class "ConnectableAPI" (
     doc = """UsdShadeConnectableAPI is an API schema that provides a common
     interface for creating outputs and making connections between shading 
-    parameters and outputs.
+    parameters and outputs. The interface is common to all UsdShade schemas
+    that support Inputs and Outputs, which currently includes UsdShadeShader,
+    UsdShadeNodeGraph, and UsdShadeMaterial .
+
+    One can construct a UsdShadeConnectableAPI directly from a UsdPrim, or
+    from objects of any of the schema classes listed above.  If it seems
+    onerous to need to construct a secondary schema object to interact with
+    Inputs and Outputs, keep in mind that any function whose purpose is either
+    to walk material/shader networks via their connections, or to create such
+    networks, can typically be written entirely in terms of 
+    UsdShadeConnectableAPI objects, without needing to care what the underlying
+    prim type is.
+
+    Additionally, the most common UsdShadeConnectableAPI behaviors
+    (creating Inputs and Outputs, and making connections) are wrapped as
+    convenience methods on the prim schema classes (creation) and 
+    UsdShadeInput and UsdShadeOutput.
     """
 )
 {

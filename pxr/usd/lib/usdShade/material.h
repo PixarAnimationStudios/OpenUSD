@@ -64,39 +64,43 @@ class SdfAssetPath;
 /// adopt the convention that all properties be prefixed with a namespace
 /// that identifies the target, e.g. "rel ri:surface = </Shaders/mySurf>".
 /// 
-/// <b>Binding Materials</b>
+/// ## Binding Materials
 /// 
-/// In the UsdShading model, geometry expresses a binding to a single Material or
-/// to a set of Materials partitioned by face-sets defined on the geometry;
+/// In the USD shading model, geometry expresses a binding to a single Material 
+/// or to a set of Materials partitioned by face-sets defined on the geometry;
 /// it is legal to bind a Material at the root (or other sub-prim) of a model,
 /// and then bind a different Material to individual gprims, but the meaning of
 /// inheritance and "ancestral overriding" of Material bindings is left to each
 /// render-target to determine.  Since UsdGeom has no concept of shading,
-/// we provide the API for binding and unbinding geometry here, on UsdShadeMaterial.
+/// we provide the API for binding and unbinding geometry here, on 
+/// UsdShadeMaterial.
 /// Please see Bind(), Unbind(), GetBindingRel(), GetBoundMaterial().
 /// 
-/// <b>Material Variation</b>
+/// ## Material Variation
 /// 
-/// The entire power of Usd variantSets and all the other composition 
-/// operators can be brought to bear on encoding shading variation.  
+/// The entire power of USD VariantSets and all the other composition 
+/// operators can leveraged when encoding shading variation.  
 /// UsdShadeMaterial provides facilities for a particular way of building
 /// "Material variants" in which neither the identity of the Materials themselves
 /// nor the geometry Material-bindings need to change - instead we vary the
-/// targetted networks, interface values, and even parameter values within
+/// targeted networks, interface values, and even parameter values within
 /// a single variantSet.  
-/// See \ref UsdShadeMaterial_Variations "Authoring Material Variations" for more.
+/// See \ref UsdShadeMaterial_Variations "Authoring Material Variations" 
+/// for more details.
 /// 
-/// <b>Authoring Materials for Referenced Re-use</b>
+/// ## Materials Encapsulate their Networks in Namespace
 /// 
-/// The shading networks that a Material may target can live anywhere in a layer's
-/// namespace.  However, it is advantageous to place all of the shaders that 
-/// "belong" to the Material under it in namespace, particularly when building
-/// "shading libraries/palettes" that you intend to reference into other,
-/// composite, more specialized Materials.  This is because Usd references compose
-/// all descendant prims of the reference target into the referencer's namespace.
-/// This means that all of the library Material's shader network will come along 
-/// with the Material when the Material gets referenced as a sub-component of another
-/// Material.
+/// UsdShade requires that all of the shaders that "belong" to the Material 
+/// live under the Material in namespace. This supports powerful, easy reuse
+/// of Materials, because it allows us to *reference* a Material from one
+/// asset (the asset might be a library of Materials) into another asset: USD 
+/// references compose all descendant prims of the reference target into the 
+/// referencer's namespace, which means that all of the referenced Material's 
+/// shader networks will come along with the Material. When referenced in this
+/// way, Materials can also be [instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing), for ease of deduplication and compactness.
+/// Finally, Material encapsulation also allows us to 
+/// \ref UsdShadeMaterial_BaseMaterial "specialize" child materials from 
+/// parent materials.
 /// 
 /// 
 ///
@@ -266,35 +270,56 @@ public:
     /// \anchor UsdShadeMaterial_Variations
     /// \name Authoring Material Variations
     /// Each UsdShadeMaterial prim can host data for any number of render targets
-    /// (such as Renderman RSL, Renderman RIS, Arnold, or glslfx).  Each Material
-    /// can /em also, however, encode variations of a particular Material that can
-    /// vary each target's set of bound shaders - or any other data authored
-    /// on the Material.  For example, we might have a logo'd baseball cap that
-    /// comes in denim, nylon, and corduroy variations.  We can encode the
-    /// material variation - and the ability to select the variations - as
-    /// a Material variant that varies the surface shader relationship in each of
-    /// the render targets.
+    /// (such as Renderman RIS, Arnold, or glslfx).
+    ///
+    /// A single UsdShadeMaterial group can, however, encode variations on
+    /// appearance, varying any data authored on the material and its contents.
+    /// For example, we might have a logo'd baseball cap that
+    /// comes in denim, nylon, and corduroy variations.
     ///
     /// We provide methods to aid in authoring such variations on individual
-    /// Material prims, and also a facility for creating a "master" Material variant
-    /// on another prim (a model's root prim, or another common ancestor of
-    /// all Material prims in a model) that will set the variants on each Material
-    /// in concert, from making a single variant selection.
+    /// Material prims, and also a facility for creating a "master" look
+    /// variant on another prim (e.g.  a model's root prim, or another common 
+    /// ancestor of all Material prims in a model) that will be able to modify
+    /// Materials, bindings, connections and values at once.
     ///
     /// <b>Note on variant vs "direct" opinions.</b>
-    /// For any given location in a layer (i.e. a prim's spec in the layer),
-    /// opinions expressed inside a variant of a variantSet will be
-    /// \em weaker than any opinions expressed "directly" at the location,
-    /// outside of any layer.
+    /// For any given prim's spec in a layer, opinions expressed inside a 
+    /// variant of a variantSet will be /weaker/ than any opinions expressed 
+    /// "directly" at the location, outside of any layer.
     ///
-    /// Therefore, if you intend to vary relationship "surface" in a 
-    /// MaterialVariant, make sure you author it \em only inside variant edit
-    /// contexts (i.e. GetEditContextForVariant()).  If you author the
-    /// relationship outside any of the variants, it will trump them all.
+    /// Therefore, if you intend to author a default variant that is weaker than
+    /// more explicit variants, you will need to have those opinions be weaker 
+    /// by setting them across a reference arc such as the following:
+    ///
+    /// \code
+    /// def "MyMaterial" (
+    ///     add references = </MyMaterial_defaultShadingVariant>
+    ///     variants = {
+    ///         string materialVariant = "SomeVariant"
+    ///     }
+    ///     add variantSets = "materialVariant"
+    /// )
+    /// {
+    ///     float strongerThanVariantOpinion
+    /// 
+    ///     variantSet "materialVariant" = {
+    ///         "SomeVariant" {
+    ///             float variantOpinion
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// over "MyMaterial_defaultShadingVariant"
+    /// {
+    ///     float weakerThanVariantOpinion
+    /// }
+    /// \endcode
+    /// 
     /// @{
+    ///
     // --------------------------------------------------------------------- //
-
-    /// Helper function for configuring a UsdStage's editTarget to author
+    /// Helper function for configuring a UsdStage's UsdEditTarget to author
     /// Material variations. Takes care of creating the Material variantSet and
     /// specified variant, if necessary.
     ///
@@ -308,7 +333,7 @@ public:
     /// {
     ///     UsdEditContext ctxt(clothMaterial.GetEditContextForVariant(currVariant));
     ///
-    ///     // All Usd mutation of the UsdStage on which clothMaterial sits will
+    ///     // All USD mutation of the UsdStage on which clothMaterial sits will
     ///     // now go "inside" the currVariant of the "MaterialVariant" variantSet
     /// }
     /// \endcode

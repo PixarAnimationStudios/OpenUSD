@@ -1,16 +1,181 @@
 /*!
 \page usdShade_page_front UsdShade : USD Shading Schema
 \if ( PIXAR_MFB_BUILD )
-\mainpage UsdShade : USD Shading Schema
 \publicLib
+\mainpage UsdShade : USD Shading Schema
 \endif
 
-\section usdShade_overview Overview
+UsdShade provides schemas and behaviors for creating and binding materials,
+which encapsulate shading networks.
 
-UsdShade provides schemas and behaviors for creating and connecting shading
-networks (UsdShadeShader, UsdShadeInput, UsdShadeConnectableAPI), organizing 
-shading networks into coherent packaged units for binding to geometry and 
-reuse (UsdShadeMaterial), and creating instanceable user interfaces for 
-Materials that drive shader parameters (UsdShadeNodeGraph_Inputs). 
+# UsdShade Networks {#UsdShadeNetworks}
+
+UsdShade provides schemas and behaviors for creating shading networks
+(UsdShadeNodeGraph) and materials (UsdShadeMaterial). The networks are
+composed of UsdShadeShader objects, as well as other UsdShadeNodeGraph.
+
+Objects in a network are connected together and to their encapsulating Material
+using the UsdShadeConnectableAPI schema, which allows one to create 
+UsdShadeInput and UsdShadeOutput (which are UsdAttribute schemas), and *connect*
+them using [UsdAttribute connections](http://openusd.org/docs/api/class_usd_attribute.html#af8eaf3216d67a143923b65465eac881a).
+
+Here's a python example.
+
+~~~~~~~~~~~~~{.py}
+    # create material
+    materialPath = Sdf.Path('/Model/Materials/MyMaterial')
+    material = UsdShade.Material.Define(stage, materialPath)
+
+    # create shaders
+    downStreamShader = UsdShade.Shader.Define(
+        stage, materialPath.AppendChild('Upstream'))
+    upstreamShader = UsdShade.Shader.Define(
+        stage, materialPath.AppendChild('Downstream'))
+
+    # Connect
+    inputPort = downStreamShader.CreateInput(
+        'DownstreamInput', Sdf.ValueTypeNames.Float)
+    inputPort.ConnectToSource(upstreamShader, 'UpstreamOutput')
+~~~~~~~~~~~~~
+
+This will yield a material with two connected nodes.
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    def "Model"
+    {
+        def "Materials"
+        {
+            def Material "MyMaterial"
+            {
+                def Shader "Upstream"
+                {
+                    float inputs:DownstreamInput.connect = 
+                        </Model/Materials/MyMaterial/Downstream.outputs:UpstreamOutput>
+                }
+
+                def Shader "Downstream"
+                {
+                    float outputs:UpstreamOutput
+                }
+            }
+        }
+    }
+~~~~~~~~~~~~~
+
+
+# Encapsulation and Sharing {#UsdShadeEncapsulation}
+
+\note In UsdShade, all shaders are UsdPrims or just "prims".  However, in 
+deference to the larger body of technical discourse on shading, we will refer
+to them as "nodes" in this discussion.
+
+Shading nodes should be encapsulated in a containing object, and are not
+generally used in isolation.
+
+Shading networks can be organized into coherent packaged units
+(UsdShadeNodeGraph), with their own public parameters exposed and connected
+to the internal nodes.  In this scenario, the UsdShadeNodeGraph is a parent or
+ancestor prim to all of the UsdShadeShader prims in the network, and serves
+as the point of encapsulation - the UsdShadeNodeGraph prim can then be 
+*referenced* into other, larger networks as a building block, with its entire
+network intact.  When referenced into larger networks, NodeGraphs can also
+be [instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing)
+so that they appear as a single prim in the network, and can be processed
+more efficiently when referenced from multiple locations.
+
+If the network of shading nodes is directly consumable as a "shader" of a
+type known to some client renderer (e.g. a *surface shader*), then the
+encapsulating parent/ancestor should be declared as a UsdShadeMaterial, which
+is a container that can also be bound to geometries or collections. Materials
+can also be reused and instanced, retaining the same network but allowing
+top-level "Material Interface" parameter to be authored uniquely.
+
+To expose a parameter to the container, we use the same mechanism that
+connects nodes.
+
+~~~~~~~~~~~~~{.py}
+    # Expose a parameter to the public interface
+    internalPort = upstreamShader.CreateInput(
+        'internalPort', Sdf.ValueTypeNames.Float)
+    exposedPort = material.CreateInput(
+        'ExposedPort', Sdf.ValueTypeNames.Float)
+    exposedPort.Set(1.0)
+    internalPort.ConnectToSource(exposedPort)
+~~~~~~~~~~~~~
+
+Which will yield a public interface parameter called 'ExposedPort' on the
+UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    def "Model"
+    {
+        def "Materials"
+        {
+            def Material "MyMaterial"
+            {
+                float inputs:ExposedPort = 1
+
+                def Shader "Upstream"
+                {
+                    float inputs:DownstreamInput.connect = 
+                        </Model/Materials/MyMaterial/Downstream.outputs:UpstreamOutput>
+                }
+
+                def Shader "Downstream"
+                {
+                    float inputs:internalPort.connect = 
+                        </Model/Materials/MyMaterial.inputs:ExposedPort>
+                    float outputs:UpstreamOutput
+                }
+            }
+        }
+    }
+~~~~~~~~~~~~~
+
+To expose an output of a node network as an output of a NodeGraph, or as a
+"terminal output" of a Material, we again use the same connection API, except
+that now we are connecting an Output to another Output (in effect, *forwarding*
+the Output from a node to its encapsulating container):
+
+~~~~~~~~~~~~~{.py}
+    # The output represents the result of the shader's computation. For
+    # complex types like "surface illumination" we use the type Token as
+    # a standin for the type specific to the renderer
+    outPort = surfaceShader.CreateOutput(
+        'out', Sdf.ValueTypeNames.Token)
+    surfaceTerminal = material.CreateOutput(
+        'surface', Sdf.ValueTypeNames.Token)
+    # For outputs, it is the container's Output that connect's to the Node's
+    # output
+    surfaceTerminal.ConnectToSource(outPort)
+~~~~~~~~~~~~~
+
+Which will yield a public interface parameter called 'ExposedPort' on the
+UsdShadeMaterial called 'MyMaterial', and set its default value to 1.0
+
+~~~~~~~~~~~~~{.usd}
+    #usda 1.0
+
+    def "Model"
+    {
+        def "Materials"
+        {
+            def Material "MyMaterial"
+            {
+                token outputs:surface.connect = 
+                    </Model/Materials/MyMaterial/Surface.outputs:out>
+
+                def Shader "Surface"
+                {
+                    token outputs:out
+                }
+            }
+        }
+    }
+~~~~~~~~~~~~~
 
 */
