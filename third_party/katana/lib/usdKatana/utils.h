@@ -108,10 +108,12 @@ struct PxrUsdKatanaUtils {
     /// katana location, given a scenegraph generator configuration.
     static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
-            const PxrUsdKatanaUsdInPrivateData& data);
+            const PxrUsdKatanaUsdInPrivateData& data,
+            bool allowOutsideIsolation = false);
     static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
-            const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs);
+            const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs,
+            bool allowOutsideIsolation = false);
 
     /// USD Looks can have Katana child-parent relationships, which means that
     /// we'll have to do some extra processing to find the correct path that

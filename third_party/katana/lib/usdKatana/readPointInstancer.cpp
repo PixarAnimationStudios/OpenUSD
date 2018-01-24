@@ -411,7 +411,8 @@ PxrUsdKatanaReadPointInstancer(
     // Validate instancer data.
     //
 
-    const std::string instancerPath = instancer.GetPath().GetString();
+    const auto instancerSdfPath = instancer.GetPath();
+    const std::string instancerPath = instancerSdfPath.GetString();
 
     UsdStageWeakPtr stage = instancer.GetPrim().GetStage();
 
@@ -637,7 +638,7 @@ PxrUsdKatanaReadPointInstancer(
                     {
                         const SdfPath &commonPrefix =
                                 protoPath.GetCommonPrefix(materialPath);
-                        if (commonPrefix.GetString() == "/")
+                        if (commonPrefix.GetString() == "/" || instancerSdfPath.HasPrefix(commonPrefix))
                         {
                             // XXX Unhandled case.
                             // The prim and its material are not under the same
