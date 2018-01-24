@@ -105,9 +105,9 @@ class PluginContainer(object):
     and 'configureView' methods.
     """
 
-    def __init__(self, plugCtx, plugRegistry):
+    def __init__(self, usdviewApi, plugRegistry):
 
-        self._plugCtx = plugCtx
+        self._usdviewApi = usdviewApi
         self._plugRegistry = plugRegistry
 
     def deferredImport(self, moduleName):
@@ -150,14 +150,14 @@ PluginContainerTfType = Tf.Type.Define(PluginContainer)
 
 class CommandPlugin(object):
     """A Usdview command plugin object. The plugin's `callback` parameter must
-    be a callable object which takes a PlugContext object as its only parameter.
+    be a callable object which takes a UsdviewApi object as its only parameter.
     """
 
-    def __init__(self, name, callback, plugCtx):
+    def __init__(self, name, callback, usdviewApi):
 
         self._name = name
         self._callback = callback
-        self._plugCtx = plugCtx
+        self._usdviewApi = usdviewApi
 
     @property
     def name(self):
@@ -168,7 +168,7 @@ class CommandPlugin(object):
     def run(self):
         """Run the command's callback function."""
 
-        self._callback(self._plugCtx)
+        self._callback(self._usdviewApi)
 
 
 class PluginMenu(object):
@@ -212,9 +212,9 @@ class PluginMenu(object):
 class PluginRegistry(object):
     """Manages all plugins loaded by Usdview."""
 
-    def __init__(self, plugCtx, mainWindow):
+    def __init__(self, usdviewApi, mainWindow):
 
-        self._plugCtx = plugCtx
+        self._usdviewApi = usdviewApi
         self._mainWindow = mainWindow
 
         self._commandPlugins = set()
@@ -223,11 +223,11 @@ class PluginRegistry(object):
 
     def registerCommandPlugin(self, name, callback):
         """Creates, registers, and returns a new command plugin. The plugin's
-        `callback` parameter must be a callable object which takes a PlugContext
+        `callback` parameter must be a callable object which takes a UsdviewApi
         object as its only parameter.
         """
 
-        plugin = CommandPlugin(name, callback, self._plugCtx)
+        plugin = CommandPlugin(name, callback, self._usdviewApi)
         self._commandPlugins.add(plugin)
         return plugin
 
@@ -245,7 +245,7 @@ class PluginRegistry(object):
             return menu
 
 
-def loadPlugins(plugCtx, mainWindow):
+def loadPlugins(usdviewApi, mainWindow):
     """Find and load all Usdview plugins."""
 
     # Find all the defined container types using libplug.
@@ -260,7 +260,7 @@ def loadPlugins(plugCtx, mainWindow):
         pluginContainers.append(containerType)
 
     # Create the Usdview plugin registry.
-    registry = PluginRegistry(plugCtx, mainWindow)
+    registry = PluginRegistry(usdviewApi, mainWindow)
 
     # Load all discovered containers and let them register their plugins and
     # configure the UI.
@@ -268,7 +268,7 @@ def loadPlugins(plugCtx, mainWindow):
     for plugin, containerTypes in plugins.items():
         plugin.Load()
         for containerType in containerTypes:
-            pluginContainer = containerType.pythonClass(plugCtx, registry)
+            pluginContainer = containerType.pythonClass(usdviewApi, registry)
             pluginContainer.registerPlugins()
             pluginContainer.configureView()
             allContainers.append(pluginContainer)

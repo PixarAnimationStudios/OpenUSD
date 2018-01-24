@@ -62,7 +62,7 @@ def _testInterpreterWorks(appController):
     # So instead, we check the last context variable that the interpreter
     # initializes. This is pretty brittle, but other options seem just as 
     # brittle,
-    assert 'layer' in appController._console.locals()
+    assert "usdviewApi" in appController._console.locals()
     
 
 def testUsdviewInputFunction(appController):

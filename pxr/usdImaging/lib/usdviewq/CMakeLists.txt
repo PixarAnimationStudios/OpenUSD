@@ -41,7 +41,7 @@ pxr_library(usdviewq
         arrayAttributeView.py
         customAttributes.py
         appController.py
-        plugContext.py
+        usdviewApi.py
         plugin.py
         scalarTypes.py
         stageView.py
@@ -63,7 +63,6 @@ pxr_library(usdviewq
         primLegend.py
         propertyLegend.py
         attributeValueEditor.py
-        pythonExpressionPrompt.py
         overridableLineEdit.py
         variantComboBox.py
         qt.py
@@ -80,7 +79,6 @@ pxr_library(usdviewq
         attributeValueEditorUI.ui
         primLegendUI.ui
         propertyLegendUI.ui
-        pythonExpressionPromptUI.ui
 )
 
 install(DIRECTORY
@@ -91,7 +89,6 @@ install(DIRECTORY
 pxr_test_scripts(
     testenv/testUsdviewqConstantGroup.py
     testenv/testUsdviewqSettings2.py
-    testenv/testUsdviewqPlugContextProxy.py
     testenv/testUsdviewqRootDataModel.py
     testenv/testUsdviewqSelectionDataModel.py
     testenv/testUsdviewqLauncher.py
@@ -118,12 +115,6 @@ pxr_register_test(testUsdviewqSettings2
 pxr_register_test(testUsdviewqRootDataModel
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqRootDataModel"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdviewqPlugContextProxy
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqPlugContextProxy"
     EXPECTED_RETURN_CODE 0
 )
 

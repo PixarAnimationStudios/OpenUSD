@@ -63,10 +63,11 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
 
 import settings2
 from settings2 import StateSource
-from plugContext import PlugContext
+from usdviewApi import UsdviewApi
 from rootDataModel import RootDataModel
 from viewSettingsDataModel import ViewSettingsDataModel
 import plugin
+from pythonInterpreter import Myconsole
 
 SETTINGS_VERSION = "1"
 
@@ -280,7 +281,7 @@ class AppController(QtCore.QObject):
     def _configurePlugins(self):
 
         with Timer() as t:
-            plugin.loadPlugins(self._plugCtx, self._mainWindow)
+            plugin.loadPlugins(self._usdviewApi, self._mainWindow)
 
         if self._printTiming:
             t.PrintTime("configure and load plugins.")
@@ -949,8 +950,8 @@ class AppController(QtCore.QObject):
 
             self._setupDebugMenu()
 
-            # Setup plug context and optionally load plugins
-            self._plugCtx = PlugContext(self)
+            # Setup Usdview API and optionally load plugins
+            self._usdviewApi = UsdviewApi(self)
             if not self._noPlugins:
                 self._configurePlugins()
 
@@ -2040,12 +2041,10 @@ class AppController(QtCore.QObject):
             self._stageView.update()
 
     def _showInterpreter(self):
-        from pythonExpressionPrompt import Myconsole
-
         if self._interpreter is None:
             self._interpreter = QtWidgets.QDialog(self._mainWindow)
             self._interpreter.setObjectName("Interpreter")
-            self._console = Myconsole(self._interpreter)
+            self._console = Myconsole(self._interpreter, self._usdviewApi)
             self._interpreter.setFocusProxy(self._console) # this is important!
             lay = QtWidgets.QVBoxLayout()
             lay.addWidget(self._console)
@@ -2056,18 +2055,9 @@ class AppController(QtCore.QObject):
                                self._mainWindow.y())
         self._interpreter.resize(600, self._mainWindow.size().height()/2)
 
-        self._updateInterpreter()
         self._interpreter.show()
         self._interpreter.activateWindow()
         self._interpreter.setFocus()
-
-    def _updateInterpreter(self):
-        from pythonExpressionPrompt import Myconsole
-
-        if self._console is None:
-            return
-
-        self._console.reloadConsole(self)
 
     # Screen capture functionality ===========================================
 
@@ -2432,8 +2422,6 @@ class AppController(QtCore.QObject):
     def _onCompositionSelectionChanged(self, curr=None, prev=None):
         self._currentSpec = getattr(curr, 'spec', None)
         self._currentLayer = getattr(curr, 'layer', None)
-        if self._console:
-            self._console.reloadConsole(self)
 
     def _updateAttributeInspector(self, index=None, obj=None):
         # index must be the first parameter since this method is used as
@@ -2732,7 +2720,6 @@ class AppController(QtCore.QObject):
             obj=self._dataModel.selection.getFocusPrim())
         self._updateAttributeView()
         self._refreshAttributeValue()
-        self._updateInterpreter()
 
     def _getPrimsFromPaths(self, paths):
         """Get all prims from a list of paths."""

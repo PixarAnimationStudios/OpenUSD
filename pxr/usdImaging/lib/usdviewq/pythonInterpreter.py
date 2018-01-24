@@ -24,6 +24,7 @@
 from pxr import Tf
 
 from qt import QtCore, QtGui, QtWidgets
+from usdviewApi import UsdviewApi
 
 from code import InteractiveInterpreter
 import os, sys, keyword
@@ -876,3 +877,35 @@ class View(QtWidgets.QTextEdit):
 
     def SelectToBottom(self):
         self._MoveCursorToEnd(True)
+
+
+FREQUENTLY_USED = [
+    "dataModel", "stage", "frame", "prim", "property", "spec", "layer"]
+
+
+INITIAL_PROMPT = """
+Use the `usdviewApi` variable to interact with UsdView.
+Type `help(usdviewApi)` to view available API methods and properties.
+
+Frequently used properties:
+{}\n""".format(
+    "".join("    usdviewApi.{} - {}\n".format(
+        name, getattr(UsdviewApi, name).__doc__)
+    for name in FREQUENTLY_USED))
+
+
+class Myconsole(View):
+
+    def __init__(self, parent, usdviewApi):
+        View.__init__(self, parent)
+        self.setObjectName("Myconsole")
+
+        # Inject the UsdviewApi into the interpreter variables.
+        interpreterLocals = vars()
+        interpreterLocals["usdviewApi"] = usdviewApi
+
+        # Make a Controller.
+        self._controller = Controller(self, INITIAL_PROMPT, interpreterLocals)
+
+    def locals(self):
+        return self._controller.interpreter.locals

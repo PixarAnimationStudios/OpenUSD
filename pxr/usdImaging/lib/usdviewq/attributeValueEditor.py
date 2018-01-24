@@ -24,7 +24,6 @@
 from pxr import Usd
 from qt import QtCore, QtWidgets
 from attributeValueEditorUI import Ui_AttributeValueEditor
-from pythonExpressionPrompt import PythonExpressionPrompt
 from common import GetAttributeColor, UIPropertyValueSourceColors
 from scalarTypes import ToString
 
