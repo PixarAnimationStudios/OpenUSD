@@ -194,18 +194,9 @@ public:
                 bool* drawShape,
                 bool* drawBoundingBox);
 
-        /// \brief Tests an object for intersection with a given view.
-        ///
-        /// \p hitPoint yields the point of interesection if \c true is returned.
-        ///
-        PXRUSDMAYAGL_API
-        bool TestIntersection(
-                M3dView& aView,
-                unsigned int pickResolution,
-                bool singleSelection,
-                GfVec3d* hitPoint) const;
-
         const SdfPath& GetSharedId() const { return _sharedId; }
+
+        const GfMatrix4d& GetRootXform() const { return _rootXform; }
 
         /// \brief Returns base params as set previously by \c PrepareForQueue(...)
         ///
@@ -260,9 +251,6 @@ public:
                                       const SdfPathVector& roots);
 
     protected:
-        PXRUSDMAYAGL_API
-        void _InsertRenderTask(const SdfPath& id);
-
         PXRUSDMAYAGL_API
         void _SetLightingStateFromLightingContext();
 
@@ -370,13 +358,21 @@ public:
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
 
-private:
+    /// \brief Tests an object from a shape renderer with the given sharedId
+    /// and root transform for intersection with a given view.
+    ///
+    /// \p hitPoint yields the point of intersection if \c true is returned.
+    ///
+    PXRUSDMAYAGL_API
+    bool TestIntersection(
+            const SdfPath& shapeRendererSharedId,
+            const GfMatrix4d& shapeRootXform,
+            M3dView& view,
+            unsigned int pickResolution,
+            bool singleSelection,
+            GfVec3d* hitPoint);
 
-    /// \brief Helper function to find a key for the shape in the renderer cache
-    static size_t _ShapeHash(
-            const UsdPrim& usdPrim,
-            const SdfPathVector& excludePrimPaths,
-            const MDagPath& objPath );
+private:
 
     /// \brief Private helper function for registering a batch render call.
     void _QueueShapeForDraw(

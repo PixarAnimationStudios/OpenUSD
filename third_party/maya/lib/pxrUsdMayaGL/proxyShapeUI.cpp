@@ -217,10 +217,13 @@ UsdMayaProxyShapeUI::select(
 
     GfVec3d hitPoint;
     const bool didHit =
-        shapeRenderer->TestIntersection(view,
-                                        selectRes,
-                                        selectInfo.singleSelection(),
-                                        &hitPoint);
+        UsdMayaGLBatchRenderer::Get().TestIntersection(
+            shapeRenderer->GetSharedId(),
+            shapeRenderer->GetRootXform(),
+            view,
+            selectRes,
+            selectInfo.singleSelection(),
+            &hitPoint);
 
     if (didHit) {
         MSelectionList newSelectionList;

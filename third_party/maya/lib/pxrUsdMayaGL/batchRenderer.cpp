@@ -112,29 +112,30 @@ std::unique_ptr<UsdMayaGLBatchRenderer> UsdMayaGLBatchRenderer::_sGlobalRenderer
 /// passes in vp2 (e.g. a shadow pass and a color pass).
 class _BatchDrawUserData : public MUserData
 {
-public:
+    public:
 
-    bool _drawShape;
-    boost::scoped_ptr<MBoundingBox> _bounds;
-    boost::scoped_ptr<GfVec4f> _wireframeColor;
+        bool _drawShape;
+        boost::scoped_ptr<MBoundingBox> _bounds;
+        boost::scoped_ptr<GfVec4f> _wireframeColor;
 
-    // Constructor to use when shape is drawn but no bounding box.
-    _BatchDrawUserData() :
-        MUserData(/* deleteAfterUse = */ false),
-        _drawShape(true) {}
+        // Constructor to use when shape is drawn but no bounding box.
+        _BatchDrawUserData() :
+            MUserData(/* deleteAfterUse = */ false),
+            _drawShape(true) {}
 
-    // Constructor to use when shape may be drawn but there is a bounding box.
-    _BatchDrawUserData(
-            const bool drawShape,
-            const MBoundingBox& bounds,
-            const GfVec4f& wireFrameColor) :
-        MUserData(/* deleteAfterUse = */ false),
-        _drawShape(drawShape),
-        _bounds(new MBoundingBox(bounds)),
-        _wireframeColor(new GfVec4f(wireFrameColor)) {}
+        // Constructor to use when shape may be drawn but there is a bounding
+        // box.
+        _BatchDrawUserData(
+                const bool drawShape,
+                const MBoundingBox& bounds,
+                const GfVec4f& wireFrameColor) :
+            MUserData(/* deleteAfterUse = */ false),
+            _drawShape(drawShape),
+            _bounds(new MBoundingBox(bounds)),
+            _wireframeColor(new GfVec4f(wireFrameColor)) {}
 
-    // Make sure everything gets freed!
-    virtual ~_BatchDrawUserData() {}
+        // Make sure everything gets freed!
+        virtual ~_BatchDrawUserData() {}
 };
 
 
@@ -249,8 +250,8 @@ _GetWireframeColor(
         return softSelectHelper.GetFalloffColor(objPath, mayaWireColor);
     }
     else if ((displayStatus == MHWRender::kActive) ||
-            (displayStatus == MHWRender::kLead)    ||
-            (displayStatus == MHWRender::kHilite)) {
+             (displayStatus == MHWRender::kLead) ||
+             (displayStatus == MHWRender::kHilite)) {
         *mayaWireColor = MHWRender::MGeometryUtilities::wireframeColor(objPath);
         return true;
     }
@@ -293,12 +294,10 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
         // But that means we need to pre-linearize the wireframe color
         // from Maya.
         params.wireframeColor =
-                GfConvertDisplayToLinear(
-                    GfVec4f(
-                        mayaWireframeColor.r,
-                        mayaWireframeColor.g,
-                        mayaWireframeColor.b,
-                        1.f ));
+            GfConvertDisplayToLinear(GfVec4f(mayaWireframeColor.r,
+                                             mayaWireframeColor.g,
+                                             mayaWireframeColor.b,
+                                             1.0f));
     }
 
     switch (displayStyle) {
@@ -362,7 +361,8 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     MColor mayaWireframeColor;
     bool needsWire = _GetWireframeColor(
         _batchRenderer->GetSoftSelectHelper(),
-        objPath, displayStatus,
+        objPath,
+        displayStatus,
         &mayaWireframeColor);
 
     if (needsWire) {
@@ -416,33 +416,6 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     return params;
 }
 
-bool
-UsdMayaGLBatchRenderer::ShapeRenderer::TestIntersection(
-        M3dView& view,
-        unsigned int pickResolution,
-        bool singleSelection,
-        GfVec3d* hitPoint) const
-{
-    const HdxIntersector::Hit *hitInfo =
-            _batchRenderer->_GetHitInfo(
-                view, pickResolution, singleSelection, _sharedId, _rootXform );
-    if( !hitInfo )
-        return false;
-
-    if( hitPoint )
-        *hitPoint = hitInfo->worldSpaceHitPoint;
-
-    if( TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO) )
-    {
-        cout << "FOUND HIT: " << endl;
-        cout << "\tdelegateId: " << hitInfo->delegateId << endl;
-        cout << "\tobjectId: " << hitInfo->objectId << endl;
-        cout << "\tndcDepth: " << hitInfo->ndcDepth << endl;
-    }
-
-    return true;
-}
-
 UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
         HdRenderIndex* renderIndex,
         const SdfPath& delegateID) :
@@ -456,8 +429,8 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
     _rootId = delegateID.AppendChild(
         TfToken(TfStringPrintf("_UsdImaging_%p", this)));
 
-    _simpleLightTaskId          = _rootId.AppendChild(_tokens->simpleLightTask);
-    _cameraId                   = _rootId.AppendChild(_tokens->camera);
+    _simpleLightTaskId = _rootId.AppendChild(_tokens->simpleLightTask);
+    _cameraId = _rootId.AppendChild(_tokens->camera);
 
     // camera
     {
@@ -482,22 +455,6 @@ UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
         cache[HdTokens->params] = VtValue(taskParams);
         cache[HdTokens->children] = VtValue(SdfPathVector());
     }
-}
-
-void
-UsdMayaGLBatchRenderer::TaskDelegate::_InsertRenderTask(const SdfPath& id)
-{
-    GetRenderIndex().InsertTask<HdxRenderTask>(this, id);
-    _ValueCache &cache = _valueCacheMap[id];
-    HdxRenderTaskParams taskParams;
-    taskParams.camera = _cameraId;
-    // Initialize viewport to the latest value since render tasks can be lazily
-    // instantiated, potentially even after SetCameraState.  All other
-    // parameters will be updated by _UpdateRenderParams.
-    taskParams.viewport = _viewport;
-    cache[HdTokens->params] = VtValue(taskParams);
-    cache[HdTokens->children] = VtValue(SdfPathVector());
-    cache[HdTokens->collection] = VtValue();
 }
 
 /* virtual */
@@ -676,10 +633,22 @@ UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
     // select bucket
     SdfPath renderTaskId;
     if (!TfMapLookup(_renderTaskIdMap, hash, &renderTaskId)) {
-        // create new render task if not exists
+        // Create a new render task if one does not exist for this hash.
         renderTaskId = _rootId.AppendChild(
             TfToken(TfStringPrintf("renderTask%zx", hash)));
-        _InsertRenderTask(renderTaskId);
+
+        GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
+        _ValueCache &cache = _valueCacheMap[renderTaskId];
+        HdxRenderTaskParams taskParams;
+        taskParams.camera = _cameraId;
+        // Initialize viewport to the latest value since render tasks can be lazily
+        // instantiated, potentially even after SetCameraState.  All other
+        // parameters will be updated by _UpdateRenderParams.
+        taskParams.viewport = _viewport;
+        cache[HdTokens->params] = VtValue(taskParams);
+        cache[HdTokens->children] = VtValue(SdfPathVector());
+        cache[HdTokens->collection] = VtValue();
+
         _renderTaskIdMap[hash] = renderTaskId;
     }
 
@@ -765,7 +734,9 @@ UsdMayaGLBatchRenderer::GetShapeRenderer(
         const SdfPathVector& excludePrimPaths,
         const MDagPath& objPath)
 {
-    const size_t hash = _ShapeHash(usdPrim, excludePrimPaths, objPath);
+    size_t hash(MObjectHandle(objPath.transform()).hashCode());
+    boost::hash_combine(hash, usdPrim);
+    boost::hash_combine(hash, excludePrimPaths);
 
     // We can get away with this because the spec for std::unordered_map
     // guarantees that data pairs remain valid even if other objects are
@@ -854,6 +825,25 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
 
     if (drawShape) {
         _QueueShapeForDraw(shapeRendererSharedId, params);
+    }
+}
+
+void
+UsdMayaGLBatchRenderer::_QueueShapeForDraw(
+        const SdfPath& sharedId,
+        const RenderParams& params)
+{
+    const size_t paramKey = params.Hash();
+
+    auto renderSetIter = _renderQueue.find(paramKey);
+    if (renderSetIter == _renderQueue.end()) {
+        // If we had no _SdfPathSet for this particular RenderParam combination,
+        // create a new one.
+        _renderQueue[paramKey] = _RenderParamSet(params,
+                                                 _SdfPathSet({sharedId}));
+    } else {
+        _SdfPathSet& renderPaths = renderSetIter->second.second;
+        renderPaths.insert(sharedId);
     }
 }
 
@@ -1055,36 +1045,36 @@ UsdMayaGLBatchRenderer::Draw(
     }
 }
 
-size_t
-UsdMayaGLBatchRenderer::_ShapeHash(
-        const UsdPrim& usdPrim,
-        const SdfPathVector& excludePrimPaths,
-        const MDagPath& objPath)
+bool
+UsdMayaGLBatchRenderer::TestIntersection(
+        const SdfPath& shapeRendererSharedId,
+        const GfMatrix4d& shapeRootXform,
+        M3dView& view,
+        unsigned int pickResolution,
+        bool singleSelection,
+        GfVec3d* hitPoint)
 {
-    size_t hash( MObjectHandle(objPath.transform()).hashCode() );
-    boost::hash_combine( hash, usdPrim );
-    boost::hash_combine( hash, excludePrimPaths );
-
-    return hash;
-}
-
-void
-UsdMayaGLBatchRenderer::_QueueShapeForDraw(
-        const SdfPath& sharedId,
-        const RenderParams& params)
-{
-    const size_t paramKey = params.Hash();
-
-    auto renderSetIter = _renderQueue.find(paramKey);
-    if (renderSetIter == _renderQueue.end()) {
-        // If we had no _SdfPathSet for this particular RenderParam combination,
-        // create a new one.
-        _renderQueue[paramKey] = _RenderParamSet(params,
-                                                 _SdfPathSet({sharedId}));
-    } else {
-        _SdfPathSet& renderPaths = renderSetIter->second.second;
-        renderPaths.insert(sharedId);
+    const HdxIntersector::Hit* hitInfo = _GetHitInfo(view,
+                                                     pickResolution,
+                                                     singleSelection,
+                                                     shapeRendererSharedId,
+                                                     shapeRootXform);
+    if (!hitInfo) {
+        return false;
     }
+
+    if (hitPoint) {
+        *hitPoint = hitInfo->worldSpaceHitPoint;
+    }
+
+    if (TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO)) {
+        cout << "FOUND HIT: " << endl;
+        cout << "    delegateId: " << hitInfo->delegateId << endl;
+        cout << "    objectId  : " << hitInfo->objectId << endl;
+        cout << "    ndcDepth  : " << hitInfo->ndcDepth << endl;
+    }
+
+    return true;
 }
 
 const HdxIntersector::Hit*
