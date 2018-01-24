@@ -167,7 +167,7 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
     UsdAttribute attr;
     if (model.GetKind(&kind) && KindRegistry::IsA(kind, KindTokens->component))
         applyDrawMode = true;
-    else if (attr = model.GetModelApplyDrawModeAttr())
+    else if ((attr = model.GetModelApplyDrawModeAttr()))
         attr.Get(&applyDrawMode);
 
     if (!applyDrawMode)
