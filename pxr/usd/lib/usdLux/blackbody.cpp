@@ -71,10 +71,10 @@ static GfVec3f const _blackbodyRGB[] = {
 
 // Catmull-Rom basis
 static const float _basis[4][4] = {
-    -0.5f,  1.5f, -1.5f,  0.5f,
-     1.f,  -2.5f,  2.0f, -0.5f,
-    -0.5f,  0.0f,  0.5f,  0.0f,
-     0.f,   1.0f,  0.0f,  0.0f
+    {-0.5f,  1.5f, -1.5f,  0.5f},
+    { 1.f,  -2.5f,  2.0f, -0.5f},
+    {-0.5f,  0.0f,  0.5f,  0.0f},
+    { 0.f,   1.0f,  0.0f,  0.0f}
 };
 
 static inline float _Rec709RgbToLuma(const GfVec3f &rgb)

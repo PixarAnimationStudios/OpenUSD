@@ -141,28 +141,28 @@ constexpr Vt_PyShape<0> Vt_GetElementShapeImpl(...) { return {}; }
 
 template <class T>
 constexpr typename std::enable_if<GfIsGfVec<T>::value, Vt_PyShape<1> >::type
-Vt_GetElementShapeImpl(T *) { return { T::dimension }; }
+Vt_GetElementShapeImpl(T *) { return {{ T::dimension }}; }
 
 template <class T>
 constexpr typename std::enable_if<GfIsGfMatrix<T>::value, Vt_PyShape<2> >::type
-Vt_GetElementShapeImpl(T *) { return { T::numRows, T::numColumns }; }
+Vt_GetElementShapeImpl(T *) { return {{ T::numRows, T::numColumns }}; }
 
 template <class T>
 constexpr typename std::enable_if<GfIsGfQuat<T>::value, Vt_PyShape<1> >::type
-Vt_GetElementShapeImpl(T *) { return { 4 }; }
+Vt_GetElementShapeImpl(T *) { return {{ 4 }}; }
 
 template <class T>
 constexpr typename std::enable_if<
     GfIsGfRange<T>::value && T::dimension == 1, Vt_PyShape<1> >::type
-Vt_GetElementShapeImpl(T *) { return { 2 }; }
+Vt_GetElementShapeImpl(T *) { return {{ 2 }}; }
 
 template <class T>
 constexpr typename std::enable_if<
     GfIsGfRange<T>::value && T::dimension != 1, Vt_PyShape<2> >::type
-Vt_GetElementShapeImpl(T *) { return { 2, T::dimension }; }
+Vt_GetElementShapeImpl(T *) { return {{ 2, T::dimension }}; }
 
 constexpr Vt_PyShape<2>
-Vt_GetElementShapeImpl(GfRect2i *) { return { 2, 2 }; }
+Vt_GetElementShapeImpl(GfRect2i *) { return {{ 2, 2 }}; }
 
 template <class T>
 constexpr auto Vt_GetElementShape() ->

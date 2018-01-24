@@ -64,7 +64,7 @@ HdBasisCurves::ConfigureRepr(TfToken const &reprName,
         desc.geomStyle = HdBasisCurvesGeomStylePatch;
     }
 
-    _reprDescConfig.Append(reprName, _BasisCurvesReprConfig::DescArray{desc});
+    _reprDescConfig.Append(reprName, _BasisCurvesReprConfig::DescArray{{desc}});
 }
 
 /* static */

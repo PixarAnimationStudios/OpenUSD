@@ -49,7 +49,7 @@ HdPoints::ConfigureRepr(TfToken const &reprName,
 {
     HD_TRACE_FUNCTION();
 
-    _reprDescConfig.Append(reprName, _PointsReprConfig::DescArray{desc});
+    _reprDescConfig.Append(reprName, _PointsReprConfig::DescArray{{desc}});
 }
 
 /* static */
