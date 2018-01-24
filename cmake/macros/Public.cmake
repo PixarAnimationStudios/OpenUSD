@@ -100,13 +100,13 @@ function(pxr_python_bin BIN_NAME)
     endif()
 
     # Add the target.
-    add_custom_target(${BIN_NAME}
+    add_custom_target(${BIN_NAME}_script
         DEPENDS ${outputs} ${pb_DEPENDENCIES}
     )
-    add_dependencies(python ${BIN_NAME})
+    add_dependencies(python ${BIN_NAME}_script)
 
     _get_folder("" folder)
-    set_target_properties(${BIN_NAME}
+    set_target_properties(${BIN_NAME}_script
         PROPERTIES
             FOLDER "${folder}"
     )
