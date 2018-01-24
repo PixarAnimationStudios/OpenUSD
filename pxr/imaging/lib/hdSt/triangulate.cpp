@@ -47,9 +47,10 @@ void
 HdSt_TriangleIndexBuilderComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 3));
+    specs->emplace_back(HdTokens->indices, HdTupleType{HdTypeInt32Vec3, 1});
     // triangles don't support ptex indexing (at least for now).
-    specs->push_back(HdBufferSpec(HdTokens->primitiveParam, GL_INT, 1));
+    specs->emplace_back(HdTokens->primitiveParam,
+                        HdTupleType{HdTypeInt32, 1});
 }
 
 bool
@@ -123,7 +124,7 @@ HdSt_TriangulateFaceVaryingComputation::Resolve()
     if(meshUtil.ComputeTriangulatedFaceVaryingPrimvar(
             _source->GetData(),
             _source->GetNumElements(),
-            _source->GetGLElementDataType(),
+            _source->GetTupleType().type,
             &result)) {
         _SetResult(HdBufferSourceSharedPtr(
                     new HdVtBufferSource(

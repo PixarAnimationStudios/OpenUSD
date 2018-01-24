@@ -339,16 +339,16 @@ HdSt_TestLightingShader::UnbindResources(HdSt_ResourceBinder const &binder,
 void
 HdSt_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l0dir, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l0color, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l1dir, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l1color, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->sceneAmbient, _tokens->vec3));
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l0dir, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l0color, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l1dir, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l1color, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->sceneAmbient, HdTypeFloatVec3);
 }
 
 void

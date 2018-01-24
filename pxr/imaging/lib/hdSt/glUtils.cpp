@@ -34,7 +34,7 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/renderContextCaps.h"
@@ -58,6 +58,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 
     TF_VERIFY(data.size() == stride*(numElements-1) + arraySize*sizeof(T));
 
+    // XXX Seems like this should test if stride==arraySize*sizeof(T)
     if (stride == sizeof(T)) {
         memcpy(dst, src, numElements*arraySize*sizeof(T));
     } else {
@@ -73,20 +74,26 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 
 VtValue
 HdStGLUtils::ReadBuffer(GLint vbo,
-                      int glDataType,
-                      int numComponents,
-                      int arraySize,
-                      int vboOffset,
-                      int stride,
-                      int numElements)
+                        HdTupleType tupleType,
+                        int vboOffset,
+                        int stride,
+                        int numElems)
 {
     if (glBufferSubData == NULL) return VtValue();
 
-    int bytesPerElement = numComponents *
-        HdConversions::GetComponentSize(glDataType);
+    // HdTupleType represents scalar, vector, matrix, and array types.
+    const int bytesPerElement = HdDataSizeOfTupleType(tupleType);
+    const int arraySize = tupleType.count;
+    
+    // Stride is the byte distance between subsequent elements.
+    // If stride was not provided (aka 0), we assume elements are
+    // tightly packed and have no interleaved data.
     if (stride == 0) stride = bytesPerElement;
     TF_VERIFY(stride >= bytesPerElement);
 
+    // Total VBO size is the sum of the strides required to cover
+    // every element up to the last, which only requires bytesPerElement.
+    //
     // +---------+---------+---------+
     // |   :SRC: |   :SRC: |   :SRC: |
     // +---------+---------+---------+
@@ -94,12 +101,12 @@ HdStGLUtils::ReadBuffer(GLint vbo,
     //     |       ^           | ^ |
     //     | stride * (n -1)   |   |
     //                       bytesPerElement
-
-    GLsizeiptr vboSize = stride * (numElements-1) + bytesPerElement * arraySize;
+    //
+    const GLsizeiptr vboSize = stride * (numElems-1) + bytesPerElement;
 
     HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
-    // read data
+    // Read data from GL
     std::vector<unsigned char> tmp(vboSize);
     if (caps.directStateAccessEnabled) {
         glGetNamedBufferSubDataEXT(vbo, vboOffset, vboSize, &tmp[0]);
@@ -109,62 +116,48 @@ HdStGLUtils::ReadBuffer(GLint vbo,
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    VtValue result;
-    // create VtArray
-    switch(glDataType){
-    case GL_BYTE:
-        switch(numComponents) {
-        case 1: result = _CreateVtArray<char>(numElements, arraySize, stride, tmp); break;
-        default: break;
-        }
-        break;
-    case GL_SHORT:
-        switch(numComponents) {
-        case 1: result = _CreateVtArray<short>(numElements, arraySize, stride, tmp); break;
-        default: break;
-        }
-        break;
-    case GL_UNSIGNED_SHORT:
-        switch(numComponents) {
-        case 1: result = _CreateVtArray<unsigned short>(numElements, arraySize, stride, tmp); break;
-        default: break;
-        }
-        break;
-    case GL_INT:
-        switch(numComponents) {
-        case 1: result = _CreateVtArray<int>(numElements, arraySize, stride, tmp); break;
-        case 2: result = _CreateVtArray<GfVec2i>(numElements, arraySize, stride, tmp); break;
-        case 3: result = _CreateVtArray<GfVec3i>(numElements, arraySize, stride, tmp); break;
-        case 4: result = _CreateVtArray<GfVec4i>(numElements, arraySize, stride, tmp); break;
-        default: break;
-        }
-        break;
-    case GL_FLOAT:
-        switch(numComponents) {
-        case 1: result = _CreateVtArray<float>(numElements, arraySize, stride, tmp); break;
-        case 2: result = _CreateVtArray<GfVec2f>(numElements, arraySize, stride, tmp); break;
-        case 3: result = _CreateVtArray<GfVec3f>(numElements, arraySize, stride, tmp); break;
-        case 4: result = _CreateVtArray<GfVec4f>(numElements, arraySize, stride, tmp); break;
-        case 16: result = _CreateVtArray<GfMatrix4f>(numElements, arraySize, stride, tmp); break;
-        default: break;
-        }
-        break;
-    case GL_DOUBLE:
-        switch(numComponents) {
-        case 1: result = _CreateVtArray<double>(numElements, arraySize, stride, tmp); break;
-        case 2: result = _CreateVtArray<GfVec2d>(numElements, arraySize, stride, tmp); break;
-        case 3: result = _CreateVtArray<GfVec3d>(numElements, arraySize, stride, tmp); break;
-        case 4: result = _CreateVtArray<GfVec4d>(numElements, arraySize, stride, tmp); break;
-        case 16: result = _CreateVtArray<GfMatrix4d>(numElements, arraySize, stride, tmp); break;
-        default: break;
-        }
-        break;
+    // Convert data to Vt
+    switch (tupleType.type) {
+    case HdTypeInt8:
+        return _CreateVtArray<char>(numElems, arraySize, stride, tmp);
+    case HdTypeInt16:
+        return _CreateVtArray<int16_t>(numElems, arraySize, stride, tmp);
+    case HdTypeUInt16:
+        return _CreateVtArray<uint16_t>(numElems, arraySize, stride, tmp);
+    case HdTypeUInt32:
+        return _CreateVtArray<uint32_t>(numElems, arraySize, stride, tmp);
+    case HdTypeInt32:
+        return _CreateVtArray<int32_t>(numElems, arraySize, stride, tmp);
+    case HdTypeInt32Vec2:
+        return _CreateVtArray<GfVec2i>(numElems, arraySize, stride, tmp);
+    case HdTypeInt32Vec3:
+        return _CreateVtArray<GfVec3i>(numElems, arraySize, stride, tmp);
+    case HdTypeInt32Vec4:
+        return _CreateVtArray<GfVec4i>(numElems, arraySize, stride, tmp);
+    case HdTypeFloat:
+        return _CreateVtArray<float>(numElems, arraySize, stride, tmp);
+    case HdTypeFloatVec2:
+        return _CreateVtArray<GfVec2f>(numElems, arraySize, stride, tmp);
+    case HdTypeFloatVec3:
+        return _CreateVtArray<GfVec3f>(numElems, arraySize, stride, tmp);
+    case HdTypeFloatVec4:
+        return _CreateVtArray<GfVec4f>(numElems, arraySize, stride, tmp);
+    case HdTypeFloatMat4:
+        return _CreateVtArray<GfMatrix4f>(numElems, arraySize, stride, tmp);
+    case HdTypeDouble:
+        return _CreateVtArray<double>(numElems, arraySize, stride, tmp);
+    case HdTypeDoubleVec2:
+        return _CreateVtArray<GfVec2d>(numElems, arraySize, stride, tmp);
+    case HdTypeDoubleVec3:
+        return _CreateVtArray<GfVec3d>(numElems, arraySize, stride, tmp);
+    case HdTypeDoubleVec4:
+        return _CreateVtArray<GfVec4d>(numElems, arraySize, stride, tmp);
+    case HdTypeDoubleMat4:
+        return _CreateVtArray<GfMatrix4d>(numElems, arraySize, stride, tmp);
     default:
-        TF_CODING_ERROR("Invalid data type");
-        break;
+        TF_CODING_ERROR("Unhandled data type %i", tupleType.type);
     }
-
-    return result;
+    return VtValue();
 }
 
 bool

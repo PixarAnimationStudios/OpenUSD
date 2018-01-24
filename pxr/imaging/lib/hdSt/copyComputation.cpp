@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -66,8 +67,12 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         return;
     }
 
-    int srcBytesPerElement = src->GetNumComponents() * src->GetComponentSize();
-    int dstBytesPerElement = dst->GetNumComponents() * dst->GetComponentSize();
+    // XXX:Arrays: Should this support array-valued types?
+    // Commented-out version that would support arrays:
+    // int srcBytesPerElement = HdDataSizeOfTupleType(src->GetTupleType());
+    // int dstBytesPerElement = HdDataSizeOfTupleType(dst->GetTupleType());
+    int srcBytesPerElement = HdDataSizeOfType(src->GetTupleType().type);
+    int dstBytesPerElement = HdDataSizeOfType(dst->GetTupleType().type);
 
     if (!TF_VERIFY(srcBytesPerElement == dstBytesPerElement)) {
         return;
@@ -131,10 +136,7 @@ HdStCopyComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
     HdStBufferArrayRangeGLSharedPtr srcRange =
         boost::static_pointer_cast<HdStBufferArrayRangeGL> (_src);
 
-    HdStBufferResourceGLSharedPtr const &resource = srcRange->GetResource(_name);
-    specs->push_back(HdBufferSpec(_name,
-                                  resource->GetGLDataType(),
-                                  resource->GetNumComponents()));
+    specs->emplace_back(_name, srcRange->GetResource(_name)->GetTupleType());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

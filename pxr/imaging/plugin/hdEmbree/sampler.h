@@ -48,17 +48,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdEmbreeTypeHelper
 ///
-/// A utility class that helps map between C++ types and GL type tags.
+/// A utility class that helps map between C++ types and Hd type tags.
 class HdEmbreeTypeHelper {
 public:
-    /// Return the GL type enum corresponding to the component type of the
-    /// given C++ type.
+    /// Return the HdTupleType corresponding to the given C++ type.
     template<typename T>
-    static int GetGLComponentType();
-
-    /// Return the arity of the given C++ type.
-    template<typename T>
-    static int GetNumComponents();
+    static HdTupleType GetTupleType();
 
     /// Define a type that can hold one sample of any primvar.
     typedef char PrimvarTypeContainer[sizeof(GfMatrix4d)];
@@ -66,31 +61,29 @@ public:
 
 // Define template specializations of HdEmbreeTypeHelper methods for
 // all our supported types...
-#define TYPE_HELPER(T,ctype,clen)\
-template<> inline int \
-HdEmbreeTypeHelper::GetGLComponentType<T>() { return ctype; }\
-template<> inline int \
-HdEmbreeTypeHelper::GetNumComponents<T>() { return clen; }
+#define TYPE_HELPER(T,type)\
+template<> inline HdTupleType \
+HdEmbreeTypeHelper::GetTupleType<T>() { return HdTupleType{type, 1}; }
 
-    TYPE_HELPER(bool, GL_BOOL, 1)
-    TYPE_HELPER(char, GL_BYTE, 1)
-    TYPE_HELPER(short, GL_SHORT, 1)
-    TYPE_HELPER(unsigned short, GL_UNSIGNED_SHORT, 1)
-    TYPE_HELPER(int, GL_INT, 1)
-    TYPE_HELPER(GfVec2i, GL_INT, 2)
-    TYPE_HELPER(GfVec3i, GL_INT, 3)
-    TYPE_HELPER(GfVec4i, GL_INT, 4)
-    TYPE_HELPER(unsigned int, GL_UNSIGNED_INT, 1)
-    TYPE_HELPER(float, GL_FLOAT, 1)
-    TYPE_HELPER(GfVec2f, GL_FLOAT, 2)
-    TYPE_HELPER(GfVec3f, GL_FLOAT, 3)
-    TYPE_HELPER(GfVec4f, GL_FLOAT, 4)
-    TYPE_HELPER(double, GL_DOUBLE, 1)
-    TYPE_HELPER(GfVec2d, GL_DOUBLE, 2)
-    TYPE_HELPER(GfVec3d, GL_DOUBLE, 3)
-    TYPE_HELPER(GfVec4d, GL_DOUBLE, 4)
-    TYPE_HELPER(GfMatrix4f, GL_FLOAT, 16)
-    TYPE_HELPER(GfMatrix4d, GL_DOUBLE, 16)
+    TYPE_HELPER(bool, HdTypeBool)
+    TYPE_HELPER(char, HdTypeInt8)
+    TYPE_HELPER(short, HdTypeInt16)
+    TYPE_HELPER(unsigned short, HdTypeUInt16)
+    TYPE_HELPER(int, HdTypeInt32)
+    TYPE_HELPER(GfVec2i, HdTypeInt32Vec2)
+    TYPE_HELPER(GfVec3i, HdTypeInt32Vec3)
+    TYPE_HELPER(GfVec4i, HdTypeInt32Vec4)
+    TYPE_HELPER(unsigned int, HdTypeUInt32)
+    TYPE_HELPER(float, HdTypeFloat)
+    TYPE_HELPER(GfVec2f, HdTypeFloatVec2)
+    TYPE_HELPER(GfVec3f, HdTypeFloatVec3)
+    TYPE_HELPER(GfVec4f, HdTypeFloatVec4)
+    TYPE_HELPER(double, HdTypeDouble)
+    TYPE_HELPER(GfVec2d, HdTypeDoubleVec2)
+    TYPE_HELPER(GfVec3d, HdTypeDoubleVec3)
+    TYPE_HELPER(GfVec4d, HdTypeDoubleVec4)
+    TYPE_HELPER(GfMatrix4f, HdTypeFloatMat4)
+    TYPE_HELPER(GfMatrix4d, HdTypeDoubleMat4)
 #undef TYPE_HELPER
 
 /// \class HdEmbreeBufferSampler
@@ -116,22 +109,19 @@ public:
     /// declaration of the underlying buffer, in which case Sample returns
     /// false. Sample also returns false if \p index is out of bounds.
     ///
-    /// For example, to sample data as GfVec3, \p componentType would
-    /// be GL_FLOAT and \p numComponents would be 3.
+    /// For example, to sample data as GfVec3, \p dataType would be
+    /// HdTupleType { HdTypeFloatVec3, 1 }.
     ///
     /// \param index The element index to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
-    bool Sample(int index, void* value, int componentType,
-                short numComponents) const;
+    bool Sample(int index, void* value, HdTupleType dataType) const;
 
     // Convenient, templated frontend for Sample().
     template<typename T> bool Sample(int index, T* value) const {
         return Sample(index, static_cast<void*>(value),
-            HdEmbreeTypeHelper::GetGLComponentType<T>(),
-            HdEmbreeTypeHelper::GetNumComponents<T>());
+            HdEmbreeTypeHelper::GetTupleType<T>());
     }
 
 private:
@@ -165,18 +155,16 @@ public:
     /// \param u The u coordinate to sample.
     /// \param v The v coordinate to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
     virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        int componentType, short numComponents) const = 0;
+                        HdTupleType dataType) const = 0;
 
     // Convenient, templated frontend for Sample().
     template<typename T> bool Sample(unsigned int element, float u, float v,
                                      T* value) const {
         return Sample(element, u, v, static_cast<void*>(value),
-            HdEmbreeTypeHelper::GetGLComponentType<T>(),
-            HdEmbreeTypeHelper::GetNumComponents<T>());
+            HdEmbreeTypeHelper::GetTupleType<T>());
     }
 
 protected:
@@ -186,11 +174,10 @@ protected:
     /// \param samples The array of sample pointers (length \p sampleCount).
     /// \param weights The array of sample weights (length \p sampleCount).
     /// \param sampleCount The number of samples to combine.
-    /// \param componentType The component type of \p value and \p samples[i].
-    /// \param numComponents The arity of \p value and \p samples[i].
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the samples were successfully combined.
     static bool _Interpolate(void* out, void** samples, float* weights,
-        size_t sampleCount, int componentType, short numComponents);
+        size_t sampleCount, HdTupleType dataType);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

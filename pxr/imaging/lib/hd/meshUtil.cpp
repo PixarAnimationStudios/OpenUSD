@@ -25,8 +25,8 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/types.h"
 
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
@@ -249,7 +249,7 @@ void _TriangulateFaceVarying(
 bool
 HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
                                                   int numElements,
-                                                  int glDataType,
+                                                  HdType dataType,
                                                   VtValue *triangulated)
 {
     HD_TRACE_FUNCTION();
@@ -267,36 +267,36 @@ HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
     VtIntArray const &holeFaces = _topology->GetHoleIndices();
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
 
-    switch (glDataType) {
-    case GL_FLOAT:
+    switch (dataType) {
+    case HdTypeFloat:
         _TriangulateFaceVarying<float>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_FLOAT_VEC2:
+    case HdTypeFloatVec2:
         _TriangulateFaceVarying<GfVec2f>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_FLOAT_VEC3:
+    case HdTypeFloatVec3:
         _TriangulateFaceVarying<GfVec3f>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_FLOAT_VEC4:
+    case HdTypeFloatVec4:
         _TriangulateFaceVarying<GfVec4f>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_DOUBLE:
+    case HdTypeDouble:
         _TriangulateFaceVarying<double>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_DOUBLE_VEC2:
+    case HdTypeDoubleVec2:
         _TriangulateFaceVarying<GfVec2d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_DOUBLE_VEC3:
+    case HdTypeDoubleVec3:
         _TriangulateFaceVarying<GfVec3d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
-    case GL_DOUBLE_VEC4:
+    case HdTypeDoubleVec4:
         _TriangulateFaceVarying<GfVec4d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
         break;
@@ -613,7 +613,7 @@ bool
 HdMeshUtil::ComputeQuadrangulatedPrimvar(HdQuadInfo const* qi,
                                          void const* source,
                                          int numElements,
-                                         int glDataType,
+                                         HdType dataType,
                                          VtValue *quadrangulated)
 {
     HD_TRACE_FUNCTION();
@@ -627,29 +627,29 @@ HdMeshUtil::ComputeQuadrangulatedPrimvar(HdQuadInfo const* qi,
         return false;
     }
 
-    switch (glDataType) {
-    case GL_FLOAT:
+    switch (dataType) {
+    case HdTypeFloat:
         _Quadrangulate<float>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_FLOAT_VEC2:
+    case HdTypeFloatVec2:
         _Quadrangulate<GfVec2f>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_FLOAT_VEC3:
+    case HdTypeFloatVec3:
         _Quadrangulate<GfVec3f>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_FLOAT_VEC4:
+    case HdTypeFloatVec4:
         _Quadrangulate<GfVec4f>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_DOUBLE:
+    case HdTypeDouble:
         _Quadrangulate<double>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_DOUBLE_VEC2:
+    case HdTypeDoubleVec2:
         _Quadrangulate<GfVec2d>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_DOUBLE_VEC3:
+    case HdTypeDoubleVec3:
         _Quadrangulate<GfVec3d>(_id, source, numElements, qi, quadrangulated);
         break;
-    case GL_DOUBLE_VEC4:
+    case HdTypeDoubleVec4:
         _Quadrangulate<GfVec4d>(_id, source, numElements, qi, quadrangulated);
         break;
     default:
@@ -767,7 +767,7 @@ bool
 HdMeshUtil::ComputeQuadrangulatedFaceVaryingPrimvar(
         void const* source,
         int numElements,
-        int glDataType,
+        HdType dataType,
         VtValue *quadrangulated)
 {
     HD_TRACE_FUNCTION();
@@ -785,43 +785,43 @@ HdMeshUtil::ComputeQuadrangulatedFaceVaryingPrimvar(
     VtIntArray const &holeFaces = _topology->GetHoleIndices();
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
 
-    switch (glDataType) {
-    case GL_FLOAT:
+    switch (dataType) {
+    case HdTypeFloat:
         _QuadrangulateFaceVarying<float>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_FLOAT_VEC2:
+    case HdTypeFloatVec2:
         _QuadrangulateFaceVarying<GfVec2f>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_FLOAT_VEC3:
+    case HdTypeFloatVec3:
         _QuadrangulateFaceVarying<GfVec3f>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_FLOAT_VEC4:
+    case HdTypeFloatVec4:
         _QuadrangulateFaceVarying<GfVec4f>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_DOUBLE:
+    case HdTypeDouble:
         _QuadrangulateFaceVarying<double>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_DOUBLE_VEC2:
+    case HdTypeDoubleVec2:
         _QuadrangulateFaceVarying<GfVec2d>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_DOUBLE_VEC3:
+    case HdTypeDoubleVec3:
         _QuadrangulateFaceVarying<GfVec3d>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);
         break;
-    case GL_DOUBLE_VEC4:
+    case HdTypeDoubleVec4:
         _QuadrangulateFaceVarying<GfVec4d>(
             _id, faceVertexCounts, holeFaces, flip,
             source, numElements, quadrangulated);

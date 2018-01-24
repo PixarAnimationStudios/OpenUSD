@@ -38,7 +38,6 @@
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/hd/vtExtractor.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include <limits>
@@ -133,9 +132,11 @@ HdStExtCompGpuComputation::Execute(
         // shouldn't be written to for example.
         if (binding.IsValid()) {
             HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
-            _uniforms.push_back(buffer->GetOffset() / buffer->GetComponentSize());
+            size_t componentSize = HdDataSizeOfType(
+                HdGetComponentType(buffer->GetTupleType().type));
+            _uniforms.push_back(buffer->GetOffset() / componentSize);
             // Assumes non-SSBO allocator for the stride
-            _uniforms.push_back(buffer->GetStride() / buffer->GetComponentSize());
+            _uniforms.push_back(buffer->GetStride() / componentSize);
             binder.BindBuffer(name, buffer);
         } 
     }
@@ -145,12 +146,14 @@ HdStExtCompGpuComputation::Execute(
         // These should all be valid as they are required inputs
         if (TF_VERIFY(binding.IsValid())) {
             HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
-            _uniforms.push_back((inputRange->GetOffset() + buffer->GetOffset()) /
-                    buffer->GetComponentSize());
+            HdTupleType tupleType = buffer->GetTupleType();
+            size_t componentSize =
+                HdDataSizeOfType(HdGetComponentType(tupleType.type));
+            _uniforms.push_back((inputRange->GetOffset() + buffer->GetOffset()) / componentSize);
             // If allocated with a VBO allocator use the line below instead.
             //_uniforms.push_back(buffer->GetStride() / buffer->GetComponentSize());
             // This is correct for the SSBO allocator only
-            _uniforms.push_back(buffer->GetNumComponents());
+            _uniforms.push_back(HdGetComponentCount(tupleType.type));
             binder.BindBuffer(name, buffer);
         }
     }
@@ -208,9 +211,7 @@ HdStExtCompGpuComputation::Execute(
 void
 HdStExtCompGpuComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    for (HdBufferSpec const &spec : _outputSpecs) {
-        specs->push_back(spec);
-    }
+    specs->insert(specs->end(), _outputSpecs.begin(), _outputSpecs.end());
 }
 
 int
@@ -335,13 +336,16 @@ HdSt_GetExtComputationPrimVarsComputations(
                 // combine the primvars as an output buffer specs
                 HdBufferSpecVector outputBufferSpecs;
                 {
-                    Hd_VtExtractor extractor;
-                    extractor.Extract(primVarDesc.defaultValue);
+                    HdTupleType tupleType =
+                        HdGetValueTupleType(primVarDesc.defaultValue);
+                    // For the common case of a default value that is an
+                    // empty VtArray<T>, treat it as representing one T
+                    // per element rather than a zero-sized tuple.
+                    if (tupleType.count == 0) {
+                        tupleType.count = 1;
+                    }
                     outputBufferSpecs.emplace_back(
-                        primVarDesc.computationOutputName,
-                        extractor.GetGLCompontentType(),
-                        extractor.GetNumComponents(),
-                        1);        
+                        primVarDesc.computationOutputName, tupleType);
                 }
                 
                 HdStExtCompGpuComputationSharedPtr gpuComputation;

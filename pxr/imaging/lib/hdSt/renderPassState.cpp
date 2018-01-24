@@ -31,7 +31,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -95,21 +95,40 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
         // note: InterleavedMemoryManager computes the offsets in the packed
         // struct of following entries, which CodeGen generates the struct
         // definition into GLSL source in accordance with.
-        GLenum matType = HdVtBufferSource::GetDefaultMatrixType();
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->worldToViewMatrix, matType, 16));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->worldToViewInverseMatrix, matType, 16));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->projectionMatrix, matType, 16));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->overrideColor, GL_FLOAT, 4));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->wireframeColor, GL_FLOAT, 4));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->lightingBlendAmount, GL_FLOAT, 1));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->alphaThreshold, GL_FLOAT, 1));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->tessLevel, GL_FLOAT, 1));
-        bufferSpecs.push_back(HdBufferSpec(HdShaderTokens->viewport, GL_FLOAT, 4));
+        HdType matType = HdVtBufferSource::GetDefaultMatrixType();
+
+        bufferSpecs.emplace_back(
+            HdShaderTokens->worldToViewMatrix,
+            HdTupleType{matType, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->worldToViewInverseMatrix,
+            HdTupleType{matType, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->projectionMatrix,
+            HdTupleType{matType, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->overrideColor,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->wireframeColor,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->lightingBlendAmount,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->alphaThreshold,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->tessLevel,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->viewport,
+            HdTupleType{HdTypeFloatVec4, 1});
 
         if (clipPlanes.size() > 0) {
-            bufferSpecs.push_back(
-                HdBufferSpec(
-                    HdShaderTokens->clipPlanes, GL_FLOAT, 4, clipPlanes.size()));
+            bufferSpecs.emplace_back(
+                HdShaderTokens->clipPlanes,
+                HdTupleType{HdTypeFloatVec4, clipPlanes.size()});
         }
         _clipPlanesBufferSize = clipPlanes.size();
 
@@ -157,7 +176,7 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
                                                VtValue(_alphaThreshold))));
     sources.push_back(HdBufferSourceSharedPtr(
                        new HdVtBufferSource(HdShaderTokens->tessLevel,
-                                            VtValue(_tessLevel))));;
+                                            VtValue(_tessLevel))));
     sources.push_back(HdBufferSourceSharedPtr(
                           new HdVtBufferSource(HdShaderTokens->viewport,
                                                VtValue(_viewport))));
@@ -166,7 +185,8 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
         sources.push_back(HdBufferSourceSharedPtr(
                               new HdVtBufferSource(
                                   HdShaderTokens->clipPlanes,
-                                  VtValue(clipPlanes))));
+                                  VtValue(clipPlanes),
+                                  clipPlanes.size())));
     }
 
     resourceRegistry->AddSources(_renderPassStateBar, sources);
@@ -246,7 +266,7 @@ HdStRenderPassState::Bind()
         }
     }
 
-    glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
+    glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
 
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {

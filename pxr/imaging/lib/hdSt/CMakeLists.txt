@@ -11,11 +11,16 @@ endif()
 pxr_library(hdSt
     LIBRARIES
         cameraUtil
+        garch
+        glf
         hd
         tf
         tracelite
+        ${GLEW_LIBRARY}
+        ${OPENSUBDIV_LIBRARIES}
 
     INCLUDE_DIRS
+        ${GLEW_INCLUDE_DIR}
         ${OPENSUBDIV_INCLUDE_DIR}
 
     PUBLIC_CLASSES
@@ -38,6 +43,7 @@ pxr_library(hdSt
         extCompGpuComputationResource
         fallbackLightingShader
         geometricShader
+        glConversions
         glslfxShader
         glslProgram
         glUtils

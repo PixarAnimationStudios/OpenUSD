@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,9 +37,7 @@ public:
     /// The \p vboOffset is expressed in bytes.
     HDST_API
     static VtValue ReadBuffer(GLint vbo,
-                              int glDataType,
-                              int numComponents,
-                              int arraySize,
+                              HdTupleType tupleType,
                               int vboOffset,
                               int stride,
                               int numElements);
@@ -54,7 +53,6 @@ public:
     HDST_API
     static bool GetProgramLinkStatus(GLuint program,
                                      std::string * reason = NULL);
-
 };
 
 /// \class HdStGLBufferRelocator

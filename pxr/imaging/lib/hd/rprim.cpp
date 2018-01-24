@@ -310,11 +310,13 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
 
             source.reset(new HdVtBufferSource(
                              HdTokens->instancerTransform,
-                             rootTransforms, /*staticArray=*/true));
+                             rootTransforms,
+                             rootTransforms.size()));
             sources.push_back(source);
             source.reset(new HdVtBufferSource(
                              HdTokens->instancerTransformInverse,
-                             rootInverseTransforms, /*staticArray=*/true));
+                             rootInverseTransforms,
+                             rootInverseTransforms.size()));
             sources.push_back(source);
 
             // XXX: It might be worth to consider to have isFlipped
@@ -351,7 +353,6 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
     }
 
     if (HdChangeTracker::IsPrimIdDirty(*dirtyBits, id)) {
-        GfVec4f primIdColor;
         int32_t primId = GetPrimId();
         HdBufferSourceSharedPtr source(new HdVtBufferSource(
                                            HdTokens->primID,
@@ -362,9 +363,9 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
     if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
         TfTokenVector primVarNames = delegate->GetPrimVarConstantNames(id);
         sources.reserve(sources.size()+primVarNames.size());
-        TF_FOR_ALL(nameIt, primVarNames) {
-            if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt)) {
-                VtValue value = delegate->Get(id, *nameIt);
+        for (const TfToken& name: primVarNames) {
+            if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, name)) {
+                VtValue value = delegate->Get(id, name);
 
                 // XXX Hydra doesn't support string primvar yet
                 if (value.IsHolding<std::string>()) continue;
@@ -373,14 +374,17 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                     // A value holding an empty array does not count as an
                     // empty value. Catch that case here.
                     TF_WARN("Empty array value for constant primvar %s "
-                            "on Rprim %s",
-                            nameIt->GetText(), id.GetText());
+                            "on Rprim %s", name.GetText(), id.GetText());
                 } else if (!value.IsEmpty()) {
+                    // Given that this is a constant primvar, if it is
+                    // holding VtArray then use that as a single array
+                    // value rather than as one value per element.
                     HdBufferSourceSharedPtr source(
-                        new HdVtBufferSource(*nameIt, value,
-                            value.IsArrayValued()));
+                        new HdVtBufferSource(name, value,
+                            value.IsArrayValued() ? value.GetArraySize() : 1));
 
-                    TF_VERIFY(source->GetNumComponents() > 0);
+                    TF_VERIFY(source->GetTupleType().type != HdTypeInvalid);
+                    TF_VERIFY(source->GetTupleType().count > 0);
                     sources.push_back(source);
                 }
             }
@@ -508,9 +512,8 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
     HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
     for (HdBufferSpec const &bufferSpec : bufferSpecs) {
         boost::hash_combine(primvarId, bufferSpec.name);
-        boost::hash_combine(primvarId, bufferSpec.glDataType);
-        boost::hash_combine(primvarId, bufferSpec.numComponents);
-        boost::hash_combine(primvarId, bufferSpec.arraySize);
+        boost::hash_combine(primvarId, bufferSpec.tupleType.type);
+        boost::hash_combine(primvarId, bufferSpec.tupleType.count);
     }
 
     return primvarId;

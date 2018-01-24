@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include <vector>
@@ -40,19 +40,20 @@ typedef std::vector<struct HdBufferSpec> HdBufferSpecVector;
 /// \class HdBufferSpec
 ///
 /// Describes each named resource of buffer array.
+/// This specifies the buffer's value type as HdTupleType,
+/// which specifies the value type, number of components, and
+/// number of array entries (which may be 1).
 ///
 /// for example:
 /// HdBufferSpecVector
-///    0: name = points, glDataType = GL_FLOAT, numComponents = 3
-///    1: name = normals, glDataType = GL_FLOAT, numComponents = 3
-///    2: name = colors, glDataType = GL_FLOAT, numComponents = 4
+///    0: name = points,  tupleType = {HdTypeFloatVec3, 1}
+///    1: name = normals, tupleType = {HdTypeFloatVec3, 1}
+///    2: name = colors,  tupleType = {HdTypeFloatVec3, 1}
 ///
-struct HdBufferSpec {
+struct HdBufferSpec final {
     /// Constructor.
-    HdBufferSpec(TfToken const &name, GLenum glDataType, int numComponents,
-                 int arraySize=1) :
-        name(name), glDataType(glDataType), numComponents(numComponents),
-        arraySize(arraySize) {}
+    HdBufferSpec(TfToken const &name, HdTupleType tupleType) :
+        name(name), tupleType(tupleType) {}
 
     /// Util function for adding buffer specs of sources into bufferspecs.
     template<typename T>
@@ -82,10 +83,7 @@ struct HdBufferSpec {
 
     /// Equality checks.
     bool operator == (HdBufferSpec const &other) const {
-        return name == other.name                &&
-            glDataType == other.glDataType       &&
-            numComponents == other.numComponents &&
-            arraySize == other.arraySize;
+        return name == other.name && tupleType == other.tupleType;
     }
     bool operator != (HdBufferSpec const &other) const {
         return !(*this == other);
@@ -94,15 +92,11 @@ struct HdBufferSpec {
     /// Ordering.
     bool operator < (HdBufferSpec const &other) const {
         return name < other.name || (name == other.name &&
-              (glDataType < other.glDataType || (glDataType == other.glDataType &&
-              (numComponents < other.numComponents || (numComponents == other.numComponents &&
-              (arraySize < other.arraySize))))));
+            tupleType < other.tupleType);
     }
 
     TfToken name;
-    GLenum glDataType;
-    int numComponents;
-    int arraySize;
+    HdTupleType tupleType;
 };
 
 

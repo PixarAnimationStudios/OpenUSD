@@ -75,9 +75,9 @@ HdBufferSpec::Dump(HdBufferSpecVector const &specs)
     for (int i = 0; i < (int)specs.size(); ++i) {
         std::cout << i << " : "
                   << specs[i].name << ", "
-                  << specs[i].glDataType << ", "
-                  << specs[i].numComponents << ", "
-                  << specs[i].arraySize << "\n";
+                  << TfEnum::GetName(specs[i].tupleType.type) << " ("
+                  << specs[i].tupleType.type << "), "
+                  << specs[i].tupleType.count << "\n";
     }
 }
 

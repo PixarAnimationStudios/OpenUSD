@@ -37,6 +37,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// A bindless GL sampler buffer.
+// This identifies a texture as a 64-bit handle, passed to GLSL as "uvec2".
+// See https://www.khronos.org/opengl/wiki/Bindless_Texture
 class HdSt_BindlessSamplerBufferSource : public HdBufferSource {
 public:
     HdSt_BindlessSamplerBufferSource(TfToken const &name,
@@ -59,6 +62,9 @@ public:
     virtual void const* GetData() const {
         return &_value;
     }
+    virtual HdTupleType GetTupleType() const {
+        return {HdTypeUInt32Vec2, 1};
+    }
     virtual int GetGLComponentDataType() const {
         // note: we use sampler enums to express bindless pointer
         // (somewhat unusual)
@@ -74,7 +80,7 @@ public:
         return 1;
     }
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const {
-        specs->push_back(HdBufferSpec(_name, _type, 1));
+        specs->emplace_back(_name, GetTupleType());
     }
     virtual bool Resolve() {
         if (!_TryLock()) return false;

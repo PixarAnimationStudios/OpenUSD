@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
-
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -55,26 +53,17 @@ Hd_SmoothNormalsComputation::Hd_SmoothNormalsComputation(
 void
 Hd_SmoothNormalsComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    // the datatype of normals is same as points (float or double).
-    specs->push_back(HdBufferSpec(_dstName,
-                                  GetGLComponentDataType(),
-                                  (_packed ? 1 : 3)));
+    // The datatype of normals is the same as that of points,
+    // unless the packed format was requested.
+    specs->emplace_back(_dstName,
+        _packed ? HdTupleType { HdTypeInt32_2_10_10_10_REV, 1 }
+        : _points->GetTupleType() );
 }
 
 TfToken const &
 Hd_SmoothNormalsComputation::GetName() const
 {
     return _dstName;
-}
-
-int
-Hd_SmoothNormalsComputation::GetGLComponentDataType() const
-{
-    if (_packed) {
-        return GL_INT_2_10_10_10_REV;
-    } else {
-        return _points->GetGLComponentDataType();
-    }
 }
 
 bool
@@ -94,12 +83,12 @@ Hd_SmoothNormalsComputation::Resolve()
 
     if (!TF_VERIFY(_adjacency)) return true;
 
-    int numPoints = _points->GetNumElements();
+    size_t numPoints = _points->GetNumElements();
 
     HdBufferSourceSharedPtr normals;
 
-    switch (_points->GetGLElementDataType()) {
-    case GL_FLOAT_VEC3:
+    switch (_points->GetTupleType().type) {
+    case HdTypeFloatVec3:
         if (_packed) {
             normals = HdBufferSourceSharedPtr(
                 new HdVtBufferSource(
@@ -116,7 +105,7 @@ Hd_SmoothNormalsComputation::Resolve()
                             static_cast<const GfVec3f*>(_points->GetData())))));
         }
         break;
-    case GL_DOUBLE_VEC3:
+    case HdTypeDoubleVec3:
         if (_packed) {
             normals = HdBufferSourceSharedPtr(
                 new HdVtBufferSource(

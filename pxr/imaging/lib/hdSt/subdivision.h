@@ -76,8 +76,7 @@ public:
     virtual HdComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
         TfToken const &name,
-        GLenum dataType,
-        int numComponents) = 0;
+        HdType type) = 0;
 
     /// Returns true if the subdivision for \a scheme generates triangles,
     /// instead of quads.
@@ -164,10 +163,8 @@ public:
     virtual TfToken const &GetName() const;
     virtual size_t ComputeHash() const;
     virtual void const* GetData() const;
-    virtual int GetGLComponentDataType() const;
-    virtual int GetGLElementDataType() const;
+    virtual HdTupleType GetTupleType() const override;
     virtual int GetNumElements() const;
-    virtual short GetNumComponents() const;
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
     virtual bool Resolve();
     virtual bool HasPreChainedBuffer() const;
@@ -193,8 +190,7 @@ class HdSt_OsdRefineComputationGPU : public HdComputation {
 public:
     HdSt_OsdRefineComputationGPU(HdSt_MeshTopology *topology,
                                TfToken const &name,
-                               GLenum dataType,
-                               int numComponents);
+                               HdType type);
 
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry);
@@ -214,7 +210,7 @@ public:
         // bit confusing, osd expects 'GetNumElements()' returns the num components,
         // in hydra sense
         int GetNumElements() const {
-            return _resource->GetNumComponents();
+            return HdGetComponentCount(_resource->GetTupleType().type);
         }
         GLuint BindVBO() {
             return _resource->GetId();
@@ -225,8 +221,7 @@ public:
 private:
     HdSt_MeshTopology *_topology;
     TfToken _name;
-    GLenum  _dataType;
-    int _numComponents;
+    HdType _type;
 };
 
 // ---------------------------------------------------------------------------
@@ -270,17 +265,10 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetData() const
 }
 
 template <typename VERTEX_BUFFER>
-int
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetGLComponentDataType() const
+HdTupleType
+HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetTupleType() const
 {
-    return _source->GetGLComponentDataType();
-}
-
-template <typename VERTEX_BUFFER>
-int
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetGLElementDataType() const
-{
-    return _source->GetGLElementDataType();
+    return _source->GetTupleType();
 }
 
 template <typename VERTEX_BUFFER>
@@ -288,13 +276,6 @@ int
 HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetNumElements() const
 {
     return _cpuVertexBuffer->GetNumVertices();
-}
-
-template <typename VERTEX_BUFFER>
-short
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetNumComponents() const
-{
-    return _cpuVertexBuffer->GetNumElements();
 }
 
 template <typename VERTEX_BUFFER>
@@ -317,8 +298,9 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::Resolve()
 
     // prepare cpu vertex buffer including refined vertices
     TF_VERIFY(!_cpuVertexBuffer);
-    _cpuVertexBuffer = VERTEX_BUFFER::Create(_source->GetNumComponents(),
-                                             subdivision->GetNumVertices());
+    _cpuVertexBuffer = VERTEX_BUFFER::Create(
+        HdGetComponentCount(_source->GetTupleType().type),
+        subdivision->GetNumVertices());
 
     subdivision->RefineCPU(_source, _varying, _cpuVertexBuffer);
 

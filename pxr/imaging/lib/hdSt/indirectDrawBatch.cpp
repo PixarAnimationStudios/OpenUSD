@@ -286,7 +286,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     _numTotalElements = 0;
     _numTotalVertices = 0;
 
-    int instancerNumLevels
+    size_t instancerNumLevels
         = _drawItemInstances[0]->GetDrawItem()->GetInstancePrimVarNumLevels();
 
     // how many integers in the dispatch struct
@@ -365,7 +365,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         //
         int instanceIndexWidth = instancerNumLevels + 1;
         std::vector<HdStBufferArrayRangeGLSharedPtr> instanceBars(instancerNumLevels);
-        for (int i = 0; i < instancerNumLevels; ++i) {
+        for (size_t i = 0; i < instancerNumLevels; ++i) {
             HdBufferArrayRangeSharedPtr const &
                 ins_ = drawItem->GetInstancePrimVarRange(i);
             HdStBufferArrayRangeGLSharedPtr ins =
@@ -495,7 +495,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = shaderDC;
             }
         }
-        for (int i = 0; i < instancerNumLevels; ++i) {
+        for (size_t i = 0; i < instancerNumLevels; ++i) {
             GLuint instanceDC = instanceBars[i] ? instanceBars[i]->GetOffset() : 0;
             *cmdIt++ = instanceDC;
         }
@@ -532,39 +532,41 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         if (_useGpuInstanceCulling) {
             // draw indirect command
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawDispatch, GL_INT, 1,
+                HdTokens->drawDispatch, {HdTypeInt32, 1},
                 offsetof(_DrawArraysInstanceCullCommand, count));
             // drawing coords 0
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord0, GL_INT, 4,
+                HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawArraysInstanceCullCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, GL_INT, 3,
+                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
                 offsetof(_DrawArraysInstanceCullCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
-                    HdTokens->drawingCoordI, GL_INT, instancerNumLevels,
+                    HdTokens->drawingCoordI,
+                    {HdTypeInt32, instancerNumLevels},
                     sizeof(_DrawArraysInstanceCullCommand));
             }
         } else {
             // draw indirect command
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawDispatch, GL_INT, 1,
+                HdTokens->drawDispatch, {HdTypeInt32, 1},
                 offsetof(_DrawArraysCommand, count));
             // drawing coords 0
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord0, GL_INT, 4,
+                HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawArraysCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, GL_INT, 3,
+                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
                 offsetof(_DrawArraysCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
-                    HdTokens->drawingCoordI, GL_INT, instancerNumLevels,
+                    HdTokens->drawingCoordI,
+                    {HdTypeInt32, instancerNumLevels},
                     sizeof(_DrawArraysCommand));
             }
         }
@@ -572,39 +574,41 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         if (_useGpuInstanceCulling) {
             // draw indirect command
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawDispatch, GL_INT, 1,
+                HdTokens->drawDispatch, {HdTypeInt32, 1},
                 offsetof(_DrawElementsInstanceCullCommand, count));
             // drawing coords 0
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord0, GL_INT, 4,
+                HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawElementsInstanceCullCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, GL_INT, 3,
+                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
                 offsetof(_DrawElementsInstanceCullCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
-                    HdTokens->drawingCoordI, GL_INT, instancerNumLevels,
+                    HdTokens->drawingCoordI,
+                    {HdTypeInt32, instancerNumLevels},
                     sizeof(_DrawElementsInstanceCullCommand));
             }
         } else {
             // draw indirect command
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawDispatch, GL_INT, 1,
+                HdTokens->drawDispatch, {HdTypeInt32, 1},
                 offsetof(_DrawElementsCommand, count));
             // drawing coords 0
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord0, GL_INT, 4,
+                HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawElementsCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, GL_INT, 3,
-                    offsetof(_DrawElementsCommand, fvarDC));
+                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
+                offsetof(_DrawElementsCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
                 _dispatchBuffer->AddBufferResourceView(
-                    HdTokens->drawingCoordI, GL_INT, instancerNumLevels,
+                    HdTokens->drawingCoordI,
+                    {HdTypeInt32, instancerNumLevels},
                     sizeof(_DrawElementsCommand));
             }
         }
@@ -653,76 +657,80 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             if (_useGpuInstanceCulling) {
                 // cull indirect command
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawDispatch, GL_INT, 1,
+                    HdTokens->drawDispatch, {HdTypeInt32, 1},
                     offsetof(_DrawArraysInstanceCullCommand, cullCount));
                 // cull drawing coord 0
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawingCoord0, GL_INT, 4,
+                    HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                     offsetof(_DrawArraysInstanceCullCommand, modelDC));
                 // cull drawing coord 1
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawingCoord1, GL_INT, 2, // see the comment above
+                    // see the comment above
+                    HdTokens->drawingCoord1, {HdTypeInt32Vec2, 1},
                     offsetof(_DrawArraysInstanceCullCommand, fvarDC));
                 // cull instance drawing coord
                 if (instancerNumLevels > 0) {
                     _dispatchBufferCullInput->AddBufferResourceView(
-                        HdTokens->drawingCoordI, GL_INT, instancerNumLevels,
+                        HdTokens->drawingCoordI,
+                        {HdTypeInt32, instancerNumLevels},
                         sizeof(_DrawArraysInstanceCullCommand));
                 }
                 // cull draw index
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawCommandIndex, GL_INT, 1,
+                    HdTokens->drawCommandIndex, {HdTypeInt32, 1},
                     offsetof(_DrawArraysInstanceCullCommand, baseInstance));
             } else {
                 // cull indirect command
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawDispatch, GL_INT, 1,
+                    HdTokens->drawDispatch, {HdTypeInt32, 1},
                     offsetof(_DrawArraysCommand, count));
                 // cull drawing coord 0
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawingCoord0, GL_INT, 4,
+                    HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                     offsetof(_DrawArraysCommand, modelDC));
                 // cull instance count input
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->instanceCountInput, GL_INT, 1,
+                    HdTokens->instanceCountInput, {HdTypeInt32, 1},
                     offsetof(_DrawArraysCommand, instanceCount));
             }
         } else {
             if (_useGpuInstanceCulling) {
                 // cull indirect command
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawDispatch, GL_INT, 1,
+                    HdTokens->drawDispatch, {HdTypeInt32, 1},
                     offsetof(_DrawElementsInstanceCullCommand, cullCount));
                 // cull drawing coord 0
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawingCoord0, GL_INT, 4,
+                    HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                     offsetof(_DrawElementsInstanceCullCommand, modelDC));
                 // cull drawing coord 1
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawingCoord1, GL_INT, 2, // see the comment above
+                    // see the comment above
+                    HdTokens->drawingCoord1, {HdTypeInt32Vec2, 1},
                     offsetof(_DrawElementsInstanceCullCommand, fvarDC));
                 // cull instance drawing coord
                 if (instancerNumLevels > 0) {
                     _dispatchBufferCullInput->AddBufferResourceView(
-                        HdTokens->drawingCoordI, GL_INT, instancerNumLevels,
+                        HdTokens->drawingCoordI,
+                        {HdTypeInt32, instancerNumLevels},
                         sizeof(_DrawElementsInstanceCullCommand));
                 }
                 // cull draw index
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawCommandIndex, GL_INT, 1,
+                    HdTokens->drawCommandIndex, {HdTypeInt32, 1},
                     offsetof(_DrawElementsInstanceCullCommand, baseInstance));
             } else {
                 // cull indirect command
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawDispatch, GL_INT, 1,
+                    HdTokens->drawDispatch, {HdTypeInt32, 1},
                     offsetof(_DrawElementsCommand, count));
                 // cull drawing coord 0
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->drawingCoord0, GL_INT, 4,
+                    HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
                     offsetof(_DrawElementsCommand, modelDC));
                 // cull instance count input
                 _dispatchBufferCullInput->AddBufferResourceView(
-                    HdTokens->instanceCountInput, GL_INT, 1,
+                    HdTokens->instanceCountInput, {HdTypeInt32, 1},
                     offsetof(_DrawElementsCommand, instanceCount));
             }
         }

@@ -22,29 +22,23 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdEmbree/sampler.h"
-#include "pxr/imaging/hd/conversions.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-HdEmbreeBufferSampler::Sample(int index, void* value, int componentType,
-                              short numComponents) const
+HdEmbreeBufferSampler::Sample(int index, void* value,
+                              HdTupleType dataType) const
 {
     // Sanity checks: index is within the bounds of buffer,
-    // and the sample type and buffer type (defined by the componentType
-    // and numComponents) are the same.
+    // and the sample type and buffer type (defined by the dataType)
+    // are the same.
     if (_buffer.GetNumElements() <= index ||
-        _buffer.GetGLComponentDataType() != componentType ||
-        _buffer.GetNumComponents() != numComponents) {
+        _buffer.GetTupleType() != dataType) {
         return false;
     }
 
-    // Reconstruct the size of the element type (e.g. GfVec3f) by
-    // multiplying the component size (e.g. float) by the component
-    // arity (e.g. 3).
-    size_t elemSize = HdConversions::GetComponentSize(componentType) *
-        numComponents;
     // Calculate the element's byte offset in the array.
+    size_t elemSize = HdDataSizeOfTupleType(dataType);
     size_t offset = elemSize * index;
 
     // Equivalent to:
@@ -59,7 +53,7 @@ HdEmbreeBufferSampler::Sample(int index, void* value, int componentType,
 template<typename T>
 static void
 _InterpolateImpl(void* out, void** samples, float* weights,
-             size_t sampleCount, short numComponents)
+                 size_t sampleCount, short numComponents)
 {
     // This is an implementation of a general blend of samples:
     // out = sum_j { sample[j] * weights[j] }.
@@ -76,45 +70,50 @@ _InterpolateImpl(void* out, void** samples, float* weights,
 
 /* static */ bool
 HdEmbreePrimvarSampler::_Interpolate(void* out, void** samples, float* weights,
-    size_t sampleCount, int componentType, short numComponents)
+    size_t sampleCount, HdTupleType dataType)
 {
     // Combine maps from component type tag to C++ type, and delegates to
     // the templated _InterpolateImpl.
 
+    // Combine number of components in the underlying type and tuple arity.
+    short numComponents = HdGetComponentCount(dataType.type) * dataType.count;
+
+    HdType componentType = HdGetComponentType(dataType.type);
+
     switch(componentType) {
-        case GL_BOOL:
+        case HdTypeBool:
             /* This function isn't meaningful on boolean types. */
             return false;
-        case GL_BYTE:
+        case HdTypeInt8:
             _InterpolateImpl<char>(out, samples, weights, sampleCount,
                 numComponents);
-            return true;
-        case GL_SHORT:
+        case HdTypeInt16:
             _InterpolateImpl<short>(out, samples, weights, sampleCount,
                 numComponents);
             return true;
-        case GL_UNSIGNED_SHORT:
+        case HdTypeUInt16:
             _InterpolateImpl<unsigned short>(out, samples, weights, sampleCount,
                 numComponents);
             return true;
-        case GL_INT:
+        case HdTypeInt32:
             _InterpolateImpl<int>(out, samples, weights, sampleCount,
                 numComponents);
             return true;
-        case GL_UNSIGNED_INT:
+        case HdTypeUInt32:
             _InterpolateImpl<unsigned int>(out, samples, weights, sampleCount,
                 numComponents);
             return true;
-        case GL_FLOAT:
+        case HdTypeFloat:
             _InterpolateImpl<float>(out, samples, weights, sampleCount,
                 numComponents);
             return true;
-        case GL_DOUBLE:
+        case HdTypeDouble:
             _InterpolateImpl<double>(out, samples, weights, sampleCount,
                 numComponents);
             return true;
         default:
-            TF_CODING_ERROR("Unsupported type passed to _Interpolate");
+            TF_CODING_ERROR("Unsupported type '%s' passed to _Interpolate",
+                TfEnum::GetName(componentType).c_str());
             return false;
     }
 }

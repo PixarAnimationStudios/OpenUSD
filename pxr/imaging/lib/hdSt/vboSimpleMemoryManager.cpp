@@ -28,6 +28,7 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
@@ -36,7 +37,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/conversions.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -142,14 +142,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
 
     // populate BufferResources
     TF_FOR_ALL(it, bufferSpecs) {
-        int stride = HdConversions::GetComponentSize(it->glDataType) *
-            it->numComponents;
-        _AddResource(it->name,
-                     it->glDataType,
-                     it->numComponents,
-                     it->arraySize,
-                     /*offset=*/0,
-                     /*stride=*/stride);
+        int stride = HdDataSizeOfTupleType(it->tupleType);
+        _AddResource(it->name, it->tupleType, /*offset=*/0, stride);
     }
 
     _SetMaxNumRanges(1);
@@ -159,20 +153,18 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::_SimpleBufferArray(
         HdStBufferResourceGLSharedPtr const &bres = it->second;
         _maxBytesPerElement = std::max(
             _maxBytesPerElement,
-            bres->GetNumComponents() * bres->GetComponentSize());
+            HdDataSizeOfTupleType(bres->GetTupleType()));
     }
 }
 
 HdStBufferResourceGLSharedPtr
-HdStVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(TfToken const& name,
-                            int glDataType,
-                            short numComponents,
-                            int arraySize,
+HdStVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(
+    TfToken const& name,
+    HdTupleType tupleType,
                             int offset,
                             int stride)
 {
     HD_TRACE_FUNCTION();
-
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // duplication check
         HdStBufferResourceGLSharedPtr bufferRes = GetResource(name);
@@ -182,13 +174,10 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::_AddResource(TfToken const& name
     }
 
     HdStBufferResourceGLSharedPtr bufferRes = HdStBufferResourceGLSharedPtr(
-        new HdStBufferResourceGL(GetRole(), glDataType,
-                             numComponents, arraySize, offset, stride));
-
-    _resourceList.push_back(std::make_pair(name, bufferRes));
+        new HdStBufferResourceGL(GetRole(), tupleType, offset, stride));
+    _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }
-
 
 HdStVBOSimpleMemoryManager::_SimpleBufferArray::~_SimpleBufferArray()
 {
@@ -279,7 +268,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceGLSharedPtr const &bres = bresIt->second;
 
-        int bytesPerElement = bres->GetNumComponents() * bres->GetComponentSize();
+        // XXX:Arrays: We should use HdDataSizeOfTupleType() here, to
+        // add support for array types.
+        int bytesPerElement = HdDataSizeOfType(bres->GetTupleType().type);
         GLsizeiptr bufferSize = bytesPerElement * numElements;
 
         if (glGenBuffers) {
@@ -423,9 +414,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::GetBufferSpecs() const
     HdBufferSpecVector result;
     result.reserve(_resourceList.size());
     TF_FOR_ALL (it, _resourceList) {
-        HdStBufferResourceGLSharedPtr const &bres = it->second;
-        HdBufferSpec spec(it->first, bres->GetGLDataType(), bres->GetNumComponents());
-        result.push_back(spec);
+        result.emplace_back(it->first, it->second->GetTupleType());
     }
     return result;
 }
@@ -468,12 +457,13 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     if (glBufferSubData != NULL) {
-        int bytesPerElement =
-            VBO->GetNumComponents() * VBO->GetComponentSize();
+        int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
         // overrun check. for graceful handling of erroneous assets,
         // issue warning here and continue to copy for the valid range.
         size_t dstSize = _numElements * bytesPerElement;
-        size_t srcSize = bufferSource->GetSize();
+        size_t srcSize =
+            bufferSource->GetNumElements() *
+            HdDataSizeOfTupleType(bufferSource->GetTupleType());
         if (srcSize > dstSize) {
             TF_WARN("%s: size %ld is larger than the range (%ld)",
                     bufferSource->GetName().GetText(), srcSize, dstSize);
@@ -516,9 +506,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &nam
     }
 
     return HdStGLUtils::ReadBuffer(VBO->GetId(),
-                                 VBO->GetGLDataType(),
-                                 VBO->GetNumComponents(),
-                                 VBO->GetArraySize(),
+                                   VBO->GetTupleType(),
                                  /*offset=*/0,
                                  /*stride=*/0,  // not interleaved.
                                  _numElements);

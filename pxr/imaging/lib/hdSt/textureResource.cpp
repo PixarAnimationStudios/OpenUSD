@@ -25,7 +25,7 @@
 
 #include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/renderContextCaps.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/ptexTexture.h"
@@ -67,8 +67,8 @@ HdStSimpleTextureResource::HdStSimpleTextureResource(
         // If the HdStSimpleTextureResource defines a wrap mode it will 
         // use it, otherwise it gives an opportunity to the texture to define
         // its own wrap mode. The fallback value is always HdWrapRepeat
-        GLenum fwrapS = HdConversions::GetWrap(wrapS);
-        GLenum fwrapT = HdConversions::GetWrap(wrapT);
+        GLenum fwrapS = HdStGLConversions::GetWrap(wrapS);
+        GLenum fwrapT = HdStGLConversions::GetWrap(wrapT);
         VtDictionary txInfo = _texture->GetTextureInfo();
 
         if (wrapS == HdWrapUseMetaDict && 
@@ -81,8 +81,8 @@ HdStSimpleTextureResource::HdStSimpleTextureResource(
             fwrapT = VtDictionaryGet<GLuint>(txInfo, "wrapModeT");
         }
 
-        GLenum fminFilter = HdConversions::GetMinFilter(minFilter);
-        GLenum fmagFilter = HdConversions::GetMagFilter(magFilter);
+        GLenum fminFilter = HdStGLConversions::GetMinFilter(minFilter);
+        GLenum fmagFilter = HdStGLConversions::GetMagFilter(magFilter);
         if (!_texture->IsMinFilterSupported(fminFilter)) {
             fminFilter = GL_NEAREST;
         }

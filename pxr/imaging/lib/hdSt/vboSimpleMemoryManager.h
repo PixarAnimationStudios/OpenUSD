@@ -179,11 +179,9 @@ protected:
         /// Adds a new, named GPU resource and returns it.
         HDST_API
         HdStBufferResourceGLSharedPtr _AddResource(TfToken const& name,
-                                                int glDataType,
-                                                short numComponents,
-                                                int arraySize,
-                                                int offset,
-                                                int stride);
+                                                   HdTupleType tupleType,
+                                                   int offset,
+                                                   int stride);
 
     private:
         _SimpleBufferArray * _bufferArray;
@@ -271,11 +269,9 @@ protected:
         /// Adds a new, named GPU resource and returns it.
         HDST_API
         HdStBufferResourceGLSharedPtr _AddResource(TfToken const& name,
-                                            int glDataType,
-                                            short numComponents,
-                                            int arraySize,
-                                            int offset,
-                                            int stride);
+                                                   HdTupleType tupleType,
+                                                   int offset,
+                                                   int stride);
     private:
         int _capacity;
         size_t _maxBytesPerElement;

@@ -29,7 +29,7 @@
 #include "pxr/imaging/hdx/package.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -77,7 +77,7 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
     }
 
     // XXX: Move conversion to sync time once Task header becomes private.
-    glDepthFunc(HdConversions::GetGlDepthFunc(_depthFunc));
+    glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // Generate the actual shadow maps

@@ -179,7 +179,7 @@ HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
     // monolithic resource
     _entireResource = HdStBufferResourceGLSharedPtr(
         new HdStBufferResourceGL(
-            role, GL_INT, /*numComponent=*/1, /*arraySize=*/1,
+            role, {HdTypeInt32, 1},
             /*offset=*/0, stride));
     _entireResource->SetAllocation(newId, dataSize);
 
@@ -219,14 +219,13 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
 
 void
 HdStDispatchBuffer::AddBufferResourceView(
-    TfToken const &name, GLenum glDataType, int numComponents, int offset)
+    TfToken const &name, HdTupleType tupleType, int offset)
 {
     size_t stride = _commandNumUints * sizeof(GLuint);
 
     // add a binding view (resource binder iterates and automatically binds)
     HdStBufferResourceGLSharedPtr view =
-        _AddResource(name, glDataType, numComponents, /*arraySize=*/1,
-                     offset, stride);
+        _AddResource(name, tupleType, offset, stride);
 
     // this is just a view, not consuming memory
     view->SetAllocation(_entireResource->GetId(), /*size=*/0);
@@ -291,11 +290,9 @@ HdStDispatchBuffer::GetResource(TfToken const& name)
 
 HdStBufferResourceGLSharedPtr
 HdStDispatchBuffer::_AddResource(TfToken const& name,
-                            int glDataType,
-                            short numComponents,
-                            int arraySize,
-                            int offset,
-                            int stride)
+                                 HdTupleType tupleType,
+                                 int offset,
+                                 int stride)
 {
     HD_TRACE_FUNCTION();
 
@@ -308,10 +305,10 @@ HdStDispatchBuffer::_AddResource(TfToken const& name,
     }
 
     HdStBufferResourceGLSharedPtr bufferRes = HdStBufferResourceGLSharedPtr(
-        new HdStBufferResourceGL(GetRole(), glDataType,
-                             numComponents, arraySize, offset, stride));
+        new HdStBufferResourceGL(GetRole(), tupleType,
+                                 offset, stride));
 
-    _resourceList.push_back(std::make_pair(name, bufferRes));
+    _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }
 

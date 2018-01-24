@@ -57,13 +57,11 @@ public:
 
     /// overrides
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
     HD_API
-    virtual bool Resolve();
+    virtual bool Resolve() override;
     HD_API
     virtual TfToken const &GetName() const;
-    HD_API
-    virtual int GetGLComponentDataType() const;
 
 protected:
     HD_API

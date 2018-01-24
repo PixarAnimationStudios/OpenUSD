@@ -49,22 +49,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdSt_SmoothNormalsComputationGPU::HdSt_SmoothNormalsComputationGPU(
     Hd_VertexAdjacency const *adjacency,
     TfToken const &srcName, TfToken const &dstName,
-    GLenum srcDataType, GLenum dstDataType)
+    HdType srcDataType, HdType dstDataType)
     : _adjacency(adjacency), _srcName(srcName), _dstName(dstName)
     , _srcDataType(srcDataType), _dstDataType(dstDataType)
 {
-    if (srcDataType != GL_FLOAT && srcDataType != GL_DOUBLE) {
+    if (srcDataType != HdTypeFloatVec3 && srcDataType != HdTypeDoubleVec3) {
         TF_CODING_ERROR(
-            "Unsupported points type %x for computing smooth normals",
-            srcDataType);
-        srcDataType = GL_FLOAT;
+            "Unsupported points type %s for computing smooth normals",
+            TfEnum::GetName(srcDataType).c_str());
+        _srcDataType = HdTypeInvalid;
     }
-    if (dstDataType != GL_FLOAT && dstDataType != GL_DOUBLE &&
-        dstDataType != GL_INT_2_10_10_10_REV) {
+    if (dstDataType != HdTypeFloatVec3 && dstDataType != HdTypeDoubleVec3 &&
+        dstDataType != HdTypeInt32_2_10_10_10_REV) {
         TF_CODING_ERROR(
-            "Unsupported normals type %x for computing smooth normals",
-            dstDataType);
-        dstDataType = GL_FLOAT;
+            "Unsupported normals type %s for computing smooth normals",
+            TfEnum::GetName(dstDataType).c_str());
+        _dstDataType = HdTypeInvalid;
     }
 }
 
@@ -78,6 +78,8 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     if (!glDispatchCompute)
         return;
+    if (_srcDataType == HdTypeInvalid || _dstDataType == HdTypeInvalid)
+        return;
 
     TF_VERIFY(_adjacency);
     HdBufferArrayRangeSharedPtr const &adjacencyRange_ = 
@@ -89,20 +91,20 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     // select shader by datatype
     TfToken shaderToken;
-    if (_srcDataType == GL_FLOAT) {
-        if (_dstDataType == GL_FLOAT) {
+    if (_srcDataType == HdTypeFloatVec3) {
+        if (_dstDataType == HdTypeFloatVec3) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToFloat;
-        } else if (_dstDataType == GL_DOUBLE) {
+        } else if (_dstDataType == HdTypeDoubleVec3) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToDouble;
-        } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
+        } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsFloatToPacked;
         }
-    } else if (_srcDataType == GL_DOUBLE) {
-        if (_dstDataType == GL_FLOAT) {
+    } else if (_srcDataType == HdTypeDoubleVec3) {
+        if (_dstDataType == HdTypeFloatVec3) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToFloat;
-        } else if (_dstDataType == GL_DOUBLE) {
+        } else if (_dstDataType == HdTypeDoubleVec3) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToDouble;
-        } else if (_dstDataType == GL_INT_2_10_10_10_REV) {
+        } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
             shaderToken = HdStGLSLProgramTokens->smoothNormalsDoubleToPacked;
         }
     }
@@ -142,11 +144,20 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     // components in interleaved vertex array are always same data type.
     // i.e. it can't handle an interleaved array which interleaves
     // float/double, float/int etc.
-    uniform.pointsOffset = points->GetOffset() / points->GetComponentSize();
-    uniform.pointsStride = points->GetStride() / points->GetComponentSize();
+    //
+    // The offset and stride values we pass to the shader are in terms
+    // of indexes, not bytes, so we must convert the HdBufferResource
+    // offset/stride (which are in bytes) to counts of float[]/double[]
+    // entries.
+    const size_t pointComponentSize =
+        HdDataSizeOfType(HdGetComponentType(points->GetTupleType().type));
+    uniform.pointsOffset = points->GetOffset() / pointComponentSize;
+    uniform.pointsStride = points->GetStride() / pointComponentSize;
     // interleaved offset/stride to normals
-    uniform.normalsOffset = normals->GetOffset() / normals->GetComponentSize();
-    uniform.normalsStride = normals->GetStride() / normals->GetComponentSize();
+    const size_t normalComponentSize =
+        HdDataSizeOfType(HdGetComponentType(normals->GetTupleType().type));
+    uniform.normalsOffset = normals->GetOffset() / normalComponentSize;
+    uniform.normalsStride = normals->GetStride() / normalComponentSize;
 
     // The number of points is based off the size of the output,
     // However, the number of points in the adjacency table
@@ -195,11 +206,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 void
 HdSt_SmoothNormalsComputationGPU::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    if (_dstDataType == GL_INT_2_10_10_10_REV) {
-        specs->push_back(HdBufferSpec(_dstName, _dstDataType, 1));
-    } else {
-        specs->push_back(HdBufferSpec(_dstName, _dstDataType, 3));
-    }
+    specs->emplace_back(_dstName, HdTupleType {_dstDataType, 1});
 }
 
 

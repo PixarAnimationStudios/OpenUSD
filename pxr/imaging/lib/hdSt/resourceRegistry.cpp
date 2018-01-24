@@ -21,6 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/textureRegistry.h"
+
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/tokens.h"
@@ -125,6 +128,18 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
                                                   VtDefault = 0) + size;
 
         gpuMemoryUsed += size;
+    }
+
+    // Texture registry
+    {
+        GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
+        std::vector<VtDictionary> textureInfo = textureReg.GetTextureInfos();
+        size_t textureMemory = 0;
+        TF_FOR_ALL (textureIt, textureInfo) {
+            VtDictionary &info = (*textureIt);
+            textureMemory += info["memoryUsed"].Get<size_t>();
+        }
+        (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;

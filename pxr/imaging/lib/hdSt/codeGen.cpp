@@ -24,6 +24,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/package.h"
@@ -373,11 +374,9 @@ HdSt_CodeGen::Compile()
     }
 
     // XXX: this macro is still used in GlobalUniform.
-    if (HdVtBufferSource::GetDefaultMatrixType() == GL_FLOAT) {
-        _genCommon << "#define MAT4 mat4\n";
-    } else {
-        _genCommon << "#define MAT4 dmat4\n";
-    }
+    _genCommon << "#define MAT4 " <<
+        HdStGLConversions::GetGLSLTypename(
+            HdVtBufferSource::GetDefaultMatrixType()) << "\n";
     // a trick to tightly pack vec3 into SSBO/UBO.
     _genCommon << _GetPackedTypeDefinitions();
 
@@ -935,10 +934,10 @@ static void _EmitDeclaration(
     int arraySize=0)
 {
     _EmitDeclaration(str,
-                     bindingDeclaration.name,
-                     bindingDeclaration.dataType,
-                     bindingDeclaration.binding,
-                     arraySize);
+         bindingDeclaration.name,
+         bindingDeclaration.dataType,
+         bindingDeclaration.binding,
+         arraySize);
 }
 
 static void _EmitStructAccessor(std::stringstream &str,

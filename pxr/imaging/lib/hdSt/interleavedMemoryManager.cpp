@@ -33,11 +33,13 @@
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/stackTrace.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -122,16 +124,19 @@ HdAggregationStrategy::AggregationId
 HdStInterleavedUBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs) const
 {
-    uint32_t hash = 0;
-    TF_FOR_ALL(it, bufferSpecs) {
-        size_t nameHash = it->name.Hash();
-        hash = ArchHash((const char*)&nameHash, sizeof(nameHash), hash);
-        hash = ArchHash((const char*)&(it->glDataType), sizeof(it->glDataType), hash);
-        hash = ArchHash((const char*)&(it->numComponents), sizeof(it->numComponents), hash);
-        hash = ArchHash((const char*)&(it->arraySize), sizeof(it->arraySize), hash);
+    static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
+    size_t result = salt;
+    for (HdBufferSpec const &spec : bufferSpecs) {
+        size_t const params[] = { 
+            spec.name.Hash(),
+            (size_t) spec.tupleType.type,
+            spec.tupleType.count
+        };
+        boost::hash_combine(result,
+                ArchHash((char const*)params, sizeof(size_t) * 3));
     }
     // promote to size_t
-    return (AggregationId)hash;
+    return (AggregationId)result;
 }
 
 // ---------------------------------------------------------------------------
@@ -157,17 +162,18 @@ HdAggregationStrategy::AggregationId
 HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs) const
 {
-    static uint32_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
-    uint32_t hash = salt;
-    TF_FOR_ALL(it, bufferSpecs) {
-        size_t nameHash = it->name.Hash();
-        hash = ArchHash((const char*)&nameHash, sizeof(nameHash), hash);
-        hash = ArchHash((const char*)&(it->glDataType), sizeof(it->glDataType), hash);
-        hash = ArchHash((const char*)&(it->numComponents), sizeof(it->numComponents), hash);
-        hash = ArchHash((const char*)&(it->arraySize), sizeof(it->arraySize), hash);
+    static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
+    size_t result = salt;
+    for (HdBufferSpec const &spec : bufferSpecs) {
+        size_t const params[] = { 
+            spec.name.Hash(),
+            (size_t) spec.tupleType.type,
+            spec.tupleType.count
+        };
+        boost::hash_combine(result,
+                ArchHash((char const*)params, sizeof(size_t) * 3));
     }
-    // promote to size_t
-    return (AggregationId)hash;
+    return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,14 +187,21 @@ _ComputePadding(int alignment, int currentOffset)
 }
 
 static inline int
-_ComputeAlignment(int componentSize, int numComponents)
+_ComputeAlignment(HdTupleType tupleType)
 {
+    const HdType componentType = HdGetComponentType(tupleType.type);
+    const int numComponents = HdGetComponentCount(tupleType.type);
+    const int componentSize = HdDataSizeOfType(componentType);
+
     // This is simplified to treat arrays of int and floats
     // as vectors. The padding rules state that if we have
     // an array of 2 ints, it would get aligned to the size
     // of a vec4, where as a vec2 of ints or floats is aligned
     // to the size of a vec2. Since we don't know if something is
     // an array or vector, we are treating them as vectors.
+    //
+    // XXX:Arrays: Now that we do know whether a value is an array
+    // or vector, we can update this to do the right thing.
 
     // Matrices are treated as an array of vec4s, so the
     // max num components we are looking at is 4
@@ -242,18 +255,15 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
      */
 
     TF_FOR_ALL(it, bufferSpecs) {
-        int componentSize = HdConversions::GetComponentSize(it->glDataType);
-        int dataSize = componentSize * it->numComponents * it->arraySize;
-
         // Figure out the alignment we need for this type of data
-        int alignment = _ComputeAlignment(componentSize, it->numComponents);
+        int alignment = _ComputeAlignment(it->tupleType);
         _stride += _ComputePadding(alignment, _stride);
 
         // We need to save the max alignment size for later because the
         // stride for our struct needs to be aligned to this
         structAlignment = std::max(structAlignment, alignment);
 
-        _stride += dataSize;
+        _stride += HdDataSizeOfTupleType(it->tupleType);
     }
 
     // Our struct stride needs to be aligned to the max alignment needed within
@@ -273,26 +283,18 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     // populate BufferResources, interleaved
     int offset = 0;
     TF_FOR_ALL(it, bufferSpecs) {
-        int componentSize = HdConversions::GetComponentSize(it->glDataType);
-        int dataSize = componentSize * it->numComponents * it->arraySize;
-
         // Figure out alignment for this data member
-        int alignment = _ComputeAlignment(componentSize, it->numComponents);
+        int alignment = _ComputeAlignment(it->tupleType);
         // Add any needed padding to fixup alignment
         offset += _ComputePadding(alignment, offset);
 
-        _AddResource(it->name,
-                     it->glDataType,
-                     it->numComponents,
-                     it->arraySize,
-                     offset,
-                     _stride);
+        _AddResource(it->name, it->tupleType, offset, _stride);
 
         TF_DEBUG_MSG(HD_BUFFER_ARRAY_INFO,
                      "  %s : offset = %d, alignment = %d\n",
                      it->name.GetText(), offset, alignment);
 
-        offset += dataSize;
+        offset += HdDataSizeOfTupleType(it->tupleType);
     }
 
     _SetMaxNumRanges(_maxSize / _stride);
@@ -301,12 +303,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
 }
 
 HdStBufferResourceGLSharedPtr
-HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_AddResource(TfToken const& name,
-                            int glDataType,
-                            short numComponents,
-                            int arraySize,
-                            int offset,
-                            int stride)
+HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_AddResource(
+    TfToken const& name,
+    HdTupleType tupleType,
+    int offset,
+    int stride)
 {
     HD_TRACE_FUNCTION();
 
@@ -319,10 +320,9 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_AddResource(TfToken co
     }
 
     HdStBufferResourceGLSharedPtr bufferRes = HdStBufferResourceGLSharedPtr(
-        new HdStBufferResourceGL(GetRole(), glDataType,
-                             numComponents, arraySize, offset, stride));
+        new HdStBufferResourceGL(GetRole(), tupleType, offset, stride));
 
-    _resourceList.push_back(std::make_pair(name, bufferRes));
+    _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }
 
@@ -580,9 +580,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::GetBufferSpecs() const
     HdBufferSpecVector result;
     result.reserve(_resourceList.size());
     TF_FOR_ALL (it, _resourceList) {
-        HdStBufferResourceGLSharedPtr const &bres = it->second;
-        HdBufferSpec spec(it->first, bres->GetGLDataType(), bres->GetNumComponents());
-        result.push_back(spec);
+        result.emplace_back(it->first, it->second->GetTupleType());
     }
     return result;
 }
@@ -654,17 +652,28 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     }
 
     // overrun check
-    if (!TF_VERIFY(bufferSource->GetNumElements() == VBO->GetArraySize())) return;
-
-    // datatype of bufferSource has to match with bufferResource
-    if (!TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType()) ||
-        !TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents())) return;
+    // XXX:Arrays:  Note that we only check tuple type here, not arity.
+    // This code allows N-tuples and N-element arrays to be interchanged.
+    // It would seem better to have upstream buffers adjust their tuple
+    // arity as needed.
+    if (!TF_VERIFY(
+        bufferSource->GetTupleType().type == VBO->GetTupleType().type,
+        "'%s': (%s (%i) x %zu) != (%s (%i) x %zu)\n",
+        bufferSource->GetName().GetText(),
+        TfEnum::GetName(bufferSource->GetTupleType().type).c_str(),
+        bufferSource->GetTupleType().type,
+        bufferSource->GetTupleType().count,
+        TfEnum::GetName(VBO->GetTupleType().type).c_str(),
+        VBO->GetTupleType().type,
+        VBO->GetTupleType().count)) {
+        return;
+    }
 
     HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
     if (glBufferSubData != NULL) {
         int vboStride = VBO->GetStride();
         GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;
-        int dataSize = VBO->GetNumComponents() * VBO->GetComponentSize() * VBO->GetArraySize();
+        int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
         const unsigned char *data =
             (const unsigned char*)bufferSource->GetData();
 
@@ -707,9 +716,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
     }
 
     result = HdStGLUtils::ReadBuffer(VBO->GetId(),
-                                   VBO->GetGLDataType(),
-                                   VBO->GetNumComponents(),
-                                   VBO->GetArraySize(),
+                                   VBO->GetTupleType(),
                                    VBO->GetOffset() + VBO->GetStride() * _index,
                                    VBO->GetStride(),
                                    _numElements);

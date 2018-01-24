@@ -24,6 +24,8 @@
 #ifndef HDST_BUFFER_RESOURCE_GL_H
 #define HDST_BUFFER_RESOURCE_GL_H
 
+#include "pxr/imaging/glf/glew.h"
+
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
@@ -55,11 +57,9 @@ class HdStBufferResourceGL : public HdBufferResource {
 public:
     HDST_API
     HdStBufferResourceGL(TfToken const &role,
-                     int glDataType,
-                     short numComponents,
-                     int arraySize,
-                     int offset,
-                     int stride);
+                         HdTupleType tupleType,
+                         int offset,
+                         int stride);
     HDST_API
     ~HdStBufferResourceGL();
 

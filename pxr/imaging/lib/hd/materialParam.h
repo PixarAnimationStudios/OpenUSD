@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
 
@@ -39,8 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 typedef std::vector<class HdMaterialParam> HdMaterialParamVector;
-
-bool HdEnabledUV();
 
 // XXX: Docs
 class HdMaterialParam {
@@ -64,16 +63,8 @@ public:
 
     TfToken const& GetName() const { return _name; }
 
-    // i.e. GL_FLOAT, etc.
     HD_API
-    int GetGLElementType() const;
-
-    // i.e. GL_FLOAT_MAT4, etc.
-    HD_API
-    int GetGLComponentType() const;
-
-    HD_API
-    TfToken GetGLTypeName() const;
+    HdTupleType GetTupleType() const;
 
     VtValue const& GetFallbackValue() const { return _fallbackValue; }
 

@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,7 +61,7 @@ static const _FormatDesc FORMAT_DESC[] =
 static_assert(TfArraySize(FORMAT_DESC) ==  HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
 
 size_t
-HdConversions::GetComponentSize(int glDataType)
+HdStGLConversions::GetComponentSize(int glDataType)
 {
     switch (glDataType) {
         case GL_BOOL:
@@ -111,7 +112,7 @@ HdConversions::GetComponentSize(int glDataType)
 
 
 GLenum
-HdConversions::GetGlDepthFunc(HdCompareFunction func)
+HdStGLConversions::GetGlDepthFunc(HdCompareFunction func)
 {
     static GLenum HD_2_GL_DEPTH_FUNC[] =
     {
@@ -130,7 +131,7 @@ HdConversions::GetGlDepthFunc(HdCompareFunction func)
 }
 
 GLenum 
-HdConversions::GetMinFilter(HdMinFilter filter)
+HdStGLConversions::GetMinFilter(HdMinFilter filter)
 {
     switch (filter) {
         case HdMinFilterNearest : return GL_NEAREST;
@@ -146,7 +147,7 @@ HdConversions::GetMinFilter(HdMinFilter filter)
 }
 
 GLenum 
-HdConversions::GetMagFilter(HdMagFilter filter)
+HdStGLConversions::GetMagFilter(HdMagFilter filter)
 {
     switch (filter) {
         case HdMagFilterNearest : return GL_NEAREST;
@@ -158,7 +159,7 @@ HdConversions::GetMagFilter(HdMagFilter filter)
 }
 
 GLenum 
-HdConversions::GetWrap(HdWrap wrap)
+HdStGLConversions::GetWrap(HdWrap wrap)
 {
     switch (wrap) {
         case HdWrapClamp : return GL_CLAMP_TO_EDGE;
@@ -172,7 +173,7 @@ HdConversions::GetWrap(HdWrap wrap)
 }
 
 void
-HdConversions::GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat)
+HdStGLConversions::GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat)
 {
     if ((inFormat < 0) || (inFormat >= HdFormatCount))
     {
@@ -188,6 +189,121 @@ HdConversions::GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType
     *outFormat         = desc.format;
     *outType           = desc.type;
     *outInternalFormat = desc.internalFormat;
+}
+
+int
+HdStGLConversions::GetGLAttribType(HdType type)
+{
+    switch (type) {
+    case HdTypeInt32:
+    case HdTypeInt32Vec2:
+    case HdTypeInt32Vec3:
+    case HdTypeInt32Vec4:
+        return GL_INT;
+    case HdTypeUInt32:
+    case HdTypeUInt32Vec2:
+    case HdTypeUInt32Vec3:
+    case HdTypeUInt32Vec4:
+        return GL_UNSIGNED_INT;
+    case HdTypeFloat:
+    case HdTypeFloatVec2:
+    case HdTypeFloatVec3:
+    case HdTypeFloatVec4:
+    case HdTypeFloatMat4:
+        return GL_FLOAT;
+    case HdTypeDouble:
+    case HdTypeDoubleVec2:
+    case HdTypeDoubleVec3:
+    case HdTypeDoubleVec4:
+    case HdTypeDoubleMat4:
+        return GL_DOUBLE;
+    case HdTypeInt32_2_10_10_10_REV:
+        return GL_INT_2_10_10_10_REV;
+    default:
+        break;
+    };
+    return -1;
+}
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _glTypeNames,
+    ((_bool, "bool"))
+
+    ((_float, "float"))
+    (vec2)
+    (vec3)
+    (vec4)
+    (mat4)
+
+    ((_double, "double"))
+    (dvec2)
+    (dvec3)
+    (dvec4)
+    (dmat4)
+
+    ((_int, "int"))
+    (ivec2)
+    (ivec3)
+    (ivec4)
+
+    ((_uint, "uint"))
+    (uvec2)
+    (uvec3)
+    (uvec4)
+);
+
+TfToken
+HdStGLConversions::GetGLSLTypename(HdType type)
+{
+    switch (type) {
+    case HdTypeInvalid:
+    default:
+        return TfToken();
+    case HdTypeBool:
+        return _glTypeNames->_bool;
+
+    case HdTypeInt32:
+        return _glTypeNames->_int;
+    case HdTypeInt32Vec2:
+        return _glTypeNames->ivec2;
+    case HdTypeInt32Vec3:
+        return _glTypeNames->ivec3;
+    case HdTypeInt32Vec4:
+        return _glTypeNames->ivec4;
+
+    case HdTypeUInt32:
+        return _glTypeNames->_uint;
+    case HdTypeUInt32Vec2:
+        return _glTypeNames->uvec2;
+    case HdTypeUInt32Vec3:
+        return _glTypeNames->uvec3;
+    case HdTypeUInt32Vec4:
+        return _glTypeNames->uvec4;
+
+    case HdTypeFloat:
+        return _glTypeNames->_float;
+    case HdTypeFloatVec2:
+        return _glTypeNames->vec2;
+    case HdTypeFloatVec3:
+        return _glTypeNames->vec3;
+    case HdTypeInt32_2_10_10_10_REV:
+        // Special case: treat as a vec4.
+    case HdTypeFloatVec4:
+        return _glTypeNames->vec4;
+    case HdTypeFloatMat4:
+        return _glTypeNames->mat4;
+
+    case HdTypeDouble:
+        return _glTypeNames->_double;
+    case HdTypeDoubleVec2:
+        return _glTypeNames->dvec2;
+    case HdTypeDoubleVec3:
+        return _glTypeNames->dvec3;
+    case HdTypeDoubleVec4:
+        return _glTypeNames->dvec4;
+    case HdTypeDoubleMat4:
+        return _glTypeNames->dmat4;
+    };
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

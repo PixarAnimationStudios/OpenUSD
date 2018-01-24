@@ -32,12 +32,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStBufferResourceGL::HdStBufferResourceGL(TfToken const &role,
-                                   int glDataType,
-                                   short numComponents,
-                                   int arraySize,
-                                   int offset,
-                                   int stride)
-    : HdBufferResource(role, glDataType, numComponents, arraySize, offset, stride),
+                                           HdTupleType tupleType,
+                                           int offset,
+                                           int stride)
+    : HdBufferResource(role, tupleType, offset, stride),
       _gpuAddr(0),
       _texId(0),
       _id(0)
@@ -82,25 +80,43 @@ HdStBufferResourceGL::GetTextureBuffer()
 {
     // XXX: need change tracking.
 
+    if (_tupleType.count != 1) {
+        TF_CODING_ERROR("unsupported tuple size: %zu\n", _tupleType.count);
+        return 0;
+    }
+
     if (_texId == 0) {
         glGenTextures(1, &_texId);
 
+
         GLenum format = GL_R32F;
-        if (_glDataType == GL_FLOAT) {
-            if (_numComponents <= 4) {
-                static const GLenum floats[]
-                    = { GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F };
-                format = floats[_numComponents-1];
-            }
-        } else if (_glDataType == GL_INT) {
-            if (_numComponents <= 4) {
-                static const GLenum ints[]
-                    = { GL_R32I, GL_RG32I, GL_RGB32I, GL_RGBA32I };
-                format = ints[_numComponents-1];
-            }
-        } else {
-            TF_CODING_ERROR("unsupported type: 0x%x numComponents = %d\n",
-                            _glDataType, _numComponents);
+        switch(_tupleType.type) {
+        case HdTypeFloat:
+            format = GL_R32F;
+            break;
+        case HdTypeFloatVec2:
+            format = GL_RG32F;
+            break;
+        case HdTypeFloatVec3:
+            format = GL_RGB32F;
+            break;
+        case HdTypeFloatVec4:
+            format = GL_RGBA32F;
+            break;
+        case HdTypeInt32:
+            format = GL_R32I;
+            break;
+        case HdTypeInt32Vec2:
+            format = GL_RG32I;
+            break;
+        case HdTypeInt32Vec3:
+            format = GL_RGB32I;
+            break;
+        case HdTypeInt32Vec4:
+            format = GL_RGBA32I;
+            break;
+        default:
+            TF_CODING_ERROR("unsupported type: 0x%x\n", _tupleType.type);
         }
 
         glBindTexture(GL_TEXTURE_BUFFER, _texId);

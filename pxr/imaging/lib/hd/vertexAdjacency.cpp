@@ -361,7 +361,7 @@ void
 Hd_AdjacencyBuilderForGPUComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(HdTokens->adjacency, GL_INT, 1));
+    specs->emplace_back(HdTokens->adjacency, HdTupleType{HdTypeInt32, 1});
 }
 
 bool

@@ -52,26 +52,26 @@ public:
     HdSt_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
                                  TfToken const &srcName,
                                  TfToken const &dstName,
-                                 GLenum srcDataType,
-                                 GLenum dstDataType);
+                                 HdType srcDataType,
+                                 HdType dstDataType);
 
     HDST_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
     HDST_API
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry);
+                         HdResourceRegistry *resourceRegistry) override;
 
     /// This computation doesn't generate buffer source (i.e. 2nd phase)
     /// This is a gpu computation, but no need to resize the destination
     /// since it belongs the same range as src buffer.
-    virtual int GetNumOutputElements() const { return 0; }
+    virtual int GetNumOutputElements() const override { return 0; }
 
 private:
     Hd_VertexAdjacency const *_adjacency;
     TfToken _srcName;
     TfToken _dstName;
-    GLenum _srcDataType;
-    GLenum _dstDataType;
+    HdType _srcDataType;
+    HdType _dstDataType;
 };
 
 

@@ -36,8 +36,6 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/rotation.h"
 
-#include "pxr/imaging/glf/simpleLight.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

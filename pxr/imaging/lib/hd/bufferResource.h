@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/tf/token.h"
 
@@ -54,24 +55,14 @@ class HdBufferResource : public HdResource {
 public:
     HD_API
     HdBufferResource(TfToken const &role,
-                     int glDataType,
-                     short numComponents,
-                     int arraySize,
+                     HdTupleType tupleType,
                      int offset,
                      int stride);
     HD_API
     ~HdBufferResource();
 
-    /// OpenGL data type; GL_UNSIGNED_INT, etc
-    int GetGLDataType() const {return _glDataType;}
-
-    /// Returns the number of components in a single element.
-    /// This value is always in the range [1,4].
-    short GetNumComponents() const {return _numComponents;}
-
-    /// Returns the size of a single component.
-    HD_API 
-    size_t GetComponentSize() const;
+    /// Data type and count
+    HdTupleType GetTupleType() const { return _tupleType; }
 
     /// Returns the interleaved offset (in bytes) of this data.
     int GetOffset() const {return _offset;}
@@ -79,19 +70,8 @@ public:
     /// Returns the stride (in bytes) of underlying buffer.
     int GetStride() const {return _stride;}
 
-    /// Returns the size of array if this resource is a static-sized array.
-    /// returns 1 for non-array resource.
-    int GetArraySize() const {return _arraySize;}
-
-    /// Returns the type name string of this resource
-    /// to be used in codegen.
-    HD_API
-    TfToken GetGLTypeName() const;
-
 protected:
-    int _glDataType;
-    short _numComponents;
-    int _arraySize;
+    HdTupleType _tupleType;
     int _offset;
     int _stride;
 };

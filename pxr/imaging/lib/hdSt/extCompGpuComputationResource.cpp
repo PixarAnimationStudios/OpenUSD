@@ -36,8 +36,8 @@ static size_t _Hash(HdBufferSpecVector const &specs) {
     for (HdBufferSpec const &spec : specs) {
         size_t const params[] = { 
             spec.name.Hash(),
-            spec.glDataType,
-            (size_t)spec.numComponents
+            (size_t) spec.tupleType.type,
+            spec.tupleType.count
         };
         boost::hash_combine(result,
                 ArchHash((char const*)params, sizeof(size_t) * 3));
@@ -154,8 +154,7 @@ HdStExtCompGpuComputationResource::AllocateInternalRange(
 {
     TF_VERIFY(internalSources);
 
-    for (size_t i = 0; i < inputs.size(); ++i) {
-        HdBufferSourceSharedPtr const &source = inputs[i];
+    for (HdBufferSourceSharedPtr const &source: inputs) {
         bool inPlace = false;
         TF_FOR_ALL(it, _outputBufferSpecs) {
             if (it->name == source->GetName()) {
@@ -173,16 +172,16 @@ HdStExtCompGpuComputationResource::AllocateInternalRange(
 
     if (!_internalRange && internalSources->size() > 0) {
         HdBufferSpecVector bufferSpecs;
-        for (size_t i = 0; i < internalSources->size(); ++i) {
-            HdBufferSourceSharedPtr const &source = (*internalSources)[i];
+        for (HdBufferSourceSharedPtr const &source: *internalSources) {
             // This currently needs the element count as the array size as the
             // SSBO allocator needs all data in one stripe.
-            const int arraySize = source->GetNumElements();
-            bufferSpecs.push_back(
-                HdBufferSpec(source->GetName(),
-                             source->GetGLComponentDataType(),
-                             source->GetNumComponents(),
-                             arraySize));
+            //
+            // XXX:Arrays: Should this support array-valued types?  If
+            // yes, we should multiply numElements onto the count.
+            //
+            HdTupleType tupleType = source->GetTupleType();
+            tupleType.count = source->GetNumElements();
+            bufferSpecs.emplace_back(source->GetName(), tupleType);
         }
 
         _internalRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(

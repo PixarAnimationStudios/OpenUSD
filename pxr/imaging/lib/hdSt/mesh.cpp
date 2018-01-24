@@ -408,7 +408,7 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
         // transfered
         HdComputationSharedPtr computation =
             topology->GetQuadrangulateComputationGPU(
-                source->GetName(), source->GetGLComponentDataType(), id);
+                source->GetName(), source->GetTupleType().type, id);
         // computation can be null for all quad mesh.
         if (computation) {
             computations->push_back(computation);
@@ -470,8 +470,8 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
         // GPU subdivision
         HdComputationSharedPtr computation =
             topology->GetOsdRefineComputationGPU(
-                source->GetName(), source->GetGLComponentDataType(),
-                source->GetNumComponents());
+                source->GetName(),
+                source->GetTupleType().type);
         // computation can be null for empty mesh
         if (computation)
             computations->push_back(computation);
@@ -650,7 +650,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         TfToken normalsName = usePackedNormals ? HdTokens->packedNormals :
                                                  HdTokens->normals;
-
+        
         // The smooth normals computation uses the points primvar as a source.
         //
         if (cpuSmoothNormals) {
@@ -701,38 +701,35 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // Therefore, the code needs to check that the gpu buffer is
             // valid for the current topology before using it.
 
-
-            GLenum pointsDataType = GL_NONE;
+            HdType pointsDataType = HdTypeInvalid;
             if (points) {
-                pointsDataType = points->GetGLComponentDataType();
-                    } else {
-                HdBufferArrayRangeSharedPtr const &bar =
-                    drawItem->GetVertexPrimVarRange();
-
-                if (bar) {
+                pointsDataType = points->GetTupleType().type;
+            } else {
+                if (HdBufferArrayRangeSharedPtr const &bar =
+                    drawItem->GetVertexPrimVarRange()) {
                     if (bar->IsValid()) {
                         HdStBufferArrayRangeGLSharedPtr bar_ =
                             boost::static_pointer_cast<HdStBufferArrayRangeGL>
                                                                           (bar);
                         HdStBufferResourceGLSharedPtr pointsResource =
                                             bar_->GetResource(HdTokens->points);
-
                         if (pointsResource) {
-                            pointsDataType = pointsResource->GetGLDataType();
+                            pointsDataType = pointsResource->GetTupleType().type;
                         }
                     }
                 }
             }
 
-
-            if (pointsDataType != GL_NONE) {
+            if (pointsDataType != HdTypeInvalid) {
                 // determine datatype. if we're updating points too, ask the
                 // buffer source. Otherwise (if we're updating just normals)
                 // ask delegate.
             // This is very unfortunate. Can we force normals to be always
             // float? (e.g. when switing flat -> smooth first time).
-                GLenum normalsDataType = usePackedNormals ?
-                                         GL_INT_2_10_10_10_REV : pointsDataType;
+                HdType normalsDataType =
+                    usePackedNormals ? HdTypeInt32_2_10_10_10_REV
+                    : pointsDataType;
+
                 HdComputationSharedPtr smoothNormalsComputation(
                     new HdSt_SmoothNormalsComputationGPU(
                         _vertexAdjacency.get(),
@@ -749,7 +746,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 if (doRefine) {
                     HdComputationSharedPtr computation =
                         _topology->GetOsdRefineComputationGPU(
-                                         HdTokens->normals, normalsDataType, 3);
+                                         HdTokens->normals, normalsDataType);
 
                     // computation can be null for empty mesh
                     if (computation) {
@@ -758,7 +755,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 } else if (doQuadrangulate) {
                     HdComputationSharedPtr computation =
                         _topology->GetQuadrangulateComputationGPU(
-                                   HdTokens->normals, normalsDataType, GetId());
+                                   HdTokens->normals,
+                                   normalsDataType, GetId());
 
                     // computation can be null for all-quad mesh
                     if (computation) {

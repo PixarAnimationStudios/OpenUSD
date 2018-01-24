@@ -43,9 +43,7 @@ HdStBufferArrayRangeGL::AddBufferSpecs(HdBufferSpecVector *specs) const
     HdStBufferResourceGLNamedList const &resources = GetResources();
 
     TF_FOR_ALL(it, resources) {
-        specs->push_back(HdBufferSpec(it->first,
-                                      it->second->GetGLDataType(),
-                                      it->second->GetNumComponents()));
+        specs->emplace_back(it->first, it->second->GetTupleType());
     }
 }
 

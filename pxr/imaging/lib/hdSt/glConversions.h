@@ -21,42 +21,49 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HD_CONVERSIONS_H
-#define HD_CONVERSIONS_H
+#ifndef HDST_CONVERSIONS_H
+#define HDST_CONVERSIONS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdConversions {
+class HdStGLConversions {
 public:
     /// Returns the size of glDataType.
     /// For example: sizeof(GLuint)
-    HD_API
+    HDST_API
     static size_t GetComponentSize(int glDataType);
 
-    HD_API
+    HDST_API
     static GLenum GetGlDepthFunc(HdCompareFunction func);
 
-    HD_API
+    HDST_API
     static GLenum GetMinFilter(HdMinFilter filter);
 
-    HD_API
+    HDST_API
     static GLenum GetMagFilter(HdMagFilter filter);
 
-    HD_API
+    HDST_API
     static GLenum GetWrap(HdWrap wrap);
 
-    HD_API
+    HDST_API
     static void GetGlFormat(HdFormat inFormat, GLenum *outFormat, GLenum *outType, GLenum *outInternalFormat);
+
+    HDST_API
+    static int GetGLAttribType(HdType type);
+
+    /// Return the name of the given type as represented in GLSL.
+    HDST_API
+    static TfToken GetGLSLTypename(HdType type);
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_CONVERSIONS_H
+#endif // HDST_CONVERSIONS_H

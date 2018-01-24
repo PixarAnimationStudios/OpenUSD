@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/meshTopology.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -105,14 +106,14 @@ public:
                                 VtIntArray *primitiveParams);
 
     /// Return a triangulation of a face-varying primvar. source is
-    /// a buffer of size numElements and type corresponding to glDataType
-    /// (e.g. GL_FLOAT_VEC3); the result is a VtArray<T> of the
+    /// a buffer of size numElements and type corresponding to dataType
+    /// (e.g. HdTypeFloatVec3); the result is a VtArray<T> of the
     /// correct type written to the variable "triangulated".
-    /// This function returns false if it can't resolve glDataType.
+    /// This function returns false if it can't resolve dataType.
     HD_API
     bool ComputeTriangulatedFaceVaryingPrimvar(void const* source,
                                                int numElements,
-                                               int glDataType,
+                                               HdType dataType,
                                                VtValue *triangulated);
 
     // --------------------------------------------------------------------
@@ -152,26 +153,26 @@ public:
                             VtVec2iArray *primitiveParams);
 
     /// Return a quadrangulation of a per-vertex primvar. source is
-    /// a buffer of size numElements and type corresponding to glDataType
-    /// (e.g. GL_FLOAT_VEC3); the result is a VtArray<T> of the
+    /// a buffer of size numElements and type corresponding to dataType
+    /// (e.g. HdTypeFloatVec3); the result is a VtArray<T> of the
     /// correct type written to the variable "quadrangulated".
-    /// This function returns false if it can't resolve glDataType.
+    /// This function returns false if it can't resolve dataType.
     HD_API
     bool ComputeQuadrangulatedPrimvar(HdQuadInfo const* qi,
                                       void const* source,
                                       int numElements,
-                                      int glDataType,
+                                      HdType dataType,
                                       VtValue *quadrangulated);
 
     /// Return a quadrangulation of a face-varying primvar.
     /// source is a buffer of size numElements and type corresponding
-    /// to glDataType (e.g. GL_FLOAT_VEC3); the result is a VtArray<T> of the
+    /// to dataType (e.g. HdTypeFloatVec3); the result is a VtArray<T> of the
     /// correct type written to the variable "quadrangulated".
-    /// This function returns false if it can't resolve glDataType.
+    /// This function returns false if it can't resolve dataType.
     HD_API
     bool ComputeQuadrangulatedFaceVaryingPrimvar(void const* source,
                                                  int numElements,
-                                                 int glDataType,
+                                                 HdType dataType,
                                                  VtValue *quadrangulated);
 
     // --------------------------------------------------------------------

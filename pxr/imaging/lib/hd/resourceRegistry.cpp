@@ -31,8 +31,6 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 
-#include "pxr/imaging/glf/textureRegistry.h"
-
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/work/loops.h"
@@ -277,24 +275,23 @@ HdResourceRegistry::Commit()
 //#pragma omp parallel for
             for (int i = 0; i < numThreads; ++i) {
                 // iterate over all pending sources
-                for (_PendingSourceList::iterator reqIt = _pendingSources.begin();
-                     reqIt != _pendingSources.end(); ++reqIt) {
-                    TF_FOR_ALL(sourceIt, reqIt->sources) {
+                for (_PendingSource const& req: _pendingSources) {
+                    for (HdBufferSourceSharedPtr const& source: req.sources) {
                         // execute computation.
                         // call IsResolved first since Resolve is virtual and
                         // could be costly.
-                        if (!(*sourceIt)->IsResolved()) {
-                            if ((*sourceIt)->Resolve()) {
-                                TF_VERIFY((*sourceIt)->IsResolved(), 
-                                "Name = %s", (*sourceIt)->GetName().GetText());
+                        if (!source->IsResolved()) {
+                            if (source->Resolve()) {
+                                TF_VERIFY(source->IsResolved(), 
+                                "Name = %s", source->GetName().GetText());
 
                                 ++numBufferSourcesResolved;
 
                                 // call resize if it's the first source in sources.
-                                if (reqIt->range &&
-                                    (sourceIt.base() == reqIt->sources.begin())) {
-                                    reqIt->range->Resize(
-                                        (*sourceIt)->GetNumElements());
+                                if (req.range &&
+                                    source == *req.sources.begin()) {
+                                    req.range->Resize(
+                                        source->GetNumElements());
                                 }
                             }
                         }
@@ -538,16 +535,6 @@ HdResourceRegistry::GetResourceAllocation() const
     }
     result[HdPerfTokens->textureResourceMemory] = VtValue(hydraTexturesMemory);
     gpuMemoryUsed += hydraTexturesMemory;
-
-    GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
-    std::vector<VtDictionary> textureInfo = textureReg.GetTextureInfos();
-    size_t textureMemory = 0;
-    TF_FOR_ALL (textureIt, textureInfo) {
-        VtDictionary &info = (*textureIt);
-        textureMemory += info["memoryUsed"].Get<size_t>();
-    }
-    result[HdPerfTokens->textureMemory] = VtValue(textureMemory);
-
 
     result[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
 

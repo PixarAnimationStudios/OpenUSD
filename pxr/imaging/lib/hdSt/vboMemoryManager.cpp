@@ -30,12 +30,14 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/stackTrace.h"
 
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -70,15 +72,19 @@ HdStVBOMemoryManager::CreateBufferArrayRange()
 HdAggregationStrategy::AggregationId
 HdStVBOMemoryManager::ComputeAggregationId(HdBufferSpecVector const &bufferSpecs) const
 {
-    uint32_t hash = 0;
-    TF_FOR_ALL(it, bufferSpecs) {
-        size_t nameHash = it->name.Hash();
-        hash = ArchHash((const char*)&nameHash, sizeof(nameHash), hash);
-        hash = ArchHash((const char*)&(it->glDataType), sizeof(it->glDataType), hash);
-        hash = ArchHash((const char*)&(it->numComponents), sizeof(it->numComponents), hash);
+    static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
+    size_t result = salt;
+    for (HdBufferSpec const &spec : bufferSpecs) {
+        size_t const params[] = { 
+            spec.name.Hash(),
+            (size_t) spec.tupleType.type,
+            spec.tupleType.count
+        };
+        boost::hash_combine(result,
+                ArchHash((char const*)params, sizeof(size_t) * 3));
     }
     // promote to size_t
-    return (AggregationId)hash;
+    return (AggregationId)result;
 }
 
 
@@ -167,14 +173,13 @@ HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
 
     // populate BufferResources
     TF_FOR_ALL(it, bufferSpecs) {
-        int stride = HdConversions::GetComponentSize(it->glDataType) *
-            it->numComponents;
-        _AddResource(it->name,
-                     it->glDataType,
-                     it->numComponents,
-                     it->arraySize,
-                     /*offset=*/0,
-                     /*stride=*/stride);
+        int stride = HdDataSizeOfTupleType(it->tupleType);
+
+        if (it->tupleType.count == 0) {
+            TfLogStackTrace("zero count");
+        }
+
+        _AddResource(it->name, it->tupleType, /*offset*/0, stride);
     }
 
     // VBO Memory Manage supports an effectivly limitless set of ranges
@@ -182,10 +187,9 @@ HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
 
     // compute max bytes / elements
     TF_FOR_ALL (it, GetResources()) {
-        HdStBufferResourceGLSharedPtr const &bres = it->second;
         _maxBytesPerElement = std::max(
             _maxBytesPerElement,
-            bres->GetNumComponents() * bres->GetComponentSize());
+            HdDataSizeOfTupleType(it->second->GetTupleType()));
     }
 
     // GetMaxNumElements() will crash with a divide by 0
@@ -202,14 +206,11 @@ HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
 
 HdStBufferResourceGLSharedPtr
 HdStVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
-                            int glDataType,
-                            short numComponents,
-                            int arraySize,
-                            int offset,
-                            int stride)
+                                                   HdTupleType tupleType,
+                                                   int offset,
+                                                   int stride)
 {
     HD_TRACE_FUNCTION();
-
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // duplication check
         HdStBufferResourceGLSharedPtr bufferRes = GetResource(name);
@@ -219,13 +220,10 @@ HdStVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
     }
 
     HdStBufferResourceGLSharedPtr bufferRes = HdStBufferResourceGLSharedPtr(
-        new HdStBufferResourceGL(GetRole(), glDataType,
-                             numComponents, arraySize, offset, stride));
-
-    _resourceList.push_back(std::make_pair(name, bufferRes));
+        new HdStBufferResourceGL(GetRole(), tupleType, offset, stride));
+    _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }
-
 
 HdStVBOMemoryManager::_StripedBufferArray::~_StripedBufferArray()
 {
@@ -343,8 +341,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         HdStBufferResourceGLSharedPtr const &curRes =
                 curRangeOwner_->GetResources()[bresIdx].second;
 
-        int bytesPerElement =
-            bres->GetNumComponents() * bres->GetComponentSize();
+        int bytesPerElement = HdDataSizeOfTupleType(bres->GetTupleType());
         TF_VERIFY(bytesPerElement > 0);
         GLsizeiptr bufferSize = bytesPerElement * _totalCapacity;
 
@@ -526,9 +523,7 @@ HdStVBOMemoryManager::_StripedBufferArray::GetBufferSpecs() const
     HdBufferSpecVector result;
     result.reserve(_resourceList.size());
     TF_FOR_ALL (it, _resourceList) {
-        HdStBufferResourceGLSharedPtr const &bres = it->second;
-        HdBufferSpec spec(it->first, bres->GetGLDataType(), bres->GetNumComponents());
-        result.push_back(spec);
+        result.emplace_back(it->first, it->second->GetTupleType());
     }
     return result;
 }
@@ -653,28 +648,31 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     }
 
     // datatype of bufferSource has to match with bufferResource
-    if (!TF_VERIFY(bufferSource->GetGLComponentDataType() == VBO->GetGLDataType(),
-                      "%s: 0x%x != 0x%x\n",
-                      bufferSource->GetName().GetText(),
-                      bufferSource->GetGLComponentDataType(),
-                      VBO->GetGLDataType()) ||
-        !TF_VERIFY(bufferSource->GetNumComponents() == VBO->GetNumComponents(),
-                      "%s: %d != %d\n",
-                      bufferSource->GetName().GetText(),
-                      bufferSource->GetNumComponents(),
-                      VBO->GetNumComponents())) {
+    if (bufferSource->GetTupleType() != VBO->GetTupleType()) {
+        TfLogStackTrace("buf mismatch");
+    }
+    if (!TF_VERIFY(bufferSource->GetTupleType() == VBO->GetTupleType(),
+                   "'%s': (%s (%i) x %zu) != (%s (%i) x %zu)\n",
+                   bufferSource->GetName().GetText(),
+                   TfEnum::GetName(bufferSource->GetTupleType().type).c_str(),
+                   bufferSource->GetTupleType().type,
+                   bufferSource->GetTupleType().count,
+                   TfEnum::GetName(VBO->GetTupleType().type).c_str(),
+                   VBO->GetTupleType().type,
+                   VBO->GetTupleType().count)) {
         return;
     }
 
     HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
     if (glBufferSubData) {
-        int bytesPerElement =
-            VBO->GetNumComponents() * VBO->GetComponentSize();
+        int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
 
         // overrun check. for graceful handling of erroneous assets,
         // issue warning here and continue to copy for the valid range.
         size_t dstSize = _numElements * bytesPerElement;
-        size_t srcSize = bufferSource->GetSize();
+        size_t srcSize =
+            bufferSource->GetNumElements() *
+            HdDataSizeOfTupleType(bufferSource->GetTupleType());
         if (srcSize > dstSize) {
             TF_WARN("%s: size %ld is larger than the range (%ld)",
                     bufferSource->GetName().GetText(), srcSize, dstSize);
@@ -716,16 +714,12 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) co
         return result;
     }
 
-    GLintptr vboOffset = VBO->GetNumComponents() *
-        HdConversions::GetComponentSize(VBO->GetGLDataType()) *
-        _offset;
+    GLintptr vboOffset = HdDataSizeOfTupleType(VBO->GetTupleType()) * _offset;
 
     result = HdStGLUtils::ReadBuffer(VBO->GetId(),
-                                   VBO->GetGLDataType(),
-                                   VBO->GetNumComponents(),
-                                   VBO->GetArraySize(),
+                                   VBO->GetTupleType(),
                                    vboOffset,
-                                   /*stride=*/0,  // not interleaved.
+                                   /*stride=*/0, // not interleaved.
                                    _numElements);
 
     return result;

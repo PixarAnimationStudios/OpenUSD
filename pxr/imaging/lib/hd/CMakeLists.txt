@@ -18,17 +18,13 @@ pxr_library(hd
         vt
         work
         sdf
-        garch
         hf
-        glf
         pxOsd
         ${OPENSUBDIV_LIBRARIES}
-        ${GLEW_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}
-        ${GLEW_INCLUDE_DIR}
         ${TBB_INCLUDE_DIRS}
         ${OPENSUBDIV_INCLUDE_DIR}
 
@@ -46,7 +42,6 @@ pxr_library(hd
         changeTracker
         compExtCompInputSource
         computation
-        conversions
         debugCodes
         dirtyList
         drawingCoord
@@ -90,18 +85,17 @@ pxr_library(hd
         textureResource
         tokens
         topology
+        types
         unitTestDelegate
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
         vertexAdjacency
         vtBufferSource
-        vtExtractor
 
     PUBLIC_HEADERS
         api.h
         enums.h
-        types.h
         version.h
 
     PRIVATE_CLASSES

@@ -134,8 +134,7 @@ public:
     virtual HdComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
         TfToken const &name,
-        GLenum dataType,
-        int numComponents) override;
+        HdType dataType) override;
 
     void SetRefinementTables(
         OpenSubdiv::Far::StencilTable const *vertexStencils,
@@ -269,14 +268,17 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
         static_cast<OpenSubdiv::Osd::CpuVertexBuffer*>(vertexBuffer);
 
     int numElements = source->GetNumElements();
-    int stride = source->GetNumComponents();
+
+    // Stride is measured here in components, not bytes.
+    int stride = HdGetComponentCount(source->GetTupleType().type);
 
     // NOTE: in osd, GetNumElements() returns how many fields in a vertex
     //          (i.e.  3 for XYZ, and 4 for RGBA)
     //       in hydra, GetNumElements() returns how many vertices
     //       (or faces, etc) in a buffer. We basically follow the hydra
     //       convention in this file.
-    TF_VERIFY(stride == osdVertexBuffer->GetNumElements());
+    TF_VERIFY(stride == osdVertexBuffer->GetNumElements(),
+              "%i vs %i", stride, osdVertexBuffer->GetNumElements());
 
     // if the mesh has more vertices than that in use in topology (faceIndices),
     // we need to trim the buffer so that they won't overrun the coarse
@@ -386,11 +388,10 @@ HdSt_Osd3Subdivision::CreateRefineComputation(HdSt_MeshTopology *topology,
 HdComputationSharedPtr
 HdSt_Osd3Subdivision::CreateRefineComputationGPU(HdSt_MeshTopology *topology,
                                            TfToken const &name,
-                                           GLenum dataType,
-                                           int numComponents)
+                                           HdType dataType)
 {
     return HdComputationSharedPtr(new HdSt_OsdRefineComputationGPU(
-                                      topology, name, dataType, numComponents));
+                                      topology, name, dataType));
 }
 
 #if HDST_ENABLE_GPU_SUBDIVISION
@@ -584,11 +585,14 @@ HdSt_Osd3IndexComputation::Resolve()
     } else if (_subdivision->IsAdaptive() &&
                HdSt_Subdivision::RefinesToBSplinePatches(scheme)) {
 
-        VtArray<Hd_BSplinePatchIndex> indices(ptableSize/16);
+        // Bundle groups of 16 patch control vertices.
+        VtArray<int> indices(ptableSize);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr patchIndices(
-            new HdVtBufferSource(HdTokens->indices, VtValue(indices)));
+            new HdVtBufferSource(HdTokens->indices, VtValue(indices),
+                                 /* arraySize */ 16));
+
         _SetResult(patchIndices);
 
         _PopulateBSplinePrimitiveBuffer(patchTable);

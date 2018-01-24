@@ -104,8 +104,8 @@ public:
 
     /// Add an interleaved view to this buffer.
     HDST_API
-    void AddBufferResourceView(TfToken const &name, GLenum glDataType,
-                               int numComponents, int offset);
+    void AddBufferResourceView(TfToken const &name,
+                               HdTupleType tupleType, int offset);
 
     /// Returns the dispatch count
     int GetCount() const { return _count; }
@@ -154,11 +154,9 @@ protected:
     /// Adds a new, named GPU resource and returns it.
     HDST_API
     HdStBufferResourceGLSharedPtr _AddResource(TfToken const& name,
-                                           int glDataType,
-                                           short numComponents,
-                                           int arraySize,
-                                           int offset,
-                                           int stride);
+                                               HdTupleType tupleType,
+                                               int offset,
+                                               int stride);
 
 private:
     int _count;
