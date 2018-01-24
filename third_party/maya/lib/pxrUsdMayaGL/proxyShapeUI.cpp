@@ -60,9 +60,11 @@ UsdMayaProxyShapeUI::creator()
 
 static
 UsdMayaGLBatchRenderer::ShapeRenderer*
-_GetShapeRenderer(const MDagPath& objPath, const bool prepareForQueue)
+_GetShapeRenderer(
+        UsdMayaProxyShape* shape,
+        const MDagPath& objPath,
+        const bool prepareForQueue)
 {
-    UsdMayaProxyShape* shape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
     if (!shape) {
         return nullptr;
     }
@@ -113,8 +115,12 @@ UsdMayaProxyShapeUI::getDrawRequests(
 {
     MDrawRequest request = drawInfo.getPrototype(*this);
 
+    const MDagPath shapeDagPath = drawInfo.multiPath();
+    UsdMayaProxyShape* shape =
+        UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
     UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        _GetShapeRenderer(drawInfo.multiPath(),
+        _GetShapeRenderer(shape,
+                          shapeDagPath,
                           /*prepareForQueue= */ true);
     if (!shapeRenderer) {
         return;
@@ -131,9 +137,6 @@ UsdMayaProxyShapeUI::getDrawRequests(
     // Only query bounds if we're drawing bounds...
     //
     if (drawBoundingBox) {
-        UsdMayaProxyShape* shape =
-            static_cast<UsdMayaProxyShape*>(surfaceShape());
-
         const MBoundingBox bounds = shape->boundingBox();
 
         // Note that drawShape is still passed through here.
@@ -193,8 +196,14 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
+    // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
+    // selectInfo.selectPath() returns the dag path to the assembly node, not
+    // the shape node, so we don't have the shape node's path readily available.
+    UsdMayaProxyShape* shape = static_cast<UsdMayaProxyShape*>(surfaceShape());
+
     UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        _GetShapeRenderer(selectInfo.selectPath(),
+        _GetShapeRenderer(shape,
+                          selectInfo.selectPath(),
                           /*prepareForQueue= */ false);
     if (!shapeRenderer) {
         return false;
