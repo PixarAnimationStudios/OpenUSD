@@ -1013,9 +1013,6 @@ class AppController(QtCore.QObject):
 
     def _openStage(self, usdFilePath, populationMaskPaths):
         Ar.GetResolver().ConfigureResolverForAsset(usdFilePath)
-        fullAssetPath = Ar.GetResolver().Resolve(usdFilePath)
-        self._pathResolverContext = \
-            Ar.GetResolver().CreateDefaultContextForAsset(fullAssetPath)
 
         def _GetFormattedError(reasons=[]):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
@@ -1048,11 +1045,9 @@ class AppController(QtCore.QObject):
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(
-                    layer, self._pathResolverContext, popMask, preloadSet)
+                stage = Usd.Stage.OpenMasked(layer, popMask, preloadSet)
             else:
-                stage = Usd.Stage.Open(
-                    layer, self._pathResolverContext, preloadSet)
+                stage = Usd.Stage.Open(layer, preloadSet)
 
             # no point in optimizing for editing if we're not redrawing
             if stage and not self._noRender:
@@ -1097,11 +1092,9 @@ class AppController(QtCore.QObject):
 
                 if popMask:
                     stage2 = Usd.Stage.OpenMasked(
-                        layer, sl, self._pathResolverContext,
-                        popMask, loadSet)
+                        layer, sl, popMask, loadSet)
                 else:
-                    stage2 = Usd.Stage.Open(
-                        layer, sl, self._pathResolverContext, loadSet)
+                    stage2 = Usd.Stage.Open(layer, sl, loadSet)
                 stage = stage2
 
         if not stage:
