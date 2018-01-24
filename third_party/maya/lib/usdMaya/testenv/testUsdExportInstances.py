@@ -92,7 +92,10 @@ class testUsdExportMesh(unittest.TestCase):
                 self.assertTrue(p.IsInstanceable())
                 self.assertTrue(p.IsInstance())
                 ps = layer.GetPrimAtPath(pp)
-                self.assertEqual(ps.inheritPathList.GetAddedOrExplicitItems()[0], i)
+
+                ref = ps.referenceList.GetAddedOrExplicitItems()[0]
+                self.assertEqual(ref.assetPath, "")
+                self.assertEqual(ref.primPath, i)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
