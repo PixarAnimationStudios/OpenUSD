@@ -144,6 +144,11 @@ PxrMayaHdShapeAdapter::PrepareForQueue(
         _delegate->SetTime(time);
 
         _delegate->SetRootCompensation(_rootPrim.GetPath());
+
+        if (!_isPopulated) {
+            _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
+            _isPopulated = true;
+        }
     }
 }
 

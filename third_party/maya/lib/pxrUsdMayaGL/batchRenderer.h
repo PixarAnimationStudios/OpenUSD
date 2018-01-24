@@ -243,10 +243,6 @@ private:
     typedef std::unordered_map<size_t, PxrMayaHdShapeAdapter> _ShapeAdapterMap;
     _ShapeAdapterMap _shapeAdapterMap;
 
-    /// \brief container of all delegates to be populated at next display
-    /// refresh.
-    std::unordered_set<PxrMayaHdShapeAdapter*> _populateQueue;
-
     /// \brief Cache of \c SdfPath objects to be rendered
     typedef std::unordered_set<SdfPath, SdfPath::Hash> _SdfPathSet;
 

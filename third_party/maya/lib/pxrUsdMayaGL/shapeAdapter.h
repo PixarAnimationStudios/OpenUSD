@@ -102,12 +102,6 @@ class PxrMayaHdShapeAdapter
                 bool* drawShape,
                 bool* drawBoundingBox);
 
-        const UsdPrim& GetRootPrim() const { return _rootPrim; }
-
-        const SdfPathVector& GetExcludedPrimPaths() const {
-            return _excludedPrimPaths;
-        }
-
         const GfMatrix4d& GetRootXform() const { return _rootXform; }
 
         /// Returns base params as set previously by \c PrepareForQueue().
@@ -116,19 +110,6 @@ class PxrMayaHdShapeAdapter
         }
 
         const SdfPath& GetSharedId() const { return _sharedId; }
-
-        bool IsPopulated() const { return _isPopulated; }
-        void SetPopulated(const bool isPopulated = true) {
-            _isPopulated = isPopulated;
-        }
-
-        UsdImagingDelegate* GetDelegate() const {
-            if (_delegate) {
-                return _delegate.get();
-            }
-
-            return nullptr;
-        }
 
     private:
 

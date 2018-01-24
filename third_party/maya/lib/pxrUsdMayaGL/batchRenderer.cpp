@@ -49,7 +49,6 @@
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -71,7 +70,6 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -242,12 +240,6 @@ UsdMayaGLBatchRenderer::_QueueShapeForDraw(
         PxrMayaHdShapeAdapter* shapeAdapter,
         const PxrMayaHdRenderParams& params)
 {
-    if (!shapeAdapter->IsPopulated()) {
-        // Populate this shape adapter on the next draw if it hasn't yet been
-        // populated.
-        _populateQueue.insert(shapeAdapter);
-    }
-
     const size_t paramKey = params.Hash();
 
     auto renderSetIter = _renderQueue.find(paramKey);
@@ -329,8 +321,9 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
     _intersector.reset();
     _taskDelegate.reset();
 
-    // The cache of shape adapters may have UsdImagingDelegate objects which
-    // need to be deleted before _renderIndex is deleted.
+    // The cache of shape adapters may have delegate objects holding references
+    // to the render index, so they need to be deleted before _renderIndex is
+    // deleted.
     _shapeAdapterMap.clear();
 }
 
@@ -665,41 +658,6 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 {
     if (_renderQueue.empty()) {
         return;
-    }
-
-    if (!_populateQueue.empty()) {
-        TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "____________ POPULATE STAGE START ______________ (%zu)\n",
-            _populateQueue.size());
-
-        std::vector<UsdImagingDelegate*> delegates;
-        UsdPrimVector rootPrims;
-        std::vector<SdfPathVector> excludedPrimPaths;
-        std::vector<SdfPathVector> invisedPrimPaths;
-
-        for (PxrMayaHdShapeAdapter* shapeAdapter : _populateQueue) {
-            if (shapeAdapter->IsPopulated()) {
-                continue;
-            }
-
-            delegates.push_back(shapeAdapter->GetDelegate());
-            rootPrims.push_back(shapeAdapter->GetRootPrim());
-            excludedPrimPaths.push_back(shapeAdapter->GetExcludedPrimPaths());
-            invisedPrimPaths.push_back(SdfPathVector());
-
-            shapeAdapter->SetPopulated(true);
-        }
-
-        UsdImagingDelegate::Populate(delegates,
-                                     rootPrims,
-                                     excludedPrimPaths,
-                                     invisedPrimPaths);
-
-        _populateQueue.clear();
-
-        TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "^^^^^^^^^^^^ POPULATE STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",
-            _populateQueue.size());
     }
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
