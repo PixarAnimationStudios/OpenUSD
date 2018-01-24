@@ -336,18 +336,20 @@ GusdMeshWrapper::refine(
         if (!normalsAttr.GetMetadata(UsdGeomTokens->interpolation, &interp)) {
             interp = UsdGeomTokens->varying;
         }
-        if (interp == UsdGeomTokens->varying) {
-            // varying normalsAttr becomes a point attribute.
-            gtPointAttrs = gtPointAttrs->addAttribute("N", gtNormals, true);
-        } else if (interp == UsdGeomTokens->faceVarying) {
-            // faceVarying normalsAttr becomes a vertex attribute.
-            gtVertexAttrs = gtVertexAttrs->addAttribute("N", gtNormals, true);
-        } else if (interp == UsdGeomTokens->uniform) {
-            // uniform normalsAttr becomes a primitive attribute.
-            gtUniformAttrs = gtUniformAttrs->addAttribute("N", gtNormals, true);
-        } else if (interp == UsdGeomTokens->constant) {
-            // constant normalsAttr becomes a detail attribute.
-            gtDetailAttrs = gtDetailAttrs->addAttribute("N", gtNormals, true);
+        if( gtNormals ) {
+            _validateAttrData(
+                "N",
+                normalsAttr.GetBaseName().GetText(),
+                m_usdMesh.GetPrim().GetPath().GetText(),
+                gtNormals,
+                interp,
+                usdCounts.size(),
+                usdPoints.size(),
+                usdFaceIndex.size(),
+                &gtVertexAttrs,
+                &gtPointAttrs,
+                &gtUniformAttrs,
+                &gtDetailAttrs );
         }
     }
 
@@ -359,7 +361,21 @@ GusdMeshWrapper::refine(
             velAttr.Get(&vtVec3Array, m_time);
             GT_DataArrayHandle gtVel = 
                     new GusdGT_VtArray<GfVec3f>(vtVec3Array, GT_TYPE_VECTOR);
-            gtPointAttrs = gtPointAttrs->addAttribute("v", gtVel, true);
+            if( gtVel ) {
+                _validateAttrData(
+                    "v",
+                    velAttr.GetBaseName().GetText(),
+                    m_usdMesh.GetPrim().GetPath().GetText(),
+                    gtVel,
+                    UsdGeomTokens->varying, // Point attribute
+                    usdCounts.size(),
+                    usdPoints.size(),
+                    usdFaceIndex.size(),
+                    &gtVertexAttrs,
+                    &gtPointAttrs,
+                    &gtUniformAttrs,
+                    &gtDetailAttrs );
+            }
         }
             
         loadPrimvars( m_time, parms, 
