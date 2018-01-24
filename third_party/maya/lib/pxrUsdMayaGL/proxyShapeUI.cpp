@@ -25,6 +25,7 @@
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/renderParams.h"
 #include "usdMaya/proxyShape.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -127,7 +128,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
     }
 
     bool drawShape, drawBoundingBox;
-    UsdMayaGLBatchRenderer::RenderParams params =
+    PxrMayaHdRenderParams params =
         shapeRenderer->GetRenderParams(drawInfo.multiPath(),
                                        drawInfo.displayStyle(),
                                        drawInfo.displayStatus(),

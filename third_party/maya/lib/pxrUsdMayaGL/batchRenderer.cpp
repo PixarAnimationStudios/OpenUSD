@@ -21,20 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-// Some header #define's Bool as int, which breaks stuff in sdf/types.h.
-// Include it first to sidestep the problem. :-/
-#include "pxr/pxr.h"
-#include "pxr/usd/sdf/types.h"
 
+// glew needs to be included before any other OpenGL headers.
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hdx/renderTask.h"
-#include "pxr/imaging/hdx/selectionTask.h"
-#include "pxr/imaging/hdx/simpleLightTask.h"
+#include "pxr/pxr.h"
+#include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/renderParams.h"
+#include "pxrUsdMayaGL/sceneDelegate.h"
+#include "pxrUsdMayaGL/softSelectHelper.h"
 
-#include "pxr/imaging/hdSt/camera.h"
-#include "pxr/imaging/hdSt/light.h"
+#include "px_vp20/utils.h"
+#include "px_vp20/utils_legacy.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -42,22 +40,44 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/registryManager.h"
-
-#include "px_vp20/utils.h"
-#include "px_vp20/utils_legacy.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hdx/intersector.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/timeCode.h"
+#include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
+#include <maya/MColor.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MDrawData.h>
+#include <maya/MDrawRequest.h>
 #include <maya/MFrameContext.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+#include <maya/MUserData.h>
+#include <maya/MViewport2Renderer.h>
+
+#include <boost/functional/hash.hpp>
+#include <boost/scoped_ptr.hpp>
+
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -65,11 +85,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (idRenderTask)
-    (renderTask)
-    (selectionTask)
-    (simpleLightTask)
-    (camera)
+
     (render)
 
     ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
@@ -163,17 +179,17 @@ UsdMayaGLBatchRenderer::ShapeRenderer::Init(
 void
 UsdMayaGLBatchRenderer::ShapeRenderer::PrepareForQueue(
         const MDagPath& objPath,
-        UsdTimeCode time,
-        uint8_t refineLevel,
-        bool showGuides,
-        bool showRenderGuides,
-        bool tint,
-        GfVec4f tintColor)
+        const UsdTimeCode time,
+        const uint8_t refineLevel,
+        const bool showGuides,
+        const bool showRenderGuides,
+        const bool tint,
+        const GfVec4f& tintColor)
 {
     // Initialization of default parameters go here. These parameters get used
     // in all viewports and for selection.
     //
-    _baseParams.frame = time;
+    _baseParams.timeCode = time;
     _baseParams.refineLevel = refineLevel;
 
     // XXX Not yet adding ability to turn off display of proxy geometry, but
@@ -259,7 +275,7 @@ _GetWireframeColor(
     return false;
 }
 
-UsdMayaGLBatchRenderer::RenderParams
+PxrMayaHdRenderParams
 UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
         const MDagPath& objPath,
         const M3dView::DisplayStyle& displayStyle,
@@ -269,7 +285,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
 {
     // VP 1.0 Implementation
     //
-    RenderParams params(_baseParams);
+    PxrMayaHdRenderParams params(_baseParams);
 
     // VP 1.0 deos not allow shapes and bounding boxes to be drawn at the
     // same time...
@@ -338,7 +354,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     return params;
 }
 
-UsdMayaGLBatchRenderer::RenderParams
+PxrMayaHdRenderParams
 UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
         const MDagPath& objPath,
         const unsigned int& displayStyle,
@@ -348,7 +364,7 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
 {
     // VP 2.0 Implementation
     //
-    RenderParams params(_baseParams);
+    PxrMayaHdRenderParams params(_baseParams);
 
     *drawShape = true;
     *drawBoundingBox =
@@ -416,317 +432,6 @@ UsdMayaGLBatchRenderer::ShapeRenderer::GetRenderParams(
     return params;
 }
 
-UsdMayaGLBatchRenderer::TaskDelegate::TaskDelegate(
-        HdRenderIndex* renderIndex,
-        const SdfPath& delegateID) :
-    HdSceneDelegate(renderIndex, delegateID)
-{
-    _lightingContext = GlfSimpleLightingContext::New();
-
-    // populate tasks in renderindex
-
-    // create an unique namespace
-    _rootId = delegateID.AppendChild(
-        TfToken(TfStringPrintf("_UsdImaging_%p", this)));
-
-    _simpleLightTaskId = _rootId.AppendChild(_tokens->simpleLightTask);
-    _cameraId = _rootId.AppendChild(_tokens->camera);
-
-    // camera
-    {
-        // Since we're hardcoded to use HdStRenderDelegate, we expect to
-        // have camera Sprims.
-        TF_VERIFY(renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->camera));
-
-        renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
-        _ValueCache &cache = _valueCacheMap[_cameraId];
-        cache[HdStCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdStCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdStCameraTokens->windowPolicy] = VtValue();  // no window policy.
-    }
-
-    // simple lighting task (for Hydra native)
-    {
-        renderIndex->InsertTask<HdxSimpleLightTask>(this, _simpleLightTaskId);
-        _ValueCache &cache = _valueCacheMap[_simpleLightTaskId];
-        HdxSimpleLightTaskParams taskParams;
-        taskParams.cameraPath = _cameraId;
-        taskParams.viewport = GfVec4f(_viewport);
-        cache[HdTokens->params] = VtValue(taskParams);
-        cache[HdTokens->children] = VtValue(SdfPathVector());
-    }
-}
-
-/* virtual */
-VtValue
-UsdMayaGLBatchRenderer::TaskDelegate::Get(
-        const SdfPath& id,
-        const TfToken& key)
-{
-    _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
-    VtValue ret;
-    if( vcache && TfMapLookup(*vcache, key, &ret) )
-        return ret;
-
-    TF_CODING_ERROR("%s:%s doesn't exist in the value cache\n",
-                    id.GetText(), key.GetText());
-    return VtValue();
-}
-
-void
-UsdMayaGLBatchRenderer::TaskDelegate::SetCameraState(
-        const GfMatrix4d& worldToViewMatrix,
-        const GfMatrix4d& projectionMatrix,
-        const GfVec4d& viewport)
-{
-    // cache the camera matrices
-    _ValueCache &cache = _valueCacheMap[_cameraId];
-    cache[HdStCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
-    cache[HdStCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
-    cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
-
-    // invalidate the camera to be synced
-    GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
-                                                       HdStCamera::AllDirty);
-
-    if (_viewport != viewport) {
-        _viewport = viewport;
-
-        // Update the simple light task.
-        HdxSimpleLightTaskParams simpleLightTaskParams =
-            _GetValue<HdxSimpleLightTaskParams>(_simpleLightTaskId,
-                                                HdTokens->params);
-
-        simpleLightTaskParams.viewport = GfVec4f(_viewport);
-        _SetValue(_simpleLightTaskId, HdTokens->params, simpleLightTaskParams);
-
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            _simpleLightTaskId,
-            HdChangeTracker::DirtyParams);
-
-        // Update all render tasks.
-        for (const auto& it : _renderTaskIdMap) {
-            const SdfPath& renderTaskId = it.second;
-
-            HdxRenderTaskParams renderTaskParams =
-                _GetValue<HdxRenderTaskParams>(renderTaskId, HdTokens->params);
-
-            renderTaskParams.viewport = _viewport;
-            _SetValue(renderTaskId, HdTokens->params, renderTaskParams);
-
-            GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-                renderTaskId,
-                HdChangeTracker::DirtyParams);
-        }
-    }
-}
-
-void
-UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromVP1(
-        const GfMatrix4d& worldToViewMatrix,
-        const GfMatrix4d& projectionMatrix)
-{
-    // This function should only be called in a VP1.0 context. In VP2.0, we can
-    // translate the lighting state from the MDrawContext directly into Glf,
-    // but there is no draw context in VP1.0, so we have to transfer the state
-    // through OpenGL.
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadMatrixd(worldToViewMatrix.GetArray());
-    _lightingContext->SetStateFromOpenGL();
-    glPopMatrix();
-
-    _lightingContext->SetCamera(worldToViewMatrix, projectionMatrix);
-
-    _SetLightingStateFromLightingContext();
-}
-
-void
-UsdMayaGLBatchRenderer::TaskDelegate::SetLightingStateFromMayaDrawContext(
-        const MHWRender::MDrawContext& context)
-{
-    _lightingContext = px_vp20Utils::GetLightingContextFromDrawContext(context);
-
-    _SetLightingStateFromLightingContext();
-}
-
-void
-UsdMayaGLBatchRenderer::TaskDelegate::_SetLightingStateFromLightingContext()
-{
-    const GlfSimpleLightVector& lights = _lightingContext->GetLights();
-
-    bool hasNumLightsChanged = false;
-
-    // Insert light Ids into the render index for those that do not yet exist.
-    while (_lightIds.size() < lights.size()) {
-        SdfPath lightId(
-            TfStringPrintf("%s/light%d",
-                           _rootId.GetText(),
-                           (int)_lightIds.size()));
-        _lightIds.push_back(lightId);
-
-        // Since we're hardcoded to use HdStRenderDelegate, we expect to have
-        // light Sprims.
-        TF_VERIFY(GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->light));
-
-        GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, lightId);
-        hasNumLightsChanged = true;
-    }
-
-    // Remove unused light Ids from HdRenderIndex
-    while (_lightIds.size() > lights.size()) {
-        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
-        _lightIds.pop_back();
-        hasNumLightsChanged = true;
-    }
-
-    // invalidate HdLights
-    for (size_t i = 0; i < lights.size(); ++i) {
-        _ValueCache &cache = _valueCacheMap[_lightIds[i]];
-        // store GlfSimpleLight directly.
-        cache[HdStLightTokens->params] = VtValue(lights[i]);
-        cache[HdStLightTokens->transform] = VtValue();
-        cache[HdStLightTokens->shadowParams] = VtValue(HdxShadowParams());
-        cache[HdStLightTokens->shadowCollection] = VtValue();
-
-        // Only mark as dirty the parameters to avoid unnecessary invalidation
-        // specially marking as dirty lightShadowCollection will trigger
-        // a collection dirty on geometry and we don't want that to happen
-        // always
-        GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            _lightIds[i], HdStLight::AllDirty);
-    }
-
-    // sadly the material also comes from lighting context right now...
-    HdxSimpleLightTaskParams taskParams
-        = _GetValue<HdxSimpleLightTaskParams>(_simpleLightTaskId,
-                                              HdTokens->params);
-    taskParams.sceneAmbient = _lightingContext->GetSceneAmbient();
-    taskParams.material = _lightingContext->GetMaterial();
-
-    // invalidate HdxSimpleLightTask too
-    if (hasNumLightsChanged) {
-        _SetValue(_simpleLightTaskId, HdTokens->params, taskParams);
-
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            _simpleLightTaskId, HdChangeTracker::DirtyParams);
-    }
-}
-
-HdTaskSharedPtrVector
-UsdMayaGLBatchRenderer::TaskDelegate::GetSetupTasks()
-{
-    HdTaskSharedPtrVector tasks;
-
-    tasks.push_back(GetRenderIndex().GetTask(_simpleLightTaskId));
-
-    return tasks;
-}
-
-HdTaskSharedPtr
-UsdMayaGLBatchRenderer::TaskDelegate::GetRenderTask(
-        const size_t hash,
-        const RenderParams& renderParams,
-        const SdfPathVector& roots)
-{
-    // select bucket
-    SdfPath renderTaskId;
-    if (!TfMapLookup(_renderTaskIdMap, hash, &renderTaskId)) {
-        // Create a new render task if one does not exist for this hash.
-        renderTaskId = _rootId.AppendChild(
-            TfToken(TfStringPrintf("renderTask%zx", hash)));
-
-        GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
-        _ValueCache &cache = _valueCacheMap[renderTaskId];
-        HdxRenderTaskParams taskParams;
-        taskParams.camera = _cameraId;
-        // Initialize viewport to the latest value since render tasks can be lazily
-        // instantiated, potentially even after SetCameraState.  All other
-        // parameters will be updated by _UpdateRenderParams.
-        taskParams.viewport = _viewport;
-        cache[HdTokens->params] = VtValue(taskParams);
-        cache[HdTokens->children] = VtValue(SdfPathVector());
-        cache[HdTokens->collection] = VtValue();
-
-        _renderTaskIdMap[hash] = renderTaskId;
-    }
-
-
-    //
-    // XXX: The Maya-Hydra plugin needs refactoring such that the plugin is
-    // creating a different collection name for each collection it is trying to
-    // manage. (i.e. Each collection within a frame that has different content
-    // should have a different collection name)
-    //
-    // With Hydra, changing the contents of a collection can be
-    // an expensive operation as it causes draw batches to be rebuilt.
-    //
-    // The Maya-Hydra Plugin is currently reusing the same collection
-    // name for all collections within a frame.
-    // (This stems from a time when collection name had a significant meaning
-    // rather than id'ing a collection).
-    //
-    // The plugin should also track deltas to the contents of a collection
-    // and set Hydra's dirty state when prims get added and removed from
-    // the collection.
-    //
-    // Another possible change that can be made to this code is HdxRenderTask
-    // now takes an array of collections, so it is possible to support different
-    // reprs using the same task.  Therefore, this code should be modified to
-    // only add one task that is provided with the active set of collections.
-    //
-    // However, a further improvement to the code could be made using
-    // UsdDelegate's fallback repr feature instead of using multiple
-    // collections as it would avoid modifying the collection as a Maya shape
-    // object display state changes.  This would result in a much cheaper state
-    // transition within Hydra itself.
-    //
-    TfToken colName = renderParams.geometryCol;
-    HdRprimCollection rprims(colName, renderParams.drawRepr);
-    rprims.SetRootPaths(roots);
-    rprims.SetRenderTags(renderParams.renderTags);
-    GetRenderIndex().GetChangeTracker().MarkCollectionDirty(colName);
-
-    // update value cache
-    _SetValue(renderTaskId, HdTokens->collection, rprims);
-
-    // invalidate
-    GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-        renderTaskId, HdChangeTracker::DirtyCollection);
-
-    // update render params in the value cache
-    HdxRenderTaskParams taskParams =
-                _GetValue<HdxRenderTaskParams>(renderTaskId, HdTokens->params);
-
-    // update params
-    taskParams.overrideColor         = renderParams.overrideColor;
-    taskParams.wireframeColor        = renderParams.wireframeColor;
-    taskParams.enableLighting        = renderParams.enableLighting;
-    taskParams.enableIdRender        = false;
-    taskParams.alphaThreshold        = 0.1;
-    taskParams.tessLevel             = 32.0;
-    const float tinyThreshold        = 0.9f;
-    taskParams.drawingRange          = GfVec2f(tinyThreshold, -1.0f);
-    taskParams.depthBiasUseDefault   = true;
-    taskParams.depthFunc             = HdCmpFuncLess;
-    taskParams.cullStyle             = renderParams.cullStyle;
-    taskParams.geomStyle             = HdGeomStylePolygons;
-    taskParams.enableHardwareShading = true;
-
-    // note that taskParams.rprims and taskParams.viewport are not updated
-    // in this function, and needed to be preserved.
-
-    // store into cache
-    _SetValue(renderTaskId, HdTokens->params, taskParams);
-
-    // invalidate
-    GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-        renderTaskId,  HdChangeTracker::DirtyParams);
-
-    return GetRenderIndex().GetTask(renderTaskId);
-}
-
 
 UsdMayaGLBatchRenderer::ShapeRenderer*
 UsdMayaGLBatchRenderer::GetShapeRenderer(
@@ -764,7 +469,7 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
         const SdfPath& shapeRendererSharedId,
         MPxSurfaceShapeUI* shapeUI,
         MDrawRequest& drawRequest,
-        const RenderParams& params,
+        const PxrMayaHdRenderParams& params,
         const bool drawShape,
         const MBoundingBox* boxToDraw)
 {
@@ -798,7 +503,7 @@ void
 UsdMayaGLBatchRenderer::QueueShapeForDraw(
         const SdfPath& shapeRendererSharedId,
         MUserData*& userData,
-        const RenderParams& params,
+        const PxrMayaHdRenderParams& params,
         const bool drawShape,
         const MBoundingBox* boxToDraw)
 {
@@ -831,7 +536,7 @@ UsdMayaGLBatchRenderer::QueueShapeForDraw(
 void
 UsdMayaGLBatchRenderer::_QueueShapeForDraw(
         const SdfPath& sharedId,
-        const RenderParams& params)
+        const PxrMayaHdRenderParams& params)
 {
     const size_t paramKey = params.Hash();
 
@@ -882,9 +587,9 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     if (!TF_VERIFY(_renderIndex)) {
         return;
     }
-    _taskDelegate.reset(new TaskDelegate(_renderIndex.get(), SdfPath("/mayaTask")));
+    _taskDelegate.reset(
+        new PxrMayaHdSceneDelegate(_renderIndex.get(), SdfPath("/mayaTask")));
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
-
 
     static MCallbackId sceneUpdateCallbackId = 0;
     if (sceneUpdateCallbackId == 0) {
@@ -1050,8 +755,8 @@ UsdMayaGLBatchRenderer::TestIntersection(
         const SdfPath& shapeRendererSharedId,
         const GfMatrix4d& shapeRootXform,
         M3dView& view,
-        unsigned int pickResolution,
-        bool singleSelection,
+        const unsigned int pickResolution,
+        const bool singleSelection,
         GfVec3d* hitPoint)
 {
     const HdxIntersector::Hit* hitInfo = _GetHitInfo(view,
@@ -1080,8 +785,8 @@ UsdMayaGLBatchRenderer::TestIntersection(
 const HdxIntersector::Hit*
 UsdMayaGLBatchRenderer::_GetHitInfo(
         M3dView& view,
-        unsigned int pickResolution,
-        bool singleSelection,
+        const unsigned int pickResolution,
+        const bool singleSelection,
         const SdfPath& sharedId,
         const GfMatrix4d& localToWorldSpace)
 {
@@ -1097,7 +802,7 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
     if (!_selectQueue.empty()) {
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "____________ SELECTION STAGE START ______________ (singleSelect = %d)\n",
-            singleSelection );
+            singleSelection);
 
         GfMatrix4d viewMatrix;
         GfMatrix4d projectionMatrix;
@@ -1118,19 +823,19 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         HdxIntersector::Params qparams;
         qparams.viewMatrix = worldToLocalSpace * viewMatrix;
         qparams.projectionMatrix = projectionMatrix;
-        qparams.alphaThreshold = 0.1;
+        qparams.alphaThreshold = 0.1f;
 
         _selectResults.clear();
 
-        for( const auto &renderSetIter : _selectQueue )
-        {
-            const RenderParams &renderParams = renderSetIter.second.first;
-            const _SdfPathSet &renderPaths = renderSetIter.second.second;
+        for (const auto& renderSetIter : _selectQueue) {
+            const PxrMayaHdRenderParams& renderParams = renderSetIter.second.first;
+            const _SdfPathSet& renderPaths = renderSetIter.second.second;
             SdfPathVector roots(renderPaths.begin(), renderPaths.end());
 
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-                    "--- pickQueue, batch %zx, size %zu\n",
-                    renderSetIter.first, renderPaths.size());
+                "--- pickQueue, batch %zx, size %zu\n",
+                renderSetIter.first,
+                renderPaths.size());
 
             TfToken colName = renderParams.geometryCol;
             HdRprimCollection rprims(colName, renderParams.drawRepr);
@@ -1152,18 +857,17 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                          GL_POLYGON_BIT);
             bool r = _intersector->Query(qparams, rprims, &_hdEngine, &result);
             glPopAttrib();
-            if( !r ) {
+            if (!r) {
                 continue;
             }
 
-            if( singleSelection )
-            {
+            if (singleSelection) {
                 hits.resize(1);
-                if( !result.ResolveNearest(&hits.front()) )
+                if (!result.ResolveNearest(&hits.front())) {
                     continue;
+                }
             }
-            else if( !result.ResolveAll(&hits) )
-            {
+            else if (!result.ResolveAll(&hits)) {
                 continue;
             }
 
@@ -1173,47 +877,48 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                         std::pair<SdfPath, HdxIntersector::Hit>(hit.delegateId, hit));
 
                 const bool &inserted = itIfExists.second;
-                if( inserted )
+                if (inserted) {
                     continue;
+                }
 
                 HdxIntersector::Hit& existingHit = itIfExists.first->second;
-                if( hit.ndcDepth < existingHit.ndcDepth )
+                if (hit.ndcDepth < existingHit.ndcDepth) {
                     existingHit = hit;
+                }
             }
         }
 
-        if( singleSelection && _selectResults.size()>1 )
-        {
+        if (singleSelection && _selectResults.size() > 1u) {
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-                    "!!! multiple singleSel hits found: %zu\n",
-                    _selectResults.size());
+                "!!! multiple singleSel hits found: %zu\n",
+                _selectResults.size());
 
-            auto minIt=_selectResults.begin();
-            for( auto curIt=minIt; curIt!=_selectResults.end(); curIt++ )
-            {
+            auto minIt = _selectResults.begin();
+            for (auto curIt = minIt; curIt != _selectResults.end(); ++curIt) {
                 const HdxIntersector::Hit& curHit = curIt->second;
                 const HdxIntersector::Hit& minHit = minIt->second;
-                if( curHit.ndcDepth < minHit.ndcDepth )
+                if (curHit.ndcDepth < minHit.ndcDepth) {
                     minIt = curIt;
+                }
             }
 
-            if( minIt!=_selectResults.begin() )
-                _selectResults.erase(_selectResults.begin(),minIt);
-            minIt++;
-            if( minIt!=_selectResults.end() )
-                _selectResults.erase(minIt,_selectResults.end());
+            if (minIt != _selectResults.begin()) {
+                _selectResults.erase(_selectResults.begin(), minIt);
+            }
+            ++minIt;
+            if (minIt != _selectResults.end()) {
+                _selectResults.erase(minIt, _selectResults.end());
+            }
         }
 
-        if( TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO) )
-        {
-            for ( const auto &selectPair : _selectResults)
-            {
+        if (TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO)) {
+            for (const auto& selectPair : _selectResults) {
                 const SdfPath& path = selectPair.first;
                 const HdxIntersector::Hit& hit = selectPair.second;
-                cout << "NEW HIT: " << path << endl;
-                cout << "\tdelegateId: " << hit.delegateId << endl;
-                cout << "\tobjectId: " << hit.objectId << endl;
-                cout << "\tndcDepth: " << hit.ndcDepth << endl;
+                cout << "NEW HIT       : " << path << endl;
+                cout << "    delegateId: " << hit.delegateId << endl;
+                cout << "    objectId  : " << hit.objectId << endl;
+                cout << "    ndcDepth  : " << hit.ndcDepth << endl;
             }
         }
 
@@ -1230,8 +935,9 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         // user attempts another selection. We fix the renderer state by
         // scheduling another refresh when the view is next idle.
 
-        if( _selectResults.empty() )
+        if (_selectResults.empty()) {
             view.scheduleRefresh();
+        }
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "^^^^^^^^^^^^ SELECTION STAGE FINISH ^^^^^^^^^^^^^\n");
@@ -1253,15 +959,15 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
     if (!_populateQueue.empty()) {
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "____________ POPULATE STAGE START ______________ (%zu)\n",_populateQueue.size());
+            "____________ POPULATE STAGE START ______________ (%zu)\n",
+            _populateQueue.size());
 
         std::vector<UsdImagingDelegate*> delegates;
         UsdPrimVector rootPrims;
         std::vector<SdfPathVector> excludedPrimPaths;
         std::vector<SdfPathVector> invisedPrimPaths;
 
-        for( ShapeRenderer *shapeRenderer : _populateQueue )
-        {
+        for (ShapeRenderer* shapeRenderer : _populateQueue) {
             delegates.push_back(shapeRenderer->_delegate.get());
             rootPrims.push_back(shapeRenderer->_rootPrim);
             excludedPrimPaths.push_back(shapeRenderer->_excludedPaths);
@@ -1270,19 +976,21 @@ UsdMayaGLBatchRenderer::_RenderBatches(
             shapeRenderer->_isPopulated = true;
         }
 
-        UsdImagingDelegate::Populate( delegates,
-                                      rootPrims,
-                                      excludedPrimPaths,
-                                      invisedPrimPaths );
+        UsdImagingDelegate::Populate(delegates,
+                                     rootPrims,
+                                     excludedPrimPaths,
+                                     invisedPrimPaths);
 
         _populateQueue.clear();
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "^^^^^^^^^^^^ POPULATE STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",_populateQueue.size());
+            "^^^^^^^^^^^^ POPULATE STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",
+            _populateQueue.size());
     }
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-        "____________ RENDER STAGE START ______________ (%zu)\n",_renderQueue.size());
+        "____________ RENDER STAGE START ______________ (%zu)\n",
+        _renderQueue.size());
 
     // A new display refresh signifies that the cached selection data is no
     // longer valid.
@@ -1328,23 +1036,24 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // non-highlight mode)
     bool gammaCorrect = !vp2Context;
 
-    if( gammaCorrect )
+    if (gammaCorrect) {
         glEnable(GL_FRAMEBUFFER_SRGB_EXT);
+    }
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     // render task setup
     HdTaskSharedPtrVector tasks = _taskDelegate->GetSetupTasks(); // lighting etc
 
-    for( const auto &renderSetIter : _renderQueue )
-    {
+    for (const auto& renderSetIter : _renderQueue) {
         const size_t hash = renderSetIter.first;
-        const RenderParams &params = renderSetIter.second.first;
+        const PxrMayaHdRenderParams& params = renderSetIter.second.first;
         const _SdfPathSet &renderPaths = renderSetIter.second.second;
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-                "*** renderQueue, batch %zx, size %zu\n",
-                renderSetIter.first, renderPaths.size() );
+            "*** renderQueue, batch %zx, size %zu\n",
+            renderSetIter.first,
+            renderPaths.size());
 
         SdfPathVector roots(renderPaths.begin(), renderPaths.end());
         tasks.push_back(_taskDelegate->GetRenderTask(hash, params, roots));
@@ -1352,8 +1061,9 @@ UsdMayaGLBatchRenderer::_RenderBatches(
 
     _hdEngine.Execute(*_renderIndex, tasks);
 
-    if( gammaCorrect )
+    if (gammaCorrect) {
         glDisable(GL_FRAMEBUFFER_SRGB_EXT);
+    }
 
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT
 
@@ -1369,7 +1079,8 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     }
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-        "^^^^^^^^^^^^ RENDER STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",_renderQueue.size());
+        "^^^^^^^^^^^^ RENDER STAGE FINISH ^^^^^^^^^^^^^ (%zu)\n",
+        _renderQueue.size());
 }
 
 void

@@ -25,6 +25,7 @@
 #include "pxrUsdMayaGL/proxyDrawOverride.h"
 
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/renderParams.h"
 #include "usdMaya/proxyShape.h"
 
 #include <maya/MBoundingBox.h>
@@ -130,7 +131,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
                                    tintColor);
 
     bool drawShape, drawBoundingBox;
-    UsdMayaGLBatchRenderer::RenderParams params =
+    PxrMayaHdRenderParams params =
         shapeRenderer->GetRenderParams(
             objPath,
             frameContext.getDisplayStyle(),

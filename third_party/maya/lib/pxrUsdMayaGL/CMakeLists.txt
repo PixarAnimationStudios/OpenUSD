@@ -25,12 +25,14 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_HEADERS
         api.h
+        renderParams.h
 
     PUBLIC_CLASSES
         batchRenderer
         hdRenderer
         proxyDrawOverride
         proxyShapeUI
+        sceneDelegate
         softSelectHelper
 
     DISABLE_PRECOMPILED_HEADERS
