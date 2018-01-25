@@ -224,7 +224,7 @@ public:
     // --------------------------------------------------------------------- //
     // SCALES 
     // --------------------------------------------------------------------- //
-    /// Joint-local quaternion scaling of all affected joints, in
+    /// Joint-local scales of all affected joints, in
     /// 16 bit precision. Array length should match the size of the *joints* 
     /// attribute.
     ///

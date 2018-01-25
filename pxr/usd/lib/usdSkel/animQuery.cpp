@@ -42,11 +42,11 @@ UsdSkelAnimQuery::GetPrim() const
 
 
 bool
-UsdSkelAnimQuery::ComputeRootTransform(GfMatrix4d* xform,
-                                       UsdGeomXformCache* xfCache) const
+UsdSkelAnimQuery::ComputeTransform(GfMatrix4d* xform,
+                                       UsdTimeCode time) const
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
-        return _impl->ComputeRootTransform(xform, xfCache);
+        return _impl->ComputeTransform(xform, time);
     }
     return false;
 }

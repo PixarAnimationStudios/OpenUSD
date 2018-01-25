@@ -55,7 +55,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-
 /// Wrapper for parallel loops that execs in serial if \p count
 /// is below a reasonable threading threshold.
 template <typename Fn>
@@ -73,13 +72,26 @@ _ParallelForN(size_t count, Fn&& callback)
     }
 }
 
+} // namespace
+
 
 bool
-_ConcatJointTransforms(const UsdSkelTopology& topology,
-                       const GfMatrix4d* jointLocalXforms,
-                       GfMatrix4d* xforms,
-                       const GfMatrix4d* rootXform)
+UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
+                             const GfMatrix4d* jointLocalXforms,
+                             GfMatrix4d* xforms,
+                             const GfMatrix4d* rootXform)
 {
+    if(topology.GetNumJoints() > 0) {
+        if(!jointLocalXforms) {
+            TF_CODING_ERROR("'jointLocalXforms' pointer is null.");
+            return false;
+        }
+        if(!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+    }
+
     for(size_t i = 0; i < topology.GetNumJoints(); ++i) {
         int parent = topology.GetParent(i);
         if(parent >= 0) {
@@ -106,8 +118,6 @@ _ConcatJointTransforms(const UsdSkelTopology& topology,
     return true;
 }
 
-} // namespace
-
 
 bool
 UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
@@ -119,8 +129,8 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 
     if(jointLocalXforms.size() == topology.GetNumJoints()) {
         xforms->resize(topology.GetNumJoints());
-        return _ConcatJointTransforms(topology, jointLocalXforms.cdata(),
-                                      xforms->data(), rootXform);
+        return UsdSkelConcatJointTransforms(topology, jointLocalXforms.cdata(),
+                                            xforms->data(), rootXform);
     } else {
         TF_WARN("jointLocalXforms.size() [%zu] != number of joints [%zu].",
                 jointLocalXforms.size(), topology.GetNumJoints());
@@ -129,15 +139,29 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 }
 
 
-namespace {
-
 bool
-_ComputeJointLocalTransforms(const UsdSkelTopology& topology,
-                             const GfMatrix4d* xforms,
-                             const GfMatrix4d* inverseXforms,
-                             GfMatrix4d* jointLocalXforms,
-                             const GfMatrix4d* rootInverseXform)
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   const GfMatrix4d* xforms,
+                                   const GfMatrix4d* inverseXforms,
+                                   GfMatrix4d* jointLocalXforms,
+                                   const GfMatrix4d* rootInverseXform)
 {
+    if(topology.GetNumJoints() > 0) {
+        if(!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+        if(!inverseXforms) {
+            TF_CODING_ERROR("'inverseXforms' pointer is null.");
+            return false;
+        }
+        if(!jointLocalXforms) {
+            TF_CODING_ERROR("'jointLocalXforms' pointer is null.");
+            return false;
+        }
+    }
+
+
     // Skel-space transforms are computed as:
     //     skelXform = jointLocalXform*parentSkelXform
     // So we want:
@@ -169,8 +193,6 @@ _ComputeJointLocalTransforms(const UsdSkelTopology& topology,
     return true;
 }
 
-} // namespace
-
 
 bool
 UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
@@ -189,7 +211,7 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
     if(xforms.size() == topology.GetNumJoints()) {
         if(inverseXforms.size() == topology.GetNumJoints()) {
             jointLocalXforms->resize(xforms.size());
-            return _ComputeJointLocalTransforms(
+            return UsdSkelComputeJointLocalTransforms(
                 topology, xforms.cdata(), inverseXforms.cdata(),
                 jointLocalXforms->data(), rootInverseXform);
         } else {
@@ -302,28 +324,43 @@ UsdSkelDecomposeTransform(const GfMatrix4d& xform,
 }
 
 
-namespace {
-
 bool
-_DecomposeTransforms(const GfMatrix4d* xforms,
-                     size_t numXforms,
-                     GfVec3f* translations,
-                     GfQuatf* rotations,
-                     GfVec3h* scales)
+UsdSkelDecomposeTransforms(const GfMatrix4d* xforms,
+                           GfVec3f* translations,
+                           GfQuatf* rotations,
+                           GfVec3h* scales,
+                           size_t count)
 {
-    for(size_t i = 0; i < numXforms; ++i) {
-        if(!_DecomposeTransform(xforms[i], translations+i,
-                                rotations+i, scales+i)) {
-            // XXX: Should this be a coding error, or a warning?
-            TF_WARN("Failed decomposing transform %zu. "
-                    "The source transform may be singular.", i);
+    if(count > 0) {
+        if(!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
             return false;
+        }
+        if(!translations) {
+           TF_CODING_ERROR("'translations' pointer is null.");
+           return false;
+        }
+        if(!rotations) {
+           TF_CODING_ERROR("'rotations' pointer is null.");
+           return false;
+        }
+        if(!scales) {
+           TF_CODING_ERROR("'scales' pointer is null.");
+           return false;
+        }
+
+        for(size_t i = 0; i < count; ++i) {
+            if(!_DecomposeTransform(xforms[i], translations+i,
+                                    rotations+i, scales+i)) {
+                // XXX: Should this be a coding error, or a warning?
+                TF_WARN("Failed decomposing transform %zu. "
+                        "The source transform may be singular.", i);
+                return false;
+            }
         }
     }
     return true;
 }
-
-} // namespace
 
 
 bool
@@ -351,9 +388,10 @@ UsdSkelDecomposeTransforms(const VtMatrix4dArray& xforms,
     rotations->resize(xforms.size());
     scales->resize(xforms.size());
 
-    return _DecomposeTransforms(xforms.cdata(), xforms.size(),
-                                translations->data(),
-                                rotations->data(), scales->data());
+    return UsdSkelDecomposeTransforms(xforms.cdata(),
+                                      translations->data(),
+                                      rotations->data(), scales->data(),
+                                      xforms.size());
 }
 
 
@@ -395,6 +433,40 @@ UsdSkelMakeTransform(const GfVec3f& translate,
 
 
 bool
+UsdSkelMakeTransforms(const GfVec3f* translations,
+                      const GfQuatf* rotations,
+                      const GfVec3h* scales,
+                      GfMatrix4d* xforms,
+                      size_t count)
+{
+    if(count > 0) {
+        if(!xforms) {
+            TF_CODING_ERROR("'xforms' pointer is null.");
+            return false;
+        }
+        if(!translations) {
+           TF_CODING_ERROR("'translations' pointer is null.");
+           return false;
+        }
+        if(!rotations) {
+           TF_CODING_ERROR("'rotations' pointer is null.");
+           return false;
+        }
+        if(!scales) {
+           TF_CODING_ERROR("'scales' pointer is null.");
+           return false;
+        }
+
+        for(size_t i = 0; i < count; ++i) {
+            xforms[i] = UsdSkelMakeTransform(
+                translations[i], rotations[i], scales[i]);
+        }
+    }
+    return true;
+}
+
+
+bool
 UsdSkelMakeTransforms(const VtVec3fArray& translations,
                       const VtQuatfArray& rotations,
                       const VtVec3hArray& scales,
@@ -411,16 +483,10 @@ UsdSkelMakeTransforms(const VtVec3fArray& translations,
         if(translations.size() == scales.size()) {
 
             xforms->resize(translations.size());
-
-            GfMatrix4d* xformsData = xforms->data();
-            const GfVec3f* t = translations.cdata();   
-            const GfQuatf* r = rotations.cdata();
-            const GfVec3h* s = scales.cdata();
-
-            for(size_t i = 0; i < xforms->size(); ++i) {
-                xformsData[i] = UsdSkelMakeTransform(t[i], r[i], s[i]);
-            }
-            return true;
+            
+            return UsdSkelMakeTransforms(
+                translations.cdata(), rotations.cdata(), scales.cdata(),
+                xforms->data(), xforms->size());
         } else {
             TF_WARN("Size of translations [%zu] != size of scales [%zu].",
                     translations.size(), scales.size()); 
@@ -433,13 +499,11 @@ UsdSkelMakeTransforms(const VtVec3fArray& translations,
 }
 
 
-namespace {
-
 bool
-_ComputeJointsExtent(const GfMatrix4d* xforms,
-                     size_t count,
-                     VtVec3fArray* extent,
-                     const GfVec3f& pad)
+UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
+                           size_t count,
+                           VtVec3fArray* extent,
+                           const GfVec3f& pad)
 {
     if(!extent) {
         TF_CODING_ERROR("'extent' pointer is null.");
@@ -466,8 +530,6 @@ _ComputeJointsExtent(const GfMatrix4d* xforms,
     return true;
 }
 
-} // namespace
-
 
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& xforms,
@@ -476,7 +538,8 @@ UsdSkelComputeJointsExtent(const VtMatrix4dArray& xforms,
 {
     TRACE_FUNCTION();
 
-    return _ComputeJointsExtent(xforms.cdata(), xforms.size(), extent, pad);
+    return UsdSkelComputeJointsExtent(xforms.cdata(),
+                                      xforms.size(), extent, pad);
 }
 
 
@@ -1143,13 +1206,15 @@ _BakeSkinnedPoints(const UsdPrim& prim,
             xfCache->SetTime(time);
             GfMatrix4d gprimLocalToWorld =
                 xfCache->GetLocalToWorldTransform(prim);
+
             GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeRootTransform(&skelLocalToWorld, xfCache)) {
+            if(!skelQuery.ComputeAnimTransform(&skelLocalToWorld, time)) {
                 TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                     "[UsdSkelBakeSkinning]   Failed computing "
-                    "root transform\n");
+                    "anim transform\n");
                 return false;
             }
+            skelLocalToWorld *= xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d skelToGprimXf =
                 skelLocalToWorld*gprimLocalToWorld.GetInverse();
@@ -1236,12 +1301,13 @@ _BakeSkinnedTransform(const UsdPrim& prim,
             xfCache->SetTime(time);
 
             GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeRootTransform(&skelLocalToWorld, xfCache)) {
+            if(!skelQuery.ComputeAnimTransform(&skelLocalToWorld, time)) {
                 TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                     "[UsdSkelBakeSkinning]   Failed computing "
-                    "root transform\n");
+                    "anim transform\n");
                 return false;
             }
+            skelLocalToWorld *= xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d newLocalXform;
             

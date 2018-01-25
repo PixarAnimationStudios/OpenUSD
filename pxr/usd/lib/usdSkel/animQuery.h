@@ -41,7 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class GfMatrix4d;
-class UsdGeomXformCache;
 class UsdSkelCache;
 
 
@@ -89,18 +88,18 @@ public:
     USDSKEL_API
     UsdPrim GetPrim() const;
 
-    /// Compute a root transform at \p time.
-    /// The root transform provides the local-to-world transform of a skeleton.
+    /// Compute a root transform of the entire animation at \p time.
     USDSKEL_API
-    bool ComputeRootTransform(GfMatrix4d* xform,
-                              UsdGeomXformCache* xfCache) const;
+    bool ComputeTransform(GfMatrix4d* xform,
+                          UsdTimeCode time=UsdTimeCode::Default()) const;
 
     /// Compute joint transforms in joint-local space.
     /// Transforms are returned in the order specified by the joint ordering
     /// of the animation primitive itself.
     USDSKEL_API
-    bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
-                                     UsdTimeCode time) const;
+    bool ComputeJointLocalTransforms(
+             VtMatrix4dArray* xforms,
+             UsdTimeCode time=UsdTimeCode::Default()) const;
     
     /// Get the time samples at which values contributing to joint transforms
     /// are set. This only computes the time samples for sampling transforms in

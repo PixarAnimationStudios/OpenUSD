@@ -253,7 +253,7 @@ public:
     /// Animation source to be bound to this prim and its 
     /// descendants. An animationSource has no effect until the next
     /// _skel:skeleton_ binding applied either at the same prim that
-    /// the animationSource is define on, or at the binding of an
+    /// the animationSource is defined on, or at the binding of an
     /// ancestor prim. An animationSource does not affect a skeleton
     /// bound on an ancestor scope.
     /// 

@@ -30,6 +30,8 @@
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/vt/types.h"
 
+#include "pxr/usd/usdGeom/xformable.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
@@ -37,7 +39,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdGeomXformCache;
 class UsdPrim;
 class UsdTimeCode;
 
@@ -72,12 +73,9 @@ public:
     
     virtual bool JointTransformsMightBeTimeVarying() const = 0;
 
-    /// Compute a root transform using \p xfCache.
-    /// If any other attributes need to be queried to resolve the root
-    /// transform, they should read values using the time set on \p xfCache.
     virtual bool
-    ComputeRootTransform(GfMatrix4d* xform,
-                         UsdGeomXformCache* xfCache) const = 0;
+    ComputeTransform(GfMatrix4d* xform,
+                     UsdTimeCode time=UsdTimeCode::Default()) const = 0;
 
     const VtTokenArray& GetJointOrder() const { return _jointOrder; }
 

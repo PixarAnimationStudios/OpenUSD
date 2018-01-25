@@ -82,6 +82,17 @@ UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
                                    const GfMatrix4d* rootInverseXform=nullptr);
 
 
+/// \overload
+USDSKEL_API
+bool
+UsdSkelComputeJointLocalTransforms(const UsdSkelTopology& topology,
+                                   const GfMatrix4d* xforms,
+                                   const GfMatrix4d* inverseXforms,
+                                   GfMatrix4d* jointLocalXforms,
+                                   const GfMatrix4d* rootInverseXform=nullptr);
+
+
+
 /// Compute concatenated joint transforms.
 /// This concatenates transforms from \p jointLocalXforms, providing joint
 /// transforms in joint-local space.
@@ -98,10 +109,28 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
                              const GfMatrix4d* rootXform=nullptr);
 
 
+/// \overload
+USDSKEL_API
+bool
+UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
+                             const GfMatrix4d* jointLocalXforms,
+                             GfMatrix4d* xforms,
+                             const GfMatrix4d* rootXform=nullptr);
+
+
 /// Compute an extent from a set of skel-space joint transform.
 USDSKEL_API
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& joints,
+                           VtVec3fArray* extent,
+                           const GfVec3f& pad=GfVec3f(0,0,0));
+
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
+                           size_t numXforms,
                            VtVec3fArray* extent,
                            const GfVec3f& pad=GfVec3f(0,0,0));
 
@@ -142,6 +171,16 @@ UsdSkelDecomposeTransforms(const VtMatrix4dArray& xforms,
                            VtVec3hArray* scales);
 
 
+/// \overload
+USDSKEL_API
+bool
+UsdSkelDecomposeTransforms(const GfMatrix4d* xforms,
+                           GfVec3f* translations,
+                           GfQuatf* rotations,
+                           GfVec3h* scales,
+                           size_t count);
+
+
 /// Create a transform from translate/rotate/scale components.
 /// This performs the inverse of UsdSkelDecomposeTransform.
 USDSKEL_API
@@ -164,6 +203,15 @@ UsdSkelMakeTransforms(const VtVec3fArray& translations,
                       const VtQuatfArray& rotations,
                       const VtVec3hArray& scales,
                       VtMatrix4dArray* xforms);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelMakeTransforms(const GfVec3f* translations,
+                      const GfQuatf* rotations,
+                      const GfVec3h* scales,
+                      GfMatrix4d* xforms,
+                      size_t count);
 
 
 /// @}

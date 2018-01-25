@@ -66,22 +66,22 @@ UsdSkelSkeletonQuery::_HasMappableAnim() const
 
 
 bool
-UsdSkelSkeletonQuery::ComputeRootTransform(GfMatrix4d* xform,
-                                           UsdGeomXformCache* xfCache) const
+UsdSkelSkeletonQuery::ComputeAnimTransform(GfMatrix4d* xform,
+                                           UsdTimeCode time) const
 {
     TRACE_FUNCTION();
 
-    if(!xform) {
-        TF_CODING_ERROR("'xform' pointer is null.");
-        return false;
-     }
-
     if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
         if(_animQuery) {
-            return _animQuery.ComputeRootTransform(xform, xfCache);
+            return _animQuery.ComputeTransform(xform, time);
         }
 
-        // No anim to provide a root transform. Fallback to using identity.
+        if(!xform) {
+            TF_CODING_ERROR("'xform' pointer is null.");
+            return false;
+        }
+
+        // No anim; fallback to using identity.
         xform->SetIdentity();
         return true;
     }
@@ -168,57 +168,6 @@ UsdSkelSkeletonQuery::_ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
     if(_ComputeJointLocalTransforms(&localXforms, time, atRest)) {
         const auto& topology = _definition->GetTopology();
         return UsdSkelConcatJointTransforms(topology, localXforms, xforms);
-    }
-    return false;
-}
-
-
-bool
-UsdSkelSkeletonQuery::ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
-                                                  UsdGeomXformCache* xfCache,
-                                                  bool atRest) const
-{
-    TRACE_FUNCTION();
-
-    if(!xforms) {
-        TF_CODING_ERROR("'xforms' pointer is null.");
-        return false;
-    }
-    if(!xfCache) {
-        TF_CODING_ERROR("'xfCache' pointer is null.");
-        return false;
-    }
-
-    if(TF_VERIFY(IsValid(), "invalid skeleton query.")) {
-        atRest = atRest || !_HasMappableAnim();
-        return _ComputeJointWorldTransforms(xforms, xfCache, atRest);
-    }
-    return false;
-}
-
-
-bool
-UsdSkelSkeletonQuery::_ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
-                                                   UsdGeomXformCache* xfCache,
-                                                   bool atRest) const
-{
-    GfMatrix4d rootXf;
-    if(ComputeRootTransform(&rootXf, xfCache)) {
-        // There are two approaches to computing world space transforms:
-        // 1. Compute transforms in skel space, then concat the root
-        //    transform against all skel space transforms.
-        //    This requires roughly numJoints*2 matrix mults.
-        // 2. Concat root transforms against root joints while concatenating
-        //    joint transforms. This requires about numJoints matrix mults.
-        // We do the latter.
-
-        VtMatrix4dArray localXforms;
-        if(_ComputeJointLocalTransforms(&localXforms,   
-                                        xfCache->GetTime(), atRest)) {
-            const auto& topology = _definition->GetTopology();
-            return UsdSkelConcatJointTransforms(topology, localXforms,
-                                                xforms, &rootXf);
-        }
     }
     return false;
 }

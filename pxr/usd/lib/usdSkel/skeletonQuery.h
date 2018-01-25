@@ -40,7 +40,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdGeomXformCache;
 class UsdSkelSkeleton;
 class UsdSkelTopology;
@@ -55,17 +54,16 @@ TF_DECLARE_REF_PTRS(UsdSkel_SkelDefinition);
 /// bindings, as bound through the UsdSkelBindingAPI.
 ///
 /// A UsdSkelSkeletonQuery can not be constructed directly, and instead must be
-/// constructed through a UsdSkelCache instance.
-/// In most cases, however, a UsdSkelSkeletonQuery is built out and accessed
-/// through a UsdSkelBindingMap. A basic coding pattern for this is as follows:
+/// constructed through a UsdSkelCache instance. This is done as follows:
 ///
 /// \code
 /// // Global cache, intended to persist.
 /// UsdSkelCache skelCache;
-/// UsdSkelBindingMap bindingMap;
-/// if(bindingMap.Populate(skelRoot)) {
-///     for(const auto& pair : bindingMap) {
-///         UsdSkelSkeletonQuery = pair.first;
+/// // Populate the cache for a skel root.
+/// skelCache.Populate(UsdSkelRoot(skelRootPrim));
+///
+/// for(const auto& prim : UsdPrimRange(skelRootPrim) {
+///     if(UsdSkelSkeletonQuery = skelCache.GetSkelQuery(prim)) {
 ///         ...
 ///     }
 /// }
@@ -128,13 +126,13 @@ public:
     USDSKEL_API
     VtTokenArray GetJointOrder() const;
 
-    /// Compute the root transform of the bound skeleton instance.
-    /// The root transform is the local to world transform as computed
-    /// from the bound animation source. If no animation source is
-    /// bound, an identity matrix is returned.
+    /// Compute a root animation transform. If no animation source is bound,
+    /// an identity matrix is returned.
+    /// A Skeleton instance's local to world transform is:
+    ///     animTransform * skelInstanceLocalToWorld
     USDSKEL_API
-    bool ComputeRootTransform(GfMatrix4d* xform,
-                              UsdGeomXformCache* xfCache) const;
+    bool ComputeAnimTransform(GfMatrix4d* xform,
+                              UsdTimeCode time=UsdTimeCode::Default()) const;
     
     /// Compute joint transforms in joint-local space, at \p time.
     /// This returns transforms in joint order of the skeleton.
@@ -156,14 +154,6 @@ public:
     bool ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
                                     UsdTimeCode time,
                                     bool atRest=false) const;
-
-    /// Compute joint transforms in world space, at whatever time has
-    /// been set on \p xfCache. The \p xfCache is required in order 
-    /// evaluation of the local to world transformation of the animatino source.
-    USDSKEL_API
-    bool ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
-                                     UsdGeomXformCache* xfCache,
-                                     bool atRest=false) const;
 
     /// Compute transforms representing the change in transformation
     /// of a joint from its rest pose, in skeleton space.
@@ -191,10 +181,6 @@ private:
     bool _ComputeJointSkelTransforms(VtMatrix4dArray* xforms,
                                      UsdTimeCode time,
                                      bool atRest=false) const;
-
-    bool _ComputeJointWorldTransforms(VtMatrix4dArray* xforms,
-                                      UsdGeomXformCache* xfCache,
-                                      bool atRest=false) const;
 
     bool _ComputeSkinningTransforms(VtMatrix4dArray* xforms,
                                     UsdTimeCode time) const;

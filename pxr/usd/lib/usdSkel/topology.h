@@ -76,6 +76,12 @@ public:
     /// Returns -1 for joints with no parent (roots).
     inline int GetParent(size_t index) const;
 
+    bool operator==(const UsdSkelTopology& o) const;
+
+    bool operator!=(const UsdSkelTopology& o) const {
+        return !(*this == o);
+    }
+
 private:
     VtIntArray _parentIndices;
     const int* _parentIndicesData;

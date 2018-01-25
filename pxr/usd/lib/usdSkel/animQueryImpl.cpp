@@ -26,7 +26,7 @@
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/prim.h"
 
-#include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
 #include "pxr/usd/usdSkel/packedJointAnimation.h"
 #include "pxr/usd/usdSkel/utils.h"
@@ -60,14 +60,14 @@ public:
 
     virtual bool JointTransformsMightBeTimeVarying() const override;
 
-    virtual bool
-    ComputeRootTransform(GfMatrix4d* xform,
-                         UsdGeomXformCache* xfCache) const override;
+    virtual bool ComputeTransform(GfMatrix4d* xform,
+                                  UsdTimeCode time) const override;
 
 
 private:
     UsdSkelPackedJointAnimation _anim;
     UsdAttributeQuery _translations, _rotations, _scales;
+    UsdGeomXformable::XformQuery _xformQuery;
 };
 
 
@@ -76,7 +76,8 @@ UsdSkel_PackedJointAnimationQueryImpl::UsdSkel_PackedJointAnimationQueryImpl(
     : _anim(anim),
       _translations(anim.GetTranslationsAttr()),
       _rotations(anim.GetRotationsAttr()),
-      _scales(anim.GetScalesAttr())
+      _scales(anim.GetScalesAttr()),
+      _xformQuery(anim)
 {
     if(TF_VERIFY(anim)) {
         anim.GetJointsAttr().Get(&_jointOrder);
@@ -131,22 +132,11 @@ UsdSkel_PackedJointAnimationQueryImpl::JointTransformsMightBeTimeVarying() const
 
 
 bool
-UsdSkel_PackedJointAnimationQueryImpl::ComputeRootTransform(
-    GfMatrix4d* xform,
-    UsdGeomXformCache* xfCache) const
+UsdSkel_PackedJointAnimationQueryImpl::ComputeTransform(GfMatrix4d* xform,
+                                                        UsdTimeCode time) const
 {
     if(TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.")) {
-        if(!xform) {
-            TF_CODING_ERROR("'xform' pointer is null.");
-            return false;
-        }
-        if(!xfCache) {
-            TF_CODING_ERROR("'xfCache' pointer is null.");
-            return false;
-        }
-
-        *xform = xfCache->GetLocalToWorldTransform(_anim.GetPrim());
-        return true;
+        return _xformQuery.GetLocalTransformation(xform, time);
     }
     return false;
 }

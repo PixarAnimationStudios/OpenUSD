@@ -159,4 +159,11 @@ UsdSkelTopology::Validate(std::string* reason) const
 }
 
 
+bool
+UsdSkelTopology::operator==(const UsdSkelTopology& o) const
+{
+    return _parentIndices == o._parentIndices;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -29,8 +29,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/usd/usdGeom/xformCache.h"
-
 #include "pxr/usd/usdSkel/animQuery.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/topology.h"
@@ -48,10 +46,10 @@ namespace {
 
 
 GfMatrix4d
-_ComputeRootTransform(UsdSkelSkeletonQuery& self, UsdGeomXformCache& xfCache)
+_ComputeAnimTransform(UsdSkelSkeletonQuery& self, UsdTimeCode time)
 {
     GfMatrix4d xform;
-    if(!self.ComputeRootTransform(&xform, &xfCache))
+    if(!self.ComputeAnimTransform(&xform, time))
         xform.SetIdentity();
     return xform;
 }
@@ -73,16 +71,6 @@ _ComputeJointSkelTransforms(UsdSkelSkeletonQuery& self,
 {
     VtMatrix4dArray xforms;
     self.ComputeJointSkelTransforms(&xforms, time, atRest);
-    return xforms;
-}
-
-
-VtMatrix4dArray
-_ComputeJointWorldTransforms(UsdSkelSkeletonQuery& self,
-                             UsdGeomXformCache& xfCache, bool atRest)
-{
-    VtMatrix4dArray xforms;
-    self.ComputeJointWorldTransforms(&xforms, &xfCache, atRest);
     return xforms;
 }
 
@@ -120,17 +108,14 @@ void wrapUsdSkelSkeletonQuery()
 
         .def("GetJointOrder", &This::GetJointOrder)
         
-        .def("ComputeRootTransform", &_ComputeRootTransform,
-             (arg("xfCache")))
+        .def("ComputeAnimTransform", &_ComputeAnimTransform,
+             (arg("time")=UsdTimeCode::Default()))
         
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
         
         .def("ComputeJointSkelTransforms", &_ComputeJointSkelTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
-
-        .def("ComputeJointWorldTransforms", &_ComputeJointWorldTransforms,
-             (arg("xfCache"), arg("atRest")=false))
 
         .def("ComputeSkinningTransforms", &_ComputeSkinningTransforms,
              (arg("time")=UsdTimeCode::Default()))

@@ -127,10 +127,15 @@ referenced:
   animations will not break if transformations are altered on ancestor
   prims of the skinned geometry.
 
-- **Skeleton Root Transform**:
+- **Animation Transform**
+  
+  The root transform of an _Animation_.
 
-  The root transform that transforms an object defined in _Skeleton Space_
-  into World Space.
+- **Skeleton Instance Transform**
+
+  The transform defined on a _Skeleton Instance_.
+  This is concatenated against a skeleton's _Animation Transform_ when
+  computing a complete local-to-world transform of a skeleton instance.
 
 - \anchor UsdSkel_Transforms_GeomBindTransform **Geom Bind Transform**:
 
@@ -159,8 +164,15 @@ or _jointSkelSpaceTransform_ of the parent joint otherwise.
 The _World Space_ transform of a joint is computed as:
 
 \code
-    jointWorldSpaceTransform = jointLocalSpaceTransform * parentJointSkelSpaceTransform * skelRootTransform
+    jointWorldSpaceTransform = jointLocalSpaceTransform *
+        parentJointSkelSpaceTransform * skelInstanceLocalToWorldTransform
 \endcode
+
+Where _skelInstanceLocalToWorldTransform_ is computed as:
+\code
+    skelInstanceLocalToWorldTransform = animTransform * skelInstanceTransform
+\endcode
+    
 
 <b>Computing a Posed Point</b>
 

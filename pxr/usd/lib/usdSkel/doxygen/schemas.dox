@@ -206,6 +206,16 @@ only identify a sparse subset of the joints in a skeleton. When an animation
 provides sparse data, fallback values are taken from the rest pose on the
 UsdSkelSkeleton primitive to which they apply.
 
+\subsection Animation Root Transform
+
+A PackedJointAnimation is itself a UsdGeomXformable primitive, and may specify
+a local transformation. If such a local transform is defined, it provides
+a root transformation for the entire animation.
+
+This is separate from the root transformation of the 
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance", and provides a way of
+making a distintion between the component of a character's _clip_ motion, and
+the model's own local-to-world transform.
 
 \section UsdSkel_BindingAPI Binding API Schema
 

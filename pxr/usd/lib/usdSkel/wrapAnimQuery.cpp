@@ -31,8 +31,6 @@
 
 #include "pxr/usd/usd/prim.h"
 
-#include "pxr/usd/usdGeom/xformCache.h"
-
 #include "pxr/base/gf/interval.h"
 
 #include <boost/python.hpp>
@@ -49,10 +47,10 @@ namespace {
 
 
 GfMatrix4d
-_ComputeRootTransform(const UsdSkelAnimQuery& self, UsdGeomXformCache& xfCache)
+_ComputeTransform(const UsdSkelAnimQuery& self, UsdTimeCode time)
 {
     GfMatrix4d xform;
-    if(!self.ComputeRootTransform(&xform, &xfCache))
+    if(!self.ComputeTransform(&xform, time))
         xform.SetIdentity();
     return xform;
 }
@@ -101,8 +99,8 @@ void wrapUsdSkelAnimQuery()
 
         .def("GetPrim", &This::GetPrim)
 
-        .def("ComputeRootTransform", &_ComputeRootTransform,
-             (arg("xfCache")))
+        .def("ComputeTransform", &_ComputeTransform,
+             (arg("time")=UsdTimeCode::Default()))
 
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default()))
