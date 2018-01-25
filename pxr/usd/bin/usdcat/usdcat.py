@@ -131,18 +131,6 @@ def main():
     exitCode = 0
 
     for inputFile in args.inputFiles:
-        # Ignore nonexistent or empty files.
-        if not os.path.isfile(inputFile) or os.path.getsize(inputFile) == 0:
-            _Err("Ignoring nonexistent/empty file '%s'" % inputFile)
-            exitCode = 1
-            continue
-
-        # Ignore unrecognized file types.
-        if not Usd.Stage.IsSupportedFile(inputFile):
-            _Err("Ignoring file with unrecognized type '%s'" % inputFile)
-            exitCode = 1
-            continue
-
         # Either open a layer or compose a stage, depending on whether or not
         # --flatten was specified.  Note that 'usdData' will be either a
         # Usd.Stage or an Sdf.Layer.

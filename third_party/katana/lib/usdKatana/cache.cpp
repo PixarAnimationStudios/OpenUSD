@@ -557,14 +557,12 @@ UsdStageRefPtr UsdKatanaCache::GetStage(
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating and caching UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
-            fileName.c_str(), path.c_str());
+            fileName.c_str(), _ResolvePath(fileName).c_str());
 
-    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(path)) {
+    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileName)) {
         SdfLayerRefPtr& sessionLayer =
                 _FindOrCreateSessionLayer(sessionAttr, sessionRootLocation);
 
@@ -636,14 +634,12 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
-            fileName.c_str(), path.c_str());
+            fileName.c_str(), _ResolvePath(fileName).c_str());
 
-    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(path)) {
+    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileName)) {
         SdfLayerRefPtr& sessionLayer =
                 _FindOrCreateSessionLayer(sessionAttr, sessionRootLocation);
         
