@@ -81,10 +81,6 @@ HdStRenderPassShader::ComputeHash() const
     // of down stream clients.
     TF_FOR_ALL(it, _customBuffers) {
         boost::hash_combine(_hash, it->second.ComputeHash());
-        // XXX: Not sure this 0 padding is necessary -- suspect
-        // it was copy-pasted from another place where it was required
-        // to prevent aliasing due to commutative hash order...
-        boost::hash_combine(_hash, 0);
     }
     _hashValid = true;
 
