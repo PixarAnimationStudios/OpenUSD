@@ -622,28 +622,43 @@ HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 
     if (!TF_VERIFY(result)) return;
 
-    int const * numVertsPtr =
-        _topology->GetFaceVertexCounts().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-
-    // hole faces shouldn't affect ptex id.
-    // passing empty array to count num quads.
-    int numQuads = HdMeshUtil::ComputeNumQuads(
-        _topology->GetFaceVertexCounts(),
-        /*holeFaces=*/VtIntArray());
+    int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
+    int numAuthoredFaces    = _topology->GetFaceVertexCounts().size();
     result->clear();
-    result->reserve(numQuads);
+    result->reserve(numAuthoredFaces); // first guess at possible size
 
-    for (int i = 0; i < numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        if (nv < 3) continue;
-        if (nv == 4) {
-            result->push_back(i);
+    int regFaceSize = 4;
+    if (HdSt_Subdivision::RefinesToTriangles( _topology->GetScheme() )) {
+        regFaceSize = 3;
+    }
+
+    for (int faceId = 0; faceId < numAuthoredFaces; ++faceId) {
+        int nv = numVertsPtr[faceId];
+        if (nv < 3) continue; // skip degenerate faces
+
+        // hole faces shouldn't affect ptex id, i.e., ptex face id's are
+        // assigned for hole faces.
+        // note: this is inconsistent with quadrangulation 
+        // (HdMeshUtil::ComputeQuadIndices), but consistent with OpenSubdiv 3.x
+        // (see ptexIndices.cpp)
+        
+        if (nv == regFaceSize) {
+            // regular face => 1:1 mapping to a ptex face
+            result->push_back(faceId);
         } else {
-            for (int j = 0; j < nv; ++j)
-                result->push_back(i);
+            // if we expect quad faces, non-quad n-gons are quadrangulated into
+            // n-quads
+            // if we expect tri faces, non-tri n-gons are triangulated into
+            // n-2-tris. note: we don't currently support non-tri faces when
+            // using loop (see pxOsd/refinerFactory.cpp)
+            int numPtexFaces = (regFaceSize == 4)? nv : nv - 2;
+            for (int f = 0; f < numPtexFaces; ++f) {
+                result->push_back(faceId);
+            }
         }
     }
+
+    result->shrink_to_fit();
 }
 
 void
