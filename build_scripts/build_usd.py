@@ -556,20 +556,14 @@ OPENEXR_URL = "https://github.com/openexr/openexr/archive/v2.2.0.zip"
 def InstallOpenEXR(context, force):
     srcDir = DownloadURL(OPENEXR_URL, context, force)
 
-    # Specify NAMESPACE_VERSIONING=OFF so that the built libraries
-    # don't have the version appended to their filename. USD's
-    # FindOpenEXR module can't handle that right now -- see 
-    # https://github.com/PixarAnimationStudios/USD/issues/71
     ilmbaseSrcDir = os.path.join(srcDir, "IlmBase")
     with CurrentWorkingDirectory(ilmbaseSrcDir):
-        RunCMake(context, force,
-                 ['-DNAMESPACE_VERSIONING=OFF'])
+        RunCMake(context, force)
 
     openexrSrcDir = os.path.join(srcDir, "OpenEXR")
     with CurrentWorkingDirectory(openexrSrcDir):
         RunCMake(context, force,
-                 ['-DNAMESPACE_VERSIONING=OFF',
-                  '-DILMBASE_PACKAGE_PREFIX="{instDir}"'
+                 ['-DILMBASE_PACKAGE_PREFIX="{instDir}"'
                   .format(instDir=context.instDir)])
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
@@ -656,6 +650,16 @@ def InstallOpenImageIO(context, force):
         extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
                      '-DOIIO_BUILD_TESTS=OFF',
                      '-DSTOP_ON_WARNING=OFF']
+
+        # OIIO's FindOpenEXR module circumvents CMake's normal library 
+        # search order, which causes versions of OpenEXR installed in
+        # /usr/local or other hard-coded locations in the module to
+        # take precedence over the version we've built, which would 
+        # normally be picked up when we specify CMAKE_PREFIX_PATH. 
+        # This may lead to undefined symbol errors at build or runtime. 
+        # So, we explicitly specify the OpenEXR we want to use here.
+        extraArgs.append('-DOPENEXR_HOME="{instDir}"'
+                         .format(instDir=context.instDir))
 
         # If Ptex support is disabled in USD, disable support in OpenImageIO
         # as well. This ensures OIIO doesn't accidentally pick up a Ptex
