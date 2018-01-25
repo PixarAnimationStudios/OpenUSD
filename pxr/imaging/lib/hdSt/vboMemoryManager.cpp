@@ -31,7 +31,6 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/enum.h"
-#include "pxr/base/tf/stackTrace.h"
 
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/glUtils.h"
@@ -174,11 +173,6 @@ HdStVBOMemoryManager::_StripedBufferArray::_StripedBufferArray(
     // populate BufferResources
     TF_FOR_ALL(it, bufferSpecs) {
         int stride = HdDataSizeOfTupleType(it->tupleType);
-
-        if (it->tupleType.count == 0) {
-            TfLogStackTrace("zero count");
-        }
-
         _AddResource(it->name, it->tupleType, /*offset*/0, stride);
     }
 
@@ -648,9 +642,6 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     }
 
     // datatype of bufferSource has to match with bufferResource
-    if (bufferSource->GetTupleType() != VBO->GetTupleType()) {
-        TfLogStackTrace("buf mismatch");
-    }
     if (!TF_VERIFY(bufferSource->GetTupleType() == VBO->GetTupleType(),
                    "'%s': (%s (%i) x %zu) != (%s (%i) x %zu)\n",
                    bufferSource->GetName().GetText(),

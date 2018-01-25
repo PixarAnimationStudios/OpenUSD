@@ -32,7 +32,6 @@
 #include "pxr/base/gf/matrix4f.h"
 
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/stackTrace.h"
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
