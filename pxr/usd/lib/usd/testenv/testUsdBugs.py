@@ -180,5 +180,52 @@ class TestUsdBugs(unittest.TestCase):
                 s2.GetPrimAtPath('/i2/c/y')
             ]]))
 
+    def test_156222(self):
+        from pxr import Sdf, Usd
+
+        # Test that removing all instances for a master prim and adding a new
+        # instance with the same instancing key as the master causes the new
+        # instance to be assigned to the master.
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        Sdf.CreatePrimInLayer(l, '/Ref')
+
+        # The bug is non-deterministic because of threaded composition,
+        # but it's easier to reproduce with more instance prims.
+        numInstancePrims = 50
+        instancePrimPaths = [Sdf.Path('/Instance_{}'.format(i))
+                             for i in xrange(numInstancePrims)]
+        for path in instancePrimPaths:
+            instancePrim = Sdf.CreatePrimInLayer(l, path)
+            instancePrim.instanceable = True
+            instancePrim.referenceList.Add(Sdf.Reference(primPath = '/Ref'))
+
+        nonInstancePrim = Sdf.CreatePrimInLayer(l, '/NonInstance')
+        nonInstancePrim.referenceList.Add(Sdf.Reference(primPath = '/Ref'))
+
+        s = Usd.Stage.Open(l)
+        self.assertEqual(len(s.GetMasters()), 1)
+
+        # Check that the master prim is using one of the instanceable prim
+        # index for its source.
+        master = s.GetMasters()[0]
+        masterPath = master.GetPath()
+        self.assertIn(master._GetSourcePrimIndex().rootNode.path,
+                      instancePrimPaths)
+
+        # In a single change block, uninstance all of the instanceable prims,
+        # but mark the non-instance prim as instanceable.
+        with Sdf.ChangeBlock():
+            for path in instancePrimPaths:
+                l.GetPrimAtPath(path).instanceable = False
+            nonInstancePrim.instanceable = True
+
+        # This should not cause a new master prim to be generated; instead, 
+        # the master prim should now be using the newly-instanced prim index 
+        # as its source.
+        master = s.GetMasters()[0]
+        self.assertEqual(master.GetPath(), masterPath)
+        self.assertEqual(master._GetSourcePrimIndex().rootNode.path,
+                         nonInstancePrim.path)
+
 if __name__ == '__main__':
     unittest.main()

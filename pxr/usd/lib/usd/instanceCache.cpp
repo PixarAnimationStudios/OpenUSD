@@ -324,9 +324,17 @@ Usd_InstanceCache::_RemoveInstances(
         }
 
         // This path is no longer instanced under this master, so record the old
-        // source index path and the prim's index path.
-        changes->associatedIndexOld.push_back(
-            _masterToSourcePrimIndexMap[masterPath]);
+        // source index path and the prim's index path. Note that we may have 
+        // removed the entry from _masterToSourcePrimIndexMap in an earlier
+        // iteration of this loop; if we have, then we will have saved the
+        // old path away in removedMasterPrimIndexPath.
+        const SdfPath* oldSourcePrimIndexPath = 
+            TfMapLookupPtr(_masterToSourcePrimIndexMap, masterPath);
+        if (!oldSourcePrimIndexPath) {
+            oldSourcePrimIndexPath = &removedMasterPrimIndexPath;
+        }
+
+        changes->associatedIndexOld.push_back(*oldSourcePrimIndexPath);
         changes->associatedIndexNew.push_back(path);
 
         if (_sourcePrimIndexToMasterMap.erase(path)) {
