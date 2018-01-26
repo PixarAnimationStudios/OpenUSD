@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "extraPluginMissingContainer",
+            "Info": {
+                "Types": {
+                    "extraPluginMissingContainer.ExtraContainerMissingContainer": {
+                        "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+                        "displayName": "Extra plugin with missing container."
+                    }
+                }
+            }
+        }
+    ]
+}

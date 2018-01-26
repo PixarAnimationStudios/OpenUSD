@@ -22,12 +22,27 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+from __future__ import print_function
+
+import sys
 import importlib
 
 from pxr import Tf
 from pxr import Plug
 
 from qt import QtGui
+
+
+class DuplicateCommandPlugin(Exception):
+    """Exception raised when two command plugins are registered with the same
+    name.
+    """
+
+    def __init__(self, name):
+        super(DuplicateCommandPlugin, self).__init__(
+            ("A command plugin with the name '{}' has already been "
+            "registered.").format(name))
+        self.name = name
 
 
 class DeferredImport(object):
@@ -105,11 +120,6 @@ class PluginContainer(object):
     and 'configureView' methods.
     """
 
-    def __init__(self, usdviewApi, plugRegistry):
-
-        self._usdviewApi = usdviewApi
-        self._plugRegistry = plugRegistry
-
     def deferredImport(self, moduleName):
         """Return a DeferredImport object which can be used to lazy load
         functions when they are invoked for the first time.
@@ -117,32 +127,20 @@ class PluginContainer(object):
 
         return DeferredImport(moduleName, self.__module__)
 
-    def registerPlugins(self):
-        """This method is called after a container is discovered by Usdview, and
-        should call 'registerCommandPlugin' one or more times to add commands to
-        Usdview.
+    def registerPlugins(self, plugRegistry, plugCtx):
+        """This method is called after the container is discovered by Usdview,
+        and should call 'registerCommandPlugin' one or more times on the
+        plugRegistry to add commands to Usdview.
         """
 
         raise NotImplementedError
 
-    def registerCommandPlugin(self, name, callback):
-        """Register a single command plugin with Usdview."""
-
-        return self._plugRegistry.registerCommandPlugin(name, callback)
-
-    def configureView(self):
+    def configureView(self, plugRegistry, plugUIBuilder):
         """This method is called directly after 'registerPlugins' and can be
-        used to add menus which invoke a plugin command.
+        used to add menus which invoke a plugin command using the plugUIBuilder.
         """
 
         raise NotImplementedError
-
-    def getMenu(self, menuName):
-        """Creates a new menu in the top bar of Usdview and returns an object
-        which can add new items to the menu.
-        """
-
-        return self._plugRegistry.getMenu(menuName)
 
 # We load the PluginContainer using libplug so it needs to be a defined Tf.Type.
 PluginContainerTfType = Tf.Type.Define(PluginContainer)
@@ -153,17 +151,24 @@ class CommandPlugin(object):
     be a callable object which takes a UsdviewApi object as its only parameter.
     """
 
-    def __init__(self, name, callback, usdviewApi):
+    def __init__(self, name, displayName, callback, usdviewApi):
 
         self._name = name
+        self._displayName = displayName
         self._callback = callback
         self._usdviewApi = usdviewApi
 
     @property
     def name(self):
-        """Return the command name."""
+        """Return the command's name."""
 
         return self._name
+
+    @property
+    def displayName(self):
+        """Return the command's display name."""
+
+        return self._displayName
 
     def run(self):
         """Run the command's callback function."""
@@ -184,13 +189,13 @@ class PluginMenu(object):
         shortcut.
         """
 
-        action = self._qMenu.addAction(commandPlugin.name,
+        action = self._qMenu.addAction(commandPlugin.displayName,
             lambda: commandPlugin.run())
 
         if shortcut is not None:
             action.setShortcut(QtGui.QKeySequence(shortcut))
 
-    def getSubmenu(self, menuName):
+    def findOrCreateSubmenu(self, menuName):
         """Get a PluginMenu object for the submenu with the given name. If no
         submenu with the given name exists, it is created.
         """
@@ -212,26 +217,52 @@ class PluginMenu(object):
 class PluginRegistry(object):
     """Manages all plugins loaded by Usdview."""
 
-    def __init__(self, usdviewApi, mainWindow):
+    def __init__(self, usdviewApi):
 
         self._usdviewApi = usdviewApi
-        self._mainWindow = mainWindow
 
-        self._commandPlugins = set()
+        self._commandPlugins = dict()
+
+    def registerCommandPlugin(self, name, displayName, callback):
+        """Creates, registers, and returns a new command plugin.
+
+        The plugin's `name` parameter is used to find the plugin from the
+        registry later. It is good practice to prepend the plugin container's
+        name to the plugin's `name` parameter to avoid duplicate names
+        (i.e. "MyPluginContainer.myPluginName"). If a duplicate name is found, a
+        DuplicateCommandPlugin exception will be raised.
+
+        The `displayName` parameter is the name displayed to users.
+
+        The plugin's `callback` parameter must be a callable object which takes
+        a UsdviewApi object as its only parameter.
+        """
+
+        plugin = CommandPlugin(name, displayName, callback, self._usdviewApi)
+        if name in self._commandPlugins:
+            raise DuplicateCommandPlugin(name)
+
+        self._commandPlugins[name] = plugin
+        return plugin
+
+    def getCommandPlugin(self, name):
+        """Finds and returns a registered command plugin. If no plugin with the
+        given name is registered, return None instead.
+        """
+
+        return self._commandPlugins.get(name, None)
+
+
+class PluginUIBuilder(object):
+    """Used by plugins to construct UI elements in Usdview."""
+
+    def __init__(self, mainWindow):
+
+        self._mainWindow = mainWindow
 
         self._menus = dict()
 
-    def registerCommandPlugin(self, name, callback):
-        """Creates, registers, and returns a new command plugin. The plugin's
-        `callback` parameter must be a callable object which takes a UsdviewApi
-        object as its only parameter.
-        """
-
-        plugin = CommandPlugin(name, callback, self._usdviewApi)
-        self._commandPlugins.add(plugin)
-        return plugin
-
-    def getMenu(self, menuName):
+    def findOrCreateMenu(self, menuName):
         """Get a PluginMenu object for the menu with the given name. If no menu
         with the given name exists, it is created.
         """
@@ -252,23 +283,49 @@ def loadPlugins(usdviewApi, mainWindow):
     containerTypes = Plug.Registry.GetAllDerivedTypes(
         PluginContainerTfType)
 
-    # Get all the libplug plugins for Usdview.
+    # Find all plugins and plugin container types through libplug.
     plugins = dict()
     for containerType in containerTypes:
         plugin = Plug.Registry().GetPluginForType(containerType)
-        pluginContainers = plugins.setdefault(plugin, [])
-        pluginContainers.append(containerType)
+        pluginContainerTypes = plugins.setdefault(plugin, [])
+        pluginContainerTypes.append(containerType)
 
-    # Create the Usdview plugin registry.
-    registry = PluginRegistry(usdviewApi, mainWindow)
-
-    # Load all discovered containers and let them register their plugins and
-    # configure the UI.
+    # Load each plugin in alphabetical order by name. For each plugin, load all
+    # of its containers in alphabetical order by type name.
     allContainers = []
-    for plugin, containerTypes in plugins.items():
+    for plugin in sorted(plugins.keys(), key=lambda plugin: plugin.name):
         plugin.Load()
-        for containerType in containerTypes:
-            pluginContainer = containerType.pythonClass(usdviewApi, registry)
-            pluginContainer.registerPlugins()
-            pluginContainer.configureView()
-            allContainers.append(pluginContainer)
+        pluginContainerTypes = sorted(
+            plugins[plugin], key=lambda containerType: containerType.typeName)
+        for containerType in pluginContainerTypes:
+            if containerType.pythonClass is None:
+                print(("WARNING: Missing plugin container '{}' from plugin "
+                    "'{}'. Make sure the container is a defined Tf.Type and "
+                    "the container's import path matches the path in "
+                    "plugInfo.json.").format(
+                        containerType.typeName, plugin.name), file=sys.stderr)
+                continue
+            container = containerType.pythonClass()
+            allContainers.append(container)
+
+    # No plugins to load, so don't create a registry.
+    if len(allContainers) == 0:
+        return None
+
+    # Register all plugins from each container. If there is a naming conflict,
+    # abort plugin initialization.
+    registry = PluginRegistry(usdviewApi)
+    for container in allContainers:
+        try:
+            container.registerPlugins(registry, usdviewApi)
+        except DuplicateCommandPlugin as e:
+            print("WARNING: {}".format(e), file=sys.stderr)
+            print("Plugins will not be loaded.", file=sys.stderr)
+            return None
+
+    # Allow each plugin to construct UI elements.
+    uiBuilder = PluginUIBuilder(mainWindow)
+    for container in allContainers:
+        container.configureView(registry, uiBuilder)
+
+    return registry

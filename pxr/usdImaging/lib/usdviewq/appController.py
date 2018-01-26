@@ -281,7 +281,8 @@ class AppController(QtCore.QObject):
     def _configurePlugins(self):
 
         with Timer() as t:
-            plugin.loadPlugins(self._usdviewApi, self._mainWindow)
+            self._plugRegistry = plugin.loadPlugins(
+                self._usdviewApi, self._mainWindow)
 
         if self._printTiming:
             t.PrintTime("configure and load plugins.")
@@ -951,6 +952,7 @@ class AppController(QtCore.QObject):
             self._setupDebugMenu()
 
             # Setup Usdview API and optionally load plugins
+            self._plugRegistry = None
             self._usdviewApi = UsdviewApi(self)
             if not self._noPlugins:
                 self._configurePlugins()
