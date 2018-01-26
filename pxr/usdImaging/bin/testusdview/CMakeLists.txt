@@ -150,6 +150,16 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewLoadPlugins_chained
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewUpAxis
+        DEST testusdviewUpAxis_zUp
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewUpAxis
+        DEST testusdviewUpAxis_yUp
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -320,6 +330,18 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewLoadPlugins_chained
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_chained.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewUpAxis_zUp
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_zUp.py testZUp.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewUpAxis_yUp
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_yUp.py testYUp.usda"
         EXPECTED_RETURN_CODE 0
     )
 

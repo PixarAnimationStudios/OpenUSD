@@ -1338,6 +1338,9 @@ class StageView(QtOpenGL.QGLWidget):
         self._cameraGuidesVBO = None
         self._vao = 0
 
+        # Update all properties for the current stage.
+        self._stageReplaced()
+
     def _getRenderer(self):
         # Unfortunately, we cannot assume that initializeGL() was called
         # before attempts to use the renderer (e.g. pick()), so we must
