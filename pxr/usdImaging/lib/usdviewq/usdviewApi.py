@@ -25,6 +25,7 @@
 import types
 
 from pxr import Gf
+from qt import QtCore
 
 
 class UsdviewApi(object):
@@ -70,8 +71,7 @@ class UsdviewApi(object):
     def selectedPaths(self):
         """A list of the paths of all currently selected prims."""
 
-        return [item.prim.GetPath() for item in
-            self.__appController._dataModel.selection.getPrimPaths()]
+        return self.__appController._dataModel.selection.getPrimPaths()
 
     @property
     def selectedInstances(self):
@@ -95,6 +95,15 @@ class UsdviewApi(object):
         return self.__appController._currentLayer
 
     @property
+    def cameraPrim(self):
+        """The current camera prim."""
+
+        if self.__appController._stageView is not None:
+            return self.__appController._stageView.getCameraPrim()
+        else:
+            return None
+
+    @property
     def currentGfCamera(self):
         """A copy of the last computed Gf Camera."""
 
@@ -102,6 +111,34 @@ class UsdviewApi(object):
             return Gf.Camera(self.__appController._stageView.gfCamera)
         else:
             return None
+
+    @property
+    def viewportSize(self):
+        """The width and height of the viewport in pixels."""
+
+        stageView = self.__appController._stageView
+        if stageView is not None:
+            return stageView.width(), stageView.height()
+        else:
+            return 0, 0
+
+    @property
+    def configDir(self):
+        """The config dir, typically ~/.usdview/."""
+
+        return self.__appController._outputBaseDirectory()
+
+    @property
+    def stageIdentifier(self):
+        """The identifier of the open Usd.Stage's root layer."""
+
+        return self.__appController._dataModel.stage.GetRootLayer().identifier
+
+    @property
+    def qMainWindow(self):
+        """A QWidget object that other widgets can use as a parent."""
+
+        return self.__appController._mainWindow
 
     # This needs to be the last property added because otherwise the @property
     # decorator will call this method rather than the actual property decorator.
@@ -111,12 +148,7 @@ class UsdviewApi(object):
 
         return self.__appController._dataModel.selection.getFocusProp()
 
-    def GetQMainWindow(self):
-        """Returns a QWidget object that other widgets can use as a parent."""
-
-        return self.__appController._mainWindow
-
-    def GetModelsFromSelection(self):
+    def ComputeModelsFromSelection(self):
         """Returns selected models.  this will walk up to find the nearest model.
         Note, this may return "group"'s if they are selected.
         """
@@ -132,7 +164,7 @@ class UsdviewApi(object):
 
         return models
 
-    def GetSelectedPrimsOfType(self, schemaType):
+    def ComputeSelectedPrimsOfType(self, schemaType):
         """Returns selected prims of the provided schemaType (TfType)."""
 
         prims = []
@@ -143,28 +175,13 @@ class UsdviewApi(object):
 
         return prims
 
-    def GetConfigDir(self):
-        """Returns the config dir, typically ~/.usdview/."""
-
-        return self.__appController._outputBaseDirectory()
-
-    def GetInputFilePath(self):
-        """Returns the file that usdview was called on."""
-
-        return self.__appController._parserData.usdFile
-
     def PrintStatus(self, msg):
         """Prints a status message."""
 
         self.__appController.statusMessage(msg)
 
-    def GetStageView(self):
-        """Returns the stageView object."""
-
-        return self.__appController._stageView
-
     def GetSettings(self):
-        """Returns settings object."""
+        """DEPRECATED Returns the old settings object."""
 
         return self.__appController._settings
 
@@ -178,3 +195,15 @@ class UsdviewApi(object):
         """Returns a QImage of the current stage view in usdview."""
 
         return self.__appController.GrabViewportShot()
+
+    def _ExportSession(self, stagePath, defcamName='usdviewCam', imgWidth=None,
+            imgHeight=None):
+        """Export the free camera (if currently active) and session layer to a
+        USD file at the specified stagePath that references the current-viewed
+        stage.
+        """
+
+        stageView = self.__appController._stageView
+        if stageView is not None:
+            stageView.ExportSession(stagePath, defcamName='usdviewCam',
+                imgWidth=None, imgHeight=None)
