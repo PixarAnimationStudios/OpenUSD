@@ -41,7 +41,10 @@ namespace {
 const char* pathEnvVarName      = BOOST_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation       = BOOST_PP_STRINGIZE(PXR_BUILD_LOCATION);
 const char* pluginBuildLocation = BOOST_PP_STRINGIZE(PXR_PLUGIN_BUILD_LOCATION);
+
+#ifdef PXR_INSTALL_LOCATION
 const char* installLocation     = BOOST_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
+#endif // PXR_INSTALL_LOCATION
 
 void
 _AppendPathList(
@@ -86,7 +89,10 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     // Fallback locations.
     _AppendPathList(&result, buildLocation, sharedLibPath);
     _AppendPathList(&result, pluginBuildLocation, sharedLibPath);
+
+#ifdef PXR_INSTALL_LOCATION
     _AppendPathList(&result, installLocation, sharedLibPath);
+#endif // PXR_INSTALL_LOCATION
 
     Plug_SetPaths(result);
 }
