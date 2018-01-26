@@ -203,7 +203,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawTarget)                                \
     (material)                                  \
     /* Sprims Lights */                         \
-    (light)                                     \
+    (simpleLight)                               \
     (domeLight)                                 \
     (rectLight)                                 \
     (sphereLight)                               \

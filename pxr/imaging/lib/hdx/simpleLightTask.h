@@ -69,8 +69,16 @@ protected:
     virtual void _Sync(HdTaskContext* ctx);
 
 private:
+    size_t _AppendLightsOfType(HdRenderIndex &renderIndex,
+                               std::vector<TfToken> const &lightTypes, 
+                               SdfPathVector const &lightIncludePaths,
+                               SdfPathVector const &lightExcludePaths,
+                               std::map<TfToken, SdfPathVector> *lights);
+
+private:
     SdfPath _cameraId;
-    SdfPathVector _lightIds;
+    std::map<TfToken, SdfPathVector> _lightIds;
+    size_t _numLights;
 
     // Should be weak ptrs
     HdxSimpleLightingShaderSharedPtr _lightingShader;

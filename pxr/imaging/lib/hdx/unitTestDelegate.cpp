@@ -213,7 +213,7 @@ void
 Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
 {
     // add light
-    GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, id);
+    GetRenderIndex().InsertSprim(HdPrimTypeTokens->simpleLight, this, id);
     _ValueCache &cache = _valueCacheMap[id];
 
     HdxShadowParams shadowParams;

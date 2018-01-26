@@ -155,9 +155,9 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         
         // XXX: This is inefficient, need to be optimized
         SdfPathVector lightPaths;
-        if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light)) {
+        if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
             SdfPathVector sprimPaths = renderIndex.GetSprimSubtree(
-                HdPrimTypeTokens->light, SdfPath::AbsoluteRootPath());
+                HdPrimTypeTokens->simpleLight, SdfPath::AbsoluteRootPath());
 
             HdPrimGather gather;
 
@@ -171,7 +171,8 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         TF_FOR_ALL (it, lightPaths) {
              const HdStLight *light = static_cast<const HdStLight *>(
                                          renderIndex.GetSprim(
-                                                 HdPrimTypeTokens->light, *it));
+                                                 HdPrimTypeTokens->simpleLight, 
+                                                 *it));
 
              if (light != nullptr) {
                 lights.push_back(light);
@@ -180,7 +181,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
         
         GlfSimpleLightVector const glfLights = lightingContext->GetLights();
         
-        if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->light) ||
+        if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight) ||
             !TF_VERIFY(lights.size() == glfLights.size())) {
             return;
         }

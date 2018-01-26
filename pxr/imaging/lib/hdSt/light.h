@@ -29,6 +29,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
+#include "pxr/imaging/glf/simpleLight.h"
+
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -40,7 +42,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDST_LIGHT_TOKENS                        \
+#define HDST_LIGHT_TOKENS                       \
+    (angle)                                     \
+    (exposure)                                  \
+    (intensity)                                 \
     (params)                                    \
     (shadowCollection)                          \
     (shadowParams)                              \
@@ -59,7 +64,7 @@ typedef std::vector<class HdStLight const *> HdStLightPtrConstVector;
 class HdStLight final : public HdSprim {
 public:
     HDST_API
-    HdStLight(SdfPath const & id);
+    HdStLight(SdfPath const & id, TfToken const &lightType);
     HDST_API
     virtual ~HdStLight();
 
@@ -93,7 +98,17 @@ public:
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:
-    // cached states
+    /// Converts area lights (sphere lights and distant lights) into
+    /// glfSimpleLights and inserts them in the dictionary so 
+    /// SimpleLightTask can use them later on as if they were regular lights.
+    GlfSimpleLight _ApproximateAreaLight(SdfPath const &id, 
+                                         HdSceneDelegate *sceneDelegate);
+
+private:
+    // Stores the internal light type of this light.
+    TfToken _lightType;
+
+    // Cached states.
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _params;
 };
 

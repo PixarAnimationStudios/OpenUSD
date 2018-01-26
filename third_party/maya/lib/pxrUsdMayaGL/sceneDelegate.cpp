@@ -213,15 +213,18 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
 
         // Since we're hardcoded to use HdStRenderDelegate, we expect to have
         // light Sprims.
-        TF_VERIFY(GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->light));
+        TF_VERIFY(GetRenderIndex().
+            IsSprimTypeSupported(HdPrimTypeTokens->simpleLight));
 
-        GetRenderIndex().InsertSprim(HdPrimTypeTokens->light, this, lightId);
+        GetRenderIndex().
+            InsertSprim(HdPrimTypeTokens->simpleLight, this, lightId);
         hasNumLightsChanged = true;
     }
 
     // Remove unused light Ids from HdRenderIndex
     while (_lightIds.size() > lights.size()) {
-        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->light, _lightIds.back());
+        GetRenderIndex().
+            RemoveSprim(HdPrimTypeTokens->simpleLight, _lightIds.back());
         _lightIds.pop_back();
         hasNumLightsChanged = true;
     }

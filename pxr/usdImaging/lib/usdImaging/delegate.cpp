@@ -3095,24 +3095,14 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
                 return VtValue();
             }
             return VtValue(asset.GetResolvedPath());
-
-        // XXX : As soon as we have sprim dirty bits and time variability 
-        // we can use another mechanism
-        } else if (paramName == HdTokens->transform) {
-            GfMatrix4d ctm = UsdImaging_XfStrategy::ComputeTransform(
-                prim, _xformCache.GetRootPath(), UsdTimeCode(1.0), 
-                _rigidXformOverrides) * GetRootTransform();
-            return VtValue(ctm);
         }
-        
-        TF_WARN("Unable to find attribute '%s' in prim '%s'.", 
-            paramName.GetText(), id.GetText());
-        return VtValue();
+
+        return Get(id, paramName);
     }
 
     // Reading the value may fail, should we warn here when it does?
     attr.Get(&value, GetTime());
-    return value;    
+    return value;
 }
 
 VtValue

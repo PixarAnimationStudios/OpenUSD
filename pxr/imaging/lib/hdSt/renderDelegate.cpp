@@ -56,9 +56,11 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
-    HdPrimTypeTokens->light,
     HdPrimTypeTokens->drawTarget,
-    HdPrimTypeTokens->material
+    HdPrimTypeTokens->material,
+    HdPrimTypeTokens->rectLight,
+    HdPrimTypeTokens->simpleLight,
+    HdPrimTypeTokens->sphereLight
 };
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -177,8 +179,12 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdStCamera(sprimId);
-    } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdStLight(sprimId);
+    } else if (typeId == HdPrimTypeTokens->simpleLight) {
+        return new HdStLight(sprimId, HdPrimTypeTokens->simpleLight);
+    } else if (typeId == HdPrimTypeTokens->sphereLight) {
+        return new HdStLight(sprimId, HdPrimTypeTokens->sphereLight);
+    } else if (typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(sprimId, HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(sprimId);
     } else  if (typeId == HdPrimTypeTokens->material) {
@@ -195,8 +201,15 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdStCamera(SdfPath::EmptyPath());
-    } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdStLight(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->simpleLight) {
+        return new HdStLight(SdfPath::EmptyPath(),
+                             HdPrimTypeTokens->simpleLight);
+    } else if (typeId == HdPrimTypeTokens->sphereLight) {
+        return new HdStLight(SdfPath::EmptyPath(), 
+                             HdPrimTypeTokens->sphereLight);
+    } else if (typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(SdfPath::EmptyPath(), 
+                             HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->material) {
@@ -207,7 +220,6 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 
     return nullptr;
 }
-
 
 void
 HdStRenderDelegate::DestroySprim(HdSprim *sPrim)
@@ -224,7 +236,6 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
     } else  {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
-
 
     return nullptr;
 }
