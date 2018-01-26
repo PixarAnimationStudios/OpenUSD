@@ -314,5 +314,15 @@ UsdSkelAnimMapper::RemapTransforms(const VtMatrix4dArray& source,
     return Remap(source, target, elementSize, &identity);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+bool
+UsdSkelAnimMapper::operator==(const UsdSkelAnimMapper& o) const
+{
+    return _targetSize == o._targetSize &&
+           _offset == o._offset &&
+           _flags == o._flags &&
+           _indexMap == o._indexMap;
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

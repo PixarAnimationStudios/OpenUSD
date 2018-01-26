@@ -114,6 +114,12 @@ public:
     USDSKEL_API
     bool IsNull() const;
 
+    bool operator==(const UsdSkelAnimMapper& o) const;
+
+    bool operator!=(const UsdSkelAnimMapper& o) const {
+        return !(*this == o);
+    }
+
 private:
     template <typename T>
     bool _Remap(const VtArray<T>& source, VtArray<T>* target,
