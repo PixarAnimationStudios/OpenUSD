@@ -3,13 +3,6 @@ set(PXR_PACKAGE hd)
 
 set(optionalPublicClasses "")
 
-if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-endif()
-if (OPENSUBDIV_HAS_GLSL_COMPUTE)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
-endif()
-
 pxr_library(hd
     LIBRARIES
         plug
@@ -20,13 +13,10 @@ pxr_library(hd
         sdf
         hf
         pxOsd
-        ${OPENSUBDIV_LIBRARIES}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${OPENSUBDIV_INCLUDE_DIR}
         ${TBB_INCLUDE_DIRS}
-        ${OPENSUBDIV_INCLUDE_DIR}
 
     PUBLIC_CLASSES
         basisCurves
