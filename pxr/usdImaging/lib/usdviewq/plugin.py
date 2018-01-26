@@ -151,12 +151,13 @@ class CommandPlugin(object):
     be a callable object which takes a UsdviewApi object as its only parameter.
     """
 
-    def __init__(self, name, displayName, callback, usdviewApi):
+    def __init__(self, name, displayName, callback, description, usdviewApi):
 
         self._name = name
         self._displayName = displayName
         self._callback = callback
         self._usdviewApi = usdviewApi
+        self._description = description
 
     @property
     def name(self):
@@ -169,6 +170,12 @@ class CommandPlugin(object):
         """Return the command's display name."""
 
         return self._displayName
+
+    @property
+    def description(self):
+        """Return the command description."""
+
+        return self._description
 
     def run(self):
         """Run the command's callback function."""
@@ -192,6 +199,8 @@ class PluginMenu(object):
         action = self._qMenu.addAction(commandPlugin.displayName,
             lambda: commandPlugin.run())
 
+        action.setToolTip(commandPlugin.description)
+
         if shortcut is not None:
             action.setShortcut(QtGui.QKeySequence(shortcut))
 
@@ -204,6 +213,7 @@ class PluginMenu(object):
             return self._submenus[menuName]
         else:
             subQMenu = self._qMenu.addMenu(menuName)
+            subQMenu.setToolTipsVisible(True)
             submenu = PluginMenu(subQMenu)
             self._submenus[menuName] = submenu
             return submenu
@@ -223,7 +233,8 @@ class PluginRegistry(object):
 
         self._commandPlugins = dict()
 
-    def registerCommandPlugin(self, name, displayName, callback):
+    def registerCommandPlugin(self, name, displayName, callback,
+            description=""):
         """Creates, registers, and returns a new command plugin.
 
         The plugin's `name` parameter is used to find the plugin from the
@@ -236,9 +247,13 @@ class PluginRegistry(object):
 
         The plugin's `callback` parameter must be a callable object which takes
         a UsdviewApi object as its only parameter.
+
+        The optional `description` parameter is a short description of what the
+        command does which can be displayed to users.
         """
 
-        plugin = CommandPlugin(name, displayName, callback, self._usdviewApi)
+        plugin = CommandPlugin(name, displayName, callback, description,
+            self._usdviewApi)
         if name in self._commandPlugins:
             raise DuplicateCommandPlugin(name)
 
@@ -271,6 +286,7 @@ class PluginUIBuilder(object):
             return self._menus[menuName]
         else:
             qMenu = self._mainWindow.menuBar().addMenu(menuName)
+            qMenu.setToolTipsVisible(True)
             menu = PluginMenu(qMenu)
             self._menus[menuName] = menu
             return menu
