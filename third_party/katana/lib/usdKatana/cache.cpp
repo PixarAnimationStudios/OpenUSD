@@ -679,6 +679,15 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     
 }
 
+
+void UsdKatanaCache::FlushStage(const UsdStageRefPtr & stage)
+{
+    UsdStageCache& stageCache = UsdUtilsStageCache::Get();
+    
+    stageCache.Erase(stage);
+}
+
+
 UsdImagingGLSharedPtr const& 
 UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
                             UsdPrim const& root,
