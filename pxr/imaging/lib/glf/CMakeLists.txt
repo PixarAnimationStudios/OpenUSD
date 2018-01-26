@@ -19,6 +19,7 @@ pxr_library(glf
         arch
         garch
         gf
+        hf
         js
         plug
         tf

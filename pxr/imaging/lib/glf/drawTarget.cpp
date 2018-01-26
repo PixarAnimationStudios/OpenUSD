@@ -32,6 +32,8 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -648,6 +650,8 @@ GlfDrawTarget::Attachment::~Attachment()
 void
 GlfDrawTarget::Attachment::_GenTexture()
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     GLenum internalFormat = _internalFormat;
     GLenum type = _type;
     size_t memoryUsed = 0;
@@ -722,7 +726,7 @@ GlfDrawTarget::Attachment::_GenTexture()
 
     glBindTexture( GL_TEXTURE_2D, 0 );
 
-    memoryUsed += baseImageSize * _numSamples;
+    memoryUsed += baseImageSize;
 
     _SetMemoryUsed(memoryUsed);
 
