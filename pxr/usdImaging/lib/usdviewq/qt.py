@@ -38,6 +38,9 @@ if QtCore.__name__.startswith('PySide.'):
         QtWidgets.QHeaderView.setSectionResizeMode = \
             QtWidgets.QHeaderView.setResizeMode
 
+    if not hasattr(QtGui.QMenu, 'setToolTipsVisible'):
+        QtGui.QMenu.setToolTipsVisible = lambda self, _: None
+
     if hasattr(QtGui.QWheelEvent, 'delta') \
         and not hasattr(QtGui.QWheelEvent, 'angleDelta'):
         def angleDelta(self):
