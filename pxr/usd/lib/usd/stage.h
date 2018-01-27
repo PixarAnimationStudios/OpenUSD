@@ -728,6 +728,32 @@ public:
     USD_API
     UsdPrim GetPrimAtPath(const SdfPath &path) const;
 
+    /// Return the UsdObject at \p path, or an invalid UsdObject if none exists.
+    ///
+    /// If \p path indicates a prim beneath an instance, returns an instance
+    /// proxy prim if a prim exists at the corresponding path in that instance's 
+    /// master. If \p path indicates a property beneath a child of an instance, 
+    /// returns a property whose parent prim is an instance proxy prim.
+    ///
+    /// Example:
+    ///
+    /// \code
+    ///if (UsdObject obj = stage->GetObjectAtPath(path)) {
+    ///    if (UsdPrim prim = obj.As<UsdPrim>()) {
+    ///        // Do things with prim
+    ///    }
+    ///    else if (UsdProperty prop = obj.As<UsdProperty>()) {
+    ///        // Do things with property. We can also cast to
+    ///        // UsdRelationship or UsdAttribute using this same pattern.
+    ///    }
+    ///}
+    ///else {
+    ///    // No object at specified path
+    ///}
+    /// \endcode
+    USD_API
+    UsdObject GetObjectAtPath(const SdfPath &path) const;
+
 private:
     // Return the primData object at \p path.
     Usd_PrimDataConstPtr _GetPrimDataAtPath(const SdfPath &path) const;

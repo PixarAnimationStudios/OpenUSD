@@ -1746,6 +1746,32 @@ UsdStage::GetPrimAtPath(const SdfPath &path) const
     return UsdPrim(primData, proxyPrimPath);
 }
 
+UsdObject
+UsdStage::GetObjectAtPath(const SdfPath &path) const
+{
+    // Maintain consistent behavior with GetPrimAtPath
+    if (!path.IsAbsolutePath()) {
+        return UsdObject();
+    }
+
+    const bool isPrimPath = path.IsPrimPath();
+    const bool isPropPath = !isPrimPath && path.IsPropertyPath();
+    if (!isPrimPath && !isPropPath) {
+        return UsdObject();
+    }
+
+    // A valid prim must be found to return either a prim or prop
+    if (isPrimPath) {
+        return GetPrimAtPath(path);
+    } else if (isPropPath) {
+        if (auto prim = GetPrimAtPath(path.GetPrimPath())) {
+            return prim.GetProperty(path.GetNameToken());
+        }
+    }
+
+    return UsdObject();
+}
+
 Usd_PrimDataConstPtr
 UsdStage::_GetPrimDataAtPath(const SdfPath &path) const
 {
