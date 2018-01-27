@@ -2136,20 +2136,39 @@ class AppController(QtCore.QObject):
 
             self._mainWindow.setWindowTitle(filename)
 
+    def _getSaveFileName(self, caption, recommendedFilename):
+        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(
+            self._mainWindow,
+            caption,
+            './' + recommendedFilename,
+            'USD Files (*.usd)'
+            ';;USD ASCII Files (*.usda)'
+            ';;USD Crate Files (*.usdc)'
+            ';;Any USD File (*.usd *.usda *.usdc)',
+            'Any USD File (*.usd *.usda *.usdc)')
+
+        if len(saveName) == 0:
+            return ''
+
+        _, ext = os.path.splitext(saveName)
+        if ext not in ('.usd', '.usda', '.usdc'):
+            saveName += '.usd'
+        
+        return saveName
+
     def _saveOverridesAs(self):
         recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
         recommendedFilename += '_overrides.usd'
-        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self._mainWindow,
-                                                     "Save file (*.usd)",
-                                                     "./" + recommendedFilename,
-                                                     'Usd Files (*.usd)')
-        if len(saveName) <= 0:
+
+        saveName = self._getSaveFileName(
+            'Save Overrides As', recommendedFilename)
+        if len(saveName) == 0:
             return
 
-        if (saveName.rsplit('.')[-1] != 'usd'):
-            saveName += '.usd'
+        if not self._dataModel.stage:
+            return
 
-        if self._dataModel.stage:
+        with BusyContext():
             # In the future, we may allow usdview to be brought up with no file,
             # in which case it would create an in-memory root layer, to which
             # all edits will be targeted.  In order to future proof
@@ -2159,7 +2178,8 @@ class AppController(QtCore.QObject):
             # the stage root file as a sublayer.
             rootLayer = self._dataModel.stage.GetRootLayer()
             if not rootLayer.anonymous:
-                self._dataModel.stage.GetSessionLayer().Export(saveName, 'Created by UsdView')
+                self._dataModel.stage.GetSessionLayer().Export(
+                    saveName, 'Created by UsdView')
                 targetLayer = Sdf.Layer.FindOrOpen(saveName)
                 UsdUtils.CopyLayerMetadata(rootLayer, targetLayer,
                                            skipSublayers=True)
@@ -2177,26 +2197,20 @@ class AppController(QtCore.QObject):
                 targetLayer.RemoveInertSceneDescription()
                 targetLayer.Save()
             else:
-                self._dataModel.stage.GetRootLayer().Export(saveName, 'Created by UsdView')
+                self._dataModel.stage.GetRootLayer().Export(
+                    saveName, 'Created by UsdView')
 
     def _saveFlattenedAs(self):
         recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
         recommendedFilename += '_flattened.usd'
-        (saveName, _) = QtWidgets.QFileDialog.getSaveFileName(self._mainWindow,
-                                                     "Save file (*.usd)",
-                                                     "./" + recommendedFilename,
-                                                     'Usd Files (*.usd)'
-                                                        ';;Usd Ascii Files (*.usda)'
-                                                        ';;Usd Crate Files (*.usdc)'
-                                                        ';;Any Usd File (*.usd *.usda *.usdc)',
-                                                     'Any Usd File (*.usd *.usda *.usdc)')
-        if len(saveName) <= 0:
+
+        saveName = self._getSaveFileName(
+            'Save Flattened As', recommendedFilename)
+        if len(saveName) == 0:
             return
 
-        if (saveName.rsplit('.')[-1] not in ('usd', 'usda', 'usdc')):
-            saveName += '.usd'
-            
-        self._dataModel.stage.Export(saveName)
+        with BusyContext():
+            self._dataModel.stage.Export(saveName)
 
     def _reopenStage(self):
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)

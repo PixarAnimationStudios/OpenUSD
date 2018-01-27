@@ -1116,7 +1116,6 @@
     <addaction name="actionReload_All_Layers"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Overrides_As"/>
-    <addaction name="actionSave_Overrides_To_Scene"/>
     <addaction name="actionSave_Flattened_As"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -1880,12 +1879,7 @@
     <string>Save Overrides As...</string>
    </property>
    <property name="toolTip">
-    <string>Save Overrides As...</string>
-   </property>
-  </action>
-  <action name="actionLoad_Overrides">
-   <property name="text">
-    <string>Load Overrides</string>
+    <string>Save property and metadata overrides</string>
    </property>
   </action>
   <action name="actionSave_Flattened_As">
