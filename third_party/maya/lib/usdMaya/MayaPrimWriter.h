@@ -69,6 +69,12 @@ class MayaPrimWriter
     PXRUSDMAYA_API
     virtual bool shouldPruneChildren() const;
 
+    /// Post export function that runs before saving the stage.
+    ///
+    /// Base implementation does nothing.
+    PXRUSDMAYA_API
+    virtual void postExport();
+    
 public:
     const MDagPath&        getDagPath()    const { return mDagPath; }
     const SdfPath&         getUsdPath()    const { return mUsdPath; }
