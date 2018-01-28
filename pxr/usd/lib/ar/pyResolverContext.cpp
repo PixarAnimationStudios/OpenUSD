@@ -25,8 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/pyResolverContext.h"
 
-#include "pxr/base/tf/iterator.h"
-
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -59,8 +57,8 @@ bool
 Ar_CanConvertResolverContextFromPython(PyObject* pyObj)
 {
     Ar_PythonConverterRegistry& reg = _GetRegistry();
-    TF_FOR_ALL(canMakeContextFrom, reg._convertFromPython) {
-        if ((*canMakeContextFrom)(pyObj, NULL)) {
+    for (const auto& canMakeContextFrom : reg._convertFromPython) {
+        if (canMakeContextFrom(pyObj, nullptr)) {
             return true;
         }
     }
@@ -73,8 +71,8 @@ Ar_ConvertResolverContextFromPython(PyObject* pyObj)
     ArResolverContext context;
 
     Ar_PythonConverterRegistry& reg = _GetRegistry();
-    TF_FOR_ALL(makeContextFrom, reg._convertFromPython) {
-        if ((*makeContextFrom)(pyObj, &context)) {
+    for (const auto& makeContextFrom : reg._convertFromPython) {
+        if (makeContextFrom(pyObj, &context)) {
             break;
         }
     }
@@ -87,8 +85,8 @@ Ar_ConvertResolverContextToPython(const ArResolverContext& context)
     TfPyObjWrapper pyObj;
     
     Ar_PythonConverterRegistry& reg = _GetRegistry();
-    TF_FOR_ALL(convertToPython, reg._convertToPython) {
-        if ((*convertToPython)(context, &pyObj)) {
+    for (const auto& convertToPython : reg._convertToPython) {
+        if (convertToPython(context, &pyObj)) {
             break;
         }
     }
