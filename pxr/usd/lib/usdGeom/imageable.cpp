@@ -210,11 +210,11 @@ UsdGeomImageable::_MakePrimvars(std::vector<UsdProperty> const &props) const
     std::vector<UsdGeomPrimvar> primvars;
     primvars.reserve(props.size());
     
-    TF_FOR_ALL(prop, props) {
+    for (const auto& prop : props) {
         // All prefixed properties except the ones that contain extra
         // namespaces (eg. the ":indices" attributes belonging to indexed
         // primvars) will be valid primvars.
-        if (UsdGeomPrimvar primvar = UsdGeomPrimvar(prop->As<UsdAttribute>()))
+        if (UsdGeomPrimvar primvar = UsdGeomPrimvar(prop.As<UsdAttribute>()))
             primvars.push_back(primvar);
     }
     return primvars;
@@ -347,9 +347,7 @@ _MakeVisible(const UsdPrim &prim, UsdTimeCode const &time, bool *hasInvisibleAnc
 
                 // Invis all siblings of prim.
                 UsdPrim::SiblingRange children = parent.GetAllChildren();
-                TF_FOR_ALL(childIt, children) {
-                    const UsdPrim &childPrim = *childIt;
-                    
+                for (const auto& childPrim : children) {
                     if (childPrim != prim) {
                         UsdGeomImageable imageableChild(childPrim);
                         if (imageableChild) {

@@ -90,8 +90,7 @@ TF_MAKE_STATIC_DATA(TfToken, _fallbackUpAxis)
         .Get<TfToken>();
     
     PlugPluginPtrVector plugs = PlugRegistry::GetInstance().GetAllPlugins();
-    TF_FOR_ALL(plugIter, plugs) {
-        PlugPluginPtr plug = *plugIter;
+    for (const auto& plug : plugs) {
         JsObject metadata = plug->GetMetadata();
         JsValue metricsDictValue;
         if (TfMapLookup(metadata, _tokens->UsdGeomMetrics, &metricsDictValue)){

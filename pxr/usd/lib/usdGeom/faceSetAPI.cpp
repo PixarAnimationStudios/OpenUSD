@@ -84,9 +84,7 @@ UsdGeomFaceSetAPI::GetFaceSets(const UsdPrim &prim)
 
     vector<UsdProperty> faceSetProperties = prim.GetPropertiesInNamespace(
         UsdGeomTokens->faceSet);
-    TF_FOR_ALL(propIt, faceSetProperties) {
-        const UsdProperty &prop = *propIt;
-        
+    for (const auto& prop : faceSetProperties) {
         if (prop.GetBaseName() != _tokens->isPartition) 
             continue;
 
@@ -267,14 +265,12 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
         allTimeSamples.insert(fcTimes.begin(), fcTimes.end());
 
     allTimes.reserve(allTimes.size() + allTimeSamples.size());
-    TF_FOR_ALL(it, allTimeSamples) {
-        allTimes.push_back(UsdTimeCode(*it));
+    for (const auto& time : allTimeSamples) {
+        allTimes.push_back(UsdTimeCode(time));
     }
 
     size_t prevNumFaceCounts = std::numeric_limits<size_t>::max();
-    TF_FOR_ALL(timeIt, allTimes) {
-        const UsdTimeCode &time = *timeIt;
-
+    for (const auto& time : allTimes) {
         VtIntArray faceIndices;
         if (GetFaceIndices(&faceIndices, time)) {
             if (isPartition && _ContainsDuplicates(faceIndices)) {
@@ -309,8 +305,8 @@ UsdGeomFaceSetAPI::Validate(string *reason) const
             prevNumFaceCounts = faceCounts.size();
 
             size_t sum = 0;
-            TF_FOR_ALL(faceCountsIt, faceCounts) {
-                sum += *faceCountsIt;
+            for (const auto& faceCount : faceCounts) {
+                sum += faceCount;
             }
             if (faceIndices.size() != sum) {
                 isValid = false;
@@ -434,8 +430,8 @@ UsdGeomFaceSetAPI::AppendFaceGroup(const VtIntArray &indices,
 
     faceCounts.push_back(indices.size());
     faceIndices.reserve(faceIndices.size() + indices.size());
-    TF_FOR_ALL(indicesIt, indices) {
-        faceIndices.push_back(*indicesIt);
+    for (const auto& index : indices) {
+        faceIndices.push_back(index);
     }
 
     bool success = true;

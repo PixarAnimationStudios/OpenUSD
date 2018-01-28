@@ -199,12 +199,15 @@ UsdGeomXformOp::Type
 _GetRotateOpType(const vector<UsdGeomXformOp>& ops,
                  bool includeSingleAxisTypes=false)
 {
-    TF_FOR_ALL(it, ops) {
-        if (_validRotateTypes->count(it->GetOpType()))
-            return it->GetOpType();
+    for (const auto& op : ops) {
+        if (_validRotateTypes->count(op.GetOpType())) {
+            return op.GetOpType();
+        }
+
         if (includeSingleAxisTypes &&
-                _validSingleAxisRotateTypes->count(it->GetOpType()))
-            return it->GetOpType();
+                _validSingleAxisRotateTypes->count(op.GetOpType())) {
+            return op.GetOpType();
+        }
     }
     return UsdGeomXformOp::TypeRotateXYZ;
 }
@@ -262,15 +265,15 @@ _GetCommonOpTypesForOpOrder(const vector<UsdGeomXformOp>& xformOps,
     bool hasScaleOp = false;
     size_t numInverseTranslateOps = 0;
 
-    TF_FOR_ALL(it, xformOps) {
-        if (_validRotateTypes->count(it->GetOpType()) ||
-                _validSingleAxisRotateTypes->count(it->GetOpType())) {
+    for (const auto& op : xformOps) {
+        if (_validRotateTypes->count(op.GetOpType()) ||
+                _validSingleAxisRotateTypes->count(op.GetOpType())) {
             hasRotateOp = true;
-            rotateOpType = it->GetOpType();
-        } else if (it->GetOpType() == UsdGeomXformOp::TypeScale) {
+            rotateOpType = op.GetOpType();
+        } else if (op.GetOpType() == UsdGeomXformOp::TypeScale) {
             hasScaleOp = true;
-        } else if (it->GetOpType() == UsdGeomXformOp::TypeTranslate &&
-                   it->IsInverseOp()) {
+        } else if (op.GetOpType() == UsdGeomXformOp::TypeTranslate &&
+                   op.IsInverseOp()) {
             ++numInverseTranslateOps;
         }
     }
@@ -580,9 +583,9 @@ static
 TfToken
 _GetRotateOpNameToken(const vector<UsdGeomXformOp> &ops)
 {
-    TF_FOR_ALL(it, ops) {
-        if (_validRotateTypes->count(it->GetOpType()))
-            return it->GetOpName();
+    for (const auto& op : ops) {
+        if (_validRotateTypes->count(op.GetOpType()))
+            return op.GetOpName();
     }
     return _tokens->xformOpRotateXYZ;
 }
@@ -611,8 +614,9 @@ UsdGeomXformCommonAPI::_ValidateAndComputeXformOpIndices(
     typedef std::map<TfToken, int> XformOpToIndexMap;
     XformOpToIndexMap xformOpToIndexMap;
     // Initialize all indices to _InvalidIndex.
-    TF_FOR_ALL(it, opNameTokens)
-        xformOpToIndexMap[*it] = _InvalidIndex;
+    for (const auto& token : opNameTokens) {
+        xformOpToIndexMap[token] = _InvalidIndex;
+    }
 
     for(size_t index = 0; index < _xformOps.size(); ++index) {
         const TfToken opName = _xformOps[index].GetOpName();
@@ -627,8 +631,8 @@ UsdGeomXformCommonAPI::_ValidateAndComputeXformOpIndices(
     
     // Verify that the xformOps that do exist are in a compatible order.
     int lastNonNegativeIndex = _InvalidIndex;
-    TF_FOR_ALL(opNameIt, opNameTokens) {
-        int opIndex = xformOpToIndexMap[*opNameIt];
+    for (const auto& token : opNameTokens) {
+        int opIndex = xformOpToIndexMap[token];
         if (opIndex != _InvalidIndex) {    
             TF_VERIFY(opIndex != lastNonNegativeIndex);
 

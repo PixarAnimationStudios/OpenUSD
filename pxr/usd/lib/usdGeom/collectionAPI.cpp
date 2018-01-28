@@ -209,8 +209,8 @@ UsdGeomCollectionAPI::AddTarget(
 
     targetFaceCounts.push_back(faceIndices.size()); 
     targetFaceIndices.reserve(targetFaceIndices.size() + faceIndices.size());
-    TF_FOR_ALL(it, faceIndices) {
-        targetFaceIndices.push_back(*it);
+    for (const auto& index : faceIndices) {
+        targetFaceIndices.push_back(index);
     }
     targets.push_back(target);
 
@@ -318,9 +318,7 @@ UsdGeomCollectionAPI::GetCollections(const UsdPrim &prim)
     vector<UsdGeomCollectionAPI> result;
     vector<UsdProperty> collectionProperties = prim.GetPropertiesInNamespace(
         UsdGeomTokens->collection);
-    TF_FOR_ALL(propIt, collectionProperties) {
-        const UsdProperty &prop = *propIt;
-
+    for (const auto& prop : collectionProperties) {
         if (!prop.Is<UsdRelationship>())
             continue;
 
@@ -410,13 +408,11 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
         allTimeSamples.insert(tfcTimes.begin(), tfcTimes.end());
 
     allTimes.reserve(allTimes.size() + allTimeSamples.size());
-    TF_FOR_ALL(timeSampleIt, allTimeSamples) {
-        allTimes.push_back(UsdTimeCode(*timeSampleIt));
+    for (const auto& timeSample : allTimeSamples) {
+        allTimes.push_back(UsdTimeCode(timeSample));
     }
 
-    TF_FOR_ALL(timeIt, allTimes) {
-        const UsdTimeCode &time = *timeIt;
-
+    for (const auto& time : allTimes) {
         VtIntArray faceCounts, faceIndices;
         if (!GetTargetFaceCounts(&faceCounts, time) ||
             !GetTargetFaceIndices(&faceIndices, time)) {
@@ -434,8 +430,9 @@ UsdGeomCollectionAPI::Validate(std::string *reason) const
         }
         
         size_t totalFaceCounts = 0;
-        TF_FOR_ALL(faceCountsIter, faceCounts) 
-            totalFaceCounts += *faceCountsIter;
+        for (const auto& faceCount : faceCounts) {
+            totalFaceCounts += faceCount;
+        }
 
         if (faceIndices.size() != totalFaceCounts) {
             *reason += TfStringPrintf("The sum of all 'targetFaceCounts'"

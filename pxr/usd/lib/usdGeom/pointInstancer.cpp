@@ -660,8 +660,7 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
             return false;
         }
 
-        TF_FOR_ALL(iter, protoIndices) {
-            const int protoIndex = *iter;
+        for (const auto& protoIndex : protoIndices) {
             if (protoIndex < 0 || static_cast<size_t>(protoIndex) >= protoPaths.size()) {
                 TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
                         GetPrim().GetPath().GetText(),
@@ -763,8 +762,7 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
     }
 
     // verify that all the protoIndices are in bounds.
-    TF_FOR_ALL(iter, protoIndices) {
-        const int protoIndex = *iter;
+    for (const auto& protoIndex : protoIndices) {
         if (protoIndex < 0 || 
             static_cast<size_t>(protoIndex) >= protoPaths.size()) {
             TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",

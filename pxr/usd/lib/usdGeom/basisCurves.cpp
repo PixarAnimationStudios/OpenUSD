@@ -234,12 +234,12 @@ _ComputeVaryingDataSize(const UsdGeomBasisCurves &basisCurves,
     // Code is deliberately verbose to clarify each case.
     if (curvesType == UsdGeomTokens->linear) {
         if (isNonPeriodic) {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += *itr;
+            for (const auto& curveVertexCt : curveVertexCts) {
+                result += curveVertexCt;
             }
         } else {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += *itr + 1;
+            for (const auto& curveVertexCt : curveVertexCts) {
+                result += curveVertexCt + 1;
             }
         }
         return result;
@@ -251,12 +251,12 @@ _ComputeVaryingDataSize(const UsdGeomBasisCurves &basisCurves,
 
     if (curvesType == UsdGeomTokens->cubic) {
         if (isNonPeriodic) {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += (*itr - 4)/vstep + 2;
+            for (const auto& curveVertexCt : curveVertexCts) {
+                result += (curveVertexCt - 4)/vstep + 2;
             }
         } else {
-            TF_FOR_ALL(itr, curveVertexCts) {
-                result += *itr/vstep;
+            for (const auto& curveVertexCt : curveVertexCts) {
+                result += curveVertexCt/vstep;
             }
         }
     }
@@ -271,8 +271,8 @@ _ComputeVertexDataSize(
 {
     // http://renderman.pixar.com/resources/current/rps/appnote.19.html
     size_t result = 0;
-    TF_FOR_ALL(itr, curveVertexCounts) {
-        result += *itr;
+    for (const auto& curveVertexCount : curveVertexCounts) {
+        result += curveVertexCount;
     }
        
     return result;

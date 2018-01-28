@@ -405,14 +405,14 @@ UsdGeomXformable::SetXformOpOrder(
     if (resetXformStack)
         ops.push_back(UsdGeomXformOpTypes->resetXformStack);
 
-    TF_FOR_ALL(it, orderedXformOps) {
+    for (const auto& xformOp : orderedXformOps) {
         // Check to make sure that the xformOp being added to xformOpOrder 
         // belongs to this prim.
-        if (it->GetAttr().GetPrim() == GetPrim()) {
-            ops.push_back(it->GetOpName());
+        if (xformOp.GetAttr().GetPrim() == GetPrim()) {
+            ops.push_back(xformOp.GetOpName());
         } else {
             TF_CODING_ERROR("XformOp attribute <%s> does not belong to schema "
-                            "prim <%s>.",  it->GetAttr().GetPath().GetText(),
+                            "prim <%s>.",  xformOp.GetAttr().GetPath().GetText(),
                             GetPath().GetText()); 
             return false;
         }
@@ -515,8 +515,8 @@ UsdGeomXformable::XformQuery::XformQuery(const UsdGeomXformable &xformable):
         _xformOps = orderedXformOps;
 
         // Create attribute queries for all the xform ops.
-        TF_FOR_ALL(it, _xformOps) {
-            it->_CreateAttributeQuery();
+        for (const auto& xformOp : _xformOps) {
+            xformOp._CreateAttributeQuery();
         }
     }
 }
@@ -534,8 +534,8 @@ bool
 _TransformMightBeTimeVarying(vector<UsdGeomXformOp> const &xformOps)
 {
     // If any of the xform ops may vary, then the cumulative transform may vary.
-    TF_FOR_ALL(it, xformOps) {
-        if (it->MightBeTimeVarying())
+    for (const auto& xformOp : xformOps) {
+        if (xformOp.MightBeTimeVarying())
             return true;
     }
 
@@ -708,9 +708,10 @@ bool
 UsdGeomXformable::XformQuery::IsAttributeIncludedInLocalTransform(
     const TfToken &attrName) const
 {
-    TF_FOR_ALL(it, _xformOps) {
-        if (it->GetName() == attrName)
+    for (const auto& xformOp : _xformOps) {
+        if (xformOp.GetName() == attrName) {
             return true;
+        }
     }
 
     return false;
