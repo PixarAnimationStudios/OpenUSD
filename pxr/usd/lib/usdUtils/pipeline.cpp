@@ -87,8 +87,7 @@ UsdUtilsGetModelNameFromRootLayer(
     }
 
     // Otherwise, fallback to getting the first non-class child in the layer.
-    TF_FOR_ALL(rootChildrenIter, rootLayer->GetRootPrims()) {
-        const SdfPrimSpecHandle& rootPrim = *rootChildrenIter;
+    for (const auto& rootPrim : rootLayer->GetRootPrims()) {
         if (rootPrim->GetSpecifier() != SdfSpecifierClass) {
             return rootPrim->GetNameToken();
         }
@@ -100,8 +99,7 @@ UsdUtilsGetModelNameFromRootLayer(
 TF_MAKE_STATIC_DATA(std::set<UsdUtilsRegisteredVariantSet>, _regVarSets)
 {
     PlugPluginPtrVector plugs = PlugRegistry::GetInstance().GetAllPlugins();
-    TF_FOR_ALL(plugIter, plugs) {
-        PlugPluginPtr plug = *plugIter;
+    for (const auto& plug : plugs) {
         JsObject metadata = plug->GetMetadata();
         JsValue pipelineUtilsDictValue;
         if (TfMapLookup(metadata, _tokens->UsdUtilsPipeline, &pipelineUtilsDictValue)) {
