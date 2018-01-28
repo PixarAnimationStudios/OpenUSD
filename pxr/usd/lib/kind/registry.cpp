@@ -27,7 +27,6 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -188,14 +187,14 @@ KindRegistry::_RegisterDefaults()
     //     This allows the KindRegistry to be threadsafe without locking.
     const PlugPluginPtrVector& plugins = 
         PlugRegistry::GetInstance().GetAllPlugins();
-    TF_FOR_ALL(plug, plugins){
+    for (const auto& plug : plugins) {
         JsObject kinds;
-        const JsObject &metadata = (*plug)->GetMetadata();
+        const JsObject &metadata = plug->GetMetadata();
         if (!_GetKey(metadata, _tokens->PluginKindsKey, &kinds)) continue;
 
-        TF_FOR_ALL(kindEntry, kinds){
+        for (const auto& kindEntry : kinds) {
             // Each entry is a map from kind -> metadata dict.
-            TfToken  kind(kindEntry->first);
+            TfToken  kind(kindEntry.first);
             JsObject   kindDict;
             if (!_GetKey(kinds, kind, &kindDict)){
                 TF_RUNTIME_ERROR("Expected dict for kind '%s'",
