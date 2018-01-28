@@ -76,10 +76,10 @@ int main(int argc, char* argv[])
     // Print out the paths so we can compare runs when something fails
     cout << "==== paths ====" << endl;
     sort(paths.begin(), paths.end());
-    TF_FOR_ALL(it, paths) {
-        cout << *it << endl;
-        if (IsPathToCheck(*it)) {
-            filtered_paths.push_back(*it);
+    for (const auto& path : paths) {
+        cout << path << endl;
+        if (IsPathToCheck(path)) {
+            filtered_paths.push_back(path);
         }
     }
     cout << endl;
