@@ -26,7 +26,6 @@
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/poolAllocator.h"
 #include "pxr/base/tf/stopwatch.h"
 
@@ -155,10 +154,10 @@ public:
 
         // Now that the node is done, loop over all its outputs and decrement
         // their counts.  If they can start, add them as available work.
-        TF_FOR_ALL(output, node->GetOutputs()) {
-            if ((*output)->DecrementWaitCount()) {
+        for (const auto& output : node->GetOutputs()) {
+            if (output->DecrementWaitCount()) {
                 dispatcher->Run(&Graph::CallbackDynamic<DispatcherType>,
-                    this, const_cast<Node *>(*output), dispatcher);
+                    this, const_cast<Node *>(output), dispatcher);
             }
         }
 
@@ -182,12 +181,12 @@ public:
     //
     void GetInitialJobsForDynamic(std::vector<Node *> *jobs) {
 
-        TF_FOR_ALL(node, _nodes) {
+        for (const auto& node : _nodes) {
             // Nodes that can run right away are nodes with zero inputs.
-            if ( (*node)->GetInputs().size() == 0 ) {
-                jobs->push_back(*node);
+            if (node->GetInputs().size() == 0 ) {
+                jobs->push_back(node);
             }
-            (*node)->InitWaitCount();
+            node->InitWaitCount();
         }
 
         _numNodesRun = 0;
@@ -195,9 +194,9 @@ public:
 
     void GetInitialJobsForFixed(std::vector<Node *> *jobs) {
 
-        TF_FOR_ALL(node, _nodes) {
-            jobs->push_back(*node);
-            (*node)->InitWaitCount();
+        for (const auto& node : _nodes) {
+            jobs->push_back(node);
+            node->InitWaitCount();
         }
 
         _numNodesRun = 0;
@@ -221,13 +220,13 @@ public:
 
         // The first line is the total number of nodes.
         os << _nodes.size() << std::endl;
-        TF_FOR_ALL(node, _nodes) {
+        for (const auto& node : _nodes) {
             // Each additional line is the amount of sleep followed by the
             // number of inputs followed by the input index.
-            os << (*node)->GetSleepTime() << " ";
-            os << (*node)->GetInputs().size() << " ";
-            TF_FOR_ALL(input, (*node)->GetInputs()) {
-                os << (*input)->GetIndex() << " ";
+            os << node->GetSleepTime() << " ";
+            os << node->GetInputs().size() << " ";
+            for (const auto& input : node->GetInputs()) {
+                os << input->GetIndex() << " ";
             }
             os << std::endl;
         }
@@ -358,10 +357,10 @@ _TestDispatcher(Graph *graph)
     timer.Reset();
     timer.Start();
 
-    TF_FOR_ALL(i, jobs) {
+    for (const auto& job : jobs) {
         workDispatcher.Run(
             &Graph::CallbackDynamic<DispatcherType>,
-            graph, *i, &workDispatcher);
+            graph, job, &workDispatcher);
     }
 
     workDispatcher.Wait();
