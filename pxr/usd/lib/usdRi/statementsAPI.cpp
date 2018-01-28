@@ -263,8 +263,7 @@ UsdRiStatementsAPI::GetRiAttributes(
     std::vector<UsdProperty> validProps;
     std::vector<string> names;
     bool requestedNameSpace = (nameSpace != "");
-    TF_FOR_ALL(propItr, props){
-        UsdProperty prop = *propItr;
+    for (const auto& prop : props) {
         names = prop.SplitName();
         if (requestedNameSpace && names[2] != nameSpace) {
             // wrong namespace
