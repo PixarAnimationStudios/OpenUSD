@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/multiInterval.h"
 #include "pxr/base/gf/ostreamHelpers.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/type.h"
 
@@ -45,8 +44,9 @@ GfMultiInterval::GfMultiInterval(const GfInterval &i)
 
 GfMultiInterval::GfMultiInterval(const std::vector<GfInterval> &intervals)
 {
-    TF_FOR_ALL(i, intervals)
-        Add(*i);
+    for (const auto& i : intervals) {
+        Add(i);
+    }
 }
 
 size_t
@@ -114,8 +114,8 @@ GfMultiInterval::Contains(const GfMultiInterval & s) const
     if (s.IsEmpty()) {
         return false;
     }
-    TF_FOR_ALL(i, s) {
-        if (!Contains(*i)) {
+    for (const auto& i : s) {
+        if (!Contains(i)) {
             return false;
         }
     }
@@ -198,8 +198,9 @@ GfMultiInterval::GetContainingInterval( double x ) const
 void
 GfMultiInterval::Add( const GfMultiInterval &intervals )
 {
-    TF_FOR_ALL(i, intervals)
-        Add(*i);
+    for (const auto& i : intervals) {
+        Add(i);
+    }
 }
 
 void
@@ -251,8 +252,9 @@ GfMultiInterval::Add( const GfInterval & interval )
 void
 GfMultiInterval::Remove( const GfMultiInterval &intervals )
 {
-    TF_FOR_ALL(i, intervals)
-        Remove(*i);
+    for (const auto& i : intervals) {
+        Remove(i);
+    }
 }
 
 // Remove interval j from interval at iterator i, inserting new intervals
@@ -304,16 +306,16 @@ GfMultiInterval::GetComplement() const
 {
     GfMultiInterval r;
     GfInterval workingInterval = GfInterval::GetFullInterval();
-    TF_FOR_ALL(i, _set) {
+    for (const auto& i : _set) {
         // Insert interval prior to *i.
-        workingInterval.SetMax( i->GetMin(), !i->IsMinClosed() );
+        workingInterval.SetMax( i.GetMin(), !i.IsMinClosed() );
         if (!workingInterval.IsEmpty()) {
             r._set.insert(/* hint */ r._set.end(), workingInterval);
         }
 
         // Set up next interval.
         workingInterval = GfInterval::GetFullInterval();
-        workingInterval.SetMin( i->GetMax(), !i->IsMaxClosed() );
+        workingInterval.SetMin( i.GetMax(), !i.IsMaxClosed() );
     }
     if (!workingInterval.IsEmpty()) {
         r._set.insert(/* hint */ r._set.end(), workingInterval);
@@ -357,8 +359,8 @@ void
 GfMultiInterval::ArithmeticAdd( const GfInterval &i )
 {
     GfMultiInterval result;
-    TF_FOR_ALL(it, *this) {
-        result.Add(*it + i);
+    for (const auto& interval : *this) {
+        result.Add(interval + i);
     }
 
     swap(result);
@@ -369,10 +371,11 @@ operator<<(std::ostream &out, const GfMultiInterval &s)
 {
     out << "[";
     bool first = true;
-    TF_FOR_ALL(interval, s) {
-        if (!first)
+    for (const auto& interval : s) {
+        if (!first) {
             out << ", ";
-        out << Gf_OstreamHelperP(*interval);
+        }
+        out << Gf_OstreamHelperP(interval);
         first = false;
     }
     out << "]";

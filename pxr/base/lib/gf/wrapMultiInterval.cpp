@@ -25,7 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/multiInterval.h"
 
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
@@ -49,10 +48,11 @@ _Repr(GfMultiInterval const &self)
     if (!self.IsEmpty()) {
         r += "[";
         int count = 0;
-        TF_FOR_ALL(i, self) {
-            if (count)
+        for (const auto& i : self) {  
+            if (count) {
                 r += ", ";
-            r += TfPyRepr(*i);
+            }
+            r += TfPyRepr(i);
             count++;
         }
         r += "]";
