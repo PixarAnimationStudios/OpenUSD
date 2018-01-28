@@ -146,6 +146,16 @@ public:
     /// \name Lifetime Management
     /// @{
     // --------------------------------------------------------------------- //
+    
+    /// \enum InitialLoadSet
+    ///
+    /// Specifies the initial set of prims to load when opening a UsdStage.
+    ///
+    enum InitialLoadSet
+    {
+        LoadAll, ///< Load all loadable prims
+        LoadNone ///< Load no loadable prims
+    };
 
     /// Create a new stage with root layer \p identifier, destroying
     /// potentially existing files with that identifer; it is considered an
@@ -157,6 +167,9 @@ public:
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
+    //
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
     /// Note that the \p pathResolverContext passed here will apply to all path
     /// resolutions for this stage, regardless of what other context may be
@@ -166,23 +179,27 @@ public:
     /// path.
     USD_API
     static UsdStageRefPtr
-    CreateNew(const std::string& identifier);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier,
-              const SdfLayerHandle& sessionLayer);
+    CreateNew(const std::string& identifier, 
+              InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
               const SdfLayerHandle& sessionLayer,
-              const ArResolverContext& pathResolverContext);
+              InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
-              const ArResolverContext& pathResolverContext);
+              const SdfLayerHandle& sessionLayer,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
 
     /// Creates a new stage only in memory, analogous to creating an
     /// anonymous SdfLayer.
@@ -192,43 +209,41 @@ public:
     /// bound at resolve time. If no context is passed in here, Usd will create
     /// one by calling \sa ArResolver::CreateDefaultContext.
     ///
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
     /// Invoking an overload that does not take a \p sessionLayer argument will
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
     USD_API
     static UsdStageRefPtr
-    CreateInMemory();
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier);
+    CreateInMemory(InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
-                   const ArResolverContext& pathResolverContext);
+                   InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
-                   const SdfLayerHandle &sessionLayer);
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
                    const SdfLayerHandle &sessionLayer,
-                   const ArResolverContext& pathResolverContext);
+                   InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   const SdfLayerHandle &sessionLayer,
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
 
-    /// \enum InitialLoadSet
-    ///
-    /// Specifies the initial set of prims to load when opening a UsdStage.
-    ///
-    enum InitialLoadSet
-    {
-        LoadAll, ///< Load all loadable prims
-        LoadNone ///< Load no loadable prims
-    };
 
     /// Attempt to find a matching existing stage in a cache if
     /// UsdStageCacheContext objects exist on the stack. Failing that, create a

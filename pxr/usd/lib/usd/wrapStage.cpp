@@ -197,56 +197,80 @@ void wrapUsdStage()
         .def(TfPyRefAndWeakPtr())
         .def("__repr__", __repr__)
 
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &))
-             &UsdStage::CreateNew,
-             (arg("identifier")),
-             return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateNew", (UsdStageRefPtr (*)(const string &,
-                                              const SdfLayerHandle &))
+                                              UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), arg("sessionLayer")),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
-                                              const ArResolverContext &))
-             &UsdStage::CreateNew,
-             (arg("identifier"), arg("pathResolverContext")),
+             (arg("identifier"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateNew", (UsdStageRefPtr (*)(const string &,
                                               const SdfLayerHandle &,
-                                              const ArResolverContext &))
+                                              UsdStage::InitialLoadSet))
              &UsdStage::CreateNew,
-             (arg("identifier"), arg("sessionLayer"),
-              arg("pathResolverContext")),
+             (arg("identifier"), 
+              arg("sessionLayer"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+                                              const ArResolverContext &,
+                                              UsdStage::InitialLoadSet))
+             &UsdStage::CreateNew,
+             (arg("identifier"), 
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateNew", (UsdStageRefPtr (*)(const string &,
+                                              const SdfLayerHandle &,
+                                              const ArResolverContext &,
+                                              UsdStage::InitialLoadSet))
+             &UsdStage::CreateNew,
+             (arg("identifier"), 
+              arg("sessionLayer"),
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("CreateNew")
 
-        .def("CreateInMemory", (UsdStageRefPtr (*)())
+        .def("CreateInMemory", (UsdStageRefPtr (*)(
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .def("CreateInMemory", (UsdStageRefPtr (*)(const string &))
-             &UsdStage::CreateInMemory,
-             (arg("identifier")),
+             (arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     const string &,
-                                    const ArResolverContext &))
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"), arg("pathResolverContext")),
+             (arg("identifier"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     const string &,
-                                    const SdfLayerHandle &))
+                                    const ArResolverContext &,
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
-             (arg("identifier"), arg("sessionLayer")),
+             (arg("identifier"), 
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .def("CreateInMemory", (UsdStageRefPtr (*)(
                                     const string &,
                                     const SdfLayerHandle &,
-                                    const ArResolverContext &))
+                                    UsdStage::InitialLoadSet))
+             &UsdStage::CreateInMemory,
+             (arg("identifier"), 
+              arg("sessionLayer"),
+              arg("load")=UsdStage::LoadAll),
+             return_value_policy<TfPyRefPtrFactory<> >())
+        .def("CreateInMemory", (UsdStageRefPtr (*)(
+                                    const string &,
+                                    const SdfLayerHandle &,
+                                    const ArResolverContext &,
+                                    UsdStage::InitialLoadSet))
              &UsdStage::CreateInMemory,
              (arg("identifier"),
               arg("sessionLayer"),
-              arg("pathResolverContext")),
+              arg("pathResolverContext"),
+              arg("load")=UsdStage::LoadAll),
              return_value_policy<TfPyRefPtrFactory<> >())
         .staticmethod("CreateInMemory")
 
