@@ -215,8 +215,8 @@ UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
 
     // Calculate bounds
     GfRange3d bbox;
-    TF_FOR_ALL(pointsItr, points) {
-        bbox.UnionWith(GfVec3f(*pointsItr));
+    for (const auto& point : points) {
+        bbox.UnionWith(GfVec3f(point));
     }
 
     (*extent)[0] = GfVec3f(bbox.GetMin());

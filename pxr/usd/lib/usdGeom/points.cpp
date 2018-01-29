@@ -193,11 +193,11 @@ UsdGeomPoints::ComputeExtent(const VtVec3fArray& points,
     // Calculate bounds
     GfRange3d bbox;
     TfIterator<const VtFloatArray> widthsItr(widths);
-    TF_FOR_ALL(pointsItr, points) {
+    for (const auto& point : points) {
         float halfWidth = *widthsItr/2;
         GfVec3f widthVec(halfWidth);
-        bbox.UnionWith(GfVec3f(*pointsItr) + widthVec);
-        bbox.UnionWith(GfVec3f(*pointsItr) - widthVec);
+        bbox.UnionWith(GfVec3f(point) + widthVec);
+        bbox.UnionWith(GfVec3f(point) - widthVec);
 
         widthsItr++;
     }

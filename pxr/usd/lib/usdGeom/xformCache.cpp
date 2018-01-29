@@ -184,8 +184,8 @@ UsdGeomXformCache::SetTime(UsdTimeCode time)
         return;
 
     // Mark all cached CTMs as invalid, but leave the queries behind.
-    TF_FOR_ALL(it, _ctmCache) {
-        it->second.ctmIsValid = false;
+    for (auto& p : _ctmCache) {
+        p.second.ctmIsValid = false;
     }
 
     _time = time;

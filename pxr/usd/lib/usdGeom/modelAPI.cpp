@@ -482,8 +482,8 @@ UsdGeomModelAPI::GetConstraintTargets() const
     vector<UsdGeomConstraintTarget> constraintTargets;
 
     const vector<UsdAttribute> &attributes = GetPrim().GetAttributes();
-    TF_FOR_ALL(attrIt, attributes) {
-        UsdGeomConstraintTarget constraintTarget(*attrIt);
+    for (const auto& attr : attributes) {
+        UsdGeomConstraintTarget constraintTarget(attr);
 
         // Add it to the list, if it is a valid constraint target.
         if (constraintTarget) {

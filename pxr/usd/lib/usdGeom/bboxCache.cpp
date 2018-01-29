@@ -590,8 +590,8 @@ UsdGeomBBoxCache::_GetCombinedBBoxForIncludedPurposes(
     const _PurposeToBBoxMap &bboxes)
 {
     GfBBox3d combinedBound;
-    TF_FOR_ALL(purposeIt, _includedPurposes) {
-        _PurposeToBBoxMap::const_iterator it = bboxes.find(*purposeIt);
+    for (const auto& purpose : _includedPurposes) {
+        _PurposeToBBoxMap::const_iterator it = bboxes.find(purpose);
         if (it != bboxes.end()) {
             const GfBBox3d &bboxForPurpose = it->second;
             if (!bboxForPurpose.GetRange().IsEmpty())
@@ -631,14 +631,14 @@ UsdGeomBBoxCache::SetTime(UsdTimeCode time)
                                time.GetValue(),
                                clearUnvarying ? "true": "false");
 
-    TF_FOR_ALL(it, _bboxCache) {
-        if (clearUnvarying || it->second.isVarying) {
-            it->second.isComplete = false;
+    for (auto& p : _bboxCache) {
+        if (clearUnvarying || p.second.isVarying) {
+            p.second.isComplete = false;
             // Clear cached bboxes.
-            it->second.bboxes.clear();
+            p.second.bboxes.clear();
             TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] invalidating %s "
                                        "for time change\n",
-                                       it->first.GetPath().GetText());
+                                       p.first.GetPath().GetText());
         }
     }
     _time = time;
@@ -1217,8 +1217,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
         }
 
-        TF_FOR_ALL(childIt, children) {
-            const UsdPrim &childPrim = *childIt;
+        for (const auto& childPrim : children) {
             // Skip creating bbox tasks for excluded children.
             //
             // We must do this check here on the children, because when an
@@ -1256,12 +1255,12 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // child prims will come from its master prim. The bboxes
                 // for these prims should already have been computed in
                 // _Resolve, so we don't need to schedule an additional task.
-                included.push_back(std::make_pair(*childIt, (_BBoxTask*)0));
+                included.push_back(std::make_pair(childPrim, (_BBoxTask*)0));
             }
             else {
-                included.push_back(std::make_pair(*childIt,
+                included.push_back(std::make_pair(childPrim,
                     new(task->allocate_child())
-                        _BBoxTask(*childIt,
+                        _BBoxTask(childPrim,
                                   inverseEnclosingComponentCtm,
                                   this,
                                   task->GetXformCaches())));
@@ -1278,9 +1277,9 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         //
         if (!primIsInstance) {
             task->set_ref_count(refCount);
-            TF_FOR_ALL(childIt, included) {
-                if (childIt->second) {
-                    task->spawn(*childIt->second);
+            for (const auto& child : included) {
+                if (child.second) {
+                    task->spawn(*child.second);
                 }
             }
             task->wait_for_all();
@@ -1294,10 +1293,10 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // Accumulate child results.
         // Process the child bounding boxes, accumulating their variability and
         // volume into this cache entry.
-        TF_FOR_ALL(childIt, included) {
+        for (const auto& child : included) { 
             // The child's bbox is returned in local space, so we must convert
             // it to model space to be compatible with the current bbox.
-            UsdPrim const& childPrim = childIt->first;
+            UsdPrim const& childPrim = child.first;
             const _Entry* childEntry = TfMapLookupPtr(_bboxCache, childPrim);
             if (!TF_VERIFY(childEntry->isComplete))
                 continue;
@@ -1314,8 +1313,8 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                         xfCache.GetLocalToWorldTransform(prim) *
                         inverseEnclosingComponentCtm;
 
-                    TF_FOR_ALL(bboxIt, *bboxes) {
-                        GfBBox3d &bbox = bboxIt->second;
+                    for (auto& p : *bboxes) {
+                        GfBBox3d &bbox = p.second;
                         bbox.SetMatrix(localToComponentXform);
                         bbox = GfBBox3d(bbox.ComputeAlignedRange());
                     }
@@ -1339,10 +1338,10 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 }
 
                 // Convert the resolved BBox to component space.
-                TF_FOR_ALL(childBBoxIt, childBBoxes) {
-                    const TfToken purposeToken = childBBoxIt->first;
+                for (auto& p : childBBoxes) {
+                    const TfToken purposeToken = p.first;
 
-                    GfBBox3d &childBBox = childBBoxIt->second;
+                    GfBBox3d &childBBox = p.second;
                     childBBox.Transform(childLocalToComponentXform);
 
                     // Since the range is in component space and the matrix is
@@ -1362,8 +1361,8 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // so we must apply the inverse component-space transform
         // (component-to-local) to move it to local space.
         GfMatrix4d componentToLocalXform = localToComponentXform.GetInverse();
-        TF_FOR_ALL(bboxIt, *bboxes) {
-            GfBBox3d &bbox = bboxIt->second;
+        for (auto& p : *bboxes) {
+            GfBBox3d &bbox = p.second;
             bbox.SetMatrix(componentToLocalXform);
         }
     }
