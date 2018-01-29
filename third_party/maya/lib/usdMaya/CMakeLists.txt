@@ -96,6 +96,7 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaMeshWriter
         MayaNurbsCurveWriter
         MayaNurbsSurfaceWriter
+        MayaParticleWriter
         ModelKindWriter
 
     PRIVATE_HEADERS
@@ -156,6 +157,7 @@ pxr_test_scripts(
         testenv/testUsdExportMesh.py
         testenv/testUsdExportNurbsCurve.py
         testenv/testUsdExportOverImport.py
+        testenv/testUsdExportParticles.py
         testenv/testUsdExportPointInstancer.py
         testenv/testUsdExportRenderLayerMode.py
         testenv/testUsdExportRfMLight.py
@@ -306,6 +308,20 @@ pxr_register_test(testUsdExportOverImport
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportOverImport"
     TESTENV testUsdExportOverImport
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportParticlesTest
+    DEST testUsdExportParticles
+)
+pxr_register_test(testUsdExportParticles
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportParticles"
+    TESTENV testUsdExportParticles
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

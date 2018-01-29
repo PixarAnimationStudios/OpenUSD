@@ -28,6 +28,7 @@
 #include "usdMaya/MayaMeshWriter.h"
 #include "usdMaya/MayaNurbsCurveWriter.h"
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
+#include "usdMaya/MayaParticleWriter.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/stageCache.h"
@@ -270,6 +271,11 @@ MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
         }
     } else if (ob.hasFn(MFn::kNurbsSurface)) {
         MayaNurbsSurfaceWriterPtr primPtr(new MayaNurbsSurfaceWriter(curDag, writePath, instanceSource, *this));
+        if (primPtr->isValid()) {
+            return primPtr;
+        }
+    } else if (ob.hasFn(MFn::kParticle) || ob.hasFn(MFn::kNParticle)) {
+        MayaParticleWriterPtr primPtr(new MayaParticleWriter(curDag, getUsdPathFromDagPath(curDag, instanceSource), instanceSource, *this));
         if (primPtr->isValid()) {
             return primPtr;
         }
