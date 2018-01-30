@@ -197,7 +197,15 @@ UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 UsdShadeMaterial
 UsdShadeMaterial::GetBoundMaterial(const UsdPrim &prim)
 {
-    return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial();
+    if (UsdRelationship rel = UsdShadeMaterial::GetBindingRel(prim)) {
+        SdfPathVector targetPaths;
+        rel.GetForwardedTargets(&targetPaths);
+        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
+            return UsdShadeMaterial(
+                prim.GetStage()->GetPrimAtPath(targetPaths.front()));
+        }
+    }
+    return UsdShadeMaterial();
 }
 
 std::pair<UsdStagePtr, UsdEditTarget >
