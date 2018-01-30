@@ -192,4 +192,6 @@ void wrapUsdAttribute()
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdAttribute>();
+    to_python_converter<std::vector<UsdAttribute>,
+                        TfPySequenceToPython<std::vector<UsdAttribute>>>();
 }
