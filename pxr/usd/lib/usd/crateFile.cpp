@@ -1767,6 +1767,7 @@ CrateFile::CrateFile(string const &fileName, _UniqueFILE inputFile)
     , _useMmap(false)
 {
     _DoAllTypeRegistrations();
+    _InitPread();
 }
 
 void
