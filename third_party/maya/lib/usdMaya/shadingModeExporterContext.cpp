@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_EXPORT_OLD_STYLE_FACESETS, true, 
+TF_DEFINE_ENV_SETTING(PIXMAYA_EXPORT_OLD_STYLE_FACESETS, false, 
     "Whether maya/usdExport should create face-set bindings encoded in the "
     "old-style, using UsdGeomFaceSetAPI.");
 
