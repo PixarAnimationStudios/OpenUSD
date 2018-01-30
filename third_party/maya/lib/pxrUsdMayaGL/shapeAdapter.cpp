@@ -34,9 +34,11 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -50,6 +52,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MStatus.h>
+#include <maya/MString.h>
 
 #include <boost/functional/hash.hpp>
 
@@ -98,6 +101,12 @@ PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
     _sharedId = SdfPath(idString);
 
     _delegate.reset(new UsdImagingDelegate(renderIndex, _sharedId));
+
+    _rprimCollection.SetName(TfToken(_shapeDagPath.fullPathName().asChar()));
+    _rprimCollection.SetReprName(HdTokens->refined);
+    _rprimCollection.SetRootPath(_sharedId);
+
+    renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
 }
 
 void
@@ -124,6 +133,13 @@ PxrMayaHdShapeAdapter::PrepareForQueue(
     }
     if (showRenderGuides) {
         _baseParams.renderTags.push_back(_tokens->RenderGuidesTag);
+    }
+
+    if (_rprimCollection.GetRenderTags() != _baseParams.renderTags) {
+        _rprimCollection.SetRenderTags(_baseParams.renderTags);
+
+        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+            _rprimCollection.GetName());
     }
 
     if (tint) {
@@ -266,6 +282,13 @@ PxrMayaHdShapeAdapter::GetRenderParams(
         }
     };
 
+    if (_rprimCollection.GetReprName() != params.drawRepr) {
+        _rprimCollection.SetReprName(params.drawRepr);
+
+        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+            _rprimCollection.GetName());
+    }
+
     return params;
 }
 
@@ -336,6 +359,13 @@ PxrMayaHdShapeAdapter::GetRenderParams(
         params.cullStyle = HdCullStyleBackUnlessDoubleSided;
     }
 #endif
+
+    if (_rprimCollection.GetReprName() != params.drawRepr) {
+        _rprimCollection.SetReprName(params.drawRepr);
+
+        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+            _rprimCollection.GetName());
+    }
 
     return params;
 }

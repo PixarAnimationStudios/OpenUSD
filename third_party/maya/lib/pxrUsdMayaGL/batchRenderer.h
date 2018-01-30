@@ -239,21 +239,21 @@ private:
     /// legacy viewport.
     void _MayaRenderDidEnd();
 
-    /// \brief Cache of hashed shape adapaters for fast lookup
+    /// Cache of hashed shape adapters for fast lookup
     typedef std::unordered_map<size_t, PxrMayaHdShapeAdapter> _ShapeAdapterMap;
     _ShapeAdapterMap _shapeAdapterMap;
 
-    /// \brief Cache of \c SdfPath objects to be rendered
-    typedef std::unordered_set<SdfPath, SdfPath::Hash> _SdfPathSet;
+    /// Cache of shape adapter hashes for shapes that should be rendered.
+    typedef std::unordered_set<size_t> _ShapeAdapterHashSet;
 
-    /// \brief Associative pair of \c PxrMayaHdRenderParams and \c SdfPath
-    /// objects to be rendered with said params.
-    typedef std::pair<PxrMayaHdRenderParams, _SdfPathSet> _RenderParamSet;
+    /// Associative pair of \c PxrMayaHdRenderParams and shape adapter hashes
+    /// of shapes to be rendered with said params.
+    typedef std::pair<PxrMayaHdRenderParams, _ShapeAdapterHashSet> _RenderParamSet;
 
-    /// \brief Lookup table to to find \c _RenderParamSet given a param hash key.
+    /// Lookup table to to find \c _RenderParamSet given a param hash key.
     typedef std::unordered_map<size_t, _RenderParamSet> _RendererQueueMap;
 
-    /// \brief container of all batched render calls to be made at next display
+    /// Container of all batched render calls to be made at next display
     /// refresh.
     _RendererQueueMap _renderQueue;
 

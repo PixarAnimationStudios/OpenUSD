@@ -39,6 +39,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -278,7 +279,7 @@ HdTaskSharedPtr
 PxrMayaHdSceneDelegate::GetRenderTask(
         const size_t hash,
         const PxrMayaHdRenderParams& renderParams,
-        const SdfPathVector& roots)
+        const HdRprimCollectionVector& rprimCollections)
 {
     // select bucket
     SdfPath renderTaskId;
@@ -302,6 +303,14 @@ PxrMayaHdSceneDelegate::GetRenderTask(
     }
 
 
+    //
+    // (meta-XXX): The notes below are actively being addressed with an
+    // HdRprimCollection now being created and managed by the shape adapter of
+    // each shape being drawn. I'm leaving the full notes intact while work
+    // continues, as they've been immensely helpful in optimizing our usage of
+    // the Hydra API.
+    //
+    // ------------------------------------------------------------------------
     //
     // XXX: The Maya-Hydra plugin needs refactoring such that the plugin is
     // creating a different collection name for each collection it is trying to
@@ -331,14 +340,9 @@ PxrMayaHdSceneDelegate::GetRenderTask(
     // object display state changes.  This would result in a much cheaper state
     // transition within Hydra itself.
     //
-    TfToken colName = renderParams.geometryCol;
-    HdRprimCollection rprims(colName, renderParams.drawRepr);
-    rprims.SetRootPaths(roots);
-    rprims.SetRenderTags(renderParams.renderTags);
-    GetRenderIndex().GetChangeTracker().MarkCollectionDirty(colName);
 
     // update value cache
-    _SetValue(renderTaskId, HdTokens->collection, rprims);
+    _SetValue(renderTaskId, HdTokens->collection, rprimCollections);
 
     // invalidate
     GetRenderIndex().GetChangeTracker().MarkTaskDirty(

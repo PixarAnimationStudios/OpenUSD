@@ -34,6 +34,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -102,13 +103,21 @@ class PxrMayaHdShapeAdapter
                 bool* drawShape,
                 bool* drawBoundingBox);
 
+        PXRUSDMAYAGL_API
+        const HdRprimCollection& GetRprimCollection() const {
+            return _rprimCollection;
+        }
+
+        PXRUSDMAYAGL_API
         const GfMatrix4d& GetRootXform() const { return _rootXform; }
 
         /// Returns base params as set previously by \c PrepareForQueue().
+        PXRUSDMAYAGL_API
         const PxrMayaHdRenderParams& GetBaseParams() const {
             return _baseParams;
         }
 
+        PXRUSDMAYAGL_API
         const SdfPath& GetSharedId() const { return _sharedId; }
 
     private:
@@ -133,6 +142,8 @@ class PxrMayaHdShapeAdapter
         SdfPath _sharedId;
         bool _isPopulated;
         std::shared_ptr<UsdImagingDelegate> _delegate;
+
+        HdRprimCollection _rprimCollection;
 };
 
 

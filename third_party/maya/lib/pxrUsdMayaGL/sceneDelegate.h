@@ -39,6 +39,7 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/usd/sdf/path.h"
@@ -87,8 +88,8 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         PXRUSDMAYAGL_API
         HdTaskSharedPtr GetRenderTask(
                 const size_t hash,
-                const PxrMayaHdRenderParams& params,
-                const SdfPathVector& roots);
+                const PxrMayaHdRenderParams& renderParams,
+                const HdRprimCollectionVector& rprimCollections);
 
     protected:
         PXRUSDMAYAGL_API

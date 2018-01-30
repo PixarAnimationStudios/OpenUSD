@@ -244,13 +244,13 @@ UsdMayaGLBatchRenderer::_QueueShapeForDraw(
 
     auto renderSetIter = _renderQueue.find(paramKey);
     if (renderSetIter == _renderQueue.end()) {
-        // If we had no _SdfPathSet for this particular RenderParam combination,
-        // create a new one.
+        // If we had no shape adapter hash set for this particular RenderParam
+        // combination, create a new one.
         _renderQueue[paramKey] =
-            _RenderParamSet(params, _SdfPathSet({shapeAdapter->GetSharedId()}));
+            _RenderParamSet(params, _ShapeAdapterHashSet({shapeAdapter->GetHash()}));
     } else {
-        _SdfPathSet& renderPaths = renderSetIter->second.second;
-        renderPaths.insert(shapeAdapter->GetSharedId());
+        _ShapeAdapterHashSet& shapeAdapterHashes = renderSetIter->second.second;
+        shapeAdapterHashes.insert(shapeAdapter->GetHash());
     }
 }
 
@@ -532,61 +532,70 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
 
         for (const auto& renderSetIter : _selectQueue) {
             const PxrMayaHdRenderParams& renderParams = renderSetIter.second.first;
-            const _SdfPathSet& renderPaths = renderSetIter.second.second;
-            SdfPathVector roots(renderPaths.begin(), renderPaths.end());
+            const _ShapeAdapterHashSet& shapeAdapterHashes =
+                renderSetIter.second.second;
+
+            HdRprimCollectionVector rprimCollections;
+            for (const size_t shapeAdapterHash : shapeAdapterHashes) {
+                const auto& iter = _shapeAdapterMap.find(shapeAdapterHash);
+                if (iter != _shapeAdapterMap.end()) {
+                    const PxrMayaHdShapeAdapter& shapeAdapter = iter->second;
+                    rprimCollections.push_back(shapeAdapter.GetRprimCollection());
+                }
+            }
 
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
                 "--- pickQueue, batch %zx, size %zu\n",
                 renderSetIter.first,
-                renderPaths.size());
-
-            TfToken colName = renderParams.geometryCol;
-            HdRprimCollection rprims(colName, renderParams.drawRepr);
-            rprims.SetRootPaths(roots);
-            rprims.SetRenderTags(renderParams.renderTags);
+                rprimCollections.size());
 
             qparams.cullStyle = renderParams.cullStyle;
             qparams.renderTags = renderParams.renderTags;
 
-            HdxIntersector::Result result;
-            HdxIntersector::HitVector hits;
+            for (const HdRprimCollection& rprimCollection : rprimCollections) {
+                HdxIntersector::Result result;
+                HdxIntersector::HitVector hits;
 
-            glPushAttrib(GL_VIEWPORT_BIT |
-                         GL_ENABLE_BIT |
-                         GL_COLOR_BUFFER_BIT |
-                         GL_DEPTH_BUFFER_BIT |
-                         GL_STENCIL_BUFFER_BIT |
-                         GL_TEXTURE_BIT |
-                         GL_POLYGON_BIT);
-            bool r = _intersector->Query(qparams, rprims, &_hdEngine, &result);
-            glPopAttrib();
-            if (!r) {
-                continue;
-            }
-
-            if (singleSelection) {
-                hits.resize(1);
-                if (!result.ResolveNearest(&hits.front())) {
-                    continue;
-                }
-            }
-            else if (!result.ResolveAll(&hits)) {
-                continue;
-            }
-
-            for (const HdxIntersector::Hit& hit : hits) {
-                auto itIfExists =
-                    _selectResults.insert(
-                        std::pair<SdfPath, HdxIntersector::Hit>(hit.delegateId, hit));
-
-                const bool &inserted = itIfExists.second;
-                if (inserted) {
+                glPushAttrib(GL_VIEWPORT_BIT |
+                             GL_ENABLE_BIT |
+                             GL_COLOR_BUFFER_BIT |
+                             GL_DEPTH_BUFFER_BIT |
+                             GL_STENCIL_BUFFER_BIT |
+                             GL_TEXTURE_BIT |
+                             GL_POLYGON_BIT);
+                const bool r = _intersector->Query(qparams,
+                                                   rprimCollection,
+                                                   &_hdEngine,
+                                                   &result);
+                glPopAttrib();
+                if (!r) {
                     continue;
                 }
 
-                HdxIntersector::Hit& existingHit = itIfExists.first->second;
-                if (hit.ndcDepth < existingHit.ndcDepth) {
-                    existingHit = hit;
+                if (singleSelection) {
+                    hits.resize(1);
+                    if (!result.ResolveNearest(&hits.front())) {
+                        continue;
+                    }
+                }
+                else if (!result.ResolveAll(&hits)) {
+                    continue;
+                }
+
+                for (const HdxIntersector::Hit& hit : hits) {
+                    auto itIfExists =
+                        _selectResults.insert(
+                            std::pair<SdfPath, HdxIntersector::Hit>(hit.delegateId, hit));
+
+                    const bool &inserted = itIfExists.second;
+                    if (inserted) {
+                        continue;
+                    }
+
+                    HdxIntersector::Hit& existingHit = itIfExists.first->second;
+                    if (hit.ndcDepth < existingHit.ndcDepth) {
+                        existingHit = hit;
+                    }
                 }
             }
         }
@@ -720,15 +729,25 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     for (const auto& renderSetIter : _renderQueue) {
         const size_t hash = renderSetIter.first;
         const PxrMayaHdRenderParams& params = renderSetIter.second.first;
-        const _SdfPathSet &renderPaths = renderSetIter.second.second;
+        const _ShapeAdapterHashSet& shapeAdapterHashes =
+            renderSetIter.second.second;
+
+        HdRprimCollectionVector rprimCollections;
+        for (const size_t shapeAdapterHash : shapeAdapterHashes) {
+            const auto& iter = _shapeAdapterMap.find(shapeAdapterHash);
+            if (iter != _shapeAdapterMap.end()) {
+                const PxrMayaHdShapeAdapter& shapeAdapter = iter->second;
+                rprimCollections.push_back(shapeAdapter.GetRprimCollection());
+            }
+        }
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "*** renderQueue, batch %zx, size %zu\n",
             renderSetIter.first,
-            renderPaths.size());
+            rprimCollections.size());
 
-        SdfPathVector roots(renderPaths.begin(), renderPaths.end());
-        tasks.push_back(_taskDelegate->GetRenderTask(hash, params, roots));
+        tasks.push_back(
+            _taskDelegate->GetRenderTask(hash, params, rprimCollections));
     }
 
     _hdEngine.Execute(*_renderIndex, tasks);
