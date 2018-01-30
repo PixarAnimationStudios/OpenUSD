@@ -58,10 +58,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdShadeTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdShadeTokens->connectedSourceFor);
+///     gprim.GetMyTokenValuedAttr().Set(UsdShadeTokens->allPurpose);
 /// \endcode
 struct UsdShadeTokensType {
     USDSHADE_API UsdShadeTokensType();
+    /// \brief ""
+    /// 
+    /// Possible value for the 'materialPurpose' paramter in the various methods available in UsdShadeMaterialBindingAPI. Its value is empty and its purpose is to represent a general  purpose material-binding that applies in the absence of a  specific-purpose binding. 
+    const TfToken allPurpose;
+    /// \brief "bindMaterialAs"
+    /// 
+    /// Token valued metadata key authored on a material  binding relationship to indicate the strength of the binding  relative to bindings authored on descendants. 
+    const TfToken bindMaterialAs;
     /// \brief "connectedSourceFor:"
     /// 
     /// The prefix on UsdShadeShader relationships associated with a Parameter.  This prefixed relationship has a suffix matching the associated attribute name, and denotes a logical shader connection between UsdShadeShaders. 
@@ -74,9 +82,13 @@ struct UsdShadeTokensType {
     /// 
     /// Describes the displacement relationship terminal on a UsdShadeMaterial. Used to find the terminal UsdShadeShader describing the displacement of a UsdShadeMaterial. 
     const TfToken displacement;
+    /// \brief "fallbackStrength"
+    /// 
+    /// Sentinal value to be used for 'bindMaterialAs'  metadata's default value. Clients should pass this in for the  'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(), if they want to author the default value (weakerThanDescendants) sparsely. The value "fallbackStrength" never gets authored  into scene description.
+    const TfToken fallbackStrength;
     /// \brief "full"
     /// 
-    /// Possible value for 'connectability' metadata on  a UsdShadeInput. When connectability of an input is set to  "full", it implies that it can be connected to any input or  output. 
+    /// Possible value for the 'materialPurpose'  parameter in UsdShadeMaterialBindingAPI, to be used when the  purpose of the render is entirely about visualizing the truest representation of a scene, considering all lighting and material information, at highest fidelity.  Also a possible value for 'connectability' metadata on  a UsdShadeInput. When connectability of an input is set to  "full", it implies that it can be connected to any input or  output. 
     const TfToken full;
     /// \brief "info:id"
     /// 
@@ -110,6 +122,10 @@ struct UsdShadeTokensType {
     /// 
     ///  The relationship name on non-shading prims to denote a binding to a UsdShadeMaterial. 
     const TfToken materialBinding;
+    /// \brief "material:binding:collection"
+    /// 
+    ///  The relationship name on non-shading prims to denote a collection-based binding to a UsdShadeMaterial. 
+    const TfToken materialBindingCollection;
     /// \brief "materialVariant"
     /// 
     /// The variant name of material variation described on a UsdShadeMaterial. 
@@ -118,10 +134,22 @@ struct UsdShadeTokensType {
     /// 
     /// The prefix on shading attributes denoting an output. 
     const TfToken outputs;
+    /// \brief "preview"
+    /// 
+    /// Possible value for the 'materialPurpose'  parameter in UsdShadeMaterialBindingAPI, to be used when the  render is in service of a goal other than a high fidelity "full" render (such as scene manipulation, modeling, or realtime  playback). Latency and speed are generally of greater concern  for preview renders, therefore preview materials are generally  designed to be "lighterweight" compared to full materials. 
+    const TfToken preview;
+    /// \brief "strongerThanDescendants"
+    /// 
+    /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is weaker than  any bindings authored on the descendants.
+    const TfToken strongerThanDescendants;
     /// \brief "surface"
     /// 
     /// Describes the surface relationship terminal on a UsdShadeMaterial. Used to find the terminal UsdShadeShader describing the surface of a UsdShadeMaterial. 
     const TfToken surface;
+    /// \brief "weakerThanDescendants"
+    /// 
+    /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is weaker than  any bindings authored on the descendants.
+    const TfToken weakerThanDescendants;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

@@ -18,6 +18,13 @@ over "GLOBAL" (
                 denote a binding to a UsdShadeMaterial.
                 """
             }
+            dictionary materialBindingCollection = {
+                string value = "material:binding:collection"
+                string doc = """ 
+                The relationship name on non-shading prims to
+                denote a collection-based binding to a UsdShadeMaterial.
+                """
+            }
             dictionary lookBinding = {
                 string value = "look:binding"
                 string doc = """The relationship name on non shading prims to
@@ -54,8 +61,35 @@ over "GLOBAL" (
                 UsdShadeMaterial.
                 """
             }
+
+            dictionary allPurpose = {
+                string value = ""
+                string doc = """Possible value for the 'materialPurpose' paramter
+                in the various methods available in UsdShadeMaterialBindingAPI.
+                Its value is empty and its purpose is to represent a general 
+                purpose material-binding that applies in the absence of a 
+                specific-purpose binding.
+                """
+            }
+            dictionary preview = {
+                string doc = """Possible value for the 'materialPurpose' 
+                parameter in UsdShadeMaterialBindingAPI, to be used when the 
+                render is in service of a goal other than a high fidelity "full"
+                render (such as scene manipulation, modeling, or realtime 
+                playback). Latency and speed are generally of greater concern 
+                for preview renders, therefore preview materials are generally 
+                designed to be "lighterweight" compared to full materials.
+                """
+            }
+
             dictionary full = {
-                string doc= """Possible value for 'connectability' metadata on 
+                string doc= """Possible value for the 'materialPurpose' 
+                parameter in UsdShadeMaterialBindingAPI, to be used when the 
+                purpose of the render is entirely about visualizing the truest
+                representation of a scene, considering all lighting and material
+                information, at highest fidelity.
+
+                Also a possible value for 'connectability' metadata on 
                 a UsdShadeInput. When connectability of an input is set to 
                 "full", it implies that it can be connected to any input or 
                 output.
@@ -102,6 +136,32 @@ over "GLOBAL" (
                 string doc = """(DEPRECATED) The prefix on UsdShadeNodeGraph
                 relationships denoting the target of an interface attribute.
                 """
+            }
+            dictionary bindMaterialAs = {
+                string doc="""Token valued metadata key authored on a material 
+                binding relationship to indicate the strength of the binding 
+                relative to bindings authored on descendants.
+                """
+            }
+            dictionary weakerThanDescendants = {
+                string doc = """Possible value for 'bindMaterialAs' metadata on the 
+                collection-based material binding relationship. Indicates 
+                that the binding represented by the relationship is weaker than 
+                any bindings authored on the descendants."""
+            }
+            dictionary strongerThanDescendants = {
+                string doc = """Possible value for 'bindMaterialAs' metadata on the 
+                collection-based material binding relationship. Indicates 
+                that the binding represented by the relationship is weaker than 
+                any bindings authored on the descendants."""
+            }
+            dictionary fallbackStrength = {
+                string doc="""Sentinal value to be used for 'bindMaterialAs' 
+                metadata's default value. Clients should pass this in for the 
+                'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
+                if they want to author the default value (weakerThanDescendants)
+                sparsely. The value "fallbackStrength" never gets authored 
+                into scene description."""
             }
         }
     }
@@ -154,15 +214,14 @@ class Material "Material" (
     
     ## Binding Materials
     
-    In the USD shading model, geometry expresses a binding to a single Material 
-    or to a set of Materials partitioned by face-sets defined on the geometry;
-    it is legal to bind a Material at the root (or other sub-prim) of a model,
-    and then bind a different Material to individual gprims, but the meaning of
-    inheritance and "ancestral overriding" of Material bindings is left to each
-    render-target to determine.  Since UsdGeom has no concept of shading,
-    we provide the API for binding and unbinding geometry here, on 
-    UsdShadeMaterial.
-    Please see Bind(), Unbind(), GetBindingRel(), GetBoundMaterial().
+    In the UsdShading model, geometry expresses a binding to a single Material or
+    to a set of Materials partitioned by UsdGeomSubsets defined beneath the
+    geometry; it is legal to bind a Material at the root (or other sub-prim) of 
+    a model, and then bind a different Material to individual gprims, but the
+    meaning of inheritance and "ancestral overriding" of Material bindings is 
+    left to each render-target to determine.  Since UsdGeom has no concept of 
+    shading, we provide the API for binding and unbinding geometry on the API 
+    schema UsdShadeMaterialBindingAPI.
     
     ## Material Variation
     
@@ -290,4 +349,105 @@ class "ConnectableAPI"
     }
 )
 {
+}
+
+class "MaterialBindingAPI"
+(
+    doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
+    interface for binding materials to prims or collections of prims 
+    (represented UsdCollectionAPI objects). 
+    
+    In the USD shading model, each renderable gprim computes a single 
+    <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
+    of course, for gprims that possess UsdGeomSubsets, as each subset can be 
+    shaded by a different Material).  A gprim <b>and each of its ancestor 
+    prims</b> can possess, through the MaterialBindingAPI, both a 
+    <b>direct</b> binding to a Material, and any number of 
+    <b>collection-based</b> bindings to Materials; each binding can be generic 
+    or declared for a particular <b>purpose</b>, and given a specific <b>binding 
+    strength</b>. It is the process of "material resolution" (see 
+    \\ref UsdShadeMaterialBindingAPI_MaterialResolution) that examines all of 
+    these bindings, and selects the one Material that best matches the 
+    client's needs.
+
+    The intent of <b>purpose</b> is that each gprim should be able to resolve a 
+    Material for any given purpose, which implies it can have differently bound 
+    materials for different purposes. There are two <i>special</i> values of 
+    <b>purpose</b> defined in UsdShade, although the API fully supports 
+    specifying arbitrary values for it, for the sake of extensibility:
+    <ul><li><b>UsdShadeTokens->full</b>: to be used when the purpose of the 
+    render is entirely to visualize the truest representation of a scene, 
+    considering all lighting and material information, at highest fidelity.</li>  
+    <li><b>UsdShadeTokens->preview</b>: to be used when the render is in 
+    service of a goal other than a high fidelity "full" render (such as scene
+    manipulation, modeling, or realtime playback). Latency and speed are 
+    generally of greater concern for preview renders, therefore preview 
+    materials are generally designed to be "lighterweight" compared to full
+    materials.</li></ul>
+    A binding can also have no specific purpose at all, in which 
+    case, it is considered to be the fallback or all-purpose binding (denoted 
+    by the empty-valued token <b>UsdShadeTokens->allPurpose</b>). 
+
+    The <b>purpose</b> of a material binding is encoded in the name of the 
+    binding relationship. 
+    <ul><li>
+    In the case of a direct binding, the <i>allPurpose</i> binding is 
+    represented by the relationship named <b>"material:binding"</b>. 
+    Special-purpose direct bindings are represented by relationships named
+    <b>"material:binding:<i>purpose</i></b>. A direct binding relationship 
+    must have a single target path that points to a <b>UsdShadeMaterial</b>.</li>
+    <li>
+    In the case of a collection-based binding, the <i>allPurpose</i> binding is 
+    represented by a relationship named 
+    "material:binding:collection:<i>bindingName</i>", where 
+    <b>bindingName</b> establishes an identity for the binding that is unique 
+    on the prim. Attempting to establish two collection bindings of the same 
+    name on the same prim will result in the first binding simply being 
+    overridden. A special-purpose collection-based binding is represented by a 
+    relationship named "material:binding:collection:<i>purpose:bindingName</i>".
+    A collection-based binding relationship must have exacly two targets, one of 
+    which should be a collection-path (see 
+    \ref UsdCollectionAPI::GetCollectionPath()) and the other should point to a
+    <b>UsdShadeMaterial</b>. In the future, we may allow a single collection 
+    binding to target multiple collections, if we can establish a reasonable 
+    round-tripping pattern for applications that only allow a single collection 
+    to be associated with each Material.
+    </li>
+    </ul>
+
+    <b>Note:</b> Both <b>bindingName</b> and <b>purpose</b> must be 
+    non-namespaced tokens. This allows us to know the role of a binding 
+    relationship simply from the number of tokens in it. 
+    <ul><li><b>Two tokens</b>: the fallback, "all purpose", direct binding, 
+    <i>material:binding</i></li>
+    <li><b>Three tokens</b>: a purpose-restricted, direct, fallback binding, 
+    e.g. material:binding:preview</li>
+    <li><b>Four tokens</b>: an all-purpose, collection-based binding, e.g. 
+    material:binding:collection:metalBits</li>
+    <li><b>Five tokens</b>: a purpose-restricted, collection-based binding, 
+    e.g. material:binding:collection:full:metalBits</li>
+    </ul>
+
+    A <b>binding-strength</b> value is used to specify whether a binding 
+    authored on a prim should be weaker or stronger than bindings that appear 
+    lower in namespace. We encode the binding strength with as token-valued 
+    metadata <b>'bindMaterialAs'</b> for future flexibility, even though for 
+    now, there are only two possible values:
+    <i>UsdShadeTokens->weakerThanDescendants</i> and 
+    <i>UsdShadeTokens->strongerThanDescendants</i>. When binding-strength is 
+    not authored (i.e. empty) on a binding-relationship, the default behavior 
+    matches UsdShadeTokens->weakerThanDescendants.
+
+    """ 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdGeom/subset.h"
+#include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/tokens.h"
+    """
+    }
+)
+{
+    
 }

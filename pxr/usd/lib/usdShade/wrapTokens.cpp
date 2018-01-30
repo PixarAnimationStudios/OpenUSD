@@ -64,9 +64,12 @@ void wrapUsdShadeTokens()
 {
     boost::python::class_<UsdShadeTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "allPurpose", UsdShadeTokens->allPurpose);
+    _AddToken(cls, "bindMaterialAs", UsdShadeTokens->bindMaterialAs);
     _AddToken(cls, "connectedSourceFor", UsdShadeTokens->connectedSourceFor);
     _AddToken(cls, "derivesFrom", UsdShadeTokens->derivesFrom);
     _AddToken(cls, "displacement", UsdShadeTokens->displacement);
+    _AddToken(cls, "fallbackStrength", UsdShadeTokens->fallbackStrength);
     _AddToken(cls, "full", UsdShadeTokens->full);
     _AddToken(cls, "infoId", UsdShadeTokens->infoId);
     _AddToken(cls, "inputs", UsdShadeTokens->inputs);
@@ -76,7 +79,11 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "lookBinding", UsdShadeTokens->lookBinding);
     _AddToken(cls, "materialBind", UsdShadeTokens->materialBind);
     _AddToken(cls, "materialBinding", UsdShadeTokens->materialBinding);
+    _AddToken(cls, "materialBindingCollection", UsdShadeTokens->materialBindingCollection);
     _AddToken(cls, "materialVariant", UsdShadeTokens->materialVariant);
     _AddToken(cls, "outputs", UsdShadeTokens->outputs);
+    _AddToken(cls, "preview", UsdShadeTokens->preview);
+    _AddToken(cls, "strongerThanDescendants", UsdShadeTokens->strongerThanDescendants);
     _AddToken(cls, "surface", UsdShadeTokens->surface);
+    _AddToken(cls, "weakerThanDescendants", UsdShadeTokens->weakerThanDescendants);
 }

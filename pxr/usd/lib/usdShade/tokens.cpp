@@ -26,9 +26,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdShadeTokensType::UsdShadeTokensType() :
+    allPurpose("", TfToken::Immortal),
+    bindMaterialAs("bindMaterialAs", TfToken::Immortal),
     connectedSourceFor("connectedSourceFor:", TfToken::Immortal),
     derivesFrom("derivesFrom", TfToken::Immortal),
     displacement("displacement", TfToken::Immortal),
+    fallbackStrength("fallbackStrength", TfToken::Immortal),
     full("full", TfToken::Immortal),
     infoId("info:id", TfToken::Immortal),
     inputs("inputs:", TfToken::Immortal),
@@ -38,13 +41,20 @@ UsdShadeTokensType::UsdShadeTokensType() :
     lookBinding("look:binding", TfToken::Immortal),
     materialBind("materialBind", TfToken::Immortal),
     materialBinding("material:binding", TfToken::Immortal),
+    materialBindingCollection("material:binding:collection", TfToken::Immortal),
     materialVariant("materialVariant", TfToken::Immortal),
     outputs("outputs:", TfToken::Immortal),
+    preview("preview", TfToken::Immortal),
+    strongerThanDescendants("strongerThanDescendants", TfToken::Immortal),
     surface("surface", TfToken::Immortal),
+    weakerThanDescendants("weakerThanDescendants", TfToken::Immortal),
     allTokens({
+        allPurpose,
+        bindMaterialAs,
         connectedSourceFor,
         derivesFrom,
         displacement,
+        fallbackStrength,
         full,
         infoId,
         inputs,
@@ -54,9 +64,13 @@ UsdShadeTokensType::UsdShadeTokensType() :
         lookBinding,
         materialBind,
         materialBinding,
+        materialBindingCollection,
         materialVariant,
         outputs,
-        surface
+        preview,
+        strongerThanDescendants,
+        surface,
+        weakerThanDescendants
     })
 {
 }

@@ -1,0 +1,126 @@
+#usda 1.0
+
+def Xform "World" (
+    prepend apiSchemas = ["CollectionAPI:furniture", "CollectionAPI:pensOrPencils", "CollectionAPI:emptyCollection"]
+)
+{
+    uniform token collection:furniture:expansionRule = "expandPrims"
+    rel collection:furniture:includes = [
+        </World/Room_set/Table_grp/Table>,
+        </World/Room_set/Chairs_grp>,
+    ]
+
+    uniform token collection:pensOrPencils:expansionRule = "expandPrims"
+    rel collection:pensOrPencils:includes = [
+        </World/Room_set/Table_grp/Pencils_grp>,
+        </World/Room_set/Table_grp/Pens_grp>,
+    ]
+    rel collection:pensOrPencils:excludes = </World/Room_set/Table_grp/Pencils_grp/EraserA>
+
+    def Xform "Room_set" (
+        prepend apiSchemas = ["CollectionAPI:lampBases", "CollectionAPI:lampShades"]
+    )
+    {
+        uniform token collection:lampBases:expansionRule = "expandPrims"
+        rel collection:lampBases:includes = [
+            </World/Room_set/Table_grp/LampA/Geom/Base>,
+            </World/Room_set/Table_grp/LampB/Geom/Base>
+        ]
+        uniform token collection:lampShades:expansionRule = "expandPrims"
+        rel collection:lampShades:includes = [
+            </World/Room_set/Table_grp/LampA/Geom/Shade>,
+            </World/Room_set/Table_grp/LampB/Geom/Shade>
+        ]
+
+        def Xform "Table_grp" (
+            prepend apiSchemas = ["CollectionAPI:lampA", "CollectionAPI:lampB", "CollectionAPI:lampC"]
+        )
+        {
+            uniform token collection:lamps:expansionRule = "expandPrims"
+            rel collection:lamps:includes = [
+                </World/Room_set/Table_grp/LampA>,
+                </World/Room_set/Table_grp/LampB>
+            ]
+
+            def "LampA" (
+                references = @./lamp.usda@</Lamp>
+                instanceable = true
+            )
+            {
+            }
+
+            def "LampB" (
+                references = @./lamp.usda@</Lamp>
+                instanceable = true
+            )
+            {
+            }
+
+            def Xform "Pencils_grp"
+            {
+                def Xform "PencilA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+
+                def Xform "PencilB"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+
+                def Xform "EraserA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+            }
+
+            def Xform "Pens_grp"
+            {
+                def Xform "PenA"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+
+                def Xform "PenB"
+                {
+                    def Xform "Geom"
+                    {
+                    }
+                }
+            }
+
+            def Xform "Table"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+        }
+
+        def Xform "Chairs_grp"
+        {
+            def Xform "ChairA"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+
+            def Xform "ChairB"
+            {
+                def Xform "Geom"
+                {
+                }
+            }
+        }
+    }
+}
+
