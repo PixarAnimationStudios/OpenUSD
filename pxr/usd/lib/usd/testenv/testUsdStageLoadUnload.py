@@ -28,7 +28,8 @@ from pxr import Gf, Tf, Sdf, Usd
 allFormats = ['usd' + x for x in 'ac']
 
 class PayloadedScene(object):
-    def __init__(self, fmt, unload=True, loadSet=Usd.Stage.LoadAll):
+    def __init__(self, fmt, unload=True, loadSet=Usd.Stage.LoadAll,
+                 stageCreateFn=Usd.Stage.CreateInMemory):
         # Construct the following test case:
         #
         # stage.fmt         payload1.fmt
@@ -44,22 +45,22 @@ class PayloadedScene(object):
         ext = '.'+fmt
 
         # Create payload1.fmt
-        self.__payload1 = Usd.Stage.CreateInMemory("payload1"+ext)
+        self.__payload1 = stageCreateFn("payload1"+ext)
         p = self.__payload1.DefinePrim("/Sad/Panda", "Scope")
 
         # Create payload3.usda
-        self.__payload3 = Usd.Stage.CreateInMemory("payload3"+ext)
+        self.__payload3 = stageCreateFn("payload3"+ext)
         p = self.__payload3.DefinePrim("/Garply/Qux", "Scope")
 
         # Create payload2.usda
-        self.__payload2 = Usd.Stage.CreateInMemory("payload2"+ext)
+        self.__payload2 = stageCreateFn("payload2"+ext)
         p = self.__payload2.DefinePrim("/Baz/Garply", "Scope")
         p.SetPayload(self.__payload3.GetRootLayer(), "/Garply")
 
         #
         # Create the scene that references payload1 and payload2
         #
-        self.stage = Usd.Stage.CreateInMemory("scene"+ext, loadSet)
+        self.stage = stageCreateFn("scene"+ext, loadSet)
         p = self.stage.DefinePrim("/Sad", "Scope")
         p.SetPayload(self.__payload1.GetRootLayer(), "/Sad")
 
@@ -71,6 +72,22 @@ class PayloadedScene(object):
         if unload:
             self.stage.Unload()
 
+    def CleanupOnDiskAssets(self, fmt):
+        import os
+        
+        del self.stage
+        del self.__payload1
+        del self.__payload2
+        del self.__payload3
+
+        ext = "." + fmt
+        for i in [1,2,3]:
+            fname = "payload" + str(i) + ext
+            if os.path.exists(fname):
+                os.unlink(fname)
+        fname = "scene"+ ext
+        if os.path.exists(fname):
+            os.unlink(fname)
 
     def PrintPaths(self, msg=""):
         print("    Paths: "+msg)
@@ -292,8 +309,9 @@ class TestUsdLoadUnload(unittest.TestCase):
         """Test the behavior of UsdStage::Create WRT load behavior"""
         print sys._getframe().f_code.co_name
 
+        # Exercise creating an in memory stage
         for fmt in allFormats:
-            # try loading none
+            # Try loading none
             p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadNone)
                 
             p.PrintPaths()
@@ -303,6 +321,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert len(p.stage.GetLoadSet()) == 0
             assert len(p.stage.FindLoadable()) == 2
 
+            # Try loading all
             p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadAll)
             p.PrintPaths()
             assert p.stage.GetPrimAtPath("/Sad/Panda")
@@ -310,6 +329,33 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
             assert len(p.stage.GetLoadSet()) == 3, str(p.stage.GetLoadSet())
             assert len(p.stage.FindLoadable()) == 3
+
+        # Exercise creating an on-disk stage
+        for fmt in allFormats:
+            # Try loading none
+            p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadNone,
+                               stageCreateFn=Usd.Stage.CreateNew)
+                
+            p.PrintPaths()
+            assert not p.stage.GetPrimAtPath("/Sad/Panda")
+            assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
+            assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
+            assert len(p.stage.GetLoadSet()) == 0
+            assert len(p.stage.FindLoadable()) == 2
+
+            p.CleanupOnDiskAssets(fmt) 
+
+            # Try loading all
+            p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadAll,
+                               stageCreateFn=Usd.Stage.CreateNew)
+            p.PrintPaths()
+            assert p.stage.GetPrimAtPath("/Sad/Panda")
+            assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
+            assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
+            assert len(p.stage.GetLoadSet()) == 3, str(p.stage.GetLoadSet())
+            assert len(p.stage.FindLoadable()) == 3
+
+            p.CleanupOnDiskAssets(fmt)
 
     def test_Open(self):
         """Test the behavior of UsdStage::Open WRT load behavior.
