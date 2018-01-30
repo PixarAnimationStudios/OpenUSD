@@ -28,7 +28,7 @@ from pxr import Gf, Tf, Sdf, Usd
 allFormats = ['usd' + x for x in 'ac']
 
 class PayloadedScene(object):
-    def __init__(self, fmt):
+    def __init__(self, fmt, unload=True, loadSet=Usd.Stage.LoadAll):
         # Construct the following test case:
         #
         # stage.fmt         payload1.fmt
@@ -59,15 +59,17 @@ class PayloadedScene(object):
         #
         # Create the scene that references payload1 and payload2
         #
-        self.stage = Usd.Stage.CreateInMemory("scene"+ext)
+        self.stage = Usd.Stage.CreateInMemory("scene"+ext, loadSet)
         p = self.stage.DefinePrim("/Sad", "Scope")
         p.SetPayload(self.__payload1.GetRootLayer(), "/Sad")
 
         p = self.stage.DefinePrim("/Foo/Baz", "Scope")
         p.SetPayload(self.__payload2.GetRootLayer(), "/Baz")
 
-        # Test expects that the scene starts with everything unloaded.
-        self.stage.Unload()
+        # By default, tests expect that the scene starts 
+        # with everything unloaded, unless specified otherwise
+        if unload:
+            self.stage.Unload()
 
 
     def PrintPaths(self, msg=""):
@@ -285,6 +287,29 @@ class TestUsdLoadUnload(unittest.TestCase):
                     set([Sdf.Path("/Sad"), 
                          Sdf.Path("/Foo/Baz"), 
                          Sdf.Path("/Foo/Baz/Garply")]))
+
+    def test_Create(self):
+        """Test the behavior of UsdStage::Create WRT load behavior"""
+        print sys._getframe().f_code.co_name
+
+        for fmt in allFormats:
+            # try loading none
+            p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadNone)
+                
+            p.PrintPaths()
+            assert not p.stage.GetPrimAtPath("/Sad/Panda")
+            assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
+            assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
+            assert len(p.stage.GetLoadSet()) == 0
+            assert len(p.stage.FindLoadable()) == 2
+
+            p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadAll)
+            p.PrintPaths()
+            assert p.stage.GetPrimAtPath("/Sad/Panda")
+            assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
+            assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
+            assert len(p.stage.GetLoadSet()) == 3, str(p.stage.GetLoadSet())
+            assert len(p.stage.FindLoadable()) == 3
 
     def test_Open(self):
         """Test the behavior of UsdStage::Open WRT load behavior.
