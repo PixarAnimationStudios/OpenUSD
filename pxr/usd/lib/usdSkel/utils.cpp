@@ -59,13 +59,13 @@ namespace {
 /// is below a reasonable threading threshold.
 template <typename Fn>
 void
-_ParallelForN(size_t count, Fn&& callback)
+_ParallelForN(size_t count, bool forceSerial, Fn&& callback)
 {
     // XXX: Profiling shows that most of our loops only benefit
     // from parallelism past this threshold.
     const int threshold = 1000;
 
-    if(count < threshold) {
+    if(count < threshold || forceSerial) {
         WorkSerialForN(count, callback);
     } else {
         WorkParallelForN(count, callback);
@@ -577,6 +577,7 @@ _NormalizeWeights(float* weights, size_t numWeights,
 
     _ParallelForN(
         numComponents,
+        /* forceSerial = */ false,
         [&](size_t start, size_t end)
         {
             for(size_t i = 0; i < end; ++i) {
@@ -641,6 +642,7 @@ _SortInfluences(int* indices, float* weights,
 
     _ParallelForN(
         numComponents,
+        /* forceSerial = */ false,
         [&](size_t start, size_t end)
         {
             std::vector<std::pair<float,int> > influences;
@@ -811,10 +813,8 @@ UsdSkelTruncateInfluences(VtFloatArray* weights,
 }
 
 
-namespace {
-
 bool
-_SkinPointsLBS(const GfMatrix4d& geomBindTransform,
+UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                const GfMatrix4d* jointXforms,
                size_t numJoints,
                const int* jointIndices,
@@ -822,8 +822,11 @@ _SkinPointsLBS(const GfMatrix4d& geomBindTransform,
                size_t numInfluences,
                int numInfluencesPerPoint,
                GfVec3f* points,
-               size_t numPoints)
+               size_t numPoints,
+               bool forceSerial)
 {
+    TRACE_FUNCTION();
+    
     if(numInfluences != (numPoints*numInfluencesPerPoint)) {
         TF_WARN("numInfluences [%zu] != "
                 "(numPoints [%zu] * numInfluencesPerPoint [%d]).",
@@ -836,6 +839,7 @@ _SkinPointsLBS(const GfMatrix4d& geomBindTransform,
 
     _ParallelForN(
         numPoints,
+        /* forceSerial = */ forceSerial,
         [&](size_t start, size_t end)
         {
             for(size_t pi = start; pi < end; ++pi) {
@@ -896,12 +900,11 @@ _SkinPointsLBS(const GfMatrix4d& geomBindTransform,
 
                 points[pi] = p;
             }
-        });
+        }
+        );
 
     return !errors;
 }
-
-} // namespace
 
 
 bool
@@ -912,22 +915,20 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      int numInfluencesPerPoint,
                      VtVec3fArray* points)
 {
-    TRACE_FUNCTION();
-
     if(!points) {
         TF_CODING_ERROR("'points' pointer is null.");
         return false;
     }
 
     if(jointIndices.size() == jointWeights.size()) {
-        return _SkinPointsLBS(geomBindTransform,
-                              jointXforms.cdata(),
-                              jointXforms.size(),
-                              jointIndices.cdata(),
-                              jointWeights.cdata(),
-                              jointIndices.size(),
-                              numInfluencesPerPoint,
-                              points->data(), points->size());
+        return UsdSkelSkinPointsLBS(geomBindTransform,
+                                    jointXforms.cdata(),
+                                    jointXforms.size(),
+                                    jointIndices.cdata(),
+                                    jointWeights.cdata(),
+                                    jointIndices.size(),
+                                    numInfluencesPerPoint,
+                                    points->data(), points->size());
     } else {
         TF_WARN("jointIndices.size() [%zu]! = jointWeights.size() [%zu].",
                 jointIndices.size(), jointWeights.size());
@@ -936,17 +937,17 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
 }
 
 
-namespace {
-
 bool
-_SkinTransformLBS(const GfMatrix4d& geomBindTransform,
-                  const GfMatrix4d* jointXforms,
-                  size_t numJoints,
-                  const int* jointIndices,
-                  const float* jointWeights,
-                  size_t numInfluences,
-                  GfMatrix4d* xform)
+UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
+                        const GfMatrix4d* jointXforms,
+                        size_t numJoints,
+                        const int* jointIndices,
+                        const float* jointWeights,
+                        size_t numInfluences,
+                        GfMatrix4d* xform)
 {
+    TRACE_FUNCTION();
+    //
     // Early-out for the common case where an object is rigidly
     // bound to a single joint.
     if(numInfluences == 1 && GfIsClose(jointWeights[0], 1.0f, 1e-6)) {
@@ -1017,8 +1018,6 @@ _SkinTransformLBS(const GfMatrix4d& geomBindTransform,
     return true;
 }
 
-} // namespace
-
 
 bool
 UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
@@ -1027,18 +1026,16 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         const VtFloatArray& jointWeights,
                         GfMatrix4d* xform)
 {
-    TRACE_FUNCTION();
-
     if(!xform) {
         TF_CODING_ERROR("'xform' pointer is null.");
         return false;
     }
 
     if(jointIndices.size() == jointWeights.size()) {
-        return _SkinTransformLBS(geomBindTransform, jointXforms.cdata(),
-                                 jointXforms.size(), jointIndices.cdata(),
-                                 jointWeights.cdata(), jointIndices.size(),
-                                 xform);
+        return UsdSkelSkinTransformLBS(geomBindTransform, jointXforms.cdata(),
+                                      jointXforms.size(), jointIndices.cdata(),
+                                      jointWeights.cdata(), jointIndices.size(),
+                                      xform);
     } else {
         TF_WARN("jointIndices.size() [%zu]! = jointWeights.size() [%zu].",
                 jointIndices.size(), jointWeights.size());

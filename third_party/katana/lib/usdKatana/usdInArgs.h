@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
+#include "pxr/usd/usdSkel/cache.h"
 #include "pxr/base/tf/refPtr.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -184,6 +185,10 @@ public:
         return _bboxCaches.local();
     }
 
+    UsdSkelCache& GetUsdSkelCache() {
+        return _usdSkelCache;
+    }
+
     const std::string & GetErrorMessage() {
         return _errorMessage;
     }
@@ -229,6 +234,9 @@ private:
 
     typedef tbb::enumerable_thread_specific< std::map<double, UsdGeomBBoxCache> > _ThreadLocalBBoxCaches;
     _ThreadLocalBBoxCaches _bboxCaches;
+
+    // Cache for accelerating UsdSkel skinning data calculation.
+    UsdSkelCache _usdSkelCache;
     
     std::string _errorMessage;
 

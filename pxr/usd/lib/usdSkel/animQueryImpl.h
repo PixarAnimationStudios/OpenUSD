@@ -39,6 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class UsdAttribute;
 class UsdPrim;
 class UsdTimeCode;
 
@@ -70,7 +71,10 @@ public:
     virtual bool
     GetJointTransformTimeSamples(const GfInterval& interval,
                                  std::vector<double>* times) const = 0;
-    
+   
+    virtual bool
+    GetJointTransformAttributes(std::vector<UsdAttribute>* attrs) const = 0;
+   
     virtual bool JointTransformsMightBeTimeVarying() const = 0;
 
     virtual bool

@@ -25,6 +25,7 @@
 
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/attribute.h"
 
 #include "pxr/usd/usdGeom/xformable.h"
 
@@ -58,6 +59,10 @@ public:
     GetJointTransformTimeSamples(const GfInterval& interval,
                                  std::vector<double>* times) const override;
 
+    virtual bool 
+    GetJointTransformAttributes(
+        std::vector<UsdAttribute>* attrs) const override;
+    
     virtual bool JointTransformsMightBeTimeVarying() const override;
 
     virtual bool ComputeTransform(GfMatrix4d* xform,
@@ -119,6 +124,16 @@ UsdSkel_PackedJointAnimationQueryImpl::GetJointTransformTimeSamples(
         {_translations.GetAttribute(),
          _rotations.GetAttribute(),
          _scales.GetAttribute()}, interval, times);
+}
+
+bool
+UsdSkel_PackedJointAnimationQueryImpl::GetJointTransformAttributes(
+    std::vector<UsdAttribute>* attrs) const
+{
+    attrs->push_back(_translations.GetAttribute());
+    attrs->push_back(_rotations.GetAttribute());
+    attrs->push_back(_scales.GetAttribute());
+    return true;
 }
 
 

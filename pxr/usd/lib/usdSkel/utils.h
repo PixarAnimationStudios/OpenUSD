@@ -296,6 +296,21 @@ UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
                      VtVec3fArray* points);
 
 
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinPointsLBS(const GfMatrix4d& geomBindTransform,
+               const GfMatrix4d* jointXforms,
+               size_t numJoints,
+               const int* jointIndices,
+               const float* jointWeights,
+               size_t numInfluences,
+               int numInfluencesPerPoint,
+               GfVec3f* points,
+               size_t numPoints,
+               bool forceSerial=false);
+
+
 /// Skin a transform using linear blend skinning (LBS).
 /// The \p jointXforms are \ref UsdSkel_Term_SkinningTransforms
 /// "skinning transforms", given in _skeleton space_, while the
@@ -307,6 +322,18 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         const VtMatrix4dArray& jointXforms,
                         const VtIntArray& jointIndices,
                         const VtFloatArray& jointWeights,
+                        GfMatrix4d* xform);
+
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
+                        const GfMatrix4d* jointXforms,
+                        size_t numJoints,
+                        const int* jointIndices,
+                        const float* jointWeights,
+                        size_t numInfluences,
                         GfMatrix4d* xform);
 
 

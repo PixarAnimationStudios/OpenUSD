@@ -27,6 +27,7 @@
 #include "pxr/usd/usdSkel/animQueryImpl.h"
 
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/attribute.h"
 
 #include "pxr/base/gf/interval.h"
 
@@ -78,6 +79,16 @@ UsdSkelAnimQuery::GetJointTransformTimeSamplesInInterval(
 {
     if(TF_VERIFY(IsValid(), "invalid anim query.")) {
         return _impl->GetJointTransformTimeSamples(interval, times);
+    }
+    return false;
+}
+
+bool 
+UsdSkelAnimQuery::GetJointTransformAttributes(
+    std::vector<UsdAttribute>* attrs) const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->GetJointTransformAttributes(attrs);
     }
     return false;
 }

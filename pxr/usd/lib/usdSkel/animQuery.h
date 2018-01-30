@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class GfMatrix4d;
+class UsdAttribute;
 class UsdSkelCache;
 
 
@@ -119,6 +120,10 @@ public:
     USDSKEL_API
     bool GetJointTransformTimeSamplesInInterval(const GfInterval& interval,
                                                 std::vector<double>* times) const;
+
+    /// Get the attributes contributing to JointTransform computations
+    USDSKEL_API
+    bool GetJointTransformAttributes(std::vector<UsdAttribute>* attrs) const;
 
     /// Return true if it possible, but not certain, that joint transforms  
     /// computed through this animation query change over time, false otherwise.

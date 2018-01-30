@@ -280,6 +280,25 @@ PxrUsdKatanaUsdInPrivateData::IsMotionBackward() const
     }
 }
 
+std::vector<std::pair<double, double> >
+PxrUsdKatanaUsdInPrivateData::GetUsdAndKatanaTimes(
+        const UsdAttribute& attr) const
+{
+    const std::vector<double> motionSampleTimes = GetMotionSampleTimes(attr);
+    std::vector<std::pair<double, double> > result;
+    result.reserve(motionSampleTimes.size());
+    bool isMotionBackward = IsMotionBackward();
+    double u, k;
+    for(auto t : motionSampleTimes) 
+    {
+        u = _currentTime + t;
+        k = isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(t) : t;
+        result.emplace_back(u,k);
+    } 
+    return result;
+}
+
+
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
     const UsdAttribute& attr) const

@@ -13,6 +13,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdImaging
         usdImagingGL
         usdShade
+        usdSkel
         usdGeom
         usdLux
         usdRi
