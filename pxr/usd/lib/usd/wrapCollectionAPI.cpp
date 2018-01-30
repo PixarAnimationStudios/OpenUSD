@@ -166,8 +166,16 @@ WRAP_CUSTOM {
               arg("expansionRule")=UsdTokens->expandPrims))
             .staticmethod("ApplyCollection")
 
-        .def("GetCollection", &This::GetCollection,
+        .def("GetCollection", 
+             (UsdCollectionAPI(*)(const UsdPrim &prim, 
+                                        const TfToken &name))
+                &This::GetCollection,
              (arg("prim"), arg("name")))
+        .def("GetCollection", 
+             (UsdCollectionAPI(*)(const UsdStagePtr &stage, 
+                                  const SdfPath &collectionPath))
+                &This::GetCollection,
+             (arg("stage"), arg("collectionPath")))
             .staticmethod("GetCollection")
 
         .def("GetAllCollections", &This::GetAllCollections, 
@@ -195,6 +203,9 @@ WRAP_CUSTOM {
         .def("CreateIncludesRel", &This::CreateIncludesRel)
         .def("GetExcludesRel", &This::GetExcludesRel)
         .def("CreateExcludesRel", &This::CreateExcludesRel)
+
+        .def("AddPrim", &This::AddPrim)
+        .def("RemovePrim", &This::RemovePrim)
 
         .def("Validate", &_WrapValidate)
 

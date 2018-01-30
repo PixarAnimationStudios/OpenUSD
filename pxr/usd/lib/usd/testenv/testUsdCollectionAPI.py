@@ -169,11 +169,56 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
         self.assertEqual(len(combinedCollIncObjects), 5)
 
+    def test_testAddAndRemovePrim(self):
+        geomCollection = Usd.CollectionAPI.ApplyCollection(geom, 
+            "geom")
+        self.assertTrue(geomCollection.AddPrim(shapes))
+        self.assertTrue(geomCollection.RemovePrim(sphere))
+
+        query = geomCollection.ComputeMembershipQuery()
+        self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
+        self.assertTrue(query.IsPathIncluded(cube.GetPath()))
+        self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
+        self.assertFalse(query.IsPathIncluded(hemiSphere1.GetPath()))
+        self.assertFalse(query.IsPathIncluded(hemiSphere2.GetPath()))
+
+        # Add just hemiSphere2
+        self.assertTrue(geomCollection.AddPrim(hemiSphere2))
+
+        # Remove hemiSphere1. Note that this does nothing however since it's 
+        # not included in the collection.
+        self.assertTrue(geomCollection.RemovePrim(hemiSphere1))
+
+        # Every time we call AddPrim() or RemovePrim(), we must recompute 
+        # the MembershipQuery object.
+        query = geomCollection.ComputeMembershipQuery()
+        self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
+        self.assertFalse(query.IsPathIncluded(hemiSphere1.GetPath()))
+        self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
+
+        # Add back sphere and verify that everything is included now.
+        self.assertTrue(geomCollection.AddPrim(sphere))
+
+        query = geomCollection.ComputeMembershipQuery()
+        self.assertTrue(query.IsPathIncluded(sphere.GetPath()))
+        self.assertTrue(query.IsPathIncluded(hemiSphere1.GetPath()))
+        self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
+        self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
+        self.assertTrue(query.IsPathIncluded(cube.GetPath()))
+
     def test_testReadCollection(self):
         leafGeom = Usd.CollectionAPI.GetCollection(testPrim, "leafGeom")
         (valid, reason) = leafGeom.Validate()
         self.assertTrue(valid)
 
+        # Test the other overload of GetCollection.
+        leafGeomPath = leafGeom.GetCollectionPath()
+        leafGeom = Usd.CollectionAPI.GetCollection(stage, leafGeomPath)
+        self.assertEqual(leafGeom.GetCollectionPath(), leafGeomPath)
+
+        (valid, reason) = leafGeom.Validate()
+        self.assertTrue(valid)
+        
         # Test GetName() API.
         self.assertEqual(leafGeom.GetName(), 'leafGeom')
 
@@ -219,7 +264,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = allGeomProperties.Validate()
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
-                allGeomPropertiesMquery, stage)), 24)
+                allGeomPropertiesMquery, stage)), 27)
 
         hasRels = Usd.CollectionAPI.GetCollection(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
