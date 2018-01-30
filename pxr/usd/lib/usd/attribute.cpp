@@ -156,7 +156,6 @@ UsdAttribute::GetUnionedTimeSamplesInInterval(
 
     for (const auto &attr : attrs) {
         if (!attr) {
-            TF_CODING_ERROR("Invalid attribute: %s", UsdDescribe(attr).c_str());
             success = false;
             continue;
         }

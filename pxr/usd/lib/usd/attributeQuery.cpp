@@ -199,11 +199,8 @@ UsdAttributeQuery::GetUnionedTimeSamplesInInterval(
 
     for (const auto &attrQuery : attrQueries) {
         const UsdAttribute &attr = attrQuery.GetAttribute();
-        if (!attr) {
-            TF_CODING_ERROR("Invalid attribute query <%s>", 
-                            UsdDescribe(attr).c_str());
+        if (!attr)
             continue;
-        }
 
         // This will work even if the attributes belong to different 
         // USD stages.
