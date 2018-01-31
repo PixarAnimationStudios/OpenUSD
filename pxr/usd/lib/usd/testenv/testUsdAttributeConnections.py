@@ -374,5 +374,67 @@ class TestUsdAttributeConnections(unittest.TestCase):
         attr = master.GetChild("A").GetAttribute("cattr")
         _TestConnectionInMaster(attr)
 
+    def test_AuthoringConnections(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory("testAuthoringConnections." + fmt)
+
+            prim = stage.DefinePrim("/Test")
+            attr = prim.CreateAttribute("attr", Sdf.ValueTypeNames.Int)
+            attrSpec = stage.GetEditTarget().GetPropertySpecForScenePath(
+                attr.GetPath())
+
+            attr.SetConnections(["/Test.A", "/Test.B"])
+            self.assertEqual(attr.GetConnections(), ["/Test.A", "/Test.B"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.explicitItems = ["/Test.A", "/Test.B"]
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
+            attr.AddConnection("/Test.C")
+            self.assertEqual(attr.GetConnections(), 
+                             ["/Test.A", "/Test.B", "/Test.C"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.explicitItems = ["/Test.A", "/Test.B", "/Test.C"]
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
+            attr.ClearConnections()
+            self.assertEqual(attr.GetConnections(), [])
+
+            expectedListOp = Sdf.PathListOp()
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
+            attr.AddConnection("/Test.A", Usd.ListPositionFrontOfPrependList)
+            self.assertEqual(attr.GetConnections(), ["/Test.A"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test.A"]
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
+            attr.AddConnection("/Test.B", Usd.ListPositionBackOfPrependList)
+            self.assertEqual(attr.GetConnections(), ["/Test.A", "/Test.B"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test.A", "/Test.B"]
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
+            attr.AddConnection("/Test.C", Usd.ListPositionFrontOfAppendList)
+            self.assertEqual(attr.GetConnections(), 
+                             ["/Test.A", "/Test.B", "/Test.C"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test.A", "/Test.B"]
+            expectedListOp.appendedItems = ["/Test.C"]
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
+            attr.AddConnection("/Test.D", Usd.ListPositionBackOfAppendList)
+            self.assertEqual(attr.GetConnections(), 
+                             ["/Test.A", "/Test.B", "/Test.C", "/Test.D"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test.A", "/Test.B"]
+            expectedListOp.appendedItems = ["/Test.C", "/Test.D"]
+            self.assertEqual(attrSpec.GetInfo("connectionPaths"), expectedListOp)
+
 if __name__ == '__main__':
     unittest.main()

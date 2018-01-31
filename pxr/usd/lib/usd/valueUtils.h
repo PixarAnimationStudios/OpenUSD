@@ -132,6 +132,10 @@ Usd_MergeTimeSamples(std::vector<double> * const timeSamples,
 
 // Helper that implements the various options for adding items to lists
 // enumerated by UsdListPosition.
+//
+// If the list op is in explicit mode, the item will be inserted into the
+// explicit list regardless of the list specified in the position enum.
+//
 // If the item already exists in the list, but not in the requested
 // position, it will be moved to the requested position.
 template <class PROXY>
@@ -140,7 +144,7 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
                    UsdListPosition position)
 {
     typename PROXY::ListProxy list(/* unused */ SdfListOpTypeExplicit);
-    bool atFront;
+    bool atFront = false;
     switch (position) {
     case UsdListPositionTempDefault:
         if (UsdAuthorOldStyleAdd()) {
@@ -165,6 +169,14 @@ Usd_InsertListItem(PROXY proxy, const typename PROXY::value_type &item,
         list = proxy.GetAppendedItems();
         atFront = true;
         break;
+    }
+
+    // This function previously used SdfListEditorProxy::Add, which would
+    // update the explicit list if the list op was in explicit mode. Clients
+    // currently expect this behavior, so we need to maintain it regardless
+    // of the list specified in the postiion enum.
+    if (proxy.IsExplicit()) {
+        list = proxy.GetExplicitItems();
     }
 
     if (list.empty()) {
