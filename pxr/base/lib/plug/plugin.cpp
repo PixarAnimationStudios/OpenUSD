@@ -115,6 +115,8 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
             "Already registered %s plugin '%s' - not registering '%s'.\n",
             _GetPluginTypeDisplayName(pluginType),
             metadata.pluginName.c_str(), pluginCreationPath.c_str());
+        // Remove the null entry we added in _allPlugins for the alt path.
+        _allPlugins->erase(iresult.first);
         return std::make_pair(it->second, false);
     }
 
