@@ -149,5 +149,28 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
         self.assertTrue(layer.GetObjectAtPath(
             '/Sphere{vset_1=default}{vset_2=default}ChildFromNestedVariant'))
 
+    def test_EmptyAssetPaths(self):
+        src_stage = Usd.Stage.Open('emptyAssetPaths.usda')
+        layer = UsdUtils.FlattenLayerStack(src_stage, tag='emptyAssetPaths')
+        result_stage = Usd.Stage.Open(layer)
+
+        # Verify that empty asset paths do not trigger coding errors during
+        # flattening.
+
+        prim = result_stage.GetPrimAtPath('/Test')
+        self.assertTrue(prim.HasAuthoredReferences())
+
+        primSpec = layer.GetPrimAtPath('/Test')
+        expectedRefs = Sdf.ReferenceListOp()
+        expectedRefs.explicitItems = [Sdf.Reference(primPath="/Ref")]
+        self.assertEqual(primSpec.GetInfo('references'), expectedRefs)
+
+        assetAttr = prim.GetAttribute('a')
+        self.assertEqual(assetAttr.Get(), Sdf.AssetPath())
+
+        assetArrayAttr = prim.GetAttribute('b')
+        self.assertEqual(list(assetArrayAttr.Get()), 
+                         [Sdf.AssetPath(), Sdf.AssetPath()])
+
 if __name__=="__main__":
     unittest.main()

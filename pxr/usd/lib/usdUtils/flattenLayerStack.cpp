@@ -281,13 +281,22 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     return val;
 }
 
+static std::string
+_FixAssetPath(const SdfLayerHandle &sourceLayer, 
+              const std::string &assetPath)
+{
+    // Treat empty asset paths specially, since they cause coding errors in
+    // SdfComputeAssetPathRelativeToLayer.
+    return assetPath.empty() ? 
+        assetPath : SdfComputeAssetPathRelativeToLayer(sourceLayer, assetPath);
+}
+
 static boost::optional<SdfReference>
 _FixReference(const SdfLayerHandle &sourceLayer,
               const SdfReference &ref)
 {
     SdfReference result = ref;
-    result.SetAssetPath(SdfComputeAssetPathRelativeToLayer(sourceLayer,
-                                                           ref.GetAssetPath()));
+    result.SetAssetPath(_FixAssetPath(sourceLayer, ref.GetAssetPath()));
     return boost::optional<SdfReference>(result);
 }
 
@@ -299,9 +308,7 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     if (val->IsHolding<SdfAssetPath>()) {
         SdfAssetPath ap;
         val->Swap(ap);
-        ap = SdfAssetPath(
-            SdfComputeAssetPathRelativeToLayer(sourceLayer,
-                                               ap.GetAssetPath()));
+        ap = SdfAssetPath(_FixAssetPath(sourceLayer, ap.GetAssetPath()));
         val->Swap(ap);
         return;
     }
@@ -309,9 +316,7 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
         VtArray<SdfAssetPath> a;
         val->Swap(a);
         for (SdfAssetPath &ap: a) {
-            ap = SdfAssetPath(
-                SdfComputeAssetPathRelativeToLayer(sourceLayer,
-                                                   ap.GetAssetPath()));
+            ap = SdfAssetPath(_FixAssetPath(sourceLayer, ap.GetAssetPath()));
         }
         val->Swap(a);
         return;
@@ -334,9 +339,7 @@ _FixAssetPaths(const SdfLayerHandle &sourceLayer,
     else if (val->IsHolding<SdfPayload>()) {
         SdfPayload pl;
         val->Swap(pl);
-        pl.SetAssetPath(
-            SdfComputeAssetPathRelativeToLayer(sourceLayer,
-                                               pl.GetAssetPath()));
+        pl.SetAssetPath(_FixAssetPath(sourceLayer, pl.GetAssetPath()));
         val->Swap(pl);
         return;
     }
