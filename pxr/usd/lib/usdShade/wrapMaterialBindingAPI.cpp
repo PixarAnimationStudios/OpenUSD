@@ -213,7 +213,7 @@ WRAP_CUSTOM {
                                     const TfToken &) const) &This::Bind,
              (arg("collection"), 
               arg("material"), 
-              arg("bindingName"),
+              arg("bindingName")=TfToken(),
               arg("bindingStrength")=UsdShadeTokens->fallbackStrength,
               arg("materialPurpose")=UsdShadeTokens->allPurpose))
 

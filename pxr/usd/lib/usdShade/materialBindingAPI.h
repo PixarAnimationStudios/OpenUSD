@@ -407,10 +407,15 @@ public:
     /// \p bindingName establishes an identity for the binding that is unique 
     /// on the prim. Attempting to establish two collection bindings of the same 
     /// name on the same prim will result in the first binding simply being 
-    /// overridden. If \p bindingName is empty, it is set to the name of the 
-    /// collection being bound. Hence, if there are multiple collections of the 
-    /// same name being bound at the same prim, clients should pass in a unique 
-    /// binding name per binding in order to preserve all bindings.
+    /// overridden. If \p bindingName is empty, it is set to the base-name of 
+    /// the collection being bound (which is the collection-name with any 
+    /// namespaces stripped out). If there are multiple collections with the 
+    /// same base-name being bound at the same prim, clients should pass in a 
+    /// unique binding name per binding, in order to preserve all bindings. 
+    /// The binding name used in constructing the collection-binding 
+    /// relationship name shoud not contain namespaces. Hence, a coding error 
+    /// is issued and no binding is authored if the provided value of 
+    /// \p bindingName is non-empty and contains namespaces. 
     /// 
     /// If \p bindingStrength is <i>UsdShadeTokens->fallbackStrength</i>, the 
     /// value UsdShadeTokens->weakerThanDescendants is authored sparsely, i.e. 

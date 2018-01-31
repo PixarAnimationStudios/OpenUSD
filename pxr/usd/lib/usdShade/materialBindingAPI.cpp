@@ -424,14 +424,22 @@ UsdShadeMaterialBindingAPI::Bind(
     const TfToken &bindingStrength,
     const TfToken &materialPurpose) const
 {
+    // BindingName should not contains any namespaces. 
+    // Also, we use the collection-name when bindingName is empty.
+    TfToken fixedBindingName = bindingName;
+
     if (bindingName.IsEmpty()) {
-        TF_CODING_ERROR("bindingName is empty. Not binding collection <%s> to "
-            "material <%s>", collection.GetCollectionPath().GetText(),
+        fixedBindingName = SdfPath::StripNamespace(collection.GetName());
+    } else if (bindingName.GetString().find(':') != std::string::npos) {
+        TF_CODING_ERROR("Invalid bindingName '%s', as it contains namespaces. "
+            "Not binding collection <%s> to material <%s>.", 
+            bindingName.GetText(), collection.GetCollectionPath().GetText(),
             material.GetPath().GetText());
+        return false;
     }
 
     UsdRelationship collBindingRel = _CreateCollectionBindingRel(
-        bindingName, materialPurpose);
+        fixedBindingName, materialPurpose);
 
     if (collBindingRel) {
         SetMaterialBindingStrength(collBindingRel, bindingStrength);

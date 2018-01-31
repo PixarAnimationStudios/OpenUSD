@@ -291,6 +291,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # Create some materials.
         defaultMat = UsdShade.Material.Define(s, "/World/Materials/Default")
         woodMat = UsdShade.Material.Define(s, "/World/Materials/Wood")
+        rubberMat = UsdShade.Material.Define(s, "/World/Materials/Rubber")
         plasticMat = UsdShade.Material.Define(s, "/World/Materials/Plastic")
         metalMat = UsdShade.Material.Define(s, "/World/Materials/Metal")
         velvetMat = UsdShade.Material.Define(s, "/World/Materials/Velvet")
@@ -307,8 +308,14 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         tableGrpBindingAPI = UsdShade.MaterialBindingAPI(tableGrp)
 
         # Test basic collection-binding API.
-        tableGrpBindingAPI.Bind(lampsColl, plasticMat, 
-            bindingName="lamps")
+        # Try specigying a bindingName with namespaces.
+        with self.assertRaises(RuntimeError):        
+            tableGrpBindingAPI.Bind(lampsColl, plasticMat, 
+                bindingName="my:lamps")
+
+        # Try again without namespaces in bindingName.
+        self.assertTrue(tableGrpBindingAPI.Bind(lampsColl, plasticMat, 
+                            bindingName="lamps"))
         collBindingsAndRels = tableGrpBindingAPI.GetCollectionBindings()
         self.assertEqual(len(collBindingsAndRels), 2)
 
@@ -331,6 +338,10 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertFalse(ComputeBoundMaterial(pencilB))
         self.assertFalse(ComputeBoundMaterial(eraserA))
 
+        # Overwrite binding by passing not passing in bindingName. It uses 
+        # the base-name of the collection, which is "lamps".
+        self.assertTrue(tableGrpBindingAPI.Bind(lampsColl, rubberMat))
+
         # Test the above results using the vectorized ComputeBoundMaterials 
         # API.
         boundMaterials = UsdShade.MaterialBindingAPI.ComputeBoundMaterials(
@@ -338,28 +349,28 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
                    lampAShade])
         self.assertTrue(len(boundMaterials), 7)
         self.assertEqual([i.GetPath() for i in boundMaterials], 
-            [plasticMat.GetPath(), plasticMat.GetPath(), 
+            [rubberMat.GetPath(), rubberMat.GetPath(), 
              Sdf.Path(), Sdf.Path(), Sdf.Path(), 
-             plasticMat.GetPath(), plasticMat.GetPath()])
+             rubberMat.GetPath(), rubberMat.GetPath()])
 
         # Test AddPrimToBindingCollection and RemovePrimFromBindingCollection.
         self.assertTrue(tableGrpBindingAPI.AddPrimToBindingCollection(eraserA, 
                         "lamps"))
         self.assertEqual(ComputeBoundMaterial(eraserA).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
 
         self.assertTrue(tableGrpBindingAPI.RemovePrimFromBindingCollection(
                         eraserA, "lamps"))
         self.assertFalse(ComputeBoundMaterial(eraserA))
 
         # Author a direct binding to the default matarial.
-        tableGrpBindingAPI.Bind(defaultMat)
+        self.assertTrue(tableGrpBindingAPI.Bind(defaultMat))
 
         # Ensure that collection-based bindings win over the default binding.
         self.assertEqual(ComputeBoundMaterial(lampA).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
         self.assertEqual(ComputeBoundMaterial(lampB).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
 
         self.assertEqual(ComputeBoundMaterial(pencilA).GetPath(), 
                          defaultMat.GetPath())
@@ -370,20 +381,20 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
 
         # Bind collections with overlapping geometry higher up in namespace.
         roomSetBindingAPI = UsdShade.MaterialBindingAPI(roomSet)
-        roomSetBindingAPI.Bind(lampBasesColl, metalMat, 
+        self.assertTrue(roomSetBindingAPI.Bind(lampBasesColl, metalMat, 
             bindingName="lampBasesOnly", 
-            bindingStrength=UsdShade.Tokens.weakerThanDescendants)
+            bindingStrength=UsdShade.Tokens.weakerThanDescendants))
 
-        roomSetBindingAPI.Bind(lampShadesColl, woodMat, 
+        self.assertTrue(roomSetBindingAPI.Bind(lampShadesColl, woodMat, 
             bindingName="justLampShades", 
-            bindingStrength=UsdShade.Tokens.strongerThanDescendants)
+            bindingStrength=UsdShade.Tokens.strongerThanDescendants))
 
         self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
         self.assertEqual(ComputeBoundMaterial(lampAShade).GetPath(), 
                          woodMat.GetPath())
         self.assertEqual(ComputeBoundMaterial(lampBBase).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
         self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
                          woodMat.GetPath())
 
@@ -408,9 +419,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # "room_set". Since properties are in alphabetical order by default, this 
         # will come last in property order. Hence, it loses over the earlier 
         # collection bindings.
-        roomSetBindingAPI.Bind(lampsColl, velvetMat, 
+        self.assertTrue(roomSetBindingAPI.Bind(lampsColl, velvetMat, 
             bindingName="zLamps", 
-            bindingStrength=UsdShade.Tokens.strongerThanDescendants)
+            bindingStrength=UsdShade.Tokens.strongerThanDescendants))
 
         self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
                          metalMat.GetPath())
@@ -440,9 +451,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         roomSetBindingAPI.UnbindAllBindings()
 
         self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
         self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
-                         plasticMat.GetPath())
+                         rubberMat.GetPath())
 
         # Test UnbindCollectionBinding().
         tableGrpBindingAPI.UnbindCollectionBinding("lamps")
@@ -470,7 +481,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         gprim = stage.DefinePrim("/World/gprim")
 
         UsdShade.MaterialBindingAPI(over).UnbindDirectBinding()
-        UsdShade.MaterialBindingAPI(gprim).Bind(look)
+        self.assertTrue(UsdShade.MaterialBindingAPI(gprim).Bind(look))
         # This will compose in gprim's binding, but should still be blocked
         over.GetInherits().AddInherit("/World/gprim")
         self.assertFalse(ComputeBoundMaterial(over))
