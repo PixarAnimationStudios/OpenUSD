@@ -185,8 +185,8 @@ bool visitNode(UsdShadeShader const & shadeNode,
         node.type = TfToken("PbsNetworkMaterialStandIn_2");
     }
 
-    // Protect against inserting the same node twice, and return false. 
-    // Authoring tools could guarantee that too during content creation.
+    // Protect against inserting the same node twice.  This can happen
+    // when, for example, multiple connections exist to the same node.
     auto dup = std::find(std::begin(materialNetwork->nodes), 
                          std::end(materialNetwork->nodes), 
                          node);
@@ -214,10 +214,8 @@ bool visitNode(UsdShadeShader const & shadeNode,
             materialNetwork->relationships.push_back(relationship);
         } else {
             // Parameters detected, let's store it
-            HdValueAndRole entry;
-            shadeNodeInputs[i].Get(&entry.value);
-            entry.role = shadeNodeInputs[i].GetAttr().GetRoleName();
-            node.parameters[shadeNodeInputs[i].GetFullName()] = entry;
+            shadeNodeInputs[i].Get(&value);
+            node.parameters[shadeNodeInputs[i].GetFullName()] = value;
         }
     }
 

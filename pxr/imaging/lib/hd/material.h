@@ -83,21 +83,6 @@ bool operator==(const HdMaterialRelationship& lhs,
                 const HdMaterialRelationship& rhs);
 
 
-/// \struct HdValueAndRole
-///
-/// A pair of (value, role).  The role value comes from SdfValueRoleNames
-/// and indicates the intended interpretation.  For example, the role
-/// indicates whether a GfVec3f value should be interpreted as a color,
-/// point, vector, or normal.
-struct HdValueAndRole {
-    VtValue value;
-    TfToken role;
-};
-
-// VtValue requirements
-bool operator==(const HdValueAndRole& lhs,
-                const HdValueAndRole& rhs);
-
 /// \struct HdMaterialNode
 ///
 /// Describes a material node which is made of a path, a type and
@@ -105,7 +90,7 @@ bool operator==(const HdValueAndRole& lhs,
 struct HdMaterialNode {
     SdfPath path;
     TfToken type;
-    std::map<TfToken, HdValueAndRole> parameters;
+    std::map<TfToken, VtValue> parameters;
 };
 
 // VtValue requirements
