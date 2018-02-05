@@ -39,8 +39,19 @@ struct HdRprimSharedData;
 
 /// \class HdRepr
 ///
-/// An HdRepr owns a collection of draw items (HdDrawItem) that
-/// visually represent an HdRprim.
+/// An HdRepr owns one or more draw item(s) that visually represent it.
+///
+/// The relevant compositional hierarchy is:
+/// 
+/// HdRprim
+///  |
+///  +--HdRepr(s)
+///       |
+///       +--HdDrawItem(s)
+///  
+/// For example, an HdMesh rprim could have a "Surface + Hull" repr with two 
+/// draw items; one to draw its subdivided surface and another to draw its 
+/// hull lines.
 ///
 class HdRepr {
 public:

@@ -44,7 +44,29 @@ typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
 
 /// \class HdRenderPass
 ///
-/// A single draw pass to a render target/buffer.
+/// An abstract class representing a single render iteration over a set of prims
+/// (the HdRprimCollection), for the camera/viewport parameters in
+/// HdRenderPassState.
+/// 
+/// Conceptually, a rendering task may be broken down into one or more 
+/// HdRenderPass(es).
+/// 
+/// An HdRenderPass has two phases, Sync() and Execute(), in line with Hydra's
+/// execution phases (See HdEngine::Execute)
+/// 
+/// The base class implementation of Sync() takes care of syncing collection
+/// changes with the HdRenderIndex via HdDirtyList, and allows derived classes
+/// to track collection changes (via _MarkCollectionDirty) and sync additional
+/// resources (via _Sync)
+/// 
+/// Renderer backends implement _Execute, wherein the HdDrawItem(s) for the
+/// collection may be consumed via HdRenderIndex::GetDrawItems.
+/// Typically, the HdRenderPassState argument of _Execute is made available via 
+/// the HdTaskContext.
+///
+/// \note
+/// Rendering backends are expected to specialize this abstract class, and
+/// return the specialized object via HdRenderDelegate::CreateRenderPass
 ///
 class HdRenderPass : boost::noncopyable {
 public:
@@ -72,12 +94,20 @@ public:
     HD_API
     TfTokenVector const &GetRenderTags();
 
+    /// Return the render index
+    HdRenderIndex * const GetRenderIndex() const { return _renderIndex; }
+
+    // ---------------------------------------------------------------------- //
+    /// \name Synchronization
+    // ---------------------------------------------------------------------- //
+
     /// Sync the render pass resources
     HD_API
     void Sync();
 
-    /// Return the render index
-    HdRenderIndex * const GetRenderIndex() const { return _renderIndex; }
+    // ---------------------------------------------------------------------- //
+    /// \name Execution
+    // ---------------------------------------------------------------------- //
 
     /// Execute all of the buckets in this renderpass.
     HD_API
@@ -91,7 +121,10 @@ public:
     void Execute(HdRenderPassStateSharedPtr const &renderPassState,
                  TfToken const &renderTag);
 
-    /// Optional API: Hooks for progressive rendering.
+    // ---------------------------------------------------------------------- //
+    /// \name Optional API hooks for progressive rendering
+    // ---------------------------------------------------------------------- //
+
     virtual void ResetImage() {}
     virtual bool IsConverged() const { return true; }
 
@@ -109,7 +142,7 @@ protected:
 
 private:
     // ---------------------------------------------------------------------- //
-    // Change Tracking State
+    // \name Change Tracking State
     // ---------------------------------------------------------------------- //
     // The renderIndex to which this renderPass belongs
     // (can't change after construction)
@@ -119,7 +152,7 @@ private:
     HdDirtyListSharedPtr _dirtyList;
 
     // ---------------------------------------------------------------------- //
-    // Core RenderPass State
+    // \name Core RenderPass State
     // ---------------------------------------------------------------------- //
     HdRprimCollection _collection;
 };

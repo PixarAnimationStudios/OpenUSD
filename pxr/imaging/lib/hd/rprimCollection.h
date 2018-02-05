@@ -41,8 +41,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A named, semantic collection of objects.
 ///
 /// Note that the collection object itself doesn't hold HdRprim objects, rather
-/// it acts and addressing mechanism to identify a specific group of HdRprim 
+/// it acts as an addressing mechanism to identify a specific group of HdRprim 
 /// objects that can be requested from the HdRenderIndex.
+/// 
+/// HdDirtyList provides the above algorithmic functionality, while HdRenderPass
+/// uses HdRprimCollection to concisely represent the HdRprim's it operates on.
+/// 
+/// \sa
+/// HdRenderPass
+/// HdDirtyList
 ///
 class HdRprimCollection {
 public:
