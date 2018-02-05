@@ -112,6 +112,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             if (theOption[0] == MString("materialCollectionsPath")) {
                 jobArgs.materialCollectionsPath = theOption[1].asChar();
             }
+            if (theOption[0] == MString("exportCollectionBasedBindings")) {
+                jobArgs.exportCollectionBasedBindings= theOption[1].asInt();
+            }
             if (theOption[0] == MString("normalizeUVs")) {
                 jobArgs.normalizeMeshUVs = theOption[1].asInt();
                 jobArgs.nurbsExplicitUVType = PxUsdExportJobArgsTokens->Uniform;

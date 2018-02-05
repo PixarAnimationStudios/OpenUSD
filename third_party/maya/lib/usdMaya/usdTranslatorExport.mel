@@ -115,6 +115,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Export material collections" exportMaterialCollectionsCheckBox;
         textFieldGrp -l "Material collections path:" materialCollectionsPathField;
+
+        checkBox -l "Export collection-based material bindings" exportCollectionBasedBindingsCheckBox;
         
         checkBox -l "Export UVs" exportUVsCheckBox;
 
@@ -168,6 +170,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportMaterialCollectionsCheckBox");
                 } else if ($optionBreakDown[0] == "materialCollectionsPath") {
                     textFieldGrp -e -text $optionBreakDown[1] materialCollectionsPathField;
+                } else if ($optionBreakDown[0] == "exportCollectionBasedBindings") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportCollectionBasedBindingsCheckBox");
                 } else if ($optionBreakDown[0] == "normalizeUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
@@ -219,6 +223,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportCollectionBasedBindings", "exportCollectionBasedBindingsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeUVs", "normalizeUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");

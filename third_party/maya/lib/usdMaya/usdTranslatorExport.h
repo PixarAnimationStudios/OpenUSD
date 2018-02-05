@@ -46,6 +46,7 @@ const char* const usdTranslatorExportDefaults =
         "exportUVs=1;"
         "exportMaterialCollections=0;"
         "materialCollectionsPath=/Collections;"
+        "exportCollectionBasedBindings=0;"
         "normalizeUVs=0;"
         "exportColorSets=1;"
         "renderableOnly=0;"

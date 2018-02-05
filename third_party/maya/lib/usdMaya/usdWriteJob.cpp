@@ -30,6 +30,7 @@
 
 #include "usdMaya/translatorMaterial.h"
 #include "usdMaya/primWriterRegistry.h"
+#include "usdMaya/shadingModeExporterContext.h"
 
 #include "usdMaya/Chaser.h"
 #include "usdMaya/ChaserRegistry.h"
@@ -274,19 +275,24 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
         }
     }
 
+    PxrUsdMayaExportParams exportParams;
+    exportParams.mergeTransformAndShape = mJobCtx.mArgs.mergeTransformAndShape;
+    exportParams.exportCollectionBasedBindings = 
+            mJobCtx.mArgs.exportCollectionBasedBindings;
+    exportParams.overrideRootPath = mJobCtx.mArgs.usdModelRootOverridePath;
+    exportParams.bindableRoots = mJobCtx.mArgs.dagPaths;
+
     // Writing Materials/Shading
-    SdfPath matCollectionPath = mJobCtx.mArgs.exportMaterialCollections ? 
-                    SdfPath(mJobCtx.mArgs.materialCollectionsPath) : 
-                    SdfPath::EmptyPath();
+    exportParams.materialCollectionsPath = 
+            mJobCtx.mArgs.exportMaterialCollections ? 
+            SdfPath(mJobCtx.mArgs.materialCollectionsPath) : 
+            SdfPath::EmptyPath();
 
     PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
                 mJobCtx.mStage,
-                mJobCtx.mArgs.dagPaths,
                 mJobCtx.mArgs.shadingMode,
-                mJobCtx.mArgs.mergeTransformAndShape,
-                mJobCtx.mArgs.usdModelRootOverridePath,
                 mDagPathToUsdPathMap,
-                matCollectionPath);
+                exportParams);
 
     if (!mModelKindWriter.MakeModelHierarchy(mJobCtx.mStage)) {
         return false;

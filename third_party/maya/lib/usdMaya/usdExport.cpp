@@ -66,6 +66,7 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-uvs" , "-exportUVs", MSyntax::kBoolean);
     syntax.addFlag("-mcs" , "-exportMaterialCollections", MSyntax::kBoolean);
     syntax.addFlag("-mcp" , "-materialCollectionsPath", MSyntax::kString);
+    syntax.addFlag("-cbb" , "-exportCollectionBasedBindings", MSyntax::kBoolean);
     syntax.addFlag("-nuv" , "-normalizeMeshUVs" , MSyntax::kBoolean);
     syntax.addFlag("-nnu" , "-normalizeNurbs" , MSyntax::kBoolean);
     syntax.addFlag("-euv" , "-nurbsExplicitUVType" , MSyntax::kString);
@@ -185,6 +186,11 @@ try
         MString stringVal;
         argData.getFlagArgument("materialCollectionsPath", 0, stringVal);
         jobArgs.materialCollectionsPath = stringVal.asChar();
+    }
+
+    if (argData.isFlagSet("exportCollectionBasedBindings")) {
+        argData.getFlagArgument("exportCollectionBasedBindings", 0,
+                                jobArgs.exportCollectionBasedBindings);
     }
 
     if (argData.isFlagSet("normalizeMeshUVs")) {

@@ -34,15 +34,46 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct PxrUsdMayaExportParams {
+    /// Whether the transform node and the shape node must be merged into 
+    /// a single node in the output USD.
+    bool mergeTransformAndShape=true;
+
+    /// If set to false, then direct per-gprim bindings are exported. 
+    /// If set to true and if \p materialCollectionsPath is non-empty, then 
+    /// material-collections are created and bindings are made to the 
+    /// collections at \p materialCollectionsPath, instead of direct 
+    /// per-gprim bindings.
+    bool exportCollectionBasedBindings=false;
+
+    /// Modified root path. 
+    SdfPath overrideRootPath;
+
+    /// If this is not empty, then a set of collections are exported on the 
+    /// prim pointed to by the path, each representing the collection of
+    /// geometry that's bound to the various shading group sets in maya.
+    SdfPath materialCollectionsPath;
+
+    /// Shaders that are bound to prims under \p bindableRoot paths will get
+    /// exported.  If \p bindableRoots is empty, it will export all.
+    PxrUsdMayaUtil::ShapeSet bindableRoots;
+};
+
 class PxrUsdMayaShadingModeExportContext
 {
 public:
     void SetShadingEngine(MObject shadingEngine) { _shadingEngine = shadingEngine; }
     MObject GetShadingEngine() const { return _shadingEngine; }
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
-    bool GetMergeTransformAndShape() const { return _mergeTransformAndShape; }
-    const SdfPath& GetOverrideRootPath() const { return _overrideRootPath; }
-    const SdfPathSet& GetBindableRoots() const { return _bindableRoots; }
+    bool GetMergeTransformAndShape() const { 
+        return _exportParams.mergeTransformAndShape; 
+    }
+    const SdfPath& GetOverrideRootPath() const { 
+        return _exportParams.overrideRootPath; 
+    }
+    const SdfPathSet& GetBindableRoots() const { 
+        return _bindableRoots; 
+    }
 
     const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& GetDagPathToUsdMap() const
     { return _dagPathToUsdMap; }
@@ -96,17 +127,17 @@ public:
     PxrUsdMayaShadingModeExportContext(
             const MObject& shadingEngine,
             const UsdStageRefPtr& stage,
-            bool mergeTransformAndShape,
-            const PxrUsdMayaUtil::ShapeSet& bindableRoots,
-            SdfPath overrideRootPath,
-            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap);
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+            const PxrUsdMayaExportParams &exportParams);
 private:
     MObject _shadingEngine;
     const UsdStageRefPtr& _stage;
-    bool _mergeTransformAndShape;
-    SdfPath _overrideRootPath;
-    SdfPathSet _bindableRoots;
     const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& _dagPathToUsdMap;
+    const PxrUsdMayaExportParams &_exportParams;
+
+    // Bindable roots stored as an SdfPathSet.
+    SdfPathSet _bindableRoots;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
