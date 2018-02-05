@@ -1,5 +1,113 @@
 # Change Log
 
+## [0.8.3] - 2018-02-05
+
+### Added
+- Compression in .usdc files for integer arrays and scalar floating point 
+  arrays. The latter are compressed if the values are all integers or there 
+  are a small number of unique values. In the example Kitchen Set asset on 
+  the USD website, the total size of the geometry layers decreased by ~46%, 
+  from 25 MB to 14 MB.
+
+  .usdc files with this new compression enabled are marked as version 0.6.0
+  and are not readable by earlier releases. These files are not written by
+  default; this may be enabled by setting the environment variable 
+  `USD_WRITE_NEW_USDC_FILES_AS_VERSION` to "0.6.0".
+- Ability to record and query API schemas that have been applied to a prim
+  via new Apply method on API schema classes, UsdPrim::GetAppliedSchemas and
+  UsdPrim::HasAPI. Custom API schemas should be updated with these new
+  methods by re-running usdGenSchema.
+- GetUnionedTimeSamples and GetUnionedTimeSamplesInInterval functions for
+  UsdAttribute and UsdAttributeQuery.
+- Ability to offset time for active value clips when using template clip 
+  metadata via "templateActiveOffset" entry.
+- UsdUtilsGetDirtyLayers for retrieving dirty layers used by a UsdStage.
+- GetTimeSamplesInInterval functions for UsdGeomXformOp, UsdGeomXformable 
+  and UsdGeomXformable::XformQuery.
+- UsdShadeMaterialBindingAPI, which provides an interface for binding 
+  materials to prims or collections of prims and computing the final bound
+  material for a prim via "material resolution".
+- Numerous features and documentation for UsdSkel schema.
+- "Save Flattened As" functionality in usdview.
+- Plugin mechanism in usdview that allows users to add custom commands 
+  and menus. See new tutorial for more details.
+- Partial support for RenderMan for Maya lights in the Maya plugin.
+- PxrUsdIn.BootstrapMaterialGroup op in Katana plugin for more robustly reading 
+  a Looks scope from a .usd file
+
+### Changed
+- Build now supports versioned OpenEXR and IlmBase shared libraries. (Issue #71)
+- Layer identifiers may now include '?' characters. (Issue #289)
+- UsdStage preserves payload load state when processing instancing changes.
+- UsdListPosition enum values now specify the "append" or "prepend" list as 
+  well as a position to provide users with finer-grained control.
+- The various Add... methods in Usd that take a UsdListPosition argument
+  now author entries to the back of the "prepend" list by default if no
+  "explicit" list exists. The old behavior of authoring to the (now 
+  deprecated) "added" list can be restored by setting the environment
+  variable `USD_AUTHOR_OLD_STYLE_ADD` to 1.
+- Standard schema conventions are more strictly-enforced in usdGenSchema.
+- UsdCollectionAPI::AddCollection has been renamed ApplyCollection.
+- Enabled authoring of new UsdShade encoding by default. Authoring the old
+  (now deprecated) encoding can be restored by setting the environment variable 
+  `USD_SHADE_WRITE_NEW_ENCODING` to 0.
+- The "joints" relationship on the UsdSkelSkeleton, UsdSkelPackedJointAnimation,
+  and UsdSkelBinding API schemas is now a token array-valued attribute.
+- UsdRiStatements API schema has been renamed to UsdRiStatementsAPI.
+- sdfdump utility now shows all specs in a layer, even if they have no fields.
+- Various improvements to Hydra reprs and geometry processing.
+- More improvements to Hydra's handling of invalid data.
+- Ongoing work to prepare Hydra to fully consume UsdShade schemas.
+- Refactored GL dependency out of Hd library.
+- Built-in variables in usdview interpreter are now accessed through a separate
+  usdviewApi object to avoid name collisions.
+- Performance improvements in Maya plugin when in Viewport 2.0.
+- Inclusion of info.usd.opArgs in Katana plugin is now parameterized; it will
+  be authored to the location where a "setOpArgsToInfo" attribute exists and is
+  set to 1.
+
+### Deprecated
+- The "added" list for list ops in scene description is deprecated in favor 
+  of the "prepend" and "append" lists.
+
+### Removed
+- GfCamera::ZUp and GfCamera::YUp.
+- UsdSkelJoint schema.
+
+### Fixed
+- build_usd.py ensures OpenImageIO build does not pick up OpenEXR from other 
+  locations, which could have led to runtime errors. (Issue #315, Issue #325)
+- Headers are now installed properly for monolithic builds. (Issue #277)
+- Original install location will no longer be searched for plugins after
+  relocating builds. (Issue #363)
+- Fixed thread-safety issue where plugins with the same name but in different
+  locations could be loaded twice. (Issue #358)
+- Fixed bug where layers that were muted via SdfLayer::AddToMutedLayers before
+  they were first opened could not be unmuted.
+- Fixed bug in usdGenSchema where changing an existing property's type in a 
+  schema would not be reflected in the generated code.
+- Fixed bug where a large (> 1460) number of variants in a .usda file would
+  cause a "memory exhausted" error when parsing that file.
+- Fixed broken pread mode for .usdc files.
+- Fixed bug that caused UsdStage::CreateNew to crash on Windows. (Issue #364)
+- Fixed bug when using a UsdStagePopulationMask with prims beneath instances. 
+  (Issue #312)
+- Fixed bug where setting float-valued attributes to +inf in Python would fail.
+- UsdAttribute::GetTimeSamplesInInterval now properly accounts for layer 
+  offsets. (Issue #352)
+- Internal references or empty asset paths no longer cause errors in 
+  UsdUtilsFlattenLayerStack.
+- Fixed bug where UsdGeomPrimvar::GetTimeSamples would miss time samples for
+  indexed primvars.
+- Disabled tiny prim culling in Hydra by default. It can be re-enabled by
+  setting the environment variable `HD_ENABLE_TINY_PRIM_CULLING` to 1.
+  (Issue #314)
+- Fixed issues with using non-file-backed asset paths in various utilities
+  and Maya and Katana plugins.
+- Houdini plugin explicitly links against required libraries to avoid runtime
+  errors with Houdini 16.5.
+- Fixed several bugs with point instancing support in Houdini plugin.
+
 ## [0.8.2] - 2017-12-01
 
 Release 0.8.2 increments the file format version for .usdc files. New .usdc
