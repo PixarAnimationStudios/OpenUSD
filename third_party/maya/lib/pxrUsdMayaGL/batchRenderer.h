@@ -37,6 +37,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
@@ -58,9 +59,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,9 +66,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEBUG_CODES(
     PXRUSDMAYAGL_QUEUE_INFO
 );
-
-
-typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 
 
 /// \brief This is an helper object that shapes can hold to get consistent usd
@@ -89,7 +84,7 @@ typedef boost::shared_ptr<class HdxIntersector> HdxIntersectorSharedPtr;
 /// In the draw stage, \c Draw(...) must be called for each draw request to
 /// complete the render.
 ///
-class UsdMayaGLBatchRenderer : private boost::noncopyable
+class UsdMayaGLBatchRenderer : public TfSingleton<UsdMayaGLBatchRenderer>
 {
 public:
 
@@ -100,7 +95,7 @@ public:
     static void Init();
 
     PXRUSDMAYAGL_API
-    static UsdMayaGLBatchRenderer& Get();
+    static UsdMayaGLBatchRenderer& GetInstance();
 
     /// Gets a pointer to the \c PxrMayaHdShapeAdapter associated with a
     /// certain set of parameters.
@@ -143,20 +138,11 @@ public:
             const bool drawShape,
             const MBoundingBox* boxToDraw = nullptr);
 
-    /// Construct a new, unique BatchRenderer.
-    ///
-    /// In almost all cases, this should not be used. Use \c Get() instead.
-    PXRUSDMAYAGL_API
-    UsdMayaGLBatchRenderer();
-
-    PXRUSDMAYAGL_API
-    virtual ~UsdMayaGLBatchRenderer();
-
     /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
     /// In particular, it's important that this happen when switching to a new
     /// Maya scene so that any UsdImagingDelegates held by shape adapters that
     /// have been populated with USD stages can have those stages released,
-    /// since the delegates hold a strong pointers to their stages.
+    /// since the delegates hold a strong pointer to their stages.
     PXRUSDMAYAGL_API
     static void Reset();
 
@@ -184,6 +170,14 @@ public:
             GfVec3d* hitPoint);
 
 private:
+
+    friend class TfSingleton<UsdMayaGLBatchRenderer>;
+
+    PXRUSDMAYAGL_API
+    UsdMayaGLBatchRenderer();
+
+    PXRUSDMAYAGL_API
+    virtual ~UsdMayaGLBatchRenderer();
 
     /// Gets the UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
     ///
@@ -289,12 +283,11 @@ private:
     std::unique_ptr<HdRenderIndex> _renderIndex;
 
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
-    HdxIntersectorSharedPtr _intersector;
+    std::unique_ptr<HdxIntersector> _intersector;
     UsdMayaGLSoftSelectHelper _softSelectHelper;
-
-    /// \brief Sole global batch renderer used by default.
-    static std::unique_ptr<UsdMayaGLBatchRenderer> _sGlobalRendererPtr;
 };
+
+PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

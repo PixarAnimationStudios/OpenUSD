@@ -46,6 +46,9 @@
 #include <maya/MViewport2Renderer.h>
 #include <maya/MHWGeometryUtilities.h>
 
+#include <memory>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -55,11 +58,11 @@ UsdMayaGLHdRenderer::CheckRendererSetup(
         const SdfPathVector& excludePaths)
 {
     if (usdPrim != _renderedPrim || excludePaths != _excludePrimPaths) {
-        _excludePrimPaths = excludePaths;
-        boost::scoped_ptr<UsdImagingGL> tmpRenderer( new UsdImagingGL(usdPrim.GetPath(), _excludePrimPaths) );
-
-        _renderer.swap(tmpRenderer);
         _renderedPrim = usdPrim;
+        _excludePrimPaths = excludePaths;
+
+        _renderer.reset(new UsdImagingGL(_renderedPrim.GetPath(),
+                                         _excludePrimPaths));
     }
 }
 

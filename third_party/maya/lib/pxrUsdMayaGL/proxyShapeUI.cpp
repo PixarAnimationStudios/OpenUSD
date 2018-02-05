@@ -90,7 +90,7 @@ _GetShapeAdapter(
     }
 
     PxrMayaHdShapeAdapter* outShapeAdapter =
-        UsdMayaGLBatchRenderer::Get().GetShapeAdapter(
+        UsdMayaGLBatchRenderer::GetInstance().GetShapeAdapter(
             objPath,
             usdPrim,
             excludePaths);
@@ -140,7 +140,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
         const MBoundingBox bounds = shape->boundingBox();
 
         // Note that drawShape is still passed through here.
-        UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
+        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
             shapeAdapter,
             this,
             request,
@@ -151,7 +151,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
     //
     // Like above but with no bounding box...
     else if (drawShape) {
-        UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
+        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
             shapeAdapter,
             this,
             request,
@@ -177,7 +177,7 @@ UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
     view.beginGL();
 
-    UsdMayaGLBatchRenderer::Get().Draw(request, view);
+    UsdMayaGLBatchRenderer::GetInstance().Draw(request, view);
 
     view.endGL();
 }
@@ -217,7 +217,7 @@ UsdMayaProxyShapeUI::select(
 
     GfVec3d hitPoint;
     const bool didHit =
-        UsdMayaGLBatchRenderer::Get().TestIntersection(
+        UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             shapeAdapter,
             view,
             selectRes,

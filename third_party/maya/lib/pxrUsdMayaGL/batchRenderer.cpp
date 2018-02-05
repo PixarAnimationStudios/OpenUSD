@@ -41,6 +41,8 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/registryManager.h"
@@ -66,8 +68,6 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/scoped_ptr.hpp>
-
 #include <memory>
 #include <utility>
 
@@ -87,27 +87,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
             "Prints out batch renderer queuing info.");
 }
 
-/* static */
-void
-UsdMayaGLBatchRenderer::Init()
-{
-    GlfGlewInit();
-
-    Get();
-}
-
-/* static */
-UsdMayaGLBatchRenderer&
-UsdMayaGLBatchRenderer::Get()
-{
-    if (!_sGlobalRendererPtr) {
-        Reset();
-    }
-
-    return *_sGlobalRendererPtr;
-}
-
-std::unique_ptr<UsdMayaGLBatchRenderer> UsdMayaGLBatchRenderer::_sGlobalRendererPtr;
 
 /// \brief struct to hold all the information needed for a
 /// draw request in vp1 or vp2, without requiring shape querying at
@@ -120,9 +99,9 @@ class _BatchDrawUserData : public MUserData
 {
     public:
 
-        bool _drawShape;
-        boost::scoped_ptr<MBoundingBox> _bounds;
-        boost::scoped_ptr<GfVec4f> _wireframeColor;
+        const bool _drawShape;
+        const std::unique_ptr<MBoundingBox> _bounds;
+        const std::unique_ptr<GfVec4f> _wireframeColor;
 
         // Constructor to use when shape is drawn but no bounding box.
         _BatchDrawUserData() :
@@ -144,6 +123,24 @@ class _BatchDrawUserData : public MUserData
         virtual ~_BatchDrawUserData() {}
 };
 
+
+TF_INSTANTIATE_SINGLETON(UsdMayaGLBatchRenderer);
+
+/* static */
+void
+UsdMayaGLBatchRenderer::Init()
+{
+    GlfGlewInit();
+
+    GetInstance();
+}
+
+/* static */
+UsdMayaGLBatchRenderer&
+UsdMayaGLBatchRenderer::GetInstance()
+{
+    return TfSingleton<UsdMayaGLBatchRenderer>::GetInstance();
+}
 
 PxrMayaHdShapeAdapter*
 UsdMayaGLBatchRenderer::GetShapeAdapter(
@@ -278,8 +275,8 @@ UsdMayaGLBatchRenderer::_OnMayaEndRenderCallback(
         MHWRender::MDrawContext& context,
         void* clientData)
 {
-    if (_sGlobalRendererPtr) {
-        _sGlobalRendererPtr->_MayaRenderDidEnd();
+    if (UsdMayaGLBatchRenderer::CurrentlyExists()) {
+        UsdMayaGLBatchRenderer::GetInstance()._MayaRenderDidEnd();
     }
 }
 
@@ -331,10 +328,12 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 void
 UsdMayaGLBatchRenderer::Reset()
 {
-    if (_sGlobalRendererPtr) {
+    if (UsdMayaGLBatchRenderer::CurrentlyExists()) {
         MGlobal::displayInfo("Resetting USD Batch Renderer");
+        UsdMayaGLBatchRenderer::DeleteInstance();
     }
-    _sGlobalRendererPtr.reset(new UsdMayaGLBatchRenderer());
+
+    UsdMayaGLBatchRenderer::GetInstance();
 }
 
 void

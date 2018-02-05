@@ -119,9 +119,9 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     // The shape adapter is owned by the global batch renderer, which is a
     // singleton.
     PxrMayaHdShapeAdapter* shapeAdapter =
-        UsdMayaGLBatchRenderer::Get().GetShapeAdapter(objPath,
-                                                      usdPrim,
-                                                      excludePaths);
+        UsdMayaGLBatchRenderer::GetInstance().GetShapeAdapter(objPath,
+                                                              usdPrim,
+                                                              excludePaths);
 
     shapeAdapter->PrepareForQueue(timeCode,
                                   subdLevel,
@@ -145,7 +145,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         bounds = shape->boundingBox();
 
         // Note that drawShape is still passed through here.
-        UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
+        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
             shapeAdapter,
             userData,
             params,
@@ -155,7 +155,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     //
     // Like above but with no bounding box...
     else if (drawShape) {
-        UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
+        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
             shapeAdapter,
             userData,
             params,
@@ -187,7 +187,7 @@ UsdMayaProxyDrawOverride::draw(
         const MHWRender::MDrawContext& context,
         const MUserData* data)
 {
-    UsdMayaGLBatchRenderer::Get().Draw(context, data);
+    UsdMayaGLBatchRenderer::GetInstance().Draw(context, data);
 }
 
 

@@ -30,17 +30,21 @@
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImagingGL/gl.h"
-#include <boost/scoped_ptr.hpp>
+
 #include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 
+#include <memory>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 /// \brief This is an helper object that shapes can hold to get consistent usd
 /// drawing in maya.
@@ -148,7 +152,7 @@ public:
 private:
     UsdPrim _renderedPrim;
     SdfPathVector _excludePrimPaths;
-    boost::scoped_ptr<UsdImagingGL> _renderer;
+    std::unique_ptr<UsdImagingGL> _renderer;
 };
 
 
