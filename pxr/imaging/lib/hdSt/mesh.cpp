@@ -52,6 +52,8 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hf/diagnostic.h"
+
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/vt/value.h"
@@ -574,7 +576,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // index into; the inverse is when we issue a warning and skip
             // update.
             if (source->GetNumElements() < numPoints) {
-                TF_CODING_ERROR(
+                HF_VALIDATION_WARN(
                     "Vertex primvar %s for prim %s has only %d elements, while"
                     " its topology expects at least %d elements. Skipping "
                     " primvar update.",
@@ -589,7 +591,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(),
                            HdBufferArrayRangeSharedPtr());
 
-                    TF_CODING_ERROR(
+                    HF_VALIDATION_WARN(
                     "Skipping prim %s because its points data is insufficient.",
                     id.GetText());
 
@@ -599,7 +601,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 continue;
 
             } else if (source->GetNumElements() > numPoints) {
-                TF_WARN(
+                HF_VALIDATION_WARN(
                     "Vertex primvar %s for prim %s has %d elements, while"
                     " its topology references only upto element index %d.",
                     nameIt->GetText(), id.GetText(),
@@ -934,7 +936,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
             // verify primvar length
             if (source->GetNumElements() != numFaceVaryings) {
-                TF_WARN(
+                HF_VALIDATION_WARN(
                     "# of facevaryings mismatch (%d != %d)"
                     " for primvar %s, prim %s",
                     source->GetNumElements(), numFaceVaryings,
@@ -1016,7 +1018,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
             // verify primvar length
             if (source->GetNumElements() != numFaces) {
-                TF_WARN(
+                HF_VALIDATION_WARN(
                     "# of faces mismatch (%d != %d) for primvar %s, prim %s",
                     source->GetNumElements(), numFaces,
                     nameIt->GetText(), id.GetText());

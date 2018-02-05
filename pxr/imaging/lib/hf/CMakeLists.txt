@@ -11,6 +11,7 @@ pxr_library(hf
 
     PUBLIC_HEADERS
         api.h
+        diagnostic.h
         pluginDesc.h
         perfLog.h
 
