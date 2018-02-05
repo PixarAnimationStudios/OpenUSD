@@ -145,6 +145,13 @@
   </sample>
 </attr>
 </topAttr>
+<topAttr name="xform">
+<attr type="GroupAttr">
+  <attr name="originInstanceSource" tupleSize="1" type="DoubleAttr">
+    <sample size="1" time="0" value="1 "/>
+  </attr>
+</attr>
+</topAttr>
 </location>
 <location path="/root/world/geo/Rocks/Instances/Prototypes/Rock_0/geo">
 <topAttr name="type">
