@@ -15,6 +15,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdShade
         usdUtils
         ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
         ${HOUDINI_UI_LIBRARY}
         ${HOUDINI_OPZ_LIBRARY}
         ${HOUDINI_OP3_LIBRARY}
