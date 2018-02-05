@@ -46,6 +46,24 @@ enum HdCompareFunction
     HdCmpFuncLast
 };
 
+/// \enum HdStencilOp
+///
+/// Abstraction of the Graphics stencil test operations.
+///
+enum HdStencilOp
+{
+    HdStencilOpKeep,
+    HdStencilOpZero,
+    HdStencilOpReplace,
+    HdStencilOpIncrement,
+    HdStencilOpIncrementWrap,
+    HdStencilOpDecrement,
+    HdStencilOpDecrementWrap,
+    HdStencilOpInvert,
+
+    HdStencilOpLast
+};
+
 /// \enum HdCullStyle
 ///
 /// Face culling options.

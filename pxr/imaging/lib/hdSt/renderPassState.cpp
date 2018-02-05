@@ -267,6 +267,23 @@ HdStRenderPassState::Bind()
     }
 
     glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
+    
+    // Stencil
+    if (_stencilEnabled) {
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(HdStGLConversions::GetGlStencilFunc(_stencilFunc),
+                _stencilRef, _stencilMask);
+        glStencilOp(HdStGLConversions::GetGlStencilOp(_stencilFailOp),
+                HdStGLConversions::GetGlStencilOp(_stencilZFailOp),
+                HdStGLConversions::GetGlStencilOp(_stencilZPassOp));
+    } else {
+        glDisable(GL_STENCIL_TEST);
+    }
+    
+    // Line width
+    if (_lineWidth > 0) {
+        glLineWidth(_lineWidth);
+    }
 
     if (!_alphaToCoverageUseDefault) {
         if (_alphaToCoverageEnabled) {
@@ -306,8 +323,10 @@ HdStRenderPassState::Unbind()
     glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
     glPolygonOffset(0, 0);
+    glLineWidth(1.0f);
 
     for (size_t i = 0; i < _clipPlanes.size(); ++i) {
         glDisable(GL_CLIP_DISTANCE0 + i);

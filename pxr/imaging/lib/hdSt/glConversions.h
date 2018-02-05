@@ -44,6 +44,12 @@ public:
     static GLenum GetGlDepthFunc(HdCompareFunction func);
 
     HDST_API
+    static GLenum GetGlStencilFunc(HdCompareFunction func);
+
+    HDST_API
+    static GLenum GetGlStencilOp(HdStencilOp op);
+
+    HDST_API
     static GLenum GetMinFilter(HdMinFilter filter);
 
     HDST_API

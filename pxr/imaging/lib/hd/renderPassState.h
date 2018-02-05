@@ -145,6 +145,22 @@ public:
     HdCompareFunction GetDepthFunc() const { return _depthFunc; }
 
     HD_API
+    void SetStencil(HdCompareFunction func, int ref, int mask,
+                    HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass);
+    HdCompareFunction GetStencilFunc() const { return _stencilFunc; }
+    int GetStencilRef() const { return _stencilRef; }
+    int GetStencilMask() const { return _stencilMask; }
+    HdStencilOp GetStencilFailOp() const { return _stencilFailOp; }
+    HdStencilOp GetStencilDepthFailOp() const { return _stencilZFailOp; }
+    HdStencilOp GetStencilDepthPassOp() const { return _stencilZPassOp; }
+    HD_API
+    void SetStencilEnabled(bool enabled);
+    
+    HD_API
+    void SetLineWidth(float width);
+    float GetLineWidth() const { return _lineWidth; }
+    
+    HD_API
     void SetAlphaToCoverageUseDefault(bool useDefault);
     bool GetAlphaToCoverageUseDefault() const { return _alphaToCoverageUseDefault; }
 
@@ -196,6 +212,18 @@ protected:
     HdCompareFunction _depthFunc;
     HdCullStyle _cullStyle;
 
+    // Stencil RenderPassState
+    HdCompareFunction _stencilFunc;
+    int _stencilRef;
+    int _stencilMask;
+    HdStencilOp _stencilFailOp;
+    HdStencilOp _stencilZFailOp;
+    HdStencilOp _stencilZPassOp;
+    bool _stencilEnabled;
+    
+    // Line width
+    float _lineWidth;
+    
     // alpha to coverage
     bool _alphaToCoverageUseDefault;
     bool _alphaToCoverageEnabled;

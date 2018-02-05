@@ -48,6 +48,7 @@ struct HdSt_BasisCurvesShaderKey
     bool IsCullingPass() const { return false; }
     HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
     HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
+    float GetLineWidth() const { return 0; }
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
         return primType; 
     }

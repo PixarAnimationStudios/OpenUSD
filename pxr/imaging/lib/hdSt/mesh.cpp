@@ -1306,7 +1306,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  hasFaceVaryingPrimVars,
                                  blendWireframeColor,
                                  cullStyle,
-                                 geomStyle);
+                                 geomStyle,
+                                 desc.lineWidth);
 
     HdStResourceRegistrySharedPtr resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(

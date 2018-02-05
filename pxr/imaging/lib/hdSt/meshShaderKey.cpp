@@ -58,6 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((surfaceFS,               "Fragment.Surface"))
     ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
     ((surfaceSheerFS,          "Fragment.SurfaceSheer"))
+    ((surfaceOutlineFS,        "Fragment.SurfaceOutline"))
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((hullColorFS,             "Fragment.HullColor"))
     ((mainFS,                  "Mesh.Fragment"))
@@ -74,10 +75,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool faceVarying,
     bool blendWireframeColor,
     HdCullStyle cullStyle,
-    HdMeshGeomStyle geomStyle)
+    HdMeshGeomStyle geomStyle,
+    float lineWidth)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
+    , lineWidth(lineWidth)
     , isFaceVarying(faceVarying)
     , glslfx(_tokens->baseGLSLFX)
 {
@@ -125,7 +128,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     //                stage.
     if (!hasCustomDisplacementTerminal) {
         // Geometry shader (along with the displacement shader) 
-        // can be fully disabled in the folowing condition.
+        // can be fully disabled in the following condition.
         if (smoothNormals
             && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
             && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
@@ -180,6 +183,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->surfaceUnlitFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderSheer) {
         terminalFS = _tokens->surfaceSheerFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderOutline) {
+        terminalFS = _tokens->surfaceOutlineFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
         terminalFS = _tokens->constantColorFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {

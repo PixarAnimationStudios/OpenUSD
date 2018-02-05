@@ -97,7 +97,8 @@ public:
                        HdCullStyle cullStyle,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
-                       SdfPath const &debugId=SdfPath());
+                       SdfPath const &debugId = SdfPath(),
+                       float lineWidth = 0);
 
     HDST_API
     virtual ~HdSt_GeometricShader();
@@ -184,7 +185,9 @@ public:
                         shaderKey.GetPrimitiveType(),
                         shaderKey.GetCullStyle(),
                         shaderKey.GetPolygonMode(),
-                        shaderKey.IsCullingPass())));
+                        shaderKey.IsCullingPass(),
+                        SdfPath(),
+                        shaderKey.GetLineWidth())));
         }
         return geometricShaderInstance.GetValue();
     }
@@ -193,6 +196,7 @@ private:
     PrimitiveType _primType;
     HdCullStyle _cullStyle;
     HdPolygonMode _polygonMode;
+    float _lineWidth;
     // depth offset?
 
     boost::scoped_ptr<GlfGLSLFX> _glslfx;

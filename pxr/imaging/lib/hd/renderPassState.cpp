@@ -51,6 +51,14 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
     , _cullStyle(HdCullStyleNothing)
+    , _stencilFunc(HdCmpFuncAlways)
+    , _stencilRef(0)
+    , _stencilMask(~0)
+    , _stencilFailOp(HdStencilOpKeep)
+    , _stencilZFailOp(HdStencilOpKeep)
+    , _stencilZPassOp(HdStencilOpKeep)
+    , _stencilEnabled(false)
+    , _lineWidth(1.0f)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
@@ -172,6 +180,31 @@ void
 HdRenderPassState::SetDepthFunc(HdCompareFunction depthFunc)
 {
     _depthFunc = depthFunc;
+}
+
+void
+HdRenderPassState::SetStencil(HdCompareFunction func,
+        int ref, int mask,
+        HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
+{
+    _stencilFunc = func;
+    _stencilRef = ref;
+    _stencilMask = mask;
+    _stencilFailOp = fail;
+    _stencilZFailOp = zfail;
+    _stencilZPassOp = zpass;
+}
+
+void
+HdRenderPassState::SetStencilEnabled(bool enabled)
+{
+    _stencilEnabled = enabled;
+}
+
+void
+HdRenderPassState::SetLineWidth(float width)
+{
+    _lineWidth = width;
 }
 
 void

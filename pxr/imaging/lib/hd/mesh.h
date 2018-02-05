@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (surfaceShader)              \
     (surfaceShaderUnlit)         \
     (surfaceShaderSheer)         \
+    (surfaceShaderOutline)       \
     (constantColor)              \
     (hullColor)
 
@@ -54,12 +55,14 @@ struct HdMeshReprDesc {
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
                    bool smoothNormals = false,
-                   bool blendWireframeColor = true)
+                   bool blendWireframeColor = true,
+                   float lineWidth = 0)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
         , smoothNormals(smoothNormals)
         , blendWireframeColor(blendWireframeColor)
+        , lineWidth(lineWidth)
         {}
 
     HdMeshGeomStyle geomStyle;
@@ -67,6 +70,7 @@ struct HdMeshReprDesc {
     TfToken         shadingTerminal;
     bool            smoothNormals;
     bool            blendWireframeColor;
+    float           lineWidth;
 };
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.

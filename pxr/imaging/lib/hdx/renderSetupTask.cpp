@@ -137,6 +137,12 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
                                params.depthBiasSlopeFactor);
     _renderPassState->SetDepthFunc(params.depthFunc);
 
+    // stencil
+    _renderPassState->SetStencilEnabled(params.stencilEnable);
+    _renderPassState->SetStencil(params.stencilFunc, params.stencilRef,
+            params.stencilMask, params.stencilFailOp, params.stencilZFailOp,
+            params.stencilZPassOp);
+    
     // alpha to coverage
     // XXX:  Long-term Alpha to Coverage will be a render style on the
     // task.  However, as there isn't a fallback we current force it

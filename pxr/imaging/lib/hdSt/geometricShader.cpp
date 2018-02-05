@@ -44,11 +44,13 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        HdCullStyle cullStyle,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
-                                       SdfPath const &debugId)
+                                       SdfPath const &debugId,
+                                       float lineWidth)
     : HdStShaderCode()
     , _primType(primType)
     , _cullStyle(cullStyle)
     , _polygonMode(polygonMode)
+    , _lineWidth(lineWidth)
     , _cullingPass(cullingPass)
     , _hash(0)
 {
@@ -111,6 +113,9 @@ HdSt_GeometricShader::BindResources(HdSt_ResourceBinder const &binder, int progr
 
     if (_polygonMode == HdPolygonModeLine) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if (_lineWidth > 0) {
+            glLineWidth(_lineWidth);
+        }
     }
 }
 
