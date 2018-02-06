@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,8 +37,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// and a place holder for when we develop a true validation system where we
 /// can plumb this information back to the application.
 ///
-#define HF_VALIDATION_WARN(...) \
-    TF_WARN(__VA_ARGS__)
+#define HF_VALIDATION_WARN(id, ...) \
+    TF_WARN("Invalid Hydra prim '%s': %s", \
+            id.GetText(), \
+            TfStringPrintf(__VA_ARGS__).c_str())
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

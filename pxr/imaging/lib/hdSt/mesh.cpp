@@ -576,11 +576,11 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // index into; the inverse is when we issue a warning and skip
             // update.
             if (source->GetNumElements() < numPoints) {
-                HF_VALIDATION_WARN(
-                    "Vertex primvar %s for prim %s has only %d elements, while"
+                HF_VALIDATION_WARN(id, 
+                    "Vertex primvar %s has only %d elements, while"
                     " its topology expects at least %d elements. Skipping "
                     " primvar update.",
-                    nameIt->GetText(), id.GetText(),
+                    nameIt->GetText(),
                     source->GetNumElements(), numPoints);
 
                 if (*nameIt == HdTokens->points) {
@@ -591,9 +591,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(),
                            HdBufferArrayRangeSharedPtr());
 
-                    HF_VALIDATION_WARN(
-                    "Skipping prim %s because its points data is insufficient.",
-                    id.GetText());
+                    HF_VALIDATION_WARN(id, 
+                      "Skipping prim because its points data is insufficient.");
 
                     return;
                 }
@@ -601,10 +600,10 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 continue;
 
             } else if (source->GetNumElements() > numPoints) {
-                HF_VALIDATION_WARN(
-                    "Vertex primvar %s for prim %s has %d elements, while"
+                HF_VALIDATION_WARN(id,
+                    "Vertex primvar %s has %d elements, while"
                     " its topology references only upto element index %d.",
-                    nameIt->GetText(), id.GetText(),
+                    nameIt->GetText(),
                     source->GetNumElements(), numPoints);
 
                 // If the primvar has more data than needed, we issue a warning,
@@ -936,11 +935,11 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
             // verify primvar length
             if (source->GetNumElements() != numFaceVaryings) {
-                HF_VALIDATION_WARN(
+                HF_VALIDATION_WARN(id, 
                     "# of facevaryings mismatch (%d != %d)"
-                    " for primvar %s, prim %s",
+                    " for primvar %s",
                     source->GetNumElements(), numFaceVaryings,
-                    nameIt->GetText(), id.GetText());
+                    nameIt->GetText());
                 continue;
             }
 
@@ -1018,10 +1017,9 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
             // verify primvar length
             if (source->GetNumElements() != numFaces) {
-                HF_VALIDATION_WARN(
-                    "# of faces mismatch (%d != %d) for primvar %s, prim %s",
-                    source->GetNumElements(), numFaces,
-                    nameIt->GetText(), id.GetText());
+                HF_VALIDATION_WARN(id,
+                    "# of faces mismatch (%d != %d) for primvar %s",
+                    source->GetNumElements(), numFaces, nameIt->GetText());
                 continue;
             }
 
