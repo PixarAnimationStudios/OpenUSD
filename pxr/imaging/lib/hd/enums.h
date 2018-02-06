@@ -107,8 +107,8 @@ enum HdMeshGeomStyle {
 
 enum HdBasisCurvesGeomStyle {
     HdBasisCurvesGeomStyleInvalid,
-    HdBasisCurvesGeomStyleLine,
-    HdBasisCurvesGeomStyleRefined,
+    HdBasisCurvesGeomStyleWire,
+    HdBasisCurvesGeomStylePatch,
     HdBasisCurvesGeomStylePoints
 };
 

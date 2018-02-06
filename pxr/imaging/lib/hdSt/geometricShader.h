@@ -50,7 +50,8 @@ public:
     enum class PrimitiveType { 
         PRIM_POINTS, 
         PRIM_BASIS_CURVES_LINES,     // when linear (or) non-refined cubic
-        PRIM_BASIS_CURVES_PATCHES,   // refined cubic curves
+        PRIM_BASIS_CURVES_LINEAR_PATCHES,  // refined linear curves
+        PRIM_BASIS_CURVES_CUBIC_PATCHES,   // refined cubic curves
         PRIM_MESH_COARSE_TRIANGLES,  
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
@@ -65,7 +66,8 @@ public:
 
     static inline bool IsPrimTypeBasisCurves(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_BASIS_CURVES_LINES ||
-                primType == PrimitiveType::PRIM_BASIS_CURVES_PATCHES);
+                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
+                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES);
     }
 
     static inline bool IsPrimTypeMesh(PrimitiveType primType) {
@@ -88,7 +90,8 @@ public:
 
     static inline bool IsPrimTypePatches(PrimitiveType primType) {
         return primType == PrimitiveType::PRIM_MESH_PATCHES ||
-               primType == PrimitiveType::PRIM_BASIS_CURVES_PATCHES;
+               primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
+               primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }
 
     HDST_API

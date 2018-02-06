@@ -656,21 +656,22 @@ HdRenderIndex::_ConfigureReprs()
                                          /*smoothNormals=*/true,
                                          /*blendWireframeColor=*/true));
 
+    // TODO: Port over wire on surf geometry shader from lava/lib/basisCurves
+    // (filed as bug 129550)
     HdBasisCurves::ConfigureRepr(HdTokens->hull,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->wire,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->refined,
-                                 HdBasisCurvesGeomStyleRefined);
-    // XXX: draw coarse line for refinedWire (filed as bug 129550)
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
-                                  HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                                 HdBasisCurvesGeomStyleRefined);
+                                 HdBasisCurvesGeomStylePatch);
 
     HdPoints::ConfigureRepr(HdTokens->hull,
                             HdPointsGeomStylePoints);

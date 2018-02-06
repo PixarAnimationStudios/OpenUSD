@@ -101,11 +101,17 @@ private:
         DirtyHullIndices    = (DirtyIndices       << 1)
     };
 
-    /// We only support drawing smooth curves for a small subset of all the
-    /// curves that hydra needs to support
-    /// We will fallback to line segments for unsupported curves.
-    bool _SupportsSmoothCurves(const HdBasisCurvesReprDesc &desc,
-                               int refineLevel);
+    // When processing primvars, these will get set to if we determine that
+    // we should do cubic basis interpolation on the normals and widths.
+    // NOTE: I worry that it may be possible for these to get out of sync.
+    // The right long term fix is likely to maintain proper separation between 
+    // varying and vertex primvars throughout the HdSt rendering pipeline.
+    bool _basisWidthInterpolation = false;
+    bool _basisNormalInterpolation = false;
+
+    bool _SupportsRefinement(int refineLevel);
+    bool _SupportsUserWidths(HdStDrawItem* drawItem);
+    bool _SupportsUserNormals(HdStDrawItem* drawItem);
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,

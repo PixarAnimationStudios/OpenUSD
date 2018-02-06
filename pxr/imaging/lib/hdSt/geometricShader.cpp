@@ -155,7 +155,8 @@ HdSt_GeometricShader::GetPrimitiveMode() const
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             primMode = GL_LINES_ADJACENCY;
             break;
-        case PrimitiveType::PRIM_BASIS_CURVES_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         case PrimitiveType::PRIM_MESH_PATCHES:
             primMode = GL_PATCHES;
             break;    
@@ -175,13 +176,14 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
             primIndexSize = 1;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
             primIndexSize = 2;
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
             primIndexSize = 3;
             break;
-        case PrimitiveType::PRIM_BASIS_CURVES_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
         case PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             primIndexSize = 4;
@@ -209,7 +211,8 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
-        case PrimitiveType::PRIM_BASIS_CURVES_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
         case PrimitiveType::PRIM_MESH_PATCHES: 
         // for patches with tesselation, input to GS is still a series of tris
             numPrimVerts = 3;

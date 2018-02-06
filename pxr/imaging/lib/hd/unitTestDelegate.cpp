@@ -171,6 +171,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &points,
                                     VtIntArray const &curveVertexCounts,
                                     VtVec3fArray const &normals,
+                                    TfToken const &type,
                                     TfToken const &basis,
                                     VtValue const &color,
                                     Interpolation colorInterpolation,
@@ -187,6 +188,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
 
     _curves[id] = _Curves(points, curveVertexCounts, 
                           normals,
+                          type,
                           basis,
                           color, colorInterpolation,
                           width, widthInterpolation);
@@ -559,7 +561,7 @@ HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
     const _Curves &curve = _curves[id];
 
     // Need to implement testing support for basis curves
-    return HdBasisCurvesTopology(HdTokens->cubic,
+    return HdBasisCurvesTopology(curve.type,
                                  curve.basis,
                                  HdTokens->nonperiodic,
                                  curve.curveVertexCounts,
@@ -1278,7 +1280,8 @@ HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int n
 
 void
 HdUnitTestDelegate::AddCurves(
-    SdfPath const &id, TfToken const &basis, GfMatrix4f const &transform,
+    SdfPath const &id, TfToken const &type, 
+    TfToken const &basis, GfMatrix4f const &transform,
     HdUnitTestDelegate::Interpolation colorInterp,
     HdUnitTestDelegate::Interpolation widthInterp,
     bool authoredNormals,
@@ -1298,21 +1301,31 @@ HdUnitTestDelegate::AddCurves(
         GfVec3f( 1.0f,-1.0f,-1.0f ),
     };
 
-    GfVec3f normals[] = {
-        GfVec3f(   .0f,-1.0f,  .0f ),
-        GfVec3f(   .0f,  .0f, 1.0f ),
-        GfVec3f(  1.0f,  .0f,  .0f ),
-        GfVec3f(  1.0f,  .0f,  .0f ),
-
-        GfVec3f(   .0f,  .0f, 1.0f ),
-        GfVec3f(   .0f,  .0f, 1.0f ),
-        GfVec3f( -1.0f,  .0f,  .0f ),
-        GfVec3f( -1.0f,  .0f,  .0f ),
-    };
-
     VtVec3fArray authNormals;
-    if (authoredNormals)
+    if (authoredNormals && type == HdTokens->linear){
+        GfVec3f normals[] = {
+            GfVec3f(   .0f, -.7f,  .7f ),
+            GfVec3f(   .0f,  .0f, 1.0f ),
+            GfVec3f(  .0f,  .7f,  .7f ),
+            GfVec3f(  .7f,  .7f,  .0f ),
+
+            GfVec3f(   .0f,  .0f, 1.0f ),
+            GfVec3f(   .0f,  .0f, 1.0f ),
+            GfVec3f( -1.0f,  .0f,  .0f ),
+            GfVec3f( -1.0f,  .0f,  .0f )
+        };
         authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
+
+    } else if (authoredNormals && type == HdTokens->cubic){
+        GfVec3f normals[] = {
+            GfVec3f(   .0f,  .0f, 1.0f ),
+            GfVec3f(   .0f,  .7f,  .7f ),
+
+            GfVec3f(   .0f,  .7f, .7f ),
+            GfVec3f(  -.7f,  .7f, .0f )
+        };
+        authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
+    }
 
     for(size_t i = 0;i < sizeof(points) / sizeof(points[0]); ++ i) {
         GfVec4f tmpPoint = GfVec4f(points[i][0], points[i][1], points[i][2], 1.0f);
@@ -1339,6 +1352,7 @@ HdUnitTestDelegate::AddCurves(
     }
 
     VtValue width;
+
     if (widthInterp == HdUnitTestDelegate::CONSTANT) {
         width = VtValue(0.1f);
     } else if (widthInterp == HdUnitTestDelegate::UNIFORM) {
@@ -1347,8 +1361,11 @@ HdUnitTestDelegate::AddCurves(
     } else if (widthInterp == HdUnitTestDelegate::VERTEX) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f, 0.1f, 0.2f, 0.2f, 0.1f };
         width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
-    } else if (widthInterp == HdUnitTestDelegate::VARYING) {
+    } else if (type == HdTokens->cubic && widthInterp == HdUnitTestDelegate::VARYING) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f};
+        width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
+    } else if (type == HdTokens->linear && widthInterp == HdUnitTestDelegate::VARYING) {
+        float widths[] = { 0, 0.1f, 0.2f, 0.3f, 0.1f, 0.2f, 0.2f, 0.1f };
         width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
     }
 
@@ -1358,6 +1375,7 @@ HdUnitTestDelegate::AddCurves(
         _BuildArray(curveVertexCounts,
                     sizeof(curveVertexCounts)/sizeof(curveVertexCounts[0])),
         authNormals,
+        type,
         basis,
         color, colorInterp,
         width, widthInterp,
@@ -1664,19 +1682,19 @@ HdUnitTestDelegate::PopulateBasicTestSet()
     // curves
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
-        AddCurves(SdfPath("/curve1"), HdTokens->linear, GfMatrix4f(dmat),
+        AddCurves(SdfPath("/curve1"), HdTokens->linear, TfToken(), GfMatrix4f(dmat),
                            HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::VERTEX);
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
-        AddCurves(SdfPath("/curve2"), HdTokens->bezier, GfMatrix4f(dmat),
+        AddCurves(SdfPath("/curve2"), HdTokens->cubic, HdTokens->bezier, GfMatrix4f(dmat),
                            HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::VERTEX);
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
-        AddCurves(SdfPath("/curve3"), HdTokens->bSpline, GfMatrix4f(dmat),
+        AddCurves(SdfPath("/curve3"), HdTokens->cubic, HdTokens->bSpline, GfMatrix4f(dmat),
                            HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::CONSTANT);
 
         dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));
-        AddCurves(SdfPath("/curve4"), HdTokens->catmullRom, GfMatrix4f(dmat),
+        AddCurves(SdfPath("/curve4"), HdTokens->cubic, HdTokens->catmullRom, GfMatrix4f(dmat),
                            HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::CONSTANT);
 
         xPos += 3.0;
@@ -1712,6 +1730,7 @@ HdUnitTestDelegate::PopulateInvalidPrimsSet()
                             VtIntArray(),
                             VtVec3fArray(),
                             HdTokens->linear,
+                            TfToken(),
                             VtValue(GfVec4f(1)), HdUnitTestDelegate::CONSTANT,
                             VtValue(1.0f), HdUnitTestDelegate::CONSTANT);
 

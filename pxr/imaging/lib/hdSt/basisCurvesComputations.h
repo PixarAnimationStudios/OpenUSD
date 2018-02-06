@@ -43,7 +43,7 @@ class HdBasisCurvesTopology;
 class HdSt_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
-                                            bool supportSmoothCurves);
+                                            bool forceLines);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
@@ -68,10 +68,10 @@ public:
 private:
     IndexAndPrimIndex _BuildLinesIndexArray();
     IndexAndPrimIndex _BuildLineSegmentIndexArray();
-    IndexAndPrimIndex _BuildSmoothCurveIndexArray();
+    IndexAndPrimIndex _BuildCubicIndexArray();
                                     
     HdBasisCurvesTopology *_topology;
-    bool _supportSmoothCurves;
+    bool _forceLines;
 
     HdBufferSourceSharedPtr _primitiveParam;    
 };
@@ -95,7 +95,7 @@ private:
     VtFloatArray _authoredWidths;
 };
 
-/// Compute vertex normals based on \p authoredNormals, doing interpolation as
+/// Compute varying normals based on \p authoredNormals, doing interpolation as
 /// necessary 
 ///
 class HdSt_BasisCurvesNormalsInterpolaterComputation
