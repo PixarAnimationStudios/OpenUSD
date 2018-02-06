@@ -357,14 +357,7 @@ UsdCollectionAPI::AddPrim(const UsdPrim &prim) const
     // Now that we've removed the explicit excludes if there was one, 
     // we can add the prim if it's not already included in the collection. 
     if (!query.IsPathIncluded(prim.GetPath())) {
-        // XXX: Explicitly set all targets here to avoid bug 156442.
-        // This could simply return CreateIncludesRel().AddTarget(prim.GetPath())
-        // once the bug is resolved.
-        UsdRelationship includesRel = CreateIncludesRel();
-        SdfPathVector targets; 
-        includesRel.GetTargets(&targets);
-        targets.push_back(prim.GetPath());
-        return includesRel.SetTargets(targets);
+        return CreateIncludesRel().AddTarget(prim.GetPath());
     }
 
     return true;
@@ -400,14 +393,7 @@ UsdCollectionAPI::RemovePrim(const UsdPrim &prim) const
     // Now that we've removed the explicit include if there was one, 
     // we can remove the prim if it's not already excluded from the collection. 
     if (query.IsPathIncluded(prim.GetPath())) {
-        // XXX: Explicitly set all targets here to avoid bug 156442.
-        // This could simply return CreateExcludesRel().AddTarget(prim.GetPath())
-        // once the bug is resolved.
-        UsdRelationship excludesRel = CreateExcludesRel();
-        SdfPathVector targets; 
-        excludesRel.GetTargets(&targets);
-        targets.push_back(prim.GetPath());
-        return excludesRel.SetTargets(targets);
+        return CreateExcludesRel().AddTarget(prim.GetPath());
     }
 
     return true;
