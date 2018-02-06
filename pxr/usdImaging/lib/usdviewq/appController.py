@@ -3839,21 +3839,50 @@ class AppController(QtCore.QObject):
             # It is sadly much much faster to regenerate the entire view
             self._resetPrimView()
 
-    def activateSelectedPrims(self):
+    def _setSelectedPrimsActivation(self, active):
+        """Activate or deactivate all selected prims."""
+
         with BusyContext():
-            primNames=[]
+
+            # We can only activate/deactivate prims which are not in a master.
+            paths = []
             for item in self.getSelectedItems():
-                item.setActive(True)
-                primNames.append(item.name)
-            self.editComplete("Activated %s." % primNames)
+                if item.prim.IsPseudoRoot():
+                    print("WARNING: Cannot change activation of pseudoroot.")
+                elif item.isInMaster:
+                    print("WARNING: The prim <" + str(item.prim.GetPrimPath()) +
+                        "> is in a master. Cannot change activation.")
+                else:
+                    paths.append(item.prim.GetPrimPath())
+
+            # If we are deactivating prims, clear the selection so it doesn't
+            # hold onto paths from inactive prims.
+            if not active:
+                self._dataModel.selection.clear()
+
+            # If we try to deactivate prims one at a time in Usd, some may have
+            # become invalid by the time we get to them. Instead, we set the
+            # active state all at once through Sdf.
+            layer = self._dataModel.stage.GetEditTarget().GetLayer()
+            with Sdf.ChangeBlock():
+                for path in paths:
+                    sdfPrim = Sdf.CreatePrimInLayer(layer, path)
+                    sdfPrim.active = active
+
+            # Refresh primView to support the stage changes.
+            self.updateGUI()
+
+            pathNames = ", ".join(path.name for path in paths)
+            if active:
+                self.editComplete("Deactivated {}.".format(pathNames))
+            else:
+                self.editComplete("Activated {}.".format(pathNames))
+
+    def activateSelectedPrims(self):
+        self._setSelectedPrimsActivation(True)
 
     def deactivateSelectedPrims(self):
-        with BusyContext():
-            primNames=[]
-            for item in self.getSelectedItems():
-                item.setActive(False)
-                primNames.append(item.name)
-            self.editComplete("Deactivated %s." % primNames)
+        self._setSelectedPrimsActivation(False)
 
     def loadSelectedPrims(self):
         with BusyContext():
