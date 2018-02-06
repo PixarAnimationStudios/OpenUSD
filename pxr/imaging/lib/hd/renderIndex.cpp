@@ -656,8 +656,8 @@ HdRenderIndex::_ConfigureReprs()
                                          /*smoothNormals=*/true,
                                          /*blendWireframeColor=*/true));
 
-    // TODO: Port over wire on surf geometry shader from lava/lib/basisCurves
-    // (filed as bug 129550)
+    // TODO: Port over wire on surf geometry shader from internal code base
+    // (internal pixar bug 129550)
     HdBasisCurves::ConfigureRepr(HdTokens->hull,
                                  HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
