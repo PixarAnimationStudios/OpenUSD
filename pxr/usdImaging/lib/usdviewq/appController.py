@@ -1406,13 +1406,25 @@ class AppController(QtCore.QObject):
             self._stageView.update()
 
     def _adjustComplexity(self):
-        complexity= QtWidgets.QInputDialog.getDouble(self._mainWindow,
+        complexityStr, success = QtWidgets.QInputDialog.getText(self._mainWindow,
             "Adjust complexity", "Enter a value between 1 and 2.\n\n"
             "You can also use ctrl+ or ctrl- to adjust the\n"
             "complexity without invoking this dialog.\n",
-            self._dataModel.viewSettings.complexity, 1.0,2.0,2)
-        if complexity[1]:
-            self._dataModel.viewSettings.complexity = complexity[0]
+            QtWidgets.QLineEdit.EchoMode.Normal,
+            str(self._dataModel.viewSettings.complexity))
+        if success:
+            try:
+                complexity = float(complexityStr)
+            except ValueError:
+                QtWidgets.QMessageBox.critical(self._mainWindow, "Error",
+                    "Complexity must be a number, got '{}'.".format(
+                        complexityStr))
+                return
+            self._dataModel.viewSettings.complexity = complexity
+            if self._dataModel.viewSettings.complexity != complexity:
+                QtWidgets.QMessageBox.warning(self._mainWindow, "Warning",
+                    "Complexity out of range, clamped to {}.".format(
+                        self._dataModel.viewSettings.complexity))
             if self._stageView:
                 self._stageView.update()
 
