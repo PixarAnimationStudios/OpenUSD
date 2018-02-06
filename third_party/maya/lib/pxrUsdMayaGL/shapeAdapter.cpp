@@ -80,6 +80,11 @@ PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter(
 {
 }
 
+/* virtual */
+PxrMayaHdShapeAdapter::~PxrMayaHdShapeAdapter()
+{
+}
+
 size_t
 PxrMayaHdShapeAdapter::GetHash() const
 {
@@ -93,14 +98,14 @@ PxrMayaHdShapeAdapter::GetHash() const
 void
 PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
 {
-    const size_t shapeHash = GetHash();
-
     // Create a simple hash string to put into a flat SdfPath "hierarchy".
     // This is much faster than more complicated pathing schemes.
+    const size_t shapeHash = GetHash();
     const std::string idString = TfStringPrintf("/x%zx", shapeHash);
     _sharedId = SdfPath(idString);
 
     _delegate.reset(new UsdImagingDelegate(renderIndex, _sharedId));
+    _isPopulated = false;
 
     _rprimCollection.SetName(TfToken(_shapeDagPath.fullPathName().asChar()));
     _rprimCollection.SetReprName(HdTokens->refined);
@@ -111,7 +116,7 @@ PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
 
 void
 PxrMayaHdShapeAdapter::PrepareForQueue(
-        const UsdTimeCode time,
+        const UsdTimeCode timeCode,
         const uint8_t refineLevel,
         const bool showGuides,
         const bool showRenderGuides,
@@ -120,23 +125,21 @@ PxrMayaHdShapeAdapter::PrepareForQueue(
 {
     // Initialization of default parameters go here. These parameters get used
     // in all viewports and for selection.
-    _baseParams.timeCode = time;
-    _baseParams.refineLevel = refineLevel;
 
     // XXX Not yet adding ability to turn off display of proxy geometry, but
     // we should at some point, as in usdview.
-    _baseParams.renderTags.clear();
-    _baseParams.renderTags.push_back(HdTokens->geometry);
-    _baseParams.renderTags.push_back(HdTokens->proxy);
+    TfTokenVector renderTags;
+    renderTags.push_back(HdTokens->geometry);
+    renderTags.push_back(HdTokens->proxy);
     if (showGuides) {
-        _baseParams.renderTags.push_back(HdTokens->guide);
+        renderTags.push_back(HdTokens->guide);
     }
     if (showRenderGuides) {
-        _baseParams.renderTags.push_back(_tokens->RenderGuidesTag);
+        renderTags.push_back(_tokens->RenderGuidesTag);
     }
 
-    if (_rprimCollection.GetRenderTags() != _baseParams.renderTags) {
-        _rprimCollection.SetRenderTags(_baseParams.renderTags);
+    if (_rprimCollection.GetRenderTags() != renderTags) {
+        _rprimCollection.SetRenderTags(renderTags);
 
         _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
             _rprimCollection.GetName());
@@ -157,7 +160,7 @@ PxrMayaHdShapeAdapter::PrepareForQueue(
         _delegate->SetRefineLevelFallback(refineLevel);
 
         // Will only react if time actually changes.
-        _delegate->SetTime(time);
+        _delegate->SetTime(timeCode);
 
         _delegate->SetRootCompensation(_rootPrim.GetPath());
 
@@ -225,6 +228,7 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     // Legacy viewport Implementation.
 
     PxrMayaHdRenderParams params(_baseParams);
+    TfToken reprName;
 
     // The legacy viewport does not allow shapes and bounding boxes to be drawn
     // at the same time...
@@ -250,25 +254,25 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     switch (displayStyle) {
         case M3dView::kWireFrame:
         {
-            params.drawRepr = HdTokens->refinedWire;
+            reprName = HdTokens->refinedWire;
             params.enableLighting = false;
             break;
         }
         case M3dView::kGouraudShaded:
         {
             if (needsWire) {
-                params.drawRepr = HdTokens->refinedWireOnSurf;
+                reprName = HdTokens->refinedWireOnSurf;
             } else {
-                params.drawRepr = HdTokens->refined;
+                reprName = HdTokens->refined;
             }
             break;
         }
         case M3dView::kFlatShaded:
         {
             if (needsWire) {
-                params.drawRepr = HdTokens->wireOnSurf;
+                reprName = HdTokens->wireOnSurf;
             } else {
-                params.drawRepr = HdTokens->hull;
+                reprName = HdTokens->hull;
             }
             break;
         }
@@ -282,8 +286,8 @@ PxrMayaHdShapeAdapter::GetRenderParams(
         }
     };
 
-    if (_rprimCollection.GetReprName() != params.drawRepr) {
-        _rprimCollection.SetReprName(params.drawRepr);
+    if (_rprimCollection.GetReprName() != reprName) {
+        _rprimCollection.SetReprName(reprName);
 
         _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
             _rprimCollection.GetName());
@@ -302,6 +306,7 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     // VP 2.0 Implementation
 
     PxrMayaHdRenderParams params(_baseParams);
+    TfToken reprName;
 
     *drawShape = true;
     *drawBoundingBox =
@@ -328,22 +333,22 @@ PxrMayaHdShapeAdapter::GetRenderParams(
 
     if (flatShaded) {
         if (needsWire) {
-            params.drawRepr = HdTokens->wireOnSurf;
+            reprName = HdTokens->wireOnSurf;
         } else {
-            params.drawRepr = HdTokens->hull;
+            reprName = HdTokens->hull;
         }
     }
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded)
     {
         if (needsWire || (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)) {
-            params.drawRepr = HdTokens->refinedWireOnSurf;
+            reprName = HdTokens->refinedWireOnSurf;
         } else {
-            params.drawRepr = HdTokens->refined;
+            reprName = HdTokens->refined;
         }
     }
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
     {
-        params.drawRepr = HdTokens->refinedWire;
+        reprName = HdTokens->refinedWire;
         params.enableLighting = false;
     }
     else
@@ -360,8 +365,8 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     }
 #endif
 
-    if (_rprimCollection.GetReprName() != params.drawRepr) {
-        _rprimCollection.SetReprName(params.drawRepr);
+    if (_rprimCollection.GetReprName() != reprName) {
+        _rprimCollection.SetReprName(reprName);
 
         _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
             _rprimCollection.GetName());

@@ -549,9 +549,10 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                 rprimCollections.size());
 
             qparams.cullStyle = renderParams.cullStyle;
-            qparams.renderTags = renderParams.renderTags;
 
             for (const HdRprimCollection& rprimCollection : rprimCollections) {
+                qparams.renderTags = rprimCollection.GetRenderTags();
+
                 HdxIntersector::Result result;
                 HdxIntersector::HitVector hits;
 

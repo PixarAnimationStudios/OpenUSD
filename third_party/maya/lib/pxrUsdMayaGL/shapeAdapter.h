@@ -65,6 +65,9 @@ class PxrMayaHdShapeAdapter
                 const SdfPathVector& excludedPrimPaths);
 
         PXRUSDMAYAGL_API
+        virtual ~PxrMayaHdShapeAdapter();
+
+        PXRUSDMAYAGL_API
         size_t GetHash() const;
 
         PXRUSDMAYAGL_API
@@ -74,7 +77,7 @@ class PxrMayaHdShapeAdapter
         /// queues.
         PXRUSDMAYAGL_API
         void PrepareForQueue(
-                const UsdTimeCode time,
+                const UsdTimeCode timeCode,
                 const uint8_t refineLevel,
                 const bool showGuides,
                 const bool showRenderGuides,
@@ -110,12 +113,6 @@ class PxrMayaHdShapeAdapter
 
         PXRUSDMAYAGL_API
         const GfMatrix4d& GetRootXform() const { return _rootXform; }
-
-        /// Returns base params as set previously by \c PrepareForQueue().
-        PXRUSDMAYAGL_API
-        const PxrMayaHdRenderParams& GetBaseParams() const {
-            return _baseParams;
-        }
 
         PXRUSDMAYAGL_API
         const SdfPath& GetSharedId() const { return _sharedId; }
