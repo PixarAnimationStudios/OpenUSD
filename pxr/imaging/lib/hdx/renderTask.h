@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"  // for short-term compatibility.
+#include "pxr/imaging/hdSt/renderPassState.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -73,6 +74,11 @@ private:
 
     // XXX: temp members to keep compatibility (optional)
     HdxRenderSetupTaskSharedPtr _setupTask;
+
+    // XXX: Setup additional state that HdStRenderPassState requires.
+    // This should be moved to hdSt!
+    void _SetHdStRenderPassState(HdTaskContext *ctx,
+                                 HdStRenderPassState *renderPassState);
 };
 
 

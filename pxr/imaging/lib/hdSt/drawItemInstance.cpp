@@ -23,12 +23,12 @@
 //
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
-#include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdStDrawItemInstance::HdStDrawItemInstance(HdDrawItem const* drawItem)
+HdStDrawItemInstance::HdStDrawItemInstance(HdStDrawItem const* drawItem)
     : _batch(nullptr)
     , _drawItem(drawItem)
     , _batchIndex(0)

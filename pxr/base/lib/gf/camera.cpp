@@ -46,9 +46,6 @@ GfCamera::APERTURE_UNIT = 0.1;
 const double
 GfCamera::FOCAL_LENGTH_UNIT = 0.1;
 
-const bool GfCamera::ZUp = true;
-const bool GfCamera::YUp = false;
-
 // The default filmback size is based on a 35mm spherical
 // projector aperture (0.825 x 0.602 inches, converted to
 // mm). Note this is slightly different than SMPTE195-2000,

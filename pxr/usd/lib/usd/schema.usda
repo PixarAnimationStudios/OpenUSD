@@ -154,6 +154,13 @@ def "GLOBAL" (
                 in UsdCollectionAPI::MembershipQuery::IsPathIncluded.
                 """
             }
+            dictionary apiSchemas = {
+                string doc = """
+                A listop metadata containing the API schemas which have
+                been applied to this prim, using the Apply() method on
+                the particular schema class. 
+                """
+            }
         }
     }
 )
@@ -263,7 +270,7 @@ class "CollectionAPI"
 
     <b>Creating collections in C++</b>
     
-    \\snippet examples.cpp AddCollections
+    \\snippet examples.cpp ApplyCollections
     """
 
     customData = {
@@ -271,6 +278,8 @@ class "CollectionAPI"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/tokens.h"
 """
+        bool isMultipleApply = true
+        bool isPrivateApply  = true    
     }
 )
 {

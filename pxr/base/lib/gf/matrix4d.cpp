@@ -212,7 +212,7 @@ GfMatrix4d::SetDiagonal(const GfVec4d& v)
 }
 
 double *
-GfMatrix4d::Get(double m[4][4])
+GfMatrix4d::Get(double m[4][4]) const
 {
     m[0][0] = _mtx[0][0];
     m[0][1] = _mtx[0][1];

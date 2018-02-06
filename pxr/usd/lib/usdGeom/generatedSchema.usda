@@ -171,7 +171,7 @@ class "Xformable" (
     float3 xformOp:rotateXYZ = (30, 60, 90)
     float3 xformOp:scale = (2, 2, 2)
     double3 xformOp:translate = (0, 100, 0)
-    uniform token xformOpOrder = [ \"xformOp:translate\", \"xformOp:rotateXYZ\", \"xformOp:scale\" ]
+    uniform token[] xformOpOrder = [ \"xformOp:translate\", \"xformOp:rotateXYZ\", \"xformOp:scale\" ]
     \\endcode
 
     The attributes appear in the dictionary order in which USD, by default,
@@ -195,7 +195,7 @@ class "Xformable" (
     float xformOp:rotateZ = 90
     float3 xformOp:scale = (2, 2, 2)
     double3 xformOp:translate = (0, 100, 0)
-    uniform token xformOpOrder = [ \"xformOp:translate\", \"xformOp:rotateZ\", \"xformOp:rotateY\", \"xformOp:rotateX\", \"xformOp:scale\" ]
+    uniform token[] xformOpOrder = [ \"xformOp:translate\", \"xformOp:rotateZ\", \"xformOp:rotateY\", \"xformOp:rotateX\", \"xformOp:scale\" ]
     \\endcode
     
     Again, note that although we are encoding an XYZ rotation, the three
@@ -209,7 +209,7 @@ class "Xformable" (
     float3 xformOp:scale = (2, 2, 2)
     double3 xformOp:translate = (0, 100, 0)
     double3 xformOp:translate:scalePivot
-    uniform token xformOpOrder = [ \"xformOp:translate\", \"xformOp:rotateXYZ\", \"xformOp:translate:scalePivot\", \"xformOp:scale\" ]
+    uniform token[] xformOpOrder = [ \"xformOp:translate\", \"xformOp:rotateXYZ\", \"xformOp:translate:scalePivot\", \"xformOp:scale\" ]
     \\endcode
 
     <b>Paired \"Inverted\" Ops</b>
@@ -3303,6 +3303,26 @@ class PointInstancer "PointInstancer" (
     multiple threads; the low-level API allows the client to cache unvarying
     inputs so that they need not be read duplicately when computing over
     time.
+    
+    Primvars on PointInstancer
+    
+    \"Primvars\" authored on a PointInstancer prim should
+    always be applied to each instance with constant interpolation at
+    the root of the instance.  When you are authoring primvars on a 
+    PointInstancer, think about it as if you were authoring them on a 
+    point-cloud (e.g. a UsdGeomPoints gprim).  The same 
+    <A HREF=\"http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers\">interpolation rules for points</A> apply here, substituting
+    \"instance\" for \"point\".
+    
+    In other words, the (constant) value extracted for each instance
+    from the authored primvar value depends on the authored interpolation
+    and elementSize of the primvar, as follows:
+    - <b>constant</b> or <b>uniform</b> : the entire authored value of the
+    primvar should be applied exactly to each instance.
+    - <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
+    elementSize elements of the authored primvar array should be assigned to
+    instance zero, the second elementSize elements should be assigned to
+    instance one, and so forth.
 
     
     Masking Instances: \"Deactivating\" and Invising
@@ -3397,26 +3417,7 @@ class PointInstancer "PointInstancer" (
     18     }
     19 }
     \\endcode
-    
-    Primvars on PointInstancer
-    
-    \"Primvars\" authored on a PointInstancer prim should
-    always be applied to each instance with constant interpolation at
-    the root of the instance.  When you are authoring primvars on a 
-    PointInstancer, think about it as if you were authoring them on a 
-    point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-    <A HREF=\"http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers\">interpolation rules for points</A> apply here, substituting
-    \"instance\" for \"point\".
-    
-    In other words, the (constant) value extracted for each instance
-    from the authored primvar value depends on the authored interpolation
-    and elementSize of the primvar, as follows:
-    - <b>constant</b> or <b>uniform</b> : the entire authored value of the
-    primvar should be applied exactly to each instance.
-    - <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
-    elementSize elements of the authored primvar array should be assigned to
-    instance zero, the second elementSize elements should be assigned to
-    instance one, and so forth."""
+    """
 )
 {
     vector3f[] angularVelocities (
@@ -3804,11 +3805,8 @@ class "GeomModelAPI" (
                    Locate each quad so that it bisects the model extents.
     - box   - Generate a quad normal to each basis direction and negative.
                    Locate each quad on a face of the model extents, facing out.
-    - fromTexture - Generate a quad for each supplied texture by
-                         transforming the range from (-1,-1) to (1,1) by the
-                         inverse of the worldToScreenPos transform, pulled
-                         from texture metadata. The resulting positions are
-                         interpreted as being in model space.
+    - fromTexture - Generate a quad for each supplied texture from
+                         attributes stored in that texture's metadata.
 
     For cross and box mode, the extents are calculated for purposes
     default, proxy, and render, at their earliest authored time.
@@ -3822,7 +3820,14 @@ class "GeomModelAPI" (
     model:drawModeColor.
 
     For fromTexture mode, only card faces with valid textures assigned
-    are drawn.
+    are drawn. The geometry is generated by pulling the worldtoscreen
+    attribute out of texture metadata.  This is expected to be a 4x4 matrix
+    mapping the model-space position of the card quad to the clip-space quad
+    with corners (-1,-1,0) and (1,1,0).  The card vertices are generated by
+    transforming the clip-space corners by the inverse of worldtoscreen.
+    Textures are mapped so that (s) and (t) map to (+x) and (+y) in clip space.
+    If the metadata cannot be read in the right format, or the matrix can't
+    be inverted, the card face is not drawn.
 
     All card faces are drawn and textured as double-sided.
 

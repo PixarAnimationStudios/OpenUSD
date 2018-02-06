@@ -26,7 +26,7 @@
 import os
 import unittest
 
-from pxr import Usd
+from pxr import Gf, Usd, UsdGeom, Vt
 
 from maya import standalone
 from maya import cmds
@@ -86,6 +86,27 @@ class testUsdExportAssembly(unittest.TestCase):
         """
         assembly = self._stage.GetPrimAtPath('/AssemblyWithClasses')
         self.assertTrue(assembly.HasAuthoredInherits())
+
+    def testXformOpsIdentity(self):
+        assembly = self._stage.GetPrimAtPath('/XformOpAssembly_Identity')
+        xformable = UsdGeom.Xformable(assembly)
+        self.assertFalse(xformable.GetXformOpOrderAttr().Get())
+        self.assertEqual(xformable.GetLocalTransformation(), Gf.Matrix4d(1.0))
+
+    def testXformOpsNonIdentity(self):
+        assembly = self._stage.GetPrimAtPath('/XformOpAssembly_NonIdentity')
+        xformable = UsdGeom.Xformable(assembly)
+        self.assertEqual(xformable.GetXformOpOrderAttr().Get(),
+                Vt.TokenArray(["xformOp:translate"]))
+        self.assertEqual(xformable.GetLocalTransformation(),
+                Gf.Matrix4d().SetTranslate(Gf.Vec3d(7.0, 8.0, 9.0)))
+
+    def testXformOpsResetStack(self):
+        assembly = self._stage.GetPrimAtPath(
+                '/Group1/XformOpAssembly_NoInherit')
+        xformable = UsdGeom.Xformable(assembly)
+        self.assertTrue(xformable.GetResetXformStack())
+        self.assertEqual(xformable.GetLocalTransformation(), Gf.Matrix4d(1.0))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

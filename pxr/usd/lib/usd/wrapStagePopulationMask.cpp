@@ -28,6 +28,7 @@
 
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
 using std::string;
 
@@ -46,6 +47,14 @@ static string __repr__(UsdStagePopulationMask const &self)
 {
     return TF_PY_REPR_PREFIX + "StagePopulationMask(" +
         TfPyRepr(self.GetPaths()) + ")";
+}
+
+static std::pair<bool, std::vector<TfToken>> 
+_GetIncludedChildNames(UsdStagePopulationMask const &self, SdfPath const& path)
+{
+    TfTokenVector names;
+    const bool result = self.GetIncludedChildNames(path, &names);
+    return std::make_pair(result, std::move(names));
 }
 
 } // anonymous namespace 
@@ -107,6 +116,10 @@ void wrapUsdStagePopulationMask()
                  SdfPath const &path))
              &UsdStagePopulationMask::Add,
              return_self<>())
+
+        .def("GetIncludedChildNames", &_GetIncludedChildNames,
+             arg("path"),
+             return_value_policy<TfPyPairToTuple>())
 
         .def("GetPaths", &UsdStagePopulationMask::GetPaths)
 

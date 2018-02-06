@@ -56,7 +56,7 @@ class HdSt_DrawTask final : public HdTask
 {
 public:
     HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                HdRenderPassStateSharedPtr const &renderPassState)
+                  HdStRenderPassStateSharedPtr const &renderPassState)
     : HdTask()
     , _renderPass(renderPass)
     , _renderPassState(renderPassState)
@@ -80,7 +80,7 @@ protected:
 
 private:
     HdRenderPassSharedPtr _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassStateSharedPtr _renderPassState;
 };
 
 template <typename T>
@@ -100,7 +100,9 @@ HdSt_TestDriver::HdSt_TestDriver()
  , _reprName()
  , _geomPass()
  , _geomAndGuidePass()
- , _renderPassState(new HdRenderPassState())
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
 {
     TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
@@ -118,7 +120,9 @@ HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
  , _reprName()
  , _geomPass()
  , _geomAndGuidePass()
- , _renderPassState(new HdRenderPassState())
+ , _renderPassState(
+    boost::dynamic_pointer_cast<HdStRenderPassState>(
+        _renderDelegate.CreateRenderPassState()))
 {
     _Init(reprName);
 }
@@ -135,7 +139,7 @@ HdSt_TestDriver::_Init(TfToken const &reprName)
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
 
-    _sceneDelegate = new Hd_UnitTestDelegate(_renderIndex,
+    _sceneDelegate = new HdSt_UnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
     _reprName = reprName;
@@ -314,7 +318,7 @@ HdSt_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
 
 /* virtual */
 void
-HdSt_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
+HdSt_TestLightingShader::BindResources(HdSt_ResourceBinder const &binder,
                                       int program)
 {
     binder.BindUniformf(_tokens->l0dir,   3, _lights[0].eyeDir.GetArray());
@@ -326,7 +330,7 @@ HdSt_TestLightingShader::BindResources(Hd_ResourceBinder const &binder,
 
 /* virtual */
 void
-HdSt_TestLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
+HdSt_TestLightingShader::UnbindResources(HdSt_ResourceBinder const &binder,
                                         int program)
 {
 }
@@ -335,16 +339,16 @@ HdSt_TestLightingShader::UnbindResources(Hd_ResourceBinder const &binder,
 void
 HdSt_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l0dir, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l0color, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l1dir, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->l1color, _tokens->vec3));
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM, _tokens->sceneAmbient, _tokens->vec3));
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l0dir, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l0color, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l1dir, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->l1color, HdTypeFloatVec3);
+    customBindings->emplace_back(
+        HdBinding::UNIFORM, _tokens->sceneAmbient, HdTypeFloatVec3);
 }
 
 void

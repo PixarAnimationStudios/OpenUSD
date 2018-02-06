@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,37 +37,37 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// 
 /// This interface provides a simple way for clients to extend a given
 /// shader without mutating the original shader.
-class HdStMixinShaderCode final : public HdShaderCode {
+class HdStMixinShaderCode final : public HdStShaderCode {
 public:
 
     HDST_API
     HdStMixinShaderCode(std::string mixinSource,
-                        HdShaderCodeSharedPtr baseShader);
+                        HdStShaderCodeSharedPtr baseShader);
 
     HDST_API
     virtual ~HdStMixinShaderCode();
 
     /// Returns the hash value of this shader.
-    virtual HdShaderCode::ID ComputeHash() const override;
+    virtual HdStShaderCode::ID ComputeHash() const override;
 
     /// Returns the shader source provided by this shader
     /// for \a shaderStageKey
     virtual std::string GetSource(TfToken const &shaderStageKey) const override;
 
-    virtual HdShaderParamVector const& GetParams() const override;
+    virtual HdMaterialParamVector const& GetParams() const override;
 
-    virtual HdShaderCode::TextureDescriptorVector GetTextures() const override;
+    virtual HdStShaderCode::TextureDescriptorVector GetTextures() const override;
 
     /// Returns a buffer which stores parameter fallback values and texture
     /// handles.
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const override;
 
     /// Binds shader-specific resources to \a program
-    virtual void BindResources(Hd_ResourceBinder const &binder,
+    virtual void BindResources(HdSt_ResourceBinder const &binder,
                                int program) override;
 
     /// Unbinds shader-specific resources.
-    virtual void UnbindResources(Hd_ResourceBinder const &binder,
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder,
                                  int program) override;
 
     /// Add custom bindings (used by codegen)
@@ -75,7 +75,7 @@ public:
 
 private:
     std::string _mixinSource;
-    HdShaderCodeSharedPtr _baseShader;
+    HdStShaderCodeSharedPtr _baseShader;
     
     HdStMixinShaderCode()                                        = delete;
     HdStMixinShaderCode(const HdStMixinShaderCode &)             = delete;
@@ -85,5 +85,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //HD_SHADER_H
+#endif // HDST_SHADER_H
 

@@ -835,5 +835,19 @@ class TestSettings2(unittest.TestCase):
 
         self._removeStateFile()
 
+    def test_NoParent(self):
+        """Test a StateSource with a parent set to None rather than another
+        StateSource.
+        """
+
+        # Create a new state source with no parent.
+        model1 = BasicModel(None, "model1")
+
+        # Verify that the default state was loaded.
+        self.assertEqual(model1.testInt, 0)
+        self.assertEqual(model1.testFloat, 0.0)
+        self.assertEqual(model1.testStr, "")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

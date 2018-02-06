@@ -25,12 +25,15 @@
 
 from pxr import UsdImagingGL
 from pxr.Usdviewq.qt import QtWidgets
+from pxr.Usdviewq.selectionDataModel import ALL_INSTANCES
+from pxr.Usdviewq.common import SelectionHighlightModes
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
-    appController.drawSelHighlights = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.selHighlightMode = (
+        SelectionHighlightModes.NEVER)
 
 # Take a shot of the viewport and save it to a file.
 def _takeShot(appController, fileName):
@@ -50,8 +53,7 @@ def _testFrameSelection(appController):
 
     # Frame the front sphere.
 
-    appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._dataModel.selection.setPrimPath("/frontSphere", ALL_INSTANCES)
     _emitFrameAction(appController)
 
     _takeShot(appController, "framed.png")
@@ -63,7 +65,7 @@ def _testFrameSelection(appController):
 
     # Rotate the start camera.
 
-    appController.freeCamera.rotTheta = 90
+    appController._dataModel.viewSettings.freeCamera.rotTheta = 90
     appController._stageView.updateGL()
 
     _takeShot(appController, "rotatedStart.png")

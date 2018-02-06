@@ -514,11 +514,22 @@ namespace {
 // We don't populate such prims in Usd.
 struct _NameChildrenPred
 {
-    explicit _NameChildrenPred(Usd_InstanceCache* instanceCache)
-        : _instanceCache(instanceCache)
+    explicit _NameChildrenPred(const UsdStagePopulationMask* mask,
+                               Usd_InstanceCache* instanceCache)
+        : _mask(mask)
+        , _instanceCache(instanceCache)
     { }
 
-    bool operator()(const PcpPrimIndex &index) const {
+    bool operator()(const PcpPrimIndex &index, 
+                    TfTokenVector* childNamesToCompose) const 
+    {
+        // Compose only the child prims that are included in the population
+        // mask, if any.
+        if (_mask && !_mask->GetIncludedChildNames(
+                index.GetPath(), childNamesToCompose)) {
+            return false;
+        }
+
         // Use a resolver to walk the index and find the strongest active
         // opinion.
         Usd_Resolver res(&index);
@@ -539,7 +550,7 @@ struct _NameChildrenPred
         if (index.IsInstanceable()) {
             const bool indexUsedAsMasterSource = 
                 _instanceCache->RegisterInstancePrimIndex(index)
-                || !_instanceCache->GetMasterUsingPrimIndexAtPath(
+                || !_instanceCache->GetMasterUsingPrimIndexPath(
                     index.GetPath()).IsEmpty();
             return indexUsedAsMasterSource;
         }
@@ -548,6 +559,7 @@ struct _NameChildrenPred
     }
 
 private:
+    const UsdStagePopulationMask* _mask;
     Usd_InstanceCache* _instanceCache;
 };
 
@@ -1179,7 +1191,7 @@ bool
 UsdStage::_ValidateEditPrimAtPath(const SdfPath &primPath, 
                                   const char* operation) const
 {
-    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathMasterOrInMaster(primPath))) {
+    if (ARCH_UNLIKELY(Usd_InstanceCache::IsPathInMaster(primPath))) {
         TF_CODING_ERROR("Cannot %s at path <%s>; "
                         "authoring to an instancing master is not allowed.",
                         operation, primPath.GetText());
@@ -1751,7 +1763,7 @@ UsdStage::_GetPrimDataAtPathOrInMaster(const SdfPath &path) const
     // in the master.
     if (!primData) {
         const SdfPath primInMasterPath = 
-            _instanceCache->GetPrimInMasterForPath(path);
+            _instanceCache->GetPathInMasterForInstancePath(path);
         if (!primInMasterPath.IsEmpty()) {
             primData = _GetPrimDataAtPath(primInMasterPath);
         }
@@ -2154,9 +2166,9 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
     // convert it to the path of the prim in the corresponding master.
     // This ensures _DiscoverPayloads will always return paths to 
     // prims in masters for loadable prims in instances.
-    if (!Usd_InstanceCache::IsPathMasterOrInMaster(path)) {
+    if (!Usd_InstanceCache::IsPathInMaster(path)) {
         const SdfPath pathInMaster = 
-            _instanceCache->GetPrimInMasterForPath(path);
+            _instanceCache->GetPathInMasterForInstancePath(path);
         if (!pathInMaster.IsEmpty()) {
             path = pathInMaster;
         }
@@ -2238,8 +2250,8 @@ UsdStage::_GetMasterForInstance(Usd_PrimDataConstPtr prim) const
         return NULL;
     }
 
-    const SdfPath masterPath = 
-        _instanceCache->GetMasterForPrimIndexAtPath(
+    const SdfPath masterPath =
+        _instanceCache->GetMasterForInstanceablePrimIndexPath(
             prim->GetPrimIndex().GetPath());
     return masterPath.IsEmpty() ? NULL : _GetPrimDataAtPath(masterPath);
 }
@@ -2251,7 +2263,7 @@ UsdStage::_IsObjectDescendantOfInstance(const SdfPath& path) const
     // prim index, it would not be computed during composition unless
     // it is also serving as the source prim index for a master prim
     // on this stage.
-    return (_instanceCache->IsPrimInMasterForPrimIndexAtPath(
+    return (_instanceCache->IsPathDescendantToAnInstance(
             path.GetAbsoluteRootOrPrimPath()));
 }
 
@@ -2270,7 +2282,7 @@ UsdStage::_GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const
     } 
     else if (_instanceCache->GetNumMasters() != 0) {
         const vector<SdfPath> mastersUsingPrimIndex = 
-            _instanceCache->GetPrimsInMastersUsingPrimIndexAtPath(
+            _instanceCache->GetPrimsInMastersUsingPrimIndexPath(
                 primIndexPath);
 
         for (const auto& pathInMaster : mastersUsingPrimIndex) {
@@ -2366,7 +2378,7 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
         const SdfPath& sourceIndexPath = 
             prim->GetSourcePrimIndex().GetPath();
         const SdfPath masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexAtPath(sourceIndexPath);
+            _instanceCache->GetMasterUsingPrimIndexPath(sourceIndexPath);
 
         if (!masterPath.IsEmpty()) {
             Usd_PrimDataPtr masterPrim = _GetPrimDataAtPath(masterPath);
@@ -3402,6 +3414,11 @@ UsdStage::_HandleLayersDidChange(
             const SdfPath &path = entryList.first;
             const SdfChangeList::Entry &entry = entryList.second;
 
+            // Skip target paths entirely -- we do not create target objects in
+            // USD.
+            if (path.IsTargetPath())
+                continue;
+
             TF_DEBUG(USD_CHANGES).Msg(
                 "<%s> in @%s@ changed.\n",
                 path.GetText(), 
@@ -3454,23 +3471,11 @@ UsdStage::_HandleLayersDidChange(
                 }
             }
             else {
-                if (path.IsPropertyPath()) {
-                    willRecompose = 
-                        entry.flags.didAddPropertyWithOnlyRequiredFields    ||
-                        entry.flags.didAddProperty                          ||
-                        entry.flags.didRemovePropertyWithOnlyRequiredFields ||
-                        entry.flags.didRemoveProperty;
-                }
-                else if (path.IsTargetPath()) {
-                    // XXX: This will cause us to include target paths like
-                    // /Foo.rel[/Bar] in the resynced path list in the
-                    // ObjectsChanged notice we emit. This is a bug; no such
-                    // object exists in the USD scenegraph. Keeping this here
-                    // for now to maintain current behavior.
-                    willRecompose =
-                        entry.flags.didAddTarget ||
-                        entry.flags.didRemoveTarget;
-                }
+                willRecompose = path.IsPropertyPath() &&
+                    (entry.flags.didAddPropertyWithOnlyRequiredFields ||
+                     entry.flags.didAddProperty ||
+                     entry.flags.didRemovePropertyWithOnlyRequiredFields ||
+                     entry.flags.didRemoveProperty);
 
                 if (willRecompose) {
                     _AddDependentPaths(layerAndChangelist.first, path, 
@@ -3679,9 +3684,9 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         // need to recompose any prim index beneath instance prim 
         // indexes *unless* they are being used as the source index
         // for a master.
-        if (_instanceCache->IsPrimInMasterForPrimIndexAtPath(path)) {
+        if (_instanceCache->IsPathDescendantToAnInstance(path)) {
             const bool primIndexUsedByMaster = 
-                _instanceCache->IsPrimInMasterUsingPrimIndexAtPath(path);
+                _instanceCache->MasterUsesPrimIndexPath(path);
             if (!primIndexUsedByMaster) {
                 TF_DEBUG(USD_CHANGES).Msg(
                     "Ignoring elided prim <%s>\n", path.GetText());
@@ -3709,7 +3714,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     SdfPathVector masterPrimsToRecompose;
     for (const SdfPath& path : primPathsToRecompose) {
         for (const SdfPath& masterPath :
-                 _instanceCache->GetPrimsInMastersUsingPrimIndexAtPath(path)) {
+                 _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
             masterPrimsToRecompose.push_back(masterPath);
             masterToPrimIndexMap[masterPath] = path;
         }
@@ -3770,6 +3775,42 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         _ComposeSubtreesInParallel(
             subtreesToRecompose, &primIndexPathsForSubtrees);
     }
+
+    // If the instancing changes produced old/new associated indexes, we need to
+    // square up payload inclusion, and recurse.
+    if (!instanceChanges.associatedIndexOld.empty()) {
+
+        // Walk the old and new, and if the old has payloads included strictly
+        // descendent to the old path, find the equivalent relative path on the
+        // new and include that payload.
+        SdfPathSet curLoadSet = _cache->GetIncludedPayloads();
+        SdfPathSet newPayloads;
+
+        for (size_t i = 0;
+             i != instanceChanges.associatedIndexOld.size(); ++i) {
+            SdfPath const &oldPath = instanceChanges.associatedIndexOld[i];
+            SdfPath const &newPath = instanceChanges.associatedIndexNew[i];
+            for (auto iter = curLoadSet.lower_bound(oldPath);
+                 iter != curLoadSet.end() && iter->HasPrefix(oldPath); ++iter) {
+                if (*iter == oldPath)
+                    continue;
+                SdfPath payloadPath = iter->ReplacePrefix(oldPath, newPath);
+                newPayloads.insert(payloadPath);
+                TF_DEBUG(USD_INSTANCING).Msg(
+                    "Including equivalent payload <%s> -> <%s> for instancing "
+                    "changes.\n",
+                    iter->GetText(), payloadPath.GetText());
+            }
+        }
+        if (!newPayloads.empty()) {
+            // Request payloads and recurse.
+            PcpChanges pcpChanges;
+            _cache->RequestPayloads(newPayloads, SdfPathSet(), &pcpChanges);
+            SdfPathSet toRecompose;
+            _RecomposePrims(pcpChanges, &toRecompose);
+            pathsToRecompose->insert(toRecompose.begin(), toRecompose.end());
+        }
+    }
 }
 
 template <class PrimIndexPathMap>
@@ -3801,7 +3842,7 @@ UsdStage::_RemoveMasterSubtreesSubsumedByInstances(
         const SdfPath* sourceIndexPath = 
             TfMapLookupPtr(primPathToSourceIndexPathMap, p->GetPath());
         const SdfPath& masterPath = 
-            _instanceCache->GetMasterUsingPrimIndexAtPath(
+            _instanceCache->GetMasterUsingPrimIndexPath(
                 sourceIndexPath ? *sourceIndexPath : p->GetPath());
         if (!masterPath.IsEmpty()) {
             if (!mastersForSubtrees) {
@@ -3966,17 +4007,12 @@ UsdStage::_ComposePrimIndexesInParallel(
         TF_DEBUG(USD_COMPOSITION).Msg("%s", msg.c_str());
     }
 
-    std::vector<SdfPath> const *pathsToCompose = &primIndexPaths;
-
-    // If we have a population mask, take the intersection of the requested
-    // paths with the stage's population mask, and only compute those.
+    // We only want to compute prim indexes included by the stage's 
+    // population mask. As an optimization, if all prims are included the 
+    // name children predicate doesn't need to consider the mask at all.
     static auto allMask = UsdStagePopulationMask::All();
-    vector<SdfPath> maskedPaths;
-    if (GetPopulationMask() != allMask) {
-        maskedPaths = UsdStagePopulationMask(primIndexPaths).
-            GetIntersection(GetPopulationMask()).GetPaths();
-        pathsToCompose = &maskedPaths;
-    }
+    const UsdStagePopulationMask* mask = 
+        _populationMask == allMask ? nullptr : &_populationMask;
 
     // Ask Pcp to compute all the prim indexes in parallel, stopping at
     // prim indexes that won't be used by the stage.
@@ -3984,19 +4020,22 @@ UsdStage::_ComposePrimIndexesInParallel(
 
     if (includeRule == _IncludeAllDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
-            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
+            primIndexPaths, &errs, 
+            _NameChildrenPred(mask, _instanceCache.get()),
             [](const SdfPath &) { return true; },
             "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNoDiscoveredPayloads) {
         _cache->ComputePrimIndexesInParallel(
-            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
+            primIndexPaths, &errs, 
+            _NameChildrenPred(mask, _instanceCache.get()),
             [](const SdfPath &) { return false; },
             "Usd", _mallocTagID);
     }
     else if (includeRule == _IncludeNewPayloadsIfAncestorWasIncluded) {
         _cache->ComputePrimIndexesInParallel(
-            *pathsToCompose, &errs, _NameChildrenPred(_instanceCache.get()),
+            primIndexPaths, &errs, 
+            _NameChildrenPred(mask, _instanceCache.get()),
             _IncludeNewlyDiscoveredPayloadsPredicate(this),
             "Usd", _mallocTagID);
     }
@@ -4203,7 +4242,7 @@ _RemoveMasterTargetPaths(const UsdProperty& srcProp,
 {
     auto removeIt = std::remove_if(
         targetPaths->begin(), targetPaths->end(),
-        Usd_InstanceCache::IsPathMasterOrInMaster);
+        Usd_InstanceCache::IsPathInMaster);
     if (removeIt == targetPaths->end()) {
         return;
     }
@@ -6450,8 +6489,19 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
 
         const std::set<double> samples = layer->ListTimeSamplesForPath(specId);
         if (!samples.empty()) {
-            copySamplesInInterval(samples, times, interval);
-            if (!info._layerToStageOffset.IsIdentity()) {
+            if (info._layerToStageOffset.IsIdentity()) {
+                // The layer offset is identity, so we can use the interval
+                // directly, and do not need to remap the sample times.
+                copySamplesInInterval(samples, times, interval);
+            } else {
+                // Map the interval (expressed in stage time) to layer time.
+                const SdfLayerOffset stageToLayer =
+                    info._layerToStageOffset.GetInverse();
+                const GfInterval layerInterval =
+                    interval * stageToLayer.GetScale()
+                    + stageToLayer.GetOffset();
+                copySamplesInInterval(samples, times, layerInterval);
+                // Map the layer sample times to stage times.
                 for (auto &time : *times) {
                     time = info._layerToStageOffset * time;
                 }

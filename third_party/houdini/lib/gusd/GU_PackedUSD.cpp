@@ -748,11 +748,21 @@ GusdGU_PackedUSD::getInstanceKey(UT_Options& key) const
     
     if( !m_masterPathCacheValid ) {
         UsdPrim usdPrim = getUsdPrim();
+
+        // Disambiguate masters of instances by including the stage pointer.
+        // Sometimes instances are opened on different stages, so their
+        // path will both be "/__Master_1" even if they are different prims.
+        // TODO: hash by the Usd instancing key if it becomes exposed.
+        std::ostringstream ost;
+        ost << (void const *)get_pointer(usdPrim.GetStage());
+        std::string stagePtr = ost.str();
         if( usdPrim.IsValid() && usdPrim.IsInstance() ) {
-            m_masterPathCache = usdPrim.GetMaster().GetPrimPath().GetString();
+            m_masterPathCache = stagePtr +
+                usdPrim.GetMaster().GetPrimPath().GetString();
         } 
         else if( usdPrim.IsValid() && usdPrim.IsInstanceProxy() ) {
-            m_masterPathCache = usdPrim.GetPrimInMaster().GetPrimPath().GetString();
+            m_masterPathCache = stagePtr +
+                usdPrim.GetPrimInMaster().GetPrimPath().GetString();
         } 
         else{
             m_masterPathCache = "";
@@ -798,6 +808,8 @@ GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
 {
     if(m_usdPrim)
         return m_usdPrim;
+
+    m_masterPathCacheValid = false;
 
     GusdStageCacheReader cache;
     m_usdPrim =

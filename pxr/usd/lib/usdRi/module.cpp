@@ -45,7 +45,7 @@ TF_WRAP_MODULE
 
     TF_WRAP(UsdRiRisIntegrator);
     TF_WRAP(UsdRiRslShader);
-    TF_WRAP(UsdRiStatements);
+    TF_WRAP(UsdRiStatementsAPI);
 
     TF_WRAP(UsdRiTokens);
 

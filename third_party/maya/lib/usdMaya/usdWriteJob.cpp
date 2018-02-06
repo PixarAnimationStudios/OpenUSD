@@ -382,6 +382,10 @@ void usdWriteJob::endJob()
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
     }
+    // Running post export function on all the prim writers.
+    for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
+        primWriter->postExport();
+    }
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
         mJobCtx.mStage->GetRootLayer()->Save();
     }

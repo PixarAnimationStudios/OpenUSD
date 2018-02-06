@@ -170,7 +170,7 @@ HdSt_MeshTopology::GetQuadrangulateComputation(
 
 HdComputationSharedPtr
 HdSt_MeshTopology::GetQuadrangulateComputationGPU(
-    TfToken const &name, GLenum dataType, SdfPath const &id)
+    TfToken const &name, HdType dataType, SdfPath const &id)
 {
     // check if the quad table is already computed as all-quads.
     if (_quadInfo && _quadInfo->IsAllQuads()) {
@@ -271,8 +271,7 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
 
 HdComputationSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
-                                           GLenum dataType,
-                                           int numComponents)
+                                              HdType dataType)
 {
     // for empty topology, we don't need to refine anything.
     if (_topology.GetFaceVertexCounts().size() == 0) {
@@ -281,8 +280,7 @@ HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
 
     if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
 
-    return _subdivision->CreateRefineComputationGPU(
-        this, name, dataType, numComponents);
+    return _subdivision->CreateRefineComputationGPU(this, name, dataType);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

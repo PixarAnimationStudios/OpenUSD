@@ -2923,35 +2923,39 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         layer->_FinishInitialization(/* success = */ false);
         return TfNullPtr;
     }
-        
-    if (!layer->IsMuted()) {
-        // This is in support of specialized file formats that piggyback on
-        // anonymous layer functionality. If the layer is anonymous, pass the
-        // original assetPath to the reader, otherwise, pass the resolved path
-        // of the layer.
-        const string readFilePath = 
-            isAnonymous ? info.layerPath : resolvedPath;
 
+    // This is in support of specialized file formats that piggyback
+    // on anonymous layer functionality. If the layer is anonymous,
+    // pass the original assetPath to the reader, otherwise, pass the
+    // resolved path of the layer.
+    const string readFilePath = 
+        isAnonymous ? info.layerPath : resolvedPath;
+
+    if (!layer->IsMuted()) {
         // Run the file parser to read in the file contents.
         if (!layer->_Read(info.identifier, readFilePath, metadataOnly)) {
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;
         }
+     }
 
-        if (!isAnonymous) {
-            // Grab modification timestamp.
-            VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-                info.identifier, readFilePath);
-            if (timestamp.IsEmpty()) {
-                TF_CODING_ERROR(
-                    "Unable to get modification timestamp for '%s (%s)'",
-                    info.identifier.c_str(), readFilePath.c_str());
-                layer->_FinishInitialization(/* success = */ false);
-                return TfNullPtr;
-            }
-
-            layer->_assetModificationTime.Swap(timestamp);
+    // Grab the modification time even if layer is muted and not being
+    // read. Since a muted layer may become unmuted later, there needs
+    // to be a non-empty timestamp so it will not be misidentified as
+    // a newly created non-serialized layer.
+    if (!isAnonymous) {
+        // Grab modification timestamp.
+        VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+            info.identifier, readFilePath);
+        if (timestamp.IsEmpty()) {
+            TF_CODING_ERROR(
+                "Unable to get modification timestamp for '%s (%s)'",
+                info.identifier.c_str(), readFilePath.c_str());
+            layer->_FinishInitialization(/* success = */ false);
+            return TfNullPtr;
         }
+        
+        layer->_assetModificationTime.Swap(timestamp);
     }
 
     layer->_MarkCurrentStateAsClean();

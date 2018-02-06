@@ -392,6 +392,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_RelocatePrimsWithSameName.testenv
+    DEST testPcpMuseum_RelocatePrimsWithSameName
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SubrootReferenceAndClasses.testenv
     DEST testPcpMuseum_SubrootReferenceAndClasses
 )
@@ -909,6 +914,13 @@ pxr_register_test(testPcpMuseum_RelativePathReferences
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelativePathReferences/root.sdf" 
     STDOUT_REDIRECT compositionResults_RelativePathReferences.txt
     DIFF_COMPARE compositionResults_RelativePathReferences.txt 
+)
+
+pxr_register_test(testPcpMuseum_RelocatePrimsWithSameName
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults RelocatePrimsWithSameName/root.sdf" 
+    STDOUT_REDIRECT compositionResults_RelocatePrimsWithSameName.txt
+    DIFF_COMPARE compositionResults_RelocatePrimsWithSameName.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndClasses

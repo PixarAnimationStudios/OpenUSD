@@ -50,9 +50,11 @@ class TestUsdCollectionAPI(unittest.TestCase):
     def test_AuthorCollections(self):
         # ----------------------------------------------------------
         # Test an explicitOnly collection.
-        explicitColl = Usd.CollectionAPI.AddCollection(testPrim, 
+        explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "testExplicitCollection", Usd.Tokens.explicitOnly)
         self.assertTrue(explicitColl.HasNoIncludedPaths())
+        self.assertEqual(['CollectionAPI:testExplicitCollection'],
+                         testPrim.GetAppliedSchemas())
 
         explicitColl.CreateIncludesRel().AddTarget(sphere.GetPath())
         self.assertFalse(explicitColl.HasNoIncludedPaths())
@@ -88,7 +90,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # ----------------------------------------------------------
         # Test an expandPrims collection.
-        expandPrimsColl = Usd.CollectionAPI.AddCollection(testPrim, 
+        expandPrimsColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "testExpandPrimsColl", Usd.Tokens.expandPrims)
         expandPrimsColl.CreateIncludesRel().AddTarget(geom.GetPath())
         expandPrimsCollMquery = expandPrimsColl.ComputeMembershipQuery()
@@ -117,7 +119,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # ----------------------------------------------------------
         # Test an expandPrimsAndProperties collection.
-        expandPrimsAndPropertiesColl = Usd.CollectionAPI.AddCollection(
+        expandPrimsAndPropertiesColl = Usd.CollectionAPI.ApplyCollection(
                 testPrim, 
                 "testExpandPrimsAndPropertiesColl",
                 Usd.Tokens.expandPrimsAndProperties)
@@ -136,7 +138,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # 
         # Create a collection that combines the explicit collection and 
         # the expandPrimsAndProperties collection.
-        combinedColl = Usd.CollectionAPI.AddCollection(testPrim, "combined", 
+        combinedColl = Usd.CollectionAPI.ApplyCollection(testPrim, "combined", 
                 Usd.Tokens.explicitOnly)
         combinedColl.CreateIncludesRel().AddTarget(
             expandPrimsAndPropertiesColl.GetCollectionPath())
@@ -157,7 +159,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
         # collection.
         combinedColl.CreateIncludesRel().AddTarget(
-            expandPrimsColl.GetCollectionPath(), position=Usd.ListPositionBack)
+            expandPrimsColl.GetCollectionPath(), position=Usd.ListPositionBackOfAppendList)
         combinedMquery = combinedColl.ComputeMembershipQuery()
         
         combinedCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
@@ -167,11 +169,56 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
         self.assertEqual(len(combinedCollIncObjects), 5)
 
+    def test_testAddAndRemovePrim(self):
+        geomCollection = Usd.CollectionAPI.ApplyCollection(geom, 
+            "geom")
+        self.assertTrue(geomCollection.AddPrim(shapes))
+        self.assertTrue(geomCollection.RemovePrim(sphere))
+
+        query = geomCollection.ComputeMembershipQuery()
+        self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
+        self.assertTrue(query.IsPathIncluded(cube.GetPath()))
+        self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
+        self.assertFalse(query.IsPathIncluded(hemiSphere1.GetPath()))
+        self.assertFalse(query.IsPathIncluded(hemiSphere2.GetPath()))
+
+        # Add just hemiSphere2
+        self.assertTrue(geomCollection.AddPrim(hemiSphere2))
+
+        # Remove hemiSphere1. Note that this does nothing however since it's 
+        # not included in the collection.
+        self.assertTrue(geomCollection.RemovePrim(hemiSphere1))
+
+        # Every time we call AddPrim() or RemovePrim(), we must recompute 
+        # the MembershipQuery object.
+        query = geomCollection.ComputeMembershipQuery()
+        self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
+        self.assertFalse(query.IsPathIncluded(hemiSphere1.GetPath()))
+        self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
+
+        # Add back sphere and verify that everything is included now.
+        self.assertTrue(geomCollection.AddPrim(sphere))
+
+        query = geomCollection.ComputeMembershipQuery()
+        self.assertTrue(query.IsPathIncluded(sphere.GetPath()))
+        self.assertTrue(query.IsPathIncluded(hemiSphere1.GetPath()))
+        self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
+        self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
+        self.assertTrue(query.IsPathIncluded(cube.GetPath()))
+
     def test_testReadCollection(self):
         leafGeom = Usd.CollectionAPI.GetCollection(testPrim, "leafGeom")
         (valid, reason) = leafGeom.Validate()
         self.assertTrue(valid)
 
+        # Test the other overload of GetCollection.
+        leafGeomPath = leafGeom.GetCollectionPath()
+        leafGeom = Usd.CollectionAPI.GetCollection(stage, leafGeomPath)
+        self.assertEqual(leafGeom.GetCollectionPath(), leafGeomPath)
+
+        (valid, reason) = leafGeom.Validate()
+        self.assertTrue(valid)
+        
         # Test GetName() API.
         self.assertEqual(leafGeom.GetName(), 'leafGeom')
 
@@ -192,11 +239,11 @@ class TestUsdCollectionAPI(unittest.TestCase):
                                                          stage)),
             2)
 
-        # Calling AddCollection on an already existing collection will update
+        # Calling ApplyCollection on an already existing collection will update
         # the expansionRule.
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.explicitOnly)
-        leafGeom = Usd.CollectionAPI.AddCollection(testPrim, "leafGrom", 
+        leafGeom = Usd.CollectionAPI.ApplyCollection(testPrim, "leafGrom", 
             Usd.Tokens.expandPrims)
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.expandPrims)
@@ -217,7 +264,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = allGeomProperties.Validate()
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
-                allGeomPropertiesMquery, stage)), 24)
+                allGeomPropertiesMquery, stage)), 27)
 
         hasRels = Usd.CollectionAPI.GetCollection(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
@@ -287,14 +334,14 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(len(reason) > 0)
 
     def test_CircularDependency(self):
-        collectionA = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionA = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "A", Usd.Tokens.explicitOnly)
-        collectionB = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionB = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "B")
-        collectionC = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionC = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "C")
 
-        collectionD = Usd.CollectionAPI.AddCollection(testPrim, 
+        collectionD = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "D")
                 
         collectionA.CreateIncludesRel().AddTarget(

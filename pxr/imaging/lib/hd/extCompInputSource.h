@@ -26,6 +26,8 @@
 #define HD_EXT_COMP_INPUT_SOURCE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,14 +42,18 @@ class VtValue;
 class Hd_ExtCompInputSource : public HdNullBufferSource {
 public:
     /// Constructs the input binding with the name inputName
+    HD_API
     Hd_ExtCompInputSource(const TfToken &inputName);
 
+    HD_API
     virtual ~Hd_ExtCompInputSource() = default;
 
     /// Returns the name of the input.
+    HD_API
     virtual TfToken const &GetName() const final;
 
     /// Returns the value associated with the input.
+    HD_API
     virtual const VtValue &GetValue() const = 0;
 
 private:

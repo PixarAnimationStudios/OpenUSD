@@ -21,17 +21,41 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/textureRegistry.h"
+
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/persistentBuffer.h"
+#include "pxr/imaging/hdSt/interleavedMemoryManager.h"
+#include "pxr/imaging/hdSt/vboMemoryManager.h"
+#include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStResourceRegistry::HdStResourceRegistry()
 {
+    // default aggregation strategies for varying (vertex, varying) primvars
+    SetNonUniformAggregationStrategy(
+        new HdStVBOMemoryManager(/*isImmutable=*/false));
+    SetNonUniformImmutableAggregationStrategy(
+        new HdStVBOMemoryManager(/*isImmutable=*/true));
+
+    // default aggregation strategy for uniform on SSBO (for primvars)
+    SetShaderStorageAggregationStrategy(
+        new HdStInterleavedSSBOMemoryManager());
+
+    // default aggregation strategy for uniform on UBO (for globals)
+    SetUniformAggregationStrategy(
+        new HdStInterleavedUBOMemoryManager());
+
+    // default aggregation strategy for single buffers (for nested instancer)
+    SetSingleStorageAggregationStrategy(
+        new HdStVBOSimpleMemoryManager());
 }
 
 HdStResourceRegistry::~HdStResourceRegistry()
@@ -44,6 +68,10 @@ HdStResourceRegistry::_GarbageCollect()
 {
     GarbageCollectDispatchBuffers();
     GarbageCollectPersistentBuffers();
+
+    // Cleanup Shader registries
+    _geometricShaderRegistry.GarbageCollect();
+    _glslProgramRegistry.GarbageCollect();
 }
 
 void
@@ -84,6 +112,34 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
                                                   VtDefault = 0) + size;
 
         gpuMemoryUsed += size;
+    }
+
+    // glsl program & ubo allocation
+    TF_FOR_ALL (progIt, _glslProgramRegistry) {
+        HdStGLSLProgramSharedPtr const &program = progIt->second;
+        if (!program) continue;
+        size_t size =
+            program->GetProgram().GetSize() +
+            program->GetGlobalUniformBuffer().GetSize();
+
+        // the role of program and global uniform buffer is always same.
+        std::string const &role = program->GetProgram().GetRole().GetString();
+        (*result)[role] = VtDictionaryGet<size_t>(*result, role,
+                                                  VtDefault = 0) + size;
+
+        gpuMemoryUsed += size;
+    }
+
+    // Texture registry
+    {
+        GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
+        std::vector<VtDictionary> textureInfo = textureReg.GetTextureInfos();
+        size_t textureMemory = 0;
+        TF_FOR_ALL (textureIt, textureInfo) {
+            VtDictionary &info = (*textureIt);
+            textureMemory += info["memoryUsed"].Get<size_t>();
+        }
+        (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
@@ -137,6 +193,136 @@ HdStResourceRegistry::GarbageCollectPersistentBuffers()
             std::bind(&HdStPersistentBufferSharedPtr::unique,
                       std::placeholders::_1)),
         _persistentBufferRegistry.end());
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::MergeBufferArrayRange(
+    HdAggregationStrategy *strategy,
+    HdBufferArrayRegistry &bufferArrayRegistry,
+    TfToken const &role,
+    HdBufferSpecVector const &newBufferSpecs,
+    HdBufferArrayRangeSharedPtr const &range)
+{
+    HD_TRACE_FUNCTION();
+
+    if (!TF_VERIFY(range)) return HdBufferArrayRangeSharedPtr();
+
+    // get existing buffer specs
+    HdBufferSpecVector oldBufferSpecs;
+    range->AddBufferSpecs(&oldBufferSpecs);
+
+    // immutable ranges should always be migrated, otherwise compare bufferspec
+    if (range->IsImmutable() || !HdBufferSpec::IsSubset(newBufferSpecs, oldBufferSpecs)) {
+        // create / moveto the new buffer array.
+
+        HdComputationVector computations;
+
+        // existing content has to be transferred.
+        TF_FOR_ALL(it, oldBufferSpecs) {
+            if (std::find(newBufferSpecs.begin(), newBufferSpecs.end(), *it)
+                == newBufferSpecs.end()) {
+
+                // migration computation
+                computations.push_back(
+                    HdComputationSharedPtr(new HdStCopyComputationGPU(
+                                               /*src=*/range, it->name)));
+            }
+        }
+        // new buffer array should have a union of
+        // new buffer specs and exsiting buffer specs.
+        HdBufferSpecVector bufferSpecs = HdBufferSpec::ComputeUnion(
+            newBufferSpecs, oldBufferSpecs);
+
+        // allocate new range.
+        HdBufferArrayRangeSharedPtr result = bufferArrayRegistry.AllocateRange(
+            strategy, role, bufferSpecs);
+
+        // register copy computation.
+        if (!computations.empty()) {
+            TF_FOR_ALL(it, computations) {
+                AddComputation(result, *it);
+            }
+        }
+
+        // The source range will be no longer used.
+        // Increment version of the underlying bufferArray to notify
+        // all batches pointing the range to be rebuilt.
+        //
+        // XXX: Currently we have migration computations for each individual
+        // ranges, so the version is being incremented redundantly.
+        // It shouldn't be a big issue, but we can put several range
+        // computations into single computation to avoid that redundancy
+        // if we like. Or alternatively the change tracker can take care of it.
+        range->IncrementVersion();
+
+        HD_PERF_COUNTER_INCR(HdPerfTokens->bufferArrayRangeMerged);
+
+        return result;
+    }
+
+    return range;
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::MergeNonUniformBufferArrayRange(
+    TfToken const &role,
+    HdBufferSpecVector const &newBufferSpecs,
+    HdBufferArrayRangeSharedPtr const &range)
+{
+    return MergeBufferArrayRange(_nonUniformAggregationStrategy.get(),
+                                 _nonUniformBufferArrayRegistry,
+                                 role, newBufferSpecs, range);
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::MergeNonUniformImmutableBufferArrayRange(
+    TfToken const &role,
+    HdBufferSpecVector const &newBufferSpecs,
+    HdBufferArrayRangeSharedPtr const &range)
+{
+    return MergeBufferArrayRange(_nonUniformImmutableAggregationStrategy.get(),
+                                 _nonUniformImmutableBufferArrayRegistry,
+                                 role, newBufferSpecs, range);
+}
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::MergeUniformBufferArrayRange(
+    TfToken const &role,
+    HdBufferSpecVector const &newBufferSpecs,
+    HdBufferArrayRangeSharedPtr const &range)
+{
+    return MergeBufferArrayRange(_uniformUboAggregationStrategy.get(),
+                                 _uniformUboBufferArrayRegistry,
+                                 role, newBufferSpecs, range);
+}
+
+HdBufferArrayRangeSharedPtr
+HdStResourceRegistry::MergeShaderStorageBufferArrayRange(
+    TfToken const &role,
+    HdBufferSpecVector const &newBufferSpecs,
+    HdBufferArrayRangeSharedPtr const &range)
+{
+    return MergeBufferArrayRange(_uniformSsboAggregationStrategy.get(),
+                                 _uniformSsboBufferArrayRegistry,
+                                 role, newBufferSpecs, range);
+}
+
+std::unique_lock<std::mutex>
+HdStResourceRegistry::RegisterGeometricShader(HdStShaderKey::ID id,
+                        HdInstance<HdStShaderKey::ID, HdSt_GeometricShaderSharedPtr> *instance)
+{
+    return _geometricShaderRegistry.GetInstance(id, instance);
+}
+
+std::unique_lock<std::mutex>
+HdStResourceRegistry::RegisterGLSLProgram(HdStGLSLProgram::ID id,
+              HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> *instance)
+{
+    return _glslProgramRegistry.GetInstance(id, instance);
+}
+
+void HdStResourceRegistry::InvalidateShaderRegistry()
+{
+    _geometricShaderRegistry.Invalidate();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

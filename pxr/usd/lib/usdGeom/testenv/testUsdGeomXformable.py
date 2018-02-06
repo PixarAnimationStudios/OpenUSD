@@ -578,21 +578,66 @@ class TestUsdGeomXformable(unittest.TestCase):
 
         xlateOp.Set(translation + translation, Usd.TimeCode(1))
         self.assertFalse(x.TransformMightBeTimeVarying())
-        # Test both overloads of TestMightBeTimeVarying.
+        # Test both overloads of TransformMightBeTimeVarying.
         self.assertFalse(x.TransformMightBeTimeVarying([xlateOp]))
 
+        self.assertEqual(x.GetTimeSamples(), [1.0])
         xlateOp.Set(translation * 3, Usd.TimeCode(2))
 
         self.assertTrue(x.TransformMightBeTimeVarying())
         self.assertTrue(x.TransformMightBeTimeVarying([xlateOp]))
+        self.assertEqual(x.GetTimeSamples(), [1.0, 2.0])
 
         x.GetXformOpOrderAttr().Set(Vt.TokenArray(('xformOp:translate', 
             '!resetXformStack!')))
         self.assertFalse(x.TransformMightBeTimeVarying())
+        self.assertEqual(x.GetTimeSamples(), [])
 
         x.GetXformOpOrderAttr().Set(Vt.TokenArray(('!resetXformStack!',
             'xformOp:translate')))
         self.assertTrue(x.TransformMightBeTimeVarying())
+        self.assertEqual(x.GetTimeSamples(), [1.0, 2.0])
+
+    def test_GetTimeSamples(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+
+        xlateOp = x.AddTranslateOp()
+        scaleOp = x.AddScaleOp()
+
+        self.assertEqual([], xlateOp.GetTimeSamples())
+        self.assertEqual([], scaleOp.GetTimeSamples())
+
+        xlate1 = Gf.Vec3d(10., 20., 30.)
+        scale2 = Gf.Vec3f(1., 2., 3.);
+
+        xlate3 = Gf.Vec3d(10., 20., 30.)
+        scale4 = Gf.Vec3f(1., 2., 3.);
+
+        self.assertEqual(x.GetTimeSamples(), [])
+
+        xlateOp.Set(xlate1, Usd.TimeCode(1))
+        self.assertEqual(x.GetTimeSamples(), [1.0])
+
+        xlateOp.Set(xlate3, Usd.TimeCode(3))
+        self.assertEqual(x.GetTimeSamples(), [1.0, 3.0])
+
+        scaleOp.Set(scale2, Usd.TimeCode(2))
+        self.assertEqual(x.GetTimeSamples(), [1.0, 2.0, 3.0])
+
+        scaleOp.Set(scale4, Usd.TimeCode(4))
+        self.assertEqual(x.GetTimeSamples(), [1.0, 2.0, 3.0, 4.0])
+
+        self.assertEqual([1.0, 3.0], xlateOp.GetTimeSamples())
+        self.assertEqual([2.0, 4.0], scaleOp.GetTimeSamples())
+
+        self.assertEqual([3.0], 
+                         xlateOp.GetTimeSamplesInInterval(Gf.Interval(2, 4)))
+        self.assertEqual([2.0], 
+                         scaleOp.GetTimeSamplesInInterval(Gf.Interval(0, 3)))
+
+        self.assertEqual(x.GetTimeSamplesInInterval(Gf.Interval(1.5, 3.2)), 
+                        [2.0, 3.0])
 
     def test_PureOvers(self):
         s = Usd.Stage.CreateInMemory()

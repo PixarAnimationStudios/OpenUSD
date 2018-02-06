@@ -85,8 +85,6 @@ private:
     /// and managed externally, so the state is persistent between runs of the
     /// render graph.
     HdTaskContext _taskContext;
-
-    void _InitCaps() const;
 };
 
 

@@ -53,20 +53,19 @@ HdEmbreeRTCBufferAllocator::Free(RTCBufferType buffer)
 
 bool
 HdEmbreeConstantSampler::Sample(unsigned int element, float u, float v,
-    void* value, int componentType, short numComponents) const
+    void* value, HdTupleType dataType) const
 {
-    return _sampler.Sample(0, value, componentType, numComponents);
+    return _sampler.Sample(0, value, dataType);
 }
 
 // HdEmbreeUniformSampler
 
 bool
 HdEmbreeUniformSampler::Sample(unsigned int element, float u, float v,
-    void* value, int componentType, short numComponents) const
+    void* value, HdTupleType dataType) const
 {
     if (_primitiveParams.empty()) {
-        return _sampler.Sample(element, value, componentType,
-            numComponents);
+        return _sampler.Sample(element, value, dataType);
     }
     if (element >= _primitiveParams.size()) {
         return false;
@@ -74,25 +73,22 @@ HdEmbreeUniformSampler::Sample(unsigned int element, float u, float v,
     return _sampler.Sample(
         HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam(
             _primitiveParams[element]),
-        value, componentType, numComponents);
+        value, dataType);
 }
 
 // HdEmbreeTriangleVertexSampler
 
 bool
 HdEmbreeTriangleVertexSampler::Sample(unsigned int element, float u, float v,
-    void* value, int componentType, short numComponents) const
+    void* value, HdTupleType dataType) const
 {
     if (element >= _indices.size()) {
         return false;
     }
     HdEmbreeTypeHelper::PrimvarTypeContainer corners[3];
-    if (!_sampler.Sample(_indices[element][0], &corners[0], componentType,
-            numComponents) ||
-        !_sampler.Sample(_indices[element][1], &corners[1], componentType,
-            numComponents) ||
-        !_sampler.Sample(_indices[element][2], &corners[2], componentType,
-            numComponents)) {
+    if (!_sampler.Sample(_indices[element][0], &corners[0], dataType) ||
+        !_sampler.Sample(_indices[element][1], &corners[1], dataType) ||
+        !_sampler.Sample(_indices[element][2], &corners[2], dataType)) {
         return false;
     }
     void* samples[3] = { static_cast<void*>(&corners[0]),
@@ -101,23 +97,19 @@ HdEmbreeTriangleVertexSampler::Sample(unsigned int element, float u, float v,
     // Embree specification of triangle interpolation:
     // t_uv = (1-u-v)*t0 + u*t1 + v*t2
     float weights[3] = { 1.0f - u - v, u, v };
-    return _Interpolate(value, samples, weights, 3, componentType,
-        numComponents);
+    return _Interpolate(value, samples, weights, 3, dataType);
 }
 
 // HdEmbreeTriangleFaceVaryingSampler
 
 bool
 HdEmbreeTriangleFaceVaryingSampler::Sample(unsigned int element, float u,
-    float v, void* value, int componentType, short numComponents) const
+    float v, void* value, HdTupleType dataType) const
 {
     HdEmbreeTypeHelper::PrimvarTypeContainer corners[3];
-    if (!_sampler.Sample(element*3 + 0, &corners[0], componentType,
-            numComponents) ||
-        !_sampler.Sample(element*3 + 1, &corners[1], componentType,
-            numComponents) ||
-        !_sampler.Sample(element*3 + 2, &corners[2], componentType,
-            numComponents)) {
+    if (!_sampler.Sample(element*3 + 0, &corners[0], dataType) ||
+        !_sampler.Sample(element*3 + 1, &corners[1], dataType) ||
+        !_sampler.Sample(element*3 + 2, &corners[2], dataType)) {
         return false;
     }
     void* samples[3] = { static_cast<void*>(&corners[0]),
@@ -126,8 +118,7 @@ HdEmbreeTriangleFaceVaryingSampler::Sample(unsigned int element, float u,
     // Embree specification of triangle interpolation:
     // t_uv = (1-u-v)*t0 + u*t1 + v*t2
     float weights[3] = { 1.0f - u - v, u, v };
-    return _Interpolate(value, samples, weights, 3, componentType,
-        numComponents);
+    return _Interpolate(value, samples, weights, 3, dataType);
 }
 
 /* static */ VtValue
@@ -137,8 +128,9 @@ HdEmbreeTriangleFaceVaryingSampler::_Triangulate(TfToken const& name,
     HdVtBufferSource buffer(name, value);
     VtValue triangulated;
     if (!meshUtil.ComputeTriangulatedFaceVaryingPrimvar(
-            buffer.GetData(), buffer.GetNumElements(),
-            buffer.GetGLElementDataType(),
+            buffer.GetData(),
+            buffer.GetNumElements(),
+            buffer.GetTupleType().type,
             &triangulated)) {
         TF_CODING_ERROR("[%s] Could not triangulate face-varying data.",
             name.GetText());
@@ -158,8 +150,8 @@ HdEmbreeSubdivVertexSampler::HdEmbreeSubdivVertexSampler(TfToken const& name,
     , _meshId(meshId)
     , _allocator(allocator)
 {
-    // The embree API only supports float primvars.
-    if (_buffer.GetGLComponentDataType() != GL_FLOAT) {
+    // The embree API only supports float-component primvars.
+    if (HdGetComponentType(_buffer.GetTupleType().type) != HdTypeFloat) {
         TF_CODING_ERROR("Embree subdivision meshes only support float-based"
             " primvars for vertex interpolation mode");
         return;
@@ -175,7 +167,9 @@ HdEmbreeSubdivVertexSampler::HdEmbreeSubdivVertexSampler(TfToken const& name,
     // Tag the embree mesh object with the primvar buffer, for use by
     // rtcInterpolate.
     rtcSetBuffer(_meshScene, _meshId, _embreeBufferId,
-        _buffer.GetData(), 0, _buffer.GetNumComponents() * sizeof(float));
+        _buffer.GetData(),
+        /* offset */ 0,
+        /* stride */ HdDataSizeOfTupleType(_buffer.GetTupleType()));
 }
 
 HdEmbreeSubdivVertexSampler::~HdEmbreeSubdivVertexSampler()
@@ -187,17 +181,20 @@ HdEmbreeSubdivVertexSampler::~HdEmbreeSubdivVertexSampler()
 
 bool
 HdEmbreeSubdivVertexSampler::Sample(unsigned int element, float u, float v,
-    void* value, int componentType, short numComponents) const
+    void* value, HdTupleType dataType) const
 {
     // Make sure the buffer type and sample type have the same arity.
     // _embreeBufferId of -1 indicates this sampler failed to initialize.
     if (_embreeBufferId == static_cast<RTCBufferType>(-1) ||
-        componentType != GL_FLOAT ||
-        numComponents != _buffer.GetNumComponents()) {
+        dataType != _buffer.GetTupleType()) {
         return false;
     }
+
+    // Combine number of components in the underlying type and tuple arity.
+    size_t numFloats = HdGetComponentCount(dataType.type) * dataType.count;
+
     rtcInterpolate(_meshScene, _meshId, element, u, v, _embreeBufferId,
-        static_cast<float*>(value), nullptr, nullptr, numComponents);
+        static_cast<float*>(value), nullptr, nullptr, numFloats);
     return true;
 }
 

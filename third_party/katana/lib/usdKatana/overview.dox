@@ -31,7 +31,7 @@ function:
 \code
 void Function(
     const PxrUsdKatanaOpUsdInPrivateData& args,
-    Foundry::Katnaa::GeolibCookInterface& interfac);
+    Foundry::Katana::GeolibCookInterface& interface);
 \endcode
 
 Finally, the plugin needs to be registered with katana and the registry:

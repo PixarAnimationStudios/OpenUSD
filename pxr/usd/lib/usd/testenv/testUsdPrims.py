@@ -753,5 +753,19 @@ class TestUsdPrim(unittest.TestCase):
             self.assertFalse(
                 s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
 
+    def test_AppliedSchemas(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt)
+            root = s.DefinePrim('/hello')
+            self.assertEqual([], root.GetAppliedSchemas())
+            Usd.ModelAPI.Apply(s, '/hello')
+            self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
+            Usd.ClipsAPI.Apply(s, '/hello')
+            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+
+            # Ensure duplicates aren't picked up
+            Usd.ClipsAPI.Apply(s, '/hello')
+            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+
 if __name__ == "__main__":
     unittest.main()

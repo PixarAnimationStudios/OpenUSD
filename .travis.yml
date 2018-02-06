@@ -104,7 +104,7 @@ install:
       tar -xvzf /tmp/oiio.tgz -C $HOME;
       pushd $HOME/oiio-Release-1.5.11;
       mkdir build && cd build;
-      cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr ..;
+      cmake -DCMAKE_INSTALL_PREFIX=$HOME/oiio -DILMBASE_HOME=$HOME/openexr -DOPENEXR_HOME=$HOME/openexr -DUSE_PYTHON=OFF -DOIIO_BUILD_TOOLS=OFF -DOIIO_BUILD_TESTS=OFF ..;
       make && make install;
       popd;
     else

@@ -878,7 +878,7 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // of /World/sets/model/geom...
 
         // Cook the node to get detail attributes.
-        OP_Context houdiniContext(startTimeCode);
+        OP_Context houdiniContext(tstart);
         GU_DetailHandle cookedGeoHdl = m_renderNode->getCookedGeoHandle(houdiniContext);
 
         // Get the model path and asset name

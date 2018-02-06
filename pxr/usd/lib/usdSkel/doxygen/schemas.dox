@@ -1,0 +1,392 @@
+/*!
+
+\page UsdSkel_Schemas Schemas
+
+\section UsdSkel_Schemas_Overview Overview
+
+Data in UsdSkel is stored in modular, reusable, instanceable parts,
+adhering to the following design principles:
+
+- _Skeleton_ "rigs" can be defined and published, to be referenced in wherever
+  needed. Encapsulating skeletons this way is not necessarily a requirement for
+  the interchange of skeletal data, but facilitates scalability and
+  maintainability when deploying directly-rendered, skinned crowds at scale
+  in VFX pipelines.
+
+- _Animations_ can be published individually and referenced back into scenes.
+  This not only allows re-use, but also enables sequencing of animations as
+  <a href="http://openusd.org/docs/USD-Glossary.html#USDGlossary-ValueClips">Value Clips</a>.
+
+- Separating the binding of a _skeleton_ and its _animation_ as bound to
+  geometry allows assets to be published with a bound _skeleton_, inside of
+  a \ref Usd_ScenegraphInstancing_Overview "instance primitive", which can
+  still be driven by a separate animation.
+
+- All posing and animation data is vectorized. This encoding is concise and
+  ideal for scalability and speed of data consumption in the USD APIs.
+
+  Although vectorization may seem unnecessary to the client attempting to
+  interchange individual models only, it is an important consideration for
+  achieving a scalable encoding of crowds in VFX pipelines.
+
+Following these principles, UsdSkel defines skeletal data using the following
+schema types:
+
+- \ref UsdSkel_SkelRoot "Skel Root":
+
+  Identifies where in a scene graph skeletal processing takes place,
+  in addition to providing bounds for skinned models.
+
+- \ref UsdSkel_Skeleton "Skeleton":
+  
+  Defines the \ref UsdSkel_Term_SkeletonTopology "topology" of the skeleton,
+  as well as storing a _rest pose_.
+
+- \ref UsdSkel_Joint "Joint":
+  
+  Concrete prim type used when defining the \ref UsdSkel_JointHierarchy
+  "joint hierarchy" of a skeleton.
+
+- \ref UsdSkel_PackedJointAnimation "Packed Joint Animation":
+  
+  Stores animated joint transforms, which may be applied to any skeleton.
+
+- \ref UsdSkel_BindingAPI "Binding API":
+
+  API schema used to describe what skeletons affect which primitives,
+  what animation sources drive the skeleton, as well as basic skinning
+  properties like joint influences.
+
+\section UsdSkel_JointOrder Joint Order
+
+Joint data in UsdSkel is stored in vectorized arrays.
+Throughout UsdSkel, these arrays may be ordered in slightly different ways.
+For instance, a _skeleton_ has its own explicit joint ordering, but an
+_animation_ may have another order, representing either a different
+ordering of joints, or a sparse subset of joints.
+
+These data orderings are referred to as a primitive's **joint order**, and
+are defined using token arrays.
+
+The tokens in a joint array are given as Sdf-style paths, where parent-child
+relationships in the ggiven paths establish a
+\ref UsdSkel_jointHierarch "joint hierarchy." Note that these paths do not
+need to refer to actual primitives in the scene. They are used as a way to
+name and order joints in vectorized data. For example:
+
+\code
+def PackedJointAnimation "Anim" {
+    uniform token[] = ["A", "A/B"]
+}
+def Skeleton "Skel" {
+    uniform token[] = ["A/B", "A"]
+}
+\endcode
+
+Note that in both example primitives above, the given paths do not reference
+any real primitives. Also note that each primitive has its own joint ordering,
+and that those orders need not be identical.
+
+The purpose of encoding orderings in this manner to allow for the creation
+of **self-contained** assets. For example, it is possible to construct
+a \ref UsdSkel_PackedJointAnimation "packed joint animation" primitive
+independently from any skeleton definitions, which will remain valid even if a
+_skeleton_ that the animation is mapped to has a slightly different ordering.
+
+Part of the motivation for this is to allow for more robust, composed assets.
+When orderings are required to remain fixed, maintenance difficulties
+may arise. For example, if animation assets are produced through a process
+independent from the process that produces a shared definition of a
+_skeleton asset_, data can easily get out of sync.
+
+On top of allowing for more robust assets, these flexible joint orderings allow
+for additional features like sparse authoring of animation data.
+
+Data can be remapped from one joint ordering to another using a
+UsdSkelAnimMapper, and is done so by matching joint names.
+
+\sa UsdSkelSkeleton::GetJointOrder, UsdSkelSkeleton::SetJointOrder,
+    UsdSkelPackedJointAnimation::GetJointOrder,
+    UsdSkelPackedJointAnimation::SetJointOrder,
+    UsdSkelBindingAPI::GetJointOrder, UsdSkelBindingAPI::SetJointOrder
+
+
+\section UsdSkel_SkelRoot Skeleton Root Schema
+
+The UsdSkelRoot schema is used to **encapsulate** primitives with
+skelelal skinning behaviors, and is required when authoring skeletal data.
+
+A SkelRoot is a boundable primitive, and provides a place to encode the
+extents of all skinned primitives beneath it. It is neither expected nor
+required the descendent primitives that are being skinned will encode
+their own skinned extents.
+
+A SkelRoot additionally gives DCC apps a way of identifying which parts of a
+scene graph require skeletal processing, so that they can take different code
+paths, as is often required to consume skeletal data.
+
+Because a UsdSkelRoot prim encapsulates skeletal behavior, it is also the case
+that the inherited bindings set through the \ref UsdSkel_BindingAPI
+"Binding API Schema" have no effect when set on primitives that do not have
+a UsdSkelRoot primitive as one of their ancestors.
+
+It is possible to override a primitive's composed type in USD, in order
+to either enable or disable skeletal processing. For example:
+
+\code{.cpp}
+    // Enable skeletal processing by setting the type to UsdSkelRoot.
+    UsdSkel.Root.Define(prim.GetStage(), prim.GetPath());
+    // Disable skeletal processing by changing the type to a normal transform.
+    UsdGeomTransform.Define(prim.GetStage(), prim.GetPath());
+\endcode
+
+\section UsdSkel_Skeleton Skeleton Schema
+
+The UsdSkelSkeleton schema describes a skeleton. This schema is responsible
+both for establishing the _topology_ of a skeleton, as well as for identifying
+a _rest pose_.
+
+A skeleton itself provides only structure. Meshes are posed with a skeleton
+by way of \ref UsdSkel_BindingAPI "skeletal bindings" inside of 
+the "geometry hierarchy" of primitives.
+
+\subsection UsdSkel_JointHierarchy Skeleton: Joint Hierarchy
+
+The joints of a Skeleton are defined by the _joints_ attribute. This attribute
+encodes joints paths -- which must be valid SdfPath strings. The parent-child
+relationships of these paths establish parent-child relationships.
+
+For example:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = ["A", "A/B",  "C", "C/D/E"]
+}
+
+In the above example, there are four joints:
+- `A`: A root joint (no parent)
+- `A/B`: A joint parented beneath joint `A`
+- `C`: Another root joint (no parent). There can be any number of root joints.
+- `C/D/E`: A joint which, since `C/D` has not been defined, will be parented
+   beneath joint `C`.
+
+In addition to providing parent-child relationships, this token array also
+establishes the \ref UsdSkel_JointOrder "joint order" of the skeleton.
+
+The targets of the _joints_ attribute are required to be authored such
+that all parent joints come before any of their children in the array.
+This is a requirement because it simplifies some computations without
+necessitating the creation of additional data structures. This ordering
+can most easily be achieved by simply sorting the array.
+
+It's possible to test whether or not an array of joint paths defines a
+valid topology as follows:
+
+\code{.cpp}
+std::string whyNot;
+bool isValid = UsdSkelTopology(paths).Validate(&whyNot);
+\endcode
+
+\section UsdSkel_PackedJointAnimation Packed Joint Animation Schema
+
+Schema describing vectorized joint animation data.
+
+Both as a storage optimization and to allow for value interpolation that
+preserves transform orthogonality, joint transforms are encoded as separate
+translate, rotate and scale components, given in _joint local_ space.
+Transforms are constructed from components using an order of
+scale-rotate-translate. Client code may make use of the
+\ref UsdSkel_TransformCompositionUtils "transform composition utilities" for
+converting transforms to and from this component form.
+
+Joint data is stored in arrays, using the \ref UsdSkel_JointOrder
+"joint order" specified by the _joints_ attribute. This ordering may be
+different from the Skeletons that the animation maps to, and may also
+only identify a sparse subset of the joints in a skeleton. When an animation
+provides sparse data, fallback values are taken from the rest pose on the
+UsdSkelSkeleton primitive to which they apply.
+
+\subsection Animation Root Transform
+
+A PackedJointAnimation is itself a UsdGeomXformable primitive, and may specify
+a local transformation. If such a local transform is defined, it provides
+a root transformation for the entire animation.
+
+This is separate from the root transformation of the 
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance", and provides a way of
+making a distintion between the component of a character's _clip_ motion, and
+the model's own local-to-world transform.
+
+\section UsdSkel_BindingAPI Binding API Schema
+
+The UsdSkelBindingAPI schema provides a means of binding a _Skeleton_ into
+a geometry hierarchy. This schema is also responsible for defining joint
+influences, as well as an optional _geomBindTransform_ property to define
+the space for skinning.
+
+Since a UsdSkelRoot primitive provides encapsulation of skeletal data, bindings
+defined on any primitives that do not have a UsdSkelRoot primitive as one of
+their ancestors have no meaning, and should be ignored.
+
+\sa \ref UsdSkel_CodingExamples "Coding examples for reading skel data"
+
+\subsection UsdSkel_BindingAPI_Skeletons BindingAPI: Binding Skeletons
+
+Meshes are skinned based on \ref UsdSkel_Term_SkinningTransform
+"skinning transforms", computed from a UsdSkelSkeletonQuery, which is bound
+hierarchically using the _skel:skeleton_ relationship. The transforms for
+a bound skeleton are driven from an animation source, such as a
+ \ref UsdSkel_PackedJointAnimation "packed joint animation", which is
+also bound hierarchically, via the _skel:animationSource_ binding relationship.
+
+By defining bindings hierarchically, it is possible to define models that
+each have unique skeletal animations, while also being
+\ref Usd_ScenegraphInstancing_Overview "instanced".
+For example:
+
+\code
+def "Character" {
+    rel skel:skeleton = <Skel>
+    def Skeleton "Skel" {}
+}
+
+def PackedJointAnimation "Anim" {}
+
+over "Instance" (
+    prepend references = </Character>
+    instanceable=true
+) {
+    rel skel:animationSource = </Anim>
+}
+\endcode
+
+Each _skel:skeleton_ binding may be thought of as identifying a
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance", animated
+according to whichever inherited _skel:animationSource_ is defined at the
+location at which the _skel:skeleton_ is bound.
+
+Although _skel:animationSource_ bindings are inherited, they only apply
+when a _skel:skeleton_ is resolved. For example:
+
+\code
+over "A" {
+    rel skel:animationSource = </Anim>
+
+    over "B" {
+       rel skel:skeleton = </Skel1>
+    }
+    over "C" {
+        rel skel:skeleton = </Skel2>
+    }
+}
+\endcode
+
+The above example includes two separate _skeleton instances_, with the
+same animation being applied to each instance. Contrast that with the
+following case:
+
+\code
+over "A" {
+    rel skel:skeleton = </Skel>
+
+    over "B" {
+       rel skel:animationSource = </Anim1>
+    }
+    over "C" {
+        rel skel:animationSource = </Anim2>
+    }
+}
+\endcode
+
+In the above example, there is only a single _skeleton instance_ 
+(at `</A>`), which has no animation, because a _skel:animationSource_
+binding is not considered to have any effect until the next
+_skel:skeleton_ binding at or beneath the binding location in namespace.
+
+One final example may clarify behavior:
+
+\code
+over "A" {
+    rel skel:skeleton = </Skel>
+    rel skel:animationSource = </Anim1>    
+
+    over "B" {
+        rel skel:animationSource = </Anim2>
+    }
+    over "C" {
+        rel skel:animationSource = </Anim2>
+        rel skel:skeleton = </Skel>
+    }
+}
+\endcode
+
+In this case, there are two _skeleton instances_: One at `</A>`, referencing
+the animation at `</Anim1>`, and one at `</A/C>`, referencing the animation
+at `</Anim2>`. The _skel:animationSource_ relationship at `</A/B>` has no
+effect.
+
+\subsection UsdSkel_BindingAPI_JointInfluences BindingAPI: Joint Influences
+
+Joint influences for skinning points are defined via primvars,
+_primvars:skel:jointIndices_ and _primvars:skel:jointWeights_.
+The _jointIndices_ primvar provides an array giving the joint index of an
+influence, while the _jointWeights_ primvar provides a weight value
+corresponding to each of those indices.
+
+The indices in the _jointIndices_ primvar refer to joints based on the
+bound \ref UsdSkel_JointOrder "joint order". If the _skel:joints_
+attribute has been set, each index refers to the corresponding target
+of that token array. Otherwise, each index refers to a joint using the
+joint order of the bound _Skeleton_.
+
+In the common case, these primvars are configured with _vertex_ interpolation,
+and provide a run of N influences per point, where N is the _elementSize_
+of the primvars. See UsdGeomPrimvar for more information on the meaning
+of primvar interpolation and elementSize.
+
+No restrictions are placed on the _elementSize_ when defining joint influences.
+Because such a limit may vary among different DCC applications, we feel that
+it is inappropriate to hard-code any such restrictions at the file storage
+level. Instead, for clients that require a strict limit on the number of
+influences per point, UsdSkel provides helper method,
+\ref UsdSkelTruncateInfluences, that can be used to enforce such limits
+within each client, as necessary.
+
+
+See the \ref UsdSkel_CE_Skinning "skinning coding examples" for an example
+of how resolved joint influences may be read.
+
+
+\subsection UsdSkel_BindingAPI_RigidDeformations BindingAPI: Rigid Deformations
+
+In addition to defining influences that vary per point, joint influences may be
+also defined with _constant_ interpolation. In this form, the _jointIndices_
+and _jointWeights_ arrays hold N scalar values, which apply to all points.
+Constant joint influences are supported both as a form of storage optimization,
+as well as for the sake of encoding _rigid deformations_. By identifying
+rigid deformations, some clients may be able to retain instancing properties
+that would otherwise be lost by skinning, by affecting only the transform of
+an instance rather than the deforming points of that instance.
+
+It is not expected that all clients know how to deal with rigid deformations.
+For those clients that don't understand rigid deformations, UsdSkel provides
+helper methods UsdSkelSkinningQuery::ComputeVaryingJointInfluences and
+\ref UsdSkelExpandConstantInfluencesToVarying which both provide a means of
+querying rigid deformations as if they had been encoded with influences
+per-point.
+
+\subsection UsdSkel_BindingAPI_StoringInfluences BindingAPI: Storing Influences
+
+To ensure correct skinning, joint influences should be normalized when they
+are written using the UsdSkelBindingAPI. UsdSkel does *not* automatically
+normalize weights when reading data. Clients should instead use the
+\ref UsdSkelNormalizeWeights helper method to normalize weights prior to
+storing them.
+
+Additionally, as part of our \ref UsdSkel_BestPractices "best practices",
+we suggest that joint influences be sorted from largest weight value to
+smallest. The \ref UsdSkelSortInfluences utility can be used to do so.
+UsdSkel does not currently *require* sorted joint influences, but may later
+add such restrictions, since they enable some skinning optimizations like 
+\ref UsdSkelTruncateInfluences.
+*/

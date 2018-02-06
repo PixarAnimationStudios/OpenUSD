@@ -24,15 +24,15 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class Hd_DispatchBufferArrayRange : public HdBufferArrayRangeGL {
+class Hd_DispatchBufferArrayRange : public HdStBufferArrayRangeGL {
 public:
     /// Constructor.
     Hd_DispatchBufferArrayRange(HdStDispatchBuffer *buffer) :
@@ -115,17 +115,17 @@ public:
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.
-    virtual HdBufferResourceGLSharedPtr GetResource() const {
+    virtual HdStBufferResourceGLSharedPtr GetResource() const {
         return _buffer->GetResource();
     }
 
     /// Returns the named GPU resource.
-    virtual HdBufferResourceGLSharedPtr GetResource(TfToken const& name) {
+    virtual HdStBufferResourceGLSharedPtr GetResource(TfToken const& name) {
         return _buffer->GetResource(name);
     }
 
     /// Returns the list of all named GPU resources for this bufferArrayRange.
-    virtual HdBufferResourceGLNamedList const& GetResources() const {
+    virtual HdStBufferResourceGLNamedList const& GetResources() const {
         return _buffer->GetResources();
     }
 
@@ -161,7 +161,7 @@ HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     GLuint newId = 0;
     size_t stride = commandNumUints * sizeof(GLuint);
@@ -177,15 +177,15 @@ HdStDispatchBuffer::HdStDispatchBuffer(TfToken const &role, int count,
     }
 
     // monolithic resource
-    _entireResource = HdBufferResourceGLSharedPtr(
-        new HdBufferResourceGL(
-            role, GL_INT, /*numComponent=*/1, /*arraySize=*/1,
+    _entireResource = HdStBufferResourceGLSharedPtr(
+        new HdStBufferResourceGL(
+            role, {HdTypeInt32, 1},
             /*offset=*/0, stride));
     _entireResource->SetAllocation(newId, dataSize);
 
     // create a buffer array range, which aggregates all views
     // (will be added by AddBufferResourceView)
-    _bar = HdBufferArrayRangeGLSharedPtr(new Hd_DispatchBufferArrayRange(this));
+    _bar = HdStBufferArrayRangeGLSharedPtr(new Hd_DispatchBufferArrayRange(this));
 }
 
 HdStDispatchBuffer::~HdStDispatchBuffer()
@@ -201,7 +201,7 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
     if (!TF_VERIFY(data.size()*sizeof(GLuint) == static_cast<size_t>(_entireResource->GetSize())))
         return;
 
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     if (caps.directStateAccessEnabled) {
         glNamedBufferSubDataEXT(_entireResource->GetId(),
@@ -219,14 +219,13 @@ HdStDispatchBuffer::CopyData(std::vector<GLuint> const &data)
 
 void
 HdStDispatchBuffer::AddBufferResourceView(
-    TfToken const &name, GLenum glDataType, int numComponents, int offset)
+    TfToken const &name, HdTupleType tupleType, int offset)
 {
     size_t stride = _commandNumUints * sizeof(GLuint);
 
     // add a binding view (resource binder iterates and automatically binds)
-    HdBufferResourceGLSharedPtr view =
-        _AddResource(name, glDataType, numComponents, /*arraySize=*/1,
-                     offset, stride);
+    HdStBufferResourceGLSharedPtr view =
+        _AddResource(name, tupleType, offset, stride);
 
     // this is just a view, not consuming memory
     view->SetAllocation(_entireResource->GetId(), /*size=*/0);
@@ -253,12 +252,12 @@ HdStDispatchBuffer::DebugDump(std::ostream &out) const
     /*nothing*/
 }
 
-HdBufferResourceGLSharedPtr
+HdStBufferResourceGLSharedPtr
 HdStDispatchBuffer::GetResource() const
 {
     HD_TRACE_FUNCTION();
 
-    if (_resourceList.empty()) return HdBufferResourceGLSharedPtr();
+    if (_resourceList.empty()) return HdStBufferResourceGLSharedPtr();
 
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // make sure this buffer array has only one resource.
@@ -275,43 +274,41 @@ HdStDispatchBuffer::GetResource() const
     return _resourceList.begin()->second;
 }
 
-HdBufferResourceGLSharedPtr
+HdStBufferResourceGLSharedPtr
 HdStDispatchBuffer::GetResource(TfToken const& name)
 {
     HD_TRACE_FUNCTION();
 
     // linear search.
     // The number of buffer resources should be small (<10 or so).
-    for (HdBufferResourceGLNamedList::iterator it = _resourceList.begin();
+    for (HdStBufferResourceGLNamedList::iterator it = _resourceList.begin();
          it != _resourceList.end(); ++it) {
         if (it->first == name) return it->second;
     }
-    return HdBufferResourceGLSharedPtr();
+    return HdStBufferResourceGLSharedPtr();
 }
 
-HdBufferResourceGLSharedPtr
+HdStBufferResourceGLSharedPtr
 HdStDispatchBuffer::_AddResource(TfToken const& name,
-                            int glDataType,
-                            short numComponents,
-                            int arraySize,
-                            int offset,
-                            int stride)
+                                 HdTupleType tupleType,
+                                 int offset,
+                                 int stride)
 {
     HD_TRACE_FUNCTION();
 
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // duplication check
-        HdBufferResourceGLSharedPtr bufferRes = GetResource(name);
+        HdStBufferResourceGLSharedPtr bufferRes = GetResource(name);
         if (!TF_VERIFY(!bufferRes)) {
             return bufferRes;
         }
     }
 
-    HdBufferResourceGLSharedPtr bufferRes = HdBufferResourceGLSharedPtr(
-        new HdBufferResourceGL(GetRole(), glDataType,
-                             numComponents, arraySize, offset, stride));
+    HdStBufferResourceGLSharedPtr bufferRes = HdStBufferResourceGLSharedPtr(
+        new HdStBufferResourceGL(GetRole(), tupleType,
+                                 offset, stride));
 
-    _resourceList.push_back(std::make_pair(name, bufferRes));
+    _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }
 

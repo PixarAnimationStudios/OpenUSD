@@ -20,7 +20,7 @@ over "World" (
     )
     {
         over "house1" (
-            add references = @assets/blue_house.usdc@</house>
+            prepend references = @assets/blue_house.usdc@</house>
         )
         {
         }
@@ -31,7 +31,7 @@ over "World" (
     )
     {
         over "lil_cloud" (
-            add references = @assets/lil_cloud.usdc@</clouds>
+            prepend references = @assets/lil_cloud.usdc@</clouds>
         )
         {
         }

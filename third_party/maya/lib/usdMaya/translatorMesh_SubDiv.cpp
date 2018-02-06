@@ -27,7 +27,6 @@
 #include "usdMaya/util.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdRi/rmanUtilities.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MFloatArray.h>

@@ -139,7 +139,7 @@ class SdfAssetPath;
 /// float3 xformOp:rotateXYZ = (30, 60, 90)
 /// float3 xformOp:scale = (2, 2, 2)
 /// double3 xformOp:translate = (0, 100, 0)
-/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale" ]
+/// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale" ]
 /// \endcode
 /// 
 /// The attributes appear in the dictionary order in which USD, by default,
@@ -163,7 +163,7 @@ class SdfAssetPath;
 /// float xformOp:rotateZ = 90
 /// float3 xformOp:scale = (2, 2, 2)
 /// double3 xformOp:translate = (0, 100, 0)
-/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateZ", "xformOp:rotateY", "xformOp:rotateX", "xformOp:scale" ]
+/// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateZ", "xformOp:rotateY", "xformOp:rotateX", "xformOp:scale" ]
 /// \endcode
 /// 
 /// Again, note that although we are encoding an XYZ rotation, the three
@@ -177,7 +177,7 @@ class SdfAssetPath;
 /// float3 xformOp:scale = (2, 2, 2)
 /// double3 xformOp:translate = (0, 100, 0)
 /// double3 xformOp:translate:scalePivot
-/// uniform token xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale" ]
+/// uniform token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateXYZ", "xformOp:translate:scalePivot", "xformOp:scale" ]
 /// \endcode
 /// 
 /// <b>Paired "Inverted" Ops</b>
@@ -405,12 +405,21 @@ public:
             /// 
             /// \sa UsdXformable::GetTimeSamples
             USDGEOM_API
-            bool GetTimeSamples(std::vector<double> *times);
+            bool GetTimeSamples(std::vector<double> *times) const;
+
+            /// Sets the vector of times in the \p interval at which xformOp 
+            /// samples have been authored in the cached set of xform ops.
+            /// 
+            /// \sa UsdXformable::GetTimeSamples
+            USDGEOM_API
+            bool GetTimeSamplesInInterval(const GfInterval &interval, 
+                                          std::vector<double> *times) const;
 
             /// Returns whether the given attribute affects the local 
             /// transformation computed for this query.
             USDGEOM_API
-            bool IsAttributeIncludedInLocalTransform(const TfToken &attrName);
+            bool IsAttributeIncludedInLocalTransform(
+                const TfToken &attrName) const;
 
         private:
             // Cached copy of the vector of ordered xform ops.
@@ -621,7 +630,7 @@ public:
     /// operations be present in \p orderedXformOps, so this method can be used to
     /// completely change the transformation structure applied to the prim.
     ///
-    /// If \p reserXformStack is set to true, then "!resetXformOp! will be
+    /// If \p resetXformStack is set to true, then "!resetXformOp! will be
     /// set as the first op in xformOpOrder, to indicate that the prim does 
     /// not inherit its parent's transformation.
     /// 
@@ -698,17 +707,50 @@ public:
     /// Sets \p times to the union of all the timesamples at which xformOps that 
     /// are included in the xformOpOrder attribute are authored. 
     /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from all the xformOps.
+    /// 
     /// \sa UsdAttribute::GetTimeSamples
     USDGEOM_API
-    bool GetTimeSamples(std::vector<double> *timeSamples) const;
+    bool GetTimeSamples(std::vector<double> *times) const;
+
+    /// Sets \p times to the union of all the timesamples in the interval, 
+    /// \p interval, at which xformOps that are included in the xformOpOrder
+    /// attribute are authored. 
+    /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from all the xformOps.
+    /// 
+    /// \sa UsdAttribute::GetTimeSamples
+    USDGEOM_API
+    bool GetTimeSamplesInInterval(const GfInterval &interval,
+                                  std::vector<double> *times) const;
 
     /// Returns the union of all the timesamples at which the attributes 
     /// belonging to the given \p orderedXformOps are authored.
     /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from \p orderedXformOps.
+    /// 
     /// \sa UsdGeomXformable::GetTimeSamples
     USDGEOM_API
-    static bool GetTimeSamples(std::vector<UsdGeomXformOp> const &orderedXformOps,
-                               std::vector<double> *times);
+    static bool GetTimeSamples(
+        std::vector<UsdGeomXformOp> const &orderedXformOps,
+        std::vector<double> *times);
+
+    /// Returns the union of all the timesamples in the \p interval
+    /// at which the attributes belonging to the given \p orderedXformOps 
+    /// are authored.
+    /// 
+    /// This clears the \p times vector before accumulating sample times 
+    /// from \p orderedXformOps.
+    /// 
+    /// \sa UsdGeomXformable::GetTimeSamplesInInterval
+    USDGEOM_API
+    static bool GetTimeSamplesInInterval(
+        std::vector<UsdGeomXformOp> const &orderedXformOps,
+        const GfInterval &interval,
+        std::vector<double> *times);
 
     /// Computes the fully-combined, local-to-parent transformation for this prim.
     /// 
@@ -727,12 +769,15 @@ public:
     /// 
     /// \return true on success, false if there was an error reading data.
     ///
-    /// \note A coding error is issued if resetsXformStack is NULL. 
+    /// \note A coding error is issued if \p transform or \p resetsXformStack 
+    ///       is NULL. 
     ///
     USDGEOM_API
-    bool GetLocalTransformation(GfMatrix4d *transform,
-                                bool *resetsXformStack,
-                                const UsdTimeCode time = UsdTimeCode::Default()) const;
+    bool GetLocalTransformation(
+        GfMatrix4d *transform,
+        bool *resetsXformStack,
+        const UsdTimeCode time = UsdTimeCode::Default()) const;
+
     /// \overload 
     /// Computes the fully-combined, local-to-parent transformation for this 
     /// prim as efficiently as possible, using a pre-fetched (cached) list of 
@@ -751,7 +796,8 @@ public:
     /// 
     /// \return true on success, false if there was an error reading data.
     /// 
-    /// \note A coding error is issued if resetsXformStack is NULL. 
+    /// \note A coding error is issued if \p transform or \p resetsXformStack 
+    ///       is NULL. 
     ///
     USDGEOM_API
     bool GetLocalTransformation(GfMatrix4d *transform,

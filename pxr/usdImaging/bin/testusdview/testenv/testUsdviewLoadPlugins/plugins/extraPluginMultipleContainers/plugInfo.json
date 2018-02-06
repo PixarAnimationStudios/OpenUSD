@@ -1,0 +1,20 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "extraPluginMultipleContainers",
+            "Info": {
+                "Types": {
+                    "extraPluginMultipleContainers.ExtraContainer1": {
+                        "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+                        "displayName": "Extra plugin container 1."
+                    },
+                    "extraPluginMultipleContainers.ExtraContainer2": {
+                        "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+                        "displayName": "Extra plugin container 2."
+                    }
+                }
+            }
+        }
+    ]
+}

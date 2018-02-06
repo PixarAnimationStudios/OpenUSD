@@ -88,9 +88,10 @@ global proc int usdTranslatorImport (string $parent,
             intFieldGrp -l "Start Time:" startTimeField;
             intFieldGrp -l "End Time:" endTimeField;
 
-	    optionMenuGrp -l "Assembly Representation:" assemblyRepPopup;
-	        menuItem -l "Collapsed";
-	        menuItem -l "Full";
+        optionMenuGrp -l "Assembly Representation:" assemblyRepPopup;
+            menuItem -l "Collapsed";
+            menuItem -l "Full";
+            menuItem -l "Import";
         
         setParent $parent;
         

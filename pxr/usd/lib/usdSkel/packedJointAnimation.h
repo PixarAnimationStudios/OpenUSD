@@ -53,6 +53,10 @@ class SdfAssetPath;
 /// \class UsdSkelPackedJointAnimation
 ///
 /// Describes a vectorized collection of joint animations.
+/// 
+/// See the extended \ref UsdSkel_PackedJointAnimation "Packed Joint Animation"
+/// documentation for more information.
+/// 
 ///
 class UsdSkelPackedJointAnimation : public UsdGeomXformable
 {
@@ -149,10 +153,34 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// Array of tokens identifying which joints this animation's
+    /// data applies to. The tokens for joints correspond to the tokens of
+    /// Skeleton primitives. The order of the joints as listed here may
+    /// vary from the order of joints on the Skeleton itself.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointsAttr() const;
+
+    /// See GetJointsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // TRANSLATIONS 
     // --------------------------------------------------------------------- //
     /// Joint-local translations of all affected joints. Array length 
-    /// should match the size of the *joints* relationship.
+    /// should match the size of the *joints* attribute.
     ///
     /// \n  C++ Type: VtArray<GfVec3f>
     /// \n  Usd Type: SdfValueTypeNames->Float3Array
@@ -174,8 +202,8 @@ public:
     // ROTATIONS 
     // --------------------------------------------------------------------- //
     /// Joint-local unit quaternion rotations of all affected joints, 
-    /// in 32-bit precision.  Array length should match the size of the 
-    /// *joints* relationship.
+    /// in 32-bit precision. Array length should match the size of the 
+    /// *joints* attribute.
     ///
     /// \n  C++ Type: VtArray<GfQuatf>
     /// \n  Usd Type: SdfValueTypeNames->QuatfArray
@@ -196,9 +224,9 @@ public:
     // --------------------------------------------------------------------- //
     // SCALES 
     // --------------------------------------------------------------------- //
-    /// Joint-local quaternion scaling of all affected joints, in
+    /// Joint-local scales of all affected joints, in
     /// 16 bit precision. Array length should match the size of the *joints* 
-    /// relationship.
+    /// attribute.
     ///
     /// \n  C++ Type: VtArray<GfVec3h>
     /// \n  Usd Type: SdfValueTypeNames->Half3Array
@@ -216,24 +244,6 @@ public:
     UsdAttribute CreateScalesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// A relationship whose targets define the joints to which this
-    /// animation's data applies, relative to the animation prim itself, so
-    /// that it is self-contained.  This list of Joints that an animation 
-    /// targets need not be identical to any Skeleton to which the animation
-    /// will be applied.
-    ///
-    USDSKEL_API
-    UsdRelationship GetJointsRel() const;
-
-    /// See GetJointsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateJointsRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -245,6 +255,7 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

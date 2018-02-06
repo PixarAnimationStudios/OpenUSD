@@ -1,0 +1,77 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the behavior when child prims with the same
+    name are introduced across separate composition arcs, but relocated to
+    different names.
+    """
+)
+
+def "ExternalReferences" (
+    references = [
+        @./ref_1.sdf@</Ref1>,
+        @./ref_2.sdf@</Ref2>
+    ]
+)
+{
+}
+
+def "InternalReferences" (
+    references = [
+        </Ref1>,
+        </Ref2>
+    ]
+)
+{
+}
+
+def "ChainedReferences" (
+    references = </ChainedRef_1>
+    relocates = {
+        <Child> : <Child_1>
+    }
+)
+{
+}
+
+def "ChainedRef_1" (
+    references = </ChainedRef_2>
+)
+{
+    def "Child"
+    {
+    }
+}
+
+def "ChainedRef_2" (
+    references = @./base.sdf@</Base>
+    relocates = {
+        <Child> : <Child_2>
+    }
+)
+{
+}
+
+def "Ref1" (
+    references = @./base.sdf@</Base>
+    relocates = {
+        <Child> : <Child_1>
+    }
+)
+{
+    def "Ref1_Child"
+    {
+    }
+}
+
+def "Ref2" (
+    references = @./base.sdf@</Base>
+    relocates = {
+        <Child> : <Child_2>
+    }
+)
+{
+    def "Ref2_Child"
+    {
+    }
+}

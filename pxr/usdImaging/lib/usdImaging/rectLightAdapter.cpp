@@ -30,6 +30,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+bool _IsEnabledSceneLights();
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingRectLightAdapter Adapter;
@@ -44,7 +46,8 @@ UsdImagingRectLightAdapter::~UsdImagingRectLightAdapter()
 bool
 UsdImagingRectLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return index->IsSprimTypeSupported(HdPrimTypeTokens->rectLight);
+    return _IsEnabledSceneLights() &&
+           index->IsSprimTypeSupported(HdPrimTypeTokens->rectLight);
 }
 
 SdfPath

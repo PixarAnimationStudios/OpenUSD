@@ -1,9 +1,7 @@
 {
     "Plugins": [
         {
-            "Info": {
-                "ShaderResources": "shaders"
-            },
+            "Info": {},
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
             "Name": "hd",
             "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",

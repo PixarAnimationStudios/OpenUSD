@@ -84,29 +84,41 @@ bool MayaCameraWriter::writeCameraAttrs(const UsdTimeCode &usdTime, UsdGeomCamer
     // because we want the xformOps populated by the parent class to survive.
     // Using SetFromCamera() would stomp them with a single "transform" xformOp.
 
-    // Set the type of projection.
     if (camFn.isOrtho()) {
         primSchema.GetProjectionAttr().Set(UsdGeomTokens->orthographic, usdTime);
+
+        // Contrary to the documentation, Maya actually stores the orthographic
+        // width in centimeters (Maya's internal unit system), not inches.
+        const double orthoWidth = PxrUsdMayaUtil::ConvertCMToMM(camFn.orthoWidth());
+
+        // It doesn't seem to be possible to specify a non-square orthographic
+        // camera in Maya, and aspect ratio, lens squeeze ratio, and film
+        // offset have no effect.
+        primSchema.GetHorizontalApertureAttr().Set(float(orthoWidth), usdTime);
+        primSchema.GetVerticalApertureAttr().Set(float(orthoWidth), usdTime);
     } else {
         primSchema.GetProjectionAttr().Set(UsdGeomTokens->perspective, usdTime);
+
+        // Lens squeeze ratio applies horizontally only.
+        const double horizontalAperture = PxrUsdMayaUtil::ConvertInchesToMM(
+            camFn.horizontalFilmAperture() * camFn.lensSqueezeRatio());
+        const double verticalAperture = PxrUsdMayaUtil::ConvertInchesToMM(
+            camFn.verticalFilmAperture());
+
+        const double horizontalApertureOffset = PxrUsdMayaUtil::ConvertInchesToMM(
+            camFn.horizontalFilmOffset());
+        const double verticalApertureOffset = PxrUsdMayaUtil::ConvertInchesToMM(
+            camFn.verticalFilmOffset());
+
+        primSchema.GetHorizontalApertureAttr().Set(
+            float(horizontalAperture), usdTime);
+        primSchema.GetVerticalApertureAttr().Set(
+            float(verticalAperture), usdTime);
+        primSchema.GetHorizontalApertureOffsetAttr().Set(
+            float(horizontalApertureOffset), usdTime);
+        primSchema.GetVerticalApertureOffsetAttr().Set(
+            float(verticalApertureOffset), usdTime);
     }
-
-    // Setup the aperture.
-    primSchema.GetHorizontalApertureAttr().Set(
-        float(PxrUsdMayaUtil::ConvertInchesToMM(
-                camFn.horizontalFilmAperture() *
-                camFn.lensSqueezeRatio())),
-        usdTime);
-    primSchema.GetVerticalApertureAttr().Set(
-        float(PxrUsdMayaUtil::ConvertInchesToMM(
-                camFn.verticalFilmAperture() *
-                camFn.lensSqueezeRatio())),
-        usdTime);
-
-    primSchema.GetHorizontalApertureOffsetAttr().Set(
-        float(camFn.horizontalFilmOffset()), usdTime);
-    primSchema.GetVerticalApertureOffsetAttr().Set(
-        float(camFn.verticalFilmOffset()), usdTime);
 
     // Set the lens parameters.
     primSchema.GetFocalLengthAttr().Set(

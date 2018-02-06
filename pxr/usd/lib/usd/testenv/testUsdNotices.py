@@ -117,17 +117,17 @@ class NoticeTester(unittest.TestCase):
 
     def ObjectsChangedNotice(self):
         def OnResync(notice, stage):
-            self.assertTrue(notice.GetStage() == stage)
-            self.assertTrue(notice.GetResyncedPaths() == [Sdf.Path("/Foo")])
-            self.assertTrue(notice.GetChangedInfoOnlyPaths() == [])
+            self.assertEqual(notice.GetStage(), stage)
+            self.assertEqual(notice.GetResyncedPaths(), [Sdf.Path("/Foo")])
+            self.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
             self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo")))
             self.assertTrue(notice.ResyncedObject(stage.GetPrimAtPath("/Foo")))
             self.assertTrue(not notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo")))
 
         def OnUpdate(notice, stage):
-            self.assertTrue(notice.GetStage() == stage)
-            self.assertTrue(notice.GetResyncedPaths() == [])
-            self.assertTrue(notice.GetChangedInfoOnlyPaths() == [Sdf.Path("/Foo")])
+            self.assertEqual(notice.GetStage(), stage)
+            self.assertEqual(notice.GetResyncedPaths(), [])
+            self.assertEqual(notice.GetChangedInfoOnlyPaths(), [Sdf.Path("/Foo")])
             self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo")))
             self.assertTrue(not notice.ResyncedObject(stage.GetPrimAtPath("/Foo")))
             self.assertTrue(notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo")))
@@ -152,9 +152,9 @@ class NoticeTester(unittest.TestCase):
             prim = s.DefinePrim("/Foo");
 
             def OnAttributeCreation(notice, stage):
-                self.assertTrue(notice.GetStage() == stage)
-                self.assertTrue(notice.GetResyncedPaths() == [Sdf.Path("/Foo.attr")])
-                self.assertTrue(notice.GetChangedInfoOnlyPaths() == [])
+                self.assertEqual(notice.GetStage(), stage)
+                self.assertEqual(notice.GetResyncedPaths(), [Sdf.Path("/Foo.attr")])
+                self.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
                 self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
                 self.assertTrue(notice.ResyncedObject(stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
                 self.assertTrue(not notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
@@ -164,8 +164,8 @@ class NoticeTester(unittest.TestCase):
             attr = prim.CreateAttribute("attr", Sdf.ValueTypeNames.Int)
 
             def OnAttributeValueChange(notice, stage):
-                self.assertTrue(notice.GetStage() == stage)
-                self.assertTrue(notice.GetResyncedPaths() == [])
+                self.assertEqual(notice.GetStage(), stage)
+                self.assertEqual(notice.GetResyncedPaths(), [])
                 self.assertTrue(notice.GetChangedInfoOnlyPaths() == \
                     [Sdf.Path("/Foo.attr")])
                 self.assertTrue(notice.AffectedObject(
@@ -188,9 +188,9 @@ class NoticeTester(unittest.TestCase):
             prim = s.DefinePrim("/Foo");
 
             def OnRelationshipCreation(notice, stage):
-                self.assertTrue(notice.GetStage() == stage)
-                self.assertTrue(notice.GetResyncedPaths() == [Sdf.Path("/Foo.rel")])
-                self.assertTrue(notice.GetChangedInfoOnlyPaths() == [])
+                self.assertEqual(notice.GetStage(), stage)
+                self.assertEqual(notice.GetResyncedPaths(), [Sdf.Path("/Foo.rel")])
+                self.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
                 self.assertTrue(notice.AffectedObject(
                     stage.GetPrimAtPath("/Foo").GetRelationship("rel")))
                 self.assertTrue(notice.ResyncedObject(
@@ -203,13 +203,11 @@ class NoticeTester(unittest.TestCase):
             rel = prim.CreateRelationship("rel")
 
             def OnRelationshipTargetChange(notice, stage):
-                self.assertTrue(notice.GetStage() == stage)
+                self.assertEqual(notice.GetStage(), stage)
 
-                # XXX: This is a bug. We should not get a resync involving the
-                # target path, since no such object exists in the USD
-                # scenegraph.
-                self.assertTrue(notice.GetResyncedPaths() == [Sdf.Path("/Foo.rel[/Bar]")])
-                self.assertTrue(notice.GetChangedInfoOnlyPaths() == [Sdf.Path("/Foo.rel")])
+                self.assertEqual(notice.GetResyncedPaths(), [])
+                self.assertEqual(notice.GetChangedInfoOnlyPaths(),
+                                 [Sdf.Path("/Foo.rel")])
                 self.assertTrue(notice.AffectedObject(
                     stage.GetPrimAtPath("/Foo").GetRelationship("rel")))
                 self.assertTrue(not notice.ResyncedObject(

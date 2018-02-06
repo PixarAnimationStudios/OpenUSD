@@ -23,21 +23,21 @@
 //
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/lightingShader.h"
+#include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/surfaceShader.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/codeGen.h"
-#include "pxr/imaging/hd/geometricShader.h"
-#include "pxr/imaging/hd/glslProgram.h"
-#include "pxr/imaging/hd/lightingShader.h"
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -101,9 +101,10 @@ HdSt_DrawBatch::Append(HdStDrawItemInstance * drawItemInstance)
     // XXX: we'll soon refactor this function out and centralize batch
     // bucketing and reordering logic in HdStCommandBuffer.
 
-    HdDrawItem const* drawItem = drawItemInstance->GetDrawItem();
-
-    HdDrawItem const* batchItem = _drawItemInstances.front()->GetDrawItem();
+    HdStDrawItem const* drawItem = static_cast<const HdStDrawItem*>(
+        drawItemInstance->GetDrawItem());
+    HdStDrawItem const* batchItem = static_cast<const HdStDrawItem*>(
+        _drawItemInstances.front()->GetDrawItem());
     TF_VERIFY(batchItem);
 
     if (_IsAggregated(drawItem, batchItem)) {
@@ -118,11 +119,11 @@ HdSt_DrawBatch::Append(HdStDrawItemInstance * drawItemInstance)
 
 /*static*/
 bool
-HdSt_DrawBatch::_IsAggregated(HdDrawItem const *drawItem0,
-                            HdDrawItem const *drawItem1)
+HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
+                              HdStDrawItem const *drawItem1)
 {
-    if (!HdShaderCode::CanAggregate(drawItem0->GetMaterial(),
-                                    drawItem1->GetMaterial())) {
+    if (!HdStShaderCode::CanAggregate(drawItem0->GetMaterialShader(),
+                                    drawItem1->GetMaterialShader())) {
         return false;
     }
 
@@ -186,23 +187,23 @@ HdSt_DrawBatch::Rebuild()
 }
 
 HdSt_DrawBatch::_DrawingProgram &
-HdSt_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
+HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                                  bool indirect,
                                  HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdDrawItem const *firstDrawItem = _drawItemInstances[0]->GetDrawItem();
+    HdStDrawItem const *firstDrawItem = _drawItemInstances[0]->GetDrawItem();
 
     // Calculate unique hash to detect if the shader (composed) has changed
     // recently and we need to recompile it.
     size_t shaderHash = state->GetShaderHash();
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
-    HdShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
-    HdShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
-                                       : firstDrawItem->GetMaterial();
+    HdStShaderCodeSharedPtr overrideShader = state->GetOverrideShader();
+    HdStShaderCodeSharedPtr surfaceShader  = overrideShader ? overrideShader
+                                       : firstDrawItem->GetMaterialShader();
     boost::hash_combine(shaderHash, surfaceShader->ComputeHash());
     bool shaderChanged = (_shaderHash != shaderHash);
     
@@ -210,7 +211,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
     // We need to do this before checking if the shaderChanged because 
     // it is possible that the shader does not need to 
     // be recompiled but some of the parameters have changed.
-    HdShaderCodeSharedPtrVector shaders = state->GetShaders();
+    HdStShaderCodeSharedPtrVector shaders = state->GetShaders();
     _program.SetShaders(shaders);
     _program.SetGeometricShader(firstDrawItem->GetGeometricShader());
 
@@ -242,10 +243,10 @@ HdSt_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 
             GlfGLSLFXSharedPtr glslSurfaceFallback = 
                 GlfGLSLFXSharedPtr(
-                        new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+                        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
-            HdShaderCodeSharedPtr fallbackSurface =
-                HdShaderCodeSharedPtr(
+            HdStShaderCodeSharedPtr fallbackSurface =
+                HdStShaderCodeSharedPtr(
                     new HdStGLSLFXShader(glslSurfaceFallback));
 
             _program.SetSurfaceShader(fallbackSurface);
@@ -265,7 +266,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdRenderPassStateSharedPtr const &state,
 
 bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
-        HdDrawItem const *drawItem,
+        HdStDrawItem const *drawItem,
         bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -288,13 +289,13 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     _GetCustomBindings(&customBindings, &instanceDraw);
 
     // also (surface, renderPass) shaders use their bindings
-    HdShaderCodeSharedPtrVector shaders = GetComposedShaders();
+    HdStShaderCodeSharedPtrVector shaders = GetComposedShaders();
 
     TF_FOR_ALL(it, shaders) {
         (*it)->AddBindings(&customBindings);
     }
 
-    Hd_CodeGen codeGen(_geometricShader, shaders);
+    HdSt_CodeGen codeGen(_geometricShader, shaders);
 
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.
@@ -305,17 +306,17 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                     instanceDraw,
                                     customBindings);
 
-    HdGLSLProgram::ID hash = codeGen.ComputeHash();
+    HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
     {
-        HdInstance<HdGLSLProgram::ID, HdGLSLProgramSharedPtr> programInstance;
+        HdInstance<HdStGLSLProgram::ID, HdStGLSLProgramSharedPtr> programInstance;
 
         // ask registry to see if there's already compiled program
         std::unique_lock<std::mutex> regLock = 
             resourceRegistry->RegisterGLSLProgram(hash, &programInstance);
 
         if (programInstance.IsFirstInstance()) {
-            HdGLSLProgramSharedPtr glslProgram = codeGen.Compile();
+            HdStGLSLProgramSharedPtr glslProgram = codeGen.Compile();
             if (glslProgram && _Link(glslProgram)) {
                 // store the program into the program registry.
                 programInstance.SetValue(glslProgram);
@@ -351,7 +352,7 @@ HdSt_DrawBatch::_DrawingProgram::_GetCustomBindings(
 /* virtual */
 bool
 HdSt_DrawBatch::_DrawingProgram::_Link(
-        HdGLSLProgramSharedPtr const & glslProgram)
+        HdStGLSLProgramSharedPtr const & glslProgram)
 {
     if (!TF_VERIFY(glslProgram)) return false;
 

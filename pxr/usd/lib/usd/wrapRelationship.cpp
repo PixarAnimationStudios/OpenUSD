@@ -89,4 +89,6 @@ void wrapUsdRelationship()
         .def("HasAuthoredTargets", &UsdRelationship::HasAuthoredTargets)
         ;
     TfPyRegisterStlSequencesFromPython<UsdRelationship>();
+    to_python_converter<std::vector<UsdRelationship>,
+                        TfPySequenceToPython<std::vector<UsdRelationship>>>();
 }

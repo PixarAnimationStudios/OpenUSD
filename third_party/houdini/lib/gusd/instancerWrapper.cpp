@@ -635,7 +635,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
     std::vector<SOP_Node*> protoNodes;
     OBJ_Node* objNode;
     UT_Matrix4D localToWorldMatrix;
-    double time = GusdUSD_Utils::GetNumericTime(ctxt.time);
+    double time = CHgetTimeFromFrame(GusdUSD_Utils::GetNumericTime(ctxt.time));
     OP_Context houdiniContext(time);
     if (!usdPrototypesPath.empty()) {
         objNode = OPgetDirector()->findOBJNode(usdPrototypesPath.c_str());
@@ -940,8 +940,7 @@ writePrototypes(const GusdContext& ctxt, const UsdStagePtr& stage,
         if(ctxt.overlayAll) {
             relationshipPaths.push_back(relationshipPath);
         } else {
-            // Append items in order to match relIndex counting.
-            prototypesRel.AddTarget(relationshipPath, UsdListPositionBack);
+            prototypesRel.AddTarget(relationshipPath);
         }
         m_relationshipIndexMap[TfToken(mapKey)] = relIdx++;
     }

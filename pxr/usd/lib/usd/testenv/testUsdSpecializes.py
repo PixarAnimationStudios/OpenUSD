@@ -38,8 +38,8 @@ class TestUsdSpecializes(unittest.TestCase):
             assert not concrete.HasAuthoredSpecializes()
             assert concrete.GetSpecializes().AddSpecialize(specA.GetPath())
             assert concrete.HasAuthoredSpecializes()
-            self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 1)
-            self.assertEqual(concrete.GetMetadata("specializes").addedItems[0],
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 1)
+            self.assertEqual(concrete.GetMetadata("specializes").prependedItems[0],
                         specA.GetPath())
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 0)
             # This will be used later in the test.
@@ -47,7 +47,7 @@ class TestUsdSpecializes(unittest.TestCase):
 
             assert concrete.GetSpecializes().RemoveSpecialize(specA.GetPath())
             assert concrete.HasAuthoredSpecializes()
-            self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 1)
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 0)
 
@@ -58,7 +58,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # Set the list of added items explicitly.
             assert concrete.GetSpecializes().SetSpecializes(items)
             assert concrete.HasAuthoredSpecializes()
-            self.assertEqual(len(concrete.GetMetadata("specializes").addedItems), 0)
+            self.assertEqual(len(concrete.GetMetadata("specializes").prependedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").deletedItems), 0)
             self.assertEqual(len(concrete.GetMetadata("specializes").explicitItems), 1)
 
@@ -110,7 +110,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # Add a specializes path to the instance prim pointing to the 
             # class prim.
             instancePrim.GetSpecializes() \
-                        .AddSpecialize("/Model/Class", Usd.ListPositionFront)
+                        .AddSpecialize("/Model/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedSpecializePaths = Sdf.PathListOp()
             expectedSpecializePaths.prependedItems = [Sdf.Path("/Ref/Class")]
@@ -130,7 +130,7 @@ class TestUsdSpecializes(unittest.TestCase):
 
             # Add a global specialize path.
             instancePrim.GetSpecializes() \
-                        .AddSpecialize("/Class", Usd.ListPositionFront)
+                        .AddSpecialize("/Class", Usd.ListPositionFrontOfPrependList)
 
             expectedSpecializePaths = Sdf.PathListOp()
             expectedSpecializePaths.prependedItems = [Sdf.Path("/Class")]
@@ -151,7 +151,7 @@ class TestUsdSpecializes(unittest.TestCase):
             # map across the reference edit target.
             with self.assertRaises(Tf.ErrorException):
                 instancePrim.GetSpecializes() \
-                            .AddSpecialize("/Ref2/Class", Usd.ListPositionFront)
+                            .AddSpecialize("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
@@ -199,7 +199,7 @@ class TestUsdSpecializes(unittest.TestCase):
             with vset.GetVariantEditContext():
                 instancePrim = stage.GetPrimAtPath("/Root/Instance")
                 instancePrim.GetSpecializes().AddSpecialize(
-                    "/Root/Class", Usd.ListPositionFront)
+                    "/Root/Class", Usd.ListPositionFrontOfPrependList)
 
             # Check that authored specializes path does *not* include variant
             # selection.

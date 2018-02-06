@@ -112,7 +112,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     }
 
     static void *convertible(PyObject *obj) {
-        return PyCallable_Check(obj) ? obj : 0;
+        return ((obj == Py_None) || PyCallable_Check(obj)) ? obj : 0;
     }
 
     template <typename FuncType>
@@ -124,57 +124,66 @@ struct TfPyFunctionFromPython<Ret (Args...)>
         void *storage = ((converter::rvalue_from_python_storage<FuncType> *)
                          data)->storage.bytes;
 
-        // In the case of instance methods, holding a strong reference will
-        // keep the bound 'self' argument alive indefinitely, which is
-        // undesirable. Unfortunately, we can't just keep a weak reference to
-        // the instance method, because python synthesizes these on-the-fly.
-        // Instead we do something like what PyQt's SIP does, and break the
-        // method into three parts: the class, the function, and the self
-        // parameter.  We keep strong references to the class and the
-        // function, but a weak reference to 'self'.  Then at call-time, if
-        // self has not expired, we build a new instancemethod and call it.
-        //
-        // Otherwise if the callable is a lambda (checked in a hacky way, but
-        // mirroring SIP), we take a strong reference.
-        // 
-        // For all other callables, we attempt to take weak references to
-        // them. If that fails, we take a strong reference.
-        //
-        // This is all sort of contrived, but seems to have the right behavior
-        // for most usage patterns.
-
-        object callable(handle<>(borrowed(src)));
-        PyObject *pyCallable = callable.ptr();
-        PyObject *self =
-            PyMethod_Check(pyCallable) ? PyMethod_GET_SELF(pyCallable) : NULL;
-
-        if (self) {
-            // Deconstruct the method and attempt to get a weak reference to
-            // the self instance.
-            object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
-            object func(handle<>(borrowed(PyMethod_GET_FUNCTION(pyCallable))));
-            object weakSelf(handle<>(PyWeakref_NewRef(self, NULL)));
-            new (storage)
-                FuncType(CallMethod{
-                    TfPyObjWrapper(func),
-                    TfPyObjWrapper(weakSelf),
-                    TfPyObjWrapper(cls)});
-
-        } else if (PyObject_HasAttrString(pyCallable, "__name__") &&
-                   extract<string>(callable.attr("__name__"))() == "<lambda>") {
-            // Explicitly hold on to strong references to lambdas.
-            new (storage) FuncType(Call{TfPyObjWrapper(callable)});
+        if (src == Py_None) {
+            new (storage) FuncType();
         } else {
-            // Attempt to get a weak reference to the callable.
-            if (PyObject *weakCallable =
-                PyWeakref_NewRef(pyCallable, NULL)) {
+
+            // In the case of instance methods, holding a strong reference will
+            // keep the bound 'self' argument alive indefinitely, which is
+            // undesirable. Unfortunately, we can't just keep a weak reference to
+            // the instance method, because python synthesizes these on-the-fly.
+            // Instead we do something like what PyQt's SIP does, and break the
+            // method into three parts: the class, the function, and the self
+            // parameter.  We keep strong references to the class and the
+            // function, but a weak reference to 'self'.  Then at call-time, if
+            // self has not expired, we build a new instancemethod and call it.
+            //
+            // Otherwise if the callable is a lambda (checked in a hacky way, but
+            // mirroring SIP), we take a strong reference.
+            // 
+            // For all other callables, we attempt to take weak references to
+            // them. If that fails, we take a strong reference.
+            //
+            // This is all sort of contrived, but seems to have the right behavior
+            // for most usage patterns.
+            
+            object callable(handle<>(borrowed(src)));
+            PyObject *pyCallable = callable.ptr();
+            PyObject *self =
+                PyMethod_Check(pyCallable) ?
+                PyMethod_GET_SELF(pyCallable) : NULL;
+
+            if (self) {
+                // Deconstruct the method and attempt to get a weak reference to
+                // the self instance.
+                object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
+                object func(handle<>(borrowed(PyMethod_GET_FUNCTION(
+                                                  pyCallable))));
+                object weakSelf(handle<>(PyWeakref_NewRef(self, NULL)));
                 new (storage)
-                    FuncType(CallWeak{
-                        TfPyObjWrapper(object(handle<>(weakCallable)))});
-            } else {
-                // Fall back to taking a strong reference.
-                PyErr_Clear();
+                    FuncType(CallMethod{
+                            TfPyObjWrapper(func),
+                                TfPyObjWrapper(weakSelf),
+                                TfPyObjWrapper(cls)});
+                
+            } else if (PyObject_HasAttrString(pyCallable, "__name__") &&
+                       extract<string>(callable.attr("__name__"))()
+                                                                == "<lambda>") {
+                // Explicitly hold on to strong references to lambdas.
                 new (storage) FuncType(Call{TfPyObjWrapper(callable)});
+            } else {
+                // Attempt to get a weak reference to the callable.
+                if (PyObject *weakCallable =
+                    PyWeakref_NewRef(pyCallable, NULL)) {
+                    new (storage)
+                        FuncType(
+                            CallWeak{TfPyObjWrapper(
+                                    object(handle<>(weakCallable)))});
+                } else {
+                    // Fall back to taking a strong reference.
+                    PyErr_Clear();
+                    new (storage) FuncType(Call{TfPyObjWrapper(callable)});
+                }
             }
         }
 

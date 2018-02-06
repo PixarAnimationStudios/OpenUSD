@@ -89,6 +89,7 @@ void wrapQuatd()
                           
         .def(TfTypePythonClass())
 
+        .def(init<GfQuatd>())
         .def(init<double>(arg("real")))
         .def(init<double, const GfVec3d &>(
                  (arg("real"), arg("imaginary"))))

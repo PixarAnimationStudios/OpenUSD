@@ -92,11 +92,10 @@ public:
     /// \param u The u coordinate to sample.
     /// \param v The v coordinate to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
     virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        int componentType, short numComponents) const;
+                        HdTupleType dataType) const;
 
 private:
     HdVtBufferSource const _buffer;
@@ -143,11 +142,10 @@ public:
     /// \param u The u coordinate to sample.
     /// \param v The v coordinate to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
     virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        int componentType, short numComponents) const;
+                        HdTupleType dataType) const;
 
 private:
     HdVtBufferSource const _buffer;
@@ -187,11 +185,10 @@ public:
     /// \param u The u coordinate to sample.
     /// \param v The v coordinate to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
     virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        int componentType, short numComponents) const;
+                        HdTupleType dataType) const;
 
 private:
     HdVtBufferSource const _buffer;
@@ -239,11 +236,10 @@ public:
     /// \param u The u coordinate to sample.
     /// \param v The v coordinate to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
     virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        int componentType, short numComponents) const;
+                        HdTupleType dataType) const;
     
 private:
     HdVtBufferSource const _buffer;
@@ -294,11 +290,10 @@ public:
     /// \param u The u coordinate to sample.
     /// \param v The v coordinate to sample.
     /// \param value The memory to write the value to (only written on success).
-    /// \param componentType The component type of \p value.
-    /// \param numComponents The arity of \p value.
+    /// \param dataType The HdTupleType describing element values.
     /// \return True if the value was successfully sampled.
     virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        int componentType, short numComponents) const;
+                        HdTupleType dataType) const;
 
 private:
     RTCBufferType _embreeBufferId;

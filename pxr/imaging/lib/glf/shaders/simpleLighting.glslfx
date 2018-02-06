@@ -374,14 +374,14 @@ simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
 
     // Get the roughness and metallic values
 
-#if HD_HAS_roughness
-    float roughness = max(0.0, min(1.0, float(HdGet_roughness())));
+#if HD_HAS_displayRoughness
+    float roughness = max(0.0, min(1.0, float(HdGet_displayRoughness())));
 #else
     float roughness = 0.0;
 #endif
 
-#if HD_HAS_metallic
-    float metallic  = max(0.0, min(1.0, float(HdGet_metallic())));
+#if HD_HAS_displayMetallic
+    float metallic  = max(0.0, min(1.0, float(HdGet_displayMetallic())));
 #else
     float metallic = 0.0;
 #endif
@@ -391,7 +391,7 @@ simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
 
     LightingInterfaceProperties props;
 
-#if HD_HAS_roughness
+#if HD_HAS_displayRoughness
     float specularExp = (1.0 - roughness) * 120.0 + 8.0;
     props.shininess = specularExp;
     matSpecular.rgb = mix(vec3(1.0), matDiffuse.rgb, metallic);

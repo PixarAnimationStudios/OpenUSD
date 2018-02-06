@@ -37,6 +37,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 #define PXRUSDMAYA_TRANSLATOR_TOKENS \
+    (Collapsed) \
+    (Full) \
+    (Import) \
     ((UsdFileExtensionDefault, "usd")) \
     ((UsdFileExtensionASCII, "usda")) \
     ((UsdFileExtensionCrate, "usdc")) \
@@ -46,8 +49,6 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
         PXRUSDMAYA_TRANSLATOR_TOKENS);
 
 #define PXRUSDMAYA_JOBARGS_TOKENS \
-    (Full) \
-    (Collapsed) \
     (Uniform) \
     (defaultLayer) \
     (currentLayer) \

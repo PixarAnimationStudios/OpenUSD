@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/imaging/garch/gl.h"
@@ -47,8 +47,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
-typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
-typedef std::vector<HdTextureResourceSharedPtr> HdTextureResourceSharedPtrVector;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 
@@ -60,7 +58,7 @@ typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 /// can use this object to express these surface shaders in Hydra. In addition
 /// to the shader itself, a binding from the Rprim to the SurfaceShader must be
 /// expressed as well.
-class HdStSurfaceShader : public HdShaderCode {
+class HdStSurfaceShader : public HdStShaderCode {
 public:
     HDST_API
     HdStSurfaceShader();
@@ -74,15 +72,15 @@ public:
     HDST_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDST_API
-    virtual HdShaderParamVector const& GetParams() const;
+    virtual HdMaterialParamVector const& GetParams() const;
     HDST_API
     virtual HdBufferArrayRangeSharedPtr const& GetShaderData() const;
     HDST_API
     virtual TextureDescriptorVector GetTextures() const;
     HDST_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDST_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
     HDST_API
@@ -94,7 +92,7 @@ public:
     HDST_API
     void SetGeometrySource(const std::string &source);
     HDST_API
-    void SetParams(const HdShaderParamVector &params);
+    void SetParams(const HdMaterialParamVector &params);
     HDST_API
     void SetTextureDescriptors(const TextureDescriptorVector &texDesc);
     HDST_API
@@ -114,7 +112,7 @@ private:
     std::string _geometrySource;
 
     // Shader Parameters
-    HdShaderParamVector         _params;
+    HdMaterialParamVector      _params;
     HdBufferSpecVector          _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
 

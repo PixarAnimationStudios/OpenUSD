@@ -25,13 +25,13 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPass.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
@@ -91,7 +91,7 @@ static void CameraAndLightTest()
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
     HdRprimCollection collection(HdTokens->geometry, HdTokens->hull);
-    HdRenderPassStateSharedPtr renderPassState(new HdRenderPassState());
+    HdRenderPassStateSharedPtr renderPassState(new HdStRenderPassState());
     HdRenderPassSharedPtr renderPass(
         new HdSt_RenderPass(index.get(), collection));
     HdEngine engine;

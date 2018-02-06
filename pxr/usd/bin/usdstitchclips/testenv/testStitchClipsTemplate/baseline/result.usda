@@ -18,6 +18,7 @@ over "World"
                     dictionary default = {
                         asset manifestAssetPath = @./result.topology.usda@
                         string primPath = "/World/fx/Particles_Splash/points"
+                        double templateActiveOffset = 0.3
                         string templateAssetPath = "p.#.usd"
                         double templateEndTime = 104
                         double templateStartTime = 101

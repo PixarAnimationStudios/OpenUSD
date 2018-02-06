@@ -150,6 +150,15 @@ public:
         return _paths.empty();
     }
 
+    /// Return true if this mask includes any child prims beneath \p path,
+    /// false otherwise.  If only specific child prims beneath \p path are
+    /// included, the names of those children will be returned in \p childNames.
+    /// If all child prims beneath \p path are included, \p childNames will
+    /// be empty.
+    USD_API
+    bool GetIncludedChildNames(SdfPath const &path, 
+                               std::vector<TfToken> *childNames) const;
+
     /// Return the set of paths that define this mask.
     USD_API
     std::vector<SdfPath> GetPaths() const;

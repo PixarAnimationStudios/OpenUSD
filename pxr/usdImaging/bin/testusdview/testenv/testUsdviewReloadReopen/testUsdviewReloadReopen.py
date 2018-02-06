@@ -23,8 +23,8 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import UsdImagingGL
 from pxr.Usdviewq.qt import QtWidgets
+from pxr.Usdviewq.common import SelectionHighlightModes
 
 # XXX We will probably want harness-level facilities for this, as it
 # will be required for any tests that do stage mutations, as we only
@@ -36,9 +36,10 @@ def _waitForRefresh():
 
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
-    appController.drawSelHighlights = False
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.selHighlightMode = (
+        SelectionHighlightModes.NEVER)
 
 # Take a shot of the viewport and save it to a file.
 def _takeShot(appController, fileName):
@@ -72,16 +73,14 @@ def _testReloadReopen(appController):
     #
     # Frame the front sphere, and color it red
     #
-    appController.selectPrimByPath("/frontSphere", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
-    stage = appController._stage
+    appController._dataModel.selection.setPrimPath("/frontSphere")
+    stage = appController._dataModel.stage
     sphere = UsdGeom.Sphere(stage.GetPrimAtPath("/frontSphere"))
     with Usd.EditContext(stage, stage.GetRootLayer()):
         sphere.CreateDisplayColorAttr([(1, 0, 0)])
     _emitFrameAction(appController)
     # Finally, clear selection so the red really shows
-    appController.selectPrimByPath("/", UsdImagingGL.GL.ALL_INSTANCES, "replace")
-    appController._itemSelectionChanged()
+    appController._dataModel.selection.clear()
 
     _takeShot(appController, "coloredAndFramed.png")
 

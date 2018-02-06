@@ -191,43 +191,10 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
 }
 
 void
-UsdImagingGprimAdapter::_DiscoverPrimvars(
-        UsdGeomGprim const& gprim,
-        SdfPath const& cachePath,
-        SdfPath const& shaderPath,
-        UsdTimeCode time,
-        UsdImagingValueCache* valueCache)
-{
-    // Check if each parameter/input is bound to a texture or primvar, if so,
-    // collect that primvar from this gprim.
-    // XXX: Should move this into ShaderAdapter
-    if (UsdPrim const& shaderPrim = _GetPrim(shaderPath)) {
-        if (UsdShadeShader s = UsdShadeShader(shaderPrim)) {
-            _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
-                                               s, time, valueCache);
-        } else {
-            _DiscoverPrimvarsDeprecated(gprim, cachePath, 
-                                        shaderPrim, time, valueCache);
-        }
-    }
-}
-
-void
 UsdImagingGprimAdapter::_RemovePrim(SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index)
 {
     index->RemoveRprim(cachePath);
-}
-
-
-static bool
-_IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
-{
-    UsdAttribute attr = shaderInput.GetAttr();
-
-    TfToken baseName = attr.GetBaseName();
-    return  attr.SplitName().size() >= 2 && 
-            (baseName =="texture" || baseName=="primvar");
 }
 
 void 
@@ -263,124 +230,6 @@ UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     }
 }
 
-void
-UsdImagingGprimAdapter::_DiscoverPrimvarsFromShaderNetwork(
-    UsdGeomGprim const& gprim,
-    SdfPath const& cachePath, 
-    UsdShadeShader const& shader,
-    UsdTimeCode time,
-    UsdImagingValueCache* valueCache)
-{
-    // TODO: It might be convenient to implicitly wire up PtexFaceOffset and
-    // PtexFaceIndex primvars.
-    
-    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Looking for <%s> primvars at <%s>\n",
-                            gprim.GetPrim().GetPath().GetText(),
-                            shader.GetPrim().GetPath().GetText());
-    for (UsdShadeInput const& input : shader.GetInputs()) {
-
-        if (_IsTextureOrPrimvarInput(input))
-            continue;
-
-        UsdShadeConnectableAPI source;
-        TfToken outputName;
-        UsdShadeAttributeType sourceType;
-        if (UsdShadeConnectableAPI::GetConnectedSource(input, &source, 
-                &outputName, &sourceType)) {
-            UsdAttribute attr = UsdShadeShader(source).GetIdAttr();
-            TfToken id;
-            if (!attr || !attr.Get(&id)) {
-                continue;
-            }
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t\t Shader input <%s> connected <%s>(%s)\n",
-                            input.GetAttr().GetName().GetText(),
-                            source.GetPath().GetText(),
-                            id.GetText());
-            if (id == UsdHydraTokens->HwPrimvar_1) {
-                UsdShadeShader sourceShader(source);
-                TfToken t;
-                if (UsdHydraPrimvar(sourceShader).GetVarnameAttr().Get(&t, 
-                                            UsdTimeCode::Default())) {
-                    _ComputeAndMergePrimvar(
-                        gprim, cachePath, t, time, valueCache);
-                }
-            } else {
-                // Recursively look for more primvars
-                _DiscoverPrimvarsFromShaderNetwork(gprim, cachePath, 
-                    UsdShadeShader(source), time, valueCache);
-            }
-        }
-    }
-}
-void
-UsdImagingGprimAdapter::_DiscoverPrimvarsDeprecated(UsdGeomGprim const& gprim,
-                                          SdfPath const& cachePath, 
-                                          UsdPrim const& shaderPrim,
-                                          UsdTimeCode time,
-                                          UsdImagingValueCache* valueCache)
-{
-    UsdImagingValueCache::PrimvarInfo primvar;
-
-    UsdShadeShader shader(shaderPrim);
-    std::vector<UsdShadeInput> const &inputs = shader.GetInputs();
-    for (const UsdShadeInput &shaderInput: inputs) {
-        if (_IsTextureOrPrimvarInput(shaderInput))
-            continue;
-
-        UsdAttribute attr = shaderInput.GetAttr();
-        if (!attr) {
-            continue;
-        }
-
-        // Ok this is a parameter, check source input.
-        if (UsdAttribute texAttr = shaderPrim.GetAttribute(
-                                TfToken(attr.GetPath().GetName() 
-                                + ":texture"))) {
-            TfToken t;
-            SdfAssetPath ap;
-            texAttr.Get(&ap, UsdTimeCode::Default());
-
-            bool isPtex = GlfIsSupportedPtexTexture(TfToken(ap.GetAssetPath()));
-            if (isPtex) {
-
-                t = UsdImagingTokens->ptexFaceIndex;
-                // Allow the client to override this name
-                texAttr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t);
-                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
-
-                t = UsdImagingTokens->ptexFaceOffset;
-                // Allow the client to override this name
-                texAttr.GetMetadata(UsdImagingTokens->faceOffsetPrimvar, &t);
-                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
-
-            } else {
-                texAttr.GetMetadata(UsdImagingTokens->uvPrimvar, &t);
-                UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(t);
-                if (TF_VERIFY(primvarAttr, "%s\n", t.GetText())) {
-                    VtValue v;
-                    if (TF_VERIFY(primvarAttr.ComputeFlattened(&v, time))) {
-                        primvar.name = t; // does not include primvars:
-                        primvar.interpolation = primvarAttr.GetInterpolation();
-                        // Convert double to float, we don't need double precision.
-                        if (v.IsHolding<VtVec2dArray>()) {
-                            v = VtValue::Cast<VtVec2fArray>(v);
-                        }
-                        valueCache->GetPrimvar(cachePath, t) = v;
-                        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-                    }
-                }
-            }
-        } else if (UsdAttribute pvAttr = shaderPrim.GetAttribute(
-                                        TfToken(attr.GetPath().GetName() 
-                                                + ":primvar"))) {
-            TfToken t;
-            if (TF_VERIFY(pvAttr.Get(&t, UsdTimeCode::Default()))) {
-                _ComputeAndMergePrimvar(gprim, cachePath, t, time, valueCache);
-            }
-        }
-    }
-}
-
 void 
 UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
@@ -408,30 +257,43 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         if (instancerContext && usdMaterialPath.IsEmpty()) {
             usdMaterialPath = instancerContext->instanceMaterialId;
         }
+
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
                 prim.GetPath().GetText(), usdMaterialPath.GetText());
 
         if (!usdMaterialPath.IsEmpty()) {
-            _DiscoverPrimvars(gprim, cachePath, 
-                              usdMaterialPath, time, valueCache);
+            // Obtain the primvars used in the material bound to this prim
+            // and check if they are in this prim, if so, add them to the 
+            // primvars descriptions.
+            TfTokenVector matPrimvars = 
+                _delegate->GetMaterialPrimvars(usdMaterialPath);
+
+            for (auto const &p : matPrimvars) {
+                _ComputeAndMergePrimvar(
+                    gprim, cachePath, p, time, valueCache);
+            }
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyDoubleSided)
+    if (requestedBits & HdChangeTracker::DirtyDoubleSided){
         valueCache->GetDoubleSided(cachePath) = _GetDoubleSided(prim);
+    }
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
         valueCache->GetTransform(cachePath) = GetTransform(prim, time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyExtent)
+    if (requestedBits & HdChangeTracker::DirtyExtent) {
         valueCache->GetExtent(cachePath) = _GetExtent(prim, time);
+    }
 
-    if (requestedBits & HdChangeTracker::DirtyVisibility)
+    if (requestedBits & HdChangeTracker::DirtyVisibility){
         valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+    }
 
-    if (requestedBits & HdChangeTracker::DirtyMaterialId)
+    if (requestedBits & HdChangeTracker::DirtyMaterialId){
         valueCache->GetMaterialId(cachePath) = _GetMaterialId(prim);
+    }
 }
 
 HdDirtyBits
@@ -548,7 +410,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     TfToken colorPrimvarName, opacityPrimvarName;
 
     // for a prim's color & opacity, we use the following precedence:
-    // material rel >  shader rel > local prim vars   
+    // material rel >  local prim var(s)
     {
         // -- Material --        
         // XXX: Primvar values that come from shaders should not be part of
@@ -598,7 +460,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
         // -- Prim local prim var --
         UsdGeomGprim gprimSchema(prim);
  
-        if (colorInterp.IsEmpty()) {
+        if (colorInterp.IsEmpty()) { // did not get color from material
             VtArray<GfVec3f> colorArray;
                 const UsdGeomPrimvar& primvar = 
                     gprimSchema.GetDisplayColorPrimvar();
@@ -609,13 +471,15 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 result.resize(numColors);
 
                 if (colorInterp == UsdGeomTokens->constant) {
-                    result[0][0] = colorArray[0][0];
-                    result[0][1] = colorArray[0][1];
-                    result[0][2] = colorArray[0][2];
+                    if (numColors > 0) {
+                        result[0][0] = colorArray[0][0];
+                        result[0][1] = colorArray[0][1];
+                        result[0][2] = colorArray[0][2];
+                    }
 
-                    if (numColors > 1) {
+                    if (numColors != 1) {
                         // warn and copy default color for remaining elements
-                         TF_WARN("Prim %s has %lu elements for %s even "
+                         TF_WARN("Prim %s has %lu element(s) for %s even "
                                  "though it is marked constant.",
                                  prim.GetPath().GetText(), numColors,
                                  colorPrimvarName.GetText());
@@ -643,14 +507,17 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 if (colorInterp != UsdGeomTokens->constant) {
                     numColors = 0;
                 }
+
+                static TfToken 
+                    defaultDisplayColorToken("displayColor(default)");
+                colorPrimvarName = defaultDisplayColorToken;
             }
         }
 
-        // Guaranteed to have set either material/shader/primvar/default color
+        // Guaranteed to have set either material/local/default color interp.
         TF_VERIFY(!colorInterp.IsEmpty());
 
-        if (opacityInterp.IsEmpty()) {
-                // did not get opacity from either material or shader
+        if (opacityInterp.IsEmpty()) { // did not get opacity from material
             VtArray<float> opacityArray;
                 const UsdGeomPrimvar& primvar = 
                     gprimSchema.GetDisplayOpacityPrimvar();
@@ -665,11 +532,13 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 // copy just the opacities; color is populated in the 
                 // consolidation step
                 if (opacityInterp == UsdGeomTokens->constant) {
-                    result[0][3] = opacityArray[0];
+                    if (numOpacities > 0) {
+                        result[0][3] = opacityArray[0];
+                    }
 
-                    if (numOpacities > 1) {
+                    if (numOpacities != 1) {
                         // warn and copy default opacity for remaining elements
-                         TF_WARN("Prim %s has %lu elements for %s even "
+                         TF_WARN("Prim %s has %lu element(s) for %s even "
                                  "though it is marked constant.",
                                  prim.GetPath().GetText(), numOpacities,
                                  opacityPrimvarName.GetText());
@@ -693,17 +562,23 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
                 if (opacityInterp != UsdGeomTokens->constant) {
                     numOpacities = 0;
                 }
+
+                static TfToken
+                    defaultDisplayOpacityToken("displayOpacity(default)");
+                opacityPrimvarName = defaultDisplayOpacityToken;
             }
         }
-        // Guaranteed to have set either material/shader/primvar/default opacity
+        // Guaranteed to have set either material/local/default opacity interp
         TF_VERIFY(!opacityInterp.IsEmpty());
     }
 
     {
         // --  Cases where we can surely issue warnings --
-        if (colorInterp == opacityInterp && numColors != numOpacities) {
-            // interp modes same but lengths different for primvars is surely
-            // an input error
+        if (colorInterp == opacityInterp &&
+            numColors != numOpacities &&
+            (numColors > 0 && numOpacities > 0)) {
+            // interp modes same but (non-zero) lengths different for primvars 
+            // is surely an input error
             TF_WARN("Prim %s has %lu elements for %s and %lu "
                     "elements for %s even though they have the "
                     "same interpolation mode %s", prim.GetPath().GetText(), 

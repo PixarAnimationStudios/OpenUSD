@@ -21,71 +21,40 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-find_path(OPENEXR_ROOT_DIR
-        include/OpenEXR/half.h
-    HINTS
-        "${OPENEXR_LOCATION}"
-        "$ENV{OPENEXR_LOCATION}"
-)
-
-if (APPLE)
-    find_path(OPENEXR_LIBRARY_DIR
-            libHalf.dylib
-        HINTS
-            "${OPENEXR_LOCATION}"
-            "$ENV{OPENEXR_LOCATION}"
-            "${OPENEXR_BASE_DIR}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-            "OpenEXR library path"
-    )
-elseif (UNIX)
-    find_path(OPENEXR_LIBRARY_DIR
-            libHalf.so
-        HINTS
-            "${OPENEXR_LOCATION}"
-            "$ENV{OPENEXR_LOCATION}"
-            "${OPENEXR_BASE_DIR}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-            "OpenEXR library path"
-    )
-elseif (WIN32)
-    find_path(OPENEXR_LIBRARY_DIR
-            Half.lib
-        HINTS
-            "${OPENEXR_LOCATION}"
-            "$ENV{OPENEXR_LOCATION}"
-            "${OPENEXR_BASE_DIR}"
-        PATH_SUFFIXES
-            lib/
-        DOC
-            "OpenEXR library path"
-    )
-endif()
 
 find_path(OPENEXR_INCLUDE_DIR
     OpenEXR/half.h
 HINTS
     "${OPENEXR_LOCATION}"
     "$ENV{OPENEXR_LOCATION}"
-    "${OPENEXR_BASE_DIR}"
 PATH_SUFFIXES
     include/
 DOC
     "OpenEXR headers path"
 )
 
-if(OPENEXR_INCLUDE_DIR AND EXISTS "${OPENEXR_INCLUDE_DIR}/OpenEXR/OpenEXRConfig.h")
-  file(STRINGS
-       ${OPENEXR_INCLUDE_DIR}/OpenEXR/OpenEXRConfig.h
-       TMP
-       REGEX "#define OPENEXR_VERSION_STRING.*$")
-  string(REGEX MATCHALL "[0-9.]+" OPENEXR_VERSION ${TMP})
-endif()
+if(OPENEXR_INCLUDE_DIR)
+  set(openexr_config_file "${OPENEXR_INCLUDE_DIR}/OpenEXR/OpenEXRConfig.h")
+  if(EXISTS ${openexr_config_file})
+      file(STRINGS
+           ${openexr_config_file}
+           TMP
+           REGEX "#define OPENEXR_VERSION_STRING.*$")
+      string(REGEX MATCHALL "[0-9.]+" OPENEXR_VERSION ${TMP})
 
+      file(STRINGS
+           ${openexr_config_file}
+           TMP
+           REGEX "#define OPENEXR_VERSION_MAJOR.*$")
+      string(REGEX MATCHALL "[0-9]" OPENEXR_MAJOR_VERSION ${TMP})
+
+      file(STRINGS
+           ${openexr_config_file}
+           TMP
+           REGEX "#define OPENEXR_VERSION_MINOR.*$")
+      string(REGEX MATCHALL "[0-9]" OPENEXR_MINOR_VERSION ${TMP})
+  endif()
+endif()
 
 foreach(OPENEXR_LIB
     Half
@@ -95,12 +64,15 @@ foreach(OPENEXR_LIB
     IlmThread
     )
 
+    # OpenEXR libraries may be suffixed with the version number, so we search
+    # using both versioned and unversioned names.
     find_library(OPENEXR_${OPENEXR_LIB}_LIBRARY
+        NAMES
+            ${OPENEXR_LIB}-${OPENEXR_MAJOR_VERSION}_${OPENEXR_MINOR_VERSION}
             ${OPENEXR_LIB}
         HINTS
             "${OPENEXR_LOCATION}"
             "$ENV{OPENEXR_LOCATION}"
-            "${OPENEXR_BASE_DIR}"
         PATH_SUFFIXES
             lib/
         DOC
@@ -120,7 +92,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OpenEXR
     REQUIRED_VARS
         OPENEXR_INCLUDE_DIRS
-        OPENEXR_LIBRARY_DIR
+        OPENEXR_LIBRARIES
     VERSION_VAR
         OPENEXR_VERSION
 )

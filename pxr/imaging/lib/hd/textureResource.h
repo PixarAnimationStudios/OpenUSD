@@ -28,13 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/enums.h"
 
-#include "pxr/imaging/glf/texture.h"
-#include "pxr/imaging/glf/textureHandle.h"
-#include "pxr/imaging/garch/gl.h"
-
-#include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/gf/vec4f.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -63,54 +57,8 @@ public:
 
     virtual bool IsPtex() const = 0;
 
-    virtual GLuint GetTexelsTextureId() = 0;
-    virtual GLuint GetTexelsSamplerId() = 0;
-    virtual uint64_t GetTexelsTextureHandle() = 0;
-
-    virtual GLuint GetLayoutTextureId() = 0;
-    virtual uint64_t GetLayoutTextureHandle() = 0;
-
     virtual size_t GetMemoryUsed() = 0;
 };
-
-class HdSimpleTextureResource : public HdTextureResource
-                              , boost::noncopyable {
-public:
-    HD_API
-    HdSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex);
-    HD_API
-    HdSimpleTextureResource(GlfTextureHandleRefPtr const &textureHandle, bool isPtex, 
-        HdWrap wrapS, HdWrap wrapT, HdMinFilter minFilter, HdMagFilter magFilter);
-    HD_API
-    virtual ~HdSimpleTextureResource();
-
-    HD_API
-    virtual bool IsPtex() const;
-
-    HD_API
-    virtual GLuint GetTexelsTextureId();
-    HD_API
-    virtual GLuint GetTexelsSamplerId();
-    HD_API
-    virtual uint64_t GetTexelsTextureHandle();
-
-    HD_API
-    virtual GLuint GetLayoutTextureId();
-    HD_API
-    virtual uint64_t GetLayoutTextureHandle();
-
-    HD_API
-    virtual size_t GetMemoryUsed();
-
-private:
-    GlfTextureHandleRefPtr _textureHandle;
-    GlfTextureRefPtr _texture;
-    GfVec4f _borderColor;
-    float _maxAnisotropy;
-    GLuint _sampler;
-    bool _isPtex;
-};
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

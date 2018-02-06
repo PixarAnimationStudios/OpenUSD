@@ -43,7 +43,9 @@ if __name__ == '__main__':
     exitCode = 0
     for p in opts.filePaths:
         try:
-            Sdf.Layer.FindOrOpen(p)
+            result = Sdf.Layer.FindOrOpen(p)
+            if result is None:
+                raise Exception("could not open path %r" % p)
             status(True, p)
         except Exception as e:
             status(False, p)

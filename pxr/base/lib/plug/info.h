@@ -38,7 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class JsValue;
 
 /// Data describing the plugin itself.
-struct Plug_RegistrationMetadata {
+class Plug_RegistrationMetadata {
+public:
     enum Type {
         UnknownType,
         LibraryType,

@@ -30,9 +30,9 @@
 
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/shaderParam.h"
 #include "pxr/imaging/hd/textureResource.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
@@ -257,30 +257,24 @@ public:
                                             SdfPathVector *instanceContext=NULL);
 
     // -----------------------------------------------------------------------//
-    /// \name SurfaceShader Aspects
+    /// \name Material Aspects
     // -----------------------------------------------------------------------//
 
-    /// Returns the source code for the given surface shader ID.
+    /// Returns the surface shader source code for the given material ID.
     HD_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
+    virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
 
-    /// Returns the displacement source code for the given surface shader ID.
+    /// Returns the displacement shader source code for the given material ID.
     HD_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
+    virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);
 
-    /// Returns the per delegate mixin source code for the given shader stage key.
-    /// This allows per-rprim customization of shading for a given delegate.
-    /// \see GetShadingStyle
+    /// Returns a single value for the given material and named parameter.
     HD_API
-    virtual std::string GetMixinShaderSource(TfToken const &shaderStageKey);
-
-    /// Returns a single value for the given shader and named parameter.
-    HD_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &shaderId, 
-                                  TfToken const &paramName);
+    virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
+                                          TfToken const &paramName);
 
     HD_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const& shaderId);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const& materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects
@@ -311,6 +305,11 @@ public:
     // needed to create a material.
     HD_API 
     virtual VtValue GetMaterialResource(SdfPath const &materialId);
+
+    // Returns a list of primvars used by the material id passed 
+    // to this function.
+    HD_API 
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Camera Aspects
@@ -352,8 +351,35 @@ public:
     virtual HdExtComputationInputParams GetExtComputationInputParams(
                                    SdfPath const& id, TfToken const &inputName);
 
+    /// Gets the names of the outputs of an ExtComputation with the given id.
+    ///
+    /// See HdExtComputationInputParams for the information the scene delegate
+    /// is expected to provide.
     HD_API
     virtual TfTokenVector GetExtComputationOutputNames(SdfPath const& id);
+
+    /// Returns a list of primVar names that should be bound to
+    /// a generated output from  an ExtComputation for the given prim id and
+    /// interpolation mode.  Binding information is obtained through
+    /// GetExtComputationPrimVarDesc()
+    HD_API
+    virtual TfTokenVector GetExtComputationPrimVarNames(
+                                             SdfPath const& id,
+                                             HdInterpolation interpolationMode);
+
+    /// Returns a structure describing source information for a primVar
+    /// that is bound to an ExtComputation.  See HdExtComputationPrimVarDesc
+    /// for the expected information to be returned.
+    HD_API
+    virtual HdExtComputationPrimVarDesc GetExtComputationPrimVarDesc(
+                                                SdfPath const& id,
+                                                TfToken const& varName);
+    
+    /// Returns the kernel source assigned to the computation at the path id.
+    /// If the string is empty the computation has no GPU kernel and the
+    /// CPU callback should be used.
+    HD_API
+    virtual std::string GetExtComputationKernel(SdfPath const& id);
 
     /// Requests the scene delegate run the ExtComputation with the given id.
     /// The context contains the input values that delegate requested through
@@ -398,29 +424,6 @@ public:
     /// Returns the Instance-rate primVar names.
     HD_API
     virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
-
-    /// Returns a list of primVar names that should be bound to
-    /// a generated output from  anExtComputation for the given prim id and
-    /// interpolation mode.  Binding information is obtained through
-    /// GetExtComputationPrimVarDesc()
-    HD_API
-    virtual TfTokenVector GetExtComputationPrimVarNames(
-                                             SdfPath const& id,
-                                             HdInterpolation interpolationMode);
-
-    /// Returns a structure describing source information for a primVar
-    /// that is bound to an ExtComputation.  See HdExtComputationPrimVarDesc
-    /// for the expected information to be returned.
-    HD_API
-    virtual HdExtComputationPrimVarDesc GetExtComputationPrimVarDesc(
-                                                SdfPath const& id,
-                                                TfToken const& varName);
-    
-    /// Returns the kernel source assigned to the computation at the path id.
-    /// If the string is empty the computation has no GPU kernel and the
-    /// CPU callback should be used.
-    HD_API
-    virtual std::string GetExtComputationKernel(SdfPath const& id);
 
 private:
     HdRenderIndex *_index;

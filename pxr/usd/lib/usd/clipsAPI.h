@@ -157,6 +157,16 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget. This information is stored in the apiSchemas
+    /// metadata on prims.  
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    USD_API
+    static UsdClipsAPI 
+    Apply(const UsdStagePtr &stage, const SdfPath &path);
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -433,6 +443,30 @@ public:
     USD_API
     bool GetClipTemplateStride(double* clipTemplateStride) const;
 
+    /// Set the clip template offset for the clip set named \p clipSet.
+    /// \sa GetClipTemplateActiveOffset
+    USD_API
+    bool SetClipTemplateActiveOffset(const double clipTemplateActiveOffset,
+                                     const std::string& clipSet);
+
+    /// \overload
+    /// This function operates on the default clip set.
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
+    bool SetClipTemplateActiveOffset(const double clipTemplateActiveOffset);
+
+    /// A double representing the offset value used by USD when
+    /// determining the active period for each clip. 
+    USD_API
+    bool GetClipTemplateActiveOffset(double* clipTemplateActiveOffset,
+                                     const std::string& clipSet) const;
+
+    /// \overload
+    /// This function operates on the default clip set.
+    /// \sa \ref UsdClipsAPISetNames
+    USD_API
+    bool GetClipTemplateActiveOffset(double* clipTemplateActiveOffset) const;
+
     /// Set the template stride for the clip set named \p clipSet.
     /// \sa GetClipTemplateStride()
     USD_API
@@ -495,7 +529,7 @@ public:
     /// Return true if the setter functions that do not take a clip set author
     /// values to legacy metadata fields (e.g. clipAssetPaths, clipTimes, etc.),
     /// or false if values are authored to the default clip set. 
-    /// 
+    ///
     /// This is controlled by the USD_AUTHOR_LEGACY_CLIPS environment variable
     /// and is intended to be an aid for transitioning.
     USD_API
@@ -515,6 +549,7 @@ public:
     (templateEndTime)       \
     (templateStartTime)     \
     (templateStride)        \
+    (templateActiveOffset)  \
     (times)                 \
 
 /// \anchor UsdClipsAPIInfoKeys
@@ -534,6 +569,7 @@ public:
 /// \li <b>templateEndTime</b> - see UsdClipsAPI::GetClipTemplateEndTime
 /// \li <b>templateStartTime</b> - see UsdClipsAPI::GetClipTemplateStartTime
 /// \li <b>templateStride</b> - see UsdClipsAPI::GetClipTemplateStride
+/// \li <b>templateActiveOffset</b> - see UsdClipsAPI::GetClipTemplateActiveOffset
 /// \li <b>times</b> - see UsdClipsAPI::GetClipTimes
 TF_DECLARE_PUBLIC_TOKENS(UsdClipsAPIInfoKeys, USD_API, USDCLIPS_INFO_KEYS);
 

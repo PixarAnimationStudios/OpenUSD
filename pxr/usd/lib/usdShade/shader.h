@@ -56,17 +56,24 @@ class SdfAssetPath;
 
 /// \class UsdShadeShader
 ///
-/// Base class for all usd shaders. This is not target specific,
-/// although usually each render target will derive its own, renderer-specific
-/// shader object types from this base.
+/// Base class for all USD shaders. Shaders are the building blocks
+/// of shading networks. While UsdShadeShader objects are not target specific,
+/// each renderer or application target may derive its own renderer-specific 
+/// shader object types from this base, if needed.
 /// 
-/// Shader objects generally (but need not) represent a one-to-one 
-/// correspondence with shader objects of some kind in the target renderer.
+/// Objects of this class generally represent a single shading object, whether
+/// it exists in the target renderer or not. For example, a texture, a fractal,
+/// or a mix node.
+/// 
+/// The main property of this class is the info:id token, which uniquely 
+/// identifies the type of this node. The id resolution into a renderable 
+/// shader target is deferred to the consuming application.
+/// 
 /// The purpose of representing them in Usd is two-fold:
 /// \li To represent, via "connections" the topology of the shading network
 /// that must be reconstructed in the renderer. Facilities for authoring and 
 /// manipulating connections are encapsulated in the Has-A schema 
-/// ef UsdShadeConnectableAPI.
+/// UsdShadeConnectableAPI.
 /// \li To present a (partial or full) interface of typed input parameters 
 /// whose values can be set and overridden in Usd, to be provided later at 
 /// render-time as parameter values to the actual render shader objects. Shader 
@@ -176,8 +183,8 @@ public:
     // ID 
     // --------------------------------------------------------------------- //
     /// The id is an identifier for the type or purpose of the 
-    /// shader. E.g.: Texture or FractalFloat. 
-    /// The use of this id will depend on the renderer: some will turn it
+    /// shader. E.g.: Texture or FractalFloat.
+    /// The use of this id will depend on the render target: some will turn it
     /// into an actual shader path, some will use it to generate dynamically
     /// a shader source code.
     /// 

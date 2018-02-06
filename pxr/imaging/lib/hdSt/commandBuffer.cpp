@@ -24,15 +24,15 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/commandBuffer.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/gf/matrix4f.h"
@@ -64,7 +64,7 @@ static
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 {
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     if (caps.multiDrawIndirectEnabled) {
         return HdSt_DrawBatchSharedPtr(
@@ -76,8 +76,9 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 }
 
 void
-HdStCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry)
+HdStCommandBuffer::PrepareDraw(
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -87,8 +88,9 @@ HdStCommandBuffer::PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState
 }
 
 void
-HdStCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry)
+HdStCommandBuffer::ExecuteDraw(
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
@@ -115,7 +117,7 @@ HdStCommandBuffer::ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState
 }
 
 void
-HdStCommandBuffer::SwapDrawItems(std::vector<HdDrawItem const*>* items,
+HdStCommandBuffer::SwapDrawItems(std::vector<HdStDrawItem const*>* items,
                                unsigned currentShaderBindingsVersion)
 {
     _drawItems.swap(*items);
@@ -155,18 +157,18 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->rebuildBatches);
 
-    bool bindlessTexture = HdRenderContextCaps::GetInstance()
+    bool bindlessTexture = HdStRenderContextCaps::GetInstance()
                                                .bindlessTextureEnabled;
 
     // XXX: Temporary sorting by shader.
     std::map<size_t, HdSt_DrawBatchSharedPtr> batchMap;
 
     for (size_t i = 0; i < _drawItems.size(); i++) {
-        HdDrawItem const * drawItem = _drawItems[i];
+        HdStDrawItem const * drawItem = _drawItems[i];
 
-        HdShaderCodeSharedPtr const &geometricShader
-            = drawItem->GetGeometricShader();
-        if (!TF_VERIFY(geometricShader, "%s",
+        if (!TF_VERIFY(drawItem->GetGeometricShader(), "%s",
+                       drawItem->GetRprimID().GetText()) ||
+            !TF_VERIFY(drawItem->GetMaterialShader(), "%s",
                        drawItem->GetRprimID().GetText())) {
             continue;
         }
@@ -174,15 +176,15 @@ HdStCommandBuffer::_RebuildDrawBatches()
         _drawItemInstances.push_back(HdStDrawItemInstance(drawItem));
         HdStDrawItemInstance* drawItemInstance = &_drawItemInstances.back();
 
-        size_t key = geometricShader->ComputeHash();
+        size_t key = drawItem->GetGeometricShader()->ComputeHash();
         boost::hash_combine(key, drawItem->GetBufferArraysHash());
 
         if (!bindlessTexture) {
             // Geometric, RenderPass and Lighting shaders should never break
             // batches, however materials can. We consider the material 
             // parameters to be part of the batch key here for that reason.
-            boost::hash_combine(key, HdShaderParam::ComputeHash(
-                                    drawItem->GetMaterial()->GetParams()));
+            boost::hash_combine(key, HdMaterialParam::ComputeHash(
+                            drawItem->GetMaterialShader()->GetParams()));
         }
 
         TF_DEBUG(HD_DRAW_BATCH).Msg("%lu (%lu)\n", 
@@ -224,7 +226,7 @@ HdStCommandBuffer::SyncDrawItemVisibility(unsigned visChangeCount)
         end = std::min(end*N, _drawItemInstances.size());
         size_t& count = visCounts.local();
         for (size_t i = start; i < end; ++i) {
-            HdDrawItem const* item = _drawItemInstances[i].GetDrawItem();
+            HdStDrawItem const* item = _drawItemInstances[i].GetDrawItem();
 
             bool visible = item->GetVisible();
             // DrawItemInstance->SetVisible is not only an inline function but
@@ -269,7 +271,7 @@ HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
         {
             for(size_t i = begin; i < end; i++) {
                 HdStDrawItemInstance& itemInstance = (*drawItemInstances)[i];
-                HdDrawItem const* item = itemInstance.GetDrawItem();
+                HdStDrawItem const* item = itemInstance.GetDrawItem();
                 bool visible = item->GetVisible() && 
                     item->IntersectsViewVolume(viewProjMatrix);
                 if ((itemInstance.IsVisible() != visible) || 

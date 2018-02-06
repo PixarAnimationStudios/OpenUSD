@@ -41,7 +41,8 @@ pxr_library(usdviewq
         arrayAttributeView.py
         customAttributes.py
         appController.py
-        plugContext.py
+        usdviewApi.py
+        plugin.py
         scalarTypes.py
         stageView.py
         usdviewContextMenuItem.py
@@ -62,11 +63,13 @@ pxr_library(usdviewq
         primLegend.py
         propertyLegend.py
         attributeValueEditor.py
-        pythonExpressionPrompt.py
         overridableLineEdit.py
         variantComboBox.py
         qt.py
         constantGroup.py
+        rootDataModel.py
+        selectionDataModel.py
+        viewSettingsDataModel.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES
@@ -76,7 +79,6 @@ pxr_library(usdviewq
         attributeValueEditorUI.ui
         primLegendUI.ui
         propertyLegendUI.ui
-        pythonExpressionPromptUI.ui
 )
 
 install(DIRECTORY
@@ -87,6 +89,15 @@ install(DIRECTORY
 pxr_test_scripts(
     testenv/testUsdviewqConstantGroup.py
     testenv/testUsdviewqSettings2.py
+    testenv/testUsdviewqRootDataModel.py
+    testenv/testUsdviewqSelectionDataModel.py
+    testenv/testUsdviewqLauncher.py
+    testenv/testUsdviewqViewSettingsDataModel.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewqRootDataModel
+    DEST testUsdviewqRootDataModel
 )
 
 pxr_register_test(testUsdviewqConstantGroup
@@ -100,3 +111,28 @@ pxr_register_test(testUsdviewqSettings2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSettings2"
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_register_test(testUsdviewqRootDataModel
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqRootDataModel"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqSelectionDataModel
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSelectionDataModel"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqLauncher
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqLauncher"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqViewSettingsDataModel
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqViewSettingsDataModel"
+    EXPECTED_RETURN_CODE 0
+)
+

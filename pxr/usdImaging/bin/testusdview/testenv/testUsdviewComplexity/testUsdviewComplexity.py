@@ -23,15 +23,21 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+
+from pxr.Usdviewq.common import RenderModes
+
+
 # Remove any unwanted visuals from the view.
 def _modifySettings(appController):
-    appController.showBBoxes = False
-    appController.showHUD = False
-    appController.renderMode = "Wireframe" # Make image differences clear.
+    appController._dataModel.viewSettings.showBBoxes = False
+    appController._dataModel.viewSettings.showHUD = False
+
+    # Make image differences clear.
+    appController._dataModel.viewSettings.renderMode = RenderModes.WIREFRAME
 
 # Set the complexity and refresh the view.
 def _setComplexity(appController, complexity):
-    appController.complexity = complexity
+    appController._dataModel.viewSettings.complexity = complexity
     appController._stageView.updateGL()
 
 # Take a shot of the viewport and save it to a file.

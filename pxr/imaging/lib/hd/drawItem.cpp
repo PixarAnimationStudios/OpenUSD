@@ -23,8 +23,6 @@
 //
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/geometricShader.h"
-#include "pxr/imaging/hd/shaderCode.h"
 
 #include "pxr/base/gf/frustum.h"
 
@@ -43,12 +41,6 @@ HdDrawItem::HdDrawItem(HdRprimSharedData const *sharedData)
 HdDrawItem::~HdDrawItem()
 {
     /*NOTHING*/
-}
-
-HdShaderCodeSharedPtr
-HdDrawItem::GetMaterial() const
-{
-    return _sharedData->material;
 }
 
 size_t
@@ -96,8 +88,6 @@ std::ostream &operator <<(std::ostream &out,
     out << "Draw Item:\n";
     out << "    Bound: "    << self._sharedData->bounds << "\n";
     out << "    Visible: "  << self._sharedData->visible << "\n";
-    out << "    GeometricShader:\n";
-    // TODO: add debugging output into Hd_GeometricShader and GlfGLSLFX.
     if (self.GetTopologyRange()) {
         out << "    Topology:\n";
         out << "        numElements=" << self.GetTopologyRange()->GetNumElements() << "\n";

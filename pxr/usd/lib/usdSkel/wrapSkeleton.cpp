@@ -50,6 +50,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateJointsAttr(UsdSkelSkeleton &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateRestTransformsAttr(UsdSkelSkeleton &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRestTransformsAttr(
@@ -62,7 +69,7 @@ void wrapUsdSkelSkeleton()
 {
     typedef UsdSkelSkeleton This;
 
-    class_<This, bases<UsdTyped> >
+    class_<This, bases<UsdGeomImageable> >
         cls("Skeleton");
 
     cls
@@ -97,6 +104,13 @@ void wrapUsdSkelSkeleton()
         .def(!self)
 
         
+        .def("GetJointsAttr",
+             &This::GetJointsAttr)
+        .def("CreateJointsAttr",
+             &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetRestTransformsAttr",
              &This::GetRestTransformsAttr)
         .def("CreateRestTransformsAttr",
@@ -104,11 +118,6 @@ void wrapUsdSkelSkeleton()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -138,4 +147,4 @@ namespace {
 WRAP_CUSTOM {
 }
 
-}
+} // anonymous namespace 

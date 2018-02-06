@@ -3,7 +3,7 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
-class "Statements" (
+class "StatementsAPI" (
     doc = "Container namespace schema for all renderman statements"
 )
 {
@@ -21,8 +21,8 @@ class RslShader "RslShader"
 {
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
-        shader. E.g.: Texture or FractalFloat. 
-        The use of this id will depend on the renderer: some will turn it
+        shader. E.g.: Texture or FractalFloat.
+        The use of this id will depend on the render target: some will turn it
         into an actual shader path, some will use it to generate dynamically
         a shader source code.
         """
@@ -38,8 +38,8 @@ class RisObject "RisObject" (
     asset info:filePath
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
-        shader. E.g.: Texture or FractalFloat. 
-        The use of this id will depend on the renderer: some will turn it
+        shader. E.g.: Texture or FractalFloat.
+        The use of this id will depend on the render target: some will turn it
         into an actual shader path, some will use it to generate dynamically
         a shader source code.
         """
@@ -54,8 +54,8 @@ class RisPattern "RisPattern" (
     asset info:filePath
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
-        shader. E.g.: Texture or FractalFloat. 
-        The use of this id will depend on the renderer: some will turn it
+        shader. E.g.: Texture or FractalFloat.
+        The use of this id will depend on the render target: some will turn it
         into an actual shader path, some will use it to generate dynamically
         a shader source code.
         """
@@ -72,8 +72,8 @@ class RisOslPattern "RisOslPattern" (
     )
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
-        shader. E.g.: Texture or FractalFloat. 
-        The use of this id will depend on the renderer: some will turn it
+        shader. E.g.: Texture or FractalFloat.
+        The use of this id will depend on the render target: some will turn it
         into an actual shader path, some will use it to generate dynamically
         a shader source code.
         """
@@ -89,8 +89,8 @@ class RisBxdf "RisBxdf" (
     asset info:filePath
     uniform token info:id (
         doc = """The id is an identifier for the type or purpose of the 
-        shader. E.g.: Texture or FractalFloat. 
-        The use of this id will depend on the renderer: some will turn it
+        shader. E.g.: Texture or FractalFloat.
+        The use of this id will depend on the render target: some will turn it
         into an actual shader path, some will use it to generate dynamically
         a shader source code.
         """

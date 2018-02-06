@@ -4,7 +4,7 @@
 )
 
 def "ExampleModelingVariants" (
-    add references = [
+    prepend references = [
         @./ExampleModelingVariants.shading.usd@</ExampleModelingVariants>,
         @./ExampleModelingVariants.geom.usd@</ExampleModelingVariants>
     ]

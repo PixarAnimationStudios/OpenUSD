@@ -25,22 +25,34 @@
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/renderParams.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/timeCode.h"
+
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
+#include <maya/MPoint.h>
 #include <maya/MPointArray.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
+#include <maya/MSelectionMask.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
+/* static */
 void*
 UsdMayaProxyShapeUI::creator()
 {
@@ -48,48 +60,104 @@ UsdMayaProxyShapeUI::creator()
     return new UsdMayaProxyShapeUI();
 }
 
+static
+PxrMayaHdShapeAdapter*
+_GetShapeAdapter(
+        UsdMayaProxyShape* shape,
+        const MDagPath& objPath,
+        const bool prepareForQueue)
+{
+    if (!shape) {
+        return nullptr;
+    }
+
+    UsdPrim usdPrim;
+    SdfPathVector excludePaths;
+    UsdTimeCode timeCode;
+    int subdLevel;
+    bool showGuides, showRenderGuides;
+    bool tint;
+    GfVec4f tintColor;
+    if (!shape->GetAllRenderAttributes(&usdPrim,
+                                       &excludePaths,
+                                       &subdLevel,
+                                       &timeCode,
+                                       &showGuides,
+                                       &showRenderGuides,
+                                       &tint,
+                                       &tintColor)) {
+        return nullptr;
+    }
+
+    PxrMayaHdShapeAdapter* outShapeAdapter =
+        UsdMayaGLBatchRenderer::Get().GetShapeAdapter(
+            objPath,
+            usdPrim,
+            excludePaths);
+
+    if (prepareForQueue) {
+        outShapeAdapter->PrepareForQueue(timeCode,
+                                         subdLevel,
+                                         showGuides,
+                                         showRenderGuides,
+                                         tint,
+                                         tintColor);
+    }
+
+    return outShapeAdapter;
+}
+
+/* virtual */
 void
 UsdMayaProxyShapeUI::getDrawRequests(
-    const MDrawInfo& drawInfo,
-    bool /* isObjectAndActiveOnly */,
-    MDrawRequestQueue& requests)
+        const MDrawInfo& drawInfo,
+        bool /* isObjectAndActiveOnly */,
+        MDrawRequestQueue& requests)
 {
     MDrawRequest request = drawInfo.getPrototype(*this);
-    
-    UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        _GetShapeRenderer( drawInfo.multiPath(), /*prepareForQueue= */ true );
-    if( !shapeRenderer )
+
+    const MDagPath shapeDagPath = drawInfo.multiPath();
+    UsdMayaProxyShape* shape =
+        UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
+    PxrMayaHdShapeAdapter* shapeAdapter =
+        _GetShapeAdapter(shape,
+                         shapeDagPath,
+                         /*prepareForQueue= */ true);
+    if (!shapeAdapter) {
         return;
+    }
 
     bool drawShape, drawBoundingBox;
-    UsdMayaGLBatchRenderer::RenderParams params =
-        shapeRenderer->GetRenderParams(
-                            drawInfo.multiPath(),
-                            drawInfo.displayStyle(),
-                            drawInfo.displayStatus(),
-                            &drawShape,
-                            &drawBoundingBox );
+    PxrMayaHdRenderParams params =
+        shapeAdapter->GetRenderParams(drawInfo.displayStyle(),
+                                      drawInfo.displayStatus(),
+                                      &drawShape,
+                                      &drawBoundingBox);
 
     // Only query bounds if we're drawing bounds...
     //
-    if( drawBoundingBox )
-    {
-        UsdMayaProxyShape* shape = 
-            static_cast<UsdMayaProxyShape*>(surfaceShape());
-        
-        MBoundingBox bounds;
-        bounds = shape->boundingBox();
-        
+    if (drawBoundingBox) {
+        const MBoundingBox bounds = shape->boundingBox();
+
         // Note that drawShape is still passed through here.
-        shapeRenderer->QueueShapeForDraw(
-            this, request, params, drawShape, &bounds );
+        UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
+            shapeAdapter,
+            this,
+            request,
+            params,
+            drawShape,
+            &bounds);
     }
     //
     // Like above but with no bounding box...
-    else if( drawShape )
-    {
-        shapeRenderer->QueueShapeForDraw(
-            this, request, params, drawShape, NULL );
+    else if (drawShape) {
+        UsdMayaGLBatchRenderer::Get().QueueShapeForDraw(
+            shapeAdapter,
+            this,
+            request,
+            params,
+            drawShape,
+            nullptr);
     }
     else
     {
@@ -103,54 +171,64 @@ UsdMayaProxyShapeUI::getDrawRequests(
     requests.add(request);
 }
 
+/* virtual */
 void
-UsdMayaProxyShapeUI::draw(
-    const MDrawRequest& request, 
-    M3dView& view) const
+UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
     view.beginGL();
-    
-    UsdMayaGLBatchRenderer::GetGlobalRenderer().Draw( request, view );
-    
+
+    UsdMayaGLBatchRenderer::Get().Draw(request, view);
+
     view.endGL();
 }
 
+/* virtual */
 bool
 UsdMayaProxyShapeUI::select(
-    MSelectInfo& selectInfo,
-    MSelectionList& selectionList,
-    MPointArray& worldSpaceSelectedPoints) const
+        MSelectInfo& selectInfo,
+        MSelectionList& selectionList,
+        MPointArray& worldSpaceSelectedPoints) const
 {
     MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
-    // selectable() takes MSelectionMask&, not const MSelectionMask.  :(.
-    if( !selectInfo.selectable(objectsMask) )
-        return false;
 
-    UsdMayaGLBatchRenderer::ShapeRenderer* shapeRenderer =
-        _GetShapeRenderer( selectInfo.selectPath(), /*prepareForQueue= */ false );
-    if( !shapeRenderer )
+    // selectable() takes MSelectionMask&, not const MSelectionMask.  :(.
+    if (!selectInfo.selectable(objectsMask)) {
         return false;
+    }
+
+    // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
+    // selectInfo.selectPath() returns the dag path to the assembly node, not
+    // the shape node, so we don't have the shape node's path readily available.
+    UsdMayaProxyShape* shape = static_cast<UsdMayaProxyShape*>(surfaceShape());
+
+    PxrMayaHdShapeAdapter* shapeAdapter =
+        _GetShapeAdapter(shape,
+                         selectInfo.selectPath(),
+                         /*prepareForQueue= */ false);
+    if (!shapeAdapter) {
+        return false;
+    }
 
     // object selection
     M3dView view = selectInfo.view();
-    
+
     // We will miss very small objects with this setting, but it's faster.
     const unsigned int selectRes = 256;
-    
-    GfVec3d hitPoint;
-    bool didHit = shapeRenderer->TestIntersection(
-                        view, selectRes,
-                        selectInfo.singleSelection(), &hitPoint ) ;
 
-    if( didHit )
-    {
+    GfVec3d hitPoint;
+    const bool didHit =
+        UsdMayaGLBatchRenderer::Get().TestIntersection(
+            shapeAdapter,
+            view,
+            selectRes,
+            selectInfo.singleSelection(),
+            &hitPoint);
+
+    if (didHit) {
         MSelectionList newSelectionList;
         newSelectionList.add(selectInfo.selectPath());
 
-        MPoint mayaHitPoint;
-        // Transform the hit point into the correct space
-        // and make it a maya point
-        mayaHitPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
+        MPoint mayaHitPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
 
         selectInfo.addSelection(
             newSelectionList,
@@ -169,49 +247,14 @@ UsdMayaProxyShapeUI::select(
     return didHit;
 }
 
-UsdMayaGLBatchRenderer::ShapeRenderer*
-UsdMayaProxyShapeUI::_GetShapeRenderer(
-    const MDagPath &objPath,
-    bool prepareForQueue ) const
-{
-    UsdMayaProxyShape* shape = 
-        static_cast<UsdMayaProxyShape*>(surfaceShape());
-    
-    UsdPrim usdPrim;
-    SdfPathVector excludePaths;
-    UsdTimeCode timeCode;
-    int subdLevel;
-    bool showGuides, showRenderGuides;
-    bool tint;
-    GfVec4f tintColor;
-    if( !shape->GetAllRenderAttributes(
-                    &usdPrim, &excludePaths, &subdLevel, &timeCode,
-                    &showGuides, &showRenderGuides,
-                    &tint, &tintColor ) )
-    {
-        return NULL;
-    }
-    
-    UsdMayaGLBatchRenderer::ShapeRenderer *outShapeRenderer =
-        UsdMayaGLBatchRenderer::GetGlobalRenderer().GetShapeRenderer(
-            usdPrim, excludePaths, objPath );
-    
-    if( prepareForQueue )
-        outShapeRenderer->PrepareForQueue(
-                objPath, timeCode, subdLevel, showGuides, showRenderGuides,
-                tint, tintColor );
-
-    return outShapeRenderer;
-}
-
-UsdMayaProxyShapeUI::UsdMayaProxyShapeUI()
-    : MPxSurfaceShapeUI()
+UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() : MPxSurfaceShapeUI()
 {
 }
 
+/* virtual */
 UsdMayaProxyShapeUI::~UsdMayaProxyShapeUI() {
     // empty
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

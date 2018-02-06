@@ -24,7 +24,7 @@
 #ifndef USDUTILS_AUTHORING_H_
 #define USDUTILS_AUTHORING_H_
 
-/// \file usdUtils/authoring.h 
+/// \file usdUtils/authoring.h
 ///
 /// A collection of utilities for higher-level authoring and copying scene
 /// description than provided by the core Usd and Sdf API's
@@ -32,11 +32,11 @@
 #include "pxr/pxr.h"
 
 #include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
@@ -48,13 +48,13 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// Makes no attempt to clear metadata that may already be authored in
 /// \p destination, but any fields that are already in \p destination but also
 /// in \p source will be replaced.
-/// 
-/// Certain bits of layer metadata (eg. colorConfiguration and 
-/// colorManagementSystem) can have their fallback values specified in the 
-/// plugInfo.json files of plugins. When such metadata is unauthored in the 
-/// source layer, if \p bakeUnauthoredFallbacks is set to true, then the 
+///
+/// Certain bits of layer metadata (eg. colorConfiguration and
+/// colorManagementSystem) can have their fallback values specified in the
+/// plugInfo.json files of plugins. When such metadata is unauthored in the
+/// source layer, if \p bakeUnauthoredFallbacks is set to true, then the
 /// fallback values are baked into the destination layer.
-/// 
+///
 /// \return \c true on success, \c false on error.
 USDUTILS_API
 bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
@@ -181,7 +181,11 @@ std::vector<UsdCollectionAPI> UsdUtilsCreateCollections(
     const unsigned int minIncludeExcludeCollectionSize=3u);
 
 /// @}
-    
+
+/// Retrieve a list of all dirty layers from the stage's UsedLayers.
+USDUTILS_API
+SdfLayerHandleVector UsdUtilsGetDirtyLayers(UsdStagePtr stage,
+                                            bool includeClipLayers = true);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

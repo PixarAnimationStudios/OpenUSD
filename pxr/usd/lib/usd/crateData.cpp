@@ -201,33 +201,45 @@ public:
         return false;
     }
 
-    inline bool _HasTargetSpec(SdfPath const &path) const {
+    inline bool _GetTargetOrConnectionListOp(
+        SdfPath const &path, SdfPathListOp *listOp) const {
+        if (path.IsPrimPropertyPath()) {
+            VtValue targetPaths;
+            SdfAbstractDataSpecId specId(&path);
+            if ((Has(specId, SdfFieldKeys->TargetPaths, &targetPaths) ||
+                 Has(specId, SdfFieldKeys->ConnectionPaths, &targetPaths)) &&
+                targetPaths.IsHolding<SdfPathListOp>()) {
+                targetPaths.UncheckedSwap(*listOp);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    inline bool _HasTargetOrConnectionSpec(SdfPath const &path) const {
         // We don't store target specs to save space, since in Usd we don't have
         // any fields that may be set on them.  Their presence is determined by
         // whether or not they appear in their owning relationship's Added or
         // Explicit items.
+        using std::find;
         SdfPath parentPath = path.GetParentPath();
-        if (parentPath.IsPrimPropertyPath()) {
-            VtValue targetPaths;
-            if (Has(SdfAbstractDataSpecId(&parentPath),
-                    SdfFieldKeys->TargetPaths, &targetPaths) &&
-                targetPaths.IsHolding<SdfPathListOp>()) {
-                auto const &listOp = targetPaths.UncheckedGet<SdfPathListOp>();
-                if (listOp.IsExplicit()) {
-                    auto const &items = listOp.GetExplicitItems();
-                    return std::find(
-                        items.begin(), items.end(), path) != items.end();
-                } else {
-                    auto const &added = listOp.GetAddedItems();
-                    auto const &prepended = listOp.GetPrependedItems();
-                    auto const &appended = listOp.GetAppendedItems();
-                    return std::find(added.begin(), added.end(), path)
-                        != added.end() ||
-                        std::find(prepended.begin(), prepended.end(), path)
-                        != prepended.end() ||
-                        std::find(appended.begin(), appended.end(), path)
-                        != appended.end();
-                }
+        SdfPath targetPath = path.GetTargetPath();
+        SdfPathListOp listOp;
+        if (_GetTargetOrConnectionListOp(parentPath, &listOp)) {
+            if (listOp.IsExplicit()) {
+                auto const &items = listOp.GetExplicitItems();
+                return find(
+                    items.begin(), items.end(), targetPath) != items.end();
+            } else {
+                auto const &added = listOp.GetAddedItems();
+                auto const &prepended = listOp.GetPrependedItems();
+                auto const &appended = listOp.GetAppendedItems();
+                return find(added.begin(),
+                            added.end(), targetPath) != added.end() ||
+                    find(prepended.begin(),
+                         prepended.end(), targetPath) != prepended.end() ||
+                    find(appended.begin(),
+                         appended.end(), targetPath) != appended.end();
             }
         }
         return false;
@@ -236,7 +248,7 @@ public:
     inline bool HasSpec(const SdfAbstractDataSpecId &id) const {
         const SdfPath &path = id.GetFullSpecPath();
         if (ARCH_UNLIKELY(path.IsTargetPath())) {
-            return _HasTargetSpec(path);
+            return _HasTargetOrConnectionSpec(path);
         }
         return _hashData ?
             _hashData->find(path) != _hashData->end() :
@@ -311,8 +323,18 @@ public:
             return SdfSpecTypePseudoRoot;
         }
         if (path.IsTargetPath()) {
-            return _HasTargetSpec(path) ?
-                SdfSpecTypeRelationshipTarget : SdfSpecTypeUnknown;
+            if (_HasTargetOrConnectionSpec(path)) {
+                SdfPath parentPath = path.GetParentPath();
+                SdfSpecType parentSpecType = 
+                    GetSpecType(SdfAbstractDataSpecId(&parentPath));
+                if (parentSpecType == SdfSpecTypeRelationship) {
+                    return SdfSpecTypeRelationshipTarget;
+                }
+                else if (parentSpecType == SdfSpecTypeAttribute) {
+                    return SdfSpecTypeConnection;
+                }
+            }
+            return SdfSpecTypeUnknown;
         }
         if (_hashData) {
             auto i = _hashData->find(path);
@@ -353,21 +375,70 @@ public:
         }
     }
 
+
+
     inline void _VisitSpecs(SdfAbstractData const &data,
                             SdfAbstractDataSpecVisitor* visitor) const {
-        // XXX: Is it important to present relationship target specs here?
+
+        // A helper function for spoofing target & connection spec existence --
+        // we don't actually store those specs since we don't support fields on
+        // them.
+        auto doTargetAndConnectionSpecs =
+            [this, &data, visitor](SdfPath const &path, SdfSpecType specType) {
+            // Spoof existence of target & connection specs.
+            if (specType == SdfSpecTypeAttribute ||
+                specType == SdfSpecTypeRelationship) {
+                SdfPathListOp listOp;
+                SdfPathVector specs;
+                if (_GetTargetOrConnectionListOp(path, &listOp)) {
+                    if (listOp.IsExplicit()) {
+                        specs = listOp.GetExplicitItems();
+                    }
+                    else {
+                        auto const &added = listOp.GetAddedItems();
+                        auto const &prepended = listOp.GetPrependedItems();
+                        auto const &appended = listOp.GetAppendedItems();
+                        specs.resize(
+                            added.size() + prepended.size() + appended.size());
+                        using std::copy;
+                        copy(appended.begin(), appended.end(),
+                             copy(prepended.begin(), prepended.end(),
+                                  copy(added.begin(), added.end(),
+                                       specs.begin())));
+                        std::sort(specs.begin(), specs.end());
+                        specs.erase(std::unique(specs.begin(), specs.end()),
+                                    specs.end());
+                    }
+                    for (auto const &p: specs) {
+                        SdfPath tp = path.AppendTarget(p);
+                        if (!visitor->VisitSpec(
+                                data, SdfAbstractDataSpecId(&tp))) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        };
+        
         if (_hashData) {
             for (auto const &p: *_hashData) {
-                if (!visitor->VisitSpec(
-                        data, SdfAbstractDataSpecId(&p.first))) {
-                    break;
+                SdfAbstractDataSpecId specId(&p.first);
+                if (!visitor->VisitSpec(data, specId) ||
+                    !doTargetAndConnectionSpecs(p.first, p.second.specType)) {
+                    return;
                 }
             }
         } else {
+            size_t index = 0;
             for (auto const &p: _flatData) {
-                if (!visitor->VisitSpec(
-                        data, SdfAbstractDataSpecId(&p.first))) {
-                    break;
+                SdfAbstractDataSpecId specId(&p.first);
+                if (!visitor->VisitSpec(data, specId)) {
+                    return;
+                }
+                SdfSpecType specType = _flatTypes[index++].type;
+                if (!doTargetAndConnectionSpecs(p.first, specType)) {
+                    return;
                 }
             }
         }
@@ -487,7 +558,8 @@ public:
             return;
         }
         if (id.GetFullSpecPath().IsTargetPath()) {
-            TF_CODING_ERROR("Cannot set fields on relationship target specs: "
+            TF_CODING_ERROR("Cannot set fields on relationship target or "
+                            "attribute connection specs: "
                             "<%s>:%s = %s", id.GetFullSpecPath().GetText(),
                             fieldName.GetText(), TfStringify(value).c_str());
             return;

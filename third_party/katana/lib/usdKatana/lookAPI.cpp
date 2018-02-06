@@ -24,6 +24,7 @@
 #include "usdKatana/lookAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -36,12 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<UsdKatanaLookAPI,
         TfType::Bases< UsdSchemaBase > >();
     
-    // Register the usd prim typename as an alias under UsdSchemaBase. This
-    // enables one to call
-    // TfType::Find<UsdSchemaBase>().FindDerivedByName("LookAPI")
-    // to find TfType<UsdKatanaLookAPI>, which is how IsA queries are
-    // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdKatanaLookAPI>("LookAPI");
 }
 
 /* virtual */
@@ -60,18 +55,54 @@ UsdKatanaLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdKatanaLookAPI(stage->GetPrimAtPath(path));
 }
 
+
 /* static */
 UsdKatanaLookAPI
-UsdKatanaLookAPI::Define(
-    const UsdStagePtr &stage, const SdfPath &path)
+UsdKatanaLookAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
 {
-    static TfToken usdPrimTypeName("LookAPI");
+    // Ensure we have a valid stage, path and prim
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return UsdKatanaLookAPI();
     }
-    return UsdKatanaLookAPI(
-        stage->DefinePrim(path, usdPrimTypeName));
+
+    if (path == SdfPath::AbsoluteRootPath()) {
+        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
+        return UsdKatanaLookAPI();
+    }
+
+    auto prim = stage->GetPrimAtPath(path);
+    if (!prim) {
+        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
+        return UsdKatanaLookAPI();
+    }
+
+    TfToken apiName("LookAPI");  
+
+    // Get the current listop at the edit target
+    UsdEditTarget editTarget = stage->GetEditTarget();
+    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
+    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
+                                    .UncheckedGet<SdfTokenListOp>();
+
+    // Append our name to the prepend list, if it doesnt exist locally
+    TfTokenVector prepends = listOp.GetPrependedItems();
+    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
+        return UsdKatanaLookAPI();
+    }
+
+    SdfTokenListOp prependListOp;
+    prepends.push_back(apiName);
+    prependListOp.SetPrependedItems(prepends);
+    auto result = listOp.ApplyOperations(prependListOp);
+    if (!result) {
+        TF_CODING_ERROR("Failed to prepend api name to current listop.");
+        return UsdKatanaLookAPI();
+    }
+
+    // Set the listop at the current edit target and return the API prim
+    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
+    return UsdKatanaLookAPI(prim);
 }
 
 /* static */

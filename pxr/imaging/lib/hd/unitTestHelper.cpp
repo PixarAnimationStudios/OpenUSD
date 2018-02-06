@@ -97,7 +97,7 @@ Hd_TestDriver::Hd_TestDriver()
  , _reprName()
  , _geomPass()
  , _geomAndGuidePass()
- , _renderPassState(new HdRenderPassState())
+ , _renderPassState(_renderDelegate.CreateRenderPassState())
 {
     TfToken reprName = HdTokens->hull;
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
@@ -115,7 +115,7 @@ Hd_TestDriver::Hd_TestDriver(TfToken const &reprName)
  , _reprName()
  , _geomPass()
  , _geomAndGuidePass()
- , _renderPassState(new HdRenderPassState())
+ , _renderPassState(_renderDelegate.CreateRenderPassState())
 {
     _Init(reprName);
 }
@@ -132,7 +132,7 @@ Hd_TestDriver::_Init(TfToken const &reprName)
     _renderIndex = HdRenderIndex::New(&_renderDelegate);
     TF_VERIFY(_renderIndex != nullptr);
 
-    _sceneDelegate = new Hd_UnitTestDelegate(_renderIndex,
+    _sceneDelegate = new HdUnitTestDelegate(_renderIndex,
                                              SdfPath::AbsoluteRootPath());
 
     _reprName = reprName;
@@ -147,7 +147,7 @@ Hd_TestDriver::_Init(TfToken const &reprName)
 
     SetCamera(viewMatrix, projMatrix, GfVec4d(0, 0, 512, 512));
 
-    // set depthfunc to GL default
+    // set depthfunc to default
     _renderPassState->SetDepthFunc(HdCmpFuncLess);
 }
 

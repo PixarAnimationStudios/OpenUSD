@@ -69,7 +69,7 @@ JobImportArgs::JobImportArgs()
     :
         shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
         defaultMeshScheme(UsdGeomTokens->catmullClark),
-        assemblyRep(PxUsdExportJobArgsTokens->Collapsed),
+        assemblyRep(PxrUsdMayaTranslatorTokens->Collapsed),
         readAnimData(true),
         useCustomFrameRange(false),
         startTime(1.0),

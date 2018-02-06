@@ -24,6 +24,7 @@
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -54,6 +55,57 @@ UsdCollectionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdCollectionAPI(stage->GetPrimAtPath(path));
 }
 
+
+/* static */
+UsdCollectionAPI
+UsdCollectionAPI::_Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
+{
+    // Ensure we have a valid stage, path and prim
+    if (!stage) {
+        TF_CODING_ERROR("Invalid stage");
+        return UsdCollectionAPI();
+    }
+
+    if (path == SdfPath::AbsoluteRootPath()) {
+        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
+        return UsdCollectionAPI();
+    }
+
+    auto prim = stage->GetPrimAtPath(path);
+    if (!prim) {
+        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
+        return UsdCollectionAPI();
+    }
+
+    TfToken apiName(std::string("CollectionAPI") 
+                    + std::string(":") 
+                    + name.GetString());
+
+    // Get the current listop at the edit target
+    UsdEditTarget editTarget = stage->GetEditTarget();
+    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
+    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
+                                    .UncheckedGet<SdfTokenListOp>();
+
+    // Append our name to the prepend list, if it doesnt exist locally
+    TfTokenVector prepends = listOp.GetPrependedItems();
+    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
+        return UsdCollectionAPI();
+    }
+
+    SdfTokenListOp prependListOp;
+    prepends.push_back(apiName);
+    prependListOp.SetPrependedItems(prepends);
+    auto result = listOp.ApplyOperations(prependListOp);
+    if (!result) {
+        TF_CODING_ERROR("Failed to prepend api name to current listop.");
+        return UsdCollectionAPI();
+    }
+
+    // Set the listop at the current edit target and return the API prim
+    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
+    return UsdCollectionAPI(prim);
+}
 
 /* static */
 const TfType &
@@ -117,7 +169,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 /* static */
 UsdCollectionAPI 
-UsdCollectionAPI::AddCollection(
+UsdCollectionAPI::ApplyCollection(
     const UsdPrim& prim, 
     const TfToken &name, 
     const TfToken &expansionRule /*=UsdTokens->expandPrims*/) 
@@ -131,6 +183,8 @@ UsdCollectionAPI::AddCollection(
             "schema property name.", name.GetText(), baseName.GetText());
         return UsdCollectionAPI();
     }
+
+    UsdCollectionAPI::_Apply(prim.GetStage(), prim.GetPath(), name);
     
     return UsdCollectionAPI(prim, name, expansionRule);
 }
@@ -142,6 +196,22 @@ UsdCollectionAPI::GetCollection(
     const TfToken &name)
 {
     return UsdCollectionAPI(prim, name);
+}
+
+/* static */
+UsdCollectionAPI 
+UsdCollectionAPI::GetCollection(const UsdStagePtr &stage, 
+                                const SdfPath &collectionPath)
+{
+    TfToken collectionName;
+    if (!IsCollectionPath(collectionPath, &collectionName)) {
+        TF_CODING_ERROR("Invalid collection path <%s>.", 
+                        collectionPath.GetText());
+        return UsdCollectionAPI();
+    }
+
+    return GetCollection(stage->GetPrimAtPath(collectionPath.GetPrimPath()), 
+                         collectionName);
 }
 
 SdfPath 
@@ -256,6 +326,91 @@ UsdRelationship
 UsdCollectionAPI::CreateExcludesRel() const
 {
     return _GetExcludesRel(/* create */ true);
+}
+
+bool 
+UsdCollectionAPI::AddPrim(const UsdPrim &prim) const
+{
+    // If the prim is already included in the collection, do nothing.
+    MembershipQuery query  = ComputeMembershipQuery();
+    if (query.IsPathIncluded(prim.GetPath())) {
+        return true;
+    }
+
+    // Check if the prim is directly excluded from the collection.
+    SdfPathVector excludes;
+    if (UsdRelationship excludesRel = _GetExcludesRel()) {
+        excludesRel.GetTargets(&excludes);
+
+        if (std::find(excludes.begin(), excludes.end(), prim.GetPath()) != 
+                excludes.end()) {
+            excludesRel.RemoveTarget(prim.GetPath());
+            // Update the query object we have, instead of having to 
+            // recompute it.
+            auto it = query._pathExpansionRuleMap.find(prim.GetPath());
+            if (TF_VERIFY(it != query._pathExpansionRuleMap.end())) {
+                query._pathExpansionRuleMap.erase(it);
+            }
+        }
+    }
+
+    // Now that we've removed the explicit excludes if there was one, 
+    // we can add the prim if it's not already included in the collection. 
+    if (!query.IsPathIncluded(prim.GetPath())) {
+        // XXX: Explicitly set all targets here to avoid bug 156442.
+        // This could simply return CreateIncludesRel().AddTarget(prim.GetPath())
+        // once the bug is resolved.
+        UsdRelationship includesRel = CreateIncludesRel();
+        SdfPathVector targets; 
+        includesRel.GetTargets(&targets);
+        targets.push_back(prim.GetPath());
+        return includesRel.SetTargets(targets);
+    }
+
+    return true;
+}
+
+bool 
+UsdCollectionAPI::RemovePrim(const UsdPrim &prim) const
+{
+    // If the prim is already excluded from the collection (or not included),
+    // do nothing.
+    MembershipQuery query  = ComputeMembershipQuery();
+    if (!query.IsPathIncluded(prim.GetPath())) {
+        return true;
+    }
+
+    // Check if the prim is directly included in the collection.
+    SdfPathVector includes;
+    if (UsdRelationship includesRel = _GetIncludesRel()) {
+        includesRel.GetTargets(&includes);
+
+        if (std::find(includes.begin(), includes.end(), prim.GetPath()) != 
+                includes.end()) {
+            includesRel.RemoveTarget(prim.GetPath());
+            // Update the query object we have, instead of having to 
+            // recompute it.
+            auto it = query._pathExpansionRuleMap.find(prim.GetPath());
+            if (TF_VERIFY(it != query._pathExpansionRuleMap.end())) {
+                query._pathExpansionRuleMap.erase(it);
+            }
+        }
+    }
+
+    // Now that we've removed the explicit include if there was one, 
+    // we can remove the prim if it's not already excluded from the collection. 
+    if (query.IsPathIncluded(prim.GetPath())) {
+        // XXX: Explicitly set all targets here to avoid bug 156442.
+        // This could simply return CreateExcludesRel().AddTarget(prim.GetPath())
+        // once the bug is resolved.
+        UsdRelationship excludesRel = CreateExcludesRel();
+        SdfPathVector targets; 
+        excludesRel.GetTargets(&targets);
+        targets.push_back(prim.GetPath());
+        return excludesRel.SetTargets(targets);
+    }
+
+    return true;
 }
 
 UsdCollectionAPI::UsdCollectionAPI(
@@ -821,8 +976,8 @@ UsdCollectionAPI::MembershipQuery::_MergeMembershipQuery(
     const _PathExpansionRuleMap &pathExpansionRuleMap = 
         query._GetPathExpansionRuleMap();
 
-    // We can't just do an insert here and we need to overwrite existing 
-    // entries new values of expansion rules from query.
+    // We can't just do an insert here as we need to overwrite existing 
+    // entries with new values of expansion rule from 'query'.
     for (const auto &pathAndExpansionRule : pathExpansionRuleMap) {
         if (pathAndExpansionRule.second == UsdTokens->exclude) {
             _hasExcludes = true;

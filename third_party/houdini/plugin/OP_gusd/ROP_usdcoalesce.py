@@ -106,7 +106,14 @@ def coalesceFiles(
 
     # generate an aggregate topology from the input files
     topologyLayerName = outFile.replace( outFile[extension:], '.topology.usda' )
-    topologyLayer = Sdf.Layer.CreateNew( topologyLayerName )
+
+    # Open the layer that corresponds to topologyLayerName layer, if
+    # it exists. Otherwise, create a new layer for it.
+    if Sdf.Layer.Find( topologyLayerName ):
+        topologyLayer = Sdf.Layer.FindOrOpen( topologyLayerName )
+    else:
+        topologyLayer = Sdf.Layer.CreateNew( topologyLayerName )
+    
     UsdUtils.StitchClipsTopology( topologyLayer, sortedFiles )
 
     if len( topologyLayer.rootPrims ) == 0:

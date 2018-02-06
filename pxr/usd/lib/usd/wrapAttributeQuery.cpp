@@ -62,6 +62,23 @@ _GetTimeSamplesInInterval(const UsdAttributeQuery& query,
     return result;
 }
 
+static vector<double>
+_GetUnionedTimeSamples(const vector<UsdAttributeQuery> & attrQueries) 
+{
+    vector<double> result;
+    UsdAttributeQuery::GetUnionedTimeSamples(attrQueries, &result);
+    return result;
+}
+
+static vector<double>
+_GetUnionedTimeSamplesInInterval(const vector<UsdAttributeQuery>& attrQueries,
+                                 const GfInterval& interval) {
+    vector<double> result;
+    UsdAttributeQuery::GetUnionedTimeSamplesInInterval(attrQueries, interval,
+                                                       &result);
+    return result;
+}
+
 static object
 _GetBracketingTimeSamples(const UsdAttributeQuery& self, double desiredTime) 
 {
@@ -113,6 +130,18 @@ void wrapUsdAttributeQuery()
              arg("interval"),
              return_value_policy<TfPySequenceToList>())
 
+        .def("GetUnionedTimeSamples", 
+             _GetUnionedTimeSamples,
+             arg("attrQueries"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetUnionedTimeSamples")
+
+        .def("GetUnionedTimeSamplesInInterval", 
+             _GetUnionedTimeSamplesInInterval,
+             (arg("attrQueries"), arg("interval")),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetUnionedTimeSamplesInInterval")
+
         .def("GetNumTimeSamples", &UsdAttributeQuery::GetNumTimeSamples)
         .def("GetBracketingTimeSamples", _GetBracketingTimeSamples,
              arg("desiredTime"))
@@ -128,4 +157,6 @@ void wrapUsdAttributeQuery()
         .def("Get", _Get, arg("time")=UsdTimeCode::Default())
          
         ;
+
+    TfPyRegisterStlSequencesFromPython<UsdAttributeQuery>();
 }

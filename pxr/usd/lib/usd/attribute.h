@@ -235,6 +235,53 @@ public:
     bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
 
+    /// Populates the given vector, \p times with the union of all the 
+    /// authored sample times on all of the given attributes, \p attrs.
+    /// 
+    /// \note This function will query all value clips that may contribute 
+    /// time samples for the attributes in \p attrs, opening them if needed. 
+    /// This may be expensive, especially if many clips are involved.
+    /// 
+    /// The accumulated sample times will be in sorted (increasing) order and 
+    /// will not contain any duplicates.
+    /// 
+    /// This clears any existing values in the \p times vector before 
+    /// accumulating sample times of the given attributes.
+    /// 
+    /// \return false if any of the attributes in \p attr are invalid or  if 
+    /// there's an error when fetching time-samples for any of the attributes.
+    /// 
+    /// \sa UsdAttribute::GetTimeSamples
+    /// \sa UsdAttribute::GetUnionedTimeSamplesInInterval
+    USD_API
+    static bool GetUnionedTimeSamples(const std::vector<UsdAttribute> &attrs, 
+                                      std::vector<double> *times);
+
+    /// Populates the given vector, \p times with the union of all the 
+    /// authored sample times in the GfInterval, \p interval on all of the 
+    /// given attributes, \p attrs.
+    /// 
+    /// \note This function will only query the value clips that may 
+    /// contribute time samples for the attributes in \p attrs, in the 
+    /// given \p interval, opening them if necessary.
+    ///
+    /// The accumulated sample times will be in sorted (increasing) order and 
+    /// will not contain any duplicates.
+    /// 
+    /// This clears any existing values in the \p times vector before 
+    /// accumulating sample times of the given attributes.
+    /// 
+    /// \return false if any of the attributes in \p attr are invalid or if 
+    /// there's an error fetching time-samples for any of the attributes.
+    ///
+    /// \sa UsdAttribute::GetTimeSamplesInInterval
+    /// \sa UsdAttribute::GetUnionedTimeSamples
+    USD_API
+    static bool GetUnionedTimeSamplesInInterval(
+        const std::vector<UsdAttribute> &attrs, 
+        const GfInterval &interval,
+        std::vector<double> *times);
+
     /// Returns the number of time samples that have been authored.
     ///
     /// This method uses the standard resolution semantics, so if a stronger

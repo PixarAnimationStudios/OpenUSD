@@ -285,11 +285,16 @@ public:
     /// This is similar to ComputePrimIndex(), except it computes an entire
     /// subtree of indexes in parallel so it can be much more efficient.  This
     /// function invokes both \p childrenPred and \p payloadPred concurrently,
-    /// so it must be safe to do so.  When a PcpPrimIndex computation completes
-    /// invoke \p childrenPred, passing it the PcpPrimIndex.  If \p childrenPred
-    /// returns true, continue indexing children prim indexes.  Conversely if
-    /// \p childrenPred returns false, stop indexing in that subtree.  If
-    /// payloads discovered during indexing do not already appear in this
+    /// so it must be safe to do so.  
+    ///
+    /// When a PcpPrimIndex computation completes invoke \p childrenPred, 
+    /// passing it the PcpPrimIndex.  If \p childrenPred returns true, continue 
+    /// indexing children prim indexes.  In this case, \p childrenPred may 
+    /// provide a list of names of the children prim indexes to compute.
+    /// If it does not, all children prim indexes will be computed.
+    /// If \p childrenPred returns false, stop indexing in that subtree.  
+    ///
+    /// If payloads discovered during indexing do not already appear in this
     /// cache's set of included payloads, invoke \p payloadPred, passing it the
     /// path for the prim with the payload.  If \p payloadPred returns true,
     /// include its payload and add it to the cache's set of included payloads
@@ -580,16 +585,18 @@ private:
         explicit _UntypedIndexingChildrenPredicate(const Pred *pred)
             : pred(pred), invoke(_Invoke<Pred>) {}
 
-        inline bool operator()(const PcpPrimIndex &index) const {
-            return invoke(pred, index);
+        inline bool operator()(const PcpPrimIndex &index, 
+                               TfTokenVector *childNamesToCompose) const {
+            return invoke(pred, index, childNamesToCompose);
         }
     private:
         template <class Pred>
-        static bool _Invoke(const void *pred, const PcpPrimIndex &index) {
-            return (*static_cast<const Pred *>(pred))(index);
+        static bool _Invoke(const void *pred, const PcpPrimIndex &index,
+                            TfTokenVector *namesToCompose) {
+            return (*static_cast<const Pred *>(pred))(index, namesToCompose);
         }
         const void *pred;
-        bool (*invoke)(const void *, const PcpPrimIndex &);
+        bool (*invoke)(const void *, const PcpPrimIndex &, TfTokenVector *);
     };
 
     // See doc for _UntypedIndexingChildrenPredicate above.  This does the same

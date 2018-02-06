@@ -1,0 +1,202 @@
+Loading @RelocatePrimsWithSameName/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences>
+
+Prim Stack:
+    root.sdf             /ExternalReferences
+    ref_1.sdf            /Ref1
+    base.sdf             /Base
+    ref_2.sdf            /Ref2
+    base.sdf             /Base
+
+Child names:
+     ['Child_2', 'Ref2_Child', 'Child_1', 'Ref1_Child']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences/Child_2>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences/Ref2_Child>
+
+Prim Stack:
+    ref_2.sdf            /Ref2/Ref2_Child
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences/Child_1>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </ExternalReferences/Ref1_Child>
+
+Prim Stack:
+    ref_1.sdf            /Ref1/Ref1_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReferences>
+
+Prim Stack:
+    root.sdf             /InternalReferences
+    root.sdf             /Ref1
+    base.sdf             /Base
+    root.sdf             /Ref2
+    base.sdf             /Base
+
+Child names:
+     ['Child_2', 'Ref2_Child', 'Child_1', 'Ref1_Child']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </InternalReferences/Child_2>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReferences/Ref2_Child>
+
+Prim Stack:
+    root.sdf             /Ref2/Ref2_Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReferences/Child_1>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </InternalReferences/Ref1_Child>
+
+Prim Stack:
+    root.sdf             /Ref1/Ref1_Child
+
+------------------------------------------------------------------------
+Results for composing </ChainedReferences>
+
+Prim Stack:
+    root.sdf             /ChainedReferences
+    root.sdf             /ChainedRef_1
+    root.sdf             /ChainedRef_2
+    base.sdf             /Base
+
+Child names:
+     ['Child_2', 'Child_1']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </ChainedReferences/Child_2>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </ChainedReferences/Child_1>
+
+Prim Stack:
+    root.sdf             /ChainedRef_1/Child
+
+------------------------------------------------------------------------
+Results for composing </ChainedRef_1>
+
+Prim Stack:
+    root.sdf             /ChainedRef_1
+    root.sdf             /ChainedRef_2
+    base.sdf             /Base
+
+Child names:
+     ['Child_2']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </ChainedRef_1/Child_2>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </ChainedRef_2>
+
+Prim Stack:
+    root.sdf             /ChainedRef_2
+    base.sdf             /Base
+
+Child names:
+     ['Child_2']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </ChainedRef_2/Child_2>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </Ref1>
+
+Prim Stack:
+    root.sdf             /Ref1
+    base.sdf             /Base
+
+Child names:
+     ['Child_1', 'Ref1_Child']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Ref1/Child_1>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </Ref1/Ref1_Child>
+
+Prim Stack:
+    root.sdf             /Ref1/Ref1_Child
+
+------------------------------------------------------------------------
+Results for composing </Ref2>
+
+Prim Stack:
+    root.sdf             /Ref2
+    base.sdf             /Base
+
+Child names:
+     ['Child_2', 'Ref2_Child']
+
+Prohibited child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </Ref2/Child_2>
+
+Prim Stack:
+    base.sdf             /Base/Child
+
+------------------------------------------------------------------------
+Results for composing </Ref2/Ref2_Child>
+
+Prim Stack:
+    root.sdf             /Ref2/Ref2_Child
+

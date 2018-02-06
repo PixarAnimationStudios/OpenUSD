@@ -28,9 +28,9 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 
-#include "pxr/imaging/hd/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/shaderCode.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
@@ -38,13 +38,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdDrawItem;
+class HdStDrawItem;
 class HdStDrawItemInstance;
 
 typedef boost::shared_ptr<class HdSt_DrawBatch> HdSt_DrawBatchSharedPtr;
-typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
-typedef boost::shared_ptr<class HdGLSLProgram> HdGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdSt_GeometricShader> HdSt_GeometricShaderSharedPtr;
+typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 typedef std::vector<HdSt_DrawBatchSharedPtr> HdSt_DrawBatchSharedPtrVector;
 typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
 typedef boost::shared_ptr<class HdStResourceRegistry>
@@ -83,12 +83,12 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     virtual void PrepareDraw(
-        HdRenderPassStateSharedPtr const &renderPassState,
+        HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
-        HdRenderPassStateSharedPtr const &renderPassState,
+        HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
 
     /// Let the batch know that one of it's draw item instances has changed
@@ -112,17 +112,17 @@ protected:
 
         HDST_API
         bool CompileShader(
-                HdDrawItem const *drawItem,
+                HdStDrawItem const *drawItem,
                 bool indirect,
                 HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-        HdGLSLProgramSharedPtr GetGLSLProgram() const {
+        HdStGLSLProgramSharedPtr GetGLSLProgram() const {
             return _glslProgram;
         }
 
         /// Returns the resouce binder, which is used for buffer resource
         /// bindings at draw time.
-        const Hd_ResourceBinder &GetBinder() const { 
+        const HdSt_ResourceBinder &GetBinder() const { 
             return _resourceBinder; 
         }
 
@@ -130,42 +130,42 @@ protected:
             _glslProgram.reset();
             _surfaceShader.reset();
             _geometricShader.reset();
-            _resourceBinder = Hd_ResourceBinder();
+            _resourceBinder = HdSt_ResourceBinder();
             _shaders.clear();
         }
         
-        void SetSurfaceShader(HdShaderCodeSharedPtr shader) {
+        void SetSurfaceShader(HdStShaderCodeSharedPtr shader) {
             _surfaceShader = shader;
         }
 
-        const HdShaderCodeSharedPtr &GetSurfaceShader() {
+        const HdStShaderCodeSharedPtr &GetSurfaceShader() {
             return _surfaceShader; 
         }
 
-        void SetGeometricShader(Hd_GeometricShaderSharedPtr shader) {
+        void SetGeometricShader(HdSt_GeometricShaderSharedPtr shader) {
             _geometricShader = shader;
         }
 
-        const Hd_GeometricShaderSharedPtr &GetGeometricShader() { 
+        const HdSt_GeometricShaderSharedPtr &GetGeometricShader() { 
             return _geometricShader; 
         }
 
         /// Set shaders (lighting/renderpass). In the case of Geometric Shaders 
         /// or Surface shaders you can use the specific setters.
-        void SetShaders(HdShaderCodeSharedPtrVector shaders) {
+        void SetShaders(HdStShaderCodeSharedPtrVector shaders) {
             _shaders = shaders; 
         }
 
         /// Returns array of shaders, this will not include the surface shader
         /// passed via SetSurfaceShader (or the geometric shader).
-        const HdShaderCodeSharedPtrVector &GetShaders() const {
+        const HdStShaderCodeSharedPtrVector &GetShaders() const {
             return _shaders; 
         }
 
         /// Returns array of composed shaders, this include the shaders passed
         /// via SetShaders and the shader passed to SetSurfaceShader.
-        HdShaderCodeSharedPtrVector GetComposedShaders() const {
-            HdShaderCodeSharedPtrVector shaders = _shaders;
+        HdStShaderCodeSharedPtrVector GetComposedShaders() const {
+            HdStShaderCodeSharedPtrVector shaders = _shaders;
             if (_surfaceShader) {
                 shaders.push_back(_surfaceShader);
             }
@@ -182,32 +182,32 @@ protected:
             bool *enableInstanceDraw) const;
 
         HDST_API
-        virtual bool _Link(HdGLSLProgramSharedPtr const & glslProgram);
+        virtual bool _Link(HdStGLSLProgramSharedPtr const & glslProgram);
 
     private:
-        HdGLSLProgramSharedPtr _glslProgram;
-        Hd_ResourceBinder _resourceBinder;
-        HdShaderCodeSharedPtrVector _shaders;
-        Hd_GeometricShaderSharedPtr _geometricShader;
-        HdShaderCodeSharedPtr _surfaceShader;
+        HdStGLSLProgramSharedPtr _glslProgram;
+        HdSt_ResourceBinder _resourceBinder;
+        HdStShaderCodeSharedPtrVector _shaders;
+        HdSt_GeometricShaderSharedPtr _geometricShader;
+        HdStShaderCodeSharedPtr _surfaceShader;
     };
 
     HDST_API
     _DrawingProgram & _GetDrawingProgram(
-        HdRenderPassStateSharedPtr const &state, 
+        HdStRenderPassStateSharedPtr const &state, 
         bool indirect,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
 protected:
     HDST_API
-    static bool _IsAggregated(HdDrawItem const *drawItem0,
-                              HdDrawItem const *drawItem1);
+    static bool _IsAggregated(HdStDrawItem const *drawItem0,
+                              HdStDrawItem const *drawItem1);
 
     std::vector<HdStDrawItemInstance const*> _drawItemInstances;
 
 private:
     _DrawingProgram _program;
-    HdShaderCode::ID _shaderHash;
+    HdStShaderCode::ID _shaderHash;
 };
 
 

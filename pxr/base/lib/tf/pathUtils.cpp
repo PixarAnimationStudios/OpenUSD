@@ -55,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+#if defined(ARCH_OS_WINDOWS)
 // Expands symlinks in path.  Used on Windows as a partial replacement
 // for realpath(), partial because is doesn't handle /./, /../ and
 // duplicate slashes.
@@ -83,6 +84,7 @@ _ExpandSymlinks(const std::string& path)
     // No links at all.
     return path;
 }
+#endif
 
 void
 _ClearError()

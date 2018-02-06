@@ -190,7 +190,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         resultLayer = Sdf.Layer.CreateNew('customSetName.usd')
         topLayer = Sdf.Layer.CreateNew('customSetName.topology.usd')
         UsdUtils.StitchClipsTemplate(resultLayer, topLayer, self.clipPath,
-                                     'asset.#.usd', 101, 120, 1, 'bob')
+                                     'asset.#.usd', 101, 120, 1, 0.3, 'bob')
         self.assertEqual(list(resultLayer.subLayerPaths),
                          ['./customSetName.topology.usd'])
         self.assertEqual(resultLayer.endTimeCode, 120)
@@ -200,6 +200,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         self.assertTrue('clips' in prim.GetMetaDataInfoKeys())
         expectedValues = {'templateStartTime': 101.0, 
                           'templateStride': 1.0, 
+                          'templateActiveOffset': 0.3,
                           'primPath': '/World/fx/Particles_Splash', 
                           'templateAssetPath': 'asset.#.usd', 
                           'templateEndTime': 120.0}

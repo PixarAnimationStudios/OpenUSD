@@ -96,6 +96,10 @@ class testUsdExportCamera(unittest.TestCase):
             usdAttr = usdCamera.GetPrim().GetAttribute(propertyName)
             self.assertTrue(usdAttr)
 
+            if expectedValue is None:
+                self.assertFalse(usdAttr.HasAuthoredValueOpinion())
+                continue
+
             # Validate the attribute value at usdTime
             value = usdAttr.Get(usdTime)
             if (isinstance(value, float) or
@@ -129,11 +133,11 @@ class testUsdExportCamera(unittest.TestCase):
             ('focalLength', 50.0, False),
             ('focusDistance', 5.0, False),
             ('fStop', 8.0, False),
-            ('horizontalAperture', 35.0, False),
-            ('horizontalApertureOffset', 0.0, False),
+            ('horizontalAperture', 119.05709, False),
+            ('horizontalApertureOffset', None, False),
             ('projection', UsdGeom.Tokens.orthographic, False),
-            ('verticalAperture', 35.0, False),
-            ('verticalApertureOffset', 0.0, False),
+            ('verticalAperture', 119.05709, False),
+            ('verticalApertureOffset', None, False),
 
             ('xformOpOrder', Vt.TokenArray(['xformOp:translate']), False),
         ]
@@ -222,7 +226,7 @@ class testUsdExportCamera(unittest.TestCase):
 
         # Since the focalLength on the Maya camera shape is animated, all of
         # the attributes from the camera shape will have time samples.
-        # However, the values on the USD camera at the default time should 
+        # However, the values on the USD camera at the default time should
         # not have been written and should still be the schema default values.
         expectedPropertyTuples = [
             ('clippingRange', Gf.Vec2f(1, 1000000.0), True),
@@ -263,6 +267,74 @@ class testUsdExportCamera(unittest.TestCase):
         attr = usdCamera.GetFocalLengthAttr()
         self.assertTrue(Gf.IsClose(attr.Get(self.START_TIMECODE), 35.0, 1e-6))
         self.assertTrue(Gf.IsClose(attr.Get(self.END_TIMECODE), 100.0, 1e-6))
+
+    def testExportOrthographicViewCheckCamera(self):
+        """
+        Tests exporting a specifically positioned orthographic camera. Looking
+        through this camera in the Maya scene and in usdview should show a cube
+        in each of the four corners of the frame.
+        """
+        usdCamera = self._GetUsdCamera('ViewCheck/OrthographicCamera')
+
+        # There should be no animation on any of the camera attributes.
+        expectedPropertyTuples = [
+            ('clippingRange', Gf.Vec2f(0.1, 10000.0), False),
+            ('focalLength', 35.0, False),
+            ('focusDistance', 5.0, False),
+            ('fStop', 5.6, False),
+            ('horizontalAperture', 500, False),
+            ('horizontalApertureOffset', None, False),
+            ('projection', UsdGeom.Tokens.orthographic, False),
+            ('verticalAperture', 500, False),
+            ('verticalApertureOffset', None, False),
+
+            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateX']), False),
+        ]
+
+        # There should be no animation on the transform either.
+        self._ValidateUsdCamera(usdCamera, expectedPropertyTuples, False)
+
+        # Validate the camera's xformOps at the default time.
+        (translateOp, rotateOp) = usdCamera.GetOrderedXformOps()
+        self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
+        self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateX)
+
+        self.assertTrue(Gf.IsClose(translateOp.Get(), Gf.Vec3d(0.0, -20.0, 0.0), 1e-6))
+        self.assertTrue(Gf.IsClose(rotateOp.Get(), 90, 1e-6))
+
+    def testExportPerspectiveViewCheckCamera(self):
+        """
+        Tests exporting a specifically positioned perspective camera. Looking
+        through this camera in the Maya scene and in usdview should show a cube
+        in each of the four corners of the frame.
+        """
+        usdCamera = self._GetUsdCamera('ViewCheck/PerspectiveCamera')
+
+        # There should be no animation on any of the camera attributes.
+        expectedPropertyTuples = [
+            ('clippingRange', Gf.Vec2f(0.1, 10000.0), False),
+            ('focalLength', 35.0, False),
+            ('focusDistance', 5.0, False),
+            ('fStop', 5.6, False),
+            ('horizontalAperture', 29.6, False),
+            ('horizontalApertureOffset', 0.0, False),
+            ('projection', UsdGeom.Tokens.perspective, False),
+            ('verticalAperture', 16.0, False),
+            ('verticalApertureOffset', 0.0, False),
+
+            ('xformOpOrder', Vt.TokenArray(['xformOp:translate', 'xformOp:rotateXYZ']), False),
+        ]
+
+        # There should be no animation on the transform either.
+        self._ValidateUsdCamera(usdCamera, expectedPropertyTuples, False)
+
+        # Validate the camera's xformOps at the default time.
+        (translateOp, rotateOp) = usdCamera.GetOrderedXformOps()
+        self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
+        self.assertEqual(rotateOp.GetOpType(), UsdGeom.XformOp.TypeRotateXYZ)
+
+        self.assertTrue(Gf.IsClose(translateOp.Get(), Gf.Vec3d(-25.0, 25.0, 25.0), 1e-6))
+        self.assertTrue(Gf.IsClose(rotateOp.Get(), Gf.Vec3f(60.0, 0.0, -135.0), 1e-6))
 
 
 if __name__ == '__main__':

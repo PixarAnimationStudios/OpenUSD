@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
-#include "pxr/imaging/hd/shaderParam.h"
+#include "pxr/imaging/hd/materialParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -114,15 +114,25 @@ private:
 
     /// \brief Returns the parameters that \p prim uses.  Hydra will build
     /// the appropriate internal data structures so that these values are
-    /// available in the shader.
+    /// available in the material.
     ///
-    /// \sa HdShaderParam
-    HdShaderParamVector _GetSurfaceShaderParams(UsdPrim const& prim) const;
+    /// \sa HdMaterialParam
+    HdMaterialParamVector _GetMaterialParams(UsdPrim const& prim) const;
 
     /// \brief Returns the value of param \p paramName for \p prim.
-    VtValue _GetSurfaceShaderParamValue(UsdPrim const& prim,
-                                        TfToken const& paramName,
-                                        UsdTimeCode time) const;
+    VtValue _GetMaterialParamValue(UsdPrim const& prim,
+                                   TfToken const& paramName,
+                                   UsdTimeCode time) const;
+
+    /// Entry point for primvar discovery.
+    TfTokenVector _DiscoverPrimvars(SdfPath const& shaderPath) const;
+
+    /// Discover required primvars by searching for primvar inputs connected to
+    /// the shader network.
+    TfTokenVector _DiscoverPrimvarsFromShaderNetwork(UsdShadeShader const& shader) const;
+
+    // Deprecated shader discovery.
+    TfTokenVector _DiscoverPrimvarsDeprecated(UsdPrim const& shaderPrim) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

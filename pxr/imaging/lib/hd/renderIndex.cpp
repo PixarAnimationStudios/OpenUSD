@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/mesh.h"
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/primGather.h"
@@ -41,10 +40,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/loops.h"
@@ -58,9 +54,6 @@
 #include <tbb/concurrent_vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-typedef boost::shared_ptr<class GlfGLSLFX> GlfGLSLFXSharedPtr;
 
 
 HdRenderIndex::HdRenderIndex(HdRenderDelegate *renderDelegate)
@@ -916,6 +909,7 @@ namespace {
 
     static void
     _PreSyncRPrims(HdSceneDelegate *sceneDelegate,
+                   HdChangeTracker *tracker,
                    _RprimSyncRequestVector *syncReq,
                    _ReprList const& reprs,
                    size_t begin,
@@ -967,6 +961,8 @@ namespace {
                     reprsMask >>= 1;
                 }
                 dirtyBits &= ~HdChangeTracker::InitRepr;
+                // Update the InitRepr bit in the change tracker.
+                tracker->MarkRprimClean(rprim->GetId(), dirtyBits);
             }
 
             if (rprim->CanSkipDirtyBitPropagationAndSync(dirtyBits)) {
@@ -988,13 +984,15 @@ namespace {
 
     static void
     _PreSyncRequestVector(HdSceneDelegate *sceneDelegate,
+                          HdChangeTracker *tracker,
                           _RprimSyncRequestVector *syncReq,
                           _ReprList const &reprs)
     {
         size_t numPrims = syncReq->rprims.size();
         WorkParallelForN(numPrims,
                          std::bind(&_PreSyncRPrims,
-                                   sceneDelegate, syncReq, std::cref(reprs),
+                                   sceneDelegate, tracker,
+                                   syncReq, std::cref(reprs),
                                    std::placeholders::_1,
                                    std::placeholders::_2));
 
@@ -1204,6 +1202,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector const &tasks,
             dirtyBitDispatcher.Run(
                                    std::bind(&_PreSyncRequestVector,
                                              sceneDelegate,
+                                             &_tracker,
                                              r,
                                              std::cref(reprs)));
 
@@ -1508,28 +1507,19 @@ HdRenderIndex::_AppendDrawItems(
 
             // Extract the draw items and assign them to the right command buffer
             // based on the tag
-            std::vector<HdDrawItem> *drawItems =
+            if (const std::vector<HdDrawItem*> *drawItems =
                           rprimInfo.rprim->GetDrawItems(rprimInfo.sceneDelegate,
                                                         reprName,
-                                                        forcedRepr);
-            if (drawItems != nullptr) {
+                                                        forcedRepr)) {
+
                 const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(
                                                         rprimInfo.sceneDelegate,
                                                         reprName);
 
                 HdDrawItemPtrVector &resultDrawItems = drawItemView[rprimTag];
 
-                // Loop over each draw item, taking it's address and pushing
-                // that into the results array.
-                resultDrawItems.reserve(resultDrawItems.size() +
-                                        drawItems->size());
-                typedef std::vector<HdDrawItem>::iterator HdDrawItemIt;
-                for (HdDrawItemIt diIt  = drawItems->begin();
-                                  diIt != drawItems->end();
-                                ++diIt) {
-                    HdDrawItem &drawItem = *diIt;
-                    resultDrawItems.push_back(&drawItem);
-                }
+                resultDrawItems.insert( resultDrawItems.end(),
+                                        drawItems->begin(), drawItems->end() );
             }
         }
     }

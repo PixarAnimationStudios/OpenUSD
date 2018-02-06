@@ -40,6 +40,15 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const PxrUsdKatanaUsdInPrivateData* parentData)
     : _prim(prim), _usdInArgs(usdInArgs), _extGb(0)
 {
+    // None of the below is safe or relevant if the prim is not valid
+    // This is most commonly due to an invalid isolatePath -- which is 
+    // already reported as a katana error from pxrUsdIn.cpp
+    if (!prim)
+    {
+        return;
+    }
+    
+    
     // XXX: manually track instance and master path for possible
     //      relationship re-retargeting. This approach does not yet
     //      support nested instances -- which is expected to be handled
@@ -270,6 +279,25 @@ PxrUsdKatanaUsdInPrivateData::IsMotionBackward() const
             _motionSampleTimesFallback.back());
     }
 }
+
+std::vector<std::pair<double, double> >
+PxrUsdKatanaUsdInPrivateData::GetUsdAndKatanaTimes(
+        const UsdAttribute& attr) const
+{
+    const std::vector<double> motionSampleTimes = GetMotionSampleTimes(attr);
+    std::vector<std::pair<double, double> > result;
+    result.reserve(motionSampleTimes.size());
+    bool isMotionBackward = IsMotionBackward();
+    double u, k;
+    for(auto t : motionSampleTimes) 
+    {
+        u = _currentTime + t;
+        k = isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(t) : t;
+        result.emplace_back(u,k);
+    } 
+    return result;
+}
+
 
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(

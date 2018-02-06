@@ -191,7 +191,25 @@ vec4 ApplySelectionColor(vec4 color)
 
 vec4 ApplyColorOverrides(vec4 color)
 {
-#if defined(HD_HAS_overrideColor)
+#if defined(HD_HAS_scalarOverride)
+    // Allow a scalar value to override the color from the surface
+    // for previewing heatmaps. This is useful for editing workflows.
+#if defined(HD_HAS_scalarOverrideColorRamp)
+    int rampCount = constantPrimVars[GetDrawingCoord().constantCoord].
+                scalarOverrideColorRamp.length();
+    float scalar = HdGet_scalarOverride() * float(rampCount - 1);
+    float baseIndex = floor(scalar);
+    float nextIndex = min(float(rampCount - 1), baseIndex + 1.0);
+    float interp = scalar - baseIndex;
+    color = mix(HdGet_scalarOverrideColorRamp(int(baseIndex)),
+                HdGet_scalarOverrideColorRamp(int(nextIndex)),
+                interp);
+#else
+    // If no ramp is given just gamma correct the scalar as greyscale.
+    color.rgb = vec3(pow(HdGet_scalarOverride(), 2.2));
+#endif // HD_HAS_scalarOverrideColorRamp
+
+#elif defined(HD_HAS_overrideColor)
     // Mix in override color
     vec4 overrideColor = HdGet_overrideColor();
     color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);

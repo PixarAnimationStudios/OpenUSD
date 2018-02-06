@@ -36,10 +36,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-
-
-
 // HdRprimSharedData is an assortment of data being shared across HdReprs,
 // owned by HdRprim. HdDrawItem holds a const pointer to HdRprimSharedData.
 //
@@ -55,7 +51,6 @@ typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
 struct HdRprimSharedData {
     HdRprimSharedData(int barContainerSize)
         : barContainer(barContainerSize)
-        , material()
         , bounds()
         , hasInstancer(false)
         , visible(true)
@@ -66,7 +61,6 @@ struct HdRprimSharedData {
                       bool hasInstancer,
                       bool visible)
         : barContainer(barContainerSize)
-        , material()
         , bounds()
         , hasInstancer(hasInstancer)
         , visible(visible)
@@ -75,9 +69,6 @@ struct HdRprimSharedData {
 
     // BufferArrayRange array
     HdBufferArrayRangeContainer barContainer;
-
-    // The material to which the Rprim is bound.
-    HdShaderCodeSharedPtr material;
 
     // Used for CPU frustum culling.
     GfBBox3d bounds;

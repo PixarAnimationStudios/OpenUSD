@@ -24,8 +24,8 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/persistentBuffer.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -34,13 +34,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStPersistentBuffer::HdStPersistentBuffer(
     TfToken const &role, size_t dataSize, void* data)
-    : HdResourceGL(role)
+    : HdStResourceGL(role)
     , _mappedAddress(0)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderContextCaps const &caps = HdRenderContextCaps::GetInstance();
+    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     GLuint newId = 0;
     glGenBuffers(1, &newId);

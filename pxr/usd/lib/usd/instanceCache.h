@@ -32,6 +32,7 @@
 
 #include <tbb/mutex.h>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -57,6 +58,16 @@ public:
             c.newMasterPrimIndexes.begin(), 
             c.newMasterPrimIndexes.end());
 
+        associatedIndexOld.insert(
+            associatedIndexOld.end(),
+            c.associatedIndexOld.begin(),
+            c.associatedIndexOld.end());
+
+        associatedIndexNew.insert(
+            associatedIndexNew.end(),
+            c.associatedIndexNew.begin(),
+            c.associatedIndexNew.end());
+
         changedMasterPrims.insert(
             changedMasterPrims.end(),
             c.changedMasterPrims.begin(), 
@@ -77,6 +88,18 @@ public:
     std::vector<SdfPath> newMasterPrims;
     std::vector<SdfPath> newMasterPrimIndexes;
 
+    /// List of index paths that are "associated" in a before/after sense.  For
+    /// example, if a prim </foo/bar> previously wasn't instanced, but becomes
+    /// instanced and its master uses the prim index at </x/y>, then there will
+    /// be an index i such that associatedIndexOld[i] == </foo/bar> and
+    /// associatedIndexNew[i] == </x/y>.  Similarly if subsequently </foo/bar>
+    /// ceases to be instanced, then we'll see corresponding entries with </x/y>
+    /// in Old and </foo/bar> in new.  This will also track changes where an
+    /// instancing master changes its source prim index.  This information is
+    /// used to propagate payload inclusion across instancing changes.
+    std::vector<SdfPath> associatedIndexOld;
+    std::vector<SdfPath> associatedIndexNew;
+    
     /// List of master prims that have been changed to use a new
     /// source prim index.
     std::vector<SdfPath> changedMasterPrims;
@@ -108,6 +131,17 @@ public:
 /// This object keeps track of the dependencies formed between 
 /// masters and prim indexes by this process.
 ///
+/// API note: It can be confusing to reason about masters and instances,
+/// especially with arbitrarily nested instancing.  To help clarify, the API
+/// below uses two idioms to describe the two main kinds of relationships
+/// involved in instancing: 1) instances to their master usd prims, and 2)
+/// master usd prims to the prim indexes they use.  For #1, we use phrasing
+/// like, "master for instance".  For example GetPathInMasterForInstancePath() finds
+/// the corresponding master prim for a given instance prim path.  For #2, we
+/// use phrasing like, "master using prim index".  For example
+/// GetMasterUsingPrimIndexPath() finds the master using the given prim index
+/// path as its source, if there is one.
+///
 class Usd_InstanceCache
 {
     Usd_InstanceCache(Usd_InstanceCache const &) = delete;
@@ -136,9 +170,9 @@ public:
     /// resulting list of master prim changes via \p changes.
     void ProcessChanges(Usd_InstanceChanges* changes);
 
-    /// Returns true if an object at \p path is a master or in a
-    /// master.  \p path must be either an absolute path or empty.
-    static bool IsPathMasterOrInMaster(const SdfPath& path);
+    /// Return true if \p path identifies a master or a master descendant.  The
+    /// \p path must be either an absolute path or empty.
+    static bool IsPathInMaster(const SdfPath& path);
 
     /// Returns the paths of all master prims for instance prim 
     /// indexes registered with this cache.
@@ -148,48 +182,50 @@ public:
     /// prim indexes registered with this cache.
     size_t GetNumMasters() const;
 
-    /// Returns the path of the master prim using the prim index
-    /// at \p primIndexPath as its source prim index, or an empty path
-    /// if no such master exists.
+    /// Return the path of the master root prim using the prim index at
+    /// \p primIndexPath as its source prim index, or the empty path if no such
+    /// master exists.
     ///
-    /// Unlike GetMasterForPrimIndexAtPath, this function will return a
+    /// Unlike GetMasterForPrimIndexPath, this function will return a
     /// master prim path only if the master prim is using the specified
     /// prim index as its source.
-    SdfPath GetMasterUsingPrimIndexAtPath(const SdfPath& primIndexPath) const;
+    SdfPath GetMasterUsingPrimIndexPath(const SdfPath& primIndexPath) const;
 
-    /// Returns the paths of all prims in masters using the prim index
-    /// at \p primIndexPath. There may be more than one such prim in
-    /// the case of nested instances.
-    std::vector<SdfPath> 
-    GetPrimsInMastersUsingPrimIndexAtPath(const SdfPath& primIndexPath) const;
-
-    /// Returns true if the prim index at \p primIndexPath is being used
-    /// by any prim in a master.
-    bool IsPrimInMasterUsingPrimIndexAtPath(const SdfPath& primIndexPath) const;
-
-    /// If \p primIndexPath is an instanceable prim index that has been
-    /// assigned to a master prim, returns the path of that master prim,
-    /// otherwise returns an empty path.
+    /// Return the paths of all prims in masters using the prim index at
+    /// \p primIndexPath.
     ///
-    /// Unlike GetMasterUsingPrimIndexAtPath, this function will return a
-    /// master prim path even if that master prim is not using the specified
-    /// prim index as its source.
-    SdfPath GetMasterForPrimIndexAtPath(const SdfPath& primIndexPath) const;
+    /// There are at most two such paths.  Without nested instancing, there is
+    /// at most one: the prim in the master corresponding to the instance
+    /// identified by \p primIndexPath.  With nested instancing there will be
+    /// two if the \p primIndexPath identifies an instanceable prim index
+    /// descendant to another instancable prim index, and this \p primIndexPath
+    /// was selected for use by that nested instance's master.  In that case
+    /// this function will return the path of the nested instance under the
+    /// outer master, and also the master path corresponding to that nested
+    /// instance.
+    std::vector<SdfPath> 
+    GetPrimsInMastersUsingPrimIndexPath(const SdfPath& primIndexPath) const;
 
-    /// If \p primIndexPath is a descendent of an instanceable prim index
-    /// that has been assigned to a master prim, returns the path of the
-    /// corresponding descendent of that master prim.
-    SdfPath 
-    GetPrimInMasterForPrimIndexAtPath(const SdfPath& primIndexPath) const;
+    /// Return true if a prim in a master uses the prim index at
+    /// \p primIndexPath.
+    bool MasterUsesPrimIndexPath(const SdfPath& primIndexPath) const;
 
-    /// Returns true if \p primIndexPath is a descendent of an instanceable
-    /// prim index that has been assigned to a master prim.
-    bool IsPrimInMasterForPrimIndexAtPath(const SdfPath& primIndexPath) const;
+    /// Return the path of the master prim associated with the instanceable
+    /// \p primIndexPath.  If \p primIndexPath is not instanceable, or if it
+    /// has no associated master because it lacks composition arcs, return the
+    /// empty path.
+    SdfPath
+    GetMasterForInstanceablePrimIndexPath(const SdfPath& primIndexPath) const;
 
-    /// If the given \p primPath specifies a prim beneath an instance, 
-    /// returns the path of the corresponding prim in that instance's 
-    /// master.
-    SdfPath GetPrimInMasterForPath(const SdfPath& primPath) const;
+    /// Returns true if \p primPath is descendent to an instance.  That is,
+    /// return true if a strict ancestor path of \p usdPrimPath identifies an
+    /// instanceable prim index.
+    bool IsPathDescendantToAnInstance(const SdfPath& primPath) const;
+
+    /// Return the corresponding master prim path if \p primPath is descendant
+    /// to an instance (see IsPathDescendantToAnInstance()), otherwise the empty
+    /// path.
+    SdfPath GetPathInMasterForInstancePath(const SdfPath& primPath) const;
 
 private:
     typedef std::vector<SdfPath> _PrimIndexPaths;
@@ -197,18 +233,22 @@ private:
     void _CreateOrUpdateMasterForInstances(
         const Usd_InstanceKey& instanceKey,
         _PrimIndexPaths* primIndexPaths,
-        Usd_InstanceChanges* changes);
+        Usd_InstanceChanges* changes,
+        std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> const &
+        masterToOldSourceIndexPath);
 
     void _RemoveInstances(
         const Usd_InstanceKey& instanceKey,
         const _PrimIndexPaths& primIndexPaths,
-        Usd_InstanceChanges* changes);
+        Usd_InstanceChanges* changes,
+        std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> *
+        masterToOldSourceIndexPath);
 
     void _RemoveMasterIfNoInstances(
         const Usd_InstanceKey& instanceKey,
         Usd_InstanceChanges* changes);
 
-    bool _IsPrimInMasterUsingPrimIndexAtPath(
+    bool _MasterUsesPrimIndexPath(
         const SdfPath& primIndexPath,
         std::vector<SdfPath>* masterPaths = NULL) const;
 

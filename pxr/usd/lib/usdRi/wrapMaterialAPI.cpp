@@ -94,6 +94,9 @@ void wrapUsdRiMaterialAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .staticmethod("Apply")
+
         .def("IsConcrete",
             static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
         .staticmethod("IsConcrete")

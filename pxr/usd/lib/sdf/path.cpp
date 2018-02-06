@@ -1248,17 +1248,32 @@ SdfPath::TokenizeIdentifierAsTokens(const std::string &name)
 }
 
 std::string
-SdfPath::JoinIdentifier(const std::vector<std::string>& names)
+SdfPath::JoinIdentifier(const std::vector<std::string> &names)
 {
+    if (std::any_of(names.begin(), names.end(), 
+                    [](const std::string &s){return s.empty();})) 
+    {
+        // Create a new vector with just the non-empty names.
+        std::vector<std::string> nonEmptyNames;
+        nonEmptyNames.reserve(names.size());
+        std::copy_if(names.begin(), names.end(), 
+                     std::back_inserter(nonEmptyNames),
+                     [](const std::string &s){return !s.empty();});
+        return TfStringJoin(nonEmptyNames, 
+                            SdfPathTokens->namespaceDelimiter.GetText());
+    }
     return TfStringJoin(names, SdfPathTokens->namespaceDelimiter.GetText());
 }
 
 std::string
 SdfPath::JoinIdentifier(const TfTokenVector& names)
 {
-    std::vector<std::string> tmp(names.size());
+    std::vector<std::string> tmp;
+    tmp.reserve(names.size());
     for (size_t i = 0, n = names.size(); i != n; ++i) {
-        tmp[i] = names[i].GetString();
+        if (!names[i].IsEmpty()) {
+            tmp.push_back(names[i].GetString());
+        }
     }
     return TfStringJoin(tmp, SdfPathTokens->namespaceDelimiter.GetText());
 }

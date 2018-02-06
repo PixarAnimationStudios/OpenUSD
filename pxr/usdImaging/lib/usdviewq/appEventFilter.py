@@ -104,6 +104,11 @@ class AppEventFilter(QtCore.QObject):
             focusObject.setFocus()
 
     def eventFilter(self, widget, event):
+        # There is currently no filtering we want to do for modal or popups
+        if (QtWidgets.QApplication.activeModalWidget() or
+            QtWidgets.QApplication.activePopupWidget()):
+            return False
+        
         currFocusWidget = QtWidgets.QApplication.focusWidget()
         
         if event.type() == QtCore.QEvent.KeyPress:

@@ -132,6 +132,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/envSetting.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/utils.h"
 
@@ -154,15 +155,6 @@ TF_DEFINE_ENV_SETTING(
     USD_HONOR_LEGACY_BASE_MATERIAL, true,
     "If on, read base material as derivesFrom relationship when available.");
 
-
-static 
-UsdRelationship
-_CreateBindingRel(const UsdPrim& prim)
-{
-    return prim.CreateRelationship(UsdShadeTokens->materialBinding,
-                                   /* custom = */ false);
-}
-
 bool 
 UsdShadeMaterial::Bind(const UsdPrim& prim) const
 {
@@ -173,12 +165,7 @@ UsdShadeMaterial::Bind(const UsdPrim& prim) const
         oldRel.BlockTargets();
     }
 
-    if (UsdRelationship rel = _CreateBindingRel(prim)){
-        SdfPathVector  targets(1, GetPath());
-        return rel.SetTargets(targets);
-    }
-
-    return false;
+    return UsdShadeMaterialBindingAPI(prim).Bind(*this);
 }
 
 bool 
@@ -191,14 +178,13 @@ UsdShadeMaterial::Unbind(const UsdPrim& prim)
         oldRel.BlockTargets();
     }
 
-    return _CreateBindingRel(prim).BlockTargets();
+    return UsdShadeMaterialBindingAPI(prim).UnbindDirectBinding();
 }
 
 UsdRelationship
 UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 {
-    UsdRelationship rel = prim.GetRelationship(
-            UsdShadeTokens->materialBinding);
+    UsdRelationship rel = UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
     if (TfGetEnvSetting(USD_HONOR_LEGACY_USD_LOOK)) {
         if (!rel) {
             // honor legacy assets using UsdShadeLook

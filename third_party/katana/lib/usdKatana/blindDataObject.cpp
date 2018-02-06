@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdKatanaBlindDataObject,
-        TfType::Bases< UsdSchemaBase > >();
+        TfType::Bases< UsdTyped > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -171,7 +171,7 @@ UsdKatanaBlindDataObject::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdSchemaBase::GetSchemaAttributeNames(true),
+            UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

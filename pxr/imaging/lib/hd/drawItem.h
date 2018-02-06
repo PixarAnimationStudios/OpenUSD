@@ -38,60 +38,51 @@
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec4f.h"
 
-#include <boost/shared_ptr.hpp>
-
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-typedef boost::shared_ptr<class Hd_GeometricShader> Hd_GeometricShaderSharedPtr;
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
-
 /// \class HdDrawItem
 ///
-/// An abstraction for a single draw item.
+/// A draw item represents a single component of the collective
+/// visual representation of an HdRprim.  For example, a mesh rprim might
+/// use one draw item for its subdivided surface and another for
+/// its hull lines.
 ///
 class HdDrawItem {
 public:
-
     HF_MALLOC_TAG_NEW("new HdDrawItem");
 
     HD_API
     HdDrawItem(HdRprimSharedData const *sharedData);
     HD_API
-    ~HdDrawItem();
-
-    SdfPath const &GetRprimID() const { return _sharedData->rprimID; }
-
-    void SetGeometricShader(Hd_GeometricShaderSharedPtr const &geometricShader) {
-        _geometricShader = geometricShader;
-    }
-
-    Hd_GeometricShaderSharedPtr const &GetGeometricShader() const {
-        return _geometricShader;
-    }
+    virtual ~HdDrawItem();
 
     HD_API
-    HdShaderCodeSharedPtr GetMaterial() const;
+    SdfPath const &GetRprimID() const { return _sharedData->rprimID; }
 
+    HD_API
     GfBBox3d const & GetBounds() const { return _sharedData->bounds; }
 
+    HD_API
     GfRange3d const& GetExtent() const {
         return _sharedData->bounds.GetRange();
     }
 
+    HD_API
     GfMatrix4d const& GetMatrix() const {
         return _sharedData->bounds.GetMatrix();
     }
 
     /// Returns a BufferRange of constant-PrimVar.
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetConstantPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetConstantPrimVarIndex());
     }
 
     /// Returns the number of nested levels of instance primvars.
+    HD_API
     int GetInstancePrimVarNumLevels() const {
         return _drawingCoord.GetInstancePrimVarNumLevels();
     }
@@ -107,49 +98,58 @@ public:
     ///             |
     ///             +-- mesh_prototype
     ///
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetInstancePrimVarRange(int level) const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetInstancePrimVarIndex(level));
     }
 
     /// Returns a BufferRange of instance-index indirection.
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetInstanceIndexRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetInstanceIndexIndex());
     }
 
     /// Returns a BufferRange of element-PrimVars.
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetElementPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetElementPrimVarIndex());
     }
 
     /// Returns a BufferArrayRange of topology.
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetTopologyRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetTopologyIndex());
     }
 
     /// Returns a BufferArrayRange of vertex-primVars.
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetVertexPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetVertexPrimVarIndex());
     }
 
     /// Returns a BufferArrayRange of face-varying primvars.
+    HD_API
     HdBufferArrayRangeSharedPtr const &GetFaceVaryingPrimVarRange() const {
         return _sharedData->barContainer.Get(
             _drawingCoord.GetFaceVaryingPrimVarIndex());
     }
 
+    HD_API
     HdDrawingCoord *GetDrawingCoord() {
         return &_drawingCoord;
     }
 
     /// Returns the authored visibility, expressed by the delegate.
+    HD_API
     bool GetVisible() const { return _sharedData->visible; }
 
     /// Returns true if the drawItem has instancer.
+    HD_API
     bool HasInstancer() const { return _sharedData->hasInstancer; }
 
     /// Returns the hash of the versions of underlying buffers. When the
@@ -172,8 +172,6 @@ public:
                                      const HdDrawItem& self);
 
 private:
-    Hd_GeometricShaderSharedPtr _geometricShader;
-
     // configuration of how to bundle the drawing coordinate for this draw item
     // out of BARs in sharedData
     HdDrawingCoord _drawingCoord;

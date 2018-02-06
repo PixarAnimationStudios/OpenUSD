@@ -1,0 +1,466 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/basisCurves.glslfx
+
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/terminals.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.Vertex
+
+out CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+// We will either generate a camera facing normal or use the authored normal.
+vec3 getNormal(MAT4 transform);
+
+void main(void)
+{
+    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+
+    outData.Peye = GetWorldToViewMatrix() * transform * vec4(HdGet_points(), 1);
+    outData.Neye = getNormal(transpose(transformInv *
+                                  GetWorldToViewInverseMatrix()));
+
+    ProcessPrimVars();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.TessellationControl
+
+layout(vertices = 4) out;
+
+in CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[gl_MaxPatchVertices];
+
+out CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData[4];
+
+float GetMaxTess()
+{
+    // Should be replaced with a uniform
+    return 40;
+}
+
+float GetPixelToTessRatio()
+{
+    // Should be replaced with a uniform
+    return 20.0;
+}
+
+vec2 projectToScreen(MAT4 projMat, vec4 vertex, vec2 screen_size)
+{
+    vec4 res = vec4(projMat * vertex);
+    res /= res.w;
+    return (clamp(res.xy, -1.3, 1.3) + 1) * (screen_size * 0.5);
+}
+
+void determineLODSettings()
+{
+    MAT4 projMat = GetProjectionMatrix();
+    vec4 viewport = GetViewport();
+    vec2 screen_size = vec2(viewport.z, viewport.w);
+    vec2 v0 = projectToScreen(projMat, inData[0].Peye, screen_size);
+    vec2 v1 = projectToScreen(projMat, inData[1].Peye, screen_size);
+    vec2 v2 = projectToScreen(projMat, inData[2].Peye, screen_size);
+    vec2 v3 = projectToScreen(projMat, inData[3].Peye, screen_size);
+
+    // Need to handle off screen
+    float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
+    float level = clamp(dist / GetPixelToTessRatio(), 0, GetMaxTess());
+
+    gl_TessLevelOuter[0] = level;
+    gl_TessLevelOuter[1] = 1;
+    gl_TessLevelOuter[2] = level;
+    gl_TessLevelOuter[3] = 1;
+
+    gl_TessLevelInner[0] = 1;
+    gl_TessLevelInner[1] = level;
+}
+
+void main(void)
+{
+    if(gl_InvocationID == 0) {
+	determineLODSettings();
+    }
+
+    outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
+    outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
+
+    ProcessPrimVars();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.TessellationEvaluation
+
+layout(quads, fractional_odd_spacing, ccw) in;
+
+struct Coeffs
+{
+  vec4 basis;
+  vec4 tangent_basis;
+};
+
+in CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[gl_MaxPatchVertices];
+
+out VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+// Predefine so that we can later swap in the correct one depending
+// on what type of curve we have
+Coeffs evaluateBasis(float u, float u2, float u3);
+float evaluateWidths(vec4 basis, float u);
+vec3 interpNormal(vec4 basis, float u);
+
+void main()
+{
+    float u, v;
+    u = gl_TessCoord.y;
+    v = gl_TessCoord.x;
+
+    vec4 cv0 = inData[0].Peye;
+    vec4 cv1 = inData[1].Peye;
+    vec4 cv2 = inData[2].Peye;
+    vec4 cv3 = inData[3].Peye;
+
+    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    vec4 basis = coeffs.basis;
+    vec4 tangent_basis = coeffs.tangent_basis;
+    vec4 pos = basis[0] * cv0 + 
+	       basis[1] * cv1 + 
+	       basis[2] * cv2 + 
+	       basis[3] * cv3; 
+
+    vec4 tangent = tangent_basis[0] * cv0 + 
+		   tangent_basis[1] * cv1 + 
+		   tangent_basis[2] * cv2 + 
+		   tangent_basis[3] * cv3; 
+
+    tangent = normalize(tangent);
+
+    outData.Neye = interpNormal(basis, u);
+
+    // XXX: The result of this cross product is not stable, which
+    // causes the ribbons to twist. Once we fix this issue, we should use Neye
+    // directly in the fragment shader to avoid the faceted shading that results
+    // from screen-space derivatives.
+    vec3 up = normalize(cross(tangent.xyz, outData.Neye));
+
+    float width = evaluateWidths(basis, u);
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 widthVec = GetWorldToViewMatrix() * transform 
+                  * vec4(up, 0);
+
+    pos = vec4(pos.xyz + up * length(widthVec.xyz) * width * (v - 0.5), 1.0);
+
+    outData.Peye = pos;
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    // XXX: needs more work.
+    ProcessPrimVars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.Vertex.Normal.CameraFacing
+
+vec3 getNormal(MAT4 transform)
+{
+    // Generate a camera-facing normal in camera/eye space, designed to match
+    // RenderMan.
+    return vec3(0, 0, 1);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.Vertex.Normal.Authored
+
+vec3 getNormal(MAT4 transform)
+{
+    return (transform * vec4(HdGet_normals(), 0)).xyz;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.TES.Normal.CameraFacing
+
+vec3 interpNormal(vec4 basis, float u)
+{
+    return inData[0].Neye;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.TES.Normal.Authored
+
+vec3 evaluateNormal(vec4 basis, float u);
+
+vec3 interpNormal(vec4 basis, float u)
+{
+    return normalize(evaluateNormal(basis, u));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.BezierBasis
+
+Coeffs evaluateBasis(float u, float u2, float u3)
+{
+  vec4 basis; vec4 tangent_basis;
+  basis[0] = u3;
+  basis[1] = -3.0*u3 + 3.0*u2;
+  basis[2] = 3.0*u3 - 6.0*u2 + 3.0*u;
+  basis[3] = -1.0*u3 + 3.0*u2 - 3.0*u + 1.0;
+
+  tangent_basis[0] = 3.0*u2;
+  tangent_basis[1] = -9.0*u2 + 6.0*u;
+  tangent_basis[2] = 9.0*u2 - 12.0*u + 3.0;
+  tangent_basis[3] = -3.0*u2 + 6.0*u - 3.0;
+  return Coeffs(basis, tangent_basis);
+}
+
+float evaluateWidths(vec4 basis, float u)
+{
+    return HdGet_widths(0)*basis.x 
+         + HdGet_widths(1)*basis.y
+         + HdGet_widths(2)*basis.z 
+         + HdGet_widths(3)*basis.w;
+}
+
+#ifdef HD_HAS_normals
+vec3 evaluateNormal(vec4 basis, float u)
+{
+    return inData[0].Neye*basis.x 
+         + inData[1].Neye*basis.y
+         + inData[2].Neye*basis.z 
+         + inData[3].Neye*basis.w;
+}
+#endif
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.LinearBasis
+
+Coeffs evaluateBasis(float u, float u2, float u3)
+{
+  vec4 basis; vec4 tangent_basis;
+  basis[0] = u;
+  basis[1] = 0;
+  basis[2] = 0;
+  basis[3] = 1.0 - u;
+
+  tangent_basis[0] = 1;
+  tangent_basis[1] = 0;
+  tangent_basis[2] = 0;
+  tangent_basis[3] = -1;
+  return Coeffs(basis, tangent_basis);
+}
+
+float evaluateWidths(vec4 basis, float u)
+{
+    return HdGet_widths(0)*basis.x 
+         + HdGet_widths(1)*basis.y
+         + HdGet_widths(2)*basis.z 
+         + HdGet_widths(3)*basis.w;
+}
+
+#ifdef HD_HAS_normals
+vec3 evaluateNormal(vec4 basis, float u)
+{
+    return HdGet_normals(0)*basis.x 
+         + HdGet_normals(1)*basis.y
+         + HdGet_normals(2)*basis.z 
+         + HdGet_normals(3)*basis.w;
+}
+#endif
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.CatmullRomBasis
+
+Coeffs evaluateBasis(float u, float u2, float u3)
+{
+  vec4 basis; vec4 tangent_basis;
+  basis[0] = 0.5*u3 - 0.5*u2;
+  basis[1] = -1.5*u3 + 2.0*u2 + 0.5*u;
+  basis[2] = 1.5*u3 - 2.5*u2 + 1.0;
+  basis[3] = -0.5*u3 + u2 - 0.5*u;
+
+  tangent_basis[0] = 1.5*u2 - u;
+  tangent_basis[1] = -4.5*u2 + 4.0*u + 0.5;
+  tangent_basis[2] = 4.5*u2 - 5.0*u;
+  tangent_basis[3] = -1.5*u2 + 2.0*u - 0.5;
+  return Coeffs(basis, tangent_basis);
+}
+
+float evaluateWidths(vec4 basis, float u)
+{
+    return mix(HdGet_widths(2), HdGet_widths(1), u);
+}
+
+#ifdef HD_HAS_normals
+vec3 evaluateNormal(vec4 basis, float u)
+{
+    return mix(HdGet_normals(2), HdGet_normals(1), u);
+}
+#endif
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.BsplineBasis
+
+Coeffs evaluateBasis(float u, float u2, float u3)
+{
+  vec4 basis; vec4 tangent_basis;
+  basis[0] = (1.0/6.0)*u3;
+  basis[1] = -0.5*u3 + 0.5*u2 + 0.5*u + (1.0/6.0);
+  basis[2] = 0.5*u3 - u2 + (2.0/3.0);
+  basis[3] = -(1.0/6.0)*u3 + 0.5*u2 - 0.5*u + (1.0/6.0);
+
+  tangent_basis[0] = 0.5*u2;
+  tangent_basis[1] = -1.5*u2 + u + 0.5;
+  tangent_basis[2] = 1.5*u2 - 2.0*u;
+  tangent_basis[3] = -0.5*u2 + u - 0.5;
+  return Coeffs(basis, tangent_basis);
+}
+
+float evaluateWidths(vec4 basis, float u)
+{
+    return mix(HdGet_widths(2), HdGet_widths(1), u);
+}
+
+#ifdef HD_HAS_normals
+vec3 evaluateNormal(vec4 basis, float u)
+{
+    return mix(HdGet_normals(2), HdGet_normals(1), u);
+}
+#endif
+
+--- --------------------------------------------------------------------------
+-- glsl BasisCurves.Fragment
+
+in VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData;
+
+void main(void)
+{
+#ifdef HD_HAS_color
+    vec4 color = HdGet_color();
+#else
+    vec4 color = vec4(1);
+#endif
+    color.rgb = ApplyColorOverrides(color).rgb;
+
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+
+    // XXX: Neye is interpolated in from previous stages, however the
+    // polarity is not stable due to instability in the cross-product in the
+    // TessEval shader. Once that is fixed, we could use Neye directly here.
+    // The normal computed here results in faceted shading.
+    //
+    vec3 Neye = normalize(cross(dFdx(Peye), dFdy(Peye)));
+
+    vec4 patchCoord = vec4(0);
+    color.rgb = mix(color.rgb, 
+                    ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
+                    GetLightingBlendAmount());
+
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+
+    RenderColor(color);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Line.Vertex
+
+out VertexData
+{
+    vec4 Peye;
+} outData;
+
+void main(void)
+{
+    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    vec4 point     = vec4(HdGet_points().xyz, 1);
+
+    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+
+    ProcessPrimVars();
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Line.Fragment
+
+in VertexData
+{
+    vec4 Peye;
+} inData;
+
+void main(void)
+{
+#ifdef HD_HAS_color
+    vec4 color = HdGet_color();
+#else
+    vec4 color = vec4(1);
+#endif
+
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+
+    // We would like to have a better oriented normal here, however to keep the
+    // shader fast, we use this camera-facing approximation.
+    vec3 Neye = vec3(0,0,1);
+
+    vec4 patchCoord = vec4(0);
+
+    color.rgb = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb;
+
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+
+    RenderColor(color);
+}

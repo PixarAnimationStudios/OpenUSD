@@ -284,10 +284,15 @@ GetReportByPath(SdfLayerHandle const &layer, ReportParams const &p,
     vector<SdfPath> paths = CollectPaths(layer, p);
     sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
+        SdfSpecType specType = layer->GetSpecType(path);
+        report.push_back(
+            TfStringPrintf(
+                "<%s> : %s", 
+                path.GetText(), TfStringify(specType).c_str()));
+
         vector<TfToken> fields = CollectFields(layer, path, p);
         if (fields.empty())
             continue;
-        report.push_back(TfStringPrintf("<%s>", path.GetText()));
         for (auto const &field: fields) {
             if (p.showValues) {
                 report.push_back(

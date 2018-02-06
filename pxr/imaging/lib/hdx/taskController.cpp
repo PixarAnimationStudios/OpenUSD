@@ -227,7 +227,7 @@ HdxTaskController::~HdxTaskController()
         GetRenderIndex()->RemoveTask(tasks[i]);
     }
     TF_FOR_ALL (id, _lightIds) {
-        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->light, *id);
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight, *id);
     }
 }
 
@@ -381,6 +381,12 @@ void
 HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src,
                                     bool bypass)
 {
+    // No need to create a light compilation task if we are on renderers
+    // that do not support stream.
+    if (!GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+        return;
+    }
+
     if (bypass) {
         // If we're using HdxSimpleLightBypassTask, we just pass the context
         // through to the task.
@@ -411,41 +417,40 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src,
 
     // Create or remove Sprims so that the render index has the correct
     // number of lights.
-    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->light)) {
-        while (_lightIds.size() < lights.size()) {
-            SdfPath lightId = GetControllerId().AppendChild(TfToken(
-                TfStringPrintf("light%d", (int)_lightIds.size())));
-            _lightIds.push_back(lightId);
+    while (_lightIds.size() < lights.size()) {
+        SdfPath lightId = GetControllerId().AppendChild(TfToken(
+            TfStringPrintf("light%d", (int)_lightIds.size())));
+        _lightIds.push_back(lightId);
 
-            GetRenderIndex()->InsertSprim(HdPrimTypeTokens->light, &_delegate,
-                lightId);
-            hasNumLightsChanged = true;
-        }
-        while (_lightIds.size() > lights.size()) {
-            GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->light,
-                _lightIds.back());
+        GetRenderIndex()->InsertSprim(HdPrimTypeTokens->simpleLight, 
+            &_delegate,
+            lightId);
+        hasNumLightsChanged = true;
+    }
+    while (_lightIds.size() > lights.size()) {
+        GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight,
+            _lightIds.back());
 
-            _lightIds.pop_back();
-            hasNumLightsChanged = true;
-        }
+        _lightIds.pop_back();
+        hasNumLightsChanged = true;
+    }
 
-        // Update light Sprims
-        for (size_t i = 0; i < lights.size(); ++i) {
-            _delegate.SetParameter(_lightIds[i], HdStLightTokens->params,
-                lights[i]);
-            _delegate.SetParameter(_lightIds[i], HdStLightTokens->transform,
-                VtValue());
-            _delegate.SetParameter(_lightIds[i], HdStLightTokens->shadowParams,
-                HdxShadowParams());
-            _delegate.SetParameter(_lightIds[i], HdStLightTokens->shadowCollection,
-                VtValue());
+    // Update light Sprims
+    for (size_t i = 0; i < lights.size(); ++i) {
+        _delegate.SetParameter(_lightIds[i], HdStLightTokens->params,
+            lights[i]);
+        _delegate.SetParameter(_lightIds[i], HdStLightTokens->transform,
+            VtValue());
+        _delegate.SetParameter(_lightIds[i], HdStLightTokens->shadowParams,
+            HdxShadowParams());
+        _delegate.SetParameter(_lightIds[i], HdStLightTokens->shadowCollection,
+            VtValue());
 
-            // Only mark the parameters dirty to avoid unnecessary invalidation.
-            // Marking the shadowCollection as dirty will mark the geometry
-            // collection dirty and we don't want that to happen every time.
-            GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                _lightIds[i], HdStLight::DirtyParams);
-        }
+        // Only mark the parameters dirty to avoid unnecessary invalidation.
+        // Marking the shadowCollection as dirty will mark the geometry
+        // collection dirty and we don't want that to happen every time.
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _lightIds[i], HdStLight::DirtyParams);
     }
 
     // Update the material: sadly, this comes from the lighting context

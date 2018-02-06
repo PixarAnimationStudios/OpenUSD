@@ -26,8 +26,7 @@
 // wrapQuat.template.cpp file to make changes.
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/quat{{ SUFFIX }}.h"
-{% for S in SCALARS if S != SCL and ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
+{% for S in SCALARS %}
 #include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
@@ -90,11 +89,15 @@ void wrapQuat{{ SUFFIX }}()
                           
         .def(TfTypePythonClass())
 
+        .def(init<GfQuat{{ SUFFIX }}>())
         .def(init<{{ SCL }}>(arg("real")))
         .def(init<{{ SCL }}, const GfVec3{{ SUFFIX }} &>(
                  (arg("real"), arg("imaginary"))))
         .def(init<{{ SCL }}, {{ SCL }}, {{ SCL }}, {{ SCL }}>(
                  (arg("real"), arg("i"), arg("j"), arg("k"))))
+{% for S in SCALARS if S != SCL and not ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
+        .def(init<const GfQuat{{ SCALAR_SUFFIX(S) }} & >())
+{% endfor %}
 
         .def("GetIdentity", &{{ QUAT }}::GetIdentity)
         .staticmethod("GetIdentity")

@@ -115,6 +115,51 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewReloadReopen
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewNoPlugins
+        DEST testusdviewNoPlugins
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewInterpreterNoRender
+        DEST testusdviewInterpreterNoRender
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewLoadPlugins
+        DEST testusdviewLoadPlugins_alive
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewLoadPlugins
+        DEST testusdviewLoadPlugins_multipleContainers
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewLoadPlugins
+        DEST testusdviewLoadPlugins_missingContainer
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewLoadPlugins
+        DEST testusdviewLoadPlugins_duplicateCommand
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewLoadPlugins
+        DEST testusdviewLoadPlugins_chained
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewUpAxis
+        DEST testusdviewUpAxis_zUp
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewUpAxis
+        DEST testusdviewUpAxis_yUp
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -234,6 +279,7 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     )
 
     pxr_register_test(testusdviewNavigationKeys
+        RUN_SERIAL
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewNavigationKeys.py test.usda"
         EXPECTED_RETURN_CODE 0
@@ -244,4 +290,59 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewReloadReopen.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
+    
+    pxr_register_test(testusdviewNoPlugins
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewNoPlugins.py --noplugins test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewInterpreterNoRender
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInterpreterNoRender.py --norender test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewLoadPlugins_alive
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_alive.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewLoadPlugins_multipleContainers
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_multipleContainers.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewLoadPlugins_missingContainer
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_missingContainer.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewLoadPlugins_duplicateCommand
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_duplicateCommand.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewLoadPlugins_chained
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLoadPlugins_chained.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewUpAxis_zUp
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_zUp.py testZUp.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewUpAxis_yUp
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_yUp.py testYUp.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
 endif()

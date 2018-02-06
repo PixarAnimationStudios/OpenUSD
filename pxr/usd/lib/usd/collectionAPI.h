@@ -121,7 +121,7 @@ class SdfAssetPath;
 /// 
 /// <b>Creating collections in C++</b>
 /// 
-/// \snippet examples.cpp AddCollections
+/// \snippet examples.cpp ApplyCollections
 /// 
 ///
 class UsdCollectionAPI : public UsdSchemaBase
@@ -179,6 +179,18 @@ public:
     static UsdCollectionAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+private:
+
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget along with the supplied \p name. This information 
+    /// is stored in the apiSchemas metadata on prims.  
+    /// Given a schema, FooAPI, and a name bar, the token stored
+    /// in the apiSchemas metadata would be 'FooAPI:bar'
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    static UsdCollectionAPI 
+    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -217,7 +229,7 @@ public:
     /// be the same as one of the core collection schema properties,
     /// i.e. should not be 'expansionRule' or 'includes' or 'excludes'.
     USD_API
-    static UsdCollectionAPI AddCollection(
+    static UsdCollectionAPI ApplyCollection(
         const UsdPrim& prim, 
         const TfToken &name, 
         const TfToken &expansionRule=UsdTokens->expandPrims);
@@ -225,6 +237,12 @@ public:
     /// Returns the collection named, \p name on the given prim, \p prim.
     USD_API
     static UsdCollectionAPI GetCollection(const UsdPrim &prim, const TfToken &name);
+
+    /// Returns the collection represented by the given collection path, 
+    /// \p collectionPath on the given USD stage.
+    USD_API
+    static UsdCollectionAPI GetCollection(const UsdStagePtr &stage, 
+                                          const SdfPath &collectionPath);
 
     /// Returns all the named collections on the given USD prim. 
     USD_API
@@ -298,13 +316,14 @@ public:
             return _hasExcludes;
         }
     private:
-        // Holds an ordered map describing membership of paths in this collection
-        // and the associated expansionRule for how the paths are to be expanded. 
-        // If a collection includes another collection, the included collection's
-        // _PathExpansionRuleMap is merged into this one. 
+        // Holds an unordered map describing membership of paths in this 
+        // collection and the associated expansionRule for how the paths are to 
+        // be expanded. If a collection includes another collection, the 
+        // included collection's _PathExpansionRuleMap is merged into this one. 
         // If a path is excluded, its expansion rule is set to 
         // UsdTokens->exclude.
-        using _PathExpansionRuleMap = std::map<SdfPath, TfToken>;
+        using _PathExpansionRuleMap = std::unordered_map<SdfPath, 
+                                        TfToken, SdfPath::Hash>;
 
         // Add \p path as an included path in the MembershipQuery with the 
         // given expansion rule, \p expansionRule.
@@ -456,6 +475,42 @@ public:
 
     /// @}
 
+    /// \anchor UsdCollectionAPI_AuthoringAPI
+    /// \name Collection Authoring API
+    /// 
+    /// Convenience API for adding or removing prims to (or from) a collecition.
+    /// 
+    /// @{
+
+    /// Adds the given \p prim to the collection. 
+    /// 
+    /// This does nothing if the prim is already included in the collection. 
+    /// 
+    /// This does not modify the expansion-rule of the collection. Hence, if the 
+    /// expansionRule is <i>expandPrims</i> or <i>expandPrimsAndProperties</i>, 
+    /// then the descendants of \p prim will be also included in the collection 
+    /// (unless explicitly excluded).
+    /// 
+    /// \sa UsdCollectionAPI::RemovePrim()
+    USD_API 
+    bool AddPrim(const UsdPrim &prim) const;
+
+
+    /// Removes the given \p prim from the collection. 
+    /// 
+    /// This does nothing if the prim is not included in the collection. 
+    ///
+    /// This does not modify the expansion-rule of the collection. Hence, if the 
+    /// expansionRule is <i>expandPrims</i> or <i>expandPrimsAndProperties</i>, 
+    /// then the descendants of \p prim will also be excluded from the 
+    /// collection (unless explicitly included).
+    ///
+    /// \sa UsdCollectionAPI::AddPrim()
+    USD_API
+    bool RemovePrim(const UsdPrim &prim) const; 
+
+    /// @}
+    
     /// Validates the collection by checking the following rules:
     /// * a collection's expansionRule should be one of "explicitOnly", 
     ///   "expandPrims" or "expandPrimsAndProperties".

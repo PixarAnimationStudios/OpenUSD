@@ -32,6 +32,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,      "points.glslfx"))
     ((mainVS,          "Point.Vertex"))
+    ((commonFS,        "Fragment.CommonTerminals"))
     ((surfaceFS,       "Fragment.Surface"))
     ((mainFS,          "Point.Fragment"))
     ((instancing,      "Instancing.Transform"))
@@ -45,8 +46,9 @@ HdSt_PointsShaderKey::HdSt_PointsShaderKey()
     VS[2] = TfToken();
 
     FS[0] = _tokens->surfaceFS;
-    FS[1] = _tokens->mainFS;
-    FS[2] = TfToken();
+    FS[1] = _tokens->commonFS;
+    FS[2] = _tokens->mainFS;
+    FS[3] = TfToken();
 }
 
 HdSt_PointsShaderKey::~HdSt_PointsShaderKey()

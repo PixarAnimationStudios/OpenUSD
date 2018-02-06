@@ -123,16 +123,19 @@ HdSt_BasisCurvesIndexBuilderComputation::AddBufferSpecs(
 {
     // index buffer
     if(_supportSmoothCurves) {
-        specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 4));
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType{HdTypeInt32Vec4, 1});
     }
     else {
-        specs->push_back(HdBufferSpec(HdTokens->indices, GL_INT, 2));
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType{HdTypeInt32Vec2, 1});
     }
 
     // primitive index buffer (curve id per curve segment) is used only
     // when the basis curve has uniform primvars.
     // XXX: we currently create it even when the curve has no uniform primvars
-    specs->push_back(HdBufferSpec(HdTokens->primitiveParam, GL_INT, 1));    
+    specs->emplace_back(HdTokens->primitiveParam,
+                        HdTupleType{HdTypeInt32, 1});
 }
 
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
@@ -450,7 +453,7 @@ HdSt_BasisCurvesWidthsInterpolaterComputation::HdSt_BasisCurvesWidthsInterpolate
 void
 HdSt_BasisCurvesWidthsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(HdTokens->widths, GL_FLOAT, 1));
+    specs->emplace_back(HdTokens->widths, HdTupleType{HdTypeFloat, 1});
 }
 
 bool
@@ -518,7 +521,7 @@ HdSt_BasisCurvesNormalsInterpolaterComputation::HdSt_BasisCurvesNormalsInterpola
 void
 HdSt_BasisCurvesNormalsInterpolaterComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(HdTokens->normals, GL_FLOAT, 3));
+    specs->emplace_back(HdTokens->normals, HdTupleType{HdTypeFloatVec3, 1});
 }
 
 bool

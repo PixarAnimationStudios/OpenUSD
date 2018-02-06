@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/conversions.h"
 
 #include "pxr/base/arch/hash.h"
 
@@ -37,25 +36,8 @@ size_t
 HdBufferSource::ComputeHash() const
 {
     size_t hash = 0;
-    return ArchHash64((const char*)GetData(), GetSize(), hash);
-}
-
-size_t
-HdBufferSource::GetElementSize() const
-{
-    return GetNumComponents() * GetComponentSize();
-}
-
-size_t
-HdBufferSource::GetComponentSize() const
-{
-    return HdConversions::GetComponentSize(GetGLComponentDataType());
-}
-
-size_t
-HdBufferSource::GetSize() const
-{
-    return GetNumElements() * GetElementSize();
+    size_t size = HdDataSizeOfTupleType(GetTupleType()) * GetNumElements();
+    return ArchHash64((const char*)GetData(), size, hash);
 }
 
 bool
@@ -117,26 +99,15 @@ HdComputedBufferSource::GetData() const
     return _result->GetData();
 }
 
-int
-HdComputedBufferSource::GetGLComponentDataType() const
+HdTupleType
+HdComputedBufferSource::GetTupleType() const
 {
     if (!_result) {
-        TF_CODING_ERROR("HdComputedBufferSource::GetGLComponentDataType() "
-                        "called without setting the result.");
-        return 0;
+        TF_CODING_ERROR("HdComputedBufferSource::GetTupleType() called "
+                        "without setting the result.");
+        return {HdTypeInvalid, 0};
     }
-    return _result->GetGLComponentDataType();
-}
-
-int
-HdComputedBufferSource::GetGLElementDataType() const
-{
-    if (!_result) {
-        TF_CODING_ERROR("HdComputedBufferSource::GetGLElementDataType() "
-                        "called without setting the result.");
-        return 0;
-    }
-    return _result->GetGLElementDataType();
+    return _result->GetTupleType();
 }
 
 int
@@ -144,13 +115,6 @@ HdComputedBufferSource::GetNumElements() const
 {
     // GetNumElements returns 0 for the empty result.
     return _result ? _result->GetNumElements() : 0;
-}
-
-short
-HdComputedBufferSource::GetNumComponents() const
-{
-    // GetNumComponents returns 0 for the empty result.
-    return _result ? _result->GetNumComponents() : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,29 +140,16 @@ HdNullBufferSource::GetData() const
     return nullptr;
 }
 
-int
-HdNullBufferSource::GetGLComponentDataType() const
+HdTupleType
+HdNullBufferSource::GetTupleType() const
 {
-    TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer range");
-    return 0;
-}
-
-int
-HdNullBufferSource::GetGLElementDataType() const
-{
-    TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer range");
-    return 0;
+    TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer "
+                    "range");
+    return {HdTypeInvalid, 0};
 }
 
 int
 HdNullBufferSource::GetNumElements() const
-{
-    TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer range");
-    return 0;
-}
-
-short
-HdNullBufferSource::GetNumComponents() const
 {
     TF_CODING_ERROR("HdNullBufferSource can't be scheduled with a buffer range");
     return 0;

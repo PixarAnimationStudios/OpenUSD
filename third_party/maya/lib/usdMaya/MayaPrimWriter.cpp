@@ -184,6 +184,11 @@ MayaPrimWriter::shouldPruneChildren() const
 }
 
 void
+MayaPrimWriter::postExport()
+{ 
+}
+
+void
 MayaPrimWriter::setExportsVisibility(bool exports)
 {
     mExportsVisibility = exports;

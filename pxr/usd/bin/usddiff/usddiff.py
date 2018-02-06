@@ -85,12 +85,16 @@ def _findDiffTools():
     return (usdcatCmd, diffCmd)
 
 def _getFileFormat(path):
-    from pxr import Sdf
+    from pxr import Sdf, Ar
 
     # Note that python's os.path.splitext retains the '.' portion
     # when obtaining an extension, but Sdf's Fileformat API doesn't 
     # expect one. We also make sure to prune out any version specifiers.
     _, ext = os.path.splitext(path)
+    path = Ar.GetResolver().Resolve(path)
+    if path is None:
+        return None
+
     if len(ext) <= 1:
         fileFormat = Sdf.FileFormat.FindByExtension('usd')
     else:
@@ -101,8 +105,9 @@ def _getFileFormat(path):
          
         fileFormat = Sdf.FileFormat.FindByExtension(prunedExtension)
 
-    # Allow an empty file.
-    if fileFormat and (os.stat(path).st_size == 0 or fileFormat.CanRead(path)):
+    # Don't check if file exists - this should be handled by resolver (and
+    # path may not exist / have been fetched yet)
+    if fileFormat:
         return fileFormat.formatId
 
     return None
@@ -110,15 +115,19 @@ def _getFileFormat(path):
 def _convertTo(inPath, outPath, usdcatCmd, flatten=None, fmt=None):
     # Just copy empty files -- we want something to diff against but
     # the file isn't valid usd.
-    if os.stat(inPath).st_size == 0:
-        import shutil
-        try:
-            shutil.copy(inPath, outPath)
-            return 0
-        except:
-            return 1
-    else:
-        return call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt))
+    try:
+        if os.stat(inPath).st_size == 0:
+            import shutil
+            try:
+                shutil.copy(inPath, outPath)
+                return 0
+            except:
+                return 1
+    except (IOError, OSError):
+        # assume it's because file doesn't exist yet, because it's an unresolved
+        # path...
+        pass
+    return call(_generateCatCommand(usdcatCmd, inPath, outPath, flatten, fmt))
 
 def _tryEdit(fileName, tempFileName, usdcatCmd, fileType, flattened):
     if flattened:
@@ -216,6 +225,9 @@ def _findFiles(args):
     baseline-only and comparison-only are lists of individual files, while
     matching is a list of corresponding pairs of files.'''
     import os
+    import stat
+    from pxr import Ar
+
     join = os.path.join
     basename = os.path.basename
     exists = os.path.exists
@@ -233,12 +245,33 @@ def _findFiles(args):
     if len(args) < 2:
         raise err
 
-    for index, exist in enumerate(map(exists, args)):
-        if not exist:
-            raise ValueError("Error: %s does not exist" % args[index]) 
+    # For speed, since filestats can be slow, stat all args once, then reuse that
+    # to determine isdir/isfile
+    resolver = Ar.GetResolver()
+    stats = []
+    for arg in args:
+        try:
+            st = os.stat(arg)
+        except (OSError, IOError):
+            if not resolver.Resolve(arg):
+                raise ValueError("Error: %s does not exist, and cannot be "
+                                 "resolved" % arg)
+            st = None
+        stats.append(st)
+
+    def isdir(st):
+        return st and stat.S_ISDIR(st.st_mode)
+
+    # if any of the directory forms are used, no paths may be unresolved assets
+    def validateFiles():
+        for i, st in enumerate(stats):
+            if st is None:
+                raise ValueError("Error: %s did not exist on disk, and using a "
+                                 "directory comparison form" % args[i])
 
     # DIR FILES...
-    if os.path.isdir(args[0]) and not any(map(os.path.isdir, args[1:])):
+    if isdir(stats[0]) and not any(map(isdir, stats[1:])):
+        validateFiles()
         dirpath = args[0]
         files = set(map(os.path.relpath, args[1:]))
         dirfiles = listFiles(dirpath)
@@ -246,7 +279,8 @@ def _findFiles(args):
                 [(join(dirpath, p), p) for p in files & dirfiles],
                 [p for p in files - dirfiles])
     # FILES... DIR
-    elif not any(map(os.path.isdir, args[:-1])) and os.path.isdir(args[-1]):
+    elif not any(map(isdir, stats[:-1])) and isdir(stats[-1]):
+        validateFiles()
         dirpath = args[-1]
         files = set(map(os.path.relpath, args[:-1]))
         dirfiles = listFiles(dirpath)
@@ -256,7 +290,7 @@ def _findFiles(args):
     # FILE FILE or DIR DIR
     elif len(args) == 2:
         # DIR DIR
-        if all(map(os.path.isdir, args)):
+        if all(map(isdir, stats)):
             ldir, rdir = args[0], args[1]
             lhs, rhs = map(listFiles, args)
             return (
@@ -267,7 +301,7 @@ def _findFiles(args):
                 # comparison only
                 sorted([join(rdir, p) for p in rhs - lhs]))
         # FILE FILE
-        elif not any(map(os.path.isdir, args)):
+        elif not any(map(isdir, stats)):
             return ([], [(args[0], args[1])], [])
 
     raise err

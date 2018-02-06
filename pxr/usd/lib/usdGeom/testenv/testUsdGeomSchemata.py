@@ -641,5 +641,74 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertFalse(Usd.SchemaRegistry.IsConcrete(imageable))
         self.assertFalse(Usd.SchemaRegistry.IsConcrete(geomModelAPI))
 
+    def test_Apply(self):
+        s = Usd.Stage.CreateInMemory('AppliedSchemas.usd')
+        root = s.DefinePrim('/hello')
+        self.assertEqual([], root.GetAppliedSchemas())
+
+        # Check duplicates
+        UsdGeom.MotionAPI.Apply(s, '/hello')
+        self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
+        UsdGeom.MotionAPI.Apply(s, '/hello')
+        self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
+        
+        # Ensure duplicates aren't picked up
+        UsdGeom.ModelAPI.Apply(s, '/hello')
+        self.assertEqual(['MotionAPI', 'GeomModelAPI'], root.GetAppliedSchemas())
+
+    def test_IsA(self):
+        from pxr import Usd, Tf
+        s = Usd.Stage.CreateInMemory()
+        spherePrim = s.DefinePrim('/sphere', typeName='Sphere')
+        typelessPrim = s.DefinePrim('/regular')
+
+        types = [Tf.Type.FindByName('UsdGeomSphere'),
+                 Tf.Type.FindByName('UsdGeomGprim'),
+                 Tf.Type.FindByName('UsdGeomBoundable'),
+                 Tf.Type.FindByName('UsdGeomXformable'),
+                 Tf.Type.FindByName('UsdGeomImageable'),
+                 Tf.Type.FindByName('UsdTyped')]
+
+        # Our sphere prim should return true on IsA queries for Sphere
+        # and everything it inherits from. Our plain prim should return false 
+        # for all of them.
+        for t in types:
+            self.assertTrue(spherePrim.IsA(t))
+            self.assertFalse(typelessPrim.IsA(t))
+
+    def test_HasAPI(self):
+        from pxr import Usd, Tf
+        s = Usd.Stage.CreateInMemory()
+        prim = s.DefinePrim('/prim')
+
+        types = [Tf.Type.FindByName('UsdGeomMotionAPI'),
+                 Tf.Type.FindByName('UsdGeomModelAPI'),
+                 Tf.Type.FindByName('UsdModelAPI')]
+
+        # Check that no APIs have yet been applied
+        for t in types:
+            self.assertFalse(prim.HasAPI(t))
+
+        # Apply our schemas to this prim
+        UsdGeom.ModelAPI.Apply(s, '/prim')
+        UsdGeom.MotionAPI.Apply(s, '/prim')
+
+        # Note that were applying an ancestor type of UsdGeomModelAPI
+        Usd.ModelAPI.Apply(s, '/prim')
+
+        # Check that all our applied schemas show up
+        for t in types:
+            self.assertTrue(prim.HasAPI(t))
+
+        # Check that we get an exception for unknown and non-API types
+        with self.assertRaises(Tf.ErrorException):
+            prim.HasAPI(Tf.Type.Unknown)
+        
+        with self.assertRaises(Tf.ErrorException):
+            prim.HasAPI(Tf.Type.FindByName('UsdGeomXform'))
+
+        with self.assertRaises(Tf.ErrorException):
+            prim.HasAPI(Tf.Type.FindByName('UsdGeomImageable'))
+
 if __name__ == "__main__":
     unittest.main()

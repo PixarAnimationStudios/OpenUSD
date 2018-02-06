@@ -155,6 +155,10 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
     UsdPrim usdRootPrim = mPrimPath.empty() ? stage->GetDefaultPrim() :
         stage->GetPrimAtPath(SdfPath(mPrimPath));
     if (!usdRootPrim && !(mPrimPath.empty() || mPrimPath == "/")) {
+        std::string errorMsg = TfStringPrintf(
+            "Unable to set root prim to \"%s\" for USD file \"%s\" - using pseudo-root \"/\" instead",
+            mPrimPath.c_str(), mFileName.c_str());
+        MGlobal::displayError(errorMsg.c_str());
         usdRootPrim = stage->GetPseudoRoot();
     }
 
@@ -272,10 +276,8 @@ bool usdReadJob::_DoImport(UsdPrimRange& range,
                 assetPrimPath = prim.GetPath();
             }
 
-            // XXX: At some point, if assemblyRep == "import" we'd like
-            // to import everything instead of just making an assembly.
-            // Note: We may need to load the model if it isn't already.
-
+            // Note that if assemblyRep == "Import", the assembly reader will
+            // NOT run and we will fall through to the prim reader below.
             MObject parentNode = ctx.GetMayaNode(prim.GetPath().GetParentPath(), false);
             if (PxrUsdMayaTranslatorModelAssembly::Read(prim,
                                                         assetIdentifier,

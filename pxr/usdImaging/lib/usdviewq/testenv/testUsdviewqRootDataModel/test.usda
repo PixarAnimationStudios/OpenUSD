@@ -1,0 +1,25 @@
+#usda 1.0
+
+def Xform "Implicits" (
+    add variantSets = "shapeVariant"
+)
+{
+    variantSet "shapeVariant" = {
+        "Sphere" {
+            def Sphere "Ball"
+            {
+            }
+        }
+    }
+}
+
+def Sphere "frontSphere" {
+    double3 xformOp:translate = (2, 2, 2)
+     uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "backSphere" {
+    double3 xformOp:translate = (3, 4, 3)
+     uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+

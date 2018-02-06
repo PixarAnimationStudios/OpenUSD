@@ -25,6 +25,7 @@
 #include "pxr/usd/usd/attributeQuery.h"
 
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tracelite/trace.h"
@@ -162,6 +163,56 @@ UsdAttributeQuery::GetTimeSamplesInInterval(const GfInterval& interval,
 {
     return _attr._GetStage()->_GetTimeSamplesInIntervalFromResolveInfo(
         _resolveInfo, _attr, interval, times);
+}
+
+/* static */
+bool 
+UsdAttributeQuery::GetUnionedTimeSamples(
+    const std::vector<UsdAttributeQuery> &attrQueries, 
+    std::vector<double> *times)
+{
+    return GetUnionedTimeSamplesInInterval(attrQueries, 
+            GfInterval::GetFullInterval(), times);
+}
+
+/* static */
+bool 
+UsdAttributeQuery::GetUnionedTimeSamplesInInterval(
+    const std::vector<UsdAttributeQuery> &attrQueries, 
+    const GfInterval &interval,
+    std::vector<double> *times)
+{
+    // Clear the vector first before proceeding to accumulate sample times.
+    times->clear();
+
+    if (attrQueries.empty()) {
+        return true;
+    }
+
+    bool success = true;
+
+    // Vector that holds the per-attribute sample times.
+    std::vector<double> attrSampleTimes;
+
+    // Temporary vector used to hold the union of two time-sample vectors.
+    std::vector<double> tempUnionSampleTimes;
+
+    for (const auto &attrQuery : attrQueries) {
+        const UsdAttribute &attr = attrQuery.GetAttribute();
+        if (!attr)
+            continue;
+
+        // This will work even if the attributes belong to different 
+        // USD stages.
+        success = attr.GetStage()->_GetTimeSamplesInIntervalFromResolveInfo(
+                attrQuery._resolveInfo, attr, interval, &attrSampleTimes) 
+                && success;
+
+        // Merge attrSamplesTimes into the times vector.
+        Usd_MergeTimeSamples(times, attrSampleTimes, &tempUnionSampleTimes);
+    }
+    
+    return success;
 }
 
 size_t

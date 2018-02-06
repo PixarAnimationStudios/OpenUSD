@@ -3,13 +3,6 @@ set(PXR_PACKAGE hd)
 
 set(optionalPublicClasses "")
 
-if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)
-endif()
-if (OPENSUBDIV_HAS_GLSL_COMPUTE)
-    add_definitions(-DOPENSUBDIV_HAS_GLSL_COMPUTE)
-endif()
-
 pxr_library(hd
     LIBRARIES
         plug
@@ -18,19 +11,12 @@ pxr_library(hd
         vt
         work
         sdf
-        garch
         hf
-        glf
         pxOsd
-        ${OPENSUBDIV_LIBRARIES}
-        ${GLEW_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${OPENSUBDIV_INCLUDE_DIR}
-        ${GLEW_INCLUDE_DIR}
         ${TBB_INCLUDE_DIRS}
-        ${OPENSUBDIV_INCLUDE_DIR}
 
     PUBLIC_CLASSES
         basisCurves
@@ -39,68 +25,49 @@ pxr_library(hd
         bprim
         bufferArray
         bufferArrayRange
-        bufferArrayRangeGL
         bufferArrayRegistry
         bufferResource
-        bufferResourceGL
         bufferSource
         bufferSpec
         changeTracker
-        codeGen
+        compExtCompInputSource
         computation
-        computeShader
-        conversions
-        copyComputation
         debugCodes
         dirtyList
         drawingCoord
         drawItem
         engine
         extCompCpuComputation
-        extCompGpuComputation
-        extCompGpuComputationBufferSource
-        extCompGpuComputationResource
+        extCompInputSource
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
-        fallbackLightingShader
-        geometricShader
-        glslProgram
-        glUtils
         instancer
         instanceRegistry
-        interleavedMemoryManager
-        lightingShader
+        material
+        materialParam
         mesh
         meshTopology
         meshUtil
-        package
         patchIndex
         perfLog
         points
         primGather
         primTypeIndex
-        renderContextCaps
         renderDelegate
         renderIndex
         renderPass
-        renderPassShader
         renderPassState
         repr
         resource
-        resourceGL
-        resourceBinder
         resourceRegistry
         rprim
         rprimCollection
         rprimSharedData
         sceneDelegate
-        shader
-        shaderCode
-        shaderKey
-        shaderParam
-        sortedIds                   
+        sceneExtCompInputSource
         smoothNormals
+        sortedIds                   
         sprim
         strategyBase
         task
@@ -108,47 +75,24 @@ pxr_library(hd
         textureResource
         tokens
         topology
+        types
         unitTestDelegate
-        vboMemoryManager
-        vboSimpleMemoryManager
+        unitTestHelper
+        unitTestNullRenderDelegate
+        unitTestNullRenderPass
         vertexAdjacency
         vtBufferSource
 
     PUBLIC_HEADERS
         api.h
         enums.h
-        types.h
         version.h
 
     PRIVATE_CLASSES
-        compExtCompInputSource
-        extCompInputSource
         extComputationContextInternal
-        sceneExtCompInputSource
-        unitTestHelper
-        unitTestNullRenderDelegate
-        unitTestNullRenderPass
-        vtExtractor
         ${optionalPrivateClasses}
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/basisCurves.glslfx
-        shaders/compute.glslfx
-        shaders/fallbackLighting.glslfx
-        shaders/fallbackLightingShader.glslfx
-        shaders/fallbackSurface.glslfx
-        shaders/frustumCull.glslfx
-        shaders/instancing.glslfx
-        shaders/lighting.glslfx
-        shaders/lightingIntegrationShader.glslfx
-        shaders/mesh.glslfx
-        shaders/meshNormal.glslfx
-        shaders/meshWire.glslfx
-        shaders/points.glslfx
-        shaders/ptexTexture.glslfx
-        shaders/renderPass.glslfx
-        shaders/renderPassShader.glslfx
-        shaders/terminals.glslfx
 )
 

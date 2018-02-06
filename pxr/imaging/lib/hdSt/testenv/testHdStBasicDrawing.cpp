@@ -80,7 +80,7 @@ My_TestGLDrawing::InitTest()
     std::cout << "My_TestGLDrawing::InitTest() " << _reprName << "\n";
 
     _driver = new HdSt_TestDriver(_reprName);
-    Hd_UnitTestDelegate &delegate = _driver->GetDelegate();
+    HdSt_UnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
     GfVec3f center(0);

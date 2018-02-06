@@ -63,6 +63,8 @@ public:
     HDST_API
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                 HdRprimCollection const& collection) override;
+    HDST_API
+    virtual HdRenderPassStateSharedPtr CreateRenderPassState() const override;
 
     HDST_API
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
@@ -108,7 +110,7 @@ private:
     static std::atomic_int _counterResourceRegistry;
     static HdStResourceRegistrySharedPtr _resourceRegistry;
 
-    HdSprim *_CreateFallbackShaderPrim();
+    HdSprim *_CreateFallbackMaterialPrim();
 
     HdStRenderDelegate(const HdStRenderDelegate &)             = delete;
     HdStRenderDelegate &operator =(const HdStRenderDelegate &) = delete;

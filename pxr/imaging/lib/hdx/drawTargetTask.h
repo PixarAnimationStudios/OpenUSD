@@ -62,7 +62,7 @@ protected:
 
 private:
     struct RenderPassInfo {
-        HdRenderPassStateSharedPtr        renderPassState;
+        HdStRenderPassStateSharedPtr      renderPassState;
         HdxSimpleLightingShaderSharedPtr  simpleLightingShader;
         const HdStDrawTarget             *target;
         unsigned int                      version;

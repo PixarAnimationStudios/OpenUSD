@@ -24,16 +24,14 @@
 #include "pxr/imaging/hd/engine.h"
 
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -70,13 +68,6 @@ HdEngine::RemoveTaskContextData(const TfToken &id)
 }
 
 void
-HdEngine::_InitCaps() const
-{
-    // Make sure we initialize caps in main thread.
-    HdRenderContextCaps::GetInstance();
-}
-
-void
 HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 {
     // Note: For Hydra Stream render delegate.
@@ -98,8 +89,6 @@ HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
     // Once we reflect all conditions which provoke the batch recompilation
     // into the collection dirtiness, we can call
     // HdRenderPass::GetCommandBuffer() to get the right batch.
-
-    _InitCaps();
 
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE
@@ -133,31 +122,29 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
     // 1st dirty all rprims, so they will trigger shader reload
     tracker.MarkAllRprimsDirty(HdChangeTracker::AllDirty);
 
-    // Dirty all surface shaders
-    SdfPathVector shaders = index.GetSprimSubtree(HdPrimTypeTokens->shader,
+    // Dirty all materials
+    SdfPathVector materials = index.GetSprimSubtree(HdPrimTypeTokens->material,
                                                   SdfPath::EmptyPath());
 
-    for (SdfPathVector::iterator shaderIt  = shaders.begin();
-                                 shaderIt != shaders.end();
-                               ++shaderIt) {
+    for (SdfPathVector::iterator materialIt  = materials.begin();
+                                 materialIt != materials.end();
+                               ++materialIt) {
 
-        tracker.MarkSprimDirty(*shaderIt, HdChangeTracker::AllDirty);
+        tracker.MarkSprimDirty(*materialIt, HdChangeTracker::AllDirty);
     }
 
-    // Invalidate Geometry shader cache in Resource Registry.
-    index.GetResourceRegistry()->InvalidateGeometricShaderRegistry();
+    // Invalidate shader cache in Resource Registry.
+    index.GetResourceRegistry()->InvalidateShaderRegistry();
 
-    // Fallback Shader
-    HdShader *shader = static_cast<HdShader *>(
-                              index.GetFallbackSprim(HdPrimTypeTokens->shader));
-    shader->Reload();
-
+    // Fallback material
+    HdMaterial *material = static_cast<HdMaterial *>(
+                        index.GetFallbackSprim(HdPrimTypeTokens->material));
+    material->Reload();
 
     // Note: Several Shaders are not currently captured in this
     // - Lighting Shaders
     // - Render Pass Shaders
     // - Culling Shader
-
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

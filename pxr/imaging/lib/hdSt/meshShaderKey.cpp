@@ -44,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
+    ((hullEdgeOnlyNoBlendFS,   "MeshWire.Fragment.HullEdgeOnlyNoBlend"))
     ((edgeOnSurfGS,            "MeshWire.Geometry.Edge"))
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
@@ -53,17 +54,19 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBezierTES,           "Mesh.TessEval.Bezier"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
+    ((commonFS,                "Fragment.CommonTerminals"))
     ((surfaceFS,               "Fragment.Surface"))
     ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
     ((surfaceSheerFS,          "Fragment.SurfaceSheer"))
     ((constantColorFS,         "Fragment.ConstantColor"))
+    ((hullColorFS,             "Fragment.HullColor"))
     ((mainFS,                  "Mesh.Fragment"))
     ((instancing,              "Instancing.Transform"))
     ((displacementGS,          "Geometry.Displacement"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
-    Hd_GeometricShader::PrimitiveType primitiveType,
+    HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
     bool hasCustomDisplacementTerminal,
     bool smoothNormals,
@@ -92,7 +95,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // tessellation control shader
     const bool isPrimTypePatches = 
-        Hd_GeometricShader::IsPrimTypePatches(primType);
+        HdSt_GeometricShader::IsPrimTypePatches(primType);
 
     TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
     TCS[1] = isPrimTypePatches ? _tokens->mainBSplineTCS : TfToken();
@@ -113,7 +116,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
               geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
                                                           : _tokens->edgeNoneGS);
 
-    GS[3] = Hd_GeometricShader::IsPrimTypeQuads(primType)? 
+    GS[3] = HdSt_GeometricShader::IsPrimTypeQuads(primType)? 
                 _tokens->mainQuadGS : _tokens->mainTriangleGS;
     GS[4] = TfToken();
 
@@ -125,7 +128,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         // can be fully disabled in the folowing condition.
         if (smoothNormals
             && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
-            && Hd_GeometricShader::IsPrimTypeTriangles(primType)
+            && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
             && (!isFaceVarying)) {
             
             GS[0] = TfToken();
@@ -139,7 +142,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Optimization : Points don't need any sort of geometry shader so
     //                we ignore it here.
-    if (Hd_GeometricShader::IsPrimTypePoints(primType)) {
+    if (HdSt_GeometricShader::IsPrimTypePoints(primType)) {
         GS[0] = TfToken();
     }
 
@@ -156,10 +159,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
                                                               : _tokens->edgeNoneFS));
     } else {
-        if (geomStyle == HdMeshGeomStyleEdgeOnly ||
-            geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+        if (geomStyle == HdMeshGeomStyleEdgeOnly) {
             FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
                                         : _tokens->edgeOnlyNoBlendFS;
+        } else if (geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+            FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
+                                        : _tokens->hullEdgeOnlyNoBlendFS;
         } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                    geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
             FS[3] = _tokens->edgeOnSurfFS;
@@ -177,6 +182,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->surfaceSheerFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
         terminalFS = _tokens->constantColorFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {
+        terminalFS = _tokens->hullColorFS;
     } else if (!shadingTerminal.IsEmpty()) {
         terminalFS = shadingTerminal;
     } else {
@@ -184,8 +191,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
 
     FS[4] = terminalFS;
-    FS[5] = _tokens->mainFS;
-    FS[6] = TfToken();
+    FS[5] = _tokens->commonFS;
+    FS[6] = _tokens->mainFS;
+    FS[7] = TfToken();
 }
 
 HdSt_MeshShaderKey::~HdSt_MeshShaderKey()

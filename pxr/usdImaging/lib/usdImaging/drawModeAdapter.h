@@ -119,8 +119,8 @@ protected:
                              UsdImagingIndexProxy* index);
 
 private:
-    // Check whether the given cachePath is a path to the draw mode shader.
-    bool _IsShaderPath(SdfPath const& path);
+    // Check whether the given cachePath is a path to the draw mode material.
+    bool _IsMaterialPath(SdfPath const& path);
     // Check whether the given cachePath is a path to a draw mode texture.
 
     bool _IsTexturePath(SdfPath const& path);

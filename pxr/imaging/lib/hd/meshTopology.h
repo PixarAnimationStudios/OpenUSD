@@ -78,13 +78,6 @@ public:
     HD_API
     HdMeshTopology &operator =(const HdMeshTopology &copy);
 
-
-#if defined(HD_SUPPORT_OPENSUBDIV2)
-    /// Returns whether OpenSubdiv 3.0 to be used.
-    HD_API
-    static bool IsEnabledOpenSubdiv3();
-#endif
-
     /// Returns whether adaptive subdivision is enabled or not.
     HD_API
     static bool IsEnabledAdaptive();

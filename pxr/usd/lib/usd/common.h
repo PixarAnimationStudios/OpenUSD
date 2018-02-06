@@ -24,6 +24,8 @@
 #ifndef USD_COMMON_H
 #define USD_COMMON_H
 
+/// \file usd/common.h
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -118,17 +120,32 @@ SdfLayerOffset UsdPrepLayerOffset(SdfLayerOffset offset);
 /// methods in the USD API that manipulate lists, such as AddReference().
 ///
 enum UsdListPosition {
-    /// The front of the list
-    UsdListPositionFront,
-    /// The back of the list
-    UsdListPositionBack,
+    /// The position at the front of the prepend list.
+    /// An item added at this position will, after composition is applied,
+    /// be stronger than other items prepended in this layer, and stronger
+    /// than items added by weaker layers.
+    UsdListPositionFrontOfPrependList,
+    /// The position at the back of the prepend list.
+    /// An item added at this position will, after composition is applied,
+    /// be weaker than other items prepended in this layer, but stronger
+    /// than items added by weaker layers.
+    UsdListPositionBackOfPrependList,
+    /// The position at the front of the append list.
+    /// An item added at this position will, after composition is applied,
+    /// be stronger than other items appended in this layer, and stronger
+    /// than items added by weaker layers.
+    UsdListPositionFrontOfAppendList,
+    /// The position at the back of the append list.
+    /// An item added at this position will, after composition is applied,
+    /// be weaker than other items appended in this layer, but stronger
+    /// than items added by weaker layers.
+    UsdListPositionBackOfAppendList,
     /// Default position.
     /// XXX This value will be removed in the near future. This is
     /// meant as a temporary value used for staged rollout of the
     /// new behavior with a TfEnvSetting.
     UsdListPositionTempDefault,
 };
-
 
 /// \enum UsdLoadPolicy
 ///

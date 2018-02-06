@@ -23,9 +23,7 @@
 //
 #include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
 
-#include "pxr/imaging/hd/conversions.h"
 #include "pxr/imaging/hd/extCompCpuComputation.h"
-#include "pxr/imaging/hd/vtExtractor.h"
 
 #include <limits>
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,19 +37,17 @@ HdExtCompPrimvarBufferSource::HdExtCompPrimvarBufferSource(
  , _primvarName(primvarName)
  , _source(source)
  , _sourceOutputIdx(HdExtCompCpuComputation::INVALID_OUTPUT_INDEX)
- , _glComponentDataType(0)
- , _glElementDataType(0)
+ , _tupleType(HdGetValueTupleType(defaultValue))
  , _rawDataPtr(nullptr)
 {
-    Hd_VtExtractor extractor;
-
-    extractor.Extract(defaultValue);
-
-    _glComponentDataType = extractor.GetGLCompontentType();
-    _glElementDataType   = extractor.GetGLElementType();
-    _numComponents       = extractor.GetNumComponents();
-
     _sourceOutputIdx = source->GetOutputIndex(sourceOutputName);
+
+    // For the common case of a default value that is an empty
+    // VtArray<T>, treat it as representing one T per element,
+    // rather than a zero-sized tuple.
+    if (_tupleType.count == 0) {
+        _tupleType.count = 1;
+    }
 }
 
 TfToken const &
@@ -63,12 +59,8 @@ HdExtCompPrimvarBufferSource::GetName() const
 void
 HdExtCompPrimvarBufferSource::AddBufferSpecs(HdBufferSpecVector *specs) const
 {
-    specs->emplace_back(_primvarName,
-                        _glComponentDataType,
-                        _numComponents,
-                        _source->GetNumElements());
+    specs->emplace_back(_primvarName, _tupleType);
 }
-
 
 bool
 HdExtCompPrimvarBufferSource::Resolve()
@@ -82,7 +74,6 @@ HdExtCompPrimvarBufferSource::Resolve()
 
     if (!_TryLock()) return false;
 
-
     if (!sourceValid || _source->HasResolveError()) {
         _SetResolveError();
         return true;
@@ -90,30 +81,21 @@ HdExtCompPrimvarBufferSource::Resolve()
 
     VtValue output = _source->GetOutputByIndex(_sourceOutputIdx);
 
-
-
-    Hd_VtExtractor extractor;
-    extractor.Extract(output);
-
-    // Validate output type matches what is expected.
-    if ((_glComponentDataType != extractor.GetGLCompontentType()) ||
-        (_glElementDataType   != extractor.GetGLElementType())    ||
-        (_numComponents       != extractor.GetNumComponents())) {
-        TF_WARN("Output type mismatch on %s. ", _primvarName.GetText());
-        _SetResolveError();
-        return true;
+    // Validate output type and count matches what is expected.
+    {
+        HdTupleType outputTupleType = HdGetValueTupleType(output);
+        if (_source->GetNumElements() > 0) {
+            // Adjust tuple size to account for distribution over elements.
+            outputTupleType.count /= _source->GetNumElements();
+        }
+        if (outputTupleType != _tupleType) {
+            TF_WARN("Output type mismatch on %s. ", _primvarName.GetText());
+            _SetResolveError();
+            return true;
+        }
     }
 
-    // Validate output size matches what is expected.
-    size_t expectedSize = GetNumElements()  * _numComponents *
-                          HdConversions::GetComponentSize(_glComponentDataType);
-    if ( extractor.GetSize() !=  expectedSize) {
-        TF_WARN("Not enough data for primvar %s. ", _primvarName.GetText());
-        _SetResolveError();
-        return true;
-    }
-
-    _rawDataPtr = extractor.GetData();
+    _rawDataPtr = HdGetValueData(output);
 
     _SetResolved();
     return true;
@@ -126,20 +108,11 @@ HdExtCompPrimvarBufferSource::GetData() const
     return _rawDataPtr;
 }
 
-
-int
-HdExtCompPrimvarBufferSource::GetGLComponentDataType() const
+HdTupleType
+HdExtCompPrimvarBufferSource::GetTupleType() const
 {
-    return _glComponentDataType;
+    return _tupleType;
 }
-
-
-int
-HdExtCompPrimvarBufferSource::GetGLElementDataType() const
-{
-    return _glElementDataType;
-}
-
 
 int
 HdExtCompPrimvarBufferSource::GetNumElements() const
@@ -147,23 +120,13 @@ HdExtCompPrimvarBufferSource::GetNumElements() const
     return _source->GetNumElements();
 }
 
-
-short
-HdExtCompPrimvarBufferSource::GetNumComponents() const
-{
-    return _numComponents;
-}
-
-
 bool
 HdExtCompPrimvarBufferSource::_CheckValid() const
 {
     return (_source &&
             (_sourceOutputIdx !=
                                HdExtCompCpuComputation::INVALID_OUTPUT_INDEX) &&
-            (_numComponents > 0) &&
-            (_glComponentDataType > 0) &&
-            (_glElementDataType > 0));
+            (_tupleType.type != HdTypeInvalid));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

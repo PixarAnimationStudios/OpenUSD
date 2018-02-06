@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(PlugPlugin);
 
+class Plug_RegistrationMetadata;
 class TfType;
 
 /// \class PlugPlugin
@@ -115,7 +116,7 @@ public:
     PLUG_API std::string FindPluginResource(const std::string& path, bool verify = true) const;
 
 private:
-    enum _Type { 
+    enum _Type {
         LibraryType, 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED        
         PythonType, 
@@ -141,29 +142,27 @@ private:
     PLUG_LOCAL
     static PlugPluginPtrVector _GetAllPlugins();
 
+    template <class PluginMap>
+    PLUG_LOCAL
+    static std::pair<PlugPluginPtr, bool>
+    _NewPlugin(const Plug_RegistrationMetadata &metadata,
+               _Type pluginType,
+               const std::string& pluginCreationPath,
+               PluginMap *allPluginsByNamePtr);
+
     PLUG_LOCAL
     static std::pair<PlugPluginPtr, bool> 
-    _NewDynamicLibraryPlugin(const std::string & path,
-                             const std::string & name,
-                             const std::string & dsoPath,
-                             const std::string & resourcePath,
-                             const JsObject & plugInfo);
+    _NewDynamicLibraryPlugin(const Plug_RegistrationMetadata& metadata);
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     PLUG_LOCAL
     static std::pair<PlugPluginPtr, bool> 
-    _NewPythonModulePlugin(const std::string & path,
-                           const std::string & name,
-                           const std::string & resourcePath,
-                           const JsObject & plugInfo);
+    _NewPythonModulePlugin(const Plug_RegistrationMetadata& metadata);
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
     PLUG_LOCAL
     static std::pair<PlugPluginPtr, bool> 
-    _NewResourcePlugin(const std::string & path,
-                       const std::string & name,
-                       const std::string & resourcePath,
-                       const JsObject & plugInfo);
+    _NewResourcePlugin(const Plug_RegistrationMetadata& metadata);
 
     PLUG_LOCAL
     bool _Load();
@@ -183,6 +182,9 @@ private:
 
     PLUG_LOCAL
     static void _UpdatePluginMaps( const TfType & baseType );
+
+    PLUG_LOCAL
+    static constexpr char const *_GetPluginTypeDisplayName(_Type type);
 
 private:
     std::string _name;

@@ -26,6 +26,7 @@
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
@@ -92,22 +93,7 @@ UsdReferences::AddReference(const SdfReference& refIn, UsdListPosition position)
     {
         TfErrorMark mark;
         if (SdfPrimSpecHandle spec = _CreatePrimSpecForEditing()) {
-            SdfReferencesProxy refs = spec->GetReferenceList();
-            switch (position) {
-            case UsdListPositionFront:
-                refs.Prepend(ref);
-                break;
-            case UsdListPositionBack:
-                refs.Append(ref);
-                break;
-            case UsdListPositionTempDefault:
-                if (UsdAuthorOldStyleAdd()) {
-                    refs.Add(ref);
-                } else {
-                    refs.Prepend(ref);
-                }
-                break;
-            }
+            Usd_InsertListItem( spec->GetReferenceList(), ref, position );
             // mark *should* contain only errors from adding the reference, NOT
             // any recomposition errors, because the SdfChangeBlock handily
             // defers composition till after we leave this scope.

@@ -55,7 +55,10 @@ class StateSource(object):
 
     def _getState(self):
         """Get this source's state dict from its parent source."""
-        return self._parentStateSource._getChildState(self._stateSourceName)
+        if self._parentStateSource is None:
+            return dict()
+        else:
+            return self._parentStateSource._getChildState(self._stateSourceName)
 
     def _getChildState(self, childName):
         """Get a child source's state dict. This method guarantees that a dict

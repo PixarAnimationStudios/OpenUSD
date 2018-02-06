@@ -24,11 +24,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferArrayRangeGL.h"
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/patchIndex.h"
@@ -134,8 +134,7 @@ public:
     virtual HdComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
         TfToken const &name,
-        GLenum dataType,
-        int numComponents) override;
+        HdType dataType) override;
 
     void SetRefinementTables(
         OpenSubdiv::Far::StencilTable const *vertexStencils,
@@ -269,14 +268,17 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
         static_cast<OpenSubdiv::Osd::CpuVertexBuffer*>(vertexBuffer);
 
     int numElements = source->GetNumElements();
-    int stride = source->GetNumComponents();
+
+    // Stride is measured here in components, not bytes.
+    int stride = HdGetComponentCount(source->GetTupleType().type);
 
     // NOTE: in osd, GetNumElements() returns how many fields in a vertex
     //          (i.e.  3 for XYZ, and 4 for RGBA)
     //       in hydra, GetNumElements() returns how many vertices
     //       (or faces, etc) in a buffer. We basically follow the hydra
     //       convention in this file.
-    TF_VERIFY(stride == osdVertexBuffer->GetNumElements());
+    TF_VERIFY(stride == osdVertexBuffer->GetNumElements(),
+              "%i vs %i", stride, osdVertexBuffer->GetNumElements());
 
     // if the mesh has more vertices than that in use in topology (faceIndices),
     // we need to trim the buffer so that they won't overrun the coarse
@@ -314,8 +316,8 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
 
     // filling coarse vertices has been done at resource registry.
 
-    HdBufferArrayRangeGLSharedPtr range_ =
-        boost::static_pointer_cast<HdBufferArrayRangeGL> (range);
+    HdStBufferArrayRangeGLSharedPtr range_ =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // vertex buffer wrapper for OpenSubdiv API
     HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(
@@ -386,11 +388,10 @@ HdSt_Osd3Subdivision::CreateRefineComputation(HdSt_MeshTopology *topology,
 HdComputationSharedPtr
 HdSt_Osd3Subdivision::CreateRefineComputationGPU(HdSt_MeshTopology *topology,
                                            TfToken const &name,
-                                           GLenum dataType,
-                                           int numComponents)
+                                           HdType dataType)
 {
     return HdComputationSharedPtr(new HdSt_OsdRefineComputationGPU(
-                                      topology, name, dataType, numComponents));
+                                      topology, name, dataType));
 }
 
 #if HDST_ENABLE_GPU_SUBDIVISION
@@ -584,11 +585,14 @@ HdSt_Osd3IndexComputation::Resolve()
     } else if (_subdivision->IsAdaptive() &&
                HdSt_Subdivision::RefinesToBSplinePatches(scheme)) {
 
-        VtArray<Hd_BSplinePatchIndex> indices(ptableSize/16);
+        // Bundle groups of 16 patch control vertices.
+        VtArray<int> indices(ptableSize);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr patchIndices(
-            new HdVtBufferSource(HdTokens->indices, VtValue(indices)));
+            new HdVtBufferSource(HdTokens->indices, VtValue(indices),
+                                 /* arraySize */ 16));
+
         _SetResult(patchIndices);
 
         _PopulateBSplinePrimitiveBuffer(patchTable);
@@ -618,28 +622,43 @@ HdSt_Osd3IndexComputation::_CreatePtexIndexToCoarseFaceIndexMapping(
 
     if (!TF_VERIFY(result)) return;
 
-    int const * numVertsPtr =
-        _topology->GetFaceVertexCounts().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-
-    // hole faces shouldn't affect ptex id.
-    // passing empty array to count num quads.
-    int numQuads = HdMeshUtil::ComputeNumQuads(
-        _topology->GetFaceVertexCounts(),
-        /*holeFaces=*/VtIntArray());
+    int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
+    int numAuthoredFaces    = _topology->GetFaceVertexCounts().size();
     result->clear();
-    result->reserve(numQuads);
+    result->reserve(numAuthoredFaces); // first guess at possible size
 
-    for (int i = 0; i < numFaces; ++i) {
-        int nv = numVertsPtr[i];
-        if (nv < 3) continue;
-        if (nv == 4) {
-            result->push_back(i);
+    int regFaceSize = 4;
+    if (HdSt_Subdivision::RefinesToTriangles( _topology->GetScheme() )) {
+        regFaceSize = 3;
+    }
+
+    for (int faceId = 0; faceId < numAuthoredFaces; ++faceId) {
+        int nv = numVertsPtr[faceId];
+        if (nv < 3) continue; // skip degenerate faces
+
+        // hole faces shouldn't affect ptex id, i.e., ptex face id's are
+        // assigned for hole faces.
+        // note: this is inconsistent with quadrangulation 
+        // (HdMeshUtil::ComputeQuadIndices), but consistent with OpenSubdiv 3.x
+        // (see ptexIndices.cpp)
+        
+        if (nv == regFaceSize) {
+            // regular face => 1:1 mapping to a ptex face
+            result->push_back(faceId);
         } else {
-            for (int j = 0; j < nv; ++j)
-                result->push_back(i);
+            // if we expect quad faces, non-quad n-gons are quadrangulated into
+            // n-quads
+            // if we expect tri faces, non-tri n-gons are triangulated into
+            // n-2-tris. note: we don't currently support non-tri faces when
+            // using loop (see pxOsd/refinerFactory.cpp)
+            int numPtexFaces = (regFaceSize == 4)? nv : nv - 2;
+            for (int f = 0; f < numPtexFaces; ++f) {
+                result->push_back(faceId);
+            }
         }
     }
+
+    result->shrink_to_fit();
 }
 
 void

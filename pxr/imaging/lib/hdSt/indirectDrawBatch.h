@@ -25,8 +25,8 @@
 #define HDST_INDIRECT_DRAW_BATCH_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
 #include "pxr/imaging/hdSt/persistentBuffer.h"
@@ -59,13 +59,15 @@ public:
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
-    virtual void PrepareDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+    virtual void PrepareDraw(
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     /// Executes the drawing commands for this batch.
     HDST_API
-    virtual void ExecuteDraw(HdRenderPassStateSharedPtr const &renderPassState,
-                             HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+    virtual void ExecuteDraw(
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
     HDST_API
     virtual void DrawItemInstanceChanged(HdStDrawItemInstance const* instance);
@@ -94,14 +96,14 @@ protected:
 
 private:
     void _ValidateCompatibility(
-            HdBufferArrayRangeGLSharedPtr const& constantBar,
-            HdBufferArrayRangeGLSharedPtr const& indexBar,
-            HdBufferArrayRangeGLSharedPtr const& elementBar,
-            HdBufferArrayRangeGLSharedPtr const& fvarBar,
-            HdBufferArrayRangeGLSharedPtr const& vertexBar,
+            HdStBufferArrayRangeGLSharedPtr const& constantBar,
+            HdStBufferArrayRangeGLSharedPtr const& indexBar,
+            HdStBufferArrayRangeGLSharedPtr const& elementBar,
+            HdStBufferArrayRangeGLSharedPtr const& fvarBar,
+            HdStBufferArrayRangeGLSharedPtr const& vertexBar,
             int instancerNumLevels,
-            HdBufferArrayRangeGLSharedPtr const& instanceIndexBar,
-            std::vector<HdBufferArrayRangeGLSharedPtr> const& instanceBars) const;
+            HdStBufferArrayRangeGLSharedPtr const& instanceIndexBar,
+            std::vector<HdStBufferArrayRangeGLSharedPtr> const& instanceBars) const;
 
     // Culling requires custom resource binding.
     class _CullingProgram : public _DrawingProgram {
@@ -117,7 +119,7 @@ private:
         virtual void _GetCustomBindings(
             HdBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const;
-        virtual bool _Link(HdGLSLProgramSharedPtr const & glslProgram);
+        virtual bool _Link(HdStGLSLProgramSharedPtr const & glslProgram);
     private:
         bool _useDrawArrays;
         bool _useInstanceCulling;
@@ -129,12 +131,12 @@ private:
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumCulling(HdDrawItem const *item,
-                            HdRenderPassStateSharedPtr const &renderPassState,
+    void _GPUFrustumCulling(HdStDrawItem const *item,
+                            HdStRenderPassStateSharedPtr const &renderPassState,
                             HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumCullingXFB(HdDrawItem const *item,
-                               HdRenderPassStateSharedPtr const &renderPassState,
+    void _GPUFrustumCullingXFB(HdStDrawItem const *item,
+                               HdStRenderPassStateSharedPtr const &renderPassState,
                                HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _BeginGPUCountVisibleInstances(HdStResourceRegistrySharedPtr const &resourceRegistry);

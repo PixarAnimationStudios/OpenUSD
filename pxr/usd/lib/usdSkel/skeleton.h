@@ -28,10 +28,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
+
+#include "pxr/usd/usdSkel/topology.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -52,9 +54,14 @@ class SdfAssetPath;
 
 /// \class UsdSkelSkeleton
 ///
-/// Describes a skeleton.
+/// Describes a skeleton. A Skeleton is responsible both for establishing
+/// the _topology_ of a skeleton, as well as for identifying a rest pose.
+/// 
+/// See the extended \ref UsdSkel_Skeleton "Skeleton Schema" documentation for
+/// more information.
+/// 
 ///
-class UsdSkelSkeleton : public UsdTyped
+class UsdSkelSkeleton : public UsdGeomImageable
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -73,7 +80,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSkelSkeleton(const UsdPrim& prim=UsdPrim())
-        : UsdTyped(prim)
+        : UsdGeomImageable(prim)
     {
     }
 
@@ -81,7 +88,7 @@ public:
     /// Should be preferred over UsdSkelSkeleton(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSkelSkeleton(const UsdSchemaBase& schemaObj)
-        : UsdTyped(schemaObj)
+        : UsdGeomImageable(schemaObj)
     {
     }
 
@@ -149,10 +156,37 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// An array of path tokens identifying the set of joints that make
+    /// up the skeleton, and their order. Each token in the array must be valid
+    /// when parsed as an SdfPath. The parent-child relationships of the
+    /// corresponding paths determine the parent-child relationships of each
+    /// joint.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointsAttr() const;
+
+    /// See GetJointsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // RESTTRANSFORMS 
     // --------------------------------------------------------------------- //
-    /// specifies rest transforms of each joint in 
+    /// Specifies rest transforms of each joint in 
     /// **joint-local space**, in the ordering imposed by *joints*.
+    /// Joint transforms should all be given as orthogonal, affine
+    /// transformations.
     ///
     /// \n  C++ Type: VtArray<GfMatrix4d>
     /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
@@ -168,23 +202,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDSKEL_API
     UsdAttribute CreateRestTransformsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// A relationship that defines the order of all Skeleton joints 
-    /// for pose evaluation, for a "primary" Skeleton, or provides re-indexing 
-    /// of joints into an ancestor Skeleton's joints for a nested (in namespace)
-    /// Skeleton.
-    ///
-    USDSKEL_API
-    UsdRelationship GetJointsRel() const;
-
-    /// See GetJointsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateJointsRel() const;
 
 public:
     // ===================================================================== //

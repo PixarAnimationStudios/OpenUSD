@@ -27,8 +27,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//! [AddCollections]
-bool AddCollections(UsdPrim const &prim)
+//! [ApplyCollections]
+bool ApplyCollections(UsdPrim const &prim)
 {       
     /* Assuming the folling prim hierarchy:
     |- Vehicles 
@@ -53,7 +53,7 @@ bool AddCollections(UsdPrim const &prim)
 
     // Create a collection that includes only the cars, by adding all 
     // of "FourWheelers" and excluding the trucks.
-    UsdCollectionAPI cars = UsdCollectionAPI::AddCollection(
+    UsdCollectionAPI cars = UsdCollectionAPI::ApplyCollection(
         prim, "cars", /* expansionRule */ UsdTokens->expandPrims);
     cars.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/FourWheelers"));
     cars.CreateExcludesRel().AddTarget(SdfPath("/Vehicles/FourWheelers/TruckA"));
@@ -61,7 +61,7 @@ bool AddCollections(UsdPrim const &prim)
 
     // Create a collection that includes only the bikes by explicitly inluding 
     // just the two bikes in the collection.
-    UsdCollectionAPI bikes = UsdCollectionAPI::AddCollection(
+    UsdCollectionAPI bikes = UsdCollectionAPI::ApplyCollection(
         prim, "bikes", /* expansionRule */ UsdTokens->explicitOnly);
     bikes.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/TwoWheelers/BikeA"));
     bikes.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/TwoWheelers/BikeB"));
@@ -69,12 +69,12 @@ bool AddCollections(UsdPrim const &prim)
     // Create an explicit collection of slow-moving vehicles. 
     // An explicit collection implies that descendants (i.e. the front and back 
     // wheels) are not considered to be included in the collection.
-    UsdCollectionAPI slowVehicles = UsdCollectionAPI::AddCollection(prim, 
+    UsdCollectionAPI slowVehicles = UsdCollectionAPI::ApplyCollection(prim, 
         "slowVehicles", /* expansionRule */ UsdTokens->explicitOnly);
     slowVehicles.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/TwoWheelers/BicycleA"));
     slowVehicles.CreateIncludesRel().AddTarget(SdfPath("/Vehicles/Other/TricycleA"));
 
-    UsdCollectionAPI vehicles = UsdCollectionAPI::AddCollection(prim, 
+    UsdCollectionAPI vehicles = UsdCollectionAPI::ApplyCollection(prim, 
         "vehicles", /* expansionRule */ UsdTokens->expandPrims);
     vehicles.CreateIncludesRel().AddTarget(cars.GetCollectionPath());
     vehicles.CreateIncludesRel().AddTarget(bikes.GetCollectionPath());
@@ -112,7 +112,7 @@ bool AddCollections(UsdPrim const &prim)
                                              &includedObjects);
 }
 
-//! [AddCollections]
+//! [ApplyCollections]
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,8 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -38,19 +38,20 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class Hd_UnitTestDelegate
+/// \class HdUnitTestDelegate
 ///
 /// A simple delegate class for unit test driver.
 ///
-class Hd_UnitTestDelegate : public HdSceneDelegate {
+class HdUnitTestDelegate : public HdSceneDelegate {
 public:
     HD_API
-    Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
+    HdUnitTestDelegate(HdRenderIndex *parentIndex,
                         SdfPath const& delegateID);
 
     void SetUseInstancePrimVars(bool v) { _hasInstancePrimVars = v; }
@@ -128,10 +129,19 @@ public:
                                      bool rightHanded=true, bool doubleSided=false,
                                      SdfPath const &instancerId=SdfPath());
 
+    // Add a grid with division x*y and a custom primvar
+    HD_API
+    void AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
+                            GfMatrix4f const &transform,
+                            VtValue const &primvar,
+                            Interpolation primvarInterpolation,
+                            bool rightHanded=true, bool doubleSided=false,
+                            SdfPath const &instancerId=SdfPath());
+
     /// Add a triangle, quad and pentagon.
     HD_API
     void AddPolygons(SdfPath const &id, GfMatrix4f const &transform,
-                     Hd_UnitTestDelegate::Interpolation colorInterp,
+                     HdUnitTestDelegate::Interpolation colorInterp,
                      SdfPath const &instancerId=SdfPath());
 
     /// Add a subdiv with various tags
@@ -157,8 +167,8 @@ public:
     HD_API
     void AddCurves(SdfPath const &id, TfToken const &basis,
                    GfMatrix4f const &transform,
-                   Hd_UnitTestDelegate::Interpolation colorInterp=Hd_UnitTestDelegate::CONSTANT,
-                   Hd_UnitTestDelegate::Interpolation widthInterp=Hd_UnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation colorInterp=HdUnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation widthInterp=HdUnitTestDelegate::CONSTANT,
                    bool authoredNormals=false,
                    SdfPath const &instancerId=SdfPath());
 
@@ -175,8 +185,8 @@ public:
     HD_API
     void AddPoints(SdfPath const &id,
                    GfMatrix4f const &transform,
-                   Hd_UnitTestDelegate::Interpolation colorInterp=Hd_UnitTestDelegate::CONSTANT,
-                   Hd_UnitTestDelegate::Interpolation widthInterp=Hd_UnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation colorInterp=HdUnitTestDelegate::CONSTANT,
+                   HdUnitTestDelegate::Interpolation widthInterp=HdUnitTestDelegate::CONSTANT,
                    SdfPath const &instancerId=SdfPath());
 
     /// Instancer
@@ -198,7 +208,7 @@ public:
     void AddMaterialHydra(SdfPath const &id,
                           std::string const &sourceSurface,
                           std::string const &sourceDisplacement,
-                          HdShaderParamVector const &params);
+                          HdMaterialParamVector const &params);
     
     /// Material
     HD_API
@@ -216,10 +226,6 @@ public:
     /// Example to update a material binding on the fly
     HD_API
     void RebindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
-
-    /// Texture
-    HD_API
-    void AddTexture(SdfPath const& id, GlfTextureRefPtr const& texture);
 
     /// Camera
     HD_API
@@ -338,10 +344,10 @@ public:
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);    
     HD_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &materialId);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &materialId);
     HD_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &materialId, 
-                                               TfToken const &paramName);
+    virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
+                                          TfToken const &paramName);
     HD_API
     virtual HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId);
     HD_API
@@ -446,7 +452,7 @@ private:
         _MaterialHydra() { }
         _MaterialHydra(std::string const &srcSurface, 
                        std::string const &srcDisplacement,
-                       HdShaderParamVector const &pms)
+                       HdMaterialParamVector const &pms)
             : sourceSurface(srcSurface)
             , sourceDisplacement(srcDisplacement)
             , params(pms) {
@@ -454,14 +460,7 @@ private:
 
         std::string sourceSurface;
         std::string sourceDisplacement;
-        HdShaderParamVector params;
-    };
-    struct _Texture {
-        _Texture() {}
-        _Texture(GlfTextureRefPtr const &tex)
-            : texture(tex) {
-        }
-        GlfTextureRefPtr texture;
+        HdMaterialParamVector params;
     };
     struct _Camera {
         VtDictionary params;
@@ -479,7 +478,6 @@ private:
     std::map<SdfPath, _Instancer> _instancers;
     std::map<SdfPath, _MaterialHydra> _materialsHydra;
     std::map<SdfPath, VtValue> _materials;
-    std::map<SdfPath, _Texture> _textures;
     std::map<SdfPath, _Camera> _cameras;
     std::map<SdfPath, _Light> _lights;
     std::map<SdfPath, _Task> _tasks;

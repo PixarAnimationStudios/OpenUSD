@@ -159,6 +159,14 @@ _GetTimeSamples(const UsdGeomXformable &self)
     return result;
 }
 
+static std::vector<double>
+_GetTimeSamplesInInterval(const UsdGeomXformable &self, const GfInterval &interval)
+{
+    std::vector<double> result;
+    self.GetTimeSamplesInInterval(interval, &result);
+    return result;
+}
+
 static std::vector<UsdGeomXformOp>
 _GetOrderedXformOps(const UsdGeomXformable &self)
 {
@@ -280,6 +288,9 @@ WRAP_CUSTOM {
         .def("TransformMightBeTimeVarying", TransformMightBeTimeVarying_2)
 
         .def("GetTimeSamples", _GetTimeSamples,
+            return_value_policy<TfPySequenceToList>())
+
+        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
             return_value_policy<TfPySequenceToList>())
 
         .def("GetLocalTransformation", _GetLocalTransformation1,

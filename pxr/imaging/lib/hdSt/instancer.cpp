@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/hdSt/instancer.h"
 
-#include "pxr/imaging/hd/drawItem.h"
+#include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -283,11 +283,12 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
                     "range for <%s>\n",
                     GetId().GetText());
             HdBufferSpecVector bufferSpecs;
-            bufferSpecs.push_back(HdBufferSpec(HdTokens->instanceIndices, GL_INT, 1));
+            bufferSpecs.emplace_back(HdTokens->instanceIndices,
+                                     HdTupleType {HdTypeInt32, 1});
             // for GPU frustum culling, we need a copy of instanceIndices.
             // see shader/frustumCull.glslfx
-            bufferSpecs.push_back(
-                HdBufferSpec(HdTokens->culledInstanceIndices, GL_INT, 1));
+            bufferSpecs.emplace_back(HdTokens->culledInstanceIndices,
+                                     HdTupleType {HdTypeInt32, 1});
 
             // allocate new one
             indexRange = resourceRegistry->AllocateNonUniformBufferArrayRange(

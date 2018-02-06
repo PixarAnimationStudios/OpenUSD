@@ -63,6 +63,10 @@ TF_DEFINE_ENV_SETTING(
     "If on, legacy clip metadata will be respected when populating "
     "clips. Otherwise, legacy clip metadata will be ignored.");
 
+// offset is an optional metadata in template clips, this value is
+// used to signify that it was not specified.
+constexpr double _DefaultClipOffsetValue = std::numeric_limits<double>::max();
+
 static bool
 _IsClipRelatedField(const TfToken& fieldName)
 {
@@ -228,17 +232,18 @@ _DeriveClipTimeString(const double currentClipTime,
         std::string stringRep = TfStringPrintf(decimalSpec.c_str(), 
                                                currentClipTime);
         auto splitAt = stringRep.find('.');
- 
+
         // We trim anything larger that the specified number of values
         decimalPortion = stringRep.substr(splitAt+1);
-    } 
+    }
 
     return { integerPortion, decimalPortion };
-} 
+}
 
 static void
 _DeriveClipInfo(const std::string& templateAssetPath,
                 const double stride,
+                const double activeOffset,
                 const double startTimeCode,
                 const double endTimeCode,
                 boost::optional<VtVec2dArray>* clipTimes,
@@ -248,10 +253,19 @@ _DeriveClipInfo(const std::string& templateAssetPath,
                 const PcpLayerStackPtr& sourceLayerStack,
                 const size_t indexOfSourceLayer)
 {
-    if (stride == 0) {
+    if (stride <= 0) {
         TF_WARN("Invalid clipTemplateStride %f for prim <%s>. "
                 "clipTemplateStride must be greater than 0.", 
                 stride, usdPrimPath.GetText());
+        return;
+    }
+
+    bool activeOffsetProvided = activeOffset != _DefaultClipOffsetValue;
+    if (activeOffsetProvided && (std::abs(activeOffset) > stride)) {
+        TF_WARN("Invalid clipTemplateOffset %f for prim <%s>. "
+                "absolute value of clipTemplateOffset must not exceed "
+                "clipTemplateStride %f.",
+                activeOffset, usdPrimPath.GetText(), stride);
         return;
     }
 
@@ -291,7 +305,7 @@ _DeriveClipInfo(const std::string& templateAssetPath,
         TF_WARN("Invalid template string specified %s, must be "
                 "of the form path/basename.###.usd or "
                 "path/basename.###.###.usd. Note that the number "
-                "of hash marks is variable in each group.", 
+                "of hash marks is variable in each group.",
                 templateAssetPath.c_str());
         return;
     }
@@ -299,8 +313,8 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     if (startTimeCode > endTimeCode) {
         TF_WARN("Invalid range specified in template clip metadata. "
                 "clipTemplateEndTime (%f) cannot be greater than "
-                "clipTemplateStartTime (%f).", 
-                endTimeCode, 
+                "clipTemplateStartTime (%f).",
+                endTimeCode,
                 startTimeCode);
         return;
     }
@@ -309,43 +323,66 @@ _DeriveClipInfo(const std::string& templateAssetPath,
     *clipActive = VtVec2dArray();
     *clipAssetPaths = VtArray<SdfAssetPath>();
 
-    const SdfLayerRefPtr& sourceLayer = 
+    const SdfLayerRefPtr& sourceLayer =
         sourceLayerStack->GetLayers()[indexOfSourceLayer];
     const ArResolverContextBinder binder(
         sourceLayerStack->GetIdentifier().pathResolverContext);
     ArResolverScopedCache resolverScopedCache;
     auto& resolver = ArGetResolver();
 
-    // XXX: We shift the value here into the integer range 
+    // XXX: We shift the value here into the integer range
     // to ensure consistency when incrementing by a stride
-    // that is fractional. This does have the possibility of 
+    // that is fractional. This does have the possibility of
     // chopping of large values with fractional components.
-    const size_t promotion = 10000;
-    size_t clipActiveIndex = 0; 
-    
+    constexpr size_t promotion = 10000;
+    size_t clipActiveIndex = 0;
+
+    // If we have an activeOffset, we author a knot on the front so users can query
+    // at time t where t is the first sample - the clipActiveOffset
+    if (activeOffsetProvided) {
+        const double promotedStart = startTimeCode*promotion;
+        const double promotedOffset = std::abs(activeOffset)*promotion;
+        const double clipTime = (promotedStart - promotedOffset)
+                                /(double)promotion;
+        (*clipTimes)->push_back(GfVec2d(clipTime, clipTime));
+    }
+
     for (double t = startTimeCode * promotion;
-         t <= endTimeCode*promotion; 
-         t += stride*promotion) 
-    {
-        double clipTime = t/(double)promotion; 
+                t <= endTimeCode*promotion; t += stride*promotion) {
+    
+        const double clipTime = t/(double)promotion;
         auto timeString = _DeriveClipTimeString(clipTime, numIntegerHashes,
                                                 numDecimalHashes);
-
         tokenizedBasename[integerHashSectionIndex] = timeString.integerPortion;
 
         if (!timeString.decimalPortion.empty()) {
             tokenizedBasename[decimalHashSectionIndex] = timeString.decimalPortion;
         }
 
-        auto filePath = SdfComputeAssetPathRelativeToLayer(sourceLayer, 
+        auto filePath = SdfComputeAssetPathRelativeToLayer(sourceLayer,
             path + TfStringJoin(tokenizedBasename, "."));
 
         if (!resolver.Resolve(filePath).empty()) {
             (*clipAssetPaths)->push_back(SdfAssetPath(filePath));
             (*clipTimes)->push_back(GfVec2d(clipTime, clipTime));
-            (*clipActive)->push_back(GfVec2d(clipTime, clipActiveIndex));
+            if (activeOffsetProvided) {
+                const double offsetTime = (t + (activeOffset*(double)promotion))
+                                          /(double)promotion;
+                (*clipActive)->push_back(GfVec2d(offsetTime, clipActiveIndex));
+            } else {
+                (*clipActive)->push_back(GfVec2d(clipTime, clipActiveIndex));
+            }
             clipActiveIndex++;
         }
+    }
+
+    // If we have an offset, we author a knot on the end so users can query
+    // at time t where t is the last sample + the clipActiveOffset
+    if (activeOffsetProvided) {
+        const double promotedEnd = endTimeCode*promotion;
+        const double promotedOffset = std::abs(activeOffset)*promotion;
+        const double clipTime = (promotedEnd + promotedOffset)/(double)promotion;
+        (*clipTimes)->push_back(GfVec2d(clipTime, clipTime));
     }
 
     _ClipDerivationMsg(UsdTokens->clipAssetPaths, **clipAssetPaths, usdPrimPath);
@@ -406,10 +443,10 @@ _ResolveLegacyClipInfo(
                         node.GetPath().GetString().c_str());
             }
         }
-        
+
         if (templateMetadataSeen || nontemplateMetadataSeen) {
             break;
-        } 
+        }
     }
 
     // we need not complete resolution if there are no clip
@@ -508,14 +545,19 @@ _ResolveLegacyClipInfo(
                     auto sourceLayer = clipInfo->sourceLayerStack->GetLayers()[
                         clipInfo->indexOfLayerWhereAssetPathsFound];
 
+                    // Note that we supply _DefaultClipOffsetValue 
+                    // for the templateActiveOffset here. This is because offset
+                    // is only available in the new, dictionary style clips, 
+                    // and was not backported to the legacy clips.
                     _DeriveClipInfo(*templateAssetPath, *templateStride,
+                                    _DefaultClipOffsetValue,
                                     *templateStartTime, *templateEndTime,
                                     &clipInfo->clipTimes, &clipInfo->clipActive,
                                     &clipInfo->clipAssetPaths, 
                                     primIndex.GetPath(),
                                     clipInfo->sourceLayerStack,
                                     clipInfo->indexOfLayerWhereAssetPathsFound);
-                        
+
                     // Apply layer offsets to clipActive and clipTimes afterwards
                     // so that they don't affect the derived asset paths. Consumers
                     // expect offsets to affect what clip is being used at a given
@@ -673,7 +715,7 @@ _ResolveClipSetsInNode(
                 }
 
                 _ClipSet& clipSet = clipSetsInNode[clipSetName];
-                
+
                 VtDictionary clipInfoForLayer;
                 clipInfoValue.Swap(clipInfoForLayer);
 
@@ -811,6 +853,8 @@ _ResolveClipInfo(
         else if (const std::string* templateAssetPath = _GetInfo<std::string>(
                      clipInfo, UsdClipsAPIInfoKeys->templateAssetPath)) {
 
+            const double* templateActiveOffset = _GetInfo<double>(
+                clipInfo, UsdClipsAPIInfoKeys->templateActiveOffset);
             const double* templateStride = _GetInfo<double>(
                 clipInfo, UsdClipsAPIInfoKeys->templateStride);
             const double* templateStartTime = _GetInfo<double>(
@@ -822,6 +866,8 @@ _ResolveClipInfo(
             if (templateStride && templateStartTime && templateEndTime) {
                 _DeriveClipInfo(
                     *templateAssetPath, *templateStride,
+                    (templateActiveOffset ? *templateActiveOffset 
+                                          : _DefaultClipOffsetValue),
                     *templateStartTime, *templateEndTime,
                     &out.clipTimes, &out.clipActive, &out.clipAssetPaths,
                     primIndex.GetPath(),
@@ -851,7 +897,7 @@ _ResolveClipInfo(
     }
 
     return true;
-}    
+}
 
 bool
 Usd_ResolveClipInfo(

@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
@@ -79,13 +80,15 @@ UsdPrim::GetPrimDefinition() const
 }
 
 bool
-UsdPrim::_IsA(const TfType& schemaType) const
+UsdPrim::_IsA(const TfType& schemaType, bool validateSchemaType) const
 {
-    // Check Schema TfType
-    if (schemaType.IsUnknown()) {
-        TF_CODING_ERROR("Unknown schema type (%s) is invalid for IsA query",
-                        schemaType.GetTypeName().c_str());
-        return false;
+    if (validateSchemaType) {
+        // Check Schema TfType
+        if (schemaType.IsUnknown()) {
+            TF_CODING_ERROR("Unknown schema type (%s) is invalid for IsA query",
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
     }
 
     // Get Prim TfType
@@ -94,6 +97,62 @@ UsdPrim::_IsA(const TfType& schemaType) const
     return !typeName.empty() &&
         PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(typeName).
         IsA(schemaType);
+}
+
+bool
+UsdPrim::_HasAPI(const TfType& schemaType, bool validateSchemaType) const 
+{
+    if (validateSchemaType) {
+        if (schemaType.IsUnknown()) {
+            TF_CODING_ERROR("Unknown schema type (%s) is invalid for HasAPI query",
+                            schemaType.GetTypeName().c_str());
+            return false;
+        }
+
+        // Note that this is only hit in python code paths,
+        // C++ clients would hit the static_asserts defined in prim.h
+        auto schemaRegistry = UsdSchemaRegistry::GetInstance();
+        if (schemaRegistry.IsConcrete(schemaType)) {
+            TF_CODING_ERROR("Provided schema type must be non-concrete");  
+            return false;
+        }
+
+        if (schemaRegistry.IsTyped(schemaType)) {
+            TF_CODING_ERROR("Provided schema type must be untyped");
+            return false;
+        }
+    }
+
+    // Get our composed set of applied schemas
+    static const auto usdSchemaBase = TfType::FindByName("UsdSchemaBase");
+    auto appliedSchemas = GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return false;
+    }
+
+    auto foundMatch = [&appliedSchemas](const std::string& alias) {
+        return std::find(appliedSchemas.begin(), appliedSchemas.end(), alias) 
+               != appliedSchemas.end();
+    };
+
+    // See if our schema is directly authored
+    for (const auto& alias : usdSchemaBase.GetAliases(schemaType)) {
+        if (foundMatch(alias)) { return true; }
+    }
+
+    // If we couldn't find it directly authored in apiSchemas, 
+    // consider derived types. For example, if a user queries
+    // prim.HasAPI<UsdModelAPI>() on a prim with 
+    // apiSchemas = ["UsdGeomModelAPI"], we should return true
+    std::set<TfType> derivedTypes;
+    schemaType.GetAllDerivedTypes(&derivedTypes);
+    for (const auto& derived : derivedTypes) {
+        for (const auto& alias : usdSchemaBase.GetAliases(derived)) {
+            if (foundMatch(alias)) { return true; }
+        }
+    }
+
+    return false;
 }
 
 std::vector<UsdProperty>
@@ -206,6 +265,16 @@ UsdPrim::_GetPropertyNames(bool onlyAuthored, bool applyOrder) const
         _ApplyOrdering(GetPropertyOrder(), &names);
     }
     return names;
+}
+
+TfTokenVector
+UsdPrim::GetAppliedSchemas() const
+{
+    SdfTokenListOp appliedSchemas;
+    GetMetadata(UsdTokens->apiSchemas, &appliedSchemas);
+    TfTokenVector result;
+    appliedSchemas.ApplyOperations(&result);
+    return result;
 }
 
 TfTokenVector
@@ -717,7 +786,7 @@ UsdPrim::GetMaster() const
 bool 
 UsdPrim::_PrimPathIsInMaster() const
 {
-    return Usd_InstanceCache::IsPathMasterOrInMaster(GetPrimPath());
+    return Usd_InstanceCache::IsPathInMaster(GetPrimPath());
 }
 
 SdfPrimSpecHandleVector 

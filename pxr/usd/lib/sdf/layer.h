@@ -374,7 +374,7 @@ public:
     /// 
     /// For example: 
     ///     FindOrOpen('foo.sdf', args={'a':'b', 'c':'d'}).identifier
-    ///         => "foo.sdf?a=b&c=d"
+    ///         => "foo.sdf?sdf_args:a=b&c=d"
     ///
     /// Note that this means the identifier may in general not be a path.
     ///

@@ -36,10 +36,6 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/rotation.h"
 
-#include "pxr/imaging/glf/simpleLight.h"
-#include "pxr/imaging/glf/textureRegistry.h"
-#include "pxr/imaging/glf/ptexTexture.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -59,7 +55,7 @@ _BuildArray(T values[], int numValues)
     return result;
 }
 
-Hd_UnitTestDelegate::Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
+HdUnitTestDelegate::HdUnitTestDelegate(HdRenderIndex *parentIndex,
                                          SdfPath const& delegateID)
   : HdSceneDelegate(parentIndex, delegateID)
   , _hasInstancePrimVars(true), _refineLevel(0), _visibility(true)
@@ -67,7 +63,7 @@ Hd_UnitTestDelegate::Hd_UnitTestDelegate(HdRenderIndex *parentIndex,
 }
 
 void
-Hd_UnitTestDelegate::SetRefineLevel(int level)
+HdUnitTestDelegate::SetRefineLevel(int level)
 {
     _refineLevel = level;
     TF_FOR_ALL (it, _meshes) {
@@ -84,7 +80,7 @@ Hd_UnitTestDelegate::SetRefineLevel(int level)
 }
 
 void
-Hd_UnitTestDelegate::SetVisibility(bool vis)
+HdUnitTestDelegate::SetVisibility(bool vis)
 {
     _visibility = vis;
     TF_FOR_ALL(it, _meshes) {
@@ -101,7 +97,7 @@ Hd_UnitTestDelegate::SetVisibility(bool vis)
 }
 
 void
-Hd_UnitTestDelegate::AddMesh(SdfPath const &id)
+HdUnitTestDelegate::AddMesh(SdfPath const &id)
 {
     GfMatrix4f transform(1);
     VtVec3fArray points;
@@ -118,7 +114,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id)
 }
 
 void
-Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
+HdUnitTestDelegate::AddMesh(SdfPath const &id,
                              GfMatrix4f const &transform,
                              VtVec3fArray const &points,
                              VtIntArray const &numVerts,
@@ -143,7 +139,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
+HdUnitTestDelegate::AddMesh(SdfPath const &id,
                              GfMatrix4f const &transform,
                              VtVec3fArray const &points,
                              VtIntArray const &numVerts,
@@ -171,7 +167,7 @@ Hd_UnitTestDelegate::AddMesh(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::AddBasisCurves(SdfPath const &id,
+HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &points,
                                     VtIntArray const &curveVertexCounts,
                                     VtVec3fArray const &normals,
@@ -200,7 +196,7 @@ Hd_UnitTestDelegate::AddBasisCurves(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::AddPoints(SdfPath const &id,
+HdUnitTestDelegate::AddPoints(SdfPath const &id,
                                VtVec3fArray const &points,
                                VtValue const &color,
                                Interpolation colorInterpolation,
@@ -224,7 +220,7 @@ Hd_UnitTestDelegate::AddPoints(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::AddInstancer(SdfPath const &id,
+HdUnitTestDelegate::AddInstancer(SdfPath const &id,
                                   SdfPath const &parentId,
                                   GfMatrix4f const &rootTransform)
 {
@@ -242,7 +238,7 @@ Hd_UnitTestDelegate::AddInstancer(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
+HdUnitTestDelegate::SetInstancerProperties(SdfPath const &id,
                                             VtIntArray const &prototypeIndex,
                                             VtVec3fArray const &scale,
                                             VtVec4fArray const &rotate,
@@ -263,36 +259,36 @@ Hd_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::AddMaterialHydra(SdfPath const &id,
+HdUnitTestDelegate::AddMaterialHydra(SdfPath const &id,
                                       std::string const &sourceSurface,
                                       std::string const &sourceDisplacement,
-                                      HdShaderParamVector const &params)
+                                      HdMaterialParamVector const &params)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertSprim(HdPrimTypeTokens->shader, this, id);
+    index.InsertSprim(HdPrimTypeTokens->material, this, id);
     _materialsHydra[id] = _MaterialHydra(sourceSurface, 
                                          sourceDisplacement, 
                                          params);
 }
 
 void 
-Hd_UnitTestDelegate::AddMaterialResource(SdfPath const &id,
+HdUnitTestDelegate::AddMaterialResource(SdfPath const &id,
                                          VtValue materialResource)
 {
     HdRenderIndex& index = GetRenderIndex();
     TF_VERIFY(index.GetRenderDelegate()->CanComputeMaterialNetworks());
-    index.InsertSprim(HdPrimTypeTokens->shader, this, id);
+    index.InsertSprim(HdPrimTypeTokens->material, this, id);
     _materials[id] = materialResource;
 }
 
 void 
-Hd_UnitTestDelegate::UpdateMaterialResource(SdfPath const &materialId, 
+HdUnitTestDelegate::UpdateMaterialResource(SdfPath const &materialId, 
                                             VtValue materialResource)
 {
     _materials[materialId] = materialResource;
 
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-    tracker.MarkSprimDirty(materialId, HdShader::DirtyResource);
+    tracker.MarkSprimDirty(materialId, HdMaterial::DirtyResource);
 
     /// XXX : Make sure all rprims know they have an invalid binding,
     //        some backends need to be notified when a material has
@@ -305,14 +301,14 @@ Hd_UnitTestDelegate::UpdateMaterialResource(SdfPath const &materialId,
 }
 
 void 
-Hd_UnitTestDelegate::BindMaterial(SdfPath const &rprimId, 
+HdUnitTestDelegate::BindMaterial(SdfPath const &rprimId, 
                                   SdfPath const &materialId)
 {
     _materialBindings[rprimId] = materialId;
 }
 
 void 
-Hd_UnitTestDelegate::RebindMaterial(SdfPath const &rprimId, 
+HdUnitTestDelegate::RebindMaterial(SdfPath const &rprimId, 
                                     SdfPath const &materialId)
 {
     BindMaterial(rprimId, materialId);
@@ -326,30 +322,21 @@ Hd_UnitTestDelegate::RebindMaterial(SdfPath const &rprimId,
 }
 
 void
-Hd_UnitTestDelegate::AddTexture(SdfPath const& id, 
-                                GlfTextureRefPtr const& texture)
-{
-    HdRenderIndex& index = GetRenderIndex();
-    index.InsertBprim(HdPrimTypeTokens->texture, this, id);
-    _textures[id] = _Texture(texture);
-}
-
-void
-Hd_UnitTestDelegate::HideRprim(SdfPath const& id) 
+HdUnitTestDelegate::HideRprim(SdfPath const& id) 
 {
     _hiddenRprims.insert(id);
     GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
 }
 
 void
-Hd_UnitTestDelegate::UnhideRprim(SdfPath const& id) 
+HdUnitTestDelegate::UnhideRprim(SdfPath const& id) 
 {
     _hiddenRprims.erase(id);
     GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
 }
 
 void
-Hd_UnitTestDelegate::SetReprName(SdfPath const &id, TfToken const &reprName)
+HdUnitTestDelegate::SetReprName(SdfPath const &id, TfToken const &reprName)
 {
    if (_meshes.find(id) != _meshes.end()) {
        _meshes[id].reprName = reprName;
@@ -357,7 +344,7 @@ Hd_UnitTestDelegate::SetReprName(SdfPath const &id, TfToken const &reprName)
 }
 
 void
-Hd_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int refineLevel)
+HdUnitTestDelegate::SetRefineLevel(SdfPath const &id, int refineLevel)
 {
     _refineLevels[id] = refineLevel;
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
@@ -365,7 +352,7 @@ Hd_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int refineLevel)
 }
 
 void
-Hd_UnitTestDelegate::SetVisibility(SdfPath const &id, bool vis)
+HdUnitTestDelegate::SetVisibility(SdfPath const &id, bool vis)
 {
     _visibilities[id] = vis;
     GetRenderIndex().GetChangeTracker().MarkRprimDirty(id,
@@ -382,7 +369,7 @@ static VtVec3fArray _AnimatePositions(VtVec3fArray const &positions, float time)
 }
 
 void
-Hd_UnitTestDelegate::UpdatePositions(SdfPath const &id, float time)
+HdUnitTestDelegate::UpdatePositions(SdfPath const &id, float time)
 {
    if (_meshes.find(id) != _meshes.end()) {
        _meshes[id].points = _AnimatePositions(_meshes[id].points, time);
@@ -400,7 +387,7 @@ Hd_UnitTestDelegate::UpdatePositions(SdfPath const &id, float time)
 }
 
 void
-Hd_UnitTestDelegate::UpdateRprims(float time)
+HdUnitTestDelegate::UpdateRprims(float time)
 {
     // update prims
     float delta = 0.01f;
@@ -417,7 +404,7 @@ Hd_UnitTestDelegate::UpdateRprims(float time)
 }
 
 void
-Hd_UnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
+HdUnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
 {
     // update curve prims to use uniform color
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
@@ -435,7 +422,7 @@ Hd_UnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
 }
 
 void
-Hd_UnitTestDelegate::UpdateInstancerPrimVars(float time)
+HdUnitTestDelegate::UpdateInstancerPrimVars(float time)
 {
     // update instancers
     TF_FOR_ALL (it, _instancers) {
@@ -462,7 +449,7 @@ Hd_UnitTestDelegate::UpdateInstancerPrimVars(float time)
 }
 
 void
-Hd_UnitTestDelegate::UpdateInstancerPrototypes(float time)
+HdUnitTestDelegate::UpdateInstancerPrototypes(float time)
 {
     // update instancer prototypes
     TF_FOR_ALL (it, _instancers) {
@@ -486,7 +473,7 @@ Hd_UnitTestDelegate::UpdateInstancerPrototypes(float time)
 }
 
 void
-Hd_UnitTestDelegate::AddCamera(SdfPath const &id)
+HdUnitTestDelegate::AddCamera(SdfPath const &id)
 {
     HdRenderIndex& index = GetRenderIndex();
     index.InsertSprim(HdPrimTypeTokens->camera, this, id);
@@ -494,7 +481,7 @@ Hd_UnitTestDelegate::AddCamera(SdfPath const &id)
 }
 
 void
-Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
+HdUnitTestDelegate::UpdateCamera(SdfPath const &id,
                                   TfToken const &key,
                                   VtValue value)
 {
@@ -505,7 +492,7 @@ Hd_UnitTestDelegate::UpdateCamera(SdfPath const &id,
 }
 
 void
-Hd_UnitTestDelegate::UpdateTask(SdfPath const &id,
+HdUnitTestDelegate::UpdateTask(SdfPath const &id,
                                 TfToken const &key,
                                 VtValue value)
 {
@@ -526,7 +513,7 @@ Hd_UnitTestDelegate::UpdateTask(SdfPath const &id,
 
 /*virtual*/
 TfToken
-Hd_UnitTestDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
+HdUnitTestDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
 {
     HD_TRACE_FUNCTION();
 
@@ -551,7 +538,7 @@ Hd_UnitTestDelegate::GetRenderTag(SdfPath const& id, TfToken const& reprName)
 
 /*virtual*/
 HdMeshTopology 
-Hd_UnitTestDelegate::GetMeshTopology(SdfPath const& id)
+HdUnitTestDelegate::GetMeshTopology(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -566,7 +553,7 @@ Hd_UnitTestDelegate::GetMeshTopology(SdfPath const& id)
 
 /*virtual*/
 HdBasisCurvesTopology 
-Hd_UnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
+HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     const _Curves &curve = _curves[id];
@@ -581,7 +568,7 @@ Hd_UnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
 
 /*virtual*/
 PxOsdSubdivTags
-Hd_UnitTestDelegate::GetSubdivTags(SdfPath const& id)
+HdUnitTestDelegate::GetSubdivTags(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -592,7 +579,7 @@ Hd_UnitTestDelegate::GetSubdivTags(SdfPath const& id)
 
 /*virtual*/
 GfRange3d
-Hd_UnitTestDelegate::GetExtent(SdfPath const& id)
+HdUnitTestDelegate::GetExtent(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -616,7 +603,7 @@ Hd_UnitTestDelegate::GetExtent(SdfPath const& id)
 
 /*virtual*/
 bool
-Hd_UnitTestDelegate::GetDoubleSided(SdfPath const& id)
+HdUnitTestDelegate::GetDoubleSided(SdfPath const& id)
 {
     if (_meshes.find(id) != _meshes.end()) {
         return _meshes[id].doubleSided;
@@ -626,7 +613,7 @@ Hd_UnitTestDelegate::GetDoubleSided(SdfPath const& id)
 
 /*virtual*/
 int 
-Hd_UnitTestDelegate::GetRefineLevel(SdfPath const& id)
+HdUnitTestDelegate::GetRefineLevel(SdfPath const& id)
 {
     if (_refineLevels.find(id) != _refineLevels.end()) {
         return _refineLevels[id];
@@ -637,7 +624,7 @@ Hd_UnitTestDelegate::GetRefineLevel(SdfPath const& id)
 
 /*virtual*/
 VtIntArray
-Hd_UnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
+HdUnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
                                         SdfPath const& prototypeId)
 {
     HD_TRACE_FUNCTION();
@@ -665,7 +652,7 @@ Hd_UnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
 
 /*virtual*/
 GfMatrix4d
-Hd_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
+HdUnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
                                            SdfPath const& prototypeId)
 {
     HD_TRACE_FUNCTION();
@@ -677,7 +664,7 @@ Hd_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
 
 /*virtual*/
 std::string
-Hd_UnitTestDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
+HdUnitTestDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
 {
     if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
         return material->sourceSurface;
@@ -688,7 +675,7 @@ Hd_UnitTestDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
 
 /*virtual*/
 std::string
-Hd_UnitTestDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
+HdUnitTestDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
 {
     if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
         return material->sourceDisplacement;
@@ -698,20 +685,20 @@ Hd_UnitTestDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
 }
 
 /*virtual*/
-HdShaderParamVector
-Hd_UnitTestDelegate::GetSurfaceShaderParams(SdfPath const &materialId)
+HdMaterialParamVector
+HdUnitTestDelegate::GetMaterialParams(SdfPath const &materialId)
 {
     if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
         return material->params;
     }
     
-    return HdShaderParamVector();
+    return HdMaterialParamVector();
 }
 
 /*virtual*/
 VtValue
-Hd_UnitTestDelegate::GetSurfaceShaderParamValue(SdfPath const &materialId, 
-                              TfToken const &paramName)
+HdUnitTestDelegate::GetMaterialParamValue(SdfPath const &materialId, 
+                                          TfToken const &paramName)
 {
     if (_MaterialHydra *material = TfMapLookupPtr(_materialsHydra, materialId)){
         TF_FOR_ALL(paramIt, material->params) {
@@ -724,7 +711,7 @@ Hd_UnitTestDelegate::GetSurfaceShaderParamValue(SdfPath const &materialId,
 
 /*virtual*/
 VtValue 
-Hd_UnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
+HdUnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 {
     if (VtValue *material = TfMapLookupPtr(_materials, materialId)){
         return *material;
@@ -734,35 +721,21 @@ Hd_UnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 
 /*virtual*/
 HdTextureResource::ID
-Hd_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
+HdUnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
 {
     return SdfPath::Hash()(textureId);
 }
 
 /*virtual*/
 HdTextureResourceSharedPtr
-Hd_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
+HdUnitTestDelegate::GetTextureResource(SdfPath const& textureId)
 {
-    GlfTextureHandleRefPtr texture =
-        GlfTextureRegistry::GetInstance().GetTextureHandle(_textures[textureId].texture);
-
-    // Simple way to detect if the glf texture is ptex or not
-    bool isPtex = false;
-#ifdef PXR_PTEX_SUPPORT_ENABLED
-    GlfPtexTextureRefPtr pTex = 
-        TfDynamic_cast<GlfPtexTextureRefPtr>(_textures[textureId].texture);
-    if (pTex) {
-        isPtex = true;
-    }
-#endif
-
-    return HdTextureResourceSharedPtr(
-        new HdSimpleTextureResource(texture, isPtex));
+    return nullptr;
 }
 
 /*virtual*/
 GfMatrix4d
-Hd_UnitTestDelegate::GetTransform(SdfPath const& id)
+HdUnitTestDelegate::GetTransform(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -774,7 +747,7 @@ Hd_UnitTestDelegate::GetTransform(SdfPath const& id)
 
 /*virtual*/
 bool
-Hd_UnitTestDelegate::GetVisible(SdfPath const& id)
+HdUnitTestDelegate::GetVisible(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -787,7 +760,7 @@ Hd_UnitTestDelegate::GetVisible(SdfPath const& id)
 
 /*virtual*/
 VtValue
-Hd_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
+HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     HD_TRACE_FUNCTION();
 
@@ -845,7 +818,7 @@ Hd_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].translate);
         }
-    } else if (key == HdShaderTokens->surfaceShader) {
+    } else if (key == HdShaderTokens->material) {
         SdfPath materialId;
         TfMapLookup(_materialBindings, id, &materialId);
 
@@ -858,7 +831,7 @@ Hd_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
 
 /* virtual */
 TfToken
-Hd_UnitTestDelegate::GetReprName(SdfPath const &id)
+HdUnitTestDelegate::GetReprName(SdfPath const &id)
 {
     HD_TRACE_FUNCTION();
 
@@ -870,7 +843,7 @@ Hd_UnitTestDelegate::GetReprName(SdfPath const &id)
 
 /* virtual */
 TfTokenVector
-Hd_UnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -903,7 +876,7 @@ Hd_UnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-Hd_UnitTestDelegate::GetPrimVarVaryingNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimVarVaryingNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -918,7 +891,7 @@ Hd_UnitTestDelegate::GetPrimVarVaryingNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-Hd_UnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -933,7 +906,7 @@ Hd_UnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-Hd_UnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -955,7 +928,7 @@ Hd_UnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-Hd_UnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -984,7 +957,7 @@ Hd_UnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-Hd_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
+HdUnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
 {
     HD_TRACE_FUNCTION();
 
@@ -999,7 +972,7 @@ Hd_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
 }
 
 void
-Hd_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide,
+HdUnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide,
                              SdfPath const &instancerId, TfToken const &scheme)
 {
     GfVec3f points[] = {
@@ -1055,9 +1028,9 @@ Hd_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, boo
 }
 
 void
-Hd_UnitTestDelegate::AddPolygons(
+HdUnitTestDelegate::AddPolygons(
     SdfPath const &id, GfMatrix4f const &transform,
-    Hd_UnitTestDelegate::Interpolation colorInterp,
+    HdUnitTestDelegate::Interpolation colorInterp,
     SdfPath const &instancerId)
 {
     int numVerts[] = { 3, 4, 5 };
@@ -1081,14 +1054,14 @@ Hd_UnitTestDelegate::AddPolygons(
     PxOsdSubdivTags subdivTags;
     VtValue color;
 
-    if (colorInterp == Hd_UnitTestDelegate::CONSTANT) {
+    if (colorInterp == HdUnitTestDelegate::CONSTANT) {
         color = VtValue(GfVec4f(1, 1, 0, 1));
-    } else if (colorInterp == Hd_UnitTestDelegate::UNIFORM) {
+    } else if (colorInterp == HdUnitTestDelegate::UNIFORM) {
         GfVec4f colors[] = { GfVec4f(1, 0, 0, 1),
                              GfVec4f(0, 0, 1, 1),
                              GfVec4f(0, 1, 0, 1) };
         color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
-    } else if (colorInterp == Hd_UnitTestDelegate::VERTEX) {
+    } else if (colorInterp == HdUnitTestDelegate::VERTEX) {
         VtVec4fArray colorArray(sizeof(points)/sizeof(points[0]));
         for (size_t i = 0; i < colorArray.size(); ++i) {
             colorArray[i] = GfVec4f(fabs(sin(0.5*i)),
@@ -1097,7 +1070,7 @@ Hd_UnitTestDelegate::AddPolygons(
                                     1);
         }
         color = VtValue(colorArray);
-    } else if (colorInterp == Hd_UnitTestDelegate::FACEVARYING) {
+    } else if (colorInterp == HdUnitTestDelegate::FACEVARYING) {
         VtVec4fArray colorArray(sizeof(verts)/sizeof(verts[0]));
         for (size_t i = 0; i < colorArray.size(); ++i) {
             colorArray[i] = GfVec4f(fabs(sin(0.5*i)),
@@ -1147,7 +1120,7 @@ _CreateGrid(int nx, int ny, std::vector<GfVec3f> *points,
 }
 
 void
-Hd_UnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
+HdUnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
                              GfMatrix4f const &transform,
                              bool rightHanded, bool doubleSided,
                              SdfPath const &instancerId)
@@ -1170,7 +1143,36 @@ Hd_UnitTestDelegate::AddGrid(SdfPath const &id, int nx, int ny,
 }
 
 void
-Hd_UnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
+HdUnitTestDelegate::AddGridWithPrimvar(SdfPath const &id, int nx, int ny,
+                                            GfMatrix4f const &transform,
+                                            VtValue const &primvar,
+                                            Interpolation  primvarInterpolation,
+                                            bool rightHanded, bool doubleSided,
+                                            SdfPath const &instancerId)
+{
+    std::vector<GfVec3f> points;
+    std::vector<int> numVerts;
+    std::vector<int> verts;
+    PxOsdSubdivTags subdivTags;
+    _CreateGrid(nx, ny, &points, &numVerts, &verts, transform);
+
+    AddMesh(id,
+            transform,
+            _BuildArray(&points[0], points.size()),
+            _BuildArray(&numVerts[0], numVerts.size()),
+            _BuildArray(&verts[0], verts.size()),
+            subdivTags,
+            primvar,
+            primvarInterpolation,
+            false,
+            instancerId,
+            PxOsdOpenSubdivTokens->catmark,
+            rightHanded ? HdTokens->rightHanded : HdTokens->leftHanded,
+            doubleSided);
+}
+
+void
+HdUnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
                                           GfMatrix4f const &transform,
                                           bool rightHanded, bool doubleSided,
                                           SdfPath const &instancerId)
@@ -1196,7 +1198,7 @@ Hd_UnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
             _BuildArray(&verts[0], verts.size()),
             subdivTags,
             VtValue(colorArray),
-            Hd_UnitTestDelegate::UNIFORM,
+            HdUnitTestDelegate::UNIFORM,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1205,7 +1207,7 @@ Hd_UnitTestDelegate::AddGridWithFaceColor(SdfPath const &id, int nx, int ny,
 }
 
 void
-Hd_UnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
+HdUnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
                                             GfMatrix4f const &transform,
                                             bool rightHanded, bool doubleSided,
                                             SdfPath const &instancerId)
@@ -1231,7 +1233,7 @@ Hd_UnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
             _BuildArray(&verts[0], verts.size()),
             subdivTags,
             VtValue(colorArray),
-            Hd_UnitTestDelegate::VERTEX,
+            HdUnitTestDelegate::VERTEX,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1240,7 +1242,7 @@ Hd_UnitTestDelegate::AddGridWithVertexColor(SdfPath const &id, int nx, int ny,
 }
 
 void
-Hd_UnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int ny,
+HdUnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int ny,
                                                  GfMatrix4f const &transform,
                                                  bool rightHanded, bool doubleSided,
                                                  SdfPath const &instancerId)
@@ -1266,7 +1268,7 @@ Hd_UnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int 
             _BuildArray(&verts[0], verts.size()),
             subdivTags,
             VtValue(colorArray),
-            Hd_UnitTestDelegate::FACEVARYING,
+            HdUnitTestDelegate::FACEVARYING,
             false,
             instancerId,
             PxOsdOpenSubdivTokens->catmark,
@@ -1275,10 +1277,10 @@ Hd_UnitTestDelegate::AddGridWithFaceVaryingColor(SdfPath const &id, int nx, int 
 }
 
 void
-Hd_UnitTestDelegate::AddCurves(
+HdUnitTestDelegate::AddCurves(
     SdfPath const &id, TfToken const &basis, GfMatrix4f const &transform,
-    Hd_UnitTestDelegate::Interpolation colorInterp,
-    Hd_UnitTestDelegate::Interpolation widthInterp,
+    HdUnitTestDelegate::Interpolation colorInterp,
+    HdUnitTestDelegate::Interpolation widthInterp,
     bool authoredNormals,
     SdfPath const &instancerId)
 {
@@ -1319,12 +1321,12 @@ Hd_UnitTestDelegate::AddCurves(
     }
 
     VtValue color;
-    if (colorInterp == Hd_UnitTestDelegate::CONSTANT) {
+    if (colorInterp == HdUnitTestDelegate::CONSTANT) {
         color = VtValue(GfVec4f(1));
-    } else if (colorInterp == Hd_UnitTestDelegate::UNIFORM) {
+    } else if (colorInterp == HdUnitTestDelegate::UNIFORM) {
         GfVec4f colors[] = { GfVec4f(1, 0, 0, 1), GfVec4f(0, 0, 1, 1) };
         color = VtValue(_BuildArray(&colors[0], sizeof(colors)/sizeof(colors[0])));
-    } else if (colorInterp == Hd_UnitTestDelegate::VERTEX) {
+    } else if (colorInterp == HdUnitTestDelegate::VERTEX) {
         GfVec4f colors[] = { GfVec4f(0, 0, 1, 1),
                              GfVec4f(0, 1, 0, 1),
                              GfVec4f(0, 1, 1, 1),
@@ -1337,15 +1339,15 @@ Hd_UnitTestDelegate::AddCurves(
     }
 
     VtValue width;
-    if (widthInterp == Hd_UnitTestDelegate::CONSTANT) {
+    if (widthInterp == HdUnitTestDelegate::CONSTANT) {
         width = VtValue(0.1f);
-    } else if (widthInterp == Hd_UnitTestDelegate::UNIFORM) {
+    } else if (widthInterp == HdUnitTestDelegate::UNIFORM) {
         float widths[] = { 0.1f, 0.4f };
         width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
-    } else if (widthInterp == Hd_UnitTestDelegate::VERTEX) {
+    } else if (widthInterp == HdUnitTestDelegate::VERTEX) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f, 0.1f, 0.2f, 0.2f, 0.1f };
         width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
-    } else if (widthInterp == Hd_UnitTestDelegate::VARYING) {
+    } else if (widthInterp == HdUnitTestDelegate::VARYING) {
         float widths[] = { 0, 0.1f, 0.2f, 0.3f};
         width = VtValue(_BuildArray(&widths[0], sizeof(widths)/sizeof(widths[0])));
     }
@@ -1363,10 +1365,10 @@ Hd_UnitTestDelegate::AddCurves(
 }
 
 void
-Hd_UnitTestDelegate::AddPoints(
+HdUnitTestDelegate::AddPoints(
     SdfPath const &id, GfMatrix4f const &transform,
-    Hd_UnitTestDelegate::Interpolation colorInterp,
-    Hd_UnitTestDelegate::Interpolation widthInterp,
+    HdUnitTestDelegate::Interpolation colorInterp,
+    HdUnitTestDelegate::Interpolation widthInterp,
     SdfPath const &instancerId)
 {
     int numPoints = 500;
@@ -1382,10 +1384,10 @@ Hd_UnitTestDelegate::AddPoints(
     }
 
     VtValue color;
-    if (colorInterp == Hd_UnitTestDelegate::CONSTANT ||
-        colorInterp == Hd_UnitTestDelegate::UNIFORM) {
+    if (colorInterp == HdUnitTestDelegate::CONSTANT ||
+        colorInterp == HdUnitTestDelegate::UNIFORM) {
         color = VtValue(GfVec4f(1, 1, 1, 1));
-    } else if (colorInterp == Hd_UnitTestDelegate::VERTEX) {
+    } else if (colorInterp == HdUnitTestDelegate::VERTEX) {
         VtVec4fArray colors(numPoints);
         for (int i = 0; i < numPoints; ++i) {
             colors[i] = GfVec4f(fabs(sin(0.1*i)),
@@ -1397,8 +1399,8 @@ Hd_UnitTestDelegate::AddPoints(
     }
 
     VtValue width;
-    if (widthInterp == Hd_UnitTestDelegate::CONSTANT ||
-        widthInterp == Hd_UnitTestDelegate::UNIFORM) {
+    if (widthInterp == HdUnitTestDelegate::CONSTANT ||
+        widthInterp == HdUnitTestDelegate::UNIFORM) {
         width = VtValue(0.1f);
     } else { // VERTEX
         VtFloatArray widths(numPoints);
@@ -1416,7 +1418,7 @@ Hd_UnitTestDelegate::AddPoints(
 }
 
 void
-Hd_UnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
+HdUnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
                                SdfPath const &instancerId)
 {
 /*
@@ -1487,31 +1489,31 @@ Hd_UnitTestDelegate::AddSubdiv(SdfPath const &id, GfMatrix4f const &transform,
             _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             subdivTags,
             /*color=*/VtValue(GfVec4f(1)),
-            /*colorInterpolation=*/Hd_UnitTestDelegate::CONSTANT,
+            /*colorInterpolation=*/HdUnitTestDelegate::CONSTANT,
             false,
             instancerId);
 }
 
 void
-Hd_UnitTestDelegate::Remove(SdfPath const &id)
+HdUnitTestDelegate::Remove(SdfPath const &id)
 {
     GetRenderIndex().RemoveRprim(id);
 }
 
 void
-Hd_UnitTestDelegate::Clear()
+HdUnitTestDelegate::Clear()
 {
     GetRenderIndex().Clear();
 }
 
 void
-Hd_UnitTestDelegate::MarkRprimDirty(SdfPath path, HdDirtyBits flag)
+HdUnitTestDelegate::MarkRprimDirty(SdfPath path, HdDirtyBits flag)
 {
     GetRenderIndex().GetChangeTracker().MarkRprimDirty(path, flag);
 }
 
 GfVec3f
-Hd_UnitTestDelegate::PopulateBasicTestSet()
+HdUnitTestDelegate::PopulateBasicTestSet()
 {
     GfMatrix4d dmat;
     double xPos = 0.0;
@@ -1537,19 +1539,19 @@ Hd_UnitTestDelegate::PopulateBasicTestSet()
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
         AddPolygons(SdfPath("/nonquads1"), GfMatrix4f(dmat),
-                             Hd_UnitTestDelegate::CONSTANT);
+                             HdUnitTestDelegate::CONSTANT);
 
         dmat.SetTranslate(GfVec3d(xPos,  0.0, 0.0));
         AddPolygons(SdfPath("/nonquads2"), GfMatrix4f(dmat),
-                             Hd_UnitTestDelegate::UNIFORM);
+                             HdUnitTestDelegate::UNIFORM);
 
         dmat.SetTranslate(GfVec3d(xPos,  3.0, 0.0));
         AddPolygons(SdfPath("/nonquads3"), GfMatrix4f(dmat),
-                             Hd_UnitTestDelegate::VERTEX);
+                             HdUnitTestDelegate::VERTEX);
 
         dmat.SetTranslate(GfVec3d(xPos,  6.0, 0.0));
         AddPolygons(SdfPath("/nonquads4"), GfMatrix4f(dmat),
-                             Hd_UnitTestDelegate::FACEVARYING);
+                             HdUnitTestDelegate::FACEVARYING);
 
         xPos += 3.0;
     }
@@ -1663,19 +1665,19 @@ Hd_UnitTestDelegate::PopulateBasicTestSet()
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
         AddCurves(SdfPath("/curve1"), HdTokens->linear, GfMatrix4f(dmat),
-                           Hd_UnitTestDelegate::VERTEX, Hd_UnitTestDelegate::VERTEX);
+                           HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::VERTEX);
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
         AddCurves(SdfPath("/curve2"), HdTokens->bezier, GfMatrix4f(dmat),
-                           Hd_UnitTestDelegate::VERTEX, Hd_UnitTestDelegate::VERTEX);
+                           HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::VERTEX);
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
         AddCurves(SdfPath("/curve3"), HdTokens->bSpline, GfMatrix4f(dmat),
-                           Hd_UnitTestDelegate::VERTEX, Hd_UnitTestDelegate::CONSTANT);
+                           HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::CONSTANT);
 
         dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));
         AddCurves(SdfPath("/curve4"), HdTokens->catmullRom, GfMatrix4f(dmat),
-                           Hd_UnitTestDelegate::VERTEX, Hd_UnitTestDelegate::CONSTANT);
+                           HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::CONSTANT);
 
         xPos += 3.0;
     }
@@ -1684,22 +1686,22 @@ Hd_UnitTestDelegate::PopulateBasicTestSet()
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
         AddPoints(SdfPath("/points1"), GfMatrix4f(dmat),
-                       Hd_UnitTestDelegate::CONSTANT, Hd_UnitTestDelegate::CONSTANT);
+                       HdUnitTestDelegate::CONSTANT, HdUnitTestDelegate::CONSTANT);
 
         dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
         AddPoints(SdfPath("/points2"), GfMatrix4f(dmat),
-                           Hd_UnitTestDelegate::VERTEX, Hd_UnitTestDelegate::CONSTANT);
+                           HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::CONSTANT);
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
         AddPoints(SdfPath("/points3"), GfMatrix4f(dmat),
-                           Hd_UnitTestDelegate::VERTEX, Hd_UnitTestDelegate::VERTEX);
+                           HdUnitTestDelegate::VERTEX, HdUnitTestDelegate::VERTEX);
     }
 
     return GfVec3f(xPos/2.0, 0, 0);
 }
 
 GfVec3f
-Hd_UnitTestDelegate::PopulateInvalidPrimsSet()
+HdUnitTestDelegate::PopulateInvalidPrimsSet()
 {
     // empty mesh
     AddGrid(SdfPath("/empty_mesh"), 0, 0, GfMatrix4f(1));
@@ -1710,14 +1712,14 @@ Hd_UnitTestDelegate::PopulateInvalidPrimsSet()
                             VtIntArray(),
                             VtVec3fArray(),
                             HdTokens->linear,
-                            VtValue(GfVec4f(1)), Hd_UnitTestDelegate::CONSTANT,
-                            VtValue(1.0f), Hd_UnitTestDelegate::CONSTANT);
+                            VtValue(GfVec4f(1)), HdUnitTestDelegate::CONSTANT,
+                            VtValue(1.0f), HdUnitTestDelegate::CONSTANT);
 
     // empty point
     AddPoints(SdfPath("/empty_points"),
                        VtVec3fArray(),
-                       VtValue(GfVec4f(1)), Hd_UnitTestDelegate::CONSTANT,
-                       VtValue(1.0f), Hd_UnitTestDelegate::CONSTANT);
+                       VtValue(GfVec4f(1)), HdUnitTestDelegate::CONSTANT,
+                       VtValue(1.0f), HdUnitTestDelegate::CONSTANT);
 
     return GfVec3f(0);
 }

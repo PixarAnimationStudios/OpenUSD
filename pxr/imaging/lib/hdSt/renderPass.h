@@ -56,7 +56,7 @@ protected:
 
 private:
     void _PrepareCommandBuffer(
-            HdRenderPassStateSharedPtr const &renderPasssState);
+            HdStRenderPassStateSharedPtr const &renderPasssState);
 
     // -----------------------------------------------------------------------
     // Drawing state
