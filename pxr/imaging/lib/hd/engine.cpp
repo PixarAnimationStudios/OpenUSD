@@ -124,7 +124,7 @@ HdEngine::ReloadAllShaders(HdRenderIndex& index)
 
     // Dirty all materials
     SdfPathVector materials = index.GetSprimSubtree(HdPrimTypeTokens->material,
-                                                  SdfPath::EmptyPath());
+                                                    SdfPath::AbsoluteRootPath());
 
     for (SdfPathVector::iterator materialIt  = materials.begin();
                                  materialIt != materials.end();
