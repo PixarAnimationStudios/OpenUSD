@@ -259,7 +259,7 @@ class ClassInfo(object):
                        + '<' + str(sdfPrim.path) + '>')
         errorSuffix = ('See '
                        'https://graphics.pixar.com/usd/docs/api/'
-                       '_usd__page__generating_schemas.html#Usd_IsAVsAPISchemas '
+                       '_usd__page__generating_schemas.html '
                        'for more information.\n')
         errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix
 
