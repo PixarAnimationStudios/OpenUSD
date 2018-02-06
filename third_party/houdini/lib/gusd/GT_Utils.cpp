@@ -134,6 +134,12 @@ struct GtDataToUsdTypename
             = SdfValueTypeNames->Float3;
         m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_NONE, 3, true)]
             = SdfValueTypeNames->Float3Array;
+#if (GUSD_VER_CMP_2(>=,16,5))
+        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_TEXTURE, 3, false)]
+            = SdfValueTypeNames->Float3;
+        m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_TEXTURE, 3, true)]
+            = SdfValueTypeNames->Float3Array;
+#endif
         // VectorFloat
         m_typeLookup[KeyType(GT_STORE_REAL32, GT_TYPE_VECTOR, 3, false)]
             = SdfValueTypeNames->Vector3f;
