@@ -543,7 +543,7 @@ class SelectionDataModel(QtCore.QObject):
                     newPropPath = self._buildPropPath(toPrimPath, propPath.name)
                     self.addPropPath(newPropPath)
                     for target in targets:
-                        self.addTarget(newPropPath, target)
+                        self.addPropTargetPath(newPropPath, target)
 
         with self.batchComputedPropChanges:
 
