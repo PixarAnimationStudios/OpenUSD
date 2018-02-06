@@ -202,7 +202,6 @@ bool visitNode(UsdShadeShader const & shadeNode,
                          std::end(materialNetwork->nodes), 
                          node);
     if (dup != std::end(materialNetwork->nodes)) {
-        TF_WARN("UsdShade Shader node duplicated: %s.", node.path.GetText());
         return false;
     }
 
