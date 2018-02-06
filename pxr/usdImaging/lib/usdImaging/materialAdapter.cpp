@@ -100,13 +100,24 @@ UsdImagingMaterialAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     if (requestedBits & HdMaterial::DirtyResource) {
-        // Walk the material network and generate a HdMaterialNetwork structure
-        // to store it in the value cache.
-        HdMaterialNetwork materialNetwork;
-        _GetMaterialNetwork(prim, &materialNetwork);
+        // Walk the material network and generate a HdMaterialNetworkMap
+        // structure to store it in the value cache.
+        HdMaterialNetworkMap materialNetworkMap;
+        _GetMaterialNetworkMap(prim, &materialNetworkMap);
 
-        valueCache->GetMaterialResource(cachePath) = materialNetwork;
-        valueCache->GetMaterialPrimvars(cachePath) = materialNetwork.primvars;
+        valueCache->GetMaterialResource(cachePath) = materialNetworkMap;
+
+        // Compute union of primvars from all networks
+        std::vector<TfToken> primvars;
+        for (const auto& entry: materialNetworkMap.map) {
+            primvars.insert(primvars.end(),
+                            entry.second.primvars.begin(),
+                            entry.second.primvars.end());
+        }
+        std::sort(primvars.begin(), primvars.end());
+        primvars.erase(std::unique(primvars.begin(), primvars.end()),
+                       primvars.end());
+        valueCache->GetMaterialPrimvars(cachePath) = primvars;
     }
 }
 
@@ -251,8 +262,8 @@ void walkGraph(UsdShadeShader const & shadeNode,
 }
 
 void 
-UsdImagingMaterialAdapter::_GetMaterialNetwork(UsdPrim const &usdPrim, 
-                                               HdMaterialNetwork *materialNetwork)
+UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim, 
+                                               HdMaterialNetworkMap *materialNetworkMap)
 {
     // This function expects a usdPrim of type Material. However, it will
     // only be able to fill the HdMaterialNetwork structures if the Material
@@ -260,15 +271,24 @@ UsdImagingMaterialAdapter::_GetMaterialNetwork(UsdPrim const &usdPrim,
     // will return the HdMaterialNetwork structures without any change.
     UsdRiMaterialAPI m(usdPrim);
 
+    // For each network type:
     // Resolve the binding to the first node which
     // is usually the standin node in the case of a UsdRi.
     // If it fails to provide a relationship then we are not in a 
-    // usdPrim that contains a correct bxdf terminal to a UsdShade Shader node.
+    // usdPrim that contains a correct terminal to a UsdShade Shader node.
     if( UsdRelationship matRel = m.GetBxdfOutput().GetRel() ) {
         UsdShadeShader shadeNode(
             UsdImaging_MaterialStrategy::GetTargetedShader(
                 usdPrim.GetPrim(), matRel));
-        walkGraph(shadeNode, materialNetwork);
+        walkGraph(shadeNode,
+                  &materialNetworkMap->map[UsdImagingTokens->bxdf]);
+    }
+    if( UsdRelationship matRel = m.GetDisplacementOutput().GetRel() ) {
+        UsdShadeShader shadeNode(
+            UsdImaging_MaterialStrategy::GetTargetedShader(
+                usdPrim.GetPrim(), matRel));
+        walkGraph(shadeNode,
+                  &materialNetworkMap->map[UsdImagingTokens->displacement]);
     }
 }
 

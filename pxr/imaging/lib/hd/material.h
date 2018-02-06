@@ -108,6 +108,13 @@ struct HdMaterialNetwork {
     TfTokenVector primvars;
 };
 
+/// \struct HdMaterialNetworkMap
+///
+/// Describes a map from network type to network.
+struct HdMaterialNetworkMap {
+    std::map<TfToken, HdMaterialNetwork> map;
+};
+
 // VtValue requirements
 HD_API
 std::ostream& operator<<(std::ostream& out, const HdMaterialNetwork& pv);
@@ -115,6 +122,16 @@ HD_API
 bool operator==(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs);
 HD_API
 bool operator!=(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs);
+
+HD_API
+std::ostream& operator<<(std::ostream& out,
+                         const HdMaterialNetworkMap& pv);
+HD_API
+bool operator==(const HdMaterialNetworkMap& lhs,
+                const HdMaterialNetworkMap& rhs);
+HD_API
+bool operator!=(const HdMaterialNetworkMap& lhs,
+                const HdMaterialNetworkMap& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

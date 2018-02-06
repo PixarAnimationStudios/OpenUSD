@@ -29,8 +29,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdMaterialNetworkMap;
 
-class HdMaterialNetwork;
 
 /// \class UsdImagingMaterialAdapter
 /// \brief Provides information that can be used to generate a material.
@@ -101,8 +101,8 @@ protected:
                              UsdImagingIndexProxy* index) final;
 
 private:
-    void _GetMaterialNetwork(UsdPrim const &prim, 
-                             HdMaterialNetwork *materialNetwork);
+    void _GetMaterialNetworkMap(UsdPrim const &prim, 
+                                HdMaterialNetworkMap *materialNetworkMap);
 };
 
 
