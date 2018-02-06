@@ -69,7 +69,7 @@ def ToString(v, typeName=None):
 
     # Cache miss.
     if v is None:
-        fn = lambda: 'None'
+        fn = lambda _: 'None'
 
     # Pretty-print a bounding box
     elif isinstance(v, Gf.BBox3d):
