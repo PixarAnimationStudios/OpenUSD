@@ -182,7 +182,7 @@ public:
     /// Fills a {{ DIM }}x{{ DIM }} array of \c {{ SCL }} values with the values in
     /// the matrix, specified in row-major order.
     GF_API
-    {{ SCL }}* Get({{ SCL }} m[{{ DIM }}][{{ DIM }}]);
+    {{ SCL }}* Get({{ SCL }} m[{{ DIM }}][{{ DIM }}]) const;
 
     /// Returns vector components as an array of \c {{ SCL }} values.
     {{ SCL }}* GetArray()  {

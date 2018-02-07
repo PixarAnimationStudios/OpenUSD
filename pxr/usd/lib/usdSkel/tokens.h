@@ -35,28 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDSKEL_TOKENS \
-    (joints) \
-    ((primvarsSkelGeomBindTransform, "primvars:skel:geomBindTransform")) \
-    ((primvarsSkelJointIndices, "primvars:skel:jointIndices")) \
-    ((primvarsSkelJointWeights, "primvars:skel:jointWeights")) \
-    (restTransforms) \
-    (rotations) \
-    (scales) \
-    ((skelAnimationSource, "skel:animationSource")) \
-    ((skelJoints, "skel:joints")) \
-    ((skelSkeleton, "skel:skeleton")) \
-    (translations)
 
-/// \anchor UsdSkelTokens
+/// \class UsdSkelTokensType
 ///
-/// <b>UsdSkelTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdSkelTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -64,27 +53,68 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdSkelTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdSkelTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdSkelTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdSkelTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdSkelTokens->joints);
 /// \endcode
+struct UsdSkelTokensType {
+    USDSKEL_API UsdSkelTokensType();
+    /// \brief "joints"
+    /// 
+    /// UsdSkelPackedJointAnimation, UsdSkelSkeleton
+    const TfToken joints;
+    /// \brief "primvars:skel:geomBindTransform"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken primvarsSkelGeomBindTransform;
+    /// \brief "primvars:skel:jointIndices"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken primvarsSkelJointIndices;
+    /// \brief "primvars:skel:jointWeights"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken primvarsSkelJointWeights;
+    /// \brief "restTransforms"
+    /// 
+    /// UsdSkelSkeleton
+    const TfToken restTransforms;
+    /// \brief "rotations"
+    /// 
+    /// UsdSkelPackedJointAnimation
+    const TfToken rotations;
+    /// \brief "scales"
+    /// 
+    /// UsdSkelPackedJointAnimation
+    const TfToken scales;
+    /// \brief "skel:animationSource"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken skelAnimationSource;
+    /// \brief "skel:joints"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken skelJoints;
+    /// \brief "skel:skeleton"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken skelSkeleton;
+    /// \brief "translations"
+    /// 
+    /// UsdSkelPackedJointAnimation
+    const TfToken translations;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdSkelTokens
 ///
-/// The tokens are:
-/// \li <b>joints</b> - UsdSkelPackedJointAnimation, UsdSkelSkeleton
-/// \li <b>primvarsSkelGeomBindTransform</b> - UsdSkelBindingAPI
-/// \li <b>primvarsSkelJointIndices</b> - UsdSkelBindingAPI
-/// \li <b>primvarsSkelJointWeights</b> - UsdSkelBindingAPI
-/// \li <b>restTransforms</b> - UsdSkelSkeleton
-/// \li <b>rotations</b> - UsdSkelPackedJointAnimation
-/// \li <b>scales</b> - UsdSkelPackedJointAnimation
-/// \li <b>skelAnimationSource</b> - UsdSkelBindingAPI
-/// \li <b>skelJoints</b> - UsdSkelBindingAPI
-/// \li <b>skelSkeleton</b> - UsdSkelBindingAPI
-/// \li <b>translations</b> - UsdSkelPackedJointAnimation
-TF_DECLARE_PUBLIC_TOKENS(UsdSkelTokens, USDSKEL_API, USDSKEL_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdSkelTokensType
+extern USDSKEL_API TfStaticData<UsdSkelTokensType> UsdSkelTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

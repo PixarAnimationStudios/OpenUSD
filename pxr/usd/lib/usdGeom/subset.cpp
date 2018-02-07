@@ -195,8 +195,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
+    // Namespace prefix of the attribute used to encode the familyType of a 
+    // family of GeomSubsets below an imageable prim.
     (subsetFamily)
-    (isPartition)
+
+    // Base name of token-valued attribute used to encode the type of family 
+    // that a collection of GeomSubsets with a common familyName belong to.
+    (familyType)
 );
 
 /* static */
@@ -207,7 +213,7 @@ UsdGeomSubset::CreateGeomSubset(
     const TfToken &elementType,
     const VtIntArray &indices,
     const TfToken &familyName,
-    const UsdGeomSubset::FamilyType familyType)
+    const TfToken &familyType)
 {
     SdfPath subsetPath = geom.GetPath().AppendChild(TfToken(subsetName));
     UsdGeomSubset subset = UsdGeomSubset::Define(geom.GetPrim().GetStage(), 
@@ -219,7 +225,7 @@ UsdGeomSubset::CreateGeomSubset(
 
     // XXX: would be nice to do this just once per family rather than once per 
     // subset that's created.
-    if (!familyName.IsEmpty()) {
+    if (!familyName.IsEmpty() && !familyType.IsEmpty()) {
         UsdGeomSubset::SetFamilyType(geom, familyName, familyType);
     }
 
@@ -254,7 +260,7 @@ UsdGeomSubset::CreateUniqueGeomSubset(
     const TfToken &elementType,
     const VtIntArray &indices,
     const TfToken &familyName,
-    UsdGeomSubset::FamilyType familyType)
+    const TfToken &familyType)
 {
     UsdGeomSubset subset = _CreateUniqueGeomSubset(
         geom.GetPrim().GetStage(), geom.GetPath(), /*baseName*/ subsetName);
@@ -265,7 +271,7 @@ UsdGeomSubset::CreateUniqueGeomSubset(
 
     // XXX: would be nice to do this just once per family rather than once per 
     // subset.
-    if (!familyName.IsEmpty()) {
+    if (!familyName.IsEmpty() && !familyType.IsEmpty()) {
         UsdGeomSubset::SetFamilyType(geom, familyName, familyType);
     }
 
@@ -337,12 +343,12 @@ UsdGeomSubset::GetAllGeomSubsetFamilyNames(const UsdGeomImageable &geom)
 }
 
 static TfToken 
-_GetIsPartitionAttrName(const TfToken &familyName)
+_GetFamilyTypeAttrName(const TfToken &familyName)
 {
     return TfToken(TfStringJoin(std::vector<std::string>{
         _tokens->subsetFamily.GetString(),
         familyName.GetString(),
-        _tokens->isPartition.GetString()}, ":"));
+        _tokens->familyType.GetString()}, ":"));
 }
 
 /* static */
@@ -350,40 +356,28 @@ bool
 UsdGeomSubset::SetFamilyType(
     const UsdGeomImageable &geom, 
     const TfToken &familyName, 
-    const UsdGeomSubset::FamilyType familyType)
+    const TfToken &familyType)
 {
-    UsdAttribute isPartitionAttr = geom.GetPrim().CreateAttribute(
-            _GetIsPartitionAttrName(familyName),
-            SdfValueTypeNames->Bool,
+    UsdAttribute familyTypeAttr = geom.GetPrim().CreateAttribute(
+            _GetFamilyTypeAttrName(familyName),
+            SdfValueTypeNames->Token,
             /* custom */ false, 
             SdfVariabilityUniform);
-    bool isPartition = (familyType == FamilyType::Partition);
-    return isPartitionAttr && isPartitionAttr.Set(isPartition);
+    return familyTypeAttr.Set(familyType);
 }
 
 /* static */
-UsdGeomSubset::FamilyType 
+TfToken
 UsdGeomSubset::GetFamilyType(
     const UsdGeomImageable &geom, 
     const TfToken &familyName)
 {
-    bool isPartition = UsdGeomSubset::GetFamilyIsPartition(geom, familyName);
-    return isPartition ? FamilyType::Partition : FamilyType::NonPartition;
-}
-
-/* static */
-bool 
-UsdGeomSubset::GetFamilyIsPartition(
-    const UsdGeomImageable &geom,
-    const TfToken &familyName)
-{
-    UsdAttribute isPartitionAttr = geom.GetPrim().GetAttribute(
-            _GetIsPartitionAttrName(familyName));
-    bool isPartition = false;
-    if (isPartitionAttr) {
-        isPartitionAttr.Get(&isPartition);
-    }
-    return isPartition;
+    UsdAttribute familyTypeAttr = geom.GetPrim().GetAttribute(
+            _GetFamilyTypeAttrName(familyName));
+    TfToken familyType;
+    familyTypeAttr.Get(&familyType);
+    
+    return familyType.IsEmpty() ? UsdGeomTokens->unrestricted : familyType;
 }
 
 /* static */
@@ -415,9 +409,10 @@ UsdGeomSubset::GetUnassignedIndices(
 
 /* static */
 bool 
-UsdGeomSubset::ValidatePartition(
+UsdGeomSubset::ValidateSubsets(
     const std::vector<UsdGeomSubset> &subsets,
     const size_t elementCount,
+    const TfToken &familyType,
     std::string * const reason)
 {
     if (subsets.empty())
@@ -461,7 +456,9 @@ UsdGeomSubset::ValidatePartition(
             subset.GetIndicesAttr().Get(&subsetIndices, t);
 
             for (const int index : subsetIndices) {
-                if (!indicesInFamily.insert(index).second) {
+                if (!indicesInFamily.insert(index).second &&
+                    familyType != UsdGeomTokens->unrestricted) 
+                {
                     valid = false;
                     if (reason) {
                         *reason += TfStringPrintf("Found overlapping index %d "
@@ -473,7 +470,8 @@ UsdGeomSubset::ValidatePartition(
         }
 
         // Make sure every index appears exactly once if it's a partition.
-        if (indicesInFamily.size() != elementCount) {
+        if (familyType == UsdGeomTokens->partition &&
+            indicesInFamily.size() != elementCount) {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Number of unique indices at time %s"
@@ -537,12 +535,14 @@ UsdGeomSubset::ValidateFamily(
     if (faceCount == 0) {
         valid = false;
         if (reason) {
-            *reason != TfStringPrintf("Unable to determine face-count for geom"
+            *reason += TfStringPrintf("Unable to determine face-count for geom"
                 " <%s>", geom.GetPath().GetText());
         }
     }
 
-    bool familyIsPartition = GetFamilyIsPartition(geom, familyName);
+    TfToken familyType = GetFamilyType(geom, familyName);
+    
+    bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
 
     std::set<double> allTimeSamples;
     for (const auto &subset : familySubsets) {
@@ -563,7 +563,7 @@ UsdGeomSubset::ValidateFamily(
         for (const UsdGeomSubset &subset : familySubsets) {
             VtIntArray subsetIndices;
             subset.GetIndicesAttr().Get(&subsetIndices, t);
-            if (!familyIsPartition) {
+            if (!familyIsRestricted) {
                 indicesInFamily.insert(subsetIndices.begin(), subsetIndices.end());
             } else {
                 for (const int index : subsetIndices) {
@@ -580,7 +580,7 @@ UsdGeomSubset::ValidateFamily(
         }
 
         // Make sure every index appears exactly once if it's a partition.
-        if (familyIsPartition && 
+        if (familyType == UsdGeomTokens->partition && 
             indicesInFamily.size() != faceCount) 
         {
             valid = false;

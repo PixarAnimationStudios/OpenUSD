@@ -34,7 +34,7 @@ namespace foo {
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdContrivedTestHairman,
-        TfType::Bases< UsdSchemaBase > >();
+        TfType::Bases< UsdTyped > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -166,7 +166,7 @@ UsdContrivedTestHairman::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdSchemaBase::GetSchemaAttributeNames(true),
+            UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

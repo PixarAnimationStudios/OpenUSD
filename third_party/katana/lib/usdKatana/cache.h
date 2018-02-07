@@ -101,6 +101,12 @@ public:
                             std::string const& ignoreLayerRegex,
                             bool forcePopulate);
 
+    /// Flushes an individual stage if present in the cache
+    void FlushStage(const UsdStageRefPtr & stage);
+
+
+
+
     /// Get (or create) a cached renderer for a given prim path.
     UsdImagingGLSharedPtr const& GetRenderer(UsdStageRefPtr const& stage,
                                              UsdPrim const& root,

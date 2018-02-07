@@ -154,6 +154,40 @@ public:
     bool GetTimeSamplesInInterval(const GfInterval& interval,
                                   std::vector<double>* times) const;
 
+    /// Populates the given vector, \p times with the union of all the 
+    /// authored sample times on all of the given attribute-query objects, 
+    /// \p attrQueries.
+    /// 
+    /// Behaves identically to UsdAttribute::GetUnionedTimeSamples()
+    /// 
+    /// \return false if one or more attribute-queries in \p attrQueries are 
+    /// invalid or if there's an error fetching time-samples for any of 
+    /// the attribute-query objects.
+    ///
+    /// \sa UsdAttribute::GetUnionedTimeSamples
+    /// \sa UsdAttributeQuery::GetUnionedTimeSamplesInInterval
+    USD_API
+    static bool GetUnionedTimeSamples(
+        const std::vector<UsdAttributeQuery> &attrQueries, 
+        std::vector<double> *times);
+
+    /// Populates the given vector, \p times with the union of all the 
+    /// authored sample times in the GfInterval, \p interval on all of the 
+    /// given attribute-query objects, \p attrQueries.
+    /// 
+    /// Behaves identically to UsdAttribute::GetUnionedTimeSamplesInInterval()
+    /// 
+    /// \return false if one or more attribute-queries in \p attrQueries are 
+    /// invalid or if there's an error fetching time-samples for any of 
+    /// the attribute-query objects.
+    ///
+    /// \sa UsdAttribute::GetUnionedTimeSamplesInInterval
+    USD_API
+    static bool GetUnionedTimeSamplesInInterval(
+        const std::vector<UsdAttributeQuery> &attrQueries, 
+        const GfInterval &interval,
+        std::vector<double> *times);
+
     /// Returns the number of time samples that have been authored.
     /// 
     /// \sa UsdAttribute::GetNumTimeSamples

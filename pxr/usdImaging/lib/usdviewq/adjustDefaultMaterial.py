@@ -25,20 +25,10 @@ from qt import QtCore, QtWidgets
 from adjustDefaultMaterialUI import Ui_AdjustDefaultMaterial
 
 class AdjustDefaultMaterial(QtWidgets.QDialog):
-    """The dataModel provided to this VC must conform to the following
-    interface:
-    
-    Editable properties:
-       defaultMaterialAmbient (float)
-       defaultMaterialSpecular (float)
-
-    Methods:
-       ResetDefaultMaterialSettings()
-
-    Signals:
-       signalDefaultMaterialChanged() - when either property is
-                                        set in the dataModel.
+    """Popup widget to adjust the default material used for rendering.
+    `datamodel` should be a ViewSettingsDataModel.
     """
+
     def __init__(self, parent, dataModel):
         QtWidgets.QDialog.__init__(self,parent)
         self._ui = Ui_AdjustDefaultMaterial()
@@ -64,11 +54,11 @@ class AdjustDefaultMaterial(QtWidgets.QDialog):
         if self._dataModel.defaultMaterialAmbient != self._ambientCache:
             self._ambientCache = self._dataModel.defaultMaterialAmbient
             self._ui.ambientIntSpinBox.setValue(self._ambientCache)
-        
+
         if self._dataModel.defaultMaterialSpecular != self._specularCache:
             self._specularCache = self._dataModel.defaultMaterialSpecular
             self._ui.specularIntSpinBox.setValue(self._specularCache)
-            
+
 
     def _ambientChanged(self, val):
         if val != self._ambientCache:
@@ -83,7 +73,7 @@ class AdjustDefaultMaterial(QtWidgets.QDialog):
             self._dataModel.defaultMaterialSpecular = val
 
     def _reset(self, unused):
-        self._dataModel.ResetDefaultMaterialSettings()
+        self._dataModel.resetDefaultMaterial()
 
     def _done(self, unused):
         self.close()

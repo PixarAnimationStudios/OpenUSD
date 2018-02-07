@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "usdKatana/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "usdKatana/tokens.h"
@@ -54,7 +54,7 @@ class SdfAssetPath;
 ///
 /// Container namespace schema for katana blind data from the klf file
 ///
-class UsdKatanaBlindDataObject : public UsdSchemaBase
+class UsdKatanaBlindDataObject : public UsdTyped
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -63,12 +63,17 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = true;
 
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = true;
+
     /// Construct a UsdKatanaBlindDataObject on UsdPrim \p prim .
     /// Equivalent to UsdKatanaBlindDataObject::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdKatanaBlindDataObject(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdTyped(prim)
     {
     }
 
@@ -76,7 +81,7 @@ public:
     /// Should be preferred over UsdKatanaBlindDataObject(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdKatanaBlindDataObject(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdTyped(schemaObj)
     {
     }
 
@@ -183,6 +188,27 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDKATANA_API
     UsdAttribute CreateVisibleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SUPPRESSGROUPTOASSEMBLYPROMOTION 
+    // --------------------------------------------------------------------- //
+    /// If true don't promote a group to an assembly.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDKATANA_API
+    UsdAttribute GetSuppressGroupToAssemblyPromotionAttr() const;
+
+    /// See GetSuppressGroupToAssemblyPromotionAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDKATANA_API
+    UsdAttribute CreateSuppressGroupToAssemblyPromotionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

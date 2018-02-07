@@ -52,6 +52,8 @@ JobExportArgs::JobExportArgs()
         exportDefaultCameras(false),
         exportMeshUVs(true),
         normalizeMeshUVs(false),
+        exportMaterialCollections(false),
+        materialCollectionsPath(""),
         normalizeNurbs(false),
         exportNurbsExplicitUV(true),
         nurbsExplicitUVType(PxUsdExportJobArgsTokens->Uniform),
@@ -67,7 +69,7 @@ JobImportArgs::JobImportArgs()
     :
         shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
         defaultMeshScheme(UsdGeomTokens->catmullClark),
-        assemblyRep(PxUsdExportJobArgsTokens->Collapsed),
+        assemblyRep(PxrUsdMayaTranslatorTokens->Collapsed),
         readAnimData(true),
         useCustomFrameRange(false),
         startTime(1.0),

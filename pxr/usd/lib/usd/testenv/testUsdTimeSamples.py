@@ -124,19 +124,21 @@ class TestUsdTimeSamples(unittest.TestCase):
             self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(0,0)), []) 
             self.assertEqual(attr.GetTimeSamplesInInterval(Gf.Interval(1.0, 2.0)), [1.0, 2.0])  
 
-            # ensure that open, finite endpoints are disallowed
-            with self.assertRaises(Tf.ErrorException):
-                # IsClosed() will be True by default in the Interval ctor
-                bothClosed = Gf.Interval(1.0, 2.0, False, False)
-                attr.GetTimeSamplesInInterval(bothClosed)
+            bothOpen = Gf.Interval(1.0, 2.0, False, False)
+            self.assertEqual([], attr.GetTimeSamplesInInterval(bothOpen))
              
-            with self.assertRaises(Tf.ErrorException):
-                finiteMinClosed = Gf.Interval(1.0, 2.0, True, False)
-                attr.GetTimeSamplesInInterval(finiteMinClosed)
+            finiteMinClosed = Gf.Interval(1.0, 2.0, True, False)
+            self.assertEqual([1.0], attr.GetTimeSamplesInInterval(finiteMinClosed))
             
-            with self.assertRaises(Tf.ErrorException):
-                finiteMaxClosed = Gf.Interval(1.0, 2.0, False, True)
-                attr.GetTimeSamplesInInterval(finiteMaxClosed)
+            finiteMaxClosed = Gf.Interval(1.0, 2.0, False, True)
+            self.assertEqual([2.0], attr.GetTimeSamplesInInterval(finiteMaxClosed))
+
+            # Ensure that an empty interval returns nothing
+            emptyInterval = Gf.Interval()
+            self.assertEqual([], attr.GetTimeSamplesInInterval(emptyInterval))
+
+            emptyInterval2 = Gf.Interval(50,1)
+            self.assertEqual([], attr.GetTimeSamplesInInterval(emptyInterval2))
 
             self.assertEqual(attr.GetBracketingTimeSamples(1.5), (1.0,2.0))
             self.assertEqual(attr.GetBracketingTimeSamples(1.0), (1.0,1.0))
@@ -181,6 +183,34 @@ class TestUsdTimeSamples(unittest.TestCase):
             self.assertEqual(sdUnvaryingAttr.HasInfo("timeSamples"), False)
             self.assertEqual(sdVaryingAttr.HasInfo("timeSamples"), True)
 
+    def test_GetUnionedTimeSamples(self):
+        s = Usd.Stage.CreateInMemory()
+        foo = s.DefinePrim('/foo')
+        attr1 = foo.CreateAttribute('attr1', Sdf.ValueTypeNames.Bool)
+        self.assertEqual([], attr1.GetTimeSamples())
+
+        attr1.Set(True, 1.0)
+        attr1.Set(False, 3.0)
+        
+        attr2 = foo.CreateAttribute('attr2', Sdf.ValueTypeNames.Float)
+        attr2.Set(100.0, 2.0)
+        attr2.Set(200.0, 4.0)
+
+        self.assertEqual(Usd.Attribute.GetUnionedTimeSamples(
+                                [attr1, attr2]), 
+                         [1.0, 2.0, 3.0, 4.0])
+
+        self.assertEqual(Usd.Attribute.GetUnionedTimeSamplesInInterval(
+                                [attr1, attr2], Gf.Interval(1.5, 3.5)), 
+                         [2.0, 3.0])
+
+        attrQueries = [Usd.AttributeQuery(attr1), Usd.AttributeQuery(attr2)]
+        self.assertEqual(Usd.AttributeQuery.GetUnionedTimeSamples(
+                attrQueries), [1.0, 2.0, 3.0, 4.0])
+
+        self.assertEqual(Usd.AttributeQuery.GetUnionedTimeSamplesInInterval(
+                attrQueries, Gf.Interval(1.5, 3.5)), [2.0, 3.0])
+
     def test_EmptyTimeSamplesMap(self):
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''#sdf 1.4.32
@@ -196,6 +226,73 @@ def "Foo" {
         self.assertEqual(x.Get(), 123)
         self.assertEqual(x.GetResolveInfo().GetSource(),
             Usd.ResolveInfoSourceDefault)
+
+    def test_usdaPrecisionBug(self):
+        s = Usd.Stage.CreateInMemory()
+        foo = s.DefinePrim('/foo')
+        test = foo.CreateAttribute('test', Sdf.ValueTypeNames.Float)
+        test.Set(0.0, 1.0)
+        test.Set(1.0, 1.0-Usd.TimeCode.SafeStep())
+        self.assertEqual(len(test.GetTimeSamples()), 2)
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        l.ImportFromString(s.GetRootLayer().ExportToString())
+        self.assertEqual(
+            len(l.GetAttributeAtPath('/foo.test').GetInfo('timeSamples')), 2)
+
+    def test_TimeSamplesWithOffset(self):
+        '''
+        Test the effect of SdfLayerOffset on timesample API.
+        '''
+        stage = Usd.Stage.CreateInMemory()
+
+        # Set up a simple prim </Source>
+        # with an attribute 'x' with a simple linear ramp over frames 0..10.
+        source = stage.DefinePrim('/Source')
+        source_attr = source.CreateAttribute('x', Sdf.ValueTypeNames.Float)
+        source_attr.Set(0.0, 0.0)
+        source_attr.Set(10.0, 10.0)
+        self.assertEqual(source_attr.GetTimeSamples(), [0.0, 10.0])
+        self.assertEqual(source_attr.Get(0.0), 0)
+        self.assertEqual(source_attr.Get(10.0), 10)
+
+        # Reference that prim, with an offset of +100 frames.
+        test1 = stage.DefinePrim('/Test1')
+        test1.GetReferences().AddInternalReference('/Source',
+            Sdf.LayerOffset(offset=100.0, scale=1.0))
+        test1_attr = test1.GetAttribute('x')
+        # Both samples should pass through.
+        # The sample times should be offset.
+        self.assertEqual(test1_attr.GetTimeSamples(), [100.0, 110.0])
+        self.assertEqual(test1_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 10)), [])
+        self.assertEqual(test1_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 110)), [100.0, 110.0])
+        # Value resolution should respect the offset.
+        # Times outside the interval hold at the value of the nearest sample.
+        self.assertEqual(test1_attr.Get(0.0), 0)
+        self.assertEqual(test1_attr.Get(10.0), 0)
+        self.assertEqual(test1_attr.Get(100.0), 0)
+        self.assertEqual(test1_attr.Get(110.0), 10)
+        self.assertEqual(test1_attr.Get(120.0), 10)
+
+        # Reference that prim, with a 2x scale.
+        test2 = stage.DefinePrim('/Test2')
+        test2.GetReferences().AddInternalReference('/Source',
+            Sdf.LayerOffset(offset=0.0, scale=2.0))
+        test2_attr = test2.GetAttribute('x')
+        # Both samples should pass through.
+        # The sample times should be offset.
+        self.assertEqual(test2_attr.GetTimeSamples(), [0.0, 20.0])
+        self.assertEqual(test2_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 10)), [0.0])
+        self.assertEqual(test2_attr.GetTimeSamplesInInterval(
+            Gf.Interval(0, 20)), [0.0, 20.0])
+        # Value resolution should respect the offset.
+        # Times outside the interval hold at the value of the nearest sample.
+        self.assertEqual(test2_attr.Get(0.0), 0)
+        self.assertEqual(test2_attr.Get(10.0), 5)
+        self.assertEqual(test2_attr.Get(20.0), 10)
+        self.assertEqual(test2_attr.Get(30.0), 10)
 
 if __name__ == "__main__":
     unittest.main()

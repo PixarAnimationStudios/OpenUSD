@@ -52,8 +52,8 @@ class SdfAssetPath;
 
 /// \class UsdLuxDomeLight
 ///
-/// Light emitted inward from a distant external dome or hemisphere,
-/// such as a sky.
+/// Light emitted inward from a distant external environment,
+/// such as a sky or IBL light probe.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
@@ -68,6 +68,11 @@ public:
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
     static const bool IsConcrete = true;
+
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = true;
 
     /// Construct a UsdLuxDomeLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxDomeLight::Get(prim.GetStage(), prim.GetPath())
@@ -153,7 +158,7 @@ public:
     // TEXTUREFILE 
     // --------------------------------------------------------------------- //
     /// A color texture to use on the dome, such as an HDR (high
-    /// dyanmic range) texture intended for IBL (image based lighting).
+    /// dynamic range) texture intended for IBL (image based lighting).
     ///
     /// \n  C++ Type: SdfAssetPath
     /// \n  Usd Type: SdfValueTypeNames->Asset

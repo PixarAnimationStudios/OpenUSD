@@ -49,6 +49,8 @@ using std::pair;
 using std::string;
 using std::vector;
 
+using namespace std::placeholders;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static inline bool _IsValidIdentifier(TfToken const &name);
@@ -1246,17 +1248,32 @@ SdfPath::TokenizeIdentifierAsTokens(const std::string &name)
 }
 
 std::string
-SdfPath::JoinIdentifier(const std::vector<std::string>& names)
+SdfPath::JoinIdentifier(const std::vector<std::string> &names)
 {
+    if (std::any_of(names.begin(), names.end(), 
+                    [](const std::string &s){return s.empty();})) 
+    {
+        // Create a new vector with just the non-empty names.
+        std::vector<std::string> nonEmptyNames;
+        nonEmptyNames.reserve(names.size());
+        std::copy_if(names.begin(), names.end(), 
+                     std::back_inserter(nonEmptyNames),
+                     [](const std::string &s){return !s.empty();});
+        return TfStringJoin(nonEmptyNames, 
+                            SdfPathTokens->namespaceDelimiter.GetText());
+    }
     return TfStringJoin(names, SdfPathTokens->namespaceDelimiter.GetText());
 }
 
 std::string
 SdfPath::JoinIdentifier(const TfTokenVector& names)
 {
-    std::vector<std::string> tmp(names.size());
+    std::vector<std::string> tmp;
+    tmp.reserve(names.size());
     for (size_t i = 0, n = names.size(); i != n; ++i) {
-        tmp[i] = names[i].GetString();
+        if (!names[i].IsEmpty()) {
+            tmp.push_back(names[i].GetString());
+        }
     }
     return TfStringJoin(tmp, SdfPathTokens->namespaceDelimiter.GetText());
 }
@@ -1504,7 +1521,9 @@ SdfPath::RemoveDescendentPaths(SdfPathVector *paths)
     // Now unique and erase all descendents.  The equivalence predicate returns
     // true if rhs has lhs as a prefix.
     paths->erase(std::unique(paths->begin(), paths->end(),
-                             boost::bind(&SdfPath::HasPrefix, _2, _1)),
+                             [](SdfPath const &l, SdfPath const &r) {
+                                 return r.HasPrefix(l);
+                             }),
                  paths->end());
 }
 
@@ -1519,7 +1538,9 @@ SdfPath::RemoveAncestorPaths(SdfPathVector *paths)
     // if lhs has rhs as a prefix.
     paths->erase(paths->begin(),
                  std::unique(paths->rbegin(), paths->rend(),
-                             boost::bind(&SdfPath::HasPrefix, _1, _2)).base());
+                             [](SdfPath const &l, SdfPath const &r) {
+                                 return l.HasPrefix(r);
+                             }).base());
 }
 
 // Overload hash_value for SdfPath.

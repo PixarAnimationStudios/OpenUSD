@@ -55,7 +55,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 bool 
 Usd_PrimIsA(const UsdPrim& prim, const TfType& schemaType)
 {
-    return prim._IsA(schemaType);
+    return prim._IsA(schemaType, /*validateSchema=*/true);
+}
+
+bool 
+Usd_PrimHasAPI(const UsdPrim& prim, const TfType& schemaType)
+{
+    return prim._HasAPI(schemaType, /*validateSchema=*/true);
 }
 
 const PcpPrimIndex &
@@ -179,12 +185,16 @@ void wrapUsdPrim()
              arg("namespaces"),
              return_value_policy<TfPySequenceToList>())
 
+        .def("GetAppliedSchemas", &UsdPrim::GetAppliedSchemas,
+             return_value_policy<TfPySequenceToList>())
+
         .def("GetPropertyOrder", &UsdPrim::GetPropertyOrder,
              return_value_policy<TfPySequenceToList>())
 
         .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
 
         .def("IsA", &Usd_PrimIsA, arg("schemaType"))
+        .def("HasAPI", &Usd_PrimHasAPI, arg("schemaType"))
 
         .def("GetChild", &UsdPrim::GetChild, arg("name"))
 
@@ -274,7 +284,7 @@ void wrapUsdPrim()
              &UsdPrim::SetPayload, (arg("layer"), arg("primPath")))
         .def("ClearPayload", &UsdPrim::ClearPayload)
 
-        .def("Load", &UsdPrim::Load)
+        .def("Load", &UsdPrim::Load, (arg("policy")=UsdLoadWithDescendants))
         .def("Unload", &UsdPrim::Unload)
 
         .def("GetReferences", &UsdPrim::GetReferences)

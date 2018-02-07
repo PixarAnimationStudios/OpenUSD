@@ -79,14 +79,14 @@
       <property name="handleWidth">
        <number>2</number>
       </property>
-      <widget class="QSplitter" name="nodeStageSplitter">
+      <widget class="QSplitter" name="primStageSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
        <property name="handleWidth">
         <number>2</number>
        </property>
-       <widget class="QFrame" name="nodeFrame">
+       <widget class="QFrame" name="primFrame">
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
@@ -110,7 +110,7 @@
           <number>6</number>
          </property>
          <item>
-          <widget class="QTreeWidget" name="nodeView">
+          <widget class="QTreeWidget" name="primView">
            <property name="font">
             <font>
              <family>Gotham Rounded</family>
@@ -180,10 +180,10 @@
           </widget>
          </item>
          <item>
-           <widget class="NodeLegend" name="nodeLegendContainer" native="true"/>
+          <widget class="PrimLegend" name="primLegendContainer" native="true"/>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="nodeFindContainer">
+          <layout class="QHBoxLayout" name="primFindContainer">
            <property name="topMargin">
             <number>0</number>
            </property>
@@ -204,7 +204,7 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="nodeLegendQButton">
+            <widget class="QPushButton" name="primLegendQButton">
              <property name="maximumSize">
               <size>
                <width>32</width>
@@ -215,9 +215,12 @@
               <font>
                <family>Gotham Rounded</family>
                <pointsize>9</pointsize>
-               <weight>50</weight>
+               <weight>75</weight>
                <bold>true</bold>
               </font>
+             </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
              </property>
              <property name="text">
               <string>?</string>
@@ -231,7 +234,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="nodeViewLineEdit">
+            <widget class="QLineEdit" name="primViewLineEdit">
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -253,7 +256,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="nodeViewFindNext">
+            <widget class="QPushButton" name="primViewFindNext">
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -353,51 +356,24 @@
          </property>
          <item>
           <widget class="QTreeWidget" name="propertyView">
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Plain</enum>
-          </property>
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
            <property name="toolTip">
             <string/>
            </property>
            <property name="styleSheet">
             <string notr="true"/>
            </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Plain</enum>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
            <property name="columnCount">
             <number>3</number>
            </property>
-           <attribute name="horizontalHeaderCascadingSectionResizes">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="horizontalHeaderDefaultSectionSize">
-            <number>200</number>
-           </attribute>
-           <attribute name="horizontalHeaderMinimumSectionSize">
-            <number>8</number>
-           </attribute>
-           <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="verticalHeaderDefaultSectionSize">
-            <number>30</number>
-           </attribute>
-           <attribute name="verticalHeaderMinimumSectionSize">
-            <number>20</number>
-           </attribute>
-           <attribute name="verticalHeaderStretchLastSection">
-            <bool>false</bool>
-           </attribute>
            <column>
             <property name="text">
              <string>Type</string>
@@ -1122,7 +1098,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>27</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1140,7 +1116,7 @@
     <addaction name="actionReload_All_Layers"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Overrides_As"/>
-    <addaction name="actionSave_Overrides_To_Scene"/>
+    <addaction name="actionSave_Flattened_As"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -1148,7 +1124,7 @@
     <property name="title">
      <string>&amp;Options</string>
     </property>
-    <widget class="QMenu" name="menuNode_View_Depth">
+    <widget class="QMenu" name="menuPrim_View_Depth">
      <property name="title">
       <string>Prim View Depth</string>
      </property>
@@ -1202,8 +1178,8 @@
     </widget>
     <addaction name="menuHUD"/>
     <addaction name="separator"/>
-    <addaction name="menuNode_View_Depth"/>
-    <addaction name="actionShow_Inactive_Nodes"/>
+    <addaction name="menuPrim_View_Depth"/>
+    <addaction name="actionShow_Inactive_Prims"/>
     <addaction name="actionShow_All_Master_Prims"/>
     <addaction name="actionShow_Undefined_Prims"/>
     <addaction name="actionShow_Abstract_Prims"/>
@@ -1362,10 +1338,9 @@
     <property name="title">
      <string>Window</string>
     </property>
-    <addaction name="actionWatch_Window"/>
     <addaction name="showInterpreter"/>
    </widget>
-   <widget class="QMenu" name="menuEdit_Node">
+   <widget class="QMenu" name="menuEdit_Prim">
     <property name="title">
      <string>Edit Prim(s)</string>
     </property>
@@ -1392,7 +1367,7 @@
     </property>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit_Node"/>
+   <addaction name="menuEdit_Prim"/>
    <addaction name="menuOptions"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
@@ -1479,16 +1454,10 @@
    <property name="text">
     <string>Frame Forward</string>
    </property>
-   <property name="shortcut">
-    <string>Right</string>
-   </property>
   </action>
   <action name="actionFrame_Backwards">
    <property name="text">
     <string>Frame Backward</string>
-   </property>
-   <property name="shortcut">
-    <string>Left</string>
    </property>
   </action>
   <action name="actionAdjust_FOV">
@@ -1599,9 +1568,6 @@
    <property name="text">
     <string>Key</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
   </action>
   <action name="actionFill">
    <property name="checkable">
@@ -1612,9 +1578,6 @@
    </property>
    <property name="text">
     <string>Fill</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
    </property>
   </action>
   <action name="actionBack">
@@ -1627,9 +1590,6 @@
    <property name="text">
     <string>Back</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+F</string>
-   </property>
   </action>
   <action name="actionAmbient_Only">
    <property name="checkable">
@@ -1640,9 +1600,6 @@
    </property>
    <property name="text">
     <string>Camera Light</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="actionLevel_6">
@@ -1922,12 +1879,21 @@
     <string>Save Overrides As...</string>
    </property>
    <property name="toolTip">
-    <string>Save Overrides As...</string>
+    <string>Save property and metadata overrides</string>
    </property>
   </action>
-  <action name="actionLoad_Overrides">
+  <action name="actionSave_Flattened_As">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Load Overrides</string>
+    <string>Save Flattened As...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Flattened As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save a flattened version of the current stage</string>
    </property>
   </action>
   <action name="showInterpreter">
@@ -2067,7 +2033,7 @@
     <string>Enable Hardware Shading</string>
    </property>
   </action>
-  <action name="actionShow_Inactive_Nodes">
+  <action name="actionShow_Inactive_Prims">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -2479,35 +2445,33 @@
     <string>Adjust Default Material...</string>
    </property>
   </action>
-  <actiongroup name="actionGroupCameraReticles">
-   <action name="actionCameraReticles_Inside">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>Camera Reticles Inside</string>
-    </property>
-   </action>
-   <action name="actionCameraReticles_Outside">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>Camera Reticles Outside</string>
-    </property>
-   </action>
-   <action name="actionCameraReticles_Color">
-    <property name="text">
-     <string>Select Color...</string>
-    </property>
-   </action>
-  </actiongroup>
+  <action name="actionCameraReticles_Inside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Inside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Outside">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Camera Reticles Outside</string>
+   </property>
+  </action>
+  <action name="actionCameraReticles_Color">
+   <property name="text">
+    <string>Select Color...</string>
+   </property>
+  </action>
   <actiongroup name="actionGroupCameraMask">
    <action name="actionCameraMask_Full">
     <property name="checkable">
@@ -2543,11 +2507,11 @@
     </property>
    </action>
    <action name="actionCameraMask_Color">
-    <property name="text">
-     <string>Select Color...</string>
-    </property>
     <property name="checkable">
      <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>Select Color...</string>
     </property>
    </action>
   </actiongroup>
@@ -2560,9 +2524,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>NodeLegend</class>
+   <class>PrimLegend</class>
    <extends>QWidget</extends>
-   <header>nodeLegend</header>
+   <header>primLegend</header>
    <container>1</container>
   </customwidget>
   <customwidget>

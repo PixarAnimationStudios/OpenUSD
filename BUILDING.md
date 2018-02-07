@@ -152,7 +152,7 @@ This plugin is compatible with Alembic 1.5.2. The additional dependencies that m
 
 | Dependency Name    | Description                                                             | Version |
 | ------------------ |-----------------------------------------------------------------------  | ------- |
-| ALEMBIC_LOCATION   | The location of [Alembic](https://https://github.com/alembic/alembic)   | 1.5.2   |
+| ALEMBIC_DIR        | The location of [Alembic](https://https://github.com/alembic/alembic)   | 1.5.2   |
 | OPENEXR_LOCATION   | The location of [OpenEXR](http://www.openexr.com)                       | 2.2.0   |
 
 Support for Alembic files using the HDF5 backend is enabled by default but can be

@@ -98,6 +98,23 @@ UsdSkelPackedJointAnimation::_GetTfType() const
 }
 
 UsdAttribute
+UsdSkelPackedJointAnimation::GetJointsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->joints);
+}
+
+UsdAttribute
+UsdSkelPackedJointAnimation::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->joints,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelPackedJointAnimation::GetTranslationsAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->translations);
@@ -148,19 +165,6 @@ UsdSkelPackedJointAnimation::CreateScalesAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-UsdRelationship
-UsdSkelPackedJointAnimation::GetJointsRel() const
-{
-    return GetPrim().GetRelationship(UsdSkelTokens->joints);
-}
-
-UsdRelationship
-UsdSkelPackedJointAnimation::CreateJointsRel() const
-{
-    return GetPrim().CreateRelationship(UsdSkelTokens->joints,
-                       /* custom = */ false);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -178,6 +182,7 @@ const TfTokenVector&
 UsdSkelPackedJointAnimation::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdSkelTokens->joints,
         UsdSkelTokens->translations,
         UsdSkelTokens->rotations,
         UsdSkelTokens->scales,

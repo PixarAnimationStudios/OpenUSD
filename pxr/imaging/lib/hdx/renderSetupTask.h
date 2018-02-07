@@ -39,12 +39,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef boost::shared_ptr<class HdRenderPassShader> HdRenderPassShaderSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassShader> HdStRenderPassShaderSharedPtr;
 typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 typedef boost::shared_ptr<class HdxRenderSetupTask> HdxRenderSetupTaskSharedPtr;
-typedef boost::shared_ptr<class HdShaderCode> HdShaderCodeSharedPtr;
+typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 struct HdxRenderTaskParams;
-class HdStCamera;
+class HdStRenderPassState;
 
 
 /// \class HdxRenderSetupTask
@@ -59,9 +59,10 @@ public:
 
     // compatibility APIs used from HdxRenderTask
     HDX_API
-    void Sync(HdxRenderTaskParams const &params);
+    void SyncParams(HdxRenderTaskParams const &params);
     HDX_API
     void SyncCamera();
+
     HdRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
@@ -94,15 +95,18 @@ protected:
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;
-    HdRenderPassShaderSharedPtr _colorRenderPassShader;
-    HdRenderPassShaderSharedPtr _idRenderPassShader;
+    HdStRenderPassShaderSharedPtr _colorRenderPassShader;
+    HdStRenderPassShaderSharedPtr _idRenderPassShader;
     GfVec4d _viewport;
-    const HdStCamera *_camera;
+    SdfPath _cameraId;
     TfTokenVector _renderTags;
 
-    static HdShaderCodeSharedPtr _overrideShader;
+    static HdStShaderCodeSharedPtr _overrideShader;
 
     static void _CreateOverrideShader();
+
+    void _SetHdStRenderPassState(HdxRenderTaskParams const& params,
+                                 HdStRenderPassState *renderPassState);
 };
 
 /// \class HdxRenderTaskParams

@@ -196,16 +196,13 @@ public:
                                 HdBufferSourceSharedPtr const &source,
                                 HdBufferSourceSharedPtr const &quadInfoBuilder,
                                 SdfPath const &id);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual bool Resolve();
-
-    // overrides GetGLComponentDataType to return source spec
-    // since Hd_SmoothNormals::AddBufferSpecs() uses source datatype,
-    // which happens before calling _SetResult().
-    virtual int GetGLComponentDataType() const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual bool Resolve() override;
+    virtual HdTupleType GetTupleType() const override;
 
     virtual bool HasPreChainedBuffer() const;
     virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
+
 
 protected:
     virtual bool _CheckValid() const;
@@ -248,7 +245,7 @@ public:
     /// This computaion doesn't generate buffer source (i.e. 2nd phase)
     HdSt_QuadrangulateComputationGPU(HdSt_MeshTopology *topology,
                                TfToken const &sourceName,
-                               GLenum dataType,
+                               HdType dataType,
                                SdfPath const &id);
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry);
@@ -259,7 +256,7 @@ private:
     SdfPath const _id;
     HdSt_MeshTopology *_topology;
     TfToken _name;
-    GLenum _dataType;
+    HdType _dataType;
 };
 
 

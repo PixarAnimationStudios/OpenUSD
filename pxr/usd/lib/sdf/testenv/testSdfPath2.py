@@ -507,6 +507,11 @@ class TestSdfPath2(unittest.TestCase):
         self.assertEqual(Sdf.Path.JoinIdentifier([]), "")
         self.assertEqual(Sdf.Path.JoinIdentifier(["foo"]), "foo")
         self.assertEqual(Sdf.Path.JoinIdentifier(["foo","bar","baz"]), "foo:bar:baz")
+        self.assertEqual(Sdf.Path.JoinIdentifier(["foo","","baz"]), "foo:baz")
+        self.assertEqual(Sdf.Path.JoinIdentifier(["foo","bar",""]), "foo:bar")
+        self.assertEqual(Sdf.Path.JoinIdentifier(["","bar","baz"]), "bar:baz")
+        self.assertEqual(Sdf.Path.JoinIdentifier(["","bar",""]), "bar")
+        
         self.assertEqual(Sdf.Path.StripNamespace(Sdf.Path.JoinIdentifier([])), "")
         self.assertEqual(Sdf.Path.StripNamespace(Sdf.Path.JoinIdentifier(["foo"])), "foo")
         self.assertEqual(Sdf.Path.StripNamespace(Sdf.Path.JoinIdentifier(["foo","bar","baz"])), "baz")

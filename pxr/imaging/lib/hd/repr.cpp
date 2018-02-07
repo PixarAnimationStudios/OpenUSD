@@ -35,11 +35,5 @@ HdRepr::~HdRepr()
 {
 }
 
-std::vector<HdDrawItem>*
-HdRepr::GetDrawItems()
-{
-    return &_drawItems;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

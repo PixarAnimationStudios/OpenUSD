@@ -29,8 +29,10 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
 
 #include <maya/MFnMesh.h>
 #include <maya/MString.h>
@@ -54,14 +56,19 @@ namespace PxrUsdMayaMeshUtil
     bool getEmitNormals(const MFnMesh &mesh, const TfToken& subdivScheme);
     PXRUSDMAYA_API
     TfToken setEmitNormals(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
+    PXRUSDMAYA_API
+    bool GetMeshNormals(
+        const MFnMesh& mesh,
+        VtArray<GfVec3f>* normalsArray,
+        TfToken* interpolation);
     
     PXRUSDMAYA_API
-    TfToken getSubdivScheme(const MFnMesh &mesh, TfToken defaultValue);
+    TfToken getSubdivScheme(const MFnMesh &mesh, const TfToken& defaultValue);
     PXRUSDMAYA_API
     TfToken setSubdivScheme(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 
     PXRUSDMAYA_API
-    TfToken getSubdivInterpBoundary(const MFnMesh &mesh,  TfToken defaultValue);
+    TfToken getSubdivInterpBoundary(const MFnMesh &mesh, const TfToken& defaultValue);
     PXRUSDMAYA_API
     TfToken setSubdivInterpBoundary(const UsdGeomMesh &primSchema, MFnMesh &meshFn, TfToken defaultValue);
 

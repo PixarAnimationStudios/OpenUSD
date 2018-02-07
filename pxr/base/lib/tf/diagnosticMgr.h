@@ -45,6 +45,7 @@
 #include "pxr/base/arch/functionLite.h"
 
 #include <tbb/enumerable_thread_specific.h>
+#include <tbb/spin_rw_mutex.h>
 #include <tbb/atomic.h>
 
 #include <boost/scoped_ptr.hpp>
@@ -52,6 +53,7 @@
 #include <cstdarg>
 #include <list>
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,13 +70,13 @@ class TfErrorMark;
 /// \ingroup group_tf_Diagnostic
 ///
 /// Singleton class through which all errors and diagnostics pass.
-class TfDiagnosticMgr: public TfWeakBase {
+class TfDiagnosticMgr : public TfWeakBase {
 public:
 
     typedef TfDiagnosticMgr This;
 
     typedef std::list<TfError> ErrorList;
-    
+
     /// Synonym for standard STL iterator to traverse the error list.
     ///
     /// The error list for a thread is an STL list.  The \c ErrorIterator type
@@ -95,14 +97,28 @@ public:
     /// \endcode
     typedef ErrorList::iterator ErrorIterator;
 
-     /// Returns the name of the given diagnostic code.
+    /// Returns the name of the given diagnostic code.
     TF_API
     static std::string GetCodeName(const TfEnum &code);
 
     /// \class Delegate
     /// One may set a delegate with the \c TfDiagnosticMgr which will be
     /// called to respond to errors and diagnostics.
-    class Delegate : public TfWeakBase {
+    ///
+    /// \note None of the methods in \c TfDiagnosticMgr::Delegate can be
+    /// reentrant.
+    ///
+    /// Practically speaking, this means they cannot invoke:
+    ///
+    /// - TF_ERROR
+    /// - TF_RUNTIME_ERROR
+    /// - TF_CODING_ERROR
+    /// - TF_WARN
+    /// - TF_STATUS
+    ///
+    /// For a more complete list, see diagnostic.h 
+    ///
+    class Delegate {
       public:
         TF_API 
         virtual ~Delegate() = 0;
@@ -127,21 +143,27 @@ public:
         /// has already been logged.
         void _UnhandledAbort() const;
     };
-    typedef TfWeakPtr<Delegate> DelegateWeakPtr;
-
 
     /// Return the singleton instance.
     TF_API static This &GetInstance() {
         return TfSingleton<This>::GetInstance();
     }
 
-    /// Set the delegate to \a delegate.
+    /// Add the delegate \p delegate to the list of current delegates.
     ///
-    /// \a delegate will be called when diagnostics and errors are invoked.
-    /// Note that only one delegate may be registered in an application.  Any
-    /// subsequent registrations will be ignored.
+    /// This will add the delegate even if it already exists in the list.
+    ///
+    /// Each delegate will be called when diagnostics and errors are invoked
+    ///
+    /// This function is thread safe.
     TF_API
-    void SetDelegate(DelegateWeakPtr const &delegate);
+    void AddDelegate(Delegate* delegate);
+
+    /// Removes all delegates equal to \p delegate from the current delegates.
+    ///
+    /// This function is thread safe.
+    TF_API
+    void RemoveDelegate(Delegate* delegate);
 
     /// Set whether errors, warnings and status messages should be printed out
     /// to the terminal.
@@ -387,8 +409,14 @@ private:
     // Helper to actually publish log text into the Arch crash handler.
     void _SetLogInfoForErrors(std::vector<std::string> const &logText) const;
 
-    // The current diagnostic delegate.
-    DelegateWeakPtr _delegate;
+    // A guard used to protect reentrency when adding/removing
+    // delegates as well as posting errors/warnings/statuses
+    mutable tbb::enumerable_thread_specific<bool> _reentrantGuard;
+
+    // The registered delegates.
+    std::vector<Delegate*> _delegates;
+
+    mutable tbb::spin_rw_mutex _delegatesMutex;
 
     // Global serial number for sorting.
     tbb::atomic<size_t> _nextSerial;

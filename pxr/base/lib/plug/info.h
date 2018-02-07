@@ -28,8 +28,8 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/js/value.h"
 
-#include <boost/function.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -38,7 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class JsValue;
 
 /// Data describing the plugin itself.
-struct Plug_RegistrationMetadata {
+class Plug_RegistrationMetadata {
+public:
     enum Type {
         UnknownType,
         LibraryType,
@@ -70,14 +71,15 @@ public:
     ~Plug_TaskArena();
 
     /// Schedule \p fn to run.
-    void Run(const boost::function<void()>& fn);
+    template <class Fn>
+    void Run(Fn const &fn);
 
     /// Wait for all scheduled tasks to complete.
     void Wait();
 
 private:
     class _Impl;
-    boost::scoped_ptr<_Impl> _impl;
+    std::unique_ptr<_Impl> _impl;
 };
 
 /// Reads several plugInfo files, recursively loading any included files.
@@ -92,8 +94,8 @@ private:
 void
 Plug_ReadPlugInfo(
     const std::vector<std::string>& pathnames,
-    const boost::function<bool (const std::string&)>& addVisitedPath,
-    const boost::function<void (const Plug_RegistrationMetadata&)>& addPlugin,
+    const std::function<bool (const std::string&)>& addVisitedPath,
+    const std::function<void (const Plug_RegistrationMetadata&)>& addPlugin,
     Plug_TaskArena* taskArena);
 
 /// Sets the paths to the bootstrap plug-path JSON files.

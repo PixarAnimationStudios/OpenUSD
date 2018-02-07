@@ -30,7 +30,6 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 
-#include <boost/bind.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -614,8 +613,9 @@ UsdStageCache::EraseAll(const SdfLayerHandle &rootLayer,
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
         numErased =
             EraseIf(byRootLayer, byRootLayer.equal_range(rootLayer),
-                    bind(&UsdStage::GetSessionLayer,
-                         bind(&Entry::stage, _1)) == sessionLayer,
+                    [&sessionLayer](Entry const &e) {
+                        return e.stage->GetSessionLayer() == sessionLayer;
+                    },
                     debug.GetEntryVec());
     }
     return numErased;
@@ -632,10 +632,11 @@ UsdStageCache::EraseAll(const SdfLayerHandle &rootLayer,
         StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
         numErased =
             EraseIf(byRootLayer, byRootLayer.equal_range(rootLayer),
-                    (bind(&UsdStage::GetSessionLayer,
-                          bind(&Entry::stage, _1)) == sessionLayer) &&
-                    (bind(&UsdStage::GetPathResolverContext,
-                          bind(&Entry::stage, _1)) == pathResolverContext),
+                    [&sessionLayer, &pathResolverContext](Entry const &e) {
+                        return (e.stage->GetSessionLayer() == sessionLayer &&
+                                e.stage->GetPathResolverContext() ==
+                                pathResolverContext);
+                    },
                     debug.GetEntryVec());
     }
     return numErased;

@@ -70,7 +70,7 @@ HdEmbreeInstancer::_SyncPrimvars()
     HF_MALLOC_TAG_FUNCTION();
 
     HdChangeTracker &changeTracker = 
-        _GetDelegate()->GetRenderIndex().GetChangeTracker();
+        GetDelegate()->GetRenderIndex().GetChangeTracker();
     SdfPath const& id = GetId();
 
     // Use the double-checked locking pattern to check if this instancer's
@@ -86,11 +86,11 @@ HdEmbreeInstancer::_SyncPrimvars()
             // primvar names and then cache each one.
 
             TfTokenVector primVarNames;
-            primVarNames = _GetDelegate()->GetPrimVarInstanceNames(id);
+            primVarNames = GetDelegate()->GetPrimVarInstanceNames(id);
 
             TF_FOR_ALL(nameIt, primVarNames) {
                 if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt)) {
-                    VtValue value = _GetDelegate()->Get(id, *nameIt);
+                    VtValue value = GetDelegate()->Get(id, *nameIt);
                     if (!value.IsEmpty()) {
                         if (_primvarMap.count(*nameIt) > 0) {
                             delete _primvarMap[*nameIt];
@@ -123,9 +123,9 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     // If any transform isn't provided, it's assumed to be the identity.
 
     GfMatrix4d instancerTransform =
-        _GetDelegate()->GetInstancerTransform(GetId(), prototypeId);
+        GetDelegate()->GetInstancerTransform(GetId(), prototypeId);
     VtIntArray instanceIndices =
-        _GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
+        GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
 
     VtMatrix4dArray transforms(instanceIndices.size());
     for (size_t i = 0; i < instanceIndices.size(); ++i) {
@@ -188,7 +188,7 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
     }
 
     HdInstancer *parentInstancer =
-        _GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
+        GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
     if (!TF_VERIFY(parentInstancer)) {
         return transforms;
     }

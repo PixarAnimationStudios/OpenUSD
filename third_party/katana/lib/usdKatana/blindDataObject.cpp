@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdKatanaBlindDataObject,
-        TfType::Bases< UsdSchemaBase > >();
+        TfType::Bases< UsdTyped > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -131,6 +131,23 @@ UsdKatanaBlindDataObject::CreateVisibleAttr(VtValue const &defaultValue, bool wr
                        writeSparsely);
 }
 
+UsdAttribute
+UsdKatanaBlindDataObject::GetSuppressGroupToAssemblyPromotionAttr() const
+{
+    return GetPrim().GetAttribute(UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion);
+}
+
+UsdAttribute
+UsdKatanaBlindDataObject::CreateSuppressGroupToAssemblyPromotionAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -150,10 +167,11 @@ UsdKatanaBlindDataObject::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdKatanaTokens->katanaType,
         UsdKatanaTokens->katanaVisible,
+        UsdKatanaTokens->katanaSuppressGroupToAssemblyPromotion,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdSchemaBase::GetSchemaAttributeNames(true),
+            UsdTyped::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

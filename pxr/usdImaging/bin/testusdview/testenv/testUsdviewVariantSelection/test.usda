@@ -1,0 +1,68 @@
+#usda 1.0
+
+def Xform "Shapes" (
+    add variantSets = ["a_shapeVariant", "b_shapeVariant"]
+)
+{
+    variantSet "a_shapeVariant" = {
+        "capsule" {
+            def Capsule "Pill"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cone" {
+            def Cone "PartyHat"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cube" {
+            def Cube "Box"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cylinder" {
+            def Cylinder "Tube"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    variantSet "b_shapeVariant" = {
+        "capsule" {
+            def Capsule "Pill"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cone" {
+            def Cone "PartyHat"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cube" {
+            def Cube "Box"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        "cylinder" {
+            def Cylinder "Tube"
+            {
+                double3 xformOp:translate = (4, 5, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+}

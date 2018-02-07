@@ -245,6 +245,10 @@ TestStrings()
     TF_AXIOM(TfGetBaseName("\\foo\\bar") == "bar");
     TF_AXIOM(TfGetBaseName("\\foo\\bar\\") == "bar");
     TF_AXIOM(TfGetBaseName("..\\some-dir\\bar") == "bar");
+    TF_AXIOM(TfGetBaseName("C:\\hello") == "hello");
+    TF_AXIOM(TfGetBaseName("C:\\") == "");
+    TF_AXIOM(TfGetBaseName("C:") == "");
+    TF_AXIOM(TfGetBaseName("C:hello.txt") == "hello.txt");
 #endif
 
     TF_AXIOM(TfGetPathName("") == "");

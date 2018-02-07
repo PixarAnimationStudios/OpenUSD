@@ -26,6 +26,8 @@
 #define HD_COMP_EXT_COMP_INPUT_SOURCE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/extCompInputSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,16 +45,20 @@ class Hd_CompExtCompInputSource final : public Hd_ExtCompInputSource {
 public:
     /// Constructs the computation, binding inputName to sourceOutputName
     /// on buffer source representation of the source computation.
+    HD_API
     Hd_CompExtCompInputSource(const TfToken &inputName,
                               const HdExtCompCpuComputationSharedPtr &source,
                               const TfToken &sourceOutputName);
 
+    HD_API
     virtual ~Hd_CompExtCompInputSource() = default;
 
     /// Returns true once the source computation has been resolved.
+    HD_API
     virtual bool Resolve() override;
 
     /// Obtains the value of the output from the source computation.
+    HD_API
     virtual const VtValue &GetValue() const override;
 
 protected:

@@ -7,11 +7,14 @@ class BlindDataObject "BlindDataObject" (
     doc = "Container namespace schema for katana blind data from the klf file"
 )
 {
+    bool katana:suppressGroupToAssemblyPromotion (
+        doc = "If true don't promote a group to an assembly."
+    )
     string katana:type
     bool katana:visible
 }
 
-class LookAPI "LookAPI" (
+class "LookAPI" (
     doc = "Katana-specific extensions of UsdShadeMaterial."
 )
 {

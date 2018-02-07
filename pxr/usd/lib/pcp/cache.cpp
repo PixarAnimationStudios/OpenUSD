@@ -59,8 +59,6 @@
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_rw_mutex.h>
 
-#include <boost/bind.hpp>
-
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -1296,12 +1294,19 @@ struct Pcp_ParallelIndexer
 
         // Invoke the client's predicate to see if we should do children.
         bool didChildren = false;
-        if (_childrenPredicate(*index)) {
+        TfTokenVector namesToCompose;
+        if (_childrenPredicate(*index, &namesToCompose)) {
             // Compute the children paths and add new tasks for them.
             TfTokenVector names;
             PcpTokenSet prohibitedNames;
             index->ComputePrimChildNames(&names, &prohibitedNames);
             for (const auto& name : names) {
+                if (!namesToCompose.empty() &&
+                    std::find(namesToCompose.begin(), namesToCompose.end(), 
+                              name) == namesToCompose.end()) {
+                    continue;
+                }
+
                 didChildren = true;
                 _dispatcher.Run(
                     &This::_ComputeIndex, this, index,

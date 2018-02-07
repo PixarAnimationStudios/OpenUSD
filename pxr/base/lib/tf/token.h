@@ -94,13 +94,28 @@ public:
 
     /// Copy constructor.
     TfToken(TfToken const& rhs) : _rep(rhs._rep) { _AddRef(); }
+
+    /// Move constructor.
+    TfToken(TfToken && rhs) : _rep(rhs._rep) {
+        rhs._rep = TfPointerAndBits<const _Rep>();
+    }
     
-    /// Assignment.
+    /// Copy assignment.
     TfToken& operator= (TfToken const& rhs) {
         if (&rhs != this) {
-        rhs._AddRef();
-        _RemoveRef();
-        _rep = rhs._rep;
+            rhs._AddRef();
+            _RemoveRef();
+            _rep = rhs._rep;
+        }
+        return *this;
+    }
+
+    /// Move assignment.
+    TfToken& operator= (TfToken && rhs) {
+        if (&rhs != this) {
+            _RemoveRef();
+            _rep = rhs._rep;
+            rhs._rep = TfPointerAndBits<const _Rep>();
         }
         return *this;
     }
@@ -161,19 +176,12 @@ public:
         }
     };
 
-    /// Functor for comparing two tokens, for use in TfHashSet.
-    struct TokensEqualFunctor {
-        bool operator()(TfToken const& t1, TfToken const& t2) const {
-            return t1 == t2;
-        }
-    };
-
-    /// \typedef TfHashSet<TfToken, TfToken::HashFunctor, TfToken::TokensEqualFunctor> HashSet;
+    /// \typedef TfHashSet<TfToken, TfToken::HashFunctor> HashSet;
     ///
     /// Predefined type for TfHashSet of tokens, since it's so awkward to
     /// manually specify.
     ///
-    typedef TfHashSet<TfToken, TfToken::HashFunctor, TfToken::TokensEqualFunctor> HashSet;
+    typedef TfHashSet<TfToken, TfToken::HashFunctor> HashSet;
     
     /// \typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
     ///
@@ -183,13 +191,23 @@ public:
     ///
     typedef std::set<TfToken, TfToken::LTTokenFunctor> Set;
     
+    /// Return the size of the string that this token represents.
+    size_t size() const {
+        return _rep ? _rep->_str.size() : 0;
+    }
+
     /// Return the text that this token represents.
     ///
     /// \note The returned pointer value is not valid after this TfToken
     /// object has been destroyed.
     ///
     char const* GetText() const {
-        return _rep ? _rep->_str.c_str() : _emptyStr;
+        return _rep ? _rep->_str.c_str() : "";
+    }
+
+    /// Synonym for GetText().
+    char const *data() const {
+        return GetText();
     }
 
     /// Return the string that this token represents.
@@ -204,7 +222,9 @@ public:
     
     /// Equality operator
     bool operator==(TfToken const& o) const {
-        return _rep.Get() == o._rep.Get();
+        // Equal if pointers & bits are equal, or if just pointers are.  Done
+        // this way to avoid the bitwise operations for common cases.
+        return _rep == o._rep || _rep.Get() == o._rep.Get();
     }
 
     /// Equality operator
@@ -373,7 +393,6 @@ private:
     friend struct Tf_TokenRegistry;
     
     TF_API static std::string const& _GetEmptyString();
-    TF_API static char const* _emptyStr;
 
     mutable TfPointerAndBits<const _Rep> _rep;
 };

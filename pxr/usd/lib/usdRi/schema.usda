@@ -46,7 +46,7 @@ def "GLOBAL" (
 {
 }
 
-class "Statements" (
+class "StatementsAPI" (
     doc = """Container namespace schema for all renderman statements""" 
 ) {
     float ri:focusRegion (

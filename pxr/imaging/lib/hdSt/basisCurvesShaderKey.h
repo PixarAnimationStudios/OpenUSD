@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,12 +48,12 @@ struct HdSt_BasisCurvesShaderKey
     bool IsCullingPass() const { return false; }
     HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
     HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
-    Hd_GeometricShader::PrimitiveType GetPrimitiveType() const { 
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const { 
         return primType; 
     }
     bool IsFaceVarying() const { return false; }
 
-    Hd_GeometricShader::PrimitiveType primType;
+    HdSt_GeometricShader::PrimitiveType primType;
     TfToken glslfx;
     TfToken VS[4];
     TfToken TCS[4];

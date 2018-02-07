@@ -425,7 +425,7 @@ class TestUsdPrim(unittest.TestCase):
             assert not baz
             assert not foo.HasAuthoredReferences()
             assert foo.GetReferences().AddReference(s1.GetRootLayer().identifier, "/Foo")
-            items = foo.GetMetadata("references").addedItems
+            items = foo.GetMetadata("references").ApplyOperations([])
             assert foo.HasAuthoredReferences()
 
             # Make sure references are detected across composition arcs.
@@ -731,6 +731,41 @@ class TestUsdPrim(unittest.TestCase):
             self.assertFalse(w.IsPseudoRoot())
             self.assertTrue(w.GetParent().IsPseudoRoot())
             self.assertFalse(p.GetParent().IsPseudoRoot())
+
+    def test_Deactivation(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('Deactivation.%s' % fmt)
+            child = s.DefinePrim('/Root/Group/Child')
+
+            group = s.GetPrimAtPath('/Root/Group')
+            self.assertEqual(group.GetAllChildren(), [child])
+            self.assertTrue(s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
+
+            group.SetActive(False)
+
+            # Deactivating a prim removes all of its children from the stage.
+            # Note that the deactivated prim itself still exists on the stage;
+            # this allows users to reactivate it.
+            self.assertEqual(group.GetAllChildren(), [])
+
+            # Deactivating a prim should also cause the underlying prim 
+            # indexes for its children to be removed.
+            self.assertFalse(
+                s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
+
+    def test_AppliedSchemas(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt)
+            root = s.DefinePrim('/hello')
+            self.assertEqual([], root.GetAppliedSchemas())
+            Usd.ModelAPI.Apply(s, '/hello')
+            self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
+            Usd.ClipsAPI.Apply(s, '/hello')
+            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+
+            # Ensure duplicates aren't picked up
+            Usd.ClipsAPI.Apply(s, '/hello')
+            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
 
 if __name__ == "__main__":
     unittest.main()

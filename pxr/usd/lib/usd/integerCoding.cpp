@@ -96,8 +96,13 @@ per integer (6.25% the original size), in the worst possible case it is
 
 namespace {
 
-inline int32_t
-_Signed(uint32_t x)
+template <class Int>
+inline typename std::enable_if<
+    std::is_integral<Int>::value &&
+    std::is_unsigned<Int>::value &&
+    sizeof(Int) == 4,
+    int32_t>::type
+_Signed(Int x)
 {
     if (x <= static_cast<uint32_t>(INT32_MAX))
         return static_cast<int32_t>(x);
@@ -107,6 +112,46 @@ _Signed(uint32_t x)
 
     TF_FATAL_ERROR("Unsupported C++ integer representation");
     return 0;
+}    
+
+template <class Int>
+inline typename std::enable_if<
+    std::is_integral<Int>::value &&
+    std::is_signed<Int>::value &&
+    sizeof(Int) == 4,
+    int32_t>::type
+_Signed(Int x)
+{
+    return x;
+}    
+
+template <class Int>
+inline typename std::enable_if<
+    std::is_integral<Int>::value &&
+    std::is_unsigned<Int>::value &&
+    sizeof(Int) == 8,
+    int64_t>::type
+_Signed(Int x)
+{
+    if (x <= static_cast<uint64_t>(INT64_MAX))
+        return static_cast<int64_t>(x);
+
+    if (x >= static_cast<uint64_t>(INT64_MIN))
+        return static_cast<int64_t>(x - INT64_MIN) + INT64_MIN;
+
+    TF_FATAL_ERROR("Unsupported C++ integer representation");
+    return 0;
+}
+
+template <class Int>
+inline typename std::enable_if<
+    std::is_integral<Int>::value &&
+    std::is_signed<Int>::value &&
+    sizeof(Int) == 8,
+    int64_t>::type
+_Signed(Int x)
+{
+    return x;
 }
 
 template <class T>
@@ -137,6 +182,15 @@ _GetEncodedBufferSize(size_t numInts)
         : 0;
 }
 
+template <class Int>
+struct _SmallTypes
+{
+    typedef typename std::conditional<
+        sizeof(Int) == 4, int8_t, int16_t>::type SmallInt;
+    typedef typename std::conditional<
+        sizeof(Int) == 4, int16_t, int32_t>::type MediumInt;
+};        
+
 template <int N, class Iterator>
 void _EncodeNHelper(
     Iterator &cur,
@@ -149,18 +203,20 @@ void _EncodeNHelper(
 
     using Int = typename std::iterator_traits<Iterator>::value_type;
     using SInt = typename std::make_signed<Int>::type;
+    using SmallInt = typename _SmallTypes<Int>::SmallInt;
+    using MediumInt = typename _SmallTypes<Int>::MediumInt;
 
     static_assert(1 <= N && N <= 4, "");
 
-    enum Code { Common, One, Two, Four };
+    enum Code { Common, Small, Medium, Large };
     
     auto getCode = [commonValue](SInt x) {
-        std::numeric_limits<int8_t> int8Limit;
-        std::numeric_limits<int16_t> int16Limit;
+        std::numeric_limits<SmallInt> smallLimit;
+        std::numeric_limits<MediumInt> mediumLimit;
         if (x == commonValue) { return Common; }
-        if (x >= int8Limit.min() && x <= int8Limit.max()) { return One; }
-        if (x >= int16Limit.min() && x <= int16Limit.max()) { return Two; }
-        return Four;
+        if (x >= smallLimit.min() && x <= smallLimit.max()) { return Small; }
+        if (x >= mediumLimit.min() && x <= mediumLimit.max()) { return Medium; }
+        return Large;
     };
 
     uint8_t codeByte = 0;
@@ -173,14 +229,14 @@ void _EncodeNHelper(
         default:
         case Common:
             break;
-        case One:
-            vintsOut = _WriteBits(vintsOut, static_cast<int8_t>(val));
+        case Small:
+            vintsOut = _WriteBits(vintsOut, static_cast<SmallInt>(val));
             break;
-        case Two:
-            vintsOut = _WriteBits(vintsOut, static_cast<int16_t>(val));
+        case Medium:
+            vintsOut = _WriteBits(vintsOut, static_cast<MediumInt>(val));
             break;
-        case Four:
-            vintsOut = _WriteBits(vintsOut, static_cast<int32_t>(val));
+        case Large:
+            vintsOut = _WriteBits(vintsOut, _Signed(val));
             break;
         };
     }
@@ -198,8 +254,11 @@ void _DecodeNHelper(
     Iterator &output)
 {
     using Int = typename std::iterator_traits<Iterator>::value_type;
+    using SInt = typename std::make_signed<Int>::type;
+    using SmallInt = typename _SmallTypes<Int>::SmallInt;
+    using MediumInt = typename _SmallTypes<Int>::MediumInt;
 
-    enum Code { Common, One, Two, Four };
+    enum Code { Common, Small, Medium, Large };
 
     uint8_t codeByte = *codesIn++;
     for (int i = 0; i != N; ++i) {
@@ -208,14 +267,14 @@ void _DecodeNHelper(
         case Common:
             prevVal += commonValue;
             break;
-        case One:
-            prevVal += _ReadBits<int8_t>(vintsIn);
+        case Small:
+            prevVal += _ReadBits<SmallInt>(vintsIn);
             break;
-        case Two:
-            prevVal += _ReadBits<int16_t>(vintsIn);
+        case Medium:
+            prevVal += _ReadBits<MediumInt>(vintsIn);
             break;
-        case Four:
-            prevVal += _ReadBits<int32_t>(vintsIn);
+        case Large:
+            prevVal += _ReadBits<SInt>(vintsIn);
             break;
         }
         *output++ = static_cast<Int>(prevVal);
@@ -226,8 +285,6 @@ template <class Int>
 size_t
 _EncodeIntegers(Int const *begin, size_t numInts, char *output)
 {
-    static_assert(sizeof(Int) == sizeof(int32_t), "");
-
     using SInt = typename std::make_signed<Int>::type;
     
     if (numInts == 0)
@@ -282,8 +339,6 @@ _EncodeIntegers(Int const *begin, size_t numInts, char *output)
 template <class Int>
 size_t _DecodeIntegers(char const *data, size_t numInts, Int *result)
 {
-    static_assert(sizeof(Int) == sizeof(int32_t), "");
-
     using SInt = typename std::make_signed<Int>::type;
 
     auto commonValue = _ReadBits<SInt>(data);
@@ -315,8 +370,6 @@ template <class Int>
 size_t
 _CompressIntegers(Int const *begin, size_t numInts, char *output)
 {
-    static_assert(sizeof(Int) == sizeof(int32_t), "");
-
     // Working space.
     std::unique_ptr<char[]>
         encodeBuffer(new char[_GetEncodedBufferSize<Int>(numInts)]);
@@ -333,8 +386,6 @@ template <class Int>
 size_t _DecompressIntegers(char const *compressed, size_t compressedSize,
                            Int *ints, size_t numInts, char *workingSpace)
 {
-    static_assert(sizeof(Int) == sizeof(int32_t), "");
-
     // Working space.
     size_t workingSpaceSize =
         Usd_IntegerCompression::GetDecompressionWorkingSpaceSize(numInts);
@@ -355,6 +406,9 @@ size_t _DecompressIntegers(char const *compressed, size_t compressedSize,
 
 
 } // anon
+
+////////////////////////////////////////////////////////////////////////
+// 32 bit.
 
 size_t
 Usd_IntegerCompression::GetCompressedBufferSize(size_t numInts)
@@ -396,6 +450,54 @@ size_t
 Usd_IntegerCompression::DecompressFromBuffer(
     char const *compressed, size_t compressedSize,
     uint32_t *ints, size_t numInts, char *workingSpace)
+{
+    return _DecompressIntegers(compressed, compressedSize,
+                               ints, numInts, workingSpace);
+}
+
+////////////////////////////////////////////////////////////////////////
+// 64 bit.
+
+size_t
+Usd_IntegerCompression64::GetCompressedBufferSize(size_t numInts)
+{
+    return TfFastCompression::GetCompressedBufferSize(
+        _GetEncodedBufferSize<int64_t>(numInts));
+}
+
+size_t
+Usd_IntegerCompression64::GetDecompressionWorkingSpaceSize(size_t numInts)
+{
+    return _GetEncodedBufferSize<int64_t>(numInts);
+}
+
+size_t
+Usd_IntegerCompression64::CompressToBuffer(
+    int64_t const *ints, size_t numInts, char *compressed)
+{
+    return _CompressIntegers(ints, numInts, compressed);
+}
+
+size_t
+Usd_IntegerCompression64::CompressToBuffer(
+    uint64_t const *ints, size_t numInts, char *compressed)
+{
+    return _CompressIntegers(ints, numInts, compressed);
+}
+
+size_t
+Usd_IntegerCompression64::DecompressFromBuffer(
+    char const *compressed, size_t compressedSize,
+    int64_t *ints, size_t numInts, char *workingSpace)
+{
+    return _DecompressIntegers(compressed, compressedSize,
+                               ints, numInts, workingSpace);
+}
+
+size_t
+Usd_IntegerCompression64::DecompressFromBuffer(
+    char const *compressed, size_t compressedSize,
+    uint64_t *ints, size_t numInts, char *workingSpace)
 {
     return _DecompressIntegers(compressed, compressedSize,
                                ints, numInts, workingSpace);

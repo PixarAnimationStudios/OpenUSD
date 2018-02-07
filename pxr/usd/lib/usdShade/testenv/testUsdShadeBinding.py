@@ -37,15 +37,17 @@ class TestUsdShadeBinding(unittest.TestCase):
         lw2 = UsdShade.Material.Define(s, "/weaker/look2")
         gpw = s.OverridePrim("/weaker/gprim")
         lw1.Bind(gpw)
-        self.assertEqual(UsdShade.Material.GetBindingRel(gpw).GetTargets(),
-                         [Sdf.Path("/weaker/look1")])
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI(gpw).GetDirectBindingRel().GetTargets(),
+            [Sdf.Path("/weaker/look1")])
 
         ls1 = UsdShade.Material.Define(s, "/stronger/look1")
         ls2 = UsdShade.Material.Define(s, "/stronger/look2")
         gps = s.OverridePrim("/stronger/gprim")
         ls2.Bind(gps)
-        self.assertEqual(UsdShade.Material.GetBindingRel(gps).GetTargets(), 
-                         [Sdf.Path("/stronger/look2")])
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI(gps).GetDirectBindingRel().GetTargets(), 
+            [Sdf.Path("/stronger/look2")])
 
         cr = s.OverridePrim("/composed")
 
@@ -53,21 +55,25 @@ class TestUsdShadeBinding(unittest.TestCase):
         cr.GetReferences().AddReference(rl.identifier, "/weaker")
 
         gpc = s.GetPrimAtPath("/composed/gprim")
-        lb = UsdShade.Material.GetBindingRel(gpc)
+        lb = UsdShade.MaterialBindingAPI(gpc).GetDirectBindingRel()
 
         # validate we get look2, the stronger binding
         self.assertEqual(lb.GetTargets(), [Sdf.Path("/composed/look2")])
 
         # upon unbinding *in* the stronger site (i.e. "/stronger/gprim"),
         # we should still be unbound in the fully composed view
-        UsdShade.Material.Unbind(gps)
+        UsdShade.MaterialBindingAPI(gps).UnbindAllBindings()
         self.assertEqual(lb.GetTargets(), [])
+
         # but *clearing* the target on the referenced prim should allow
         # the weaker binding to shine through
-        UsdShade.Material.GetBindingRel(gps).ClearTargets(True)
+        UsdShade.MaterialBindingAPI(gps).GetDirectBindingRel().ClearTargets(True)
+
+        print rl.ExportToString()
+
         self.assertEqual(lb.GetTargets(), [Sdf.Path("/composed/look1")])
 
-    # Test GetBoundMaterial() API
+    # Test ComputeBoundMaterial() API
     def test_GetBoundMaterial(self):
         stage = Usd.Stage.CreateInMemory()
         look = UsdShade.Material.Define(stage, "/World/Material")
@@ -75,17 +81,16 @@ class TestUsdShadeBinding(unittest.TestCase):
         gprim = stage.OverridePrim("/World/Gprim")
         self.assertTrue(gprim)
 
-        self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
-        self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
-        look.Bind(gprim)
-        self.assertTrue(UsdShade.Material.GetBoundMaterial(gprim))
-        self.assertTrue(UsdShade.Material.GetBoundMaterial(gprim))
+        gprimBindingAPI = UsdShade.MaterialBindingAPI(gprim)
+        self.assertFalse(gprimBindingAPI.ComputeBoundMaterial()[0])
+        gprimBindingAPI.Bind(look)
+        (mat, rel) = gprimBindingAPI.ComputeBoundMaterial()
+        self.assertTrue(mat and rel)
 
         # Now add one more target to mess things up
-        rel = UsdShade.Material.GetBindingRel(gprim)
+        rel = gprimBindingAPI.GetDirectBindingRel()
         rel.AddTarget(Sdf.Path("/World"))
-        self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
-        self.assertFalse(UsdShade.Material.GetBoundMaterial(gprim))
+        self.assertFalse(gprimBindingAPI.ComputeBoundMaterial()[0])
 
     def test_BlockingOnOver(self):
         stage = Usd.Stage.CreateInMemory()
@@ -94,12 +99,11 @@ class TestUsdShadeBinding(unittest.TestCase):
         self.assertTrue(look)
         gprim = stage.DefinePrim("/World/gprim")
 
-        UsdShade.Material.Unbind(over)
-        look.Bind(gprim)
+        UsdShade.MaterialBindingAPI(over).UnbindDirectBinding()
+        UsdShade.MaterialBindingAPI(gprim).Bind(look)
         # This will compose in gprim's binding, but should still be blocked
         over.GetInherits().AddInherit("/World/gprim")
-        self.assertFalse(UsdShade.Material.GetBoundMaterial(over))
-        self.assertFalse(UsdShade.Material.GetBoundMaterial(over))
+        self.assertFalse(UsdShade.MaterialBindingAPI(over).ComputeBoundMaterial()[0])
 
 if __name__ == "__main__":
     unittest.main()

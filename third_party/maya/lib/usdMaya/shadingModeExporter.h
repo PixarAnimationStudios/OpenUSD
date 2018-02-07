@@ -30,6 +30,8 @@
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
 
+#include "pxr/usd/usdShade/material.h"
+
 #include <functional>
 #include <memory>
 
@@ -42,14 +44,35 @@ public:
     PXRUSDMAYA_API
     virtual ~PxrUsdMayaShadingModeExporter();
 
-    PXRUSDMAYA_API
-    virtual void DoExport(const UsdStageRefPtr& stage,
-                          const PxrUsdMayaUtil::ShapeSet& bindableRoots,
-                          bool mergeTransformAndShape,
-                          const SdfPath& overrideRootPath);
 
     PXRUSDMAYA_API
-    virtual void Export(const PxrUsdMayaShadingModeExportContext& context);
+    void DoExport(const UsdStageRefPtr& stage,
+                  const PxrUsdMayaUtil::ShapeSet& bindableRoots,
+                  bool mergeTransformAndShape,
+                  const SdfPath& overrideRootPath,
+                  const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+                  const SdfPath &materialCollectionsPath);
+
+    /// Called once, before any exports are started.
+    ///
+    /// Because it is called before the the per-shading-engine loop, the shadingEngine
+    /// in the passed PxrUsdMayaShadingModeExportContext will be a null MObject.
+    PXRUSDMAYA_API
+    virtual void PreExport(const PxrUsdMayaShadingModeExportContext& context) {};
+
+    /// Called inside of a loop, per-shading-engine
+    PXRUSDMAYA_API
+    virtual void Export(const PxrUsdMayaShadingModeExportContext& context,
+                        UsdShadeMaterial * const mat, 
+                        SdfPathSet * const boundPrimPaths)=0;
+
+    /// Called once, after Export is called for all shading engines.
+    ///
+    /// Because it is called after the the per-shading-engine loop, the shadingEngine
+    /// in the passed PxrUsdMayaShadingModeExportContext will be a null MObject.
+    PXRUSDMAYA_API
+    virtual void PostExport(const PxrUsdMayaShadingModeExportContext& context) {};
+
 };
 
 using PxrUsdMayaShadingModeExporterPtr = std::shared_ptr<PxrUsdMayaShadingModeExporter>;

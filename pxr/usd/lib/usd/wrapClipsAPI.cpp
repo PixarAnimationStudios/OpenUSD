@@ -66,6 +66,16 @@ void wrapUsdClipsAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .staticmethod("Apply")
+
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -240,6 +250,15 @@ static double _GetClipTemplateStride(const UsdClipsAPI &self,
 }
 
 template <class... Args>
+static double _GetClipTemplateActiveOffset(const UsdClipsAPI &self, 
+                                     const Args&... args) 
+{
+    double clipTemplateActiveOffset;
+    self.GetClipTemplateActiveOffset(&clipTemplateActiveOffset, args...);
+    return clipTemplateActiveOffset;
+}
+
+template <class... Args>
 static double _GetClipTemplateStartTime(const UsdClipsAPI &self, 
                                         const Args&... args) 
 {
@@ -381,6 +400,22 @@ WRAP_CUSTOM {
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateStride),
              (arg("clipTemplateStride"), arg("clipSet")))
+
+        .def("GetClipTemplateActiveOffset", 
+             (double(*)(const UsdClipsAPI&))
+                (&_GetClipTemplateActiveOffset))
+        .def("GetClipTemplateActiveOffset", 
+             (double(*)(const UsdClipsAPI&, const std::string&))
+                 (&_GetClipTemplateActiveOffset),
+             arg("clipSet"))
+        .def("SetClipTemplateActiveOffset", 
+             (bool(UsdClipsAPI::*)(double))
+                 (&UsdClipsAPI::SetClipTemplateActiveOffset),
+             arg("clipTemplateActiveOffset"))
+        .def("SetClipTemplateActiveOffset", 
+             (bool(UsdClipsAPI::*)(double, const std::string&))
+                 (&UsdClipsAPI::SetClipTemplateActiveOffset),
+             (arg("clipTemplateActiveOffset"), arg("clipSet")))
 
         .def("GetClipTemplateStartTime", 
              (double(*)(const UsdClipsAPI&))

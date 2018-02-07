@@ -32,6 +32,7 @@ def "GLOBAL" (
 ##### Katana Blind Data Object #####
 
 class BlindDataObject "BlindDataObject" (
+    inherits = </Typed>
     doc = """Container namespace schema for katana blind data from the klf file""" 
 ) {
     string katana:type (
@@ -44,9 +45,15 @@ class BlindDataObject "BlindDataObject" (
             string apiName = "visible"
         }
     )
+    bool katana:suppressGroupToAssemblyPromotion (
+        doc = """If true don't promote a group to an assembly."""
+        customData = { 
+            string apiName = "suppressGroupToAssemblyPromotion"
+        }
+    )
 }
 
-class LookAPI "LookAPI"(
+class "LookAPI"(
     doc = """Katana-specific extensions of UsdShadeMaterial."""
 ) {
     uniform string katana:primName (

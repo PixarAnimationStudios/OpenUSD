@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "extraPluginDuplicateCommand",
+            "Info": {
+                "Types": {
+                    "extraPluginDuplicateCommand.ExtraContainerDuplicateCommand": {
+                        "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+                        "displayName": "Extra plugin container with duplicate commands."
+                    }
+                }
+            }
+        }
+    ]
+}

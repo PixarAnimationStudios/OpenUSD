@@ -67,11 +67,30 @@ HdRprimCollection::HdRprimCollection(TfToken const& name,
     }
 }
 
+HdRprimCollection::HdRprimCollection(HdRprimCollection const& col)
+{
+    _name           = col._name;
+    _reprName       = col._reprName;
+    _forcedRepr     = col._forcedRepr;
+    _renderTags     = col._renderTags;
+    _rootPaths      = col._rootPaths;
+    _excludePaths   = col._excludePaths;
+}
+
 HdRprimCollection::~HdRprimCollection()
 {
     /*NOTHING*/
 }
 
+HdRprimCollection
+HdRprimCollection::CreateInverseCollection() const
+{
+    // Use the copy constructor and then swap the root and exclude paths
+    HdRprimCollection invCol(*this);
+    invCol._rootPaths.swap(invCol._excludePaths);
+
+    return invCol;
+}
 
 SdfPathVector const& 
 HdRprimCollection::GetRootPaths() const

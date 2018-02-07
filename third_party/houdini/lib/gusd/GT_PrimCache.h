@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __GUSD_GT_PRIMCACHE_H_
+#ifndef __GUSD_GT_PRIMCACHE_H__
 #define __GUSD_GT_PRIMCACHE_H__
 
 

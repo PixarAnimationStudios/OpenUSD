@@ -57,6 +57,13 @@ _CreateGeomBindTransformAttr(UsdSkelBindingAPI &self,
 }
         
 static UsdAttribute
+_CreateJointsAttr(UsdSkelBindingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateJointIndicesAttr(UsdSkelBindingAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateJointIndicesAttr(
@@ -87,6 +94,16 @@ void wrapUsdSkelBindingAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .staticmethod("Apply")
+
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -105,6 +122,13 @@ void wrapUsdSkelBindingAPI()
              &This::GetGeomBindTransformAttr)
         .def("CreateGeomBindTransformAttr",
              &_CreateGeomBindTransformAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetJointsAttr",
+             &This::GetJointsAttr)
+        .def("CreateJointsAttr",
+             &_CreateJointsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
@@ -132,11 +156,6 @@ void wrapUsdSkelBindingAPI()
              &This::GetSkeletonRel)
         .def("CreateSkeletonRel",
              &This::CreateSkeletonRel)
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -163,7 +182,24 @@ void wrapUsdSkelBindingAPI()
 
 namespace {
 
+
 WRAP_CUSTOM {
+    using This = UsdSkelBindingAPI;
+
+    _class
+        .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar)
+
+        .def("CreateJointIndicesPrimvar", &This::CreateJointIndicesPrimvar,
+             (arg("constant"), arg("elementSize")=-1))
+
+        .def("GetJointWeightsPrimvar", &This::GetJointWeightsPrimvar)
+
+        .def("CreateJointWeightsPrimvar", &This::CreateJointWeightsPrimvar,
+             (arg("constant"), arg("elementSize")=-1))
+
+        .def("SetRigidJointInfluence", &This::SetRigidJointInfluence,
+             (arg("jointIndex"), arg("weight")=1.0f))
+        ;
 }
 
-}
+} // namespace

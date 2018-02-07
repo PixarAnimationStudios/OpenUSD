@@ -57,7 +57,23 @@ class SdfAssetPath;
 ///
 /// UsdShadeConnectableAPI is an API schema that provides a common
 /// interface for creating outputs and making connections between shading 
-/// parameters and outputs.
+/// parameters and outputs. The interface is common to all UsdShade schemas
+/// that support Inputs and Outputs, which currently includes UsdShadeShader,
+/// UsdShadeNodeGraph, and UsdShadeMaterial .
+/// 
+/// One can construct a UsdShadeConnectableAPI directly from a UsdPrim, or
+/// from objects of any of the schema classes listed above.  If it seems
+/// onerous to need to construct a secondary schema object to interact with
+/// Inputs and Outputs, keep in mind that any function whose purpose is either
+/// to walk material/shader networks via their connections, or to create such
+/// networks, can typically be written entirely in terms of 
+/// UsdShadeConnectableAPI objects, without needing to care what the underlying
+/// prim type is.
+/// 
+/// Additionally, the most common UsdShadeConnectableAPI behaviors
+/// (creating Inputs and Outputs, and making connections) are wrapped as
+/// convenience methods on the prim schema classes (creation) and 
+/// UsdShadeInput and UsdShadeOutput.
 /// 
 ///
 class UsdShadeConnectableAPI : public UsdSchemaBase
@@ -68,6 +84,11 @@ public:
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
     static const bool IsConcrete = false;
+
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = false;
 
     /// Construct a UsdShadeConnectableAPI on UsdPrim \p prim .
     /// Equivalent to UsdShadeConnectableAPI::Get(prim.GetStage(), prim.GetPath())
@@ -110,6 +131,16 @@ public:
     static UsdShadeConnectableAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget. This information is stored in the apiSchemas
+    /// metadata on prims.  
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    USDSHADE_API
+    static UsdShadeConnectableAPI 
+    Apply(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -578,6 +609,7 @@ public:
     /// 
     /// \note This method exists only for testing equality of the old and new
     /// encoding of shading networks in USD. 
+    USDSHADE_API
     static bool AreBidirectionalInterfaceConnectionsEnabled();
 
     /// @}

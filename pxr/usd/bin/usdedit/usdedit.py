@@ -55,15 +55,16 @@ def _findEditorTools(usdFileName, readOnly):
         sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH.")
 
     # Ensure we have a suitable editor available
-    editorCmd = (os.getenv("EDITOR") or 
+    editorCmd = (os.getenv("USD_EDITOR") or
+                 os.getenv("EDITOR") or 
                  _findExe("emacs") or
                  _findExe("vim") or
                  _findExe("notepad"))
     
     if not editorCmd:
         sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 
-                 "either $EDITOR to be set, or emacs/vim/notepad to be installed.")
-
+                 "$USD_EDITOR or $EDITOR to be set, or emacs/vim/notepad to "
+                 "be installed and available in PATH.")
 
     # special handling for emacs users
     if 'emacs' in editorCmd:
@@ -131,8 +132,13 @@ def main():
                'original file, unless you supply the "-n" (--noeffect) flag, \n'
                'in which case no changes will be saved back to the original '
                'file. \n'
-               'The editor to use will be queried from the EDITOR environment '
-               'variable.\n\n')
+               'The editor to use will be looked up as follows: \n'
+               '    - USD_EDITOR environment variable \n'
+               '    - EDITOR environment variable \n'
+               '    - emacs in PATH \n'
+               '    - vim in PATH \n'
+               '    - notepad in PATH \n'
+               '\n\n')
     parser.add_argument('-n', '--noeffect',
                         dest='readOnly', action='store_true',
                         help='Do not edit the file.')

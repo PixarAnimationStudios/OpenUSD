@@ -24,6 +24,7 @@
 // WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.
 //
 
+#include "pxr/pxr.h"
 #include <atomic>
 #include <stddef.h>
 #include <string>

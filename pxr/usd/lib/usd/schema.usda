@@ -120,6 +120,47 @@ def "GLOBAL" (
               See \\ref UsdClipsAPI::GetClipSets.
               """
             }
+            dictionary collection = {
+                string doc = """This is the namespace prefix used by 
+                UsdCollectionAPI for authoring collections."""
+            }
+            dictionary expansionRule = {
+                string doc = """Base name of the attribute used to encode 
+                how the paths included in a collection must be expanded."""
+            }
+            dictionary explicitOnly = {
+                string doc = """
+                Possible value for the "expansionRule" attribute of a 
+                collection.
+                """
+            }
+            dictionary expandPrims = {
+                string doc = """
+                Possible value for the "expansionRule" attribute of a 
+                collection.
+                """
+            }
+            dictionary expandPrimsAndProperties = {
+                string doc = """
+                Possible value for the "expansionRule" attribute of a 
+                collection.
+                """
+            }
+            dictionary exclude = {
+                string doc = """
+                This is the token used to exclude a path from a collection. 
+                Although it is not a possible value for the "expansonRule"
+                attribute, it is used as the expansionRule for excluded paths 
+                in UsdCollectionAPI::MembershipQuery::IsPathIncluded.
+                """
+            }
+            dictionary apiSchemas = {
+                string doc = """
+                A listop metadata containing the API schemas which have
+                been applied to this prim, using the Apply() method on
+                the particular schema class. 
+                """
+            }
         }
     }
 )
@@ -157,6 +198,89 @@ class "ModelAPI"
     \\todo establish an _IsCompatible() override that returns IsModel()
     \\todo GetModelInstanceName()
     """
+)
+{
+}
+
+class "CollectionAPI"
+(
+    doc = """ This is a general purpose API schema, used to describe a 
+    collection of heterogeneous objects within the scene. "Objects" here may be 
+    prims or properties belonging to prims or other collections. It's an add-on 
+    schema that can be applied many times to a prim with different collection 
+    names. 
+
+    A collection allows an enumeration of a set of paths to include and a 
+    set of paths to exclude (beneath the included paths). Whether the 
+    descendants of an included path are members of a collection are decided 
+    by it's expansion rule (see below). A collection shall not exclude a 
+    path that's not already included by it. This rule isn't enforced by the 
+    authoring API, but can be validated using the UsdCollectionAPI::Validate()
+    method. 
+
+    All the properties authored by the schema are namespaced under
+    "collection:". The given name of the collection provides additional 
+    namespacing for the various per-collection properties, which include the 
+    following:
+
+    <ul><li><b>uniform token collection:<i>collectionName</i>:expansionRule</b> - 
+    specified how the paths that are included in the collection must be expanded 
+    to determine its members. Possible values include:
+        <ul>
+        <li><b>explicitOnly</b> - only paths in the includes rel targets and not 
+        in the excludes rel targets belong to the collection.
+        </li>
+        <li><b>expandPrims</b> - all the prims at or below the includes rel-
+        targets (and not under the excludes rel-targets) belong to the 
+        collection.  Any property paths included in the collection would, of 
+        course, also be honored. This is the default behavior as it satisfies 
+        most use cases.
+        </li>
+        <li><b>expandPrimsAndProperties</b> - like expandPrims, but also 
+        includes all properties on all matched prims.  We're still not quite 
+        sure what the use cases are for this, but you can use it to capture a 
+        whole lot of UsdObjects very concisely.
+        </li>
+        </ul>
+    </li>
+    <li><b>rel collection:<i>collectionName</i>:includes</b> - specifies a list 
+    of targets that are included in the collection. This can target prims or 
+    properties directly. A collection can include another collection by 
+    making its <i>includes</i> relationship target the <b>collection:{collectionName}</b> 
+    property on the owning prim of the collection to be included.
+    Such a property may not (and typically does not) exist on the UsdStage, but 
+    it is the path that is used to refer to the collection. When a collection 
+    When a collection includes one or more collections, the order in which 
+    targets are added to the includes relationship may become significant, if 
+    there are conflicting opinions about the same path. Targets that are added 
+    later are considered to be stronger than earlier targets. 
+    </li>
+    <li><b>rel collection:<i>collectionName</i>:excludes</b> - specifies a list 
+    of targets that are excluded below the <b>included</b> paths in this 
+    collection. This can target prims or properties directly, but <b>cannot
+    target another collection</b>. This is to keep the membership determining 
+    logic simple, efficient and easier to reason about. Finally, it is invalid 
+    for a collection to exclude paths that are not included in it. The presence
+    of such "orphaned" excluded paths will not affect the set of paths included 
+    in the collection, but may affect the performance of querying membership of 
+    a path in the collection (see UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
+    or of enumerating the objects belonging to the collection (see 
+    UsdCollectionAPI::GetIncludedObjects).
+    </li></ul>
+
+    <b>Creating collections in C++</b>
+    
+    \\snippet examples.cpp ApplyCollections
+    """
+
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usd/primFlags.h"
+#include "pxr/usd/usd/tokens.h"
+"""
+        bool isMultipleApply = true
+        bool isPrivateApply  = true    
+    }
 )
 {
 }

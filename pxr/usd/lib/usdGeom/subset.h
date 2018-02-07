@@ -91,6 +91,11 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = true;
 
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = true;
+
     /// Construct a UsdGeomSubset on UsdPrim \p prim .
     /// Equivalent to UsdGeomSubset::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -220,15 +225,28 @@ public:
     // FAMILYNAME 
     // --------------------------------------------------------------------- //
     /// The name of the family of subsets that this subset belongs to. 
-    /// This is optional is only useful when there are multiple families of 
-    /// subsets under a geometric prim.
-    /// When multiple subsets belonging to a prim have the same familyName, it 
-    /// is possible to encode whether the subsets in the family form a partition 
-    /// (i.e. every element of the whole geometry appears exactly once in only 
-    /// one of the subsets belonging to the family) using the static method
-    /// UsdGeomSubset::SetFamilyType(). The validity of the partition 
-    /// can be checked using ValidatePartition(). However, mutual exclusivity 
-    /// and inclusiveness are not enforced by the authoring APIs.
+    /// This is optional and is primarily useful when there are multiple 
+    /// families of subsets under a geometric prim. In some cases, this could 
+    /// also be used for achieving proper roundtripping of subset data between 
+    /// DCC apps.
+    /// When multiple subsets belonging to a prim have the same familyName, they 
+    /// are said to belong to the family. A <i>familyType</i> value can be 
+    /// encoded on the owner of a family of subsets as a token using the static 
+    /// method UsdGeomSubset::SetFamilyType(). "familyType" can have one of the 
+    /// following values:
+    /// <ul><li><b>UsdGeomTokens->partition</b>: implies that every element of 
+    /// the whole geometry appears exactly once in only one of the subsets
+    /// belonging to the family.</li>
+    /// <li><b>UsdGeomTokens->nonOverlapping</b>: an element that appears in one 
+    /// subset may not appear in any other subset belonging to the family.</li>
+    /// <li><b>UsdGeomTokens->unrestricted</b>: implies that there are no
+    /// restrictions w.r.t. the membership of elements in the subsets. They 
+    /// could be overlapping and the union of all subsets in the family may 
+    /// not represent the whole.</li>
+    /// </ul>
+    /// \note The validity of subset data is not enforced by the authoring 
+    /// APIs, however they can be checked using UsdGeomSubset::ValidateFamily().
+    /// 
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
@@ -257,17 +275,6 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Enum class used to denote the type of a family of GeomSubsets. 
-    enum class FamilyType {
-        // Every element appears exacly once in only one of the subsets in 
-        // the family.
-        Partition,      
-
-        // A particular element may appear in multiple subsets and not all 
-        // elements may be included in the union of all the subsets.
-        NonPartition    
-    };
-
     /// Creates a new GeomSubset below the given \p geom with the given 
     /// name, \p subsetName, element type, \p elementType and \p indices.
     /// 
@@ -275,6 +282,8 @@ public:
     /// this updates its attributes with the values of the provided arguments 
     /// (indices value at time 'default' will be updated) and returns it. 
     /// 
+    /// The family type is set / updated on \p geom only if a non-empty value 
+    /// is passed in for \p familyType and \p familyName.
     USDGEOM_API
     static UsdGeomSubset CreateGeomSubset(
         const UsdGeomImageable &geom, 
@@ -282,7 +291,7 @@ public:
         const TfToken &elementType,
         const VtIntArray &indices,
         const TfToken &familyName=TfToken(),
-        const FamilyType familyType=FamilyType::NonPartition);
+        const TfToken &familyType=TfToken());
 
     /// Creates a new GeomSubset below the given imageable, \p geom with the 
     /// given name, \p subsetName, element type, \p elementType and \p indices.
@@ -291,6 +300,8 @@ public:
     /// this creates a new subset by appending a suitable index as suffix to 
     /// \p subsetName (eg, subsetName_1) to avoid name collisions.
     /// 
+    /// The family type is set / updated on \p geom only if a non-empty value 
+    /// is passed in for \p familyType and \p familyName.
     USDGEOM_API
     static UsdGeomSubset CreateUniqueGeomSubset(
         const UsdGeomImageable &geom, 
@@ -298,7 +309,7 @@ public:
         const TfToken &elementType,
         const VtIntArray &indices,
         const TfToken &familyName=TfToken(),
-        const FamilyType familyType=FamilyType::NonPartition);
+        const TfToken &familyType=TfToken());
     
     /// Returns all the GeomSubsets defined on the given imageable, \p geom. 
     USDGEOM_API
@@ -327,14 +338,14 @@ public:
     /// on the given geometric prim \p geom, with the given family name, 
     /// \p familyName belong to. 
     /// 
-    /// See \ref UsdGeomSubset::FamilyType for the possible values for 
+    /// See \ref UsdGeomSubset::GetFamilyNameAttr for the possible values for 
     /// \p familyType.
     /// 
-    /// When a family of GeomSubsets is tagged as a FamilyType::Partition, the 
-    /// validity of the partition (i.e. mutual exclusivity and wholeness) is 
-    /// not enforced by the authoring APIs. Use ValidateFamily() or 
-    /// ValidateSubsets() to validate a family of GeomSubsets that need to be 
-    /// a partition.
+    /// When a family of GeomSubsets is tagged as a UsdGeomTokens->partition or 
+    /// UsdGeomTokens->nonOverlapping, the validity of the data (i.e. 
+    /// mutual exclusivity and/or wholeness) is not enforced by the authoring 
+    /// APIs. Use ValidateFamily() to validate the data in a family of 
+    /// GeomSubsets.
     /// 
     /// \return Returns false upon failure to create or set the appropriate
     /// attribute on \p geom.
@@ -342,27 +353,20 @@ public:
     static bool SetFamilyType(
         const UsdGeomImageable &geom, 
         const TfToken &familyName, 
-        FamilyType familyType);
+        const TfToken &familyType);
 
     /// Returns the type of family that the GeomSubsets on the given geometric 
     /// prim \p geom, with the given family name, \p familyName belong to. 
     /// 
-    USDGEOM_API
-    static FamilyType GetFamilyType(
-        const UsdGeomImageable &geom, 
-        const TfToken &familyName);
-
-    /// Returns whether the family of subsets identified by \p familyName must 
-    /// form a valid partition. This only returns the bit that's encoded on the 
-    /// imagealbe \p geom and does not perform any actual validation on the family of 
-    /// GeomSubsets. Please use ValidateFamily() for such validation.
+    /// This only returns the token that's encoded on \p geom and does not perform 
+    /// any actual validation on the family of GeomSubsets. Please use 
+    /// ValidateFamily() for such validation.
     /// 
-    /// \return Returns false if the family is not a partition or upon failure 
-    /// to find or query the value of the associated attribute on the imageable,
-    /// \p geom.
+    /// When familyType is not set on \p geom, the fallback value 
+    /// UsdTokens->unrestricted is returned.
     USDGEOM_API
-    static bool GetFamilyIsPartition(
-        const UsdGeomImageable &geom,
+    static TfToken GetFamilyType(
+        const UsdGeomImageable &geom, 
         const TfToken &familyName);
 
     /// Utility for getting the list of indices that are not assigned to any of 
@@ -375,40 +379,41 @@ public:
         const size_t elementCount,
         const UsdTimeCode &time=UsdTimeCode::EarliestTime());
 
-    /// Validates whether the set of given GeomSubsets form a valid partition 
-    /// given the total number of indices in the array being subdivided, 
-    /// \p elementCount".
+    /// Validates the data in the given set of GeomSubsets, \p subsets, given 
+    /// the total number of elements in the array being subdivided,
+    /// \p elementCount and the \p familyType that the subsets belong to.  
     /// 
-    /// For proper validation of indices in \p subsets, all of the subsets 
+    /// For proper validation of indices in \p subsets, all of the GeomSubsets 
     /// must have the same 'elementType'.
     /// 
-    /// Returns the validity of the partition. If it's invalid, then \p reason
-    /// is populated with a string explaining the reason why it is invalid.
+    /// If one or more subsets contain invalid data, then false is returned and 
+    /// \p reason is populated with a string explaining the reason why it is 
+    /// invalid.
     ///
     /// The python version of this method returns a tuple containing 
-    /// a (bool, string), where the bool has the validity of the partition and 
-    /// the string contains the reason if it's invalid.
+    /// a (bool, string), where the bool has the validity of the subsets and 
+    /// the string contains the reason (if they're invalid).
     /// 
     USDGEOM_API
-    static bool ValidatePartition(
+    static bool ValidateSubsets(
         const std::vector<UsdGeomSubset> &subsets,
         const size_t elementCount,
+        const TfToken &familyType,
         std::string * const reason);
 
     /// Validates whether the family of subsets identified by the given 
     /// \p familyName and \p elementType on the given imageable, \p geom contain 
-    /// valid data. 
-    /// If the family is designated as a partition using SetFamilyType(), 
-    /// then the validity of the partition is checked (i.e. every element of the 
-    /// whole imageable prim appears exactly once in exactly one of the subsets 
-    /// belonging to the family).
+    /// valid data. If the family is designated as a partition or as 
+    /// non-overlapping using SetFamilyType(), then the validity of the data 
+    /// is checked. If the familyType is "unrestricted", then this performs only
+    /// bounds checking of the values in the "indices" arrays.
     /// 
     /// If \p reason is not NULL, then it is populated with a string explaining 
     /// why the family is invalid, if it is invalid.
     /// 
     /// The python version of this method returns a tuple containing 
     /// a (bool, string), where the bool has the validity of the family and 
-    /// the string contains the reason string.
+    /// the string contains the reason (if it's invalid).
     /// 
     USDGEOM_API
     static bool ValidateFamily(

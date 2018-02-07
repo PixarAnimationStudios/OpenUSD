@@ -149,6 +149,14 @@ pxr_build_test(testUsdGeomIsA
         testenv/testUsdGeomIsA.cpp
 )
 
+pxr_build_test(testUsdGeomHasAPI
+    LIBRARIES
+        usd
+        usdGeom
+    CPPFILES
+        testenv/testUsdGeomHasAPI.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testUsdGeomBasisCurves
     DEST testUsdGeomBasisCurves
@@ -252,6 +260,11 @@ pxr_register_test(testUsdGeomSubset
 
 pxr_register_test(testUsdGeomIsA
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomIsA"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomHasAPI
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomHasAPI"
     EXPECTED_RETURN_CODE 0
 )
 

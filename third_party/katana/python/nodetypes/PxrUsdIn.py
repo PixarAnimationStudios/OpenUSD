@@ -110,64 +110,150 @@ nb.setHintsForParameter('verbose', {
 
 nb.setParametersTemplateAttr(gb.build())
 
-def buildOpChain(self, interface):
-    interface.setMinRequiredInputs(0)
+#-----------------------------------------------------------------------------
 
+# Given a graphState and the current parameter values, return the opArgs to
+# PxrUsdIn. This logic was previously exclusive to buildOpChain but was
+# refactored to be callable directly -- initially in service of flushStage
+def buildPxrUsdInOpArgsAtGraphState(self, graphState):
     gb = FnAttribute.GroupBuilder()
-
-    gb.set('fileName', interface.buildAttrFromParam(
-        self.getParameter('fileName')))
-
-    gb.set('location', interface.buildAttrFromParam(
-        self.getParameter('location')))
-
-    gb.set('isolatePath', interface.buildAttrFromParam(
-        self.getParameter('isolatePath')))
-
-    gb.set('variants', interface.buildAttrFromParam(
-        self.getParameter('variants')))
-
-    gb.set('ignoreLayerRegex', interface.buildAttrFromParam(
-        self.getParameter('ignoreLayerRegex')))
-
-    gb.set('motionSampleTimes', interface.buildAttrFromParam(
-        self.getParameter('motionSampleTimes')))
-
-    gb.set('verbose', interface.buildAttrFromParam(
-        self.getParameter('verbose'), 
-            numberType=FnAttribute.IntAttribute))
     
-    gb.set('instanceMode', interface.buildAttrFromParam(
-        self.getParameter('instanceMode')))
+    frameTime = graphState.getTime()
     
-    gb.set('prePopulate', interface.buildAttrFromParam(
-        self.getParameter('prePopulate'),
-        numberType=FnAttribute.IntAttribute))
+    gb.set('fileName',
+            self.getParameter('fileName').getValue(frameTime))
+    gb.set('location',
+            self.getParameter('location').getValue(frameTime))
+
+    gb.set('isolatePath',
+            self.getParameter('isolatePath').getValue(frameTime))
+
+    gb.set('variants',
+            self.getParameter('variants').getValue(frameTime))
+
+    gb.set('ignoreLayerRegex',
+            self.getParameter('ignoreLayerRegex').getValue(frameTime))
+
+    gb.set('motionSampleTimes',
+            self.getParameter('motionSampleTimes').getValue(frameTime))
+
+    gb.set('verbose',
+            int(self.getParameter('verbose').getValue(frameTime)))
+    
+    gb.set('instanceMode',
+            self.getParameter('instanceMode').getValue(frameTime))
+    
+    gb.set('prePopulate',
+            int(self.getParameter('prePopulate').getValue(frameTime)))
+    
 
     sessionValues = (
-            interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
+            graphState.getDynamicEntry("var:pxrUsdInSession"))
     if isinstance(sessionValues, FnAttribute.GroupAttribute):
         gb.set('session', sessionValues)
 
     
-    gb.set('system', interface.getGraphState().getOpSystemArgs())
+    gb.set('system', graphState.getOpSystemArgs())
     gb.set('processStageWideQueries', FnAttribute.IntAttribute(1))
-
-    # our primary op in the chain that will create the root location
-    sscb = FnGeolibServices.OpArgsBuilders.StaticSceneCreate(True)
+    
+    gb.set('setOpArgsToInfo', FnAttribute.IntAttribute(1))
+    
 
     # check for any extra attributes or namespaces set downstream
     # via graph state
-    extra = interface.getGraphState().getDynamicEntry('var:usdExtraAttributesOrNamespaces')
+    extra = graphState.getDynamicEntry('var:usdExtraAttributesOrNamespaces')
     if extra:
         gb.set('extraAttributesOrNamespaces', extra)
 
-    argsOverride = interface.getGraphState().getDynamicEntry('var:pxrUsdInArgs')
+    argsOverride = graphState.getDynamicEntry('var:pxrUsdInArgs')
     if isinstance(argsOverride, FnAttribute.GroupAttribute):
         gb.update(argsOverride)
 
-    # add the PxrUsdIn op as a sub op
     pxrUsdInArgs = gb.build()
+    
+    return pxrUsdInArgs
+
+nb.setCustomMethod('buildPxrUsdInOpArgsAtGraphState',
+        buildPxrUsdInOpArgsAtGraphState)
+
+#-----------------------------------------------------------------------------
+
+kArgsCookTmpKeyToken = 'pxrUsdIn_argsCookTmpKey'
+
+# While it's possible to call buildPxrUsdInOpArgsAtGraphState directly, it's
+# usually more meaningful to call it with a graphState relative to a
+# downstream node as PxrUsdInVariantSelect (and its sibling) contribute to
+# the graphState and resulting opArgs. This wraps up the inconvenience of
+# tracking the graphState by injecting an extra entry into starting graphState
+# which triggers buildOpChain to record its opArgs.
+#
+# NOTE: should a better way of tracking graphState appear in a future version
+#       of Katana, the implementation details here are hidden within this
+#       method.
+def buildPxrUsdInOpArgsFromDownstreamNode(
+        self, downstreamNode, graphState, portIndex=0):
+    if not hasattr(self, '_argsCookTmp'):
+        self._argsCookTmp = {}
+    
+    key = (FnAttribute.GroupBuilder()
+            .set('graphState', graphState.getOpSystemArgs())
+            .set('node', hash(downstreamNode))
+            .set('portIndex', portIndex)
+            .build().getHash())
+    
+    # Set a dynamic entry that's not prefixed with "var:" so it won't show up
+    # in op system args (or other graph state comparisons other than hash
+    # uniqueness)
+    useGraphState = graphState.edit().setDynamicEntry(kArgsCookTmpKeyToken,
+            FnAttribute.StringAttribute(key)).build()
+    
+    # trigger a cook with this unique graph state
+    Nodes3DAPI.CreateClient(downstreamNode,
+            graphState=useGraphState, portIndex=portIndex)
+    
+    if key in self._argsCookTmp:
+        result = self._argsCookTmp[key]
+        return result
+    else:
+        # TODO, exception?
+        pass
+
+nb.setCustomMethod('buildPxrUsdInOpArgsFromDownstreamNode',
+        buildPxrUsdInOpArgsFromDownstreamNode)
+
+#-----------------------------------------------------------------------------
+
+def flushStage(self, viewNode, graphState, portIndex=0):
+    opArgs = self.buildPxrUsdInOpArgsFromDownstreamNode(viewNode, graphState,
+            portIndex=portIndex)
+    
+    if isinstance(opArgs, FnAttribute.GroupAttribute):
+        FnGeolibServices.AttributeFunctionUtil.Run("PxrUsdIn.FlushStage",
+                opArgs)
+
+nb.setCustomMethod('flushStage', flushStage)
+
+#-----------------------------------------------------------------------------
+
+def buildOpChain(self, interface):
+    interface.setMinRequiredInputs(0)
+    
+    graphState = interface.getGraphState()
+    pxrUsdInArgs = self.buildPxrUsdInOpArgsAtGraphState(graphState)
+    
+    # When buildOpChain is reached as result of a call to
+    # buildPxrUsdInOpArgsFromDownstreamNode, an additional entry will be
+    # present in the graphState (otherwise not meaningful to the cooked scene).
+    # If found, we'll record opArgs at the specified key in a member variable
+    # dict.
+    argsCookTmpKey = graphState.getDynamicEntry(kArgsCookTmpKeyToken)
+    if isinstance(argsCookTmpKey, FnAttribute.StringAttribute):
+        self._argsCookTmp[argsCookTmpKey.getValue('', False)] = pxrUsdInArgs
+    
+    
+    # our primary op in the chain that will create the root location
+    sscb = FnGeolibServices.OpArgsBuilders.StaticSceneCreate(True)
+
     sscb.addSubOpAtLocation(self.getScenegraphLocation(
         interface.getFrameTime()), 'PxrUsdIn', pxrUsdInArgs)
 
@@ -178,6 +264,8 @@ def buildOpChain(self, interface):
 nb.setGetScenegraphLocationFnc(getScenegraphLocation)
 nb.setBuildOpChainFnc(buildOpChain)
 
+
+#-----------------------------------------------------------------------------
 
 # XXX prePopulate exists in some production data with an incorrect default
 #     value. Assume all studio uses of it prior to this fix intend for
@@ -609,6 +697,76 @@ def buildOpChain(self, interface):
                 .setDynamicEntry("var:pxrUsdInSession", gb.build())
                 .build())
         
+    interface.addInputRequest("in", graphState)
+
+nb.setBuildOpChainFnc(buildOpChain)
+
+nb.build()
+
+#-----------------------------------------------------------------------------
+
+nb = Nodes3DAPI.NodeTypeBuilder('PxrUsdInIsolate')
+
+nb.setInputPortNames(("in",))
+
+
+nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
+    .set('locations', '')
+    .set('mode', 'append')
+    .build(),
+        forceArrayNames=(
+            'locations',
+            ))
+
+nb.setHintsForParameter('locations', {
+    'widget' : 'scenegraphLocationArray',
+})
+
+nb.setHintsForParameter('mode', {
+    'widget' : 'popup',
+    'options' : ['append', 'replace'],
+})
+
+
+def buildOpChain(self, interface):
+    interface.setExplicitInputRequestsEnabled(True)
+    
+    graphState = interface.getGraphState()
+    frameTime = interface.getFrameTime()
+    locationsParam = self.getParameter("locations")
+    
+    locations = [y for y in
+        (x.getValue(frameTime) for x in locationsParam.getChildren()) if y]
+    
+    if locations:
+        existingValue = (
+                graphState.getDynamicEntry("var:pxrUsdInSession")
+                        or FnAttribute.GroupAttribute())
+        
+        # later nodes set to 'replace' win out
+        maskIsFinal = existingValue.getChildByName('maskIsFinal')
+        if not maskIsFinal:
+            
+            gb = FnAttribute.GroupBuilder()
+            
+            gb.update(existingValue)
+            
+            mode = self.getParameter('mode').getValue(frameTime)
+            
+            if mode == 'replace':
+                gb.set('mask', FnAttribute.StringAttribute(locations))
+                gb.set('maskIsFinal', 1)
+            else:
+                existingLocationsAttr = existingValue.getChildByName('mask')
+                if isinstance(existingLocationsAttr, FnAttribute.StringAttribute):
+                    locations.extend(existingLocationsAttr.getNearestSample(0))
+                
+                gb.set('mask', FnAttribute.StringAttribute(locations))
+            
+            graphState = (graphState.edit()
+                .setDynamicEntry("var:pxrUsdInSession", gb.build())
+                .build())
+    
     interface.addInputRequest("in", graphState)
 
 nb.setBuildOpChainFnc(buildOpChain)

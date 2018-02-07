@@ -878,7 +878,7 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // of /World/sets/model/geom...
 
         // Cook the node to get detail attributes.
-        OP_Context houdiniContext(startTimeCode);
+        OP_Context houdiniContext(tstart);
         GU_DetailHandle cookedGeoHdl = m_renderNode->getCookedGeoHandle(houdiniContext);
 
         // Get the model path and asset name
@@ -1026,8 +1026,8 @@ copyKindMetaDataForOverlays( UsdStageRefPtr stage, SdfPrimSpecHandle p )
 
     // Recurse until we find a model
     if( usdPrim.IsGroup() ) {
-        TF_FOR_ALL( it, p->GetNameChildren() ) {
-            copyKindMetaDataForOverlays( stage, *it );
+        for (const auto& child : p->GetNameChildren()) {
+            copyKindMetaDataForOverlays( stage, child );
         }
     }
 }
@@ -2008,10 +2008,10 @@ setCamerasAreZup(UsdStageWeakPtr const &stage, bool isZup)
     }
     bool anySet = false;
     
-    TF_FOR_ALL(prim, stage->GetPseudoRoot().
-                            GetFilteredChildren(UsdPrimIsDefined && 
-                                                !UsdPrimIsAbstract)){
-        prim->SetCustomDataByKey(TfToken("zUp"), VtValue(isZup));
+    for (const auto& prim : stage->GetPseudoRoot().
+                              GetFilteredChildren(UsdPrimIsDefined && 
+                                                  !UsdPrimIsAbstract)) {
+        prim.SetCustomDataByKey(TfToken("zUp"), VtValue(isZup));
         anySet = true;
     }
     return anySet;

@@ -1,0 +1,256 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/compute.glslfx
+
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.Counting
+
+layout (std430, binding = drawIndirectResult_Binding) buffer ResultData {
+    int numVisibleInstances;
+};
+
+void
+FrustumCullCountVisibleInstances(int resultInstanceCount)
+{
+    atomicAdd(numVisibleInstances, resultInstanceCount);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.NoCounting
+
+void
+FrustumCullCountVisibleInstances(int resultInstanceCount)
+{
+    // do nothing
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.NoTinyCull
+
+bool
+FrustumCullIsTinyPrim(vec4 bboxMin, vec4 bboxMax)
+{
+    // do nothing
+    return false;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.TinyCull
+
+layout (location = ulocDrawRangeNDC_Binding) uniform vec2 drawRangeNDC;
+
+bool
+FrustumCullIsTinyPrim(vec4 bboxMin, vec4 bboxMax)
+{
+    // Check the length of the min/max diagonal, could do something better here.
+    vec2 ndcMin = (bboxMin.xy/max(.000001,bboxMin.w));
+    vec2 ndcMax = (bboxMax.xy/max(.000001,bboxMax.w));
+    float diag = distance(ndcMin, ndcMax);
+
+    // Cull prims outside the min(x)/max(y) range.
+    // When max is negative, do not cull based on max size
+
+    #define isLargeEnough (diag > drawRangeNDC.x)
+    #define isSmallEnough (drawRangeNDC.y < 0 || diag < drawRangeNDC.y)
+
+    return !isLargeEnough || !isSmallEnough;
+
+    #undef isLargeEnough
+    #undef isSmallEnough
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.IsVisible
+
+bool
+FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax)
+{
+    // Disable culling when bbox is empty
+    if (localMin.x > localMax.x || localMin.y > localMax.y || localMin.z > localMax.z)
+        return true;
+
+    // Transform the corners of the bounding box to clipping space.
+    vec4 p[8];
+    p[0] = vec4(toClip * vec4(localMin.x, localMin.y, localMin.z, 1));
+    p[2] = vec4(toClip * vec4(localMin.x, localMax.y, localMin.z, 1));
+    p[5] = vec4(toClip * vec4(localMax.x, localMin.y, localMax.z, 1));
+    p[7] = vec4(toClip * vec4(localMax.x, localMax.y, localMax.z, 1));
+
+    // This prim is visible if it wasn't culled and at least one tiny prim test
+    // failed. Test two axes here because size is measured in screen space.
+    // We front-load this test because it saves quite a bit of compute: in one
+    // test the framerate went from 7.7 to 9.0 FPS.
+    if (FrustumCullIsTinyPrim(p[0], p[7]) && FrustumCullIsTinyPrim(p[2], p[5]))
+        return false;
+
+    // Finish computing points and perform frustum culling.
+    p[1] = vec4(toClip * vec4(localMin.x, localMin.y, localMax.z, 1));
+    p[3] = vec4(toClip * vec4(localMin.x, localMax.y, localMax.z, 1));
+    p[4] = vec4(toClip * vec4(localMax.x, localMin.y, localMin.z, 1));
+    p[6] = vec4(toClip * vec4(localMax.x, localMax.y, localMin.z, 1));
+
+    // Test the corners of the bounding box against the clipping volume.
+    ivec3 clipFlags = ivec3(0);
+    for (int i=0; i<8; ++i) {
+        vec4 clipPos = p[i];
+        bvec3 clip0 = lessThan(clipPos.xyz, vec3(clipPos.w));
+        bvec3 clip1 = greaterThan(clipPos.xyz, -vec3(clipPos.w));
+        clipFlags |= ivec3(clip0) + 2*ivec3(clip1);
+    }
+
+    return clipFlags == ivec3(3);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.Vertex
+
+layout (location = instanceCountInput_Binding) in int instanceCountInput;
+layout (location = ulocCullMatrix_Binding) uniform mat4 cullMatrix;
+
+out int resultInstanceCount;
+
+MAT4 GetCullMatrix()
+{
+    return MAT4(cullMatrix);
+}
+
+void main()
+{
+    MAT4 transform = HdGet_transform();
+    MAT4 toClip = GetCullMatrix() * transform;
+
+    vec4 localMin = HdGet_bboxLocalMin();
+    vec4 localMax = HdGet_bboxLocalMax();
+
+    bool isVisible = FrustumCullIsVisible(toClip, localMin, localMax);
+
+    // Set the resulting instance count to 0 if the primitive is culled
+    // otherwise pass through the original incoming instance count.
+    resultInstanceCount = int(isVisible) * instanceCountInput;
+
+    FrustumCullCountVisibleInstances(resultInstanceCount);
+}
+
+
+--- --------------------------------------------------------------------------
+-- glsl ViewFrustumCull.VertexInstancing
+
+/*
+   per-instance culling
+
+   We use instance index indirection buffer to switch prototypes efficiently.
+   Per-instance culling exploits this indirection to trim culled instances
+   from draw call.
+
+   Example: Prototype mesh M is instanced for 5 instances.
+
+   Instancer has instance primvars (translate, rotate, ...)
+   and index indirection for M.
+
+   InstancePrimVar  (T:translate)
+   +-------+-----------------------------+-----------+
+   :       |T0 T1 T2 T3 T4 T5 T6 T7 T8 T9|           :
+   +-------+-----------------------------+-----------+
+                           ^
+   InstanceIndices(for M)  |
+   +-----------+---------------+-----------+
+   :           | 0  2  5  8  9 |           :
+   +-----------+---------------+-----------+
+                     ^
+                     |
+           M: gl_InstanceID (0-5)
+
+   We can draw all instances of M, by just drawing with numInstance = 6.
+
+   For per-instance culling, we test each bbox against the frustum.
+   Then, we store only passed instance indices into culledInstanceIndices buffer,
+   as well as counting them.
+
+   InstanceIndices(for M)
+   +-----------+---------------+-----------+
+   :           | 0  2  5  8  9 |           :  instanceCount = 5
+   +-----------+---------------+-----------+
+                      V
+               <Frustum culling>  (say only 2 and 8 are visible in frustum)
+                      V
+   +-----------+---------------+-----------+
+   :           | 2  8  x  x  x |           :  instanceCount = 2
+   +-----------+---------------+-----------+
+                            x:undefined value
+*/
+
+layout (location = drawCommandIndex_Binding) in int drawCommandIndex;
+layout (location = ulocDrawCommandNumUints_Binding) uniform uint drawCommandNumUints;
+layout (location = ulocResetPass_Binding) uniform int resetPass = 0;
+layout (location = ulocCullMatrix_Binding) uniform mat4 cullMatrix;
+
+layout (std430, binding = dispatchBuffer_Binding) buffer DispatchBuffer {
+    uint drawCommands[];
+};
+
+MAT4 GetCullMatrix()
+{
+    return MAT4(cullMatrix);
+}
+
+void main()
+{
+    // instanceCountOffset is a relative offset in drawcommand struct.
+    // it's a second entry in both DrawArraysCommand and DrawElementsCommand.
+    const int instanceCountOffset = 1;
+
+    // reset pass
+    if (resetPass == 1) {
+        // note: we expect all instance invocations of this draw command is clearing
+        // same field to zero, and intentionally chosen to not guard this access as atomic.
+        drawCommands[drawCommandIndex * drawCommandNumUints + instanceCountOffset] = 0;
+        return;
+    }
+
+    // culling pass
+    // precondition: drawCommand.instanceCount has to be reset in the separate
+    // invocation unit.
+
+    vec4 localMin = HdGet_bboxLocalMin();
+    vec4 localMax = HdGet_bboxLocalMax();
+
+    MAT4 toClip = GetCullMatrix() * ApplyInstanceTransform(HdGet_transform());
+
+    bool isVisible = FrustumCullIsVisible(toClip, localMin, localMax);
+
+    if (isVisible) {
+        // increment the instance count and store instanceIndex to culledInstanceIndices.
+
+        uint id = atomicAdd(drawCommands[drawCommandIndex * drawCommandNumUints
+                                         + instanceCountOffset], 1);
+        SetCulledInstanceIndex(id);
+        FrustumCullCountVisibleInstances(1);
+    }
+}

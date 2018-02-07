@@ -27,12 +27,11 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/debugCodes.h"
-#include "pxr/imaging/hd/renderContextCaps.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
-
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -80,7 +79,7 @@ UsdImagingGLHdEngine::UsdImagingGLHdEngine(
 {
     // _renderIndex, _taskController, and _delegate are initialized
     // by the plugin system.
-    if (!SetRendererPlugin(TfType())) {
+    if (!SetRendererPlugin(TfToken())) {
         TF_CODING_ERROR("No renderer plugins found! Check before creation.");
     }
 }
@@ -540,7 +539,7 @@ UsdImagingGLHdEngine::TestIntersection(
     int *outHitInstanceIndex,
     int *outHitElementIndex)
 {
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
 
        return false;
@@ -605,7 +604,7 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
        return false;
     }
@@ -666,7 +665,7 @@ void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
     // User is responsible for initalizing GL contenxt and glew
-    if (!HdRenderContextCaps::GetInstance().SupportsHydra()) {
+    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
         return;
     }
@@ -903,18 +902,30 @@ UsdImagingGLHdEngine::IsConverged() const
 }
 
 /* virtual */
-std::vector<TfType>
-UsdImagingGLHdEngine::GetRendererPlugins()
+TfTokenVector
+UsdImagingGLHdEngine::GetRendererPlugins() const
 {
     HfPluginDescVector pluginDescriptors;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
 
-    std::vector<TfType> plugins;
+    TfTokenVector plugins;
     for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
-        plugins.push_back(
-                TfType::FindByName(pluginDescriptors[i].id.GetString()));
+        plugins.push_back(pluginDescriptors[i].id);
     }
     return plugins;
+}
+
+/* virtual */
+std::string
+UsdImagingGLHdEngine::GetRendererPluginDesc(TfToken const &id) const
+{
+    HfPluginDesc pluginDescriptor;
+    if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().
+                   GetPluginDesc(id, &pluginDescriptor))) {
+        return std::string();
+    }
+
+    return pluginDescriptor.displayName;
 }
 
 /* static */
@@ -928,33 +939,21 @@ UsdImagingGLHdEngine::IsDefaultPluginAvailable()
 
 /* virtual */
 bool
-UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
+UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
 {
-    HfPluginDescVector pluginDescriptors;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescriptors);
-
     HdxRendererPlugin *plugin = nullptr;
-    TfType actualType = type;
-    // Special case: TfType() selects the first plugin in the list.
-    if (type.IsUnknown() && pluginDescriptors.size() > 0) {
-        plugin = HdxRendererPluginRegistry::GetInstance().
-            GetRendererPlugin(pluginDescriptors[0].id);
-        actualType = TfType::FindByName(pluginDescriptors[0].id.GetString());
+    TfToken actualId = id;
+
+    // Special case: TfToken() selects the first plugin in the list.
+    if (actualId.IsEmpty()) {
+        actualId = HdxRendererPluginRegistry::GetInstance().
+            GetDefaultPluginId();
     }
-    // General case: find the matching type id.
-    else {
-        for(size_t i = 0; i < pluginDescriptors.size(); ++i) {
-            if(pluginDescriptors[i].id == type.GetTypeName()) {
-                plugin = HdxRendererPluginRegistry::GetInstance().
-                    GetRendererPlugin(pluginDescriptors[i].id);
-                break;
-            }
-        }
-    }
+    plugin = HdxRendererPluginRegistry::GetInstance().
+        GetRendererPlugin(actualId);
 
     if (plugin == nullptr) {
-        TF_CODING_ERROR("Couldn't find plugin named %s",
-            type.GetTypeName().c_str());
+        TF_CODING_ERROR("Couldn't find plugin for id %s", actualId.GetText());
         return false;
     } else if (plugin == _renderPlugin) {
         // It's a no-op to load the same plugin twice.
@@ -989,7 +988,7 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfType const &type)
     _taskController = new HdxTaskController(_renderIndex,
         _delegateID.AppendChild(TfToken(TfStringPrintf(
             "_UsdImaging_%s_%p",
-            TfMakeValidIdentifier(actualType.GetTypeName()).c_str(),
+            TfMakeValidIdentifier(actualId.GetText()).c_str(),
             this))));
 
     // Rebuild state in the new delegate/task controller.

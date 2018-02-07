@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -109,44 +110,55 @@ public:
     HdBindingRequest() = default;
 
     /// A data binding, not backed by neither BufferArrayRange nor
-    /// BufferResource. If glDataType is not given, this binding request simply
+    /// BufferResource.  This binding request simply
     /// generates named metadata (#define HD_HAS_foo 1, #define HD_foo_Binding)
-    HdBindingRequest(HdBinding::Type type, TfToken const& name,
-                     TfToken const &glTypeName = TfToken())
-        : _type(type)
+    HdBindingRequest(HdBinding::Type bindingType, TfToken const& name)
+        : _bindingType(bindingType)
+        , _dataType(HdTypeInvalid)
         , _name(name)
         , _resource(nullptr)
         , _bar(nullptr)
         , _isInterleaved(false)
-        , _glTypeName(glTypeName)
+    {}
+
+    /// A data binding, not backed by neither BufferArrayRange nor
+    /// BufferResource.
+    HdBindingRequest(HdBinding::Type bindingType, TfToken const& name,
+                     HdType dataType)
+        : _bindingType(bindingType)
+        , _dataType(dataType)
+        , _name(name)
+        , _resource(nullptr)
+        , _bar(nullptr)
+        , _isInterleaved(false)
     {}
 
     /// A buffer resource binding. Binds a given buffer resource to a specified
-    /// name. glTypeName is set from the resource.
-    HdBindingRequest(HdBinding::Type type, TfToken const& name,
-                    HdBufferResourceSharedPtr const& resource)
-        : _type(type)
+    /// name.  The data type is set from the resource.
+    HdBindingRequest(HdBinding::Type bindingType, TfToken const& name,
+                     HdBufferResourceSharedPtr const& resource)
+        : _bindingType(bindingType)
+        , _dataType(resource->GetTupleType().type)
         , _name(name)
         , _resource(resource)
         , _bar(nullptr)
         , _isInterleaved(false)
-        , _glTypeName(resource->GetGLTypeName())
     {}
 
     /// A named struct binding. From an interleaved BufferArray, an array of
     /// structs will be generated, consuming a single binding point. Note that
     /// all resources in the buffer array must have the same underlying
     /// identifier, hence must be interleaved and bindable as a single resource.
-    /// glDataTypes can be derived from each HdBufferResource of bar.
+    /// Data types can be derived from each HdBufferResource of bar.
     HdBindingRequest(HdBinding::Type type, TfToken const& name,
                     HdBufferArrayRangeSharedPtr bar,
                     bool interleave)
-        : _type(type)
+        : _bindingType(type)
+        , _dataType(HdTypeInvalid)
         , _name(name)
         , _resource(nullptr)
         , _bar(bar)
         , _isInterleaved(interleave)
-        , _glTypeName(TfToken())
     {}
 
     // ---------------------------------------------------------------------- //
@@ -177,7 +189,7 @@ public:
     /// This binding is typelss. CodeGen only allocate location and
     /// skip emitting declarations and accessors.
     bool IsTypeless() const {
-        return (!_bar) && (!_resource) && _glTypeName.IsEmpty();
+        return (!_bar) && (!_resource) && (_dataType == HdTypeInvalid);
     }
 
     // ---------------------------------------------------------------------- //
@@ -190,8 +202,8 @@ public:
         return _name;
     }
     /// Returns the HdBinding type of this request.
-    HdBinding::Type GetType() const {
-        return _type;
+    HdBinding::Type GetBindingType() const {
+        return _bindingType;
     }
     /// Returns the single resource associated with this binding request or
     /// null when IsResource() returns false.
@@ -210,10 +222,9 @@ public:
         return _bar;
     }
 
-    /// Return the GL type name of this request. Not that it returns empty
-    /// if this binding request is backed by Bar.
-    TfToken const& GetGLTypeName() const {
-        return _glTypeName;
+    /// Return the data type of this request
+    HdType GetDataType() const {
+        return _dataType;
     }
 
     /// Returns the hash corresponding to this buffer request.
@@ -231,7 +242,8 @@ private:
     // the current use cases.
 
     // Named binding request
-    HdBinding::Type _type;
+    HdBinding::Type _bindingType;
+    HdType _dataType;
     TfToken _name;
 
     // Resource binding request
@@ -241,8 +253,6 @@ private:
     HdBufferArrayRangeSharedPtr _bar;
     bool _isInterleaved;
 
-    // GL type name used by CodeGen
-    TfToken _glTypeName;
 };
 
 

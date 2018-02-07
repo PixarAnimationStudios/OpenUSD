@@ -132,6 +132,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/envSetting.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/utils.h"
 
@@ -154,15 +155,6 @@ TF_DEFINE_ENV_SETTING(
     USD_HONOR_LEGACY_BASE_MATERIAL, true,
     "If on, read base material as derivesFrom relationship when available.");
 
-
-static 
-UsdRelationship
-_CreateBindingRel(const UsdPrim& prim)
-{
-    return prim.CreateRelationship(UsdShadeTokens->materialBinding,
-                                   /* custom = */ false);
-}
-
 bool 
 UsdShadeMaterial::Bind(const UsdPrim& prim) const
 {
@@ -173,12 +165,7 @@ UsdShadeMaterial::Bind(const UsdPrim& prim) const
         oldRel.BlockTargets();
     }
 
-    if (UsdRelationship rel = _CreateBindingRel(prim)){
-        SdfPathVector  targets(1, GetPath());
-        return rel.SetTargets(targets);
-    }
-
-    return false;
+    return UsdShadeMaterialBindingAPI(prim).Bind(*this);
 }
 
 bool 
@@ -191,14 +178,13 @@ UsdShadeMaterial::Unbind(const UsdPrim& prim)
         oldRel.BlockTargets();
     }
 
-    return _CreateBindingRel(prim).BlockTargets();
+    return UsdShadeMaterialBindingAPI(prim).UnbindDirectBinding();
 }
 
 UsdRelationship
 UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 {
-    UsdRelationship rel = prim.GetRelationship(
-            UsdShadeTokens->materialBinding);
+    UsdRelationship rel = UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
     if (TfGetEnvSetting(USD_HONOR_LEGACY_USD_LOOK)) {
         if (!rel) {
             // honor legacy assets using UsdShadeLook
@@ -524,37 +510,49 @@ UsdShadeMaterial::HasBaseMaterial() const
 
 /* static */
 UsdGeomSubset 
-UsdShadeMaterial::CreateMaterialBindFaceSubset(
+UsdShadeMaterial::CreateMaterialBindSubset(
     const UsdGeomImageable &geom,
     const TfToken &subsetName,
-    const VtIntArray &indices)
+    const VtIntArray &indices,
+    const TfToken &elementType)
 {
-    return UsdGeomSubset::CreateGeomSubset(geom, subsetName, 
-        UsdGeomTokens->face, indices, UsdShadeTokens->materialBind);
+    UsdGeomSubset result = UsdGeomSubset::CreateGeomSubset(geom, subsetName, 
+        elementType, indices, UsdShadeTokens->materialBind);
+
+    TfToken familyType = UsdGeomSubset::GetFamilyType(geom, 
+        UsdShadeTokens->materialBind);
+    // Subsets that have materials bound to them should have 
+    // mutually exclusive sets of indices. Hence, set the familyType 
+    // to "nonOverlapping" if it's unset (or explicitly set to unrestricted).
+    if (familyType == UsdGeomTokens->unrestricted) {
+        SetMaterialBindSubsetsFamilyType(geom, UsdGeomTokens->nonOverlapping);
+    }
+
+    return result;
 }
 
 
 /* static */
 std::vector<UsdGeomSubset> 
-UsdShadeMaterial::GetMaterialBindFaceSubsets(
+UsdShadeMaterial::GetMaterialBindSubsets(
     const UsdGeomImageable &geom)
 {
-    return UsdGeomSubset::GetGeomSubsets(geom, UsdGeomTokens->face, 
+    return UsdGeomSubset::GetGeomSubsets(geom, /* elementType */ TfToken(), 
         UsdShadeTokens->materialBind);
 }
 
 /* static */
-bool UsdShadeMaterial::SetMaterialBindFaceSubsetsFamilyType(
+bool UsdShadeMaterial::SetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom,
-        const UsdGeomSubset::FamilyType familyType)
+        const TfToken &familyType)
 {
     return UsdGeomSubset::SetFamilyType(geom, UsdShadeTokens->materialBind,
         familyType);
 }
 
 /* static */
-UsdGeomSubset::FamilyType 
-UsdShadeMaterial::GetMaterialBindFaceSubsetsFamilyType(
+TfToken
+UsdShadeMaterial::GetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom)
 {
     return UsdGeomSubset::GetFamilyType(geom, UsdShadeTokens->materialBind);

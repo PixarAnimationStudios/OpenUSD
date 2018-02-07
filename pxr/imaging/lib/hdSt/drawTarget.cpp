@@ -26,10 +26,10 @@
 #include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/drawTargetTextureResource.h"
 #include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -289,7 +289,7 @@ HdStDrawTarget::_SetAttachments(
         GLenum format = GL_RGBA;
         GLenum type   = GL_BYTE;
         GLenum internalFormat = GL_RGBA8;
-        HdConversions::GetGlFormat(desc.GetFormat(),
+        HdStGLConversions::GetGlFormat(desc.GetFormat(),
                                    &format, &type, &internalFormat);
 
         const std::string &name = desc.GetName();

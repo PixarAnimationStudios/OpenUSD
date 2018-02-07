@@ -26,16 +26,18 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <cstdlib>
 #include <iostream>
 #include <mutex>
 #include <set>
 #include <thread>
+
+using namespace std::placeholders;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,14 +56,19 @@ _CountThreads(size_t begin, size_t end)
 }
 
 static size_t
-_ExpectedLimit(const size_t envVal, const size_t n)
+_ExpectedLimit(const int envVal, const size_t n)
 {
     // If envVal is non-zero, it wins over n!
-    return envVal ? envVal : n;
+    // envVal may also be a negative number, which means all but that many
+    // cores.
+    return envVal ? 
+        (envVal < 0 ?
+            std::max<int>(1, envVal+WorkGetPhysicalConcurrencyLimit()) : envVal)
+        : n;
 }
 
 static void
-_TestThreadLimit(const size_t envVal, const size_t n)
+_TestThreadLimit(const int envVal, const size_t n)
 {
     const size_t expectedN = _ExpectedLimit(envVal, n);
     if (expectedN != n) {
@@ -73,7 +80,7 @@ _TestThreadLimit(const size_t envVal, const size_t n)
 
     _uniqueThreads->clear();
 
-    WorkParallelForN(numSamples, boost::bind(&_CountThreads, _1, _2));
+    WorkParallelForN(numSamples, std::bind(&_CountThreads, _1, _2));
 
     std::cout << "   TBB used " << _uniqueThreads->size() << '\n';
 
@@ -85,7 +92,7 @@ _TestThreadLimit(const size_t envVal, const size_t n)
 }
 
 static void
-_TestArguments(const size_t envVal)
+_TestArguments(const int envVal)
 {
     // Note that if envVal is set (i.e. non-zero) it will always win over the
     // value supplied through the API calls.
@@ -111,13 +118,15 @@ _TestArguments(const size_t envVal)
     WorkSetConcurrencyLimitArgument(1000);
     TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, 1000));
 
-    // n = -1 means numCores - 1
+    // n = -1 means numCores - 1, with a minimum of 1
     WorkSetConcurrencyLimitArgument(-1);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, numCores-1));
+    TF_AXIOM(WorkGetConcurrencyLimit() == 
+             _ExpectedLimit(envVal, std::max(1, numCores-1)));
 
-    // n = -3 means numCores - 3
+    // n = -3 means numCores - 3, with a minimum of 1
     WorkSetConcurrencyLimitArgument(-3);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, numCores-3));
+    TF_AXIOM(WorkGetConcurrencyLimit() == 
+             _ExpectedLimit(envVal, std::max(1, numCores-3)));
 
     // n = -numCores means 1 (no threading)
     WorkSetConcurrencyLimitArgument(-numCores);
@@ -139,7 +148,7 @@ int
 main(int argc, char **argv)
 {
     // Read the env setting used to limit threading
-    const size_t envVal = WorkGetThreadLimit();
+    const int envVal = TfGetenvInt("PXR_WORK_THREAD_LIMIT", 0);
     std::cout << "PXR_WORK_THREAD_LIMIT = " << envVal << '\n';
 
     // Test to make sure that a call to tbb that happens before any of the
@@ -152,8 +161,6 @@ main(int argc, char **argv)
     // seem to be a way to limit it again.  That's why we test this
     // functionality by itself.
     if ((argc == 2) && (strcmp(argv[1], "--rawtbb") == 0)) {
-        TF_AXIOM(WorkGetPhysicalConcurrencyLimit() >= 4);
-
         std::cout << "Testing that libWork automatically limits tbb "
             "threading when PXR_WORK_THREAD_LIMIT is set...\n";
         _uniqueThreads->clear();
@@ -163,14 +170,15 @@ main(int argc, char **argv)
                   << " threads\n";
         
         if (envVal == 0) {
-            if (_uniqueThreads->size() < 2) {
+            if (_uniqueThreads->size() < WorkGetPhysicalConcurrencyLimit()) {
                 TF_FATAL_ERROR("tbb only used %zu threads when it should be "
                                "unlimited\n", _uniqueThreads->size());
             }
         }
-        else if (_uniqueThreads->size() > envVal) {
-            TF_FATAL_ERROR("tbb used %zu threads, which is greater than "
-                           "PXR_WORK_THREAD_LIMIT=%zu.", _uniqueThreads->size(),
+        else if (_uniqueThreads->size() > WorkGetConcurrencyLimit()) {
+            TF_FATAL_ERROR("tbb used %zu threads, which is greater than the "
+                           "concurrency limit %d (PXR_WORK_THREAD_LIMIT=%d).", 
+                           _uniqueThreads->size(), WorkGetConcurrencyLimit(), 
                            envVal);
         }
 
@@ -180,23 +188,20 @@ main(int argc, char **argv)
     }
 
     // 0 means all cores.
-    size_t limit = envVal;
-    if (limit == 0) {
+    if (envVal == 0) {
         WorkSetMaximumConcurrencyLimit();
-        limit = WorkGetConcurrencyLimit();
     }
-    
-    TF_AXIOM(limit > 0 && limit <= WorkGetPhysicalConcurrencyLimit());
+    const size_t limit = WorkGetConcurrencyLimit();
 
     // Make sure that we get the default thread limit
     std::cout << "Testing that the thread limit defaults to "
-        " PXR_WORK_THREAD_LIMIT by default...\n";
+        "PXR_WORK_THREAD_LIMIT by default...\n";
     _TestThreadLimit(envVal, limit);
 
     // Now that we've invoked libWork, make sure that raw TBB API also defaults
     // to PXR_WORK_THREAD_LIMIT.
     std::cout << "Testing that raw tbb code is now also unlimited "
-        " after first invocation of libWork API...\n";
+        "after first invocation of libWork API...\n";
 
     _uniqueThreads->clear();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, 100000), _RawTBBCounter());

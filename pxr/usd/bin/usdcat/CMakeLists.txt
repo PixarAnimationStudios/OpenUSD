@@ -62,7 +62,7 @@ pxr_register_test(testUsdCatMask
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask --flatten input.usda -o output.usda"
     DIFF_COMPARE output.usda
-    CLEAN_OUTPUT "\\(.*\\n.*\\n.*\\n.*\\)"
+    CLEAN_OUTPUT "(?:[A-Za-z]:)?\\/.*\\/"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -1,0 +1,5 @@
+#usda 1.0
+
+def "Root"{
+    string hello = "goodbye"
+}

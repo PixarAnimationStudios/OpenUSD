@@ -59,27 +59,6 @@ using std::string;
 using std::vector;
 using FnKat::GroupBuilder;
 
-
-// Similar to katana's group builder, but takes in usd attributes.
-struct _UsdBuilder {
-    GroupBuilder &_builder;
-    double _time;
-
-    _UsdBuilder& Set(const char *kat_name, UsdAttribute attr) {
-        VtValue val;
-        if (attr.IsValid() && attr.HasAuthoredValueOpinion()
-            && attr.Get(&val, _time)) {
-            FnKat::Attribute kat_attr =
-                PxrUsdKatanaUtils::ConvertVtValueToKatAttr( val,
-                                        /* asShaderParam */ true,
-                                        /* pathAsModel */ false,
-                                        /* resolvePath */ false);
-            _builder.set(kat_name, kat_attr);
-        }
-        return *this;
-    }
-};
-
 void
 PxrUsdKatanaReadLight(
         const UsdLuxLight& light,
@@ -88,14 +67,17 @@ PxrUsdKatanaReadLight(
 {
     const UsdPrim lightPrim = light.GetPrim();
     const SdfPath primPath = lightPrim.GetPath();
-    const double currentTime = data.GetCurrentTime();
+    const UsdTimeCode currentTimeCode = data.GetCurrentTime();
 
-    GroupBuilder materialBuilder;
-    GroupBuilder lightBuilder;
-    _UsdBuilder usdBuilder = {lightBuilder, currentTime};
+    attrs.SetUSDTimeCode(currentTimeCode);
+    PxrUsdKatanaAttrMap lightBuilder;
+    lightBuilder.SetUSDTimeCode(currentTimeCode);
+    PxrUsdKatanaAttrMap geomBuilder;
+    geomBuilder.SetUSDTimeCode(currentTimeCode);
+    FnKat::GroupBuilder materialBuilder;
 
     // UsdLuxLight
-    usdBuilder
+    lightBuilder
         .Set("intensity", light.GetIntensityAttr())
         .Set("exposure", light.GetExposureAttr())
         .Set("diffuse", light.GetDiffuseAttr())
@@ -107,7 +89,7 @@ PxrUsdKatanaReadLight(
         ;
 
     if (UsdLuxShapingAPI l = UsdLuxShapingAPI(lightPrim)) {
-        usdBuilder
+        lightBuilder
             .Set("emissionFocus", l.GetShapingFocusAttr())
             .Set("emissionFocusTint", l.GetShapingFocusTintAttr())
             .Set("coneAngle", l.GetShapingConeAngleAttr())
@@ -117,7 +99,7 @@ PxrUsdKatanaReadLight(
             ;
     }
     if (UsdLuxShadowAPI l = UsdLuxShadowAPI(lightPrim)) {
-        usdBuilder
+        lightBuilder
             .Set("enableShadows", l.GetShadowEnableAttr())
             .Set("shadowColor", l.GetShadowColorAttr())
             .Set("shadowDistance", l.GetShadowDistanceAttr())
@@ -126,41 +108,45 @@ PxrUsdKatanaReadLight(
             ;
     }
     if (UsdRiLightAPI l = UsdRiLightAPI(lightPrim)) {
-        usdBuilder.Set("intensityNearDist", l.GetRiIntensityNearDistAttr());
-        usdBuilder.Set("traceLightPaths", l.GetRiTraceLightPathsAttr());
-        usdBuilder.Set("thinShadow", l.GetRiShadowThinShadowAttr());
-        usdBuilder.Set("fixedSampleCount",
-                       l.GetRiSamplingFixedSampleCountAttr());
-        usdBuilder.Set("importanceMultiplier",
-                       l.GetRiSamplingImportanceMultiplierAttr());
-        usdBuilder.Set("lightGroup", l.GetRiLightGroupAttr());
+        lightBuilder
+            .Set("intensityNearDist", l.GetRiIntensityNearDistAttr())
+            .Set("traceLightPaths", l.GetRiTraceLightPathsAttr())
+            .Set("thinShadow", l.GetRiShadowThinShadowAttr())
+            .Set("fixedSampleCount",
+                           l.GetRiSamplingFixedSampleCountAttr())
+            .Set("importanceMultiplier",
+                           l.GetRiSamplingImportanceMultiplierAttr())
+            .Set("lightGroup", l.GetRiLightGroupAttr())
+            ;
     }
 
     if (UsdLuxSphereLight l = UsdLuxSphereLight(lightPrim)) {
+        geomBuilder.Set("light.size", l.GetRadiusAttr());
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrSphereLight"));
-        // TODO: extract scale, set as geometry.light.size
     }
     if (UsdLuxDiskLight l = UsdLuxDiskLight(lightPrim)) {
+        geomBuilder.Set("light.size", l.GetRadiusAttr());
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrDiskLight"));
-        // TODO: extract scale, set as geometry.light.size, width, height
     }
     if (UsdLuxRectLight l = UsdLuxRectLight(lightPrim)) {
+        geomBuilder.Set("light.width", l.GetWidthAttr());
+        geomBuilder.Set("light.height", l.GetHeightAttr());
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrRectLight"));
-        usdBuilder.Set("lightColorMap", l.GetTextureFileAttr());
+        lightBuilder.Set("lightColorMap", l.GetTextureFileAttr());
         if (UsdRiTextureAPI t = UsdRiTextureAPI(lightPrim)) {
-            usdBuilder.Set("colorMapGamma", t.GetRiTextureGammaAttr());
-            usdBuilder.Set("colorMapSaturation",
-                           t.GetRiTextureSaturationAttr());
+            lightBuilder
+                .Set("colorMapGamma", t.GetRiTextureGammaAttr())
+                .Set("colorMapSaturation", t.GetRiTextureSaturationAttr())
+                ;
         }
-        // TODO: extract scale, set as geometry.light.size, width, height
     }
     if (UsdLuxDistantLight l = UsdLuxDistantLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrDistantLight"));
-        usdBuilder.Set("angleExtent", l.GetAngleAttr());
+        lightBuilder.Set("angleExtent", l.GetAngleAttr());
     }
     if (UsdLuxGeometryLight l = UsdLuxGeometryLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
@@ -174,49 +160,54 @@ PxrUsdKatanaReadLight(
             }
             std::string kat_loc =
                 PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(geo[0], data);
-            attrs.set("geometry.areaLightGeometrySource",
+            geomBuilder.set("areaLightGeometrySource",
                       FnKat::StringAttribute(kat_loc));
         }
     }
     if (UsdLuxDomeLight l = UsdLuxDomeLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrDomeLight"));
-        usdBuilder.Set("lightColorMap", l.GetTextureFileAttr());
+        lightBuilder.Set("lightColorMap", l.GetTextureFileAttr());
         // Note: The prman backend ignores texture:format since that is
         // specified inside the renderman texture file format.
         if (UsdRiTextureAPI t = UsdRiTextureAPI(lightPrim)) {
-            usdBuilder.Set("colorMapGamma", t.GetRiTextureGammaAttr());
-            usdBuilder.Set("colorMapSaturation",
-                           t.GetRiTextureSaturationAttr());
+            lightBuilder
+                .Set("colorMapGamma", t.GetRiTextureGammaAttr())
+                .Set("colorMapSaturation", t.GetRiTextureSaturationAttr())
+                ;
         }
     }
     if (UsdRiPxrEnvDayLight l = UsdRiPxrEnvDayLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrEnvDayLight"));
-        usdBuilder.Set("day", l.GetDayAttr());
-        usdBuilder.Set("haziness", l.GetHazinessAttr());
-        usdBuilder.Set("hour", l.GetHourAttr());
-        usdBuilder.Set("latitude", l.GetLatitudeAttr());
-        usdBuilder.Set("longitude", l.GetLongitudeAttr());
-        usdBuilder.Set("month", l.GetMonthAttr());
-        usdBuilder.Set("skyTint", l.GetSkyTintAttr());
-        usdBuilder.Set("sunDirection", l.GetSunDirectionAttr());
-        usdBuilder.Set("sunSize", l.GetSunSizeAttr());
-        usdBuilder.Set("sunTint", l.GetSunTintAttr());
-        usdBuilder.Set("year", l.GetYearAttr());
-        usdBuilder.Set("zone", l.GetZoneAttr());
+        lightBuilder
+            .Set("day", l.GetDayAttr())
+            .Set("haziness", l.GetHazinessAttr())
+            .Set("hour", l.GetHourAttr())
+            .Set("latitude", l.GetLatitudeAttr())
+            .Set("longitude", l.GetLongitudeAttr())
+            .Set("month", l.GetMonthAttr())
+            .Set("skyTint", l.GetSkyTintAttr())
+            .Set("sunDirection", l.GetSunDirectionAttr())
+            .Set("sunSize", l.GetSunSizeAttr())
+            .Set("sunTint", l.GetSunTintAttr())
+            .Set("year", l.GetYearAttr())
+            .Set("zone", l.GetZoneAttr())
+            ;
     }
     if (UsdRiPxrAovLight l = UsdRiPxrAovLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrAovLight"));
-        usdBuilder.Set("aovName", l.GetAovNameAttr());
-        usdBuilder.Set("inPrimaryHit", l.GetInPrimaryHitAttr());
-        usdBuilder.Set("inReflection", l.GetInReflectionAttr());
-        usdBuilder.Set("inRefraction", l.GetInRefractionAttr());
-        usdBuilder.Set("invert", l.GetInvertAttr());
-        usdBuilder.Set("onVolumeBoundaries", l.GetOnVolumeBoundariesAttr());
-        usdBuilder.Set("useColor", l.GetUseColorAttr());
-        usdBuilder.Set("useThroughput", l.GetUseThroughputAttr());
+        lightBuilder
+            .Set("aovName", l.GetAovNameAttr())
+            .Set("inPrimaryHit", l.GetInPrimaryHitAttr())
+            .Set("inReflection", l.GetInReflectionAttr())
+            .Set("inRefraction", l.GetInRefractionAttr())
+            .Set("invert", l.GetInvertAttr())
+            .Set("onVolumeBoundaries", l.GetOnVolumeBoundariesAttr())
+            .Set("useColor", l.GetUseColorAttr())
+            .Set("useThroughput", l.GetUseThroughputAttr())
+            ;
         // XXX aovSuffix, writeToDisk
     }
 
@@ -228,10 +219,14 @@ PxrUsdKatanaReadLight(
     
     // Gather prman statements
     FnKat::GroupBuilder prmanBuilder;
-    PxrUsdKatanaReadPrimPrmanStatements(lightPrim, currentTime, prmanBuilder);
+    PxrUsdKatanaReadPrimPrmanStatements(lightPrim, currentTimeCode.GetValue(),
+                                        prmanBuilder);
     attrs.set("prmanStatements", prmanBuilder.build());
+
     materialBuilder.set("prmanLightParams", lightBuilder.build());
     attrs.set("material", materialBuilder.build());
+    attrs.set("geometry", geomBuilder.build());
+
     PxrUsdKatanaReadXformable(light, data, attrs);
     attrs.set("type", FnKat::StringAttribute("light"));
 }

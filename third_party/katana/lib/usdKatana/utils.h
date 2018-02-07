@@ -36,12 +36,16 @@
 
 #include <FnAttribute/FnGroupBuilder.h>
 #include <FnAttribute/FnDataBuilder.h>
+#include <FnGeolib/op/FnGeolibOp.h>
 
+#include <type_traits>
 #include <vector>
 
 namespace FnKat = Foundry::Katana;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdLuxLinkingAPI;
 
 struct PxrUsdKatanaUtils {
 
@@ -97,9 +101,8 @@ struct PxrUsdKatanaUtils {
     // Scan the model hierarchy for models with kind=camera.
     static SdfPathVector FindCameraPaths( const UsdStageRefPtr& stage );
 
-    /// Use UsdLuxListAPI to discover published lights (without a
-    /// full scene traversal).
-    static SdfPathSet FindLightPaths( const UsdStageRefPtr& stage );
+    /// Discover published lights (without a full scene traversal).
+    static SdfPathVector FindLightPaths( const UsdStageRefPtr& stage );
 
     /// Convert the given SdfPath in the UsdStage to the corresponding
     /// katana location, given a scenegraph generator configuration.
@@ -178,6 +181,76 @@ struct PxrUsdKatanaUtils {
     
 };
 
+/// Utility class for building a light list.
+class PxrUsdKatanaUtilsLightListAccess {
+public:
+    /// Get the Usd prim at the current light path.
+    UsdPrim GetPrim() const;
+
+    /// Get the Katana location for the current light path.
+    std::string GetLocation() const;
+
+    /// Get the Katana location for a given Usd path.
+    std::string GetLocation(const SdfPath& path) const;
+
+    /// Add an attribute to lightList.
+    template <class T>
+    void Set(const std::string& name, const T& value)
+    {
+        static_assert(!std::is_base_of<FnKat::Attribute, T>::value,
+                      "Directly setting Katana Attributes is not supported");
+        _Set(name, VtValue(value));
+    }
+
+    /// Set linking for the light.  Returns true if linkAPI's map
+    /// links linkAPI's path.
+    bool SetLinks(const UsdLuxLinkingAPI &linkAPI,
+                  const std::string &linkName);
+
+    /// Append the string \p value to a custom string list named \p tag.
+    /// These are built to the interface as attributes named \p tag.
+    void AddToCustomStringList(const std::string& tag,const std::string& value);
+
+protected:
+    PxrUsdKatanaUtilsLightListAccess(
+        FnKat::GeolibCookInterface &interface,
+        const PxrUsdKatanaUsdInArgsRefPtr& usdInArgs);
+    ~PxrUsdKatanaUtilsLightListAccess();
+
+    /// Change the light path being accessed.
+    void SetPath(const SdfPath& lightPath);
+
+    /// Build into \p interface.
+    void Build();
+
+private:
+    void _Set(const std::string& name, const VtValue& value);
+    void _Set(const std::string& name, const FnKat::Attribute& attr);
+
+private:
+    FnKat::GeolibCookInterface& _interface;
+    PxrUsdKatanaUsdInArgsRefPtr _usdInArgs;
+    FnKat::GroupBuilder _lightListBuilder;
+    std::map<std::string, FnKat::StringBuilder> _customStringLists;
+    SdfPath _lightPath;
+    std::string _key;
+};
+
+/// Utility class for building a light list.
+class PxrUsdKatanaUtilsLightListEditor :
+    public PxrUsdKatanaUtilsLightListAccess {
+public:
+    PxrUsdKatanaUtilsLightListEditor(
+        FnKat::GeolibCookInterface &interface,
+        const PxrUsdKatanaUsdInArgsRefPtr& usdInArgs) :
+        PxrUsdKatanaUtilsLightListAccess(interface, usdInArgs) { }
+
+    // Allow access to protected members.  PxrUsdKatanaUtilsLightListAccess
+    // is handed out to calls that need limited access and this class is
+    // used for full access.
+    using PxrUsdKatanaUtilsLightListAccess::SetPath;
+    using PxrUsdKatanaUtilsLightListAccess::Build;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

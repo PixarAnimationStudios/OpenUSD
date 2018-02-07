@@ -26,7 +26,7 @@
 
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/unitTestGLDrawing.h"
+#include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -38,7 +38,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-class My_TestGLDrawing : public Hd_UnitTestGLDrawing {
+class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     My_TestGLDrawing() {
         _reprName = HdTokens->hull;
@@ -50,7 +50,7 @@ public:
         SetCameraTranslate(GfVec3f(0, 0, -20.0f-1.7320508f*2.0f));
     }
 
-    // Hd_UnitTestGLDrawing overrides
+    // HdSt_UnitTestGLDrawing overrides
     virtual void InitTest();
     virtual void DrawTest();
     virtual void OffscreenTest();
@@ -80,7 +80,7 @@ My_TestGLDrawing::InitTest()
     std::cout << "My_TestGLDrawing::InitTest() " << _reprName << "\n";
 
     _driver = new HdSt_TestDriver(_reprName);
-    Hd_UnitTestDelegate &delegate = _driver->GetDelegate();
+    HdSt_UnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
     GfVec3f center(0);

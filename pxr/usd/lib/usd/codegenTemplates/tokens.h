@@ -37,25 +37,19 @@
 #include "pxr/pxr.h"
 #include "{{ libraryPath }}/api.h"
 {% endif %}
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 {% if useExportAPI %}
 {{ namespaceOpen }}
 
 {% endif %}
-/// \hideinitializer
-#define {{ Upper(tokensPrefix) }}_TOKENS \
-{% for token in tokens %}
-    {% if token.id == token.value -%}({{ token.id }})
-    {%- else -%}                     (({{ token.id }}, "{{ token.value}}"))
-    {%- endif -%}{% if not loop.last %} \{% endif %}
 
-{% endfor %}
-
-/// \anchor {{ tokensPrefix }}Tokens
+/// \class {{ tokensPrefix }}TokensType
 ///
-/// <b>{{ tokensPrefix }}Tokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link {{ tokensPrefix }}Tokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -63,19 +57,32 @@
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// {{ tokensPrefix }}Tokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// {{ tokensPrefix }}Tokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
+{% if tokens %}
 /// Use {{ tokensPrefix }}Tokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set({{ tokensPrefix }}Tokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set({{ tokensPrefix }}Tokens->{{ tokens[0].id }});
 /// \endcode
-///
-/// The tokens are:
+{% endif %}
+struct {{ tokensPrefix }}TokensType {
+    {% if useExportAPI %}{{ Upper(libraryName) }}_API {% endif %}{{ tokensPrefix }}TokensType();
 {% for token in tokens %}
-/// \li <b>{{ token.id }}</b> - {{ token.desc }}
+    /// \brief "{{ token.value }}"
+    /// 
+    /// {{ token.desc }}
+    const TfToken {{ token.id }};
 {% endfor %}
-TF_DECLARE_PUBLIC_TOKENS({{ tokensPrefix }}Tokens, {% if useExportAPI %}{{ Upper(libraryName) }}_API, {% endif %}{{ Upper(tokensPrefix) }}_TOKENS);
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var {{ tokensPrefix }}Tokens
+///
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa {{ tokensPrefix }}TokensType
+extern{% if useExportAPI %} {{ Upper(libraryName) }}_API{% endif %} TfStaticData<{{ tokensPrefix }}TokensType> {{ tokensPrefix }}Tokens;
 {% if useExportAPI %}
 
 {{ namespaceClose }}

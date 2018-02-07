@@ -31,11 +31,17 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Return true if the calling thread is the main thread, false otherwise.
 /// \ingroup group_arch_Multithreading
 ARCH_API bool ArchIsMainThread();
+
+/// Return the std::thread_id for the thread arch considers to be the "main"
+/// thread.
+ARCH_API std::thread::id ArchGetMainThreadId();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

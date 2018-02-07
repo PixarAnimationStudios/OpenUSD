@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/meshTopology.h"
+#include "pxr/imaging/hd/types.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -34,7 +35,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class HdResourceRegistry;
+class HdStResourceRegistry;
 class HdSt_Subdivision;
 struct HdQuadInfo;
 class SdfPath;
@@ -87,7 +88,7 @@ public:
     /// via the resource registry.
     HdSt_QuadInfoBuilderComputationSharedPtr GetQuadInfoBuilderComputation(
         bool gpu, SdfPath const &id,
-        HdResourceRegistry *resourceRegistry = nullptr);
+        HdStResourceRegistry *resourceRegistry = nullptr);
 
     /// Returns the quad indices (for drawing) buffer source computation.
     HdBufferSourceSharedPtr GetQuadIndexBuilderComputation(SdfPath const &id);
@@ -98,7 +99,7 @@ public:
 
     /// Returns the GPU quadrangulate computation.
     HdComputationSharedPtr GetQuadrangulateComputationGPU(
-        TfToken const &name, GLenum dataType, SdfPath const &id);
+        TfToken const &name, HdType dataType, SdfPath const &id);
 
     /// Returns the CPU face-varying quadrangulate computation
     HdBufferSourceSharedPtr GetQuadrangulateFaceVaryingComputation(
@@ -171,7 +172,7 @@ public:
 
     /// Returns the subdivision primvar refine computation on GPU.
     HdComputationSharedPtr GetOsdRefineComputationGPU(
-        TfToken const &name, GLenum dataType, int numComponents);
+        TfToken const &name, HdType dataType);
 
     /// @}
 

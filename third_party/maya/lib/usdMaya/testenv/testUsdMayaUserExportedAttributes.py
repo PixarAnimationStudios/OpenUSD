@@ -200,7 +200,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         }
         expectedRiAttrNames = set(expectedRiAttrs.keys())
 
-        riStatements = UsdRi.Statements(prim)
+        riStatements = UsdRi.StatementsAPI(prim)
         self.assertTrue(riStatements)
 
         riAttrs = riStatements.GetRiAttributes()
@@ -212,7 +212,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         for riAttrName in expectedRiAttrs:
             riAttr = prim.GetAttribute(riAttrName)
             self.assertTrue(riAttr)
-            self.assertTrue(UsdRi.Statements.IsRiAttribute(riAttr))
+            self.assertTrue(UsdRi.StatementsAPI.IsRiAttribute(riAttr))
             self.assertEqual(riAttr.Get(), expectedRiAttrs[riAttrName]['value'])
             self.assertEqual(riAttr.GetTypeName(), expectedRiAttrs[riAttrName]['typeName'])
 
@@ -288,7 +288,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         INT_1_VALUE = 42
         INT_2_VALUE = Gf.Vec2i(1, 2)
         INT_3_VALUE = Gf.Vec3i(1, 2, 3)
-        ENUM_VALUE = 'Two'
+        ENUM_VALUE = 2 # Expect value of enum to be exported, not string
         FLOAT_DOUBLE_1_VALUE = 1.1
         FLOAT_DOUBLE_2_VALUE = Gf.Vec2d(1.1, 2.2)
         FLOAT_DOUBLE_3_VALUE = Gf.Vec3d(1.1, 2.2, 3.3)
@@ -320,7 +320,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
             'myLong':         {'value': INT_1_VALUE,
                                'typeName': Sdf.ValueTypeNames.Int},
             'myEnum':         {'value': ENUM_VALUE,
-                               'typeName': Sdf.ValueTypeNames.Token},
+                               'typeName': Sdf.ValueTypeNames.Int},
             'myFloat':        {'value': FLOAT_DOUBLE_1_VALUE,
                                'typeName': Sdf.ValueTypeNames.Float},
             'myDouble':       {'value': FLOAT_DOUBLE_1_VALUE,
@@ -401,7 +401,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         primvars = gprim.GetPrimvars()
         self.assertEqual(len(primvars), len(exportedAttrsDict) + 3)
 
-        riStatements = UsdRi.Statements(usdPrim)
+        riStatements = UsdRi.StatementsAPI(usdPrim)
         self.assertTrue(riStatements)
 
         riAttrs = riStatements.GetRiAttributes()
@@ -436,7 +436,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
             # Test UsdRi attributes.
             riAttr = usdPrim.GetAttribute('ri:attributes:user:%sUsdRiAttr' % attrPrefix)
             self.assertTrue(riAttr)
-            self.assertTrue(UsdRi.Statements.IsRiAttribute(riAttr))
+            self.assertTrue(UsdRi.StatementsAPI.IsRiAttribute(riAttr))
             self._assertAlmostEqualWithFallback(riAttr.Get(), value)
 
             riAttrType = exportedAttrsDict[attrPrefix]['typeName']

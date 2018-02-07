@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdSkelSkeleton,
-        TfType::Bases< UsdTyped > >();
+        TfType::Bases< UsdGeomImageable > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -98,6 +98,23 @@ UsdSkelSkeleton::_GetTfType() const
 }
 
 UsdAttribute
+UsdSkelSkeleton::GetJointsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->joints);
+}
+
+UsdAttribute
+UsdSkelSkeleton::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->joints,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelSkeleton::GetRestTransformsAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->restTransforms);
@@ -112,19 +129,6 @@ UsdSkelSkeleton::CreateRestTransformsAttr(VtValue const &defaultValue, bool writ
                        SdfVariabilityUniform,
                        defaultValue,
                        writeSparsely);
-}
-
-UsdRelationship
-UsdSkelSkeleton::GetJointsRel() const
-{
-    return GetPrim().GetRelationship(UsdSkelTokens->joints);
-}
-
-UsdRelationship
-UsdSkelSkeleton::CreateJointsRel() const
-{
-    return GetPrim().CreateRelationship(UsdSkelTokens->joints,
-                       /* custom = */ false);
 }
 
 namespace {
@@ -144,11 +148,12 @@ const TfTokenVector&
 UsdSkelSkeleton::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdSkelTokens->joints,
         UsdSkelTokens->restTransforms,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdTyped::GetSchemaAttributeNames(true),
+            UsdGeomImageable::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

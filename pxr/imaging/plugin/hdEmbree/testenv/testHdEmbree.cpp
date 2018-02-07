@@ -27,7 +27,7 @@
 #include "pxr/imaging/glf/drawTarget.h"
 
 #include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/unitTestGLDrawing.h"
+#include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
 
 #include "pxr/imaging/hdx/renderTask.h"
@@ -45,11 +45,11 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // ------------------------------------------------------
-// Hd_UnitTestGLDrawing is test scaffolding; it can create a window
+// HdSt_UnitTestGLDrawing is test scaffolding; it can create a window
 // and render into it, or do a headless render into a PNG file.
 // Extend it to draw a simple embree scene.
 
-class HdEmbree_TestGLDrawing : public Hd_UnitTestGLDrawing {
+class HdEmbree_TestGLDrawing : public HdSt_UnitTestGLDrawing {
 public:
     HdEmbree_TestGLDrawing()
         : _smooth(false)
@@ -86,12 +86,12 @@ private:
     // renderer (e.g. OpenGL buffers, Embree scene objects). Each render
     // index is bound to a single render delegate.
     //
-    // HdSceneDelegate (or derived classes like Hd_UnitTestDelegate) provide
+    // HdSceneDelegate (or derived classes like HdUnitTestDelegate) provide
     // accessors for scene data for the prims they are supporting. Each
     // scene delegate is bound to a single render index, but a render index
     // can support many scene delegates (although only one per prim).
     //
-    // Hd_UnitTestDelegate implements the scene data accessors for the
+    // HdUnitTestDelegate implements the scene data accessors for the
     // render index to use, and also exports an application-facing API to
     // create basic objects like a camera or a cube.
     //
@@ -109,7 +109,7 @@ private:
     HdEmbreeRendererPlugin *_rendererPlugin;
     HdRenderDelegate *_renderDelegate;
     HdRenderIndex *_renderIndex;
-    Hd_UnitTestDelegate *_sceneDelegate;
+    HdUnitTestDelegate *_sceneDelegate;
 
     // Scene options:
     // - Use smooth normals, or flat normals?
@@ -139,7 +139,7 @@ void HdEmbree_TestGLDrawing::InitTest()
     TF_VERIFY(_renderIndex != nullptr);
 
     // Construct a new scene delegate to populate the render index.
-    _sceneDelegate = new Hd_UnitTestDelegate(
+    _sceneDelegate = new HdUnitTestDelegate(
             _renderIndex, SdfPath::AbsoluteRootPath());
     TF_VERIFY(_sceneDelegate != nullptr);
 

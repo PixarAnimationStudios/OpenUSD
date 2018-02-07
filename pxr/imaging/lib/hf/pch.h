@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -64,7 +65,6 @@
 #include <utility>
 #include <vector>
 #include <boost/any.hpp>
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/mpl/assert.hpp>

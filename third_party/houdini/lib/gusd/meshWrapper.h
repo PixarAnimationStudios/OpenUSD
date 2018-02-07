@@ -56,9 +56,7 @@ public:
     
 public:
 
-    virtual const UsdGeomImageable getUsdPrimForWrite() const override { return m_usdMeshForWrite; }
-
-    virtual const UsdGeomImageable getUsdPrimForRead() const override { return m_usdMeshForRead; }
+    virtual const UsdGeomImageable getUsdPrim() const override { return m_usdMesh; }
 
     virtual bool redefine( 
            const UsdStagePtr& stage,
@@ -116,7 +114,7 @@ private:
 
     void initialize( const GusdContext& ctxt, const GT_PrimitiveHandle& refPrim );
 
-    UsdGeomMesh     m_usdMeshForRead, m_usdMeshForWrite;
+    UsdGeomMesh     m_usdMesh;
     bool            m_forceCreateNewGeo;
 };
 

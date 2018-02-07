@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <glob.h>
@@ -99,14 +100,11 @@
 #include <vector>
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/vector.hpp>
-#include <boost/foreach.hpp>
 #include <boost/function.hpp>
-#include <boost/functional/factory.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -117,7 +115,6 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/bool.hpp>
@@ -228,6 +225,7 @@
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_cv.hpp>

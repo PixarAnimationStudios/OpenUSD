@@ -25,13 +25,13 @@
 #define HDST_UNIT_TEST_HELPER
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/unitTestDelegate.h"
 
 #include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassState.h"
-#include "pxr/imaging/hd/unitTestDelegate.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/base/gf/vec4d.h"
@@ -75,12 +75,12 @@ public:
     HdRenderPassSharedPtr const &GetRenderPass(bool withGuides=false);
 
     /// Returns the renderPassState
-    HdRenderPassStateSharedPtr const &GetRenderPassState() const {
+    HdStRenderPassStateSharedPtr const &GetRenderPassState() const {
         return _renderPassState;
     }
 
     /// Returns the UnitTest delegate
-    Hd_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
+    HdSt_UnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
     void SetRepr(TfToken const &reprName);
@@ -92,11 +92,11 @@ private:
     HdEngine _engine;
     HdStRenderDelegate   _renderDelegate;
     HdRenderIndex       *_renderIndex;
-    Hd_UnitTestDelegate *_sceneDelegate;
+    HdSt_UnitTestDelegate *_sceneDelegate;
     TfToken _reprName;
     HdRenderPassSharedPtr _geomPass;
     HdRenderPassSharedPtr _geomAndGuidePass;
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassStateSharedPtr _renderPassState;
 };
 
 /// \class HdSt_TestLightingShader
@@ -105,19 +105,19 @@ private:
 ///
 typedef boost::shared_ptr<class HdSt_TestLightingShader> HdSt_TestLightingShaderSharedPtr;
 
-class HdSt_TestLightingShader : public HdLightingShader {
+class HdSt_TestLightingShader : public HdStLightingShader {
 public:
     HdSt_TestLightingShader();
     virtual ~HdSt_TestLightingShader();
 
-    /// HdShaderCode overrides
+    /// HdStShaderCode overrides
     virtual ID ComputeHash() const;
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
-    /// HdLightingShader overrides
+    /// HdStLightingShader overrides
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
                            GfMatrix4d const &projectionMatrix);
 

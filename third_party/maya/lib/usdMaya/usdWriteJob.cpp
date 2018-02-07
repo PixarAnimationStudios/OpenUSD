@@ -61,6 +61,7 @@
 #include <maya/MItDag.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxNode.h>
+#include <maya/MStatus.h>
 
 #include <limits>
 #include <map>
@@ -172,16 +173,42 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     for (PxrUsdMayaUtil::ShapeSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
             it != end; ++it) {
         MDagPath curDagPath = *it;
-        std::string curDagPathStr(curDagPath.partialPathName().asChar());
+        MStatus status;
+        bool curDagPathIsValid = curDagPath.isValid(&status);
+        if (status != MS::kSuccess || !curDagPathIsValid) {
+            continue;
+        }
+
+        std::string curDagPathStr(curDagPath.partialPathName(&status).asChar());
+        if (status != MS::kSuccess) {
+            continue;
+        }
+
         argDagPaths.insert(curDagPathStr);
 
-        while (curDagPath.pop() && curDagPath.length() >= 0) {
-            curDagPathStr = curDagPath.partialPathName().asChar();
+        status = curDagPath.pop();
+        if (status != MS::kSuccess) {
+            continue;
+        }
+        curDagPathIsValid = curDagPath.isValid(&status);
+
+        while (status == MS::kSuccess && curDagPathIsValid) {
+            curDagPathStr = curDagPath.partialPathName(&status).asChar();
+            if (status != MS::kSuccess) {
+                break;
+            }
+
             if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
                 // We've already traversed up from this path.
                 break;
             }
             argDagPathParents.insert(curDagPathStr);
+
+            status = curDagPath.pop();
+            if (status != MS::kSuccess) {
+                break;
+            }
+            curDagPathIsValid = curDagPath.isValid(&status);
         }
     }
 
@@ -248,12 +275,18 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     }
 
     // Writing Materials/Shading
+    SdfPath matCollectionPath = mJobCtx.mArgs.exportMaterialCollections ? 
+                    SdfPath(mJobCtx.mArgs.materialCollectionsPath) : 
+                    SdfPath::EmptyPath();
+
     PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
                 mJobCtx.mStage,
                 mJobCtx.mArgs.dagPaths,
                 mJobCtx.mArgs.shadingMode,
                 mJobCtx.mArgs.mergeTransformAndShape,
-                mJobCtx.mArgs.usdModelRootOverridePath);
+                mJobCtx.mArgs.usdModelRootOverridePath,
+                mDagPathToUsdPathMap,
+                matCollectionPath);
 
     if (!mModelKindWriter.MakeModelHierarchy(mJobCtx.mStage)) {
         return false;
@@ -348,6 +381,10 @@ void usdWriteJob::endJob()
         // We have already decided above that 'usdRootPrim' is the important
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
+    }
+    // Running post export function on all the prim writers.
+    for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
+        primWriter->postExport();
     }
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
         mJobCtx.mStage->GetRootLayer()->Save();

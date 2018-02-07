@@ -333,6 +333,50 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # testing a standalone model reference node.
         self._ValidateAllModelRepresentations(nestedAssemblyNode)
 
+    def testNestedAssembliesWithVariantSetsChangeReps(self):
+        """
+        This tests that changing representations of a hierarchy of USD
+        reference assembly nodes in Maya works as expected when the referenced
+        prims have variant sets.
+        """
+        assemblyNode = self._SetupScene('SetWithModelingVariants_set.usda',
+            '/SetWithModelingVariants_set')
+
+        # Set the modelingVariant on the top-level assembly to the one that has
+        # child prims.
+        varSetAttrName = 'usdVariantSet_modelingVariant'
+        cmds.addAttr(assemblyNode, ln=varSetAttrName, dt='string',
+            internalSet=True)
+        cmds.setAttr('%s.%s' % (assemblyNode, varSetAttrName), 'Cubes',
+            type='string')
+
+        # No representation has been activated yet, so ensure the assembly node
+        # has no children.
+        self._ValidateUnloaded(assemblyNode)
+
+        # Change representations to 'Collapsed' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Collapsed')
+        self._ValidateCollapsed(assemblyNode)
+
+        # Change representations to 'Expanded' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Expanded')
+
+        childNodes = self._GetChildren(assemblyNode)
+        cubesGroupNode = childNodes[0]
+        childNodes = self._GetChildren(cubesGroupNode)
+        cubeOneAssemblyNode = childNodes[0]
+
+        # XXX: This test should be expanded to cover more combinations of 
+        # representations like the other tests do, but more work is needed to
+        # ensure that variant set selections work correctly with hierarchies of
+        # assemblies.
+        # For example, this model reference assembly does not currently behave
+        # correctly when it appears because it is in a variant selection of a
+        # parent assembly. For now, we just make sure that it doesn't crash
+        # like it used to.
+        # self._ValidateAllModelRepresentations(cubeOneAssemblyNode)
+        cmds.assembly(cubeOneAssemblyNode, edit=True, active='Expanded')
+
 
     def _ValidateComplexSetExpandedTopLevel(self, nodeName):
         """

@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    "This is an ill defined API schema."
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "schemaFail8"
+        string libraryPath      = "pxr/usd/fakeLib"
+    }
+) {
+}
+
+class "MissingAPISuffix" {
+}

@@ -425,6 +425,127 @@ _ResolvePath(const std::string& path)
     return ArGetResolver().Resolve(path);
 }
 
+// UsdStage::OpenMasked doesn't participate with the active UsdStageCache.
+// Use of a UsdStageCacheRequest subclass lets work with the cache for masked
+// stages without having to manually lock.
+// 
+// The assumption is that external consumers of the UsdStageCache which don't
+// go through UsdKatanaCache will take the first otherwise matching stage
+// independent of masking or session layer. Those consumers are not typically
+// active in the katanaBin process but may be in the render. While the
+// interactive process can result in multiple session or mask specific copies
+// of the same stage (via interactive edits), that's not likely to be relevant
+// to the renderboot process.
+//
+// NOTE: This does not own the reference to the provided mask so its lifetime
+//       must be externally managed.
+//
+//       Additionally, UsdStagePopulationMask::All() should be sent in for an
+//       empty mask. That's only relevant internal to this file as this class
+//       is not exposed.
+class PxrUsdIn_StageOpenRequest : public UsdStageCacheRequest
+{
+public:
+    
+    PxrUsdIn_StageOpenRequest(UsdStage::InitialLoadSet load,
+            SdfLayerHandle const &rootLayer,
+            SdfLayerHandle const &sessionLayer,
+            ArResolverContext const &pathResolverContext,
+            const UsdStagePopulationMask & mask
+    )
+    : _rootLayer(rootLayer)
+    , _sessionLayer(sessionLayer)
+    , _pathResolverContext(pathResolverContext)
+    , _initialLoadSet(load)
+    , _mask(mask)
+    {}
+    
+    virtual ~PxrUsdIn_StageOpenRequest(){};
+    
+    virtual bool IsSatisfiedBy(UsdStageRefPtr const &stage) const
+    {
+        // NOTE: no need to compare the mask as the session layer key
+        //       already incorporates the masks value.
+        return _rootLayer == stage->GetRootLayer() &&
+            _sessionLayer == stage->GetSessionLayer() &&
+            _pathResolverContext == stage->GetPathResolverContext();
+    }
+    
+    virtual bool IsSatisfiedBy(UsdStageCacheRequest const &pending) const
+    {
+        
+        auto req = dynamic_cast<PxrUsdIn_StageOpenRequest const *>(&pending);
+        if (!req)
+        {
+            return false;
+        }
+
+        return _rootLayer == req->_rootLayer &&
+            _sessionLayer == req->_sessionLayer &&
+            _pathResolverContext == req->_pathResolverContext;// &&
+            // NOTE: no need to compare the mask as the session layer key
+            //       already incorporates the masks value.
+            //_mask == req->_mask;
+        
+    }
+    virtual UsdStageRefPtr Manufacture()
+    {
+        return UsdStage::OpenMasked(_rootLayer, _sessionLayer, 
+                            _pathResolverContext,
+                            _mask,
+                            _initialLoadSet);
+    }
+    
+private:
+    SdfLayerHandle _rootLayer;
+    SdfLayerHandle _sessionLayer;
+    ArResolverContext _pathResolverContext;
+    UsdStage::InitialLoadSet _initialLoadSet;
+    const UsdStagePopulationMask & _mask;
+};
+
+
+// While the population mask is not part of the session layer, it's delivered
+// along with the GroupAttribute which describes the session layer so that
+// it's incorporated in the same cache key. Other uses of population masks
+// may want to keep the mask mutable for a given stage, PxrUsdIn ensures that
+// they are unique copies as it's possible (although usually discouraged) to
+// have simultaneous states active at once.
+void FillPopulationMaskFromSessionAttr(
+        FnAttribute::GroupAttribute sessionAttr,
+        const std::string & sessionRootLocation,
+        UsdStagePopulationMask & mask)
+{
+    FnAttribute::StringAttribute maskAttr =
+            sessionAttr.getChildByName("mask");
+    
+    if (maskAttr.getNumberOfValues() > 0)
+    {
+        std::string rootLocationPlusSlash = sessionRootLocation + "/";
+        
+        auto values = maskAttr.getNearestSample(0.0f);
+        
+        for (auto i : values)
+        {
+            if (!pystring::startswith(i, rootLocationPlusSlash))
+            {
+                continue;
+            }
+            
+            std::string primPath = pystring::slice(i,
+                    sessionRootLocation.size());
+            
+            mask.Add(SdfPath(primPath));
+        }
+    }
+    
+    if (mask.IsEmpty())
+    {
+        mask = UsdStagePopulationMask::All();
+    }
+}
+
+
 UsdStageRefPtr UsdKatanaCache::GetStage(
         std::string const& fileName, 
         FnAttribute::GroupAttribute sessionAttr,
@@ -436,33 +557,60 @@ UsdStageRefPtr UsdKatanaCache::GetStage(
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating and caching UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
-            fileName.c_str(), path.c_str());
+            fileName.c_str(), _ResolvePath(fileName).c_str());
 
-    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(path)) {
+    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileName)) {
         SdfLayerRefPtr& sessionLayer =
                 _FindOrCreateSessionLayer(sessionAttr, sessionRootLocation);
 
         UsdStageCache& stageCache = UsdUtilsStageCache::Get();
-        UsdStageCacheContext cacheCtx(stageCache);
+
+        UsdStagePopulationMask mask;
+        FillPopulationMaskFromSessionAttr(
+                sessionAttr, sessionRootLocation, mask);
+        
         const UsdStage::InitialLoadSet load = 
             (forcePopulate ? UsdStage::LoadAll : UsdStage::LoadNone);
-        UsdStageRefPtr const& stage = UsdStage::Open(rootLayer, sessionLayer, 
-                ArGetResolver().GetCurrentContext(),
-                load);
 
-        // TF_DEBUG(USDKATANA_CACHE_STAGE).Msg("{USD STAGE CACHE} Fetched stage "
-        //                             "(%s, %s, forcePopulate=%s) "
-        //                             "with UsdStage address '%lx'\n",
-        //                             fileName.c_str(),
-        //                             variantSelections.c_str(),
-        //                             forcePopulate?"true":"false",
-        //                             (size_t)stage.operator->());
-
+        auto result = stageCache.RequestStage(
+                PxrUsdIn_StageOpenRequest(
+                    load,
+                    rootLayer,
+                    sessionLayer,
+                    ArGetResolver().GetCurrentContext(),
+                    mask));
+        
+        UsdStageRefPtr stage = result.first;
+        
+        if (result.second)
+        {
+            TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
+                    "{USD STAGE CACHE} Loaded stage "
+                    "(%s, forcePopulate=%s) "
+                    "with UsdStage address '%lx'\n"
+                    "and sessionAttr hash '%s'\n",
+                    fileName.c_str(),
+                    forcePopulate?"true":"false",
+                    (size_t)stage.operator->(),
+                    sessionAttr.getHash().str().c_str());
+            
+        }
+        else
+        {
+            TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
+                    "{USD STAGE CACHE} Fetching cached stage "
+                    "(%s, forcePopulate=%s) "
+                    "with UsdStage address '%lx'\n"
+                    "and sessionAttr hash '%s'\n",
+                    fileName.c_str(),
+                    forcePopulate?"true":"false",
+                    (size_t)stage.operator->(),
+                    sessionAttr.getHash().str().c_str());
+        }
+        
         // Mute layers according to a regex.
         _SetMutedLayers(stage, ignoreLayerRegex);
 
@@ -486,35 +634,39 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     const std::string contextPath = givenAbsPath ? 
                                     TfGetPathName(fileName) : ArchGetCwd();
 
-    std::string path = !givenAbsPath ? _ResolvePath(fileName) : fileName;
-
     TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
             "{USD STAGE CACHE} Creating UsdStage for "
             "given filePath @%s@, which resolves to @%s@\n", 
-            fileName.c_str(), path.c_str());
+            fileName.c_str(), _ResolvePath(fileName).c_str());
 
-    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(path)) {
+    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileName)) {
         SdfLayerRefPtr& sessionLayer =
                 _FindOrCreateSessionLayer(sessionAttr, sessionRootLocation);
         
-        // No cache!
-        //UsdStageCache stageCache;
-        //UsdStageCacheContext cacheCtx(stageCache);
         
+        UsdStagePopulationMask mask;
+        FillPopulationMaskFromSessionAttr(sessionAttr, sessionRootLocation,
+                mask);
+        
+
         const UsdStage::InitialLoadSet load = 
             (forcePopulate ? UsdStage::LoadAll : UsdStage::LoadNone);
-        UsdStageRefPtr const stage = UsdStage::Open(rootLayer, sessionLayer, 
-                ArGetResolver().GetCurrentContext(),
+        
+        // OpenMasked is always uncached
+        UsdStageRefPtr const stage = UsdStage::OpenMasked(rootLayer, sessionLayer, 
+                ArGetResolver().GetCurrentContext(), mask,
                 load);
 
-        // TF_DEBUG(USDKATANA_CACHE_STAGE).Msg("{USD STAGE CACHE} Fetched uncached stage "
-        //                             "(%s, %s, forcePopulate=%s) "
-        //                             "with UsdStage address '%lx'\n",
-        //                             fileName.c_str(),
-        //                             variantSelections.c_str(),
-        //                             forcePopulate?"true":"false",
-        //                             (size_t)stage.operator->());
-
+        TF_DEBUG(USDKATANA_CACHE_STAGE).Msg(
+                    "{USD STAGE CACHE} Loaded uncached stage "
+                    "(%s, forcePopulate=%s) "
+                    "with UsdStage address '%lx'\n"
+                    "and sessionAttr hash '%s'\n",
+                    fileName.c_str(),
+                    forcePopulate?"true":"false",
+                    (size_t)stage.operator->(),
+                    sessionAttr.getHash().str().c_str());
+        
         // Mute layers according to a regex.
         _SetMutedLayers(stage, ignoreLayerRegex);
 
@@ -526,6 +678,15 @@ UsdKatanaCache::GetUncachedStage(std::string const& fileName,
     
     
 }
+
+
+void UsdKatanaCache::FlushStage(const UsdStageRefPtr & stage)
+{
+    UsdStageCache& stageCache = UsdUtilsStageCache::Get();
+    
+    stageCache.Erase(stage);
+}
+
 
 UsdImagingGLSharedPtr const& 
 UsdKatanaCache::GetRenderer(UsdStageRefPtr const& stage,
@@ -609,6 +770,8 @@ SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
 
 SdfLayerRefPtr UsdKatanaCache::FindSessionLayer(
     const std::string& cacheKey) {
+    boost::upgrade_lock<boost::upgrade_mutex>
+                readerLock(UsdKatanaGetSessionCacheLock());
     const auto& it = _sessionKeyCache.find(cacheKey);
     if (it != _sessionKeyCache.end()) {
         return it->second;

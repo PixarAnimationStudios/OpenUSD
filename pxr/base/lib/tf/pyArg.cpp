@@ -28,15 +28,15 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/bind.hpp>
 #include <boost/python/extract.hpp>
 #include <boost/python/list.hpp>
 #include <boost/python/slice.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-using namespace boost::python;
 using std::string;
 using std::vector;
+
+using namespace boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,7 +67,8 @@ TfPyProcessOptionalArgs(
         typedef stl_input_iterator<string> KeyIterator;
         for (KeyIterator it(keys), it_end; it != it_end; ++it) {
             if (std::find_if(expectedArgs.begin(), expectedArgs.end(),
-                             boost::bind(_ArgumentIsNamed, *it, _1)) 
+                             std::bind(_ArgumentIsNamed, *it,
+                                       std::placeholders::_1))
                 == expectedArgs.end()) {
 
                 TfPyThrowTypeError("Unexpected keyword argument '%s'");

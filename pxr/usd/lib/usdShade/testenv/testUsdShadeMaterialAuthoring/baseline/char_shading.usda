@@ -1,7 +1,7 @@
 #usda 1.0
 
 def "ModelShading" (
-    add references = [
+    prepend references = [
         @./char_shading.usda@</MaterialBindingVariants>,
         @./char_shading.usda@</ShadingDefs>
     ]
@@ -110,26 +110,20 @@ def "ShadingDefs"
             variants = {
                 string materialVariant = "Dry"
             }
-            add variantSets = "materialVariant"
+            prepend variantSets = "materialVariant"
         )
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    rel connectedSourceFor:outputs:displacement = </ShadingDefs/Shaders/HairDryDisp.outputs:out>
-                    rel connectedSourceFor:outputs:pattern = </ShadingDefs/Shaders/HairDryPattern.outputs:out>
-                    rel connectedSourceFor:outputs:surface = </ShadingDefs/Shaders/HairDrySurface.outputs:out>
-                    vector3f outputs:displacement
-                    float[] outputs:pattern
-                    color3f outputs:surface
+                    vector3f outputs:displacement.connect = </ShadingDefs/Shaders/HairDryDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairDryPattern.outputs:out>
+                    color3f outputs:surface.connect = </ShadingDefs/Shaders/HairDrySurface.outputs:out>
 
                 }
                 "Wet" {
-                    rel connectedSourceFor:outputs:displacement = </ShadingDefs/Shaders/HairWetDisp.outputs:out>
-                    rel connectedSourceFor:outputs:pattern = </ShadingDefs/Shaders/HairWetPattern.outputs:out>
-                    rel connectedSourceFor:outputs:surface = </ShadingDefs/Shaders/HairWetSurface.outputs:out>
-                    vector3f outputs:displacement
-                    float[] outputs:pattern
-                    color3f outputs:surface
+                    vector3f outputs:displacement.connect = </ShadingDefs/Shaders/HairWetDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairWetPattern.outputs:out>
+                    color3f outputs:surface.connect = </ShadingDefs/Shaders/HairWetSurface.outputs:out>
 
                 }
             }
@@ -139,26 +133,20 @@ def "ShadingDefs"
             variants = {
                 string materialVariant = "Dry"
             }
-            add variantSets = "materialVariant"
+            prepend variantSets = "materialVariant"
         )
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    rel connectedSourceFor:outputs:displacement = </ShadingDefs/Shaders/SkinDryDisp.outputs:out>
-                    rel connectedSourceFor:outputs:pattern = </ShadingDefs/Shaders/SkinDryPattern.outputs:out>
-                    rel connectedSourceFor:outputs:surface = </ShadingDefs/Shaders/SkinDrySurface.outputs:out>
-                    vector3f outputs:displacement
-                    float[] outputs:pattern
-                    color3f outputs:surface
+                    vector3f outputs:displacement.connect = </ShadingDefs/Shaders/SkinDryDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinDryPattern.outputs:out>
+                    color3f outputs:surface.connect = </ShadingDefs/Shaders/SkinDrySurface.outputs:out>
 
                 }
                 "Wet" {
-                    rel connectedSourceFor:outputs:displacement = </ShadingDefs/Shaders/SkinWetDisp.outputs:out>
-                    rel connectedSourceFor:outputs:pattern = </ShadingDefs/Shaders/SkinWetPattern.outputs:out>
-                    rel connectedSourceFor:outputs:surface = </ShadingDefs/Shaders/SkinWetSurface.outputs:out>
-                    vector3f outputs:displacement
-                    float[] outputs:pattern
-                    color3f outputs:surface
+                    vector3f outputs:displacement.connect = </ShadingDefs/Shaders/SkinWetDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinWetPattern.outputs:out>
+                    color3f outputs:surface.connect = </ShadingDefs/Shaders/SkinWetSurface.outputs:out>
 
                 }
             }
@@ -168,26 +156,20 @@ def "ShadingDefs"
             variants = {
                 string materialVariant = "Dry"
             }
-            add variantSets = "materialVariant"
+            prepend variantSets = "materialVariant"
         )
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    rel connectedSourceFor:outputs:displacement = </ShadingDefs/Shaders/NailsDryDisp.outputs:out>
-                    rel connectedSourceFor:outputs:pattern = </ShadingDefs/Shaders/NailsDryPattern.outputs:out>
-                    rel connectedSourceFor:outputs:surface = </ShadingDefs/Shaders/NailsDrySurface.outputs:out>
-                    vector3f outputs:displacement
-                    float[] outputs:pattern
-                    color3f outputs:surface
+                    vector3f outputs:displacement.connect = </ShadingDefs/Shaders/NailsDryDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsDryPattern.outputs:out>
+                    color3f outputs:surface.connect = </ShadingDefs/Shaders/NailsDrySurface.outputs:out>
 
                 }
                 "Wet" {
-                    rel connectedSourceFor:outputs:displacement = </ShadingDefs/Shaders/NailsWetDisp.outputs:out>
-                    rel connectedSourceFor:outputs:pattern = </ShadingDefs/Shaders/NailsWetPattern.outputs:out>
-                    rel connectedSourceFor:outputs:surface = </ShadingDefs/Shaders/NailsWetSurface.outputs:out>
-                    vector3f outputs:displacement
-                    float[] outputs:pattern
-                    color3f outputs:surface
+                    vector3f outputs:displacement.connect = </ShadingDefs/Shaders/NailsWetDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsWetPattern.outputs:out>
+                    color3f outputs:surface.connect = </ShadingDefs/Shaders/NailsWetSurface.outputs:out>
 
                 }
             }
@@ -199,7 +181,7 @@ over "MaterialBindingVariants" (
     variants = {
         string materialVariant = "Wet"
     }
-    add variantSets = "materialVariant"
+    prepend variantSets = "materialVariant"
 )
 {
     variantSet "materialVariant" = {

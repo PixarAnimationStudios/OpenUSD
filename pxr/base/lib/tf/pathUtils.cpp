@@ -31,9 +31,6 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/errno.h"
 
-#include <boost/bind.hpp>
-#include <boost/scoped_array.hpp>
-
 #include <algorithm>
 #include <cctype>
 #include <errno.h>
@@ -58,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+#if defined(ARCH_OS_WINDOWS)
 // Expands symlinks in path.  Used on Windows as a partial replacement
 // for realpath(), partial because is doesn't handle /./, /../ and
 // duplicate slashes.
@@ -86,6 +84,7 @@ _ExpandSymlinks(const std::string& path)
     // No links at all.
     return path;
 }
+#endif
 
 void
 _ClearError()
@@ -221,7 +220,9 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
     // Lower-bound to find first non-existent path.
     vector<size_type>::iterator result =
         std::lower_bound(splitPoints.begin(), splitPoints.end(), npos,
-                         boost::bind(_Local::Compare, path, _1, _2, error));
+                         std::bind(_Local::Compare, path,
+                                   std::placeholders::_1,
+                                   std::placeholders::_2, error));
 
     // begin means nothing existed, end means everything did, else prior is last
     // existing path.
@@ -447,7 +448,7 @@ TfAbsPath(string const& path)
         return TfNormPath(path);
     }
 
-    boost::scoped_array<char> cwd(new char[ARCH_PATH_MAX]);
+    std::unique_ptr<char[]> cwd(new char[ARCH_PATH_MAX]);
 
     if (getcwd(cwd.get(), ARCH_PATH_MAX) == NULL) {
         // CODE_COVERAGE_OFF hitting this would require creating a directory,

@@ -25,11 +25,9 @@
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/extComputationContext.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
-#include "pxr/imaging/hd/extCompCpuComputation.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sceneExtCompInputSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,6 +47,7 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("HdExtComputation::Sync\n");
 
     if (!TF_VERIFY(sceneDelegate != nullptr)) {
         return;
@@ -57,6 +56,8 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
     HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyInputDesc) {
+        TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    dirty inputs\n");
+        
         _sceneInputs       = sceneDelegate->GetExtComputationInputNames(_id,
                                                 HdExtComputationInputTypeScene);
         _computationInputs = sceneDelegate->GetExtComputationInputNames(_id,
@@ -91,16 +92,15 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         _elementCount = vtElementCount.Get<size_t>();
     }
 
+    if (bits & DirtyKernel) {
+        _kernel = sceneDelegate->GetExtComputationKernel(_id);
+        TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    _kernel = '%s'\n",
+                _kernel.c_str());
+        // XXX we should update any created GPU computations as well
+        // with the new kernel if we want to provide a good editing flow.
+    }
 
     *dirtyBits = Clean;
-}
-
-
-HdExtCompCpuComputationSharedPtr
-HdExtComputation::GetComputation(HdSceneDelegate *sceneDelegate) const
-{
-    // XXX: To do: De-duplication
-    return _CreateCpuComputation(sceneDelegate);
 }
 
 HdDirtyBits
@@ -108,70 +108,5 @@ HdExtComputation::GetInitialDirtyBits() const
 {
     return AllDirty;
 }
-
-HdExtCompCpuComputationSharedPtr
-HdExtComputation::_CreateCpuComputation(HdSceneDelegate *sceneDelegate) const
-{
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-    HdResourceRegistrySharedPtr const &resourceRegistry =
-                                              renderIndex.GetResourceRegistry();
-
-
-    Hd_ExtCompInputSourceSharedPtrVector inputs;
-
-    size_t numSceneInputs = _sceneInputs.size();
-    for (size_t inputNum = 0; inputNum < numSceneInputs; ++inputNum) {
-        const TfToken &inputName = _sceneInputs[inputNum];
-
-        VtValue inputValue = sceneDelegate->Get(_id, inputName);
-
-        Hd_ExtCompInputSourceSharedPtr inputSource(
-                         new Hd_SceneExtCompInputSource(inputName, inputValue));
-
-        resourceRegistry->AddSource(inputSource);
-        inputs.push_back(inputSource);
-    }
-
-    size_t numCompInputs = _computationInputs.size();
-    for (size_t inputNum = 0; inputNum < numCompInputs; ++inputNum) {
-        const TfToken &inputName = _computationInputs[inputNum];
-        const SourceComputationDesc &sourceDesc =
-                                              _computationSourceDescs[inputNum];
-
-        HdExtComputation *sourceComp;
-        HdSceneDelegate *sourceCompSceneDelegate;
-
-        renderIndex.GetExtComputationInfo(sourceDesc.computationId,
-                                          &sourceComp,
-                                          &sourceCompSceneDelegate);
-
-        if (sourceComp != nullptr) {
-
-            HdExtCompCpuComputationSharedPtr sourceCpuComputation =
-                            sourceComp->GetComputation(sourceCompSceneDelegate);
-
-            Hd_ExtCompInputSourceSharedPtr inputSource(
-                                            new Hd_CompExtCompInputSource(
-                                                 inputName,
-                                                 sourceCpuComputation,
-                                                 sourceDesc.computationOutput));
-
-            resourceRegistry->AddSource(inputSource);
-            inputs.push_back(inputSource);
-        }
-    }
-
-    HdExtCompCpuComputationSharedPtr computation(
-            new HdExtCompCpuComputation(_id,
-                                        inputs,
-                                        _outputs,
-                                        _elementCount,
-                                        sceneDelegate));
-
-    resourceRegistry->AddSource(computation);
-
-    return computation;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

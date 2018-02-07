@@ -26,6 +26,7 @@
 
 #define BOOST_PYTHON_MAX_ARITY 20
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -72,7 +73,6 @@
 #include <utility>
 #include <vector>
 #include <boost/any.hpp>
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
@@ -141,7 +141,6 @@
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_class.hpp>

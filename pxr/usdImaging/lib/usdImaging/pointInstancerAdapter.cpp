@@ -170,8 +170,10 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
     // Need to use GetAbsoluteRootOrPrimPath() on instancerPath to drop
     // {instancer=X} from the path, so usd can find the prim.
     index->InsertInstancer(instancerPath,
-                           _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
-                           instancerContext);
+            instancerContext ? instancerContext->instancerId : SdfPath(),
+            _GetPrim(instancerPath.GetAbsoluteRootOrPrimPath()),
+            instancerContext ? instancerContext->instancerAdapter
+                             : UsdImagingPrimAdapterSharedPtr());
 
     // ---------------------------------------------------------------------- //
     // Main Prototype allocation loop.
@@ -248,6 +250,11 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         UsdPrimRange &range = treeStack.back();
         UsdPrimRange::iterator iter = range.begin();
         if (UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(*iter)) {
+            if (adapter->IsPopulatedIndirectly()) {
+                range.set_begin(++iter);
+                continue;
+            }
+
             primCount++;
 
             //
@@ -264,7 +271,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 // note that this is not IsInMaster.
                 range.set_begin(++iter);
                 continue;
-            } else if (adapter->ShouldCullChildren(*iter)) {
+            } else if (adapter->IsInstancerAdapter()) {
                 // if the prim is handled by some kind of multiplexing adapter
                 // (e.g. another nested PointInstancer)
                 // we'll relocate its children to itself, then no longer need to
@@ -272,28 +279,30 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                 //
                 // note that this condition should be tested after IsInstance()
                 // above, since UsdImagingInstanceAdapter also returns true for
-                // ShouldCullChildren but it could be instancing something else.
+                // IsInstancerAdapter but it could be instancing something else.
                 UsdImagingInstancerContext ctx = {
                     instancerContext->instancerId,
                     instancerContext->childName,
-                    instancerContext->instanceSurfaceShaderPath,
+                    instancerContext->instanceMaterialId,
                     UsdImagingPrimAdapterSharedPtr() };
                 protoPath = adapter->Populate(*iter, index, &ctx);
-                iter.PruneChildren();
             } else {
                 TfToken protoName(
                     TfStringPrintf(
                         "proto%d_%s_id%d", protoIndex,
                         iter->GetPath().GetName().c_str(), protoID++));
 
-                SdfPath const& shader = GetShaderBinding(*iter);
+                SdfPath const& materialId = GetMaterialId(*iter);
                 UsdImagingInstancerContext ctx = {
                     instancerPath,
                     /*childName=*/protoName,
-                    shader,
+                    materialId,
                     instancerContext->instancerAdapter };
-                protoPath = instancerPath.AppendProperty(protoName);
-                adapter->Populate(*iter, index, &ctx);
+                protoPath = adapter->Populate(*iter, index, &ctx);
+            }
+
+            if (adapter->ShouldCullChildren(*iter)) {
+                iter.PruneChildren();
             }
 
             if (protoPath.IsEmpty()) {
@@ -1193,12 +1202,6 @@ UsdImagingPointInstancerAdapter::MarkVisibilityDirty(
 
         index->MarkInstancerDirty(cachePath, visibilityDirty);
     }
-}
-
-bool
-UsdImagingPointInstancerAdapter::ShouldCullChildren(UsdPrim const& prim)
-{
-    return true;
 }
 
 void

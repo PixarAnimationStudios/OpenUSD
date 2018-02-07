@@ -27,7 +27,7 @@ from attributeValueEditorUI import QtCore
 
 if QtCore.__name__.startswith('PySide.'):
     from PySide import QtGui, QtOpenGL
-    from PySide import QtGui as QtWidgets        
+    from PySide import QtGui as QtWidgets
 
     # Patch missing functions to make PySide look like PySide2
 
@@ -37,6 +37,9 @@ if QtCore.__name__.startswith('PySide.'):
     if not hasattr(QtWidgets.QHeaderView, 'setSectionResizeMode'):
         QtWidgets.QHeaderView.setSectionResizeMode = \
             QtWidgets.QHeaderView.setResizeMode
+
+    if not hasattr(QtGui.QMenu, 'setToolTipsVisible'):
+        QtGui.QMenu.setToolTipsVisible = lambda self, _: None
 
     if hasattr(QtGui.QWheelEvent, 'delta') \
         and not hasattr(QtGui.QWheelEvent, 'angleDelta'):

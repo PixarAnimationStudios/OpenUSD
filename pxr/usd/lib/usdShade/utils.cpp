@@ -38,7 +38,7 @@ TF_DEFINE_ENV_SETTING(
     "parameters, interface attributes and terminals.");
 
 TF_DEFINE_ENV_SETTING(
-    USD_SHADE_WRITE_NEW_ENCODING, false,
+    USD_SHADE_WRITE_NEW_ENCODING, true,
     "Set to true to enable the authoring of shading networks using the new "
     "encoding (with inputs and outputs, in place of parameters, interface "
     "attributes and terminals.");

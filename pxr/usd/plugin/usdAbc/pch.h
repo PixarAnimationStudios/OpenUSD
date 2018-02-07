@@ -25,6 +25,7 @@
 //
 
 #define TF_MAX_ARITY 7
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <glob.h>
@@ -105,9 +106,6 @@
 #include <Alembic/Abc/OArchive.h>
 #include <Alembic/Abc/OObject.h>
 #include <Alembic/AbcCoreAbstract/Foundation.h>
-#ifdef PXR_HDF5_SUPPORT_ENABLED
-#include <Alembic/AbcCoreHDF5/All.h>
-#endif // PXR_HDF5_SUPPORT_ENABLED
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/AbcGeom/GeometryScope.h>
 #include <Alembic/AbcGeom/ICamera.h>
@@ -127,7 +125,6 @@
 #include <boost/aligned_storage.hpp>
 #include <boost/any.hpp>
 #include <boost/assign.hpp>
-#include <boost/bind.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/container/vector.hpp>
@@ -218,6 +215,7 @@
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>
+#include <boost/type_traits/is_polymorphic.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <boost/type_traits/remove_cv.hpp>

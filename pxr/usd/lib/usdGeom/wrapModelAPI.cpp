@@ -48,6 +48,76 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateModelDrawModeAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelDrawModeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelApplyDrawModeAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelApplyDrawModeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelDrawModeColorAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelDrawModeColorAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardGeometryAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardGeometryAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardTextureXPosAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardTextureXPosAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardTextureYPosAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardTextureYPosAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardTextureZPosAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardTextureZPosAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardTextureXNegAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardTextureXNegAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardTextureYNegAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardTextureYNegAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateModelCardTextureZNegAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardTextureZNegAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -66,6 +136,16 @@ void wrapUsdGeomModelAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .staticmethod("Apply")
+
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -79,6 +159,76 @@ void wrapUsdGeomModelAPI()
 
         .def(!self)
 
+        
+        .def("GetModelDrawModeAttr",
+             &This::GetModelDrawModeAttr)
+        .def("CreateModelDrawModeAttr",
+             &_CreateModelDrawModeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelApplyDrawModeAttr",
+             &This::GetModelApplyDrawModeAttr)
+        .def("CreateModelApplyDrawModeAttr",
+             &_CreateModelApplyDrawModeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelDrawModeColorAttr",
+             &This::GetModelDrawModeColorAttr)
+        .def("CreateModelDrawModeColorAttr",
+             &_CreateModelDrawModeColorAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardGeometryAttr",
+             &This::GetModelCardGeometryAttr)
+        .def("CreateModelCardGeometryAttr",
+             &_CreateModelCardGeometryAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardTextureXPosAttr",
+             &This::GetModelCardTextureXPosAttr)
+        .def("CreateModelCardTextureXPosAttr",
+             &_CreateModelCardTextureXPosAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardTextureYPosAttr",
+             &This::GetModelCardTextureYPosAttr)
+        .def("CreateModelCardTextureYPosAttr",
+             &_CreateModelCardTextureYPosAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardTextureZPosAttr",
+             &This::GetModelCardTextureZPosAttr)
+        .def("CreateModelCardTextureZPosAttr",
+             &_CreateModelCardTextureZPosAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardTextureXNegAttr",
+             &This::GetModelCardTextureXNegAttr)
+        .def("CreateModelCardTextureXNegAttr",
+             &_CreateModelCardTextureXNegAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardTextureYNegAttr",
+             &This::GetModelCardTextureYNegAttr)
+        .def("CreateModelCardTextureYNegAttr",
+             &_CreateModelCardTextureYNegAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardTextureZNegAttr",
+             &This::GetModelCardTextureZNegAttr)
+        .def("CreateModelCardTextureZNegAttr",
+             &_CreateModelCardTextureZNegAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
     ;
 

@@ -25,6 +25,7 @@
 #define GUSD_API_H
 
 #include "pxr/base/arch/export.h"
+#include <UT/UT_HDKVersion.h>
 
 #if defined(GUSD_EXPORTS)
 #    define GUSD_API ARCH_EXPORT

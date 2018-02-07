@@ -831,6 +831,98 @@ static void testValue() {
     if (v.CanCastToTypeid(typeid(GfVec3d)))
         die("CanCast double to typeid of GfVec3d");
 
+    // Check that too large doubles cast to float infinities
+    v = VtValue(1e50);
+    if (!v.CanCast<float>())
+        die("CanCast of too large double to float");
+    if (v.Cast<float>() != std::numeric_limits<float>::infinity())
+        die("Cast of too large double to float is not +inf");
+    
+    v = VtValue(-1e50);
+    if (!v.CanCast<float>())
+        die("CanCast of too small double to float");
+    if (v.Cast<float>() != -std::numeric_limits<float>::infinity())
+        die("Cast of too small double to float is not -inf");
+
+    // Check that double infinities cast to float infinities
+    v = VtValue(std::numeric_limits<double>::infinity());
+    if (!v.CanCast<float>())
+        die("CanCast of double +inf to float");
+    if (v.Cast<float>() != std::numeric_limits<float>::infinity())
+        die("Cast of double +inf to float is not +inf");
+
+    v = VtValue(-std::numeric_limits<double>::infinity());
+    if (!v.CanCast<float>())
+        die("CanCast of double -inf to float");
+    if (v.Cast<float>() != -std::numeric_limits<float>::infinity())
+        die("Cast of double -inf to float is not -inf");
+
+    // Check that float infinities cast to double infinities
+    v = VtValue(std::numeric_limits<float>::infinity());
+    if (!v.CanCast<double>())
+        die("CanCast of float +inf to double");
+    if (v.Cast<double>() != std::numeric_limits<double>::infinity())
+        die("Cast of float +inf to double is not +inf");
+
+    v = VtValue(-std::numeric_limits<float>::infinity());
+    if (!v.CanCast<double>())
+        die("CanCast of float -inf to double");
+    if (v.Cast<double>() != -std::numeric_limits<double>::infinity())
+        die("Cast of float -inf to double is not -inf");
+
+    // Check that really large long long casts to double
+    v = VtValue(1000000000000000000ll);
+    if (!v.CanCast<double>())
+        die("CanCast of really large long long to double");
+    if (v.Cast<double>() != 1e+18)
+        die("Cast of really large long long to double");
+
+    // Check that really large long long casts to float
+    v = VtValue(1000000000000000000ll);
+    if (!v.CanCast<float>())
+        die("CanCast of really large long long to float");
+    if (v.Cast<float>() != 1e+18f)
+        die("Cast of really large long long to float");
+        
+    // Check that really large long long casts to GfHalf infinity
+    v = VtValue(1000000000000000000ll);
+    if (!v.CanCast<GfHalf>())
+        die("CanCast of really large long long to GfHalf");
+    if (v.Cast<GfHalf>() != std::numeric_limits<GfHalf>::infinity())
+        die("Cast of really large long long to GfHalf is not +inf");
+
+    // Check that really small long long casts to minus GfHalf infinity
+    v = VtValue(-1000000000000000000ll);
+    if (!v.CanCast<GfHalf>())
+        die("CanCast of really small long long to GfHalf");
+    if (v.Cast<GfHalf>() != -std::numeric_limits<GfHalf>::infinity())
+        die("Cast of really small long long to GfHalf is not -inf");
+
+    // Check that too large unsigned short casts to GfHalf infinity
+    v = VtValue((unsigned short)65535);
+    if (!v.CanCast<GfHalf>())
+        die("CanCast of too large unsigned short to GfHalf");
+    if (v.Cast<GfHalf>() != std::numeric_limits<GfHalf>::infinity())
+        die("Cast of too large unsigned short to GfHalf is not +inf");
+
+    // Some sanity checks
+    v = VtValue((int)0);
+    if (!v.CanCast<double>())
+        die("CanCast of integer zero to double");
+    if (v.Cast<double>() != 0.0)
+        die("Cast of integer zero to double not zero");
+
+    v = VtValue((int)-1);
+    if (!v.CanCast<double>())
+        die("CanCast of integer -1 to double");
+    if (v.Cast<double>() != -1.0)
+        die("Cast of integer -1 to double not -1");
+
+    v = VtValue((int)+1);
+    if (!v.CanCast<double>())
+        die("CanCast of integer one to double");
+    if (v.Cast<double>() != +1.0)
+        die("Cast of integer one to double not one");
 
     // Range-checked casts.
     v = VtValue(std::numeric_limits<short>::max());

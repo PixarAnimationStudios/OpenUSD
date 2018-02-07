@@ -98,6 +98,40 @@ UsdLuxRectLight::_GetTfType() const
 }
 
 UsdAttribute
+UsdLuxRectLight::GetWidthAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->width);
+}
+
+UsdAttribute
+UsdLuxRectLight::CreateWidthAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->width,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdLuxRectLight::GetHeightAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->height);
+}
+
+UsdAttribute
+UsdLuxRectLight::CreateHeightAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->height,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdLuxRectLight::GetTextureFileAttr() const
 {
     return GetPrim().GetAttribute(UsdLuxTokens->textureFile);
@@ -131,6 +165,8 @@ const TfTokenVector&
 UsdLuxRectLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->width,
+        UsdLuxTokens->height,
         UsdLuxTokens->textureFile,
     };
     static TfTokenVector allNames =

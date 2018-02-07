@@ -1,0 +1,82 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Z"
+)
+
+def Xform "World" (
+    kind = "component"
+)
+{
+    def Xform "X"
+    {
+            float xformOp:rotateX:rotateAxis = 60
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX:rotateAxis", "xformOp:scale"]
+    }
+
+    def Xform "Y"
+    {
+            float xformOp:rotateY:rotateAxis = 60
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY:rotateAxis", "xformOp:scale"]
+    }
+    
+    def Xform "Z"
+    {
+            float xformOp:rotateZ:rotateAxis = 60
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZ:rotateAxis", "xformOp:scale"]
+    }
+    
+    def Xform "XYZ"
+    {
+            float3 xformOp:rotateXYZ:rotateAxis = (60, 120, 180)
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ:rotateAxis", "xformOp:scale"]
+    }
+
+    def Xform "YZX"
+    {
+            float3 xformOp:rotateYZX:rotateAxis = (60, 120, 180)
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateYZX:rotateAxis", "xformOp:scale"]
+    }
+
+    def Xform "ZXY"
+    {
+            float3 xformOp:rotateZXY:rotateAxis = (60, 120, 180)
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZXY:rotateAxis", "xformOp:scale"]
+    }
+
+    def Xform "XZY"
+    {
+            float3 xformOp:rotateXZY:rotateAxis = (60, 120, 180)
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXZY:rotateAxis", "xformOp:scale"]
+    }
+
+    def Xform "YXZ"
+    {
+            float3 xformOp:rotateYXZ:rotateAxis = (60, 120, 180)
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateYXZ:rotateAxis", "xformOp:scale"]
+    }
+
+    def Xform "ZYX"
+    {
+            float3 xformOp:rotateZYX:rotateAxis = (60, 120, 180)
+            float3 xformOp:scale = (0.5, 0.5, 0.5)
+            double3 xformOp:translate = (1.0, 2.0, 3.0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZYX:rotateAxis", "xformOp:scale"]
+    }
+}

@@ -28,8 +28,8 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bprim.h"
-
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/hd/textureResource.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -53,10 +53,10 @@ typedef boost::shared_ptr<class HdTextureResource> HdTextureResourceSharedPtr;
 /// The delegate is also used to obtain a HdTextureResource for the texture
 /// represented by that id.
 ///
-class HdTexture final : public HdBprim {
+class HdTexture : public HdBprim {
 public:
     // change tracking for HdTexture
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyParams           = 1 << 0,
         DirtyTexture          = 1 << 1,
@@ -94,8 +94,14 @@ public:
     HD_API
     bool ShouldGenerateMipMaps() const;
 
-private:
+protected:
+    HD_API
+    virtual HdTextureResourceSharedPtr _GetTextureResource(
+        HdSceneDelegate *sceneDelegate,
+        const SdfPath &sceneId,
+        HdTextureResource::ID texID) const;
 
+private:
     // Make sure we have a reference to the texture resource, so its
     // life time exists at least as long as this object.
     HdTextureResourceSharedPtr _textureResource;

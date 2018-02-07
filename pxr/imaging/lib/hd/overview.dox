@@ -62,7 +62,7 @@ HdEngine: Entry point for drawing, consumes HdRenderPass, produces HdCommandBuff
 HdRenderPass
   |
   |--- HdRprimCollection: Indicates selected rprims for render pass
-  |--- HdRenderIndex: Usd, Presto, DsoMoss, ...
+  |--- HdRenderIndex: Usd, Presto, ...
   |--- HdCommandBuffer
 
 HdRenderPassState
@@ -78,11 +78,62 @@ HdCommandBuffer: The work to be performed for a single render pass
 HdDrawItem: Abstraction of an OpenGL draw call.
   |
   |--- HdDrawingCoord
-  |--- Hd_GeometricShader
   |--- HdRprimSharedData
 
 </pre>
 
+\b The \b Compute \b Framework 
+
+Hd supports computation of primvar data scheduled through HdResourceRegistry.
+HdComputation instances added to a registry can generate primvar data directly
+into the GPU buffers of associated rprims for drawing purposes. Support for
+externally defined primvar computation kernels is provided by HdExtComputation.
+
+<pre>
+HdComputation: Interface for GPU computation into an HdBufferArrayRange.
+
+HdExtComputation: Interface for user or asset defined computations.
+  |
+  |--- HdExtCompCpuComputation: Runs CPU compute kernels, outputs into HdBufferSources
+  |
+  |--- HdStExtCompGpuComputation: Runs GPU compute kernels, outputs into HdBufferArrayRange
+
+</pre>
+
+HdExtComputation Usage
+<p>
+To create a computation that generates primvar data the following steps need to be taken:
+<br />
+<ol>
+    <li>Insert and create an HdExtComputation into the renderIndex by calling
+ HdRenderIndex::InsertExtComputation with the given id for the computation.</li>
+    <li>Ensure your scene delegate implements the 7 methods needed to query for
+ ExtComputation data and resolve scene inputs</li>
+    <ul>
+        <li>HdSceneDelegate::GetExtComputationInputNames</li>
+        <li>HdSceneDelegate::GetExtComputationInputParams</li>
+        <li>HdSceneDelegate::GetExtComputationOutputNames</li>
+        <li>HdSceneDelegate::GetExtComputationPrimVarNames</li>
+        <li>HdSceneDelegate::GetExtComputationPrimVarDesc</li>
+        <li>HdSceneDelegate::GetExtComputationKernel</li>
+        <li>HdSceneDelegate::InvokeExtComputation</li>
+    </ul>
+    <li>As each Rprim gathers their primvars they ask the scene delegate
+ if there are any computation primvars for them by calling
+ HdSceneDelegate::GetExtComputationPrimvarNames. If that returns a non-empty
+ token vector it will then ask for the descriptions of those primvars
+ by calling HdSceneDelegate::GetExtComputationPrimVarDesc. Each primvarDesc
+ references an ExtComputation by id that is fetched by id from the 
+ render index. The Rprim adds the computations as sources for its primvars.
+ The rest of the information flow happens during HdResourceRegistry::Commit</li>
+    <li>The resource registry resolves the ExtComputation which calls the
+ remaining delegate methods to get all the information needed to resolve input
+ scene sources and computation local inputs and outputs.</li>
+    <li>If the computation returns a compute kernel source the computation is
+ treated as a GPU computation and executed on the GPU. Otherwise the computation
+ is invoked on the CPU by calling HdSceneDelegate::InvokeExtComputation</li>
+</ol>
+</p>
 
 \b The \b Scenegraph \b Index
 
@@ -96,7 +147,7 @@ The diagram below depicts object ownership; StripedBufferArray, Topology, and
 BufferResource are shared objects.
 
 <pre>
-HdSceneDelegate: Abstracts the client scene graph (Usd, Presto, DsoMoss, ...)
+HdSceneDelegate: Abstracts the client scene graph (Usd, Presto, ...)
   |
   |--- HdRenderIndex: Holds the prim mapping from client to render engine
          |
@@ -131,13 +182,17 @@ HdResourceRegistry
   |
   |--- Instance Buffers             -> HdBufferResource[] (HdVBOMemoryManager)
   |
-  |--- Vertex PrimVar Buffers       -> HdBufferResource[] (HdVBOMemoryManager)
-  |    Element PrimVar Buffefs
-  |    FaceVarying PrimVar Buffers
+  |--- Vertex Primvar Buffers       -> HdBufferResource[] (HdVBOMemoryManager)
+  |    Element Primvar Buffefs
+  |    FaceVarying Primvar Buffers
   |
   |--- Topology Buffers             -> HdBufferResource[] (HdVBOMemoryManager)
   |
-  |--- Shader Paramters             -> HdBufferResource[] (HdInterleavedMemoryManager)
+  |--- Shader Parameters            -> HdBufferResource[] (HdInterleavedMemoryManager)
+  |
+  |--- Compute Buffers              -> HdBufferResource[] (HdInterleavedSSBOMemoryManager)
+  |
+  |--- Uniform Buffers              -> HdBufferResource[] (HdInterleavedUBOMemoryManager)
   |
   |--- Textures
 

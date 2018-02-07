@@ -27,16 +27,27 @@ from pxr import Usd, Sdf, Tf
 
 class TestUsdStagePopulationMask(unittest.TestCase):
     def test_Basic(self):
+        pm = Usd.StagePopulationMask.All()
+        assert not pm.IsEmpty()
+        assert pm.Includes('/any/path')
+        assert pm.GetIncludedChildNames('/') == (True, [])
+
         pm = Usd.StagePopulationMask()
         assert pm.IsEmpty()
-
         assert not pm.Includes('/any/path')
+        assert pm.GetIncludedChildNames('/') == (False, [])
+
         pm2 = Usd.StagePopulationMask().Add('/foo').Add('/bar')
         assert not pm.Includes(pm2)
         assert pm2.Includes(pm)
         assert pm.GetUnion(pm2) == pm2
         assert Usd.StagePopulationMask.Union(pm, pm2) == pm2
         
+        assert pm2.GetIncludedChildNames('/') == (True, ['bar', 'foo'])
+        assert pm2.GetIncludedChildNames('/foo') == (True, [])
+        assert pm2.GetIncludedChildNames('/bar') == (True, [])
+        assert pm2.GetIncludedChildNames('/baz') == (False, [])
+
         pm.Add('/World/anim/chars/CharGroup')
         assert pm.GetPaths() == ['/World/anim/chars/CharGroup']
         assert not pm.IsEmpty()
@@ -85,6 +96,17 @@ class TestUsdStagePopulationMask(unittest.TestCase):
                 Usd.StagePopulationMask(['/A', '/AA', '/B', '/Q', '/U']))
         assert (Usd.StagePopulationMask.Intersection(pm, pm2) ==
                 Usd.StagePopulationMask(['/A/X', '/B/C']))
+
+        pm = Usd.StagePopulationMask(['/A/B', '/A/C', '/A/D/E', '/A/D/F', '/B'])
+        assert pm.GetIncludedChildNames('/') == (True, ['A', 'B'])
+        assert pm.GetIncludedChildNames('/A') == (True, ['B', 'C', 'D'])
+        assert pm.GetIncludedChildNames('/A/B') == (True, [])
+        assert pm.GetIncludedChildNames('/A/C') == (True, [])
+        assert pm.GetIncludedChildNames('/A/D') == (True, ['E', 'F'])
+        assert pm.GetIncludedChildNames('/A/D/E') == (True, [])
+        assert pm.GetIncludedChildNames('/A/D/F') == (True, [])
+        assert pm.GetIncludedChildNames('/B') == (True, [])
+        assert pm.GetIncludedChildNames('/C') == (False, [])
 
         # Errors.
         with self.assertRaises(Tf.ErrorException):
@@ -157,8 +179,10 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         d = stage.DefinePrim('/World/D')
         e = stage.DefinePrim('/World/E')
 
+        cAttr = c.CreateAttribute('attr', Sdf.ValueTypeNames.Float)
+
         a.CreateRelationship('r').AddTarget(b.GetPath())
-        b.CreateRelationship('r').AddTarget(c.GetPath())
+        b.CreateRelationship('r').AddTarget(cAttr.GetPath())
         c.CreateRelationship('r').AddTarget(d.GetPath())
 
         a.CreateRelationship('pred').AddTarget(e.GetPath())
@@ -231,6 +255,41 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         assert not testStage.GetPrimAtPath('/Cubes/Geom/CubeOne')
         assert testStage.GetPrimAtPath('/Cubes/Geom/CubeTwo')
         assert not testStage.GetPrimAtPath('/Cubes/Geom/CubeThree')
-    
+
+    def test_Bug152904(self):
+        # Master prims weren't being generated on stages where the population
+        # mask included paths of prims beneath instances.
+        stage = Usd.Stage.CreateInMemory()
+        stage.DefinePrim('/Ref/geom')
+        stage.DefinePrim('/Ref/shading')
+
+        for path in ['/Instance_1', '/Instance_2']:
+            prim = stage.DefinePrim(path)
+            prim.GetReferences().AddInternalReference('/Ref')
+            prim.SetInstanceable(True)
+
+        # Open the stage with a mask that includes the 'geom' prim beneath
+        # the instances.   
+        maskedStage = Usd.Stage.OpenMasked(
+            stage.GetRootLayer(), 
+            Usd.StagePopulationMask(['/Instance_1/geom', '/Instance_2/geom']))
+
+        # Both instances should share the same master prim.
+        instance_1 = maskedStage.GetPrimAtPath('/Instance_1')
+        assert instance_1.IsInstance()
+        assert instance_1.GetMaster()
+
+        instance_2 = maskedStage.GetPrimAtPath('/Instance_2')
+        assert instance_2.IsInstance()
+        assert instance_2.GetMaster()
+
+        # For now, all prims in masters will be composed, even if they are
+        # not included in the population mask.
+        assert instance_1.GetMaster() == instance_2.GetMaster()
+        master = instance_1.GetMaster()
+
+        assert master.GetChild('geom')
+        assert master.GetChild('shading')
+
 if __name__ == '__main__':
     unittest.main()

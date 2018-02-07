@@ -21,10 +21,11 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+from pxr import Usd
 from qt import QtCore, QtWidgets
 from attributeValueEditorUI import Ui_AttributeValueEditor
-from pythonExpressionPrompt import PythonExpressionPrompt
-from common import GetAttributeColor, TimeSampleTextColor
+from common import GetAttributeColor, UIPropertyValueSourceColors
+from scalarTypes import ToString
 
 # This is the widget that appears when selecting an attribute and
 # opening the "Value" tab.
@@ -49,41 +50,27 @@ class AttributeValueEditor(QtWidgets.QWidget):
 
         self.clear()
 
-        self._ui.editButton.clicked.connect(self._edit)
-
-        self._ui.revertButton.clicked.connect(self._revert)
-
-        self._ui.revertAllButton.clicked.connect(self._revertAll)
-
-    def setMainWindow(self, mainWindow):
-        # pass the mainWindow instance from which to retrieve 
+    def setAppController(self, appController):
+        # pass the appController instance from which to retrieve
         # variable data.
-        self._mainWindow = mainWindow
-        self._propertyView = mainWindow._ui.propertyView
+        self._appController = appController
 
-    def populate(self, name, node):
+    def populate(self, primPath, propName):
         # called when the selected attribute has changed
-        # gets the attribute object and the source node
-        try: 
-            self._attribute = self._mainWindow._attributeDict[name]
+        self._primPath = primPath
+
+        try:
+            self._attribute = self._appController._attributeDict[propName]
         except KeyError:
-            self._mainWindow._attributeDict[name] = ''
-            self._attribute = self._mainWindow._attributeDict[name]
+            self._attribute = None
 
         self._isSet = True  # an attribute is selected
-        self._node = node
-
-        # determine if the attribute is editable, enable or disable buttons
-        # XXX USD DETERMINE EDITABILITY
-        #editable = self._name[0] != ' '
-        #self._ui.editButton.setEnabled(editable)
-        #self._ui.revertAllButton.setEnabled(editable)
 
         self.refresh()  # load the value at the current frame
 
     def _FindView(self, attr):
-        from customAttributes import CustomAttribute
-        if isinstance(attr, CustomAttribute):
+        # Early-out for CustomAttributes and Relationships
+        if not isinstance(attr, Usd.Attribute):
             return None
 
         for attrView in self._extraAttrViews:
@@ -93,22 +80,28 @@ class AttributeValueEditor(QtWidgets.QWidget):
         return None
 
     def refresh(self):
-        #XXX USD Determine whether the revert button should be on
-        self._ui.revertButton.setEnabled(False)
-
         # usually called upon frame change or selected attribute change
         if not self._isSet:
             return
 
         # attribute connections and relationship targets have no value to display
         # in the value viewer.
-        if self._attribute == '':
+        if self._attribute is None:
             return
 
-        frame = self._mainWindow._currentFrame
+        # If the current attribute doesn't belong to the current prim, don't
+        # display its value.
+        if self._attribute.GetPrimPath() != self._primPath:
+            self._ui.valueViewer.setText("")
+            return
+
+        frame = self._appController._dataModel.currentFrame
 
         # get the value of the attribute
-        self._val = self._attribute.Get(frame)
+        if isinstance(self._attribute, Usd.Relationship):
+            self._val = self._attribute.GetTargets()
+        else: # Usd.Attribute or CustomAttribute
+            self._val = self._attribute.Get(frame)
 
         whichView = self._FindView(self._attribute)
         if whichView:
@@ -121,89 +114,14 @@ class AttributeValueEditor(QtWidgets.QWidget):
             # set text and color in the value viewer
             self._ui.valueViewer.setTextColor(txtColor)
 
-            from scalarTypes import ToString
-            rowText = ToString(self._val, self._attribute.GetTypeName())
+            if isinstance(self._attribute, Usd.Relationship):
+                typeName = None
+            else:
+                typeName = self._attribute.GetTypeName()
+            rowText = ToString(self._val, typeName)
             self._ui.valueViewer.setText(rowText)
 
     def clear(self):
         # set the value editor to 'no attribute selected' mode
         self._isSet = False
         self._ui.valueViewer.setText("")
-
-        self._ui.editButton.setEnabled(False)
-        self._ui.revertButton.setEnabled(False)
-        self._ui.revertAllButton.setEnabled(False)
-
-    # XXX USD EDITING DISABLED
-    def _edit(self, exception = None):
-        # opens the interpreter to receive user input
-        frame = self._mainWindow._currentFrame
-        type = 'member' if self._isMember else 'attribute'
-
-        # this call opens the interpreter window and has it return the value of
-        # "_" when done.
-        value = PythonExpressionPrompt.getValueFromPython(self, exception, self._val)
-        if value is None:   # Cancelled
-            return
-
-        try:
-            # value successfully retrieved. set it.
-            if self._isMember:
-                self._node.SetMember(frame, self._name, value)
-            else:
-                self._node.SetAttribute(frame, self._name, value)
-            
-            # send a signal to the mainWindow confirming the edit
-            msg = 'Successfully edited %s "%s" at frame %s.' \
-                    %(type, self._name, frame)
-            self.editComplete.emit(msg)
-
-        except Exception as e:
-            # if an error occurs, reopen the interpreter and display it
-            self._edit(e)
-
-    def _revert(self, all=False):
-        from pxr import Usd
-
-        # revert one or all overrides on a member
-        type = 'member' if self._isMember else 'attribute'
-        frame = Usd.Object.FRAME_INVALID if all else \
-                self._mainWindow._currentFrame
-        frameStr = 'all frames' if all else \
-                   'frame %s' %(self._mainWindow._currentFrame)
-        section = Usd.USD_SECTION_ALL if all else \
-                  Usd.USD_SECTION_INVALID
-
-        # ask for confirmation before reverting overrides
-        reply = QtWidgets.QMessageBox.question(self, "Confirm Revert",
-                    "Are you sure you want to revert the %s "
-                    "<font color='%s'><b>%s</b></font> at %s?"
-                        %(type, TimeSampleTextColor.color().name(), self._name, frameStr),
-                    QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes,
-                    QtWidgets.QMessageBox.Cancel)
-    
-        msg = ""
-        if reply == QtWidgets.QMessageBox.Yes and self._node is not None:
-            # we got 'yes' as an answer
-            try:
-                # this removes only the value written in the top level stage
-                # which is the writable reference.
-                if self._isMember:
-                    self._node.RemoveMember(frame, section, self._name)
-                else:
-                    self._node.RemoveAttribute(frame, section, self._name)
-
-                msg = 'Reverted %s "%s" at %s.' %(type, self._name, frameStr)
-                self._mainWindow._refreshVars()
-
-            except RuntimeError:
-                msg = 'Failed to revert the %s "%s" at %s. Perhaps this '\
-                      '%s is not authored in the override stage.'\
-                            %(type, self._name, frameStr, type)
-        
-        # display status message
-        self._mainWindow.statusMessage(msg, 12)
-
-    def _revertAll(self):
-        self._revert(True)
-

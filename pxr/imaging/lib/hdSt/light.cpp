@@ -27,7 +27,6 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 
-#include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -35,8 +34,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdStLightTokens, HDST_LIGHT_TOKENS);
 
-HdStLight::HdStLight(SdfPath const &id)
+HdStLight::HdStLight(SdfPath const &id, TfToken const &lightType)
  : HdSprim(id)
+ , _lightType(lightType)
 {
 }
 
@@ -44,11 +44,46 @@ HdStLight::~HdStLight()
 {
 }
 
+GlfSimpleLight
+HdStLight::_ApproximateAreaLight(SdfPath const &id, 
+                                 HdSceneDelegate *sceneDelegate)
+{
+    // Get the color of the light
+    GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdTokens->color)
+            .Get<GfVec3f>();
+
+    // Extract intensity
+    float intensity = 
+        sceneDelegate->GetLightParamValue(id, HdStLightTokens->intensity)
+            .Get<float>();
+
+    // Extract the exposure of the light
+    float exposure = 
+        sceneDelegate->GetLightParamValue(id, HdStLightTokens->exposure)
+            .Get<float>();
+    intensity *= powf(2.0f, GfClamp(exposure, -50.0f, 50.0f));
+
+    // Calculate the final color of the light
+    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
+
+    // Get the transform of the light
+    GfMatrix4d transform = _params[HdTokens->transform].Get<GfMatrix4d>();
+    GfVec3d hdp = transform.ExtractTranslation();
+    GfVec4f p = GfVec4f(hdp[0], hdp[1], hdp[2], 1.0f);
+
+    // Create the Glf Simple Light object that will be used by the rest
+    // of the pipeline.
+    GlfSimpleLight l;
+    l.SetPosition(p);
+    l.SetDiffuse(c);
+    return l;
+}
+
 /* virtual */
 void
 HdStLight::Sync(HdSceneDelegate *sceneDelegate,
-               HdRenderParam   *renderParam,
-               HdDirtyBits     *dirtyBits)
+                HdRenderParam   *renderParam,
+                HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -62,15 +97,12 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     // HdStLight communicates to the scene graph and caches all interesting
-    // values within this class.
-
-    // later on Get() is called from TaskState (RenderPass) to perform
-    // aggregation/pre-computation, in order to make the shader execution
-    // efficient.
-
-    HdDirtyBits bits = *dirtyBits;
+    // values within this class. Later on Get() is called from 
+    // TaskState (RenderPass) to perform aggregation/pre-computation, 
+    // in order to make the shader execution efficient.
 
     // Change tracking
+    HdDirtyBits bits = *dirtyBits;
 
     // Transform
     if (bits & DirtyTransform) {
@@ -84,8 +116,15 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // Lighting Params
     if (bits & DirtyParams) {
-        _params[HdStLightTokens->params] =
+        // If it is an area light we will extract the parameters and convert
+        // them to a gl friendly representation.
+        if (_lightType == HdPrimTypeTokens->simpleLight) {
+            _params[HdStLightTokens->params] =
                 sceneDelegate->Get(id, HdStLightTokens->params);
+        } else {
+            _params[HdStLightTokens->params] =
+                _ApproximateAreaLight(id, sceneDelegate);
+        }
     }
 
     // Shadow Params
@@ -134,8 +173,14 @@ HdStLight::Get(TfToken const &token) const
 HdDirtyBits
 HdStLight::GetInitialDirtyBitsMask() const
 {
-    return AllDirty;
+    // In the case of regular lights we want to sync all dirty bits, but
+    // for area lights coming from the scenegraph we just want to extract
+    // the Transform and Params for now.
+    if (_lightType == HdPrimTypeTokens->simpleLight) {
+        return AllDirty;
+    } else {
+        return (DirtyParams | DirtyTransform);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

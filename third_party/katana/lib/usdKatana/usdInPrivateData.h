@@ -96,27 +96,37 @@ public:
     const std::vector<double> GetMotionSampleTimes(
         const UsdAttribute& attr = UsdAttribute()) const;
 
+    /// \brief Returns a list of <usd, katana> times for use in clients that
+    ///        wish to multi-sample USD data and build corresponding Katana 
+    ///        attributes.
+    std::vector<std::pair<double, double> > GetUsdAndKatanaTimes(
+        const UsdAttribute& attr = UsdAttribute()) const;
+
 
     /// \brief Allows a registered op or location decorator function to set
     ///        share and accumulate state during traversal.
     void setExtensionOpArg(const std::string & name,
-                FnAttribute::Attribute attr);
+                FnAttribute::Attribute attr) const;
 
     /// \brief Allows a registered op or location decorator function to
     ///        retrieve state accumulated during traversal. Arguments set via
     ///        previous consumer's calls to setExtensionOpArg are visible as
     ///        part of the opArgs sent in the op or function.
     FnAttribute::Attribute getExtensionOpArg(const std::string & name,
-                FnAttribute::GroupAttribute opArgs);
+                FnAttribute::GroupAttribute opArgs) const;
 
     /// \brief Called by the hosting op to flush the results of
     ///        setExtensionOpArg and apply back onto the provided opArgs.
     ///        NOTE: This should not be called by an executed op or function as
     ///              it's intended for use the callers of those. 
     FnAttribute::GroupAttribute updateExtensionOpArgs(
-            FnAttribute::GroupAttribute opArgs);
+            FnAttribute::GroupAttribute opArgs) const;
     
     
+    /// \brief extract private data from either the interface (its natural
+    ///        location) with room for future growth
+    static PxrUsdKatanaUsdInPrivateData * GetPrivateData(
+            const FnKat::GeolibCookInterface& interface);
 
 private:
 
@@ -135,7 +145,7 @@ private:
     std::vector<double> _motionSampleTimesFallback;
     
     
-    FnAttribute::GroupBuilder * _extGb;
+    mutable FnAttribute::GroupBuilder * _extGb;
 
 
 };

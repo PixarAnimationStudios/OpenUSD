@@ -24,14 +24,14 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/imaging/hdSt/drawTargetTextureResource.h"
-#include "pxr/imaging/hd/conversions.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 
 HdSt_DrawTargetTextureResource::HdSt_DrawTargetTextureResource()
- : HdTextureResource()
+ : HdStTextureResource()
  , _attachment()
  , _sampler(0)
 {
@@ -67,10 +67,10 @@ HdSt_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
     static const float borderColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
     // Convert params to Gl
-    GLenum glWrapS = HdConversions::GetWrap(wrapS);
-    GLenum glWrapT = HdConversions::GetWrap(wrapT);
-    GLenum glMinFilter = HdConversions::GetMinFilter(minFilter);
-    GLenum glMagFilter = HdConversions::GetMagFilter(magFilter);
+    GLenum glWrapS = HdStGLConversions::GetWrap(wrapS);
+    GLenum glWrapT = HdStGLConversions::GetWrap(wrapT);
+    GLenum glMinFilter = HdStGLConversions::GetMinFilter(minFilter);
+    GLenum glMagFilter = HdStGLConversions::GetMagFilter(magFilter);
 
     glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_S, glWrapS);
     glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, glWrapT);

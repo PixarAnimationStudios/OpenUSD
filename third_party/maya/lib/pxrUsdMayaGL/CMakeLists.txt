@@ -3,12 +3,11 @@ set(PXR_PACKAGE pxrUsdMayaGL)
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         arch
-        garch
         gf
         glf
         hd
+        hdSt
         hdx
-        plug
         px_vp20
         sdf
         tf
@@ -16,6 +15,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdImaging
         usdImagingGL
         usdMaya
+        vt
         ${Boost_LIBRARIES}
         ${MAYA_LIBRARIES}
 
@@ -25,12 +25,15 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_HEADERS
         api.h
+        renderParams.h
 
     PUBLIC_CLASSES
         batchRenderer
         hdRenderer
         proxyDrawOverride
         proxyShapeUI
+        sceneDelegate
+        shapeAdapter
         softSelectHelper
 
     DISABLE_PRECOMPILED_HEADERS

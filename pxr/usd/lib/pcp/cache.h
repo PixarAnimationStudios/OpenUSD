@@ -37,12 +37,9 @@
 
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/declarePtrs.h"
-
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include "pxr/base/tf/hashset.h"
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -92,8 +89,9 @@ SDF_DECLARE_HANDLES(SdfSpec);
 /// computing a prim index or prim stack, and computing a property index.
 ///
 class PcpCache
-    : public boost::noncopyable
 {
+    PcpCache(PcpCache const &) = delete;
+    PcpCache &operator=(PcpCache const &) = delete;
 public:
     /// Construct a PcpCache to compose results for the layer stack identified
     /// by \a layerStackIdentifier. 
@@ -287,11 +285,16 @@ public:
     /// This is similar to ComputePrimIndex(), except it computes an entire
     /// subtree of indexes in parallel so it can be much more efficient.  This
     /// function invokes both \p childrenPred and \p payloadPred concurrently,
-    /// so it must be safe to do so.  When a PcpPrimIndex computation completes
-    /// invoke \p childrenPred, passing it the PcpPrimIndex.  If \p childrenPred
-    /// returns true, continue indexing children prim indexes.  Conversely if
-    /// \p childrenPred returns false, stop indexing in that subtree.  If
-    /// payloads discovered during indexing do not already appear in this
+    /// so it must be safe to do so.  
+    ///
+    /// When a PcpPrimIndex computation completes invoke \p childrenPred, 
+    /// passing it the PcpPrimIndex.  If \p childrenPred returns true, continue 
+    /// indexing children prim indexes.  In this case, \p childrenPred may 
+    /// provide a list of names of the children prim indexes to compute.
+    /// If it does not, all children prim indexes will be computed.
+    /// If \p childrenPred returns false, stop indexing in that subtree.  
+    ///
+    /// If payloads discovered during indexing do not already appear in this
     /// cache's set of included payloads, invoke \p payloadPred, passing it the
     /// path for the prim with the payload.  If \p payloadPred returns true,
     /// include its payload and add it to the cache's set of included payloads
@@ -582,16 +585,18 @@ private:
         explicit _UntypedIndexingChildrenPredicate(const Pred *pred)
             : pred(pred), invoke(_Invoke<Pred>) {}
 
-        inline bool operator()(const PcpPrimIndex &index) const {
-            return invoke(pred, index);
+        inline bool operator()(const PcpPrimIndex &index, 
+                               TfTokenVector *childNamesToCompose) const {
+            return invoke(pred, index, childNamesToCompose);
         }
     private:
         template <class Pred>
-        static bool _Invoke(const void *pred, const PcpPrimIndex &index) {
-            return (*static_cast<const Pred *>(pred))(index);
+        static bool _Invoke(const void *pred, const PcpPrimIndex &index,
+                            TfTokenVector *namesToCompose) {
+            return (*static_cast<const Pred *>(pred))(index, namesToCompose);
         }
         const void *pred;
-        bool (*invoke)(const void *, const PcpPrimIndex &);
+        bool (*invoke)(const void *, const PcpPrimIndex &, TfTokenVector *);
     };
 
     // See doc for _UntypedIndexingChildrenPredicate above.  This does the same
@@ -694,7 +699,7 @@ private:
     _LayerStackCache _layerStackCache;
     _PrimIndexCache  _primIndexCache;
     _PropertyIndexCache  _propertyIndexCache;
-    boost::scoped_ptr<Pcp_Dependencies> _primDependencies;
+    std::unique_ptr<Pcp_Dependencies> _primDependencies;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

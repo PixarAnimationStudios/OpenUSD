@@ -42,6 +42,7 @@ typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
 
 #define USD_IMAGING_ADAPTER_KEY_TOKENS          \
     ((instanceAdapterKey, "__instanceAdapter")) \
+    ((drawModeAdapterKey, "__drawModeAdapter"))       \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens,
                          USDIMAGING_API,

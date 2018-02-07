@@ -182,11 +182,6 @@ wrapCamera()
                arg("orthographicSize"),
                arg("direction")))
 
-        .setattr("ZUp",
-            This::ZUp)
-        .setattr("YUp",
-            This::YUp)
-
         .setattr("APERTURE_UNIT",
             This::APERTURE_UNIT)
         .setattr("FOCAL_LENGTH_UNIT",

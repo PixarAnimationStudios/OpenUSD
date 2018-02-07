@@ -106,8 +106,7 @@ My_TestGLDrawing::InitTest()
         _engine.reset(new UsdImagingGLHdEngine(
             _stage->GetPseudoRoot().GetPath(), excludedPaths));
         if (!_GetRenderer().IsEmpty()) {
-            if (!_engine->SetRendererPlugin(
-                TfType::FindByName(_GetRenderer().GetString()))) {
+            if (!_engine->SetRendererPlugin(_GetRenderer())) {
                 std::cerr << "Couldn't set renderer plugin: " <<
                     _GetRenderer().GetText() << std::endl;
                 exit(-1);

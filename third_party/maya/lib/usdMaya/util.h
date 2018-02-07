@@ -31,11 +31,14 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/refPtr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
@@ -49,6 +52,8 @@
 #include <map>
 #include <set>
 #include <string>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace PxrUsdMayaUtil
 {
@@ -67,6 +72,21 @@ template <typename V>
 struct MDagPathMap
 {
     typedef std::map<MDagPath, V, cmpDag> Type;
+};
+
+/// RAII-style helper for destructing an MDataHandle obtained from a plug
+/// once it goes out of scope.
+class MDataHandleHolder : public TfRefBase {
+    MPlug _plug;
+    MDataHandle _dataHandle;
+
+public:
+    static TfRefPtr<MDataHandleHolder> New(const MPlug& plug);
+    MDataHandle GetDataHandle() { return _dataHandle; }
+
+private:
+    MDataHandleHolder(const MPlug& plug, MDataHandle dataHandle);
+    ~MDataHandleHolder();
 };
 
 inline MStatus isFloat(MString str, const MString & usage)
@@ -124,6 +144,24 @@ inline
 double
 ConvertInchesToMM(double inches) {
     return inches * MillimetersPerInch;
+}
+
+const double MillimetersPerCentimeter = 10.0;
+
+/// Converts the given value \p mm in millimeters to the equivalent value
+/// in centimeters.
+inline
+double
+ConvertMMToCM(double mm) {
+    return mm / MillimetersPerCentimeter;
+}
+
+/// Converts the given value \p cm in centimeters to the equivalent value
+/// in millimeters.
+inline
+double
+ConvertCMToMM(double cm) {
+    return cm * MillimetersPerCentimeter;
 }
 
 // seconds per frame
@@ -297,6 +335,18 @@ bool AddUnassignedColorAndAlphaIfNeeded(
         const PXR_NS::GfVec3f& defaultRGB,
         const float defaultAlpha);
 
+/// Get whether \p plug is authored in the Maya scene.
+///
+/// A plug is considered authored if its value has been changed from the
+/// default (or since being brought in from a reference for plugs on nodes from
+/// referenced files), or if the plug has a connection. Otherwise, it is
+/// considered unauthored.
+///
+/// Note that MPlug::getSetAttrCmds() is currently not declared const, so
+/// IsAuthored() here must take a non-const MPlug.
+PXRUSDMAYA_API
+bool IsAuthored(MPlug& plug);
+
 PXRUSDMAYA_API
 MPlug GetConnected(const MPlug& plug);
 
@@ -377,6 +427,13 @@ bool setPlugValue(MFnDependencyNode const &depNode,
     return false;
 }
 
+/// Obtains an RAII helper object for accessing the MDataHandle stored on the
+/// plug. When the helper object goes out of scope, the data handle will be
+/// destructed.
+/// If the plug's data handle could not be obtained, returns nullptr.
+PXRUSDMAYA_API
+TfRefPtr<MDataHandleHolder> GetPlugDataHandle(const MPlug& plug);
+
 PXRUSDMAYA_API
 bool createStringAttribute(
         MFnDependencyNode& depNode,
@@ -389,5 +446,7 @@ bool createNumericAttribute(
         MFnNumericData::Type type);
 
 } // namespace PxrUsdMayaUtil
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXRUSDMAYA_UTIL_H

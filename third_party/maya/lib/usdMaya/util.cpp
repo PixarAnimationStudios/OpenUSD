@@ -46,10 +46,12 @@
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MObject.h>
+#include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
 #include <string>
@@ -1051,6 +1053,33 @@ PxrUsdMayaUtil::AddUnassignedColorAndAlphaIfNeeded(
     return true;
 }
 
+bool
+PxrUsdMayaUtil::IsAuthored(MPlug& plug)
+{
+    MStatus status;
+
+    if (plug.isNull(&status) || status != MS::kSuccess) {
+        return false;
+    }
+
+    // Plugs with connections are considered authored.
+    if (plug.isConnected(&status)) {
+        return true;
+    }
+
+    MStringArray setAttrCmds;
+    status = plug.getSetAttrCmds(setAttrCmds, MPlug::kChanged);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    for (unsigned int i = 0u; i < setAttrCmds.length(); ++i) {
+        if (setAttrCmds[i].numChars() > 0u) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 MPlug
 PxrUsdMayaUtil::GetConnected(const MPlug& plug)
 {
@@ -1249,4 +1278,43 @@ PxrUsdMayaUtil::createNumericAttribute(
     CHECK_MSTATUS_AND_RETURN(status, false);
     
     return true;
+}
+
+PxrUsdMayaUtil::MDataHandleHolder::MDataHandleHolder(
+    const MPlug& plug, MDataHandle dataHandle)
+    : _plug(plug), _dataHandle(dataHandle)
+{
+}
+
+PxrUsdMayaUtil::MDataHandleHolder::~MDataHandleHolder()
+{
+    if (!_plug.isNull()) {
+        _plug.destructHandle(_dataHandle);
+    }
+}
+
+TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
+PxrUsdMayaUtil::MDataHandleHolder::New(const MPlug& plug)
+{
+    MStatus status;
+
+#if MAYA_API_VERSION >= 20180000
+    MDataHandle dataHandle = plug.asMDataHandle(&status);
+#else
+    MDataHandle dataHandle = plug.asMDataHandle(MDGContext::fsNormal, &status);
+#endif
+
+    if (!status.error()) {
+        return TfCreateRefPtr(
+                new PxrUsdMayaUtil::MDataHandleHolder(plug, dataHandle));
+    }
+    else {
+        return nullptr;
+    }
+}
+
+TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
+PxrUsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
+{
+    return PxrUsdMayaUtil::MDataHandleHolder::New(plug);
 }

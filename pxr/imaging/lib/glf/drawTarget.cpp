@@ -32,7 +32,8 @@
 #include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/glf/utils.h"
 
-#include "pxr/base/tf/iterator.h"
+#include "pxr/imaging/hf/perfLog.h"
+
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -111,8 +112,8 @@ GlfDrawTarget::GlfDrawTarget( GlfDrawTargetPtr const & drawtarget ) :
     Bind();
 
     // attach the textures to the correct framebuffer mount points
-    TF_FOR_ALL( it, _attachmentsPtr->attachments ) {
-        _BindAttachment( it->second );
+    for (AttachmentsMap::value_type const& p :  _attachmentsPtr->attachments) {
+        _BindAttachment( p.second );
     }
 
     Unbind();
@@ -226,8 +227,8 @@ GlfDrawTarget::CloneAttachments( GlfDrawTargetPtr const & drawtarget )
     // by the RefPtr
     _attachmentsPtr = drawtarget->_attachmentsPtr;
 
-    TF_FOR_ALL( it, _attachmentsPtr->attachments ) {
-        _BindAttachment( it->second );
+    for (AttachmentsMap::value_type const& p :  _attachmentsPtr->attachments) {
+        _BindAttachment( p.second );
     }
 }
 
@@ -261,8 +262,8 @@ GlfDrawTarget::SetSize( GfVec2i size )
 
     AttachmentsMap & attachments = _GetAttachments();
 
-    TF_FOR_ALL ( it, attachments ) {
-        AttachmentRefPtr var = it->second;
+    for (AttachmentsMap::value_type const& p :  attachments) {
+        AttachmentRefPtr var = p.second;
 
         var->ResizeTexture(_size);
 
@@ -440,18 +441,50 @@ GlfDrawTarget::Unbind()
 }
 
 void 
+GlfDrawTarget::_Resolve()
+{
+    // Resolve MSAA fbo to a regular fbo
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebufferMS);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _framebuffer);
+    glBlitFramebuffer(0, 0, _size[0], _size[1], 
+                      0, 0, _size[0], _size[1], 
+                      GL_COLOR_BUFFER_BIT | 
+                      GL_DEPTH_BUFFER_BIT | 
+                      GL_STENCIL_BUFFER_BIT , 
+                      GL_NEAREST);
+}
+
+void
 GlfDrawTarget::Resolve()
 {
     if (HasMSAA()) {
-        // Resolve MSAA fbo to a regular fbo
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebufferMS);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _framebuffer);
-        glBlitFramebuffer(0, 0, _size[0], _size[1], 
-                          0, 0, _size[0], _size[1], 
-                          GL_COLOR_BUFFER_BIT | 
-                          GL_DEPTH_BUFFER_BIT | 
-                          GL_STENCIL_BUFFER_BIT , 
-                          GL_NEAREST); 
+        _SaveBindingState();
+        _Resolve();
+        _RestoreBindingState();
+    }
+}
+
+/* static */
+void
+GlfDrawTarget::Resolve(const std::vector<GlfDrawTarget*>& drawTargets)
+{
+    bool anyResolved = false;
+
+    for(GlfDrawTarget* dt : drawTargets) {
+        if (dt->HasMSAA()) {
+            if (!anyResolved) {
+                // If this is the first draw target to be resolved,
+                // save the old binding state.
+                anyResolved = true;
+                drawTargets[0]->_SaveBindingState();
+            }
+            dt->_Resolve();
+        }
+    }
+
+    if (anyResolved) {
+        // If any draw targets were resolved, restore the old binding state.
+        drawTargets[0]->_RestoreBindingState();
     }
 }
 
@@ -460,8 +493,8 @@ GlfDrawTarget::TouchContents()
 {
     AttachmentsMap const & attachments = GetAttachments();
 
-    TF_FOR_ALL ( it, attachments ) {
-        it->second->TouchContents();
+    for (AttachmentsMap::value_type const& p :  attachments) {
+        p.second->TouchContents();
     }
 }
 
@@ -617,6 +650,8 @@ GlfDrawTarget::Attachment::~Attachment()
 void
 GlfDrawTarget::Attachment::_GenTexture()
 {
+    HF_MALLOC_TAG_FUNCTION();
+
     GLenum internalFormat = _internalFormat;
     GLenum type = _type;
     size_t memoryUsed = 0;
@@ -691,7 +726,7 @@ GlfDrawTarget::Attachment::_GenTexture()
 
     glBindTexture( GL_TEXTURE_2D, 0 );
 
-    memoryUsed += baseImageSize * _numSamples;
+    memoryUsed += baseImageSize;
 
     _SetMemoryUsed(memoryUsed);
 

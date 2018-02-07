@@ -75,7 +75,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         shader = UsdRi.RslShader.Define(stage, '/World/Group/Model/Shader')
         assert shader
         assert shader.GetPrim()
-        assert not UsdRi.Statements.IsRiAttribute(shader.GetSloPathAttr())
+        assert not UsdRi.StatementsAPI.IsRiAttribute(shader.GetSloPathAttr())
         shader.GetSloPathAttr().Set('foo')
 
         print ("Test RiMaterialAPI")
@@ -141,7 +141,7 @@ class TestUsdRiSchemata(unittest.TestCase):
             bxdf.GetPath())
 
         print ("Test riStatements")
-        riStatements = UsdRi.Statements(shader.GetPrim())
+        riStatements = UsdRi.StatementsAPI(shader.GetPrim())
         assert riStatements
         assert riStatements.GetPrim()
         attr = riStatements.CreateRiAttribute("ModelName", "string").\
@@ -154,44 +154,44 @@ class TestUsdRiSchemata(unittest.TestCase):
         assert attr
         self.assertEqual(attr.GetName(), 'ri:attributes:user:ModelName')
         self.assertEqual(attr.Get(), 'someModelName')
-        self.assertEqual(UsdRi.Statements.GetRiAttributeName(attr), 'ModelName')
-        self.assertEqual(UsdRi.Statements.GetRiAttributeNameSpace(attr), 'user')
-        assert UsdRi.Statements.IsRiAttribute(attr)
+        self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeName(attr), 'ModelName')
+        self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeNameSpace(attr), 'user')
+        assert UsdRi.StatementsAPI.IsRiAttribute(attr)
 
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('myattr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('myattr'),
                     'ri:attributes:user:myattr')
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice:myattr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:myattr'),
                     'ri:attributes:dice:myattr')
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice.myattr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.myattr'),
                     'ri:attributes:dice:myattr')
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice_myattr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_myattr'),
                     'ri:attributes:dice:myattr')
         # period is stronger separator than underscore, when both are present
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice_my.attr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my.attr'),
                     'ri:attributes:dice_my:attr')
         # multiple tokens concatted with underscores
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice:my1:long:attr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:my1:long:attr'),
                     'ri:attributes:dice:my1_long_attr')
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice.my2.long.attr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.my2.long.attr'),
                     'ri:attributes:dice:my2_long_attr')
-        self.assertEqual(UsdRi.Statements.MakeRiAttributePropertyName('dice_my3_long_attr'),
+        self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my3_long_attr'),
                     'ri:attributes:dice:my3_long_attr')
 
         self.assertEqual(riStatements.GetCoordinateSystem(), '')
-        self.assertEqual(UsdRi.Statements(model).GetModelCoordinateSystems(), [])
-        self.assertEqual(UsdRi.Statements(model).GetModelScopedCoordinateSystems(), [])
+        self.assertEqual(UsdRi.StatementsAPI(model).GetModelCoordinateSystems(), [])
+        self.assertEqual(UsdRi.StatementsAPI(model).GetModelScopedCoordinateSystems(), [])
         riStatements.SetCoordinateSystem('LEyeSpace')
         self.assertEqual(riStatements.GetCoordinateSystem(), 'LEyeSpace')
-        self.assertEqual(UsdRi.Statements(model).GetModelCoordinateSystems(),
+        self.assertEqual(UsdRi.StatementsAPI(model).GetModelCoordinateSystems(),
                     [Sdf.Path('/World/Group/Model/Shader')])
         riStatements.SetScopedCoordinateSystem('ScopedLEyeSpace')
         self.assertEqual(riStatements.GetScopedCoordinateSystem(), 'ScopedLEyeSpace')
-        self.assertEqual(UsdRi.Statements(model).GetModelScopedCoordinateSystems(),
+        self.assertEqual(UsdRi.StatementsAPI(model).GetModelScopedCoordinateSystems(),
                     [Sdf.Path('/World/Group/Model/Shader')])
-        self.assertEqual(UsdRi.Statements(group).GetModelCoordinateSystems(), [])
-        self.assertEqual(UsdRi.Statements(group).GetModelScopedCoordinateSystems(), [])
-        self.assertEqual(UsdRi.Statements(world).GetModelCoordinateSystems(), [])
-        self.assertEqual(UsdRi.Statements(world).GetModelScopedCoordinateSystems(), [])
+        self.assertEqual(UsdRi.StatementsAPI(group).GetModelCoordinateSystems(), [])
+        self.assertEqual(UsdRi.StatementsAPI(group).GetModelScopedCoordinateSystems(), [])
+        self.assertEqual(UsdRi.StatementsAPI(world).GetModelCoordinateSystems(), [])
+        self.assertEqual(UsdRi.StatementsAPI(world).GetModelScopedCoordinateSystems(), [])
 
         self.assertFalse(riStatements.GetFocusRegionAttr().IsValid())
         assert(riStatements.CreateFocusRegionAttr() is not None)

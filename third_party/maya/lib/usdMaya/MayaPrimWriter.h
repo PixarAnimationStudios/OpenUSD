@@ -69,6 +69,12 @@ class MayaPrimWriter
     PXRUSDMAYA_API
     virtual bool shouldPruneChildren() const;
 
+    /// Post export function that runs before saving the stage.
+    ///
+    /// Base implementation does nothing.
+    PXRUSDMAYA_API
+    virtual void postExport();
+    
 public:
     const MDagPath&        getDagPath()    const { return mDagPath; }
     const SdfPath&         getUsdPath()    const { return mUsdPath; }
@@ -77,6 +83,8 @@ public:
     const JobExportArgs&   getArgs()       const { return mWriteJobCtx.getArgs(); }
     const UsdPrim&         getPrim()       const { return mUsdPrim; }
 
+    bool getExportsVisibility() const { return mExportsVisibility; }
+    void setExportsVisibility(bool exports);
 
 protected:
     void setValid(bool isValid) { mIsValid = isValid;};
@@ -92,6 +100,7 @@ private:
     SdfPath mUsdPath;
 
     bool mIsValid;
+    bool mExportsVisibility;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

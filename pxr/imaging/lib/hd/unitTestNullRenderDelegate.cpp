@@ -22,16 +22,178 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
+#include "pxr/imaging/hd/bufferArray.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/points.h"
-#include "pxr/imaging/hd/shader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
+#include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/unitTestNullRenderPass.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+////////////////////////////////////////////////////////////////
+// Null aggregation strategy
+
+class Hd_NullStrategy final : public HdAggregationStrategy
+{
+public:
+    class _BufferArray : public HdBufferArray
+    {
+    public:
+        _BufferArray(TfToken const &role,
+                     HdBufferSpecVector const &bufferSpecs) 
+            : HdBufferArray(role, TfToken("perfToken")),
+            _bufferSpecs(bufferSpecs)
+        {}
+
+        virtual ~_BufferArray() {}
+
+        virtual bool GarbageCollect() { return true; }
+
+        virtual void DebugDump(std::ostream &out) const {}
+
+        bool Resize(int numElements) { return true; }
+
+        virtual void
+        Reallocate(std::vector<HdBufferArrayRangeSharedPtr> const &,
+                   HdBufferArraySharedPtr const &) {
+        }
+
+        virtual size_t GetMaxNumElements() const {
+            TF_VERIFY(false, "unimplemented");
+            return 0;
+        }
+
+        HdBufferSpecVector GetBufferSpecs() const {
+            return _bufferSpecs;
+        }
+
+        HdBufferSpecVector _bufferSpecs;
+    };
+
+    class _BufferArrayRange : public HdBufferArrayRange
+    {
+    public:
+        _BufferArrayRange() : _bufferArray(nullptr), _numElements(0) {
+        }
+
+        virtual bool IsValid() const {
+            return _bufferArray;
+        }
+
+        virtual bool IsAssigned() const {
+            return _bufferArray;
+        }
+
+        virtual bool IsImmutable() const {
+            return _bufferArray && _bufferArray->IsImmutable();
+        }   
+
+        virtual bool Resize(int numElements) {
+            _numElements = numElements;
+            return _bufferArray->Resize(numElements);
+        }
+
+        virtual void CopyData(HdBufferSourceSharedPtr const &bufferSource) {
+            /* NOTHING */
+        }
+
+        virtual VtValue ReadData(TfToken const &name) const {
+            return VtValue();
+        }
+
+        virtual int GetOffset() const {
+            return 0;
+        }
+
+        virtual int GetIndex() const {
+            return 0;
+        }
+
+        virtual int GetNumElements() const {
+            return _numElements;
+        }
+
+        virtual int GetCapacity() const {
+            TF_VERIFY(false, "unimplemented");
+            return 0;
+        }
+
+        virtual size_t GetVersion() const {
+            return 0;
+        }
+
+        virtual void IncrementVersion() {
+        }
+
+        virtual size_t GetMaxNumElements() const {
+            return _bufferArray->GetMaxNumElements();
+        }
+
+        virtual void SetBufferArray(HdBufferArray *bufferArray) {
+            _bufferArray = static_cast<_BufferArray *>(bufferArray);
+        }
+
+        /// Debug dump
+        virtual void DebugDump(std::ostream &out) const {
+            out << "Hd_NullStrategy::_BufferArray\n";
+        }
+
+        virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const {
+        }
+
+        virtual const void *_GetAggregation() const {
+            return _bufferArray;
+        }
+
+    private:
+        _BufferArray * _bufferArray;
+        int _numElements;
+    };
+
+
+    
+    virtual HdBufferArraySharedPtr CreateBufferArray(
+        TfToken const &role,
+        HdBufferSpecVector const &bufferSpecs) override
+    {
+        return boost::make_shared<Hd_NullStrategy::_BufferArray>(
+                role, bufferSpecs);
+    }
+
+    virtual HdBufferArrayRangeSharedPtr CreateBufferArrayRange() override
+    {
+        return HdBufferArrayRangeSharedPtr(new _BufferArrayRange());
+    }
+
+    virtual AggregationId ComputeAggregationId(
+        HdBufferSpecVector const &bufferSpecs) const override
+    {
+        // Always returns different value
+        static std::atomic_uint id(0);
+        AggregationId hash = id++;  // Atomic
+        return hash;
+    }
+
+    virtual HdBufferSpecVector GetBufferSpecs(
+        HdBufferArraySharedPtr const &bufferArray) const override
+    {
+        const auto ba =
+            boost::static_pointer_cast<_BufferArray>(bufferArray);
+        return ba->GetBufferSpecs();
+    }
+
+    virtual size_t GetResourceAllocation(
+        HdBufferArraySharedPtr const &bufferArray, 
+        VtDictionary &result) const override
+    {
+        return 0;
+    }
+};
 
 ////////////////////////////////////////////////////////////////
 // Null Prims
@@ -88,16 +250,16 @@ private:
     Hd_NullRprim &operator =(const Hd_NullRprim &) = delete;
 };
 
-class Hd_NullShader final : public HdShader {
+class Hd_NullMaterial final : public HdMaterial {
 public:
-    Hd_NullShader(SdfPath const& id) : HdShader(id) {}
-    virtual ~Hd_NullShader() = default;
+    Hd_NullMaterial(SdfPath const& id) : HdMaterial(id) {}
+    virtual ~Hd_NullMaterial() = default;
 
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override
     {
-        *dirtyBits = HdShader::Clean;
+        *dirtyBits = HdMaterial::Clean;
     };
 
     virtual VtValue Get(TfToken const &token) const override {
@@ -105,20 +267,15 @@ public:
     }
 
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
-        return HdShader::AllDirty;
+        return HdMaterial::AllDirty;
     }
 
     virtual void Reload() override {};
 
-    virtual HdShaderCodeSharedPtr GetShaderCode() const override {
-        static HdShaderCodeSharedPtr result;
-        return result;
-    }
-
 private:
-    Hd_NullShader()                                  = delete;
-    Hd_NullShader(const Hd_NullShader &)             = delete;
-    Hd_NullShader &operator =(const Hd_NullShader &) = delete;
+    Hd_NullMaterial()                                  = delete;
+    Hd_NullMaterial(const Hd_NullMaterial &)             = delete;
+    Hd_NullMaterial &operator =(const Hd_NullMaterial &) = delete;
 };
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
@@ -130,7 +287,7 @@ const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
-    HdPrimTypeTokens->shader
+    HdPrimTypeTokens->material
 };
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -166,6 +323,16 @@ HdResourceRegistrySharedPtr
 Hd_UnitTestNullRenderDelegate::GetResourceRegistry() const
 {
     static HdResourceRegistrySharedPtr resourceRegistry(new HdResourceRegistry);
+    resourceRegistry->SetNonUniformAggregationStrategy(
+        new Hd_NullStrategy());
+    resourceRegistry->SetNonUniformImmutableAggregationStrategy(
+        new Hd_NullStrategy());
+    resourceRegistry->SetUniformAggregationStrategy(
+        new Hd_NullStrategy());
+    resourceRegistry->SetShaderStorageAggregationStrategy(
+        new Hd_NullStrategy());
+    resourceRegistry->SetSingleStorageAggregationStrategy(
+        new Hd_NullStrategy());
     return resourceRegistry;
 }
 
@@ -193,10 +360,10 @@ Hd_UnitTestNullRenderDelegate::DestroyRprim(HdRprim *rPrim)
 
 HdSprim *
 Hd_UnitTestNullRenderDelegate::CreateSprim(TfToken const& typeId,
-                                    SdfPath const& sprimId)
+                                           SdfPath const& sprimId)
 {
-    if (typeId == HdPrimTypeTokens->shader) {
-        return new Hd_NullShader(sprimId);
+    if (typeId == HdPrimTypeTokens->material) {
+        return new Hd_NullMaterial(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -207,8 +374,8 @@ Hd_UnitTestNullRenderDelegate::CreateSprim(TfToken const& typeId,
 HdSprim *
 Hd_UnitTestNullRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
-    if (typeId == HdPrimTypeTokens->shader) {
-        return new Hd_NullShader(SdfPath::EmptyPath());
+    if (typeId == HdPrimTypeTokens->material) {
+        return new Hd_NullMaterial(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

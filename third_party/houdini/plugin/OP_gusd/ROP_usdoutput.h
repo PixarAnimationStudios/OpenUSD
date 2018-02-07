@@ -59,7 +59,7 @@ public:
 
     virtual ~GusdROP_usdoutput();
 
-    virtual bool updateParmsFlags();
+    virtual bool updateParmsFlags() override;
     
     virtual int startRender(int frameCount,
                             fpreal tstart,

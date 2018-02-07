@@ -24,6 +24,7 @@
 #include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -54,6 +55,55 @@ UsdRiMaterialAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiMaterialAPI(stage->GetPrimAtPath(path));
 }
 
+
+/* static */
+UsdRiMaterialAPI
+UsdRiMaterialAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
+{
+    // Ensure we have a valid stage, path and prim
+    if (!stage) {
+        TF_CODING_ERROR("Invalid stage");
+        return UsdRiMaterialAPI();
+    }
+
+    if (path == SdfPath::AbsoluteRootPath()) {
+        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
+        return UsdRiMaterialAPI();
+    }
+
+    auto prim = stage->GetPrimAtPath(path);
+    if (!prim) {
+        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
+        return UsdRiMaterialAPI();
+    }
+
+    TfToken apiName("RiMaterialAPI");  
+
+    // Get the current listop at the edit target
+    UsdEditTarget editTarget = stage->GetEditTarget();
+    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
+    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
+                                    .UncheckedGet<SdfTokenListOp>();
+
+    // Append our name to the prepend list, if it doesnt exist locally
+    TfTokenVector prepends = listOp.GetPrependedItems();
+    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
+        return UsdRiMaterialAPI();
+    }
+
+    SdfTokenListOp prependListOp;
+    prepends.push_back(apiName);
+    prependListOp.SetPrependedItems(prepends);
+    auto result = listOp.ApplyOperations(prependListOp);
+    if (!result) {
+        TF_CODING_ERROR("Failed to prepend api name to current listop.");
+        return UsdRiMaterialAPI();
+    }
+
+    // Set the listop at the current edit target and return the API prim
+    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
+    return UsdRiMaterialAPI(prim);
+}
 
 /* static */
 const TfType &

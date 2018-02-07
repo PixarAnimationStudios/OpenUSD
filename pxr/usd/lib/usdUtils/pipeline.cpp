@@ -79,8 +79,10 @@ UsdUtilsGetModelNameFromRootLayer(
     std::string baseName = TfGetBaseName(filePath);
     modelName = TfToken(baseName.substr(0, baseName.find('.')));
 
-    if (!modelName.IsEmpty() && rootLayer->GetPrimAtPath(
-            SdfPath::AbsoluteRootPath().AppendChild(modelName))) {
+    if (!modelName.IsEmpty() &&
+            SdfPath::IsValidIdentifier(modelName) && 
+            rootLayer->GetPrimAtPath(
+                SdfPath::AbsoluteRootPath().AppendChild(modelName))) {
         return modelName;
     }
 
@@ -215,6 +217,10 @@ UsdUtilsUninstancePrimAtPath(const UsdStagePtr &stage,
 
         if (prim.IsInstance()) {
             prim.SetInstanceable(false);
+            // When we uninstance the prim, there may be unloaded payloads 
+            // beneath it in namespace due to bug 155392. Load them here as a 
+            // temporary workaround.
+            stage->Load(prefixPath);
         }
     }
 

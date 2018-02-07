@@ -400,6 +400,14 @@ public:
         return boost::apply_visitor(_GetTimeSamples(times), _attr);
     }
 
+    /// Populates the list of time samples within the given \p interval, 
+    /// at which the associated attribute is authored.
+    bool GetTimeSamplesInInterval(const GfInterval &interval, 
+                                  std::vector<double> *times) const {
+        return boost::apply_visitor(
+                _GetTimeSamplesInInterval(interval, times), _attr);
+    }
+
     /// Returns the number of time samples authored for this xformOp.
     size_t GetNumTimeSamples() const {
         return boost::apply_visitor(_GetNumTimeSamples(), _attr);
@@ -511,6 +519,28 @@ private:
             return attrQuery.GetTimeSamples(times);
         }
 
+        std::vector<double> *times;
+    };
+
+    // Visitor for getting all the time samples within a given interval.
+    struct _GetTimeSamplesInInterval : public boost::static_visitor<bool> {
+
+        _GetTimeSamplesInInterval(const GfInterval &interval_,
+                                  std::vector<double> *times_) 
+            : interval(interval_), times(times_) 
+        {}
+
+        bool operator()(const UsdAttribute &attr) const
+        {
+            return attr.GetTimeSamplesInInterval(interval, times);
+        }
+
+        bool operator()(const UsdAttributeQuery &attrQuery) const
+        {
+            return attrQuery.GetTimeSamplesInInterval(interval, times);
+        }
+
+        const GfInterval &interval;
         std::vector<double> *times;
     };
 

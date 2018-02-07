@@ -1,0 +1,68 @@
+#usda 1.0
+
+def Xform "ProtoRed" () {
+    def Sphere "sphere" () {
+        ColorFloat[] primvars:displayColor = [(1,0,0)]
+        double radius = 0.25
+    }
+    token visibility = "invisible"
+}
+def Xform "ProtoGreen" () {
+    def Sphere "sphere" () {
+        ColorFloat[] primvars:displayColor = [(0,1,0)]
+        double radius = 0.25
+    }
+    token visibility = "invisible"
+}
+
+def Xform "Implicits" (
+    add variantSets = "shapeVariant"
+)
+{
+    variantSet "shapeVariant" = {
+        "Sphere" {
+            def Sphere "Ball"
+            {
+            }
+        }
+    }
+}
+
+def Sphere "frontSphere" {
+    double3 xformOp:translate = (2, 2, 2)
+     uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "backSphere" {
+    double3 xformOp:translate = (3, 4, 3)
+     uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def PointInstancer "Instancer" () {
+    Vec3f[] extent = [(1.75, 2.75, 3.75), (3.25, 3.25, 4.25)]
+    int[] protoIndices = [ 0, 1, 1 ] 
+    rel prototypes = [ <Protos/Proto1>, <Protos/Proto2> ]
+    PointFloat[] positions = [ (2,3,4), (2.5,3,4), (3,3,4) ]
+
+    def "Protos" {
+        def "Proto1" (
+            references = </ProtoRed>
+        ) {
+            token visibility = "visible"
+        }
+        def Xform "Proto2" (
+            references = </ProtoGreen>
+        ) {
+            token visibility = "visible"
+        }
+    }
+}
+
+def PointInstancer "Instancer2"(
+    references = </Instancer>
+)
+{
+    double3 xformOp:translate = (0,0,0.5)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    int[] ids = [ 5, 6, 7 ]
+}

@@ -228,46 +228,9 @@ void wrapError() {
     TfPyContainerConversions::from_python_sequence< vector<TfError>,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    typedef TfDiagnosticBase Base;
-    {
-        class_<Base>("_DiagnosticBase", no_init)
-            .add_property("sourceFileName",
-                make_function(&Base::GetSourceFileName,
-                              return_value_policy<return_by_value>()),
-                              "The source file name that the error was posted from.")
-
-            .add_property("sourceLineNumber", &Base::GetSourceLineNumber,
-                          "The source line number that the error was posted from.")
-
-            .add_property("commentary",
-                make_function(&Base::GetCommentary,
-                              return_value_policy<return_by_value>()),
-                              "The commentary string describing this error.")
-
-            .add_property("sourceFunction",
-                make_function(&Base::GetSourceFunction,
-                              return_value_policy<return_by_value>()),
-                              "The source function that the error was posted from.")
-
-            .add_property("diagnosticCode", &Base::GetDiagnosticCode,
-                           "The diagnostic code posted.")
-
-            .add_property("diagnosticCodeString",
-                make_function(&Base::GetDiagnosticCodeAsString,
-                              return_value_policy<return_by_value>()),
-                              "The error code posted for this error, as a string.")
-
-            /* XXX -- If we want to make info available to Python we'll need
-             *        to store a PyObject generator along with the info.
-            .add_property("info", &Base::GetInfo,
-                          "The info object associated with this error.")
-            */
-        ;
-    }
-
     typedef TfError This;
 
-    scope errorScope = class_<This, bases<Base> >("Error", no_init)
+    scope errorScope = class_<This, bases<TfDiagnosticBase> >("Error", no_init)
         .add_property("errorCode", &This::GetErrorCode,
                        "The error code posted for this error.")
 

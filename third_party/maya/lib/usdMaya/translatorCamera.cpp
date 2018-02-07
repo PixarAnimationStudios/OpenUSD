@@ -40,6 +40,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <maya/MDagModifier.h>
+#include <maya/MDistance.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MPlug.h>
 #include <maya/MObject.h>
@@ -64,6 +65,7 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((MayaCameraAttrNameVerticalAperture, "verticalFilmAperture"))
     ((MayaCameraAttrNameHorizontalApertureOffset, "horizontalFilmOffset"))
     ((MayaCameraAttrNameVerticalApertureOffset, "verticalFilmOffset"))
+    ((MayaCameraAttrNameOrthographicWidth, "orthographicWidth"))
     ((MayaCameraAttrNameFocalLength, "focalLength"))
     ((MayaCameraAttrNameFocusDistance, "focusDistance"))
     ((MayaCameraAttrNameFStop, "fStop"))
@@ -90,8 +92,7 @@ _CheckUsdTypeAndResizeArrays(
         return false;
     }
 
-    if (!PxrUsdMayaTranslatorUtil::GetTimeSamples(usdAttr, args,
-            timeSamples)) {
+    if (!PxrUsdMayaTranslatorUtil::GetTimeSamples(usdAttr, args, timeSamples)) {
         return false;
     }
 
@@ -113,17 +114,17 @@ _GetTimeAndValueArrayForUsdAttribute(
         const PxrUsdMayaPrimReaderArgs& args,
         MTimeArray* timeArray,
         MDoubleArray* valueArray,
-        bool millimetersToInches=false)
+        const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     static const TfType& floatType = TfType::Find<float>();
     std::vector<double> timeSamples;
 
     if (!_CheckUsdTypeAndResizeArrays(usdAttr,
-                                         floatType,
-                                         args,
-                                         &timeSamples,
-                                         timeArray,
-                                         valueArray)) {
+                                      floatType,
+                                      args,
+                                      &timeSamples,
+                                      timeArray,
+                                      valueArray)) {
         return false;
     }
 
@@ -135,9 +136,19 @@ _GetTimeAndValueArrayForUsdAttribute(
         if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
-        if (millimetersToInches) {
-            attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+
+        switch (convertToUnit) {
+            case MDistance::kInches:
+                attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+                break;
+            case MDistance::kCentimeters:
+                attrValue = PxrUsdMayaUtil::ConvertMMToCM(attrValue);
+                break;
+            default:
+                // The input is expected to be in millimeters.
+                break;
         }
+
         timeArray->set(MTime(timeSample), i);
         valueArray->set(attrValue, i);
     }
@@ -161,11 +172,11 @@ _GetTimeAndValueArraysForUsdAttribute(
     std::vector<double> timeSamples;
 
     if (!_CheckUsdTypeAndResizeArrays(usdAttr,
-                                         vec2fType,
-                                         args,
-                                         &timeSamples,
-                                         timeArray,
-                                         valueArray1)) {
+                                      vec2fType,
+                                      args,
+                                      &timeSamples,
+                                      timeArray,
+                                      valueArray1)) {
         return false;
     }
 
@@ -217,7 +228,7 @@ _TranslateAnimatedUsdAttributeToPlug(
         MPlug& plug,
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context,
-        bool millimetersToInches=false)
+        const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     if (!args.GetReadAnimData()) {
         return false;
@@ -226,10 +237,10 @@ _TranslateAnimatedUsdAttributeToPlug(
     MTimeArray timeArray;
     MDoubleArray valueArray;
     if (!_GetTimeAndValueArrayForUsdAttribute(usdAttr,
-                                                 args,
-                                                 &timeArray,
-                                                 &valueArray,
-                                                 millimetersToInches)) {
+                                              args,
+                                              &timeArray,
+                                              &valueArray,
+                                              convertToUnit)) {
         return false;
     }
 
@@ -257,10 +268,10 @@ _TranslateAnimatedUsdAttributeToPlugs(
     MDoubleArray valueArray1;
     MDoubleArray valueArray2;
     if (!_GetTimeAndValueArraysForUsdAttribute(usdAttr,
-                                                  args,
-                                                  &timeArray,
-                                                  &valueArray1,
-                                                  &valueArray2)) {
+                                               args,
+                                               &timeArray,
+                                               &valueArray1,
+                                               &valueArray2)) {
         return false;
     }
 
@@ -283,7 +294,7 @@ _TranslateUsdAttributeToPlug(
         TfToken plugName,
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context,
-        bool millimetersToInches=false)
+        const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     MStatus status;
 
@@ -292,17 +303,27 @@ _TranslateUsdAttributeToPlug(
 
     // First check for and translate animation if there is any.
     if (!_TranslateAnimatedUsdAttributeToPlug(usdAttr,
-                                                 plug,
-                                                 args,
-                                                 context,
-                                                 millimetersToInches)) {
+                                              plug,
+                                              args,
+                                              context,
+                                              convertToUnit)) {
         // If that fails, then try just setting a static value.
         UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
         float attrValue;
         usdAttr.Get(&attrValue, timeCode);
-        if (millimetersToInches) {
-            attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+
+        switch (convertToUnit) {
+            case MDistance::kInches:
+                attrValue = PxrUsdMayaUtil::ConvertMMToInches(attrValue);
+                break;
+            case MDistance::kCentimeters:
+                attrValue = PxrUsdMayaUtil::ConvertMMToCM(attrValue);
+                break;
+            default:
+                // The input is expected to be in millimeters.
+                break;
         }
+
         status = plug.setFloat(attrValue);
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
@@ -330,11 +351,11 @@ PxrUsdMayaTranslatorCamera::Read(
     // Create the transform node for the camera.
     MObject transformObj;
     if (!PxrUsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                          parentNode,
-                                                          args,
-                                                          context,
-                                                          &status,
-                                                          &transformObj)) {
+                                                       parentNode,
+                                                       args,
+                                                       context,
+                                                       &status,
+                                                       &transformObj)) {
         return false;
     }
 
@@ -363,14 +384,14 @@ PxrUsdMayaTranslatorCamera::Read(
 }
 
 /* static */
-bool 
+bool
 PxrUsdMayaTranslatorCamera::ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject)
 {
     JobImportArgs defaultJobArgs;
     PxrUsdMayaPrimReaderArgs args(
-            usdCamera.GetPrim(), 
+            usdCamera.GetPrim(),
             defaultJobArgs.shadingMode,
             defaultJobArgs.defaultMeshScheme,
             defaultJobArgs.readAnimData,
@@ -407,20 +428,34 @@ _ReadToCamera(
     usdAttr = usdCamera.GetHorizontalApertureAttr();
     plugName = _tokens->MayaCameraAttrNameHorizontalAperture;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context,
-                                         /* millimetersToInches */ true)) {
+                                      args, context,
+                                      /* convertToUnit = */ MDistance::kInches)) {
         return false;
+    }
+
+    if (isOrthographic) {
+        // For orthographic cameras, we'll re-use the horizontal aperture value
+        // to fill in Maya's orthographicWidth. The film aperture and film
+        // aperture offset plugs in Maya have no effect on orthographic cameras,
+        // but we author them anyway so that the data is preserved. Note also
+        // that Maya stores the orthographicWidth as centimeters.
+        plugName = _tokens->MayaCameraAttrNameOrthographicWidth;
+        if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
+                                          args, context,
+                                          /* convertToUnit = */ MDistance::kCentimeters)) {
+            return false;
+        }
     }
 
     usdAttr = usdCamera.GetVerticalApertureAttr();
     plugName = _tokens->MayaCameraAttrNameVerticalAperture;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context,
-                                         /* millimetersToInches */ true)) {
+                                      args, context,
+                                      /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
-    // XXX: 
+    // XXX:
     // Lens Squeeze Ratio is DEPRECATED on USD schema.
     // Writing it out here for backwards compatibility (see bug 123124).
     cameraFn.setLensSqueezeRatio(1.0);
@@ -428,16 +463,16 @@ _ReadToCamera(
     usdAttr = usdCamera.GetHorizontalApertureOffsetAttr();
     plugName = _tokens->MayaCameraAttrNameHorizontalApertureOffset;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context,
-                                         /* millimetersToInches */ true)) {
+                                      args, context,
+                                      /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
     usdAttr = usdCamera.GetVerticalApertureOffsetAttr();
     plugName = _tokens->MayaCameraAttrNameVerticalApertureOffset;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context,
-                                         /* millimetersToInches */ true)) {
+                                      args, context,
+                                      /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
@@ -445,21 +480,21 @@ _ReadToCamera(
     usdAttr = usdCamera.GetFocalLengthAttr();
     plugName = _tokens->MayaCameraAttrNameFocalLength;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context)) {
+                                      args, context)) {
         return false;
     }
 
     usdAttr = usdCamera.GetFocusDistanceAttr();
     plugName = _tokens->MayaCameraAttrNameFocusDistance;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context)) {
+                                      args, context)) {
         return false;
     }
 
     usdAttr = usdCamera.GetFStopAttr();
     plugName = _tokens->MayaCameraAttrNameFStop;
     if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                         args, context)) {
+                                      args, context)) {
         return false;
     }
 
@@ -474,10 +509,10 @@ _ReadToCamera(
         _tokens->MayaCameraAttrNameFarClippingPlane.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     if (!_TranslateAnimatedUsdAttributeToPlugs(usdAttr,
-                                                  nearClipPlug,
-                                                  farClipPlug,
-                                                  args,
-                                                  context)) {
+                                               nearClipPlug,
+                                               farClipPlug,
+                                               args,
+                                               context)) {
         GfVec2f clippingRange;
         usdCamera.GetClippingRangeAttr().Get(&clippingRange, timeCode);
         status = cameraFn.setNearClippingPlane(clippingRange[0]);
@@ -489,5 +524,5 @@ _ReadToCamera(
     return true;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
 
+PXR_NAMESPACE_CLOSE_SCOPE

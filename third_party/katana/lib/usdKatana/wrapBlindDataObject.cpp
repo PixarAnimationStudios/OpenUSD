@@ -62,6 +62,13 @@ _CreateVisibleAttr(UsdKatanaBlindDataObject &self,
     return self.CreateVisibleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateSuppressGroupToAssemblyPromotionAttr(UsdKatanaBlindDataObject &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateSuppressGroupToAssemblyPromotionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -69,7 +76,7 @@ void wrapUsdKatanaBlindDataObject()
 {
     typedef UsdKatanaBlindDataObject This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdTyped> >
         cls("BlindDataObject");
 
     cls
@@ -82,6 +89,14 @@ void wrapUsdKatanaBlindDataObject()
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
+
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -107,6 +122,13 @@ void wrapUsdKatanaBlindDataObject()
              &This::GetVisibleAttr)
         .def("CreateVisibleAttr",
              &_CreateVisibleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetSuppressGroupToAssemblyPromotionAttr",
+             &This::GetSuppressGroupToAssemblyPromotionAttr)
+        .def("CreateSuppressGroupToAssemblyPromotionAttr",
+             &_CreateSuppressGroupToAssemblyPromotionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

@@ -51,7 +51,10 @@ parser.add_argument('-t', '--templateMetadata', action='store_true',
                     help='author template clip metadata in the root layer.')
 parser.add_argument('-p', '--templatePath', action='store',
                     help='specify a template asset path to author') 
-
+parser.add_argument('--clipSet', action='store',
+                    help='specify a clipSet to author clip metadata under.')
+parser.add_argument('--activeOffset', action='store', required=False,
+                    help='specify an active offset')
 # useful for debugging with diffs
 parser.add_argument('-n', '--noComment', action='store_true',
                     help='''do not write a comment specifying how the
@@ -91,6 +94,9 @@ try:
     if results.stride:
         results.stride = float(results.stride)
 
+    if results.activeOffset:
+        results.activeOffset = float(results.activeOffset)
+
     if results.templateMetadata:
         def _checkMissingTemplateArg(argName, argValue):
             if not argValue:
@@ -109,10 +115,23 @@ try:
                                      results.templatePath,
                                      results.startTimeCode,
                                      results.endTimeCode,
-                                     results.stride)
+                                     results.stride,
+                                     results.activeOffset,
+                                     results.clipSet)
     else:
+        if results.templatePath:
+            raise Tf.ErrorException('Error: templatePath cannot be specified '
+                                    'without --templateMetadata')
+        if results.activeOffset:
+            raise Tf.ErrorException('Error: activeOffset cannot be specified '
+                                    'without --templateMetadata')
+        if results.stride:
+            raise Tf.ErrorException('Error: stride cannot be specified '
+                                    'without --templateMetadata')
+
         UsdUtils.StitchClips(outLayer, results.usdFiles, results.clipPath, 
-                             results.startTimeCode, results.endTimeCode)
+                             results.startTimeCode, results.endTimeCode,
+                             results.clipSet)
 
 
     if not results.noComment:

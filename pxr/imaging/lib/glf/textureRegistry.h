@@ -121,14 +121,20 @@ private:
         GlfTextureHandleRefPtr _handle;
     };
 
+public:
+    typedef std::map<TfToken, _TextureMetadata> TextureRegistryMap;
+    typedef std::map<GlfTexturePtr, GlfTextureHandlePtr> TextureRegistryNonSharedMap;
+
+private:
+
     // Map of file extensions to texture types.
     boost::scoped_ptr<GlfRankedTypeMap> _typeMap;
 
     // registry for shared textures
-    std::map<TfToken, _TextureMetadata> _textureRegistry;
+    TextureRegistryMap _textureRegistry;
 
     // registry for non-shared textures (drawtargets)
-    std::map<GlfTexturePtr, GlfTextureHandlePtr> _textureRegistryNonShared;
+    TextureRegistryNonSharedMap _textureRegistryNonShared;
 
     bool _requiresGarbageCollection;
 };

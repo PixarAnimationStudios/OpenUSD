@@ -27,18 +27,19 @@
 #include "pxr/imaging/hdSt/basisCurves.h"
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/mesh.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/renderPass.h"
-#include "pxr/imaging/hdSt/shader.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/texture.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hd/glslfxShader.h"
-#include "pxr/imaging/hd/package.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/texture.h"
 
 #include "pxr/imaging/glf/glslfx.h"
 
@@ -55,9 +56,11 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
-    HdPrimTypeTokens->light,
     HdPrimTypeTokens->drawTarget,
-    HdPrimTypeTokens->shader
+    HdPrimTypeTokens->material,
+    HdPrimTypeTokens->rectLight,
+    HdPrimTypeTokens->simpleLight,
+    HdPrimTypeTokens->sphereLight
 };
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -67,7 +70,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_BPRIM_TYPES =
 
 std::mutex HdStRenderDelegate::_mutexResourceRegistry;
 std::atomic_int HdStRenderDelegate::_counterResourceRegistry;
-HdResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
+HdStResourceRegistrySharedPtr HdStRenderDelegate::_resourceRegistry;
 
 HdStRenderDelegate::HdStRenderDelegate()
 {
@@ -77,7 +80,7 @@ HdStRenderDelegate::HdStRenderDelegate()
     std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
     
     if (_counterResourceRegistry.fetch_add(1) == 0) {
-        _resourceRegistry.reset( new HdResourceRegistry() );
+        _resourceRegistry.reset( new HdStResourceRegistry() );
         HdPerfLog::GetInstance().AddResourceRegistry(_resourceRegistry);
     }
 }
@@ -126,6 +129,12 @@ HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
     return HdRenderPassSharedPtr(new HdSt_RenderPass(index, collection));
 }
 
+HdRenderPassStateSharedPtr
+HdStRenderDelegate::CreateRenderPassState() const
+{
+    return boost::make_shared<HdStRenderPassState>();
+}
+
 HdInstancer *
 HdStRenderDelegate::CreateInstancer(HdSceneDelegate *delegate,
                                     SdfPath const& id,
@@ -170,12 +179,16 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdStCamera(sprimId);
-    } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdStLight(sprimId);
+    } else if (typeId == HdPrimTypeTokens->simpleLight) {
+        return new HdStLight(sprimId, HdPrimTypeTokens->simpleLight);
+    } else if (typeId == HdPrimTypeTokens->sphereLight) {
+        return new HdStLight(sprimId, HdPrimTypeTokens->sphereLight);
+    } else if (typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(sprimId, HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(sprimId);
-    } else  if (typeId == HdPrimTypeTokens->shader) {
-        return new HdStShader(sprimId);
+    } else  if (typeId == HdPrimTypeTokens->material) {
+        return new HdStMaterial(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -188,19 +201,25 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdStCamera(SdfPath::EmptyPath());
-    } else if (typeId == HdPrimTypeTokens->light) {
-        return new HdStLight(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->simpleLight) {
+        return new HdStLight(SdfPath::EmptyPath(),
+                             HdPrimTypeTokens->simpleLight);
+    } else if (typeId == HdPrimTypeTokens->sphereLight) {
+        return new HdStLight(SdfPath::EmptyPath(), 
+                             HdPrimTypeTokens->sphereLight);
+    } else if (typeId == HdPrimTypeTokens->rectLight) {
+        return new HdStLight(SdfPath::EmptyPath(), 
+                             HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(SdfPath::EmptyPath());
-    } else  if (typeId == HdPrimTypeTokens->shader) {
-        return _CreateFallbackShaderPrim();
+    } else  if (typeId == HdPrimTypeTokens->material) {
+        return _CreateFallbackMaterialPrim();
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
 
     return nullptr;
 }
-
 
 void
 HdStRenderDelegate::DestroySprim(HdSprim *sPrim)
@@ -213,11 +232,10 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(bprimId);
+        return new HdStTexture(bprimId);
     } else  {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
-
 
     return nullptr;
 }
@@ -226,7 +244,7 @@ HdBprim *
 HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->texture) {
-        return new HdTexture(SdfPath::EmptyPath());
+        return new HdStTexture(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
     }
@@ -241,16 +259,17 @@ HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
 }
 
 HdSprim *
-HdStRenderDelegate::_CreateFallbackShaderPrim()
+HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {
-    GlfGLSLFXSharedPtr glslfx(new GlfGLSLFX(HdPackageFallbackSurfaceShader()));
+    GlfGLSLFXSharedPtr glslfx(
+        new GlfGLSLFX(HdStPackageFallbackSurfaceShader()));
 
-    HdSurfaceShaderSharedPtr fallbackShaderCode(new HdGLSLFXShader(glslfx));
+    HdStSurfaceShaderSharedPtr fallbackShaderCode(new HdStGLSLFXShader(glslfx));
 
-    HdStShader *shader = new HdStShader(SdfPath::EmptyPath());
-    shader->SetSurfaceShader(fallbackShaderCode);
+    HdStMaterial *material = new HdStMaterial(SdfPath::EmptyPath());
+    material->SetSurfaceShader(fallbackShaderCode);
 
-    return shader;
+    return material;
 }
 
 

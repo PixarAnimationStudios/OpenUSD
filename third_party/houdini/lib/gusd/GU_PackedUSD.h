@@ -99,15 +99,33 @@ public:
     const UT_StringHolder& fileName() const { return m_fileName; }
     UT_StringHolder intrinsicFileName() const { return m_fileName; }
     void setFileName( const UT_StringHolder& fileName );
+#if HDK_API_VERSION >= 16050000
+    UT_StringHolder intrinsicFileName(const GU_PrimPacked *prim) const
+    { return intrinsicFileName(); }
+    void setFileName(GU_PrimPacked *prim, const UT_StringHolder& fileName)
+    { setFileName(fileName); }
+#endif
 
     const UT_StringHolder& altFileName() const { return m_altFileName; }
     UT_StringHolder intrinsicAltFileName() const { return m_altFileName; }
     void setAltFileName( const UT_StringHolder& fileName );
+#if HDK_API_VERSION >= 16050000
+    UT_StringHolder intrinsicAltFileName(const GU_PrimPacked *prim) const
+    { return intrinsicAltFileName(); }
+    void setAltFileName(GU_PrimPacked *prim, const UT_StringHolder& fileName)
+    { setAltFileName(fileName); }
+#endif
 
     const SdfPath& primPath() const { return m_primPath; }
     UT_StringHolder intrinsicPrimPath() const { return m_primPath.GetText(); }
     void setPrimPath( const UT_StringHolder& p );
     void setPrimPath( const SdfPath& primPath  );
+#if HDK_API_VERSION >= 16050000
+    UT_StringHolder intrinsicPrimPath(const GU_PrimPacked *prim) const
+    { return intrinsicPrimPath(); }
+    void setPrimPath(GU_PrimPacked *prim, const UT_StringHolder& p)
+    { setPrimPath(p); }
+#endif
 
     // If this prim was unpacked from a point instancer, srcPrimPath is the path
     // to the instancer.
@@ -115,26 +133,54 @@ public:
     UT_StringHolder intrinsicSrcPrimPath() const { return m_srcPrimPath.GetText(); }
     void setSrcPrimPath( const UT_StringHolder& p );
     void setSrcPrimPath( const SdfPath& primPath  );
+#if HDK_API_VERSION >= 16050000
+    UT_StringHolder intrinsicSrcPrimPath(const GU_PrimPacked *prim) const
+    { return intrinsicSrcPrimPath(); }
+    void setSrcPrimPath(GU_PrimPacked *prim, const UT_StringHolder& p)
+    { setSrcPrimPath(p); }
+#endif
 
     // If this prim was unpacked from a point instancer, index is the array 
     // index in the source point instancer.
     exint index() const { return m_index; }
     void setIndex( exint i );
+#if HDK_API_VERSION >= 16050000
+    exint index(const GU_PrimPacked *prim) const
+    { return index(); }
+    void setIndex(GU_PrimPacked *prim, exint i)
+    { setIndex(i); }
+#endif
 
     // Return true if this is a prim that has been unpacked from a point instancer.
     bool isPointInstance() const { return m_index >= 0; }
     
     // return the USD prim type
     UT_StringHolder intrinsicType() const;
+#if HDK_API_VERSION >= 16050000
+    UT_StringHolder intrinsicType(const GU_PrimPacked *prim) const
+    { return intrinsicType(); }
+#endif
 
     GA_Size usdLocalToWorldTransformSize() const { return 16; }
     void usdLocalToWorldTransform(fpreal64* val, exint size) const;
+#if HDK_API_VERSION >= 16050000
+    GA_Size usdLocalToWorldTransformSize(const GU_PrimPacked *prim) const
+    { return 16; }
+    void usdLocalToWorldTransform(const GU_PrimPacked *prim,
+	    fpreal64* val, exint size) const
+    { usdLocalToWorldTransform(val, size); }
+#endif
 
     UsdTimeCode frame() const { return m_frame; }
     fpreal intrinsicFrame() const { return GusdUSD_Utils::GetNumericTime(m_frame); }
-    
     void setFrame( UsdTimeCode frame );
     void setFrame( fpreal frame );
+#if HDK_API_VERSION >= 16050000
+    fpreal intrinsicFrame(const GU_PrimPacked *prim) const
+    { return intrinsicFrame(); }
+    void setFrame(GU_PrimPacked *prim, fpreal frame)
+    { setFrame(frame); }
+#endif
 
     GusdPurposeSet getPurposes() const { return m_purposes; }
     void setPurposes( GusdPurposeSet purposes );
@@ -142,15 +188,37 @@ public:
     exint getNumPurposes() const;
     void getIntrinsicPurposes( UT_StringArray& purposes ) const;
     void setIntrinsicPurposes( const UT_StringArray& purposes );
+#if HDK_API_VERSION >= 16050000
+    exint getNumPurposes(const GU_PrimPacked *prim) const
+    { return getNumPurposes(); }
+    void getIntrinsicPurposes(const GU_PrimPacked *prim,
+	    UT_StringArray& purposes ) const
+    { getIntrinsicPurposes(purposes); }
+    void setIntrinsicPurposes(GU_PrimPacked *prim,
+	    const UT_StringArray& purposes )
+    { setIntrinsicPurposes(purposes); }
+#endif
 
     virtual GU_PackedFactory    *getFactory() const override;
     virtual GU_PackedImpl   *copy() const override;
     virtual void         clearData() override;
 
     virtual bool     isValid() const override;
+    virtual bool     save(UT_Options &options, const GA_SaveMap &map) const override;
+#if HDK_API_VERSION < 16050000
     virtual bool     load(const UT_Options &options, const GA_LoadMap &map) override;
     virtual void     update(const UT_Options &options) override;
-    virtual bool     save(UT_Options &options, const GA_SaveMap &map) const override;
+#else
+    bool     load(const UT_Options &options, const GA_LoadMap &map);
+    void     update(const UT_Options &options);
+    virtual bool     load(GU_PrimPacked *prim,
+			    const UT_Options &options,
+			    const GA_LoadMap &map) override
+    { return load(options, map); }
+    virtual void     update(GU_PrimPacked *prim,
+			    const UT_Options &options) override
+    { update(options); }
+#endif
 
     virtual bool     getBounds(UT_BoundingBox &box) const override;
     virtual bool     getRenderingBounds(UT_BoundingBox &box) const override;

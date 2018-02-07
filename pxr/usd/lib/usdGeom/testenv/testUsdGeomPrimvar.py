@@ -169,10 +169,12 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         indicesAt1 = Vt.IntArray([1,2,0])
         indicesAt2 = Vt.IntArray([])
 
+        uValAt1 = Vt.FloatArray([2.1,3.1,4.1])
+        uValAt2 = Vt.FloatArray([3.1,4.1,5.1])
+
         self.assertTrue(u1.SetIndices(indicesAt1, 1.0))
         self.assertEqual(u1.GetIndices(1.0), indicesAt1)
 
-        uValAt1 = Vt.FloatArray([2.1,3.1,4.1])
         self.assertTrue(u1.Set(uValAt1, 1.0))
         self.assertEqual(u1.Get(1.0), uValAt1)
 
@@ -182,13 +184,25 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue(u1.SetIndices(indicesAt2, 2.0))
         self.assertEqual(u1.GetIndices(2.0), indicesAt2)
 
-        uValAt2 = Vt.FloatArray([3.1,4.1,5.1])
         self.assertTrue(u1.Set(uValAt2, 2.0))
         self.assertEqual(u1.Get(2.0), uValAt2)
 
         self.assertEqual(u1.GetTimeSamples(), [1.0, 2.0])
         self.assertEqual(u1.GetTimeSamplesInInterval(Gf.Interval(0.5, 1.5)), [1.0])
         self.assertTrue(u1.ValueMightBeTimeVarying())
+
+        # Add more time-samples to u1
+        indicesAt0 = Vt.IntArray([])
+        uValAt3 = Vt.FloatArray([4.1,5.1,6.1])
+
+        self.assertTrue(u1.SetIndices(indicesAt0, 0.0))
+        self.assertEqual(u1.GetTimeSamples(), [0.0, 1.0, 2.0])
+
+        self.assertTrue(u1.Set(uValAt3, 3.0))
+        self.assertEqual(u1.GetTimeSamples(), [0.0, 1.0, 2.0, 3.0])
+
+        self.assertEqual(u1.GetTimeSamplesInInterval(Gf.Interval(1.5, 3.5)),
+                         [2.0, 3.0])
 
         for a, b in zip(u1.ComputeFlattened(1.0),
                         [3.1, 4.1, 2.1]):

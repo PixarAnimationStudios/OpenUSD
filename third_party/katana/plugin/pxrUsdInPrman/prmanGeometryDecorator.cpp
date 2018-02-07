@@ -22,30 +22,25 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdKatana/usdInPluginRegistry.h"
+
+#include "pxrUsdInPrman/declarePackageOps.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void PrmanGeometryDecorator(
-        FnKat::GeolibCookInterface& interface,
-        FnKat::GroupAttribute opArgs,
-        PxrUsdKatanaUsdInPrivateData* privateData)
+
+
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInPrman_LocationDecorator,
+        privateData, opArgs, interface)
 {
-    // root-level locations won't yet have private data/
-    if (!privateData)
-    {
-        return;
-    }
-    
     std::string locationType =
             FnKat::StringAttribute(interface.getOutputAttr("type")
                     ).getValue("", false);
     
     if (locationType == "subdmesh")
     {
-        UsdGeomMesh mesh(privateData->GetUsdPrim());
+        UsdGeomMesh mesh(privateData.GetUsdPrim());
         if (mesh)
         {
             TfToken scheme;
@@ -65,10 +60,3 @@ void PrmanGeometryDecorator(
     }
 }
 
-
-void registerPrmanGeometryDecorator()
-{
-    PxrUsdKatanaUsdInPluginRegistry::RegisterLocationDecoratorFnc(
-            PrmanGeometryDecorator);
-    
-}

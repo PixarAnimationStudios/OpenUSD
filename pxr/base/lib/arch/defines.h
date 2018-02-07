@@ -92,6 +92,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Features
 //
 
+// Only use the GNU STL extensions on Linux when using gcc.
+#if defined(ARCH_OS_LINUX) && defined(ARCH_COMPILER_GCC)
+#define ARCH_HAS_GNU_STL_EXTENSIONS
+#endif
 
 // The current version of Apple clang does not support the thread_local
 // keyword.

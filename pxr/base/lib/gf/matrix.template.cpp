@@ -119,7 +119,7 @@ operator<<(std::ostream& out, const {{ MAT }}& m)
 }
 
 {{ SCL }} *
-{{ MAT }}::Get({{ SCL }} m[{{ DIM }}][{{ DIM }}])
+{{ MAT }}::Get({{ SCL }} m[{{ DIM }}][{{ DIM }}]) const
 {
     {{ MATRIX("m[%(i)s][%(j)s] = _mtx[%(i)s][%(j)s];", sep="\n    ",
               indent=4) }}

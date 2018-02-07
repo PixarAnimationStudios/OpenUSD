@@ -31,7 +31,6 @@
 #include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/shaderKey.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/range3d.h"
@@ -45,10 +44,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdBufferSource;
 class HdDrawItem;
+class HdMaterial;
 class HdRenderIndex;
 class HdRepr;
 class HdRenderParam;
-class HdShader;
 
 typedef boost::shared_ptr<HdRepr> HdReprSharedPtr;
 typedef boost::shared_ptr<HdBufferSource> HdBufferSourceSharedPtr;
@@ -91,12 +90,14 @@ public:
     HD_API
     virtual void Finalize(HdRenderParam *renderParam);
 
-    /// Returns the draw items for the requested reprName, these draw items
-    /// should be constructed and cached beforehand by Sync().
+    /// Returns the draw items for the requested reprName, if any.
+    /// These draw items should be constructed and cached beforehand by Sync().
+    /// If no draw items exist, or reprName cannot be found, nullptr
+    /// will be returned.
     HD_API
-    std::vector<HdDrawItem>* GetDrawItems(HdSceneDelegate* delegate,
-                                          TfToken const &reprName,
-                                          bool forced);
+    const std::vector<HdDrawItem*>* GetDrawItems(HdSceneDelegate* delegate,
+                                                 TfToken const &reprName,
+                                                 bool forced);
 
     /// Returns the render tag associated to this rprim
     HD_API
@@ -109,13 +110,13 @@ public:
 
     /// Returns the identifier of the instancer (if any) for this Rprim. If this
     /// Rprim is not instanced, an empty SdfPath will be returned.
-    SdfPath const& GetInstancerId() const { return _instancerID; }
+    SdfPath const& GetInstancerId() const { return _instancerId; }
 
-    /// Returns the ID of the SurfaceShader to which this Rprim is bound. The
-    /// SurfaceShader object itself can be fetched from the RenderIndex using
+    /// Returns the path of the material to which this Rprim is bound. The
+    /// material object itself can be fetched from the RenderIndex using
     /// this identifier.
-    SdfPath const& GetSurfaceShaderId() const {
-        return _surfaceShaderID;
+    SdfPath const& GetMaterialId() const {
+        return _materialId;
     }
 
     /// Returns true if any dirty flags are set for this rprim.
@@ -131,6 +132,14 @@ public:
 
     /// Is the prim itself visible
     bool IsVisible() const { return _sharedData.visible; }
+
+    /// This function gives an Rprim the chance to "early exit" from dirty
+    /// bit propagation, delegate sync and rprim sync altogether. It is
+    /// a temporary measure to prevent unnecessary work, like in the case of
+    /// invisible prims. The dirty bits in the change tracker remain the same.
+    /// See the implementation for the finer details.
+    HD_API
+    bool CanSkipDirtyBitPropagationAndSync(HdDirtyBits bits) const;
 
     /// Returns the set of dirty bits that should be
     /// added to the change tracker for this prim, when this prim is inserted.
@@ -220,44 +229,9 @@ protected:
                       HdComputationVector const &computations) const;
 
     HD_API
-    HdBufferArrayRangeSharedPtr
-    _GetSharedPrimvarRange(uint64_t primvarId,
-                    HdBufferSpecVector const &bufferSpecs,
-                    HdBufferArrayRangeSharedPtr const &existing,
-                    bool * isFirstInstance,
-                    HdResourceRegistrySharedPtr const &resourceRegistry) const;
-
-    /// For a given interpolation mode, obtains a set of ExtComputation primVar
-    /// source computations needed for this Rprim.
-    ///
-    /// The list of primVars that are obtained through an ExtComputation
-    /// for the given interpolationMode is obtained from the scene delegate.
-    ///
-    /// The scene delegate also provides information about which output on
-    /// which computation is providing the source of the primVar.
-    ///
-    /// Based on the information, the function creates the necessary
-    /// computations and appends them on to the sources list (the sources vector
-    /// need not be empty).
-    ///
-    /// The caller is expected to pass these computation on these computations
-    /// onto the resource registry (associating them with BAR's if it is
-    /// expected the primVar will be downloaded)
-    HD_API
-    void _GetExtComputationPrimVarsComputations(
-                                              HdSceneDelegate *sceneDelegate,
-                                              HdInterpolation interpolationMode,
-                                              HdDirtyBits dirtyBits,
-                                              HdBufferSourceVector *sources);
-
-    HD_API
     TfToken _GetReprName(HdSceneDelegate* delegate,
                          TfToken const &defaultReprName, bool forced,
                          HdDirtyBits *dirtyBits);
-
-    HD_API
-    virtual HdShaderCodeSharedPtr _GetShaderCode(HdSceneDelegate *delegate,
-                                                 HdShader const *shader) const;
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;
@@ -266,15 +240,15 @@ protected:
 
 private:
     SdfPath _id;
-    SdfPath _instancerID;
-    SdfPath _surfaceShaderID;
+    SdfPath _instancerId;
+    SdfPath _materialId;
 
     // Used for id renders.
     int32_t _primId;
 
-    /// Sets a new surface shader id to be used by this rprim
-    void _SetSurfaceShaderId(HdChangeTracker &changeTracker,
-                             SdfPath const& surfaceShaderId);
+    /// Sets a new material binding to be used by this rprim
+    void _SetMaterialId(HdChangeTracker &changeTracker,
+                        SdfPath const& materialId);
 
 protected:
     // shared data across reprs: bufferArrayRanges, bounds, visibility

@@ -34,7 +34,6 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/iterator.h"
 
 #include <boost/functional/hash.hpp>
 #include <boost/unordered_map.hpp>
@@ -104,9 +103,7 @@ ShaderResourceRegistry::ShaderResourceRegistry()
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtrVector plugins = plugReg.GetAllPlugins();
 
-    TF_FOR_ALL(plugIt, plugins) {
-        PlugPluginPtr const & plugin = *plugIt;
-
+    for (PlugPluginPtr const& plugin : plugins) {
         std::string packageName = plugin->GetName();
         JsObject metadata = plugin->GetMetadata();
 
@@ -260,6 +257,9 @@ GlfGLSLFX::_ProcessInput(std::istream * input,
                          _ParseContext & context)
 {
     while (getline(*input, context.currentLine)) {
+        // trim to avoid issues with cross-platform line endings
+        context.currentLine = TfStringTrimRight(context.currentLine);
+
         // increment the line number
         ++context.lineNo;
 
@@ -308,8 +308,7 @@ GlfGLSLFX::_ProcessInput(std::istream * input,
         }
     }
 
-    TF_FOR_ALL(it, context.imports) {
-        string importFile = *it;
+    for (std::string const& importFile : context.imports) {
         TF_DEBUG(GLF_DEBUG_GLSLFX).Msg(" Importing File : %s\n",
                                         importFile.c_str());
 
@@ -490,19 +489,18 @@ GlfGLSLFX::_ComposeConfiguration(std::string *reason)
     // there is an opportunity to do more powerful dictionary composition here
 
 
-    TF_FOR_ALL(it, _configOrder) {
-
-        TF_AXIOM(_configMap.find(*it) != _configMap.end());
+    for (std::string const& item : _configOrder) {
+        TF_AXIOM(_configMap.find(item) != _configMap.end());
         TF_DEBUG(GLF_DEBUG_GLSLFX).Msg("    Parsing config for %s\n",
-                                        TfGetBaseName(*it).c_str());
+                                        TfGetBaseName(item).c_str());
 
         string errorStr;
-        _config.reset(GlfGLSLFXConfig::Read(_configMap[*it], *it, &errorStr));
+        _config.reset(GlfGLSLFXConfig::Read(_configMap[item], item, &errorStr));
 
         if (!errorStr.empty()) {
             *reason = 
                 TfStringPrintf("Error parsing configuration section of %s: %s.",
-                             it->c_str(), errorStr.c_str());
+                               item.c_str(), errorStr.c_str());
             return false;
         }
     }
@@ -562,16 +560,15 @@ GlfGLSLFX::_GetSource(const TfToken &shaderStageKey) const
 
     string ret;
 
-    TF_FOR_ALL(it, sourceKeys) {
-
+    for (std::string const& key : sourceKeys) {
         // now look up the keys and concatenate them together..
-        _SourceMap::const_iterator cit = _sourceMap.find(*it);
+        _SourceMap::const_iterator cit = _sourceMap.find(key);
 
         if (cit == _sourceMap.end()) {
             TF_RUNTIME_ERROR("Can't find shader source for <%s> with the key "
                              "<%s>",
                              shaderStageKey.GetText(),
-                             it->c_str());
+                             key.c_str());
             return string();
         }
 

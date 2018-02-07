@@ -27,6 +27,7 @@
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/scopeDescriptionPrivate.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/vsnprintf.h"
@@ -200,7 +201,12 @@ _fatalSignalHandler(int signo)
         break;
 #endif
     }
-    ArchLogPostMortem(msg);
+
+    {
+        Tf_ScopeDescriptionStackReportLock descStackReport;
+        ArchLogPostMortem(
+            msg, /*message=*/nullptr, descStackReport.GetMessage());
+    }
 
     // Fatal signal handlers should not return. If they do and the
     // signal is SIGSEGV, SIGBUS, and possibly others, the signal will

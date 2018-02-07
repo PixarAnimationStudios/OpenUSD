@@ -698,9 +698,10 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
             }
 
             UsdStageCacheContext ctx(UsdMayaStageCache::Get());
-            usdStage = UsdStage::Open(rootLayer, 
-                    sessionLayer,
-                    ArGetResolver().GetCurrentContext());
+            usdStage = UsdStage::Open(rootLayer,
+                                      sessionLayer,
+                                      ArGetResolver().GetCurrentContext());
+            usdStage->SetEditTarget(usdStage->GetSessionLayer());
 
             primPath = usdStage->GetDefaultPrim() ?
                 usdStage->GetDefaultPrim().GetPath() :

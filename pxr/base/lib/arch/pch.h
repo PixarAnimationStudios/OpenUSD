@@ -24,6 +24,7 @@
 // WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
 #if defined(ARCH_OS_DARWIN)
 #include <crt_externs.h>

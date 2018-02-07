@@ -21,14 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "Python.h"
+#include "pxr/pxr.h"
 #include "pxr/base/tf/pyModule.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdSkelJoint);
-    TF_WRAP(UsdSkelSkeleton);
-    TF_WRAP(UsdSkelPackedJointAnimation);
+    TF_WRAP(UsdSkelAnimMapper);
+    TF_WRAP(UsdSkelAnimQuery);
     TF_WRAP(UsdSkelBindingAPI);
+    TF_WRAP(UsdSkelCache);
+    TF_WRAP(UsdSkelPackedJointAnimation);
+    TF_WRAP(UsdSkelSkeleton);
+    TF_WRAP(UsdSkelSkeletonQuery);
+    TF_WRAP(UsdSkelSkinningQuery);
+    TF_WRAP(UsdSkelRoot);
     TF_WRAP(UsdSkelTokens);
+    TF_WRAP(UsdSkelTopology);
+    TF_WRAP(UsdSkelUtils);
 }

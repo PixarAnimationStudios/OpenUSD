@@ -49,7 +49,7 @@ typedef boost::shared_ptr<class HdSceneTask> HdSceneTaskSharedPtr;
 typedef std::vector<HdSceneTaskSharedPtr> HdSceneTaskSharedPtrVector;
 
 // We want to use token as a key not std::string, so use an unordered_map over VtDictionary
-typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor, TfToken::TokensEqualFunctor> HdTaskContext;
+typedef std::unordered_map<TfToken, VtValue, TfToken::HashFunctor> HdTaskContext;
 
 class HdTask {
 public:

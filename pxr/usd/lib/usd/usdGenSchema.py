@@ -237,6 +237,21 @@ def _ExtractNames(sdfPrim, customData):
     return usdPrimTypeName, className, cppClassName, baseFileName
 
 
+# Determines if a prim 'p' inherits from Typed
+def _IsTyped(p):
+    def _FindAllInherits(p):
+        if p.GetMetadata('inheritPaths'):
+            inherits = list(p.GetMetadata('inheritPaths').ApplyOperations([]))
+        else:
+            inherits = []
+        for path in inherits:
+            p2 = p.GetStage().GetPrimAtPath(path)
+            if p2:
+                inherits += _FindAllInherits(p2)
+        return inherits
+
+    return Sdf.Path('/Typed') in set(_FindAllInherits(p))
+
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim):
         # First validate proper class naming...
@@ -269,6 +284,11 @@ class ClassInfo(object):
          self.cppClassName,
          self.baseFileName) = _ExtractNames(sdfPrim, self.customData)
 
+        # We must also hold onto the authored prim name in schema.usda
+        # for cases in which we must differentiate that from the authored
+        # className in customdata. For example, UsdModelAPI vs UsdGeomModelAPI
+        self.primName = sdfPrim.path.name
+
         # Class Parent's Info
         parentClass = inheritsList[0].name if inheritsList else 'SchemaBase'
         (parentLayer,
@@ -296,9 +316,38 @@ class ClassInfo(object):
                 if parentTypeName == self.typeName:
                     self.typeName = ''
 
-        self.isConcrete = 'false' if not self.typeName else 'true'
+        self.isConcrete = bool(self.typeName)
+        self.isTyped = _IsTyped(usdPrim)
+        self.isApi = not self.isTyped and not self.isConcrete
+        self.isMultipleApply = self.customData.get('isMultipleApply', False)
+        self.isPrivateApply = self.customData.get('isPrivateApply', False)
 
+        errorPrefix = ('Invalid schema definition at ' 
+                       + '<' + str(sdfPrim.path) + '>')
+        errorSuffix = ('       See '
+                       'https://graphics.pixar.com/usd/docs/api/'
+                       '_usd__page__generating_schemas.html#Usd_IsAVsAPISchemas '
+                       'for more information.\n')
+        errorMsg = lambda s: errorPrefix + s + '\n' + errorSuffix
 
+        if self.isConcrete and not self.isTyped:
+            raise Exception(errorMsg('Schema classes must either inherit '
+                                     'Typed(IsA), or neither inherit typed '
+                                     'nor provide a typename(API).'))
+        
+        if self.isApi and not sdfPrim.path.name.endswith('API'):
+            raise Exception(errorMsg('API schemas must named with an API suffix.'))
+
+        if not self.isApi and self.isMultipleApply:
+            raise Exception(errorMsg('Non API schemas cannot be marked with '
+                                     'isMultipleApply, only API schemas have an '
+                                     'Apply() method generated. '))
+
+        if not self.isApi and self.isPrivateApply:
+            raise Exception(errorMsg('Non API schemas cannot be marked with '
+                                     'isPrivateApply, only API schemas have an '
+                                     'Apply() method generated. '))
+         
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
 
@@ -316,15 +365,44 @@ class ClassInfo(object):
 # USD PARSER                                                                   #
 #------------------------------------------------------------------------------#
 
+def _ValidateFields(spec):
+    disallowedFields = Usd.SchemaRegistry.GetDisallowedFields()
+
+    # The schema registry will ignore these fields if they are discovered 
+    # in a generatedSchema.usda file, but we want to allow them in schema.usda.
+    whitelist = ["inheritPaths", "customData"]
+
+    invalidFields = [key for key in spec.ListInfoKeys()
+                     if key in disallowedFields and key not in whitelist]
+    if not invalidFields:
+        return True
+
+    for key in invalidFields:
+        if key == Sdf.RelationshipSpec.TargetsKey:
+            print ("ERROR: Relationship targets on <%s> cannot be specified "
+                   "in a schema." % spec.path)
+        elif key == Sdf.AttributeSpec.ConnectionPathsKey:
+            print ("ERROR: Attribute connections on <%s> cannot be specified "
+                   "in a schema." % spec.path)
+        else:
+            print ("ERROR: Fallback values for '%s' on <%s> cannot be "
+                   "specified in a schema." % (key, spec.path))
+    return False
+
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
     stage = Usd.Stage.Open(sdfLayer)
     classes = []
 
+    hasInvalidFields = False
+
     # PARSE CLASSES
     for sdfPrim in sdfLayer.rootPrims:
         if sdfPrim.name == "Typed" or sdfPrim.specifier != Sdf.SpecifierClass:
             continue
+
+        if not _ValidateFields(sdfPrim):
+            hasInvalidFields = True
 
         usdPrim = stage.GetPrimAtPath(sdfPrim.path)
         classInfo = ClassInfo(usdPrim, sdfPrim)
@@ -334,53 +412,57 @@ def ParseUsd(usdFilePath):
         # want the local properties declared directly on the class, which the
         # "properties" metadata field provides.
         #
-        if sdfPrim.properties:
-            attrApiNames = []
-            relApiNames = []
-            for sdfProp in sdfPrim.properties:
-                
-                # Attribute
-                usdAttr = usdPrim.GetAttribute(sdfProp.name)
-                if usdAttr:
-                    attrInfo = AttrInfo(sdfProp)
+        attrApiNames = []
+        relApiNames = []
+        for sdfProp in sdfPrim.properties:
 
-                    # Assert unique attribute names
-                    if attrInfo.name in classInfo.attrs: 
-                        raise Exception(
-                            'Schema Attribute names must be unique, '
-                            'irrespective of namespacing. '
-                            'Duplicate name encountered: %s.%s' %
-                            (classInfo.usdPrimTypeName, attrInfo.name))
-                    elif attrInfo.apiName in attrApiNames:
-                        raise Exception(
-                            'Schema Attribute API names must be unique. '
-                            'Duplicate apiName encountered: %s.%s' %
-                            (classInfo.usdPrimTypeName, attrInfo.apiName))
-                    else:
-                        attrApiNames.append(attrInfo.apiName)
-                        classInfo.attrs[attrInfo.name] = attrInfo
-                        classInfo.attrOrder.append(attrInfo.name)
-                
-                # Relationship
+            if not _ValidateFields(sdfProp):
+                hasInvalidFields = True
+
+            # Attribute
+            if isinstance(sdfProp, Sdf.AttributeSpec):
+                attrInfo = AttrInfo(sdfProp)
+
+                # Assert unique attribute names
+                if attrInfo.name in classInfo.attrs: 
+                    raise Exception(
+                        'Schema Attribute names must be unique, '
+                        'irrespective of namespacing. '
+                        'Duplicate name encountered: %s.%s' %
+                        (classInfo.usdPrimTypeName, attrInfo.name))
+                elif attrInfo.apiName in attrApiNames:
+                    raise Exception(
+                        'Schema Attribute API names must be unique. '
+                        'Duplicate apiName encountered: %s.%s' %
+                        (classInfo.usdPrimTypeName, attrInfo.apiName))
                 else:
-                    relInfo = RelInfo(sdfProp)
-                    
-                    # Assert unique relationship names
-                    if relInfo.name in classInfo.rels: 
-                        raise Exception(
-                            'Schema Relationship names must be unique, '
-                            'irrespective of namespacing. '
-                            'Duplicate name encountered: %s.%s' %
-                            (classInfo.usdPrimTypeName, relInfo.name))
-                    elif relInfo.apiName in relApiNames:
-                        raise Exception(
-                            'Schema Relationship API names must be unique. '
-                            'Duplicate apiName encountered: %s.%s' %
-                            (classInfo.usdPrimTypeName, relInfo.apiName))
-                    else:
-                        relApiNames.append(relInfo.apiName)
-                        classInfo.rels[relInfo.name] = relInfo
-                        classInfo.relOrder.append(relInfo.name)
+                    attrApiNames.append(attrInfo.apiName)
+                    classInfo.attrs[attrInfo.name] = attrInfo
+                    classInfo.attrOrder.append(attrInfo.name)
+
+            # Relationship
+            else:
+                relInfo = RelInfo(sdfProp)
+
+                # Assert unique relationship names
+                if relInfo.name in classInfo.rels: 
+                    raise Exception(
+                        'Schema Relationship names must be unique, '
+                        'irrespective of namespacing. '
+                        'Duplicate name encountered: %s.%s' %
+                        (classInfo.usdPrimTypeName, relInfo.name))
+                elif relInfo.apiName in relApiNames:
+                    raise Exception(
+                        'Schema Relationship API names must be unique. '
+                        'Duplicate apiName encountered: %s.%s' %
+                        (classInfo.usdPrimTypeName, relInfo.apiName))
+                else:
+                    relApiNames.append(relInfo.apiName)
+                    classInfo.rels[relInfo.name] = relInfo
+                    classInfo.relOrder.append(relInfo.name)
+
+    if hasInvalidFields:
+        raise Exception('Invalid fields specified in schema.')
 
     return (_GetLibName(sdfLayer),
             _GetLibPath(sdfLayer),
@@ -554,7 +636,7 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                    tokensHTemplate.render(tokens=tokenData), validate)
         # tokens.cpp
         _WriteFile(os.path.join(codeGenPath, 'tokens.cpp'),
-                   tokensCppTemplate.render(), validate)
+                   tokensCppTemplate.render(tokens=tokenData), validate)
         # wrapTokens.cpp
         _WriteFile(os.path.join(codeGenPath, 'wrapTokens.cpp'),
                    tokensWrapTemplate.render(tokens=tokenData), validate)
@@ -648,9 +730,11 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                 clsDict.update(cls.customData['extraPlugInfo'])
             clsDict.update({'bases': [cls.parentCppClassName],
                             'autoGenerated': True })
-            # add alias for concrete types.
-            if cls.isConcrete == 'true':
+
+            # Write out alias/primdefs for concrete IsA schemas and API schemas
+            if (cls.isConcrete or cls.isApi):
                 clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
+
             types[cls.cppClassName] = clsDict
         # write plugInfo file back out.
         content = ((

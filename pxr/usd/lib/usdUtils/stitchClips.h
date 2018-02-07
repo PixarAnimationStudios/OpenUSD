@@ -32,8 +32,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/api.h"
+#include "pxr/usd/usd/clipsAPI.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
+
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -65,6 +67,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///                           highest endTimeCode authored from the 
 ///                           \p clipLayers.
 ///
+/// \p clipSet            The name of the clipSet in which the
+///                           aforementioned metadata will be authored.
+///                           \note If this parameter is omitted, the default
+///                           clipSet name will be authored.
 ///
 /// Details on how this is accomplished can be found below:
 ///
@@ -107,7 +113,9 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
                     const double startTimeCode 
                         = std::numeric_limits<double>::max(),
                     const double endTimeCode
-                        = std::numeric_limits<double>::max());
+                        = std::numeric_limits<double>::max(),
+                    const TfToken& clipSet
+                        = UsdClipsAPISetNames->default_);
 
 /// A function which aggregates the topology of a set of \p clipLayerFiles
 /// for use in USD's Value Clips system. This aggregated scene topology
@@ -151,6 +159,16 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 /// \p stride                 The stride to be authored at the 
 ///                           clipTemplateStride metadata key.
 ///
+/// \p activeOffset           The offset to be authored at the 
+///                           clipTemplateActiveOffset metadata key. 
+///                           \note If this parameter is omitted, no value 
+///                           will be authored as the metadata is optional. 
+///
+/// \p clipSet                The name of the clipSet in which the
+///                           aforementioned metadata will be authored.
+///                           \note If this parameter is omitted, the default
+///                           clipSet name("default") will be authored.
+///
 /// For further information on these metadatum, see \ref Usd_Page_AdvancedFeatures
 ///
 USDUTILS_API
@@ -161,7 +179,11 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
                             const std::string& templatePath,
                             const double startTime,
                             const double endTime,
-                            const double stride);
+                            const double stride,
+                            const double activeOffset
+                                = std::numeric_limits<double>::max(),
+                            const TfToken& clipSet
+                                = UsdClipsAPISetNames->default_);
 
 /// Generates a topology file name based on an input file name
 /// 

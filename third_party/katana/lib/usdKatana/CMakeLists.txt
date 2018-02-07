@@ -13,6 +13,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdImaging
         usdImagingGL
         usdShade
+        usdSkel
         usdGeom
         usdLux
         usdRi
@@ -60,6 +61,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PYMODULE_CPPFILES
         wrapBlindDataObject.cpp
+        wrapCache.cpp
         wrapLookAPI.cpp
         module.cpp
 

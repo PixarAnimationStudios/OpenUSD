@@ -13,12 +13,18 @@ def Xform "Sphere" (
     {
         Vec3f[] extent = [(-7.10811, -7.10811, -7.10811), (7.10811, 7.10811, 7.10811)]
 
-        uniform bool subsetFamily:materialBind:isPartition = 1
-        uniform bool subsetFamily:validPartition:isPartition = 1
+        uniform token subsetFamily:materialBind:familyType = "partition"
+        uniform token subsetFamily:validPartition:familyType = "partition"
 
-        uniform bool subsetFamily:badPartition1:isPartition = 1
-        uniform bool subsetFamily:badPartition2:isPartition = 1
-        uniform bool subsetFamily:badPartition3:isPartition = 1
+        uniform token subsetFamily:badPartition1:familyType = "partition"
+        uniform token subsetFamily:badPartition2:familyType = "partition"
+        uniform token subsetFamily:badPartition3:familyType = "partition"
+
+        uniform token subsetFamily:validNonOverlapping:familyType = "nonOverlapping"
+        uniform token subsetFamily:invalidNonOverlapping:familyType = "nonOverlapping"
+
+        uniform token subsetFamily:validUnrestricted:familyType = "unrestricted"
+        uniform token subsetFamily:invalidUnrestricted:familyType = "unrestricted"
 
         def GeomSubset "green" 
         {
@@ -75,6 +81,89 @@ def Xform "Sphere" (
             }
         }
 
+        def GeomSubset "validNonOverlapping_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13, 15]
+            }
+        }
+
+        def GeomSubset "validNonOverlapping_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "invalidNonOverlapping_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13, 15]
+            }
+        }
+
+        def GeomSubset "invalidNonOverlapping_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "validUnrestricted_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validUnrestricted"
+            # index 0 is overlapping
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14, 15]
+            int[] indices.timeSamples = {
+                # index 15 is not included in timeSamples.
+                1: [0, 1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "validUnrestricted_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
+
+        def GeomSubset "invalidUnrestricted_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidUnrestricted"
+            # out of bound index - 16
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14, 16]            
+            int[] indices.timeSamples = {
+                # negative index
+                1: [-1, 1, 3, 5, 7, 9, 11, 13, 15]
+            }
+        }
+
+        def GeomSubset "invalidUnrestricted_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13, 15]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12, 14]
+            }
+        }
 
         def GeomSubset "badPartition1_1"
         {

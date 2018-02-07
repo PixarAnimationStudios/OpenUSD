@@ -161,6 +161,91 @@ Hd_PrimTypeIndex<PrimType>::RemovePrim(const TfToken    &typeId,
     typeEntry.primIds.Remove(primId);
 }
 
+template <class PrimType>
+void
+Hd_PrimTypeIndex<PrimType>::RemoveSubtree(const SdfPath &root,
+                                          HdSceneDelegate* sceneDelegate,
+                                          HdChangeTracker &tracker,
+                                          HdRenderDelegate *renderDelegate)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    struct _Range {
+        size_t _start;
+        size_t _end;
+
+        _Range() = default;
+        _Range(size_t start, size_t end)
+         : _start(start)
+         , _end(end)
+        {
+        }
+    };
+
+
+    size_t numTypes = _entries.size();
+    for (size_t typeIdx = 0; typeIdx < numTypes; ++typeIdx) {
+        _PrimTypeEntry &typeEntry = _entries[typeIdx];
+
+        HdPrimGather gather;
+        _Range totalRange;
+        std::vector<_Range> rangesToRemove;
+
+        const SdfPathVector &ids = typeEntry.primIds.GetIds();
+        if (gather.SubtreeAsRange(ids,
+                                   root,
+                                   &totalRange._start,
+                                   &totalRange._end)) {
+
+            // end is inclusive!
+            size_t currentRangeStart = totalRange._start;
+            for (size_t primIdIdx  = totalRange._start;
+                        primIdIdx <= totalRange._end;
+                      ++primIdIdx) {
+                const SdfPath &primId = ids[primIdIdx];
+
+                typename _PrimMap::iterator primIt = typeEntry.primMap.find(primId);
+                if (primIt == typeEntry.primMap.end()) {
+                    TF_CODING_ERROR("Prim in id list not in info map: %s",
+                                    primId.GetText());
+                } else {
+                    _PrimInfo &primInfo = primIt->second;
+
+                    if (primInfo.sceneDelegate == sceneDelegate) {
+                        _TrackerRemovePrim(tracker, primId);
+                        _RenderDelegateDestroyPrim(renderDelegate, primInfo.prim);
+                        primInfo.prim = nullptr;
+
+                        typeEntry.primMap.erase(primIt);
+                    } else {
+                        if (currentRangeStart < primIdIdx) {
+                            rangesToRemove.emplace_back(currentRangeStart,
+                                                        primIdIdx - 1);
+                        }
+
+                        currentRangeStart = primIdIdx + 1;
+                    }
+                }
+            }
+
+            // Remove final range
+            if (currentRangeStart <= totalRange._end) {
+                rangesToRemove.emplace_back(currentRangeStart,
+                                            totalRange._end);
+            }
+
+            // Remove ranges from id's in back to front order to not invalidate indices
+            while (!rangesToRemove.empty()) {
+                _Range &range = rangesToRemove.back();
+
+                typeEntry.primIds.RemoveRange(range._start, range._end);
+                rangesToRemove.pop_back();
+            }
+        }
+    }
+}
+
 
 template <class PrimType>
 PrimType *

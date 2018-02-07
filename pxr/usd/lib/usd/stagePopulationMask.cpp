@@ -165,21 +165,81 @@ UsdStagePopulationMask::Includes(SdfPath const &path) const
     return (prev && path.HasPrefix(*prev)) || (cur && cur->HasPrefix(path));
 }
 
+namespace
+{
+// Return pair where the first element is true if the mask represented by
+// paths includes the subtree rooted at path, false otherwise. The second
+// element is the result of calling lower_bound on paths with path.
+std::pair<bool, std::vector<SdfPath>::const_iterator>
+_IncludesSubtree(std::vector<SdfPath> const& paths, SdfPath const& path)
+{
+    if (paths.empty())
+        return { false, paths.end() };
+
+    // If this path is in paths, or if an element in paths prefixes path, then
+    // the subtree rooted at path is included.
+    auto iter = lower_bound(paths.begin(), paths.end(), path);
+
+    SdfPath const *prev = iter == paths.begin() ? nullptr : &iter[-1];
+    SdfPath const *cur = iter == paths.end() ? nullptr : &iter[0];
+
+    return { (prev && path.HasPrefix(*prev)) || (cur && *cur == path), iter };
+}
+}
+
 bool
 UsdStagePopulationMask::IncludesSubtree(SdfPath const &path) const
 {
-    if (_paths.empty())
-        return false;
-    
-    // If this path is in _paths, or if an element in _paths prefixes path, then
-    // the subtree rooted at path is included.
-    auto iter = lower_bound(_paths.begin(), _paths.end(), path);
-
-    SdfPath const *prev = iter == _paths.begin() ? nullptr : &iter[-1];
-    SdfPath const *cur = iter == _paths.end() ? nullptr : &iter[0];
-
-    return (prev && path.HasPrefix(*prev)) || (cur && *cur == path);
+    return _IncludesSubtree(_paths, path).first;
 }    
+
+namespace
+{
+// Return the name of the child prim that appears in \p fullPath
+// immediately after the prefix \p path.
+TfToken 
+_GetChildNameBeneathPath(SdfPath const& fullPath, SdfPath const& path)
+{
+    for (SdfPath p = fullPath; !p.IsEmpty(); p = p.GetParentPath()) {
+        if (p.GetParentPath() == path) {
+            return p.GetNameToken();
+        }
+    }
+    return TfToken();
+}
+}
+
+bool 
+UsdStagePopulationMask::GetIncludedChildNames(SdfPath const &path, 
+                                              std::vector<TfToken> *names) const
+{
+    names->clear();
+
+    auto includesSubtree = _IncludesSubtree(_paths, path);
+    if (includesSubtree.first)
+        return true;
+
+    for (auto it = includesSubtree.second; 
+         it != _paths.end() && it->HasPrefix(path); ++it) {
+
+        const SdfPath& maskPath = *it;
+        const TfToken& childName = _GetChildNameBeneathPath(maskPath, path);
+        if (!TF_VERIFY(!childName.IsEmpty())) {
+            // Should never happen because all paths in the range are prefixed
+            // by path, and if path was in the range then the earlier call to
+            // _IncludesSubtree would have returned true.
+            continue;
+        }
+
+        // Because the range is sorted, we only need to check the last
+        // element to see if childName has been added already.
+        if (names->empty() || names->back() != childName) {
+            names->push_back(childName);
+        }
+    }
+
+    return !names->empty();
+}
 
 std::vector<SdfPath>
 UsdStagePopulationMask::GetPaths() const

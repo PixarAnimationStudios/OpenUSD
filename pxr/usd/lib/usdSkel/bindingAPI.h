@@ -33,6 +33,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
 
+#include "pxr/usd/usdGeom/primvar.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -56,10 +58,9 @@ class SdfAssetPath;
 /// data that lives in the "geometry hierarchy" of prims and models that want
 /// to be skeletally deformed.
 /// 
-/// This includes binding to both skeletons and animations that drive the 
-/// skeleton's joints, as well as describing the mapping and weighting of
-/// joints to gprims and trees of geometry, and of gprims to the primary
-/// bound Skeleton.
+/// See the extended \ref UsdSkel_BindingAPI "UsdSkelBindingAPI schema"
+/// documentation for more about bindings and how they apply in a scene graph.
+/// 
 ///
 class UsdSkelBindingAPI : public UsdSchemaBase
 {
@@ -69,6 +70,11 @@ public:
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
     static const bool IsConcrete = false;
+
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = false;
 
     /// Construct a UsdSkelBindingAPI on UsdPrim \p prim .
     /// Equivalent to UsdSkelBindingAPI::Get(prim.GetStage(), prim.GetPath())
@@ -112,6 +118,16 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget. This information is stored in the apiSchemas
+    /// metadata on prims.  
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    USDSKEL_API
+    static UsdSkelBindingAPI 
+    Apply(const UsdStagePtr &stage, const SdfPath &path);
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -134,11 +150,12 @@ public:
     /// authored on the ancestor, to "inherit" down to all the leaf gprims.
     /// The *geomBindTransform* is defined as moving a gprim from its own
     /// object space (untransformed by the gprim's own transform) out into
-    /// Skeleton space.
+    /// Skeleton space. If this transform is unset, an identity transform
+    /// is used instead.
     ///
     /// \n  C++ Type: GfMatrix4d
     /// \n  Usd Type: SdfValueTypeNames->Matrix4d
-    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
     USDSKEL_API
     UsdAttribute GetGeomBindTransformAttr() const;
@@ -153,14 +170,40 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // JOINTS 
+    // --------------------------------------------------------------------- //
+    /// An (optional) array of tokens defining the list of
+    /// joints to which jointIndices apply. If not defined, jointIndices applies
+    /// to the ordered list of joints defined in the bound Skeleton's *joints*
+    /// attribute.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetJointsAttr() const;
+
+    /// See GetJointsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // JOINTINDICES 
     // --------------------------------------------------------------------- //
-    /// Indices into the *joints* relationship of the closest
+    /// Indices into the *joints* attribute of the closest
     /// (in namespace) bound Skeleton that affect each point of a PointBased
-    /// gprim.  The primvar can be either *constant* or *vertex* interpolation.
-    /// In either case, this primvar's *elementSize* will determine how many
-    /// joints apply to each vertex.  See UsdGeomPrimvar for more information
-    /// on interpolation and elementSize.
+    /// gprim. The primvar can have either *constant* or *vertex* interpolation.
+    /// This primvar's *elementSize* will determine how many joint influences
+    /// apply to each point. Indices must point be valid. Null influences should
+    /// be defined by setting values in jointWeights to zero.
+    /// See UsdGeomPrimvar for more information on interpolation and
+    /// elementSize.
     ///
     /// \n  C++ Type: VtArray<int>
     /// \n  Usd Type: SdfValueTypeNames->IntArray
@@ -181,13 +224,12 @@ public:
     // --------------------------------------------------------------------- //
     // JOINTWEIGHTS 
     // --------------------------------------------------------------------- //
-    /// Weights for the  joints that affect each point of a PointBased
-    /// gprim.  The primvar can be either *constant* or *vertex* interpolation.
-    /// In either case, this primvar's *elementSize* will determine how many
-    /// joints apply to each vertex.  The length, interpolation, and 
-    /// elementSize of *jointWeights* must match that of *jointIndices*.
-    /// See UsdGeomPrimvar for more information on interpolation and 
-    /// elementSize.
+    /// Weights for the joints that affect each point of a PointBased
+    /// gprim. The primvar can have either *constant* or *vertex* interpolation.
+    /// This primvar's *elementSize* will determine how many joints influences
+    /// apply to each point. The length, interpolation, and elementSize of
+    /// *jointWeights* must match that of *jointIndices*. See UsdGeomPrimvar
+    /// for more information on interpolation and elementSize.
     ///
     /// \n  C++ Type: VtArray<float>
     /// \n  Usd Type: SdfValueTypeNames->FloatArray
@@ -209,7 +251,12 @@ public:
     // ANIMATIONSOURCE 
     // --------------------------------------------------------------------- //
     /// Animation source to be bound to this prim and its 
-    /// descendants.
+    /// descendants. An animationSource has no effect until the next
+    /// _skel:skeleton_ binding applied either at the same prim that
+    /// the animationSource is defined on, or at the binding of an
+    /// ancestor prim. An animationSource does not affect a skeleton
+    /// bound on an ancestor scope.
+    /// 
     ///
     USDSKEL_API
     UsdRelationship GetAnimationSourceRel() const;
@@ -236,24 +283,6 @@ public:
     UsdRelationship CreateSkeletonRel() const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // JOINTS 
-    // --------------------------------------------------------------------- //
-    /// An (optional) relationship whose targets define the list of
-    /// joints to which jointIndices apply, relative to the gprim itself, so
-    /// that it is self-contained. If not defined, jointIndices applies to
-    /// the ordered list of joints defined in the bound Skeleton's *joints*
-    /// relationship.
-    ///
-    USDSKEL_API
-    UsdRelationship GetJointsRel() const;
-
-    /// See GetJointsRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDSKEL_API
-    UsdRelationship CreateJointsRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -264,6 +293,47 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Convenience function to get the jointIndices attribute as a primvar.
+    ///
+    /// \sa GetJointIndicesAttr, GetInheritedJointWeightsPrimvar
+    USDSKEL_API
+    UsdGeomPrimvar GetJointIndicesPrimvar() const;
+
+    /// Convenience function to create the jointIndices primvar, optionally
+    /// specifying elementSize.
+    /// If \p constant is true, the resulting primvar is configured 
+    /// with 'constant' interpolation, and describes a rigid deformation.
+    /// Otherwise, the primvar is configured with 'vertex' interpolation,
+    /// and describes joint influences that vary per point.
+    ///
+    /// \sa CreateJointIndicesAttr(), GetJointIndicesPrimvar()
+    USDSKEL_API
+    UsdGeomPrimvar CreateJointIndicesPrimvar(bool constant,
+                                             int elementSize=-1) const;
+
+    /// Convenience function to get the jointWeights attribute as a primvar.
+    ///
+    /// \sa GetJointWeightsAttr, GetInheritedJointWeightsPrimvar
+    USDSKEL_API
+    UsdGeomPrimvar GetJointWeightsPrimvar() const;
+
+    /// Convenience function to create the jointWeights primvar, optionally
+    /// specifying elementSize.
+    /// If \p constant is true, the resulting primvar is configured 
+    /// with 'constant' interpolation, and describes a rigid deformation.
+    /// Otherwise, the primvar is configured with 'vertex' interpolation,
+    /// and describes joint influences that vary per point.
+    ///
+    /// \sa CreateJointWeightsAttr(), GetJointWeightsPrimvar()
+    USDSKEL_API
+    UsdGeomPrimvar CreateJointWeightsPrimvar(bool constant,
+                                             int elementSize=-1) const;
+
+    /// Convenience method for defining joints influences that
+    /// make a primitive rigidly deformed by a single joint.
+    USDSKEL_API
+    bool SetRigidJointInfluence(int jointIndex, float weight=1) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

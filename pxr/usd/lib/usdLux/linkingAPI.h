@@ -137,12 +137,12 @@ private:
     virtual const TfType &_GetTfType() const;
 
 public:
-    /// An unordered map describing linkage of paths.
+    /// An ordered map describing linkage of paths.
     /// This is a standalone value representing the linkage.
     /// Any path not present in this table is assumed to inherit its
     /// setting from the longest prefix path that is present. If there
     /// is no containing path, the path is assumed to be linked.
-    typedef std::map<SdfPath, bool, SdfPath::FastLessThan> LinkMap;
+    typedef std::map<SdfPath, bool> LinkMap;
 
     /// Return true if the given path (or ancestor) is linked by the linkMap.
     /// It is a coding error to pass a non-absolute path.

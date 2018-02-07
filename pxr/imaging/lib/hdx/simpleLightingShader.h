@@ -27,8 +27,9 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/lightingShader.h"
 #include "pxr/imaging/hd/resource.h"
+#include "pxr/imaging/hdSt/lightingShader.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/glslfx.h"
@@ -53,7 +54,7 @@ typedef boost::shared_ptr<class HdxSimpleLightingShader> HdxSimpleLightingShader
 ///
 /// A shader that supports simple lighting functionality.
 ///
-class HdxSimpleLightingShader : public HdLightingShader {
+class HdxSimpleLightingShader : public HdStLightingShader {
 public:
     HDX_API
     HdxSimpleLightingShader();
@@ -66,13 +67,13 @@ public:
     HDX_API
     virtual std::string GetSource(TfToken const &shaderStageKey) const;
     HDX_API
-    virtual void BindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void BindResources(HdSt_ResourceBinder const &binder, int program);
     HDX_API
-    virtual void UnbindResources(Hd_ResourceBinder const &binder, int program);
+    virtual void UnbindResources(HdSt_ResourceBinder const &binder, int program);
     HDX_API
     virtual void AddBindings(HdBindingRequestVector *customBindings);
 
-    /// HdLightingShader overrides
+    /// HdStLightingShader overrides
     HDX_API
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
                            GfMatrix4d const &projectionMatrix);

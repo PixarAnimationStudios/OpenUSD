@@ -141,6 +141,19 @@ takes, there are also a set of "universal" metadata common to both.
           'path/basename.12.usd', 'path/basename.18.usd' and
           'path/basename.24.usd'.
 
+    - \em templateActiveOffset
+        - An optional (double precision float) number indicating the offset USD will use
+        when calculating the clipActive value.
+        - Given a start time of 101, an endTime of 103, 
+        a stride of 1, and an offset of 0.5, USD will generate the following:
+            - clipTimes  = [(100.5,100.5), (101,101), (102,102), (103,103), (103.5,103.5)]
+            - clipActive = [(101.5, 0), (102.5, 1), (103.5, 2)]
+        - Note that USD generates two additional clip time 'knots' on the ends
+        of the clipTime array. This allows users to query time samples outside
+        the start/end range based on the absolute value of their offset.
+        - Note that templateActiveOffset cannot exceed 
+        the absolute value of templateStride. 
+
 \warning In the case where both explicit clip metadata and template clip metadata
 are authored, USD will prefer the explicit metadata for composition.
 

@@ -67,7 +67,7 @@ protected:
                  HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                 HdDrawItem *drawItem,
+                                 HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBitsState);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
@@ -81,13 +81,8 @@ private:
         InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
     };
 
-    enum DirtyBits {
-        DirtyNewRepr    = HdChangeTracker::CustomBitsBegin
-    };
-
-
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                         HdDrawItem *drawItem,
+                         HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits);
 };
 

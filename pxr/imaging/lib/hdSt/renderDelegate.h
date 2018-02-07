@@ -31,6 +31,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef boost::shared_ptr<class HdStResourceRegistry>
+    HdStResourceRegistrySharedPtr;
 
 ///
 /// HdStRenderDelegate
@@ -61,6 +63,8 @@ public:
     HDST_API
     virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                 HdRprimCollection const& collection) override;
+    HDST_API
+    virtual HdRenderPassStateSharedPtr CreateRenderPassState() const override;
 
     HDST_API
     virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
@@ -104,9 +108,9 @@ private:
     /// Resource registry used in this render delegate
     static std::mutex _mutexResourceRegistry;
     static std::atomic_int _counterResourceRegistry;
-    static HdResourceRegistrySharedPtr _resourceRegistry;
+    static HdStResourceRegistrySharedPtr _resourceRegistry;
 
-    HdSprim *_CreateFallbackShaderPrim();
+    HdSprim *_CreateFallbackMaterialPrim();
 
     HdStRenderDelegate(const HdStRenderDelegate &)             = delete;
     HdStRenderDelegate &operator =(const HdStRenderDelegate &) = delete;

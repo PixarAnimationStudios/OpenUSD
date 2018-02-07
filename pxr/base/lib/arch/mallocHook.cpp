@@ -189,7 +189,6 @@ static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
         return false;
     }
 }
-#endif
 
 static bool
 _MallocHookAvailable()
@@ -232,6 +231,7 @@ _GetUnderlyingMallocFunctionNames()
 
     return names;
 }
+#endif
 
 bool
 ArchMallocHook::Initialize(

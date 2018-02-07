@@ -34,6 +34,17 @@ class TestGfQuaternion(unittest.TestCase):
         self.assertIsInstance(Gf.Quaternion(0), Gf.Quaternion)
         self.assertIsInstance(Gf.Quaternion(1, Gf.Vec3d(1,1,1)), Gf.Quaternion)
 
+        self.assertIsInstance(Gf.Quath(Gf.Quath()), Gf.Quath)
+        self.assertIsInstance(Gf.Quatf(Gf.Quatf()), Gf.Quatf)
+        self.assertIsInstance(Gf.Quatd(Gf.Quatd()), Gf.Quatd)
+        # Testing conversions between Quat[h,f,d]
+        self.assertIsInstance(Gf.Quath(Gf.Quatf()), Gf.Quath)
+        self.assertIsInstance(Gf.Quath(Gf.Quatd()), Gf.Quath)
+        self.assertIsInstance(Gf.Quatf(Gf.Quath()), Gf.Quatf)
+        self.assertIsInstance(Gf.Quatf(Gf.Quatd()), Gf.Quatf)
+        self.assertIsInstance(Gf.Quatd(Gf.Quath()), Gf.Quatd)
+        self.assertIsInstance(Gf.Quatd(Gf.Quatf()), Gf.Quatd)
+
     def test_Properties(self):
         q = Gf.Quaternion()
         q.real = 10

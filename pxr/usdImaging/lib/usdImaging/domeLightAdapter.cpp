@@ -25,11 +25,12 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+bool _IsEnabledSceneLights();
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -43,9 +44,10 @@ UsdImagingDomeLightAdapter::~UsdImagingDomeLightAdapter()
 }
 
 bool
-UsdImagingDomeLightAdapter::IsSupported(HdRenderIndex* renderIndex)
+UsdImagingDomeLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
-    return renderIndex->IsSprimTypeSupported(HdPrimTypeTokens->domeLight);
+    return _IsEnabledSceneLights() &&
+           index->IsSprimTypeSupported(HdPrimTypeTokens->domeLight);
 }
 
 SdfPath
@@ -53,7 +55,7 @@ UsdImagingDomeLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(HdPrimTypeTokens->domeLight, prim);
+    index->InsertSprim(HdPrimTypeTokens->domeLight, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return prim.GetPath();

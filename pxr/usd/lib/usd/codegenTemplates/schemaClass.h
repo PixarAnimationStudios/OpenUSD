@@ -81,7 +81,12 @@ public:
     /// to a concrete instantiable prim type in scene description.  If this is
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
-    static const bool IsConcrete = {{ cls.isConcrete }};
+    static const bool IsConcrete = {{ "true" if cls.isConcrete else "false" }};
+
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = {{ "true" if cls.isTyped else "false" }};
 
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim .
     /// Equivalent to {{ cls.cppClassName }}::Get(prim.GetStage(), prim.GetPath())
@@ -130,7 +135,7 @@ public:
     static {{ cls.cppClassName }}
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-{% if cls.isConcrete == "true" %}
+{% if cls.isConcrete %}
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
     ///
@@ -158,6 +163,47 @@ public:
     {% endif -%}
     static {{ cls.cppClassName }}
     Define(const UsdStagePtr &stage, const SdfPath &path);
+{% endif %}
+{% if cls.isPrivateApply %}
+private:
+{% endif %}
+{% if cls.isApi and not cls.isMultipleApply %}
+
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget. This information is stored in the apiSchemas
+    /// metadata on prims.  
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    {% if useExportAPI and not cls.isPrivateApply -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static {{ cls.cppClassName }} 
+{% if cls.isPrivateApply %}
+    _Apply(const UsdStagePtr &stage, const SdfPath &path);
+{% else %}
+    Apply(const UsdStagePtr &stage, const SdfPath &path);
+{% endif %}
+{% endif %}
+{% if cls.isApi and cls.isMultipleApply %}
+
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget along with the supplied \p name. This information 
+    /// is stored in the apiSchemas metadata on prims.  
+    /// Given a schema, FooAPI, and a name bar, the token stored
+    /// in the apiSchemas metadata would be 'FooAPI:bar'
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    {% if useExportAPI and not cls.isPrivateApply -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static {{ cls.cppClassName }} 
+{% if cls.isPrivateApply %}
+    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+{% else %}
+    Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+{% endif %}
 {% endif %}
 
 private:

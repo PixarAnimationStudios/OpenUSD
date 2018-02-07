@@ -280,7 +280,8 @@ GusdPrimWrapper::GusdPrimWrapper()
 GusdPrimWrapper::GusdPrimWrapper( 
         const UsdTimeCode &time, 
         const GusdPurposeSet &purposes )
-    : m_time( time )
+    : GT_Primitive()
+    , m_time( time )
     , m_purposes( purposes )
     , m_visible( true )
     , m_lastXformSet( UsdTimeCode::Default() )
@@ -289,7 +290,8 @@ GusdPrimWrapper::GusdPrimWrapper(
 }
 
 GusdPrimWrapper::GusdPrimWrapper( const GusdPrimWrapper &in )
-    : m_time( in.m_time )
+    : GT_Primitive(in)
+    , m_time( in.m_time )
     , m_purposes( in.m_purposes )
     , m_visible( in.m_visible )
     , m_lastXformSet( in.m_lastXformSet )
@@ -353,7 +355,7 @@ GusdPrimWrapper::setVisibility(const TfToken& visibility, UsdTimeCode time)
         m_visible = true;
     }
 
-    UsdAttribute visAttr = getUsdPrimForWrite().GetVisibilityAttr();
+    UsdAttribute visAttr = getUsdPrim().GetVisibilityAttr();
     if( visAttr.IsValid() ) {
         TfToken oldVal;
         if( !visAttr.Get( &oldVal, 
@@ -377,11 +379,13 @@ GusdPrimWrapper::updateVisibilityFromGTPrim(
     GT_DataArrayHandle houAttr
         = sourcePrim->findAttribute(GUSD_VISIBLE_ATTR, attrOwner, 0);
     if(houAttr) {
-        int visible = houAttr->getI32(0);
-        if(visible) {
-            setVisibility(UsdGeomTokens->inherited, time);
-        } else {
-            setVisibility(UsdGeomTokens->invisible, time);
+        GT_String visible = houAttr->getS(0);
+        if (visible) {
+            if (strcmp(visible, "inherited") == 0) {
+                setVisibility(UsdGeomTokens->inherited, time);
+            } else if (strcmp(visible, "invisible") == 0) {
+                setVisibility(UsdGeomTokens->invisible, time);
+            }
         }
     }
     else if ( forceWrite ) {
@@ -398,14 +402,20 @@ GusdPrimWrapper::updateActiveFromGTPrim(
         const GT_PrimitiveHandle& sourcePrim,
         UsdTimeCode time)
 {
-    UsdPrim prim = getUsdPrimForWrite().GetPrim();
+    UsdPrim prim = getUsdPrim().GetPrim();
 
     GT_Owner attrOwner;
     GT_DataArrayHandle houAttr
         = sourcePrim->findAttribute(GUSD_ACTIVE_ATTR, attrOwner, 0);
     if (houAttr) {
-        int active = houAttr->getI32(0);
-        prim.SetActive((bool)active);
+        GT_String state = houAttr->getS(0);
+        if (state) {
+            if (strcmp(state, "active") == 0) {
+                prim.SetActive(true);
+            } else if (strcmp(state, "inactive") == 0) {
+                prim.SetActive(false);
+            }
+        }
     }
 }
 
@@ -414,7 +424,7 @@ bool
 isClose( const GfMatrix4d &m1, const GfMatrix4d &m2, double tol = 1e-10 ) {
 
     for(int i = 0; i < 16; ++i) {
-        if(not GfIsClose(m1.GetArray()[i], m2.GetArray()[i], tol))
+        if(!GfIsClose(m1.GetArray()[i], m2.GetArray()[i], tol))
             return false;
     }
     return true;
@@ -425,7 +435,7 @@ void
 GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform, 
                                             UsdTimeCode time, bool force )
 {
-    UsdGeomImageable usdGeom = getUsdPrimForWrite();
+    UsdGeomImageable usdGeom = getUsdPrim();
     UsdGeomXformable prim( usdGeom );
 
     // Determine if we need to clear previous transformations from a stronger
@@ -448,7 +458,7 @@ GusdPrimWrapper::updateTransformFromGTPrim( const GfMatrix4d &xform,
             // Load the root layer for temp, stronger opinion changes.
             stage->GetRootLayer()->SetPermissionToSave(false);
             stage->SetEditTarget(stage->GetRootLayer());
-            UsdGeomXformable stagePrim( getUsdPrimForWrite() );
+            UsdGeomXformable stagePrim( getUsdPrim() );
 
             // Clear the xformOps on the stronger layer, so our weaker edit
             // target (with mapping across a reference) can write out clean,
@@ -569,7 +579,7 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
     const GT_DataArrayHandle& dataIn )
 {
     GT_DataArrayHandle data = dataIn;
-    UsdGeomImageable prim( getUsdPrimForWrite() );
+    UsdGeomImageable prim( getUsdPrim() );
 
     // cerr << "updatePrimvarFromGTPrim: " 
     //         << prim.GetPrim().GetPath() << ":" << name << ", " << interpolation 
@@ -628,7 +638,7 @@ GusdPrimWrapper::updatePrimvarFromGTPrim(
     const TfToken&                interpolation,
     UsdTimeCode                   time )
 {
-    UsdGeomImageable prim( getUsdPrimForWrite() );
+    UsdGeomImageable prim( getUsdPrim() );
     const GT_AttributeMapHandle attrMapHandle = gtAttrs->getMap();
 
     for(GT_AttributeMap::const_names_iterator mapIt=attrMapHandle->begin();
@@ -666,7 +676,7 @@ GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
         double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
         // Ensure the stage start frame <= bookendFrame
-        UsdStagePtr stage = getUsdPrimForWrite().GetPrim().GetStage();
+        UsdStagePtr stage = getUsdPrim().GetPrim().GetStage();
         if(stage) {
             double startFrame = stage->GetStartTimeCode();
             if( startFrame > bookendFrame) {
@@ -674,9 +684,9 @@ GusdPrimWrapper::addLeadingBookend( double curFrame, double startFrame )
             }
         }
 
-        getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
+        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
                                        UsdTimeCode(bookendFrame));
-        getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
+        getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
                                        UsdTimeCode(curFrame));   
     }
 }
@@ -686,9 +696,9 @@ GusdPrimWrapper::addTrailingBookend( double curFrame )
 {
     double bookendFrame = curFrame - TIME_SAMPLE_DELTA;
 
-    getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
+    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->inherited,
                                    UsdTimeCode(bookendFrame));
-    getUsdPrimForWrite().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
+    getUsdPrim().GetVisibilityAttr().Set(UsdGeomTokens->invisible,
                                    UsdTimeCode(curFrame));     
 }
 
@@ -1006,7 +1016,7 @@ GusdPrimWrapper::loadPrimvars(
     bool hasCdPrimvar = false;
 
     {
-        UsdGeomImageable prim = getUsdPrimForRead();
+        UsdGeomImageable prim = getUsdPrim();
 
         UsdGeomPrimvar colorPrimvar = prim.GetPrimvar(GusdTokens->Cd);
         if (colorPrimvar && colorPrimvar.GetAttr().HasAuthoredValueOpinion()) {

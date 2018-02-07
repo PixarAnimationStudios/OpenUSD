@@ -24,6 +24,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
 
+#include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/points.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
 #include "pxr/imaging/hdSt/instancer.h"
@@ -32,13 +34,13 @@
 #include "pxr/base/tf/getenv.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/geometricShader.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -78,7 +80,7 @@ HdStPoints::Sync(HdSceneDelegate* delegate,
 
 void
 HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                            HdDrawItem *drawItem,
+                            HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
@@ -92,6 +94,10 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */
     _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
 
+    /* MATERIAL SHADER */
+    drawItem->SetMaterialShaderFromRenderIndex(
+        sceneDelegate->GetRenderIndex(), GetMaterialId());
+
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
         HdStInstancer *instancer = static_cast<HdStInstancer*>(
@@ -103,10 +109,11 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     HdSt_PointsShaderKey shaderKey;
+    HdStResourceRegistrySharedPtr resourceRegistry =
+        boost::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
     drawItem->SetGeometricShader(
-        Hd_GeometricShader::Create(
-            shaderKey, 
-            sceneDelegate->GetRenderIndex().GetResourceRegistry()));
+        HdSt_GeometricShader::Create(shaderKey, resourceRegistry));
 
     /* PRIMVAR */
     if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
@@ -143,12 +150,12 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
     // points don't have multiple draw items (for now)
     if (HdChangeTracker::IsDirty(*dirtyBits)) {
         if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
-            _UpdateDrawItem(sceneDelegate,
-                            _reprs[0].second->GetDrawItem(0),
-                            dirtyBits);
+            HdStDrawItem *drawItem =
+                static_cast<HdStDrawItem*>(_reprs[0].second->GetDrawItem(0));
+            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
         }
 
-        *dirtyBits &= ~DirtyNewRepr;
+        *dirtyBits &= ~HdChangeTracker::NewRepr;
     }
 
     return it->second;
@@ -156,15 +163,16 @@ HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
 
 void
 HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                    HdDrawItem *drawItem,
+                                    HdStDrawItem *drawItem,
                                     HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    HdResourceRegistrySharedPtr const &resourceRegistry = 
-        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        boost::static_pointer_cast<HdStResourceRegistry>(
+        sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
     TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);
@@ -240,13 +248,14 @@ HdDirtyBits
 HdStPoints::_GetInitialDirtyBits() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
+        | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimVar
         | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtySurfaceShader
+        | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyWidths
@@ -277,11 +286,12 @@ HdStPoints::_InitRepr(TfToken const &reprName,
             const HdPointsReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle != HdPointsGeomStyleInvalid) {
-                repr->AddDrawItem(&_sharedData);
+                HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
+                repr->AddDrawItem(drawItem);
             }
         }
 
-        *dirtyBits |= DirtyNewRepr;
+        *dirtyBits |= HdChangeTracker::NewRepr;
     }
 
 }

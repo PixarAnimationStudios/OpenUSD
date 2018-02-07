@@ -35,29 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUI/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDUI_TOKENS \
-    (closed) \
-    (minimized) \
-    (open) \
-    ((uiDescription, "ui:description")) \
-    ((uiDisplayGroup, "ui:displayGroup")) \
-    ((uiDisplayName, "ui:displayName")) \
-    ((uiNodegraphNodeDisplayColor, "ui:nodegraph:node:displayColor")) \
-    ((uiNodegraphNodeExpansionState, "ui:nodegraph:node:expansionState")) \
-    ((uiNodegraphNodeIcon, "ui:nodegraph:node:icon")) \
-    ((uiNodegraphNodePos, "ui:nodegraph:node:pos")) \
-    ((uiNodegraphNodeSize, "ui:nodegraph:node:size")) \
-    ((uiNodegraphNodeStackingOrder, "ui:nodegraph:node:stackingOrder"))
 
-/// \anchor UsdUITokens
+/// \class UsdUITokensType
 ///
-/// <b>UsdUITokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdUITokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -65,28 +53,72 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdUITokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdUITokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdUITokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdUITokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdUITokens->closed);
 /// \endcode
+struct UsdUITokensType {
+    USDUI_API UsdUITokensType();
+    /// \brief "closed"
+    /// 
+    /// Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+    const TfToken closed;
+    /// \brief "minimized"
+    /// 
+    /// Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+    const TfToken minimized;
+    /// \brief "open"
+    /// 
+    /// Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+    const TfToken open;
+    /// \brief "ui:description"
+    /// 
+    /// UsdUIBackdrop
+    const TfToken uiDescription;
+    /// \brief "ui:displayGroup"
+    /// 
+    /// UsdUISceneGraphPrimAPI
+    const TfToken uiDisplayGroup;
+    /// \brief "ui:displayName"
+    /// 
+    /// UsdUISceneGraphPrimAPI
+    const TfToken uiDisplayName;
+    /// \brief "ui:nodegraph:node:displayColor"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeDisplayColor;
+    /// \brief "ui:nodegraph:node:expansionState"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeExpansionState;
+    /// \brief "ui:nodegraph:node:icon"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeIcon;
+    /// \brief "ui:nodegraph:node:pos"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodePos;
+    /// \brief "ui:nodegraph:node:size"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeSize;
+    /// \brief "ui:nodegraph:node:stackingOrder"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeStackingOrder;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdUITokens
 ///
-/// The tokens are:
-/// \li <b>closed</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
-/// \li <b>minimized</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
-/// \li <b>open</b> - Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
-/// \li <b>uiDescription</b> - UsdUIBackdrop
-/// \li <b>uiDisplayGroup</b> - UsdUISceneGraphPrimAPI
-/// \li <b>uiDisplayName</b> - UsdUISceneGraphPrimAPI
-/// \li <b>uiNodegraphNodeDisplayColor</b> - UsdUINodeGraphNodeAPI
-/// \li <b>uiNodegraphNodeExpansionState</b> - UsdUINodeGraphNodeAPI
-/// \li <b>uiNodegraphNodeIcon</b> - UsdUINodeGraphNodeAPI
-/// \li <b>uiNodegraphNodePos</b> - UsdUINodeGraphNodeAPI
-/// \li <b>uiNodegraphNodeSize</b> - UsdUINodeGraphNodeAPI
-/// \li <b>uiNodegraphNodeStackingOrder</b> - UsdUINodeGraphNodeAPI
-TF_DECLARE_PUBLIC_TOKENS(UsdUITokens, USDUI_API, USDUI_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdUITokensType
+extern USDUI_API TfStaticData<UsdUITokensType> UsdUITokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -25,6 +25,56 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdShadeTokens, USDSHADE_TOKENS);
+UsdShadeTokensType::UsdShadeTokensType() :
+    allPurpose("", TfToken::Immortal),
+    bindMaterialAs("bindMaterialAs", TfToken::Immortal),
+    connectedSourceFor("connectedSourceFor:", TfToken::Immortal),
+    derivesFrom("derivesFrom", TfToken::Immortal),
+    displacement("displacement", TfToken::Immortal),
+    fallbackStrength("fallbackStrength", TfToken::Immortal),
+    full("full", TfToken::Immortal),
+    infoId("info:id", TfToken::Immortal),
+    inputs("inputs:", TfToken::Immortal),
+    interface_("interface:", TfToken::Immortal),
+    interfaceOnly("interfaceOnly", TfToken::Immortal),
+    interfaceRecipientsOf("interfaceRecipientsOf:", TfToken::Immortal),
+    lookBinding("look:binding", TfToken::Immortal),
+    materialBind("materialBind", TfToken::Immortal),
+    materialBinding("material:binding", TfToken::Immortal),
+    materialBindingCollection("material:binding:collection", TfToken::Immortal),
+    materialVariant("materialVariant", TfToken::Immortal),
+    outputs("outputs:", TfToken::Immortal),
+    preview("preview", TfToken::Immortal),
+    strongerThanDescendants("strongerThanDescendants", TfToken::Immortal),
+    surface("surface", TfToken::Immortal),
+    weakerThanDescendants("weakerThanDescendants", TfToken::Immortal),
+    allTokens({
+        allPurpose,
+        bindMaterialAs,
+        connectedSourceFor,
+        derivesFrom,
+        displacement,
+        fallbackStrength,
+        full,
+        infoId,
+        inputs,
+        interface_,
+        interfaceOnly,
+        interfaceRecipientsOf,
+        lookBinding,
+        materialBind,
+        materialBinding,
+        materialBindingCollection,
+        materialVariant,
+        outputs,
+        preview,
+        strongerThanDescendants,
+        surface,
+        weakerThanDescendants
+    })
+{
+}
+
+TfStaticData<UsdShadeTokensType> UsdShadeTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

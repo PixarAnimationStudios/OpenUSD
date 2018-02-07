@@ -38,7 +38,7 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdRi/statements.h"
+#include "pxr/usd/usdRi/statementsAPI.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDoubleArray.h>
@@ -131,7 +131,7 @@ PxrUsdMayaWriteUtil::GetUsdTypeName(
     }
 
     if (attrObj.hasFn(MFn::kEnumAttribute)) {
-        return SdfValueTypeNames->Token;
+        return SdfValueTypeNames->Int;
     }
 
     MFnNumericData::Type numericDataType;
@@ -401,7 +401,7 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
         return usdAttr;
     }
 
-    UsdRiStatements riStatements(usdPrim);
+    UsdRiStatementsAPI riStatements(usdPrim);
     if (!riStatements) {
         return usdAttr;
     }
@@ -465,10 +465,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
     MObject attrObj(attrPlug.attribute());
 
     if (attrObj.hasFn(MFn::kEnumAttribute)) {
-        MFnEnumAttribute enumAttrFn(attrObj);
-        const short enumIndex = attrPlug.asShort();
-        const TfToken enumToken(enumAttrFn.fieldName(enumIndex).asChar());
-        return usdAttr.Set(enumToken, usdTime);
+        return usdAttr.Set(attrPlug.asInt(), usdTime);
     }
 
     MFnNumericData::Type numericDataType;

@@ -151,7 +151,13 @@ GusdGU_PackedUSD::Build(
     impl->m_frame = frame;
     impl->m_usdPrim = prim;
     if( lod )
+    {
+#if HDK_API_VERSION < 16050000
         impl->intrinsicSetViewportLOD( lod );
+#else
+        impl->intrinsicSetViewportLOD( packedPrim, lod );
+#endif
+    }
     impl->setPurposes( purposes );
 
     // It seems that Houdini may reuse memory for packed implementations with
@@ -183,7 +189,13 @@ GusdGU_PackedUSD::Build(
     impl->m_frame = frame;
     impl->m_usdPrim = prim;
     if( lod )
+    {
+#if HDK_API_VERSION < 16050000
         impl->intrinsicSetViewportLOD( lod );
+#else
+        impl->intrinsicSetViewportLOD( packedPrim, lod );
+#endif
+    }
     impl->setPurposes( purposes );
 
     // It seems that Houdini may reuse memory for packed implementations with
@@ -626,7 +638,11 @@ GusdGU_PackedUSD::unpackPrim(
             primPath,
             xform,
             intrinsicFrame(),
-            intrinsicViewportLOD(),
+#if HDK_API_VERSION < 16050000
+	    intrinsicViewportLOD(),
+#else
+	    intrinsicViewportLOD( getPrim() ),
+#endif
             m_purposes )) {
 
         // If the wrapper prim does not do the unpack, do it here.
@@ -732,11 +748,21 @@ GusdGU_PackedUSD::getInstanceKey(UT_Options& key) const
     
     if( !m_masterPathCacheValid ) {
         UsdPrim usdPrim = getUsdPrim();
+
+        // Disambiguate masters of instances by including the stage pointer.
+        // Sometimes instances are opened on different stages, so their
+        // path will both be "/__Master_1" even if they are different prims.
+        // TODO: hash by the Usd instancing key if it becomes exposed.
+        std::ostringstream ost;
+        ost << (void const *)get_pointer(usdPrim.GetStage());
+        std::string stagePtr = ost.str();
         if( usdPrim.IsValid() && usdPrim.IsInstance() ) {
-            m_masterPathCache = usdPrim.GetMaster().GetPrimPath().GetString();
+            m_masterPathCache = stagePtr +
+                usdPrim.GetMaster().GetPrimPath().GetString();
         } 
         else if( usdPrim.IsValid() && usdPrim.IsInstanceProxy() ) {
-            m_masterPathCache = usdPrim.GetPrimInMaster().GetPrimPath().GetString();
+            m_masterPathCache = stagePtr +
+                usdPrim.GetPrimInMaster().GetPrimPath().GetString();
         } 
         else{
             m_masterPathCache = "";
@@ -783,6 +809,8 @@ GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
     if(m_usdPrim)
         return m_usdPrim;
 
+    m_masterPathCacheValid = false;
+
     GusdStageCacheReader cache;
     m_usdPrim =
         cache.GetPrim(m_fileName, m_primPath.StripAllVariantSelections(),
@@ -794,7 +822,7 @@ GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
 GusdStageEditPtr
 GusdGU_PackedUSD::getStageEdit() const
 {
-    if(not m_primPath.ContainsPrimVariantSelection())
+    if(!m_primPath.ContainsPrimVariantSelection())
         return GusdStageEditPtr();
 
     auto* edit = new GusdStageBasicEdit;

@@ -30,10 +30,11 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassShader.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+
+#include "pxr/imaging/hdSt/renderPassShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,34 +67,18 @@ HdxRenderTask::IsConverged() const
 }
 
 void
-HdxRenderTask::_Execute(HdTaskContext* ctx)
+HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
+                                       HdStRenderPassState *renderPassState)
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdRenderPassStateSharedPtr renderPassState;
-    TfTokenVector renderTags;
-
-    if (_setupTask) {
-        // if _setupTask exists (for backward compatibility), use it
-        renderPassState = _setupTask->GetRenderPassState();
-        renderTags = _setupTask->GetRenderTags();
-    } else {
-        // otherwise, extract from TaskContext
-        _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
-        _GetTaskContextData(ctx, HdxTokens->renderTags, &renderTags);
-    }
-    if (!TF_VERIFY(renderPassState)) return;
-
     // Can't use GetTaskContextData because the lightingShader
     // is optional.
     VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
 
     // it's possible to not set lighting shader to HdRenderPassState.
     // Hd_DefaultLightingShader will be used in that case.
-    if (lightingShader.IsHolding<HdLightingShaderSharedPtr>()) {
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
         renderPassState->SetLightingShader(
-            lightingShader.Get<HdLightingShaderSharedPtr>());
+            lightingShader.Get<HdStLightingShaderSharedPtr>());
     }
 
     // Selection Setup
@@ -102,7 +87,7 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
     VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
     VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
 
-    HdRenderPassShaderSharedPtr renderPassShader
+    HdStRenderPassShaderSharedPtr renderPassShader
         = renderPassState->GetRenderPassShader();
 
     if (!vo.IsEmpty() && !vu.IsEmpty()) {
@@ -122,6 +107,32 @@ HdxRenderTask::_Execute(HdTaskContext* ctx)
     } else {
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
+    }
+}
+
+void
+HdxRenderTask::_Execute(HdTaskContext* ctx)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdRenderPassStateSharedPtr renderPassState;
+    TfTokenVector renderTags;
+
+    if (_setupTask) {
+        // if _setupTask exists (for backward compatibility), use it
+        renderPassState = _setupTask->GetRenderPassState();
+        renderTags = _setupTask->GetRenderTags();
+    } else {
+        // otherwise, extract from TaskContext
+        _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
+        _GetTaskContextData(ctx, HdxTokens->renderTags, &renderTags);
+    }
+    if (!TF_VERIFY(renderPassState)) return;
+
+    if (HdStRenderPassState* extendedState =
+            dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
+        _SetHdStRenderPassState(ctx, extendedState);
     }
 
     // Bind the render state and render geometry with the rendertags (if any)
@@ -195,7 +206,7 @@ HdxRenderTask::_Sync(HdTaskContext* ctx)
                 _setupTask.reset(new HdxRenderSetupTask(GetDelegate(), GetId()));
             }
 
-            _setupTask->Sync(params);
+            _setupTask->SyncParams(params);
 
         } else {
             // RenderPassState is managed externally (new API).

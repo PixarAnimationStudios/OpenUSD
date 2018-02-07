@@ -65,6 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (faceColors)                                \
     (geometry)                                  \
     (guide)                                     \
+    (hermite)                                   \
     (hidden)                                    \
     (hull)                                      \
     (hullIndices)                               \
@@ -82,6 +83,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (layout)                                    \
     (leftHanded)                                \
     (linear)                                    \
+    (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \
     (packedNormals)                             \
@@ -90,6 +92,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (periodic)                                  \
     (points)                                    \
     (pointsIndices)                             \
+    (power)                                     \
     (primVar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
@@ -107,7 +110,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rightHanded)                               \
     (segmented)                                 \
     (smoothHull)                                \
-    (surfaceShaderParams)                       \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
@@ -154,6 +156,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rebuildBatches)                            \
     (singleBufferSize)                          \
     (ssboSize)                                  \
+    (skipInvisibleRprimSync)                    \
     (subdivisionRefineCPU)                      \
     (subdivisionRefineGPU)                      \
     (textureResourceMemory)                     \
@@ -162,29 +165,20 @@ PXR_NAMESPACE_OPEN_SCOPE
     (uboSize)                                   \
     (vboRelocated)
 
-#define HD_GLSL_PROGRAM_TOKENS                  \
-    (smoothNormalsFloatToFloat)                 \
-    (smoothNormalsFloatToDouble)                \
-    (smoothNormalsFloatToPacked)                \
-    (smoothNormalsDoubleToFloat)                \
-    (smoothNormalsDoubleToDouble)               \
-    (smoothNormalsDoubleToPacked)               \
-    (quadrangulateFloat)                        \
-    (quadrangulateDouble)
-
 #define HD_SHADER_TOKENS                        \
     (alphaThreshold)                            \
     (clipPlanes)                                \
     (commonShaderSource)                        \
+    (computeShader)                             \
     (cullStyle)                                 \
     (drawRange)                                 \
     (environmentMap)                            \
     (fragmentShader)                            \
     (geometryShader)                            \
     (lightingBlendAmount)                       \
+    (material)                                  \
     (overrideColor)                             \
     (projectionMatrix)                          \
-    (surfaceShader)                             \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (tessLevel)                                 \
@@ -207,9 +201,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* Sprims */                                \
     (camera)                                    \
     (drawTarget)                                \
-    (shader)                                    \
+    (material)                                  \
     /* Sprims Lights */                         \
-    (light)                                     \
+    (simpleLight)                               \
     (domeLight)                                 \
     (rectLight)                                 \
     (sphereLight)                               \
@@ -219,7 +213,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdGLSLProgramTokens, HD_API, HD_GLSL_PROGRAM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);

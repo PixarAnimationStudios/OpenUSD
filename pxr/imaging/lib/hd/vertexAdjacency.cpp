@@ -112,10 +112,8 @@ _ComputeSmoothNormals(int numPoints, SrcVec3Type const * pointsPtr,
 
     WorkParallelForN(
         numPoints,
-        boost::bind(&_SmoothNormalsWorker<SrcVec3Type, DstType>::Compute,
-                    workerState, _1, _2));
-
-
+        std::bind(&_SmoothNormalsWorker<SrcVec3Type, DstType>::Compute,
+                  std::ref(workerState), std::placeholders::_1, std::placeholders::_2));
 
     return normals;
 }
@@ -255,18 +253,6 @@ Hd_VertexAdjacency::GetSmoothNormalsComputation(
             this, points, dstName, _adjacencyBuilder.lock(), packed));
 }
 
-HdComputationSharedPtr
-Hd_VertexAdjacency::GetSmoothNormalsComputationGPU(TfToken const &srcName,
-                                                   TfToken const &dstName,
-                                                   GLenum srcDataType,
-                                                   GLenum dstDataType)
-{
-    return HdComputationSharedPtr(new Hd_SmoothNormalsComputationGPU(
-                                      this, srcName, dstName,
-                                      srcDataType, dstDataType));
-}
-
-
 HdBufferSourceSharedPtr
 Hd_VertexAdjacency::GetAdjacencyBuilderComputation(
     HdMeshTopology const *topology)
@@ -375,7 +361,7 @@ void
 Hd_AdjacencyBuilderForGPUComputation::AddBufferSpecs(
     HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(HdTokens->adjacency, GL_INT, 1));
+    specs->emplace_back(HdTokens->adjacency, HdTupleType{HdTypeInt32, 1});
 }
 
 bool

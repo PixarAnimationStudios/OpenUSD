@@ -189,6 +189,7 @@ bool        AppendVariantSelections(const UT_Array<UsdPrim>& prims,
 
 struct NameMatcher
 {
+    virtual        ~NameMatcher() {}
     virtual bool    operator()(const std::string& name) const = 0;
 };
 
@@ -285,7 +286,7 @@ SchemaT
 MakeSchemaObj(const UsdPrim& prim, GusdUT_ErrorContext* err)
 {
     SchemaT obj(prim);
-    if(not obj and err) {
+    if(!obj && err) {
         static const std::string typeName =
             TfType::Find<SchemaT>().GetTypeName();
 

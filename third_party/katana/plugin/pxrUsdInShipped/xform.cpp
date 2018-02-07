@@ -29,7 +29,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_XformOp, privateData, interface)
+PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_XformOp, privateData, opArgs, interface)
 {
     PxrUsdKatanaAttrMap attrs;
 

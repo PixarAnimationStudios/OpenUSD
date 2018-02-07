@@ -47,7 +47,16 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
     const std::vector<SdfPath>& oldItems, 
     const std::vector<SdfPath>& newItems) const
 {
-    if (op != SdfListOpTypeAdded && op != SdfListOpTypeExplicit) {
+    // XXX The following code tries to manage lifetime of the target
+    // specs associated with this list, but it slightly buggy: if
+    // multiple lists mention the same target -- ex. if a target is
+    // added, appended, and prepended -- then this proxy for a single
+    // list has no way to know if the target also exists in those
+    // other lists, and so it cannot mangae lifetime on its own.
+
+    if (op == SdfListOpTypeOrdered || op == SdfListOpTypeDeleted) {
+        // These ops do not affect target spec lifetime, so there's
+        // nothing to do.
         return;
     }
 
@@ -64,10 +73,16 @@ Sdf_ConnectionListEditor<ChildPolicy>::_OnEditShared(
     TF_FOR_ALL(child, childrenToRemove) {
         if (!Sdf_ChildrenUtils<ChildPolicy>::RemoveChild(
                 layer, propertyPath, *child)) {
-
+            // Some data backends procedurally generate the children specs based
+            // on the listops as an optimization, so if we failed to remove a
+            // child here, it could be that.  If no spec is present, then we
+            // consider things to be okay and do not issue an error.
             const SdfPath specPath = 
                 ChildPolicy::GetChildPath(propertyPath, *child);
-            TF_CODING_ERROR("Failed to remove spec at <%s>", specPath.GetText());
+            if (layer->GetObjectAtPath(specPath)) {
+                TF_CODING_ERROR("Failed to remove spec at <%s>",
+                                specPath.GetText());
+            }
         }
     }
 

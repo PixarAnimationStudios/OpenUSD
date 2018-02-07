@@ -39,7 +39,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class HdStDrawItem;
 typedef boost::shared_ptr<class HdResourceRegistry> HdResourceRegistrySharedPtr;
 typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
                                               HdSt_BasisCurvesTopologySharedPtr;
@@ -72,16 +72,16 @@ protected:
                  HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
-                           HdDrawItem *drawItem,
+                           HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            const HdBasisCurvesReprDesc &desc);
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
-                                 HdDrawItem *drawItem,
+                                 HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
-                                  HdDrawItem *drawItem,
+                                  HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
 
@@ -96,10 +96,9 @@ private:
         InstancePrimVar  // has to be at the very end
     };
 
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         DirtyIndices        = HdChangeTracker::CustomBitsBegin,
-        DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyNewRepr        = (DirtyHullIndices   << 1),
+        DirtyHullIndices    = (DirtyIndices       << 1)
     };
 
     /// We only support drawing smooth curves for a small subset of all the
@@ -109,17 +108,17 @@ private:
                                int refineLevel);
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                         HdDrawItem *drawItem,
+                         HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
-                                        HdDrawItem *drawItem,
+                                        HdStDrawItem *drawItem,
                                         const HdBasisCurvesReprDesc &desc);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;
-    int _customDirtyBitsInUse;
+    HdDirtyBits _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
 };
 

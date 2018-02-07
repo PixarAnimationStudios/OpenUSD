@@ -23,10 +23,7 @@
 //
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-#include "pxr/imaging/glf/glslfx.h"
-
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/package.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
@@ -210,58 +207,31 @@ HdSceneDelegate::GetPathForInstanceIndex(const SdfPath &protoPrimPath,
 
 /*virtual*/
 std::string
-HdSceneDelegate::GetSurfaceShaderSource(SdfPath const &shaderId)
+HdSceneDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
 {
     return std::string("");
 }
 
 /*virtual*/
 std::string
-HdSceneDelegate::GetDisplacementShaderSource(SdfPath const &shaderId)
+HdSceneDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
 {
     return std::string("");
-}
-
-std::string
-HdSceneDelegate::GetMixinShaderSource(TfToken const &shaderStageKey)
-{
-    if (shaderStageKey.IsEmpty()) {
-        return std::string("");
-    }
-
-    // TODO: each delegate should provide their own package of mixin shaders
-    // the lighting mixins are fallback only.
-    static std::once_flag firstUse;
-    static std::unique_ptr<GlfGLSLFX> mixinFX;
-   
-    std::call_once(firstUse, [](){
-        std::string filePath = HdPackageLightingIntegrationShader();
-        mixinFX.reset(new GlfGLSLFX(filePath));
-    });
-
-    return mixinFX->GetSource(shaderStageKey);
 }
 
 /*virtual*/
 VtValue
-HdSceneDelegate::GetSurfaceShaderParamValue(SdfPath const &shaderId, 
-                              TfToken const &paramName)
+HdSceneDelegate::GetMaterialParamValue(SdfPath const &materialId, 
+                                       TfToken const &paramName)
 {
     return VtValue();
 }
 
 /*virtual*/
-HdShaderParamVector
-HdSceneDelegate::GetSurfaceShaderParams(SdfPath const &shaderId)
+HdMaterialParamVector
+HdSceneDelegate::GetMaterialParams(SdfPath const &materialId)
 {
-    return HdShaderParamVector();
-}
-
-/*virtual*/
-SdfPathVector
-HdSceneDelegate::GetSurfaceShaderTextures(SdfPath const &shaderId)
-{
-    return SdfPathVector();
+    return HdMaterialParamVector();
 }
 
 // -----------------------------------------------------------------------//
@@ -292,6 +262,22 @@ HdSceneDelegate::GetLightParamValue(SdfPath const &id,
                                     TfToken const &paramName) 
 {
     return VtValue();
+}
+
+// -----------------------------------------------------------------------//
+/// \name Material Aspects
+// -----------------------------------------------------------------------//
+
+VtValue 
+HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
+{
+    return VtValue();
+}
+
+TfTokenVector 
+HdSceneDelegate::GetMaterialPrimvars(SdfPath const &materialId)
+{
+    return TfTokenVector();
 }
 
 // -----------------------------------------------------------------------//
@@ -403,6 +389,13 @@ HdSceneDelegate::GetExtComputationPrimVarDesc(SdfPath const& id,
                                               TfToken const& varName)
 {
     return HdExtComputationPrimVarDesc();
+}
+
+/*virtual*/
+std::string
+HdSceneDelegate::GetExtComputationKernel(SdfPath const& id)
+{
+    return std::string();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

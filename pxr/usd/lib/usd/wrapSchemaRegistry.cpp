@@ -28,6 +28,8 @@
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 
+#include "pxr/base/tf/pyResultConversions.h"
+
 #include <boost/python.hpp>
 
 using std::string;
@@ -65,6 +67,21 @@ void wrapUsdSchemaRegistry()
              &UsdSchemaRegistry::GetRelationshipDefinition,
              (arg("primType"), arg("relName")))
         .staticmethod("GetRelationshipDefinition")
+
+        .def("GetDisallowedFields",
+             &UsdSchemaRegistry::GetDisallowedFields,
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetDisallowedFields")
+
+        .def("IsTyped",
+             &UsdSchemaRegistry::IsTyped,
+             (arg("primType")))
+        .staticmethod("IsTyped")
+
+        .def("IsConcrete",
+             &UsdSchemaRegistry::IsConcrete,
+             (arg("primType")))
+        .staticmethod("IsConcrete")
 
         ;
 }

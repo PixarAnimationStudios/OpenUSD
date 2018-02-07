@@ -17,7 +17,7 @@ def Xform "World" (
     )
     {
         def Xform "Model" (
-            kind = "model"
+            kind = "component"
             assetInfo = {
                 string name = "Model"
             }
@@ -27,6 +27,81 @@ def Xform "World" (
                 constraintTargetIdentifier = "RootXf"
             )
             bool important = 1
+        }
+
+        def Xform "TestCollections" (
+            kind = "component"
+        )
+        {
+            uniform token collection:ancestor:expansionRule = "expandPrims"
+            add rel collection:ancestor:includes = [
+                </World/anim/TestCollections/Geom/LampShade>,            
+            ]
+
+            uniform token collection:geomExpandPrims:expansionRule = "expandPrims"
+            add rel collection:geomExpandPrims:includes = [
+                </World/anim/TestCollections/Geom>,
+                # although this path is included in the collection, it won't be 
+                # a part of the collection imported in katana.
+                </World/anim/Model>
+            ]
+            add rel collection:geomExpandPrims:excludes = [
+                </World/anim/TestCollections/Geom/LampStem>
+            ]
+
+            uniform token collection:geomExplicit:expansionRule = "explicitOnly"
+            add rel collection:geomExplicit:includes = [
+                </World/anim/TestCollections/Geom/LampBase>,
+                </World/anim/TestCollections/Geom/LampShade>,
+                # although this path is included in the collection, it won't be 
+                # a part of the collection imported in katana.
+                </World/anim/Model>
+            ]
+            def Xform "Geom" 
+            {
+                uniform token collection:atGeom:expansionRule = "expandPrims"
+                add rel collection:atGeom:includes = [
+                    </World/anim/TestCollections/Geom/LampStem>,            
+                ]
+
+                uniform token collection:ancestorAtGeom:expansionRule = "expandPrims"
+                add rel collection:ancestorAtGeom:includes = [
+                    </World/anim/TestCollections.collection:ancestor>,
+                ]
+
+                uniform token collection:atGeomAtGeom:expansionRule = "expandPrims"
+                add rel collection:atGeomAtGeom:includes = [
+                    </World/anim/TestCollections/Geom.collection:atGeom>,
+                ]
+
+                uniform token collection:descendantAtGeom:expansionRule = "expandPrims"
+                add rel collection:descendantAtGeom:includes = [
+                    </World/anim/TestCollections/Geom/LampBase.collection:descendant>,
+                ]
+
+                uniform token collection:union:expansionRule = "expandPrims"
+                add rel collection:union:includes = [
+                    </World/anim/TestCollections.collection:ancestor>,
+                    </World/anim/TestCollections/Geom.collection:atGeom>,
+                    </World/anim/TestCollections/Geom/LampBase.collection:descendant>,
+                ]
+
+                def Xform "LampBase"
+                {
+                    uniform token collection:descendant:expansionRule = "expandPrims"
+                    add rel collection:descendant:includes = [
+                        </World/anim/TestCollections/Geom/LampBase>,            
+                    ]
+                }
+                def Xform "LampShade" 
+                {
+                    
+                }
+                def Xform "LampStem"
+                {
+                    
+                }
+            }
         }
     }
 

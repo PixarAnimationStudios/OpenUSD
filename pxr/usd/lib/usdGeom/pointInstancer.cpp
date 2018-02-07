@@ -233,23 +233,6 @@ UsdGeomPointInstancer::CreateInvisibleIdsAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
-UsdAttribute
-UsdGeomPointInstancer::GetPrototypeDrawModeAttr() const
-{
-    return GetPrim().GetAttribute(UsdGeomTokens->prototypeDrawMode);
-}
-
-UsdAttribute
-UsdGeomPointInstancer::CreatePrototypeDrawModeAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->prototypeDrawMode,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
 UsdRelationship
 UsdGeomPointInstancer::GetPrototypesRel() const
 {
@@ -288,7 +271,6 @@ UsdGeomPointInstancer::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->velocities,
         UsdGeomTokens->angularVelocities,
         UsdGeomTokens->invisibleIds,
-        UsdGeomTokens->prototypeDrawMode,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

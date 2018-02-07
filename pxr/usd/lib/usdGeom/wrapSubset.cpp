@@ -90,6 +90,14 @@ void wrapUsdGeomSubset()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -164,12 +172,12 @@ _WrapValidateFamily(const UsdGeomImageable &geom,
 }
 
 static object
-_WrapValidatePartition(    const std::vector<UsdGeomSubset> &subsets,
-    const size_t elementCount)
+_WrapValidateSubsets(    const std::vector<UsdGeomSubset> &subsets,
+    const size_t elementCount, const TfToken &familyType)
 {
     std::string reason;
-    bool valid = UsdGeomSubset::ValidatePartition(subsets, elementCount, 
-        &reason);
+    bool valid = UsdGeomSubset::ValidateSubsets(subsets, elementCount, 
+        familyType, &reason);
     return boost::python::make_tuple(valid, reason);
 }
 
@@ -185,22 +193,17 @@ WRAP_CUSTOM {
 
     scope s_enum = _class 
         ;
-    enum_<This::FamilyType>("FamilyType")
-        .value("Partition", UsdGeomSubset::FamilyType::Partition)
-        .value("NonPartition", UsdGeomSubset::FamilyType::NonPartition)
-        ;
-
     scope s = _class
         .def("CreateGeomSubset", &This::CreateGeomSubset,
             (arg("geom"), arg("subsetName"), arg("elementType"), 
              arg("indices"), arg("familyName")=TfToken(),
-             arg("familyType")=UsdGeomSubset::FamilyType::NonPartition))
+             arg("familyType")=TfToken()))
             .staticmethod("CreateGeomSubset")
 
         .def("CreateUniqueGeomSubset", &This::CreateUniqueGeomSubset,
             (arg("geom"), arg("subsetName"), arg("elementType"), 
              arg("indices"), arg("familyName")=TfToken(),
-             arg("familyType")=UsdGeomSubset::FamilyType::NonPartition))
+             arg("familyType")=TfToken()))
             .staticmethod("CreateUniqueGeomSubset")
 
         .def("GetAllGeomSubsets", &This::GetAllGeomSubsets,
@@ -228,10 +231,6 @@ WRAP_CUSTOM {
             (arg("geom"), arg("familyName")))
             .staticmethod("GetFamilyType")
 
-        .def("GetFamilyIsPartition", &This::GetFamilyIsPartition,
-            (arg("geom"), arg("familyName")))
-            .staticmethod("GetFamilyIsPartition")
-
         .def("GetUnassignedIndices", &This::GetUnassignedIndices,
             (arg("subsets"), arg("elementCount"), 
              arg("time")=UsdTimeCode::EarliestTime()))
@@ -243,10 +242,11 @@ WRAP_CUSTOM {
              arg("familyName")=TfToken()))
             .staticmethod("ValidateFamily")
 
-        .def("ValidatePartition", _WrapValidatePartition, 
+        .def("ValidateSubsets", _WrapValidateSubsets, 
             (arg("subsets"), 
-             arg("elementCount")))
-            .staticmethod("ValidatePartition")
+             arg("elementCount"),
+             arg("familyType")))
+            .staticmethod("ValidateSubsets")
 
         ;
 

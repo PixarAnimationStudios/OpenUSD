@@ -163,10 +163,10 @@ class TestUsdPayloads(unittest.TestCase):
         for fmt in allFormats:
             p = InstancedAndPayloadedScene(fmt)
 
-            self.assertTrue(set(p.stage.FindLoadable()) == \
-                set([Sdf.Path("/Sad"), Sdf.Path("/Sad_1"), 
-                     Sdf.Path("/Foo/Baz"), Sdf.Path("/Foo/Baz_1"),
-                     Sdf.Path("/Bar"), Sdf.Path("/Bar_1")]))
+            self.assertEqual(set(p.stage.FindLoadable()),
+                             set([Sdf.Path("/Sad"), Sdf.Path("/Sad_1"), 
+                                  Sdf.Path("/Foo/Baz"), Sdf.Path("/Foo/Baz_1"),
+                                  Sdf.Path("/Bar"), Sdf.Path("/Bar_1")]))
 
             sad = p.stage.GetPrimAtPath("/Sad")
             sad_1 = p.stage.GetPrimAtPath("/Sad_1")
@@ -214,17 +214,19 @@ class TestUsdPayloads(unittest.TestCase):
             master = sad.GetMaster()
             self.assertTrue(not master.HasPayload())
             self.assertTrue(master not in p.stage.FindLoadable())
-            self.assertTrue([prim.GetName() for prim in master.GetChildren()] == ["Panda"])
+            self.assertEqual([prim.GetName() for prim in master.GetChildren()],
+                             ["Panda"])
 
             master2 = bar.GetMaster()
             self.assertTrue(not master2.HasPayload())
             self.assertTrue(master2 not in p.stage.FindLoadable())
-            self.assertTrue([prim.GetName() for prim in master2.GetChildren()] == ["Fred"])
+            self.assertEqual([prim.GetName() for prim in master2.GetChildren()],
+                             ["Fred"])
 
             # Loading the second instance will cause Usd to assign it to the
             # first instance's master.
             sad_1.Load()
-            self.assertTrue(sad.GetMaster() == sad_1.GetMaster())
+            self.assertEqual(sad.GetMaster(), sad_1.GetMaster())
 
             sad.Unload()
             sad_1.Unload()
@@ -235,7 +237,7 @@ class TestUsdPayloads(unittest.TestCase):
             self.assertTrue(not master)
 
             bar_1.Load()
-            self.assertTrue(bar.GetMaster() == bar_1.GetMaster())
+            self.assertEqual(bar.GetMaster(), bar_1.GetMaster())
 
             bar.Unload()
             bar_1.Unload()
@@ -251,13 +253,13 @@ class TestUsdPayloads(unittest.TestCase):
             baz = p.stage.GetPrimAtPath("/Foo/Baz")
             baz_1 = p.stage.GetPrimAtPath("/Foo/Baz_1")
 
-            print '0'*72
             baz.Load()
             self.assertTrue(baz.IsLoaded())
             self.assertTrue(baz.GetMaster())
 
             master = baz.GetMaster()
-            self.assertTrue([prim.GetName() for prim in master.GetChildren()] == ["Garply"])
+            self.assertEqual(
+                [prim.GetName() for prim in master.GetChildren()], ["Garply"])
 
             garply = master.GetChild("Garply")
             self.assertTrue(garply.HasPayload())
@@ -265,19 +267,18 @@ class TestUsdPayloads(unittest.TestCase):
             self.assertTrue(garply.GetMaster())
 
             master = garply.GetMaster()
-            self.assertTrue([prim.GetName() for prim in master.GetChildren()] == ["Qux"])
+            self.assertEqual([prim.GetName() for prim in master.GetChildren()],
+                             ["Qux"])
 
-            print '1'*72 
             baz_1.Load()
-            self.assertTrue(baz.GetMaster() == baz_1.GetMaster())
+            self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
 
             # Nested payloads in masters can be individually unloaded. This
             # affects all instances.
-            print '2'*72
             garply.Unload()
             self.assertTrue(not garply.IsLoaded())
             self.assertTrue(not garply.GetMaster())
-            self.assertTrue(baz.GetMaster() == baz_1.GetMaster())
+            self.assertEqual(baz.GetMaster(), baz_1.GetMaster())
 
     def test_Payloads(self):
         for fmt in allFormats:
@@ -288,9 +289,11 @@ class TestUsdPayloads(unittest.TestCase):
                 self.assertTrue(not p.stage.GetPrimAtPath("/").HasPayload())
                 self.assertTrue(p.stage.GetPrimAtPath("/Sad").HasPayload())
                 self.assertTrue(p.stage.GetPrimAtPath("/Foo/Baz").HasPayload())
-                self.assertTrue(p.stage.GetPrimAtPath("/Foo/Baz").GetMetadata("payload") == \
+                self.assertEqual(
+                    p.stage.GetPrimAtPath("/Foo/Baz").GetMetadata("payload"),
                     Sdf.Payload(p.payload2.GetRootLayer().identifier, "/Baz"))
-                self.assertTrue(p.stage.GetPrimAtPath("/Sad").GetMetadata("payload") == \
+                self.assertEqual(
+                    p.stage.GetPrimAtPath("/Sad").GetMetadata("payload"),
                     Sdf.Payload(p.payload1.GetRootLayer().identifier, "/Sad"))
 
             AssertBaseAssumptions()
@@ -301,7 +304,8 @@ class TestUsdPayloads(unittest.TestCase):
             p.stage.Load()
             self.assertTrue(not p.stage.GetPrimAtPath("/Sad/Panda").HasPayload())
             self.assertTrue(p.stage.GetPrimAtPath("/Foo/Baz/Garply").HasPayload())
-            self.assertTrue(p.stage.GetPrimAtPath("/Foo/Baz/Garply").GetMetadata("payload") == \
+            self.assertEqual(
+                p.stage.GetPrimAtPath("/Foo/Baz/Garply").GetMetadata("payload"),
                 Sdf.Payload(p.payload3.GetRootLayer().identifier, "/Garply"))
 
             #
@@ -336,7 +340,7 @@ class TestUsdPayloads(unittest.TestCase):
             self.assertTrue(not sad.IsLoaded())
             self.assertTrue(sad.ClearPayload())
             self.assertTrue(not sad.HasPayload())
-            self.assertTrue(sad.GetMetadata("payload") == None)
+            self.assertEqual(sad.GetMetadata("payload"), None)
             # Assert that it's loaded because anything without a payload is
             # considered loaded.
             self.assertTrue(sad.IsLoaded())
@@ -348,7 +352,7 @@ class TestUsdPayloads(unittest.TestCase):
             self.assertTrue(baz.GetMetadata("payload"))
             self.assertTrue(baz.ClearPayload())
             self.assertTrue(not baz.HasPayload())
-            self.assertTrue(baz.GetMetadata("payload") == None)
+            self.assertEqual(baz.GetMetadata("payload"), None)
             # Again, assert that it's loaded because anything without a payload is
             # considered loaded.
             self.assertTrue(baz.IsLoaded())

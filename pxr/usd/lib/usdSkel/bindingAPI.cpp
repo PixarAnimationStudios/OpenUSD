@@ -24,6 +24,7 @@
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -54,6 +55,55 @@ UsdSkelBindingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdSkelBindingAPI(stage->GetPrimAtPath(path));
 }
 
+
+/* static */
+UsdSkelBindingAPI
+UsdSkelBindingAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
+{
+    // Ensure we have a valid stage, path and prim
+    if (!stage) {
+        TF_CODING_ERROR("Invalid stage");
+        return UsdSkelBindingAPI();
+    }
+
+    if (path == SdfPath::AbsoluteRootPath()) {
+        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
+        return UsdSkelBindingAPI();
+    }
+
+    auto prim = stage->GetPrimAtPath(path);
+    if (!prim) {
+        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
+        return UsdSkelBindingAPI();
+    }
+
+    TfToken apiName("BindingAPI");  
+
+    // Get the current listop at the edit target
+    UsdEditTarget editTarget = stage->GetEditTarget();
+    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
+    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
+                                    .UncheckedGet<SdfTokenListOp>();
+
+    // Append our name to the prepend list, if it doesnt exist locally
+    TfTokenVector prepends = listOp.GetPrependedItems();
+    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
+        return UsdSkelBindingAPI();
+    }
+
+    SdfTokenListOp prependListOp;
+    prepends.push_back(apiName);
+    prependListOp.SetPrependedItems(prepends);
+    auto result = listOp.ApplyOperations(prependListOp);
+    if (!result) {
+        TF_CODING_ERROR("Failed to prepend api name to current listop.");
+        return UsdSkelBindingAPI();
+    }
+
+    // Set the listop at the current edit target and return the API prim
+    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
+    return UsdSkelBindingAPI(prim);
+}
 
 /* static */
 const TfType &
@@ -89,6 +139,23 @@ UsdSkelBindingAPI::CreateGeomBindTransformAttr(VtValue const &defaultValue, bool
 {
     return UsdSchemaBase::_CreateAttr(UsdSkelTokens->primvarsSkelGeomBindTransform,
                        SdfValueTypeNames->Matrix4d,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdSkelBindingAPI::GetJointsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->skelJoints);
+}
+
+UsdAttribute
+UsdSkelBindingAPI::CreateJointsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->skelJoints,
+                       SdfValueTypeNames->TokenArray,
                        /* custom = */ false,
                        SdfVariabilityUniform,
                        defaultValue,
@@ -155,19 +222,6 @@ UsdSkelBindingAPI::CreateSkeletonRel() const
                        /* custom = */ false);
 }
 
-UsdRelationship
-UsdSkelBindingAPI::GetJointsRel() const
-{
-    return GetPrim().GetRelationship(UsdSkelTokens->skelJoints);
-}
-
-UsdRelationship
-UsdSkelBindingAPI::CreateJointsRel() const
-{
-    return GetPrim().CreateRelationship(UsdSkelTokens->skelJoints,
-                       /* custom = */ false);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -186,6 +240,7 @@ UsdSkelBindingAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdSkelTokens->primvarsSkelGeomBindTransform,
+        UsdSkelTokens->skelJoints,
         UsdSkelTokens->primvarsSkelJointIndices,
         UsdSkelTokens->primvarsSkelJointWeights,
     };
@@ -210,3 +265,71 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+
+#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/tokens.h"
+
+#include "pxr/usd/usdSkel/utils.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::GetJointIndicesPrimvar() const
+{
+    return UsdGeomPrimvar(GetJointIndicesAttr());
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::CreateJointIndicesPrimvar(bool constant,
+                                             int elementSize) const
+{
+    return UsdGeomImageable(GetPrim()).CreatePrimvar(
+        UsdSkelTokens->primvarsSkelJointIndices,
+        SdfValueTypeNames->IntArray,
+        constant ? UsdGeomTokens->constant : UsdGeomTokens->vertex,
+        elementSize);
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::GetJointWeightsPrimvar() const
+{
+    return UsdGeomPrimvar(GetJointWeightsAttr());
+}
+
+
+UsdGeomPrimvar
+UsdSkelBindingAPI::CreateJointWeightsPrimvar(bool constant,
+                                             int elementSize) const
+{
+    return UsdGeomImageable(GetPrim()).CreatePrimvar(
+        UsdSkelTokens->primvarsSkelJointWeights,
+        SdfValueTypeNames->FloatArray,
+        constant ? UsdGeomTokens->constant : UsdGeomTokens->vertex,
+        elementSize);
+}
+
+
+
+bool
+UsdSkelBindingAPI::SetRigidJointInfluence(int jointIndex, float weight) const
+{
+    UsdGeomPrimvar jointIndicesPv =
+        CreateJointIndicesPrimvar(/*constant*/ true, /*elementSize*/ 1);
+    UsdGeomPrimvar jointWeightsPv =
+        CreateJointWeightsPrimvar(/*constant*/ true, /*elementSize*/ 1);
+
+    VtIntArray indices(1);
+    indices[0] = jointIndex;
+
+    VtFloatArray weights(1);
+    weights[0] = weight;
+    
+    return jointIndicesPv.Set(indices) && jointWeightsPv.Set(weights);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

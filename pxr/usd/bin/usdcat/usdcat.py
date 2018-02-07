@@ -43,6 +43,12 @@ def GetFlattenedUsdData(filePath, populationMaskPaths):
     else:
         return Usd.Stage.Open(filePath)
 
+def GetFlattenedLayerStack(filePath):
+    from pxr import Ar, Sdf, Pcp, Usd, UsdUtils
+    Ar.GetResolver().ConfigureResolverForAsset(filePath)
+    stage = Usd.Stage.Open(filePath, Usd.Stage.LoadNone)
+    return UsdUtils.FlattenLayerStack(stage)
+
 def main():
     parser = argparse.ArgumentParser(
         description='Write usd file(s) either as text to stdout or to a '
@@ -62,6 +68,11 @@ def main():
     parser.add_argument(
         '-f', '--flatten', action='store_true', help='Compose stages with the '
         'input files as root layers and write their flattened content.')
+    parser.add_argument(
+        '--flattenLayerStack', action='store_true',
+        help='Flatten the layer stack with the given root layer, and write '
+        'out the result.  Unlike --flatten, this does not flatten composition '
+        'arcs (such as references).')
     parser.add_argument('--mask', action='store',
                         dest='populationMask',
                         metavar='PRIMPATH[,PRIMPATH...]',
@@ -120,24 +131,16 @@ def main():
     exitCode = 0
 
     for inputFile in args.inputFiles:
-        # Ignore nonexistent or empty files.
-        if not os.path.isfile(inputFile) or os.path.getsize(inputFile) == 0:
-            _Err("Ignoring nonexistent/empty file '%s'" % inputFile)
-            exitCode = 1
-            continue
-
-        # Ignore unrecognized file types.
-        if not Usd.Stage.IsSupportedFile(inputFile):
-            _Err("Ignoring file with unrecognized type '%s'" % inputFile)
-            exitCode = 1
-            continue
-
         # Either open a layer or compose a stage, depending on whether or not
         # --flatten was specified.  Note that 'usdData' will be either a
         # Usd.Stage or an Sdf.Layer.
         try:
-            usdData = (GetFlattenedUsdData(inputFile, args.populationMask)
-                       if args.flatten else GetUsdData(inputFile))
+            if args.flatten:
+                usdData = GetFlattenedUsdData(inputFile, args.populationMask)
+            elif args.flattenLayerStack:
+                usdData = GetFlattenedLayerStack(inputFile)
+            else:
+                usdData = GetUsdData(inputFile)
             if not usdData:
                 raise Exception("Unknown error")
         except Exception as e:

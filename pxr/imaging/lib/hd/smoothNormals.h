@@ -57,13 +57,11 @@ public:
 
     /// overrides
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
     HD_API
-    virtual bool Resolve();
+    virtual bool Resolve() override;
     HD_API
     virtual TfToken const &GetName() const;
-    HD_API
-    virtual int GetGLComponentDataType() const;
 
 protected:
     HD_API
@@ -76,40 +74,6 @@ private:
     HdBufferSourceSharedPtr _adjacencyBuilder;
     bool _packed;
 };
-
-/// smooth normal computation GPU
-///
-///
-class Hd_SmoothNormalsComputationGPU : public HdComputation {
-public:
-    /// Constructor
-    /// @param topology 
-    HD_API
-    Hd_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
-                                 TfToken const &srcName,
-                                 TfToken const &dstName,
-                                 GLenum srcDataType,
-                                 GLenum dstDataType);
-
-    HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    HD_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry);
-
-    /// This computation doesn't generate buffer source (i.e. 2nd phase)
-    /// This is a gpu computation, but no need to resize the destination
-    /// since it belongs the same range as src buffer.
-    virtual int GetNumOutputElements() const { return 0; }
-
-private:
-    Hd_VertexAdjacency const *_adjacency;
-    TfToken _srcName;
-    TfToken _dstName;
-    GLenum _srcDataType;
-    GLenum _dstDataType;
-};
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -68,11 +68,6 @@ public:
     /// The unit for focal length. Similar to APERTURE_UNIT.
     GF_API static const double FOCAL_LENGTH_UNIT;
     
-    /// Namespace constants to help make transition code more readable
-    /// \deprecated
-    GF_API static const bool ZUp;
-    GF_API static const bool YUp;
-
     /// Default horizontal and vertical aperture, based on a 35mm
     /// (non-anamorphic) projector aperture (0.825 x 0602 inches, converted to
     /// mm).

@@ -78,13 +78,6 @@ public:
     HD_API
     HdMeshTopology &operator =(const HdMeshTopology &copy);
 
-
-#if defined(HD_SUPPORT_OPENSUBDIV2)
-    /// Returns whether OpenSubdiv 3.0 to be used.
-    HD_API
-    static bool IsEnabledOpenSubdiv3();
-#endif
-
     /// Returns whether adaptive subdivision is enabled or not.
     HD_API
     static bool IsEnabledAdaptive();
@@ -101,9 +94,9 @@ public:
     HD_API
     int GetNumFaceVaryings() const;
 
-    /// Returns the num points by looking vert indices array
+    /// Returns the num points of the topology vert indices array
     HD_API
-    int ComputeNumPoints() const;
+    int GetNumPoints() const;
 
     /// Returns the num points by looking vert indices array
     HD_API
@@ -186,6 +179,7 @@ public:
 protected:
     PxOsdMeshTopology _topology;
     int _refineLevel;
+    int _numPoints;
 };
 
 

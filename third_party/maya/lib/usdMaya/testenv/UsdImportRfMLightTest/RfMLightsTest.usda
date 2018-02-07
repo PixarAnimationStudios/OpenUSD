@@ -1,0 +1,192 @@
+#usda 1.0
+(
+    defaultPrim = "RfMLightsTest"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "RfMLightsTest" (
+    kind = "component"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Plane"
+        {
+            uniform bool doubleSided = 1
+            float3[] extent = [(-10, -2.220446e-15, -10), (10, 2.220446e-15, 10)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 12, 11, 1, 2, 13, 12, 2, 3, 14, 13, 3, 4, 15, 14, 4, 5, 16, 15, 5, 6, 17, 16, 6, 7, 18, 17, 7, 8, 19, 18, 8, 9, 20, 19, 9, 10, 21, 20, 11, 12, 23, 22, 12, 13, 24, 23, 13, 14, 25, 24, 14, 15, 26, 25, 15, 16, 27, 26, 16, 17, 28, 27, 17, 18, 29, 28, 18, 19, 30, 29, 19, 20, 31, 30, 20, 21, 32, 31, 22, 23, 34, 33, 23, 24, 35, 34, 24, 25, 36, 35, 25, 26, 37, 36, 26, 27, 38, 37, 27, 28, 39, 38, 28, 29, 40, 39, 29, 30, 41, 40, 30, 31, 42, 41, 31, 32, 43, 42, 33, 34, 45, 44, 34, 35, 46, 45, 35, 36, 47, 46, 36, 37, 48, 47, 37, 38, 49, 48, 38, 39, 50, 49, 39, 40, 51, 50, 40, 41, 52, 51, 41, 42, 53, 52, 42, 43, 54, 53, 44, 45, 56, 55, 45, 46, 57, 56, 46, 47, 58, 57, 47, 48, 59, 58, 48, 49, 60, 59, 49, 50, 61, 60, 50, 51, 62, 61, 51, 52, 63, 62, 52, 53, 64, 63, 53, 54, 65, 64, 55, 56, 67, 66, 56, 57, 68, 67, 57, 58, 69, 68, 58, 59, 70, 69, 59, 60, 71, 70, 60, 61, 72, 71, 61, 62, 73, 72, 62, 63, 74, 73, 63, 64, 75, 74, 64, 65, 76, 75, 66, 67, 78, 77, 67, 68, 79, 78, 68, 69, 80, 79, 69, 70, 81, 80, 70, 71, 82, 81, 71, 72, 83, 82, 72, 73, 84, 83, 73, 74, 85, 84, 74, 75, 86, 85, 75, 76, 87, 86, 77, 78, 89, 88, 78, 79, 90, 89, 79, 80, 91, 90, 80, 81, 92, 91, 81, 82, 93, 92, 82, 83, 94, 93, 83, 84, 95, 94, 84, 85, 96, 95, 85, 86, 97, 96, 86, 87, 98, 97, 88, 89, 100, 99, 89, 90, 101, 100, 90, 91, 102, 101, 91, 92, 103, 102, 92, 93, 104, 103, 93, 94, 105, 104, 94, 95, 106, 105, 95, 96, 107, 106, 96, 97, 108, 107, 97, 98, 109, 108, 99, 100, 111, 110, 100, 101, 112, 111, 101, 102, 113, 112, 102, 103, 114, 113, 103, 104, 115, 114, 104, 105, 116, 115, 105, 106, 117, 116, 106, 107, 118, 117, 107, 108, 119, 118, 108, 109, 120, 119]
+            rel material:binding = </RfMLightsTest/Looks/PxrSurface1SG>
+            point3f[] points = [(-10, -2.220446e-15, 10), (-8, -2.220446e-15, 10), (-6, -2.220446e-15, 10), (-4, -2.220446e-15, 10), (-2, -2.220446e-15, 10), (0, -2.220446e-15, 10), (2, -2.220446e-15, 10), (4, -2.220446e-15, 10), (6, -2.220446e-15, 10), (8, -2.220446e-15, 10), (10, -2.220446e-15, 10), (-10, -1.7763568e-15, 8), (-8, -1.7763568e-15, 8), (-6, -1.7763568e-15, 8), (-4, -1.7763568e-15, 8), (-2, -1.7763568e-15, 8), (0, -1.7763568e-15, 8), (2, -1.7763568e-15, 8), (4, -1.7763568e-15, 8), (6, -1.7763568e-15, 8), (8, -1.7763568e-15, 8), (10, -1.7763568e-15, 8), (-10, -1.3322676e-15, 6), (-8, -1.3322676e-15, 6), (-6, -1.3322676e-15, 6), (-4, -1.3322676e-15, 6), (-2, -1.3322676e-15, 6), (0, -1.3322676e-15, 6), (2, -1.3322676e-15, 6), (4, -1.3322676e-15, 6), (6, -1.3322676e-15, 6), (8, -1.3322676e-15, 6), (10, -1.3322676e-15, 6), (-10, -8.881784e-16, 4), (-8, -8.881784e-16, 4), (-6, -8.881784e-16, 4), (-4, -8.881784e-16, 4), (-2, -8.881784e-16, 4), (0, -8.881784e-16, 4), (2, -8.881784e-16, 4), (4, -8.881784e-16, 4), (6, -8.881784e-16, 4), (8, -8.881784e-16, 4), (10, -8.881784e-16, 4), (-10, -4.440892e-16, 2), (-8, -4.440892e-16, 2), (-6, -4.440892e-16, 2), (-4, -4.440892e-16, 2), (-2, -4.440892e-16, 2), (0, -4.440892e-16, 2), (2, -4.440892e-16, 2), (4, -4.440892e-16, 2), (6, -4.440892e-16, 2), (8, -4.440892e-16, 2), (10, -4.440892e-16, 2), (-10, 0, 0), (-8, 0, 0), (-6, 0, 0), (-4, 0, 0), (-2, 0, 0), (0, 0, 0), (2, 0, 0), (4, 0, 0), (6, 0, 0), (8, 0, 0), (10, 0, 0), (-10, 4.440892e-16, -2), (-8, 4.440892e-16, -2), (-6, 4.440892e-16, -2), (-4, 4.440892e-16, -2), (-2, 4.440892e-16, -2), (0, 4.440892e-16, -2), (2, 4.440892e-16, -2), (4, 4.440892e-16, -2), (6, 4.440892e-16, -2), (8, 4.440892e-16, -2), (10, 4.440892e-16, -2), (-10, 8.881784e-16, -4), (-8, 8.881784e-16, -4), (-6, 8.881784e-16, -4), (-4, 8.881784e-16, -4), (-2, 8.881784e-16, -4), (0, 8.881784e-16, -4), (2, 8.881784e-16, -4), (4, 8.881784e-16, -4), (6, 8.881784e-16, -4), (8, 8.881784e-16, -4), (10, 8.881784e-16, -4), (-10, 1.3322676e-15, -6), (-8, 1.3322676e-15, -6), (-6, 1.3322676e-15, -6), (-4, 1.3322676e-15, -6), (-2, 1.3322676e-15, -6), (0, 1.3322676e-15, -6), (2, 1.3322676e-15, -6), (4, 1.3322676e-15, -6), (6, 1.3322676e-15, -6), (8, 1.3322676e-15, -6), (10, 1.3322676e-15, -6), (-10, 1.7763568e-15, -8), (-8, 1.7763568e-15, -8), (-6, 1.7763568e-15, -8), (-4, 1.7763568e-15, -8), (-2, 1.7763568e-15, -8), (0, 1.7763568e-15, -8), (2, 1.7763568e-15, -8), (4, 1.7763568e-15, -8), (6, 1.7763568e-15, -8), (8, 1.7763568e-15, -8), (10, 1.7763568e-15, -8), (-10, 2.220446e-15, -10), (-8, 2.220446e-15, -10), (-6, 2.220446e-15, -10), (-4, 2.220446e-15, -10), (-2, 2.220446e-15, -10), (0, 2.220446e-15, -10), (2, 2.220446e-15, -10), (4, 2.220446e-15, -10), (6, 2.220446e-15, -10), (8, 2.220446e-15, -10), (10, 2.220446e-15, -10)]
+            color3f[] primvars:displayColor = [(0, 0, 1)] (
+                customData = {
+                    dictionary Maya = {
+                        bool generated = 1
+                    }
+                }
+            )
+            float2[] primvars:st = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0.2, 0), (0.2, 0.1), (0.3, 0), (0.3, 0.1), (0.4, 0), (0.4, 0.1), (0.5, 0), (0.5, 0.1), (0.6, 0), (0.6, 0.1), (0.7, 0), (0.7, 0.1), (0.8, 0), (0.8, 0.1), (0.90000004, 0), (0.90000004, 0.1), (1, 0), (1, 0.1), (0.1, 0.2), (0, 0.2), (0.2, 0.2), (0.3, 0.2), (0.4, 0.2), (0.5, 0.2), (0.6, 0.2), (0.7, 0.2), (0.8, 0.2), (0.90000004, 0.2), (1, 0.2), (0.1, 0.3), (0, 0.3), (0.2, 0.3), (0.3, 0.3), (0.4, 0.3), (0.5, 0.3), (0.6, 0.3), (0.7, 0.3), (0.8, 0.3), (0.90000004, 0.3), (1, 0.3), (0.1, 0.4), (0, 0.4), (0.2, 0.4), (0.3, 0.4), (0.4, 0.4), (0.5, 0.4), (0.6, 0.4), (0.7, 0.4), (0.8, 0.4), (0.90000004, 0.4), (1, 0.4), (0.1, 0.5), (0, 0.5), (0.2, 0.5), (0.3, 0.5), (0.4, 0.5), (0.5, 0.5), (0.6, 0.5), (0.7, 0.5), (0.8, 0.5), (0.90000004, 0.5), (1, 0.5), (0.1, 0.6), (0, 0.6), (0.2, 0.6), (0.3, 0.6), (0.4, 0.6), (0.5, 0.6), (0.6, 0.6), (0.7, 0.6), (0.8, 0.6), (0.90000004, 0.6), (1, 0.6), (0.1, 0.7), (0, 0.7), (0.2, 0.7), (0.3, 0.7), (0.4, 0.7), (0.5, 0.7), (0.6, 0.7), (0.7, 0.7), (0.8, 0.7), (0.90000004, 0.7), (1, 0.7), (0.1, 0.8), (0, 0.8), (0.2, 0.8), (0.3, 0.8), (0.4, 0.8), (0.5, 0.8), (0.6, 0.8), (0.7, 0.8), (0.8, 0.8), (0.90000004, 0.8), (1, 0.8), (0.1, 0.90000004), (0, 0.90000004), (0.2, 0.90000004), (0.3, 0.90000004), (0.4, 0.90000004), (0.5, 0.90000004), (0.6, 0.90000004), (0.7, 0.90000004), (0.8, 0.90000004), (0.90000004, 0.90000004), (1, 0.90000004), (0.1, 1), (0, 1), (0.2, 1), (0.3, 1), (0.4, 1), (0.5, 1), (0.6, 1), (0.7, 1), (0.8, 1), (0.90000004, 1), (1, 1)] (
+                interpolation = "vertex"
+            )
+            int[] primvars:st:indices = [0, 1, 4, 6, 8, 10, 12, 14, 16, 18, 20, 3, 2, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 22, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 55, 57, 58, 59, 60, 61, 62, 63, 64, 65, 67, 66, 68, 69, 70, 71, 72, 73, 74, 75, 76, 78, 77, 79, 80, 81, 82, 83, 84, 85, 86, 87, 89, 88, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100, 99, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120]
+            double3 xformOp:translate = (0, 0.2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Cube"
+        {
+            uniform bool doubleSided = 1
+            float3[] extent = [(-2.5, -2.5, -2.5), (2.5, 2.5, 2.5)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+            rel material:binding = </RfMLightsTest/Looks/PxrSurface2SG>
+            point3f[] points = [(-2.5, -2.5, 2.5), (2.5, -2.5, 2.5), (-2.5, 2.5, 2.5), (2.5, 2.5, 2.5), (-2.5, 2.5, -2.5), (2.5, 2.5, -2.5), (-2.5, -2.5, -2.5), (2.5, -2.5, -2.5)]
+            color3f[] primvars:displayColor = [(1, 0, 0)] (
+                customData = {
+                    dictionary Maya = {
+                        bool generated = 1
+                    }
+                }
+            )
+            float2[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.625, 0.5), (0.375, 0.5), (0.625, 0.75), (0.375, 0.75), (0.625, 1), (0.375, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+                interpolation = "faceVarying"
+            )
+            int[] primvars:st:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 7, 6, 8, 9, 1, 10, 11, 2, 12, 0, 3, 13]
+            double3 xformOp:translate = (0, 2.7, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Lights"
+    {
+        def DiskLight "DiskLight"
+        {
+            color3f color = (0.1, 0.1, 0.1)
+            float colorTemperature = 6501
+            float diffuse = 1.1
+            bool enableColorTemperature = 1
+            float exposure = 0.1
+            float intensity = 1.1
+            bool normalize = 1
+            float shaping:cone:angle = 91
+            float shaping:cone:softness = 0.1
+            float shaping:focus = 0.1
+            color3f shaping:focusTint = (0.1, 0.1, 0.1)
+            float shaping:ies:angleScale = 1.1
+            asset shaping:ies:file = @./DiskLight_profile.ies@
+            float specular = 1.1
+            double3 xformOp:translate = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def DistantLight "DistantLight"
+        {
+            float angle = 0.73
+            color3f color = (0.2, 0.2, 0.2)
+            float colorTemperature = 6502
+            float diffuse = 1.2
+            bool enableColorTemperature = 1
+            float exposure = 0.2
+            float intensity = 1.2
+            bool normalize = 1
+            float specular = 1.2
+            double3 xformOp:translate = (2, 2, 2)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def DomeLight "DomeLight"
+        {
+            color3f color = (0.3, 0.3, 0.3)
+            float colorTemperature = 6503
+            float diffuse = 1.3
+            bool enableColorTemperature = 1
+            float exposure = 0.3
+            float intensity = 1.3
+            float specular = 1.3
+            asset texture:file = @./DomeLight_texture.tex@
+            double3 xformOp:translate = (3, 3, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def GeometryLight "MeshLight"
+        {
+            color3f color = (0.4, 0.4, 0.4)
+            float colorTemperature = 6504
+            float diffuse = 1.4
+            bool enableColorTemperature = 1
+            float exposure = 0.4
+            float intensity = 1.4
+            bool normalize = 1
+            float specular = 1.4
+            double3 xformOp:translate = (4, 4, 4)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def RectLight "RectLight"
+        {
+            color3f color = (0.5, 0.5, 0.5)
+            float colorTemperature = 6505
+            float diffuse = 1.5
+            bool enableColorTemperature = 1
+            float exposure = 0.5
+            float intensity = 1.5
+            bool normalize = 1
+            color3f shadow:color = (0.5, 0.5, 0.5)
+            float shadow:distance = -0.5
+            float shadow:falloff = -0.5
+            float shadow:falloffGamma = 0.5
+            float specular = 1.5
+            asset texture:file = @./RectLight_texture.tex@
+            double3 xformOp:translate = (5, 5, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def SphereLight "SphereLight"
+        {
+            color3f color = (0.6, 0.6, 0.6)
+            float colorTemperature = 6506
+            float diffuse = 1.6
+            bool enableColorTemperature = 1
+            float exposure = 0.6
+            float intensity = 1.6
+            bool normalize = 1
+            float specular = 1.6
+            double3 xformOp:translate = (6, 6, 6)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Scope "Looks"
+    {
+        def Material "PxrSurface1SG"
+        {
+            uniform token outputs:ri:bxdf.connect = </RfMLightsTest/Looks/PxrSurface1SG/BlueSurface.outputs:out>
+            token outputs:surface.connect = </RfMLightsTest/Looks/PxrSurface1SG/BlueSurface.outputs:out>
+
+            def Shader "BlueSurface"
+            {
+                uniform token info:id = "PxrSurface"
+                color3f inputs:diffuseColor = (0, 0, 1)
+                float3 inputs:outColor = (0, 0, 1)
+                token outputs:out
+            }
+        }
+
+        def Material "PxrSurface2SG"
+        {
+            uniform token outputs:ri:bxdf.connect = </RfMLightsTest/Looks/PxrSurface2SG/RedSurface.outputs:out>
+            token outputs:surface.connect = </RfMLightsTest/Looks/PxrSurface2SG/RedSurface.outputs:out>
+
+            def Shader "RedSurface"
+            {
+                uniform token info:id = "PxrSurface"
+                color3f inputs:diffuseColor = (1, 0, 0)
+                float3 inputs:outColor = (1, 0, 0)
+                token outputs:out
+            }
+        }
+    }
+}
+

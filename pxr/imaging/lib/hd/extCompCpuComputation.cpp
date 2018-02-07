@@ -23,8 +23,11 @@
 //
 
 #include "pxr/imaging/hd/extCompCpuComputation.h"
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/extComputationContextInternal.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneExtCompInputSource.h"
+#include "pxr/imaging/hd/compExtCompInputSource.h"
 
 #include <limits>
 
@@ -49,6 +52,72 @@ HdExtCompCpuComputation::HdExtCompCpuComputation(
 {
     // TODO Auto-generated constructor stub
 
+}
+
+HdExtCompCpuComputationSharedPtr
+HdExtCompCpuComputation::CreateComputation(
+    HdSceneDelegate *sceneDelegate,
+    const HdExtComputation &computation,
+    HdBufferSourceVector *computationSources)
+{
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+
+    const SdfPath &id = computation.GetId();
+
+    Hd_ExtCompInputSourceSharedPtrVector inputs;
+    for (const TfToken &inputName: computation.GetSceneInputs()) {
+        VtValue inputValue = sceneDelegate->Get(id, inputName);
+        Hd_ExtCompInputSourceSharedPtr inputSource(
+                         new Hd_SceneExtCompInputSource(inputName, inputValue));
+        computationSources->push_back(inputSource);
+        inputs.push_back(inputSource);
+    }
+
+    const TfTokenVector compInputs = computation.GetComputationInputs();
+    const HdExtComputation::SourceComputationDescVector& sourceDescs =
+        computation.GetComputationSourceDescs();
+
+    const size_t numCompInputs = compInputs.size();
+    for (size_t inputNum = 0; inputNum < numCompInputs; ++inputNum) {
+        const TfToken &inputName = compInputs[inputNum];
+        const HdExtComputation::SourceComputationDesc &sourceDesc =
+            sourceDescs[inputNum];
+
+        HdExtComputation *sourceComp;
+        HdSceneDelegate *sourceCompSceneDelegate;
+
+        renderIndex.GetExtComputationInfo(sourceDesc.computationId,
+                                          &sourceComp,
+                                          &sourceCompSceneDelegate);
+
+        if (sourceComp != nullptr) {
+
+            HdExtCompCpuComputationSharedPtr sourceCpuComputation =
+                CreateComputation(sourceCompSceneDelegate,
+                                  *sourceComp,
+                                  computationSources);
+
+            Hd_ExtCompInputSourceSharedPtr inputSource(
+                                            new Hd_CompExtCompInputSource(
+                                                 inputName,
+                                                 sourceCpuComputation,
+                                                 sourceDesc.computationOutput));
+
+            computationSources->push_back(inputSource);
+            inputs.push_back(inputSource);
+        }
+    }
+
+    HdExtCompCpuComputationSharedPtr result(
+            new HdExtCompCpuComputation(id,
+                                        inputs,
+                                        computation.GetOutputs(),
+                                        computation.GetElementCount(),
+                                        sceneDelegate));
+
+    computationSources->push_back(result);
+
+    return result;
 }
 
 TfToken const &

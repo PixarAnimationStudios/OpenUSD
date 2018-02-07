@@ -29,10 +29,8 @@
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
-#include "pxr/usdImaging/usdImaging/shaderAdapter.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/surfaceShader.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
@@ -69,11 +67,9 @@ typedef std::vector<UsdPrim> UsdPrimVector;
 class UsdImagingPrimAdapter;
 class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
-class UsdImagingDefaultShaderAdapter;
 
 typedef boost::container::flat_map<SdfPath, bool> PickabilityMap;
 typedef boost::shared_ptr<UsdImagingPrimAdapter> UsdImagingPrimAdapterSharedPtr;
-typedef boost::shared_ptr<UsdImagingShaderAdapter> UsdImagingShaderAdapterSharedPtr;
 
 /// \class UsdImagingDelegate
 ///
@@ -85,10 +81,6 @@ class UsdImagingDelegate : public HdSceneDelegate, public TfWeakBase {
 public:
 
     typedef TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> RigidXformOverridesMap;
-    typedef boost::container::flat_map<SdfPath, int /*purposeMask*/>
-        CollectionMembershipMap;
-    typedef TfHashMap<TfToken, CollectionMembershipMap, TfToken::HashFunctor>
-        CollectionMap;
 
     USDIMAGING_API
     UsdImagingDelegate(HdRenderIndex *parentIndex,
@@ -320,20 +312,16 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
                                              SdfPath const &prototypeId);
 
-    // Shader Support
-    USDIMAGING_API
-    virtual bool GetSurfaceShaderIsTimeVarying(SdfPath const& id);
+    // Material Support
     USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
     USDIMAGING_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &id);
     USDIMAGING_API
-    virtual VtValue GetSurfaceShaderParamValue(SdfPath const &id, 
-                                  TfToken const &paramName);
+    virtual VtValue GetMaterialParamValue(SdfPath const &id,
+                                          TfToken const &paramName);
     USDIMAGING_API
-    virtual HdShaderParamVector GetSurfaceShaderParams(SdfPath const &id);
-    USDIMAGING_API
-    virtual SdfPathVector GetSurfaceShaderTextures(SdfPath const &shaderId);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id);
 
     // Texture Support
     USDIMAGING_API
@@ -345,6 +333,12 @@ public:
     USDIMAGING_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName);
+
+    // Material Support
+    USDIMAGING_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    USDIMAGING_API
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // Instance path resolution
 
@@ -378,8 +372,6 @@ public:
                                             SdfPath *rprimPath=NULL,
                                             SdfPathVector *instanceContext=NULL);
 
-private:
-    typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _PathToPathMap;
 public:
     // Converts a UsdStage path to a path in the render index.
     SdfPath GetPathForIndex(SdfPath const& usdPath) {
@@ -392,40 +384,17 @@ public:
             return usdPath;
         }
 
-        tbb::spin_rw_mutex::scoped_lock 
-            lock(_usdToIndexPathMapMutex, /* write = */ false);
-
-        _PathToPathMap::const_iterator it = _usdToIndexPathMap.find(usdPath);
-        if (it != _usdToIndexPathMap.end())
-            return it->second;
-
-        const SdfPath indexPath = 
-            usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
-
-        lock.upgrade_to_writer();
-        _usdToIndexPathMap[usdPath] = indexPath;
-        return indexPath;
+        return usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
     }
 
     SdfPath GetPathForUsd(SdfPath const& indexPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();
-        if (delegateID == SdfPath::AbsoluteRootPath())
+        if (delegateID == SdfPath::AbsoluteRootPath()) {
             return indexPath;
+        }
 
-        tbb::spin_rw_mutex::scoped_lock 
-            lock(_indexToUsdPathMapMutex, /* write = */ false);
-
-        _PathToPathMap::const_iterator it = _indexToUsdPathMap.find(indexPath);
-        if (it != _indexToUsdPathMap.end())
-            return it->second;
-
-        const SdfPath usdPath = 
-            indexPath.ReplacePrefix(delegateID, SdfPath::AbsoluteRootPath());
-
-        lock.upgrade_to_writer();
-        _indexToUsdPathMap[indexPath] = usdPath;
-        return usdPath;
+        return indexPath.ReplacePrefix(delegateID, SdfPath::AbsoluteRootPath());
     }
 
     /// Populate HdxSelection for given \p path (root) and \p instanceIndex
@@ -450,10 +419,6 @@ private:
     friend class UsdImagingIndexProxy;
     friend class UsdImagingPrimAdapter;
 
-    // UsdImagingShaderAdapter needs access to _GetPrim.  We should
-    // consider making it public.
-    friend class UsdImagingShaderAdapter;
-
     bool _ValidateRefineLevel(int level) {
         if (!(0 <= level && level <= 8)) {
             TF_CODING_ERROR("Invalid refinement level(%d), "
@@ -465,6 +430,14 @@ private:
     }
 
     // ---------------------------------------------------------------------- //
+    // Draw mode support
+    // ---------------------------------------------------------------------- //
+    // Determine whether to assign a draw mode adapter to the given prim.
+    bool _IsDrawModeApplied(UsdPrim const& prim);
+    // Get the inherited model:drawMode attribute of the given prim.
+    TfToken _GetModelDrawMode(UsdPrim const& prim);
+
+    // ---------------------------------------------------------------------- //
     // Usd Change Processing / Notice Handlers 
     // ---------------------------------------------------------------------- //
     void _OnObjectsChanged(UsdNotice::ObjectsChanged const&,
@@ -474,13 +447,15 @@ private:
     // individual properties at the given path (prim or property).
     void _RefreshObject(SdfPath const& path, UsdImagingIndexProxy* proxy);
 
-    // Heavy-weight invalidation of a single property (the property was added or
-    // removed).
-    void _ResyncProperty(SdfPath const& path, UsdImagingIndexProxy* proxy);
-
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
-    void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy);
+    //
+    // By default, _ResyncPrim will remove each affected prim and call
+    // Repopulate() on those prims individually. If repopulateFromRoot is
+    // true, Repopulate() will be called on \p rootPath instead. This is slower,
+    // but handles changes in tree topology.
+    void _ResyncPrim(SdfPath const& rootPath, UsdImagingIndexProxy* proxy,
+                     bool repopulateFromRoot = false);
 
     // Process all pending updates, ensuring that rprims are marked dirty
     // as needed.
@@ -581,29 +556,6 @@ private:
     // Obtain the prim tracking data for the given cache path.
     _PrimInfo *GetPrimInfo(const SdfPath &cachePath);
 
-
-    typedef UsdImagingShaderAdapterSharedPtr _ShaderAdapterSharedPtr;
-
-    // This method looks up a shader adapter based on the \p shaderId.
-    // Currently, it's hard coded to return _shaderAdapter but could be
-    // extended.
-    //
-    // This will never return a nullptr.  
-    _ShaderAdapterSharedPtr  _ShaderAdapterLookup(SdfPath const& shaderId) const;
-
-    // XXX: These maps could be store as individual member paths on the Rprim
-    // itself, which seems like a much nicer way of maintaining the mapping.
-    tbb::spin_rw_mutex _indexToUsdPathMapMutex;
-    _PathToPathMap _indexToUsdPathMap;
-    tbb::spin_rw_mutex _usdToIndexPathMapMutex;
-    _PathToPathMap _usdToIndexPathMap;
-
-    typedef TfHashMap<SdfPath, bool, SdfPath::Hash> _ShaderMap;
-    _ShaderMap _shaderMap;
-
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _TextureSet;
-    _TextureSet _texturePaths;
-
     typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
     _InstancerSet _instancerPrimPaths;
 
@@ -649,15 +601,12 @@ private:
 
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingCache _materialBindingCache;
+    UsdImaging_MaterialNetworkBindingCache _materialNetworkBindingCache;
     UsdImaging_VisCache _visCache;
-
-    // Collection
-    CollectionMap _collectionMap;
+    UsdImaging_DrawModeCache _drawModeCache;
 
     // Pickability
     PickabilityMap _pickablesMap;
-
-    UsdImagingShaderAdapterSharedPtr _shaderAdapter;
 
     // Display guides rendering
     bool _displayGuides;
@@ -690,31 +639,40 @@ public:
     /// twice without causing an error.  However, the UsdPrim and Adpater have
     /// to be the same as what is already inserted in the tracking.
     USDIMAGING_API
-    void AddPrimInfo(SdfPath const &cachePath,
+    void AddPrimInfo(SdfPath const& cachePath,
                      UsdPrim const& usdPrim,
                      UsdImagingPrimAdapterSharedPtr const& adapter);
 
-
     USDIMAGING_API
     void InsertRprim(TfToken const& primType,
+                     SdfPath const& cachePath,
+                     SdfPath const& parentPath,
                      UsdPrim const& usdPrim,
-                     SdfPath const& shaderBinding,
-                     UsdImagingInstancerContext const* instancerContext);
+                     UsdImagingPrimAdapterSharedPtr adapter =
+                        UsdImagingPrimAdapterSharedPtr());
 
     USDIMAGING_API
     void InsertSprim(TfToken const& primType,
-                     UsdPrim const& usdPrim);
+                     SdfPath const& cachePath,
+                     UsdPrim const& usdPrim,
+                     UsdImagingPrimAdapterSharedPtr adapter =
+                        UsdImagingPrimAdapterSharedPtr());
 
     USDIMAGING_API
     void InsertBprim(TfToken const& primType,
-                     UsdPrim const& usdPrim);
+                     SdfPath const& cachePath,
+                     UsdPrim const& usdPrim,
+                     UsdImagingPrimAdapterSharedPtr adapter =
+                        UsdImagingPrimAdapterSharedPtr());
 
     // Inserts an instancer into the HdRenderIndex and schedules it for updates
     // from the delegate.
     USDIMAGING_API
     void InsertInstancer(SdfPath const& cachePath,
+                         SdfPath const& parentPath,
                          UsdPrim const& usdPrim,
-                         UsdImagingInstancerContext const* instancerContext);
+                         UsdImagingPrimAdapterSharedPtr adapter =
+                            UsdImagingPrimAdapterSharedPtr());
 
     // Refresh the prim at the specified render index path.
     USDIMAGING_API
@@ -762,10 +720,20 @@ public:
     void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
     void MarkInstancerDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
 
+    bool IsRprimTypeSupported(TfToken const& typeId) const;
+    bool IsSprimTypeSupported(TfToken const& typeId) const;
+    bool IsBprimTypeSupported(TfToken const& typeId) const;
+
+    // Check if the given path has been populated yet.
+    USDIMAGING_API
+    bool IsPopulated(SdfPath const& cachePath) const;
 
     // Recursively repopulate the specified usdPath into the render index.
     USDIMAGING_API
     void Repopulate(SdfPath const& usdPath);
+
+    UsdImagingPrimAdapterSharedPtr GetMaterialAdapter(
+        UsdPrim const& materialPrim);
 
 private:
     friend class UsdImagingDelegate;

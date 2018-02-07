@@ -32,6 +32,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/ilmbase_half.h"
+#include "pxr/base/gf/ilmbase_halfLimits.h"
 
 #include <type_traits>
 

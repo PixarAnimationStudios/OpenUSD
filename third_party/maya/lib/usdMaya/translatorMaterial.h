@@ -68,10 +68,14 @@ struct PxrUsdMayaTranslatorMaterial
             MObject shapeObj,
             PxrUsdMayaPrimReaderContext* context);
 
-    // Finds shadingEngines in the maya scene and exports them to \p stage.  This
-    // will call the current export for the shadingMode.
-    // Shaders that are bound to prims under \p bindableRoot paths will get
-    // exported.  If \p bindableRoots is empty, it will export all.
+    /// Finds shadingEngines in the maya scene and exports them to \p stage.  This
+    /// will call the current export for the shadingMode.
+    /// Shaders that are bound to prims under \p bindableRoot paths will get
+    /// exported.  If \p bindableRoots is empty, it will export all.
+    /// If \p materialCollectionsPath is not empty, then a set of collections 
+    /// are exported on the prim pointed to by the path, each representing 
+    /// the collection of geometry bound to the various shading group sets in 
+    /// maya.
     PXRUSDMAYA_API
     static void 
     ExportShadingEngines(
@@ -79,7 +83,9 @@ struct PxrUsdMayaTranslatorMaterial
             const PxrUsdMayaUtil::ShapeSet& bindableRoots,
             const TfToken& shadingMode,
             bool mergeTransformAndShape,
-            SdfPath overrideRootPath);
+            SdfPath overrideRootPath,
+            const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
+            const SdfPath &materialCollectionsPath);
 };
 
 

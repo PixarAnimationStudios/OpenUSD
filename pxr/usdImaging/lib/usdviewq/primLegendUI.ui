@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PrimLegend</class>
+ <widget class="QWidget" name="PrimLegend">
+ <property name="comment" stdset="0">
+   <string>
+     Copyright 2017 Pixar                                                                   
+                                                                                            
+     Licensed under the Apache License, Version 2.0 (the &quot;Apache License&quot;)      
+     with the following modification; you may not use this file except in                   
+     compliance with the Apache License and the following modification to it:               
+     Section 6. Trademarks. is deleted and replaced with:                                   
+                                                                                            
+     6. Trademarks. This License does not grant permission to use the trade                 
+        names, trademarks, service marks, or product names of the Licensor                  
+        and its affiliates, except as required to comply with Section 4(c) of               
+        the License and to reproduce the content of the NOTICE file.                        
+                                                                                            
+     You may obtain a copy of the Apache License at                                         
+                                                                                            
+         http://www.apache.org/licenses/LICENSE-2.0                                         
+                                                                                            
+     Unless required by applicable law or agreed to in writing, software                    
+     distributed under the Apache License with the above modification is                    
+     distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY   
+     KIND, either express or implied. See the Apache License for the specific               
+     language governing permissions and limitations under the Apache License.               
+  </string>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>420</width>
+    <height>0</height>
+   </size>
+  </property>
+  <layout class="QVBoxLayout" name="primLegendLayoutContainer">
+   <item>
+    <layout class="QGridLayout" name="primLegendLayout">
+     <item row="0" column="0">
+      <widget class="QGraphicsView" name="primLegendColorHasArcs">
+       <property name="maximumSize">
+        <size>
+         <width>20</width>
+         <height>15</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="primLegendLabelHasArcs">
+       <property name="font">
+        <font>
+         <family>Gotham Rounded</family>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>HasArcs</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QGraphicsView" name="primLegendColorInstance">
+       <property name="maximumSize">
+        <size>
+         <width>20</width>
+         <height>15</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QLabel" name="primLegendLabelInstance">
+       <property name="font">
+        <font>
+         <family>Gotham Rounded</family>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Instance</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="4">
+      <widget class="QGraphicsView" name="primLegendColorMaster">
+       <property name="maximumSize">
+        <size>
+         <width>20</width>
+         <height>15</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="5">
+      <widget class="QLabel" name="primLegendLabelMaster">
+       <property name="font">
+        <font>
+         <family>Gotham Rounded</family>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Master</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="6">
+      <widget class="QGraphicsView" name="primLegendColorNormal">
+       <property name="maximumSize">
+        <size>
+         <width>20</width>
+         <height>15</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="7">
+      <widget class="QLabel" name="primLegendLabelNormal">
+       <property name="font">
+        <font>
+         <family>Gotham Rounded</family>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Normal</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="primLegendLabelContainer">
+     <item>
+      <widget class="QLabel" name="primLegendLabelDimmed">
+       <property name="text">
+        <string>Dimmed colors denote inactive prims</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="primLegendLabelFontsAbstract">
+       <property name="text">
+        <string>Normal font indicates abstract prims(class and children)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="primLegendLabelFontsUndefined">
+       <property name="text">
+        <string>Italic font indicates undefined prims(declared with over)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="primLegendLabelFontsDefined">
+       <property name="text">
+        <string>Bold font indicates defined prims(declared with def)</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+</ui>

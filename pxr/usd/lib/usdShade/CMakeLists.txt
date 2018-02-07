@@ -15,6 +15,7 @@ pxr_library(usdShade
         input
         look
         material
+        materialBindingAPI
         output
         shader
         nodeGraph
@@ -33,6 +34,7 @@ pxr_library(usdShade
         wrapInput.cpp
         wrapLook.cpp
         wrapMaterial.cpp
+        wrapMaterialBindingAPI.cpp
         wrapOutput.cpp
         wrapShader.cpp
         wrapNodeGraph.cpp
@@ -52,6 +54,7 @@ pxr_test_scripts(
     testenv/testUsdShadeBinding.py
     testenv/testUsdShadeConnectability.py
     testenv/testUsdShadeInterfaceInputConsumers.py
+    testenv/testUsdShadeMaterialBinding.py
     testenv/testUsdShadeMaterialFaceSet.py
     testenv/testUsdShadeMaterialBindFaceSubset.py
     testenv/testUsdShadeMaterialAuthoring.py
@@ -64,6 +67,11 @@ pxr_test_scripts(
 pxr_install_test_dir(
     SRC testenv/testUsdShadeMaterialFaceSet
     DEST testUsdShadeMaterialFaceSet
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeMaterialBinding
+    DEST testUsdShadeMaterialBinding
 )
 
 pxr_install_test_dir(
@@ -102,6 +110,12 @@ pxr_register_test(testUsdShadeMaterialAuthoring
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdShadeMaterialBinding
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBinding"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdShadeMaterialFaceSet
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialFaceSet"
@@ -126,8 +140,6 @@ pxr_register_test(testUsdShadeNodeGraphs
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeNodeGraphs"
     EXPECTED_RETURN_CODE 0
-    ENV
-        USD_SHADE_WRITE_NEW_ENCODING=1
 )
 
 pxr_register_test(testUsdShadeMaterialBaseMaterial_derives
@@ -166,8 +178,6 @@ pxr_register_test(testUsdShadeInterfaceInputConsumers
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeInterfaceInputConsumers"
     EXPECTED_RETURN_CODE 0
-    ENV
-        USD_SHADE_WRITE_NEW_ENCODING=1
 )
 
 pxr_register_test(testUsdShadeConnectability
@@ -175,7 +185,6 @@ pxr_register_test(testUsdShadeConnectability
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeConnectability"
     EXPECTED_RETURN_CODE 0
     ENV
-        USD_SHADE_WRITE_NEW_ENCODING=1
         USD_SHADE_READ_OLD_ENCODING=0
 )
 

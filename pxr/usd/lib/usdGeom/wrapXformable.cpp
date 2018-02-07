@@ -73,6 +73,13 @@ void wrapUsdGeomXformable()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -149,6 +156,14 @@ _GetTimeSamples(const UsdGeomXformable &self)
 {
     std::vector<double> result;
     self.GetTimeSamples(&result);
+    return result;
+}
+
+static std::vector<double>
+_GetTimeSamplesInInterval(const UsdGeomXformable &self, const GfInterval &interval)
+{
+    std::vector<double> result;
+    self.GetTimeSamplesInInterval(interval, &result);
     return result;
 }
 
@@ -273,6 +288,9 @@ WRAP_CUSTOM {
         .def("TransformMightBeTimeVarying", TransformMightBeTimeVarying_2)
 
         .def("GetTimeSamples", _GetTimeSamples,
+            return_value_policy<TfPySequenceToList>())
+
+        .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
             return_value_policy<TfPySequenceToList>())
 
         .def("GetLocalTransformation", _GetLocalTransformation1,

@@ -50,6 +50,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateJointsAttr(UsdSkelPackedJointAnimation &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateJointsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateTranslationsAttr(UsdSkelPackedJointAnimation &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateTranslationsAttr(
@@ -90,6 +97,14 @@ void wrapUsdSkelPackedJointAnimation()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
+
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
              arg("includeInherited")=true,
@@ -102,6 +117,13 @@ void wrapUsdSkelPackedJointAnimation()
 
         .def(!self)
 
+        
+        .def("GetJointsAttr",
+             &This::GetJointsAttr)
+        .def("CreateJointsAttr",
+             &_CreateJointsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
         
         .def("GetTranslationsAttr",
              &This::GetTranslationsAttr)
@@ -124,11 +146,6 @@ void wrapUsdSkelPackedJointAnimation()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        
-        .def("GetJointsRel",
-             &This::GetJointsRel)
-        .def("CreateJointsRel",
-             &This::CreateJointsRel)
     ;
 
     _CustomWrapCode(cls);
@@ -158,4 +175,4 @@ namespace {
 WRAP_CUSTOM {
 }
 
-}
+} // anonymous namespace 

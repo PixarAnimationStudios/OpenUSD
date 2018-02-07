@@ -25,6 +25,8 @@
 #define HD_SCENE_EXT_COMP_INPUT_SOURCE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/extCompInputSource.h"
 
 #include "pxr/base/vt/value.h"
@@ -38,15 +40,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Hd_SceneExtCompInputSource : public Hd_ExtCompInputSource {
 public:
     /// Constructs the computation, binding inputName to the provided value.
+    HD_API
     Hd_SceneExtCompInputSource(const TfToken &inputName, const VtValue &value);
+
+    HD_API
     virtual ~Hd_SceneExtCompInputSource() = default;
 
     /// Set the state of the computation to resolved and returns true.
+    HD_API
     virtual bool Resolve() override;
 
     /// Returns the value associated with this input.
+    HD_API
     virtual const VtValue &GetValue() const override;
-
 
 protected:
     /// Returns if this computation binding is valid.

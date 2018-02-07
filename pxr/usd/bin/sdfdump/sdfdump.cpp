@@ -28,6 +28,7 @@
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/patternMatcher.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <boost/program_options.hpp>
@@ -76,43 +77,6 @@ void ErrExit(char const *fmt, ...) {
 void Print(char const *fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
 void Print(char const *fmt, ...) {
     va_list ap; va_start(ap, fmt); VPrint(fmt, ap); va_end(ap);
-}
-
-void SetCrashText(std::string const &newText) {    
-    // The requirement at the Arch level for ArchSetExtraLogInfoForErrors is
-    // that the pointer we hand it must remain valid, and we can't mutate the
-    // structure it points to since if another thread crashes, Arch will read it
-    // to generate the crash report.  So instead we maintain two copies.  We
-    // update one copy to the new text and then publish it to Arch, effectively
-    // swapping out the old copy.  Then we update the old copy to match.  Next
-    // time through we do it again but with the data structures swapped, which
-    // is tracked by 'parity'.
-    static std::vector<std::string> text1, text2;
-    static bool parity = false;
-    
-    auto *first = &text1;
-    auto *second = &text2;
-    if (parity) {
-        std::swap(first, second);
-    }
-    parity = !parity;
-
-    // Update the first text.
-    *first = { newText };
-    
-    // Publish the new text -- after Arch will not be observing '*second'.
-    ArchSetExtraLogInfoForErrors("sdfdump", first->empty() ? nullptr : first);
-
-    // Update the second to match now that Arch isn't looking at it.
-    *second = { newText };
-}
-void VSetCrashText(char const *fmt, va_list ap) {
-    SetCrashText(TfVStringPrintf(fmt, ap));
-}
-void SetCrashText(char const *fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
-void SetCrashText(char const *fmt, ...)
-{
-    va_list ap; va_start(ap, fmt); VSetCrashText(fmt, ap); va_end(ap);
 }
 
 bool IsClose(double a, double b, double tol)
@@ -320,10 +284,15 @@ GetReportByPath(SdfLayerHandle const &layer, ReportParams const &p,
     vector<SdfPath> paths = CollectPaths(layer, p);
     sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
+        SdfSpecType specType = layer->GetSpecType(path);
+        report.push_back(
+            TfStringPrintf(
+                "<%s> : %s", 
+                path.GetText(), TfStringify(specType).c_str()));
+
         vector<TfToken> fields = CollectFields(layer, path, p);
         if (fields.empty())
             continue;
-        report.push_back(TfStringPrintf("<%s>", path.GetText()));
         for (auto const &field: fields) {
             if (p.showValues) {
                 report.push_back(
@@ -379,18 +348,19 @@ void
 Validate(SdfLayerHandle const &layer, ReportParams const &p,
          vector<string> &report)
 {
-    SetCrashText("Collecting paths in @%s@\n", layer->GetIdentifier().c_str());
+    TF_DESCRIBE_SCOPE("Collecting paths in @%s@",
+                      layer->GetIdentifier().c_str());
     vector<SdfPath> paths;
     layer->Traverse(SdfPath::AbsoluteRootPath(),
                     [&paths, &p, layer](SdfPath const &path) {
-                        SetCrashText(
-                            "Collecting path <%s> in @%s@\n",
+                        TF_DESCRIBE_SCOPE(
+                            "Collecting path <%s> in @%s@",
                             path.GetText(), layer->GetIdentifier().c_str());
                         paths.push_back(path);
                     });
     sort(paths.begin(), paths.end());
     for (auto const &path: paths) {
-        SetCrashText("Collecting fields for <%s> in @%s@\n",
+        TF_DESCRIBE_SCOPE("Collecting fields for <%s> in @%s@",
                      path.GetText(), layer->GetIdentifier().c_str());
         vector<TfToken> fields = layer->ListFields(path);
         if (fields.empty())
@@ -399,28 +369,28 @@ Validate(SdfLayerHandle const &layer, ReportParams const &p,
             VtValue value;
             if (field == SdfFieldKeys->TimeSamples) {
                 // Pull each sample value individually.
-                SetCrashText("Getting sample times for '%s' on <%s> in @%s@\n",
-                             field.GetText(), path.GetText(),
-                             layer->GetIdentifier().c_str());
+                TF_DESCRIBE_SCOPE(
+                    "Getting sample times for '%s' on <%s> in @%s@",
+                    field.GetText(), path.GetText(),
+                    layer->GetIdentifier().c_str());
                 auto times = layer->ListTimeSamplesForPath(path);
 
                 for (auto time: times) {
-                    SetCrashText("Getting sample value at time "
-                                 "%f for '%s' on <%s> in @%s@\n",
-                                 time, field.GetText(), path.GetText(),
-                                 layer->GetIdentifier().c_str());
+                    TF_DESCRIBE_SCOPE("Getting sample value at time "
+                                      "%f for '%s' on <%s> in @%s@",
+                                      time, field.GetText(), path.GetText(),
+                                      layer->GetIdentifier().c_str());
                     layer->QueryTimeSample(path, time, &value);
                 }
             } else {
                 // Just pull value.
-                SetCrashText("Getting value for '%s' on <%s> in @%s@\n",
-                             field.GetText(), path.GetText(),
-                             layer->GetIdentifier().c_str());
+                TF_DESCRIBE_SCOPE("Getting value for '%s' on <%s> in @%s@",
+                                  field.GetText(), path.GetText(),
+                                  layer->GetIdentifier().c_str());
                 layer->HasField(path, field, &value);
             }
         }
     }
-    SetCrashText(std::string());
     report.back() += " - OK";
 }
 
@@ -547,7 +517,7 @@ main(int argc, char const *argv[])
     params.timeTolerance = timeTolerance;
 
     for (auto const &file: inputFiles) {
-        SetCrashText("Opening layer @%s@\n", file.c_str());
+        TF_DESCRIBE_SCOPE("Opening layer @%s@", file.c_str());
         auto layer = SdfLayer::FindOrOpen(file);
         if (!layer) {
             Err("failed to open layer <%s>", file.c_str());

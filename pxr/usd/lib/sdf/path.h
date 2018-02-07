@@ -577,21 +577,27 @@ public:
     static TfTokenVector TokenizeIdentifierAsTokens(const std::string &name);
 
     /// Join \p names into a single identifier using the namespace delimiter.
+    /// Any empty strings present in \p names are ignored when joining.
     SDF_API 
-    static std::string JoinIdentifier(const std::vector<std::string>& names);
+    static std::string JoinIdentifier(const std::vector<std::string> &names);
 
     /// Join \p names into a single identifier using the namespace delimiter.
+    /// Any empty strings present in \p names are ignored when joining.
     SDF_API 
     static std::string JoinIdentifier(const TfTokenVector& names);
 
     /// Join \p lhs and \p rhs into a single identifier using the
     /// namespace delimiter.
+    /// Returns \p lhs if \p rhs is empty and vice verse.
+    /// Returns an empty string if both \p lhs and \p rhs are empty.
     SDF_API 
     static std::string JoinIdentifier(const std::string &lhs,
                                       const std::string &rhs);
 
     /// Join \p lhs and \p rhs into a single identifier using the
     /// namespace delimiter.
+    /// Returns \p lhs if \p rhs is empty and vice verse.
+    /// Returns an empty string if both \p lhs and \p rhs are empty.
     SDF_API 
     static std::string JoinIdentifier(const TfToken &lhs, const TfToken &rhs);
 

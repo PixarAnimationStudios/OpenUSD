@@ -10,6 +10,10 @@ def Xform "CubeModel" (
         string name = "CubeModel"
     }
     kind = "component"
+    add variantSets = "shadingVariant"
+    variants = {
+        string shadingVariant = "Default"
+    }
 )
 {
     def Xform "Geom"
@@ -20,7 +24,38 @@ def Xform "CubeModel" (
             int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
             int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
             point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
-            color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+        }
+    }
+
+    variantSet "shadingVariant" = {
+        "Red" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0.8, 0, 0)]
+                }
+            }
+        }
+
+        "Blue" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0, 0, 0.8)]
+                }
+            }
+        }
+
+        "Default" {
+            over "Geom"
+            {
+                over "Cube"
+                {
+                    color3f[] primvars:displayColor = [(0.217638, 0.217638, 0.217638)]
+                }
+            }
         }
     }
 }

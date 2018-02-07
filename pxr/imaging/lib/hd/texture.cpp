@@ -23,16 +23,11 @@
 //
 #include "pxr/imaging/hd/texture.h"
 
-#include "pxr/imaging/glf/textureRegistry.h"
-#include "pxr/imaging/glf/uvTextureStorage.h"
-#include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
-
-#include "pxr/base/gf/vec3d.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -78,39 +73,10 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
                 resourceRegistry->RegisterTextureResource(texID, &texInstance);
 
             if (texInstance.IsFirstInstance()) {
-                if (texID == HdTextureResource::ComputeFallbackUVHash()) {
-                    GlfUVTextureStorageRefPtr texPtr = 
-                        GlfUVTextureStorage::New(1,1,VtValue(GfVec3d(0.0, 0.0, 0.0))); 
-                    GlfTextureHandleRefPtr texture =
-                        GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
-                    texture->AddMemoryRequest(0); 
-                    _textureResource = HdTextureResourceSharedPtr(
-                        new HdSimpleTextureResource(texture, false));
-                } else if (texID == HdTextureResource::ComputeFallbackPtexHash()) {
-                    _textureResource = sceneDelegate->GetTextureResource(id);
-                    // Hacky Ptex Fallback Implementation (nonfunctional)
-                    // For future reference
-                    /*if (texResource->GetTexelsTextureId() == 0) {
-                        // fail to load a texture. use fallback default
-                        if (texResource->IsPtex()) {
-                            const size_t defaultPtexId = 0x48510398a84ebf94;
-                            HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
-                                defaultTexInstance = resourceRegistry->RegisterTextureResource(defaultPtexId);
-                            if (defaultTexInstance.IsFirstInstance()) {
-                                HdTextureResourceSharedPtr defaultTexResource(new Hd_DefaultPtexTextureResource());
-                                defaultTexInstance.SetValue(defaultTexResource);
-                            }
-                            texResource = defaultTexInstance.GetValue();
-                        }
-                    }*/
-                } else {
-                    _textureResource = sceneDelegate->GetTextureResource(id);
-                }
-
+                _textureResource = _GetTextureResource(sceneDelegate,
+                                                       id, texID);
                 texInstance.SetValue(_textureResource);
-            }
-            else
-            {
+            } else {
                 // Take a reference to the texture to ensure it lives as long
                 // as this class.
                 _textureResource = texInstance.GetValue();
@@ -137,6 +103,14 @@ bool
 HdTexture::ShouldGenerateMipMaps() const
 {
     return true;
+}
+
+HdTextureResourceSharedPtr
+HdTexture::_GetTextureResource( HdSceneDelegate *sceneDelegate,
+                                const SdfPath &sceneId,
+                                HdTextureResource::ID texID) const
+{
+    return nullptr;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

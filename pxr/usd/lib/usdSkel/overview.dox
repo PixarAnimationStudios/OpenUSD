@@ -1,10 +1,51 @@
 /*!
-\page usdSkel_page_front UsdSkel : USD Skeletal Skinning Schemas
+
+\page usdSkel_page_front UsdSkel : USD Skeleton Schema and API
 \if ( PIXAR_MFB_BUILD )
-\mainpage UsdSkel : USD Skeletal Skinning Schemas
-\publicLib
+\mainpage UsdSkel : USD Skeleton Schema and API
 \endif
 
-Schemas for encoding and decoding Skeletal skinning deformation for geometry
-in USD.  Detailed documentation coming shortly.
+<b>UsdSkel</b> defines schemas and API that form a basis for interchanging
+both skeletally skinned meshes and joint animations between DCC tools in a
+graphics pipeline.
+
+\section UsdSkel API Manual
+
+This manual contains API documentation for the UsdSkel module, along with
+an introduction key schemas and API concepts.
+
+<b>API Manual</b>
+
+- \subpage UsdSkel_Intro
+  - \ref UsdSkel_ScopeAndIntent
+      - \ref UsdSkel_IsNot
+  - \ref UsdSkel_Term
+  - \ref UsdSkel_SkinnablePrims
+  - \ref UsdSkel_TransformSpaces
+- \subpage UsdSkel_OM
+  - \ref UsdSkel_OM_Cache
+  - \ref UsdSkel_OM_SkeletonQuery
+  - \ref UsdSkel_OM_AnimQuery
+  - \ref UsdSkel_OM_SkinningQuery
+  - \ref UsdSkel_OM_AnimMapper
+- \subpage UsdSkel_Schemas
+  - \ref UsdSkel_Schemas_Overview
+  - \ref UsdSkel_JointOrder
+  - \ref UsdSkel_SkelRoot
+  - \ref UsdSkel_Joint
+  - \ref UsdSkel_Skeleton
+    - \ref UsdSkel_JointHierarchy
+  - \ref UsdSkel_PackedJointAnimation
+  - \ref UsdSkel_BindingAPI
+    - \ref UsdSkel_BindingAPI_Skeletons
+    - \ref UsdSkel_BindingAPI_JointInfluences
+    - \ref UsdSkel_BindingAPI_RigidDeformations
+    - \ref UsdSkel_BindingAPI_StoringInfluences
+ - \subpage UsdSkel_CodingExamples
+   - \ref UsdSkel_CE_PopulateCache
+   - \ref UsdSkel_CE_AccessingSkels
+   - \ref UsdSkel_CE_FindSkinnables
+   - \ref UsdSkel_CE_Skinning
+ - \subpage UsdSkel_BestPractices
+
 */

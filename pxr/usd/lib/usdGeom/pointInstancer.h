@@ -144,6 +144,26 @@ class SdfAssetPath;
 /// inputs so that they need not be read duplicately when computing over
 /// time.
 /// 
+/// \section UsdGeomPointInstancer_primvars Primvars on PointInstancer
+/// 
+/// \ref UsdGeomPrimvar "Primvars" authored on a PointInstancer prim should
+/// always be applied to each instance with \em constant interpolation at
+/// the root of the instance.  When you are authoring primvars on a 
+/// PointInstancer, think about it as if you were authoring them on a 
+/// point-cloud (e.g. a UsdGeomPoints gprim).  The same 
+/// <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
+/// "instance" for "point".
+/// 
+/// In other words, the (constant) value extracted for each instance
+/// from the authored primvar value depends on the authored \em interpolation
+/// and \em elementSize of the primvar, as follows:
+/// \li <b>constant</b> or <b>uniform</b> : the entire authored value of the
+/// primvar should be applied exactly to each instance.
+/// \li <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
+/// \em elementSize elements of the authored primvar array should be assigned to
+/// instance zero, the second \em elementSize elements should be assigned to
+/// instance one, and so forth.
+/// 
 /// 
 /// \section UsdGeomPointInstancer_masking Masking Instances: "Deactivating" and Invising
 /// 
@@ -168,7 +188,7 @@ class SdfAssetPath;
 /// 
 /// The first masking feature encodes a list of IDs in a list-editable metadatum
 /// called \em inactiveIds, which, although it does not have any similar 
-/// impact to stage poopulation as \ref UsdPrim::SetActive() "prim activation",
+/// impact to stage population as \ref UsdPrim::SetActive() "prim activation",
 /// it shares with that feature that its application is uniform over all time.
 /// Because it is list-editable, we can \em sparsely add and remove instances
 /// from it in many layers.
@@ -238,30 +258,6 @@ class SdfAssetPath;
 /// 19 }
 /// \endcode
 /// 
-/// \section UsdGeomPointInstancer_primvars Primvars on PointInstancer
-/// 
-/// \ref UsdGeomPrimvar "Primvars" authored on a PointInstancer prim should
-/// always be applied to each instance with \em constant interpolation at
-/// the root of the instance.  When you are authoring primvars on a 
-/// PointInstancer, think about it as if you were authoring them on a 
-/// point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-/// <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
-/// "instance" for "point".
-/// 
-/// In other words, the (constant) value extracted for each instance
-/// from the authored primvar value depends on the authored \em interpolation
-/// and \em elementSize of the primvar, as follows:
-/// \li <b>constant</b> or <b>uniform</b> : the entire authored value of the
-/// primvar should be applied exactly to each instance.
-/// \li <b>varying</b>, <b>vertex</b>, or <b>faceVarying</b>: the first
-/// \em elementSize elements of the authored primvar array should be assigned to
-/// instance zero, the second \em elementSize elements should be assigned to
-/// instance one, and so forth.
-///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
-/// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
-/// as the value.
 ///
 class UsdGeomPointInstancer : public UsdGeomBoundable
 {
@@ -271,6 +267,11 @@ public:
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
     static const bool IsConcrete = true;
+
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = true;
 
     /// Construct a UsdGeomPointInstancer on UsdPrim \p prim .
     /// Equivalent to UsdGeomPointInstancer::Get(prim.GetStage(), prim.GetPath())
@@ -548,7 +549,7 @@ public:
     /// \n  C++ Type: VtArray<long>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
+    /// \n  Fallback Value: []
     USDGEOM_API
     UsdAttribute GetInvisibleIdsAttr() const;
 
@@ -559,30 +560,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateInvisibleIdsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // PROTOTYPEDRAWMODE 
-    // --------------------------------------------------------------------- //
-    /// Draw modes that host applications can use as a hint for how each
-    /// instance of each prototype should be represented.  This hint should only
-    /// affect interactive/preview representations and is optional.
-    ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
-    /// \n  \ref UsdGeomTokens "Allowed Values": [point, card, fullGeom]
-    USDGEOM_API
-    UsdAttribute GetPrototypeDrawModeAttr() const;
-
-    /// See GetPrototypeDrawModeAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDGEOM_API
-    UsdAttribute CreatePrototypeDrawModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

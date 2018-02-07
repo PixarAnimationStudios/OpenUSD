@@ -25,10 +25,11 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/hdSt/light.h" // XXX: Should be base light schema
+#include "pxr/imaging/hdSt/light.h"
+
+#include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,6 +39,13 @@ TF_REGISTRY_FUNCTION(TfType)
     typedef UsdImagingLightAdapter Adapter;
     TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     // No factory here, UsdImagingLightAdapter is abstract.
+}
+
+TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 0, 
+                      "Enable loading scene lights.");
+bool _IsEnabledSceneLights() {
+    static bool _v = TfGetEnvSetting(USDIMAGING_ENABLE_SCENE_LIGHTS) == 1;
+    return _v;
 }
 
 UsdImagingLightAdapter::~UsdImagingLightAdapter() 
@@ -51,8 +59,22 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
                                         UsdImagingInstancerContext const* 
                                             instancerContext)
 {
-}
+    // Discover time-varying transforms.
+    _IsTransformVarying(prim,
+        HdStLight::DirtyBits::DirtyTransform,
+        UsdImagingTokens->usdVaryingXform,
+        timeVaryingBits);
 
+    // If any of the light attributes is time varying 
+    // we will assume all light params are time-varying.
+    const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
+    TF_FOR_ALL(attrIter, attrs) {
+        const UsdAttribute& attr = *attrIter;
+        if (attr.GetNumTimeSamples()>1){
+            *timeVaryingBits |= HdStLight::DirtyBits::DirtyParams;
+        }
+    }
+}
 
 // Thread safe.
 //  * Populate dirty bits for the given \p time.

@@ -1,0 +1,33 @@
+#usda 1.0
+(
+    endTimeCode = 104
+    startTimeCode = 101
+    subLayers = [
+        @./result_customSetName.topology.usda@
+    ]
+)
+
+over "World"
+{
+    over "fx"
+    {
+        over "Particles_Splash"
+        {
+            over "points" (
+                clips = {
+                    dictionary bob = {
+                        asset manifestAssetPath = @./result_customSetName.topology.usda@
+                        string primPath = "/World/fx/Particles_Splash/points"
+                        string templateAssetPath = "p.#.usd"
+                        double templateEndTime = 104
+                        double templateStartTime = 101
+                        double templateStride = 1
+                    }
+                }
+            )
+            {
+            }
+        }
+    }
+}
+

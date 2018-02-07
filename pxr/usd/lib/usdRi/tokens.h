@@ -35,150 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRi/api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define USDRI_TOKENS \
-    (analytic) \
-    ((analyticApex, "analytic:apex")) \
-    ((analyticBlurAmount, "analytic:blur:amount")) \
-    ((analyticBlurExponent, "analytic:blur:exponent")) \
-    ((analyticBlurFarDistance, "analytic:blur:farDistance")) \
-    ((analyticBlurFarValue, "analytic:blur:farValue")) \
-    ((analyticBlurMidpoint, "analytic:blur:midpoint")) \
-    ((analyticBlurMidValue, "analytic:blur:midValue")) \
-    ((analyticBlurNearDistance, "analytic:blur:nearDistance")) \
-    ((analyticBlurNearValue, "analytic:blur:nearValue")) \
-    ((analyticBlurSMult, "analytic:blur:sMult")) \
-    ((analyticBlurTMult, "analytic:blur:tMult")) \
-    ((analyticDensityExponent, "analytic:density:exponent")) \
-    ((analyticDensityFarDistance, "analytic:density:farDistance")) \
-    ((analyticDensityFarValue, "analytic:density:farValue")) \
-    ((analyticDensityMidpoint, "analytic:density:midpoint")) \
-    ((analyticDensityMidValue, "analytic:density:midValue")) \
-    ((analyticDensityNearDistance, "analytic:density:nearDistance")) \
-    ((analyticDensityNearValue, "analytic:density:nearValue")) \
-    ((analyticDirectional, "analytic:directional")) \
-    ((analyticShearX, "analytic:shearX")) \
-    ((analyticShearY, "analytic:shearY")) \
-    ((analyticUseLightDirection, "analytic:useLightDirection")) \
-    (aovName) \
-    (argsPath) \
-    (barnMode) \
-    (bspline) \
-    (catmullRom) \
-    (clamp) \
-    ((colorContrast, "color:contrast")) \
-    ((colorMidpoint, "color:midpoint")) \
-    ((colorSaturation, "color:saturation")) \
-    ((colorTint, "color:tint")) \
-    ((colorWhitepoint, "color:whitepoint")) \
-    (cone) \
-    (constant) \
-    (cookieMode) \
-    (day) \
-    (depth) \
-    (distanceToLight) \
-    ((edgeBack, "edge:back")) \
-    ((edgeBottom, "edge:bottom")) \
-    ((edgeFront, "edge:front")) \
-    ((edgeLeft, "edge:left")) \
-    ((edgeRight, "edge:right")) \
-    (edgeThickness) \
-    ((edgeTop, "edge:top")) \
-    ((falloffRampBeginDistance, "falloffRamp:beginDistance")) \
-    ((falloffRampEndDistance, "falloffRamp:endDistance")) \
-    (filePath) \
-    (haziness) \
-    (height) \
-    (hour) \
-    ((infoArgsPath, "info:argsPath")) \
-    ((infoFilePath, "info:filePath")) \
-    ((infoOslPath, "info:oslPath")) \
-    ((infoSloPath, "info:sloPath")) \
-    (inPrimaryHit) \
-    (inReflection) \
-    (inRefraction) \
-    (interpolation) \
-    (invert) \
-    (latitude) \
-    (linear) \
-    (longitude) \
-    (max) \
-    (min) \
-    (month) \
-    (multiply) \
-    (noEffect) \
-    (noLight) \
-    (off) \
-    (onVolumeBoundaries) \
-    ((outputsRiBxdf, "outputs:ri:bxdf")) \
-    ((outputsRiDisplacement, "outputs:ri:displacement")) \
-    ((outputsRiSurface, "outputs:ri:surface")) \
-    ((outputsRiVolume, "outputs:ri:volume")) \
-    (physical) \
-    (positions) \
-    (preBarnEffect) \
-    (radial) \
-    (radius) \
-    (rampMode) \
-    ((refineBack, "refine:back")) \
-    ((refineBottom, "refine:bottom")) \
-    ((refineFront, "refine:front")) \
-    ((refineLeft, "refine:left")) \
-    ((refineRight, "refine:right")) \
-    ((refineTop, "refine:top")) \
-    (repeat) \
-    ((riCombineMode, "ri:combineMode")) \
-    ((riDensity, "ri:density")) \
-    ((riDiffuse, "ri:diffuse")) \
-    ((riExposure, "ri:exposure")) \
-    ((riFocusRegion, "ri:focusRegion")) \
-    ((riIntensity, "ri:intensity")) \
-    ((riIntensityNearDist, "ri:intensityNearDist")) \
-    ((riInvert, "ri:invert")) \
-    ((riLightGroup, "ri:lightGroup")) \
-    ((riPortalIntensity, "ri:portal:intensity")) \
-    ((riPortalTint, "ri:portal:tint")) \
-    ((riSamplingFixedSampleCount, "ri:sampling:fixedSampleCount")) \
-    ((riSamplingImportanceMultiplier, "ri:sampling:importanceMultiplier")) \
-    ((riShadowThinShadow, "ri:shadow:thinShadow")) \
-    ((riSpecular, "ri:specular")) \
-    ((riTextureGamma, "ri:texture:gamma")) \
-    ((riTextureSaturation, "ri:texture:saturation")) \
-    ((riTraceLightPaths, "ri:trace:lightPaths")) \
-    ((scaleDepth, "scale:depth")) \
-    ((scaleHeight, "scale:height")) \
-    ((scaleWidth, "scale:width")) \
-    (screen) \
-    (skyTint) \
-    (spherical) \
-    (spline) \
-    (sunDirection) \
-    (sunSize) \
-    (sunTint) \
-    ((textureFillColor, "texture:fillColor")) \
-    ((textureInvertU, "texture:invertU")) \
-    ((textureInvertV, "texture:invertV")) \
-    ((textureMap, "texture:map")) \
-    ((textureOffsetU, "texture:offsetU")) \
-    ((textureOffsetV, "texture:offsetV")) \
-    ((textureScaleU, "texture:scaleU")) \
-    ((textureScaleV, "texture:scaleV")) \
-    ((textureWrapMode, "texture:wrapMode")) \
-    (useColor) \
-    (useThroughput) \
-    (values) \
-    (width) \
-    (year) \
-    (zone)
 
-/// \anchor UsdRiTokens
+/// \class UsdRiTokensType
 ///
-/// <b>UsdRiTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link UsdRiTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -186,149 +53,556 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// UsdRiTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// UsdRiTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use UsdRiTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(UsdRiTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(UsdRiTokens->analytic);
 /// \endcode
+struct UsdRiTokensType {
+    USDRI_API UsdRiTokensType();
+    /// \brief "analytic"
+    /// 
+    /// Possible value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Possible value for UsdRiPxrBarnLightFilter::GetBarnModeAttr()
+    const TfToken analytic;
+    /// \brief "analytic:apex"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticApex;
+    /// \brief "analytic:blur:amount"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurAmount;
+    /// \brief "analytic:blur:exponent"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurExponent;
+    /// \brief "analytic:blur:farDistance"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurFarDistance;
+    /// \brief "analytic:blur:farValue"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurFarValue;
+    /// \brief "analytic:blur:midpoint"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurMidpoint;
+    /// \brief "analytic:blur:midValue"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurMidValue;
+    /// \brief "analytic:blur:nearDistance"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurNearDistance;
+    /// \brief "analytic:blur:nearValue"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurNearValue;
+    /// \brief "analytic:blur:sMult"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurSMult;
+    /// \brief "analytic:blur:tMult"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticBlurTMult;
+    /// \brief "analytic:density:exponent"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticDensityExponent;
+    /// \brief "analytic:density:farDistance"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticDensityFarDistance;
+    /// \brief "analytic:density:farValue"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticDensityFarValue;
+    /// \brief "analytic:density:midpoint"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticDensityMidpoint;
+    /// \brief "analytic:density:midValue"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken analyticDensityMidValue;
+    /// \brief "analytic:density:nearDistance"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticDensityNearDistance;
+    /// \brief "analytic:density:nearValue"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticDensityNearValue;
+    /// \brief "analytic:directional"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticDirectional;
+    /// \brief "analytic:shearX"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticShearX;
+    /// \brief "analytic:shearY"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticShearY;
+    /// \brief "analytic:useLightDirection"
+    /// 
+    /// UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken analyticUseLightDirection;
+    /// \brief "aovName"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken aovName;
+    /// \brief "argsPath"
+    /// 
+    /// UsdRiRisIntegrator
+    const TfToken argsPath;
+    /// \brief "barnMode"
+    /// 
+    /// UsdRiPxrBarnLightFilter
+    const TfToken barnMode;
+    /// \brief "bspline"
+    /// 
+    /// UsdSplineAPI - BSpline spline interpolation
+    const TfToken bspline;
+    /// \brief "catmullRom"
+    /// 
+    /// UsdSplineAPI - Catmull-Rom spline interpolation
+    const TfToken catmullRom;
+    /// \brief "clamp"
+    /// 
+    /// Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
+    const TfToken clamp;
+    /// \brief "color:contrast"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken colorContrast;
+    /// \brief "color:midpoint"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken colorMidpoint;
+    /// \brief "color:saturation"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter
+    const TfToken colorSaturation;
+    /// \brief "color:tint"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken colorTint;
+    /// \brief "color:whitepoint"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken colorWhitepoint;
+    /// \brief "cone"
+    /// 
+    /// Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
+    const TfToken cone;
+    /// \brief "constant"
+    /// 
+    /// UsdSplineAPI - Constant-value spline interpolation
+    const TfToken constant;
+    /// \brief "cookieMode"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken cookieMode;
+    /// \brief "day"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken day;
+    /// \brief "depth"
+    /// 
+    /// UsdRiPxrRodLightFilter
+    const TfToken depth;
+    /// \brief "distanceToLight"
+    /// 
+    /// Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr(), Default value for UsdRiPxrRampLightFilter::GetRampModeAttr()
+    const TfToken distanceToLight;
+    /// \brief "edge:back"
+    /// 
+    /// UsdRiPxrRodLightFilter
+    const TfToken edgeBack;
+    /// \brief "edge:bottom"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken edgeBottom;
+    /// \brief "edge:front"
+    /// 
+    /// UsdRiPxrRodLightFilter
+    const TfToken edgeFront;
+    /// \brief "edge:left"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken edgeLeft;
+    /// \brief "edge:right"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken edgeRight;
+    /// \brief "edgeThickness"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken edgeThickness;
+    /// \brief "edge:top"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken edgeTop;
+    /// \brief "falloffRamp:beginDistance"
+    /// 
+    /// UsdRiPxrRampLightFilter
+    const TfToken falloffRampBeginDistance;
+    /// \brief "falloffRamp:endDistance"
+    /// 
+    /// UsdRiPxrRampLightFilter
+    const TfToken falloffRampEndDistance;
+    /// \brief "filePath"
+    /// 
+    /// UsdRiRisIntegrator
+    const TfToken filePath;
+    /// \brief "haziness"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken haziness;
+    /// \brief "height"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken height;
+    /// \brief "hour"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken hour;
+    /// \brief "info:argsPath"
+    /// 
+    /// UsdRiRisObject
+    const TfToken infoArgsPath;
+    /// \brief "info:filePath"
+    /// 
+    /// UsdRiRisOslPattern, UsdRiRisObject
+    const TfToken infoFilePath;
+    /// \brief "info:oslPath"
+    /// 
+    /// UsdRiRisOslPattern
+    const TfToken infoOslPath;
+    /// \brief "info:sloPath"
+    /// 
+    /// UsdRiRslShader
+    const TfToken infoSloPath;
+    /// \brief "inPrimaryHit"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken inPrimaryHit;
+    /// \brief "inReflection"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken inReflection;
+    /// \brief "inRefraction"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken inRefraction;
+    /// \brief "interpolation"
+    /// 
+    /// UsdSplineAPI - Interpolation attribute name
+    const TfToken interpolation;
+    /// \brief "invert"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken invert;
+    /// \brief "latitude"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken latitude;
+    /// \brief "linear"
+    /// 
+    /// UsdSplineAPI - Linear spline interpolation, Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
+    const TfToken linear;
+    /// \brief "longitude"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken longitude;
+    /// \brief "max"
+    /// 
+    /// Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
+    const TfToken max;
+    /// \brief "min"
+    /// 
+    /// Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
+    const TfToken min;
+    /// \brief "month"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken month;
+    /// \brief "multiply"
+    /// 
+    /// Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
+    const TfToken multiply;
+    /// \brief "noEffect"
+    /// 
+    /// Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr(), Default value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
+    const TfToken noEffect;
+    /// \brief "noLight"
+    /// 
+    /// Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
+    const TfToken noLight;
+    /// \brief "off"
+    /// 
+    /// Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr(), Default value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
+    const TfToken off;
+    /// \brief "onVolumeBoundaries"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken onVolumeBoundaries;
+    /// \brief "outputs:ri:bxdf"
+    /// 
+    /// UsdRiMaterialAPI
+    const TfToken outputsRiBxdf;
+    /// \brief "outputs:ri:displacement"
+    /// 
+    /// UsdRiMaterialAPI
+    const TfToken outputsRiDisplacement;
+    /// \brief "outputs:ri:surface"
+    /// 
+    /// UsdRiMaterialAPI
+    const TfToken outputsRiSurface;
+    /// \brief "outputs:ri:volume"
+    /// 
+    /// UsdRiMaterialAPI
+    const TfToken outputsRiVolume;
+    /// \brief "physical"
+    /// 
+    /// Possible value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Default value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Possible value for UsdRiPxrBarnLightFilter::GetBarnModeAttr(), Default value for UsdRiPxrBarnLightFilter::GetBarnModeAttr()
+    const TfToken physical;
+    /// \brief "positions"
+    /// 
+    /// UsdSplineAPI - Positions attribute name
+    const TfToken positions;
+    /// \brief "preBarnEffect"
+    /// 
+    /// UsdRiPxrBarnLightFilter
+    const TfToken preBarnEffect;
+    /// \brief "radial"
+    /// 
+    /// Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
+    const TfToken radial;
+    /// \brief "radius"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken radius;
+    /// \brief "rampMode"
+    /// 
+    /// UsdRiPxrRampLightFilter
+    const TfToken rampMode;
+    /// \brief "refine:back"
+    /// 
+    /// UsdRiPxrRodLightFilter
+    const TfToken refineBack;
+    /// \brief "refine:bottom"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken refineBottom;
+    /// \brief "refine:front"
+    /// 
+    /// UsdRiPxrRodLightFilter
+    const TfToken refineFront;
+    /// \brief "refine:left"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken refineLeft;
+    /// \brief "refine:right"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken refineRight;
+    /// \brief "refine:top"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken refineTop;
+    /// \brief "repeat"
+    /// 
+    /// Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
+    const TfToken repeat;
+    /// \brief "ri:combineMode"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riCombineMode;
+    /// \brief "ri:density"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riDensity;
+    /// \brief "ri:diffuse"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riDiffuse;
+    /// \brief "ri:exposure"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riExposure;
+    /// \brief "ri:focusRegion"
+    /// 
+    /// UsdRiStatementsAPI
+    const TfToken riFocusRegion;
+    /// \brief "ri:intensity"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riIntensity;
+    /// \brief "ri:intensityNearDist"
+    /// 
+    /// UsdRiLightAPI
+    const TfToken riIntensityNearDist;
+    /// \brief "ri:invert"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riInvert;
+    /// \brief "ri:lightGroup"
+    /// 
+    /// UsdRiLightAPI
+    const TfToken riLightGroup;
+    /// \brief "ri:portal:intensity"
+    /// 
+    /// UsdRiLightPortalAPI
+    const TfToken riPortalIntensity;
+    /// \brief "ri:portal:tint"
+    /// 
+    /// UsdRiLightPortalAPI
+    const TfToken riPortalTint;
+    /// \brief "ri:sampling:fixedSampleCount"
+    /// 
+    /// UsdRiLightAPI
+    const TfToken riSamplingFixedSampleCount;
+    /// \brief "ri:sampling:importanceMultiplier"
+    /// 
+    /// UsdRiLightAPI
+    const TfToken riSamplingImportanceMultiplier;
+    /// \brief "ri:shadow:thinShadow"
+    /// 
+    /// UsdRiLightAPI
+    const TfToken riShadowThinShadow;
+    /// \brief "ri:specular"
+    /// 
+    /// UsdRiLightFilterAPI
+    const TfToken riSpecular;
+    /// \brief "ri:texture:gamma"
+    /// 
+    /// UsdRiTextureAPI
+    const TfToken riTextureGamma;
+    /// \brief "ri:texture:saturation"
+    /// 
+    /// UsdRiTextureAPI
+    const TfToken riTextureSaturation;
+    /// \brief "ri:trace:lightPaths"
+    /// 
+    /// UsdRiLightAPI
+    const TfToken riTraceLightPaths;
+    /// \brief "scale:depth"
+    /// 
+    /// UsdRiPxrRodLightFilter
+    const TfToken scaleDepth;
+    /// \brief "scale:height"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken scaleHeight;
+    /// \brief "scale:width"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken scaleWidth;
+    /// \brief "screen"
+    /// 
+    /// Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
+    const TfToken screen;
+    /// \brief "skyTint"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken skyTint;
+    /// \brief "spherical"
+    /// 
+    /// Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
+    const TfToken spherical;
+    /// \brief "spline"
+    /// 
+    /// UsdSplineAPI - Namespace for spline attributes
+    const TfToken spline;
+    /// \brief "sunDirection"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken sunDirection;
+    /// \brief "sunSize"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken sunSize;
+    /// \brief "sunTint"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken sunTint;
+    /// \brief "texture:fillColor"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureFillColor;
+    /// \brief "texture:invertU"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureInvertU;
+    /// \brief "texture:invertV"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureInvertV;
+    /// \brief "texture:map"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureMap;
+    /// \brief "texture:offsetU"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureOffsetU;
+    /// \brief "texture:offsetV"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureOffsetV;
+    /// \brief "texture:scaleU"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureScaleU;
+    /// \brief "texture:scaleV"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureScaleV;
+    /// \brief "texture:wrapMode"
+    /// 
+    /// UsdRiPxrCookieLightFilter
+    const TfToken textureWrapMode;
+    /// \brief "useColor"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken useColor;
+    /// \brief "useThroughput"
+    /// 
+    /// UsdRiPxrAovLight
+    const TfToken useThroughput;
+    /// \brief "values"
+    /// 
+    /// UsdSplineAPI - values attribute name
+    const TfToken values;
+    /// \brief "width"
+    /// 
+    /// UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
+    const TfToken width;
+    /// \brief "year"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken year;
+    /// \brief "zone"
+    /// 
+    /// UsdRiPxrEnvDayLight
+    const TfToken zone;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var UsdRiTokens
 ///
-/// The tokens are:
-/// \li <b>analytic</b> - Possible value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Possible value for UsdRiPxrBarnLightFilter::GetBarnModeAttr()
-/// \li <b>analyticApex</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticBlurAmount</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurExponent</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurFarDistance</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurFarValue</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurMidpoint</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurMidValue</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurNearDistance</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurNearValue</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurSMult</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticBlurTMult</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityExponent</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticDensityFarDistance</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticDensityFarValue</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticDensityMidpoint</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityMidValue</b> - UsdRiPxrCookieLightFilter
-/// \li <b>analyticDensityNearDistance</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticDensityNearValue</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticDirectional</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticShearX</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticShearY</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>analyticUseLightDirection</b> - UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>aovName</b> - UsdRiPxrAovLight
-/// \li <b>argsPath</b> - UsdRiRisIntegrator
-/// \li <b>barnMode</b> - UsdRiPxrBarnLightFilter
-/// \li <b>bspline</b> - UsdSplineAPI - BSpline spline interpolation
-/// \li <b>catmullRom</b> - UsdSplineAPI - Catmull-Rom spline interpolation
-/// \li <b>clamp</b> - Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
-/// \li <b>colorContrast</b> - UsdRiPxrCookieLightFilter
-/// \li <b>colorMidpoint</b> - UsdRiPxrCookieLightFilter
-/// \li <b>colorSaturation</b> - UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter
-/// \li <b>colorTint</b> - UsdRiPxrCookieLightFilter
-/// \li <b>colorWhitepoint</b> - UsdRiPxrCookieLightFilter
-/// \li <b>cone</b> - Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
-/// \li <b>constant</b> - UsdSplineAPI - Constant-value spline interpolation
-/// \li <b>cookieMode</b> - UsdRiPxrCookieLightFilter
-/// \li <b>day</b> - UsdRiPxrEnvDayLight
-/// \li <b>depth</b> - UsdRiPxrRodLightFilter
-/// \li <b>distanceToLight</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr(), Default value for UsdRiPxrRampLightFilter::GetRampModeAttr()
-/// \li <b>edgeBack</b> - UsdRiPxrRodLightFilter
-/// \li <b>edgeBottom</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>edgeFront</b> - UsdRiPxrRodLightFilter
-/// \li <b>edgeLeft</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>edgeRight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>edgeThickness</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>edgeTop</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>falloffRampBeginDistance</b> - UsdRiPxrRampLightFilter
-/// \li <b>falloffRampEndDistance</b> - UsdRiPxrRampLightFilter
-/// \li <b>filePath</b> - UsdRiRisIntegrator
-/// \li <b>haziness</b> - UsdRiPxrEnvDayLight
-/// \li <b>height</b> - UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>hour</b> - UsdRiPxrEnvDayLight
-/// \li <b>infoArgsPath</b> - UsdRiRisObject
-/// \li <b>infoFilePath</b> - UsdRiRisOslPattern, UsdRiRisObject
-/// \li <b>infoOslPath</b> - UsdRiRisOslPattern
-/// \li <b>infoSloPath</b> - UsdRiRslShader
-/// \li <b>inPrimaryHit</b> - UsdRiPxrAovLight
-/// \li <b>inReflection</b> - UsdRiPxrAovLight
-/// \li <b>inRefraction</b> - UsdRiPxrAovLight
-/// \li <b>interpolation</b> - UsdSplineAPI - Interpolation attribute name
-/// \li <b>invert</b> - UsdRiPxrAovLight
-/// \li <b>latitude</b> - UsdRiPxrEnvDayLight
-/// \li <b>linear</b> - UsdSplineAPI - Linear spline interpolation, Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
-/// \li <b>longitude</b> - UsdRiPxrEnvDayLight
-/// \li <b>max</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
-/// \li <b>min</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
-/// \li <b>month</b> - UsdRiPxrEnvDayLight
-/// \li <b>multiply</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
-/// \li <b>noEffect</b> - Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr(), Default value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
-/// \li <b>noLight</b> - Possible value for UsdRiPxrBarnLightFilter::GetPreBarnEffectAttr()
-/// \li <b>off</b> - Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr(), Default value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
-/// \li <b>onVolumeBoundaries</b> - UsdRiPxrAovLight
-/// \li <b>outputsRiBxdf</b> - UsdRiMaterialAPI
-/// \li <b>outputsRiDisplacement</b> - UsdRiMaterialAPI
-/// \li <b>outputsRiSurface</b> - UsdRiMaterialAPI
-/// \li <b>outputsRiVolume</b> - UsdRiMaterialAPI
-/// \li <b>physical</b> - Possible value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Default value for UsdRiPxrCookieLightFilter::GetCookieModeAttr(), Possible value for UsdRiPxrBarnLightFilter::GetBarnModeAttr(), Default value for UsdRiPxrBarnLightFilter::GetBarnModeAttr()
-/// \li <b>positions</b> - UsdSplineAPI - Positions attribute name
-/// \li <b>preBarnEffect</b> - UsdRiPxrBarnLightFilter
-/// \li <b>radial</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
-/// \li <b>radius</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>rampMode</b> - UsdRiPxrRampLightFilter
-/// \li <b>refineBack</b> - UsdRiPxrRodLightFilter
-/// \li <b>refineBottom</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>refineFront</b> - UsdRiPxrRodLightFilter
-/// \li <b>refineLeft</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>refineRight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>refineTop</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>repeat</b> - Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()
-/// \li <b>riCombineMode</b> - UsdRiLightFilterAPI
-/// \li <b>riDensity</b> - UsdRiLightFilterAPI
-/// \li <b>riDiffuse</b> - UsdRiLightFilterAPI
-/// \li <b>riExposure</b> - UsdRiLightFilterAPI
-/// \li <b>riFocusRegion</b> - UsdRiStatements
-/// \li <b>riIntensity</b> - UsdRiLightFilterAPI
-/// \li <b>riIntensityNearDist</b> - UsdRiLightAPI
-/// \li <b>riInvert</b> - UsdRiLightFilterAPI
-/// \li <b>riLightGroup</b> - UsdRiLightAPI
-/// \li <b>riPortalIntensity</b> - UsdRiLightPortalAPI
-/// \li <b>riPortalTint</b> - UsdRiLightPortalAPI
-/// \li <b>riSamplingFixedSampleCount</b> - UsdRiLightAPI
-/// \li <b>riSamplingImportanceMultiplier</b> - UsdRiLightAPI
-/// \li <b>riShadowThinShadow</b> - UsdRiLightAPI
-/// \li <b>riSpecular</b> - UsdRiLightFilterAPI
-/// \li <b>riTextureGamma</b> - UsdRiTextureAPI
-/// \li <b>riTextureSaturation</b> - UsdRiTextureAPI
-/// \li <b>riTraceLightPaths</b> - UsdRiLightAPI
-/// \li <b>scaleDepth</b> - UsdRiPxrRodLightFilter
-/// \li <b>scaleHeight</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>scaleWidth</b> - UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>screen</b> - Possible value for UsdRiLightFilterAPI::GetRiCombineModeAttr()
-/// \li <b>skyTint</b> - UsdRiPxrEnvDayLight
-/// \li <b>spherical</b> - Possible value for UsdRiPxrRampLightFilter::GetRampModeAttr()
-/// \li <b>spline</b> - UsdSplineAPI - Namespace for spline attributes
-/// \li <b>sunDirection</b> - UsdRiPxrEnvDayLight
-/// \li <b>sunSize</b> - UsdRiPxrEnvDayLight
-/// \li <b>sunTint</b> - UsdRiPxrEnvDayLight
-/// \li <b>textureFillColor</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureInvertU</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureInvertV</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureMap</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureOffsetU</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureOffsetV</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureScaleU</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureScaleV</b> - UsdRiPxrCookieLightFilter
-/// \li <b>textureWrapMode</b> - UsdRiPxrCookieLightFilter
-/// \li <b>useColor</b> - UsdRiPxrAovLight
-/// \li <b>useThroughput</b> - UsdRiPxrAovLight
-/// \li <b>values</b> - UsdSplineAPI - values attribute name
-/// \li <b>width</b> - UsdRiPxrRodLightFilter, UsdRiPxrCookieLightFilter, UsdRiPxrBarnLightFilter
-/// \li <b>year</b> - UsdRiPxrEnvDayLight
-/// \li <b>zone</b> - UsdRiPxrEnvDayLight
-TF_DECLARE_PUBLIC_TOKENS(UsdRiTokens, USDRI_API, USDRI_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa UsdRiTokensType
+extern USDRI_API TfStaticData<UsdRiTokensType> UsdRiTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

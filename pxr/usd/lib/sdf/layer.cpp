@@ -65,20 +65,20 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stackTrace.h"
 
-#include <boost/bind.hpp>
-
 #include <tbb/queuing_rw_mutex.h>
 
 #include <atomic>
+#include <functional>
 #include <fstream>
 #include <set>
 #include <vector>
 
-using boost::bind;
 using std::map;
 using std::set;
 using std::string;
 using std::vector;
+
+namespace ph = std::placeholders;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -2047,8 +2047,8 @@ SdfLayer::CanApply(
     static const bool fixBackpointers = true;
     SdfLayerHandle self = SdfCreateNonConstHandle(this);
     if (!edits.Process(NULL,
-                       boost::bind(&_HasObjectAtPath, self, _1),
-                       boost::bind(&_CanEdit, self, _1, _2),
+                       std::bind(&_HasObjectAtPath, self, ph::_1),
+                       std::bind(&_CanEdit, self, ph::_1, ph::_2),
                        details, !fixBackpointers)) {
         result = CombineError(result);
     }
@@ -2067,8 +2067,8 @@ SdfLayer::Apply(const SdfBatchNamespaceEdit& edits)
     SdfLayerHandle self(this);
     SdfNamespaceEditVector final;
     if (!edits.Process(&final,
-                       boost::bind(&_HasObjectAtPath, self, _1),
-                       boost::bind(&_CanEdit, self, _1, _2),
+                       std::bind(&_HasObjectAtPath, self, ph::_1),
+                       std::bind(&_CanEdit, self, ph::_1, ph::_2),
                        NULL, !fixBackpointers)) {
         return false;
     }
@@ -2163,6 +2163,7 @@ SdfLayer::_RemoveInertDFS(SdfPrimSpecHandle prim)
     bool inert = prim->IsInert();
 
     if (!inert) {
+        // Child prims
         SdfPrimSpecHandleVector removedChildren;
         TF_FOR_ALL(it, prim->GetNameChildren()) {
             SdfPrimSpecHandle child = *it;
@@ -2172,6 +2173,16 @@ SdfLayer::_RemoveInertDFS(SdfPrimSpecHandle prim)
         }
         TF_FOR_ALL(it, removedChildren) {
             prim->RemoveNameChild(*it);
+        }
+        // Child prims inside variants
+        SdfVariantSetsProxy variantSetMap = prim->GetVariantSets();
+        TF_FOR_ALL(varSetIt, variantSetMap) {
+            const SdfVariantSetSpecHandle &varSetSpec = varSetIt->second;
+            const SdfVariantSpecHandleVector &variants =
+                varSetSpec->GetVariantList();
+            TF_FOR_ALL(varIt, variants) {
+                _RemoveInertDFS((*varIt)->GetPrimSpec());
+            }
         }
     }
 
@@ -2791,8 +2802,8 @@ SdfLayer::_UpdateReferencePaths(
     TF_AXIOM(!oldLayerPath.empty());
     
     // Prim references
-    prim->GetReferenceList().ModifyItemEdits(boost::bind(
-        &_UpdateReferencePath, oldLayerPath, newLayerPath, _1));
+    prim->GetReferenceList().ModifyItemEdits(std::bind(
+        &_UpdateReferencePath, oldLayerPath, newLayerPath, ph::_1));
 
     // Prim payloads
     if (prim->HasPayload()) {
@@ -2912,35 +2923,39 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         layer->_FinishInitialization(/* success = */ false);
         return TfNullPtr;
     }
-        
-    if (!layer->IsMuted()) {
-        // This is in support of specialized file formats that piggyback on
-        // anonymous layer functionality. If the layer is anonymous, pass the
-        // original assetPath to the reader, otherwise, pass the resolved path
-        // of the layer.
-        const string readFilePath = 
-            isAnonymous ? info.layerPath : resolvedPath;
 
+    // This is in support of specialized file formats that piggyback
+    // on anonymous layer functionality. If the layer is anonymous,
+    // pass the original assetPath to the reader, otherwise, pass the
+    // resolved path of the layer.
+    const string readFilePath = 
+        isAnonymous ? info.layerPath : resolvedPath;
+
+    if (!layer->IsMuted()) {
         // Run the file parser to read in the file contents.
         if (!layer->_Read(info.identifier, readFilePath, metadataOnly)) {
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;
         }
+     }
 
-        if (!isAnonymous) {
-            // Grab modification timestamp.
-            VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-                info.identifier, readFilePath);
-            if (timestamp.IsEmpty()) {
-                TF_CODING_ERROR(
-                    "Unable to get modification timestamp for '%s (%s)'",
-                    info.identifier.c_str(), readFilePath.c_str());
-                layer->_FinishInitialization(/* success = */ false);
-                return TfNullPtr;
-            }
-
-            layer->_assetModificationTime.Swap(timestamp);
+    // Grab the modification time even if layer is muted and not being
+    // read. Since a muted layer may become unmuted later, there needs
+    // to be a non-empty timestamp so it will not be misidentified as
+    // a newly created non-serialized layer.
+    if (!isAnonymous) {
+        // Grab modification timestamp.
+        VtValue timestamp = ArGetResolver().GetModificationTimestamp(
+            info.identifier, readFilePath);
+        if (timestamp.IsEmpty()) {
+            TF_CODING_ERROR(
+                "Unable to get modification timestamp for '%s (%s)'",
+                info.identifier.c_str(), readFilePath.c_str());
+            layer->_FinishInitialization(/* success = */ false);
+            return TfNullPtr;
         }
+        
+        layer->_assetModificationTime.Swap(timestamp);
     }
 
     layer->_MarkCurrentStateAsClean();
@@ -3660,7 +3675,7 @@ SdfLayer::_PrimMoveSpec(const SdfPath& oldPath, const SdfPath& newPath,
     Sdf_ChangeManager::Get().DidMoveSpec(SdfLayerHandle(this), oldPath, newPath);
 
     Traverse(oldPath, 
-        boost::bind(_MoveSpecInternal, _data, &_idRegistry, _1, oldPath, newPath));
+        std::bind(_MoveSpecInternal, _data, &_idRegistry, ph::_1, oldPath, newPath));
 }
 
 bool 
@@ -3771,7 +3786,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
     Sdf_ChangeManager::Get().DidRemoveSpec(SdfLayerHandle(this), path, inert);
 
     TraversalFunction eraseFunc = 
-        boost::bind(&_EraseSpecAtPath, boost::get_pointer(_data), _1);
+        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
     Traverse(path, eraseFunc);
 }
 

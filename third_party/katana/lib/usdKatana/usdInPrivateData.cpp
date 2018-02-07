@@ -40,6 +40,15 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
         const PxrUsdKatanaUsdInPrivateData* parentData)
     : _prim(prim), _usdInArgs(usdInArgs), _extGb(0)
 {
+    // None of the below is safe or relevant if the prim is not valid
+    // This is most commonly due to an invalid isolatePath -- which is 
+    // already reported as a katana error from pxrUsdIn.cpp
+    if (!prim)
+    {
+        return;
+    }
+    
+    
     // XXX: manually track instance and master path for possible
     //      relationship re-retargeting. This approach does not yet
     //      support nested instances -- which is expected to be handled
@@ -232,8 +241,8 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
             //
             if (motionSampleTimesAttr.getType() == kFnKatAttributeTypeFloat)
             {
-                const auto& sampleTimes = FnKat::FloatAttribute(
-                        motionSampleTimesAttr).getNearestSample(0);
+                FnAttribute::FloatAttribute attr(motionSampleTimesAttr);
+                const auto& sampleTimes = attr.getNearestSample(0.0f);;
                 if (!sampleTimes.empty())
                 {
                     for (float sampleTime : sampleTimes)
@@ -270,6 +279,25 @@ PxrUsdKatanaUsdInPrivateData::IsMotionBackward() const
             _motionSampleTimesFallback.back());
     }
 }
+
+std::vector<std::pair<double, double> >
+PxrUsdKatanaUsdInPrivateData::GetUsdAndKatanaTimes(
+        const UsdAttribute& attr) const
+{
+    const std::vector<double> motionSampleTimes = GetMotionSampleTimes(attr);
+    std::vector<std::pair<double, double> > result;
+    result.reserve(motionSampleTimes.size());
+    bool isMotionBackward = IsMotionBackward();
+    double u, k;
+    for(auto t : motionSampleTimes) 
+    {
+        u = _currentTime + t;
+        k = isMotionBackward ? PxrUsdKatanaUtils::ReverseTimeSample(t) : t;
+        result.emplace_back(u,k);
+    } 
+    return result;
+}
+
 
 const std::vector<double>
 PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
@@ -406,7 +434,7 @@ PxrUsdKatanaUsdInPrivateData::GetMotionSampleTimes(
 }
 
 void PxrUsdKatanaUsdInPrivateData::setExtensionOpArg(
-        const std::string & name, FnAttribute::Attribute attr)
+        const std::string & name, FnAttribute::Attribute attr) const
 {
     if (!_extGb)
     {
@@ -418,7 +446,7 @@ void PxrUsdKatanaUsdInPrivateData::setExtensionOpArg(
 
 
 FnAttribute::Attribute PxrUsdKatanaUsdInPrivateData::getExtensionOpArg(
-        const std::string & name, FnAttribute::GroupAttribute opArgs)
+        const std::string & name, FnAttribute::GroupAttribute opArgs) const
 {
     if (name.empty())
     {
@@ -431,7 +459,7 @@ FnAttribute::Attribute PxrUsdKatanaUsdInPrivateData::getExtensionOpArg(
 
 FnAttribute::GroupAttribute
 PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
-        FnAttribute::GroupAttribute opArgs)
+        FnAttribute::GroupAttribute opArgs) const
 {
     if (!_extGb)
     {
@@ -443,8 +471,14 @@ PxrUsdKatanaUsdInPrivateData::updateExtensionOpArgs(
         .deepUpdate(_extGb->build())
         .build();
 }
-    
-    
+
+PxrUsdKatanaUsdInPrivateData *
+PxrUsdKatanaUsdInPrivateData::GetPrivateData(
+        const FnKat::GeolibCookInterface& interface)
+{
+    return static_cast<PxrUsdKatanaUsdInPrivateData*>(
+            interface.getPrivateData());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

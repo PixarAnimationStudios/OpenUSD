@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    startTimeCode = 101
+    endTimeCode = 106
+)
+
+def "p" {
+    float x.timeSamples = {
+        101: 1.0,
+        102: 2.0,
+        103: 3.0,
+        104: 4.0,
+        105: 5.0,
+        106: 6.0
+    }
+}

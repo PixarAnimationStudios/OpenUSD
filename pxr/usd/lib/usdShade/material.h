@@ -64,39 +64,42 @@ class SdfAssetPath;
 /// adopt the convention that all properties be prefixed with a namespace
 /// that identifies the target, e.g. "rel ri:surface = </Shaders/mySurf>".
 /// 
-/// <b>Binding Materials</b>
+/// ## Binding Materials
 /// 
 /// In the UsdShading model, geometry expresses a binding to a single Material or
-/// to a set of Materials partitioned by face-sets defined on the geometry;
-/// it is legal to bind a Material at the root (or other sub-prim) of a model,
-/// and then bind a different Material to individual gprims, but the meaning of
-/// inheritance and "ancestral overriding" of Material bindings is left to each
-/// render-target to determine.  Since UsdGeom has no concept of shading,
-/// we provide the API for binding and unbinding geometry here, on UsdShadeMaterial.
-/// Please see Bind(), Unbind(), GetBindingRel(), GetBoundMaterial().
+/// to a set of Materials partitioned by UsdGeomSubsets defined beneath the
+/// geometry; it is legal to bind a Material at the root (or other sub-prim) of 
+/// a model, and then bind a different Material to individual gprims, but the
+/// meaning of inheritance and "ancestral overriding" of Material bindings is 
+/// left to each render-target to determine.  Since UsdGeom has no concept of 
+/// shading, we provide the API for binding and unbinding geometry on the API 
+/// schema UsdShadeMaterialBindingAPI.
 /// 
-/// <b>Material Variation</b>
+/// ## Material Variation
 /// 
-/// The entire power of Usd variantSets and all the other composition 
-/// operators can be brought to bear on encoding shading variation.  
+/// The entire power of USD VariantSets and all the other composition 
+/// operators can leveraged when encoding shading variation.  
 /// UsdShadeMaterial provides facilities for a particular way of building
 /// "Material variants" in which neither the identity of the Materials themselves
 /// nor the geometry Material-bindings need to change - instead we vary the
-/// targetted networks, interface values, and even parameter values within
+/// targeted networks, interface values, and even parameter values within
 /// a single variantSet.  
-/// See \ref UsdShadeMaterial_Variations "Authoring Material Variations" for more.
+/// See \ref UsdShadeMaterial_Variations "Authoring Material Variations" 
+/// for more details.
 /// 
-/// <b>Authoring Materials for Referenced Re-use</b>
+/// ## Materials Encapsulate their Networks in Namespace
 /// 
-/// The shading networks that a Material may target can live anywhere in a layer's
-/// namespace.  However, it is advantageous to place all of the shaders that 
-/// "belong" to the Material under it in namespace, particularly when building
-/// "shading libraries/palettes" that you intend to reference into other,
-/// composite, more specialized Materials.  This is because Usd references compose
-/// all descendant prims of the reference target into the referencer's namespace.
-/// This means that all of the library Material's shader network will come along 
-/// with the Material when the Material gets referenced as a sub-component of another
-/// Material.
+/// UsdShade requires that all of the shaders that "belong" to the Material 
+/// live under the Material in namespace. This supports powerful, easy reuse
+/// of Materials, because it allows us to *reference* a Material from one
+/// asset (the asset might be a library of Materials) into another asset: USD 
+/// references compose all descendant prims of the reference target into the 
+/// referencer's namespace, which means that all of the referenced Material's 
+/// shader networks will come along with the Material. When referenced in this
+/// way, Materials can also be [instanced](http://openusd.org/docs/USD-Glossary.html#USDGlossary-Instancing), for ease of deduplication and compactness.
+/// Finally, Material encapsulation also allows us to 
+/// \ref UsdShadeMaterial_BaseMaterial "specialize" child materials from 
+/// parent materials.
 /// 
 /// 
 ///
@@ -108,6 +111,11 @@ public:
     /// true, GetStaticPrimDefinition() will return a valid prim definition with
     /// a non-empty typeName.
     static const bool IsConcrete = true;
+
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = true;
 
     /// Construct a UsdShadeMaterial on UsdPrim \p prim .
     /// Equivalent to UsdShadeMaterial::Get(prim.GetStage(), prim.GetPath())
@@ -212,17 +220,23 @@ public:
 
     // --------------------------------------------------------------------- //
     /// \name Binding Geometry Prims to Materials
+    /// \deprecated
+    /// This API is now deprecated. Please use UsdShadeMaterialBindingAPI
+    /// instead.
     /// @{
     // --------------------------------------------------------------------- //
 
+    /// \deprecated
     /// Create a Material-binding relationship on \p prim and target it to this 
     /// Material prim
     ///
     /// Any UsdPrim can have a binding to at most a \em single UsdShadeMaterial .
     /// \return true on success
     USDSHADE_API
+    //[[deprecated("Please use UsdShadeMaterialBindingAPI instead.")]]
     bool Bind(const UsdPrim& prim) const;
 
+    /// \deprecated
     /// Ensure that, when resolved up to and including the current UsdEditTarget
     /// in composition strength, the given prim has no binding to a UsdShadeMaterial
     ///
@@ -232,8 +246,10 @@ public:
     /// use GetBindingRel().ClearTargets()
     /// \return true on success
     USDSHADE_API
+    //[[deprecated("Please use UsdShadeMaterialBindingAPI instead.")]]
     static bool Unbind(const UsdPrim& prim);
 
+    /// \deprecated
     /// Direct access to the binding relationship for \p prim, if it has
     /// already been created.
     ///
@@ -246,12 +262,15 @@ public:
     /// will then be the client's responsibility to ensure that only a
     /// single Material prim is targetted.  In general, use 
     /// UsdRelationship::SetTargets() rather than UsdRelationship::AddTarget()
+    //[[deprecated("Please use UsdShadeMaterialBindingAPI instead.")]]
     USDSHADE_API
     static UsdRelationship GetBindingRel(const UsdPrim& prim);
 
+    /// \deprecated
     /// Follows the relationship returned by GetBindingRel and returns a
     /// valid UsdShadeMaterial if the relationship targets exactly one such prim.
     ///
+    //[[deprecated("Please use UsdShadeMaterialBindingAPI instead.")]]
     USDSHADE_API
     static UsdShadeMaterial GetBoundMaterial(const UsdPrim &prim);
 
@@ -261,35 +280,56 @@ public:
     /// \anchor UsdShadeMaterial_Variations
     /// \name Authoring Material Variations
     /// Each UsdShadeMaterial prim can host data for any number of render targets
-    /// (such as Renderman RSL, Renderman RIS, Arnold, or glslfx).  Each Material
-    /// can /em also, however, encode variations of a particular Material that can
-    /// vary each target's set of bound shaders - or any other data authored
-    /// on the Material.  For example, we might have a logo'd baseball cap that
-    /// comes in denim, nylon, and corduroy variations.  We can encode the
-    /// material variation - and the ability to select the variations - as
-    /// a Material variant that varies the surface shader relationship in each of
-    /// the render targets.
+    /// (such as Renderman RIS, Arnold, or glslfx).
+    ///
+    /// A single UsdShadeMaterial group can, however, encode variations on
+    /// appearance, varying any data authored on the material and its contents.
+    /// For example, we might have a logo'd baseball cap that
+    /// comes in denim, nylon, and corduroy variations.
     ///
     /// We provide methods to aid in authoring such variations on individual
-    /// Material prims, and also a facility for creating a "master" Material variant
-    /// on another prim (a model's root prim, or another common ancestor of
-    /// all Material prims in a model) that will set the variants on each Material
-    /// in concert, from making a single variant selection.
+    /// Material prims, and also a facility for creating a "master" look
+    /// variant on another prim (e.g.  a model's root prim, or another common 
+    /// ancestor of all Material prims in a model) that will be able to modify
+    /// Materials, bindings, connections and values at once.
     ///
     /// <b>Note on variant vs "direct" opinions.</b>
-    /// For any given location in a layer (i.e. a prim's spec in the layer),
-    /// opinions expressed inside a variant of a variantSet will be
-    /// \em weaker than any opinions expressed "directly" at the location,
-    /// outside of any layer.
+    /// For any given prim's spec in a layer, opinions expressed inside a 
+    /// variant of a variantSet will be /weaker/ than any opinions expressed 
+    /// "directly" at the location, outside of any layer.
     ///
-    /// Therefore, if you intend to vary relationship "surface" in a 
-    /// MaterialVariant, make sure you author it \em only inside variant edit
-    /// contexts (i.e. GetEditContextForVariant()).  If you author the
-    /// relationship outside any of the variants, it will trump them all.
+    /// Therefore, if you intend to author a default variant that is weaker than
+    /// more explicit variants, you will need to have those opinions be weaker 
+    /// by setting them across a reference arc such as the following:
+    ///
+    /// \code
+    /// def "MyMaterial" (
+    ///     add references = </MyMaterial_defaultShadingVariant>
+    ///     variants = {
+    ///         string materialVariant = "SomeVariant"
+    ///     }
+    ///     add variantSets = "materialVariant"
+    /// )
+    /// {
+    ///     float strongerThanVariantOpinion
+    /// 
+    ///     variantSet "materialVariant" = {
+    ///         "SomeVariant" {
+    ///             float variantOpinion
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// over "MyMaterial_defaultShadingVariant"
+    /// {
+    ///     float weakerThanVariantOpinion
+    /// }
+    /// \endcode
+    /// 
     /// @{
+    ///
     // --------------------------------------------------------------------- //
-
-    /// Helper function for configuring a UsdStage's editTarget to author
+    /// Helper function for configuring a UsdStage's UsdEditTarget to author
     /// Material variations. Takes care of creating the Material variantSet and
     /// specified variant, if necessary.
     ///
@@ -303,7 +343,7 @@ public:
     /// {
     ///     UsdEditContext ctxt(clothMaterial.GetEditContextForVariant(currVariant));
     ///
-    ///     // All Usd mutation of the UsdStage on which clothMaterial sits will
+    ///     // All USD mutation of the UsdStage on which clothMaterial sits will
     ///     // now go "inside" the currVariant of the "MaterialVariant" variantSet
     /// }
     /// \endcode
@@ -425,75 +465,95 @@ public:
 
 
     // --------------------------------------------------------------------- //
-    /// \anchor UsdShadeMaterial_FaceSubsets
-    /// \name Face-Subsets
+    /// \anchor UsdShadeMaterial_Subsets
+    /// \name Binding materials to subsets
+    /// \deprecated This API is now deprecated. Please use the equivalent API 
+    ///             available on UsdShadeMaterialBindingAPI.
     /// 
     /// API to create, access and query the presence of GeomSubsets below an 
-    /// imageable prim, created for the purpose of binding materials to 
-    /// subsets of faces.
+    /// imageable prim, that are created for the purpose of binding materials.
     /// 
-    /// \note Material bindings authored on GeomSubsets with elementType="face"
-    /// are honored by renderers only if its familyName is 
-    /// <b>UsdShadeTokens->materialBind</b>.
+    /// \note Material bindings authored on GeomSubsets are honored by renderers
+    /// only if their familyName is <b>UsdShadeTokens->materialBind</b>.
     /// 
-    /// Here's some sample code that shows how to create a "face" subset and 
-    /// and bind a material to it.
+    /// Here's some sample code that shows how to create "face" subsets and 
+    /// and bind materials to them.
     /// \code
     /// UsdGeomImageable mesh = UsdGeomImageable::Get(stage,
     ///         SdfPath("/path/to/meshPrim");
-    /// UsdShadeMaterial mat1 = UsdShadeMaterial::Get(stage, 
-    ///         SdfPath("/path/to/Material1");
-    /// UsdShadeMaterial mat2 = UsdShadeMaterial::Get(stage, 
-    ///         SdfPath("/path/to/Material2");    
+    /// UsdShadeMaterial plastic = UsdShadeMaterial::Get(stage, 
+    ///         SdfPath("/path/to/PlasticMaterial");
+    /// UsdShadeMaterial metal = UsdShadeMaterial::Get(stage, 
+    ///         SdfPath("/path/to/MetalMaterial");    
     ///
-    /// VtIntArray faceIndices1, faceIndices2;
+    /// VtIntArray plasticFaces, metalFaces;
     /// //.. populate faceIndices here.
     /// //.. 
     /// 
-    /// UsdGeomSubset subset1 = 
-    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, "subset1",
-    ///                                                         faceIndices1);
-    /// UsdGeomSubset subset2 = 
-    ///         UsdShaderMaterial::CreateMaterialBindFaceSubset(mesh, "subset2",
-    ///                                                         faceIndices2);
-    /// mat1.Bind(subset1.GetPrim())
-    /// mat2.Bind(subset2.GetPrim())
+    /// UsdGeomSubset plasticSubset = 
+    ///         UsdShaderMaterial::CreateMaterialBindSubset(mesh, 
+    ///                 "plasticSubset", plasticFaces);
+    /// UsdGeomSubset metalSubset = 
+    ///         UsdShaderMaterial::CreateMaterialBindSubset(mesh, 
+    ///                 "metalSubset", metalFaces);
+    /// plastic.Bind(plasticSubset.GetPrim())
+    /// metal.Bind(metalSubset.GetPrim())
     /// 
     /// \endcode
     /// @{
 
-    /// Creates a GeomSubset named \p subsetName with elementType 'face' and 
-    /// familyName <b>materialBind<b> below the given imageable prim, \p geom. 
+    /// \deprecated 
+    /// Creates a GeomSubset named \p subsetName with element type, 
+    /// \p elementType and familyName <b>materialBind<b> below the given
+    /// imageable prim, \p geom. 
+    /// 
     /// If a GeomSubset named \p subsetName already exists, then its 
     /// "familyName" is updated to be UsdShadeTokens->materialBind and its 
-    /// "default" indices are updated with the provided \p indices value before 
-    /// returning. 
-    ///
+    /// indices (at <i>default</i> timeCode) are updated with the provided 
+    /// \p indices value before returning. 
+    /// 
+    /// This method forces the familyType of the "materialBind" family of 
+    /// subsets to UsdGeomTokens->nonOverlapping if it's unset or explicitly set
+    /// to UsdGeomTokens->unrestricted.
+    /// 
+    /// The default value \p elementType is UsdGeomTokens->face, as we expect 
+    /// materials to be bound most often to subsets of faces on meshes.
     USDSHADE_API
-    static UsdGeomSubset CreateMaterialBindFaceSubset(
+    static UsdGeomSubset CreateMaterialBindSubset(
         const UsdGeomImageable &geom,
         const TfToken &subsetName,
-        const VtIntArray &indices);
+        const VtIntArray &indices,
+        const TfToken &elementType=UsdGeomTokens->face);
 
-    /// Returns all the existing GeomSubsets with elementType 'face' and 
-    /// familyName UsdShadeTokens->materialBind below the given imageable prim, 
+    /// \deprecated
+    /// Returns all the existing GeomSubsets with 
+    /// familyName=UsdShadeTokens->materialBind below the given imageable prim, 
     /// \p geom.
     USDSHADE_API
-    static std::vector<UsdGeomSubset> GetMaterialBindFaceSubsets(
+    static std::vector<UsdGeomSubset> GetMaterialBindSubsets(
         const UsdGeomImageable &geom);
     
+    /// \deprecated
     /// Encodes whether the family of "materialBind" subsets form a valid 
     /// partition of the set of all faces on the imageable prim, \p geom.
     USDSHADE_API
-    static bool SetMaterialBindFaceSubsetsFamilyType(
+    static bool SetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom,
-        const UsdGeomSubset::FamilyType familyType);
+        const TfToken &familyType);
 
-    /// Returns whether the family of "materialBind" subsets are expected to 
-    /// form a valid partition of the set of all faces on the imageable prim, 
-    /// \p geom.
+    /// \deprecated
+    /// Returns the familyType of the family of "materialBind" subsets under
+    /// \p geom. 
+    /// 
+    /// By default materialBind subsets have familyType="nonOverlapping", but
+    /// their can also be tagged as a "partition", using 
+    /// SetMaterialBindFaceSubsetsFamilyType(). 
+    /// 
+    /// \sa UsdGeomSubset::SetFamilyType
+    /// \sa UsdGeomSubset::GetFamilyNameAttr
+    /// 
     USDSHADE_API
-    static UsdGeomSubset::FamilyType GetMaterialBindFaceSubsetsFamilyType(
+    static TfToken GetMaterialBindSubsetsFamilyType(
         const UsdGeomImageable &geom);
 
     /// @}

@@ -1,0 +1,167 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/meshNormal.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Flat
+
+vec3 GetVertexNormal()
+{
+    return vec3(0);
+}
+
+vec3 GetTriGeometryNormal(vec3 vertexNormal,
+                          vec4 Peye0, vec4 Peye1, vec4 Peye2, bool isFlipped)
+{
+    // ignore vertex normal and compute flat facing normal
+    vec3 n = normalize(cross(Peye1.xyz - Peye0.xyz, Peye2.xyz - Peye0.xyz));
+
+    // flip if needed by negative-scaled transform
+    return isFlipped ? -n : n;
+}
+
+vec3 GetQuadGeometryNormal(vec3 vertexNormal,
+                           vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
+                           bool isFlipped)
+{
+    //  0---3
+    //  |.  |
+    //  | . |
+    //  |  .|
+    //  1---2
+    // ignore vertex normal and compute flat facing normal
+    // average diagonal cross products to deal with co-linear edges
+    vec3 A0 = Peye2.xyz - Peye3.xyz;
+    vec3 B0 = Peye0.xyz - Peye3.xyz;
+    vec3 A1 = Peye0.xyz - Peye1.xyz;
+    vec3 B1 = Peye2.xyz - Peye1.xyz;
+    vec3 n = normalize(cross(B0, A0) + cross(B1, A1));
+
+    // flip if needed by negative-scaled transform
+    return isFlipped ? -n : n;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Smooth
+
+vec3 GetVertexNormal()
+{
+    // get normal from vertex attribute and normalize it.
+    // XXX: Quadrangulated normals for edge/center vertices that come in are
+    // _not_ normalized. Hence, we forcibly normalize all incoming normals.
+    // We might want to fix this at the source instead.
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_normals)
+    normal = vec3(HdGet_normals().xyz);
+#elif defined(HD_HAS_packedNormals)
+    normal = vec3(HdGet_packedNormals().xyz);
+#endif
+    if (length(normal) > 0.0)
+        return normalize(normal);
+
+    return normal;
+}
+
+vec3 GetTriGeometryNormal(vec3 vertexNormal,
+                          vec4 Peye0, vec4 Peye1, vec4 Peye2, bool isFlipped)
+{
+    // plumb through
+    // authored normals shouldn't be flipped by matrices nor handedness
+    // even though we transform normals in the vertex shader.
+    return vertexNormal;
+}
+
+vec3 GetQuadGeometryNormal(vec3 vertexNormal,
+                           vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
+                           bool isFlipped)
+{
+    // plumb through
+    // authored normals shouldn't be flipped by matrices nor handedness
+    // even though we transform normals in the vertex shader.
+    return vertexNormal;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Limit
+
+vec3 GetVertexNormal()
+{
+    return vec3(0);
+}
+
+vec3 GetTriGeometryNormal(vec3 vertexNormal,
+                          vec4 Peye0, vec4 Peye1, vec4 Peye2,
+                          bool isFlipped)
+{
+    // vertexNormal is computed in the tessellation shader.
+    // flip if needed by negative-scaled transform
+    return isFlipped ? -vertexNormal : vertexNormal;
+}
+
+vec3 GetQuadGeometryNormal(vec3 vertexNormal,
+                           vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
+                           bool isFlipped)
+{
+    // note: this function shouldn't be taken in practice
+    // (tessellation always produces triangles)
+    //
+    // vertexNormal is computed in the tessellation shader.
+    // flip if needed by negative-scaled transform
+    return isFlipped ? -vertexNormal : vertexNormal;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Fragment.SingleSided
+
+vec3 GetShadingNormal(vec3 N, bool isFlipped)
+{
+    // the fragment shader takes already-flipped-normals.
+    // no need to flip here.
+    return N;
+}
+
+bool ShouldCullFaceAccordingToShading(bool frontFacing, bool isFlipped)
+{
+    return ShouldCullFace(frontFacing ^^ isFlipped, /*doubleSided=*/false);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.Fragment.DoubleSided
+
+vec3 GetShadingNormal(vec3 N, bool isFlipped)
+{
+    // note that negative scaling isn't taken into account in gl_FrontFacing
+    // so we have to consider isFlipped here too.
+    return (isFlipped ^^ gl_FrontFacing) ? N : -N;
+}
+
+bool ShouldCullFaceAccordingToShading(bool frontFacing, bool isFlipped)
+{
+    return ShouldCullFace(frontFacing ^^ isFlipped, /*doubleSided=*/true);
+}
+

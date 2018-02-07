@@ -64,6 +64,11 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = false;
 
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = false;
+
     /// Construct a UsdLuxShadowAPI on UsdPrim \p prim .
     /// Equivalent to UsdLuxShadowAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -105,6 +110,16 @@ public:
     static UsdLuxShadowAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget. This information is stored in the apiSchemas
+    /// metadata on prims.  
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    USDLUX_API
+    static UsdLuxShadowAPI 
+    Apply(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -166,7 +181,7 @@ public:
     // SHADOWDISTANCE 
     // --------------------------------------------------------------------- //
     /// The maximum distance shadows are cast.
-    /// There is no limit unless this attribute value is overriden.
+    /// There is no limit unless this attribute value is overridden.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -188,7 +203,7 @@ public:
     // SHADOWFALLOFF 
     // --------------------------------------------------------------------- //
     /// The near distance at which shadow falloff beings.
-    /// There is no falloff unless this attribute value is overriden.
+    /// There is no falloff unless this attribute value is overridden.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -232,7 +247,7 @@ public:
     // --------------------------------------------------------------------- //
     // SHADOWINCLUDE 
     // --------------------------------------------------------------------- //
-    /// Set of geometry to consider for shadowing. If this is not specified, all geometry is used for shadowing.
+    /// Set of geometry to consider for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing.
     ///
     USDLUX_API
     UsdRelationship GetShadowIncludeRel() const;
@@ -246,7 +261,7 @@ public:
     // --------------------------------------------------------------------- //
     // SHADOWEXCLUDE 
     // --------------------------------------------------------------------- //
-    /// Set of geometry to ignore for shadowing. If this is not specified, all geometry is used for shadowing.
+    /// Set of geometry to ignore for the purpose of casting shadows from a light.  If this is not specified, all geometry is used for shadowing.
     ///
     USDLUX_API
     UsdRelationship GetShadowExcludeRel() const;

@@ -29,17 +29,11 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
-
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-class HdExtCompCpuComputation;
-
-typedef boost::shared_ptr<HdExtCompCpuComputation>
-                                               HdExtCompCpuComputationSharedPtr;
 
 ///
 /// Hydra Representation of a Client defined computation.
@@ -74,7 +68,7 @@ public:
     ///
     /// Change tracking
     ///
-    enum DirtyBits {
+    enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyInputDesc        = 1 << 0,  ///< The list of inputs or input
                                          ///  bindings changed
@@ -83,12 +77,23 @@ public:
                                          ///  output arrays changed
         DirtySceneInput       = 1 << 3,  ///< A scene input changed value
         DirtyCompInput        = 1 << 4,  ///< A computation input changed value
+        DirtyKernel           = 1 << 5,  ///< The compute kernel binding changed
         AllDirty              = (DirtyInputDesc
                                 |DirtyOutputDesc
                                 |DirtyElementCount
                                 |DirtySceneInput
-                                |DirtyCompInput)
+                                |DirtyCompInput
+                                |DirtyKernel)
     };
+
+    ///
+    /// Source computation description
+    ///
+    struct SourceComputationDesc {
+        SdfPath computationId;
+        TfToken computationOutput;
+    };
+    typedef std::vector<SourceComputationDesc> SourceComputationDescVector;
 
     ///
     /// Update the object with new data from the scene delegate
@@ -100,16 +105,6 @@ public:
     HD_API
     void Sync(HdSceneDelegate *sceneDelegate,
               HdDirtyBits     *dirtyBits);
-
-    ///
-    /// Gets the buffer source object for the computation.
-    /// The returned source has already been added to the resource registry.
-    ///
-    /// The scene delegate identifies which delegate to pull scene inputs from.
-    HD_API
-    HdExtCompCpuComputationSharedPtr GetComputation(
-                                          HdSceneDelegate *sceneDelegate) const;
-
     ///
     /// Returns the set of dirty bits required for the first-sync of the
     /// object.
@@ -117,31 +112,39 @@ public:
     HD_API
     HdDirtyBits GetInitialDirtyBits() const;
 
+    HD_API
+    const SdfPath& GetId() const { return _id; }   
+
+    HD_API
+    size_t GetElementCount() const { return _elementCount; }
+
+    HD_API
+    const TfTokenVector& GetSceneInputs() const { return _sceneInputs; }
+
+    HD_API
+    const TfTokenVector& GetComputationInputs() const {
+        return _computationInputs;
+    }
+
+    HD_API
+    const SourceComputationDescVector& GetComputationSourceDescs() const {
+        return _computationSourceDescs;
+    }
+
+    HD_API
+    const TfTokenVector& GetOutputs() const { return _outputs; }
+
+    HD_API
+    const std::string& GetKernel() const { return _kernel; }
+
 private:
-    struct SourceComputationDesc {
-        SdfPath computationId;
-        TfToken computationOutput;
-    };
-    typedef std::vector<SourceComputationDesc> SourceComputationDescVector;
-
     SdfPath _id;
-
     size_t                      _elementCount;
     TfTokenVector               _sceneInputs;
     TfTokenVector               _computationInputs;
     SourceComputationDescVector _computationSourceDescs;
     TfTokenVector               _outputs;
-
-    // Creates a buffer source objects that bind the inputs and
-    // for processing the computation.
-    // These buffer sources are added to the resource registry.
-    //
-    // The scene delegate identifies which delegate to pull scene inputs from.
-    //
-    // The return value is the processing buffer source..
-    HD_API
-    HdExtCompCpuComputationSharedPtr _CreateCpuComputation(
-                                         HdSceneDelegate *sceneDelegate) const;
+    std::string                 _kernel;
 
     // No default construction or copying
     HdExtComputation() = delete;

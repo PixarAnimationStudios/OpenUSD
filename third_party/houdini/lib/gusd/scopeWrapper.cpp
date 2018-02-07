@@ -63,14 +63,13 @@ GusdScopeWrapper::GusdScopeWrapper(
         UsdTimeCode         time,
         GusdPurposeSet      purposes )
     : GusdGroupBaseWrapper( time, purposes )
-    , m_usdScopeForRead( scope )
+    , m_usdScope( scope )
 {
 }
 
 GusdScopeWrapper::GusdScopeWrapper( const GusdScopeWrapper &in )
     : GusdGroupBaseWrapper( in )
-    , m_usdScopeForRead( in.m_usdScopeForRead )
-    , m_usdScopeForWrite( in.m_usdScopeForWrite )
+    , m_usdScope( in.m_usdScope )
 {
 }
 
@@ -90,20 +89,20 @@ initUsdPrim(const UsdStagePtr& stage,
             // If we are writing an overlay and the ROP sees a geometry packed prim,
             // we want to write just the xform. In that case we can use a xform
             // wrapper to write the xform on any prim type.
-            m_usdScopeForWrite = UsdGeomScope(stage->OverridePrim( path ));
+            m_usdScope = UsdGeomScope(stage->OverridePrim( path ));
             newPrim = false;
         }
         else {
-            m_usdScopeForWrite = UsdGeomScope::Define( stage, path );   
+            m_usdScope = UsdGeomScope::Define( stage, path );   
         }
     }
     else {
-        m_usdScopeForWrite = UsdGeomScope::Define( stage, path );
+        m_usdScope = UsdGeomScope::Define( stage, path );
     }
-    if( !m_usdScopeForWrite || !m_usdScopeForWrite.GetPrim().IsValid() ) {
+    if( !m_usdScope || !m_usdScope.GetPrim().IsValid() ) {
         TF_WARN( "Unable to create %s scope '%s'.", newPrim ? "new" : "override", path.GetText() );
     }
-    return bool(m_usdScopeForWrite);
+    return bool(m_usdScope);
 }
 
 GT_PrimitiveHandle GusdScopeWrapper::
@@ -187,7 +186,7 @@ doSoftCopy() const
 bool GusdScopeWrapper::
 isValid() const
 {
-    return m_usdScopeForWrite || m_usdScopeForRead;
+    return m_usdScope;
 }
 
 bool GusdScopeWrapper::
@@ -197,7 +196,7 @@ refine(
 {
     //cerr << "GusdScopeWrapper::refine, enter: " << m_usdScope.GetPath() << endl;
 
-    return refineGroup( m_usdScopeForRead.GetPrim(), refiner, parms );
+    return refineGroup( m_usdScope.GetPrim(), refiner, parms );
 }
 
 
@@ -207,13 +206,13 @@ updateFromGTPrim(const GT_PrimitiveHandle& sourcePrim,
                  const GusdContext&        ctxt,
                  GusdSimpleXformCache&     xformCache)
 {
-    if( !m_usdScopeForWrite ) {
+    if( !m_usdScope ) {
         return false;
     }
 
     DBG( cout << "GusdScopeWrapper::updateFromGTPrim, primType = " << sourcePrim->className() << endl );
 
-    return updateGroupFromGTPrim( m_usdScopeForWrite, sourcePrim, localXform, 
+    return updateGroupFromGTPrim( m_usdScope, sourcePrim, localXform, 
                                   ctxt, xformCache );
 }
 

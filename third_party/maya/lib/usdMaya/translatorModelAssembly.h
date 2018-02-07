@@ -33,16 +33,18 @@
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
 
 #include <maya/MObject.h>
 
 #include <map>
 #include <string>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 struct PxrUsdMayaTranslatorModelAssembly
 {
@@ -82,7 +84,7 @@ struct PxrUsdMayaTranslatorModelAssembly
         const PxrUsdMayaPrimReaderArgs& args,
         PxrUsdMayaPrimReaderContext* context,
         const std::string& assemblyTypeName,
-        const std::string& assemblyRep);
+        const TfToken& assemblyRep);
 
     /// Creates a Maya USD proxy shape node for the USD prim \p prim under
     /// \p parentNode. A node of type \p proxyShapeTypeName will be created.
@@ -98,7 +100,7 @@ struct PxrUsdMayaTranslatorModelAssembly
 };
 
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif // PXRUSDMAYA_TRANSLATOR_MODELASSEMBLY_H

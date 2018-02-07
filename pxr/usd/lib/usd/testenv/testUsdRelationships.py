@@ -524,5 +524,67 @@ class TestUsdRelationships(unittest.TestCase):
             rel = stage.GetPrimAtPath("/Root/Instance_1").GetRelationship("fwdRel")
             _TestRelationshipForwarding(rel)
 
+    def test_AuthoringTargets(self):
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory("testAuthoringTargets." + fmt)
+
+            prim = stage.DefinePrim("/Test")
+            rel = prim.CreateRelationship("rel")
+            relSpec = stage.GetEditTarget().GetPropertySpecForScenePath(
+                rel.GetPath())
+
+            rel.SetTargets(["/Test/A", "/Test/B"])
+            self.assertEqual(rel.GetTargets(), ["/Test/A", "/Test/B"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.explicitItems = ["/Test/A", "/Test/B"]
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
+            rel.AddTarget("/Test/C")
+            self.assertEqual(rel.GetTargets(), 
+                             ["/Test/A", "/Test/B", "/Test/C"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.explicitItems = ["/Test/A", "/Test/B", "/Test/C"]
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
+            rel.ClearTargets(removeSpec=False)
+            self.assertEqual(rel.GetTargets(), [])
+
+            expectedListOp = Sdf.PathListOp()
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
+            rel.AddTarget("/Test/A", Usd.ListPositionFrontOfPrependList)
+            self.assertEqual(rel.GetTargets(), ["/Test/A"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test/A"]
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
+            rel.AddTarget("/Test/B", Usd.ListPositionBackOfPrependList)
+            self.assertEqual(rel.GetTargets(), ["/Test/A", "/Test/B"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test/A", "/Test/B"]
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
+            rel.AddTarget("/Test/C", Usd.ListPositionFrontOfAppendList)
+            self.assertEqual(rel.GetTargets(), 
+                             ["/Test/A", "/Test/B", "/Test/C"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test/A", "/Test/B"]
+            expectedListOp.appendedItems = ["/Test/C"]
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
+            rel.AddTarget("/Test/D", Usd.ListPositionBackOfAppendList)
+            self.assertEqual(rel.GetTargets(), 
+                             ["/Test/A", "/Test/B", "/Test/C", "/Test/D"])
+
+            expectedListOp = Sdf.PathListOp()
+            expectedListOp.prependedItems = ["/Test/A", "/Test/B"]
+            expectedListOp.appendedItems = ["/Test/C", "/Test/D"]
+            self.assertEqual(relSpec.GetInfo("targetPaths"), expectedListOp)
+
 if __name__ == '__main__':
     unittest.main()

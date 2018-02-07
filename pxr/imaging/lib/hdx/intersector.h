@@ -51,7 +51,7 @@ class HdRenderIndex;
 class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
@@ -213,11 +213,12 @@ public:
 private:
     void _Init(GfVec2i const&);
 
-    // A single shared render pass is used internally to avoid render pass
-    // thrashing due to picking.
-    HdRenderPassSharedPtr _renderPass;
+    // Create a shared render pass for pickables and unpickables
+    HdRenderPassSharedPtr _pickableRenderPass;
+    HdRenderPassSharedPtr _unpickableRenderPass;
 
-    HdRenderPassStateSharedPtr _renderPassState;
+    HdStRenderPassStateSharedPtr _pickableRenderPassState;
+    HdStRenderPassStateSharedPtr _unpickableRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.
