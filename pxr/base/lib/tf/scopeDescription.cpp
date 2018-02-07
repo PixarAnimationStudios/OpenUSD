@@ -32,6 +32,7 @@
 #include "pxr/base/arch/threads.h"
 
 #include <tbb/spin_mutex.h>
+#include <tbb/enumerable_thread_specific.h>
 
 #include <algorithm>
 #include <chrono>
@@ -192,11 +193,11 @@ struct _Stack
 
 // Force this out-of-line since modern compilers generate way too many calls to
 // __tls_get_addr even if you cache a pointer to the thread_local yourself.
-static thread_local _Stack _tlStack;
+static tbb::enumerable_thread_specific<_Stack> _tlStack;
 static _Stack &_GetLocalStack() ARCH_NOINLINE;
 static _Stack &_GetLocalStack()
 {
-    return _tlStack;
+    return _tlStack.local();
 }
 
 static bool _TimedTryAcquire(tbb::spin_mutex::scoped_lock &lock,
