@@ -54,6 +54,8 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     : HdSceneTask(delegate, id) 
     , _cameraId()
     , _lightIds()
+    , _lightIncludePaths()
+    , _lightExcludePaths()
     , _numLights(0)
     , _lightingShader(new HdxSimpleLightingShader())
     , _collectionVersion(0)
@@ -131,15 +133,8 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
-        // Extract all light paths for each type of light
-        static const TfTokenVector lightTypes = 
-            {HdPrimTypeTokens->simpleLight,
-             HdPrimTypeTokens->rectLight,
-             HdPrimTypeTokens->sphereLight};
-        _numLights = _AppendLightsOfType(renderIndex, lightTypes,
-                          params.lightIncludePaths,
-                          params.lightExcludePaths,
-                          &_lightIds);
+        _lightIncludePaths = params.lightIncludePaths;
+        _lightExcludePaths = params.lightExcludePaths;
         _cameraId = params.cameraPath;
         _enableShadows = params.enableShadows;
         _viewport = params.viewport;
@@ -186,6 +181,17 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     if (cameraHasWindowPolicy) {
         windowPolicy = vtWindowPolicy.Get<CameraUtilConformWindowPolicy>();
     }
+
+    // Extract all light paths for each type of light
+    static const TfTokenVector lightTypes = 
+        {HdPrimTypeTokens->simpleLight,
+            HdPrimTypeTokens->rectLight,
+            HdPrimTypeTokens->sphereLight};
+    _lightIds.clear();
+    _numLights = _AppendLightsOfType(renderIndex, lightTypes,
+                        _lightIncludePaths,
+                        _lightExcludePaths,
+                        &_lightIds);
 
     // We rebuild the lights array every time, but avoid reallocating
     // the array every frame as this was showing up as a significant portion

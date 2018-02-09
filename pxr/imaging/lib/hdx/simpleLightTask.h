@@ -78,6 +78,8 @@ private:
 private:
     SdfPath _cameraId;
     std::map<TfToken, SdfPathVector> _lightIds;
+    SdfPathVector _lightIncludePaths;
+    SdfPathVector _lightExcludePaths;
     size_t _numLights;
 
     // Should be weak ptrs
