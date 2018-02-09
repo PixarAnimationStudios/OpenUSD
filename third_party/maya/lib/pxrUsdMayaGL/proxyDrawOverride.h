@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -37,6 +38,7 @@
 #include <maya/MPxDrawOverride.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
+#include <maya/MViewport2Renderer.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,18 +48,26 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
     public:
         PXRUSDMAYAGL_API
+        static MString sm_drawDbClassification;
+        PXRUSDMAYAGL_API
+        static MString sm_drawRegistrantId;
+
+        PXRUSDMAYAGL_API
         static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
         PXRUSDMAYAGL_API
-        virtual ~UsdMayaProxyDrawOverride();
+        virtual ~UsdMayaProxyDrawOverride() override;
 
         PXRUSDMAYAGL_API
-        virtual bool isBounded(
+        virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
+
+        PXRUSDMAYAGL_API
+        virtual MBoundingBox boundingBox(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
-        virtual MBoundingBox boundingBox(
+        virtual bool isBounded(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
@@ -69,20 +79,14 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 MUserData* oldData) override;
 
         PXRUSDMAYAGL_API
-        virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
-
-        PXRUSDMAYAGL_API
-        static MString sm_drawDbClassification;
-        PXRUSDMAYAGL_API
-        static MString sm_drawRegistrantId;
-
-        PXRUSDMAYAGL_API
         static void draw(
                 const MHWRender::MDrawContext& context,
                 const MUserData* data);
 
     private:
         UsdMayaProxyDrawOverride(const MObject& obj);
+
+        PxrMayaHdShapeAdapter _shapeAdapter;
 };
 
 

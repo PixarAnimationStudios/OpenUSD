@@ -50,29 +50,26 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class UsdMayaProxyDrawOverride;
+class UsdMayaProxyShapeUI;
+
+
 /// Class to manage translation of Maya shape node data and viewport state for
 /// imaging with Hydra.
 class PxrMayaHdShapeAdapter
 {
     public:
 
-        /// Construct a new uninitialized \c PxrMayaHdShapeAdapter.
-        PXRUSDMAYAGL_API
-        PxrMayaHdShapeAdapter(
-                const MDagPath& shapeDagPath,
-                const UsdPrim& rootPrim,
-                const SdfPathVector& excludedPrimPaths);
-
-        PXRUSDMAYAGL_API
-        virtual ~PxrMayaHdShapeAdapter();
-
-        PXRUSDMAYAGL_API
-        size_t GetHash() const;
-
+        /// Initialize the shape adapter using the given \p renderIndex.
+        ///
+        /// This method is called back by the batch renderer when the shape
+        /// adapter is added to it so that the batch renderer can pass in its
+        /// render index. The shape adapter will then use that render index to
+        /// construct its delegate.
         PXRUSDMAYAGL_API
         void Init(HdRenderIndex* renderIndex);
 
-        /// Update the shape adapter's state from the given MPxSurfaceShape
+        /// Update the shape adapter's state from the given \c MPxSurfaceShape
         /// and the legacy viewport display state.
         PXRUSDMAYAGL_API
         bool Sync(
@@ -80,7 +77,7 @@ class PxrMayaHdShapeAdapter
                 const M3dView::DisplayStyle legacyDisplayStyle,
                 const M3dView::DisplayStatus legacyDisplayStatus);
 
-        /// Update the shape adapter's state from the given MPxSurfaceShape
+        /// Update the shape adapter's state from the given \c MPxSurfaceShape
         /// and the Viewport 2.0 display state.
         PXRUSDMAYAGL_API
         bool Sync(
@@ -106,9 +103,19 @@ class PxrMayaHdShapeAdapter
         const GfMatrix4d& GetRootXform() const { return _rootXform; }
 
         PXRUSDMAYAGL_API
-        const SdfPath& GetSharedId() const { return _sharedId; }
+        const SdfPath& GetDelegateID() const;
 
     private:
+
+        /// Construct a new uninitialized PxrMayaHdShapeAdapter.
+        ///
+        /// Note that only friends of this class are able to construct
+        /// instances of this class.
+        PXRUSDMAYAGL_API
+        PxrMayaHdShapeAdapter();
+
+        PXRUSDMAYAGL_API
+        virtual ~PxrMayaHdShapeAdapter();
 
         /// Private helper for getting the wireframe color of the shape.
         ///
@@ -125,7 +132,6 @@ class PxrMayaHdShapeAdapter
         SdfPathVector _excludedPrimPaths;
         GfMatrix4d _rootXform;
 
-        SdfPath _sharedId;
         std::shared_ptr<UsdImagingDelegate> _delegate;
         bool _isPopulated;
 
@@ -134,6 +140,17 @@ class PxrMayaHdShapeAdapter
         PxrMayaHdRenderParams _renderParams;
         bool _drawShape;
         bool _drawBoundingBox;
+
+        /// The classes that maintain ownership of and are responsible for
+        /// updating the shape adapter for their shape are made friends of
+        /// PxrMayaHdShapeAdapter so that they alone can set properties on the
+        /// shape adapter.
+        ///
+        /// XXX: Eventually, each type of shape that is imaged by Hydra will
+        /// have its own derived class of PxrMayaHdShapeAdapter so that we do
+        /// not end up with a single master list here.
+        friend class UsdMayaProxyDrawOverride;
+        friend class UsdMayaProxyShapeUI;
 };
 
 

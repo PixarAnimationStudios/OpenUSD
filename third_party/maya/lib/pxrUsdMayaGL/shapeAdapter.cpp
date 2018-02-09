@@ -71,14 +71,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter(
-        const MDagPath& shapeDagPath,
-        const UsdPrim& rootPrim,
-        const SdfPathVector& excludedPrimPaths) :
-    _shapeDagPath(shapeDagPath),
-    _rootPrim(rootPrim),
-    _excludedPrimPaths(excludedPrimPaths),
-    _isPopulated(false)
+PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter() :
+        _isPopulated(false)
 {
 }
 
@@ -87,31 +81,44 @@ PxrMayaHdShapeAdapter::~PxrMayaHdShapeAdapter()
 {
 }
 
-size_t
-PxrMayaHdShapeAdapter::GetHash() const
+void
+PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
 {
+    // Create a simple string to put into a flat SdfPath "hierarchy". This is
+    // much faster than more complicated pathing schemes.
+    //
+    // XXX: For as long as we're using the MAYA_VP2_USE_VP1_SELECTION
+    // environment variable, we need to be able to pass responsibility back and
+    // forth between the MPxDrawOverride's shape adapter for drawing and the
+    // MPxSurfaceShapeUI's shape adapter for selection. This requires both
+    // shape adapters to have the same delegate ID, which forces us to build it
+    // from data on the shape that will be common to both classes, as we do
+    // below. When we remove MAYA_VP2_USE_VP1_SELECTION and can trust that a
+    // single shape adapter handles both drawing and selection, we can do
+    // something even simpler instead like using the shape adapter's memory
+    // address as the ID:
+    //
+    // const std::string idString = TfStringPrintf("/PxrMayaHdShapeAdapter_%p",
+    //                                             this);
+    //
+    // Note that this also means that the properties used to compute the
+    // delegateId must be populated *before* this method is called, and
+    // therefore also before UsdMayaGLBatchRenderer::AddShapeAdapter() is
+    // called.
     size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
     boost::hash_combine(shapeHash, _rootPrim);
     boost::hash_combine(shapeHash, _excludedPrimPaths);
 
-    return shapeHash;
-}
-
-void
-PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
-{
-    // Create a simple hash string to put into a flat SdfPath "hierarchy".
-    // This is much faster than more complicated pathing schemes.
-    const size_t shapeHash = GetHash();
     const std::string idString = TfStringPrintf("/x%zx", shapeHash);
-    _sharedId = SdfPath(idString);
 
-    _delegate.reset(new UsdImagingDelegate(renderIndex, _sharedId));
+    const SdfPath delegateId(idString);
+
+    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateId));
     _isPopulated = false;
 
     _rprimCollection.SetName(TfToken(_shapeDagPath.fullPathName().asChar()));
     _rprimCollection.SetReprName(HdTokens->refined);
-    _rprimCollection.SetRootPath(_sharedId);
+    _rprimCollection.SetRootPath(delegateId);
 
     renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
 }
@@ -405,6 +412,16 @@ PxrMayaHdShapeAdapter::GetRenderParams(bool* drawShape, bool* drawBoundingBox)
     }
 
     return _renderParams;
+}
+
+const SdfPath&
+PxrMayaHdShapeAdapter::GetDelegateID() const
+{
+    if (_delegate) {
+        return _delegate->GetDelegateID();
+    }
+
+    return SdfPath::EmptyPath();
 }
 
 

@@ -142,25 +142,44 @@ UsdMayaGLBatchRenderer::GetInstance()
     return TfSingleton<UsdMayaGLBatchRenderer>::GetInstance();
 }
 
-PxrMayaHdShapeAdapter*
-UsdMayaGLBatchRenderer::GetShapeAdapter(
-        const MDagPath& shapeDagPath,
-        const UsdPrim& rootPrim,
-        const SdfPathVector& excludedPrimPaths)
+bool
+UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 {
-    PxrMayaHdShapeAdapter shapeAdapter(shapeDagPath,
-                                       rootPrim,
-                                       excludedPrimPaths);
-    const size_t shapeHash = shapeAdapter.GetHash();
-
-    auto inserted = _shapeAdapterMap.insert({shapeHash, shapeAdapter});
-    PxrMayaHdShapeAdapter* shapeAdapterPtr = &inserted.first->second;
-
-    if (inserted.second) {
-        shapeAdapterPtr->Init(_renderIndex.get());
+    if (!shapeAdapter) {
+        return false;
     }
 
-    return shapeAdapterPtr;
+    auto inserted = _shapeAdapterSet.insert(shapeAdapter);
+
+    if (inserted.second) {
+        shapeAdapter->Init(_renderIndex.get());
+    }
+
+    return inserted.second;
+}
+
+bool
+UsdMayaGLBatchRenderer::RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
+{
+    if (!shapeAdapter) {
+        return false;
+    }
+
+    const size_t numErased = _shapeAdapterSet.erase(shapeAdapter);
+
+    // Make sure we remove the shape adapter from the render and select queues
+    // as well.
+    for (auto& iter : _renderQueue) {
+        _ShapeAdapterSet& shapeAdapters = iter.second.second;
+        shapeAdapters.erase(shapeAdapter);
+    }
+
+    for (auto& iter : _selectQueue) {
+        _ShapeAdapterSet& shapeAdapters = iter.second.second;
+        shapeAdapters.erase(shapeAdapter);
+    }
+
+    return (numErased > 0u);
 }
 
 void
@@ -237,17 +256,17 @@ UsdMayaGLBatchRenderer::_QueueShapeForDraw(
         PxrMayaHdShapeAdapter* shapeAdapter,
         const PxrMayaHdRenderParams& params)
 {
-    const size_t paramKey = params.Hash();
+    const size_t paramsHash = params.Hash();
 
-    auto renderSetIter = _renderQueue.find(paramKey);
-    if (renderSetIter == _renderQueue.end()) {
-        // If we had no shape adapter hash set for this particular RenderParam
+    auto iter = _renderQueue.find(paramsHash);
+    if (iter == _renderQueue.end()) {
+        // If we had no shape adapter set for this particular RenderParam
         // combination, create a new one.
-        _renderQueue[paramKey] =
-            _RenderParamSet(params, _ShapeAdapterHashSet({shapeAdapter->GetHash()}));
+        _renderQueue[paramsHash] =
+            _RenderParamSet(params, _ShapeAdapterSet({shapeAdapter}));
     } else {
-        _ShapeAdapterHashSet& shapeAdapterHashes = renderSetIter->second.second;
-        shapeAdapterHashes.insert(shapeAdapter->GetHash());
+        _ShapeAdapterSet& shapeAdapters = iter->second.second;
+        shapeAdapters.insert(shapeAdapter);
     }
 }
 
@@ -317,11 +336,6 @@ UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
     _intersector.reset();
     _taskDelegate.reset();
-
-    // The cache of shape adapters may have delegate objects holding references
-    // to the render index, so they need to be deleted before _renderIndex is
-    // deleted.
-    _shapeAdapterMap.clear();
 }
 
 /* static */
@@ -464,7 +478,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
         _GetHitInfo(view,
                     pickResolution,
                     singleSelection,
-                    shapeAdapter->GetSharedId(),
+                    shapeAdapter->GetDelegateID(),
                     shapeAdapter->GetRootXform());
     if (!hitInfo) {
         return false;
@@ -489,7 +503,7 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         M3dView& view,
         const unsigned int pickResolution,
         const bool singleSelection,
-        const SdfPath& sharedId,
+        const SdfPath& delegateId,
         const GfMatrix4d& localToWorldSpace)
 {
     // Guard against user clicking in viewer before renderer is setup
@@ -529,23 +543,19 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
 
         _selectResults.clear();
 
-        for (const auto& renderSetIter : _selectQueue) {
-            const PxrMayaHdRenderParams& renderParams = renderSetIter.second.first;
-            const _ShapeAdapterHashSet& shapeAdapterHashes =
-                renderSetIter.second.second;
+        for (const auto& iter : _selectQueue) {
+            const size_t paramsHash = iter.first;
+            const PxrMayaHdRenderParams& renderParams = iter.second.first;
+            const _ShapeAdapterSet& shapeAdapters = iter.second.second;
 
             HdRprimCollectionVector rprimCollections;
-            for (const size_t shapeAdapterHash : shapeAdapterHashes) {
-                const auto& iter = _shapeAdapterMap.find(shapeAdapterHash);
-                if (iter != _shapeAdapterMap.end()) {
-                    const PxrMayaHdShapeAdapter& shapeAdapter = iter->second;
-                    rprimCollections.push_back(shapeAdapter.GetRprimCollection());
-                }
+            for (const PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
+                rprimCollections.push_back(shapeAdapter->GetRprimCollection());
             }
 
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
                 "--- pickQueue, batch %zx, size %zu\n",
-                renderSetIter.first,
+                paramsHash,
                 rprimCollections.size());
 
             qparams.cullStyle = renderParams.cullStyle;
@@ -655,7 +665,7 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             "^^^^^^^^^^^^ SELECTION STAGE FINISH ^^^^^^^^^^^^^\n");
     }
 
-    return TfMapLookupPtr(_selectResults, sharedId);
+    return TfMapLookupPtr(_selectResults, delegateId);
 }
 
 void
@@ -726,28 +736,23 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // render task setup
     HdTaskSharedPtrVector tasks = _taskDelegate->GetSetupTasks(); // lighting etc
 
-    for (const auto& renderSetIter : _renderQueue) {
-        const size_t hash = renderSetIter.first;
-        const PxrMayaHdRenderParams& params = renderSetIter.second.first;
-        const _ShapeAdapterHashSet& shapeAdapterHashes =
-            renderSetIter.second.second;
+    for (const auto& iter : _renderQueue) {
+        const size_t paramsHash = iter.first;
+        const PxrMayaHdRenderParams& params = iter.second.first;
+        const _ShapeAdapterSet& shapeAdapters = iter.second.second;
 
         HdRprimCollectionVector rprimCollections;
-        for (const size_t shapeAdapterHash : shapeAdapterHashes) {
-            const auto& iter = _shapeAdapterMap.find(shapeAdapterHash);
-            if (iter != _shapeAdapterMap.end()) {
-                const PxrMayaHdShapeAdapter& shapeAdapter = iter->second;
-                rprimCollections.push_back(shapeAdapter.GetRprimCollection());
-            }
+        for (const PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
+            rprimCollections.push_back(shapeAdapter->GetRprimCollection());
         }
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "*** renderQueue, batch %zx, size %zu\n",
-            renderSetIter.first,
+            paramsHash,
             rprimCollections.size());
 
         tasks.push_back(
-            _taskDelegate->GetRenderTask(hash, params, rprimCollections));
+            _taskDelegate->GetRenderTask(paramsHash, params, rprimCollections));
     }
 
     _hdEngine.Execute(*_renderIndex, tasks);
