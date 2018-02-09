@@ -189,6 +189,21 @@ UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsFromShaderNetwork(
                                             UsdTimeCode::Default())) {
                     primvars.push_back(t);
                 }
+            } else if (id == UsdHydraTokens->HwPtexTexture_1) {
+                TfToken t;
+
+                // Allow clients to override the names of the ptex faceIndex 
+                // and faceOffset primvars.
+                TfToken faceIndexPrimvarName = 
+                    attr.GetMetadata(UsdImagingTokens->faceIndexPrimvar, &t) ? 
+                        t : UsdImagingTokens->ptexFaceIndex;
+                primvars.push_back(faceIndexPrimvarName);
+
+                TfToken faceOffsetPrimvarName = 
+                    attr.GetMetadata(UsdImagingTokens->faceOffsetPrimvar, &t) ?
+                        t : UsdImagingTokens->ptexFaceOffset;
+                primvars.push_back(faceOffsetPrimvarName);
+
             } else {
                 // Recursively look for more primvars
                 primvars = 
@@ -501,21 +516,22 @@ UsdImagingHydraMaterialAdapter::_GetMaterialParams(UsdPrim const& prim) const
                                 GetFilenameAttr().GetPath();
                             TF_DEBUG(USDIMAGING_SHADERS).Msg(
                                         "\t connected to UV texture\n");
-                            UsdHydraUvTexture tex(sourceShader);
-                            UsdShadeInput uv(tex.GetUvAttr());
-                            UsdShadeConnectableAPI uvSource;
-                            if (UsdShadeConnectableAPI::
-                                    GetConnectedSource(uv, &uvSource, 
-                                                        &outputName,
-                                                        &sourceType)) {
-                                TfToken map;
-                                UsdShadeShader uvSourceShader(uvSource);
-                                UsdHydraPrimvar pv(uvSourceShader);
-                                if (pv.GetVarnameAttr().Get(&map)) {
-                                    samplerCoords.push_back(map);
-                                    TF_DEBUG(USDIMAGING_SHADERS).Msg(
-                                            "\t\t sampler: %s\n",
-                                            map.GetText());
+                            if (UsdShadeInput uv = sourceShader.GetInput(
+                                        UsdHydraTokens->uv)) {
+                                UsdShadeConnectableAPI uvSource;
+                                if (UsdShadeConnectableAPI::
+                                        GetConnectedSource(uv, &uvSource, 
+                                                            &outputName,
+                                                            &sourceType)) {
+                                    TfToken map;
+                                    UsdShadeShader uvSourceShader(uvSource);
+                                    UsdHydraPrimvar pv(uvSourceShader);
+                                    if (pv.GetVarnameAttr().Get(&map)) {
+                                        samplerCoords.push_back(map);
+                                        TF_DEBUG(USDIMAGING_SHADERS).Msg(
+                                                "\t\t sampler: %s\n",
+                                                map.GetText());
+                                    }
                                 }
                             }
                         } else if (id == UsdHydraTokens->HwPtexTexture_1) {
