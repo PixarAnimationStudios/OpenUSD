@@ -23,13 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 from pxr import Sdf, Usd, UsdShade
-import unittest
-
-# XXX: It would be nice if UsdShade provided a standalone free function call 
-# like this.
-def ComputeBoundMaterial(prim, materialPurpose=UsdShade.Tokens.allPurpose):
-    return UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
-            materialPurpose)[0]
+import unittest    
 
 class TestUsdShadeMaterialBinding(unittest.TestCase): 
 
@@ -263,6 +257,15 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
                 materialPurpose=UsdShade.Tokens.preview)[0].GetPath(),
             previewMat.GetPath())
 
+    # Naming this utility method _GetBoundMaterial, to distinguish it from 
+    # the core method named ComputeBoundMaterial() .
+    def _GetBoundMaterial(self, prim, materialPurpose=UsdShade.Tokens.allPurpose):
+        (material, bindingRel) = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                materialPurpose)
+        # Whenever we get a valid material, there must be a valid bindingRel.
+        if material:
+            self.assertTrue(bindingRel)
+        return material
 
     def test_CollectionBinding(self):
         # Open a usd stage containing prims and collections.
@@ -286,7 +289,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
     
         # There are no materials or bindings on the stage to begin with.         
         for p in [lampABase, lampAShade, lampBBase, lampBShade, lampA, lampB]:
-            self.assertFalse(ComputeBoundMaterial(p))
+            self.assertFalse(self._GetBoundMaterial(p))
 
         # Create some materials.
         defaultMat = UsdShade.Material.Define(s, "/World/Materials/Default")
@@ -324,19 +327,19 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertEqual(len(collBindings), 1)
         self.assertEqual(len(bindingRels), 1)
 
-        self.assertEqual(ComputeBoundMaterial(lampA).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampA).GetPath(), 
                          plasticMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampB).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampB).GetPath(), 
                          plasticMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          plasticMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBShade).GetPath(), 
                          plasticMat.GetPath())
 
         # Geometry not belonging to collections are unbound.
-        self.assertFalse(ComputeBoundMaterial(pencilA))
-        self.assertFalse(ComputeBoundMaterial(pencilB))
-        self.assertFalse(ComputeBoundMaterial(eraserA))
+        self.assertFalse(self._GetBoundMaterial(pencilA))
+        self.assertFalse(self._GetBoundMaterial(pencilB))
+        self.assertFalse(self._GetBoundMaterial(eraserA))
 
         # Overwrite binding by passing not passing in bindingName. It uses 
         # the base-name of the collection, which is "lamps".
@@ -356,27 +359,27 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # Test AddPrimToBindingCollection and RemovePrimFromBindingCollection.
         self.assertTrue(tableGrpBindingAPI.AddPrimToBindingCollection(eraserA, 
                         "lamps"))
-        self.assertEqual(ComputeBoundMaterial(eraserA).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(eraserA).GetPath(), 
                          rubberMat.GetPath())
 
         self.assertTrue(tableGrpBindingAPI.RemovePrimFromBindingCollection(
                         eraserA, "lamps"))
-        self.assertFalse(ComputeBoundMaterial(eraserA))
+        self.assertFalse(self._GetBoundMaterial(eraserA))
 
         # Author a direct binding to the default matarial.
         self.assertTrue(tableGrpBindingAPI.Bind(defaultMat))
 
         # Ensure that collection-based bindings win over the default binding.
-        self.assertEqual(ComputeBoundMaterial(lampA).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampA).GetPath(), 
                          rubberMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampB).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampB).GetPath(), 
                          rubberMat.GetPath())
 
-        self.assertEqual(ComputeBoundMaterial(pencilA).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(pencilA).GetPath(), 
                          defaultMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(pencilB).GetPath(),
+        self.assertEqual(self._GetBoundMaterial(pencilB).GetPath(),
                          defaultMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(eraserA).GetPath(),
+        self.assertEqual(self._GetBoundMaterial(eraserA).GetPath(),
                          defaultMat.GetPath())
 
         # Bind collections with overlapping geometry higher up in namespace.
@@ -389,13 +392,13 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
             bindingName="justLampShades", 
             bindingStrength=UsdShade.Tokens.strongerThanDescendants))
 
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          rubberMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampAShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampAShade).GetPath(), 
                          woodMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBBase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBBase).GetPath(), 
                          rubberMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBShade).GetPath(), 
                          woodMat.GetPath())
 
         lampBasesCollBindingRel = roomSetBindingAPI.GetCollectionBindingRel(
@@ -410,9 +413,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
                 lampBasesCollBindingRel, 
                 UsdShade.Tokens.strongerThanDescendants))
         
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          metalMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBBase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBBase).GetPath(), 
                          metalMat.GetPath())
 
         # Now add another overlapping collection-based binding named "zLamps" on
@@ -423,13 +426,13 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
             bindingName="zLamps", 
             bindingStrength=UsdShade.Tokens.strongerThanDescendants))
 
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          metalMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampAShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampAShade).GetPath(), 
                          woodMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBBase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBBase).GetPath(), 
                          metalMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBShade).GetPath(), 
                          woodMat.GetPath())
         
 
@@ -438,40 +441,40 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
                                   'material:binding:collection:lampBasesOnly',
                                   'material:binding:collection:justLampShades'])
 
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          velvetMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampAShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampAShade).GetPath(), 
                          velvetMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBBase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBBase).GetPath(), 
                          velvetMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBShade).GetPath(), 
                          velvetMat.GetPath())
 
         # Test UnbindAllBindings().
         roomSetBindingAPI.UnbindAllBindings()
 
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          rubberMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBShade).GetPath(), 
                          rubberMat.GetPath())
 
         # Test UnbindCollectionBinding().
         tableGrpBindingAPI.UnbindCollectionBinding("lamps")
-        self.assertEqual(ComputeBoundMaterial(lampABase).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampABase).GetPath(), 
                          defaultMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(lampBShade).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(lampBShade).GetPath(), 
                          defaultMat.GetPath())
-        self.assertEqual(ComputeBoundMaterial(pencilA).GetPath(), 
+        self.assertEqual(self._GetBoundMaterial(pencilA).GetPath(), 
                          defaultMat.GetPath())
 
         # Test UnbindDirectBinding()
         tableGrpBindingAPI.UnbindDirectBinding()
 
         # No more bound materials.
-        self.assertFalse(ComputeBoundMaterial(pencilA))
-        self.assertFalse(ComputeBoundMaterial(eraserA))
-        self.assertFalse(ComputeBoundMaterial(lampBBase))
-        self.assertFalse(ComputeBoundMaterial(lampAShade))
+        self.assertFalse(self._GetBoundMaterial(pencilA))
+        self.assertFalse(self._GetBoundMaterial(eraserA))
+        self.assertFalse(self._GetBoundMaterial(lampBBase))
+        self.assertFalse(self._GetBoundMaterial(lampAShade))
 
     def test_BlockingOnOver(self):
         stage = Usd.Stage.CreateInMemory()
@@ -484,7 +487,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertTrue(UsdShade.MaterialBindingAPI(gprim).Bind(look))
         # This will compose in gprim's binding, but should still be blocked
         over.GetInherits().AddInherit("/World/gprim")
-        self.assertFalse(ComputeBoundMaterial(over))
+        self.assertFalse(self._GetBoundMaterial(over))
 
 if __name__ == "__main__":
     unittest.main()

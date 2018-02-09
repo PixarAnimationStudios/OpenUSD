@@ -606,6 +606,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                         (GetMaterialBindingStrength(collBindingRel) == 
                             UsdShadeTokens->strongerThanDescendants)) {
                         boundMaterial = collBindings[i].material;
+                        winningBindingRel = collBindingRel;
 
                         // The first collection binding we match will be the 
                         // one we care about.
