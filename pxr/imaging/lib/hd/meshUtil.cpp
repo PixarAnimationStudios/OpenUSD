@@ -467,12 +467,14 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
     for (int i = 0, qv = 0, v = 0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
         if (nv < 3) {
+            v += nv;
             continue; // skip degenerated face
         }
         if (holeIndex < numHoleFaces &&
             holeFacesPtr[holeIndex] == i) {
             // skip hole faces.
             ++holeIndex;
+            v += nv;
             continue;
         }
 
