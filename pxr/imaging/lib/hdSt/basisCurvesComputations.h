@@ -48,7 +48,7 @@ public:
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
-    virtual HdBufferSourceSharedPtr GetChainedBuffer() const override;
+    virtual HdBufferSourceVector GetChainedBuffers() const override;
 
 protected:
     virtual bool _CheckValid() const override;
@@ -84,11 +84,11 @@ class HdSt_BasisCurvesWidthsInterpolaterComputation
 public:
     HdSt_BasisCurvesWidthsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtFloatArray authoredWidths);
-    virtual bool Resolve();
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual bool Resolve() override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     HdBasisCurvesTopology *_topology;
@@ -103,11 +103,11 @@ class HdSt_BasisCurvesNormalsInterpolaterComputation
 public:
     HdSt_BasisCurvesNormalsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtVec3fArray authoredNormals);
-    virtual bool Resolve();
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual bool Resolve() override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     HdBasisCurvesTopology *_topology;

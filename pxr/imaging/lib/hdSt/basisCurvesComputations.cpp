@@ -48,7 +48,7 @@ InterpolateVarying(size_t numVerts, VtIntArray const & vertexCounts, TfToken wra
 
     if (wrap == HdTokens->periodic) {
         // XXX : Add support for periodic curves
-        TF_WARN("Varying data is only supported for non-periodic curves.");     
+        TF_WARN("Varying data is only supported for non-periodic curves.");
     }
 
     TF_FOR_ALL(itVertexCount, vertexCounts) {
@@ -214,11 +214,11 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
             ++ vertexIndex;
             indices.push_back(GfVec2i(v0, v1));
             v0 = v1;
-            primIndices.push_back(curveIndex);        
+            primIndices.push_back(curveIndex);
         }
         if(wrap) {
             indices.push_back(GfVec2i(v0, firstVert));
-            primIndices.push_back(curveIndex);            
+            primIndices.push_back(curveIndex);
         }
         ++curveIndex;
     }
@@ -343,7 +343,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
                     : vertexIndex + std::min(offset + v, (count -1));
             }
             indices.push_back(seg);
-            primIndices.push_back(curveIndex);            
+            primIndices.push_back(curveIndex);
         }
         vertexIndex += count;
         curveIndex++;
@@ -434,10 +434,10 @@ HdSt_BasisCurvesIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceSharedPtr
-HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffer() const
+HdBufferSourceVector
+HdSt_BasisCurvesIndexBuilderComputation::GetChainedBuffers() const
 {
-    return _primitiveParam;
+    return { _primitiveParam };
 }
 
 // -------------------------------------------------------------------------- //

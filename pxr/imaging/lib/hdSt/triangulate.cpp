@@ -86,10 +86,10 @@ HdSt_TriangleIndexBuilderComputation::HasChainedBuffer() const
     return true;
 }
 
-HdBufferSourceSharedPtr
-HdSt_TriangleIndexBuilderComputation::GetChainedBuffer() const
+HdBufferSourceVector
+HdSt_TriangleIndexBuilderComputation::GetChainedBuffers() const
 {
-    return _primitiveParam;
+    return { _primitiveParam };
 }
 
 bool

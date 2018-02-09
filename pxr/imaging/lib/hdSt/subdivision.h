@@ -99,7 +99,7 @@ public:
                                 SdfPath const &id);
 
     /// overrides
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() = 0;
 
 protected:
@@ -128,9 +128,9 @@ protected:
 class HdSt_OsdIndexComputation : public HdComputedBufferSource {
 public:
     /// overrides
-    virtual bool HasChainedBuffer() const;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual HdBufferSourceSharedPtr GetChainedBuffer() const;
+    virtual bool HasChainedBuffer() const override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual HdBufferSourceVector GetChainedBuffers() const override;
     virtual bool Resolve() = 0;
 
 protected:
@@ -160,18 +160,18 @@ public:
                             bool varying,
                             HdBufferSourceSharedPtr const &osdTopology);
     virtual ~HdSt_OsdRefineComputation();
-    virtual TfToken const &GetName() const;
-    virtual size_t ComputeHash() const;
-    virtual void const* GetData() const;
+    virtual TfToken const &GetName() const override;
+    virtual size_t ComputeHash() const override;
+    virtual void const* GetData() const override;
     virtual HdTupleType GetTupleType() const override;
-    virtual int GetNumElements() const;
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual bool Resolve();
-    virtual bool HasPreChainedBuffer() const;
-    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
+    virtual int GetNumElements() const override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual bool Resolve() override;
+    virtual bool HasPreChainedBuffer() const override;
+    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     HdSt_MeshTopology *_topology;
@@ -193,9 +193,9 @@ public:
                                HdType type);
 
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual int GetNumOutputElements() const;
+                         HdResourceRegistry *resourceRegistry) override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual int GetNumOutputElements() const override;
 
     // A wrapper class to bridge between HdBufferResource and OpenSubdiv
     // vertex buffer API.
