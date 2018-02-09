@@ -259,7 +259,8 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     //
     // Setup GL raster state
     //
-
+    // XXX: We should use the pickMode param to bind only the attachments
+    // that are necessary. This should affect the shader code generated as well.
     GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0,
                               GL_COLOR_ATTACHMENT1,
                               GL_COLOR_ATTACHMENT2 };

@@ -95,9 +95,17 @@ public:
     /// selection.
     typedef std::function<void(void)> DepthMaskCallback;
 
+    enum PickMode {
+        PickPrimsAndInstances = 1 << 0,
+        PickFaces             = 1 << 1,
+        PickEdges             = 1 << 2,
+        PickPoints            = 1 << 3
+    };
+
     struct Params {
         Params() 
             : hitMode(HitFirst)
+            , pickMode(PickPrimsAndInstances)
             , projectionMatrix(1)
             , viewMatrix(1)
             , alphaThreshold(0.0f)
@@ -107,6 +115,7 @@ public:
         {}
 
         HitMode hitMode;
+        PickMode pickMode;
         GfMatrix4d projectionMatrix;
         GfMatrix4d viewMatrix;
         float alphaThreshold;
