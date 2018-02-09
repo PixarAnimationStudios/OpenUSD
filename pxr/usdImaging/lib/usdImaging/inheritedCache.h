@@ -530,6 +530,7 @@ struct UsdImaging_VisStrategy {
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -547,7 +548,8 @@ struct UsdImaging_MaterialStrategy {
 
     static
     query_type MakeQuery(UsdPrim prim) {
-        return UsdShadeMaterial::GetBoundMaterial(prim);
+        return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+                /*materialPurpose*/ UsdShadeTokens->preview);
     }
 
     static
@@ -563,8 +565,8 @@ struct UsdImaging_MaterialStrategy {
             UsdPrim prim,
             query_type const* query)
     { 
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
-                      prim.GetPath().GetText());
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for \"preview\" material "
+                "binding for %s\n", prim.GetPath().GetText());
         if (*query) {
             SdfPath binding = GetBinding(*query);
             if (!binding.IsEmpty()) {
@@ -574,24 +576,25 @@ struct UsdImaging_MaterialStrategy {
         return *owner->_GetValue(prim.GetParent());
     }
 
+    static 
+    value_type 
+    ComputeBoundMaterialForPurpose(UsdPrim const& prim,
+                                   TfToken const& materialPurpose) {
+                                    
+        // We don't need to walk up the namespace here since 
+        // ComputeBoundMaterial does it for us.
+        if (UsdShadeMaterial mat = UsdShadeMaterialBindingAPI(prim).
+                    ComputeBoundMaterial(materialPurpose)) {
+            return GetBinding(mat);
+        }
+
+        return value_type();
+    }
+
     static
     value_type
     ComputeMaterialPath(UsdPrim const& prim) {
-        SdfPath binding;
-
-        for (UsdPrim parent=prim;parent.GetParent();parent=parent.GetParent()) {
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
-                      parent.GetPath().GetText());
-            UsdShadeMaterial mat = UsdShadeMaterial::GetBoundMaterial(parent);
-            if (mat) {
-                binding = GetBinding(mat);
-                if (!binding.IsEmpty()) {
-                    break;
-                }
-            }
-        }
-    
-        return binding; 
+        return ComputeBoundMaterialForPurpose(prim, UsdShadeTokens->preview);
     }
 };
 
@@ -612,7 +615,8 @@ struct UsdImaging_MaterialNetworkStrategy {
 
     static
     query_type MakeQuery(UsdPrim prim) {
-        return UsdShadeMaterial::GetBoundMaterial(prim);
+        return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+            /*materialPurpose*/ UsdShadeTokens->full);
     }
 
     static
@@ -631,8 +635,8 @@ struct UsdImaging_MaterialNetworkStrategy {
             UsdPrim prim,
             query_type const* query)
     { 
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for material binding %s\n", 
-                      prim.GetPath().GetText());
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Looking for \"full\" material binding"
+                " for %s\n", prim.GetPath().GetText());
         if (*query) {
             SdfPath binding = GetBinding(*query);
             if (!binding.IsEmpty()) {
@@ -645,7 +649,8 @@ struct UsdImaging_MaterialNetworkStrategy {
     static
     value_type
     ComputeMaterialPath(UsdPrim const& prim) {
-        return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim);
+        return UsdImaging_MaterialStrategy::ComputeBoundMaterialForPurpose(
+                prim, UsdShadeTokens->full);
     }
 };
 
