@@ -59,7 +59,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
-                    GetPrimsLoadability, GetClosestBoundMaterial)
+                    GetPrimsLoadability, GetClosestBoundMaterial, Complexities)
 
 import settings2
 from settings2 import StateSource
@@ -391,7 +391,16 @@ class AppController(QtCore.QObject):
                     'Ignoring...' % parserData.primPath
                 self._initialSelectPrim = None
 
-            self._dataModel.viewSettings.complexity = parserData.complexity
+            try:
+                self._dataModel.viewSettings.complexity = Complexities.fromId(
+                    parserData.complexity)
+            except ValueError:
+                fallback = Complexities.LOW
+                sys.stderr.write(("Error: Invalid complexity '{}'. "
+                    "Using fallback '{}' instead.\n").format(
+                        parserData.complexity, fallback.id))
+                self._dataModel.viewSettings.complexity = fallback
+
 
             self._timeSamples = None
             self._stageView = None
@@ -753,7 +762,15 @@ class AppController(QtCore.QObject):
 
             self._ui.actionAdjust_FOV.triggered.connect(self._adjustFOV)
 
-            self._ui.actionComplexity.triggered.connect(self._adjustComplexity)
+            self._ui.complexityGroup = QtWidgets.QActionGroup(self._mainWindow)
+            self._ui.complexityGroup.setExclusive(True)
+            for action in (self._ui.actionLow,
+                           self._ui.actionMedium,
+                           self._ui.actionHigh,
+                           self._ui.actionVery_High):
+                self._ui.complexityGroup.addAction(action)
+            self._updateComplexityMenu()
+            self._ui.complexityGroup.triggered.connect(self._changeComplexity)
 
             self._ui.actionDisplay_Guide.toggled.connect(self._toggleDisplayGuide)
 
@@ -1395,38 +1412,37 @@ class AppController(QtCore.QObject):
 
     # Option windows ==========================================================
 
-    def _incrementComplexity(self):
-        self._dataModel.viewSettings.complexity += .1
+    def _updateComplexityMenu(self):
+        """Update the complexity menu so the current complexity setting is
+        checked.
+        """
+        complexityName = self._dataModel.viewSettings.complexity.name
+        for action in (self._ui.actionLow,
+                       self._ui.actionMedium,
+                       self._ui.actionHigh,
+                       self._ui.actionVery_High):
+            action.setChecked(str(action.text()) == complexityName)
+
+    def _setComplexity(self, complexity):
+        """Set the complexity and update the UI."""
+        self._dataModel.viewSettings.complexity = complexity
+        self._updateComplexityMenu()
         if self._stageView:
             self._stageView.update()
+
+    def _incrementComplexity(self):
+        """Jump up to the next level of complexity."""
+        self._setComplexity(Complexities.next(
+            self._dataModel.viewSettings.complexity))
 
     def _decrementComplexity(self):
-        self._dataModel.viewSettings.complexity -= .1
-        if self._stageView:
-            self._stageView.update()
+        """Jump back to the previous level of complexity."""
+        self._setComplexity(Complexities.prev(
+            self._dataModel.viewSettings.complexity))
 
-    def _adjustComplexity(self):
-        complexityStr, success = QtWidgets.QInputDialog.getText(self._mainWindow,
-            "Adjust complexity", "Enter a value between 1 and 2.\n\n"
-            "You can also use ctrl+ or ctrl- to adjust the\n"
-            "complexity without invoking this dialog.\n",
-            QtWidgets.QLineEdit.EchoMode.Normal,
-            str(self._dataModel.viewSettings.complexity))
-        if success:
-            try:
-                complexity = float(complexityStr)
-            except ValueError:
-                QtWidgets.QMessageBox.critical(self._mainWindow, "Error",
-                    "Complexity must be a number, got '{}'.".format(
-                        complexityStr))
-                return
-            self._dataModel.viewSettings.complexity = complexity
-            if self._dataModel.viewSettings.complexity != complexity:
-                QtWidgets.QMessageBox.warning(self._mainWindow, "Warning",
-                    "Complexity out of range, clamped to {}.".format(
-                        self._dataModel.viewSettings.complexity))
-            if self._stageView:
-                self._stageView.update()
+    def _changeComplexity(self, action):
+        """Update the complexity from a selected QAction."""
+        self._setComplexity(Complexities.fromName(action.text()))
 
     def _adjustFOV(self):
         fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",

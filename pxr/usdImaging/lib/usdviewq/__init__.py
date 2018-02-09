@@ -24,7 +24,7 @@
 import sys, argparse, os
 
 from qt import QtWidgets
-from common import Timer
+from common import Timer, Complexities
 from appController import AppController
 
 
@@ -149,8 +149,10 @@ class Launcher(object):
                             dest='lastframe', type=int)
 
         parser.add_argument('--complexity', action='store',
-                            type=float, default=1.0, dest='complexity',
-                            help='A float complexity value in the closed range [1,2]')
+                            type=str, default="low", dest='complexity',
+                            choices=["nope"],
+                            help='Set the initial mesh refinement complexity.')
+
         parser.add_argument('--quitAfterStartup', action='store_true',
                             dest='quitAfterStartup',
                             help='quit immediately after start up')
@@ -168,12 +170,6 @@ class Launcher(object):
         InvalidUsdviewOption if an invalid option is found. If a child has
         overridden ParseOptions, ValidateOptions is an opportunity to move
         '''
-        if arg_parse_result.complexity < 1.0 or arg_parse_result.complexity > 2.0:
-            newComplexity = max(min(2.0, arg_parse_result.complexity), 1.0)
-            print >> sys.stderr, "WARNING: complexity %.1f is out of range " \
-                "[1.0, 2.0], using %.1f instead" %  \
-                (arg_parse_result.complexity, newComplexity)
-            arg_parse_result.complexity = newComplexity
 
         # split arg_parse_result.populationMask into paths.
         if arg_parse_result.populationMask:

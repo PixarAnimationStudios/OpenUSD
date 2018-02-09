@@ -1718,7 +1718,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         # update rendering parameters
         self._renderParams.frame = self._dataModel.currentFrame
-        self._renderParams.complexity = self._dataModel.viewSettings.complexity
+        self._renderParams.complexity = self._dataModel.viewSettings.complexity.value
         self._renderParams.drawMode = renderMode
         self._renderParams.showGuides = self._dataModel.viewSettings.displayGuide
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy
@@ -2162,7 +2162,7 @@ class StageView(QtOpenGL.QGLWidget):
             if self._cameraPrim:
                 camName = self._cameraPrim.GetName()
 
-            toPrint = {"Complexity" : self._dataModel.viewSettings.complexity,
+            toPrint = {"Complexity" : self._dataModel.viewSettings.complexity.name,
                        "Camera" : camName}
             self._hud.updateGroup("BottomRight",
                                   self.width()-200, self.height()-self._hud._HUDLineSpacing*2,
@@ -2377,7 +2377,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         # update rendering parameters
         self._renderParams.frame = self._dataModel.currentFrame
-        self._renderParams.complexity = self._dataModel.viewSettings.complexity
+        self._renderParams.complexity = self._dataModel.viewSettings.complexity.value
         self._renderParams.drawMode = self._renderModeDict[self._dataModel.viewSettings.renderMode]
         self._renderParams.showGuides = self._dataModel.viewSettings.displayGuide
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy

@@ -44,8 +44,10 @@ class _MetaConstantGroup(type):
         # constants.
         allConstants = list()
         for key, value in classdict.items():
-            if key.startswith("_"):
-                # Ignore variables which start with an underscore.
+            if (key.startswith("_") or isinstance(value, classmethod) or
+                    isinstance(value, staticmethod)):
+                # Ignore variables which start with an underscore, and
+                # static/class methods.
                 pass
             else:
                 # Found a new constant.

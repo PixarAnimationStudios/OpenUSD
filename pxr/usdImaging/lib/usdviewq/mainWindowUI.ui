@@ -1299,6 +1299,15 @@
       <string>Hydra Renderer...</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuComplexity">
+     <property name="title">
+      <string>Complexity</string>
+     </property>
+     <addaction name="actionLow"/>
+     <addaction name="actionMedium"/>
+     <addaction name="actionHigh"/>
+     <addaction name="actionVery_High"/>
+    </widget>
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
     <addaction name="menuRendererPlugin"/>
@@ -1308,7 +1317,7 @@
     <addaction name="actionRecompute_Clipping_Planes"/>
     <addaction name="actionAdjust_Clipping"/>
     <addaction name="actionAdjust_Default_Material"/>
-    <addaction name="actionComplexity"/>
+    <addaction name="menuComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
     <addaction name="actionFrame_Selection"/>
@@ -1737,11 +1746,6 @@
    </property>
    <property name="text">
     <string>Redraw While Frame Scrubbing</string>
-   </property>
-  </action>
-  <action name="actionComplexity">
-   <property name="text">
-    <string>Adjust Complexity...</string>
    </property>
   </action>
   <action name="actionIncrementComplexity1">
@@ -2470,6 +2474,38 @@
   <action name="actionCameraReticles_Color">
    <property name="text">
     <string>Select Color...</string>
+   </property>
+  </action>
+  <action name="actionLow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Low</string>
+   </property>
+  </action>
+  <action name="actionMedium">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Medium</string>
+   </property>
+  </action>
+  <action name="actionHigh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>High</string>
+   </property>
+  </action>
+  <action name="actionVery_High">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Very High</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">
