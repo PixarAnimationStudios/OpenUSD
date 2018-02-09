@@ -224,8 +224,9 @@ bool visitNode(UsdShadeShader const & shadeNode,
             materialNetwork->relationships.push_back(relationship);
         } else {
             // Parameters detected, let's store it
-            shadeNodeInputs[i].Get(&value);
-            node.parameters[shadeNodeInputs[i].GetFullName()] = value;
+            if (shadeNodeInputs[i].Get(&value)) {
+                node.parameters[shadeNodeInputs[i].GetFullName()] = value;
+            }
         }
     }
 
