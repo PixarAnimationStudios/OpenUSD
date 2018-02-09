@@ -63,6 +63,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_SOURCE, "Print generated shader code");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_DUMP_SHADER_BINARY, "Write out compiled GLSL shader binary");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_ENGINE_PHASE_INFO, "Report the execution phase of the Hydra engine");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_ADDED, "Report when ExtComputations are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_REMOVED, "Report when ExtComputations are removed");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_EXT_COMPUTATION_UPDATED, "Report when ExtComputations are updated");

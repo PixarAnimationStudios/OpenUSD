@@ -70,44 +70,52 @@ HdEngine::RemoveTaskContextData(const TfToken &id)
 void
 HdEngine::Execute(HdRenderIndex& index, HdTaskSharedPtrVector const &tasks)
 {
-    // Note: For Hydra Stream render delegate.
-    //
-    //
-    // The following order is important, be careful.
-    //
-    // If Sync updates topology varying prims, it triggers both:
-    //   1. changing drawing coordinate and bumps up the global collection
-    //      version to invalidate the (indirect) batch.
-    //   2. marking garbage collection needed so that the unused BAR
-    //      resources will be reclaimed.
-    //   Also resizing ranges likely cause the buffer reallocation
-    //   (==drawing coordinate changes) anyway.
-    //
-    // Note that the garbage collection also changes the drawing coordinate,
-    // so the collection should be invalidated in that case too.
-    //
-    // Once we reflect all conditions which provoke the batch recompilation
-    // into the collection dirtiness, we can call
-    // HdRenderPass::GetCommandBuffer() to get the right batch.
-
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE
     // --------------------------------------------------------------------- //
     // Discover all required input data needed to render the required render
     // prim representations. At this point, we must read enough data to
     // establish the resource dependency graph, but we do not yet populate CPU-
-    // nor GPU-memory with data.
+    // or GPU-memory with data.
 
     // As a result of the next call, the resource registry will be populated
     // with both BufferSources that need to be resolved (possibly generating
-    // data on the CPU) and computations to run on the GPU.
+    // data on the CPU) and computations to run on the CPU/GPU.
 
+    TF_DEBUG(HD_ENGINE_PHASE_INFO).Msg(
+            "\n"
+            "==============================================================\n"
+            "      HdEngine [Data Discovery Phase](RenderIndex::SyncAll)   \n"
+            "--------------------------------------------------------------\n");
 
-    // Process all pending dirty lists
     index.SyncAll(tasks, &_taskContext);
 
+    // --------------------------------------------------------------------- //
+    // DATA COMMIT PHASE
+    // --------------------------------------------------------------------- //
+    // Having acquired handles to the data needed to update various resources,
+    // we let the render delegate 'commit' these resources. These resources may
+    // reside either on the CPU/GPU/both; that depends on the render delegate
+    // implementation.
+    TF_DEBUG(HD_ENGINE_PHASE_INFO).Msg(
+            "\n"
+            "==============================================================\n"
+            " HdEngine [Data Commit Phase](RenderDelegate::CommitResources)\n"
+            "--------------------------------------------------------------\n");
+    
     HdRenderDelegate *renderDelegate = index.GetRenderDelegate();
     renderDelegate->CommitResources(&index.GetChangeTracker());
+
+    // --------------------------------------------------------------------- //
+    // EXECUTE PHASE
+    // --------------------------------------------------------------------- //
+    // Having updated all the necessary data buffers, we can finally execute
+    // the rendering tasks.
+    TF_DEBUG(HD_ENGINE_PHASE_INFO).Msg(
+            "\n"
+            "==============================================================\n"
+            "             HdEngine [Execute Phase](Task::Execute)          \n"
+            "--------------------------------------------------------------\n");
 
     TF_FOR_ALL(it, tasks) {
         (*it)->Execute(&_taskContext);
