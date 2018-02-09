@@ -86,7 +86,7 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         HdTaskSharedPtrVector GetSetupTasks();
 
         PXRUSDMAYAGL_API
-        HdTaskSharedPtr GetRenderTask(
+        HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
                 const HdRprimCollectionVector& rprimCollections);
@@ -118,7 +118,9 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         GlfSimpleLightingContextRefPtr _lightingContext;
 
         typedef std::unordered_map<size_t, SdfPath> _RenderTaskIdMap;
+        _RenderTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap _renderTaskIdMap;
+        _RenderTaskIdMap _selectionTaskIdMap;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

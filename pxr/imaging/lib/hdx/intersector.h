@@ -138,6 +138,7 @@ public:
             return !objectId.IsEmpty();
         }
 
+        HDX_API
         size_t GetHash() const;
         struct Hash {
             inline size_t operator()(Hit const& hit) const {
@@ -154,10 +155,12 @@ public:
         // Depth and position are ignored, used for object/element/instance
         // aggregation.
         struct HitSetHash {
+            HDX_API
             size_t operator()(Hit const& hit) const;
         };
         // Equality ignores depth and position.
         struct HitSetEq{
+            HDX_API
             bool operator()(Hit const& a, Hit const& b) const;
         };
     };

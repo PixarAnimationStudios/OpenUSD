@@ -42,6 +42,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/M3dView.h>
@@ -304,7 +305,10 @@ private:
     std::unique_ptr<HdRenderIndex> _renderIndex;
 
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
+
     std::unique_ptr<HdxIntersector> _intersector;
+    HdxSelectionTrackerSharedPtr _selectionTracker;
+
     UsdMayaGLSoftSelectHelper _softSelectHelper;
 };
 

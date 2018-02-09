@@ -46,9 +46,13 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -306,9 +310,13 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     if (!TF_VERIFY(_renderIndex)) {
         return;
     }
+
     _taskDelegate.reset(
-        new PxrMayaHdSceneDelegate(_renderIndex.get(), SdfPath("/mayaTask")));
+        new PxrMayaHdSceneDelegate(_renderIndex.get(),
+                                   SdfPath("/MayaHdSceneDelegate")));
+
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
+    _selectionTracker.reset(new HdxSelectionTracker());
 
     static MCallbackId sceneUpdateCallbackId = 0;
     if (sceneUpdateCallbackId == 0) {
@@ -335,6 +343,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
 /* virtual */
 UsdMayaGLBatchRenderer::~UsdMayaGLBatchRenderer()
 {
+    _selectionTracker.reset();
     _intersector.reset();
     _taskDelegate.reset();
 }
@@ -584,6 +593,9 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         return nullptr;
     }
 
+    const HdxSelectionHighlightMode selectionMode =
+        HdxSelectionHighlightModeSelect;
+
     // We may miss very small objects with this setting, but it's faster.
     const unsigned int pickResolution = 256u;
 
@@ -627,7 +639,6 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                 qparams.cullStyle = renderParams.cullStyle;
 
                 HdxIntersector::Result result;
-                HdxIntersector::HitVector hits;
 
                 glPushAttrib(GL_VIEWPORT_BIT |
                              GL_ENABLE_BIT |
@@ -645,20 +656,24 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
                     continue;
                 }
 
+                HdxIntersector::HitSet hits;
+
                 if (singleSelection) {
-                    hits.resize(1);
-                    if (!result.ResolveNearest(&hits.front())) {
+                    HdxIntersector::Hit hit;
+                    if (!result.ResolveNearest(&hit)) {
                         continue;
                     }
+
+                    hits.insert(hit);
                 }
-                else if (!result.ResolveAll(&hits)) {
+                else if (!result.ResolveUnique(&hits)) {
                     continue;
                 }
 
                 for (const HdxIntersector::Hit& hit : hits) {
                     auto itIfExists =
                         _selectResults.insert(
-                            std::pair<SdfPath, HdxIntersector::Hit>(hit.delegateId, hit));
+                            std::make_pair(hit.delegateId, hit));
 
                     const bool &inserted = itIfExists.second;
                     if (inserted) {
@@ -696,23 +711,42 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             }
         }
 
-        if (TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO)) {
-            for (const auto& selectPair : _selectResults) {
-                const SdfPath& path = selectPair.first;
-                const HdxIntersector::Hit& hit = selectPair.second;
-                cout << "NEW HIT       : " << path << endl;
-                cout << "    delegateId: " << hit.delegateId << endl;
-                cout << "    objectId  : " << hit.objectId << endl;
-                cout << "    ndcDepth  : " << hit.ndcDepth << endl;
+        // Populate the Hydra selection from the selection results.
+        HdxSelectionSharedPtr selection(new HdxSelection);
+
+        for (const auto& selectPair : _selectResults) {
+            const SdfPath& path = selectPair.first;
+            const HdxIntersector::Hit& hit = selectPair.second;
+
+            TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
+                "NEW HIT          : %s\n"
+                "    delegateId   : %s\n"
+                "    objectId     : %s\n"
+                "    instanceIndex: %d\n"
+                "    ndcDepth     : %f\n",
+                path.GetText(),
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.instanceIndex,
+                hit.ndcDepth);
+
+            if (!hit.instancerId.IsEmpty()) {
+                VtIntArray instanceIndices;
+                instanceIndices.push_back(hit.instanceIndex);
+                selection->AddInstance(selectionMode, hit.objectId, instanceIndices);
+            } else {
+                selection->AddRprim(selectionMode, hit.objectId);
             }
         }
 
-        // As we've cached the results in pickBatches, we
-        // can clear out the selection queue.
+        _selectionTracker->SetSelection(selection);
+
+        // As we've cached the results in _selectResults, we can clear out the
+        // selection queue.
         _selectQueue.clear();
 
         // Selection can happen after a refresh but before a draw call, so
-        // clear out the render queue as well
+        // clear out the render queue as well.
         _renderQueue.clear();
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
@@ -805,9 +839,14 @@ UsdMayaGLBatchRenderer::_RenderBatches(
             paramsHash,
             rprimCollections.size());
 
-        tasks.push_back(
-            _taskDelegate->GetRenderTask(paramsHash, params, rprimCollections));
+        HdTaskSharedPtrVector renderTasks =
+            _taskDelegate->GetRenderTasks(paramsHash, params, rprimCollections);
+        tasks.insert(tasks.end(), renderTasks.begin(), renderTasks.end());
     }
+
+    VtValue selectionTrackerValue(_selectionTracker);
+    _hdEngine.SetTaskContextData(HdxTokens->selectionState,
+                                 selectionTrackerValue);
 
     _hdEngine.Execute(*_renderIndex, tasks);
 
