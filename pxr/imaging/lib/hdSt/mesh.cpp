@@ -110,9 +110,8 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                   forcedRepr,
                   &originalDirtyBits);
 
-    TfToken calcReprName = _GetReprName(delegate, reprName,
-                                        forcedRepr, dirtyBits);
-    _GetRepr(delegate, calcReprName, dirtyBits);
+    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
+    _UpdateRepr(delegate, calcReprName, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
@@ -134,7 +133,7 @@ HdStMesh::IsEnabledPackedNormals()
 }
 
 int
-HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
+HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc) const
 {
     if (desc.geomStyle == HdMeshGeomStyleHull         ||
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly ||
@@ -1434,30 +1433,18 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 
 }
 
-HdReprSharedPtr const &
-HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
-                   TfToken const &reprName,
-                   HdDirtyBits *dirtyBits)
+void
+HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                      TfToken const &reprName,
+                      HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprName);
-    _ReprVector::iterator reprIt = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
-
-    if (reprIt == _reprs.end()) {
-        // Hydra should have called _InitRepr earlier in sync when
-        // before sending dirty bits to the delegate.
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
-                        reprName.GetText(), GetId().GetText());
-
-        static const HdReprSharedPtr ERROR_RETURN;
-        return ERROR_RETURN;
+    HdReprSharedPtr const &curRepr = _GetRepr(reprName);
+    if (!curRepr) {
+        return;
     }
-
-    // _reprs holds a pair of (TfToken, HdReprSharedPtr)
-    HdReprSharedPtr const &curRepr = reprIt->second;
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStMesh::GetRepr " << GetId()
@@ -1480,6 +1467,8 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                       HdChangeTracker::NewRepr)) {
         needsSetGeometricShader = true;
     }
+
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprName);
 
     // iterate through all reprdescs for the current repr to figure out if any 
     // of them requires smoothnormals
@@ -1556,8 +1545,6 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
-
-    return curRepr;
 }
 
 HdDirtyBits

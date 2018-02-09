@@ -84,9 +84,8 @@ HdStBasisCurves::Sync(HdSceneDelegate* delegate,
                   forcedRepr,
                   dirtyBits);
 
-    TfToken calcReprName = _GetReprName(delegate, reprName,
-                                        forcedRepr, dirtyBits);
-    _GetRepr(delegate, calcReprName, dirtyBits);
+    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
+    _UpdateRepr(delegate, calcReprName, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
@@ -301,32 +300,18 @@ HdStBasisCurves::_InitRepr(TfToken const &reprName,
     }
 }
 
-
-HdReprSharedPtr const &
-HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
-                          TfToken const &reprName,
-                          HdDirtyBits *dirtyBits)
+void
+HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _BasisCurvesReprConfig::DescArray const &reprDescs = _GetReprDesc(reprName);
-
-    _ReprVector::iterator reprIt = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
-    if (reprIt == _reprs.end()) {
-        // Hydra should have called _InitRepr earlier in sync when
-        // before sending dirty bits to the delegate.
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s.",
-                        reprName.GetText());
-
-        static const HdReprSharedPtr ERROR_RETURN;
-
-        return ERROR_RETURN;
+    HdReprSharedPtr const &curRepr = _GetRepr(reprName);
+    if (!curRepr) {
+        return;
     }
-
-    // _reprs holds a pair of (TfToken, HdReprSharedPtr)
-    HdReprSharedPtr const &curRepr = reprIt->second;
 
     // Filter custom dirty bits to only those in use.
     *dirtyBits &= (_customDirtyBitsInUse |
@@ -334,7 +319,7 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
                    HdChangeTracker::NewRepr);
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
-        std::cout << "HdStBasisCurves::GetRepr " << GetId()
+        std::cout << "HdStBasisCurves::_UpdateRepr " << GetId()
                   << " Repr = " << reprName << "\n";
         HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
@@ -352,6 +337,8 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
                       HdChangeTracker::NewRepr)) {
         needsSetGeometricShader = true;
     }
+
+    _BasisCurvesReprConfig::DescArray const &reprDescs = _GetReprDesc(reprName);
 
     int drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
@@ -406,8 +393,6 @@ HdStBasisCurves::_GetRepr(HdSceneDelegate *sceneDelegate,
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
-
-    return curRepr;
 }
 
 void

@@ -71,15 +71,12 @@ HdRprim::Finalize(HdRenderParam *renderParam)
 }
 
 const std::vector<HdDrawItem*>*
-HdRprim::GetDrawItems(HdSceneDelegate* delegate,
-                      TfToken const &defaultReprName, bool forced)
+HdRprim::GetDrawItems(TfToken const &defaultReprName, bool forced) const
 {
     // note: GetDrawItems is called at execute phase.
     // All required dirtyBits should have cleaned at this point.
-    HdDirtyBits dirtyBits(HdChangeTracker::Clean);
-    TfToken reprName = _GetReprName(delegate, defaultReprName,
-                                    forced, &dirtyBits);
-    HdReprSharedPtr repr = _GetRepr(delegate, reprName, &dirtyBits);
+    TfToken reprName = _GetReprName(defaultReprName, forced);
+    HdReprSharedPtr repr = _GetRepr(reprName);
 
     if (repr) {
         return &repr->GetDrawItems();
@@ -115,26 +112,39 @@ HdRprim::_Sync(HdSceneDelegate* delegate,
     }
 }
 
-TfToken
-HdRprim::_GetReprName(HdSceneDelegate* delegate,
-                      TfToken const &defaultReprName,
-                      bool forced,
-                      HdDirtyBits *dirtyBits)
+void
+HdRprim::_UpdateReprName(HdSceneDelegate* delegate,
+                         HdDirtyBits *dirtyBits)
 {
-    // resolve reprName
+    SdfPath const& id = GetId();
+    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
+        _authoredReprName = delegate->GetReprName(id);
+    }
+}
 
+TfToken
+HdRprim::_GetReprName(TfToken const &defaultReprName, bool forced) const
+{
     // if not forced, the prim's authored reprname wins.
     // otherewise we respect defaultReprName (used for shadowmap drawing etc)
-    if (!forced) {
-        SdfPath const& id = GetId();
-        if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-            _authoredReprName = delegate->GetReprName(id);
-        }
-        if (!_authoredReprName.IsEmpty()) {
-            return _authoredReprName;
-        }
+    if (!forced && !_authoredReprName.IsEmpty()) {
+        return _authoredReprName;
     }
     return defaultReprName;
+}
+
+HdReprSharedPtr const &
+HdRprim::_GetRepr(TfToken const &reprName) const
+{
+    _ReprVector::const_iterator reprIt =
+        std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprName));
+    if (reprIt == _reprs.end()) {
+        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
+                        reprName.GetText(), GetId().GetText());
+        static const HdReprSharedPtr ERROR_RETURN;
+        return ERROR_RETURN;
+    }
+    return reprIt->second;
 }
 
 bool
@@ -214,9 +224,8 @@ HdRprim::InitRepr(HdSceneDelegate* delegate,
                   bool forced,
                   HdDirtyBits *dirtyBits)
 {
-    TfToken reprName = _GetReprName(delegate, defaultReprName,
-                                    forced, dirtyBits);
-
+    _UpdateReprName(delegate, dirtyBits);
+    TfToken reprName = _GetReprName(defaultReprName, forced);
     _InitRepr(reprName, dirtyBits);
 
 }
@@ -250,7 +259,7 @@ HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
 }
 
 bool
-HdRprim::IsDirty(HdChangeTracker &changeTracker)
+HdRprim::IsDirty(HdChangeTracker &changeTracker) const
 {
     return changeTracker.IsRprimDirty(GetId());
 }

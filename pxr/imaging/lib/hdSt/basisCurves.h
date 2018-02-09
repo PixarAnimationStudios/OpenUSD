@@ -87,10 +87,9 @@ public:
                       bool             forcedRepr) override;
 
 protected:
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBitsState) override;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdStDrawItem *drawItem,

@@ -48,8 +48,8 @@ public:
     HF_MALLOC_TAG_NEW("new HdStPoints");
 
     HDST_API
-    HdStPoints(SdfPath const& id,
-             SdfPath const& instancerId = SdfPath());
+    HdStPoints(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+
     HDST_API
     virtual ~HdStPoints();
 
@@ -61,10 +61,9 @@ public:
                       bool             forcedRepr) override;
 
 protected:
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBitsState) override;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
@@ -77,6 +76,8 @@ protected:
 
 
 private:
+    HdReprSharedPtr _smoothHullRepr;
+
     enum DrawingCoord {
         InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
     };

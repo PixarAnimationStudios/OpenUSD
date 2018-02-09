@@ -114,25 +114,26 @@ void
 HdEmbreeMesh::_InitRepr(TfToken const &reprName,
                         HdDirtyBits *dirtyBits)
 {
-    TF_UNUSED(reprName);
     TF_UNUSED(dirtyBits);
 
-    // No-op
+    // Create an empty repr.
+    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+                                            _ReprComparator(reprName));
+    if (it == _reprs.end()) {
+        _reprs.emplace_back(reprName, HdReprSharedPtr());
+    }
 }
 
 
-HdReprSharedPtr const &
-HdEmbreeMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
-                       TfToken const &reprName,
-                       HdDirtyBits *dirtyBits)
+void
+HdEmbreeMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                          TfToken const &reprName,
+                          HdDirtyBits *dirtyBits)
 {
     TF_UNUSED(sceneDelegate);
     TF_UNUSED(reprName);
     TF_UNUSED(dirtyBits);
-
-    // Embree doesn't use the HdRepr structure, so return an empty value.
-    static HdReprSharedPtr empty;
-    return empty;
+    // Embree doesn't use the HdRepr structure.
 }
 
 void
@@ -149,8 +150,7 @@ HdEmbreeMesh::Sync(HdSceneDelegate* sceneDelegate,
     // has drawing settings for this prim to use. Repr opinions can come
     // from the render pass's rprim collection or the scene delegate;
     // _GetReprName resolves these multiple opinions.
-    TfToken calculatedReprName = _GetReprName(sceneDelegate, reprName,
-        forcedRepr, dirtyBits);
+    TfToken calculatedReprName = _GetReprName(reprName, forcedRepr);
 
     // XXX: Meshes can have multiple reprs; this is done, for example, when
     // the drawstyle specifies different rasterizing modes between front faces

@@ -1509,8 +1509,7 @@ HdRenderIndex::_AppendDrawItems(
             // Extract the draw items and assign them to the right command buffer
             // based on the tag
             if (const std::vector<HdDrawItem*> *drawItems =
-                          rprimInfo.rprim->GetDrawItems(rprimInfo.sceneDelegate,
-                                                        reprName,
+                          rprimInfo.rprim->GetDrawItems(reprName,
                                                         forcedRepr)) {
 
                 const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(

@@ -78,10 +78,9 @@ public:
     static bool IsEnabledPackedNormals();
 
 protected:
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBitsState) override;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBitsState) override;
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
@@ -89,9 +88,6 @@ protected:
                 HdBufferArrayRangeSharedPtr const &existing,
                 bool * isFirstInstance,
                 HdStResourceRegistrySharedPtr const &resourceRegistry) const;
-
-    HdDirtyBits _PropagateDirtyBits(
-        HdDirtyBits dirtyBits);
 
     bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
 
@@ -127,7 +123,7 @@ protected:
                                   HdDirtyBits *dirtyBits,
                                   TfTokenVector const &primVarNames);
 
-    int _GetRefineLevelForDesc(HdMeshReprDesc desc);
+    int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
