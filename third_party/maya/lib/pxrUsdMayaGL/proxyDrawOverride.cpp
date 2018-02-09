@@ -29,6 +29,7 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -39,7 +40,10 @@
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
+#include <maya/MPoint.h>
 #include <maya/MPxDrawOverride.h>
+#include <maya/MSelectionContext.h>
+#include <maya/MSelectionMask.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
@@ -172,6 +176,76 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
     return userData;
 }
+
+#if MAYA_API_VERSION >= 201800
+
+/* virtual */
+bool
+UsdMayaProxyDrawOverride::wantUserSelection() const
+{
+    const MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+    if (!renderer) {
+        return false;
+    }
+
+    return renderer->drawAPIIsOpenGL();
+}
+
+/* virtual */
+bool
+UsdMayaProxyDrawOverride::userSelect(
+        MHWRender::MSelectionInfo& selectInfo,
+        const MHWRender::MDrawContext& context,
+        MPoint& hitPoint,
+        const MUserData* data)
+{
+    MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
+    if (!selectInfo.selectable(objectsMask)) {
+        return false;
+    }
+
+    UsdMayaProxyShape* shape =
+        UsdMayaProxyShape::GetShapeAtDagPath(_shapeAdapter._shapeDagPath);
+    if (!shape) {
+        return false;
+    }
+
+    // At this point, we expect the shape to have already been drawn and our
+    // shape adapter to have been added to the batch renderer, but just in
+    // case, we still treat the shape adapter as if we're populating it for the
+    // first time.
+    const UsdPrim usdPrim = shape->usdPrim();
+    const SdfPathVector excludedPrimPaths = shape->getExcludePrimPaths();
+    _shapeAdapter._rootPrim = usdPrim;
+    _shapeAdapter._excludedPrimPaths = excludedPrimPaths;
+
+    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
+
+    const unsigned int displayStyle = context.getDisplayStyle();
+    const MHWRender::DisplayStatus displayStatus =
+        MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter._shapeDagPath);
+
+    if (!_shapeAdapter.Sync(shape, displayStyle, displayStatus)) {
+        return false;
+    }
+
+    GfVec3f batchHitPoint;
+    const bool didHit =
+        UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
+            &_shapeAdapter,
+            selectInfo,
+            context,
+            selectInfo.singleSelection(),
+            &batchHitPoint);
+
+    if (didHit) {
+        hitPoint = MPoint(batchHitPoint[0], batchHitPoint[1], batchHitPoint[2]);
+    }
+
+    return didHit;
+}
+
+#endif // MAYA_API_VERSION >= 201800
 
 /* static */
 void

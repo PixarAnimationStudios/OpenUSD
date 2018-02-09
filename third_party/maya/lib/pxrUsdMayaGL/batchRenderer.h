@@ -34,7 +34,7 @@
 #include "pxrUsdMayaGL/softSelectHelper.h"
 
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/singleton.h"
@@ -49,6 +49,7 @@
 #include <maya/MDrawContext.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MSelectionContext.h>
 #include <maya/MUserData.h>
 
 #include <memory>
@@ -167,8 +168,8 @@ public:
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
 
-    /// \brief Tests the object from the given shape renderer for intersection
-    /// with a given view.
+    /// Tests the object from the given shape adapter for intersection with
+    /// a given view using the legacy viewport.
     ///
     /// \p hitPoint yields the point of intersection if \c true is returned.
     ///
@@ -176,9 +177,21 @@ public:
     bool TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             M3dView& view,
-            const unsigned int pickResolution,
             const bool singleSelection,
-            GfVec3d* hitPoint);
+            GfVec3f* hitPoint);
+
+    /// Tests the object from the given shape adapter for intersection with
+    /// a given draw context in Viewport 2.0.
+    ///
+    /// \p hitPoint yields the point of intersection if \c true is returned.
+    ///
+    PXRUSDMAYAGL_API
+    bool TestIntersection(
+            const PxrMayaHdShapeAdapter* shapeAdapter,
+            const MHWRender::MSelectionInfo& selectInfo,
+            const MHWRender::MDrawContext& context,
+            const bool singleSelection,
+            GfVec3f* hitPoint);
 
 private:
 
@@ -204,16 +217,15 @@ private:
             PxrMayaHdShapeAdapter* shapeAdapter,
             const PxrMayaHdRenderParams& params);
 
-    /// \brief Tests an object for intersection with a given view.
+    /// Tests an object for intersection.
     ///
     /// \returns Hydra Hit info for instance associated with \p delegateId
     ///
     const HdxIntersector::Hit* _GetHitInfo(
-            M3dView& view,
-            const unsigned int pickResolution,
+            const GfMatrix4d& viewMatrix,
+            const GfMatrix4d& projectionMatrix,
             const bool singleSelection,
-            const SdfPath& delegateId,
-            const GfMatrix4d& localToWorldSpace);
+            const SdfPath& delegateId);
 
      /// \brief Call to render all queued batches. May be called safely w/o
     /// performance hit when no batches are queued.

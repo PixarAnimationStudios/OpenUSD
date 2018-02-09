@@ -37,7 +37,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
@@ -63,6 +63,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MSelectionContext.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
@@ -470,17 +471,37 @@ bool
 UsdMayaGLBatchRenderer::TestIntersection(
         const PxrMayaHdShapeAdapter* shapeAdapter,
         M3dView& view,
-        const unsigned int pickResolution,
         const bool singleSelection,
-        GfVec3d* hitPoint)
+        GfVec3f* hitPoint)
 {
+    GfMatrix4d viewMatrix;
+    GfMatrix4d projectionMatrix;
+    px_LegacyViewportUtils::GetViewSelectionMatrices(view,
+                                                     &viewMatrix,
+                                                     &projectionMatrix);
+
+    // In the legacy viewport, selection occurs in the local space of SOME
+    // object, but we need the view matrix in world space to correctly consider
+    // all nodes. Applying localToWorldSpace removes the local space we happen
+    // to be in.
+    const GfMatrix4d localToWorldSpace(shapeAdapter->GetRootXform().GetInverse());
+    viewMatrix = localToWorldSpace * viewMatrix;
+
     const HdxIntersector::Hit* hitInfo =
-        _GetHitInfo(view,
-                    pickResolution,
+        _GetHitInfo(viewMatrix,
+                    projectionMatrix,
                     singleSelection,
-                    shapeAdapter->GetDelegateID(),
-                    shapeAdapter->GetRootXform());
+                    shapeAdapter->GetDelegateID());
     if (!hitInfo) {
+        // If nothing was selected, the view does not refresh, but this means
+        // _selectQueue will not get processed again even if the user attempts
+        // another selection. We fix the renderer state by scheduling another
+        // refresh when the view is next idle.
+
+        if (_selectResults.empty()) {
+            view.scheduleRefresh();
+        }
+
         return false;
     }
 
@@ -488,28 +509,83 @@ UsdMayaGLBatchRenderer::TestIntersection(
         *hitPoint = hitInfo->worldSpaceHitPoint;
     }
 
-    if (TfDebug::IsEnabled(PXRUSDMAYAGL_QUEUE_INFO)) {
-        cout << "FOUND HIT: " << endl;
-        cout << "    delegateId: " << hitInfo->delegateId << endl;
-        cout << "    objectId  : " << hitInfo->objectId << endl;
-        cout << "    ndcDepth  : " << hitInfo->ndcDepth << endl;
+    TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
+        "FOUND HIT:\n"
+        "    delegateId: %s\n"
+        "    objectId  : %s\n"
+        "    ndcDepth  : %f\n",
+        hitInfo->delegateId.GetText(),
+        hitInfo->objectId.GetText(),
+        hitInfo->ndcDepth);
+
+    return true;
+}
+
+bool
+UsdMayaGLBatchRenderer::TestIntersection(
+        const PxrMayaHdShapeAdapter* shapeAdapter,
+        const MHWRender::MSelectionInfo& selectInfo,
+        const MHWRender::MDrawContext& context,
+        const bool singleSelection,
+        GfVec3f* hitPoint)
+{
+    GfMatrix4d viewMatrix;
+    GfMatrix4d projectionMatrix;
+    if (!px_vp20Utils::GetSelectionMatrices(selectInfo,
+                                            context,
+                                            viewMatrix,
+                                            projectionMatrix)) {
+        return false;
     }
+
+    const HdxIntersector::Hit* hitInfo =
+        _GetHitInfo(viewMatrix,
+                    projectionMatrix,
+                    singleSelection,
+                    shapeAdapter->GetDelegateID());
+    if (!hitInfo) {
+        // If nothing was selected, the view does not refresh, but this means
+        // _selectQueue will not get processed again even if the user attempts
+        // another selection. We fix the renderer state by scheduling another
+        // refresh when the view is next idle.
+
+        if (_selectResults.empty()) {
+            M3dView::scheduleRefreshAllViews();
+        }
+
+        return false;
+    }
+
+    if (hitPoint) {
+        *hitPoint = hitInfo->worldSpaceHitPoint;
+    }
+
+    TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
+        "FOUND HIT:\n"
+        "    delegateId: %s\n"
+        "    objectId  : %s\n"
+        "    ndcDepth  : %f\n",
+        hitInfo->delegateId.GetText(),
+        hitInfo->objectId.GetText(),
+        hitInfo->ndcDepth);
 
     return true;
 }
 
 const HdxIntersector::Hit*
 UsdMayaGLBatchRenderer::_GetHitInfo(
-        M3dView& view,
-        const unsigned int pickResolution,
+        const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projectionMatrix,
         const bool singleSelection,
-        const SdfPath& delegateId,
-        const GfMatrix4d& localToWorldSpace)
+        const SdfPath& delegateId)
 {
     // Guard against user clicking in viewer before renderer is setup
     if (!_renderIndex) {
         return nullptr;
     }
+
+    // We may miss very small objects with this setting, but it's faster.
+    const unsigned int pickResolution = 256u;
 
     // Selection only occurs once per display refresh, with all usd objects
     // simulataneously. If the selectQueue is not empty, that means that
@@ -520,24 +596,10 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
             "____________ SELECTION STAGE START ______________ (singleSelect = %d)\n",
             singleSelection);
 
-        GfMatrix4d viewMatrix;
-        GfMatrix4d projectionMatrix;
-        px_LegacyViewportUtils::GetViewSelectionMatrices(view,
-                                                         &viewMatrix,
-                                                         &projectionMatrix);
-
-        // As Maya doesn't support batched selection, intersection testing is
-        // actually performed in the first selection query that happens after a
-        // render. This query occurs in the local space of SOME object, but
-        // we need results in world space so that we have results for every
-        // node available. worldToLocalSpace removes the local space we
-        // happen to be in for the initial query.
-        GfMatrix4d worldToLocalSpace(localToWorldSpace.GetInverse());
-
         _intersector->SetResolution(GfVec2i(pickResolution, pickResolution));
 
         HdxIntersector::Params qparams;
-        qparams.viewMatrix = worldToLocalSpace * viewMatrix;
+        qparams.viewMatrix = viewMatrix;
         qparams.projectionMatrix = projectionMatrix;
         qparams.alphaThreshold = 0.1f;
 
@@ -545,23 +607,24 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
 
         for (const auto& iter : _selectQueue) {
             const size_t paramsHash = iter.first;
-            const PxrMayaHdRenderParams& renderParams = iter.second.first;
             const _ShapeAdapterSet& shapeAdapters = iter.second.second;
-
-            HdRprimCollectionVector rprimCollections;
-            for (const PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-                rprimCollections.push_back(shapeAdapter->GetRprimCollection());
-            }
 
             TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
                 "--- pickQueue, batch %zx, size %zu\n",
                 paramsHash,
-                rprimCollections.size());
+                shapeAdapters.size());
 
-            qparams.cullStyle = renderParams.cullStyle;
+            for (const PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
+                const HdRprimCollection& rprimCollection =
+                    shapeAdapter->GetRprimCollection();
 
-            for (const HdRprimCollection& rprimCollection : rprimCollections) {
+                // Re-query the shape adapter for the render params rather than
+                // using what's in the queue.
+                const PxrMayaHdRenderParams& renderParams =
+                    shapeAdapter->GetRenderParams(nullptr, nullptr);
+
                 qparams.renderTags = rprimCollection.GetRenderTags();
+                qparams.cullStyle = renderParams.cullStyle;
 
                 HdxIntersector::Result result;
                 HdxIntersector::HitVector hits;
@@ -651,15 +714,6 @@ UsdMayaGLBatchRenderer::_GetHitInfo(
         // Selection can happen after a refresh but before a draw call, so
         // clear out the render queue as well
         _renderQueue.clear();
-
-        // If nothing was selected, the view does not refresh, but this
-        // means _selectQueue will not get processed again even if the
-        // user attempts another selection. We fix the renderer state by
-        // scheduling another refresh when the view is next idle.
-
-        if (_selectResults.empty()) {
-            view.scheduleRefresh();
-        }
 
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
             "^^^^^^^^^^^^ SELECTION STAGE FINISH ^^^^^^^^^^^^^\n");

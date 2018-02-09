@@ -35,7 +35,9 @@
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 #include <maya/MObject.h>
+#include <maya/MPoint.h>
 #include <maya/MPxDrawOverride.h>
+#include <maya/MSelectionContext.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
@@ -77,6 +79,18 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 const MDagPath& cameraPath,
                 const MHWRender::MFrameContext& frameContext,
                 MUserData* oldData) override;
+
+#if MAYA_API_VERSION >= 201800
+        PXRUSDMAYAGL_API
+        virtual bool wantUserSelection() const override;
+
+        PXRUSDMAYAGL_API
+        virtual bool userSelect(
+                MHWRender::MSelectionInfo& selectInfo,
+                const MHWRender::MDrawContext& context,
+                MPoint& hitPoint,
+                const MUserData* data) override;
+#endif
 
         PXRUSDMAYAGL_API
         static void draw(

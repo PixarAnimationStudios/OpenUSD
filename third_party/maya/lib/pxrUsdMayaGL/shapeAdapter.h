@@ -92,7 +92,7 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         PxrMayaHdRenderParams GetRenderParams(
                 bool* drawShape,
-                bool* drawBoundingBox);
+                bool* drawBoundingBox) const;
 
         PXRUSDMAYAGL_API
         const HdRprimCollection& GetRprimCollection() const {

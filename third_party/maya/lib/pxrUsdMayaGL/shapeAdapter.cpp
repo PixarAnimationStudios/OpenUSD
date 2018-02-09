@@ -401,7 +401,9 @@ PxrMayaHdShapeAdapter::Sync(
 }
 
 PxrMayaHdRenderParams
-PxrMayaHdShapeAdapter::GetRenderParams(bool* drawShape, bool* drawBoundingBox)
+PxrMayaHdShapeAdapter::GetRenderParams(
+        bool* drawShape,
+        bool* drawBoundingBox) const
 {
     if (drawShape) {
         *drawShape = _drawShape;

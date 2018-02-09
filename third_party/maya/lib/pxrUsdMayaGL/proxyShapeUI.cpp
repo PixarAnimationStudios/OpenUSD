@@ -29,7 +29,7 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
-#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
@@ -191,15 +191,11 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    // We will miss very small objects with this setting, but it's faster.
-    const unsigned int selectRes = 256;
-
-    GfVec3d hitPoint;
+    GfVec3f hitPoint;
     const bool didHit =
         UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
             &_shapeAdapter,
             view,
-            selectRes,
             selectInfo.singleSelection(),
             &hitPoint);
 
