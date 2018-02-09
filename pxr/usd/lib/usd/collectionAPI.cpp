@@ -328,12 +328,13 @@ UsdCollectionAPI::CreateExcludesRel() const
     return _GetExcludesRel(/* create */ true);
 }
 
+
 bool 
-UsdCollectionAPI::AddPrim(const UsdPrim &prim) const
+UsdCollectionAPI::IncludePath(const SdfPath &pathToInclude) const
 {
     // If the prim is already included in the collection, do nothing.
     MembershipQuery query  = ComputeMembershipQuery();
-    if (query.IsPathIncluded(prim.GetPath())) {
+    if (query.IsPathIncluded(pathToInclude)) {
         return true;
     }
 
@@ -342,12 +343,12 @@ UsdCollectionAPI::AddPrim(const UsdPrim &prim) const
     if (UsdRelationship excludesRel = _GetExcludesRel()) {
         excludesRel.GetTargets(&excludes);
 
-        if (std::find(excludes.begin(), excludes.end(), prim.GetPath()) != 
+        if (std::find(excludes.begin(), excludes.end(), pathToInclude) != 
                 excludes.end()) {
-            excludesRel.RemoveTarget(prim.GetPath());
+            excludesRel.RemoveTarget(pathToInclude);
             // Update the query object we have, instead of having to 
             // recompute it.
-            auto it = query._pathExpansionRuleMap.find(prim.GetPath());
+            auto it = query._pathExpansionRuleMap.find(pathToInclude);
             if (TF_VERIFY(it != query._pathExpansionRuleMap.end())) {
                 query._pathExpansionRuleMap.erase(it);
             }
@@ -356,20 +357,20 @@ UsdCollectionAPI::AddPrim(const UsdPrim &prim) const
 
     // Now that we've removed the explicit excludes if there was one, 
     // we can add the prim if it's not already included in the collection. 
-    if (!query.IsPathIncluded(prim.GetPath())) {
-        return CreateIncludesRel().AddTarget(prim.GetPath());
+    if (!query.IsPathIncluded(pathToInclude)) {
+        return CreateIncludesRel().AddTarget(pathToInclude);
     }
 
     return true;
 }
 
 bool 
-UsdCollectionAPI::RemovePrim(const UsdPrim &prim) const
+UsdCollectionAPI::ExcludePath(const SdfPath &pathToExclude) const
 {
     // If the prim is already excluded from the collection (or not included),
     // do nothing.
     MembershipQuery query  = ComputeMembershipQuery();
-    if (!query.IsPathIncluded(prim.GetPath())) {
+    if (!query.IsPathIncluded(pathToExclude)) {
         return true;
     }
 
@@ -378,12 +379,12 @@ UsdCollectionAPI::RemovePrim(const UsdPrim &prim) const
     if (UsdRelationship includesRel = _GetIncludesRel()) {
         includesRel.GetTargets(&includes);
 
-        if (std::find(includes.begin(), includes.end(), prim.GetPath()) != 
+        if (std::find(includes.begin(), includes.end(), pathToExclude) != 
                 includes.end()) {
-            includesRel.RemoveTarget(prim.GetPath());
+            includesRel.RemoveTarget(pathToExclude);
             // Update the query object we have, instead of having to 
             // recompute it.
-            auto it = query._pathExpansionRuleMap.find(prim.GetPath());
+            auto it = query._pathExpansionRuleMap.find(pathToExclude);
             if (TF_VERIFY(it != query._pathExpansionRuleMap.end())) {
                 query._pathExpansionRuleMap.erase(it);
             }
@@ -392,8 +393,8 @@ UsdCollectionAPI::RemovePrim(const UsdPrim &prim) const
 
     // Now that we've removed the explicit include if there was one, 
     // we can remove the prim if it's not already excluded from the collection. 
-    if (query.IsPathIncluded(prim.GetPath())) {
-        return CreateExcludesRel().AddTarget(prim.GetPath());
+    if (query.IsPathIncluded(pathToExclude)) {
+        return CreateExcludesRel().AddTarget(pathToExclude);
     }
 
     return true;

@@ -506,7 +506,7 @@ UsdShadeMaterialBindingAPI::RemovePrimFromBindingCollection(
             materialPurpose)) {
         auto collBinding = GetCollectionBinding(collBindingRel);
         if (collBinding.collection) {
-            return collBinding.collection.RemovePrim(prim);
+            return collBinding.collection.ExcludePath(prim.GetPath());
         }
     }
 
@@ -523,7 +523,7 @@ UsdShadeMaterialBindingAPI::AddPrimToBindingCollection(
             materialPurpose)) {
         auto collBinding = GetCollectionBinding(collBindingRel);
         if (collBinding.collection) {
-            return collBinding.collection.AddPrim(prim);
+            return collBinding.collection.IncludePath(prim.GetPath());
         }
     }
 

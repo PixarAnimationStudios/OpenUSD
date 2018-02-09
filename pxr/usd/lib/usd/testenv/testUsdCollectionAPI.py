@@ -169,11 +169,11 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
         self.assertEqual(len(combinedCollIncObjects), 5)
 
-    def test_testAddAndRemovePrim(self):
+    def test_testIncludeAndExcludePath(self):
         geomCollection = Usd.CollectionAPI.ApplyCollection(geom, 
             "geom")
-        self.assertTrue(geomCollection.AddPrim(shapes))
-        self.assertTrue(geomCollection.RemovePrim(sphere))
+        self.assertTrue(geomCollection.IncludePath(shapes.GetPath()))
+        self.assertTrue(geomCollection.ExcludePath(sphere.GetPath()))
 
         query = geomCollection.ComputeMembershipQuery()
         self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
@@ -183,13 +183,13 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertFalse(query.IsPathIncluded(hemiSphere2.GetPath()))
 
         # Add just hemiSphere2
-        self.assertTrue(geomCollection.AddPrim(hemiSphere2))
+        self.assertTrue(geomCollection.IncludePath(hemiSphere2.GetPath()))
 
         # Remove hemiSphere1. Note that this does nothing however since it's 
         # not included in the collection.
-        self.assertTrue(geomCollection.RemovePrim(hemiSphere1))
+        self.assertTrue(geomCollection.ExcludePath(hemiSphere1.GetPath()))
 
-        # Every time we call AddPrim() or RemovePrim(), we must recompute 
+        # Every time we call IncludePath() or ExcludePath(), we must recompute 
         # the MembershipQuery object.
         query = geomCollection.ComputeMembershipQuery()
         self.assertFalse(query.IsPathIncluded(sphere.GetPath()))
@@ -197,7 +197,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(query.IsPathIncluded(hemiSphere2.GetPath()))
 
         # Add back sphere and verify that everything is included now.
-        self.assertTrue(geomCollection.AddPrim(sphere))
+        self.assertTrue(geomCollection.IncludePath(sphere.GetPath()))
 
         query = geomCollection.ComputeMembershipQuery()
         self.assertTrue(query.IsPathIncluded(sphere.GetPath()))

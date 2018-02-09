@@ -204,8 +204,8 @@ WRAP_CUSTOM {
         .def("GetExcludesRel", &This::GetExcludesRel)
         .def("CreateExcludesRel", &This::CreateExcludesRel)
 
-        .def("AddPrim", &This::AddPrim)
-        .def("RemovePrim", &This::RemovePrim)
+        .def("IncludePath", &This::IncludePath, arg("pathToInclude"))
+        .def("ExcludePath", &This::ExcludePath, arg("pathToExclude"))
 
         .def("Validate", &_WrapValidate)
 

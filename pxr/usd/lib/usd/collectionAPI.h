@@ -478,36 +478,36 @@ public:
     /// \anchor UsdCollectionAPI_AuthoringAPI
     /// \name Collection Authoring API
     /// 
-    /// Convenience API for adding or removing prims to (or from) a collecition.
+    /// Convenience API for adding or removing prims and properties to (or 
+    /// from) a collection..
     /// 
     /// @{
 
-    /// Adds the given \p prim to the collection. 
+    /// Includes or adds the given path, \p pathToInclude in the collection. 
     /// 
-    /// This does nothing if the prim is already included in the collection. 
+    /// This does nothing if the path is already included in the collection. 
     /// 
     /// This does not modify the expansion-rule of the collection. Hence, if the 
     /// expansionRule is <i>expandPrims</i> or <i>expandPrimsAndProperties</i>, 
-    /// then the descendants of \p prim will be also included in the collection 
-    /// (unless explicitly excluded).
+    /// then the descendants of \p pathToInclude will be also included in the 
+    /// collection unless explicitly excluded.
     /// 
-    /// \sa UsdCollectionAPI::RemovePrim()
+    /// \sa UsdCollectionAPI::ExcludePath()
     USD_API 
-    bool AddPrim(const UsdPrim &prim) const;
+    bool IncludePath(const SdfPath &pathToInclude) const;
 
-
-    /// Removes the given \p prim from the collection. 
+    /// Excludes or removes the given path, \p pathToExclude from the collection.
     /// 
-    /// This does nothing if the prim is not included in the collection. 
+    /// This does nothing if the path is not included in the collection. 
     ///
     /// This does not modify the expansion-rule of the collection. Hence, if the 
     /// expansionRule is <i>expandPrims</i> or <i>expandPrimsAndProperties</i>, 
-    /// then the descendants of \p prim will also be excluded from the 
-    /// collection (unless explicitly included).
+    /// then the descendants of \p pathToExclude will also be excluded from the 
+    /// collection, unless explicitly included.
     ///
-    /// \sa UsdCollectionAPI::AddPrim()
+    /// \sa UsdCollectionAPI::IncludePath()
     USD_API
-    bool RemovePrim(const UsdPrim &prim) const; 
+    bool ExcludePath(const SdfPath &pathToExclude) const; 
 
     /// @}
     
