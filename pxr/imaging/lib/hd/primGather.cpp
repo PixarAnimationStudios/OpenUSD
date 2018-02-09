@@ -25,9 +25,18 @@
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/base/tf/diagnostic.h"
-
+#include "pxr/base/work/arenaDispatcher.h"
+#include <tbb/parallel_for.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Parallelism tunable values.
+// Only run ranges in parallel if there are enough to cover the
+// overhead.
+static const size_t MIN_RANGES_FOR_PARALLEL  = 10;
+static const size_t MIN_ENTRIES_FOR_PARALLEL = 10;
+static const size_t MIN_GRAIN_SIZE           = 10;
+
 
 void HdPrimGather::Filter(const SdfPathVector &paths,
                           const SdfPathVector &includePaths,
@@ -39,16 +48,19 @@ void HdPrimGather::Filter(const SdfPathVector &paths,
     _SetupFilter(includePaths, excludePaths);
     _GatherPaths(paths);
 
-    _WriteResults(paths, _gatheredRanges, results);
+    _WriteResults(paths,
+                  _gatheredRanges.begin(),
+                  _gatheredRanges.end(),
+                  results);
 }
 
 void
 HdPrimGather::PredicatedFilter(const SdfPathVector &paths,
-                      const SdfPathVector &includePaths,
-                      const SdfPathVector &excludePaths,
-                      FilterPredicateFn    predicateFn,
-                      void                *predicateParam,
-                      SdfPathVector       *results)
+                               const SdfPathVector &includePaths,
+                               const SdfPathVector &excludePaths,
+                               FilterPredicateFn    predicateFn,
+                               void                *predicateParam,
+                               SdfPathVector       *results)
 {
     HD_TRACE_FUNCTION();
 
@@ -56,26 +68,45 @@ HdPrimGather::PredicatedFilter(const SdfPathVector &paths,
     _GatherPaths(paths);
 
     {
-        // Looked into parallelizing this loop
-        // However, the measured performance wasn't large enough to
-        // justify the parallel overhead.
-        // The scope here, is so it can be tracked and decided to
-        // go parallel later if warranted
         HD_TRACE_SCOPE("HdPrimGather::Predicate Test");
 
         size_t numRanges = _gatheredRanges.size();
-        for (size_t rangeNum = 0; rangeNum < numRanges; ++rangeNum) {
-            const _Range &range = _gatheredRanges[rangeNum];
+        if (numRanges > MIN_RANGES_FOR_PARALLEL) {
+            WorkArenaDispatcher rangeDispatcher;
 
-            _DoPredicateTest(paths,
-                             range._start,
-                             range._end,
-                             predicateFn,
-                             predicateParam);
+            for (size_t rangeNum = 0; rangeNum < numRanges; ++rangeNum) {
+                const _Range &range = _gatheredRanges[rangeNum];
+
+                rangeDispatcher.Run(&HdPrimGather::_DoPredicateTestOnRange,
+                                    this,
+                                    std::cref(paths),
+                                    range,
+                                    predicateFn,
+                                    predicateParam);
+            }
+
+            rangeDispatcher.Wait();
+        } else {
+            size_t numRanges = _gatheredRanges.size();
+            for (size_t rangeNum = 0; rangeNum < numRanges; ++rangeNum) {
+                const _Range &range = _gatheredRanges[rangeNum];
+
+                _DoPredicateTestOnRange(paths,
+                                        range,
+                                        predicateFn,
+                                        predicateParam);
+            }
         }
     }
 
-    _WriteResults(paths, _resultRanges, results);
+    typedef tbb::flattened2d<_ConcurrentRangeArray> _FlattenRangeArray;
+
+    _FlattenRangeArray flattendResultRanges = tbb::flatten2d(_resultRanges);
+
+    _WriteResults(paths,
+                  flattendResultRanges.begin(),
+                  flattendResultRanges.end(),
+                  results);
 }
 
 void
@@ -87,7 +118,10 @@ HdPrimGather::Subtree(const SdfPathVector &paths,
 
     _FilterSubTree(paths, rootPath);
 
-    _WriteResults(paths, _gatheredRanges, results);
+    _WriteResults(paths,
+                  _gatheredRanges.begin(),
+                  _gatheredRanges.end(),
+                  results);
 }
 
 bool
@@ -300,13 +334,49 @@ HdPrimGather::_GatherPaths(const SdfPathVector &paths)
     _FilterRange(paths, 0, paths.size() - 1, false);
 }
 
+// Outer Loop called for each range in vector
 void
-HdPrimGather::_DoPredicateTest(const SdfPathVector &paths,
-                                size_t               begin,
-                                size_t               end,
-                                FilterPredicateFn    predicateFn,
-                                void                *predicateParam)
+HdPrimGather::_DoPredicateTestOnRange(const SdfPathVector &paths,
+                                      const _Range        &range,
+                                      FilterPredicateFn    predicateFn,
+                                      void                *predicateParam)
 {
+    // Range _end is inclusive, but blocked_range is exclusive.
+    _ConcurrentRange concurrentRange(range._start,
+                                     range._end + 1,
+                                     MIN_GRAIN_SIZE);
+
+
+    if (concurrentRange.size() > MIN_ENTRIES_FOR_PARALLEL) {
+
+        tbb::parallel_for(concurrentRange,
+                          std::bind(&HdPrimGather::_DoPredicateTestOnPrims,
+                                    this,
+                                    std::cref(paths),
+                                    std::placeholders::_1,
+                                    predicateFn,
+                                    predicateParam));
+    } else {
+        _DoPredicateTestOnPrims(paths,
+                                concurrentRange,
+                                predicateFn,
+                                predicateParam);
+    }
+}
+
+// Inner Loop over each prim in a sub range of _Range.
+void
+HdPrimGather::_DoPredicateTestOnPrims(const SdfPathVector &paths,
+                               _ConcurrentRange    &range,
+                               FilterPredicateFn    predicateFn,
+                               void                *predicateParam)
+{
+    size_t begin = range.begin();
+    size_t end   = range.end() - 1;  // convert to inclusive.
+
+    _RangeArray &resultRanges = _resultRanges.local();
+
+
     size_t currentStart = begin;
     for (size_t pathIdx = begin; pathIdx <= end; ++pathIdx) {
         // Test to see if path at index needs to split
@@ -314,7 +384,7 @@ HdPrimGather::_DoPredicateTest(const SdfPathVector &paths,
 
             // Add all paths up to the path before this one
             if (currentStart < pathIdx) {
-                _resultRanges.emplace_back(currentStart, pathIdx - 1);
+                resultRanges.emplace_back(currentStart, pathIdx - 1);
             }
 
             currentStart = pathIdx + 1;
@@ -323,36 +393,34 @@ HdPrimGather::_DoPredicateTest(const SdfPathVector &paths,
 
     // Add final range
     if (currentStart <= end) {
-        _resultRanges.emplace_back(currentStart, end);
+        resultRanges.emplace_back(currentStart, end);
     }
 }
 
-
+template <class Iterator>
+//static
 void
 HdPrimGather::_WriteResults(const SdfPathVector &paths,
-                            const _RangeArray &ranges,
-                            SdfPathVector *results) const
+                            const Iterator &rangesBegin,
+                            const Iterator &rangesEnd,
+                            SdfPathVector *results)
 {
     results->clear();
 
     size_t numPaths = 0;
-    for (_RangeArray::const_iterator it  = ranges.begin();
-                                     it != ranges.end();
-                                   ++it) {
+    for (Iterator it  = rangesBegin; it != rangesEnd; ++it) {
         numPaths += (it->_end - it->_start) + 1; // +1 for inclusive range.
     }
 
     results->reserve(numPaths);
 
-    for (_RangeArray::const_iterator it  = ranges.begin();
-                                     it != ranges.end();
-                                   ++it) {
+    for (Iterator it  = rangesBegin; it != rangesEnd; ++it) {
 
         SdfPathVector::const_iterator rangeStartIt = paths.begin();
         SdfPathVector::const_iterator rangeEndIt   = paths.begin();
 
-        std::advance(rangeStartIt, it->_start);
-        std::advance(rangeEndIt,   it->_end + 1); // End is exclusive, so +1
+        rangeStartIt += it->_start;
+        rangeEndIt   += it->_end + 1; // End is exclusive, so +1
 
         results->insert(results->end(), rangeStartIt, rangeEndIt);
     }
