@@ -28,6 +28,7 @@
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
+#include "usdMaya/proxyShape.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec4f.h"
@@ -51,6 +52,7 @@
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
@@ -114,68 +116,49 @@ PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
     renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
 }
 
-void
-PxrMayaHdShapeAdapter::PrepareForQueue(
-        const UsdTimeCode timeCode,
-        const uint8_t refineLevel,
-        const bool showGuides,
-        const bool showRenderGuides,
-        const bool tint,
-        const GfVec4f& tintColor)
+// Helper function that converts M3dView::DisplayStyle (legacy viewport) into
+// MHWRender::MFrameContext::DisplayStyle (Viewport 2.0).
+//
+// In the legacy viewport, the M3dView can be in exactly one displayStyle
+// whereas Viewport 2.0's displayStyle is a bitmask of potentially multiple
+// styles. To translate from the legacy viewport to Viewport 2.0, we simply
+// bitwise-OR the single legacy viewport displayStyle into an empty mask.
+static inline
+unsigned int
+_ToMFrameContextDisplayStyle(const M3dView::DisplayStyle legacyDisplayStyle)
 {
-    // Initialization of default parameters go here. These parameters get used
-    // in all viewports and for selection.
+    unsigned int displayStyle = 0u;
 
-    // XXX Not yet adding ability to turn off display of proxy geometry, but
-    // we should at some point, as in usdview.
-    TfTokenVector renderTags;
-    renderTags.push_back(HdTokens->geometry);
-    renderTags.push_back(HdTokens->proxy);
-    if (showGuides) {
-        renderTags.push_back(HdTokens->guide);
-    }
-    if (showRenderGuides) {
-        renderTags.push_back(_tokens->RenderGuidesTag);
-    }
-
-    if (_rprimCollection.GetRenderTags() != renderTags) {
-        _rprimCollection.SetRenderTags(renderTags);
-
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
-    }
-
-    if (tint) {
-        _baseParams.overrideColor = tintColor;
+    switch (legacyDisplayStyle) {
+        case M3dView::kBoundingBox:
+            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
+            break;
+        case M3dView::kFlatShaded:
+// MHWRender::MFrameContext::DisplayStyle::kFlatShaded is missing in Maya 2015
+// and earlier. For those versions of Maya, fall through to kGouraudShaded.
+#if MAYA_API_VERSION >= 201600
+            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
+            break;
+#endif
+        case M3dView::kGouraudShaded:
+            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kGouraudShaded;
+            break;
+        case M3dView::kWireFrame:
+            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kWireFrame;
+            break;
+        case M3dView::kPoints:
+            // Not supported.
+            break;
     }
 
-    if (_delegate) {
-        MStatus status;
-        const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
-        if (status == MS::kSuccess) {
-            _rootXform = GfMatrix4d(transform.matrix);
-            _delegate->SetRootTransform(_rootXform);
-        }
-
-        _delegate->SetRefineLevelFallback(refineLevel);
-
-        // Will only react if time actually changes.
-        _delegate->SetTime(timeCode);
-
-        _delegate->SetRootCompensation(_rootPrim.GetPath());
-
-        if (!_isPopulated) {
-            _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
-            _isPopulated = true;
-        }
-    }
+    return displayStyle;
 }
 
 // Helper function that converts M3dView::DisplayStatus (legacy viewport) into
 // MHWRender::DisplayStatus (Viewport 2.0).
 static inline
 MHWRender::DisplayStatus
-_ToMHWRenderDisplayStatus(const M3dView::DisplayStatus displayStatus)
+_ToMHWRenderDisplayStatus(const M3dView::DisplayStatus legacyDisplayStatus)
 {
     // These enums are equivalent, but statically checking just in case.
     static_assert(
@@ -193,7 +176,7 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus displayStatus)
         ((int)M3dView::kNoStatus == (int)MHWRender::kNoStatus),
             "M3dView::DisplayStatus == MHWRender::DisplayStatus");
 
-    return MHWRender::DisplayStatus((int)displayStatus);
+    return MHWRender::DisplayStatus((int)legacyDisplayStatus);
 }
 
 bool
@@ -218,109 +201,144 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
     return false;
 }
 
-PxrMayaHdRenderParams
-PxrMayaHdShapeAdapter::GetRenderParams(
-        const M3dView::DisplayStyle displayStyle,
-        const M3dView::DisplayStatus displayStatus,
-        bool* drawShape,
-        bool* drawBoundingBox)
+bool
+PxrMayaHdShapeAdapter::Sync(
+        MPxSurfaceShape* surfaceShape,
+        const M3dView::DisplayStyle legacyDisplayStyle,
+        const M3dView::DisplayStatus legacyDisplayStatus)
 {
-    // Legacy viewport Implementation.
+    const unsigned int displayStyle =
+        _ToMFrameContextDisplayStyle(legacyDisplayStyle);
+    const MHWRender::DisplayStatus displayStatus =
+        _ToMHWRenderDisplayStatus(legacyDisplayStatus);
 
-    PxrMayaHdRenderParams params(_baseParams);
-    TfToken reprName;
+    const bool success = Sync(surfaceShape, displayStyle, displayStatus);
 
-    // The legacy viewport does not allow shapes and bounding boxes to be drawn
-    // at the same time...
-    *drawBoundingBox = (displayStyle == M3dView::kBoundingBox);
-    *drawShape = !*drawBoundingBox;
-
-    MColor mayaWireframeColor;
-    const bool needsWire = _GetWireframeColor(
-        _ToMHWRenderDisplayStatus(displayStatus),
-        &mayaWireframeColor);
-
-    if (needsWire) {
+    if (success) {
         // The legacy viewport does not support color management, so we roll
         // our own gamma correction via framebuffer effect. But that means we
         // need to pre-linearize the wireframe color from Maya.
-        params.wireframeColor =
-            GfConvertDisplayToLinear(GfVec4f(mayaWireframeColor.r,
-                                             mayaWireframeColor.g,
-                                             mayaWireframeColor.b,
-                                             1.0f));
+        //
+        // The default value for wireframeColor is 0.0f for all four values and
+        // if we need a wireframe color, we expect Sync() to have set the
+        // values and put 1.0f in for alpha, so inspect the alpha value to
+        // determine whether we need to linearize rather than calling
+        // _GetWireframeColor() again.
+        if (_renderParams.wireframeColor[3] > 0.0f) {
+            _renderParams.wireframeColor[3] = 1.0f;
+            _renderParams.wireframeColor =
+                GfConvertDisplayToLinear(_renderParams.wireframeColor);
+        }
     }
 
-    switch (displayStyle) {
-        case M3dView::kWireFrame:
-        {
-            reprName = HdTokens->refinedWire;
-            params.enableLighting = false;
-            break;
-        }
-        case M3dView::kGouraudShaded:
-        {
-            if (needsWire) {
-                reprName = HdTokens->refinedWireOnSurf;
-            } else {
-                reprName = HdTokens->refined;
-            }
-            break;
-        }
-        case M3dView::kFlatShaded:
-        {
-            if (needsWire) {
-                reprName = HdTokens->wireOnSurf;
-            } else {
-                reprName = HdTokens->hull;
-            }
-            break;
-        }
-        case M3dView::kPoints:
-        {
-            // Points mode is not natively supported by Hydra, so skip it...
-        }
-        default:
-        {
-            *drawShape = false;
-        }
-    };
-
-    if (_rprimCollection.GetReprName() != reprName) {
-        _rprimCollection.SetReprName(reprName);
-
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
-    }
-
-    return params;
+    return success;
 }
 
-PxrMayaHdRenderParams
-PxrMayaHdShapeAdapter::GetRenderParams(
+bool
+PxrMayaHdShapeAdapter::Sync(
+        MPxSurfaceShape* surfaceShape,
         const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus,
-        bool* drawShape,
-        bool* drawBoundingBox)
+        const MHWRender::DisplayStatus displayStatus)
 {
-    // VP 2.0 Implementation
+    UsdMayaProxyShape* usdProxyShape =
+        dynamic_cast<UsdMayaProxyShape*>(surfaceShape);
+    if (!usdProxyShape) {
+        return false;
+    }
 
-    PxrMayaHdRenderParams params(_baseParams);
-    TfToken reprName;
+    UsdPrim usdPrim;
+    SdfPathVector excludedPrimPaths;
+    int refineLevel;
+    UsdTimeCode timeCode;
+    bool showGuides;
+    bool showRenderGuides;
+    bool tint;
+    GfVec4f tintColor;
+    if (!usdProxyShape->GetAllRenderAttributes(&usdPrim,
+                                               &excludedPrimPaths,
+                                               &refineLevel,
+                                               &timeCode,
+                                               &showGuides,
+                                               &showRenderGuides,
+                                               &tint,
+                                               &tintColor)) {
+        return false;
+    }
 
-    *drawShape = true;
-    *drawBoundingBox =
+    if (_rootPrim != usdPrim) {
+        _rootPrim = usdPrim;
+        _isPopulated = false;
+    }
+    if (_excludedPrimPaths != excludedPrimPaths) {
+        _excludedPrimPaths = excludedPrimPaths;
+        _isPopulated = false;
+    }
+
+    // Reset _renderParams to the defaults.
+    PxrMayaHdRenderParams renderParams;
+    _renderParams = renderParams;
+
+    if (tint) {
+        _renderParams.overrideColor = tintColor;
+    }
+
+    // XXX Not yet adding ability to turn off display of proxy geometry, but
+    // we should at some point, as in usdview.
+    TfTokenVector renderTags;
+    renderTags.push_back(HdTokens->geometry);
+    renderTags.push_back(HdTokens->proxy);
+    if (showGuides) {
+        renderTags.push_back(HdTokens->guide);
+    }
+    if (showRenderGuides) {
+        renderTags.push_back(_tokens->RenderGuidesTag);
+    }
+
+    if (_rprimCollection.GetRenderTags() != renderTags) {
+        _rprimCollection.SetRenderTags(renderTags);
+
+        if (_delegate) {
+            _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+                _rprimCollection.GetName());
+        }
+    }
+
+    if (_delegate) {
+        MStatus status;
+        const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
+        if (status == MS::kSuccess) {
+            _rootXform = GfMatrix4d(transform.matrix);
+            _delegate->SetRootTransform(_rootXform);
+        }
+
+        _delegate->SetRefineLevelFallback(refineLevel);
+
+        // Will only react if time actually changes.
+        _delegate->SetTime(timeCode);
+
+        _delegate->SetRootCompensation(_rootPrim.GetPath());
+
+        if (!_isPopulated) {
+            _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
+            _isPopulated = true;
+        }
+    }
+
+    _drawShape = true;
+    _drawBoundingBox =
         (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
     MColor mayaWireframeColor;
     const bool needsWire = _GetWireframeColor(displayStatus,
                                               &mayaWireframeColor);
     if (needsWire) {
-        params.wireframeColor = GfVec4f(mayaWireframeColor.r,
-                                        mayaWireframeColor.g,
-                                        mayaWireframeColor.b,
-                                        1.0f);
+        _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
+                                               mayaWireframeColor.g,
+                                               mayaWireframeColor.b,
+                                               1.0f);
     }
+
+    TfToken reprName;
 
     // Maya 2015 lacks MHWRender::MFrameContext::DisplayStyle::kFlatShaded for
     // whatever reason...
@@ -349,21 +367,12 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame)
     {
         reprName = HdTokens->refinedWire;
-        params.enableLighting = false;
+        _renderParams.enableLighting = false;
     }
     else
     {
-        *drawShape = false;
+        _drawShape = false;
     }
-
-    // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
-    // for whatever reason...
-    params.cullStyle = HdCullStyleNothing;
-#if MAYA_API_VERSION >= 201603
-    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
-        params.cullStyle = HdCullStyleBackUnlessDoubleSided;
-    }
-#endif
 
     if (_rprimCollection.GetReprName() != reprName) {
         _rprimCollection.SetReprName(reprName);
@@ -372,7 +381,30 @@ PxrMayaHdShapeAdapter::GetRenderParams(
             _rprimCollection.GetName());
     }
 
-    return params;
+    // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
+    // for whatever reason...
+    _renderParams.cullStyle = HdCullStyleNothing;
+#if MAYA_API_VERSION >= 201603
+    if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
+        _renderParams.cullStyle = HdCullStyleBackUnlessDoubleSided;
+    }
+#endif
+
+    return true;
+}
+
+PxrMayaHdRenderParams
+PxrMayaHdShapeAdapter::GetRenderParams(bool* drawShape, bool* drawBoundingBox)
+{
+    if (drawShape) {
+        *drawShape = _drawShape;
+    }
+
+    if (drawBoundingBox) {
+        *drawBoundingBox = _drawBoundingBox;
+    }
+
+    return _renderParams;
 }
 
 

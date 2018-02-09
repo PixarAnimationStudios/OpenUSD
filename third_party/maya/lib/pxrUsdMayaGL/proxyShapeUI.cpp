@@ -65,43 +65,27 @@ PxrMayaHdShapeAdapter*
 _GetShapeAdapter(
         UsdMayaProxyShape* shape,
         const MDagPath& objPath,
-        const bool prepareForQueue)
+        const M3dView::DisplayStyle displayStyle,
+        const M3dView::DisplayStatus displayStatus)
 {
     if (!shape) {
         return nullptr;
     }
 
-    UsdPrim usdPrim;
-    SdfPathVector excludePaths;
-    UsdTimeCode timeCode;
-    int subdLevel;
-    bool showGuides, showRenderGuides;
-    bool tint;
-    GfVec4f tintColor;
-    if (!shape->GetAllRenderAttributes(&usdPrim,
-                                       &excludePaths,
-                                       &subdLevel,
-                                       &timeCode,
-                                       &showGuides,
-                                       &showRenderGuides,
-                                       &tint,
-                                       &tintColor)) {
+    // The shape adapter is owned by the global batch renderer, which is a
+    // singleton.
+    const UsdPrim usdPrim = shape->usdPrim();
+    const SdfPathVector excludePaths = shape->getExcludePrimPaths();
+    PxrMayaHdShapeAdapter* outShapeAdapter =
+        UsdMayaGLBatchRenderer::GetInstance().GetShapeAdapter(objPath,
+                                                              usdPrim,
+                                                              excludePaths);
+    if (!outShapeAdapter) {
         return nullptr;
     }
 
-    PxrMayaHdShapeAdapter* outShapeAdapter =
-        UsdMayaGLBatchRenderer::GetInstance().GetShapeAdapter(
-            objPath,
-            usdPrim,
-            excludePaths);
-
-    if (prepareForQueue) {
-        outShapeAdapter->PrepareForQueue(timeCode,
-                                         subdLevel,
-                                         showGuides,
-                                         showRenderGuides,
-                                         tint,
-                                         tintColor);
+    if (!outShapeAdapter->Sync(shape, displayStyle, displayStatus)) {
+        return nullptr;
     }
 
     return outShapeAdapter;
@@ -119,19 +103,23 @@ UsdMayaProxyShapeUI::getDrawRequests(
     const MDagPath shapeDagPath = drawInfo.multiPath();
     UsdMayaProxyShape* shape =
         UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
+    if (!shape) {
+        return;
+    }
+
     PxrMayaHdShapeAdapter* shapeAdapter =
         _GetShapeAdapter(shape,
                          shapeDagPath,
-                         /*prepareForQueue= */ true);
+                         drawInfo.displayStyle(),
+                         drawInfo.displayStatus());
     if (!shapeAdapter) {
         return;
     }
 
-    bool drawShape, drawBoundingBox;
+    bool drawShape;
+    bool drawBoundingBox;
     PxrMayaHdRenderParams params =
-        shapeAdapter->GetRenderParams(drawInfo.displayStyle(),
-                                      drawInfo.displayStatus(),
-                                      &drawShape,
+        shapeAdapter->GetRenderParams(&drawShape,
                                       &drawBoundingBox);
 
     // Only query bounds if we're drawing bounds...
@@ -196,6 +184,8 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
+    M3dView view = selectInfo.view();
+
     // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
     // selectInfo.selectPath() returns the dag path to the assembly node, not
     // the shape node, so we don't have the shape node's path readily available.
@@ -204,13 +194,13 @@ UsdMayaProxyShapeUI::select(
     PxrMayaHdShapeAdapter* shapeAdapter =
         _GetShapeAdapter(shape,
                          selectInfo.selectPath(),
-                         /*prepareForQueue= */ false);
+                         view.displayStyle(),
+                         view.displayStatus(selectInfo.selectPath()));
     if (!shapeAdapter) {
         return false;
     }
 
     // object selection
-    M3dView view = selectInfo.view();
 
     // We will miss very small objects with this setting, but it's faster.
     const unsigned int selectRes = 256;

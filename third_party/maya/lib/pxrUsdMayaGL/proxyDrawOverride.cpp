@@ -97,52 +97,36 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         MUserData* userData)
 {
     UsdMayaProxyShape* shape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
-
-    UsdPrim usdPrim;
-    SdfPathVector excludePaths;
-    UsdTimeCode timeCode;
-    int subdLevel;
-    bool showGuides, showRenderGuides;
-    bool tint;
-    GfVec4f tintColor;
-    if (!shape->GetAllRenderAttributes(&usdPrim,
-                                       &excludePaths,
-                                       &subdLevel,
-                                       &timeCode,
-                                       &showGuides,
-                                       &showRenderGuides,
-                                       &tint,
-                                       &tintColor)) {
+    if (!shape) {
         return nullptr;
     }
 
     // The shape adapter is owned by the global batch renderer, which is a
     // singleton.
+    const UsdPrim usdPrim = shape->usdPrim();
+    const SdfPathVector excludedPrimPaths = shape->getExcludePrimPaths();
     PxrMayaHdShapeAdapter* shapeAdapter =
         UsdMayaGLBatchRenderer::GetInstance().GetShapeAdapter(objPath,
                                                               usdPrim,
-                                                              excludePaths);
+                                                              excludedPrimPaths);
 
-    shapeAdapter->PrepareForQueue(timeCode,
-                                  subdLevel,
-                                  showGuides,
-                                  showRenderGuides,
-                                  tint,
-                                  tintColor);
-
-    bool drawShape, drawBoundingBox;
-    PxrMayaHdRenderParams params =
-        shapeAdapter->GetRenderParams(
+    if (!shapeAdapter->Sync(
+            shape,
             frameContext.getDisplayStyle(),
-            MHWRender::MGeometryUtilities::displayStatus(objPath),
-            &drawShape,
-            &drawBoundingBox);
+            MHWRender::MGeometryUtilities::displayStatus(objPath))) {
+        return nullptr;
+    }
+
+    bool drawShape;
+    bool drawBoundingBox;
+    PxrMayaHdRenderParams params =
+        shapeAdapter->GetRenderParams(&drawShape,
+                                      &drawBoundingBox);
 
     // Only query bounds if we're drawing bounds...
     //
     if (drawBoundingBox) {
-        MBoundingBox bounds;
-        bounds = shape->boundingBox();
+        const MBoundingBox bounds = shape->boundingBox();
 
         // Note that drawShape is still passed through here.
         UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(

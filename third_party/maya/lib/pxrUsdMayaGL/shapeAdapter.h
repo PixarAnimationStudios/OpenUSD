@@ -31,19 +31,18 @@
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/renderParams.h"
 
-#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MPxSurfaceShape.h>
 
 #include <memory>
 
@@ -73,36 +72,28 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         void Init(HdRenderIndex* renderIndex);
 
-        /// Prepare the shape adapter for being added to the batch renderer's
-        /// queues.
+        /// Update the shape adapter's state from the given MPxSurfaceShape
+        /// and the legacy viewport display state.
         PXRUSDMAYAGL_API
-        void PrepareForQueue(
-                const UsdTimeCode timeCode,
-                const uint8_t refineLevel,
-                const bool showGuides,
-                const bool showRenderGuides,
-                const bool tint,
-                const GfVec4f& tintColor);
+        bool Sync(
+                MPxSurfaceShape* surfaceShape,
+                const M3dView::DisplayStyle legacyDisplayStyle,
+                const M3dView::DisplayStatus legacyDisplayStatus);
 
-        /// Get a set of render params from the legacy viewport's display state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
+        /// Update the shape adapter's state from the given MPxSurfaceShape
+        /// and the Viewport 2.0 display state.
         PXRUSDMAYAGL_API
-        PxrMayaHdRenderParams GetRenderParams(
-                const M3dView::DisplayStyle displayStyle,
-                const M3dView::DisplayStatus displayStatus,
-                bool* drawShape,
-                bool* drawBoundingBox);
-
-        /// Get a set of render params from the Viewport 2.0 display state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        PXRUSDMAYAGL_API
-        PxrMayaHdRenderParams GetRenderParams(
+        bool Sync(
+                MPxSurfaceShape* surfaceShape,
                 const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus,
+                const MHWRender::DisplayStatus displayStatus);
+
+        /// Get a set of render params from the shape adapter's current state.
+        ///
+        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
+        /// and/or bounding box rendering is indicated from the state.
+        PXRUSDMAYAGL_API
+        PxrMayaHdRenderParams GetRenderParams(
                 bool* drawShape,
                 bool* drawBoundingBox);
 
@@ -134,13 +125,15 @@ class PxrMayaHdShapeAdapter
         SdfPathVector _excludedPrimPaths;
         GfMatrix4d _rootXform;
 
-        PxrMayaHdRenderParams _baseParams;
-
         SdfPath _sharedId;
-        bool _isPopulated;
         std::shared_ptr<UsdImagingDelegate> _delegate;
+        bool _isPopulated;
 
         HdRprimCollection _rprimCollection;
+
+        PxrMayaHdRenderParams _renderParams;
+        bool _drawShape;
+        bool _drawBoundingBox;
 };
 
 
