@@ -83,7 +83,104 @@ int GetNumSelectionHighlightModes()
 {
     return hdxSelectionBuffer[0];
 }
-#endif
+
+vec4 GetSelectionColor(int mode)
+{
+    vec4 s = vec4(0,0,0,0);
+    // XXX: Make selection colors an array so we can avoid the branching.
+    if (mode == 0)
+        s = HdGet_selColor();
+    else if (mode == 1)
+        s = HdGet_selLocateColor();
+    else if (mode == 2)
+        s = HdGet_selMaskColor();
+
+    return s;
+}
+
+// Note: These should match the enum in hdxSelectionTracker.cpp
+#define SUBPRIMITIVE_TYPE_ELEMENT 0
+#define SUBPRIMITIVE_TYPE_EDGE    1
+#define SUBPRIMITIVE_TYPE_POINT   2
+
+void GetSubprimitiveRangeInfo(int rangeStart,
+                              out int type, out int smin, out int smax)
+{
+    type = hdxSelectionBuffer[rangeStart];
+    smin = hdxSelectionBuffer[rangeStart + 1];
+    smax = hdxSelectionBuffer[rangeStart + 2];
+}
+
+struct SubprimSelection {
+    bool elementSelected;
+    bool edgeSelected;
+    bool pointSelected;
+};
+
+bool IsAnySubprimSelected(SubprimSelection s)
+{
+    return (s.elementSelected || s.edgeSelected || s.pointSelected);
+}
+
+bool IsPointSelected(int ptMin, int ptMax, int ptRangeStart)
+{
+    // XXX: Add support.
+    return false;
+}
+
+bool IsEdgeSelected(int edgeMin, int edgeMax, int edgeRangeStart,
+                    out int nextOffset)
+{
+    // XXX: Add support.
+    return false;
+}
+
+bool IsElementSelected(int eleMin, int eleMax, int eleRangeStart,
+                       out int nextOffset)
+{
+    int elementId = GetElementID();
+
+    if (elementId >= eleMin && elementId < eleMax) {
+        int v = hdxSelectionBuffer[3+eleRangeStart+elementId-eleMin];
+        if (v == 0) return false; // element isn't selected
+        if (v == 1) return true; // element alone is selected
+
+        // next subprim (edges and/or points) is selected; update the offset
+        nextOffset = v>>1;
+
+        if (bool(v & 0x1)) return true; // element is also selected
+
+        return false;
+    }
+
+    return false;
+}
+
+SubprimSelection GetSubprimSel(int rangeStart)
+{
+    int type, smin, smax;
+    GetSubprimitiveRangeInfo(rangeStart, /*out*/type, /*out*/smin, /*out*/smax);
+
+    SubprimSelection s = SubprimSelection(false, false, false);
+    int nextOffset = 0;
+
+    if (type == SUBPRIMITIVE_TYPE_ELEMENT) {
+        s.elementSelected =
+            IsElementSelected(smin, smax, rangeStart, /*out*/nextOffset);
+    }
+    if (type == SUBPRIMITIVE_TYPE_EDGE) {
+        s.edgeSelected =
+            IsEdgeSelected(smin, smax, rangeStart, /*out*/nextOffset);
+    }
+    if (type == SUBPRIMITIVE_TYPE_POINT) {
+        s.pointSelected =
+            IsPointSelected(smin, smax, rangeStart);
+    }
+
+    return s;
+}
+
+#endif // HD_HAS_hdxSelectionBuffer
 
 vec4 ApplySelectionColor(vec4 color)
 {
@@ -93,7 +190,8 @@ vec4 ApplySelectionColor(vec4 color)
     // The hdxSelectionBuffer layout is:
     // [# highlight modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
     // [-------------  header --------------]
-    // See HdxSelectionTracker::GetSelectionOffsetBuffer for an example.
+    // See HdxSelectionTracker::GetSelectionOffsetBuffer for details on the
+    // encoding scheme.
     for (int mode = 0; mode < numSelectionModes; mode++) {
         int modeOffset = GetIndexOffsetForHighlightMode(mode);
         if (!HighlightModeHasSelection(modeOffset)) {
@@ -104,19 +202,17 @@ vec4 ApplySelectionColor(vec4 color)
         int smin = hdxSelectionBuffer[modeOffset];
         int smax = hdxSelectionBuffer[modeOffset + 1];
         bool sel = false;
+        SubprimSelection subprimSel = SubprimSelection(false, false, false);
+
         if (primId >= smin && primId < smax) {
             int v = hdxSelectionBuffer[modeOffset + 2 + primId - smin];
-            if (v == 1) {
-                sel = true;
-            } else if (v == 0) {
+            if (v == 0) {
                 sel = false;
+            } else if (v == 1) {
+                sel = true;
             } else {
                 // current prim isn't fully selected. check if any of its
                 // instances (or) elements are.
-
-                // offsets stored in the buffer are per-selection mode, so
-                // account for the additional level of indirection.
-                v = v + modeOffset;
 
                 #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
                 for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
@@ -129,60 +225,43 @@ vec4 ApplySelectionColor(vec4 color)
                     int instanceId = GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
                     if (instanceId >= smin && instanceId < smax) {
                         v = hdxSelectionBuffer[2+v+instanceId-smin];
-                        if (v == 1) {
-                           sel = true;
+                        if (v == 0) {
+                           sel = false; // instance/element/edge isn't selected
                            break;
-                        } else if (v == 0) {
-                           sel = false;
+                        } else if (v == 1) {
+                           sel = true; // instance is selected
                            break;
                         } else {
-                            // instance isn't selected. check if the current
-                            // element (face/curve) is.
-                            // Account for the mode offset when using 'v' since
-                            // it was reset above
-                            v = v + modeOffset;
-                            smin = hdxSelectionBuffer[v];
-                            smax = hdxSelectionBuffer[v+1];
-                            int elementId = GetElementID();
-                            sel = bool(elementId >= smin && elementId < smax);
-                            if (sel) {
-                                sel = hdxSelectionBuffer[2+v+elementId-smin] != 0;
+                            // instance isn't selected. check if a subprim is
+                            subprimSel = GetSubprimSel(v);
+                            if (IsAnySubprimSelected(subprimSel)) {
+                                sel = true;
+                                break;
                             }
                         }
-                    } else {
+                    } else { // instanceId not in range
                         sel = false;
                         break;
                     }
                 }
                 #else
-                    // We have no instances, but we may still have faces selected.
-                    smin = hdxSelectionBuffer[v];
-                    smax = hdxSelectionBuffer[v+1];
-                    int elementId = GetElementID();
-                    sel = bool(elementId >= smin && elementId < smax);
-                    if (sel) {
-                        sel = hdxSelectionBuffer[2+v+elementId-smin] != 0;
+                    // We have no instances, but we may still have subprim(s)
+                    // selected.
+                    subprimSel = GetSubprimSel(v);
+                    if (IsAnySubprimSelected(subprimSel)) {
+                        sel = true;
                     }
                 #endif
             }
 
             if (sel) {
-                vec4 s = vec4(0, 0, 0, 0);
-
-                // XXX: Make selection colors an array so we can avoid the
-                // branching.
-                if (mode == 0)
-                    s = HdGet_selColor();
-                else if (mode == 1)
-                    s = HdGet_selLocateColor();
-                else if (mode == 2)
-                    s = HdGet_selMaskColor();
+                vec4 s = GetSelectionColor(mode);
 
                 // Note: We blend mask (over) locate (over) select when an
                 // object is in all three highlight modes.
                 color.rgb = mix(color.rgb, s.rgb, s.a);
             }
-        }
+        } // primId in range
     } // for each highlight mode
     
 #endif
@@ -236,23 +315,25 @@ vec4 ApplyColorOverrides(vec4 color)
     return color;
 }
 
+vec4 IntToVec4(int id)
+{
+    return vec4(((id >>  0) & 0xff) / 255.0,
+                ((id >>  8) & 0xff) / 255.0,
+                ((id >> 16) & 0xff) / 255.0,
+                ((id >> 24) & 0xff) / 255.0);
+}
+
 void RenderColor(vec4 color)
 {
     int primId = HdGet_primID();
-    primIdOut = vec4(((primId & 0x0000ff) >>  0) / 255.0,
-                     ((primId & 0x00ff00) >>  8) / 255.0,
-                     ((primId & 0xff0000) >> 16) / 255.0, 0);
+    primIdOut = IntToVec4(primId);
 
     // instanceIndex is a tuple of integers (num nested levels).
     // for picking, we store global instanceId (instanceIndex[0]) in the
     // selection framebuffer and then reconstruct the tuple in postprocess.
     int instanceId = GetDrawingCoord().instanceIndex[0];
-    instanceIdOut = vec4(((instanceId & 0x0000ff) >>  0) / 255.0,
-                         ((instanceId & 0x00ff00) >>  8) / 255.0,
-                         ((instanceId & 0xff0000) >> 16) / 255.0, 0);
+    instanceIdOut = IntToVec4(instanceId);
 
     int elementId = GetElementID();
-    elementIdOut = vec4(((elementId & 0x0000ff) >>  0) / 255.0,
-                        ((elementId & 0x00ff00) >>  8) / 255.0,
-                        ((elementId & 0xff0000) >> 16) / 255.0, 0);
+    elementIdOut = IntToVec4(elementId);
 }

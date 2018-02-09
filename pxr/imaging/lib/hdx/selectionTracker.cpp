@@ -66,6 +66,16 @@ HdxSelection::AddElements(HdxSelectionHighlightMode const& mode,
     _selEntities[mode].elements[path] = elementIndices;
 }
 
+void 
+HdxSelection::AddEdges(HdxSelectionHighlightMode const& mode,
+            SdfPath const& path,
+            VtIntArray const &edgeIndices)
+{
+    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
+    _selEntities[mode].prims.push_back(path);
+    _selEntities[mode].edges[path] = edgeIndices;
+}
+
 SdfPathVector const&
 HdxSelection::GetSelectedPrims(HdxSelectionHighlightMode const& mode) const
 {
@@ -80,11 +90,18 @@ HdxSelection::GetSelectedInstances(HdxSelectionHighlightMode const& mode) const
     return _selEntities[mode].instances;
 }
 
-HdxSelection::ElementMap const&
+HdxSelection::ElementIndicesMap const&
 HdxSelection::GetSelectedElements(HdxSelectionHighlightMode const& mode) const
 {
     TF_VERIFY(mode < HdxSelectionHighlightModeCount);
     return _selEntities[mode].elements;
+}
+
+HdxSelection::EdgeIndicesMap const&
+HdxSelection::GetSelectedEdges(HdxSelectionHighlightMode const& mode) const
+{
+    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
+    return _selEntities[mode].edges;
 }
 
 //------------------------------------------------------------------------------
@@ -161,54 +178,58 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     }
 
     // -------------------------------------------------------------------------
-    // Selection highlighting in Hydra can be summarized as follows:
-    // A selected object may be the entire prim, a set of instances of the prim,
-    // or a set of elements of the prim.
-
+    // Hydra supports selection highlighting of:
+    // (a) a set of prims, wherein each prim is entirely highlighted
+    // (b) a set of instances of (a), wherein each instance is highlighted
+    // (c) a set of subprimitives of (a) or (b), wherein each subprim is
+    //     highlighted.
+    // Subprimitives support is limited to elements (faces or curves), with
+    // support for edges and points coming soon.
+    //
     // The current selection implementation is, in a sense, global in nature. 
     // If there are no selected objects, we do not bind any selection-related 
-    // resources, nor does the shader execute any selection-related operations. 
+    // resources, nor does the shader execute any selection-related operations.
     // 
-    // If there are one or more selected objects, we _don't_ choose to have them
-    // in a separate 'selection' collection. 
-    // Instead, we stick by AZDO principles and avoid command buffer updates 
-    // (i.e., in this case, we avoid the removal of draw items corresponding to 
-    // selected objects, and adding them to a pass with selection info). 
-
+    // If there are one or more selected objects, we *don't* choose to have them
+    // in a separate 'selection' collection.
+    // Instead, we stick by AZDO principles and avoid command buffer changes as
+    // a result of selection updates (which would involve removal of draw items
+    // corresponding to the selected objects, and adding them to a separate 
+    // "selection pass")
+    // 
     // Given a set of selected objects, we encode it into a integer buffer that 
-    // allows us to perform a minimal set of operations to early-exit for the 
-    // general case, wherein the fragment does not need selection highlighting. 
+    // allows us to perform a minimal set of lookups to quickly tell us if a
+    // fragment needs to be highlighted.
     // 
     // XXX: We currently update the selection buffer in its *entirety* on 
     // each update, resulting in poor performance when a large number of 
-    // objects are selected.
+    // objects are already selected.
     // -------------------------------------------------------------------------
 
     // Populate a selection offset buffer that holds offset data per selection
     // highlight mode. See 'Buffer Layout' for the per-selection mode layout.
     // 
     // The full layout is:
-    // [# highlight modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
-    // [-------------  header --------------]
-    // E.g.:
+    // [# modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
+    // [--------  header  --------]
     // 
-    // [       3         ] [4,      0,     10] [seloffsets mode0] [seloffsets mode2]
-    //                     |                |  ^                  ^
-    //                     |                |__|__________________|
-    //                     |                   |
-    //                     |___________________|
+    // Example:
+    // [   3   ] [4,     0,     10] [seloffsets mode0] [seloffsets mode2]
+    //            |              |  ^                  ^
+    //            |              |__|__________________|
+    //            |_________________|
     //  
-    //  Above: 
-    //  Index 0 holds the number of selection highlight modes (3 in this example)
-    //  Indices [1-3] hold the index offsets to the respective selection offsets 
-    //  for each of selection highlight modes. If a mode doesn't have any 
-    //  highlighted objects, we use 0 to encode this.
+    //  Above:
+    //  Index 0 holds the number of selection highlight modes (3)
+    //  Indices [1-3] hold the start index for each mode's data.
+    //  If a mode doesn't have any highlighted objects, we use 0 to encode this.
     //  
-    //  Indices [4-8] hold the selection offsets for mode 0.
+    //  Indices [4-9] hold the selection offsets for mode 0.
     //  Indices [10-x] hold the selection offsets for mode 2.
     //  Mode 1 can be skipped since its mode offset is 0.
     //  See hdx/shaders/renderPass.glslfx (ApplySelectionColor) for the
     //  shader readback of this buffer
+
     bool hasSelection = false;
     const size_t numHighlightModes = 
         static_cast<size_t>(HdxSelectionHighlightModeCount);
@@ -232,7 +253,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
         std::vector<int> output;
         bool modeHasSelection = _GetSelectionOffsets(
                                 static_cast<HdxSelectionHighlightMode>(mode), 
-                                index, &output);
+                                index, copyOffset, &output);
         hasSelection = hasSelection || modeHasSelection;
 
         (*offsets)[mode + 1] = modeHasSelection? copyOffset : SELECT_NONE;
@@ -261,17 +282,35 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     return true;
 }
 
+// helper methods to fill the selection buffer
+static
+int _EncodeSubprimSel(size_t netSubprimOffset, int flag)
+{
+    return int(netSubprimOffset << 1) | flag;
+}
+
+static
+void _EncodeSubprimTypeAndRange(std::vector<int>* output, size_t offset,
+                                int type, int min, int max)
+{
+    (*output)[offset    ] = type;
+    (*output)[offset + 1] = min;
+    (*output)[offset + 2] = max;
+}
+
 /*virtual*/
 bool
 HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
                                           HdRenderIndex const *index,
+                                          size_t modeOffset,
                                           std::vector<int> *output) const
 {
 
     SdfPathVector const& selectedPrims =  _selection->GetSelectedPrims(mode);
     size_t numPrims = _selection ? selectedPrims.size() : 0;
     if (numPrims == 0) {
-        TF_DEBUG(HDX_SELECTION_SETUP).Msg("No selected prims\n");
+        TF_DEBUG(HDX_SELECTION_SETUP).Msg(
+            "No selected prims for mode %d\n", mode);
         return false;
     }
 
@@ -315,7 +354,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
     // In the folowing code, we want to build up a buffer that is capable of
     // driving selection highlighting. To do this, we leverage the fact that all
     // shaders have access to the drawing coord, namely the ObjectID,
-    // InstanceID, FaceID, VertexID, etc. The idea is to take one such ID and
+    // InstanceID, ElementID, VertexID, etc. The idea is to take one such ID and
     // compare it against a range of known selected values within a given range.
     //
     // For example, imagine the ObjectID is 6, then we can know this object is
@@ -351,6 +390,12 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
     int const SELECT_ALL = 1;
     int const SELECT_NONE = 0;
 
+    enum SubPrimType {
+        ELEMENT = 0,
+        EDGE    = 1,
+        POINT   = 2
+    };
+
     _DebugPrintArray("ids", ids);
 
     output->insert(output->end(), 2+1+max-min, SELECT_NONE);
@@ -373,47 +418,110 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
         TF_DEBUG(HDX_SELECTION_SETUP).Msg("Processing: %d - %s\n",
                 id, objPath.GetText());
 
+        bool hasSelectedSubprimitives = false;
+        size_t netSubprimOffset = 0;
+         //------------------------------------------------------------------- //
+        // Subprimitives: Points
         // ------------------------------------------------------------------ //
-        // Elements
+        
+            // XXX: todo
+        
+        //------------------------------------------------------------------- //
+        // Subprimitives: Edges
+        // ------------------------------------------------------------------ //
+        size_t edgeOffset = output->size();
+        if (VtIntArray const *edgeIndices
+            = TfMapLookupPtr(_selection->GetSelectedEdges(mode), objPath)) {
+            if (edgeIndices->size()) {
+                int minEdge = std::numeric_limits<int>::max();
+                int maxEdge = std::numeric_limits<int>::lowest();
+
+                for (int const& edgeId : *edgeIndices) {
+                    minEdge = std::min(minEdge, edgeId);
+                    maxEdge = std::max(maxEdge, edgeId);
+                }
+
+                // Grow the edge array to hold edges for this object.
+                output->insert(output->end(),maxEdge-minEdge+1+3,
+                               _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
+
+                _EncodeSubprimTypeAndRange(output, edgeOffset,
+                                           EDGE, minEdge, maxEdge+1);
+
+                for (int edgeId : *edgeIndices) {
+                    (*output)[3+edgeOffset+ (edgeId-minEdge)] =
+                        _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
+                }
+
+                hasSelectedSubprimitives = true;
+                netSubprimOffset = edgeOffset + modeOffset;
+
+                _DebugPrintArray("edges", *output);
+            } else {
+                // empty edge indices buffer. do nothing.
+            }
+        } else {
+            // prim doesn't have any selected edges. do nothing.
+        }
+
+
+        // ------------------------------------------------------------------ //
+        // Subprimitives: Elements (coarse/authored face(s) for meshes,
+        //                individual curve(s) for basis curves)
         // ------------------------------------------------------------------ //
         // Find element sizes, for this object.
-        int elemOffset = output->size();
-        if (VtIntArray const *faceIndices
+        size_t elemOffset = output->size();
+        if (VtIntArray const *elementIndices
             = TfMapLookupPtr(_selection->GetSelectedElements(mode), objPath)) {
-            if (faceIndices->size()) {
+            if (elementIndices->size()) {
                 int minElem = std::numeric_limits<int>::max();
                 int maxElem = std::numeric_limits<int>::lowest();
 
-                for (int const& elemId : *faceIndices) {
+                for (int const& elemId : *elementIndices) {
                     minElem = std::min(minElem, elemId);
                     maxElem = std::max(maxElem, elemId);
                 }
 
                 // Grow the element array to hold elements for this object.
-                output->insert(output->end(), maxElem-minElem+1+2, SELECT_NONE);
-                (*output)[elemOffset+0] = minElem;
-                (*output)[elemOffset+1] = maxElem+1;
+                // Use the net offset as the splatted value if this prim
+                // has any selected edges. This lets us highlight edges for
+                // fragments that aren't part of highlighted elements.
+                output->insert(output->end(), maxElem-minElem+1+3,
+                           _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
 
-                for (int elemId : *faceIndices) {
-                    // TODO: Add support for edge and point selection.
-                    (*output)[2+elemOffset+ (elemId-minElem)] = SELECT_ALL;
+                _EncodeSubprimTypeAndRange(output, elemOffset,
+                                           ELEMENT, minElem, maxElem+1);
+
+                for (int elemId : *elementIndices) {
+                    (*output)[3+elemOffset+ (elemId-minElem)] =
+                        _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
                 }
+
+                hasSelectedSubprimitives = true;
+                netSubprimOffset = elemOffset + modeOffset;
+
                 _DebugPrintArray("elements", *output);
             } else {
-                // Entire object/instance is selected
-                elemOffset = SELECT_ALL;
+                // prim has an empty selected elements buffer.
+                // we use this to encode "highlight all faces", which overrides
+                // any subprimitives (edges, points) that may be selected
+                hasSelectedSubprimitives = false;
             }
         } else {
-            // Entire object/instance is selected
-            elemOffset = SELECT_ALL;
+            // prim doesn't have selected elements, but may have other
+            // subprimitives selected. do nothing.
         }
 
         // ------------------------------------------------------------------ //
         // Instances
         // ------------------------------------------------------------------ //
-        // Initialize prevLevel to elemOffset which removes a special case in
-        // the loops below.
-        int prevLevelOffset = elemOffset;
+        // Override netSubprimOffset to SELECT_ALL (which implies that the
+        // entire prim or instance is selected) if we don't have any
+        // subprim selected. This removes a special case in the code below.
+        if (!hasSelectedSubprimitives) {
+            netSubprimOffset = SELECT_ALL;
+        }
+        int prevLevelOffset = (int)netSubprimOffset;
 
         if (std::vector<VtIntArray> const * a =
             TfMapLookupPtr(_selection->GetSelectedInstances(mode), objPath)) {
@@ -432,7 +540,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
 
             TF_DEBUG(HDX_SELECTION_SETUP).Msg("NumLevels: %d\n", numLevels);
             if (numLevels == 0) {
-                (*output)[id-min+2] = elemOffset;
+                (*output)[id-min+2] = netSubprimOffset;
             }
             for (int level = 0; level < numLevels; ++level) {
                 // Find the required size of the instance vectors.
@@ -456,11 +564,13 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
                 (*output)[levelOffset + 1] = levelMax + 1;
                 for (VtIntArray const& instVec : *a) {
                     int instId = instVec[level] - levelMin+2;
-                    (*output)[levelOffset+instId] = prevLevelOffset; 
+                    (*output)[levelOffset+instId] = prevLevelOffset;
                 }
 
                 if (level == numLevels-1) {
-                    (*output)[id-min+2] = levelOffset;
+                    // The offset is the net index within the selection buffer, and
+                    // thus, needs to include the mode offset.
+                    (*output)[id-min+2] = levelOffset + modeOffset;
                 }
 
                 if (ARCH_UNLIKELY(TfDebug::IsEnabled(HDX_SELECTION_SETUP))){
@@ -468,10 +578,12 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
                     name << "level[" << level << "]";
                     _DebugPrintArray(name.str(), *output);
                 }
-                prevLevelOffset = levelOffset;
+                // The offset is the net index within the selection buffer, and
+                // thus, needs to include the mode offset.
+                prevLevelOffset = levelOffset + modeOffset;
             }
         } else {
-            (*output)[id-min+2] = elemOffset;
+            (*output)[id-min+2] = netSubprimOffset;
         }
     }
 
