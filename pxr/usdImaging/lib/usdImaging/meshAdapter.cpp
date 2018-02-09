@@ -206,6 +206,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
                         HdGeomSubset {
                             HdGeomSubset::TypeFaceSet,
                             subset.GetPath(),
+                            GetMaterialId(subset.GetPrim()),
                             std::move(indicesVec) });
                  }
              }

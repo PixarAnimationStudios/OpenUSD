@@ -183,6 +183,8 @@ HdMeshTopology::ComputeHash() const
                           sizeof(subset.type), hash);
         hash = ArchHash64((const char*)&subset.id,
                           sizeof(subset.id), hash);
+        hash = ArchHash64((const char*)&subset.materialId,
+                          sizeof(subset.materialId), hash);
         hash = ArchHash64((const char*)&subset.indices[0],
                           sizeof(int)*subset.indices.size(), hash);
     }

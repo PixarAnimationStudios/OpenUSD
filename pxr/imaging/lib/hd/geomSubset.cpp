@@ -29,6 +29,7 @@ bool operator==(const HdGeomSubset& lhs, const HdGeomSubset& rhs)
 {
     return lhs.type == rhs.type
         && lhs.id == rhs.id
+        && lhs.materialId == rhs.materialId
         && lhs.indices == rhs.indices;
 }
 

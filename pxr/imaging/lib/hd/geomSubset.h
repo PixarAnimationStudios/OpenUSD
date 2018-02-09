@@ -49,6 +49,8 @@ struct HdGeomSubset {
     Type type;
     /// The path used to identify this subset in the scene.
     SdfPath id;
+    /// The path used to identify this material bound to the subset.
+    SdfPath materialId;
     /// The list of element indices contained in the subset.
     std::vector<int> indices;
 };
