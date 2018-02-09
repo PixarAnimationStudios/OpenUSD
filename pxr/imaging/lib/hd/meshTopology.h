@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/geomSubset.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/topology.h"
 
@@ -163,7 +164,6 @@ public:
     /// \name Subdivision
     /// @{
 
-
     /// Sets subdivision tags.
     void SetSubdivTags(PxOsdSubdivTags const &subdivTags) {
         _topology.SetSubdivTags(subdivTags);
@@ -176,8 +176,27 @@ public:
 
     /// @}
 
+    ///
+    /// \name Geometry subsets
+    /// @{
+
+    /// Sets geometry subsets
+    HD_API
+    void SetGeomSubsets(HdGeomSubsets const &geomSubsets) {
+        _geomSubsets = geomSubsets;
+    }
+
+    /// Returns geometry subsets
+    HD_API
+    HdGeomSubsets const &GetGeomSubsets() const {
+        return _geomSubsets;
+    }
+
+    /// @}
+
 protected:
     PxOsdMeshTopology _topology;
+    HdGeomSubsets _geomSubsets;
     int _refineLevel;
     int _numPoints;
 };

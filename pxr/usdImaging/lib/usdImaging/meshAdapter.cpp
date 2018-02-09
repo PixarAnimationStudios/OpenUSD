@@ -28,12 +28,14 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/geomSubset.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/base/tf/type.h"
@@ -182,12 +184,38 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
     TfToken schemeToken;
     _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);
 
-    *topo = HdMeshTopology(
+    HdMeshTopology meshTopo(
         schemeToken,
         _Get<TfToken>(prim, UsdGeomTokens->orientation, time),
         _Get<VtIntArray>(prim, UsdGeomTokens->faceVertexCounts, time),
         _Get<VtIntArray>(prim, UsdGeomTokens->faceVertexIndices, time),
         _Get<VtIntArray>(prim, UsdGeomTokens->holeIndices, time));
+
+    // Convert UsdGeomSubsets to HdGeomSubsets.
+    if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
+        HdGeomSubsets geomSubsets;
+        for (const UsdGeomSubset &subset:
+             UsdGeomSubset::GetAllGeomSubsets(imageable)) {
+             VtIntArray indices;
+             TfToken elementType;
+             if (subset.GetElementTypeAttr().Get(&elementType) &&
+                 subset.GetIndicesAttr().Get(&indices)) {
+                 std::vector<int> indicesVec(indices.begin(), indices.end());
+                 if (elementType == UsdGeomTokens->face) {
+                     geomSubsets.emplace_back(
+                        HdGeomSubset {
+                            HdGeomSubset::TypeFaceSet,
+                            subset.GetPath(),
+                            std::move(indicesVec) });
+                 }
+             }
+        }
+        if (!geomSubsets.empty()) {
+            meshTopo.SetGeomSubsets(geomSubsets);
+        }
+    }
+
+    topo->Swap(meshTopo);
 }
 
 void

@@ -42,6 +42,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        geomSubset
         instancer
         instanceRegistry
         material

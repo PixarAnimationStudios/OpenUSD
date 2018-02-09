@@ -46,6 +46,7 @@ HdMeshTopology::HdMeshTopology(const HdMeshTopology &src,
                                int refineLevel)
  : HdTopology(src)
  , _topology(src.GetPxOsdMeshTopology())
+ , _geomSubsets(src._geomSubsets)
  , _refineLevel(refineLevel)
  , _numPoints(src._numPoints)
 {
@@ -113,6 +114,7 @@ HdMeshTopology::operator =(const HdMeshTopology &copy)
     HdTopology::operator =(copy);
 
     _topology    = copy.GetPxOsdMeshTopology();
+    _geomSubsets = copy._geomSubsets;
     _refineLevel = copy._refineLevel;
     _numPoints = copy._numPoints;
 
@@ -130,7 +132,8 @@ HdMeshTopology::operator==(HdMeshTopology const &other) const {
 
     HD_TRACE_FUNCTION();
 
-    return (_topology == other._topology);
+    return (_topology == other._topology)
+        && (_geomSubsets == other._geomSubsets);
 }
 
 int
@@ -175,6 +178,15 @@ HdMeshTopology::ComputeHash() const
 
     HdTopology::ID hash =_topology.ComputeHash();
     hash = ArchHash64((const char*)&_refineLevel, sizeof(_refineLevel), hash);
+    for (const HdGeomSubset &subset: _geomSubsets) {
+        hash = ArchHash64((const char*)&subset.type,
+                          sizeof(subset.type), hash);
+        hash = ArchHash64((const char*)&subset.id,
+                          sizeof(subset.id), hash);
+        hash = ArchHash64((const char*)&subset.indices[0],
+                          sizeof(int)*subset.indices.size(), hash);
+    }
+    // Do not hash _numPoints since it is derived from _topology.
     return hash;
 }
 
