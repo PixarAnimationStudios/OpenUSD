@@ -1,4 +1,4 @@
-Loading @BasicClassOverride/root.sdf@
+Loading @BasicInherits/root.sdf@
 
 ------------------------------------------------------------------------
 Layer Stack:
@@ -89,4 +89,20 @@ Property names:
 Property stacks:
 /_class_Model.value:
     root.sdf             /_class_Model.value
+
+------------------------------------------------------------------------
+Results for composing </NonExistentInherit>
+
+Prim Stack:
+    root.sdf             /NonExistentInherit
+    nonexistent.sdf      /NonExistentInherit
+
+Child names:
+     ['Child']
+
+------------------------------------------------------------------------
+Results for composing </NonExistentInherit/Child>
+
+Prim Stack:
+    nonexistent.sdf      /NonExistentInherit/Child
 

@@ -2219,7 +2219,6 @@ _AddClassBasedArc(
     const PcpMapExpression & inheritMap,
     const int inheritArcNum,
     const PcpLayerStackSite & ignoreIfSameAsSite,
-    bool requirePrimAtTarget,
     Pcp_PrimIndexer *indexer )
 {
     PCP_INDEXING_PHASE(
@@ -2231,13 +2230,11 @@ _AddClassBasedArc(
         indexer, parent,
         "origin: %s\n"
         "inheritArcNum: %d\n"
-        "ignoreIfSameAsSite: %s\n"
-        "requirePrimAtTarget: %s\n",
+        "ignoreIfSameAsSite: %s\n",
         Pcp_FormatSite(origin.GetSite()).c_str(),
         inheritArcNum,
         ignoreIfSameAsSite == PcpLayerStackSite() ? 
-            "<none>" : Pcp_FormatSite(ignoreIfSameAsSite).c_str(),
-        requirePrimAtTarget ? "true" : "false");
+            "<none>" : Pcp_FormatSite(ignoreIfSameAsSite).c_str());
 
     // Use the inherit map to figure out the site path to inherit.
     SdfPath inheritPath = 
@@ -2347,7 +2344,7 @@ _AddClassBasedArc(
                  inheritSite, inheritMap, inheritArcNum,
                  /* directNodeShouldContributeSpecs = */ shouldContributeSpecs,
                  includeAncestralOpinions,
-                 requirePrimAtTarget,
+                 /* requirePrimAtTarget = */ false,
                  skipDuplicateNodes,
                  indexer );
 
@@ -2387,7 +2384,6 @@ _AddClassBasedArcs(
             mapExpr,
             arcNum,
             /* ignoreIfSameAsSite = */ PcpLayerStackSite(),
-            /* requirePrimAtTarget = */ true,
             indexer);
     }
 }
@@ -2609,7 +2605,6 @@ _EvalImpliedClassTree(
                 destClassFunc,
                 srcChild.GetSiblingNumAtOrigin(),
                 /* ignoreIfSameAsSite = */ srcChild.GetSite(),
-                /* requirePrimAtTarget = */ false,
                 indexer);
         }
 
