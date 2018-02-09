@@ -548,7 +548,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
         materialPurposes.push_back(UsdShadeTokens->allPurpose);
     }
 
-    for (auto const&purpose : materialPurposes) {
+    for (auto const & purpose : materialPurposes) {
         UsdShadeMaterial boundMaterial;
         UsdRelationship winningBindingRel;
         for (UsdPrim p = GetPrim(); !p.IsPseudoRoot(); p = p.GetParent())
@@ -571,7 +571,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
             // We may want to cache all collectionBindings at every ancestor.
             std::vector<UsdRelationship> collBindingRels;
             std::vector<CollectionBinding> collBindings = 
-                pBindingAPI.GetCollectionBindings(materialPurpose,
+                pBindingAPI.GetCollectionBindings(purpose,
                                                   &collBindingRels);
 
             if (!TF_VERIFY(collBindings.size() == collBindingRels.size(), 

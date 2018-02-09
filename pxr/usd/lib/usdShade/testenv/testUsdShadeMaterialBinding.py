@@ -191,8 +191,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
                          mat2.GetPath())
         self.assertEqual(childBindingAPI.ComputeBoundMaterial()[0].GetPath(), 
                          mat2.GetPath())
-        
-
+       
     def test_DirectBindingWithPurpose(self):
         s = Usd.Stage.CreateInMemory()
 
@@ -475,6 +474,178 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertFalse(self._GetBoundMaterial(eraserA))
         self.assertFalse(self._GetBoundMaterial(lampBBase))
         self.assertFalse(self._GetBoundMaterial(lampAShade))
+
+    def test_CollectionBindingWithPurpose(self):
+        s = Usd.Stage.CreateInMemory()
+
+        tree = s.OverridePrim("/Tree")
+        geom = s.OverridePrim("/Tree/Geom")
+
+        leaves = s.OverridePrim("/Tree/Geom/Leaves")
+        leaf1 = s.OverridePrim("/Tree/Geom/Leaves/Leaf1")
+        leaf2 = s.OverridePrim("/Tree/Geom/Leaves/Leaf2")
+        leaf3 = s.OverridePrim("/Tree/Geom/Leaves/Leaf3")
+
+        treeMat = UsdShade.Material.Define(s, "/Trees/Materials/TreeMat")
+        leaf1Mat = UsdShade.Material.Define(s, "/Trees/Materials/Leaf1Mat")
+        leaf2Mat = UsdShade.Material.Define(s, "/Trees/Materials/Leaf2Mat")
+        leaf3Mat = UsdShade.Material.Define(s, "/Trees/Materials/Leaf3Mat")
+
+        fallbackMat = UsdShade.Material.Define(s, "/Trees/Materials/FallbackMat")
+        yellowMat = UsdShade.Material.Define(s, "/Trees/Materials/yellowMat")
+        redMat = UsdShade.Material.Define(s, "/Trees/Materials/RedMat")
+
+        leavesColl = Usd.CollectionAPI.ApplyCollection(geom, 'leaves')
+        leavesColl.IncludePath(leaves.GetPath())
+
+        self.assertTrue(UsdShade.MaterialBindingAPI(leaf1).Bind(leaf1Mat))
+        self.assertTrue(UsdShade.MaterialBindingAPI(leaf2).Bind(leaf2Mat, 
+                materialPurpose=UsdShade.Tokens.preview))
+        self.assertTrue(UsdShade.MaterialBindingAPI(leaf3).Bind(leaf3Mat, 
+                materialPurpose=UsdShade.Tokens.full))
+
+        self.assertEqual(
+            self._GetBoundMaterial(leaf1).GetPath(), leaf1Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            leaf1Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            leaf1Mat.GetPath())
+
+        self.assertFalse(self._GetBoundMaterial(leaf2))
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            leaf2Mat.GetPath())
+        self.assertFalse(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.full))
+
+        self.assertFalse(self._GetBoundMaterial(leaf3))
+        self.assertFalse(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.preview))
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            leaf3Mat.GetPath())
+
+        # Add a general purpose collection based binding.
+        self.assertTrue(UsdShade.MaterialBindingAPI(tree).Bind(leavesColl, 
+            fallbackMat))
+
+        self.assertEqual(
+            self._GetBoundMaterial(leaf1).GetPath(), leaf1Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            leaf1Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            leaf1Mat.GetPath())
+
+        self.assertEqual(self._GetBoundMaterial(leaf2).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            leaf2Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(),
+            fallbackMat.GetPath())
+
+        self.assertEqual(self._GetBoundMaterial(leaf3).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            leaf3Mat.GetPath())
+
+        # Add special purpose collection-based bindings.
+        self.assertTrue(UsdShade.MaterialBindingAPI(geom).Bind(leavesColl, 
+            yellowMat, materialPurpose=UsdShade.Tokens.preview))
+        self.assertTrue(UsdShade.MaterialBindingAPI(leaves).Bind(leavesColl, 
+            redMat, materialPurpose=UsdShade.Tokens.full))
+
+        self.assertEqual(
+            self._GetBoundMaterial(leaf1).GetPath(), leaf1Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            yellowMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            redMat.GetPath())
+
+        self.assertEqual(self._GetBoundMaterial(leaf2).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            leaf2Mat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(),
+            redMat.GetPath())
+
+        self.assertEqual(self._GetBoundMaterial(leaf3).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(),
+            yellowMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            leaf3Mat.GetPath())
+
+        # Reverse the strength order bindings by setting all collection-based 
+        # binding rels to 'strongerThanDescendants'
+        bindingRel1 = UsdShade.MaterialBindingAPI(tree).GetCollectionBindingRel(
+            leavesColl.GetName())
+        self.assertTrue(bindingRel1)
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel1), 
+            UsdShade.Tokens.weakerThanDescendants)
+        UsdShade.MaterialBindingAPI.SetMaterialBindingStrength(bindingRel1, 
+            UsdShade.Tokens.strongerThanDescendants)
+
+        bindingRel2 = UsdShade.MaterialBindingAPI(geom).GetCollectionBindingRel(
+            leavesColl.GetName(), materialPurpose=UsdShade.Tokens.preview)
+        self.assertTrue(bindingRel2)
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel2),
+            UsdShade.Tokens.weakerThanDescendants)
+        UsdShade.MaterialBindingAPI.SetMaterialBindingStrength(bindingRel2, 
+            UsdShade.Tokens.strongerThanDescendants)
+
+        bindingRel3 = UsdShade.MaterialBindingAPI(leaves).GetCollectionBindingRel(
+            leavesColl.GetName(), materialPurpose=UsdShade.Tokens.full)
+        self.assertTrue(bindingRel3)
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel3), 
+            UsdShade.Tokens.weakerThanDescendants)
+        UsdShade.MaterialBindingAPI.SetMaterialBindingStrength(bindingRel3, 
+            UsdShade.Tokens.strongerThanDescendants)
+
+        self.assertEqual(
+            self._GetBoundMaterial(leaf1).GetPath(), fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            yellowMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf1, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            redMat.GetPath())
+
+        self.assertEqual(self._GetBoundMaterial(leaf2).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(), 
+            yellowMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf2, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(),
+            redMat.GetPath())
+
+        self.assertEqual(self._GetBoundMaterial(leaf3).GetPath(),
+            fallbackMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.preview).GetPath(),
+            yellowMat.GetPath())
+        self.assertEqual(self._GetBoundMaterial(leaf3, 
+            materialPurpose=UsdShade.Tokens.full).GetPath(), 
+            redMat.GetPath())
 
     def test_BlockingOnOver(self):
         stage = Usd.Stage.CreateInMemory()

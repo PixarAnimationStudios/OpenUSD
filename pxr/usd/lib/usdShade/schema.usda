@@ -355,7 +355,7 @@ class "MaterialBindingAPI"
 (
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
-    (represented UsdCollectionAPI objects). 
+    (represented by UsdCollectionAPI objects). 
     
     In the USD shading model, each renderable gprim computes a single 
     <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
