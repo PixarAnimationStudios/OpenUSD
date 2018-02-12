@@ -429,8 +429,6 @@ simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
 vec4
 simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
 {
-    Neye = (gl_FrontFacing ? Neye : -Neye);
-
     return simpleLightingMaterial(color, Peye, Neye, Ctint);
 }
 
