@@ -218,14 +218,14 @@ bool visitNode(UsdShadeShader const & shadeNode,
             // Store the relationship
             HdMaterialRelationship relationship;
             relationship.sourceId = shadeNode.GetPath();
-            relationship.sourceTerminal = shadeNodeInputs[i].GetFullName();
+            relationship.sourceTerminal = shadeNodeInputs[i].GetBaseName();
             relationship.remoteId = source.GetPath();
             relationship.remoteTerminal = outputName;
             materialNetwork->relationships.push_back(relationship);
         } else {
             // Parameters detected, let's store it
             if (shadeNodeInputs[i].Get(&value)) {
-                node.parameters[shadeNodeInputs[i].GetFullName()] = value;
+                node.parameters[shadeNodeInputs[i].GetBaseName()] = value;
             }
         }
     }
