@@ -163,6 +163,7 @@ private:
     HdSt_MeshTopology *_topology;
     HdSt_QuadInfoBuilderComputationSharedPtr _quadInfoBuilder;
     HdBufferSourceSharedPtr _primitiveParam;
+    HdBufferSourceSharedPtr _quadsEdgeIndices;
 };
 
 /// \class HdSt_QuadrangulateTableComputation

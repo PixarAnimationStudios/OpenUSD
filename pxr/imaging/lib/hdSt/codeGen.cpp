@@ -1857,6 +1857,88 @@ HdSt_CodeGen::_GenerateElementPrimVar()
         << "int GetAggregatedElementID();\n";
 
 
+    if (_metaData.edgeIndexBinding.binding.IsValid()) {
+
+        HdBinding binding = _metaData.edgeIndexBinding.binding;
+
+        _EmitDeclaration(declarations, _metaData.edgeIndexBinding);
+        _EmitAccessor(accessors, _metaData.edgeIndexBinding.name,
+                    _metaData.edgeIndexBinding.dataType, binding,
+                    "GetDrawingCoord().primitiveCoord");
+
+        // Authored EdgeID getter
+        // abs() is needed below, since both branches may get executed, and
+        // we need to guard against array oob indexing.
+        accessors
+            << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
+            << "  if (primitiveEdgeID == -1) {\n"
+            << "    return -1;\n"
+            << "  }\n"
+            << "  return HdGet_edgeIndices()[abs(primitiveEdgeID)];\n;"
+            << "}\n";
+
+        // Primitive EdgeID getter
+        if (_geometricShader->IsPrimTypePoints()) {
+            // we get here only if we're rendering a mesh using a points repr.
+            // edge picking doesn't make sense, so emit the default
+            accessors
+                << "int GetPrimitiveEdgeId() {\n"
+                << "  return -1;\n"
+                << "}\n";
+        }
+        else if (_geometricShader->IsPrimTypeBasisCurves()) {
+            // basis curves don't have an edge indices buffer bound, so we 
+            // shouldn't ever get here.
+            TF_VERIFY(false, "edgeIndexBinding shouldn't be found on a "
+                             "basis curve");
+        }
+        else if (_geometricShader->IsPrimTypeMesh()) {
+            switch (_geometricShader->GetPrimitiveType()) {
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+                {
+                    // GetTriangleEdgeId is defined in edgeId.glslfx
+                    declarations
+                        << "int GetTriangleEdgeId();\n";
+                    accessors
+                        << "int GetPrimitiveEdgeId() {\n"
+                        << "  return GetTriangleEdgeId();\n"
+                        << "}\n";
+                    break;
+                }
+
+                default: // all other cases
+                {
+                    // GetQuadEdgeId is defined in edgeId.glslfx
+                    declarations
+                        << "int GetQuadEdgeId();\n";
+                    accessors
+                        << "int GetPrimitiveEdgeId() {\n"
+                        << "  return GetQuadEdgeId();\n"
+                        << "}\n";
+                    break;
+                }
+
+            }
+        }
+    } else {
+        // Both the getters below are used in picking (id render) and selection
+        // highlighting, and we need to define them for the cases where edgeid
+        // doesn't make sense
+        accessors
+            << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
+            << "  return -1;\n"
+            << "}\n";
+
+        accessors
+            << "int GetPrimitiveEdgeId() {\n"
+            << "  return -1;\n"
+            << "}\n";
+    }
+    declarations
+        << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
+        << "int GetPrimitiveEdgeId();\n";
+
+    // Uniform primvar data declarations & accessors
     TF_FOR_ALL (it, _metaData.elementData) {
         HdBinding binding = it->first;
         TfToken const &name = it->second.name;

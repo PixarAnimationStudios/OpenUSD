@@ -103,13 +103,6 @@ public:
     HD_API
     static int ComputeNumPoints(VtIntArray const &verts);
 
-    /// Returns the number of quadrangulated quads.
-    /// If degenerated face is found, sets invalidFaceFound as true.
-    HD_API
-    static int ComputeNumQuads(VtIntArray const &numVerts,
-                               VtIntArray const &holeIndices,
-                               bool *invalidFaceFound=NULL);
-
     /// Returns the subdivision scheme
     TfToken const GetScheme() const {
         return _topology.GetScheme();

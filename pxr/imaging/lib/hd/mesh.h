@@ -88,12 +88,14 @@ public:
     inline VtValue     GetShadingStyle(HdSceneDelegate* delegate)  const;
 
     ///
-    /// Topology
+    /// Topological accessors via the scene delegate
     ///
     inline HdMeshTopology  GetMeshTopology(HdSceneDelegate* delegate) const;
     inline int             GetRefineLevel(HdSceneDelegate* delegate)  const;
     inline PxOsdSubdivTags GetSubdivTags(HdSceneDelegate* delegate)   const;
 
+    /// Topology getter
+    virtual HdMeshTopologySharedPtr  GetTopology() const;
 
     ///
     /// Primvars Accessors
@@ -166,6 +168,12 @@ inline PxOsdSubdivTags
 HdMesh::GetSubdivTags(HdSceneDelegate* delegate) const
 {
     return delegate->GetSubdivTags(GetId());
+}
+
+inline HdMeshTopologySharedPtr
+HdMesh::GetTopology() const
+{
+    return HdMeshTopologySharedPtr();
 }
 
 inline VtValue

@@ -1,0 +1,155 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2018 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/edgeId.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Geometry.None
+
+// called from Mesh.Geometry.*
+void ProcessEdgeId(int index, vec2 faceUV)
+{
+    // do nothing
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Geometry.Bary
+
+// Barycentric parametrization
+noperspective out vec2 gsBaryCoord;
+
+vec2 GetBaryCoord(int index)
+{
+    vec3 barys[3];
+    barys[0] = vec3(1,0,0);
+    barys[1] = vec3(0,1,0);
+    barys[2] = vec3(0,0,1);
+    return barys[index].yz;
+}
+
+void ProcessTriEdgeId(int index)
+{
+    gsBaryCoord = GetBaryCoord(index);
+}
+
+// called from Mesh.Geometry.*
+void ProcessEdgeId(int index, vec2 faceUV)
+{
+    ProcessTriEdgeId(index);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Geometry.Rect
+
+// Rectangular parametrization
+noperspective out vec2 gsRect;
+
+void ProcessQuadEdgeId(vec2 faceUV)
+{
+    gsRect = faceUV;
+}
+
+// called from Mesh.Geometry.*
+void ProcessEdgeId(int index, vec2 faceUV)
+{
+    ProcessQuadEdgeId(faceUV);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.BaryDefault
+// Mixin version to use when the geometry shader stage is inactive.
+
+// called from hdSt/codeGen.cpp
+int GetTriangleEdgeId() {
+    return -1;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.Bary
+
+noperspective in vec2 gsBaryCoord;
+
+// called from hdSt/codeGen.cpp
+int GetTriangleEdgeId()
+{
+    vec3 baryCoord = vec3(1 - gsBaryCoord.x - gsBaryCoord.y,
+                          gsBaryCoord.x,
+                          gsBaryCoord.y);
+
+    //              2 (0,0,1)
+    //              ^
+    //         e2 /   \ e1
+    //           /     \
+    // (1,0,0)  0 ----- 1 (0,1,0) 
+    //              e0
+
+    int edgeId = -1;
+    const float delta = 0.02;
+
+    if (baryCoord.z < delta) {
+        edgeId = 0;
+    } else if (baryCoord.x < delta) {
+        edgeId = 1;
+    } else if (baryCoord.y < delta) {
+        edgeId = 2;
+    }
+
+    return edgeId;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.Rect
+
+noperspective in vec2 gsRect;
+
+// called from hdSt/codeGen.cpp
+int GetQuadEdgeId()
+{
+//              e2
+//     (0,1) 3 ------ 2 (1,1)
+//           |        |
+//       e3  |        |  e1
+//           |        |
+//     (0,0) 0 ------ 1 (1,0)
+//               e0
+
+    int edgeId = -1;
+    const float delLow = 0.02, delHigh = 1 - delLow;
+    vec2 uv = gsRect;
+
+    if (uv.y < delLow) {
+        edgeId = 0;
+    } else if (uv.x > delHigh) {
+        edgeId = 1;
+    } else if (uv.y > delHigh) {
+        edgeId = 2;
+    } else if (uv.x < delLow) {
+        edgeId = 3;
+    }
+
+    return edgeId;
+}

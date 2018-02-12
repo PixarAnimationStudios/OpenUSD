@@ -116,6 +116,11 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
+HdMeshTopologySharedPtr
+HdStMesh::GetTopology() const
+{
+    return _topology;
+}
 
 static bool
 _IsEnabledForceQuadrangulate()
@@ -175,7 +180,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // note: if we add topologyId computation in delegate,
         // we can move this copy into topologyInstance.IsFirstInstance() block
         int refineLevel = GetRefineLevel(sceneDelegate);
-        HdMeshTopology meshTopology = GetMeshTopology(sceneDelegate);
+        HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
 
         // If the topology requires none subdivision scheme then force
         // refinement level to be 0 since we do not want subdivision.
@@ -293,14 +298,14 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // create coarse points indices
                 source = _topology->GetPointsIndexBuilderComputation();
             } else if (refineLevelForDesc > 0) {
-                // create refined indices and primitiveParam
+                // create refined indices, primitiveParam and edgeIndices
                 source = _topology->GetOsdIndexBuilderComputation();
             } else if (_UsePtexIndices(sceneDelegate->GetRenderIndex())) {
                 // not refined = quadrangulate
-                // create quad indices and primitiveParam
+                // create quad indices, primitiveParam and edgeIndices
                 source = _topology->GetQuadIndexBuilderComputation(GetId());
             } else {
-                // create triangle indices and primitiveParam
+                // create triangle indices, primitiveParam and edgeIndices
                 source = _topology->GetTriangleIndexBuilderComputation(GetId());
             }
             HdBufferSourceVector sources;

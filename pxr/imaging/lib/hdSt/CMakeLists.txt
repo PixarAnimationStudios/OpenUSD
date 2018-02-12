@@ -103,6 +103,7 @@ pxr_library(hdSt
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
+        shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
         shaders/fallbackSurface.glslfx

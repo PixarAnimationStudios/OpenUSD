@@ -142,6 +142,7 @@ protected:
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _osdTopology;
     HdBufferSourceSharedPtr _primitiveBuffer;
+    HdBufferSourceSharedPtr _edgeIndicesBuffer;
 };
 
 // ---------------------------------------------------------------------------

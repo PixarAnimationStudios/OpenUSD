@@ -31,6 +31,7 @@
 #import $TOOLS/hdSt/shaders/meshNormal.glslfx
 #import $TOOLS/hdSt/shaders/meshWire.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/edgeId.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -233,6 +234,8 @@ void emit(int index, int triIndex0, int triIndex1, int triIndex2, vec3 normal)
                            inData[triIndex2].Peye,
                            inEdgeFlag);
 
+    ProcessEdgeId(index, gsPatchCoord.xy);
+
     ProcessPrimVars(index);
 
     EmitVertex();
@@ -312,6 +315,8 @@ void emit(int index, int triIndex0, int triIndex1, int triIndex2,
                             inData[triIndex1].Peye,
                             inData[triIndex2].Peye,
                             triCounter);
+
+    ProcessEdgeId(index, gsPatchCoord.xy);
 
     ProcessPrimVars(index);
 

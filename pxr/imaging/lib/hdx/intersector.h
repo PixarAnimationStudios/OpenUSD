@@ -131,6 +131,7 @@ public:
         SdfPath instancerId;
         int instanceIndex;
         int elementIndex;
+        int edgeIndex;
         GfVec3f worldSpaceHitPoint;
         float ndcDepth;
 
@@ -152,7 +153,7 @@ public:
         HDX_API
         bool operator==(Hit const& lhs) const;
 
-        // Depth and position are ignored, used for object/element/instance
+        // Depth and position are ignored, used for object/instance/subprimitive
         // aggregation.
         struct HitSetHash {
             HDX_API
@@ -176,6 +177,7 @@ public:
         Result(std::unique_ptr<unsigned char[]> primIds,
                std::unique_ptr<unsigned char[]> instanceIds,
                std::unique_ptr<unsigned char[]> elementIds,
+               std::unique_ptr<unsigned char[]> edgeIds,
                std::unique_ptr<float[]> depths,
                HdRenderIndex const *index,
                Params params,
@@ -216,6 +218,7 @@ public:
         std::unique_ptr<unsigned char[]> _primIds;
         std::unique_ptr<unsigned char[]> _instanceIds;
         std::unique_ptr<unsigned char[]> _elementIds;
+        std::unique_ptr<unsigned char[]> _edgeIds;
         std::unique_ptr<float[]> _depths;
         HdRenderIndex const *_index;
         Params _params;

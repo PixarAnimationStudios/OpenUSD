@@ -51,6 +51,9 @@ HdSt_TriangleIndexBuilderComputation::AddBufferSpecs(
     // triangles don't support ptex indexing (at least for now).
     specs->emplace_back(HdTokens->primitiveParam,
                         HdTupleType{HdTypeInt32, 1});
+    // 3 edge indices per triangle
+    specs->emplace_back(HdTokens->edgeIndices,
+                        HdTupleType{HdTypeInt32Vec3, 1});
 }
 
 bool
@@ -62,10 +65,13 @@ HdSt_TriangleIndexBuilderComputation::Resolve()
 
     VtVec3iArray trianglesFaceVertexIndices;
     VtIntArray primitiveParam;
+    VtVec3iArray trianglesEdgeIndices;
+
     HdMeshUtil meshUtil(_topology, _id);
     meshUtil.ComputeTriangleIndices(
             &trianglesFaceVertexIndices,
-            &primitiveParam);
+            &primitiveParam,
+            &trianglesEdgeIndices);
 
     _SetResult(HdBufferSourceSharedPtr(
                    new HdVtBufferSource(
@@ -75,6 +81,10 @@ HdSt_TriangleIndexBuilderComputation::Resolve()
     _primitiveParam.reset(new HdVtBufferSource(
                               HdTokens->primitiveParam,
                               VtValue(primitiveParam)));
+
+    _trianglesEdgeIndices.reset(new HdVtBufferSource(
+                                   HdTokens->edgeIndices,
+                                   VtValue(trianglesEdgeIndices)));
 
     _SetResolved();
     return true;
@@ -89,7 +99,7 @@ HdSt_TriangleIndexBuilderComputation::HasChainedBuffer() const
 HdBufferSourceVector
 HdSt_TriangleIndexBuilderComputation::GetChainedBuffers() const
 {
-    return { _primitiveParam };
+    return { _primitiveParam, _trianglesEdgeIndices };
 }
 
 bool

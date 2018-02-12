@@ -77,8 +77,8 @@ struct HdSt_MeshShaderKey
     TfToken VS[4];
     TfToken TCS[3];
     TfToken TES[3];
-    TfToken GS[6];
-    TfToken FS[8];
+    TfToken GS[7];
+    TfToken FS[9];
 };
 
 

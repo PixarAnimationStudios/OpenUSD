@@ -73,6 +73,10 @@ public:
                       TfToken const   &reprName,
                       bool             forcedRepr) override;
 
+    /// Topology (member) getter
+    HDST_API
+    virtual HdMeshTopologySharedPtr GetTopology() const override;
+
     /// Returns whether packed (10_10_10 bits) normals to be used
     HDST_API
     static bool IsEnabledPackedNormals();

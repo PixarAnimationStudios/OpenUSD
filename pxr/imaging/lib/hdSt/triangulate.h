@@ -71,6 +71,7 @@ private:
     SdfPath const _id;
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _primitiveParam;
+    HdBufferSourceSharedPtr _trianglesEdgeIndices;
 };
 
 //

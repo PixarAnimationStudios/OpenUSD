@@ -30,9 +30,14 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/meshTopology.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
+
+#include <unordered_map>
+#include <utility> // std::{min,max}, std::pair
+#include <boost/functional/hash.hpp> // boost::hash_combine
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -103,7 +108,8 @@ public:
     /// primitiveParams are output parameters.
     HD_API
     void ComputeTriangleIndices(VtVec3iArray *indices,
-                                VtIntArray *primitiveParams);
+                                VtIntArray *primitiveParams,
+                                VtVec3iArray *trianglesEdgeIndices = nullptr);
 
     /// Return a triangulation of a face-varying primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
@@ -150,7 +156,8 @@ public:
     /// primitiveParams are output parameters.
     HD_API
     void ComputeQuadIndices(VtVec4iArray *indices,
-                            VtVec2iArray *primitiveParams);
+                            VtVec2iArray *primitiveParams,
+                            VtVec4iArray *quadsEdgeIndices = nullptr);
 
     /// Return a quadrangulation of a per-vertex primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
@@ -189,6 +196,52 @@ public:
         return (coarseFaceParam & 3);
     }
 
+    // --------------------------------------------------------------------
+    // Authored edge id computation
+    struct EdgeHash {
+        // Use a custom hash so that edges (a,b) and (b,a) are equivalent
+        inline size_t operator()(GfVec2i const& v) const {
+            size_t hash = 0;
+            boost::hash_combine(hash, std::min(v[0], v[1]));
+            boost::hash_combine(hash, std::max(v[0], v[1]));
+            return hash;
+        }
+    };
+
+    struct EdgeEquality {
+        inline bool operator() (GfVec2i const& v1, GfVec2i const& v2) const
+        {
+            if (EdgeHash()(v1) == EdgeHash()(v2))
+                return true;
+
+            return false;
+        }
+    };
+
+    typedef std::unordered_map<GfVec2i, int, EdgeHash, EdgeEquality> EdgeMap;
+    
+    // Enumerates all the edges of the authored mesh topology, and returns a map
+    // of (vertex indices pair, edge id).
+    // If skipHoles is true, unshared edges of hole faces aren't enumerated.
+    HD_API
+    static EdgeMap ComputeAuthoredEdgeMap(HdMeshTopology const* topology,
+                                          bool skipHoles = false);
+
+    // Translates an authored edge id to its vertex indices
+    // Returns a pair, with first indicating success of the look up, and
+    // second being the vertex indices for the edge.
+    HD_API
+    static std::pair<bool, GfVec2i>
+    GetVertexIndicesForEdge(HdMeshTopology const* topology,
+                            int authoredEdgeId);
+
+    // Translates an edge to its authored edge id
+    // Returns a pair, with first indicating success of the look up, and
+    // second being the authored edge id
+    HD_API
+    static std::pair<bool, int>
+    GetAuthoredEdgeID(HdMeshTopology const* topology,
+                      GfVec2i edge);
 private:
     HdMeshTopology const* _topology;
     SdfPath const _id;
