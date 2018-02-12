@@ -119,6 +119,7 @@ HdRprim::_UpdateReprName(HdSceneDelegate* delegate,
     SdfPath const& id = GetId();
     if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
         _authoredReprName = delegate->GetReprName(id);
+        *dirtyBits &= ~HdChangeTracker::DirtyRepr;
     }
 }
 
