@@ -719,7 +719,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
 
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                      "[Sync] PREP: <%s> dirtyFlags: %d [%s]\n",
+                      "[Sync] PREP: <%s> dirtyFlags: 0x%x [%s]\n",
                       usdPath.GetText(), 
                       primInfo.dirtyBits,
                       HdChangeTracker::StringifyDirtyBits(
@@ -766,7 +766,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         _AdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Sync] PREP: <%s> dirtyFlags: 0x%d [%s]\n",
+                    "[Sync] PREP: <%s> dirtyFlags: 0x%x [%s]\n",
                     usdPath.GetText(), 
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(primInfo->dirtyBits).c_str());
@@ -793,7 +793,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         _AdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Sync] PREP Instancer: <%s> dirtyFlags: %d [%s]\n",
+                    "[Sync] PREP Instancer: <%s> dirtyFlags: 0x%x [%s]\n",
                     usdPath.GetText(),
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(
