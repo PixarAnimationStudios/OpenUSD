@@ -34,6 +34,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/base/tf/debug.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -48,6 +49,11 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEBUG_CODES(
+    PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE
+);
 
 
 class UsdMayaProxyDrawOverride;

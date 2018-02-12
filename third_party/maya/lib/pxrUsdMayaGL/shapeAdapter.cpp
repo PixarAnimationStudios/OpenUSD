@@ -33,6 +33,8 @@
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
@@ -71,14 +73,28 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
+TF_REGISTRY_FUNCTION(TfDebug)
+{
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE,
+        "Report Maya Hydra shape adapter lifecycle events.");
+}
+
+
 PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter() :
         _isPopulated(false)
 {
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Constructing PxrMayaHdShapeAdapter: %p\n",
+        this);
 }
 
 /* virtual */
 PxrMayaHdShapeAdapter::~PxrMayaHdShapeAdapter()
 {
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Destructing PxrMayaHdShapeAdapter: %p\n",
+        this);
 }
 
 void
@@ -121,6 +137,14 @@ PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
     _rprimCollection.SetRootPath(delegateId);
 
     renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
+
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Initialized PxrMayaHdShapeAdapter: %p\n"
+        "    collection name: %s\n"
+        "    delegateId     : %s\n",
+        this,
+        _rprimCollection.GetName().GetText(),
+        delegateId.GetText());
 }
 
 // Helper function that converts M3dView::DisplayStyle (legacy viewport) into
@@ -219,6 +243,10 @@ PxrMayaHdShapeAdapter::Sync(
     const MHWRender::DisplayStatus displayStatus =
         _ToMHWRenderDisplayStatus(legacyDisplayStatus);
 
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Synchronizing PxrMayaHdShapeAdapter for legacy viewport: %p\n",
+        this);
+
     const bool success = Sync(surfaceShape, displayStyle, displayStatus);
 
     if (success) {
@@ -252,6 +280,10 @@ PxrMayaHdShapeAdapter::Sync(
     if (!usdProxyShape) {
         return false;
     }
+
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Synchronizing PxrMayaHdShapeAdapter: %p\n",
+        this);
 
     UsdPrim usdPrim;
     SdfPathVector excludedPrimPaths;
@@ -305,6 +337,12 @@ PxrMayaHdShapeAdapter::Sync(
         _rprimCollection.SetRenderTags(renderTags);
 
         if (_delegate) {
+            TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "    Render tags changed: %s\n"
+                "        Marking collection dirty: %s\n",
+                TfStringJoin(renderTags.begin(), renderTags.end()).c_str(),
+                _rprimCollection.GetName().GetText());
+
             _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
                 _rprimCollection.GetName());
         }
@@ -326,6 +364,20 @@ PxrMayaHdShapeAdapter::Sync(
         _delegate->SetRootCompensation(_rootPrim.GetPath());
 
         if (!_isPopulated) {
+            if (TfDebug::IsEnabled(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)) {
+                TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                    "    Populating delegate:\n"
+                    "        rootPrim         : %s\n"
+                    "        excludedPrimPaths: ",
+                    _rootPrim.GetPath().GetText());
+                for (const SdfPath& primPath : _excludedPrimPaths) {
+                    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                        "%s ",
+                        primPath.GetText());
+                }
+                TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg("\n");
+            }
+
             _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
             _isPopulated = true;
         }
@@ -384,8 +436,16 @@ PxrMayaHdShapeAdapter::Sync(
     if (_rprimCollection.GetReprName() != reprName) {
         _rprimCollection.SetReprName(reprName);
 
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "    Repr name changed: %s\n"
+                "        Marking collection dirty: %s\n",
+                reprName.GetText(),
+                _rprimCollection.GetName().GetText());
+
+        if (_delegate) {
+            _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+                _rprimCollection.GetName());
+        }
     }
 
     // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
