@@ -700,14 +700,6 @@ PxrUsdKatanaReadPointInstancer(
             sourcesBldr.setAttrAtLocation(relBuildPath,
                     "type", FnKat::StringAttribute("instance source"));
 
-            // Reset transforms at the instance source location. We do this
-            // to keep things consistent with Rfk, which ignores transforms
-            // when writing out instance sources.
-            //
-            sourcesBldr.setAttrAtLocation(relBuildPath,
-                    "xform.originInstanceSource",
-                    FnKat::DoubleAttribute(1));
-
             // Author a tracking attr.
             //
             sourcesBldr.setAttrAtLocation(relBuildPath,
