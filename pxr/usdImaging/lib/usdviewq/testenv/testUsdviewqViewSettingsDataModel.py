@@ -139,7 +139,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
 
         # Users can't create their own complexities.
         with self.assertRaises(ValueError):
-            vsDM.complexity = Complexities.Complexity("none", "None", 1.5)
+            vsDM.complexity = Complexities._Complexity("none", "None", 1.5)
         self.assertEquals(vsDM.complexity, Complexities.MEDIUM)
 
         # Users can't set the float complexity directly.

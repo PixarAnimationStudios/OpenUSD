@@ -30,7 +30,7 @@ from constantGroup import ConstantGroup
 class Complexities(ConstantGroup):
     """The available complexity settings for Usdview."""
 
-    class Complexity(object):
+    class _Complexity(object):
         """Class which represents a level of mesh refinement complexity. Each level
         has a string identifier, a display name, and a float complexity value.
         """
@@ -52,10 +52,10 @@ class Complexities(ConstantGroup):
         def value(self):
             return self._value
 
-    LOW       = Complexity("low",      "Low",       1.0)
-    MEDIUM    = Complexity("medium",   "Medium",    1.1)
-    HIGH      = Complexity("high",     "High",      1.2)
-    VERY_HIGH = Complexity("veryhigh", "Very High", 1.3)
+    LOW       = _Complexity("low",      "Low",       1.0)
+    MEDIUM    = _Complexity("medium",   "Medium",    1.1)
+    HIGH      = _Complexity("high",     "High",      1.2)
+    VERY_HIGH = _Complexity("veryhigh", "Very High", 1.3)
 
     _ordered = (LOW, MEDIUM, HIGH, VERY_HIGH)
 
@@ -88,7 +88,8 @@ class Complexities(ConstantGroup):
         if comp not in Complexities:
             raise ValueError("Invalid complexity: {}".format(comp))
         nextIndex = min(
-            len(Complexities) - 1, Complexities._ordered.index(comp) + 1)
+            len(Complexities._ordered) - 1,
+            Complexities._ordered.index(comp) + 1)
         return Complexities._ordered[nextIndex]
 
     @classmethod
