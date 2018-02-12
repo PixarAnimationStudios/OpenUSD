@@ -136,7 +136,7 @@ protected:
 
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) final;
+                             UsdImagingIndexProxy* index) override;
 
 private:
 

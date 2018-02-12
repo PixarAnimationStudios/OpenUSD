@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/base/vt/array.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -52,7 +53,7 @@ struct HdGeomSubset {
     /// The path used to identify this material bound to the subset.
     SdfPath materialId;
     /// The list of element indices contained in the subset.
-    std::vector<int> indices;
+    VtIntArray indices;
 };
 
 /// A group of geometry subsets.

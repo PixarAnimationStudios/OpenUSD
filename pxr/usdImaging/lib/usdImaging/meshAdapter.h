@@ -90,6 +90,17 @@ public:
                                               SdfPath const& cachePath,
                                               TfToken const& propertyName);
 
+    USDIMAGING_API
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index) override;
+
+protected:
+    USDIMAGING_API
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) override;
+
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
     void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, UsdTimeCode time);

@@ -715,6 +715,8 @@ public:
         _instancersToRemove.push_back(instancerPath);
     }
 
+    bool HasRprim(SdfPath const &cachePath);
+
     void MarkRprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
     void MarkSprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
     void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);

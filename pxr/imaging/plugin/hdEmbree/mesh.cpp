@@ -215,7 +215,7 @@ HdEmbreeMesh::_EmbreeCullFaces(void *userData, RTCRay &ray)
 void
 HdEmbreeMesh::_CreateEmbreeSubdivMesh(RTCScene scene)
 {
-    PxOsdSubdivTags &subdivTags = _topology.GetSubdivTags();
+    const PxOsdSubdivTags &subdivTags = _topology.GetSubdivTags();
 
     // The embree edge crease buffer expects ungrouped edges: a pair
     // of indices marking an edge and one weight per crease.

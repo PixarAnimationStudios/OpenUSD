@@ -163,7 +163,7 @@ public:
     }
 
     /// Returns subdivision tags
-    PxOsdSubdivTags &GetSubdivTags() {
+    PxOsdSubdivTags const&GetSubdivTags() const {
         return _topology.GetSubdivTags();
     }
 

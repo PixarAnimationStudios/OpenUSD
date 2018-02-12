@@ -522,6 +522,13 @@ UsdImagingIndexProxy::RefreshInstancer(SdfPath const& instancerPath)
     MarkInstancerDirty(instancerPath, HdChangeTracker::AllDirty);
 }
 
+bool
+UsdImagingIndexProxy::HasRprim(SdfPath const &cachePath)
+{
+    return _delegate->GetRenderIndex().HasRprim(
+        _delegate->GetPathForIndex(cachePath));
+}
+
 void
 UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
@@ -1408,11 +1415,27 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // The prim wasn't in the _primInfoMap, this could happen
                 // because the prim just came into existence.
 
-                const _AdapterSharedPtr &adapter = _AdapterLookup(*iter);
+                _AdapterSharedPtr adapter = _AdapterLookup(*iter);
                 if (!adapter) {
-                    // This prim has no prim adapter, continue traversing
-                    // descendants.    
-                    continue;
+                    // Special case for adding UsdGeomSubset prims
+                    // (which do not get an adapter); resync the
+                    // containing mesh.
+                    if (UsdGeomSubset(*iter)) {
+                        UsdPrim parentPrim = iter->GetParent();
+                        adapter = _AdapterLookup(parentPrim);
+                        TF_DEBUG(USDIMAGING_CHANGES)
+                            .Msg("[Resync Prim]: Populating <%s> on behalf "
+                                 "of subset <%s>\n",
+                                 parentPrim.GetPath().GetText(),
+                                 iter->GetPath().GetText());
+                        proxy->Repopulate(parentPrim.GetPath());
+                        iter.PruneChildren();
+                        continue;
+                    } else {
+                        // This prim has no prim adapter, continue traversing
+                        // descendants.    
+                        continue;
+                    }
                 }
 
                 // This prim has an adapter, but wasn't in our adapter map, so

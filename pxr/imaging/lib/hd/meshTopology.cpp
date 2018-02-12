@@ -185,7 +185,7 @@ HdMeshTopology::ComputeHash() const
                           sizeof(subset.id), hash);
         hash = ArchHash64((const char*)&subset.materialId,
                           sizeof(subset.materialId), hash);
-        hash = ArchHash64((const char*)&subset.indices[0],
+        hash = ArchHash64((const char*)subset.indices.cdata(),
                           sizeof(int)*subset.indices.size(), hash);
     }
     // Do not hash _numPoints since it is derived from _topology.
