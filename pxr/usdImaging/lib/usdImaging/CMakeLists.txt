@@ -50,7 +50,6 @@ pxr_library(usdImaging
         domeLightAdapter
         drawModeAdapter
         gprimAdapter
-        hydraMaterialAdapter
         instanceAdapter
         lightAdapter
         materialAdapter

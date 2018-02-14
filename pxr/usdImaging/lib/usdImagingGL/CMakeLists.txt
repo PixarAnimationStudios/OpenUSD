@@ -40,6 +40,7 @@ pxr_library(usdImagingGL
         engine
         gl
         hdEngine
+        hydraMaterialAdapter
         refEngine
 
     PUBLIC_HEADERS

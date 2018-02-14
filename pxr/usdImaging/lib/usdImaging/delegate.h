@@ -715,15 +715,28 @@ public:
         _instancersToRemove.push_back(instancerPath);
     }
 
+    USDIMAGING_API
     bool HasRprim(SdfPath const &cachePath);
 
+    USDIMAGING_API
     void MarkRprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
+    USDIMAGING_API
     void MarkSprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
+    USDIMAGING_API
     void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
+    USDIMAGING_API
     void MarkInstancerDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
 
+    USDIMAGING_API
     bool IsRprimTypeSupported(TfToken const& typeId) const;
+
+    USDIMAGING_API
     bool IsSprimTypeSupported(TfToken const& typeId) const;
+
+    USDIMAGING_API
     bool IsBprimTypeSupported(TfToken const& typeId) const;
 
     // Check if the given path has been populated yet.
@@ -734,6 +747,7 @@ public:
     USDIMAGING_API
     void Repopulate(SdfPath const& usdPath);
 
+    USDIMAGING_API
     UsdImagingPrimAdapterSharedPtr GetMaterialAdapter(
         UsdPrim const& materialPrim);
 

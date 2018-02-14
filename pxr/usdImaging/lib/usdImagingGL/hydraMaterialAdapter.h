@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_HYDRAMATERIALADAPTER_H
-#define USDIMAGING_HYDRAMATERIALADAPTER_H
+#ifndef USDIMAGINGGL_HYDRAMATERIALADAPTER_H
+#define USDIMAGINGGL_HYDRAMATERIALADAPTER_H
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
@@ -31,19 +31,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdImagingHydraMaterialAdapter
+/// \class UsdImagingGLHydraMaterialAdapter
 /// \brief Provides information that can be used to generate a surface shader in
 /// hydra.
-class UsdImagingHydraMaterialAdapter : public UsdImagingPrimAdapter {
+class UsdImagingGLHydraMaterialAdapter : public UsdImagingPrimAdapter {
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
 
-    UsdImagingHydraMaterialAdapter()
+    UsdImagingGLHydraMaterialAdapter()
         : UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
-    virtual ~UsdImagingHydraMaterialAdapter();
+    virtual ~UsdImagingGLHydraMaterialAdapter();
 
     USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
@@ -137,4 +137,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_HYDRAMATERIALADAPTER_H
+#endif // USDIMAGINGGL_HYDRAMATERIALADAPTER_H

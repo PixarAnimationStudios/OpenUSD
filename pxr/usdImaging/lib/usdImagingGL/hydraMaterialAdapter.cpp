@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/hydraMaterialAdapter.h"
+#include "pxr/usdImaging/usdImagingGL/hydraMaterialAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -50,23 +50,23 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingHydraMaterialAdapter Adapter;
+    typedef UsdImagingGLHydraMaterialAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingHydraMaterialAdapter::~UsdImagingHydraMaterialAdapter()
+UsdImagingGLHydraMaterialAdapter::~UsdImagingGLHydraMaterialAdapter()
 {
 }
 
 bool
-UsdImagingHydraMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
+UsdImagingGLHydraMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
     return index->IsSprimTypeSupported(HdPrimTypeTokens->material);
 }
 
 bool
-UsdImagingHydraMaterialAdapter::IsPopulatedIndirectly()
+UsdImagingGLHydraMaterialAdapter::IsPopulatedIndirectly()
 {
     // Materials are populated as a consequence of populating a prim
     // which uses the material.
@@ -74,7 +74,7 @@ UsdImagingHydraMaterialAdapter::IsPopulatedIndirectly()
 }
 
 SdfPath
-UsdImagingHydraMaterialAdapter::Populate(UsdPrim const& prim,
+UsdImagingGLHydraMaterialAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
@@ -118,7 +118,7 @@ UsdImagingHydraMaterialAdapter::Populate(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingHydraMaterialAdapter::TrackVariability(UsdPrim const& prim,
+UsdImagingGLHydraMaterialAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const*
@@ -151,7 +151,7 @@ _IsTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
 }
 
 TfTokenVector
-UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsFromShaderNetwork(
+UsdImagingGLHydraMaterialAdapter::_DiscoverPrimvarsFromShaderNetwork(
     UsdShadeShader const& shader) const
 {
     // TODO: It might be convenient to implicitly wire up PtexFaceOffset and
@@ -216,7 +216,7 @@ UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsFromShaderNetwork(
 }
 
 TfTokenVector
-UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsDeprecated(
+UsdImagingGLHydraMaterialAdapter::_DiscoverPrimvarsDeprecated(
     UsdPrim const& shaderPrim) const
 {
     TfTokenVector primvars;
@@ -275,7 +275,7 @@ UsdImagingHydraMaterialAdapter::_DiscoverPrimvarsDeprecated(
 }
 
 TfTokenVector
-UsdImagingHydraMaterialAdapter::_DiscoverPrimvars(SdfPath const& shaderPath) const
+UsdImagingGLHydraMaterialAdapter::_DiscoverPrimvars(SdfPath const& shaderPath) const
 {
     TfTokenVector primvars;
 
@@ -293,7 +293,7 @@ UsdImagingHydraMaterialAdapter::_DiscoverPrimvars(SdfPath const& shaderPath) con
 
 /* virtual */
 void
-UsdImagingHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
+UsdImagingGLHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
                                        SdfPath const& cachePath,
                                        UsdTimeCode time,
                                        HdDirtyBits requestedBits,
@@ -344,7 +344,7 @@ UsdImagingHydraMaterialAdapter::UpdateForTime(UsdPrim const& prim,
 
 /* virtual */
 HdDirtyBits
-UsdImagingHydraMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
+UsdImagingGLHydraMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                SdfPath const& cachePath,
                                                TfToken const& propertyName)
 {
@@ -354,7 +354,7 @@ UsdImagingHydraMaterialAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingHydraMaterialAdapter::MarkDirty(UsdPrim const& prim,
+UsdImagingGLHydraMaterialAdapter::MarkDirty(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    HdDirtyBits dirty,
                                    UsdImagingIndexProxy* index)
@@ -368,7 +368,7 @@ UsdImagingHydraMaterialAdapter::MarkDirty(UsdPrim const& prim,
 
 /* virtual */
 void
-UsdImagingHydraMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
+UsdImagingGLHydraMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
                                  UsdImagingIndexProxy* index)
 {
     if (IsChildPath(cachePath)) {
@@ -379,7 +379,7 @@ UsdImagingHydraMaterialAdapter::_RemovePrim(SdfPath const& cachePath,
 }
 
 std::string
-UsdImagingHydraMaterialAdapter::_GetShaderSource(UsdPrim const& prim, 
+UsdImagingGLHydraMaterialAdapter::_GetShaderSource(UsdPrim const& prim, 
                                           TfToken const& shaderType) const
 {
     UsdAttribute srcAttr;
@@ -433,7 +433,7 @@ UsdImagingHydraMaterialAdapter::_GetShaderSource(UsdPrim const& prim,
 }
 
 VtValue
-UsdImagingHydraMaterialAdapter::_GetMaterialParamValue(
+UsdImagingGLHydraMaterialAdapter::_GetMaterialParamValue(
                                                 UsdPrim const &prim, 
                                                 TfToken const &paramName,
                                                 UsdTimeCode time) const
@@ -469,7 +469,7 @@ UsdImagingHydraMaterialAdapter::_GetMaterialParamValue(
 }
 
 HdMaterialParamVector
-UsdImagingHydraMaterialAdapter::_GetMaterialParams(UsdPrim const& prim) const
+UsdImagingGLHydraMaterialAdapter::_GetMaterialParams(UsdPrim const& prim) const
 {
     HdMaterialParamVector params;
 
@@ -611,7 +611,7 @@ UsdImagingHydraMaterialAdapter::_GetMaterialParams(UsdPrim const& prim) const
 }
 
 SdfPathVector
-UsdImagingHydraMaterialAdapter::_GetSurfaceShaderTextures(UsdPrim const &prim) const
+UsdImagingGLHydraMaterialAdapter::_GetSurfaceShaderTextures(UsdPrim const &prim) const
 {
     SdfPathVector textureIDs;
 
