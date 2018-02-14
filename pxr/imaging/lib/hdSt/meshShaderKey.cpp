@@ -68,6 +68,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainVS,                  "Mesh.Vertex"))
     ((mainBSplineTCS,          "Mesh.TessControl.BSpline"))
     ((mainBezierTES,           "Mesh.TessEval.Bezier"))
+    ((mainTriangleTessGS,      "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
     ((mainFS,                  "Mesh.Fragment"))
@@ -156,7 +157,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
     GS[3] = gsEdgeIdMixin;
 
-    GS[4] = isPrimTypeQuads? _tokens->mainQuadGS : _tokens->mainTriangleGS;
+    GS[4] = isPrimTypeQuads? _tokens->mainQuadGS :
+                (isPrimTypePatches ? _tokens->mainTriangleTessGS
+                                   : _tokens->mainTriangleGS);
     GS[5] = TfToken();
 
     // Optimization : If the mesh does not provide a custom displacement shader

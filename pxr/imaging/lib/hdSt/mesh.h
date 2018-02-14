@@ -93,7 +93,8 @@ protected:
                 bool * isFirstInstance,
                 HdStResourceRegistrySharedPtr const &resourceRegistry) const;
 
-    bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
+    bool _UseQuadIndices(const HdRenderIndex &renderIndex,
+                         HdSt_MeshTopologySharedPtr const & topology) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,

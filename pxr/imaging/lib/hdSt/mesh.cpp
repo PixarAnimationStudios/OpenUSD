@@ -200,15 +200,15 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // hashing.
         _topologyId = topology->ComputeHash();
 
-        // Salt the hash with refinement level and usePtexIndices.
+        // Salt the hash with refinement level and useQuadIndices.
         // (refinement level is moved into HdMeshTopology)
         //
-        // Specifically for ptexIndices, we could do better here because all we
+        // Specifically for quad indices, we could do better here because all we
         // really need is the ability to compute quad indices late, however
         // splitting the topology shouldn't be a huge cost either.
-        bool usePtexIndices = _UsePtexIndices(sceneDelegate->GetRenderIndex());
-        _topologyId = ArchHash64((const char*)&usePtexIndices,
-            sizeof(usePtexIndices), _topologyId);
+        bool useQuadIndices = _UseQuadIndices(sceneDelegate->GetRenderIndex(), topology);
+        _topologyId = ArchHash64((const char*)&useQuadIndices,
+            sizeof(useQuadIndices), _topologyId);
 
         {
             // XXX: Should be HdSt_MeshTopologySharedPtr
@@ -236,7 +236,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // we also need quadinfo if requested.
                 // Note that this is needed even if refineLevel > 0, in case
                 // HdMeshGeomStyleHull is going to be used.
-                if (usePtexIndices) {
+                if (useQuadIndices) {
                     // Quadrangulate preprocessing
                     HdSt_QuadInfoBuilderComputationSharedPtr quadInfoBuilder =
                         topology->GetQuadInfoBuilderComputation(
@@ -300,7 +300,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             } else if (refineLevelForDesc > 0) {
                 // create refined indices, primitiveParam and edgeIndices
                 source = _topology->GetOsdIndexBuilderComputation();
-            } else if (_UsePtexIndices(sceneDelegate->GetRenderIndex())) {
+            } else if (_UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology)) {
                 // not refined = quadrangulate
                 // create quad indices, primitiveParam and edgeIndices
                 source = _topology->GetQuadIndexBuilderComputation(GetId());
@@ -618,7 +618,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             if (refineLevel > 0) {
                 source = _RefinePrimVar(source, isVarying,
                                         &computations, _topology);
-            } else if (_UsePtexIndices(renderIndex)) {
+            } else if (_UseQuadIndices(renderIndex, _topology)) {
                 source = _QuadrangulatePrimVar(source, &computations, _topology,
                                                GetId(), resourceRegistry);
             }
@@ -647,7 +647,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         TF_VERIFY(_vertexAdjacency);
         bool doRefine = (refineLevel > 0);
-        bool doQuadrangulate = _UsePtexIndices(renderIndex);
+        bool doQuadrangulate = _UseQuadIndices(renderIndex, _topology);
 
         // we can't use packed normals for refined/quad,
         // let's migrate the buffer to full precision
@@ -947,16 +947,16 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
                 continue;
             }
 
-            // FaceVarying primvar requires quadrangulation (both coarse and
-            // refined) or triangulation (coase only), but refinement of the
+            // FaceVarying primvar requires quadrangulation or triangulation,
+            // depending on the subdivision scheme, but refinement of the
             // primvar is not needed even if the repr is refined, since we only
             // support linear interpolation until OpenSubdiv 3.1 supports it.
 
             //
             // XXX: there is a bug of quad and tris confusion. see bug 121414
             //
-            if (_UsePtexIndices(sceneDelegate->GetRenderIndex()) ||
-                refineLevel > 0) {
+            if (_UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology) ||
+                 (refineLevel > 0 && !_topology->RefinesToTriangles())) {
                 source = _QuadrangulateFaceVaryingPrimVar(source, _topology,
                                                           GetId(), resourceRegistry);
             } else {
@@ -1054,8 +1054,16 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 }
 
 bool
-HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
+HdStMesh::_UseQuadIndices(
+        const HdRenderIndex &renderIndex,
+        HdSt_MeshTopologySharedPtr const & topology) const
 {
+    // We should never quadrangulate for subdivision schemes
+    // which refine to triangles (like Loop)
+    if (topology->RefinesToTriangles()) {
+        return false;
+    }
+
     const HdStMaterial *material = static_cast<const HdStMaterial *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->material,
                                                        GetMaterialId()));
@@ -1256,8 +1264,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
             primType =
                 HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
-    } else if (_UsePtexIndices(renderIndex)) {
-        // quadrangulate coarse mesh (for ptex)
+    } else if (_UseQuadIndices(renderIndex, _topology)) {
+        // quadrangulate coarse mesh (e.g. for ptex)
         primType = HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
     }
 

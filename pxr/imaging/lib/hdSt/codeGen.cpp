@@ -511,6 +511,7 @@ HdSt_CodeGen::Compile()
     switch(_geometricShader->GetPrimitiveType())
     {
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
         {
             // patch interpolation
@@ -529,11 +530,10 @@ HdSt_CodeGen::Compile()
         }
 
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         {
             // barycentric interpolation
              _procGS  << "void ProcessPrimVars(int index) {\n"
-                      << "   vec2 localST = vec2[](vec2(1,0), vec2(0,1), vec2(0,0))[index];\n";
+                      << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(0,1))[index];\n";
             break;            
         }
 
@@ -2136,9 +2136,9 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
             {
                 // barycentric interpolation within a triangle.
                 _procGS << "   outPrimVars." << name
-                    << "  = HdGet_" << name << "(0) * localST.x "
-                    << "  + HdGet_" << name << "(1) * localST.y "
-                    << "  + HdGet_" << name << "(2) * (1-localST.x-localST.y);\n";                
+                    << "  = HdGet_" << name << "(0) * (1-localST.x-localST.y) "
+                    << "  + HdGet_" << name << "(1) * localST.x "
+                    << "  + HdGet_" << name << "(2) * localST.y;\n";                
                 break;  
             }
 
