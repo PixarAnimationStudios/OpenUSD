@@ -26,7 +26,7 @@ Module that provides the StageView class.
 '''
 
 from math import tan, atan, floor, ceil, radians as rad
-import os
+import os, sys
 from time import time
 
 from qt import QtCore, QtGui, QtWidgets, QtOpenGL
@@ -1736,7 +1736,13 @@ class StageView(QtOpenGL.QGLWidget):
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
-        renderer.Render(pseudoRoot, self._renderParams)
+        try:
+            renderer.Render(pseudoRoot, self._renderParams)
+        except Tf.ErrorException as e:
+            # If we encounter an error during a render, we want to continue
+            # running. Just log the error and continue.
+            sys.stderr.write(
+                "ERROR: Usdview encountered an error while rendering.{}\n".format(e))
         self._forceRefresh = False
 
 
