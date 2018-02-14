@@ -110,7 +110,7 @@ static void CameraAndLightTest()
 
     delegate->AddCamera(camera);
     delegate->AddLight(light, GlfSimpleLight());
-    delegate->SetLight(light, HdStLightTokens->shadowCollection,
+    delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->hull)));
 
@@ -129,10 +129,10 @@ static void CameraAndLightTest()
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
     // Update shadow collection
-    delegate->SetLight(light, HdStLightTokens->shadowCollection,
+    delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
+    tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
     engine.Execute(*index, tasks);
 
@@ -140,10 +140,10 @@ static void CameraAndLightTest()
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
 
     // Update shadow collection again with the same data
-    delegate->SetLight(light, HdStLightTokens->shadowCollection,
+    delegate->SetLight(light, HdLightTokens->shadowCollection,
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                                 HdTokens->refined)));
-    tracker.MarkSprimDirty(light, HdStLight::DirtyCollection);
+    tracker.MarkSprimDirty(light, HdLight::DirtyCollection);
 
     engine.Execute(*index, tasks);
 

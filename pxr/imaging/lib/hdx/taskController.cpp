@@ -437,20 +437,20 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src,
 
     // Update light Sprims
     for (size_t i = 0; i < lights.size(); ++i) {
-        _delegate.SetParameter(_lightIds[i], HdStLightTokens->params,
+        _delegate.SetParameter(_lightIds[i], HdLightTokens->params,
             lights[i]);
-        _delegate.SetParameter(_lightIds[i], HdStLightTokens->transform,
+        _delegate.SetParameter(_lightIds[i], HdLightTokens->transform,
             VtValue());
-        _delegate.SetParameter(_lightIds[i], HdStLightTokens->shadowParams,
+        _delegate.SetParameter(_lightIds[i], HdLightTokens->shadowParams,
             HdxShadowParams());
-        _delegate.SetParameter(_lightIds[i], HdStLightTokens->shadowCollection,
+        _delegate.SetParameter(_lightIds[i], HdLightTokens->shadowCollection,
             VtValue());
 
         // Only mark the parameters dirty to avoid unnecessary invalidation.
         // Marking the shadowCollection as dirty will mark the geometry
         // collection dirty and we don't want that to happen every time.
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-            _lightIds[i], HdStLight::DirtyParams);
+            _lightIds[i], HdLight::DirtyParams);
     }
 
     // Update the material: sadly, this comes from the lighting context

@@ -224,9 +224,9 @@ Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
     shadowParams.bias = -0.001;
     shadowParams.blur = 0.1;
 
-    cache[HdStLightTokens->params] = light;
-    cache[HdStLightTokens->shadowParams] = shadowParams;
-    cache[HdStLightTokens->shadowCollection]
+    cache[HdLightTokens->params] = light;
+    cache[HdLightTokens->shadowParams] = shadowParams;
+    cache[HdLightTokens->shadowCollection]
         = HdRprimCollection(HdTokens->geometry, HdTokens->refined);
 }
 
@@ -236,23 +236,23 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 {
     _ValueCache &cache = _valueCacheMap[id];
     cache[key] = value;
-    if (key == HdStLightTokens->params) {
+    if (key == HdLightTokens->params) {
         // update shadow matrix too
         GlfSimpleLight light = value.Get<GlfSimpleLight>();
         HdxShadowParams shadowParams
-            = cache[HdStLightTokens->shadowParams].Get<HdxShadowParams>();
+            = cache[HdLightTokens->shadowParams].Get<HdxShadowParams>();
         shadowParams.shadowMatrix
             = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
 
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdStLight::DirtyParams|HdStLight::DirtyShadowParams);
-        cache[HdStLightTokens->shadowParams] = shadowParams;
-    } else if (key == HdStLightTokens->transform) {
+            id, HdLight::DirtyParams|HdLight::DirtyShadowParams);
+        cache[HdLightTokens->shadowParams] = shadowParams;
+    } else if (key == HdLightTokens->transform) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdStLight::DirtyTransform);
-    } else if (key == HdStLightTokens->shadowCollection) {
+            id, HdLight::DirtyTransform);
+    } else if (key == HdLightTokens->shadowCollection) {
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-            id, HdStLight::DirtyCollection);
+            id, HdLight::DirtyCollection);
     }
 }
 

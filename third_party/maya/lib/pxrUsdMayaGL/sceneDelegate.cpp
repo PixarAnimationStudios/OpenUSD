@@ -240,10 +240,10 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache& cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
-        cache[HdStLightTokens->params] = VtValue(lights[i]);
-        cache[HdStLightTokens->transform] = VtValue();
-        cache[HdStLightTokens->shadowParams] = VtValue(HdxShadowParams());
-        cache[HdStLightTokens->shadowCollection] = VtValue();
+        cache[HdLightTokens->params] = VtValue(lights[i]);
+        cache[HdLightTokens->transform] = VtValue();
+        cache[HdLightTokens->shadowParams] = VtValue(HdxShadowParams());
+        cache[HdLightTokens->shadowCollection] = VtValue();
 
         // Only mark as dirty the parameters to avoid unnecessary invalidation
         // specially marking as dirty lightShadowCollection will trigger

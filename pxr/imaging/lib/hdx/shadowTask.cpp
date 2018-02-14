@@ -198,7 +198,7 @@ HdxShadowTask::_Sync(HdTaskContext* ctx)
             
             // Extract the collection from the HD light
             VtValue vtShadowCollection =
-                lights[lightId]->Get(HdStLightTokens->shadowCollection);
+                lights[lightId]->Get(HdLightTokens->shadowCollection);
             const HdRprimCollection &col =
                 vtShadowCollection.IsHolding<HdRprimCollection>() ?
                     vtShadowCollection.Get<HdRprimCollection>() : HdRprimCollection();

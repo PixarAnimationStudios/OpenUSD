@@ -45,6 +45,7 @@ pxr_library(hd
         geomSubset
         instancer
         instanceRegistry
+        light
         material
         materialParam
         mesh

@@ -220,7 +220,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 
             // Take a copy of the simple light into our temporary array and
             // update it with viewer-dependant values.
-            VtValue vtLightParams = light->Get(HdStLightTokens->params);
+            VtValue vtLightParams = light->Get(HdLightTokens->params);
                 _glfSimpleLights.push_back(
                     vtLightParams.GetWithDefault<GlfSimpleLight>(GlfSimpleLight()));
 
@@ -234,7 +234,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             // If the light is in camera space we need to transform
             // the position and spot direction to the right space.
             if (glfl.IsCameraSpaceLight()) {
-                VtValue vtXform = light->Get(HdStLightTokens->transform);
+                VtValue vtXform = light->Get(HdLightTokens->transform);
                 const GfMatrix4d &lightXform =
                     vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>()
                                                     : GfMatrix4d(1);
@@ -248,7 +248,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             }
 
             VtValue vLightShadowParams = 
-                light->Get(HdStLightTokens->shadowParams);
+                light->Get(HdLightTokens->shadowParams);
             HdxShadowParams lightShadowParams = 
                 vLightShadowParams.GetWithDefault<HdxShadowParams>
                     (HdxShadowParams());
