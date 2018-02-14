@@ -259,6 +259,21 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Compute the extent for the cylinder defined by the height, radius, and
+    /// axis.
+    ///
+    /// \return true upon success, false if unable to calculate extent.
+    ///
+    /// On success, extent will contain an approximate axis-aligned bounding 
+    /// box of the cylinder defined by the height, radius, and axis.
+    ///
+    /// This function is to provide easy authoring of extent for usd authoring 
+    /// tools, hence it is static and acts outside a specific prim (as in 
+    /// attribute based methods).
+    USDGEOM_API
+    static bool ComputeExtent(double height, double radius, const TfToken& axis,
+        VtVec3fArray* extent);
 };
 
 #define USDGEOM_CYLINDER_API_VERSION 1

@@ -300,6 +300,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX Bug 139215: When we enable this, we can remove
@@ -828,6 +831,28 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
     (*extent)[1] = GfVec3f(extentMax[0], extentMax[1], extentMax[2]);
 
     return true;
+}
+
+static bool
+_ComputeExtentForPointInstancer(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    VtVec3fArray* extent)
+{
+    const UsdGeomPointInstancer pointInstancerSchema(boundable);
+    if (!TF_VERIFY(pointInstancerSchema)) {
+        return false;
+    }
+
+    // We use the input time as the baseTime because we don't care about
+    // velocity or angularVelocity.
+    return pointInstancerSchema.ComputeExtentAtTime(extent, time, time);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomPointInstancer>(
+        _ComputeExtentForPointInstancer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

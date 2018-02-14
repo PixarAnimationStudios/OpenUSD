@@ -208,3 +208,68 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomCylinder::ComputeExtent(double height, double radius,
+    const TfToken& axis, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfVec3f max;
+    if (axis == UsdGeomTokens->x) {
+        max = GfVec3f(height * 0.5, radius, radius);
+    } else if (axis == UsdGeomTokens->y) {
+        max = GfVec3f(radius, height * 0.5, radius);
+    } else if (axis == UsdGeomTokens->z) {
+        max = GfVec3f(radius, radius, height * 0.5);
+    } else {
+      return false; // invalid axis
+    }
+    (*extent)[0] = -max;
+    (*extent)[1] = max;
+
+    return true;
+}
+
+static bool
+_ComputeExtentForCylinder(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    VtVec3fArray* extent)
+{
+    const UsdGeomCylinder cylinderSchema(boundable);
+    if (!TF_VERIFY(cylinderSchema)) {
+        return false;
+    }
+
+    double height;
+    if (!cylinderSchema.GetHeightAttr().Get(&height)) {
+        return false;
+    }
+
+    double radius;
+    if (!cylinderSchema.GetRadiusAttr().Get(&radius)) {
+        return false;
+    }
+
+    TfToken axis;
+    if (!cylinderSchema.GetAxisAttr().Get(&axis)) {
+        return false;
+    }
+
+    return UsdGeomCylinder::ComputeExtent(height, radius, axis, extent);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomCylinder>(
+        _ComputeExtentForCylinder);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

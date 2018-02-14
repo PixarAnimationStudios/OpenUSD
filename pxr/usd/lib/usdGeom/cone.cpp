@@ -208,3 +208,68 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomCone::ComputeExtent(double height, double radius, const TfToken& axis,
+    VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfVec3f max;
+    if (axis == UsdGeomTokens->x) {
+        max = GfVec3f(height * 0.5, radius, radius);
+    } else if (axis == UsdGeomTokens->y) {
+        max = GfVec3f(radius, height * 0.5, radius);
+    } else if (axis == UsdGeomTokens->z) {
+        max = GfVec3f(radius, radius, height * 0.5);
+    } else {
+      return false; // invalid axis
+    }
+    (*extent)[0] = -max;
+    (*extent)[1] = max;
+
+    return true;
+}
+
+static bool
+_ComputeExtentForCone(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    VtVec3fArray* extent)
+{
+    const UsdGeomCone coneSchema(boundable);
+    if (!TF_VERIFY(coneSchema)) {
+        return false;
+    }
+
+    double height;
+    if (!coneSchema.GetHeightAttr().Get(&height)) {
+        return false;
+    }
+
+    double radius;
+    if (!coneSchema.GetRadiusAttr().Get(&radius)) {
+        return false;
+    }
+
+    TfToken axis;
+    if (!coneSchema.GetAxisAttr().Get(&axis)) {
+        return false;
+    }
+
+    return UsdGeomCone::ComputeExtent(height, radius, axis, extent);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomCone>(
+        _ComputeExtentForCone);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

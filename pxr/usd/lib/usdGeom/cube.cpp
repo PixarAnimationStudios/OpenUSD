@@ -172,3 +172,47 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomCube::ComputeExtent(double size, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    (*extent)[0] = GfVec3f(size * -0.5);
+    (*extent)[1] = GfVec3f(size * 0.5);
+
+    return true;
+}
+
+static bool
+_ComputeExtentForCube(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    VtVec3fArray* extent)
+{
+    const UsdGeomCube cubeSchema(boundable);
+    if (!TF_VERIFY(cubeSchema)) {
+        return false;
+    }
+
+    double size;
+    if (!cubeSchema.GetSizeAttr().Get(&size)) {
+        return false;
+    }
+
+    return UsdGeomCube::ComputeExtent(size, extent);
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomCube>(
+        _ComputeExtentForCube);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
