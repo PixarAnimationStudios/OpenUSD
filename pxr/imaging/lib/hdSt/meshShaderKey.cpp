@@ -50,7 +50,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
-    ((hullEdgeOnlyNoBlendFS,   "MeshWire.Fragment.HullEdgeOnlyNoBlend"))
 
     ((edgeOnSurfGS,            "MeshWire.Geometry.Edge"))
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
@@ -199,12 +198,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
                                                               : _tokens->edgeNoneFS));
     } else {
-        if (geomStyle == HdMeshGeomStyleEdgeOnly) {
+        if (geomStyle == HdMeshGeomStyleEdgeOnly ||
+            geomStyle == HdMeshGeomStyleHullEdgeOnly) {
             FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
                                         : _tokens->edgeOnlyNoBlendFS;
-        } else if (geomStyle == HdMeshGeomStyleHullEdgeOnly) {
-            FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
-                                        : _tokens->hullEdgeOnlyNoBlendFS;
         } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                    geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
             FS[3] = _tokens->edgeOnSurfFS;
