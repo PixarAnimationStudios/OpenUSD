@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/package.h"
+#include "pxr/usdImaging/usdImagingGL/package.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/thisPlugin.h"
@@ -43,7 +43,7 @@ _GetShaderPath(char const * shader)
 }
 
 TfToken
-UsdImagingPackageDrawModeShader()
+UsdImagingGLPackageDrawModeShader()
 {
     static TfToken drawModeShader = _GetShaderPath("drawMode.glslfx");
     return drawModeShader;

@@ -25,7 +25,7 @@
 #define USDIMAGINGGL_HYDRAMATERIALADAPTER_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/imaging/hd/materialParam.h"
 
@@ -42,18 +42,18 @@ public:
         : UsdImagingPrimAdapter()
     {}
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual ~UsdImagingGLHydraMaterialAdapter();
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const* instancerContext = NULL);
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual bool IsPopulatedIndirectly();
 
     // ---------------------------------------------------------------------- //
@@ -61,7 +61,7 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Thread Safe.
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
@@ -70,7 +70,7 @@ public:
 
 
     /// Thread Safe.
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
@@ -84,19 +84,19 @@ public:
 
     /// Returns a bit mask of attributes to be udpated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
                                               TfToken const& propertyName);
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index);
 
 protected:
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) final;
 

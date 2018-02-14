@@ -532,7 +532,7 @@ private:
                          _AdapterSharedPtr, TfToken::HashFunctor> _AdapterMap;
     _AdapterMap _adapterMap;
 
-    // Per-Primitive tracking data.
+    // Per-Hydra-Primitive tracking data
     struct _PrimInfo {
         _AdapterSharedPtr adapter;          // The adapter to use for the prim
         UsdPrim           usdPrim;          // Reference to the Usd prim
@@ -610,6 +610,8 @@ private:
 
     // Display guides rendering
     bool _displayGuides;
+
+    const bool _hasDrawModeAdapter;
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;

@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_DRAW_MODE_ADAPTER_H
-#define USDIMAGING_DRAW_MODE_ADAPTER_H
+#ifndef USDIMAGINGGL_DRAW_MODE_ADAPTER_H
+#define USDIMAGINGGL_DRAW_MODE_ADAPTER_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -33,20 +33,20 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class UsdImagingDrawModeAdapter
+/// \class UsdImagingGLDrawModeAdapter
 ///
 /// Delegate support for the drawMode attribute on UsdGeomModelAPI.
 ///
-class UsdImagingDrawModeAdapter : public UsdImagingPrimAdapter {
+class UsdImagingGLDrawModeAdapter : public UsdImagingPrimAdapter {
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
 
-    UsdImagingDrawModeAdapter()
+    UsdImagingGLDrawModeAdapter()
         : UsdImagingPrimAdapter()
     {}
 
-    USDIMAGING_API
-    virtual ~UsdImagingDrawModeAdapter();
+    USDIMAGINGGL_API
+    virtual ~UsdImagingGLDrawModeAdapter();
 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more Rprims in the render index using the
@@ -73,14 +73,14 @@ public:
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
                                       instancerContext = NULL);
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
@@ -92,29 +92,29 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath, 
                                               TfToken const& property);
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index);
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index);
 
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index);
 
 protected:
-    USDIMAGING_API
+    USDIMAGINGGL_API
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index);
 
@@ -169,4 +169,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_DRAW_MODE_ADAPTER_H
+#endif // USDIMAGINGGL_DRAW_MODE_ADAPTER_H

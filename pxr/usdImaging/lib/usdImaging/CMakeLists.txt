@@ -38,7 +38,6 @@ pxr_library(usdImaging
         delegate
         inheritedCache
         instancerContext
-        package
         tokens
         unitTestHelper
         valueCache
@@ -48,7 +47,6 @@ pxr_library(usdImaging
         cubeAdapter
         cylinderAdapter
         domeLightAdapter
-        drawModeAdapter
         gprimAdapter
         instanceAdapter
         lightAdapter
@@ -68,6 +66,5 @@ pxr_library(usdImaging
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/drawMode.glslfx
 )
 

@@ -120,6 +120,9 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _displayGuides(true)
+    , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
+                           .HasAdapter(UsdImagingAdapterKeyTokens
+                                       ->drawModeAdapterKey) )
 {
 }
 
@@ -208,7 +211,7 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     TfToken adapterKey;
     if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
-    } else if (_IsDrawModeApplied(prim)) {
+    } else if (_hasDrawModeAdapter && _IsDrawModeApplied(prim)) {
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else {
         adapterKey = prim.GetTypeName();

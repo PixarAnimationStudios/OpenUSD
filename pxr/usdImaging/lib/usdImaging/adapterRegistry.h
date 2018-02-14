@@ -77,6 +77,11 @@ public:
         return TfSingleton<UsdImagingAdapterRegistry>::GetInstance();
     }
 
+    /// Returns true if an adapter has been registered to handle the given
+    /// \p adapterKey.
+    USDIMAGING_API
+    bool HasAdapter(TfToken const& adapterKey);
+
     /// Returns a new instance of the UsdImagingPrimAdapter that has been
     /// registered to handle the given \p adapterKey. This key is either
     /// a prim typename or a key specified in UsdImagingAdapterKeyTokens.

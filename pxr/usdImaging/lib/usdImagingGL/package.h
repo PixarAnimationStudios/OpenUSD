@@ -21,19 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDIMAGING_PACKAGE_H
-#define USDIMAGING_PACKAGE_H
+#ifndef USDIMAGINGGL_PACKAGE_H
+#define USDIMAGINGGL_PACKAGE_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImaging/api.h"
-#include "pxr/usdImaging/usdImaging/version.h"
+#include "pxr/usdImaging/usdImagingGL/api.h"
+#include "pxr/usdImaging/usdImagingGL/version.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-USDIMAGING_API
-TfToken UsdImagingPackageDrawModeShader();
+USDIMAGINGGL_API
+TfToken UsdImagingGLPackageDrawModeShader();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDIMAGING_PACKAGE_H
+#endif // USDIMAGINGGL_PACKAGE_H
