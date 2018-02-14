@@ -55,9 +55,6 @@ typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPt
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
-HDX_API
-void HdxNoDepthMask();
-
 class HdxIntersector {
 public:
     struct Params;
@@ -110,7 +107,7 @@ public:
             , viewMatrix(1)
             , alphaThreshold(0.0f)
             , cullStyle(HdCullStyleNothing)
-            , depthMaskCallback(HdxNoDepthMask)
+            , depthMaskCallback(nullptr)
             , renderTags()
         {}
 
@@ -227,11 +224,15 @@ public:
 
 private:
     void _Init(GfVec2i const&);
+    void _ConditionStencilWithGLCallback(DepthMaskCallback callback);
 
-    // Create a shared render pass for pickables and unpickables
+    // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _unpickableRenderPass;
 
+    // Having separate render pass states allows us to queue up the tasks
+    // corresponding to each of the above render passes. It also lets us use
+    // different shader mixins if we choose to (we don't currently.)
     HdStRenderPassStateSharedPtr _pickableRenderPassState;
     HdStRenderPassStateSharedPtr _unpickableRenderPassState;
 

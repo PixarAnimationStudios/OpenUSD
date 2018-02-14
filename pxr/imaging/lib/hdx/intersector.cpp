@@ -67,7 +67,9 @@ HdxIntersector::_Init(GfVec2i const& size)
         boost::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
 
     // Turn off color writes for the unpickables (we only want to condition the
-    // depth buffer)
+    // depth buffer).
+    // XXX: This is a quick alternative to using a different  shader mixin for
+    // the unpickables.
     _unpickableRenderPassState = boost::make_shared<HdStRenderPassState>(
         boost::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
     _unpickableRenderPassState->SetColorMaskUseDefault(false);
@@ -108,21 +110,6 @@ HdxIntersector::_Init(GfVec2i const& size)
     }
 }
 
-void HdxNoDepthMask()
-{
-    // The depth mask is expected to render something, which is used to
-    // condition the stencil buffer -- whatever gets rendered is available for
-    // picking. Here, we want everything to be available for picking, so we
-    // could render a full-screen primitive, but clearing the stencil buffer is
-    // much simpler.
-    
-    // Clear the stencil buffer to 1.0 to enable all following stencil tests to
-    // pass.
-    glClearStencil(1);
-    glClear(GL_STENCIL_BUFFER_BIT);
-    glClearStencil(0);
-}
-
 void
 HdxIntersector::SetResolution(GfVec2i const& widthHeight)
 {
@@ -152,6 +139,54 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
         _drawTarget->Bind();
         _drawTarget->SetSize(widthHeight);
         _drawTarget->Unbind();
+    }
+}
+
+void
+HdxIntersector::_ConditionStencilWithGLCallback(DepthMaskCallback maskCallback)
+{
+    // Setup stencil state and prevent writes to color buffer.
+    // We don't use the pickable/unpickable render pass state below, since
+    // the callback uses immediate mode GL, and doesn't conform to Hydra's
+    // command buffer based execution philosophy.
+    {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, 1, 1);
+        glStencilOp(GL_KEEP,     // stencil failed
+                    GL_KEEP,     // stencil passed, depth failed
+                    GL_REPLACE); // stencil passed, depth passed
+    }
+    
+    //
+    // Condition the stencil buffer.
+    //
+    maskCallback();
+
+    // We expect any GL state changes are restored.
+    {
+        // Clear depth incase the depthMaskCallback pollutes the depth buffer.
+        glClear(GL_DEPTH_BUFFER_BIT);
+        // Restore color outputs & setup state for rendering
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glDisable(GL_CULL_FACE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glFrontFace(GL_CCW);
+    }
+    
+    // Update the stencil state for the render passes
+    {
+        HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
+                                               _unpickableRenderPassState};
+        for (auto& state : states) {
+            state->SetStencilEnabled(true);
+            state->SetStencil(HdCmpFuncLess,
+                            /*ref=*/0,
+                            /*mask=*/1,
+                            /*sFail*/HdStencilOpKeep,
+                            /*sPassZFail*/HdStencilOpKeep,
+                            /*sPassZPass*/HdStencilOpKeep);
+        }
     }
 }
 
@@ -226,27 +261,13 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         // context, which may not be the case at constructon time.
         _Init(GfVec2i(128,128));
     }
-
-    GfVec2i size(_drawTarget->GetSize());
-    GfVec4i viewport(0, 0, size[0], size[1]);
-
     if (!TF_VERIFY(_pickableRenderPass) || 
         !TF_VERIFY(_unpickableRenderPass)) {
         return false;
     }
 
-    // Setup state based on incoming params.
-    _pickableRenderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _pickableRenderPassState->SetClipPlanes(params.clipPlanes);
-    _pickableRenderPassState->SetCullStyle(params.cullStyle);
-    _pickableRenderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
-    _pickableRenderPassState->SetLightingEnabled(false);
-
-    _unpickableRenderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _unpickableRenderPassState->SetClipPlanes(params.clipPlanes);
-    _unpickableRenderPassState->SetCullStyle(params.cullStyle);
-    _unpickableRenderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
-    _unpickableRenderPassState->SetLightingEnabled(false);
+    GfVec2i size(_drawTarget->GetSize());
+    GfVec4i viewport(0, 0, size[0], size[1]);
 
     // Use a separate drawTarget (framebuffer object) for each GL context
     // that uses this renderer, but the drawTargets share attachments/textures.
@@ -291,30 +312,28 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         GLuint vao;
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
-        // Setup stencil state and prevent writes to color buffer.
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, 1, 1);
-        glStencilOp(GL_KEEP,     // stencil failed
-                    GL_KEEP,     // stencil passed, depth failed
-                    GL_REPLACE); // stencil passed, depth passed
 
-        //
-        // Condition the stencil buffer.
-        //
-        params.depthMaskCallback();
-        // we expect any GL state changes are restored.
+        bool needStencilConditioning = (params.depthMaskCallback != nullptr);
 
-        // Disable stencil updates and setup the stencil test.
-        glStencilFunc(GL_LESS, 0, 1);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        // Clear depth incase the depthMaskCallback pollutes the depth buffer.
-        glClear(GL_DEPTH_BUFFER_BIT);
-        // Restore color outputs & setup state for rendering
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glDisable(GL_CULL_FACE);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glFrontFace(GL_CCW);
+        if (needStencilConditioning) {
+            _ConditionStencilWithGLCallback(params.depthMaskCallback);
+        } else {
+            // disable stencil
+            _pickableRenderPassState->SetStencilEnabled(false);
+            _unpickableRenderPassState->SetStencilEnabled(false);
+        }
+        
+
+        // Update render pass states based on incoming params.
+        HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
+                                               _unpickableRenderPassState};
+        for (auto& state : states) {
+            state->SetAlphaThreshold(params.alphaThreshold);
+            state->SetClipPlanes(params.clipPlanes);
+            state->SetCullStyle(params.cullStyle);
+            state->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
+            state->SetLightingEnabled(false);
+        }
 
         //
         // Enable conservative rasterization, if available.
