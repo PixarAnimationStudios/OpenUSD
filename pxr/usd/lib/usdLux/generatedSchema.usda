@@ -587,8 +587,7 @@ class DistantLight "DistantLight" (
 
 class DiskLight "DiskLight" (
     doc = """Light emitted from one side of a circular disk.
-    The disk is centered in the XY plane and emits light along the -Z axis.
-    The disk has a diameter of 1 unit in local space."""
+    The disk is centered in the XY plane and emits light along the -Z axis."""
 )
 {
     color3f color = (1, 1, 1) (
@@ -864,8 +863,7 @@ class RectLight "RectLight" (
 }
 
 class SphereLight "SphereLight" (
-    doc = """Light emitted outward from a sphere.
-    The sphere has a diameter of 1 unit in local space."""
+    doc = "Light emitted outward from a sphere."
 )
 {
     color3f color = (1, 1, 1) (
@@ -970,6 +968,140 @@ class SphereLight "SphereLight" (
     )
     float radius = 1 (
         doc = "Radius of the sphere."
+    )
+    float specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        doc = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.  Visibility is 
+        animatable, allowing a sub-tree of geometry to be present for some 
+        segment of a shot, and absent from others; unlike the action of 
+        deactivating geometry prims, invisible geometry is still 
+        available for inspection, for positioning, for defining volumes, etc.'''
+    )
+    uniform token[] xformOpOrder (
+        doc = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims.
+        
+        You should rarely, if ever, need to manipulate this attribute directly.
+        It is managed by the AddXformOp(), SetResetXformStack(), and
+        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
+        GetLocalTransformation()."""
+    )
+}
+
+class CylinderLight "CylinderLight" (
+    doc = "Light emitted outward from a cylinder."
+)
+{
+    color3f color = (1, 1, 1) (
+        doc = "The color of emitted light, in energy-linear terms."
+    )
+    float colorTemperature = 6500 (
+        displayName = "Color Temperature"
+        doc = """Color temperature, in degrees Kelvin, representing the
+        white point.  The default is a common white point, D65.  Lower
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
+    )
+    float diffuse = 1 (
+        displayName = "Diffuse Multiplier"
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    bool enableColorTemperature = 0 (
+        displayName = "Enable Color Temperature"
+        doc = "Enables using colorTemperature."
+    )
+    float exposure = 0 (
+        doc = """Scales the power of the light exponentially as a power
+        of 2 (similar to an F-stop control over exposure).  The result
+        is multiplied against the intensity."""
+    )
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    float intensity = 1 (
+        doc = "Scales the power of the light linearly."
+    )
+    bool normalize = 0 (
+        displayName = "Normalize Power"
+        doc = """Normalizes power by the surface area of the light.
+        This makes it easier to independently adjust the power and shape
+        of the light, by causing the power to not vary with the area or
+        angular size of the light."""
+    )
+    rel proxyPrim (
+        doc = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.  This is entirely optional, but can be
+        useful in several scenarios:
+        
+        - In a pipeline that does pruning (for complexity management)
+        by deactivating prims composed from asset references, when we
+        deactivate a purpose="render" prim, we will be able to discover
+        and additionally deactivate its associated purpose="proxy" prim,
+        so that preview renders reflect the pruning accurately.
+        
+        - DCC importers may be able to make more aggressive optimizations
+        for interactive processing and display if they can discover the proxy
+        for a given render prim.
+        
+        - With a little more work, a Hydra-based application will be able
+        to map a picked proxy prim back to its render geometry for selection.
+
+        \\note It is only valid to author the proxyPrim relationship on
+        prims whose purpose is "render".'''
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        doc = '''Purpose is a concept we have found useful in our pipeline for 
+        classifying geometry into categories that can each be independently
+        included or excluded from traversals of prims on a stage, such as
+        rendering or bounding-box computation traversals.  The fallback
+        purpose, default indicates that a prim has "no special purpose"
+        and should generally be included in all traversals.  Subtrees rooted
+        at a prim with purpose render should generally only be included
+        when performing a "final quality" render.  Subtrees rooted at a prim
+        with purpose proxy should generally only be included when 
+        performing a lightweight proxy render (such as openGL).  Finally,
+        subtrees rooted at a prim with purpose guide should generally
+        only be included when an interactive application has been explicitly
+        asked to "show guides". 
+        
+        In the previous paragraph, when we say "subtrees rooted at a prim",
+        we mean the most ancestral or tallest subtree that has an authored,
+        non-default opinion.  If the purpose of </RootPrim> is set to 
+        "render", then the effective purpose of </RootPrim/ChildPrim> will
+        be "render" even if that prim has a different authored value for
+        purpose.  <b>See ComputePurpose() for details of how purpose 
+        inherits down namespace</b>.
+        
+        As demonstrated in UsdGeomBBoxCache, a traverser should be ready to 
+        accept combinations of included purposes as an input.
+        
+        Purpose render can be useful in creating "light blocker"
+        geometry for raytracing interior scenes.  Purposes render and
+        proxy can be used together to partition a complicated model
+        into a lightweight proxy representation for interactive use, and a
+        fully realized, potentially quite heavy, representation for rendering.
+        One can use UsdVariantSets to create proxy representations, but doing
+        so requires that we recompose parts of the UsdStage in order to change
+        to a different runtime level of detail, and that does not interact
+        well with the needs of multithreaded rendering. Purpose provides us with
+        a better tool for dynamic, interactive complexity management.'''
+    )
+    float radius = 1 (
+        doc = "Radius of the cylinder."
     )
     float specular = 1 (
         displayName = "Specular Multiplier"

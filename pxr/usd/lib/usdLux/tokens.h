@@ -152,7 +152,7 @@ struct UsdLuxTokensType {
     const TfToken portals;
     /// \brief "radius"
     /// 
-    /// UsdLuxSphereLight, UsdLuxDiskLight
+    /// UsdLuxCylinderLight, UsdLuxSphereLight, UsdLuxDiskLight
     const TfToken radius;
     /// \brief "shadow:color"
     /// 

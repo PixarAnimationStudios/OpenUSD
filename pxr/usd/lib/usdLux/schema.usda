@@ -323,8 +323,7 @@ class DistantLight "DistantLight" (
 class DiskLight "DiskLight" (
     inherits = </Light>
     doc = """Light emitted from one side of a circular disk.
-    The disk is centered in the XY plane and emits light along the -Z axis.
-    The disk has a diameter of 1 unit in local space."""
+    The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
     float radius = 1 (
         doc = "Radius of the disk."
@@ -350,11 +349,19 @@ class RectLight "RectLight" (
 
 class SphereLight "SphereLight" (
     inherits = </Light>
-    doc = """Light emitted outward from a sphere.
-    The sphere has a diameter of 1 unit in local space."""
+    doc = """Light emitted outward from a sphere."""
 ) {
     float radius = 1 (
         doc = "Radius of the sphere."
+    )
+}
+
+class CylinderLight "CylinderLight" (
+    inherits = </Light>
+    doc = """Light emitted outward from a cylinder."""
+) {
+    float radius = 1 (
+        doc = "Radius of the cylinder."
     )
 }
 
