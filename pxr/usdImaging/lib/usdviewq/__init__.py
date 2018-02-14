@@ -150,8 +150,9 @@ class Launcher(object):
 
         parser.add_argument('--complexity', action='store',
                             type=str, default="low", dest='complexity',
-                            choices=["nope"],
-                            help='Set the initial mesh refinement complexity.')
+                            choices=[c.id for c in Complexities.ordered()],
+                            help='Set the initial mesh refinement complexity '
+                                 '(%(default)s).')
 
         parser.add_argument('--quitAfterStartup', action='store_true',
                             dest='quitAfterStartup',
