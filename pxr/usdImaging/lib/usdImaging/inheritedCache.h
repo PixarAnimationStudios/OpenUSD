@@ -573,7 +573,11 @@ struct UsdImaging_MaterialStrategy {
                 return binding;
             }
         }
-        return *owner->_GetValue(prim.GetParent());
+        // query already contains the resolved material binding for the prim. 
+        // Hence, we don't need to inherit the binding from the parent here. 
+        // Futhermore, it may be wrong to inherit the binding from the parent,
+        // because in the new scheme, a child of a bound prim can be unbound.
+        return value_type();
     }
 
     static 
