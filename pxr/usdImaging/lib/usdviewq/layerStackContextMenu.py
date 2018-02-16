@@ -109,7 +109,10 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         # Get layer path from item
         layerPath = getattr(self._item, "layerPath")
         if not layerPath or not os.path.exists(layerPath):
+            print "Error: Could not find layer file."
             return
+
+        layerName = os.path.basename(layerPath) + ".tmp"
 
         usdeditExe = self._FindUsdEdit()
         if not usdeditExe:
@@ -117,7 +120,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
             return
 
         print "Opening file: %s" % layerPath
-        os.system("%s -n %s &" % (usdeditExe, layerPath))
+        os.system("%s -n %s -p %s &" % (usdeditExe, layerPath, layerName))
 
 #
 # Opens the layer using usdview.
