@@ -2836,14 +2836,12 @@ UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
     SdfPath usdPath = GetPathForUsd(materialId);
     std::string source;
 
-    // Hydra calls GetDisplacementShaderSource multiple times, so we need to
-    // use Find not Extract here.
-    if (!_valueCache.FindDisplacementShaderSource(usdPath, &source)) {
+    if (!_valueCache.ExtractDisplacementShaderSource(usdPath, &source)) {
         TF_DEBUG(HD_SAFE_MODE).Msg(
             "WARNING: Slow displacement shader source fetch for %s\n",
             materialId.GetText());
         _UpdateSingleValue(usdPath, HdMaterial::DirtySurfaceShader);
-        TF_VERIFY(_valueCache.FindDisplacementShaderSource(
+        TF_VERIFY(_valueCache.ExtractDisplacementShaderSource(
                   usdPath, &source));
     }
 

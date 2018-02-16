@@ -1300,10 +1300,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     const HdStMaterial *material = static_cast<const HdStMaterial *>(
         renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
     if (material) {
-        const std::string & displacementShader = 
-            material->GetDisplacementShaderSource(sceneDelegate);
-        if (!displacementShader.empty()) {
-            hasCustomDisplacementTerminal = true;
+        HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
+        if (shaderCode) {
+            hasCustomDisplacementTerminal =
+                !(shaderCode->GetSource(HdShaderTokens->geometryShader).empty());
         }
     }
 
