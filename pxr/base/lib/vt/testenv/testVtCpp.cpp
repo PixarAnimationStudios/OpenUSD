@@ -192,29 +192,31 @@ static void testArray() {
     }
 
     {
-        // Test that mutating reserved data doesn't affect copies of an array.
+        // Test that mutating shape data doesn't affect copies of an array.
         VtArray<int> a(4);
-        a._GetReserved()->data[0] = 4;
-        a._GetReserved()->data[1] = 0;
+        a._GetShapeData()->otherDims[0] = 4;
+        a._GetShapeData()->otherDims[1] = 0;
 
         VtArray<int> b = a;
         const auto &ca = a;
         const auto &cb = b;
-        TF_AXIOM(ca._GetReserved()->data[0] == cb._GetReserved()->data[0]);
-        TF_AXIOM(ca._GetReserved()->data[1] == cb._GetReserved()->data[1]);
+        TF_AXIOM(ca._GetShapeData()->otherDims[0] ==
+                 cb._GetShapeData()->otherDims[0]);
+        TF_AXIOM(ca._GetShapeData()->otherDims[1] ==
+                 cb._GetShapeData()->otherDims[1]);
 
-        b._GetReserved()->data[0] = 2;
-        b._GetReserved()->data[1] = 2;
-        b._GetReserved()->data[2] = 0;
+        b._GetShapeData()->otherDims[0] = 2;
+        b._GetShapeData()->otherDims[1] = 2;
+        b._GetShapeData()->otherDims[2] = 0;
 
-        // Check that a's reserved data is unchanged
-        TF_AXIOM(ca._GetReserved()->data[0] == 4);
-        TF_AXIOM(ca._GetReserved()->data[1] == 0);
+        // Check that a's shape data is unchanged
+        TF_AXIOM(ca._GetShapeData()->otherDims[0] == 4);
+        TF_AXIOM(ca._GetShapeData()->otherDims[1] == 0);
 
-        // and that b's reserved data has been updated as expected.
-        TF_AXIOM(cb._GetReserved()->data[0] == 2);
-        TF_AXIOM(cb._GetReserved()->data[1] == 2);
-        TF_AXIOM(cb._GetReserved()->data[2] == 0);
+        // and that b's shape data has been updated as expected.
+        TF_AXIOM(cb._GetShapeData()->otherDims[0] == 2);
+        TF_AXIOM(cb._GetShapeData()->otherDims[1] == 2);
+        TF_AXIOM(cb._GetShapeData()->otherDims[2] == 0);
     }
 }
 

@@ -36,8 +36,9 @@
 
 #include <boost/preprocessor.hpp>
 
-#include <string>
 #include <cstddef>
+#include <cstring>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -177,10 +178,35 @@ VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
 template<typename T>
 T VtZero();
 
-struct Vt_Reserved {
-    static const size_t NumWords = 4;
-    Vt_Reserved() { data[0] = 0; }
-    unsigned int data[NumWords];
+// Shape representation used in VtArray for legacy code.  This is not supported
+// at the pxr level or in usd.  Shape is represented by a total size, plus sized
+// dimensions other than the last.  The size of the last dimension is computed
+// as totalSize / (product-of-other-dimensions).
+struct Vt_ShapeData {
+    unsigned int GetRank() const {
+        return
+            otherDims[0] == 0 ? 1 :
+            otherDims[1] == 0 ? 2 :
+            otherDims[2] == 0 ? 3 : 4;
+    }
+    bool operator==(Vt_ShapeData const &other) const {
+        if (totalSize != other.totalSize)
+            return false;
+        unsigned int thisRank = GetRank(), otherRank = other.GetRank();
+        if (thisRank != otherRank)
+            return false;
+        return std::equal(otherDims, otherDims + GetRank() - 1,
+                          other.otherDims);
+    }
+    bool operator!=(Vt_ShapeData const &other) const {
+        return !(*this == other);
+    }
+    void clear() {
+        memset(this, 0, sizeof(*this));
+    }
+    static const int NumOtherDims = 3;
+    size_t totalSize;
+    unsigned int otherDims[NumOtherDims];
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
