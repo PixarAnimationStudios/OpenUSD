@@ -24,9 +24,11 @@
 #include "GU_PackedUSD.h"
 
 #include "GT_PackedUSD.h"
+#include "GT_Utils.h"
 #include "xformWrapper.h"
 #include "meshWrapper.h"
 #include "pointsWrapper.h"
+#include "primWrapper.h"
 
 #include "UT_Gf.h"
 #include "GU_USD.h"
@@ -150,6 +152,37 @@ GusdGU_PackedUSD::Build(
     impl->m_primPath = primPath;
     impl->m_frame = frame;
     impl->m_usdPrim = prim;
+
+    if( prim && !prim.IsA<UsdGeomBoundable>() )
+    {
+        UsdGeomImageable geom = UsdGeomImageable(prim);
+        std::vector<UsdGeomPrimvar> authoredPrimvars = geom.GetAuthoredPrimvars();
+        GT_DataArrayHandle buffer;
+
+        for( const UsdGeomPrimvar &primvar : authoredPrimvars ) {
+            // This is temporary code, we need to factor the usd read code into GT_Utils.cpp
+            // to avoid duplicates and read for types GfHalf,double,int,string ...
+            GT_DataArrayHandle gtData = GusdPrimWrapper::convertPrimvarData( primvar, frame );
+            const UT_String  name(primvar.GetPrimvarName());
+            const GT_Storage gtStorage = gtData->getStorage();
+            const GT_Size    gtTupleSize = gtData->getTupleSize();
+
+            GA_Attribute *anAttr = detail.addTuple(GT_Util::getGAStorage(gtStorage), GA_ATTRIB_PRIMITIVE, name,
+                                                   gtTupleSize);
+
+            if( const GA_AIFTuple *aIFTuple = anAttr->getAIFTuple()) {
+
+                const float* flatArray = gtData->getF32Array( buffer );
+                aIFTuple->set( anAttr, packedPrim->getMapOffset(), flatArray, gtTupleSize );
+
+            }  else {
+
+                //TF_WARN( "Unsupported primvar type: %s, %s, tupleSize = %zd", 
+                //         GT_String( name ), GTstorage( gtStorage ), gtTupleSize );
+            }
+        }
+    }
+
     if( lod )
     {
 #if HDK_API_VERSION < 16050000
