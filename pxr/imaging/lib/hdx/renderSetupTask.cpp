@@ -120,6 +120,9 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
 {
     _renderPassState->SetOverrideColor(params.overrideColor);
     _renderPassState->SetWireframeColor(params.wireframeColor);
+    _renderPassState->SetPointColor(params.pointColor);
+    _renderPassState->SetPointSize(params.pointSize);
+    _renderPassState->SetPointSelectedSize(params.pointSelectedSize);
     _renderPassState->SetLightingEnabled(params.enableLighting);
     _renderPassState->SetAlphaThreshold(params.alphaThreshold);
     _renderPassState->SetTessLevel(params.tessLevel);
@@ -228,6 +231,9 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
     out << "RenderTask Params: (...) " 
         << pv.overrideColor << " " 
         << pv.wireframeColor << " " 
+        << pv.pointColor << " "
+        << pv.pointSize << " "
+        << pv.pointSelectedSize << " "
         << pv.enableLighting << " "
         << pv.enableIdRender << " "
         << pv.alphaThreshold << " "
@@ -253,24 +259,27 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
 
 bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 
 {
-    return lhs.overrideColor           == rhs.overrideColor           && 
-           lhs.wireframeColor          == rhs.wireframeColor          && 
-           lhs.enableLighting          == rhs.enableLighting          && 
-           lhs.enableIdRender          == rhs.enableIdRender          && 
-           lhs.alphaThreshold          == rhs.alphaThreshold          && 
-           lhs.tessLevel               == rhs.tessLevel               && 
-           lhs.drawingRange            == rhs.drawingRange            && 
-           lhs.enableHardwareShading   == rhs.enableHardwareShading   && 
-           lhs.depthBiasEnable         == rhs.depthBiasEnable         && 
-           lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor && 
-           lhs.depthBiasSlopeFactor    == rhs.depthBiasSlopeFactor    && 
-           lhs.depthFunc               == rhs.depthFunc               && 
-           lhs.cullStyle               == rhs.cullStyle               && 
-           lhs.geomStyle               == rhs.geomStyle               && 
-           lhs.complexity              == rhs.complexity              && 
-           lhs.hullVisibility          == rhs.hullVisibility          && 
-           lhs.surfaceVisibility       == rhs.surfaceVisibility       && 
-           lhs.camera                  == rhs.camera                  && 
+    return lhs.overrideColor           == rhs.overrideColor           &&
+           lhs.wireframeColor          == rhs.wireframeColor          &&
+           lhs.pointColor              == rhs.pointColor              &&
+           lhs.pointSize               == rhs.pointSize               &&
+           lhs.pointSelectedSize       == rhs.pointSelectedSize       &&
+           lhs.enableLighting          == rhs.enableLighting          &&
+           lhs.enableIdRender          == rhs.enableIdRender          &&
+           lhs.alphaThreshold          == rhs.alphaThreshold          &&
+           lhs.tessLevel               == rhs.tessLevel               &&
+           lhs.drawingRange            == rhs.drawingRange            &&
+           lhs.enableHardwareShading   == rhs.enableHardwareShading   &&
+           lhs.depthBiasEnable         == rhs.depthBiasEnable         &&
+           lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor &&
+           lhs.depthBiasSlopeFactor    == rhs.depthBiasSlopeFactor    &&
+           lhs.depthFunc               == rhs.depthFunc               &&
+           lhs.cullStyle               == rhs.cullStyle               &&
+           lhs.geomStyle               == rhs.geomStyle               &&
+           lhs.complexity              == rhs.complexity              &&
+           lhs.hullVisibility          == rhs.hullVisibility          &&
+           lhs.surfaceVisibility       == rhs.surfaceVisibility       &&
+           lhs.camera                  == rhs.camera                  &&
            lhs.viewport                == rhs.viewport                &&
            lhs.renderTags              == rhs.renderTags;
 }

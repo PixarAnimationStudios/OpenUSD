@@ -41,7 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (surfaceShaderSheer)         \
     (surfaceShaderOutline)       \
     (constantColor)              \
-    (hullColor)
+    (hullColor)                  \
+    (pointsColor)
 
 TF_DECLARE_PUBLIC_TOKENS(HdMeshReprDescTokens, HD_API,
         HD_MESH_REPR_DESC_TOKENS);

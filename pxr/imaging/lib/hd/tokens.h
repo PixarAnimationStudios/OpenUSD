@@ -186,6 +186,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (viewport)                                  \
     (vertexShader)                              \
     (wireframeColor)                            \
+    (pointColor)                                \
+    (pointSize)                                 \
+    (pointSelectedSize)                         \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
 

@@ -41,6 +41,9 @@ HdRenderPassState::HdRenderPassState()
     , _cullMatrix(1)
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
+    , _pointSize(3.0)
+    , _pointSelectedSize(3.0)
     , _lightingEnabled(true)
     , _alphaThreshold(0.5f)
     , _tessLevel(32.0)
@@ -113,6 +116,24 @@ void
 HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 {
     _wireframeColor = color;
+}
+
+void
+HdRenderPassState::SetPointColor(GfVec4f const &color)
+{
+    _pointColor = color;
+}
+
+void
+HdRenderPassState::SetPointSize(float size)
+{
+    _pointSize = size;
+}
+
+void
+HdRenderPassState::SetPointSelectedSize(float size)
+{
+    _pointSelectedSize = size;
 }
 
 void

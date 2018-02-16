@@ -113,6 +113,15 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
             HdShaderTokens->wireframeColor,
             HdTupleType{HdTypeFloatVec4, 1});
         bufferSpecs.emplace_back(
+            HdShaderTokens->pointColor,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->pointSize,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->pointSelectedSize,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
             HdShaderTokens->lightingBlendAmount,
             HdTupleType{HdTypeFloat, 1});
         bufferSpecs.emplace_back(
@@ -167,6 +176,15 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
     sources.push_back(HdBufferSourceSharedPtr(
                           new HdVtBufferSource(HdShaderTokens->wireframeColor,
                                                VtValue(_wireframeColor))));
+    sources.push_back(HdBufferSourceSharedPtr(
+                          new HdVtBufferSource(HdShaderTokens->pointColor,
+                                               VtValue(_pointColor))));
+    sources.push_back(HdBufferSourceSharedPtr(
+                          new HdVtBufferSource(HdShaderTokens->pointSize,
+                                               VtValue(_pointSize))));
+    sources.push_back(HdBufferSourceSharedPtr(
+                          new HdVtBufferSource(HdShaderTokens->pointSelectedSize,
+                                               VtValue(_pointSelectedSize))));
 
     sources.push_back(HdBufferSourceSharedPtr(
                        new HdVtBufferSource(HdShaderTokens->lightingBlendAmount,
