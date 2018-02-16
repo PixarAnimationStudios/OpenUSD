@@ -82,6 +82,11 @@ else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
 
+# Set plugin path environment variable name
+if (PXR_PLUGINPATH_NAME)
+    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -DPXR_PLUGINPATH_NAME=${PXR_PLUGINPATH_NAME}")
+endif()
+
 # XXX: This is a workaround for an issue in which Python headers unequivocally
 # redefine macros defined in standard library headers. This behavior 
 # prevents users from running strict builds with PXR_STRICT_BUILD_MODE
