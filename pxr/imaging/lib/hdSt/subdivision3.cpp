@@ -650,14 +650,13 @@ HdSt_Osd3IndexComputation::_CreatePtexFaceToCoarseFaceInfoMapping(
     
     for (int faceId = 0, v = 0; faceId < numAuthoredFaces; ++faceId) {
         int nv = numVertsPtr[faceId];
-        if (nv < 3) continue; // skip degenerate faces
 
         // hole faces shouldn't affect ptex id, i.e., ptex face id's are
         // assigned for hole faces.
         // note: this is inconsistent with quadrangulation 
         // (HdMeshUtil::ComputeQuadIndices), but consistent with OpenSubdiv 3.x
         // (see ptexIndices.cpp)
-        
+
         if (v+nv > numVertIndices) break;
 
         if (nv == regFaceSize) {
@@ -679,6 +678,15 @@ HdSt_Osd3IndexComputation::_CreatePtexFaceToCoarseFaceInfoMapping(
 
             info.coarseEdgeIds = coarseEdgeIds;
             result->push_back(info);
+        } else if (nv <= 2) {
+            // Handling degenerated faces
+            int numPtexFaces = (regFaceSize == 4)? nv : nv - 2;
+            for (int f = 0; f < numPtexFaces; ++f) {
+                PtexFaceInfo info;
+                info.coarseFaceId = faceId;
+                info.coarseEdgeIds = GfVec4i(-1,-1,-1,-1);
+                result->push_back(info);
+            }
         } else {
             // if we expect quad faces, non-quad n-gons are quadrangulated into
             // n-quads
@@ -749,7 +757,6 @@ HdSt_Osd3IndexComputation::_PopulateUniformPrimitiveBuffer(
             patchTable->GetPatchParamTable()[i];
         
         int ptexIndex = patchParam.GetFaceId();
-        //int faceIndex = ptexIndexToFaceIndexMapping[ptexIndex];
         PtexFaceInfo const& info = ptexIndexToCoarseFaceInfoMapping[ptexIndex];
         int faceIndex = info.coarseFaceId;
 
