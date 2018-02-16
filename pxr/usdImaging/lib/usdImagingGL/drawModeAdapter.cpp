@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImagingGL/drawModeAdapter.h"
 #include "pxr/usdImaging/usdImagingGL/package.h"
+#include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -931,6 +932,24 @@ UsdImagingGLDrawModeAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time)
     HD_TRACE_FUNCTION();
     // PERFORMANCE: Make this more efficient, see http://bug/90497
     return UsdGeomImageable(prim).ComputePurpose();
+}
+
+
+HdTextureResource::ID
+UsdImagingGLDrawModeAdapter::GetTextureResourceID(UsdPrim const& usdPrim,
+                                                       SdfPath const &id,
+                                                       UsdTimeCode time,
+                                                       size_t salt) const
+{
+    return UsdImagingGL_GetTextureResourceID(usdPrim, id, time, salt);
+}
+
+HdTextureResourceSharedPtr
+UsdImagingGLDrawModeAdapter::GetTextureResource(UsdPrim const& usdPrim,
+                                                     SdfPath const &id,
+                                                     UsdTimeCode time) const
+{
+    return UsdImagingGL_GetTextureResource(usdPrim, id, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -10,8 +10,6 @@ pxr_library(usdImaging
         tracelite
         vt
         work
-        garch
-        glf
         hd
         hdx
         pxOsd

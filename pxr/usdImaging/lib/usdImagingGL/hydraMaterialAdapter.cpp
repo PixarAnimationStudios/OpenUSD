@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImagingGL/hydraMaterialAdapter.h"
+#include "pxr/usdImaging/usdImagingGL/textureUtils.h"
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -671,6 +672,23 @@ UsdImagingGLHydraMaterialAdapter::_GetSurfaceShaderTextures(UsdPrim const &prim)
     }
 
     return textureIDs;
+}
+
+HdTextureResource::ID
+UsdImagingGLHydraMaterialAdapter::GetTextureResourceID(UsdPrim const& usdPrim,
+                                                       SdfPath const &id,
+                                                       UsdTimeCode time,
+                                                       size_t salt) const
+{
+    return UsdImagingGL_GetTextureResourceID(usdPrim, id, time, salt);
+}
+
+HdTextureResourceSharedPtr
+UsdImagingGLHydraMaterialAdapter::GetTextureResource(UsdPrim const& usdPrim,
+                                                     SdfPath const &id,
+                                                     UsdTimeCode time) const
+{
+    return UsdImagingGL_GetTextureResource(usdPrim, id, time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

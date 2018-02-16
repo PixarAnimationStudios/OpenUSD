@@ -113,6 +113,16 @@ public:
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index);
 
+    // ---------------------------------------------------------------------- //
+    /// \name Texture resources
+    // ---------------------------------------------------------------------- //
+
+    virtual HdTextureResource::ID
+    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time, size_t salt) const override;
+
+    virtual HdTextureResourceSharedPtr
+    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id, UsdTimeCode time) const override;
+
 protected:
     USDIMAGINGGL_API
     virtual void _RemovePrim(SdfPath const& cachePath,

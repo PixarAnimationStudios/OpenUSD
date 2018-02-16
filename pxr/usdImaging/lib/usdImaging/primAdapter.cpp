@@ -215,6 +215,22 @@ UsdImagingPrimAdapter::PopulateSelection(HdxSelectionHighlightMode const& mode,
     return true;
 }
 
+HdTextureResource::ID
+UsdImagingPrimAdapter::GetTextureResourceID(UsdPrim const& usdPrim,
+                                            SdfPath const &id,
+                                            UsdTimeCode time,
+                                            size_t salt) const
+{
+    return HdTextureResource::ID(-1);
+}
+
+HdTextureResourceSharedPtr
+UsdImagingPrimAdapter::GetTextureResource(UsdPrim const& usdPrim,
+                                          SdfPath const &id,
+                                          UsdTimeCode time) const
+{
+    return nullptr;
+}
 
 void
 UsdImagingPrimAdapter::SetDelegate(UsdImagingDelegate* delegate)

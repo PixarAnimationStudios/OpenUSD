@@ -31,6 +31,7 @@
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
@@ -263,6 +264,20 @@ public:
                                    SdfPath const &usdPath,
                                    VtIntArray const &instanceIndices,
                                    HdxSelectionSharedPtr const &result);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Texture resources
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual HdTextureResource::ID
+    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id,
+                         UsdTimeCode time, size_t salt) const;
+
+    USDIMAGING_API
+    virtual HdTextureResourceSharedPtr
+    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id,
+                       UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 
