@@ -1879,11 +1879,22 @@ HdSt_CodeGen::_GenerateElementPrimVar()
 
         // Primitive EdgeID getter
         if (_geometricShader->IsPrimTypePoints()) {
-            // we get here only if we're rendering a mesh using a points repr.
-            // edge picking doesn't make sense, so emit the default
+            // we get here only if we're rendering a mesh with the edgeIndices
+            // binding and using a points repr. since there is no GS stage, we
+            // generate fallback versions.
+            // note: this scenario can't be handled in meshShaderKey, since it
+            // doesn't know whether an edgeIndices binding exists.
             accessors
                 << "int GetPrimitiveEdgeId() {\n"
                 << "  return -1;\n"
+                << "}\n";
+            accessors
+                << "bool IsFragmentOnEdge() {\n"
+                << "  return false;\n"
+                << "}\n";
+            accessors
+                << "bool IsFragmentOnPoint() {\n"
+                << "  return false;\n"
                 << "}\n";
         }
         else if (_geometricShader->IsPrimTypeBasisCurves()) {
@@ -1893,37 +1904,12 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                              "basis curve");
         }
         else if (_geometricShader->IsPrimTypeMesh()) {
-            switch (_geometricShader->GetPrimitiveType()) {
-                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-                {
-                    // GetTriangleEdgeId is defined in edgeId.glslfx
-                    declarations
-                        << "int GetTriangleEdgeId();\n";
-                    accessors
-                        << "int GetPrimitiveEdgeId() {\n"
-                        << "  return GetTriangleEdgeId();\n"
-                        << "}\n";
-                    break;
-                }
-
-                default: // all other cases
-                {
-                    // GetQuadEdgeId is defined in edgeId.glslfx
-                    declarations
-                        << "int GetQuadEdgeId();\n";
-                    accessors
-                        << "int GetPrimitiveEdgeId() {\n"
-                        << "  return GetQuadEdgeId();\n"
-                        << "}\n";
-                    break;
-                }
-
-            }
+            // nothing to do. meshShaderKey takes care of it.
         }
     } else {
-        // Both the getters below are used in picking (id render) and selection
-        // highlighting, and we need to define them for the cases where edgeid
-        // doesn't make sense
+        // The functions below are used in picking (id render) and selection
+        // highlighting, and are expected to be defined. Generate fallback
+        // versions when we don't bind an edgeIndices buffer.
         accessors
             << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
             << "  return -1;\n"
@@ -1933,10 +1919,22 @@ HdSt_CodeGen::_GenerateElementPrimVar()
             << "int GetPrimitiveEdgeId() {\n"
             << "  return -1;\n"
             << "}\n";
+
+        accessors
+            << "bool IsFragmentOnEdge() {\n"
+            << "return false;\n"
+            << "}\n";
+
+        accessors
+            << "bool IsFragmentOnPoint() {\n"
+            << "return false;\n"
+            << "}\n";
     }
     declarations
         << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
-        << "int GetPrimitiveEdgeId();\n";
+        << "int GetPrimitiveEdgeId();\n"
+        << "bool IsFragmentOnEdge();\n"
+        << "bool IsFragmentOnPoint();\n";
 
     // Uniform primvar data declarations & accessors
     TF_FOR_ALL (it, _metaData.elementData) {
