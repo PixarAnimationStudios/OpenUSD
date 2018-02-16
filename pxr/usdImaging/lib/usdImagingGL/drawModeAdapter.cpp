@@ -380,8 +380,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {
-        valueCache->GetMaterialId(cachePath) =
-            cachePath.GetPrimPath().AppendProperty(_tokens->material);
+        SdfPath materialPath = prim.GetPath().AppendProperty(_tokens->material);
+        valueCache->GetMaterialId(cachePath) = materialPath;
     }
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
