@@ -45,6 +45,7 @@
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/vt/array.h"

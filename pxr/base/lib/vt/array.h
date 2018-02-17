@@ -36,14 +36,9 @@
 
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
-#include "pxr/base/tf/stringUtils.h"
 
-#include <boost/operators.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/preprocessor.hpp>
-#include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 
@@ -51,9 +46,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <memory>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
