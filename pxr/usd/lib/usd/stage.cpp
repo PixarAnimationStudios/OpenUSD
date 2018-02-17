@@ -2183,10 +2183,12 @@ UsdStage::FindLoadable(const SdfPath& rootPath)
 void
 UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 {
-    // For now just set the mask and recompose everything at the Usd level.
+    // For now just set the mask and recompose everything.
     _populationMask = mask;
-    SdfPathSet absRoot = { SdfPath::AbsoluteRootPath() };
-    _Recompose(PcpChanges(), &absRoot);
+
+    PcpChanges changes;
+    changes.DidChangeSignificantly(_cache.get(), SdfPath::AbsoluteRootPath());
+    _Recompose(changes, nullptr);
 }
 
 void
