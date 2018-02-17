@@ -207,7 +207,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(query.IsPathIncluded(cube.GetPath()))
 
     def test_testReadCollection(self):
-        leafGeom = Usd.CollectionAPI.GetCollection(testPrim, "leafGeom")
+        leafGeom = Usd.CollectionAPI(testPrim, "leafGeom")
         (valid, reason) = leafGeom.Validate()
         self.assertTrue(valid)
 
@@ -248,7 +248,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.expandPrims)
 
-        allGeom = Usd.CollectionAPI.GetCollection(testPrim, "allGeom")
+        allGeom = Usd.CollectionAPI(testPrim, "allGeom")
         (valid, reason) = allGeom.Validate()
         allGeomMquery = allGeom.ComputeMembershipQuery()
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
@@ -259,14 +259,13 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 allGeomMquery,stage,
                 predicate=Usd.TraverseInstanceProxies())), 11)
     
-        allGeomProperties = Usd.CollectionAPI.GetCollection(testPrim, 
-                                                  "allGeomProperties")
+        allGeomProperties = Usd.CollectionAPI(testPrim, "allGeomProperties")
         (valid, reason) = allGeomProperties.Validate()
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
                 allGeomPropertiesMquery, stage)), 27)
 
-        hasRels = Usd.CollectionAPI.GetCollection(testPrim, "hasRelationships")
+        hasRels = Usd.CollectionAPI(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
         self.assertTrue(valid)
         hasRelsMquery = hasRels.ComputeMembershipQuery()
@@ -274,8 +273,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         for obj in incObjects: 
             self.assertTrue(isinstance(obj, Usd.Property))
 
-        hasInstanceProxy = Usd.CollectionAPI.GetCollection(testPrim, 
-            "hasInstanceProxy")
+        hasInstanceProxy = Usd.CollectionAPI(testPrim, "hasInstanceProxy")
         (valid, reason) = hasInstanceProxy.Validate()
         self.assertTrue(valid)
         hasInstanceProxyMquery = hasInstanceProxy.ComputeMembershipQuery()
@@ -286,8 +284,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(obj.IsInstanceProxy())
             self.assertFalse(obj.IsInMaster())
         
-        coneProperties = Usd.CollectionAPI.GetCollection(testPrim, 
-                "coneProperties")
+        coneProperties = Usd.CollectionAPI(testPrim, "coneProperties")
         (valid, reason) = coneProperties.Validate()
         self.assertTrue(valid)
         conePropertiesMquery = coneProperties.ComputeMembershipQuery()
@@ -298,8 +295,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(isinstance(obj, Usd.Property))
 
 
-        includesCollection = Usd.CollectionAPI.GetCollection(testPrim, 
-                "includesCollection")
+        includesCollection = Usd.CollectionAPI(testPrim, "includesCollection")
         (valid, reason) = includesCollection.Validate()
         self.assertTrue(valid)
         includesCollectionMquery = includesCollection.ComputeMembershipQuery()
@@ -308,8 +304,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(hemiSphere2 in incObjects)
         self.assertTrue(hemiSphere1 not in incObjects)
 
-        excludeInstanceGeom = Usd.CollectionAPI.GetCollection(testPrim, 
-                "excludeInstanceGeom")
+        excludeInstanceGeom = Usd.CollectionAPI(testPrim, "excludeInstanceGeom")
         (valid, reason) = excludeInstanceGeom.Validate()
         self.assertTrue(valid)
         excludeInstanceGeomMquery = excludeInstanceGeom.ComputeMembershipQuery()
@@ -328,7 +323,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             "invalidExcludesExpandPrims"]
 
         for collName in invalidCollectionNames:
-            coll = Usd.CollectionAPI.GetCollection(testPrim, collName)
+            coll = Usd.CollectionAPI(testPrim, collName)
             (valid, reason) = coll.Validate()
             self.assertFalse(valid)
             self.assertTrue(len(reason) > 0)

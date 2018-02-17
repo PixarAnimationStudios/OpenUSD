@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "./api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "./tokens.h"
@@ -53,7 +53,7 @@ class SdfAssetPath;
 /// \class UsdSchemaExamplesParamsAPI
 ///
 ///
-class UsdSchemaExamplesParamsAPI : public UsdSchemaBase
+class UsdSchemaExamplesParamsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -72,7 +72,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSchemaExamplesParamsAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -80,7 +80,7 @@ public:
     /// Should be preferred over UsdSchemaExamplesParamsAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSchemaExamplesParamsAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -108,6 +108,22 @@ public:
     static UsdSchemaExamplesParamsAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
+
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "ParamsAPI" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid UsdSchemaExamplesParamsAPI object is returned upon success. 
+    /// An invalid (or empty) UsdSchemaExamplesParamsAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
+    /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
+    ///
+    USDSCHEMAEXAMPLES_API
+    static UsdSchemaExamplesParamsAPI 
+    Apply(const UsdPrim &prim);
 
 private:
     // needs to invoke _GetStaticTfType.

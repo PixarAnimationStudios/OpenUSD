@@ -300,9 +300,13 @@ class ClassInfo(object):
             (parentUsdName, parentClassName,
              self.parentCppClassName, self.parentBaseFileName) = \
              _ExtractNames(parentPrim, parentCustomData)
-        else:
+        elif self.cppClassName == "UsdTyped" or \
+             self.cppClassName == 'UsdAPISchemaBase':
             self.parentCppClassName = "UsdSchemaBase"
             self.parentBaseFileName = "schemaBase"
+        else:
+            self.parentCppClassName = "UsdAPISchemaBase"
+            self.parentBaseFileName = "apiSchemaBase"
 
         # Extra Class Metadata
         self.doc = _SanitizeDoc(sdfPrim.documentation, '\n/// ')
@@ -335,7 +339,8 @@ class ClassInfo(object):
                                      'Typed(IsA), or neither inherit typed '
                                      'nor provide a typename(API).'))
         
-        if self.isApi and not sdfPrim.path.name.endswith('API'):
+        if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
+            not sdfPrim.path.name.endswith('API'):
             raise Exception(errorMsg('API schemas must named with an API suffix.'))
 
         if not self.isApi and self.isMultipleApply:

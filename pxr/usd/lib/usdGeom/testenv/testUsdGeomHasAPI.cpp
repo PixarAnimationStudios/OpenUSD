@@ -40,14 +40,14 @@ TestHasAPI()
     
     // Valid cases
     assert(!prim.HasAPI<UsdGeomMotionAPI>());
-    UsdGeomMotionAPI::Apply(stage, path);
+    UsdGeomMotionAPI::Apply(prim);
     assert(prim.HasAPI<UsdGeomMotionAPI>());
 
     // Ensure both UsdModelAPI and UsdGeomModelAPI get picked up
     // as we check for derived schema classes
     assert(!prim.HasAPI<UsdGeomModelAPI>());
     assert(!prim.HasAPI<UsdModelAPI>());
-    UsdGeomModelAPI::Apply(stage, path);
+    UsdGeomModelAPI::Apply(prim);
     assert(prim.HasAPI<UsdGeomModelAPI>());
     assert(prim.HasAPI<UsdModelAPI>());
 

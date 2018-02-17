@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "usdKatana/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "usdKatana/tokens.h"
@@ -54,7 +54,7 @@ class SdfAssetPath;
 ///
 /// Katana-specific extensions of UsdShadeMaterial.
 ///
-class UsdKatanaLookAPI : public UsdSchemaBase
+class UsdKatanaLookAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -73,7 +73,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdKatanaLookAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -81,7 +81,7 @@ public:
     /// Should be preferred over UsdKatanaLookAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdKatanaLookAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -110,15 +110,21 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "LookAPI" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid UsdKatanaLookAPI object is returned upon success. 
+    /// An invalid (or empty) UsdKatanaLookAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     USDKATANA_API
     static UsdKatanaLookAPI 
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
 
 private:
     // needs to invoke _GetStaticTfType.

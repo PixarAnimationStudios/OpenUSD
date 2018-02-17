@@ -169,40 +169,54 @@ private:
 {% endif %}
 {% if cls.isApi and not cls.isMultipleApply %}
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "{{ cls.primName }}" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid {{ cls.cppClassName }} object is returned upon success. 
+    /// An invalid (or empty) {{ cls.cppClassName }} object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     {% if useExportAPI and not cls.isPrivateApply -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
 {% if cls.isPrivateApply %}
-    _Apply(const UsdStagePtr &stage, const SdfPath &path);
+    _Apply(const UsdPrim &prim);
 {% else %}
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
 {% endif %}
 {% endif %}
 {% if cls.isApi and cls.isMultipleApply %}
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget along with the supplied \p name. This information 
-    /// is stored in the apiSchemas metadata on prims.  
-    /// Given a schema, FooAPI, and a name bar, the token stored
-    /// in the apiSchemas metadata would be 'FooAPI:bar'
-    ///
+    /// Applies this <b>multiple-apply</b> API schema to the given \p prim 
+    /// along with the given instance name, \p name. 
+    /// 
+    /// This information is stored by adding "{{ cls.primName }}:<i>name</i>" 
+    /// to the token-valued, listOp metadata \em apiSchemas on the prim.
+    /// For example, if \p name is 'instance1', the token 
+    /// '{{ cls.primName }}:instance1' is added to 'apiSchemas'.
+    /// 
+    /// \return A valid {{ cls.cppClassName }} object is returned upon success. 
+    /// An invalid (or empty) {{ cls.cppClassName }} object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_MultipleApplyAPISchema() for 
+    /// conditions resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     {% if useExportAPI and not cls.isPrivateApply -%}
     {{ Upper(libraryName) }}_API
     {% endif -%}
     static {{ cls.cppClassName }} 
 {% if cls.isPrivateApply %}
-    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+    _Apply(const UsdPrim &prim, const TfToken &name);
 {% else %}
-    Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+    Apply(const UsdPrim &prim, const TfToken &name);
 {% endif %}
 {% endif %}
 

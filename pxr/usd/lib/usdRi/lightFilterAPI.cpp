@@ -35,9 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdRiLightFilterAPI,
-        TfType::Bases< UsdSchemaBase > >();
+        TfType::Bases< UsdAPISchemaBase > >();
     
 }
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _schemaTokens,
+    (RiLightFilterAPI)
+);
 
 /* virtual */
 UsdRiLightFilterAPI::~UsdRiLightFilterAPI()
@@ -58,51 +63,10 @@ UsdRiLightFilterAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* static */
 UsdRiLightFilterAPI
-UsdRiLightFilterAPI::Apply(const UsdStagePtr &stage, const SdfPath &path)
+UsdRiLightFilterAPI::Apply(const UsdPrim &prim)
 {
-    // Ensure we have a valid stage, path and prim
-    if (!stage) {
-        TF_CODING_ERROR("Invalid stage");
-        return UsdRiLightFilterAPI();
-    }
-
-    if (path == SdfPath::AbsoluteRootPath()) {
-        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
-        return UsdRiLightFilterAPI();
-    }
-
-    auto prim = stage->GetPrimAtPath(path);
-    if (!prim) {
-        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
-        return UsdRiLightFilterAPI();
-    }
-
-    TfToken apiName("RiLightFilterAPI");  
-
-    // Get the current listop at the edit target
-    UsdEditTarget editTarget = stage->GetEditTarget();
-    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
-    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
-                                    .UncheckedGet<SdfTokenListOp>();
-
-    // Append our name to the prepend list, if it doesnt exist locally
-    TfTokenVector prepends = listOp.GetPrependedItems();
-    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
-        return UsdRiLightFilterAPI();
-    }
-
-    SdfTokenListOp prependListOp;
-    prepends.push_back(apiName);
-    prependListOp.SetPrependedItems(prepends);
-    auto result = listOp.ApplyOperations(prependListOp);
-    if (!result) {
-        TF_CODING_ERROR("Failed to prepend api name to current listop.");
-        return UsdRiLightFilterAPI();
-    }
-
-    // Set the listop at the current edit target and return the API prim
-    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
-    return UsdRiLightFilterAPI(prim);
+    return UsdAPISchemaBase::_ApplyAPISchema<UsdRiLightFilterAPI>(
+            prim, _schemaTokens->RiLightFilterAPI);
 }
 
 /* static */
@@ -274,7 +238,7 @@ UsdRiLightFilterAPI::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdSchemaBase::GetSchemaAttributeNames(true),
+            UsdAPISchemaBase::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -124,7 +124,7 @@ class SdfAssetPath;
 /// \snippet examples.cpp ApplyCollections
 /// 
 ///
-class UsdCollectionAPI : public UsdSchemaBase
+class UsdCollectionAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -143,7 +143,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdCollectionAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -151,7 +151,7 @@ public:
     /// Should be preferred over UsdCollectionAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdCollectionAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -181,16 +181,24 @@ public:
 
 private:
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget along with the supplied \p name. This information 
-    /// is stored in the apiSchemas metadata on prims.  
-    /// Given a schema, FooAPI, and a name bar, the token stored
-    /// in the apiSchemas metadata would be 'FooAPI:bar'
-    ///
+    /// Applies this <b>multiple-apply</b> API schema to the given \p prim 
+    /// along with the given instance name, \p name. 
+    /// 
+    /// This information is stored by adding "CollectionAPI:<i>name</i>" 
+    /// to the token-valued, listOp metadata \em apiSchemas on the prim.
+    /// For example, if \p name is 'instance1', the token 
+    /// 'CollectionAPI:instance1' is added to 'apiSchemas'.
+    /// 
+    /// \return A valid UsdCollectionAPI object is returned upon success. 
+    /// An invalid (or empty) UsdCollectionAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_MultipleApplyAPISchema() for 
+    /// conditions resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     static UsdCollectionAPI 
-    _Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name);
+    _Apply(const UsdPrim &prim, const TfToken &name);
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -217,6 +225,17 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
 public:
+    /// Constructor to initialize a UsdCollectionAPI object for a collection 
+    /// named \p name on the prim, \p prim.
+    /// This does not create the collection by instantiating the 'expansionRule'
+    /// property. If the collection already exists, it's properties are not 
+    /// modified. Use ApplyCollection() to create a collection on a prim.
+    UsdCollectionAPI(const UsdPrim& prim, 
+                     const TfToken &name) :
+        UsdAPISchemaBase(prim),
+        _name(name)
+    { }
+
     /// Adds a new collection named \p name on the given prim, \p prim with the 
     /// specified expansion-rule, \p expansionRule.
     /// 
@@ -234,10 +253,6 @@ public:
         const TfToken &name, 
         const TfToken &expansionRule=UsdTokens->expandPrims);
 
-    /// Returns the collection named, \p name on the given prim, \p prim.
-    USD_API
-    static UsdCollectionAPI GetCollection(const UsdPrim &prim, const TfToken &name);
-
     /// Returns the collection represented by the given collection path, 
     /// \p collectionPath on the given USD stage.
     USD_API
@@ -251,9 +266,8 @@ public:
     /// Returns whether the collection is valid. A collection is said to be 
     /// valid if it has a non-empty name and has a valid "expansionRule" 
     /// attribute.
-    explicit operator bool() {
-        return !_name.IsEmpty() && _GetExpansionRuleAttr();
-    }
+    USD_API
+    explicit operator bool() const;
 
     /// Represents a flattened view of a collection. An object of this class 
     /// is computed by calling UsdCollectionAPI::ComputeMembershipQuery() on a 
@@ -533,19 +547,7 @@ public:
     bool BlockCollection() const;
 
 private:
-    // Constructor for creating a collection with the given name on \p prim 
-    // with the given \p expansionRule.
-    UsdCollectionAPI(const UsdPrim& prim, 
-                     const TfToken &name, 
-                     const TfToken &expansionRule);
-    
-    // Constructor to initialize a UsdCollectionAPI object for an already 
-    // existing collection.
-    UsdCollectionAPI(const UsdPrim& prim, 
-                     const TfToken &name);
-
     // Returns the collection:<name>:expansionRule attribute of the collection.
-    USD_API
     UsdAttribute _GetExpansionRuleAttr(bool create=false) const;
 
     // Returns the collection:<name>:includes relationship.

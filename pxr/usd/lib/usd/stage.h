@@ -2029,6 +2029,7 @@ private:
     
     bool _isClosingStage;
 
+    friend class UsdAPISchemaBase;
     friend class UsdAttribute;
     friend class UsdAttributeQuery;
     friend class UsdEditTarget;

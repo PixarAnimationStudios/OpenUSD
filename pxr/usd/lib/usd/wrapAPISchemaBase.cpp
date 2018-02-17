@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "{{ libraryPath }}/{{ cls.GetHeaderFile() }}"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -38,38 +38,25 @@
 
 using namespace boost::python;
 
-{% if useExportAPI %}
-{{ namespaceUsing }}
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-{% endif %}
 #define WRAP_CUSTOM                                                     \
     template <class Cls> static void _CustomWrapCode(Cls &_class)
 
 // fwd decl.
 WRAP_CUSTOM;
 
-{% for attrName in cls.attrOrder -%}
-{% set attr = cls.attrs[attrName] %}        
-static UsdAttribute
-_Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.Create{{ Proper(attr.apiName) }}Attr(
-        UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
-}
-{% endfor %}
-{% if useExportAPI %}
 
 } // anonymous namespace
-{% endif %}
 
-void wrap{{ cls.cppClassName }}()
+void wrapUsdAPISchemaBase()
 {
-    typedef {{ cls.cppClassName }} This;
+    typedef UsdAPISchemaBase This;
 
-    class_<This, bases<{{ cls.parentCppClassName }}> >
-        cls("{{ cls.className }}");
+    class_<This, bases<UsdSchemaBase> >
+        cls("APISchemaBase");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -78,21 +65,6 @@ void wrap{{ cls.cppClassName }}()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
-{% if cls.isConcrete %}
-
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
-{% endif %}
-{% if cls.isApi and not cls.isMultipleApply and not cls.isPrivateApply %}
-
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
-{% endif %}
-{% if cls.isApi and cls.isMultipleApply and not cls.isPrivateApply %}
-
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
-{% endif %}
 
         .def("IsConcrete",
             static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
@@ -114,23 +86,7 @@ void wrap{{ cls.cppClassName }}()
 
         .def(!self)
 
-{% for attrName in cls.attrOrder -%}
-{% set attr = cls.attrs[attrName] %}        
-        .def("Get{{ Proper(attr.apiName) }}Attr",
-             &This::Get{{ Proper(attr.apiName) }}Attr)
-        .def("Create{{ Proper(attr.apiName) }}Attr",
-             &_Create{{ Proper(attr.apiName) }}Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-{% endfor %}
 
-{% for relName in cls.relOrder -%}
-{% set rel = cls.rels[relName] %}        
-        .def("Get{{ Proper(rel.apiName) }}Rel",
-             &This::Get{{ Proper(rel.apiName) }}Rel)
-        .def("Create{{ Proper(rel.apiName) }}Rel",
-             &This::Create{{ Proper(rel.apiName) }}Rel)
-{% endfor %}
     ;
 
     _CustomWrapCode(cls);
@@ -148,12 +104,16 @@ void wrap{{ cls.cppClassName }}()
 // }
 //
 // Of course any other ancillary or support code may be provided.
-{% if useExportAPI %}
 // 
 // Just remember to wrap code in the appropriate delimiters:
 // 'namespace {', '}'.
 //
-{% endif %}
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+namespace {
+
+WRAP_CUSTOM {
+}
+
+}

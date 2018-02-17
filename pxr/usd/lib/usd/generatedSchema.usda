@@ -3,6 +3,25 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
+class "APISchemaBase" (
+    doc = """The base class for all API schemas.
+
+    An API schema provides an interface to a prim's qualities, but does not
+    specify a typeName for the underlying prim. The prim's qualities include 
+    its inheritance structure, attributes, relationships etc. Since it cannot
+    provide a typeName, an API schema is considered to be non-concrete. 
+    
+    To auto-generate an API schema using usdGenSchema, simply leave the 
+    typeName empty and don't add an inherits for it. See UsdModelAPI and 
+    UsdCollectionAPI for examples.
+    
+    UsdAPISchemaBase implements methods that are used to record the application
+    of an API schema on a USD prim.
+    """
+)
+{
+}
+
 class "ModelAPI" (
     doc = """UsdModelAPI is an API schema that provides an interface to a prim's
     model qualities, if it does, in fact, represent the root prim of a model.

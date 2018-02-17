@@ -35,9 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdCollectionAPI,
-        TfType::Bases< UsdSchemaBase > >();
+        TfType::Bases< UsdAPISchemaBase > >();
     
 }
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _schemaTokens,
+    (CollectionAPI)
+);
 
 /* virtual */
 UsdCollectionAPI::~UsdCollectionAPI()
@@ -58,53 +63,10 @@ UsdCollectionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* static */
 UsdCollectionAPI
-UsdCollectionAPI::_Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
+UsdCollectionAPI::_Apply(const UsdPrim &prim, const TfToken &name)
 {
-    // Ensure we have a valid stage, path and prim
-    if (!stage) {
-        TF_CODING_ERROR("Invalid stage");
-        return UsdCollectionAPI();
-    }
-
-    if (path == SdfPath::AbsoluteRootPath()) {
-        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
-        return UsdCollectionAPI();
-    }
-
-    auto prim = stage->GetPrimAtPath(path);
-    if (!prim) {
-        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
-        return UsdCollectionAPI();
-    }
-
-    TfToken apiName(std::string("CollectionAPI") 
-                    + std::string(":") 
-                    + name.GetString());
-
-    // Get the current listop at the edit target
-    UsdEditTarget editTarget = stage->GetEditTarget();
-    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
-    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
-                                    .UncheckedGet<SdfTokenListOp>();
-
-    // Append our name to the prepend list, if it doesnt exist locally
-    TfTokenVector prepends = listOp.GetPrependedItems();
-    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
-        return UsdCollectionAPI();
-    }
-
-    SdfTokenListOp prependListOp;
-    prepends.push_back(apiName);
-    prependListOp.SetPrependedItems(prepends);
-    auto result = listOp.ApplyOperations(prependListOp);
-    if (!result) {
-        TF_CODING_ERROR("Failed to prepend api name to current listop.");
-        return UsdCollectionAPI();
-    }
-
-    // Set the listop at the current edit target and return the API prim
-    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
-    return UsdCollectionAPI(prim);
+    return UsdAPISchemaBase::_MultipleApplyAPISchema<UsdCollectionAPI>(
+            prim, _schemaTokens->CollectionAPI, name);
 }
 
 /* static */
@@ -136,7 +98,7 @@ UsdCollectionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdSchemaBase::GetSchemaAttributeNames(true);
+        UsdAPISchemaBase::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
@@ -167,6 +129,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (excludes)
 );
 
+UsdCollectionAPI::operator bool() const
+{
+    return !_name.IsEmpty() && _GetExpansionRuleAttr();
+}
+
 /* static */
 UsdCollectionAPI 
 UsdCollectionAPI::ApplyCollection(
@@ -184,18 +151,9 @@ UsdCollectionAPI::ApplyCollection(
         return UsdCollectionAPI();
     }
 
-    UsdCollectionAPI::_Apply(prim.GetStage(), prim.GetPath(), name);
-    
-    return UsdCollectionAPI(prim, name, expansionRule);
-}
-
-/* static */
-UsdCollectionAPI 
-UsdCollectionAPI::GetCollection(
-    const UsdPrim &prim, 
-    const TfToken &name)
-{
-    return UsdCollectionAPI(prim, name);
+    UsdCollectionAPI collection = UsdCollectionAPI::_Apply(prim, name);
+    collection.CreateExpansionRuleAttr(VtValue(expansionRule));
+    return collection;
 }
 
 /* static */
@@ -210,8 +168,8 @@ UsdCollectionAPI::GetCollection(const UsdStagePtr &stage,
         return UsdCollectionAPI();
     }
 
-    return GetCollection(stage->GetPrimAtPath(collectionPath.GetPrimPath()), 
-                         collectionName);
+    return UsdCollectionAPI(stage->GetPrimAtPath(collectionPath.GetPrimPath()), 
+                            collectionName);
 }
 
 SdfPath 
@@ -237,8 +195,8 @@ UsdCollectionAPI::GetAllCollections(const UsdPrim &prim)
                     attr.GetNamespace().GetString().substr(
                         UsdTokens->collection.GetString().size() + 1);
 
-                collections.push_back(UsdCollectionAPI::GetCollection(prim,
-                                            TfToken(collectionName))); 
+                collections.push_back(
+                        UsdCollectionAPI(prim, TfToken(collectionName)));
             }
         }
     }
@@ -400,24 +358,6 @@ UsdCollectionAPI::ExcludePath(const SdfPath &pathToExclude) const
     return true;
 }
 
-UsdCollectionAPI::UsdCollectionAPI(
-    const UsdPrim& prim, 
-    const TfToken &name, 
-    const TfToken &expansionRule) :
-    UsdSchemaBase(prim),
-    _name(name)
-{
-    CreateExpansionRuleAttr(VtValue(expansionRule));
-}
-
-UsdCollectionAPI::UsdCollectionAPI(
-    const UsdPrim& prim, 
-    const TfToken &name) :
-    UsdSchemaBase(prim),
-    _name(name)
-{
-}
-
 bool
 UsdCollectionAPI::HasNoIncludedPaths() const
 {
@@ -545,8 +485,7 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
                 continue;
             }
 
-            UsdCollectionAPI includedCollection = 
-                    UsdCollectionAPI::GetCollection(includedPrim, collectionName);
+            UsdCollectionAPI includedCollection(includedPrim, collectionName);
 
             // Recursively compute the included collection's membership map with
             // an updated set of seen/included collection paths.

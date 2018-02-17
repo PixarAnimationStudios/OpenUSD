@@ -26,6 +26,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/clipsAPI.h"
+#include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/schemaBase.h"
 
@@ -131,14 +132,19 @@ TestPrimQueries()
     assert(!prim.HasAPI<UsdModelAPI>());
     
     printf("--------Applying UsdModelAPI -------\n");
-    UsdModelAPI::Apply(stage, path);
+    UsdModelAPI::Apply(prim);
     assert(!prim.HasAPI<UsdClipsAPI>());
     assert(prim.HasAPI<UsdModelAPI>());
 
     printf("--------Applying UsdClipsAPI -------\n");
-    UsdClipsAPI::Apply(stage, path);
+    UsdClipsAPI::Apply(prim);
     assert(prim.HasAPI<UsdClipsAPI>());
     assert(prim.HasAPI<UsdModelAPI>());
+
+    UsdCollectionAPI coll = UsdCollectionAPI::ApplyCollection(prim, 
+            TfToken("testColl"));
+    // HasAPI doesn't work for multiple-apply API schemas.
+    assert(!prim.HasAPI<UsdCollectionAPI>());
 }
 
 int main(int argc, char** argv)

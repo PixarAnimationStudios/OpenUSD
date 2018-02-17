@@ -755,17 +755,41 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_AppliedSchemas(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt)
-            root = s.DefinePrim('/hello')
+            sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
+            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt, sessionLayer)
+
+            s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
+
+            root = s.OverridePrim('/hello')
             self.assertEqual([], root.GetAppliedSchemas())
-            Usd.ModelAPI.Apply(s, '/hello')
+
+            rootModelAPI = Usd.ModelAPI.Apply(root)
+            self.assertTrue(rootModelAPI)
+
+            root = rootModelAPI.GetPrim()
+            self.assertTrue(root)
+
             self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
-            Usd.ClipsAPI.Apply(s, '/hello')
-            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+
+            # Switch the edit target to the session layer and test bug 156929
+            s.SetEditTarget(Usd.EditTarget(s.GetSessionLayer()))
+            sessionClipsAPI = Usd.ClipsAPI.Apply(root)
+            self.assertTrue(sessionClipsAPI)
+            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
 
             # Ensure duplicates aren't picked up
-            Usd.ClipsAPI.Apply(s, '/hello')
-            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+            anotherSessionClipsAPI = Usd.ClipsAPI.Apply(root)
+            self.assertTrue(anotherSessionClipsAPI)
+            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+
+            # Add a duplicate in the root layer and ensure that there are no 
+            # duplicates in the composed result.
+            s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
+            rootClipsAPI = Usd.ClipsAPI.Apply(root)
+            self.assertTrue(rootClipsAPI)
+            self.assertEqual(['ClipsAPI', 'ModelAPI'], 
+                             root.GetAppliedSchemas())
+
 
 if __name__ == "__main__":
     unittest.main()

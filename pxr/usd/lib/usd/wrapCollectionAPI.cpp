@@ -55,7 +55,7 @@ void wrapUsdCollectionAPI()
 {
     typedef UsdCollectionAPI This;
 
-    class_<This, bases<UsdSchemaBase> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("CollectionAPI");
 
     cls
@@ -161,6 +161,8 @@ WRAP_CUSTOM {
         &This::ComputeMembershipQuery;
 
     scope collectionAPI = _class 
+        .def(init<UsdPrim, TfToken>())
+
         .def("ApplyCollection", &This::ApplyCollection, 
              (arg("prim"), arg("name"), 
               arg("expansionRule")=UsdTokens->expandPrims))

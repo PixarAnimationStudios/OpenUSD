@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
@@ -62,7 +62,7 @@ class SdfAssetPath;
 /// documentation for more about bindings and how they apply in a scene graph.
 /// 
 ///
-class UsdSkelBindingAPI : public UsdSchemaBase
+class UsdSkelBindingAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -81,7 +81,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdSkelBindingAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -89,7 +89,7 @@ public:
     /// Should be preferred over UsdSkelBindingAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdSkelBindingAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -118,15 +118,21 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "BindingAPI" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid UsdSkelBindingAPI object is returned upon success. 
+    /// An invalid (or empty) UsdSkelBindingAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     USDSKEL_API
     static UsdSkelBindingAPI 
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
 
 private:
     // needs to invoke _GetStaticTfType.

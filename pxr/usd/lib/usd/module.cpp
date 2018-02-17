@@ -52,8 +52,9 @@ TF_WRAP_MODULE
     TF_WRAP(UsdPrimRange);
     TF_WRAP(UsdVariantSets);
 
-    // SchemaBase and subclasses.
+    // SchemaBase, APISchemaBase and subclasses.
     TF_WRAP(UsdSchemaBase);
+    TF_WRAP(UsdAPISchemaBase);
     TF_WRAP(UsdTyped);
 
     // Stage and Stage Cache
