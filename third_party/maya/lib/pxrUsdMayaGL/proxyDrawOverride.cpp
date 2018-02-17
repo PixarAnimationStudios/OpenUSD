@@ -121,25 +121,14 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-    // XXX: Note that for now we must populate the properties on the shape
-    // adapter that will be used to compute its delegateId *before* we call
-    // AddShapeAdapter(), since adding the shape adapter the first time will
-    // invoke its Init() method. See the comment in the implementation of
-    // PxrMayaHdShapeAdapter::Init() for more detail.
-    const UsdPrim usdPrim = shape->usdPrim();
-    const SdfPathVector excludedPrimPaths = shape->getExcludePrimPaths();
-    _shapeAdapter._shapeDagPath = objPath;
-    _shapeAdapter._rootPrim = usdPrim;
-    _shapeAdapter._excludedPrimPaths = excludedPrimPaths;
-
-    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
-
     if (!_shapeAdapter.Sync(
             shape,
             frameContext.getDisplayStyle(),
             MHWRender::MGeometryUtilities::displayStatus(objPath))) {
         return nullptr;
     }
+
+    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
     bool drawShape;
     bool drawBoundingBox;
@@ -210,24 +199,19 @@ UsdMayaProxyDrawOverride::userSelect(
         return false;
     }
 
-    // At this point, we expect the shape to have already been drawn and our
-    // shape adapter to have been added to the batch renderer, but just in
-    // case, we still treat the shape adapter as if we're populating it for the
-    // first time.
-    const UsdPrim usdPrim = shape->usdPrim();
-    const SdfPathVector excludedPrimPaths = shape->getExcludePrimPaths();
-    _shapeAdapter._rootPrim = usdPrim;
-    _shapeAdapter._excludedPrimPaths = excludedPrimPaths;
-
-    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
-
     const unsigned int displayStyle = context.getDisplayStyle();
     const MHWRender::DisplayStatus displayStatus =
         MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter._shapeDagPath);
 
+    // At this point, we expect the shape to have already been drawn and our
+    // shape adapter to have been added to the batch renderer, but just in
+    // case, we still treat the shape adapter as if we're populating it for the
+    // first time.
     if (!_shapeAdapter.Sync(shape, displayStyle, displayStatus)) {
         return false;
     }
+
+    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
     GfVec3f batchHitPoint;
     const bool didHit =

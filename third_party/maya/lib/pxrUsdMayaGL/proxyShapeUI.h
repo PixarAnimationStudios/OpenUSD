@@ -32,7 +32,6 @@
 #include "usdMaya/proxyShape.h"
 
 #include <maya/M3dView.h>
-#include <maya/MDagPath.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
@@ -78,16 +77,9 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
 
         UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
 
-        // Note that MPxSurfaceShapeUI::select() is declared as const, so since
-        // this method is called from there, we must also declare this method
-        // as const and declare _shapeAdapter as mutable so that we're able to
-        // modify it.
-        bool _SyncShapeAdapter(
-                UsdMayaProxyShape* shape,
-                const MDagPath& objPath,
-                const M3dView::DisplayStyle displayStyle,
-                const M3dView::DisplayStatus displayStatus) const;
-
+        // Note that MPxSurfaceShapeUI::select() is declared as const, so we
+        // must declare _shapeAdapter as mutable so that we're able to modify
+        // it.
         mutable PxrMayaHdShapeAdapter _shapeAdapter;
 };
 

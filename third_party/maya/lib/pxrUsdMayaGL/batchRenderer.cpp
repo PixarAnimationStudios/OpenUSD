@@ -147,6 +147,12 @@ UsdMayaGLBatchRenderer::GetInstance()
     return TfSingleton<UsdMayaGLBatchRenderer>::GetInstance();
 }
 
+HdRenderIndex*
+UsdMayaGLBatchRenderer::GetRenderIndex() const
+{
+    return _renderIndex.get();
+}
+
 bool
 UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 {
@@ -155,10 +161,6 @@ UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
     }
 
     auto inserted = _shapeAdapterSet.insert(shapeAdapter);
-
-    if (inserted.second) {
-        shapeAdapter->Init(_renderIndex.get());
-    }
 
     return inserted.second;
 }

@@ -60,33 +60,6 @@ UsdMayaProxyShapeUI::creator()
     return new UsdMayaProxyShapeUI();
 }
 
-bool
-UsdMayaProxyShapeUI::_SyncShapeAdapter(
-        UsdMayaProxyShape* shape,
-        const MDagPath& objPath,
-        const M3dView::DisplayStyle displayStyle,
-        const M3dView::DisplayStatus displayStatus) const
-{
-    if (!shape) {
-        return false;
-    }
-
-    // XXX: Note that for now we must populate the properties on the shape
-    // adapter that will be used to compute its delegateId *before* we call
-    // AddShapeAdapter(), since adding the shape adapter the first time will
-    // invoke its Init() method. See the comment in the implementation of
-    // PxrMayaHdShapeAdapter::Init() for more detail.
-    const UsdPrim usdPrim = shape->usdPrim();
-    const SdfPathVector excludedPrimPaths = shape->getExcludePrimPaths();
-    _shapeAdapter._shapeDagPath = objPath;
-    _shapeAdapter._rootPrim = usdPrim;
-    _shapeAdapter._excludedPrimPaths = excludedPrimPaths;
-
-    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
-
-    return _shapeAdapter.Sync(shape, displayStyle, displayStatus);
-}
-
 /* virtual */
 void
 UsdMayaProxyShapeUI::getDrawRequests(
@@ -103,12 +76,13 @@ UsdMayaProxyShapeUI::getDrawRequests(
         return;
     }
 
-    if (!_SyncShapeAdapter(shape,
-                           shapeDagPath,
-                           drawInfo.displayStyle(),
-                           drawInfo.displayStatus())) {
+    if (!_shapeAdapter.Sync(shape,
+                            drawInfo.displayStyle(),
+                            drawInfo.displayStatus())) {
         return;
     }
+
+    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
     bool drawShape;
     bool drawBoundingBox;
@@ -183,13 +157,17 @@ UsdMayaProxyShapeUI::select(
     // selectInfo.selectPath() returns the dag path to the assembly node, not
     // the shape node, so we don't have the shape node's path readily available.
     UsdMayaProxyShape* shape = static_cast<UsdMayaProxyShape*>(surfaceShape());
-
-    if (!_SyncShapeAdapter(shape,
-                           selectInfo.selectPath(),
-                           view.displayStyle(),
-                           view.displayStatus(selectInfo.selectPath()))) {
+    if (!shape) {
         return false;
     }
+
+    if (!_shapeAdapter.Sync(shape,
+                            view.displayStyle(),
+                            view.displayStatus(selectInfo.selectPath()))) {
+        return false;
+    }
+
+    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
     GfVec3f hitPoint;
     const bool didHit =

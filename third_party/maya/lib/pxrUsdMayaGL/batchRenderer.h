@@ -108,6 +108,13 @@ public:
     PXRUSDMAYAGL_API
     static UsdMayaGLBatchRenderer& GetInstance();
 
+    /// Get the render index owned by the batch renderer.
+    ///
+    /// Clients of the batch renderer should use this render index to construct
+    /// their delegates.
+    PXRUSDMAYAGL_API
+    HdRenderIndex* GetRenderIndex() const;
+
     /// Add the given shape adapter for batched rendering and selection.
     ///
     /// Returns true if the shape adapter had not been previously added, or
@@ -228,7 +235,7 @@ private:
             const bool singleSelection,
             const SdfPath& delegateId);
 
-     /// \brief Call to render all queued batches. May be called safely w/o
+    /// Call to render all queued batches. May be called safely without
     /// performance hit when no batches are queued.
     void _RenderBatches(
             const MHWRender::MDrawContext* vp2Context,
@@ -266,7 +273,7 @@ private:
     /// shapes to be rendered with said params.
     typedef std::pair<PxrMayaHdRenderParams, _ShapeAdapterSet> _RenderParamSet;
 
-    /// Lookup table to to find _RenderParamSet given a param hash key.
+    /// Lookup table to find a _RenderParamSet given its param hash key.
     typedef std::unordered_map<size_t, _RenderParamSet> _RendererQueueMap;
 
     /// Container of all batched render calls to be made at next display

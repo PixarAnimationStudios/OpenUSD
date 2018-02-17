@@ -34,6 +34,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -50,6 +51,7 @@
 #include <maya/M3dView.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
@@ -81,8 +83,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
 }
 
 
-PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter() :
-        _isPopulated(false)
+PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing PxrMayaHdShapeAdapter: %p\n",
@@ -97,9 +98,14 @@ PxrMayaHdShapeAdapter::~PxrMayaHdShapeAdapter()
         this);
 }
 
-void
-PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
+bool
+PxrMayaHdShapeAdapter::_Init(HdRenderIndex* renderIndex)
 {
+    if (!TF_VERIFY(renderIndex,
+                   "Cannot initialize shape adapter with invalid HdRenderIndex")) {
+        return false;
+    }
+
     // Create a simple string to put into a flat SdfPath "hierarchy". This is
     // much faster than more complicated pathing schemes.
     //
@@ -117,34 +123,63 @@ PxrMayaHdShapeAdapter::Init(HdRenderIndex* renderIndex)
     // const std::string idString = TfStringPrintf("/PxrMayaHdShapeAdapter_%p",
     //                                             this);
     //
-    // Note that this also means that the properties used to compute the
-    // delegateId must be populated *before* this method is called, and
-    // therefore also before UsdMayaGLBatchRenderer::AddShapeAdapter() is
-    // called.
     size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
     boost::hash_combine(shapeHash, _rootPrim);
     boost::hash_combine(shapeHash, _excludedPrimPaths);
 
     const std::string idString = TfStringPrintf("/x%zx", shapeHash);
-
     const SdfPath delegateId(idString);
 
-    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateId));
-    _isPopulated = false;
+    if (_delegate &&
+            delegateId == GetDelegateID() &&
+            renderIndex == &_delegate->GetRenderIndex()) {
+        // The delegate's current ID matches the delegate ID we computed and
+        // the render index matches, so it must be up to date already.
+        return true;
+    }
 
-    _rprimCollection.SetName(TfToken(_shapeDagPath.fullPathName().asChar()));
-    _rprimCollection.SetReprName(HdTokens->refined);
-    _rprimCollection.SetRootPath(delegateId);
-
-    renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
+    const TfToken collectionName(_shapeDagPath.fullPathName().asChar());
 
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Initialized PxrMayaHdShapeAdapter: %p\n"
+        "Initializing PxrMayaHdShapeAdapter: %p\n"
         "    collection name: %s\n"
         "    delegateId     : %s\n",
         this,
-        _rprimCollection.GetName().GetText(),
+        collectionName.GetText(),
         delegateId.GetText());
+
+    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateId));
+    if (!TF_VERIFY(_delegate,
+                  "Failed to create shape adapter delegate for shape %s",
+                  _shapeDagPath.fullPathName().asChar())) {
+        return false;
+    }
+
+    if (TfDebug::IsEnabled(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)) {
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+            "    Populating delegate:\n"
+            "        rootPrim         : %s\n"
+            "        excludedPrimPaths: ",
+            _rootPrim.GetPath().GetText());
+        for (const SdfPath& primPath : _excludedPrimPaths) {
+            TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+                "%s ",
+                primPath.GetText());
+        }
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg("\n");
+    }
+
+    _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
+
+    if (collectionName != _rprimCollection.GetName()) {
+        _rprimCollection.SetName(collectionName);
+        renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
+    }
+
+    _rprimCollection.SetReprName(HdTokens->refined);
+    _rprimCollection.SetRootPath(delegateId);
+
+    return true;
 }
 
 // Helper function that converts M3dView::DisplayStyle (legacy viewport) into
@@ -210,22 +245,24 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus legacyDisplayStatus)
     return MHWRender::DisplayStatus((int)legacyDisplayStatus);
 }
 
+/* static */
 bool
 PxrMayaHdShapeAdapter::_GetWireframeColor(
         const MHWRender::DisplayStatus displayStatus,
+        const MDagPath& shapeDagPath,
         MColor* mayaWireColor)
 {
     // Dormant objects may be included in a soft selection.
     if (displayStatus == MHWRender::kDormant) {
         const UsdMayaGLSoftSelectHelper& softSelectHelper =
             UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
-        return softSelectHelper.GetFalloffColor(_shapeDagPath, mayaWireColor);
+        return softSelectHelper.GetFalloffColor(shapeDagPath, mayaWireColor);
     }
     else if ((displayStatus == MHWRender::kActive) ||
              (displayStatus == MHWRender::kLead) ||
              (displayStatus == MHWRender::kHilite)) {
         *mayaWireColor =
-            MHWRender::MGeometryUtilities::wireframeColor(_shapeDagPath);
+            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
         return true;
     }
 
@@ -278,12 +315,9 @@ PxrMayaHdShapeAdapter::Sync(
     UsdMayaProxyShape* usdProxyShape =
         dynamic_cast<UsdMayaProxyShape*>(surfaceShape);
     if (!usdProxyShape) {
+        TF_WARN("Failed to get UsdMayaProxyShape.");
         return false;
     }
-
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Synchronizing PxrMayaHdShapeAdapter: %p\n",
-        this);
 
     UsdPrim usdPrim;
     SdfPathVector excludedPrimPaths;
@@ -301,17 +335,38 @@ PxrMayaHdShapeAdapter::Sync(
                                                &showRenderGuides,
                                                &tint,
                                                &tintColor)) {
+        TF_WARN("Failed to get render attributes for UsdMayaProxyShape.");
         return false;
     }
 
-    if (_rootPrim != usdPrim) {
+    // Check for updates to the shape or changes in the batch renderer that
+    // require us to re-initialize the shape adapter.
+    MStatus status;
+    const MFnDagNode dagNodeFn(usdProxyShape->thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    MDagPath shapeDagPath;
+    status = dagNodeFn.getPath(shapeDagPath);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    HdRenderIndex* renderIndex =
+        UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
+    if (!(shapeDagPath == _shapeDagPath) ||
+            usdPrim != _rootPrim ||
+            excludedPrimPaths != _excludedPrimPaths ||
+            !_delegate ||
+            renderIndex != &_delegate->GetRenderIndex()) {
+        _shapeDagPath = shapeDagPath;
         _rootPrim = usdPrim;
-        _isPopulated = false;
-    }
-    if (_excludedPrimPaths != excludedPrimPaths) {
         _excludedPrimPaths = excludedPrimPaths;
-        _isPopulated = false;
+
+        if (!_Init(renderIndex)) {
+            return false;
+        }
     }
+
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        "Synchronizing PxrMayaHdShapeAdapter: %p\n",
+        this);
 
     // Reset _renderParams to the defaults.
     PxrMayaHdRenderParams renderParams;
@@ -336,52 +391,28 @@ PxrMayaHdShapeAdapter::Sync(
     if (_rprimCollection.GetRenderTags() != renderTags) {
         _rprimCollection.SetRenderTags(renderTags);
 
-        if (_delegate) {
-            TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "    Render tags changed: %s\n"
-                "        Marking collection dirty: %s\n",
-                TfStringJoin(renderTags.begin(), renderTags.end()).c_str(),
-                _rprimCollection.GetName().GetText());
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+            "    Render tags changed: %s\n"
+            "        Marking collection dirty: %s\n",
+            TfStringJoin(renderTags.begin(), renderTags.end()).c_str(),
+            _rprimCollection.GetName().GetText());
 
-            _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-                _rprimCollection.GetName());
-        }
+        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+            _rprimCollection.GetName());
     }
 
-    if (_delegate) {
-        MStatus status;
-        const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
-        if (status == MS::kSuccess) {
-            _rootXform = GfMatrix4d(transform.matrix);
-            _delegate->SetRootTransform(_rootXform);
-        }
-
-        _delegate->SetRefineLevelFallback(refineLevel);
-
-        // Will only react if time actually changes.
-        _delegate->SetTime(timeCode);
-
-        _delegate->SetRootCompensation(_rootPrim.GetPath());
-
-        if (!_isPopulated) {
-            if (TfDebug::IsEnabled(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)) {
-                TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                    "    Populating delegate:\n"
-                    "        rootPrim         : %s\n"
-                    "        excludedPrimPaths: ",
-                    _rootPrim.GetPath().GetText());
-                for (const SdfPath& primPath : _excludedPrimPaths) {
-                    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                        "%s ",
-                        primPath.GetText());
-                }
-                TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg("\n");
-            }
-
-            _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
-            _isPopulated = true;
-        }
+    const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
+    if (status == MS::kSuccess) {
+        _rootXform = GfMatrix4d(transform.matrix);
+        _delegate->SetRootTransform(_rootXform);
     }
+
+    _delegate->SetRefineLevelFallback(refineLevel);
+
+    // Will only react if time actually changes.
+    _delegate->SetTime(timeCode);
+
+    _delegate->SetRootCompensation(_rootPrim.GetPath());
 
     _drawShape = true;
     _drawBoundingBox =
@@ -389,6 +420,7 @@ PxrMayaHdShapeAdapter::Sync(
 
     MColor mayaWireframeColor;
     const bool needsWire = _GetWireframeColor(displayStatus,
+                                              _shapeDagPath,
                                               &mayaWireframeColor);
     if (needsWire) {
         _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
