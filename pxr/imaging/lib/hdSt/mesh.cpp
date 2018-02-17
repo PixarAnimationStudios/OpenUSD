@@ -1354,6 +1354,15 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
                 HdChangeTracker::DirtyRefineLevel;
     }
 
+    // A change of material means that the Quadrangulate state may have
+    // changed.
+    if (bits & HdChangeTracker::DirtyMaterialId) {
+        bits |= (HdChangeTracker::DirtyPoints   |
+                HdChangeTracker::DirtyNormals  |
+                HdChangeTracker::DirtyPrimVar  |
+                HdChangeTracker::DirtyTopology);
+    }
+
     // If points or topology changed, recompute smooth normals.
     // Note: we latch on DirtyTopology here, since subdiv scheme affects whether
     // smooth normals are computed or not.

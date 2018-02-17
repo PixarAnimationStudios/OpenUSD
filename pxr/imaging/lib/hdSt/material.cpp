@@ -254,6 +254,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
         _surfaceShader->SetTextureDescriptors(textures);
         _surfaceShader->SetBufferSources(sources, resourceRegistry);
+
+        // XXX Forcing rprims to have a dirty material id to re-evaluate their
+        // material state as we don't know whuch rprims are bound to this one.
+        HdChangeTracker& changeTracker =
+                             sceneDelegate->GetRenderIndex().GetChangeTracker();
+        changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
     }
 
     *dirtyBits = Clean;
