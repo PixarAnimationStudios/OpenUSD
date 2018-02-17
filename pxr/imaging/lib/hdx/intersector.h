@@ -66,6 +66,20 @@ public:
     HDX_API
     ~HdxIntersector() = default;
 
+    /// The ID render pass encodes the ID as color in a specific order.
+    /// Use this method to ensure the read back is done in an endian
+    /// correct fashion.
+    ///
+    /// As packing of IDs may change in the future we encapuslate the
+    /// correct behavior here.
+    /// \param idColor a byte buffer of length 4.
+    static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
+        return (int32_t(idColor[0] & 0xff) << 0)  |
+               (int32_t(idColor[1] & 0xff) << 8)  |
+               (int32_t(idColor[2] & 0xff) << 16) |
+               (int32_t(idColor[3] & 0xff) << 24);
+    }
+
     /// Given some parameters, populate a collection of resulting hit points,
     /// potentially running commands on the GPU to accelerate the query. Return
     /// false on error or no objects picked.

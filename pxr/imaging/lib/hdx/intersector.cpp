@@ -493,18 +493,18 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
 
     int idIndex = index*4;
 
-    int primId = HdxRenderSetupTask::DecodeIDRenderColor(&primIds[idIndex]);
+    int primId = HdxIntersector::DecodeIDRenderColor(&primIds[idIndex]);
     hit->objectId = _index->GetRprimPathFromPrimId(primId);
 
     if (!hit->IsValid()) {
         return false;
     }
 
-    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int instanceIndex = HdxIntersector::DecodeIDRenderColor(
             &instanceIds[idIndex]);
-    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int elementIndex = HdxIntersector::DecodeIDRenderColor(
             &elementIds[idIndex]);
-    int edgeIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int edgeIndex = HdxIntersector::DecodeIDRenderColor(
             &edgeIds[idIndex]);
 
     bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
@@ -538,13 +538,13 @@ HdxIntersector::Result::_GetHash(int index) const
 
     int idIndex = index*4;
 
-    int primId = HdxRenderSetupTask::DecodeIDRenderColor(
+    int primId = HdxIntersector::DecodeIDRenderColor(
             &primIds[idIndex]);
-    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int instanceIndex = HdxIntersector::DecodeIDRenderColor(
             &instanceIds[idIndex]);
-    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int elementIndex = HdxIntersector::DecodeIDRenderColor(
             &elementIds[idIndex]);
-    int edgeIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int edgeIndex = HdxIntersector::DecodeIDRenderColor(
             &edgeIds[idIndex]);
 
     size_t hash = 0;

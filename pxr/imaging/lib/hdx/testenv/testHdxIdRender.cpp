@@ -31,6 +31,7 @@
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
+#include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestGLDrawing.h"
@@ -430,13 +431,13 @@ My_TestGLDrawing::PickScene(int pickX, int pickY,
         int idIndex = zMinIndex*4;
 
         result = _delegate->GetRenderIndex().GetRprimPathFromPrimId(
-                HdxRenderSetupTask::DecodeIDRenderColor(&primId[idIndex]));
+                HdxIntersector::DecodeIDRenderColor(&primId[idIndex]));
         if (outInstanceIndex) {
-            *outInstanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            *outInstanceIndex = HdxIntersector::DecodeIDRenderColor(
                     &instanceId[idIndex]);
         }
         if (outElementIndex) {
-            *outElementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+            *outElementIndex = HdxIntersector::DecodeIDRenderColor(
                     &elementId[idIndex]);
         }
     }
