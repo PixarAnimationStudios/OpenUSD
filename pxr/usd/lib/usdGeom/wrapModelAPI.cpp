@@ -301,6 +301,8 @@ WRAP_CUSTOM {
         .def("CreateConstraintTarget", &UsdGeomModelAPI::CreateConstraintTarget)
         .def("GetConstraintTargets", &UsdGeomModelAPI::GetConstraintTargets,
             return_value_policy<TfPySequenceToList>())
+
+        .def("ComputeModelDrawMode", &UsdGeomModelAPI::ComputeModelDrawMode)
     ;
 }
 
