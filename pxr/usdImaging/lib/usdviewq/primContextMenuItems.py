@@ -34,7 +34,8 @@ import sys
 #
 def _GetContextMenuItems(appController, item):
     return [JumpToEnclosingModelItem(appController, item),
-            JumpToBoundMaterialMenuItem(appController, item),
+            SelectBoundPreviewMaterialMenuItem(appController, item),
+            SelectBoundFullMaterialMenuItem(appController, item),
             SeparatorMenuItem(appController, item),
             ToggleVisibilityMenuItem(appController, item),
             VisOnlyMenuItem(appController, item),
@@ -103,31 +104,70 @@ class JumpToEnclosingModelItem(PrimContextMenuItem):
         self._appController.selectEnclosingModel()
 
 #
-# Replace each selected prim with the Material it or its closest ancestor is
-# bound to.
+# Replace each selected prim with the "preview" Material it is bound to.
 #
-class JumpToBoundMaterialMenuItem(PrimContextMenuItem):
+class SelectBoundPreviewMaterialMenuItem(PrimContextMenuItem):
 
     def __init__(self, appController, item):
         PrimContextMenuItem.__init__(self, appController, item)
-        from common import GetClosestBoundMaterial
+        from pxr import UsdShade 
 
-        self._material = None
+        self._boundPreviewMaterial = None
+        self._bindingRel = None
         for p in self._selectionDataModel.getPrims():
-            material, bound = GetClosestBoundMaterial(p)
-            if material is not None:
-                self._material = material
+            (self._boundPreviewMaterial, self._bindingRel) = \
+                UsdShade.MaterialBindingAPI(p).ComputeBoundMaterial(
+                    UsdShade.Tokens.preview)
+            if self._boundPreviewMaterial:
                 break
 
     def IsEnabled(self):
-        return self._material is not None
+        return bool(self._boundPreviewMaterial)
 
     def GetText(self):
-        return "Jump to Bound Material (%s)" % (self._material.GetName() if
-                                                self._material else
-                                                "no material bound")
+        if self._boundPreviewMaterial:
+            isPreviewBindingRel = 'preview' in self._bindingRel.SplitName()
+            return "Select Bound Preview Material (%s%s)" % (
+            self._boundPreviewMaterial.GetPrim().GetName(),
+            "" if isPreviewBindingRel else " from generic binding")
+        else:
+            return "Select Bound Preview Material (None)"
+
     def RunCommand(self):
-        self._appController.selectBoundMaterial()
+        self._appController.selectBoundPreviewMaterial()
+
+#
+# Replace each selected prim with the "preview" Material it is bound to.
+#
+class SelectBoundFullMaterialMenuItem(PrimContextMenuItem):
+
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
+        from pxr import UsdShade 
+
+        self._boundFullMaterial = None
+        self._bindingRel = None
+        for p in self._selectionDataModel.getPrims():
+            (self._boundFullMaterial, self._bindingRel) = \
+                UsdShade.MaterialBindingAPI(p).ComputeBoundMaterial(
+                    UsdShade.Tokens.full)
+            if self._boundFullMaterial:
+                break
+
+    def IsEnabled(self):
+        return bool(self._boundFullMaterial)
+
+    def GetText(self):
+        if self._boundFullMaterial:
+            isFullBindingRel = 'full' in self._bindingRel.SplitName()
+            return "Select Bound Full Material (%s%s)" % (
+            self._boundFullMaterial.GetPrim().GetName(),
+            "" if isFullBindingRel else " from generic binding")
+        else:
+            return "Select Bound Full Material (None)"
+
+    def RunCommand(self):
+        self._appController.selectBoundFullMaterial()
 
 
 #

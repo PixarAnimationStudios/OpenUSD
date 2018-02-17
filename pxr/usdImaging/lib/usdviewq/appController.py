@@ -31,7 +31,7 @@ from time import time, sleep
 from collections import deque, OrderedDict
 
 # Usd Library Components
-from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
+from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
 
 # UI Components
 from ._usdviewq import Utils
@@ -59,7 +59,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
-                    GetPrimsLoadability, GetClosestBoundMaterial, Complexities)
+                    GetPrimsLoadability, Complexities)
 
 import settings2
 from settings2 import StateSource
@@ -941,8 +941,17 @@ class AppController(QtCore.QObject):
             self._ui.actionJump_to_Model_Root.triggered.connect(
                 self.selectEnclosingModel)
 
-            self._ui.actionJump_to_Bound_Material.triggered.connect(
-                self.selectBoundMaterial)
+            self._ui.actionJump_to_Bound_Preview_Material.triggered.connect(
+                self.selectBoundPreviewMaterial)
+
+            self._ui.actionJump_to_Bound_Full_Material.triggered.connect(
+                self.selectBoundFullMaterial)
+
+            self._ui.actionSelect_Preview_Binding_Relationship.triggered.connect(
+                self.selectPreviewBindingRel)
+
+            self._ui.actionSelect_Full_Binding_Relationship.triggered.connect(
+                self.selectFullBindingRel)
 
             self._ui.actionMake_Visible.triggered.connect(self.visSelectedPrims)
             # Add extra, Presto-inspired shortcut for Make Visible
@@ -2729,18 +2738,66 @@ class AppController(QtCore.QObject):
                 else:
                     self._dataModel.selection.addPrim(prim)
 
-    def selectBoundMaterial(self):
-        """Iterates through all selected prims, selecting their bound materials
-        instead.
+    def selectBoundMaterialForPurpose(self, materialPurpose):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
         """
         oldPrims = self._dataModel.selection.getPrims()
-
         with self._dataModel.selection.batchPrimChanges:
             self._dataModel.selection.clearPrims()
             for prim in oldPrims:
-                material, bound = GetClosestBoundMaterial(prim)
-                if material:
-                    self._dataModel.selection.addPrim(material)
+                (boundMaterial, bindingRel) = \
+                    UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                        materialPurpose=materialPurpose)
+                if boundMaterial:
+                    self._dataModel.selection.addPrim(boundMaterial.GetPrim())
+
+    def selectBindingRelForPurpose(self, materialPurpose):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
+        """
+        relsToSelect = []
+        oldPrims = self._dataModel.selection.getPrims()
+        with self._dataModel.selection.batchPrimChanges:
+            self._dataModel.selection.clearPrims()
+            for prim in oldPrims:
+                (boundMaterial, bindingRel) = \
+                    UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                        materialPurpose=materialPurpose)
+                if boundMaterial and bindingRel:
+                    self._dataModel.selection.addPrim(bindingRel.GetPrim())
+                    relsToSelect.append(bindingRel)
+
+        with self._dataModel.selection.batchPropChanges:
+            self._dataModel.selection.clearProps()
+            for rel in relsToSelect:
+                self._dataModel.selection.addProp(rel)
+
+    def selectBoundPreviewMaterial(self):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
+        """
+        self.selectBoundMaterialForPurpose(
+            materialPurpose=UsdShade.Tokens.preview)
+
+    def selectBoundFullMaterial(self):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
+        """
+        self.selectBoundMaterialForPurpose(
+            materialPurpose=UsdShade.Tokens.full)
+
+    def selectPreviewBindingRel(self):
+        """Iterates through all selected prims, computing their resolved 
+        "preview" bindings and selecting the cooresponding binding relationship.
+        """
+        self.selectBindingRelForPurpose(materialPurpose=UsdShade.Tokens.preview)
+
+    def selectFullBindingRel(self):
+        """Iterates through all selected prims, computing their resolved 
+        "full" bindings and selecting the cooresponding binding relationship.
+        """
+        self.selectBindingRelForPurpose(materialPurpose=UsdShade.Tokens.full)    
 
     def _getCommonPrims(self, pathsList):
         commonPrefix = os.path.commonprefix(pathsList)
@@ -3786,7 +3843,8 @@ class AppController(QtCore.QObject):
         removeEnabled = False
         anyImageable = False
         anyModels = False
-        anyBoundMaterials = False
+        anyBoundPreviewMaterials = False
+        anyBoundFullMaterials = False
         anyActive = False
         anyInactive = False
         for prim in self._dataModel.selection.getPrims():
@@ -3795,16 +3853,33 @@ class AppController(QtCore.QObject):
                 anyImageable = anyImageable or bool(imageable)
                 removeEnabled = removeEnabled or HasSessionVis(prim)
             anyModels = anyModels or GetEnclosingModelPrim(prim) is not None
-            material, bound = GetClosestBoundMaterial(prim)
-            anyBoundMaterials = anyBoundMaterials or material is not None
+            
+            (previewMat,previewBindingRel) =\
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.preview)
+            anyBoundPreviewMaterials |= bool(previewMat)
+            
+            (fullMat,fullBindingRel) =\
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.full)            
+            anyBoundFullMaterials |= bool(fullMat)
+            
             if prim.IsActive():
                 anyActive = True
             else:
                 anyInactive = True
 
         self._ui.actionJump_to_Model_Root.setEnabled(anyModels)
-        self._ui.actionJump_to_Bound_Material.setEnabled(anyBoundMaterials)
-
+        
+        self._ui.actionJump_to_Bound_Preview_Material.setEnabled(
+                anyBoundPreviewMaterials)
+        self._ui.actionSelect_Preview_Binding_Relationship.setEnabled(
+                anyBoundPreviewMaterials)
+        
+        self._ui.actionJump_to_Bound_Full_Material.setEnabled(
+                anyBoundFullMaterials)
+        self._ui.actionSelect_Full_Binding_Relationship.setEnabled(
+                anyBoundFullMaterials)
         self._ui.actionRemove_Session_Visibility.setEnabled(removeEnabled)
         self._ui.actionMake_Visible.setEnabled(anyImageable)
         self._ui.actionVis_Only.setEnabled(anyImageable)
@@ -4121,18 +4196,42 @@ class AppController(QtCore.QObject):
                         propertyStr += "<br> -- <em>instance of prototype &lt;%s&gt;</em>" % str(currProtoPath)
 
             # Material info - this IS expected
-            materialStr = "<hr><b>Material assignment:</b><br>"
-            material, bound = GetClosestBoundMaterial(prim)
-            if material:
-                materialPath = material.GetPath()
-                # if the material is in the same model, make path model-relative
-                materialStr += _MakeModelRelativePath(materialPath, model)
+            materialStr = "<hr><b>Material assignment:</b>"
+            materialAssigns = {}
+            materialAssigns['generic'] = (genericMat, genericBindingRel) = \
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.allPurpose)
+            materialAssigns[UsdShade.Tokens.preview] = \
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.preview)
+            materialAssigns[UsdShade.Tokens.full] = \
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.full)
 
-                if bound != prim:
-                    boundPath = _MakeModelRelativePath(bound.GetPath(),
-                                                       model)
-                    materialStr += "<br><small><em>Material binding inherited from ancestor:</em></small><br> %s" % str(boundPath)
-            else:
+            gotValidMaterial = False
+            for purpose, materialAssign in materialAssigns.iteritems():
+                (material, bindingRel) = materialAssign
+                if not material:
+                    continue
+
+                gotValidMaterial = True
+
+                # skip specific purpose binding display if it is the same
+                # as the generic binding.
+                if purpose != 'generic' and bindingRel == genericBindingRel:
+                    continue
+
+                # if the material is in the same model, make path 
+                # model-relative
+                materialStr += "<br><em>%s</em>: %s" % (purpose, 
+                        _MakeModelRelativePath(material.GetPath(), model))
+
+                bindingRelPath = _MakeModelRelativePath(
+                        bindingRel.GetPath(), model)
+                materialStr += "<br><small><em>Material binding "\
+                    "relationship: %s</em></small>" % str(bindingRelPath)
+
+            if not gotValidMaterial:
                 materialStr += "<small><em>No assigned Material!</em></small>"
 
             # Instance / master info, if this prim is a native instance, else

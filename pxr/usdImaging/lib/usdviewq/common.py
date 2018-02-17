@@ -466,25 +466,6 @@ def GetEnclosingModelPrim(prim):
 
     return prim
 
-# This should be codified in UsdShadeMaterial API
-def GetClosestBoundMaterial(prim):
-    """If 'prim' or any of its ancestors are bound to a Material, return the
-    *closest in namespace* bound Material prim, as well as the prim on which the
-    binding was found.  If none of 'prim's ancestors has a binding, return
-    (None, None)"""
-    if not prim:
-        return (None, None)
-    # XXX We should not need to guard against pseudoRoot.  Remove when
-    # bug/122473 is addressed
-    psr = prim.GetStage().GetPseudoRoot()
-    while prim and prim != psr:
-        material = UsdShade.Material.GetBoundMaterial(prim)
-        if material:
-            return (material.GetPrim(), prim)
-        prim = prim.GetParent()
-
-    return (None, None)
-
 def GetPrimLoadability(prim):
     """Return a tuple of (isLoadable, isLoaded) for 'prim', according to
     the following rules:
