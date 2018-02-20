@@ -263,7 +263,7 @@ void walkGraph(UsdShadeShader const & shadeNode,
 
 void 
 UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim, 
-                                               HdMaterialNetworkMap *materialNetworkMap)
+    HdMaterialNetworkMap *materialNetworkMap)
 {
     // This function expects a usdPrim of type Material. However, it will
     // only be able to fill the HdMaterialNetwork structures if the Material
@@ -276,18 +276,21 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim,
     // is usually the standin node in the case of a UsdRi.
     // If it fails to provide a relationship then we are not in a 
     // usdPrim that contains a correct terminal to a UsdShade Shader node.
-    if( UsdRelationship matRel = m.GetBxdfOutput().GetRel() ) {
-        UsdShadeShader shadeNode(
-            UsdImaging_MaterialStrategy::GetTargetedShader(
-                usdPrim.GetPrim(), matRel));
-        walkGraph(shadeNode,
+    if( UsdShadeOutput bxdfOut = m.GetBxdfOutput() ) {
+        UsdShadeConnectableAPI source;
+        TfToken sourceName;
+        UsdShadeAttributeType sourceType;
+        bxdfOut.GetConnectedSource(&source, &sourceName, &sourceType);
+        walkGraph(source,
                   &materialNetworkMap->map[UsdImagingTokens->bxdf]);
     }
-    if( UsdRelationship matRel = m.GetDisplacementOutput().GetRel() ) {
-        UsdShadeShader shadeNode(
-            UsdImaging_MaterialStrategy::GetTargetedShader(
-                usdPrim.GetPrim(), matRel));
-        walkGraph(shadeNode,
+
+    if( UsdShadeOutput dispOut = m.GetDisplacementOutput() ) {
+        UsdShadeConnectableAPI source;
+        TfToken sourceName;
+        UsdShadeAttributeType sourceType;
+        dispOut.GetConnectedSource(&source, &sourceName, &sourceType);
+        walkGraph(source,
                   &materialNetworkMap->map[UsdImagingTokens->displacement]);
     }
 }
