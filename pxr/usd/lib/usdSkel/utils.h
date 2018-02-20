@@ -252,24 +252,24 @@ USDSKEL_API
 bool
 UsdSkelExpandConstantInfluencesToVarying(VtFloatArray* weights, size_t size);
 
-/// Truncate the number of influences in a weight or indices array,
-/// which initially has \p numInfluencesPerComponent influences to have
-/// no more than  \p maxNumInfluencesPerComponent influences per component.
-/// When truncating weight arrays, weights will be renormalized if needed.
-/// This is a convenience method for clients that have a fixed limit
-/// on the number of influences that they can support.
+/// Resize the number of influences per component in a weight or indices array,
+/// which initially has \p srcNumInfluencesPerComponent influences to have
+/// no more than \p newNumInfluencesPerComponent influences per component.
+/// If the size decreases, influences are additionally re-normalized.
+/// This is a convenience method for clients that require a fixed number of
+/// of influences.
 USDSKEL_API
 bool
-UsdSkelTruncateInfluences(VtIntArray* indices,
-                          int numInfluencesPerComponent,
-                          int maxNumInfluencesPerComponent);
+UsdSkelResizeInfluences(VtIntArray* indices,
+                        int srcNumInfluencesPerComponent,
+                        int newNumInfluencesPerComponent);
 
 /// \overload
 USDSKEL_API
 bool
-UsdSkelTruncateInfluences(VtFloatArray* weights,
-                          int numInfluencesPerComponent,
-                          int maxNumInfluencesPerComponent);
+UsdSkelResizeInfluences(VtFloatArray* weights,
+                        int srcNumInfluencesPerComponent,
+                        int newNumInfluencesPerComponent);
 
 
 /// @}

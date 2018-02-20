@@ -174,19 +174,19 @@ _ExpandConstantInfluencesToVarying(object& arrayObj, size_t size)
 
 
 bool
-_TruncateInfluences(object& arrayObj,
-                    int numInfluencesPerPoint,
-                    int maxNumInfluencesPerPoint)
+_ResizeInfluences(object& arrayObj,
+                  int srcNumInfluencesPerPoint,
+                  int newNumInfluencesPerPoint)
 {
     extract<VtIntArray&> x(arrayObj);
     if(x.check()) {
         VtIntArray& array = x;   
-        return UsdSkelTruncateInfluences(
-            &array, numInfluencesPerPoint, maxNumInfluencesPerPoint);
+        return UsdSkelResizeInfluences(
+            &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
     } else {
         VtFloatArray& array = extract<VtFloatArray&>(arrayObj);
-        return UsdSkelTruncateInfluences(
-            &array, numInfluencesPerPoint, maxNumInfluencesPerPoint);
+        return UsdSkelResizeInfluences(
+            &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
     }
 }
 
@@ -258,10 +258,10 @@ void wrapUsdSkelUtils()
         &_ExpandConstantInfluencesToVarying,
         (arg("array"), arg("size")));
 
-    def("TruncateInfluences", &_TruncateInfluences,
+    def("ResizeInfluences", &_ResizeInfluences,
         (arg("array"),
-         arg("numInfluencesPerComponent"),
-         arg("maxNumInfluencesPerComponent")));
+         arg("srcNumInfluencesPerComponent"),
+         arg("newNumInfluencesPerComponent")));
 
     def("SkinPointsLBS", &_SkinPointsLBS,
         (arg("geomBindTransform"),
