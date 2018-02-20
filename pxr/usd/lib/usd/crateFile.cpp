@@ -240,6 +240,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.7.0: Array sizes written as 64 bit ints.
 // 0.6.0: Compressed (scalar) floating point arrays that are either all ints or
 //        can be represented efficiently with a lookup table.
 // 0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
@@ -250,7 +251,7 @@ using std::vector;
 //        See _PathItemHeader_0_0_1.
 // 0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 6;
+constexpr uint8_t USDC_MINOR = 7;
 constexpr uint8_t USDC_PATCH = 0;
 
 struct CrateFile::Version
@@ -1302,7 +1303,9 @@ _WriteUncompressedArray(
     Writer w, VtArray<T> const &array, CrateFile::Version ver)
 {
     auto result = ValueRepForArray<T>(w.Tell());
-    w.template WriteAs<uint32_t>(array.size());
+    (ver < CrateFile::Version(0,7,0)) ?
+        w.template WriteAs<uint32_t>(array.size()) :
+        w.template WriteAs<uint64_t>(array.size());
     w.WriteContiguous(array.cdata(), array.size());
     return result;
 }
@@ -1346,7 +1349,9 @@ _WritePossiblyCompressedArray(
 {
     auto result = ValueRepForArray<T>(w.Tell());
     // Total elements.
-    w.template WriteAs<uint32_t>(array.size());
+    (ver < CrateFile::Version(0,7,0)) ?
+        w.template WriteAs<uint32_t>(array.size()) :
+        w.template WriteAs<uint64_t>(array.size());
     if (array.size() < MinCompressedArraySize) {
         w.WriteContiguous(array.cdata(), array.size());
     } else {
@@ -1371,9 +1376,7 @@ _WritePossiblyCompressedArray(
         array.size() < MinCompressedArraySize) {
         return _WriteUncompressedArray(w, array, ver);
     }
-    // Write total elements.
-    auto result = ValueRepForArray<T>(w.Tell());
-    w.template WriteAs<uint32_t>(array.size());
+
     // Check to see if all the floats are exactly represented as integers.
     auto isIntegral = [](T fp) {
         constexpr int32_t max = std::numeric_limits<int32_t>::max();
@@ -1383,6 +1386,10 @@ _WritePossiblyCompressedArray(
     };    
     if (std::all_of(array.cdata(), array.cdata() + array.size(), isIntegral)) {
         // Encode as integers.
+        auto result = ValueRepForArray<T>(w.Tell());
+        (ver < CrateFile::Version(0,7,0)) ?
+            w.template WriteAs<uint32_t>(array.size()) :
+            w.template WriteAs<uint64_t>(array.size());
         result.SetIsCompressed();
         vector<int32_t> ints(array.size());
         std::copy(array.cdata(), array.cdata() + array.size(), ints.data());
@@ -1417,6 +1424,10 @@ _WritePossiblyCompressedArray(
     if (!lut.empty()) {
         // Use the lookup table.  Lowercase 't' code indicates that floats are
         // written with a lookup table and indexes.
+        auto result = ValueRepForArray<T>(w.Tell());
+        (ver < CrateFile::Version(0,7,0)) ?
+            w.template WriteAs<uint32_t>(array.size()) :
+            w.template WriteAs<uint64_t>(array.size());
         result.SetIsCompressed();
         w.template WriteAs<int8_t>('t');
         // Write the lookup table itself.
@@ -1431,16 +1442,18 @@ _WritePossiblyCompressedArray(
     // byte here like the 'i' and 't' above since the resulting ValueRep is not
     // marked compressed -- the reader code will thus just read the uncompressed
     // values directly.
-    w.WriteContiguous(array.cdata(), array.size());
-    return result;
+    return _WriteUncompressedArray(w, array, ver);
 }
 
 template <class Reader, class T>
 static inline void
 _ReadPossiblyCompressedArray(
-    Reader reader, ValueRep rep, VtArray<T> *out, ...)
+    Reader reader, ValueRep rep, VtArray<T> *out, CrateFile::Version ver, ...)
 {
-    out->resize(reader.template Read<uint32_t>());
+    out->resize(
+        ver < CrateFile::Version(0,7,0) ?
+        reader.template Read<uint32_t>() :
+        reader.template Read<uint64_t>());
     reader.ReadContiguous(out->data(), out->size());
 }
 
@@ -1468,10 +1481,12 @@ typename std::enable_if<
     std::is_same<T, int64_t>::value ||
     std::is_same<T, uint64_t>::value>::type
 _ReadPossiblyCompressedArray(
-    Reader reader, ValueRep rep, VtArray<T> *out, CrateFile::Version, int)
+    Reader reader, ValueRep rep, VtArray<T> *out, CrateFile::Version ver, int)
 {
     // Read total elements.
-    out->resize(reader.template Read<uint32_t>());
+    out->resize(ver < CrateFile::Version(0,7,0) ?
+                reader.template Read<uint32_t>() :
+                reader.template Read<uint64_t>());
     if (out->size() < MinCompressedArraySize) {
         reader.ReadContiguous(out->data(), out->size());
     } else {
@@ -1488,7 +1503,9 @@ typename std::enable_if<
 _ReadPossiblyCompressedArray(
     Reader reader, ValueRep rep, VtArray<T> *out, CrateFile::Version ver, int)
 {
-    out->resize(reader.template Read<uint32_t>());
+    out->resize(ver < CrateFile::Version(0,7,0) ?
+                reader.template Read<uint32_t>() :
+                reader.template Read<uint64_t>());
     auto odata = out->data();
     auto osize = out->size();
     
