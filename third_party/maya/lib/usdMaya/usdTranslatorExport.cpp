@@ -169,6 +169,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             if (theOption[0] == MString("frameSample")) {
                 frameSamples.insert(theOption[1].asDouble());
             }
+            if (theOption[0] == MString("parentScope")) {
+                jobArgs.setParentScope(theOption[1].asChar());
+            }            
         }
         // Now resync start and end frame based on animation mode
         if (jobArgs.exportAnimation) {

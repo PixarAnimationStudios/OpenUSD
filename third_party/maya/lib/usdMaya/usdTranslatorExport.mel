@@ -29,6 +29,10 @@ global proc usdTranslatorExport_SetCheckbox(string $arg, string $widget) {
     }
 }
 
+global proc usdTranslatorExport_SetTextField(string $arg, string $widget) {
+    textFieldGrp -e -text $arg $widget;
+}
+
 global proc string usdTranslatorExport_AppendFromCheckbox(string $currentOptions, string $arg, string $widget) {
     if (`checkBox -q -v $widget` == 1) {
         return $currentOptions + ";" + $arg + "=1";
@@ -65,6 +69,12 @@ global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $cur
         $currentOptions = $currentOptions + ";" + $arg + "=" + (float) $token;
     }
 
+    return $currentOptions;
+}
+
+global proc string usdTranslatorExport_AppendFromTextField(string $currentOptions, string $arg, string $widget) {
+    string $rawValue = `textFieldGrp -q -text $widget`;
+    $currentOptions = $currentOptions + ";" + $arg + "=" + $rawValue;
     return $currentOptions;
 }
 
@@ -129,6 +139,8 @@ global proc int usdTranslatorExport (string $parent,
         checkBox -l "Renderable Only" renderableOnlyCheckBox;
          
         checkBox -l "Export all cameras" allCamerasCheckBox;
+
+        textFieldGrp -l "Parent Scope:" parentScopeField;
 
         optionMenuGrp -l "Render Layer Mode:" renderLayerModePopup;
             menuItem -l "Use Default Layer";
@@ -208,6 +220,8 @@ global proc int usdTranslatorExport (string $parent,
                         $curText = (string) $frameSample;
                     }
                     textFieldGrp -e -text $curText frameSamplesField;
+                } else if ($optionBreakDown[0] == "parentScope") {
+                    usdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
                 }
             }
         }
@@ -237,6 +251,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorExport_AppendMultiFloatFromTextField($currentOptions, "frameSample", "frameSamplesField");
+        $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
                 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

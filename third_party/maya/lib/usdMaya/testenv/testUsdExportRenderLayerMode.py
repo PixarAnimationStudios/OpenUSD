@@ -58,7 +58,7 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
         return currentRenderLayer.name()
 
     def _GetExportedStage(self, activeRenderLayerName,
-            renderLayerMode='defaultLayer'):
+            renderLayerMode='defaultLayer', **kwargs):
         cmds.file(os.path.abspath('UsdExportRenderLayerModeTest.ma'),
             open=True, force=True)
 
@@ -71,7 +71,7 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
 
         # Export to USD.
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='none', renderLayerMode=renderLayerMode)
+            shadingMode='none', renderLayerMode=renderLayerMode, **kwargs)
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
@@ -93,8 +93,10 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
         self.assertTrue(displayColorPrimvar)
         self.assertEqual(displayColorPrimvar.ComputeFlattened(), expectedColor)
 
-    def _VerifyModelingVariantMode(self, stage):
-        modelPrim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest')
+    def _VerifyModelingVariantMode(self, stage,
+                                   variantPath='/UsdExportRenderLayerModeTest',
+                                   geomPath='/UsdExportRenderLayerModeTest/Geom'):
+        modelPrim = stage.GetPrimAtPath(variantPath)
         self.assertTrue(modelPrim)
 
         variantSets = modelPrim.GetVariantSets()
@@ -119,36 +121,36 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
         self.assertEqual(variantSelection, self._GetDefaultRenderLayerName())
 
         # All cubes should be active in the default variant.
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeOne')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeOne')
         self.assertTrue(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeTwo')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeTwo')
         self.assertTrue(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeThree')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeThree')
         self.assertTrue(prim.IsActive())
 
         # Only one cube should be active in each of the render layer variants.
         modelingVariant.SetVariantSelection('RenderLayerOne')
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeOne')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeOne')
         self.assertTrue(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeTwo')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeTwo')
         self.assertFalse(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeThree')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeThree')
         self.assertFalse(prim.IsActive())
 
         modelingVariant.SetVariantSelection('RenderLayerTwo')
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeOne')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeOne')
         self.assertFalse(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeTwo')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeTwo')
         self.assertTrue(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeThree')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeThree')
         self.assertFalse(prim.IsActive())
 
         modelingVariant.SetVariantSelection('RenderLayerThree')
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeOne')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeOne')
         self.assertFalse(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeTwo')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeTwo')
         self.assertFalse(prim.IsActive())
-        prim = stage.GetPrimAtPath('/UsdExportRenderLayerModeTest/Geom/CubeThree')
+        prim = stage.GetPrimAtPath(geomPath + '/CubeThree')
         self.assertTrue(prim.IsActive())
 
     def testDefaultLayerModeWithDefaultLayerActive(self):
@@ -201,6 +203,16 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
         # first, so the results here should be the same as when the default
         # layer is active.
         self._VerifyModelingVariantMode(stage)
+
+    def testModelingVariantModeWithParentScope(self):
+        stage = self._GetExportedStage(self._GetDefaultRenderLayerName(),
+                                       renderLayerMode='modelingVariant',
+                                       parentScope='newTopLevel')
+
+        self._VerifyModelingVariantMode(
+            stage,
+            variantPath='/newTopLevel',
+            geomPath='/newTopLevel/UsdExportRenderLayerModeTest/Geom')
 
 
 if __name__ == '__main__':

@@ -120,6 +120,14 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
 
     MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
 
+    if (mJobCtx.mArgs.renderLayerMode == PxUsdExportJobArgsTokens->modelingVariant) {
+        // Handle usdModelRootOverridePath for USD Variants
+        MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
+        if (mRenderLayerObjs.length() > 1) {
+            mJobCtx.mArgs.usdModelRootOverridePath = SdfPath("/_BaseModel_");
+        }
+    }
+
     if (!mJobCtx.openFile(mFileName, append)) {
         return false;
     }
@@ -144,14 +152,6 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     //                       modeling variant.
     MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
     mCurrentRenderLayerName = currentLayer.name();
-
-    if (mJobCtx.mArgs.renderLayerMode == PxUsdExportJobArgsTokens->modelingVariant) {
-        // Handle usdModelRootOverridePath for USD Variants
-        MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
-        if (mRenderLayerObjs.length() > 1) {
-            mJobCtx.mArgs.usdModelRootOverridePath = SdfPath("/_BaseModel_");
-        }
-    }
 
     // Switch to the default render layer unless the renderLayerMode is
     // 'currentLayer', or the default layer is already the current layer.
@@ -281,6 +281,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
             mJobCtx.mArgs.exportCollectionBasedBindings;
     exportParams.overrideRootPath = mJobCtx.mArgs.usdModelRootOverridePath;
     exportParams.bindableRoots = mJobCtx.mArgs.dagPaths;
+    exportParams.parentScope = mJobCtx.mArgs.getParentScope();
 
     // Writing Materials/Shading
     exportParams.materialCollectionsPath = 
@@ -342,7 +343,7 @@ void usdWriteJob::endJob()
 {
     mJobCtx.processInstances();
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
-    
+
     // Write Variants (to first root prim path)
     UsdPrim usdRootPrim;
     TfToken defaultPrim;
@@ -352,7 +353,7 @@ void usdWriteJob::endJob()
         defaultPrim = usdRootPrim.GetName();
     }
 
-    if (usdRootPrim && mRenderLayerObjs.length() > 1 && 
+    if (usdRootPrim && mRenderLayerObjs.length() > 1 &&
         !mJobCtx.mArgs.usdModelRootOverridePath.IsEmpty()) {
             // Get RenderLayers
             //   mArgs.usdModelRootOverridePath:
@@ -402,16 +403,63 @@ void usdWriteJob::endJob()
 
 TfToken usdWriteJob::writeVariants(const UsdPrim &usdRootPrim)
 {
+    // Some notes about the expected structure that this function will create:
+
+    // Suppose we have a maya scene, that, with no parentScope path, and
+    // without renderLayerMode='modelingVariant', would give these prims:
+    //
+    //  /mayaRoot
+    //  /mayaRoot/Geom
+    //  /mayaRoot/Geom/Cube1
+    //  /mayaRoot/Geom/Cube2
+    //
+    // If you have parentScope='foo', you would instead get:
+    //
+    //  /foo/mayaRoot
+    //  /foo/mayaRoot/Geom
+    //  /foo/mayaRoot/Geom/Cube1
+    //  /foo/mayaRoot/Geom/Cube2
+    //
+    // If you have renderLayerMode='modelingVariant', and no parent scope, you
+    // will have:
+    //
+    //  /_BaseModel_
+    //  /_BaseModel_/Geom
+    //  /_BaseModel_/Geom/Cube1
+    //  /_BaseModel_/Geom/Cube2
+    //
+    //  /mayaRoot [reference to => /_BaseModel_]
+    //     [variants w/ render layer overrides]
+    //
+    // If you have both parentScope='foo' and renderLayerMode='modelingVariant',
+    // then you will get:
+    //
+    //  /_BaseModel_
+    //  /_BaseModel_/mayaRoot
+    //  /_BaseModel_/mayaRoot/Geom
+    //  /_BaseModel_/mayaRoot/Geom/Cube1
+    //  /_BaseModel_/mayaRoot/Geom/Cube2
+    //
+    //  /foo [reference to => /_BaseModel_]
+    //     [variants w/ render layer overrides]
+
     // Init parameters for filtering and setting the active variant
     std::string defaultModelingVariant;
 
-    // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
-    MayaPrimWriterPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
-    std::string firstPrimWriterPathStr( firstPrimWriterPtr->getDagPath().fullPathName().asChar() );
-    std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
-    std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), ':', '_'); // replace namespace ":" with "_"
-    SdfPath usdVariantRootPrimPath(firstPrimWriterPathStr);
-    usdVariantRootPrimPath = usdVariantRootPrimPath.GetPrefixes()[0];
+    SdfPath usdVariantRootPrimPath;
+    if (mJobCtx.mParentScopePath.IsEmpty()) {
+        // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
+        MayaPrimWriterPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
+        std::string firstPrimWriterPathStr( firstPrimWriterPtr->getDagPath().fullPathName().asChar() );
+        std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
+        std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), ':', '_'); // replace namespace ":" with "_"
+        usdVariantRootPrimPath = SdfPath(firstPrimWriterPathStr).GetPrefixes()[0];
+    }
+    else {
+        // If they passed a parentScope, then use that for our new top-level
+        // variant-switcher prim
+        usdVariantRootPrimPath = mJobCtx.mParentScopePath;
+    }
 
     // Create a new usdVariantRootPrim and reference the Base Model UsdRootPrim
     //   This is done for reasons as described above under mArgs.usdModelRootOverridePath

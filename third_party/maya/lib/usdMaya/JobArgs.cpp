@@ -61,10 +61,17 @@ JobExportArgs::JobExportArgs()
         exportColorSets(true),
         renderLayerMode(PxUsdExportJobArgsTokens->defaultLayer),
         defaultMeshScheme(UsdGeomTokens->catmullClark),
-        exportVisibility(true)
+        exportVisibility(true),
+        parentScope(SdfPath())
 {
 }
 
+void JobExportArgs::setParentScope(const std::string& ps) {
+    // Otherwise this is a malformed sdfpath.
+    if (!ps.empty()) {
+        parentScope = ps[0] == '/' ? SdfPath(ps) : SdfPath("/" + ps);
+    }
+}
 
 JobImportArgs::JobImportArgs()
     :

@@ -156,6 +156,7 @@ pxr_test_scripts(
         testenv/testUsdExportMesh.py
         testenv/testUsdExportNurbsCurve.py
         testenv/testUsdExportOverImport.py
+        testenv/testUsdExportParentScope.py
         testenv/testUsdExportPointInstancer.py
         testenv/testUsdExportRenderLayerMode.py
         testenv/testUsdExportRfMLight.py
@@ -306,6 +307,20 @@ pxr_register_test(testUsdExportOverImport
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportOverImport"
     TESTENV testUsdExportOverImport
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportParentScopeTest
+    DEST testUsdExportParentScope
+)
+pxr_register_test(testUsdExportParentScope
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportParentScope"
+    TESTENV testUsdExportParentScope
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
