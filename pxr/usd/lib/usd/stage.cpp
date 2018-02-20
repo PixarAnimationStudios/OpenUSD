@@ -3628,21 +3628,12 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         const PcpCacheChanges &ourChanges = cacheChanges.begin()->second;
 
         for (const auto& path : ourChanges.didChangeSignificantly) {
-            // Translate the real path from Pcp into a stage-relative path
             pathsToRecompose->insert(path);
             TF_DEBUG(USD_CHANGES).Msg("Did Change Significantly: %s\n",
                                       path.GetText());
         }
 
-        for (const auto& path : ourChanges.didChangeSpecs) {
-            // Translate the real path from Pcp into a stage-relative path
-            pathsToRecompose->insert(path);
-            TF_DEBUG(USD_CHANGES).Msg("Did Change Spec: %s\n",
-                                      path.GetText());
-        }
-
         for (const auto& path : ourChanges.didChangePrims) {
-            // Translate the real path from Pcp into a stage-relative path
             pathsToRecompose->insert(path);
             TF_DEBUG(USD_CHANGES).Msg("Did Change Prim: %s\n",
                                       path.GetText());

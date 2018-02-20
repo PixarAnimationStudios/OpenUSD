@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
@@ -93,9 +94,37 @@ TestObjectsChanged()
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     SdfLayerHandle rootLayer = stage->GetRootLayer();
 
-    UsdPrim foo = stage->OverridePrim(SdfPath("/foo"));
+    SdfLayerRefPtr subLayer = SdfLayer::CreateAnonymous(".usda");
+    rootLayer->InsertSubLayerPath(subLayer->GetIdentifier());
+
+    // Add a new override prim, assert that it's considered a resync.
+    {
+        printf("Adding a new override prim /over should be a resync\n");
+        _NoticeTester tester(stage);
+        tester.AddTest([stage](Notice const &n) {
+                UsdPrim newPrim = stage->GetPrimAtPath(SdfPath("/over"));
+                return TF_AXIOM(n.ResyncedObject(newPrim));
+            });
+        UsdEditContext context(
+            stage, stage->GetEditTargetForLocalLayer(subLayer));
+        UsdPrim over = stage->OverridePrim(SdfPath("/over"));
+    }
+
+    // Add an inert spec for /over, assert that it's *not* considered a resync.
+    UsdPrim over = stage->GetPrimAtPath(SdfPath("/over"));
+    {
+        printf("Adding an inert spec for /over should not be a resync\n");
+        _NoticeTester tester(stage);
+        tester.AddTest([over](Notice const &n) {
+                return 
+                    TF_AXIOM(!n.ResyncedObject(over)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(over));
+            });
+        SdfCreatePrimInLayer(rootLayer, SdfPath("/over"));
+    }
 
     // Change foo's typename, assert that it gets resynced.
+    UsdPrim foo = stage->OverridePrim(SdfPath("/foo"));
     {
         printf("Changing /foo should resync it\n");
         _NoticeTester tester(stage);
