@@ -40,6 +40,7 @@
 #include "gusd/UT_Error.h"
 
 #include "pxr/base/tf/notice.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -510,8 +511,11 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
 
         UsdStageRefPtr stage =
             mask ? UsdStage::OpenMasked(rootLayer, sessionLayer,
+                                        ArGetResolver().GetCurrentContext(),
                                         *mask, opts.GetLoadSet())
-            : UsdStage::Open(rootLayer, sessionLayer, opts.GetLoadSet());
+            : UsdStage::Open(rootLayer, sessionLayer,
+                             ArGetResolver().GetCurrentContext(),
+                             opts.GetLoadSet());
 
         if(stage) {
             if(edit) {
