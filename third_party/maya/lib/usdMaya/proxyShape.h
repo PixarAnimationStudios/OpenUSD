@@ -42,6 +42,7 @@
 #include <maya/MDGContext.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
@@ -168,6 +169,11 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
                 bool* renderGuidesOut,
                 bool* tint,
                 GfVec4f* tintColor);
+
+        PXRUSDMAYA_API
+        virtual MStatus setDependentsDirty(
+                const MPlug& plug,
+                MPlugArray& plugArray) override;
 
         PXRUSDMAYA_API
         virtual bool setInternalValueInContext(

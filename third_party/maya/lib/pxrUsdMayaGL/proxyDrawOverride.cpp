@@ -63,8 +63,16 @@ UsdMayaProxyDrawOverride::Creator(const MObject& obj)
     return new UsdMayaProxyDrawOverride(obj);
 }
 
+// Note that isAlwaysDirty became available as an MPxDrawOverride constructor
+// parameter beginning with Maya 2016 Extension 2.
 UsdMayaProxyDrawOverride::UsdMayaProxyDrawOverride(const MObject& obj) :
-        MHWRender::MPxDrawOverride(obj, UsdMayaProxyDrawOverride::draw)
+        MHWRender::MPxDrawOverride(obj,
+                                   UsdMayaProxyDrawOverride::draw
+#if MAYA_API_VERSION >= 201651
+                                   , /* isAlwaysDirty = */ true)
+#else
+                                   )
+#endif
 {
 }
 
