@@ -82,6 +82,20 @@ class PxrMayaHdShapeAdapter
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus);
 
+        /// Update the shape adapter's visibility state from the display status
+        /// of its shape.
+        ///
+        /// When a Maya shape is made invisible, it may no longer be included
+        /// in the "prepare" phase of a viewport render (i.e. we get no
+        /// getDrawRequests() or prepareForDraw() callbacks for that shape).
+        /// This method can be called on demand to ensure that the shape
+        /// adapter is updated with the current visibility state of the shape.
+        ///
+        /// Returns true if the visibility state was changed, or false
+        /// otherwise.
+        PXRUSDMAYAGL_API
+        bool UpdateVisibility();
+
         /// Get a set of render params from the shape adapter's current state.
         ///
         /// Sets \p drawShape and \p drawBoundingBox depending on whether shape

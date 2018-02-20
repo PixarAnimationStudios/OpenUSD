@@ -465,6 +465,10 @@ PxrMayaHdShapeAdapter::Sync(
         _drawShape = false;
     }
 
+    if (_delegate->GetRootVisibility() != _drawShape) {
+        _delegate->SetRootVisibility(_drawShape);
+    }
+
     if (_rprimCollection.GetReprName() != reprName) {
         _rprimCollection.SetReprName(reprName);
 
@@ -474,10 +478,8 @@ PxrMayaHdShapeAdapter::Sync(
                 reprName.GetText(),
                 _rprimCollection.GetName().GetText());
 
-        if (_delegate) {
-            _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-                _rprimCollection.GetName());
-        }
+        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
+            _rprimCollection.GetName());
     }
 
     // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
@@ -490,6 +492,26 @@ PxrMayaHdShapeAdapter::Sync(
 #endif
 
     return true;
+}
+
+bool
+PxrMayaHdShapeAdapter::UpdateVisibility()
+{
+    MStatus status;
+    const MHWRender::DisplayStatus displayStatus =
+        MHWRender::MGeometryUtilities::displayStatus(_shapeDagPath, &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    const bool isVisible = (displayStatus != MHWRender::kInvisible);
+
+    if (_delegate && _delegate->GetRootVisibility() != isVisible) {
+        _delegate->SetRootVisibility(isVisible);
+        return true;
+    }
+
+    return false;
 }
 
 PxrMayaHdRenderParams
