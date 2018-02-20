@@ -77,6 +77,9 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelDefinition(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
 
+    if(!prim || !prim.IsActive())
+        return nullptr;
+
     if(prim.IsInstanceProxy())
         return FindOrCreateSkelDefinition(prim.GetPrimInMaster());
 
@@ -101,6 +104,9 @@ UsdSkel_AnimQueryImplRefPtr
 UsdSkel_CacheImpl::ReadScope::FindOrCreateAnimQuery(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
+
+    if(!prim || !prim.IsActive())
+        return nullptr;
 
     if(prim.IsInstanceProxy())
         return FindOrCreateAnimQuery(prim.GetPrimInMaster());
