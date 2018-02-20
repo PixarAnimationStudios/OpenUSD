@@ -573,6 +573,13 @@ public:
         }
     }
 
+    // Seek to the next position that's a multiple of \p alignment.  Alignment
+    // must be a power-of-two.
+    inline int64_t Align(int alignment) {
+        Seek((Tell() + alignment - 1) & ~(alignment - 1));
+        return Tell();
+    }        
+
 private:
     inline void _FlushBuffer() {
         if (_buffer.size) {
@@ -1066,6 +1073,7 @@ public:
     int64_t Tell() const { return sink->Tell(); }
     void Seek(int64_t offset) { sink->Seek(offset); }
     void Flush() { sink->Flush(); }
+    int64_t Align(int alignment) { return sink->Align(alignment); }
 
     template <class T>
     uint32_t GetInlinedValue(T x) {
@@ -1302,11 +1310,16 @@ static inline ValueRep
 _WriteUncompressedArray(
     Writer w, VtArray<T> const &array, CrateFile::Version ver)
 {
-    auto result = ValueRepForArray<T>(w.Tell());
+    // We'll align the array to 8 bytes, so software can refer to mapped bytes
+    // directly if possible.
+    auto result = ValueRepForArray<T>(w.Align(sizeof(uint64_t)));
+
     (ver < CrateFile::Version(0,7,0)) ?
         w.template WriteAs<uint32_t>(array.size()) :
         w.template WriteAs<uint64_t>(array.size());
+    
     w.WriteContiguous(array.cdata(), array.size());
+
     return result;
 }
 
