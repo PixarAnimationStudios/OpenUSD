@@ -730,10 +730,11 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
 }
 
 bool
-UsdGeomPointInstancer::ComputeExtentAtTime(
+UsdGeomPointInstancer::_ComputeExtentAtTime(
     VtVec3fArray* extent,
     const UsdTimeCode time,
-    const UsdTimeCode baseTime) const
+    const UsdTimeCode baseTime,
+    const GfMatrix4d* transform) const
 {
     if (!extent) {
         TF_WARN("%s -- null container passed to ComputeExtentAtTime()",
@@ -820,6 +821,10 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
 
         // Apply the instance transform.
         thisBounds.Transform(instanceTransforms[instanceId]);
+        // Apply the optional transform.
+        if (transform) {
+            thisBounds.Transform(*transform);
+        }
         extentRange.UnionWith(thisBounds.ComputeAlignedRange());
     }
 
@@ -833,10 +838,30 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
     return true;
 }
 
+bool
+UsdGeomPointInstancer::ComputeExtentAtTime(
+    VtVec3fArray* extent,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime) const
+{
+    return _ComputeExtentAtTime(extent, time, baseTime, nullptr);
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTime(
+    VtVec3fArray* extent,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d& transform) const
+{
+    return _ComputeExtentAtTime(extent, time, baseTime, &transform);
+}
+
 static bool
 _ComputeExtentForPointInstancer(
     const UsdGeomBoundable& boundable,
     const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     const UsdGeomPointInstancer pointInstancerSchema(boundable);
@@ -846,7 +871,12 @@ _ComputeExtentForPointInstancer(
 
     // We use the input time as the baseTime because we don't care about
     // velocity or angularVelocity.
-    return pointInstancerSchema.ComputeExtentAtTime(extent, time, time);
+    if (transform) {
+        return pointInstancerSchema.ComputeExtentAtTime(
+            extent, time, time, *transform);
+    } else {
+        return pointInstancerSchema.ComputeExtentAtTime(extent, time, time);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

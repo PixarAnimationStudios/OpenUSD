@@ -275,6 +275,12 @@ public:
     USDGEOM_API
     static bool ComputeExtent(double height, double radius, const TfToken& axis,
         VtVec3fArray* extent);
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    static bool ComputeExtent(double height, double radius, const TfToken& axis,
+        const GfMatrix4d& transform, VtVec3fArray* extent);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

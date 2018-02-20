@@ -220,6 +220,12 @@ public:
     /// attribute based methods).
     USDGEOM_API
     static bool ComputeExtent(double radius, VtVec3fArray* extent);
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    static bool ComputeExtent(double radius, const GfMatrix4d& transform,
+        VtVec3fArray* extent);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

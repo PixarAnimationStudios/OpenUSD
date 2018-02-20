@@ -860,6 +860,23 @@ public:
                         VtVec3fArray* extent,
                         const UsdTimeCode time,
                         const UsdTimeCode baseTime) const;
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    bool ComputeExtentAtTime(
+                        VtVec3fArray* extent,
+                        const UsdTimeCode time,
+                        const UsdTimeCode baseTime,
+                        const GfMatrix4d& transform) const;
+
+private:
+
+    bool _ComputeExtentAtTime(
+        VtVec3fArray* extent,
+        const UsdTimeCode time,
+        const UsdTimeCode baseTime,
+        const GfMatrix4d* transform) const;
 };
 
 template <class T>

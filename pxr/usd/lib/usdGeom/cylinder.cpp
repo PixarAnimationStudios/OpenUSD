@@ -214,6 +214,23 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static bool
+_ComputeExtentMax(double height, double radius, const TfToken& axis,
+    GfVec3f* max)
+{
+    if (axis == UsdGeomTokens->x) {
+        *max = GfVec3f(height * 0.5, radius, radius);
+    } else if (axis == UsdGeomTokens->y) {
+        *max = GfVec3f(radius, height * 0.5, radius);
+    } else if (axis == UsdGeomTokens->z) {
+        *max = GfVec3f(radius, radius, height * 0.5);
+    } else {
+      return false; // invalid axis
+    }
+
+    return true;
+}
+
 bool
 UsdGeomCylinder::ComputeExtent(double height, double radius,
     const TfToken& axis, VtVec3fArray* extent)
@@ -222,17 +239,32 @@ UsdGeomCylinder::ComputeExtent(double height, double radius,
     extent->resize(2);
 
     GfVec3f max;
-    if (axis == UsdGeomTokens->x) {
-        max = GfVec3f(height * 0.5, radius, radius);
-    } else if (axis == UsdGeomTokens->y) {
-        max = GfVec3f(radius, height * 0.5, radius);
-    } else if (axis == UsdGeomTokens->z) {
-        max = GfVec3f(radius, radius, height * 0.5);
-    } else {
-      return false; // invalid axis
+    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+        return false;
     }
+
     (*extent)[0] = -max;
     (*extent)[1] = max;
+
+    return true;
+}
+
+bool
+UsdGeomCylinder::ComputeExtent(double height, double radius,
+    const TfToken& axis, const GfMatrix4d& transform, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfVec3f max;
+    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+        return false;
+    }
+
+    GfBBox3d bbox = GfBBox3d(GfRange3d(-max, max), transform);
+    GfRange3d range = bbox.ComputeAlignedRange();
+    (*extent)[0] = GfVec3f(range.GetMin());
+    (*extent)[1] = GfVec3f(range.GetMax());
 
     return true;
 }
@@ -241,6 +273,7 @@ static bool
 _ComputeExtentForCylinder(
     const UsdGeomBoundable& boundable,
     const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     const UsdGeomCylinder cylinderSchema(boundable);
@@ -263,7 +296,12 @@ _ComputeExtentForCylinder(
         return false;
     }
 
-    return UsdGeomCylinder::ComputeExtent(height, radius, axis, extent);
+    if (transform) {
+        return UsdGeomCylinder::ComputeExtent(
+            height, radius, axis, *transform, extent);
+    } else {
+        return UsdGeomCylinder::ComputeExtent(height, radius, axis, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

@@ -205,10 +205,11 @@ private:
 
 TF_INSTANTIATE_SINGLETON(_FunctionRegistry);
 
-bool
-UsdGeomBoundable::ComputeExtentFromPlugins(
+static bool
+_ComputeExtentFromPlugins(
     const UsdGeomBoundable& boundable,
     const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     if (!boundable) {
@@ -220,7 +221,26 @@ UsdGeomBoundable::ComputeExtentFromPlugins(
 
     const UsdGeomComputeExtentFunction fn = _FunctionRegistry::GetInstance()
         .GetComputeFunction(boundable.GetPrim());
-    return fn && (*fn)(boundable, time, extent);
+    return fn && (*fn)(boundable, time, transform, extent);
+}
+
+bool
+UsdGeomBoundable::ComputeExtentFromPlugins(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    return _ComputeExtentFromPlugins(boundable, time, &transform, extent);
+}
+
+bool
+UsdGeomBoundable::ComputeExtentFromPlugins(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    VtVec3fArray* extent)
+{
+    return _ComputeExtentFromPlugins(boundable, time, nullptr, extent);
 }
 
 void

@@ -190,10 +190,27 @@ UsdGeomSphere::ComputeExtent(double radius, VtVec3fArray* extent)
     return true;
 }
 
+bool
+UsdGeomSphere::ComputeExtent(double radius, const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfBBox3d bbox = GfBBox3d(
+        GfRange3d(GfVec3d(-radius), GfVec3d(radius)), transform);
+    GfRange3d range = bbox.ComputeAlignedRange();
+    (*extent)[0] = GfVec3f(range.GetMin());
+    (*extent)[1] = GfVec3f(range.GetMax());
+
+    return true;
+}
+
 static bool
 _ComputeExtentForSphere(
     const UsdGeomBoundable& boundable,
     const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     const UsdGeomSphere sphereSchema(boundable);
@@ -206,7 +223,11 @@ _ComputeExtentForSphere(
         return false;
     }
 
-    return UsdGeomSphere::ComputeExtent(radius, extent);
+    if (transform) {
+        return UsdGeomSphere::ComputeExtent(radius, *transform, extent);
+    } else {
+        return UsdGeomSphere::ComputeExtent(radius, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

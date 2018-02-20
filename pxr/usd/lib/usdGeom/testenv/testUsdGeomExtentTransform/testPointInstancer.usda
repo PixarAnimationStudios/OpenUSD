@@ -1,0 +1,48 @@
+#usda 1.0
+
+def Xform "ProtoRed" () {
+    def Cube "cube" () {
+        ColorFloat[] primvars:displayColor = [(1,0,0)]
+    }
+    token visibility = "invisible"
+}
+def Xform "ProtoGreen" () {
+    def Cube "cube" () {
+        ColorFloat[] primvars:displayColor = [(0,1,0)]
+    }
+    token visibility = "invisible"
+}
+
+def PointInstancer "Instancer" () {
+    Vec3f[] extent = [(-1, -1, -1), (3.5, 3.5, 3.5)]
+    int[] protoIndices = [ 0, 1, 1 ] 
+    int[] ids = [ 5, 6, 7 ]
+    rel prototypes = [ <Protos/Proto1>, <Protos/Proto2> ]
+    PointFloat[] positions = [ (0,0,0), (0,2.5,0), (2.5,2.5,2.5) ]
+
+    def "Protos" {
+        def "Proto1" (
+            references = </ProtoRed>
+        ) {
+            token visibility = "visible"
+        }
+        def Xform "Proto2" (
+            references = </ProtoGreen>
+        ) {
+            token visibility = "visible"
+        }
+    }
+}
+
+def PointInstancer "StrangeInstancer" (
+    references = </Instancer>
+) {
+    matrix4d xformOp:transform = ( (0.8047378541243649, 0.5058793634016806, -0.15530860876302277, 0), (-0.31061721752604554, 0.8047378541243649, 0.2529396817008403, 0), (0.5058793634016806, -0.31061721752604554, 0.40236892706218247, 0), (1, 2, 1.5, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Cube "StrangeInstancerComputedExtent" () {
+    Vec3f[] extent = [(-1.3977774381637573, 0.3787655532360077, 0.689382791519165),
+                      (5.12123441696167, 6.12123441696167, 3.560617208480835)]
+    uniform token visibility = "invisible"
+}

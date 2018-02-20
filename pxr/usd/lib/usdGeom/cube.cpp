@@ -190,10 +190,27 @@ UsdGeomCube::ComputeExtent(double size, VtVec3fArray* extent)
     return true;
 }
 
+bool
+UsdGeomCube::ComputeExtent(double size, const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfBBox3d bbox = GfBBox3d(
+        GfRange3d(GfVec3d(size * -0.5), GfVec3d(size * 0.5)), transform);
+    GfRange3d range = bbox.ComputeAlignedRange();
+    (*extent)[0] = GfVec3f(range.GetMin());
+    (*extent)[1] = GfVec3f(range.GetMax());
+
+    return true;
+}
+
 static bool
 _ComputeExtentForCube(
     const UsdGeomBoundable& boundable,
     const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     const UsdGeomCube cubeSchema(boundable);
@@ -206,7 +223,11 @@ _ComputeExtentForCube(
         return false;
     }
 
-    return UsdGeomCube::ComputeExtent(size, extent);
+    if (transform) {
+        return UsdGeomCube::ComputeExtent(size, *transform, extent);
+    } else {
+        return UsdGeomCube::ComputeExtent(size, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)
