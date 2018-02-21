@@ -109,13 +109,17 @@ struct PxrUsdKatanaUtils {
     static std::string _ConvertUsdPathToKatLocation(
             const SdfPath &path,
             const std::string &isolatePathString,
-            const std::string &rootPathString);
+            const std::string &rootPathString,
+            const std::string &sessionPathString = "",
+            bool allowOutsideIsolation = false);
     static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
-            const PxrUsdKatanaUsdInPrivateData& data);
+            const PxrUsdKatanaUsdInPrivateData& data,
+            bool allowOutsideIsolation = false);
     static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
-            const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs);
+            const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs,
+            bool allowOutsideIsolation = false);
 
     /// USD Looks can have Katana child-parent relationships, which means that
     /// we'll have to do some extra processing to find the correct path that
