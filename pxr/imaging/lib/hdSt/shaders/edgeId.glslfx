@@ -91,10 +91,6 @@ bool IsFragmentOnEdge() {
     return false;
 }
 
-bool IsFragmentOnPoint() {
-    return false;
-}
-
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Bary
 
@@ -138,12 +134,6 @@ bool IsFragmentOnEdge()
 {
     vec3 bc = ExpandBaryCoord(gsBaryCoord);
     return any( lessThan(bc, vec3(pickRadius)) );
-}
-
-bool IsFragmentOnPoint()
-{
-    vec3 bc = ExpandBaryCoord(gsBaryCoord);
-    return any( greaterThan(bc, vec3(1 - pickRadius)) );
 }
 
 --- --------------------------------------------------------------------------
@@ -190,15 +180,4 @@ bool IsFragmentOnEdge()
     bool e0_e3 = any( lessThan(uv, vec2(pickRadius)) );
     bool e1_e2 = any( greaterThan(uv, vec2(1 - pickRadius)) );
     return e0_e3 || e1_e2;
-}
-
-bool IsFragmentOnPoint()
-{
-    vec2 uv = gsRect;
-    bool p0 = all( lessThan(uv, vec2(pickRadius)) );
-    bool p2 = all( greaterThan(uv, vec2(1 - pickRadius)) );
-    bool p1_p3 = any( lessThan(uv, vec2(pickRadius)) ) &&
-                 any( greaterThan(uv, vec2(1 - pickRadius)) );
-
-    return p0 || p2 || p1_p3;
 }

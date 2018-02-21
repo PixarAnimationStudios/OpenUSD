@@ -1892,10 +1892,6 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                 << "bool IsFragmentOnEdge() {\n"
                 << "  return false;\n"
                 << "}\n";
-            accessors
-                << "bool IsFragmentOnPoint() {\n"
-                << "  return false;\n"
-                << "}\n";
         }
         else if (_geometricShader->IsPrimTypeBasisCurves()) {
             // basis curves don't have an edge indices buffer bound, so we 
@@ -1914,27 +1910,19 @@ HdSt_CodeGen::_GenerateElementPrimVar()
             << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
             << "  return -1;\n"
             << "}\n";
-
         accessors
             << "int GetPrimitiveEdgeId() {\n"
             << "  return -1;\n"
             << "}\n";
-
         accessors
             << "bool IsFragmentOnEdge() {\n"
-            << "return false;\n"
-            << "}\n";
-
-        accessors
-            << "bool IsFragmentOnPoint() {\n"
             << "return false;\n"
             << "}\n";
     }
     declarations
         << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
         << "int GetPrimitiveEdgeId();\n"
-        << "bool IsFragmentOnEdge();\n"
-        << "bool IsFragmentOnPoint();\n";
+        << "bool IsFragmentOnEdge();\n";
 
     // Uniform primvar data declarations & accessors
     TF_FOR_ALL (it, _metaData.elementData) {

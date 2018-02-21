@@ -29,6 +29,7 @@
 
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Point.Vertex
@@ -38,6 +39,7 @@ out VertexData
     vec4 Peye;
 } outData;
 
+void ProcessPointId(); // pointId.glslfx
 void main(void)
 {
     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
@@ -60,6 +62,8 @@ void main(void)
 
     gl_PointSize = clamp(viewportScale.x * diameter.x/diameter.w,
                          HD_GL_POINT_SIZE_MIN, HD_GL_POINT_SIZE_MAX);
+
+    ProcessPointId();
 }
 
 --- --------------------------------------------------------------------------

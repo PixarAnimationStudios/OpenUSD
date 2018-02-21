@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdx/unitTestUtils.h"
 
 #include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include <boost/functional/hash.hpp>
@@ -41,6 +42,7 @@ struct AggregatedHit {
     HdxIntersector::Hit const& hit;
     std::set<int> elementIndices;
     std::set<int> edgeIndices;
+    std::set<int> pointIndices;
 };
 
 static size_t
@@ -74,6 +76,9 @@ _AggregateHits(HdxIntersector::HitSet const& hits)
             if (hit.edgeIndex != -1) {
                 aHit.edgeIndices.insert(hit.edgeIndex);
             }
+            if (hit.pointIndex != -1) {
+                aHit.pointIndices.insert(hit.pointIndex);
+            }
             continue;
         }
 
@@ -82,6 +87,9 @@ _AggregateHits(HdxIntersector::HitSet const& hits)
         aHitNew.elementIndices.insert(hit.elementIndex);
         if (hit.edgeIndex != -1) {
             aHitNew.edgeIndices.insert(hit.edgeIndex);
+        }
+        if (hit.pointIndex != -1) {
+            aHitNew.pointIndices.insert(hit.pointIndex);
         }
         aggrHits.insert( std::make_pair(hitHash, aHitNew) );
     }
@@ -148,6 +156,23 @@ _ProcessHit(AggregatedHit const& aHit,
                 std::cout << "Picked edges ";
                 for(const auto& edge : edges) {
                     std::cout << edge << ", ";
+                }
+                std::cout << " of prim " << hit.objectId << std::endl;
+            }
+            
+            break;
+        }
+
+        case HdxIntersector::PickPoints:
+        {
+            if (!aHit.pointIndices.empty()) {
+                VtIntArray points(aHit.pointIndices.size());
+                points.assign(aHit.pointIndices.begin(), aHit.pointIndices.end());
+                selection->AddPoints(highlightMode, hit.objectId, points);
+
+                std::cout << "Picked points ";
+                for(const auto& point : points) {
+                    std::cout << point << ", ";
                 }
                 std::cout << " of prim " << hit.objectId << std::endl;
             }

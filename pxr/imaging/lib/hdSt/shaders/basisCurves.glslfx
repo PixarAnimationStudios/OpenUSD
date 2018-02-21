@@ -29,6 +29,7 @@
 
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
 
 // Known issues:
 // * The direction of the 'v' post tessellation is inconsistent between 
@@ -55,6 +56,7 @@ out CurveVertexData
 
 // We will either generate a camera facing normal or use the authored normal.
 vec3 getNormal(MAT4 transform);
+void ProcessPointId(); // pointId.glslfx
 
 void main(void)
 {
@@ -66,6 +68,8 @@ void main(void)
                                   GetWorldToViewInverseMatrix()));
 
     ProcessPrimVars();
+
+    ProcessPointId();
 }
 
 --- --------------------------------------------------------------------------
@@ -94,6 +98,8 @@ out CurveVertexData
     vec4 Peye;
 } outData;
 
+void ProcessPointId(); // pointId.glslfx
+
 void main(void)
 {
     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
@@ -105,6 +111,8 @@ void main(void)
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
+
+    ProcessPointId();
 }
 
 --- --------------------------------------------------------------------------

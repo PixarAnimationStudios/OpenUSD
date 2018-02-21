@@ -66,7 +66,8 @@ class HdxSelection {
 public:
     typedef TfHashMap<SdfPath, std::vector<VtIntArray>, SdfPath::Hash> InstanceMap;
     typedef TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> ElementIndicesMap;
-    typedef TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> EdgeIndicesMap;
+    typedef ElementIndicesMap EdgeIndicesMap;
+    typedef ElementIndicesMap PointIndicesMap;
 
     HdxSelection() = default;
 
@@ -88,6 +89,11 @@ public:
     void AddEdges(HdxSelectionHighlightMode const& mode,
                   SdfPath const &path,
                   VtIntArray const &edgeIndices);
+    
+    HDX_API
+    void AddPoints(HdxSelectionHighlightMode const& mode,
+                   SdfPath const &path,
+                   VtIntArray const &pointIndices);
 
     SdfPathVector const&
     GetSelectedPrims(HdxSelectionHighlightMode const& mode) const;
@@ -100,6 +106,9 @@ public:
 
     EdgeIndicesMap const&
     GetSelectedEdges(HdxSelectionHighlightMode const& mode) const;
+    
+    PointIndicesMap const&
+    GetSelectedPoints(HdxSelectionHighlightMode const& mode) const;
 
 protected:
     struct _SelectedEntities {
@@ -117,8 +126,12 @@ protected:
         ElementIndicesMap elements;
 
         // The selected edges, if any, for the selected objects. This maps from 
-        // object path to a vector of edge indices.
+        // object path to a vector of (authored) edge indices.
         EdgeIndicesMap edges;
+
+        // The selected points, if any, for the selected objects. This maps from
+        // object path to a vector of point (vertex) indices.
+        PointIndicesMap points;
     };
 
     _SelectedEntities _selEntities[HdxSelectionHighlightModeCount];

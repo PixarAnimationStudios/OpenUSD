@@ -76,6 +76,16 @@ HdxSelection::AddEdges(HdxSelectionHighlightMode const& mode,
     _selEntities[mode].edges[path] = edgeIndices;
 }
 
+void 
+HdxSelection::AddPoints(HdxSelectionHighlightMode const& mode,
+            SdfPath const& path,
+            VtIntArray const &pointIndices)
+{
+    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
+    _selEntities[mode].prims.push_back(path);
+    _selEntities[mode].points[path] = pointIndices;
+}
+
 SdfPathVector const&
 HdxSelection::GetSelectedPrims(HdxSelectionHighlightMode const& mode) const
 {
@@ -102,6 +112,13 @@ HdxSelection::GetSelectedEdges(HdxSelectionHighlightMode const& mode) const
 {
     TF_VERIFY(mode < HdxSelectionHighlightModeCount);
     return _selEntities[mode].edges;
+}
+
+HdxSelection::PointIndicesMap const&
+HdxSelection::GetSelectedPoints(HdxSelectionHighlightMode const& mode) const
+{
+    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
+    return _selEntities[mode].points;
 }
 
 //------------------------------------------------------------------------------
@@ -423,13 +440,45 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
          //------------------------------------------------------------------- //
         // Subprimitives: Points
         // ------------------------------------------------------------------ //
-        
-            // XXX: todo
-        
+        size_t curOffset = output->size();
+        if (VtIntArray const *pointIndices
+            = TfMapLookupPtr(_selection->GetSelectedPoints(mode), objPath)) {
+            if (pointIndices->size()) {
+                int minPt = std::numeric_limits<int>::max();
+                int maxPt = std::numeric_limits<int>::lowest();
+
+                for (int const& ptId : *pointIndices) {
+                    minPt = std::min(minPt, ptId);
+                    maxPt = std::max(maxPt, ptId);
+                }
+
+                // Grow the edge array to hold edges for this object.
+                output->insert(output->end(),maxPt-minPt+1+3,
+                               _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
+
+                _EncodeSubprimTypeAndRange(output, curOffset,
+                                           POINT, minPt, maxPt+1);
+
+                for (int ptId : *pointIndices) {
+                    (*output)[3+curOffset+ (ptId-minPt)] =
+                        _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
+                }
+
+                hasSelectedSubprimitives = true;
+                netSubprimOffset = curOffset + modeOffset;
+
+                _DebugPrintArray("points", *output);
+            } else {
+                // empty point indices buffer. do nothing.
+            }
+        } else {
+            // prim doesn't have any selected points. do nothing.
+        }
+
         //------------------------------------------------------------------- //
         // Subprimitives: Edges
         // ------------------------------------------------------------------ //
-        size_t edgeOffset = output->size();
+        curOffset = output->size();
         if (VtIntArray const *edgeIndices
             = TfMapLookupPtr(_selection->GetSelectedEdges(mode), objPath)) {
             if (edgeIndices->size()) {
@@ -445,16 +494,16 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
                 output->insert(output->end(),maxEdge-minEdge+1+3,
                                _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
 
-                _EncodeSubprimTypeAndRange(output, edgeOffset,
+                _EncodeSubprimTypeAndRange(output, curOffset,
                                            EDGE, minEdge, maxEdge+1);
 
                 for (int edgeId : *edgeIndices) {
-                    (*output)[3+edgeOffset+ (edgeId-minEdge)] =
+                    (*output)[3+curOffset+ (edgeId-minEdge)] =
                         _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
                 }
 
                 hasSelectedSubprimitives = true;
-                netSubprimOffset = edgeOffset + modeOffset;
+                netSubprimOffset = curOffset + modeOffset;
 
                 _DebugPrintArray("edges", *output);
             } else {
@@ -464,13 +513,12 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
             // prim doesn't have any selected edges. do nothing.
         }
 
-
         // ------------------------------------------------------------------ //
         // Subprimitives: Elements (coarse/authored face(s) for meshes,
         //                individual curve(s) for basis curves)
         // ------------------------------------------------------------------ //
         // Find element sizes, for this object.
-        size_t elemOffset = output->size();
+        curOffset = output->size();
         if (VtIntArray const *elementIndices
             = TfMapLookupPtr(_selection->GetSelectedElements(mode), objPath)) {
             if (elementIndices->size()) {
@@ -489,16 +537,16 @@ HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
                 output->insert(output->end(), maxElem-minElem+1+3,
                            _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
 
-                _EncodeSubprimTypeAndRange(output, elemOffset,
+                _EncodeSubprimTypeAndRange(output, curOffset,
                                            ELEMENT, minElem, maxElem+1);
 
                 for (int elemId : *elementIndices) {
-                    (*output)[3+elemOffset+ (elemId-minElem)] =
+                    (*output)[3+curOffset+ (elemId-minElem)] =
                         _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
                 }
 
                 hasSelectedSubprimitives = true;
-                netSubprimOffset = elemOffset + modeOffset;
+                netSubprimOffset = curOffset + modeOffset;
 
                 _DebugPrintArray("elements", *output);
             } else {

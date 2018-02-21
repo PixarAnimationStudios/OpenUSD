@@ -143,6 +143,7 @@ public:
         int instanceIndex;
         int elementIndex;
         int edgeIndex;
+        int pointIndex;
         GfVec3f worldSpaceHitPoint;
         float ndcDepth;
 
@@ -189,6 +190,7 @@ public:
                std::unique_ptr<unsigned char[]> instanceIds,
                std::unique_ptr<unsigned char[]> elementIds,
                std::unique_ptr<unsigned char[]> edgeIds,
+               std::unique_ptr<unsigned char[]> pointIds,
                std::unique_ptr<float[]> depths,
                HdRenderIndex const *index,
                Params params,
@@ -230,6 +232,7 @@ public:
         std::unique_ptr<unsigned char[]> _instanceIds;
         std::unique_ptr<unsigned char[]> _elementIds;
         std::unique_ptr<unsigned char[]> _edgeIds;
+        std::unique_ptr<unsigned char[]> _pointIds;
         std::unique_ptr<float[]> _depths;
         HdRenderIndex const *_index;
         Params _params;

@@ -53,8 +53,8 @@ struct HdSt_PointsShaderKey
     bool IsFaceVarying() const { return false; }
 
     TfToken glslfx;
-    TfToken VS[3];
-    TfToken FS[4];
+    TfToken VS[4];
+    TfToken FS[5];
 };
 
 

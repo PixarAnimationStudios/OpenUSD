@@ -103,6 +103,8 @@ HdxIntersector::_Init(GfVec2i const& size)
         _drawTarget->AddAttachment(
             "edgeId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
         _drawTarget->AddAttachment(
+            "pointId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
+        _drawTarget->AddAttachment(
             "depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8);
             //"depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
 
@@ -284,11 +286,12 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     //
     // XXX: We should use the pickMode param to bind only the attachments
     // that are necessary. This should affect the shader code generated as well.
-    GLenum drawBuffers[4] = { GL_COLOR_ATTACHMENT0,
+    GLenum drawBuffers[5] = { GL_COLOR_ATTACHMENT0,
                               GL_COLOR_ATTACHMENT1,
                               GL_COLOR_ATTACHMENT2,
-                              GL_COLOR_ATTACHMENT3};
-    glDrawBuffers(4, drawBuffers);
+                              GL_COLOR_ATTACHMENT3,
+                              GL_COLOR_ATTACHMENT4};
+    glDrawBuffers(5, drawBuffers);
     
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_BLEND);
@@ -398,6 +401,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     std::unique_ptr<unsigned char[]> instanceId(new unsigned char[len*4]);
     std::unique_ptr<unsigned char[]> elementId(new unsigned char[len*4]);
     std::unique_ptr<unsigned char[]> edgeId(new unsigned char[len*4]);
+    std::unique_ptr<unsigned char[]> pointId(new unsigned char[len*4]);
     std::unique_ptr<float[]> depths(new float[len]);
 
     glBindTexture(GL_TEXTURE_2D,
@@ -415,6 +419,10 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("edgeId")->GetGlTextureName());
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &edgeId[0]);
+    
+    glBindTexture(GL_TEXTURE_2D,
+        drawTarget->GetAttachments().at("pointId")->GetGlTextureName());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pointId[0]);
 
     glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
@@ -428,7 +436,8 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     if (result) {
         *result = HdxIntersector::Result(
             std::move(primId), std::move(instanceId), std::move(elementId),
-            std::move(edgeId), std::move(depths), _index, params, viewport);
+            std::move(edgeId), std::move(pointId), std::move(depths),
+            _index, params, viewport);
     }
 
     drawTarget->Unbind();
@@ -447,6 +456,7 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
                         std::unique_ptr<unsigned char[]> instanceIds,
                         std::unique_ptr<unsigned char[]> elementIds,
                         std::unique_ptr<unsigned char[]> edgeIds,
+                        std::unique_ptr<unsigned char[]> pointIds,
                         std::unique_ptr<float[]> depths,
                         HdRenderIndex const *index,
                         HdxIntersector::Params params,
@@ -455,6 +465,7 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
     , _instanceIds(std::move(instanceIds))
     , _elementIds(std::move(elementIds))
     , _edgeIds(std::move(edgeIds))
+    , _pointIds(std::move(pointIds))
     , _depths(std::move(depths))
     , _index(index)
     , _params(params)
@@ -481,6 +492,7 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     unsigned char const* instanceIds = _instanceIds.get();
     unsigned char const* elementIds = _elementIds.get();
     unsigned char const* edgeIds = _edgeIds.get();
+    unsigned char const* pointIds = _pointIds.get();
 
     GfVec3d hitPoint(0,0,0);
     gluUnProject(x, y, z,
@@ -506,6 +518,8 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
             &elementIds[idIndex]);
     int edgeIndex = HdxIntersector::DecodeIDRenderColor(
             &edgeIds[idIndex]);
+    int pointIndex = HdxIntersector::DecodeIDRenderColor(
+            &pointIds[idIndex]);
 
     bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
                                                            &(hit->delegateId),
@@ -518,8 +532,9 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     hit->worldSpaceHitPoint = GfVec3f(hitPoint);
     hit->ndcDepth = float(z);
     hit->instanceIndex = instanceIndex;
-    hit->elementIndex = elementIndex; 
-    hit->edgeIndex = edgeIndex; 
+    hit->elementIndex = elementIndex;
+    hit->edgeIndex = edgeIndex;
+    hit->pointIndex = pointIndex;
 
     if (TfDebug::IsEnabled(HDX_INTERSECT)) {
         std::cout << *hit << std::endl;
@@ -535,6 +550,7 @@ HdxIntersector::Result::_GetHash(int index) const
     unsigned char const* instanceIds = _instanceIds.get();
     unsigned char const* elementIds = _elementIds.get();
     unsigned char const* edgeIds = _edgeIds.get();
+    unsigned char const* pointIds = _pointIds.get();
 
     int idIndex = index*4;
 
@@ -546,12 +562,15 @@ HdxIntersector::Result::_GetHash(int index) const
             &elementIds[idIndex]);
     int edgeIndex = HdxIntersector::DecodeIDRenderColor(
             &edgeIds[idIndex]);
+    int pointIndex = HdxIntersector::DecodeIDRenderColor(
+            &pointIds[idIndex]);
 
     size_t hash = 0;
     boost::hash_combine(hash, primId);
     boost::hash_combine(hash, instanceIndex);
     boost::hash_combine(hash, elementIndex);
     boost::hash_combine(hash, size_t(edgeIndex));
+    boost::hash_combine(hash, size_t(pointIndex));
 
     return hash;
 }
@@ -675,6 +694,7 @@ HdxIntersector::Hit::GetHash() const
     boost::hash_combine(hash, instanceIndex);
     boost::hash_combine(hash, elementIndex);
     boost::hash_combine(hash, edgeIndex);
+    boost::hash_combine(hash, pointIndex);
     boost::hash_combine(hash, worldSpaceHitPoint[0]);
     boost::hash_combine(hash, worldSpaceHitPoint[1]);
     boost::hash_combine(hash, worldSpaceHitPoint[2]);
@@ -694,6 +714,7 @@ HdxIntersector::Hit::HitSetHash::operator()(Hit const& hit) const
     boost::hash_combine(hash, hit.instanceIndex);
     boost::hash_combine(hash, hit.elementIndex);
     boost::hash_combine(hash, hit.edgeIndex);
+    boost::hash_combine(hash, hit.pointIndex);
 
     return hash;
 }
@@ -706,7 +727,8 @@ HdxIntersector::Hit::HitSetEq::operator()(Hit const& a, Hit const& b) const
        && a.instancerId == b.instancerId
        && a.instanceIndex == b.instanceIndex
        && a.elementIndex == b.elementIndex
-       && a.edgeIndex == b.edgeIndex;
+       && a.edgeIndex == b.edgeIndex
+       && a.pointIndex == b.pointIndex;
 }
 
 bool
@@ -724,6 +746,7 @@ HdxIntersector::Hit::operator==(Hit const& lhs) const
        && instanceIndex == lhs.instanceIndex
        && elementIndex == lhs.elementIndex
        && edgeIndex == lhs.edgeIndex
+       && pointIndex == lhs.pointIndex
        && worldSpaceHitPoint == lhs.worldSpaceHitPoint
        && ndcDepth == lhs.ndcDepth;
 }
@@ -737,6 +760,7 @@ operator<<(std::ostream& out, HdxIntersector::Hit const & h)
         << "Instance: [" << h.instanceIndex << "] "
         << "Element: [" << h.elementIndex << "] "
         << "Edge: [" << h.edgeIndex  << "] "
+        << "Point: [" << h.pointIndex  << "] "
         << "HitPoint: (" << h.worldSpaceHitPoint << ") "
         << "Depth: (" << h.ndcDepth << ") ";
     return out;

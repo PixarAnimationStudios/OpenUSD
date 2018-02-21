@@ -32,6 +32,7 @@
 #import $TOOLS/hdSt/shaders/meshWire.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -71,6 +72,8 @@ void main(void)
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     gl_PointSize = GetPointSize(gl_VertexID);
     ApplyClipPlanes(outData.Peye);
+
+    ProcessPointId();
 }
 
 --- --------------------------------------------------------------------------

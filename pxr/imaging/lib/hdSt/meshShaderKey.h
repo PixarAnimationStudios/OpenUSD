@@ -74,11 +74,11 @@ struct HdSt_MeshShaderKey
     float lineWidth;
     bool isFaceVarying;
     TfToken glslfx;
-    TfToken VS[4];
+    TfToken VS[5];
     TfToken TCS[3];
     TfToken TES[3];
     TfToken GS[7];
-    TfToken FS[9];
+    TfToken FS[10];
 };
 
 

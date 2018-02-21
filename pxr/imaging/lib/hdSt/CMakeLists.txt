@@ -115,6 +115,7 @@ pxr_library(hdSt
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
         shaders/points.glslfx
+        shaders/pointId.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx

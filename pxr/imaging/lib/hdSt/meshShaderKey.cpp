@@ -60,9 +60,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
     ((edgeIdBaryGS,            "EdgeId.Geometry.Bary"))
     ((edgeIdRectGS,            "EdgeId.Geometry.Rect"))
-    ((edgeIdBaryFallback,      "EdgeId.Fragment.BaryFallback"))
+    ((edgeIdBaryFallbackFS,    "EdgeId.Fragment.BaryFallback"))
     ((edgeIdBaryFS,            "EdgeId.Fragment.Bary"))
     ((edgeIdRectFS,            "EdgeId.Fragment.Rect"))
+
+    // point id mixins (for point picking & selection)
+    ((pointIdVS,               "PointId.Vertex"))
+    ((pointIdFS,               "PointId.Fragment.Points"))
+    ((pointIdFallbackFS,       "PointId.Fragment.Fallback"))
 
     // main for all the shader stages
     ((mainVS,                  "Mesh.Vertex"))
@@ -73,6 +78,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
     ((mainFS,                  "Mesh.Fragment"))
 
+    // instancing related mixins
     ((instancing,              "Instancing.Transform"))
 
     // terminals
@@ -114,8 +120,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     VS[0] = _tokens->instancing;
     VS[1] = (smoothNormals ? _tokens->smooth
                            : _tokens->flat);
-    VS[2] = _tokens->mainVS;
-    VS[3] = TfToken();
+    VS[2] = _tokens->pointIdVS;
+    VS[3] = _tokens->mainVS;
+    VS[4] = TfToken();
 
     // tessellation control shader
     const bool isPrimTypePatches = 
@@ -256,7 +263,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
         // for triangles, emit the fallback version.
         if (HdSt_GeometricShader::IsPrimTypeTriangles(primType)) {
-            FS[fsIndex++] = _tokens->edgeIdBaryFallback;
+            FS[fsIndex++] = _tokens->edgeIdBaryFallbackFS;
         }
 
         // for points, it isn't so simple. we don't know if the 'edgeIndices'
@@ -268,6 +275,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         // we handle this scenario in hdStCodeGen since it has the binding info.
     }
 
+    FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
+                                      _tokens->pointIdFallbackFS;
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }
