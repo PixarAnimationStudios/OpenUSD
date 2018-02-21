@@ -38,7 +38,7 @@ SdfPrimSpec properties are represented by the SdfPropertySpec class. Property sp
         <b>SdfAttributeSpec.</b> Represents values, which can be scalar or array-valued.  For example, the \c radius attribute of a Sphere gprim holds a scalar value; the \c points attribute of a Mesh gprim holds an array value. 
 	</li>
 	<li>
-	    <b>SdfRelationshipSpec.</b> Represents a relationship to other prims, attributes, or relationships, such as the \c look:binding relationship that assigns Looks to Gprims.
+	    <b>SdfRelationshipSpec.</b> Represents a relationship to other prims, attributes, or relationships, such as the \c material:binding relationship that assigns Materials to Gprims.
 	</li>
 </ul>
 

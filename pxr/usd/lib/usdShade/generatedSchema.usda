@@ -76,14 +76,6 @@ class Material "Material" (
 {
 }
 
-class Look "Look" (
-    doc = """\\deprecated Deprecated in favor of Material.
-    Please refer to UsdMaterial
-    """
-)
-{
-}
-
 class Shader "Shader" (
     doc = '''Base class for all USD shaders. Shaders are the building blocks
     of shading networks. While UsdShadeShader objects are not target specific,

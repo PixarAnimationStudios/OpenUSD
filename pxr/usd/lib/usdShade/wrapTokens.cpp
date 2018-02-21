@@ -76,7 +76,6 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "interface_", UsdShadeTokens->interface_);
     _AddToken(cls, "interfaceOnly", UsdShadeTokens->interfaceOnly);
     _AddToken(cls, "interfaceRecipientsOf", UsdShadeTokens->interfaceRecipientsOf);
-    _AddToken(cls, "lookBinding", UsdShadeTokens->lookBinding);
     _AddToken(cls, "materialBind", UsdShadeTokens->materialBind);
     _AddToken(cls, "materialBinding", UsdShadeTokens->materialBinding);
     _AddToken(cls, "materialBindingCollection", UsdShadeTokens->materialBindingCollection);

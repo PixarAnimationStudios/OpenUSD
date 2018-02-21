@@ -25,13 +25,6 @@ over "GLOBAL" (
                 denote a collection-based binding to a UsdShadeMaterial.
                 """
             }
-            dictionary lookBinding = {
-                string value = "look:binding"
-                string doc = """The relationship name on non shading prims to
-                denote a binding to a UsdShadeLook. This is a deprecated
-                relationship and is superceded by material:binding.
-                """
-            }
             dictionary materialVariant = {
                 string doc = """The variant name of material variation
                 described on a UsdShadeMaterial.
@@ -254,20 +247,6 @@ class Material "Material" (
         string extraIncludes = """
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
-"""
-    }
-) {
-}
-
-class Look "Look" (
-    inherits = </Material>
-    doc = """\\deprecated Deprecated in favor of Material.
-    Please refer to UsdMaterial
-    """
-    customData = {
-        string extraIncludes = """
-#include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
 """
     }

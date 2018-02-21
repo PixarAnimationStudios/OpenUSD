@@ -110,10 +110,6 @@ struct UsdShadeTokensType {
     /// 
     /// (DEPRECATED) The prefix on UsdShadeNodeGraph relationships denoting the target of an interface attribute. 
     const TfToken interfaceRecipientsOf;
-    /// \brief "look:binding"
-    /// 
-    /// The relationship name on non shading prims to denote a binding to a UsdShadeLook. This is a deprecated relationship and is superceded by material:binding. 
-    const TfToken lookBinding;
     /// \brief "materialBind"
     /// 
     /// The name of the GeomSubset family used to  identify face subsets defined for the purpose of binding  materials to facesets. 
