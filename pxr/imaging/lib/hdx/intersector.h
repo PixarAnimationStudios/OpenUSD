@@ -51,7 +51,7 @@ class HdRenderIndex;
 class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
 
@@ -250,8 +250,8 @@ private:
     // Having separate render pass states allows us to queue up the tasks
     // corresponding to each of the above render passes. It also lets us use
     // different shader mixins if we choose to (we don't currently.)
-    HdStRenderPassStateSharedPtr _pickableRenderPassState;
-    HdStRenderPassStateSharedPtr _unpickableRenderPassState;
+    HdRenderPassStateSharedPtr _pickableRenderPassState;
+    HdRenderPassStateSharedPtr _unpickableRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.

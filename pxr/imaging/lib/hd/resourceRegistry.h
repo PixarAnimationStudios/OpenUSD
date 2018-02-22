@@ -172,6 +172,32 @@ public:
         _singleAggregationStrategy.reset(strategy);
     }
 
+    /// Returns whether an aggregation strategy is set for non uniform params.
+    bool HasNonUniformAggregationStrategy() const {
+        return _nonUniformAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for non uniform
+    /// immutable params.
+    bool HasNonUniformImmutableAggregationStrategy() const {
+        return _nonUniformImmutableAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for uniform params.
+    bool HasUniformAggregationStrategy() const {
+        return _uniformUboAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for SSBO.
+    bool HasShaderStorageAggregationStrategy() const {
+        return _uniformSsboAggregationStrategy.get();
+    }
+
+    /// Returns whether an aggregation strategy is set for single buffers.
+    bool HasSingleStorageAggregationStrategy() const {
+        return _singleAggregationStrategy.get();
+    }
+
     /// Returns a report of resource allocation by role in bytes and
     /// a summary total allocation of GPU memory in bytes for this registry.
     HD_API
