@@ -50,6 +50,8 @@ JobExportArgs::JobExportArgs()
         exportAnimation(false),
         excludeInvisible(false),
         exportDefaultCameras(false),
+        exportSkin(false),
+        autoSkelRoots(false),
         exportMeshUVs(true),
         normalizeMeshUVs(false),
         exportMaterialCollections(false),

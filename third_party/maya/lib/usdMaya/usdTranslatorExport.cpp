@@ -157,6 +157,17 @@ usdTranslatorExport::writer(const MFileObject &file,
             if (theOption[0] == MString("exportVisibility")) {
                 jobArgs.exportVisibility = theOption[1].asInt();
             }
+            if (theOption[0] == MString("exportSkin")) {
+                if (theOption[1] == "All (Automatically Create SkelRoots)") {
+                    jobArgs.exportSkin = true;
+                    jobArgs.autoSkelRoots = true;
+                } else if (theOption[1] == "Only Under SkelRoots") {
+                    jobArgs.exportSkin = true;
+                    jobArgs.autoSkelRoots = false;
+                } else {
+                    jobArgs.exportSkin = false;
+                }
+            }
             if (theOption[0] == MString("animation")) {
                 jobArgs.exportAnimation = theOption[1].asInt();
             }

@@ -14,6 +14,7 @@ pxr_shared_library(${PXR_PACKAGE}
         usdLux
         usdRi
         usdShade
+        usdSkel
         usdUtils
         vt
         ${Boost_PYTHON_LIBRARY}
@@ -96,6 +97,7 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaMeshWriter
         MayaNurbsCurveWriter
         MayaNurbsSurfaceWriter
+        MayaSkeletonWriter
         ModelKindWriter
 
     PRIVATE_HEADERS
@@ -103,6 +105,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     CPPFILES
         MayaMeshWriter_PrimVars.cpp
+        MayaMeshWriter_Skin.cpp
         MayaMeshWriter_SubDiv.cpp
         primReaderCamera.cpp
         primReaderMaterial.cpp
@@ -162,6 +165,7 @@ pxr_test_scripts(
         testenv/testUsdExportSelection.py
         testenv/testUsdExportShadingModeDisplayColor.py
         testenv/testUsdExportShadingModePxrRis.py
+        testenv/testUsdExportSkeleton.py
         testenv/testUsdExportUVSets.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportCamera.py
@@ -393,6 +397,20 @@ pxr_register_test(testUsdExportShadingModePxrRis
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportShadingModePxrRis"
     TESTENV testUsdExportShadingModePxrRis
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportSkeletonTest
+    DEST testUsdExportSkeleton
+)
+pxr_register_test(testUsdExportSkeleton
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportSkeleton"
+    TESTENV testUsdExportSkeleton
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

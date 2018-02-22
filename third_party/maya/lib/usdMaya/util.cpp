@@ -38,6 +38,7 @@
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnExpression.h>
 #include <maya/MFnLambertShader.h>
+#include <maya/MFnMatrixData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnSet.h>
@@ -45,6 +46,7 @@
 #include <maya/MItDependencyNodes.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshPolygon.h>
+#include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -412,6 +414,23 @@ bool PxrUsdMayaUtil::isAnimated(MObject & object, bool checkParent)
         }
     }
 
+    return false;
+}
+
+bool PxrUsdMayaUtil::isPlugAnimated(const MPlug& plug)
+{
+    if (plug.isNull()) {
+        return false;
+    }
+    if (plug.isKeyable() && MAnimUtil::isAnimated(plug)) {
+        return true;
+    }
+    if (plug.isDestination()) {
+        const MPlug source(GetConnected(plug));
+        if (!source.isNull() && MAnimUtil::isAnimated(source.node())) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -1179,6 +1198,32 @@ _GetVec(
     }   
     return ret;
 
+}
+
+bool
+PxrUsdMayaUtil::getPlugMatrix(
+        const MFnDependencyNode& depNode,
+        const MString& attr,
+        MMatrix* outVal)
+{
+    MStatus status;
+    MPlug plug = depNode.findPlug(attr, &status);
+    if (!status) {
+        return false;
+    }
+
+    MObject plugObj = plug.asMObject(MDGContext::fsNormal, &status);
+    if (!status) {
+        return false;
+    }
+
+    MFnMatrixData plugMatrixData(plugObj, &status);
+    if (!status) {
+        return false;
+    }
+
+    *outVal = plugMatrixData.matrix();
+    return true;
 }
 
 bool
