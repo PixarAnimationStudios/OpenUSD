@@ -51,6 +51,7 @@
 #include <maya/MDrawRequest.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectionContext.h>
+#include <maya/MTypes.h>
 #include <maya/MUserData.h>
 
 #include <memory>
@@ -64,7 +65,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DEBUG_CODES(
-    PXRUSDMAYAGL_QUEUE_INFO
+    PXRUSDMAYAGL_QUEUE_INFO,
+    PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING
 );
 
 
@@ -77,14 +79,12 @@ TF_DEBUG_CODES(
 /// Objects that manage drawing and selection of Maya shapes (e.g. classes
 /// derived from \c MPxSurfaceShapeUI or \c MPxDrawOverride) should construct
 /// and maintain a PxrMayaHdShapeAdapter. Those objects should call
-/// AddShapeAdapter() to add their shape for batched drawing and selection. The
-/// batch renderer will pass along its \c HdRenderIndex to the shape adapter to
-/// initialize it if the shape adapter had not previously been added.
+/// AddShapeAdapter() to add their shape for batched drawing and selection.
 ///
-/// At every refresh, in the prepare for draw stage, the shape adapter should
-/// be populated with Maya scene graph and viewport display data. It should
-/// then be passed along to QueueShapeForDraw() for every batch draw pass
-/// desired.
+/// In preparation for drawing, the shape adapter should be synchronized to
+/// populate it with data from its shape and from the viewport display state.
+/// A batch draw data object should also be created for the shape by calling
+/// CreateBatchDrawData().
 ///
 /// In the draw stage, Draw() must be called for each draw request to complete
 /// the render.
@@ -129,30 +129,32 @@ public:
     PXRUSDMAYAGL_API
     bool RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter);
 
-    /// \brief Queue a batch draw call, to be executed later.
+    /// Create the batch draw data for drawing in the legacy viewport.
+    ///
+    /// This draw data is attached to the given \p drawRequest. Its lifetime is
+    /// *not* managed by Maya, so it must be deleted manually at the end of a
+    /// legacy viewport Draw().
     ///
     /// \p boxToDraw may be set to nullptr if no box is desired to be drawn.
     ///
     PXRUSDMAYAGL_API
-    void QueueShapeForDraw(
-            PxrMayaHdShapeAdapter* shapeAdapter,
+    void CreateBatchDrawData(
             MPxSurfaceShapeUI* shapeUI,
             MDrawRequest& drawRequest,
             const PxrMayaHdRenderParams& params,
             const bool drawShape,
             const MBoundingBox* boxToDraw = nullptr);
 
-    /// \brief Queue a batch draw call, to be executed later.
+    /// Create the batch draw data for drawing in Viewport 2.0.
     ///
-    /// \p userData should be the same parameter \c oldData passed into the
-    /// caller: the overridden \c prepareForDraw(...) call. The \p userData
-    /// pointer must also be returned from the overridden caller.
+    /// \p userData should be the same \p oldData parameter that Maya passed
+    /// into the calling prepareForDraw() method, which that method should also
+    /// return back to Maya.
     ///
     /// \p boxToDraw may be set to nullptr if no box is desired to be drawn.
     ///
     PXRUSDMAYAGL_API
-    void QueueShapeForDraw(
-            PxrMayaHdShapeAdapter* shapeAdapter,
+    void CreateBatchDrawData(
             MUserData*& userData,
             const PxrMayaHdRenderParams& params,
             const bool drawShape,
@@ -220,21 +222,6 @@ private:
     /// Allow shape adapters access to the soft selection helper.
     friend PxrMayaHdShapeAdapter;
 
-    /// Private helper function for registering a batch render call.
-    void _QueueShapeForDraw(
-            PxrMayaHdShapeAdapter* shapeAdapter,
-            const PxrMayaHdRenderParams& params);
-
-    /// Tests an object for intersection.
-    ///
-    /// \returns Hydra Hit info for instance associated with \p delegateId
-    ///
-    const HdxIntersector::Hit* _GetHitInfo(
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const bool singleSelection,
-            const SdfPath& delegateId);
-
     /// Call to render all queued batches. May be called safely without
     /// performance hit when no batches are queued.
     void _RenderBatches(
@@ -261,28 +248,93 @@ private:
     /// _OnMayaEndRenderCallback() and is what does the actual cleanup work.
     /// For the legacy viewport, there is no such notification sent by Maya, so
     /// this method is called internally at the end of Hydra draws for the
-    /// legacy viewport.
-    void _MayaRenderDidEnd();
+    /// legacy viewport. In that case, vp2Context will be nullptr.
+    void _MayaRenderDidEnd(const MHWRender::MDrawContext* vp2Context);
 
-    /// Cache of pointers to shape adapters registered with the batch renderer.
+    /// Update the last render frame stamp using the given \p frameStamp.
+    ///
+    /// Note that frame stamps are only available from the MDrawContext when
+    /// using Viewport 2.0.
+    ///
+    /// Returns true if the last frame stamp was updated, or false if the given
+    /// frame stamp is the same as the last frame stamp.
+    bool _UpdateRenderFrameStamp(const MUint64 frameStamp);
+
+    /// Update the last selection frame stamp using the given \p frameStamp.
+    ///
+    /// Note that frame stamps are only available from the MDrawContext when
+    /// using Viewport 2.0.
+    ///
+    /// Returns true if the last frame stamp was updated, or false if the given
+    /// frame stamp is the same as the last frame stamp.
+    bool _UpdateSelectionFrameStamp(const MUint64 frameStamp);
+
+    /// Update the internal marker of whether a legacy viewport render is
+    /// pending.
+    ///
+    /// Returns true if the internal marker's value was changed, or false if
+    /// the given value is the same as the current value.
+    bool _UpdateLegacyRenderPending(const bool isPending);
+
+    /// Update the internal marker of whether a legacy viewport selection is
+    /// pending.
+    ///
+    /// Returns true if the internal marker's value was changed, or false if
+    /// the given value is the same as the current value.
+    bool _UpdateLegacySelectionPending(const bool isPending);
+
+    /// With Viewport 2.0, we can query the draw context for its frameStamp,
+    /// a pseudo-unique identifier for each draw/select operation. We use that
+    /// to determine when to do a batched draw or batched selection versus when
+    /// to simply pass through or re-use cached data.
+    ///
+    /// The legacy viewport however does not provide a context we can query for
+    /// the frameStamp, so we simulate it with bools instead. The first call to
+    /// CreateBatchDrawData() indicates that we are prepping for a render, so
+    /// we know then that a render is pending. Rendering invalidates selection,
+    /// so when a render completes, we mark selection as pending.
+    MUint64 _lastRenderFrameStamp;
+    MUint64 _lastSelectionFrameStamp;
+    bool _legacyRenderPending;
+    bool _legacySelectionPending;
+
+    /// Type definition for a set of pointers to shape adapters.
     typedef std::unordered_set<PxrMayaHdShapeAdapter*> _ShapeAdapterSet;
 
-    _ShapeAdapterSet _shapeAdapterSet;
+    /// A shape adapter bucket is a pairing of a render params object and a
+    /// set of shape adapters that all share those render params. Shape
+    /// adapters are gathered together this way to minimize Hydra/OpenGL state
+    /// changes when performing batched draws/selections.
+    typedef std::pair<PxrMayaHdRenderParams, _ShapeAdapterSet> _ShapeAdapterBucket;
 
-    /// Associative pair of PxrMayaHdRenderParams and shape adapter sets of
-    /// shapes to be rendered with said params.
-    typedef std::pair<PxrMayaHdRenderParams, _ShapeAdapterSet> _RenderParamSet;
+    /// This is the batch renderer's primary container for storing the current
+    /// bucketing of all shape adapters registered with the batch renderer.
+    /// The map is indexed by the hash of the bucket's render params object.
+    typedef std::unordered_map<size_t, _ShapeAdapterBucket> _ShapeAdapterBucketsMap;
 
-    /// Lookup table to find a _RenderParamSet given its param hash key.
-    typedef std::unordered_map<size_t, _RenderParamSet> _RendererQueueMap;
+    /// We maintain separate bucket maps for Viewport 2.0 and the legacy
+    /// viewport.
+    _ShapeAdapterBucketsMap _shapeAdapterBuckets;
 
-    /// Container of all batched render calls to be made at next display
-    /// refresh.
-    _RendererQueueMap _renderQueue;
+    _ShapeAdapterBucketsMap _legacyShapeAdapterBuckets;
 
-    /// Container of batched render calls made at last display refresh, to be
-    /// used at next selection operation.
-    _RendererQueueMap _selectQueue;
+    /// We detect and store whether Viewport 2.0 is using the legacy
+    /// viewport-based selection mechanism (i.e. whether the
+    /// MAYA_VP2_USE_VP1_SELECTION environment variable is enabled) when the
+    /// batch renderer is constructed. Then when a legacy selection is
+    /// performed, we consult this value and the viewport renderer of the
+    /// M3dView in which the selection is occurring to determine which bucket
+    /// map of shape adapters we should use to compute the selection.
+    bool _viewport2UsesLegacySelection;
+
+    /// Populates the selection results using the given parameters by
+    /// performing intersection tests against all of the shapes in the given
+    /// \p bucketsMap.
+    void _ComputeSelection(
+            _ShapeAdapterBucketsMap& bucketsMap,
+            const GfMatrix4d& viewMatrix,
+            const GfMatrix4d& projectionMatrix,
+            const bool singleSelection);
 
     /// Container of Maya render pass identifiers of passes drawn so far during
     /// a Viewport 2.0 render.

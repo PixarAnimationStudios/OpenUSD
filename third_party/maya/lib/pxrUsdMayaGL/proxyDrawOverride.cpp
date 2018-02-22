@@ -122,7 +122,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */,
         const MHWRender::MFrameContext& frameContext,
-        MUserData* userData)
+        MUserData* oldData)
 {
     UsdMayaProxyShape* shape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
     if (!shape) {
@@ -149,9 +149,8 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         const MBoundingBox bounds = shape->boundingBox();
 
         // Note that drawShape is still passed through here.
-        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
-            &_shapeAdapter,
-            userData,
+        UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
+            oldData,
             params,
             drawShape,
             &bounds);
@@ -159,9 +158,8 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     //
     // Like above but with no bounding box...
     else if (drawShape) {
-        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
-            &_shapeAdapter,
-            userData,
+        UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
+            oldData,
             params,
             drawShape,
             nullptr);
@@ -171,7 +169,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-    return userData;
+    return oldData;
 }
 
 #if MAYA_API_VERSION >= 201800
@@ -214,12 +212,12 @@ UsdMayaProxyDrawOverride::userSelect(
     // At this point, we expect the shape to have already been drawn and our
     // shape adapter to have been added to the batch renderer, but just in
     // case, we still treat the shape adapter as if we're populating it for the
-    // first time.
+    // first time. We do not add it to the batch renderer though, since that
+    // must have already been done to have caused the shape to be drawn and
+    // become eligible for selection.
     if (!_shapeAdapter.Sync(shape, displayStyle, displayStatus)) {
         return false;
     }
-
-    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
     GfVec3f batchHitPoint;
     const bool didHit =

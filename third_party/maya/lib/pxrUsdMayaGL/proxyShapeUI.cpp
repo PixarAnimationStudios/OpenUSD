@@ -95,8 +95,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
         const MBoundingBox bounds = shape->boundingBox();
 
         // Note that drawShape is still passed through here.
-        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
-            &_shapeAdapter,
+        UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
             this,
             request,
             params,
@@ -106,8 +105,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
     //
     // Like above but with no bounding box...
     else if (drawShape) {
-        UsdMayaGLBatchRenderer::GetInstance().QueueShapeForDraw(
-            &_shapeAdapter,
+        UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
             this,
             request,
             params,
@@ -166,8 +164,6 @@ UsdMayaProxyShapeUI::select(
                             view.displayStatus(selectInfo.selectPath()))) {
         return false;
     }
-
-    UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
     GfVec3f hitPoint;
     const bool didHit =
