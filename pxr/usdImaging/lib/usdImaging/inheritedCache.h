@@ -627,13 +627,6 @@ struct UsdImaging_MaterialNetworkStrategy {
     SdfPath GetBinding(UsdShadeMaterial const& material);
 
     static
-    UsdPrim GetTargetedShader(UsdPrim const& materialPrim,
-                              UsdRelationship const& materialRel) {
-        return UsdImaging_MaterialStrategy::GetTargetedShader(
-            materialPrim, materialRel);
-    }
- 
-    static 
     value_type
     Inherit(UsdImaging_MaterialNetworkBindingCache const* owner,
             UsdPrim prim,
