@@ -116,6 +116,17 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         const SdfPath& GetDelegateID() const;
 
+        /// Get whether this shape adapter is for use with Viewport 2.0.
+        ///
+        /// The shape adapter gets its viewport renderer affiliation from the
+        /// version of Sync() that is used to populate it.
+        ///
+        /// Returns true if the shape adapter should be used for batched
+        /// drawing/selection in Viewport 2.0, or false if it should be used
+        /// in the legacy viewport.
+        PXRUSDMAYAGL_API
+        bool IsViewport2() const;
+
     private:
 
         /// Construct a new uninitialized PxrMayaHdShapeAdapter.
@@ -163,6 +174,8 @@ class PxrMayaHdShapeAdapter
         PxrMayaHdRenderParams _renderParams;
         bool _drawShape;
         bool _drawBoundingBox;
+
+        bool _isViewport2;
 
         /// The classes that maintain ownership of and are responsible for
         /// updating the shape adapter for their shape are made friends of

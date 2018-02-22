@@ -275,6 +275,8 @@ PxrMayaHdShapeAdapter::Sync(
         const M3dView::DisplayStyle legacyDisplayStyle,
         const M3dView::DisplayStatus legacyDisplayStatus)
 {
+    // Legacy viewport implementation.
+
     const unsigned int displayStyle =
         _ToMFrameContextDisplayStyle(legacyDisplayStyle);
     const MHWRender::DisplayStatus displayStatus =
@@ -303,6 +305,10 @@ PxrMayaHdShapeAdapter::Sync(
         }
     }
 
+    // Since we call the Viewport 2.0 version of Sync() from this version, tag
+    // the shape adapter as *not* Viewport 2.0 after that call.
+    _isViewport2 = false;
+
     return success;
 }
 
@@ -312,6 +318,11 @@ PxrMayaHdShapeAdapter::Sync(
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
+    // Viewport 2.0 implementation (also called by legacy viewport
+    // implementation).
+
+    _isViewport2 = true;
+
     UsdMayaProxyShape* usdProxyShape =
         dynamic_cast<UsdMayaProxyShape*>(surfaceShape);
     if (!usdProxyShape) {
@@ -538,6 +549,12 @@ PxrMayaHdShapeAdapter::GetDelegateID() const
     }
 
     return SdfPath::EmptyPath();
+}
+
+bool
+PxrMayaHdShapeAdapter::IsViewport2() const
+{
+    return _isViewport2;
 }
 
 
