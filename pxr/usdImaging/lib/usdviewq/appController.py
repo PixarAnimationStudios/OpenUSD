@@ -3110,6 +3110,8 @@ class AppController(QtCore.QObject):
         frame = self._dataModel.currentFrame
         treeWidget = self._ui.propertyView
 
+        scrollPosition = treeWidget.verticalScrollBar().value()
+
         # get a dictionary of prim attribs/members and store it in self._attributeDict
         self._attributeDict = self._getAttributeDict()
         with self._propertyViewSelectionBlocker:
@@ -3190,6 +3192,12 @@ class AppController(QtCore.QObject):
             currRow += 1
 
         self._updateAttributeViewSelection()
+
+        # For some reason, resetting the scrollbar position here only works on a
+        # frame change, not when the prim changes. When the prim changes, the
+        # scrollbar always stays at the top of the list and setValue() has no
+        # effect.
+        treeWidget.verticalScrollBar().setValue(scrollPosition)
 
     def _updateAttributeView(self):
         """ Sets the contents of the attribute value viewer """
