@@ -1284,8 +1284,15 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
     // to prims or properties, in which case we should sparsely invalidate
     // cached data associated with the path.
     const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
-    _pathsToUpdate.insert(_pathsToUpdate.end(), 
-                          pathsToUpdate.begin(), pathsToUpdate.end());
+    for (PathRange::const_iterator it = pathsToUpdate.begin(); 
+         it != pathsToUpdate.end(); ++it) {
+        // Ignore all changes to prims that have not changed any field values, 
+        // since these changes cannot affect any composed values consumed by 
+        // the adapters.
+        if (!it->IsAbsoluteRootOrPrimPath() || it.HasChangedFields()) {
+            _pathsToUpdate.push_back(*it);
+        }
+    }
 
     if (TfDebug::IsEnabled(USDIMAGING_CHANGES)) {
         TF_FOR_ALL(it, pathsToResync) {
