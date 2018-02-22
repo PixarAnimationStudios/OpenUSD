@@ -54,7 +54,7 @@ public:
     typedef typename ArrayType::const_reverse_iterator  const_reverse_iterator;
 
     GusdUT_VtArrayRO(const ArrayType& array)
-        : _array(array), _size(array.GetSize()), _data(array.cdata())
+        : _array(array), _size(array.size()), _data(array.cdata())
         { UT_ASSERT(_size == 0 || _data != NULL); }
 
     const T&                operator()(exint i) const
@@ -107,14 +107,14 @@ public:
     const T&                operator()(exint i) const
                             {
                                 UT_ASSERT_P(i >= 0 && i < _size);
-                                UT_ASSERT_P(_size == _array.GetSize());
+                                UT_ASSERT_P(_size == _array.size());
                                 return _data[i];
                             }
 
     T&                      operator()(exint i)
                             {
                                 UT_ASSERT_P(i >= 0 && i < _size);
-                                UT_ASSERT_P(_size == _array.GetSize());
+                                UT_ASSERT_P(_size == _array.size());
                                 return _data[i];
                             }
     
@@ -160,7 +160,7 @@ public:
     void                    update()
                             {
                                 _data = _array.data();
-                                _size = _array.GetSize();
+                                _size = _array.size();
                                 UT_ASSSERT(_size == 0 || _data != NULL);
                             }
 
