@@ -1262,7 +1262,7 @@ UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
 // -------------------------------------------------------------------------- //
 void 
 UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
-                                UsdStageWeakPtr const& sender)
+                                      UsdStageWeakPtr const& sender)
 {
     if (!sender || !TF_VERIFY(sender == _stage))
         return;
@@ -1270,10 +1270,12 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                             "from stage with root layer @%s@\n",
                         sender->GetRootLayer()->GetIdentifier().c_str());
 
+    using PathRange = UsdNotice::ObjectsChanged::PathRange;
+
     // These paths are subtree-roots representing entire subtrees that may have
     // changed. In this case, we must dump all cached data below these points
     // and repopulate those trees.
-    SdfPathVector const& pathsToResync = notice.GetResyncedPaths();
+    const PathRange pathsToResync = notice.GetResyncedPaths();
     _pathsToResync.insert(_pathsToResync.end(), 
                           pathsToResync.begin(), pathsToResync.end());
     
@@ -1281,7 +1283,7 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
     // non-structural way, for example setting a value. These paths may be paths
     // to prims or properties, in which case we should sparsely invalidate
     // cached data associated with the path.
-    SdfPathVector const& pathsToUpdate = notice.GetChangedInfoOnlyPaths();
+    const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
     _pathsToUpdate.insert(_pathsToUpdate.end(), 
                           pathsToUpdate.begin(), pathsToUpdate.end());
 

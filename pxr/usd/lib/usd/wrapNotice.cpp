@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file Sdf/wrapNotice.cpp
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
@@ -45,6 +43,18 @@ TF_INSTANTIATE_NOTICE_WRAPPER(UsdNotice::ObjectsChanged,
 TF_INSTANTIATE_NOTICE_WRAPPER(UsdNotice::StageEditTargetChanged,
                                 UsdNotice::StageNotice);
 
+SdfPathVector
+_GetResyncedPaths(const UsdNotice::ObjectsChanged& n)
+{
+    return SdfPathVector(n.GetResyncedPaths());
+}
+
+SdfPathVector
+_GetChangedInfoOnlyPaths(const UsdNotice::ObjectsChanged& n)
+{
+    return SdfPathVector(n.GetChangedInfoOnlyPaths());
+}
+
 } // anonymous namespace 
 
 void wrapUsdNotice()
@@ -65,10 +75,26 @@ void wrapUsdNotice()
             .def("AffectedObject", &UsdNotice::ObjectsChanged::AffectedObject)
             .def("ResyncedObject", &UsdNotice::ObjectsChanged::ResyncedObject)
             .def("ChangedInfoOnly", &UsdNotice::ObjectsChanged::ChangedInfoOnly)
-            .def("GetResyncedPaths", &UsdNotice::ObjectsChanged::GetResyncedPaths,
-                     return_value_policy<return_by_value>())
-            .def("GetChangedInfoOnlyPaths", &UsdNotice::ObjectsChanged::GetChangedInfoOnlyPaths,
-                     return_value_policy<return_by_value>())
+            .def("GetResyncedPaths", &_GetResyncedPaths,
+                 return_value_policy<return_by_value>())
+            .def("GetChangedInfoOnlyPaths", &_GetChangedInfoOnlyPaths,
+                 return_value_policy<return_by_value>())
+            .def("GetChangedFields", 
+                 (TfTokenVector (UsdNotice::ObjectsChanged::*)
+                     (const UsdObject&) const)
+                 &UsdNotice::ObjectsChanged::GetChangedFields,
+                 return_value_policy<return_by_value>())
+            .def("GetChangedFields", 
+                 (TfTokenVector (UsdNotice::ObjectsChanged::*)
+                     (const SdfPath&) const)
+                 &UsdNotice::ObjectsChanged::GetChangedFields,
+                 return_value_policy<return_by_value>())
+            .def("HasChangedFields",
+                 (bool (UsdNotice::ObjectsChanged::*)(const UsdObject&) const)
+                 &UsdNotice::ObjectsChanged::HasChangedFields)
+            .def("HasChangedFields",
+                 (bool (UsdNotice::ObjectsChanged::*)(const SdfPath&) const)
+                 &UsdNotice::ObjectsChanged::HasChangedFields)
         ;
 
     TfPyNoticeWrapper<

@@ -1684,12 +1684,12 @@ private:
                                      const TfToken &propName) const;
 
     // Helper to apply Pcp changes and recompose the scenegraph accordingly,
-    // ignoring deactivatedPaths and given an optional initial set of paths to
-    // recompose.
-    void _Recompose(const PcpChanges &changes,
-                    SdfPathSet *initialPathsToRecompose);
-    void _RecomposePrims(const PcpChanges &changes,
-                         SdfPathSet *pathsToRecompose);
+    // given an optional initial set of paths to recompose.
+    void _Recompose(const PcpChanges &changes);
+    template <class T>
+    void _Recompose(const PcpChanges &changes, T *pathsToRecompose);
+    template <class T>
+    void _RecomposePrims(const PcpChanges &changes, T *pathsToRecompose);
 
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
