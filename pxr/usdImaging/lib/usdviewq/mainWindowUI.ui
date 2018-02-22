@@ -1153,7 +1153,7 @@
     </widget>
     <widget class="QMenu" name="menuPickMode">
      <property name="title">
-      <string>Pick mode...</string>
+      <string>Pick mode</string>
      </property>
      <addaction name="actionPick_Prims"/>
      <addaction name="actionPick_Models"/>
@@ -1161,7 +1161,7 @@
     </widget>
     <widget class="QMenu" name="menuSelection_Highlighting">
      <property name="title">
-      <string>Selection Highlighting...</string>
+      <string>Selection Highlighting</string>
      </property>
      <widget class="QMenu" name="menuHighlightColor">
       <property name="title">
@@ -1198,7 +1198,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Lights...</string>
+      <string>Lights</string>
      </property>
      <addaction name="actionAmbient_Only"/>
      <addaction name="separator"/>
@@ -1208,7 +1208,7 @@
     </widget>
     <widget class="QMenu" name="menuShading_Mode">
      <property name="title">
-      <string>Shading Mode...</string>
+      <string>Shading Mode</string>
      </property>
      <addaction name="actionWireframe"/>
      <addaction name="actionWireframeOnSurface"/>
@@ -1234,7 +1234,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Camera...</string>
+      <string>Camera</string>
      </property>
      <addaction name="actionFreeCam"/>
     </widget>
@@ -1243,7 +1243,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Camera Guides...</string>
+      <string>Camera Guides</string>
      </property>
      <widget class="QMenu" name="menuCamera_Masking">
       <property name="title">
@@ -1271,7 +1271,7 @@
     </widget>
     <widget class="QMenu" name="menuDisplay">
      <property name="title">
-      <string>Display Purposes...</string>
+      <string>Display Purposes</string>
      </property>
      <addaction name="actionDisplay_Guide"/>
      <addaction name="actionDisplay_Proxy"/>
@@ -1296,7 +1296,7 @@
     </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Hydra Renderer...</string>
+      <string>Hydra Renderer</string>
      </property>
     </widget>
     <widget class="QMenu" name="menuComplexity">

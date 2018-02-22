@@ -516,6 +516,15 @@ QMenu::separator {
     background: rgb(42, 42, 42);
 }
 
+/* Use a custom submenu arrow so it is not affected by the user's theme. */
+QMenu::right-arrow:enabled {
+    image: url(RESOURCE_DIR/icons/right-arrow.png);
+}
+
+QMenu::right-arrow:disabled {
+    image: url(RESOURCE_DIR/icons/right-arrow-disabled.png);
+}
+
 /* *** QComboBox ***
  * Style the drop-down menus
  * Note: The down arrow is style in the QSpinBox style
