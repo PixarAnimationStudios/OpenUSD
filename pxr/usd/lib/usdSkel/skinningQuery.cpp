@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
 
+#include "pxr/usd/usdGeom/boundable.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
 #include "pxr/usd/usdSkel/utils.h"
@@ -323,6 +324,43 @@ UsdSkelSkinningQuery::ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
                                        jointIndices, jointWeights, xform);
     }
     return false;
+}
+
+
+USDSKEL_API
+float
+UsdSkelSkinningQuery::ComputeExtentsPadding(
+    const VtMatrix4dArray& skelRestXforms,
+    const UsdGeomBoundable& boundable) const
+{
+    // Don't use default time; properties may be keyed (and still unvarying)
+    // We do, however, expect the computed quantity to not be time varying.
+    UsdTimeCode time = UsdTimeCode::EarliestTime();
+
+    VtVec3fArray boundableExtent;
+    if(boundable && 
+       boundable.GetExtentAttr().Get(&boundableExtent, time) &&
+       boundableExtent.size() == 2) {
+        
+        VtVec3fArray jointsExtent;
+        if(UsdSkelComputeJointsExtent(skelRestXforms, &jointsExtent)) {
+
+            GfRange3d range = 
+                GfBBox3d(GfRange3d(boundableExtent[0], boundableExtent[1]),
+                         GetGeomBindTransform(time)).ComputeAlignedRange();
+
+            GfVec3f minDiff = jointsExtent[0] - GfVec3f(range.GetMin());
+            GfVec3f maxDiff = GfVec3f(range.GetMax()) - jointsExtent[1];
+
+            float padding = 0.0f;
+            for(int i = 0; i < 3; ++i) {
+                padding = std::max(padding, minDiff[i]);
+                padding = std::max(padding, maxDiff[i]);
+            }
+            return padding;
+        }
+    }
+    return 0.0f;
 }
 
 

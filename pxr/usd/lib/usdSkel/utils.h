@@ -119,11 +119,15 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 
 
 /// Compute an extent from a set of skel-space joint transform.
+/// The \p rootXform may also be provided to provide an additional
+/// root transformation on top of all joints. This is useful for
+/// computing extents relative to a different space.
 USDSKEL_API
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& joints,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad=GfVec3f(0,0,0));
+                           float pad=0.0f,
+                           const GfMatrix4d* rootXform=nullptr);
 
 
 /// \overload
@@ -132,7 +136,8 @@ bool
 UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
                            size_t numXforms,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad=GfVec3f(0,0,0));
+                           const GfVec3f& pad=GfVec3f(0,0,0),
+                           const GfMatrix4d* rootXform=nullptr);
 
 
 /// @}

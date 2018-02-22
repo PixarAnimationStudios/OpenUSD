@@ -134,10 +134,18 @@ _MakeTransforms(const VtVec3fArray& translations,
                 
 
 VtVec3fArray
-_ComputeJointsExtent(const VtMatrix4dArray& xforms, const GfVec3f& pad)
+_ComputeJointsExtent(const VtMatrix4dArray& xforms, float pad,
+                     const object& rootXformObj)
 {
     VtVec3fArray extent;
-    UsdSkelComputeJointsExtent(xforms, &extent, pad);
+
+    extract<GfMatrix4d> x(rootXformObj);
+    if(x.check()) {
+        const GfMatrix4d& rootXform = x;
+        UsdSkelComputeJointsExtent(xforms, &extent, pad, &rootXform);
+    } else {
+        UsdSkelComputeJointsExtent(xforms, &extent, pad);
+    }
     return extent;
 }
 
@@ -246,7 +254,7 @@ void wrapUsdSkelUtils()
         (arg("translations"), arg("rotations"), arg("scales")));
         
     def("ComputeJointsExtent", &_ComputeJointsExtent,
-        (arg("xforms"), arg("pad")=GfVec3f(0,0,0)));
+        (arg("xforms"), arg("pad")=0.0f, arg("rootXform")=object()));
 
     def("NormalizeWeights", &_NormalizeWeights,
         (arg("weights"), arg("numInfluencesPerComponent")));

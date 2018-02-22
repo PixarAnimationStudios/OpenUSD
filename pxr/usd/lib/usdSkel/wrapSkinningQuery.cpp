@@ -30,6 +30,7 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/usd/usdGeom/boundable.h"
 
 #include "pxr/base/gf/interval.h"
 
@@ -172,6 +173,11 @@ void wrapUsdSkelSkinningQuery()
 
         .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform,
              (arg("xforms"),
+              arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeExentsPadding", &This::ComputeExtentsPadding,
+             (arg("skelRestXforms"),
+              arg("boundable"),
               arg("time")=UsdTimeCode::Default()))
 
         .def("GetGeomBindTransform", &This::GetGeomBindTransform,

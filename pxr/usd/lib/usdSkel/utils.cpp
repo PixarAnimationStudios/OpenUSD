@@ -503,7 +503,8 @@ bool
 UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
                            size_t count,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad)
+                           float pad,
+                           const GfMatrix4d* rootXform)
 {
     if(!extent) {
         TF_CODING_ERROR("'extent' pointer is null.");
@@ -518,11 +519,15 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
     GfRange3d bbox;
     if(count > 0) {
         for(size_t i = 0;i < count; ++i) {
-            bbox.UnionWith(xforms[i].ExtractTranslation());
+            GfVec3d pivot = xforms[i].ExtractTranslation();
+            bbox.UnionWith(rootXform ? rootXform->Transform(pivot) : pivot);
         }
-        bbox.SetMin(bbox.GetMin()-pad);
-        bbox.SetMax(bbox.GetMax()-pad);
+
+        const GfVec3f padVec(pad);
+        bbox.SetMin(bbox.GetMin()-padVec);
+        bbox.SetMax(bbox.GetMax()+padVec);
     }
+
 
     extent->resize(2);
     (*extent)[0] = GfVec3f(bbox.GetMin());
@@ -534,12 +539,13 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& xforms,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad)
+                           float pad,
+                           const GfMatrix4d* rootXform)
 {
     TRACE_FUNCTION();
 
-    return UsdSkelComputeJointsExtent(xforms.cdata(),
-                                      xforms.size(), extent, pad);
+    return UsdSkelComputeJointsExtent(xforms.cdata(), xforms.size(),
+                                      extent, pad, rootXform);
 }
 
 

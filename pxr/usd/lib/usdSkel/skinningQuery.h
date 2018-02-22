@@ -41,6 +41,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class UsdGeomBoundable;
+
+
 /// \class UsdSkelSkinningQuery
 ///
 /// Object used for querying resolved bindings for skinning.
@@ -164,6 +167,17 @@ public:
     bool ComputeSkinnedTransform(const VtMatrix4dArray& xforms,
                                  GfMatrix4d* xform,
                                  UsdTimeCode time=UsdTimeCode::Default()) const;
+
+
+    /// Helper for computing an *approximate* padding for use in extents
+    /// computations. The padding is computed as the difference between the
+    /// pivots of the \p skelRestXforms -- _skeleton space_ joint transforms
+    /// at rest -- and the extents of the skinned primitive.
+    /// This is intended to provide a suitable, constant metric for padding
+    /// joint extents as computed by UsdSkelComputeJointsExtent.
+    USDSKEL_API
+    float ComputeExtentsPadding(const VtMatrix4dArray& skelRestXforms,
+                                const UsdGeomBoundable& boundable) const;
 
     USDSKEL_API
     GfMatrix4d

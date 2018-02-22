@@ -29,6 +29,10 @@ class SkelRoot "SkelRoot" (
     more information."""
     customData = {
         string className = "Root"
+        
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
     }
 ) {
 }
