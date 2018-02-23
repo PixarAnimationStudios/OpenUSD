@@ -400,11 +400,13 @@ def InstallBoost(context, force):
             '--with-date_time',
             '--with-filesystem',
             '--with-program_options',
-            '--with-python',
             '--with-regex',
             '--with-system',
             '--with-thread'
         ]
+
+        if context.buildPython:
+            b2_settings.append("--with-python")
 
         if force:
             b2_settings.append("-a")
@@ -649,6 +651,7 @@ def InstallOpenImageIO(context, force):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
         extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
                      '-DOIIO_BUILD_TESTS=OFF',
+                     '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
 
         # OIIO's FindOpenEXR module circumvents CMake's normal library 
@@ -1234,7 +1237,7 @@ if context.buildDocs:
                    "PATH")
         sys.exit(1)
 
-if context.buildUsdImaging:
+if PYSIDE in requiredDependencies:
     # The USD build will skip building usdview if pyside-uic or pyside2-uic is 
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
