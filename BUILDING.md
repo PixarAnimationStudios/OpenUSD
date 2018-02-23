@@ -225,7 +225,8 @@ of the environment variable using the following CMake option:
 -DPXR_OVERRIDE_PLUGINPATH_NAME=CUSTOM_USD_PLUGINPATHS
 ```
 
-By doing this, USD will check the ```CUSTOM_USD_PLUGINPATHS``` instead of the default ```PXR_PLUGINPATH_NAME``` one.
+By doing this, USD will check the ```CUSTOM_USD_PLUGINPATHS``` environment variable for paths, instead of the default
+```PXR_PLUGINPATH_NAME``` one.
 
 ##### Shared library prefix
 
