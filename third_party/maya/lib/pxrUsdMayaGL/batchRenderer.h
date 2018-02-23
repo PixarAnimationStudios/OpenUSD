@@ -147,15 +147,22 @@ public:
 
     /// Create the batch draw data for drawing in Viewport 2.0.
     ///
-    /// \p userData should be the same \p oldData parameter that Maya passed
-    /// into the calling prepareForDraw() method, which that method should also
-    /// return back to Maya.
+    /// \p oldData should be the same \p oldData parameter that Maya passed
+    /// into the calling prepareForDraw() method. The return value from this
+    /// method should then be returned back to Maya in the calling
+    /// prepareForDraw().
+    ///
+    /// Note that this version of CreateBatchDrawData() is also invoked by the
+    /// legacy viewport version, in which case we expect oldData to be nullptr.
     ///
     /// \p boxToDraw may be set to nullptr if no box is desired to be drawn.
     ///
+    /// Returns a pointer to a new MUserData object populated with the given
+    /// parameters if oldData is nullptr, otherwise returns oldData after
+    /// having re-populated it.
     PXRUSDMAYAGL_API
-    void CreateBatchDrawData(
-            MUserData*& userData,
+    MUserData* CreateBatchDrawData(
+            MUserData* oldData,
             const PxrMayaHdRenderParams& params,
             const bool drawShape,
             const MBoundingBox* boxToDraw = nullptr);

@@ -111,25 +111,13 @@ class _BatchDrawUserData : public MUserData
 {
     public:
 
-        const bool drawShape;
-        const std::unique_ptr<MBoundingBox> bounds;
-        const std::unique_ptr<GfVec4f> wireframeColor;
+        bool drawShape;
+        std::unique_ptr<MBoundingBox> bounds;
+        std::unique_ptr<GfVec4f> wireframeColor;
 
-        // Constructor to use when shape is drawn but no bounding box.
         _BatchDrawUserData() :
             MUserData(/* deleteAfterUse = */ false),
             drawShape(true) {}
-
-        // Constructor to use when shape may be drawn but there is a bounding
-        // box.
-        _BatchDrawUserData(
-                const bool drawShape,
-                const MBoundingBox& bounds,
-                const GfVec4f& wireFrameColor) :
-            MUserData(/* deleteAfterUse = */ false),
-            drawShape(drawShape),
-            bounds(new MBoundingBox(bounds)),
-            wireframeColor(new GfVec4f(wireFrameColor)) {}
 
         // Make sure everything gets freed!
         virtual ~_BatchDrawUserData() override {}
@@ -331,12 +319,11 @@ UsdMayaGLBatchRenderer::CreateBatchDrawData(
     // render, so mark a legacy render as pending.
     _UpdateLegacyRenderPending(true);
 
-    MUserData* userData;
-
-    CreateBatchDrawData(userData,
-                        params,
-                        drawShape,
-                        boxToDraw);
+    // The legacy viewport never has an old MUserData we can reuse.
+    MUserData* userData = CreateBatchDrawData(nullptr,
+                                              params,
+                                              drawShape,
+                                              boxToDraw);
 
     // Note that the legacy viewport does not manage the data allocated in the
     // MDrawData object, so we must remember to delete the MUserData object at
@@ -347,9 +334,9 @@ UsdMayaGLBatchRenderer::CreateBatchDrawData(
     drawRequest.setDrawData(drawData);
 }
 
-void
+MUserData*
 UsdMayaGLBatchRenderer::CreateBatchDrawData(
-        MUserData*& userData,
+        MUserData* oldData,
         const PxrMayaHdRenderParams& params,
         const bool drawShape,
         const MBoundingBox* boxToDraw)
@@ -360,21 +347,30 @@ UsdMayaGLBatchRenderer::CreateBatchDrawData(
     // Our internal _BatchDrawUserData can be used to signify whether we are
     // requesting a shape to be rendered, a bounding box, both, or neither.
     //
-    // If we aren't drawing the Shape, the userData object, passed by reference,
-    // still gets set for the caller. In the Viewport 2.0 prepareForDraw()
-    // usage, any MUserData object passed into the function will be deleted by
-    // Maya. In the legacy viewport usage, the object gets deleted in
-    // UsdMayaGLBatchRenderer::Draw().
+    // In the Viewport 2.0 prepareForDraw() usage, any MUserData object passed
+    // into the function will be deleted by Maya. In the legacy viewport usage,
+    // the object gets deleted in UsdMayaGLBatchRenderer::Draw().
+
+    if (!drawShape && !boxToDraw) {
+        return nullptr;
+    }
+
+    _BatchDrawUserData* newData = static_cast<_BatchDrawUserData*>(oldData);
+    if (!newData) {
+        newData = new _BatchDrawUserData();
+    }
+
+    newData->drawShape = drawShape;
 
     if (boxToDraw) {
-        userData = new _BatchDrawUserData(drawShape,
-                                          *boxToDraw,
-                                          params.wireframeColor);
-    } else if (drawShape) {
-        userData = new _BatchDrawUserData();
+        newData->bounds.reset(new MBoundingBox(*boxToDraw));
+        newData->wireframeColor.reset(new GfVec4f(params.wireframeColor));
     } else {
-        userData = nullptr;
+        newData->bounds.reset();
+        newData->wireframeColor.reset();
     }
+
+    return newData;
 }
 
 /* static */
