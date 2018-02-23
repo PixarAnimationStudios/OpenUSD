@@ -122,8 +122,7 @@ ArDefaultResolver::AnchorRelativePath(
     const std::string& path)
 {
     if (TfIsRelativePath(anchorPath) ||
-        !ArDefaultResolver::IsRelativePath(path) ||
-        !_IsFileRelative(path)) {
+        !ArDefaultResolver::IsRelativePath(path)) {
         return path;
     }
 

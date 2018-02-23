@@ -58,6 +58,9 @@ class TestArDefaultResolver(unittest.TestCase):
             r.AnchorRelativePath('RelAnchor', 'RelPath'))
         self.assertEqual('/AbsolutePath',
             r.AnchorRelativePath('/AbsoluteAnchor', '/AbsolutePath'))
+        self.assertEqual('/AbsolutePath/Subdir/FileRel.txt',
+            r.AnchorRelativePath('/AbsolutePath/ParentFile.txt', 
+                'Subdir/FileRel.txt'))
         self.assertEqual('/AbsoluteAnchor/Subdir/FileRel.txt',
             r.AnchorRelativePath('/AbsoluteAnchor/ParentFile.txt',
                 './Subdir/FileRel.txt'))
