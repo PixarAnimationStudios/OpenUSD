@@ -240,30 +240,53 @@ public:
     USD_API
     TfTokenVector GetAppliedSchemas() const;
 
+    /// Alias for the "predicate" function parameter passed into the various
+    /// Get{Authored}{PropertyNames,Properties} methods.
+    using PropertyPredicateFunc = 
+        std::function<bool (const TfToken &propertyName)>;
+
     /// Return all of this prim's property names (attributes and relationships),
-    /// including all builtin properties, ordered according to the strongest
-    /// propertyOrder statement in scene description if one exists, otherwise
-    /// ordered according to TfDictionaryLessThan.
-    ///
+    /// including all builtin properties.
+    /// 
+    /// If a valid \p predicate is passed in, then only properties whose names 
+    /// pass the predicate are included in the result. This is useful if the 
+    /// client is interested only in a subset of properties on the prim. For 
+    /// example, only the ones in a given namespace or only the ones needed to 
+    /// compute a value.
+    /// 
     /// \sa GetAuthoredPropertyNames()
     /// \sa UsdProperty::IsAuthored()
     USD_API
-    TfTokenVector GetPropertyNames() const;
+    TfTokenVector GetPropertyNames(
+        const PropertyPredicateFunc &predicate={}) const;
 
     /// Return this prim's property names (attributes and relationships) that
     /// have authored scene description, ordered according to the strongest
     /// propertyOrder statement in scene description if one exists, otherwise
     /// ordered according to TfDictionaryLessThan.
+    /// 
+    /// If a valid \p predicate is passed in, then only the authored properties 
+    /// whose names pass the predicate are included in the result. This is 
+    /// useful if the client is interested only in a subset of authored 
+    /// properties on the prim. For example, only the ones in a given namespace 
+    /// or only the ones needed to compute a value.
     ///
     /// \sa GetPropertyNames()
     /// \sa UsdProperty::IsAuthored() 
     USD_API
-    TfTokenVector GetAuthoredPropertyNames() const;
+    TfTokenVector GetAuthoredPropertyNames(
+        const PropertyPredicateFunc &predicate={}) const;
 
     /// Return all of this prim's properties (attributes and relationships),
     /// including all builtin properties, ordered by name according to the
     /// strongest propertyOrder statement in scene description if one exists,
     /// otherwise ordered according to TfDictionaryLessThan.
+    ///
+    /// If a valid \p predicate is passed in, then only properties whose names  
+    /// pass the predicate are included in the result. This is useful if the 
+    /// client is interested only in a subset of properties on the prim. For 
+    /// example, only the ones in a given namespace or only the ones needed to 
+    /// compute a value.
     ///
     /// To obtain only either attributes or relationships, use either
     /// GetAttributes() or GetRelationships().
@@ -298,17 +321,25 @@ public:
     /// \sa GetAuthoredProperties()
     /// \sa UsdProperty::IsAuthored()
     USD_API
-    std::vector<UsdProperty> GetProperties() const;
+    std::vector<UsdProperty> GetProperties(
+        const PropertyPredicateFunc &predicate={}) const;
 
     /// Return this prim's properties (attributes and relationships) that have
     /// authored scene description, ordered by name according to the strongest
     /// propertyOrder statement in scene description if one exists, otherwise
     /// ordered according to TfDictionaryLessThan.
     ///
+    /// If a valid \p predicate is passed in, then only authored properties 
+    /// whose names pass the predicate are included in the result. This is 
+    /// useful if the client is interested only in a subset of authored 
+    /// properties on the prim. For example, only the ones in a given namespace 
+    /// or only the ones needed to compute a value.
+    ///
     /// \sa GetProperties()
     /// \sa UsdProperty::IsAuthored()
     USD_API
-    std::vector<UsdProperty> GetAuthoredProperties() const;
+    std::vector<UsdProperty> GetAuthoredProperties(
+        const PropertyPredicateFunc &predicate={}) const;
 
     /// Return this prim's properties that are inside the given property
     /// namespace ordered according to the strongest propertyOrder statement in
@@ -1072,9 +1103,11 @@ private:
     std::vector<UsdProperty>
     _MakeProperties(const TfTokenVector &names) const;
 
-    // Helper for Get(Authored)Properties.
-    TfTokenVector _GetPropertyNames(bool onlyAuthored,
-                                    bool applyOrder=true) const;
+    // Helper for Get{Authored}{PropertyNames,Properties} 
+    TfTokenVector _GetPropertyNames(
+        bool onlyAuthored,
+        bool applyOrder=true,
+        const PropertyPredicateFunc &predicate={}) const;
 
     // Helper for Get(Authored)PropertiesInNamespace.
     std::vector<UsdProperty>
