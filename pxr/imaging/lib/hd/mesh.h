@@ -57,6 +57,7 @@ struct HdMeshReprDesc {
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
                    bool smoothNormals = false,
                    bool blendWireframeColor = true,
+                   bool doubleSided = false,
                    float lineWidth = 0,
                    bool useCustomDisplacement = true)
         : geomStyle(geomStyle)
@@ -64,16 +65,28 @@ struct HdMeshReprDesc {
         , shadingTerminal(shadingTerminal)
         , smoothNormals(smoothNormals)
         , blendWireframeColor(blendWireframeColor)
+        , doubleSided(doubleSided)
         , lineWidth(lineWidth)
         , useCustomDisplacement(useCustomDisplacement)
         {}
 
+    /// The rendering style: draw refined/unrefined, edge, points, etc.
     HdMeshGeomStyle geomStyle;
+    /// The culling style: draw front faces, back faces, etc.
     HdCullStyle     cullStyle;
+    /// Specifies how the fragment color should be computed from surfaceShader;
+    /// this can be used to render a mesh lit, unlit, unshaded, etc.
     TfToken         shadingTerminal;
+    /// Does this mesh need to generate smooth normals?
     bool            smoothNormals;
+    /// Should the wireframe color be blended into the color primvar?
     bool            blendWireframeColor;
+    /// Should this mesh be treated as double-sided? The resolved value is
+    /// (prim.doubleSided || repr.doubleSided).
+    bool            doubleSided;
+    /// How big (in pixels) should line drawing be?
     float           lineWidth;
+    /// Should this mesh use displacementShader() to displace points?
     bool            useCustomDisplacement;
 };
 

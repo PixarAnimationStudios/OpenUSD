@@ -1270,7 +1270,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     }
 
     // resolve geom style, cull style
-    HdCullStyle cullStyle = _cullStyle;
+    HdCullStyle cullStyle = desc.cullStyle;
     HdMeshGeomStyle geomStyle = desc.geomStyle;
 
     // We need to use smoothNormals flag per repr (and not requireSmoothNormals)
@@ -1280,15 +1280,15 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear &&
         _topology->GetScheme() != PxOsdOpenSubdivTokens->none;
 
-    // if the prim doesn't have an opinion about cullstyle,
-    // use repr's default (it could also be DontCare, then renderPass's
+    // if the repr doesn't have an opinion about cullstyle, use the
+    // prim's default (it could also be DontCare, then renderPass's
     // cullStyle is going to be used).
     //
     // i.e.
-    //   Rprim CullStyle > Repr CullStyle > RenderPass CullStyle
+    //   Repr CullStyle > Rprim CullStyle > RenderPass CullStyle
     //
     if (cullStyle == HdCullStyleDontCare) {
-        cullStyle = desc.cullStyle;
+        cullStyle = _cullStyle;
     }
 
     bool blendWireframeColor = desc.blendWireframeColor;
@@ -1317,7 +1317,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  desc.shadingTerminal,
                                  useCustomDisplacement,
                                  smoothNormals,
-                                 _doubleSided,
+                                 _doubleSided || desc.doubleSided,
                                  hasFaceVaryingPrimVars,
                                  blendWireframeColor,
                                  cullStyle,
