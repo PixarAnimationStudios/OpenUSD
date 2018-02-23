@@ -28,6 +28,24 @@
 --- #import $TOOLS/hdSt/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl Geometry.CustomDisplacement
+
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
+
+vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
+{
+    return displacementShader(index, Peye, Neye, patchCoord);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Geometry.NoCustomDisplacement
+
+vec4 DisplacementTerminal(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
+{
+    return Peye;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Fragment.CommonTerminals
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
@@ -176,30 +194,3 @@ vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 #endif
     return ApplyColorOverrides(pointsColor);
 }
-
---- --------------------------------------------------------------------------
----
---- The displacement shader terminal could be defined in either the geometric
---- shader or "surface" (material) shader.  Typically, the one in the 
---- "surface" (material) shader is used when defined and the
---- terminal from the geometric shader isn't added to the combined shader
----  source.
----
---- However, in the case of shader compilation failure, we use a fallback
---- "surface" (material) shader.  At the point of failure, we don't know
---- which shader is defining the terminal, so the fallback shader includes
---- this terminal.  Therefore, we have a double-include problem where this
---- code fragment maybe included twice.  Therefore, we use include guards,
---- to make sure only one version of the code is compiled into in the final
---- shader.
----
--- glsl Geometry.Displacement
-
-#ifndef HD_HAS_definedDisplacementShader
-#define HD_HAS_definedDisplacementShader
-
-vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
-{
-    return Peye;
-}
-#endif // HD_HAS_definedDisplacementShader

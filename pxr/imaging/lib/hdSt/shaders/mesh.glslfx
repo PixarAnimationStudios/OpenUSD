@@ -211,11 +211,9 @@ vec4 GetPatchCoord(int index)
     return tesPatchCoord[index];
 }
 
-vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
-
 void emit(int index, int triIndex0, int triIndex1, int triIndex2, vec3 normal)
 {
-    outData.Peye = displacementShader(index, inData[index].Peye, normal, GetPatchCoord(index));
+    outData.Peye = DisplacementTerminal(index, inData[index].Peye, normal, GetPatchCoord(index));
     outData.Neye = normal;
     gsPatchCoord = GetPatchCoord(index);
     gsPatchCoord.w = GetElementID() + 0.5;
@@ -319,11 +317,9 @@ vec4 GetPatchCoord(int index)
     return InterpolatePatchCoordBarycentric(uv[index], patchParam);
 }
 
-vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
-
 void emit(int index, int triIndex0, int triIndex1, int triIndex2, vec3 normal)
 {
-    outData.Peye = displacementShader(index, inData[index].Peye, normal, GetPatchCoord(index));
+    outData.Peye = DisplacementTerminal(index, inData[index].Peye, normal, GetPatchCoord(index));
     outData.Neye = normal;
 
     gsPatchCoord = GetPatchCoord(index);
@@ -401,12 +397,10 @@ vec4 GetPatchCoord(int index)
     return OsdInterpolatePatchCoord(uv[index], patchParam);
 }
 
-vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord);
-
 void emit(int index, int triIndex0, int triIndex1, int triIndex2,
           vec3 normal, int triCounter)
 {
-    outData.Peye = displacementShader(index, inData[index].Peye, normal, GetPatchCoord(index));
+    outData.Peye = DisplacementTerminal(index, inData[index].Peye, normal, GetPatchCoord(index));
     outData.Neye = normal;
 
     gsPatchCoord = GetPatchCoord(index);

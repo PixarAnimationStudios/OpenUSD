@@ -57,13 +57,15 @@ struct HdMeshReprDesc {
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
                    bool smoothNormals = false,
                    bool blendWireframeColor = true,
-                   float lineWidth = 0)
+                   float lineWidth = 0,
+                   bool useCustomDisplacement = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
         , smoothNormals(smoothNormals)
         , blendWireframeColor(blendWireframeColor)
         , lineWidth(lineWidth)
+        , useCustomDisplacement(useCustomDisplacement)
         {}
 
     HdMeshGeomStyle geomStyle;
@@ -72,6 +74,7 @@ struct HdMeshReprDesc {
     bool            smoothNormals;
     bool            blendWireframeColor;
     float           lineWidth;
+    bool            useCustomDisplacement;
 };
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.

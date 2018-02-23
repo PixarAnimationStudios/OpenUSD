@@ -37,14 +37,14 @@ struct HdSt_MeshShaderKey
 {
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
-                       bool hasCustomDisplacementTerminal,
+                       bool useCustomDisplacement,
                        bool smoothNormals,
                        bool doubleSided,
                        bool faceVarying,
                        bool blendWireframeColor,
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
-                       float lineWidth = 0);
+                       float lineWidth);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"

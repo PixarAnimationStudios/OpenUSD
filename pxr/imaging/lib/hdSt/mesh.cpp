@@ -1307,10 +1307,15 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    // Enable displacement shading only if the repr enables it, and the
+    // entrypoint exists.
+    bool useCustomDisplacement =
+        hasCustomDisplacementTerminal && desc.useCustomDisplacement;
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  desc.shadingTerminal,
-                                 hasCustomDisplacementTerminal,
+                                 useCustomDisplacement,
                                  smoothNormals,
                                  _doubleSided,
                                  hasFaceVaryingPrimVars,
