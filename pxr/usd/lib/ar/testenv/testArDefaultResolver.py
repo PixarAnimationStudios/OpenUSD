@@ -101,6 +101,56 @@ class TestArDefaultResolver(unittest.TestCase):
             os.path.abspath('test1/test2/test_ResolveWithContext.txt'),
             resolver.Resolve('test_ResolveWithContext.txt'))
 
+    def test_ResolveWithContext(self):
+        testDir = os.path.abspath('test3/test4')
+        if os.path.isdir(testDir):
+            shutil.rmtree(testDir)
+        os.makedirs(testDir)
+        
+        testFileName = 'test_ResolveWithContext.txt'
+        testFilePath = os.path.join(testDir, testFileName) 
+        with open(testFilePath, 'w') as ofp:
+            print >>ofp, 'Garbage'
+        
+        resolver = Ar.GetResolver()
+        context = Ar.DefaultResolverContext([
+            os.path.abspath('test3'),
+            os.path.abspath('test3/test4')
+        ])
+
+        self.assertPathsEqual(
+            '', 
+            resolver.Resolve('test4/test_ResolveWithContext.txt'))
+
+        with Ar.ResolverContextBinder(context):
+            self.assertPathsEqual(
+                os.path.abspath('test3/test4/test_ResolveWithContext.txt'),
+                resolver.Resolve('test4/test_ResolveWithContext.txt'))
+            self.assertPathsEqual(
+                os.path.abspath('test3/test4/test_ResolveWithContext.txt'),
+                resolver.Resolve('test_ResolveWithContext.txt'))
+
+        self.assertPathsEqual(
+            '', 
+            resolver.Resolve('test4/test_ResolveWithContext.txt'))
+
+    def test_ResolverContext(self):
+        emptyContext = Ar.DefaultResolverContext()
+        self.assertEqual(emptyContext.GetSearchPath(), [])
+        self.assertEqual(emptyContext, Ar.DefaultResolverContext())
+        self.assertEqual(eval(repr(emptyContext)), emptyContext)
+
+        context = Ar.DefaultResolverContext(["/test/path/1", "/test/path/2"])
+        self.assertEqual(context.GetSearchPath(),
+                         [os.path.abspath("/test/path/1"), 
+                          os.path.abspath("/test/path/2")])
+        self.assertEqual(context,
+                         Ar.DefaultResolverContext(["/test/path/1", 
+                                                    "/test/path/2"]))
+        self.assertEqual(eval(repr(context)), context)
+
+        self.assertNotEqual(emptyContext, context);
+
 if __name__ == '__main__':
     unittest.main()
 
