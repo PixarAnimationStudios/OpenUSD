@@ -1058,8 +1058,6 @@ class AppController(QtCore.QObject):
 
         with Timer() as t:
             loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
-            preloadSet = loadSet if self._noRender else Usd.Stage.LoadNone
-
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
@@ -1074,57 +1072,9 @@ class AppController(QtCore.QObject):
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, popMask, preloadSet)
+                stage = Usd.Stage.OpenMasked(layer, popMask, loadSet)
             else:
-                stage = Usd.Stage.Open(layer, preloadSet)
-
-            # no point in optimizing for editing if we're not redrawing
-            if stage and not self._noRender:
-                # as described in bug #99309, UsdStage change processing
-                # can't yet tell the difference between an effectively
-                # "inert" change caused by adding an empty Over primSpec, and
-                # creation of a primSpec that has real effect on the stage.
-                # Therefore there is a massive invalidation from the root of
-                # the stage when the first edit on the stage is made
-                # (e.g. invising something), and while the UsdStage itself
-                # recovers quickly, clients like Hydra must throw everything
-                # away and start over.  Here, we limit the propagation of
-                # invalidation due to creation of new overs to the enclosing
-                # model by pre-populating the session layer with overs for
-                # the interior of the model hierarchy, before the renderer
-                # starts listening for changes.
-                #
-                # When bug #99309 is fixed, we can eliminate the "preloadSet"
-                # and double-stage load. It turns out to be typically
-                # enormously expensive to recompose the whole stage (which is
-                # what happens if we add the overs directly to stage's session
-                # layer).  So we "preload" the stage above in an unloaded state
-                # and add the overs to a detached layer that we will then use
-                # to open the stage a second time with the desired load-state,
-                # while still holding the preload-stage open.  This turns out
-                # to be much, much cheaper for scenes that are properly
-                # payloaded for scalability.
-                sl = Sdf.Layer.CreateAnonymous("usdview-session.usda")
-
-                # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
-                # so gather all the paths from the UsdStage first.
-                # We don't technically need the ChangeBlock since no-one is
-                # listening to this detached layer, but good batch-editing
-                # practice.
-                modelPaths = [p.GetPath() for p in \
-                                  Usd.PrimRange.Stage(stage,
-                                                      Usd.PrimIsModel) ]
-                with Sdf.ChangeBlock():
-                    for mpp in modelPaths:
-                        parent = sl.GetPrimAtPath(mpp.GetParentPath())
-                        Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-
-                if popMask:
-                    stage2 = Usd.Stage.OpenMasked(
-                        layer, sl, popMask, loadSet)
-                else:
-                    stage2 = Usd.Stage.Open(layer, sl, loadSet)
-                stage = stage2
+                stage = Usd.Stage.Open(layer, loadSet)
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
