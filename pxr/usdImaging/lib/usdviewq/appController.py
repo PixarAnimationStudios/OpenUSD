@@ -2211,7 +2211,12 @@ class AppController(QtCore.QObject):
                     if camera.GetName() == self._startingPrimCameraName:
                         setCamera(camera)
                         break
-
+                    
+            # If no main camera was specified, we pick up the first one:
+            if not self._startingPrimCamera and self._allSceneCameras:
+                setCamera(self._allSceneCameras[0])
+                
+        
         # Now that we have the current camera and all cameras, build the menu
         self._ui.menuCamera.clear()
         if len(self._allSceneCameras) == 0:
