@@ -558,7 +558,10 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     bool doRefine = (desc.geomStyle == HdMeshGeomStyleSurf);
 
     // If the subdivision scheme is "none", force us to not refine.
-    doRefine = doRefine && _topology.GetScheme() != PxOsdOpenSubdivTokens->none;
+    doRefine = doRefine && (_topology.GetScheme() != PxOsdOpenSubdivTokens->none);
+
+    // If the refine level is 0, triangulate instead of subdividing.
+    doRefine = doRefine && (_topology.GetRefineLevel() > 0);
 
     // The repr defines whether we should compute smooth normals for this mesh:
     // per-vertex normals taken as an average of adjacent faces, and
