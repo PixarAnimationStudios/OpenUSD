@@ -45,6 +45,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static HdRenderPassStateSharedPtr
+_InitIdRenderPassState(HdRenderIndex *index)
+{
+    HdRenderPassStateSharedPtr rps =
+        index->GetRenderDelegate()->CreateRenderPassState();
+
+    if (HdStRenderPassState* extendedState =
+            dynamic_cast<HdStRenderPassState*>(
+                rps.get())) {
+        extendedState->SetRenderPassShader(
+            boost::make_shared<HdStRenderPassShader>(
+                HdxPackageRenderPassIdShader()));
+    }
+
+    return rps;
+}
 
 HdxIntersector::HdxIntersector(HdRenderIndex *index)
     : _index(index)
@@ -59,35 +75,18 @@ HdxIntersector::_Init(GfVec2i const& size)
     HdRprimCollection col(HdTokens->geometry, HdTokens->hull);
     _pickableRenderPass = 
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
-    _unpickableRenderPass = 
+    _occluderRenderPass = 
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
-    // initialize renderPassState with ID render shader
-    _pickableRenderPassState =
-        _index->GetRenderDelegate()->CreateRenderPassState();
-    if (HdStRenderPassState* extendedState =
-            dynamic_cast<HdStRenderPassState*>(
-                _pickableRenderPassState.get())) {
-        extendedState->SetRenderPassShader(
-            boost::make_shared<HdStRenderPassShader>(
-                HdxPackageRenderPassIdShader()));
-    }
-
-    // Turn off color writes for the unpickables (we only want to condition the
-    // depth buffer).
-    // XXX: This is a quick alternative to using a different  shader mixin for
-    // the unpickables.
-    _unpickableRenderPassState =
-        _index->GetRenderDelegate()->CreateRenderPassState();
-    if (HdStRenderPassState* extendedState =
-            dynamic_cast<HdStRenderPassState*>(
-                _unpickableRenderPassState.get())) {
-        extendedState->SetRenderPassShader(
-            boost::make_shared<HdStRenderPassShader>(
-                HdxPackageRenderPassIdShader()));
-    }
-    _unpickableRenderPassState->SetColorMaskUseDefault(false);
-    _unpickableRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
+    // initialize renderPassStates with ID render shader
+    _pickableRenderPassState = _InitIdRenderPassState(_index);
+    _occluderRenderPassState = _InitIdRenderPassState(_index);
+    // Turn off color writes for the occluders, wherein we want to only
+    // condition the depth buffer and not write out any IDs.
+    // XXX: This is a hacky alternative to using a different shader mixin to
+    // accomplish the same thing.
+    _occluderRenderPassState->SetColorMaskUseDefault(false);
+    _occluderRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.
@@ -193,7 +192,7 @@ HdxIntersector::_ConditionStencilWithGLCallback(DepthMaskCallback maskCallback)
     // Update the stencil state for the render passes
     {
         HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
-                                               _unpickableRenderPassState};
+                                               _occluderRenderPassState};
         for (auto& state : states) {
             state->SetStencilEnabled(true);
             state->SetStencil(HdCmpFuncLess,
@@ -278,7 +277,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         _Init(GfVec2i(128,128));
     }
     if (!TF_VERIFY(_pickableRenderPass) || 
-        !TF_VERIFY(_unpickableRenderPass)) {
+        !TF_VERIFY(_occluderRenderPass)) {
         return false;
     }
 
@@ -337,13 +336,13 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         } else {
             // disable stencil
             _pickableRenderPassState->SetStencilEnabled(false);
-            _unpickableRenderPassState->SetStencilEnabled(false);
+            _occluderRenderPassState->SetStencilEnabled(false);
         }
         
 
         // Update render pass states based on incoming params.
         HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
-                                               _unpickableRenderPassState};
+                                               _occluderRenderPassState};
         for (auto& state : states) {
             state->SetAlphaThreshold(params.alphaThreshold);
             state->SetClipPlanes(params.clipPlanes);
@@ -365,18 +364,51 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
 
         HdTaskSharedPtrVector tasks;
         //
-        // Unpickable prims (condition the depth buffer so they can occlude,
-        // but don't write to the attachments of the draw target)
-        //
-        if (pickablesCol.GetExcludePaths().size() > 0)
-        {
-            HdRprimCollection unpickablesCol = 
+        // For point picking, the caller is expected to have set the "points"
+        // repr on the collection, and thus we won't get occlusion. In this
+        // case, we render the hull of the pickables and unpickables to account
+        // for occlusion, and then do the ID render pass.
+        // 
+        // In all other cases, if we have unpickable prims, we swap the include
+        // and exclude paths of the input collection and render the resulting
+        // prims into the depth buffer.
+        const bool pickPoints = (params.pickMode == HdxIntersector::PickPoints);
+        const bool hasUnpickables = (!pickablesCol.GetExcludePaths().empty());
+
+        if (pickPoints) {
+            HdRprimCollection occluderCol = pickablesCol;
+            // While we'd prefer not to override/use repr's configured by Hydra
+            // (in this case, the HdRenderIndex), we make an exception here.
+            // 'hull' is used because point picking on meshes works only when
+            // unrefined.
+            occluderCol.SetReprName(HdTokens->hull);
+            if (!occluderCol.GetExcludePaths().empty()) {
+                // add the "unpickables" to the prims rendered to the depth
+                // buffer
+                SdfPathVector netIncludePaths = occluderCol.GetRootPaths();
+                SdfPathVector const& excludePaths = 
+                    occluderCol.GetExcludePaths();
+                netIncludePaths.insert(netIncludePaths.end(),
+                                       excludePaths.begin(),
+                                       excludePaths.end());
+                occluderCol.SetRootPaths(netIncludePaths);
+            }
+
+            _occluderRenderPass->SetRprimCollection(occluderCol);
+            
+            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                    _occluderRenderPass,
+                    _occluderRenderPassState,
+                    params.renderTags));
+
+        } else if (hasUnpickables) {
+            HdRprimCollection occluderCol =
                 pickablesCol.CreateInverseCollection();
-            _unpickableRenderPass->SetRprimCollection(unpickablesCol);
+            _occluderRenderPass->SetRprimCollection(occluderCol);
 
             tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                    _unpickableRenderPass,
-                    _unpickableRenderPassState,
+                    _occluderRenderPass,
+                    _occluderRenderPassState,
                     params.renderTags));
         }
         

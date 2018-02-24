@@ -245,13 +245,13 @@ private:
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
-    HdRenderPassSharedPtr _unpickableRenderPass;
+    HdRenderPassSharedPtr _occluderRenderPass;
 
     // Having separate render pass states allows us to queue up the tasks
     // corresponding to each of the above render passes. It also lets us use
     // different shader mixins if we choose to (we don't currently.)
     HdRenderPassStateSharedPtr _pickableRenderPassState;
-    HdRenderPassStateSharedPtr _unpickableRenderPassState;
+    HdRenderPassStateSharedPtr _occluderRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.
