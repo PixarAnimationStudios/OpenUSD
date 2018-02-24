@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_CONE_ADAPTER_H
 #define USDIMAGING_CONE_ADAPTER_H
 
+/// \file usdImaging/coneAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"

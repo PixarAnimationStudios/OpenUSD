@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_MATERIALADAPTER_H
 #define USDIMAGING_MATERIALADAPTER_H
 
+/// \file usdImaging/materialAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 

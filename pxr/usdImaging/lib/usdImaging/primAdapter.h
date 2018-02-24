@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_PRIM_ADAPTER_H
 #define USDIMAGING_PRIM_ADAPTER_H
 
+/// \file usdImaging/primAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"

@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_POINTS_ADAPTER_H
 #define USDIMAGING_POINTS_ADAPTER_H
 
+/// \file usdImaging/pointsAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"

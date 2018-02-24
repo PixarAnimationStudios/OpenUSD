@@ -24,6 +24,8 @@
 #ifndef USD_ADAPTER_REGISTRY_H
 #define USD_ADAPTER_REGISTRY_H
 
+/// \file usdImaging/adapterRegistry.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/singleton.h"

@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_NURBS_PATCH_ADAPTER_H
 #define USDIMAGING_NURBS_PATCH_ADAPTER_H
 
+/// \file usdImaging/nurbsPatchAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"

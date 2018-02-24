@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_MESH_ADAPTER_H
 #define USDIMAGING_MESH_ADAPTER_H
 
+/// \file usdImaging/meshAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"

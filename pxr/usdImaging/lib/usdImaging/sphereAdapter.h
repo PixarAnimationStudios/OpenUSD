@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_SPHERE_ADAPTER_H
 #define USDIMAGING_SPHERE_ADAPTER_H
 
+/// \file usdImaging/sphereAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"

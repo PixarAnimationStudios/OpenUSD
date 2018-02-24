@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_UNIT_TEST_HELPER
 #define USDIMAGING_UNIT_TEST_HELPER
 
+/// \file usdImaging/unitTestHelper.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 

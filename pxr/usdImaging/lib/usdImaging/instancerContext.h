@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_INSTANCER_CONTEXT_H
 #define USDIMAGING_INSTANCER_CONTEXT_H
 
+/// \file usdImaging/instancerContext.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/sdf/path.h"

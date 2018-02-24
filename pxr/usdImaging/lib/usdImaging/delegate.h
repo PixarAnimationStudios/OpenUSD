@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_DELEGATE_H
 #define USDIMAGING_DELEGATE_H
 
+/// \file usdImaging/delegate.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"

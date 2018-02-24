@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_INHERITEDCACHE_H
 #define USDIMAGING_INHERITEDCACHE_H
 
+/// \file usdImaging/inheritedCache.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/usd/prim.h"
