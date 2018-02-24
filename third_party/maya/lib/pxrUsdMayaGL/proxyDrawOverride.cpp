@@ -69,7 +69,7 @@ UsdMayaProxyDrawOverride::UsdMayaProxyDrawOverride(const MObject& obj) :
         MHWRender::MPxDrawOverride(obj,
                                    UsdMayaProxyDrawOverride::draw
 #if MAYA_API_VERSION >= 201651
-                                   , /* isAlwaysDirty = */ true)
+                                   , /* isAlwaysDirty = */ false)
 #else
                                    )
 #endif
