@@ -266,6 +266,12 @@ void
 HdStRenderPassState::Bind()
 {
     // XXX: this states set will be refactored as hdstream PSO.
+    
+    // notify view-transform to the lighting shader to update its uniform block
+    // this needs to be done in execute as a multi camera setup may have been synced
+    // with a different view matrix baked in for shadows.
+    // SetCamera will no-op if the transforms are the same as before.
+    _lightingShader->SetCamera(_worldToViewMatrix, _projectionMatrix);
 
     // XXX: viewport should be set.
     // glViewport((GLint)_viewport[0], (GLint)_viewport[1],
