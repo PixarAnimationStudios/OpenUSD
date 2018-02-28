@@ -5882,11 +5882,11 @@ public:
         else {
             if (!TF_VERIFY(layer->GetBracketingTimeSamplesForPath(
                         specId, localTime, &lower, &upper),
-                TfStringPrintf("No bracketing time samples for "
+                        "No bracketing time samples for "
                                "%s on <%s> for time %g between %g and %g",
                                layer->GetIdentifier().c_str(),
                                specId.GetFullSpecPath().GetText(),
-                               localTime, lower, upper).c_str())) {
+                               localTime, lower, upper)) {
                 return false;
             }
         }
