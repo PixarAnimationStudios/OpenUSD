@@ -554,17 +554,16 @@ namespace {
 /// Validate the size of a weight/index array for a given
 /// number of influences per component.
 /// Throws a warning for failed validation.
-template <typename T>
 bool
-_ValidateArrayShape(T* array, int numInfluencesPerComponent)
+_ValidateArrayShape(size_t size, int numInfluencesPerComponent)
 {
     if(numInfluencesPerComponent > 0) {
-        if(array->size()%numInfluencesPerComponent == 0) {
+        if(size%numInfluencesPerComponent == 0) {
             return true;
         } else {
             TF_WARN("Unexpected array size [%zu]: Size must be a multiple of "
                     "the number of influences per component [%d].",
-                    array->size(), numInfluencesPerComponent);
+                    size, numInfluencesPerComponent);
         }
     } else {
         TF_WARN("Invalid number of influences per component (%d): "
@@ -624,7 +623,7 @@ UsdSkelNormalizeWeights(VtFloatArray* weights,
         return false;
     }
 
-    if(!_ValidateArrayShape(weights, numInfluencesPerComponent))
+    if(!_ValidateArrayShape(weights->size(), numInfluencesPerComponent))
         return false;
 
     return _NormalizeWeights(weights->data(), weights->size(),
@@ -698,7 +697,7 @@ UsdSkelSortInfluences(VtIntArray* indices,
         return false;
     }
 
-    if(!_ValidateArrayShape(weights, numInfluencesPerComponent)) {
+    if(!_ValidateArrayShape(weights->size(), numInfluencesPerComponent)) {
         return false;
     }
 
@@ -765,7 +764,7 @@ _ResizeInfluences(VtArray<T>* array, int srcNumInfluencesPerComponent,
         return false;
     }
 
-    if(!_ValidateArrayShape(array, srcNumInfluencesPerComponent))
+    if(!_ValidateArrayShape(array->size(), srcNumInfluencesPerComponent))
         return false;
 
     size_t numComponents = array->size()/srcNumInfluencesPerComponent;
@@ -1240,17 +1239,17 @@ _BakeSkinnedPoints(const UsdPrim& prim,
                 xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeAnimTransform(&skelLocalToWorld, time)) {
+            if(!skelQuery.ComputeLocalToWorldTransform(
+                   &skelLocalToWorld, xfCache)) {
                 TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                     "[UsdSkelBakeSkinning]   Failed computing "
-                    "anim transform\n");
+                    "skel local-to-world transform\n");
                 return false;
             }
-            skelLocalToWorld *= xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d skelToGprimXf =
                 skelLocalToWorld*gprimLocalToWorld.GetInverse();
-           
+
             for(auto& pt : skinnedPoints) {
                 pt = skelToGprimXf.Transform(pt);
             }
@@ -1333,13 +1332,13 @@ _BakeSkinnedTransform(const UsdPrim& prim,
             xfCache->SetTime(time);
 
             GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeAnimTransform(&skelLocalToWorld, time)) {
+            if(!skelQuery.ComputeLocalToWorldTransform(
+                   &skelLocalToWorld, xfCache)) {
                 TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                     "[UsdSkelBakeSkinning]   Failed computing "
-                    "anim transform\n");
+                    "skel local-to-world transform\n");
                 return false;
             }
-            skelLocalToWorld *= xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d newLocalXform;
             
