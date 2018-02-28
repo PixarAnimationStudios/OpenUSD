@@ -243,7 +243,7 @@ HdStRenderContextCaps::_LoadCaps()
         // GLSL version override
         glslVersion = std::min(glslVersion, TfGetEnvSetting(HD_GLSL_VERSION));
 
-        // downgrade to the overriden GLSL version
+        // downgrade to the overridden GLSL version
         explicitUniformLocation    &= (glslVersion >= 430);
         bindlessTextureEnabled     &= (glslVersion >= 430);
         bindlessBufferEnabled      &= (glslVersion >= 430);

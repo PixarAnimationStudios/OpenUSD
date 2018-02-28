@@ -123,7 +123,7 @@ enum HdPointsGeomStyle {
 /// of a gprim is to be rendered.
 ///
 /// Unspecified indicates this gprim does not indicate how it should be drawn
-/// (ie, it will always be overriden by another opinion).
+/// (ie, it will always be overridden by another opinion).
 /// The actual geomstyle must come from somewhere else, such as the viewer.
 ///
 /// The polygons/triangles of a gprim can be drawn as Lines or Polygons.

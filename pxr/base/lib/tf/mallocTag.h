@@ -63,7 +63,7 @@ public:
         /// \struct PathNode
         /// Node in the call tree structure.
         ///
-        /// A \c PathNode captures the hiearchy of active \c TfAutoMallocTag
+        /// A \c PathNode captures the hierarchy of active \c TfAutoMallocTag
         /// objects that are pushed and popped during program execution.  Each
         /// \c PathNode thus describes a sequence of call-sites (i.e. a path
         /// down the call tree).  Repeated call sites (in the case of
@@ -136,7 +136,7 @@ public:
 
         /// Generates a report to the ostream \p out.
         ///
-        /// This report is printed in a way that is intened to be used by
+        /// This report is printed in a way that is intended to be used by
         /// xxtracediff.  If \p rootName is provided and is non-empty it will
         /// replace the name of the tree root in the report.
         TF_API
@@ -175,7 +175,7 @@ public:
     /// Initialize the memory tagging system.
     ///
     /// This function returns \c true if the memory tagging system can be
-    /// succesfully initialized or it has already been initialized. Otherwise,
+    /// successfully initialized or it has already been initialized. Otherwise,
     /// \p *errMsg is set with an explanation for the failure.
     ///
     /// Until the system is initialized, the various memory reporting calls
@@ -187,7 +187,7 @@ public:
 
     /// Return true if the tagging system is active.
     ///
-    /// If \c Initialize() has been succesfully called, this function returns
+    /// If \c Initialize() has been successfully called, this function returns
     /// \c true.
     static bool IsInitialized() {
         return TfMallocTag::_doTagging;
@@ -284,7 +284,7 @@ public:
         /// be incurred even if tagging is not active.  If this is an issue,
         /// you can query \c TfMallocTag::IsInitialized() to avoid unneeded
         /// work when tagging is inactive.  Note that the case when \p name is
-        /// a string literal does not apply here: instead, the constuctor that
+        /// a string literal does not apply here: instead, the constructor that
         /// takes a \c const \c char* (above) will be called.
         ///
         /// Objects of this class should only be created as local variables;

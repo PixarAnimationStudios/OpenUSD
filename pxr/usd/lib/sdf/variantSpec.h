@@ -99,7 +99,7 @@ public:
     SDF_API
     SdfVariantSetsProxy GetVariantSets() const;
 
-    /// Returns list of variant names for the given varient set.
+    /// Returns list of variant names for the given variant set.
     SDF_API
     std::vector<std::string> GetVariantNames(const std::string& name) const;
 

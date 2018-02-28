@@ -166,7 +166,7 @@ class SdfAssetPath;
 /// \section UsdLuxListAPI_Instancing Instancing
 /// 
 /// Where instances are present, UsdLuxListAPI::ComputeLightList() will
-/// return the instance-unqiue paths to any lights discovered within
+/// return the instance-unique paths to any lights discovered within
 /// those instances.  Lights within a UsdGeomPointInstancer will
 /// not be returned, however, since they cannot be referred to
 /// solely via paths.
@@ -339,13 +339,13 @@ public:
     ///
     /// In ComputeModeConsultModelHierarchyCache, this does a traversal
     /// only of the model hierarchy. In this traversal, any lights that
-    /// live as model hiearchy prims are accumulated, as well as any
+    /// live as model hierarchy prims are accumulated, as well as any
     /// paths stored in lightList caches. The lightList:cacheBehavior
     /// attribute gives further control over the cache behavior; see the
     /// class overview for details.
     /// 
     /// When instances are present, ComputeLightList(ComputeModeIgnoreCache)
-    /// will return the instance-unqiue paths to any lights discovered
+    /// will return the instance-uniqiue paths to any lights discovered
     /// within those instances.  Lights within a UsdGeomPointInstancer
     /// will not be returned, however, since they cannot be referred to
     /// solely via paths.

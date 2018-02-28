@@ -164,7 +164,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A note about type plurality of Primvars: It is legitimate for a Primvar
 /// to be of scalar or array type, and again, consuming clients must be
-/// prepared to accomodate both.  However, while it is not possible, in all
+/// prepared to accommodate both.  However, while it is not possible, in all
 /// cases, for USD to \em prevent one from \em changing the type of an attribute
 /// in different layers or variants of an asset, it is never a good idea to
 /// do so.  This is relevant because, except in a few special cases, it is

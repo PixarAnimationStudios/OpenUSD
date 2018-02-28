@@ -869,7 +869,7 @@ public:
     bool SetPayload(
         const std::string& assetPath, const SdfPath& primPath) const;
     
-    /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifer(),
+    /// Shorthand for SetPayload(SdfPayload(layer->GetIdentifier(),
     /// primPath)).
     USD_API
     bool SetPayload(const SdfLayerHandle& layer, const SdfPath& primPath) const;

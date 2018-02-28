@@ -767,7 +767,7 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
                     true);
         }
 
-        // USD's group delimeter is :, whereas Katana's is .
+        // USD's group delimiter is :, whereas Katana's is .
         std::string page = TfStringReplace(
                 interfaceInput.GetDisplayGroup(), ":", ".");
         if (!page.empty()) {

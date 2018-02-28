@@ -47,7 +47,7 @@ class Tf_NoticeRegistry;
 /// \ingroup group_tf_Notification
 ///
 /// The base class for objects used to notify interested parties (listeners)
-/// when events have occured.  The TfNotice class also serves as a container
+/// when events have occurred.  The TfNotice class also serves as a container
 /// for various dispatching routines such as Register() and Send().
 ///
 /// See \ref page_tf_Notification in the C++ API reference for a detailed 

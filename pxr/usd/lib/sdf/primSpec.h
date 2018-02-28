@@ -177,7 +177,7 @@ public:
     SDF_API
     bool InsertNameChild(const SdfPrimSpecHandle& child, int index = -1);
 
-    /// Removes the child.  Returns true if succesful, false if failed.
+    /// Removes the child.  Returns true if successful, false if failed.
     SDF_API
     bool RemoveNameChild(const SdfPrimSpecHandle& child);
 
@@ -238,7 +238,7 @@ public:
     ///
     /// \p index is ignored except for range checking;  -1 is permitted.
     ///
-    /// Returns true if succesful, false if failed.
+    /// Returns true if successful, false if failed.
     SDF_API
     bool InsertProperty(const SdfPropertySpecHandle& property, int index = -1);
 
@@ -665,7 +665,7 @@ public:
     SDF_API
     bool HasVariantSetNames() const;
 
-    /// Returns list of variant names for the given varient set.
+    /// Returns list of variant names for the given variant set.
     SDF_API
     std::vector<std::string> GetVariantNames(const std::string& name) const;
 

@@ -370,7 +370,7 @@ void Connect(
 PXRUSDMAYA_API
 PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape);
 
-/// Conveniency function to retreive custom data
+/// Convenience function to retrieve custom data
 PXRUSDMAYA_API
 bool GetBoolCustomData(PXR_NS::UsdAttribute obj, PXR_NS::TfToken key, bool defaultValue);
 

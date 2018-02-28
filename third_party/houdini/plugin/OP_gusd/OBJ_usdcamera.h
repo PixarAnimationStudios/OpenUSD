@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     custom local variables in expressions to pull in the corresponding data
     from USD. The reason for doing it this way is that, by default,
     we're able to have everything come from USD, but at any point,
-    users are free to delete or modify the default epxressions to change 
+    users are free to delete or modify the default expressions to change
     behavior (eg., maybe we want 2x the authored near/far range).
     
     An additional oddity is that the camera parameters come from creation

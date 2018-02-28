@@ -1984,7 +1984,7 @@ _EvalNodeRelocations(
     // incorporate the ancestral arcs from the relocation sources (spooky
     // ancestors).  Using actual nodes for this lets us easily
     // incorporate spooky ancestral opinions, spooky implied inherits
-    // etc. without needed special accomodation.  However, it does
+    // etc. without needed special accommodation.  However, it does
     // have some other ramifications; see XXX:RelocatesSourceNodes.
     //
     // XXX: It could be that a better design would be to only use
@@ -2608,7 +2608,7 @@ _EvalImpliedClassTree(
                 indexer);
         }
 
-        // If we succesfully added the arc (or found it already existed)
+        // If we successfully added the arc (or found it already existed)
         // recurse on nested classes.  This will build up the full
         // class hierarchy that we are inheriting.
         // Optimization: Recursion requires some cost to set up
