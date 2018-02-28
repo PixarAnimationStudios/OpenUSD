@@ -50,27 +50,6 @@ bool operator!=(const HdxShaderInputs& lhs, const HdxShaderInputs& rhs);
 HDX_API
 std::ostream& operator<<(std::ostream& out, const HdxShaderInputs& pv);
 
-// Struct used to send texture parameters from Presto and send them to Hydra
-struct HdxTextureParameters {
-    HdWrap wrapS;
-    HdWrap wrapT;
-    HdMinFilter minFilter;
-    HdMagFilter magFilter;
-    int cropTop;
-    int cropBottom;
-    int cropLeft;
-    int cropRight;
-    float textureMemory;
-    bool isPtex;
-};
-
-HDX_API
-bool operator==(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs);
-HDX_API
-bool operator!=(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs);
-HDX_API
-std::ostream& operator<<(std::ostream& out, const HdxTextureParameters& pv);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
