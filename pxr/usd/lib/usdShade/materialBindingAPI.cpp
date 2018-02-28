@@ -674,17 +674,17 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
             }
 
             const BindingsAtPrim &bindingsAtP = *bindingsIt->second;
-            const DirectBindingPtr &directBindingPtr = 
-                bindingsAtP.directBinding;
-            const TfToken &directBindingPurpose = 
-                directBindingPtr->GetMaterialPurpose();
 
-            if (directBindingPtr && directBindingPurpose == purpose) {
+            const DirectBindingPtr &directBindingPtr = 
+                    bindingsAtP.directBinding;
+            if (directBindingPtr && 
+                directBindingPtr->GetMaterialPurpose() == purpose) 
+            {
                 const UsdRelationship &directBindingRel = 
                         directBindingPtr->GetBindingRel();
                 if (!boundMaterial || 
                     (GetMaterialBindingStrength(directBindingRel) == 
-                      UsdShadeTokens->strongerThanDescendants))
+                     UsdShadeTokens->strongerThanDescendants))
                 {
                     boundMaterial = directBindingPtr->GetMaterial();
                     winningBindingRel = directBindingRel;
