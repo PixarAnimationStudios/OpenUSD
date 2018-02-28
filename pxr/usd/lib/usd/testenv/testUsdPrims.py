@@ -782,6 +782,8 @@ class TestUsdPrim(unittest.TestCase):
             root = rootModelAPI.GetPrim()
             self.assertTrue(root)
 
+            self.assertTrue(root.HasAPI(Usd.ModelAPI))
+
             self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
 
             # Switch the edit target to the session layer and test bug 156929
@@ -789,6 +791,8 @@ class TestUsdPrim(unittest.TestCase):
             sessionClipsAPI = Usd.ClipsAPI.Apply(root)
             self.assertTrue(sessionClipsAPI)
             self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+
+            self.assertTrue(root.HasAPI(Usd.ClipsAPI))
 
             # Ensure duplicates aren't picked up
             anotherSessionClipsAPI = Usd.ClipsAPI.Apply(root)

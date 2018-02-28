@@ -143,8 +143,21 @@ TestPrimQueries()
 
     UsdCollectionAPI coll = UsdCollectionAPI::ApplyCollection(prim, 
             TfToken("testColl"));
-    // HasAPI doesn't work for multiple-apply API schemas.
-    assert(!prim.HasAPI<UsdCollectionAPI>());
+    assert(prim.HasAPI<UsdCollectionAPI>());
+
+    assert(prim.HasAPI<UsdCollectionAPI>(
+            /*instanceName*/ TfToken("testColl")));
+
+    assert(!prim.HasAPI<UsdCollectionAPI>(
+            /*instanceName*/ TfToken("nonExistentColl")));
+
+    std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
+    TfErrorMark mark;
+    // Passing in a non-empty instance name with a single-apply API schema like
+    // ModelAPI results in a coding error
+    assert(!prim.HasAPI<UsdModelAPI>(/*instanceName*/ TfToken("instance")));
+    TF_VERIFY(!mark.IsClean());
+    std::cerr << "--- END EXPECTED ERROR --" << std::endl;
 }
 
 int main(int argc, char** argv)

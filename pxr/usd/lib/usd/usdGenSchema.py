@@ -43,7 +43,7 @@ from collections import namedtuple
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 
-from pxr import Plug, Sdf, Usd, Tf
+from pxr import Plug, Sdf, Usd, Vt, Tf
 
 #------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
@@ -812,7 +812,11 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     primsToKeep = set(cls.usdPrimTypeName for cls in classes)
     if not flatStage.RemovePrim('/GLOBAL'):
         print "WARNING: Could not remove GLOBAL prim."
+    allMultipleApplyAPISchemas = []
     for p in flatStage.GetPseudoRoot().GetAllChildren():
+        if p.GetName() in primsToKeep and \
+           p.GetCustomDataByKey('isMultipleApply' ) == True:
+            allMultipleApplyAPISchemas.append(p.GetName())
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():
             myproperty.ClearCustomData()
@@ -824,6 +828,10 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     # Set layer's comment to indicate that the file is generated.
     flatLayer.comment = 'WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.'
 
+    # Add the list of all multiple-apply API schemas.
+    if len(allMultipleApplyAPISchemas) > 0:
+        flatLayer.customLayerData = {'multipleApplyAPISchemas' : 
+                                     Vt.StringArray(allMultipleApplyAPISchemas)}
     #
     # Generate Schematics
     #

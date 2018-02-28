@@ -59,6 +59,7 @@ class UsdAttribute;
 class UsdRelationship;
 class UsdReferences;
 class UsdSchemaBase;
+class UsdAPISchemaBase;
 class UsdInherits;
 class UsdSpecializes;
 class UsdVariantSets;
@@ -420,19 +421,26 @@ public:
 
 private:
     friend bool Usd_PrimIsA(const UsdPrim&, const TfType& schemaType);
-    friend bool Usd_PrimHasAPI(const UsdPrim&, const TfType& schemaType);
+    friend bool Usd_PrimHasAPI(const UsdPrim &, const TfType& schemaType,
+                               const TfToken &instanceName);
 
-    /// The non-templated implementation of UsdPrim::IsA using the
-    /// TfType system. \p validateSchemaType is provided for python clients
-    /// because they can't use compile time assertions on the input type.
+    // The non-templated implementation of UsdPrim::IsA using the
+    // TfType system. \p validateSchemaType is provided for python clients
+    // because they can't use compile time assertions on the input type.
     USD_API
     bool _IsA(const TfType& schemaType, bool validateSchemaType) const;
 
-    /// The non-templated implementation of UsdPrim::HasAPI using the
-    /// TfType system. \p validateSchemaType is provided for python clients
-    /// because they can't use compile time assertions on the input type.
+    // The non-templated implementation of UsdPrim::HasAPI using the
+    // TfType system. 
+    // 
+    // \p validateSchemaType is provided for python clients
+    // because they can't use compile time assertions on the input type.
+    // 
+    // \p instanceName is used to determine whether a particular instance 
+    // of a multiple-apply API schema has been applied to the prim.
     USD_API
-    bool _HasAPI(const TfType& schemaType, bool validateSchemaType) const;
+    bool _HasAPI(const TfType& schemaType, bool validateSchemaType,
+                 const TfToken &instanceName) const;
 
 public:
     /// Return true if the UsdPrim is/inherits a Schema of type T.
@@ -446,21 +454,63 @@ public:
         return _IsA(TfType::Find<T>(), /*validateSchemaType=*/false);
     };
 
-    /// Return true if the UsdPrim has had an API schema applied to it
-    /// through the Apply() method provided on all API schema classes, such
-    /// as UsdModelAPI and UsdCollectionAPI.
+    /// Return true if the UsdPrim has had an API schema represented by the C++ 
+    /// class type <b>T</b> applied to it through the Apply() method provided 
+    /// on the API schema class. 
+    /// 
+    /// \p instanceName, if non-empty is used to determine if a particular 
+    /// instance of a multiple-apply API schema (eg. UsdCollectionAPI) has been 
+    /// applied to the prim. A coding error is issued if a non-empty 
+    /// \p instanceName is passed in and <b>T</b> represents a single-apply API 
+    /// schema.
+    /// 
+    /// <b>Using HasAPI in C++</b>
+    /// \code 
+    /// UsdPrim prim = stage->OverridePrim("/path/to/prim");
+    /// UsdModelAPI modelAPI = UsdModelAPI::Apply(prim);
+    /// assert(prim.HasAPI<UsdModelAPI>());
+    /// 
+    /// UsdCollectionAPI collAPI = UsdCollectionAPI::Apply(prim, 
+    ///         /*instanceName*/ TfToken("geom"))
+    /// assert(prim.HasAPI<UsdCollectionAPI>()
+    /// assert(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("geom")))
+    /// \endcode
+    /// 
+    /// The python version of this method takes as an argument the TfType
+    /// of the API schema class. Similar validation of the schema type is 
+    /// performed in python at run-time and a coding error is issued if 
+    /// the given type is unknown or is a typed schema.
+    /// 
+    /// <b>Using HasAPI in Python</b>
+    /// \code{.py}
+    /// prim = stage.OverridePrim("/path/to/prim")
+    /// modelAPI = Usd.ModelAPI.Apply(prim)
+    /// assert prim.HasAPI(Usd.ModelAPI)
+    /// 
+    /// collAPI = Usd.CollectionAPI.Apply(prim, "geom")
+    /// assert(prim.HasAPI(Usd.CollectionAPI))
+    /// assert(prim.HasAPI(Usd.CollectionAPI, instanceName="geom"))
+    /// \endcode
     template <typename T>
-    bool HasAPI() const {
-        static_assert(std::is_base_of<UsdSchemaBase, T>::value,
-                      "Provided type must derive UsdSchemaBase.");
-        static_assert(!std::is_same<UsdSchemaBase, T>::value,
-                      "Provided type must not be UsdSchemaBase.");
-        static_assert(!T::IsConcrete,
-                      "Provided schema type must be non-concrete."); 
+    bool HasAPI(const TfToken &instanceName=TfToken()) const {
+        static_assert(std::is_base_of<UsdAPISchemaBase, T>::value,
+                      "Provided type must derive UsdAPISchemaBase.");
+        static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
+                      "Provided type must not be UsdAPISchemaBase.");
         static_assert(!T::IsTyped,
-                      "Provided schema type must be untyped.");
-        return _HasAPI(TfType::Find<T>(), /*validateSchemaType=*/false);
-    } 
+                      "Provided schema type must not be typed.");
+
+        if (!T::IsMultipleApply && !instanceName.IsEmpty()) {
+            TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
+                "not contain an application instanceName ( %s ).",
+                TfType::GetCanonicalTypeName(typeid(T)).c_str(),
+                instanceName.GetText());
+            return false;
+        }
+
+        return _HasAPI(TfType::Find<T>(), /*validateSchemaType=*/false, 
+                       instanceName);
+    }
 
     // --------------------------------------------------------------------- //
     /// \name Prim Children

@@ -51,10 +51,17 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # ----------------------------------------------------------
         # Test an explicitOnly collection.
         explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
-                "testExplicitCollection", Usd.Tokens.explicitOnly)
+                "test:Explicit:Collection", Usd.Tokens.explicitOnly)
         self.assertTrue(explicitColl.HasNoIncludedPaths())
-        self.assertEqual(['CollectionAPI:testExplicitCollection'],
+        self.assertEqual(['CollectionAPI:test:Explicit:Collection'],
                          testPrim.GetAppliedSchemas())
+        self.assertTrue(testPrim.HasAPI(Usd.CollectionAPI))
+        self.assertTrue(testPrim.HasAPI(Usd.CollectionAPI, 
+            instanceName="test:Explicit:Collection"))
+        self.assertTrue(not testPrim.HasAPI(Usd.CollectionAPI, 
+            instanceName="unknown"))
+        self.assertTrue(not testPrim.HasAPI(Usd.CollectionAPI, 
+            instanceName="test"))
 
         explicitColl.CreateIncludesRel().AddTarget(sphere.GetPath())
         self.assertFalse(explicitColl.HasNoIncludedPaths())

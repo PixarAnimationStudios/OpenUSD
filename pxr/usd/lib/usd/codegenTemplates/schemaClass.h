@@ -88,6 +88,13 @@ public:
     /// UsdPrim.
     static const bool IsTyped = {{ "true" if cls.isTyped else "false" }};
 
+{% if cls.isApi %}
+    /// Compile-time constant indicating whether or not this class represents a 
+    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
+    /// to the same prim multiple times with different instance names. 
+    static const bool IsMultipleApply = {{ "true" if cls.isMultipleApply else "false" }};
+
+{% endif %}
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim .
     /// Equivalent to {{ cls.cppClassName }}::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for

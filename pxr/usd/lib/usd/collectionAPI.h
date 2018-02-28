@@ -138,6 +138,11 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents a 
+    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
+    /// to the same prim multiple times with different instance names. 
+    static const bool IsMultipleApply = true;
+
     /// Construct a UsdCollectionAPI on UsdPrim \p prim .
     /// Equivalent to UsdCollectionAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -276,7 +281,7 @@ public:
     class MembershipQuery {
     public:
         /// Default Constructor, creates an empty MembershipQuery object for 
-        /// passing into UsdCollectionAPI::CreateMembershipQuery() via a 
+        /// passing into UsdCollectionAPI::ComputeMembershipQuery() via a 
         /// pointer.
         MembershipQuery() {}
         
