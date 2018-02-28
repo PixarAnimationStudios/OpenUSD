@@ -142,6 +142,10 @@ class SdfAssetPath;
 /// not authored (i.e. empty) on a binding-relationship, the default behavior 
 /// matches UsdShadeTokens->weakerThanDescendants.
 /// 
+/// \note If a material binding relationship is a built-in property defined as 
+/// part of a typed prim's schema, a fallback value should not be provided for 
+/// it. This is because the "material resolution" algorithm only conisders 
+/// <i>authored</i> properties.
 /// 
 ///
 class UsdShadeMaterialBindingAPI : public UsdAPISchemaBase
@@ -540,6 +544,11 @@ public:
     /// an ancestor of </Chair/Back/Brace/Rivet>.
     /// </li> 
     /// </ul>
+    /// 
+    /// \note If a material binding relationship is a built-in property defined 
+    /// as part of a typed prim schema, a fallback value should not be provided 
+    /// for it. This is because the "material resolution" algorithm only 
+    /// conisders <i>authored</i> properties.
     /// 
     /// @{
 

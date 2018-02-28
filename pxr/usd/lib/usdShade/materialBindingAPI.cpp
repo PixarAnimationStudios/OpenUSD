@@ -202,8 +202,8 @@ UsdShadeMaterialBindingAPI::GetCollectionBindingRels(
         const TfToken &materialPurpose) const
 {
     std::vector<UsdProperty> collectionBindingProperties = 
-        GetPrim().GetPropertiesInNamespace(
-            UsdShadeTokens->materialBindingCollection);
+        GetPrim().GetAuthoredPropertiesInNamespace(
+            _GetCollectionBindingRelName(TfToken(), materialPurpose));
 
     std::vector<UsdRelationship> result;
     for (const UsdProperty &prop : collectionBindingProperties) {
