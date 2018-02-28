@@ -190,11 +190,14 @@ def RunCMake(context, force, extraArgs = None):
         if msvcCompilerAndVersion:
             _, version = msvcCompilerAndVersion
             if version >= MSVC_2017_COMPILER_VERSION:
-                generator = '-G "Visual Studio 15 2017 Win64"'
+                generator = "Visual Studio 15 2017 Win64"
             else:
-                generator = '-G "Visual Studio 14 2015 Win64"'
+                generator = "Visual Studio 14 2015 Win64"
+
+    if generator is not None:
+        generator = '-G "{gen}"'.format(gen=generator)
                 
-    # On MacOS, enable the use of @rpath for  relocatable builds.
+    # On MacOS, enable the use of @rpath for relocatable builds.
     osx_rpath = None
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
