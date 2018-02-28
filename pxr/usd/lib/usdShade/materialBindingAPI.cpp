@@ -117,6 +117,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/work/loops.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -197,6 +199,38 @@ _GetMaterialPurpose(const UsdRelationship &bindingRel)
     return UsdShadeTokens->allPurpose;
 }
 
+
+UsdShadeMaterialBindingAPI::DirectBinding::DirectBinding(
+    const UsdRelationship &directBindingRel):
+    _bindingRel(directBindingRel),
+    _materialPurpose(_GetMaterialPurpose(directBindingRel))
+{
+    SdfPathVector targetPaths;
+    _bindingRel.GetForwardedTargets(&targetPaths);
+    if (targetPaths.size() == 1 && 
+        targetPaths.front().IsPrimPath()) {
+        _materialPath = targetPaths.front();
+    }
+}
+
+UsdShadeMaterial
+UsdShadeMaterialBindingAPI::DirectBinding::GetMaterial() const
+{
+    if (!_materialPath.IsEmpty()) {
+        return UsdShadeMaterial(_bindingRel.GetStage()->GetPrimAtPath(
+                _materialPath));
+    }
+    return UsdShadeMaterial();
+}
+
+UsdShadeMaterialBindingAPI::DirectBinding
+UsdShadeMaterialBindingAPI::GetDirectBinding(
+    const TfToken &materialPurpose) const
+{
+    UsdRelationship directBindingRel = GetDirectBindingRel(materialPurpose);
+    return DirectBinding(directBindingRel);
+}
+
 std::vector<UsdRelationship> 
 UsdShadeMaterialBindingAPI::GetCollectionBindingRels(
         const TfToken &materialPurpose) const
@@ -218,28 +252,9 @@ UsdShadeMaterialBindingAPI::GetCollectionBindingRels(
     return result;
 }
 
-/* static */
-UsdShadeMaterial 
-UsdShadeMaterialBindingAPI::GetDirectBinding(
-    const UsdRelationship &directBindingRel) 
-{
-    SdfPathVector targetPaths;
-    directBindingRel.GetForwardedTargets(&targetPaths);
-    if (targetPaths.size() == 1 && 
-        targetPaths.front().IsPrimPath()) {
-        const SdfPath &materialPath = targetPaths.front();
-        UsdPrim materialPrim = directBindingRel.GetStage()->GetPrimAtPath(
-                materialPath);
-        return UsdShadeMaterial(materialPrim);
-    }
-
-    return UsdShadeMaterial();
-}
-
-/* static */
-UsdShadeMaterialBindingAPI::CollectionBinding 
-UsdShadeMaterialBindingAPI::GetCollectionBinding(
-    const UsdRelationship &collBindingRel)
+UsdShadeMaterialBindingAPI::CollectionBinding::CollectionBinding(
+    const UsdRelationship &collBindingRel):
+    _bindingRel(collBindingRel)
 {
     SdfPathVector targetPaths;
     collBindingRel.GetForwardedTargets(&targetPaths);
@@ -251,58 +266,71 @@ UsdShadeMaterialBindingAPI::GetCollectionBinding(
         bool secondTargetPathIsPrimPath = targetPaths[1].IsPrimPath(); 
 
         if (firstTargetPathIsPrimPath ^ secondTargetPathIsPrimPath) {
-                
-            const UsdStagePtr &usdStage = collBindingRel.GetStage();
-
-            const SdfPath &materialPath = firstTargetPathIsPrimPath ? 
-                    targetPaths[0] : targetPaths[1];
-            const SdfPath &collectionPath = firstTargetPathIsPrimPath ? 
-                    targetPaths[1] : targetPaths[0];
-
-            if (collectionPath.IsPropertyPath()) {
-                return {
-                    UsdCollectionAPI::GetCollection(usdStage, collectionPath), 
-                    UsdShadeMaterial(usdStage->GetPrimAtPath(materialPath))
-                };
-            }
+            _materialPath = targetPaths[firstTargetPathIsPrimPath ? 0 : 1];
+            _collectionPath =  targetPaths[firstTargetPathIsPrimPath ? 1 : 0];
         }
     }
-
-    return {UsdCollectionAPI(), UsdShadeMaterial()};
 }
 
-UsdShadeMaterial 
-UsdShadeMaterialBindingAPI::GetDirectlyBoundMaterial(
-    const TfToken &materialPurpose,
-    UsdRelationship *bindingRel) const
+UsdShadeMaterial
+UsdShadeMaterialBindingAPI::CollectionBinding::GetMaterial() const
 {
-    UsdRelationship directBindingRel = GetDirectBindingRel(materialPurpose);
-
-    if (bindingRel) {
-        *bindingRel = directBindingRel;
+    if (!_materialPath.IsEmpty()) {
+        return UsdShadeMaterial(_bindingRel.GetStage()->GetPrimAtPath(
+                _materialPath));
     }
-
-    return directBindingRel ? GetDirectBinding(directBindingRel)
-                            : UsdShadeMaterial();
+    return UsdShadeMaterial();    
 }
 
-std::vector<UsdShadeMaterialBindingAPI::CollectionBinding> 
+UsdCollectionAPI
+UsdShadeMaterialBindingAPI::CollectionBinding::GetCollection() const
+{
+    if (!_collectionPath.IsEmpty()) {
+        return UsdCollectionAPI::GetCollection(_bindingRel.GetStage(),
+                                               _collectionPath);
+    }
+    return UsdCollectionAPI(); 
+}
+
+
+UsdShadeMaterialBindingAPI::CollectionBindingVector
 UsdShadeMaterialBindingAPI::GetCollectionBindings(
-    const TfToken &materialPurpose,
-    std::vector<UsdRelationship> *bindingRels) const
+    const TfToken &materialPurpose) const
 {
     std::vector<UsdRelationship> collectionBindingRels = 
         GetCollectionBindingRels(materialPurpose);
 
-    std::vector<CollectionBinding> result;
+    CollectionBindingVector result;
+    result.reserve(collectionBindingRels.size());
+
     for (const auto &collBindingRel : collectionBindingRels) {
-        CollectionBinding cb = GetCollectionBinding(collBindingRel);
-        // If both the collection and the material are valid, add them 
-        // to the result.
-        if (cb.collection && cb.material) {
-            result.push_back(cb);
-            if (bindingRels) {
-                bindingRels->push_back(collBindingRel);
+        result.emplace_back(collBindingRel);
+
+        // If both the collection and the material are valid, keep them in
+        // the result.
+        if (!result.back().IsValid()) {
+            result.pop_back();
+        }
+    }
+
+    return result;
+}
+
+UsdShadeMaterialBindingAPI::CollectionBindingVector
+UsdShadeMaterialBindingAPI::_GetCollectionBindings(
+    const TfTokenVector &collBindingPropertyNames) const
+{
+    CollectionBindingVector result;
+    // Assuming that all binding relationships have something bound by them.
+    result.reserve(collBindingPropertyNames.size());
+
+    for (const auto &collBindingPropName : collBindingPropertyNames) {
+        if (UsdRelationship collBindingRel = 
+                GetPrim().GetRelationship(collBindingPropName)) {
+            result.emplace_back(collBindingRel);
+            // If collection binding is valid, keep it in the result.
+            if (!result.back().IsValid()) {
+                result.pop_back();
             }
         }
     }
@@ -468,9 +496,9 @@ UsdShadeMaterialBindingAPI::RemovePrimFromBindingCollection(
 {
     if (UsdRelationship collBindingRel = GetCollectionBindingRel(bindingName, 
             materialPurpose)) {
-        auto collBinding = GetCollectionBinding(collBindingRel);
-        if (collBinding.collection) {
-            return collBinding.collection.ExcludePath(prim.GetPath());
+        auto collBinding = CollectionBinding(collBindingRel);
+        if (UsdCollectionAPI collection = collBinding.GetCollection()) {
+            return collection.ExcludePath(prim.GetPath());
         }
     }
 
@@ -485,17 +513,126 @@ UsdShadeMaterialBindingAPI::AddPrimToBindingCollection(
 {
     if (UsdRelationship collBindingRel = GetCollectionBindingRel(bindingName, 
             materialPurpose)) {
-        auto collBinding = GetCollectionBinding(collBindingRel);
-        if (collBinding.collection) {
-            return collBinding.collection.IncludePath(prim.GetPath());
+        auto collBinding = CollectionBinding(collBindingRel);
+        if (UsdCollectionAPI collection = collBinding.GetCollection()) {
+            return collection.IncludePath(prim.GetPath());
         }
     }
 
     return true;
 }
 
+// Given all the property names that start with "material:binding", returns 
+// the subset of properties that represents collection-based bindings for the
+// given material purpose.
+static 
+TfTokenVector 
+_GetCollectionBindingPropertyNames(
+    const TfTokenVector &matBindingPropNames,
+    const TfToken &purpose)
+{
+    TfToken collBindingPrefix = _GetCollectionBindingRelName(
+        /* bindingName */ TfToken(), purpose);
+    
+    TfTokenVector collBindingRelNames;
+    // Not reserving memory because we don't expect to find these on most 
+    // prims.
+    size_t indexOfNSDelim = collBindingPrefix.size();
+    for (auto & matBindingPropName : matBindingPropNames) {
+        if (matBindingPropName.size() > indexOfNSDelim &&
+            matBindingPropName.GetString()[indexOfNSDelim] == ':' &&
+            TfStringStartsWith(matBindingPropName.GetString(), 
+                               collBindingPrefix.GetString()) &&
+            // Ensure that the material purpose matches by making sure 
+            // the second half does not contain a ":".
+            (purpose != UsdShadeTokens->allPurpose || 
+             matBindingPropName.GetString().find(':', indexOfNSDelim+1) == 
+                std::string::npos)) {
+            collBindingRelNames.push_back(matBindingPropName);
+        }
+    }
+
+    return collBindingRelNames;
+}
+
+UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
+    const UsdPrim &prim, const TfToken &materialPurpose)
+{
+    // These are the properties we need to consider when looking for 
+    // bindings (both direct and collection-based) at the prim itself 
+    // and each ancestor prim.
+    // Note: This vector is already ordered.
+    const TfTokenVector matBindingPropNames = prim.GetAuthoredPropertyNames(
+            /*predicate*/ [](const TfToken &name) {
+                return TfStringStartsWith(name.GetString(), 
+                    UsdShadeTokens->materialBinding);
+            });
+   
+    if (matBindingPropNames.empty())
+        return;
+
+    auto foundMatBindingProp = [&matBindingPropNames](const TfToken &relName) {
+        return std::find(matBindingPropNames.begin(), matBindingPropNames.end(),
+                    relName) != matBindingPropNames.end();
+    };
+
+    TfToken directBindingRelName = _GetDirectBindingRelName(materialPurpose);
+    if (foundMatBindingProp(directBindingRelName)) {
+        UsdRelationship directBindingRel = 
+                prim.GetRelationship(directBindingRelName);
+        directBinding.reset(new DirectBinding(directBindingRel));
+    }
+
+    // If there is no restricted purpose direct binding, look for an
+    // all-purpose direct-binding.
+    if (materialPurpose != UsdShadeTokens->allPurpose && 
+        (!directBinding || !directBinding->GetMaterial())) {
+
+        // This may not be necessary if a specific purpose collection-binding 
+        // already includes the prim for which the resolved binding is being 
+        // computed.
+         TfToken allPurposeDBRelName = _GetDirectBindingRelName(
+            UsdShadeTokens->allPurpose);
+
+        if (foundMatBindingProp(allPurposeDBRelName)) {
+            UsdRelationship directBindingRel = prim.GetRelationship(
+                        allPurposeDBRelName);
+            directBinding.reset(new DirectBinding (directBindingRel));
+        }
+    }
+
+    // If the direct-binding points to an invalid material then clear it.
+    if (directBinding && !directBinding->GetMaterial()) {
+        directBinding.release();
+    }
+
+    // Check if there are any collection-based binding relationships 
+    // for the current "purpose" in matBindingPropNames.
+    if (materialPurpose != UsdShadeTokens->allPurpose) {
+        TfTokenVector collBindingPropertyNames =
+            _GetCollectionBindingPropertyNames(matBindingPropNames, 
+                                               materialPurpose);
+        if (!collBindingPropertyNames.empty()) {
+            UsdShadeMaterialBindingAPI bindingAPI(prim);
+            restrictedPurposeCollBindings =
+                bindingAPI._GetCollectionBindings(collBindingPropertyNames);
+        }
+    } 
+
+    
+    TfTokenVector collBindingPropertyNames =
+        _GetCollectionBindingPropertyNames(matBindingPropNames, 
+            UsdShadeTokens->allPurpose);
+    if (!collBindingPropertyNames.empty()) {
+        UsdShadeMaterialBindingAPI bindingAPI(prim);
+        allPurposeCollBindings = 
+            bindingAPI._GetCollectionBindings(collBindingPropertyNames);
+    }
+}
+
 UsdShadeMaterial 
 UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
+    BindingsCache *bindingsCache,
     CollectionQueryCache *collectionQueryCache,
     const TfToken &materialPurpose,
     UsdRelationship *bindingRel) const
@@ -515,53 +652,80 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
     for (auto const & purpose : materialPurposes) {
         UsdShadeMaterial boundMaterial;
         UsdRelationship winningBindingRel;
-        for (UsdPrim p = GetPrim(); !p.IsPseudoRoot(); p = p.GetParent())
-        {
-            UsdShadeMaterialBindingAPI pBindingAPI(p);
 
-            UsdRelationship directBindingRel;
-            if (UsdShadeMaterial directBind = 
-                    pBindingAPI.GetDirectlyBoundMaterial(purpose, 
-                                                         &directBindingRel)) {
+        for (UsdPrim p = GetPrim(); !p.IsPseudoRoot(); p = p.GetParent()) {
+            
+            auto bindingsIt = bindingsCache->find(p.GetPath());
+            if (bindingsIt == bindingsCache->end()) {
+                TRACE_SCOPE("UsdShadeMaterialBindingAPI::ComputeBoundMaterial "
+                        "(BindingsCache)");
+
+                // XXX: How do we prevent other threads from populating the same 
+                // BindingsAtPrim?
+                std::unique_ptr<BindingsAtPrim> bindingsAtP(
+                    new BindingsAtPrim(p, materialPurpose));
+
+                // XXX emplace does not work here due to a tbb bug.
+                // See https://software.intel.com/en-us/forums/
+                // intel-threading-building-blocks/topic/671548
+                // Luckily the copy should be cheap here.
+                bindingsIt = bindingsCache->insert(std::make_pair(
+                    p.GetPath(), std::move(bindingsAtP))).first;
+            }
+
+            const BindingsAtPrim &bindingsAtP = *bindingsIt->second;
+            const DirectBindingPtr &directBindingPtr = 
+                bindingsAtP.directBinding;
+            const TfToken &directBindingPurpose = 
+                directBindingPtr->GetMaterialPurpose();
+
+            if (directBindingPtr && directBindingPurpose == purpose) {
+                const UsdRelationship &directBindingRel = 
+                        directBindingPtr->GetBindingRel();
                 if (!boundMaterial || 
                     (GetMaterialBindingStrength(directBindingRel) == 
-                        UsdShadeTokens->strongerThanDescendants)) {
-                    boundMaterial = directBind;
+                      UsdShadeTokens->strongerThanDescendants))
+                {
+                    boundMaterial = directBindingPtr->GetMaterial();
                     winningBindingRel = directBindingRel;
                 }
             }
 
-            // XXX:performance
-            // We may want to cache all collectionBindings at every ancestor.
-            std::vector<UsdRelationship> collBindingRels;
-            std::vector<CollectionBinding> collBindings = 
-                pBindingAPI.GetCollectionBindings(purpose,
-                                                  &collBindingRels);
+            const CollectionBindingVector &collBindings = 
+                purpose == UsdShadeTokens->allPurpose ? 
+                bindingsAtP.allPurposeCollBindings :
+                bindingsAtP.restrictedPurposeCollBindings;
 
-            if (!TF_VERIFY(collBindings.size() == collBindingRels.size(), 
-                      "Mismatch in the size of collection bindings (%ld) and "
-                      "binding relationships (%ld)!", collBindings.size(),
-                      collBindingRels.size())) {
-                continue;
-            }
+            for (auto &collBinding : collBindings) {
+                TRACE_SCOPE("UsdShadeMaterialBindingAPI::ComputeBoundMaterial "
+                            "(IsInBoundCollection)");
 
-            for (size_t i = 0 ; i < collBindings.size(); ++i) {
-                const UsdCollectionAPI &collection = collBindings[i].collection;
-                SdfPath collectionPath = collection.GetCollectionPath();
+                const UsdCollectionAPI &collection = 
+                    collBinding.GetCollection();
+                const SdfPath &collectionPath = collBinding.GetCollectionPath();
 
                 auto collIt = collectionQueryCache->find(collectionPath);
                 if (collIt == collectionQueryCache->end()) {
-                    collIt = collectionQueryCache->emplace(
-                            std::make_pair(collectionPath,
-                                std::move(collection.ComputeMembershipQuery()))
-                        ).first;
+                    TRACE_SCOPE("UsdShadeMaterialBindingAPI::"
+                        "ComputeBoundMaterial (CollectionQuery)");
+
+                    std::unique_ptr<UsdCollectionAPI::MembershipQuery> 
+                        mQuery(new UsdCollectionAPI::MembershipQuery);
+                    collection.ComputeMembershipQuery(mQuery.get());
+
+                    // XXX emplace does not work here due to a tbb bug.
+                    // See https://software.intel.com/en-us/forums/
+                    // intel-threading-building-blocks/topic/671548
+                    // Luckily the copy should be cheap here.
+                    collIt = collectionQueryCache->insert(std::make_pair(
+                            collectionPath, std::move(mQuery))).first;
                 }
                 
-                bool isPrimIncludedInCollection = collIt->second.IsPathIncluded(
-                        GetPath());
+                bool isPrimIncludedInCollection = 
+                        collIt->second->IsPathIncluded(GetPath());
                 if (isPrimIncludedInCollection) {
                     const UsdRelationship &collBindingRel = 
-                        collBindingRels[i];
+                            collBinding.GetBindingRel();
                     // If the collection binding is on the prim itself and if 
                     // the prim is included in the collection, the collection-based
                     // binding is considered to be stronger than the direct binding.
@@ -569,7 +733,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                         (boundMaterial && winningBindingRel.GetPrim() == p) ||
                         (GetMaterialBindingStrength(collBindingRel) == 
                             UsdShadeTokens->strongerThanDescendants)) {
-                        boundMaterial = collBindings[i].material;
+                        boundMaterial = collBinding.GetMaterial();
                         winningBindingRel = collBindingRel;
 
                         // The first collection binding we match will be the 
@@ -598,8 +762,10 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
     const TfToken &materialPurpose,
     UsdRelationship *bindingRel) const
 {
-    CollectionQueryCache collectionQueryCache;
-    return ComputeBoundMaterial(&collectionQueryCache, 
+    BindingsCache bindingsCache;
+    CollectionQueryCache collQueryCache;
+    return ComputeBoundMaterial(&bindingsCache, 
+                                &collQueryCache, 
                                 materialPurpose, 
                                 bindingRel);
 }
@@ -608,21 +774,34 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 std::vector<UsdShadeMaterial> 
 UsdShadeMaterialBindingAPI::ComputeBoundMaterials(
     const std::vector<UsdPrim> &prims, 
-    const TfToken &materialPurpose)
+    const TfToken &materialPurpose,
+    std::vector<UsdRelationship> *bindingRels)
 {
-    std::vector<UsdShadeMaterial> materials;
-    materials.reserve(prims.size());
+    std::vector<UsdShadeMaterial> materials(prims.size());
+
+    if (bindingRels) {
+        bindingRels->clear();
+        bindingRels->resize(prims.size());
+    }
+
+    // This ensures that bindings are only computed once per prim.
+    BindingsCache bindingsCache;
 
     // The use of CollectionQueryCache ensures that every collection's 
-    // MembershipQuery object is only evaluated once.
-    CollectionQueryCache cache;
-    // XXX:performance
-    // We should be able to parallelize this loop.
-    for (auto &p : prims) {
-        UsdShadeMaterialBindingAPI bindingAPI(p);
-        materials.emplace_back(std::move(bindingAPI.ComputeBoundMaterial(
-            &cache, materialPurpose)));
-    }
+    // MembershipQuery object is only constructed once.
+    CollectionQueryCache collQueryCache;
+
+    WorkParallelForN(prims.size(), 
+        [&](size_t start, size_t end) {
+            for (size_t i = start; i < end; ++i) {
+                const UsdPrim &prim = prims[i];
+                UsdRelationship *bindingRel = 
+                        bindingRels ? &((*bindingRels)[i]) : nullptr;
+                materials[i] = UsdShadeMaterialBindingAPI(prim).
+                    ComputeBoundMaterial(&bindingsCache, &collQueryCache, 
+                                         materialPurpose, bindingRel);
+            }
+        });
 
     return materials;
 }

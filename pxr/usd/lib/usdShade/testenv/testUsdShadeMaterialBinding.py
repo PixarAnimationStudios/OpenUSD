@@ -44,7 +44,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
 
         self.assertEqual(weakerBindingAPI.GetDirectBindingRel().GetTargets(),
                          [Sdf.Path("/weaker/mat1")])
-        self.assertEqual(weakerBindingAPI.GetDirectlyBoundMaterial()[0].GetPath(),
+        self.assertEqual(weakerBindingAPI.GetDirectBinding().GetMaterialPath(),
                          Sdf.Path("/weaker/mat1"))
         self.assertEqual(weakerBindingAPI.ComputeBoundMaterial()[0].GetPath(),
                          Sdf.Path("/weaker/mat1"))
@@ -57,7 +57,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         strongerBindingAPI.Bind(ms2)
         self.assertEqual(strongerBindingAPI.GetDirectBindingRel().GetTargets(), 
                          [Sdf.Path("/stronger/mat2")])
-        self.assertEqual(strongerBindingAPI.GetDirectlyBoundMaterial()[0].GetPath(), 
+        self.assertEqual(strongerBindingAPI.GetDirectBinding().GetMaterialPath(), 
                          Sdf.Path("/stronger/mat2"))
         self.assertEqual(strongerBindingAPI.ComputeBoundMaterial()[0].GetPath(), 
                          Sdf.Path("/stronger/mat2"))
@@ -76,7 +76,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # validate we get mat2, the stronger binding
         self.assertEqual(composedBindingRel.GetTargets(),
                          [Sdf.Path("/composed/mat2")])
-        self.assertEqual(composedBindingAPI.GetDirectlyBoundMaterial()[0].GetPath(),
+        self.assertEqual(composedBindingAPI.GetDirectBinding().GetMaterialPath(),
                          Sdf.Path("/composed/mat2"))
         self.assertEqual(composedBindingAPI.ComputeBoundMaterial()[0].GetPath(),
                          Sdf.Path("/composed/mat2"))
@@ -85,7 +85,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # we should still be unbound in the fully composed view.
         strongerBindingAPI.UnbindDirectBinding()
         self.assertEqual(composedBindingRel.GetTargets(), [])
-        self.assertFalse(composedBindingAPI.GetDirectlyBoundMaterial()[0])
+        self.assertFalse(composedBindingAPI.GetDirectBinding().GetMaterial())
         self.assertFalse(composedBindingAPI.ComputeBoundMaterial()[0])
 
         # However, *clearing* the target (or the block) on the stronger site
@@ -94,7 +94,7 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
 
         self.assertEqual(composedBindingRel.GetTargets(),
                          [Sdf.Path("/composed/mat1")])
-        self.assertEqual(composedBindingAPI.GetDirectlyBoundMaterial()[0].GetPath(),
+        self.assertEqual(composedBindingAPI.GetDirectBinding().GetMaterialPath(),
                          Sdf.Path("/composed/mat1"))
         self.assertEqual(composedBindingAPI.ComputeBoundMaterial()[0].GetPath(),
                          Sdf.Path("/composed/mat1"))
@@ -126,9 +126,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
                          mat1.GetPath())
         
         # Test GetDirectlyBoundMaterial().
-        self.assertFalse(gpBindingAPI.GetDirectlyBoundMaterial()[0])
-        self.assertTrue(parentBindingAPI.GetDirectlyBoundMaterial()[0])
-        self.assertFalse(childBindingAPI.GetDirectlyBoundMaterial()[0])
+        self.assertFalse(gpBindingAPI.GetDirectBinding().GetMaterial())
+        self.assertTrue(parentBindingAPI.GetDirectBinding().GetMaterial())
+        self.assertFalse(childBindingAPI.GetDirectBinding().GetMaterial())
 
         gpBindingAPI.Bind(mat2)
         self.assertEqual(gpBindingAPI.ComputeBoundMaterial()[0].GetPath(),
@@ -138,11 +138,11 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertEqual(childBindingAPI.ComputeBoundMaterial()[0].GetPath(), 
                          mat1.GetPath())
 
-        self.assertEqual(gpBindingAPI.GetDirectlyBoundMaterial()[0].GetPath(),
+        self.assertEqual(gpBindingAPI.GetDirectBinding().GetMaterialPath(),
                          mat2.GetPath())
-        self.assertEqual(parentBindingAPI.GetDirectlyBoundMaterial()[0].GetPath(),
+        self.assertEqual(parentBindingAPI.GetDirectBinding().GetMaterialPath(),
                          mat1.GetPath())
-        self.assertFalse(childBindingAPI.GetDirectlyBoundMaterial()[0])
+        self.assertFalse(childBindingAPI.GetDirectBinding().GetMaterial())
         
         parentBindingAPI.UnbindAllBindings()
         self.assertEqual(gpBindingAPI.ComputeBoundMaterial()[0].GetPath(), 
@@ -152,9 +152,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertEqual(childBindingAPI.ComputeBoundMaterial()[0].GetPath(), 
                          mat2.GetPath())
 
-        self.assertTrue(gpBindingAPI.GetDirectlyBoundMaterial()[0])
-        self.assertFalse(parentBindingAPI.GetDirectlyBoundMaterial()[0])
-        self.assertFalse(childBindingAPI.GetDirectlyBoundMaterial()[0])
+        self.assertTrue(gpBindingAPI.GetDirectBinding().GetMaterial())
+        self.assertFalse(parentBindingAPI.GetDirectBinding().GetMaterial())
+        self.assertFalse(childBindingAPI.GetDirectBinding().GetMaterial())
 
         childBindingAPI.Bind(mat1)
         self.assertEqual(gpBindingAPI.ComputeBoundMaterial()[0].GetPath(),
@@ -164,9 +164,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         self.assertEqual(childBindingAPI.ComputeBoundMaterial()[0].GetPath(), 
                          mat1.GetPath())
 
-        self.assertTrue(gpBindingAPI.GetDirectlyBoundMaterial()[0])
-        self.assertFalse(parentBindingAPI.GetDirectlyBoundMaterial()[0])
-        self.assertTrue(childBindingAPI.GetDirectlyBoundMaterial()[0])
+        self.assertTrue(gpBindingAPI.GetDirectBinding().GetMaterial())
+        self.assertFalse(parentBindingAPI.GetDirectBinding().GetMaterial())
+        self.assertTrue(childBindingAPI.GetDirectBinding().GetMaterial())
 
         # Second, modify binding strength of bindings and verify changes 
         # to computed bindings.
@@ -318,13 +318,11 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # Try again without namespaces in bindingName.
         self.assertTrue(tableGrpBindingAPI.Bind(lampsColl, plasticMat, 
                             bindingName="lamps"))
-        collBindingsAndRels = tableGrpBindingAPI.GetCollectionBindings()
-        self.assertEqual(len(collBindingsAndRels), 2)
-
-        collBindings = collBindingsAndRels[0]
-        bindingRels = collBindingsAndRels[1]
+        collBindings = tableGrpBindingAPI.GetCollectionBindings()
         self.assertEqual(len(collBindings), 1)
-        self.assertEqual(len(bindingRels), 1)
+        self.assertTrue(collBindings[0].GetMaterial())
+        self.assertTrue(collBindings[0].GetCollection())
+        self.assertTrue(collBindings[0].GetBindingRel())
 
         self.assertEqual(self._GetBoundMaterial(lampA).GetPath(), 
                          plasticMat.GetPath())
@@ -346,8 +344,9 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
 
         # Test the above results using the vectorized ComputeBoundMaterials 
         # API.
-        boundMaterials = UsdShade.MaterialBindingAPI.ComputeBoundMaterials(
-            prims=[lampA, lampB, pencilA, pencilB, eraserA, lampABase, 
+        (boundMaterials, bindingRels) = \
+            UsdShade.MaterialBindingAPI.ComputeBoundMaterials(
+                prims=[lampA, lampB, pencilA, pencilB, eraserA, lampABase, 
                    lampAShade])
         self.assertTrue(len(boundMaterials), 7)
         self.assertEqual([i.GetPath() for i in boundMaterials], 
@@ -403,10 +402,11 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         lampBasesCollBindingRel = roomSetBindingAPI.GetCollectionBindingRel(
                 bindingName="lampBasesOnly")
         self.assertTrue(lampBasesCollBindingRel)
-        collBinding = UsdShade.MaterialBindingAPI.GetCollectionBinding(
+        collBinding = UsdShade.MaterialBindingAPI.CollectionBinding(
                 lampBasesCollBindingRel)
-        self.assertTrue(collBinding.collection)
-        self.assertTrue(collBinding.material)
+        self.assertTrue(collBinding.GetCollection())
+        self.assertTrue(collBinding.GetMaterial())
+        self.assertTrue(collBinding.GetBindingRel())
 
         self.assertTrue(UsdShade.MaterialBindingAPI.SetMaterialBindingStrength(
                 lampBasesCollBindingRel, 

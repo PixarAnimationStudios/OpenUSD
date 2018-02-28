@@ -428,7 +428,7 @@ class "MaterialBindingAPI"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/tokens.h"
-    """
+#include <tbb/concurrent_unordered_map.h>"""
     }
 )
 {

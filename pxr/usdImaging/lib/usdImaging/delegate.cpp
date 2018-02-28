@@ -110,8 +110,10 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime(), GetRootCompensation())
-    , _materialBindingCache(GetTime(), GetRootCompensation())
-    , _materialNetworkBindingCache(GetTime(), GetRootCompensation())
+    , _materialBindingCache(GetTime(), GetRootCompensation(), 
+                            &_matBindingSupplCache)
+    , _materialNetworkBindingCache(GetTime(), GetRootCompensation(),
+                                   &_matBindingSupplCache)
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _displayGuides(true)
@@ -1099,6 +1101,7 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         // Need to invalidate all caches if any stage objects have changed. This
         // invalidation is overly conservative, but correct.
         _xformCache.Clear();
+        _matBindingSupplCache.Clear();
         _materialBindingCache.Clear();
         _materialNetworkBindingCache.Clear();
         _visCache.Clear();
