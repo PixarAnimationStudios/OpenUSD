@@ -34,6 +34,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
+#include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MPoint.h>
 #include <maya/MPxDrawOverride.h>
@@ -62,6 +63,11 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 
         PXRUSDMAYAGL_API
         virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
+
+        PXRUSDMAYAGL_API
+        virtual MMatrix transform(
+                const MDagPath& objPath,
+                const MDagPath& cameraPath) const override;
 
         PXRUSDMAYAGL_API
         virtual MBoundingBox boundingBox(

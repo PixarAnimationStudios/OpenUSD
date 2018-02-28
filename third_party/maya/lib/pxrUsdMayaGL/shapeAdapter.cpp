@@ -541,6 +541,16 @@ PxrMayaHdShapeAdapter::GetRenderParams(
     return _renderParams;
 }
 
+void
+PxrMayaHdShapeAdapter::SetRootXform(const GfMatrix4d& transform)
+{
+    _rootXform = transform;
+
+    if (_delegate) {
+        _delegate->SetRootTransform(_rootXform);
+    }
+}
+
 const SdfPath&
 PxrMayaHdShapeAdapter::GetDelegateID() const
 {

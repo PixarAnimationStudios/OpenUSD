@@ -29,21 +29,20 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
-#include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
-#include <maya/MGlobal.h>
+#include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MPoint.h>
 #include <maya/MPxDrawOverride.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MSelectionMask.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
@@ -91,6 +90,24 @@ UsdMayaProxyDrawOverride::supportedDrawAPIs() const
 #else
     return MHWRender::kOpenGL;
 #endif
+}
+
+/* virtual */
+MMatrix
+UsdMayaProxyDrawOverride::transform(
+        const MDagPath& objPath,
+        const MDagPath& cameraPath) const
+{
+    // Propagate changes in the proxy shape's transform to the shape adapter's
+    // delegate.
+    MStatus status;
+    const MMatrix transform = objPath.inclusiveMatrix(&status);
+    if (status == MS::kSuccess) {
+        const_cast<PxrMayaHdShapeAdapter&>(_shapeAdapter).SetRootXform(
+            GfMatrix4d(transform.matrix));
+    }
+
+    return MHWRender::MPxDrawOverride::transform(objPath, cameraPath);
 }
 
 /* virtual */
