@@ -182,16 +182,19 @@ public:
     
     /// Returns whether the Output represents a terminal relationship on a 
     /// material, which is a concept we'd like to retire in favor of outputs.
-    /// This is termporary convenience API.
+    /// This is temporary convenience API.
     bool IsTerminal() const { return GetRel(); }
 
     /// Return true if the wrapped UsdAttribute is defined, and in
     /// addition the attribute is identified as an output.
+    ///
+    /// For backwards compatibility, also returns true for the case
+    /// of a valid terminal relationship; see IsTerminal().
     bool IsDefined() const {
         if (UsdAttribute attr = GetAttr()) {
-            return attr && IsOutput(attr);
+            return IsOutput(attr);
         }
-        return false;
+        return IsTerminal();
     }
 
     /// @}
