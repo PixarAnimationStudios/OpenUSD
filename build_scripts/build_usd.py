@@ -1266,6 +1266,7 @@ Building with settings:
   3rd-party source directory    {srcDir}
   3rd-party install directory   {instDir}
   Build directory               {buildDir}
+  CMake generator               {cmakeGenerator}
 
   Building                      {buildType}
     Imaging                     {buildImaging}
@@ -1287,6 +1288,8 @@ Building with settings:
     srcDir=context.srcDir,
     buildDir=context.buildDir,
     instDir=context.instDir,
+    cmakeGenerator=("Default" if not context.cmakeGenerator
+                    else context.cmakeGenerator),
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
     buildType=("Shared libraries" if context.buildShared
