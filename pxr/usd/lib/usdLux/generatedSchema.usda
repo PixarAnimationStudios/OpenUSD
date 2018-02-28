@@ -249,7 +249,7 @@ class "ListAPI" (
     Instancing
 
     Where instances are present, UsdLuxListAPI::ComputeLightList() will
-    return the instance-unqiue paths to any lights discovered within
+    return the instance-unique paths to any lights discovered within
     those instances.  Lights within a UsdGeomPointInstancer will
     not be returned, however, since they cannot be referred to
     solely via paths.
