@@ -23,6 +23,8 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/pluginStaticData.h"
+#include "usdMaya/proxyShape.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // 0x00126400 - 0x001264ff
 PxrUsdMayaPluginStaticData PxrUsdMayaPluginStaticData::pxrUsd(
         // UsdMayaProxyShape
-        MTypeId(0x0010A259), MString("pxrUsdProxyShape"),
+        MTypeId(0x0010A259), MString(PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText()),
 
         // UsdMayaReferenceAssembly
         MTypeId(0x0010A251), MString("pxrUsdReferenceAssembly"),
@@ -56,4 +58,3 @@ PxrUsdMayaPluginStaticData::PxrUsdMayaPluginStaticData(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

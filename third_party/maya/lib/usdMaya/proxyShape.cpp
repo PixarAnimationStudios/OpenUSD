@@ -32,10 +32,12 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
@@ -81,6 +83,10 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
+                        PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
 // Hydra performs its own high-performance frustum culling, so

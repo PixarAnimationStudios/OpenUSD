@@ -130,6 +130,22 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         bool IsViewport2() const;
 
+    protected:
+
+        /// Update the shape adapter's state from the given \c MPxSurfaceShape
+        /// and display state.
+        ///
+        /// This method should be called by both public versions of Sync() and
+        /// should perform shape data updates that are common to both the
+        /// legacy viewport and Viewport 2.0. The legacy viewport Sync() method
+        /// "promotes" the display state parameters to their Viewport 2.0
+        /// equivalents before calling this method.
+        PXRUSDMAYAGL_API
+        virtual bool _Sync(
+                MPxSurfaceShape* surfaceShape,
+                const unsigned int displayStyle,
+                const MHWRender::DisplayStatus displayStatus);
+
     private:
 
         /// Construct a new uninitialized PxrMayaHdShapeAdapter.

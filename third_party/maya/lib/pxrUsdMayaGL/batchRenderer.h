@@ -115,6 +115,16 @@ public:
     PXRUSDMAYAGL_API
     HdRenderIndex* GetRenderIndex() const;
 
+    /// Get the delegate ID prefix for the specified viewport.
+    ///
+    /// The batch renderer has a root SdfPath under which it maintains separate
+    /// hierarchies for shape adapter delegates based on whether they are for
+    /// the legacy viewport or for Viewport 2.0. Shape adapters should use this
+    /// method to request the appropriate prefix from the batch renderer when
+    /// building the ID for their delegate.
+    PXRUSDMAYAGL_API
+    SdfPath GetDelegatePrefix(const bool isViewport2) const;
+
     /// Add the given shape adapter for batched rendering and selection.
     ///
     /// Returns true if the shape adapter had not been previously added, or
@@ -167,7 +177,8 @@ public:
             const bool drawShape,
             const MBoundingBox* boxToDraw = nullptr);
 
-    /// \brief Reset the internal state of the global UsdMayaGLBatchRenderer.
+    /// Reset the internal state of the global UsdMayaGLBatchRenderer.
+    ///
     /// In particular, it's important that this happen when switching to a new
     /// Maya scene so that any UsdImagingDelegates held by shape adapters that
     /// have been populated with USD stages can have those stages released,
@@ -175,11 +186,11 @@ public:
     PXRUSDMAYAGL_API
     static void Reset();
 
-    /// \brief Render batch or bounds in VP1 based on \p request
+    /// Render batch or bounds in the legacy viewport based on \p request
     PXRUSDMAYAGL_API
     void Draw(const MDrawRequest& request, M3dView& view);
 
-    /// \brief Render batch or bounds in VP2 based on \p userData
+    /// Render batch or bounds in Viewport 2.0 based on \p userData
     PXRUSDMAYAGL_API
     void Draw(
             const MHWRender::MDrawContext& context,
@@ -237,7 +248,7 @@ private:
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport);
 
-    /// \brief Handler for Maya Viewport 2.0 end render notifications.
+    /// Handler for Maya Viewport 2.0 end render notifications.
     ///
     /// Viewport 2.0 may execute a render in multiple passes (shadow, color,
     /// etc.), and Maya sends a notification when all rendering has finished.
@@ -249,7 +260,7 @@ private:
             MHWRender::MDrawContext& context,
             void* clientData);
 
-    /// \brief Perform post-render state cleanup.
+    /// Perform post-render state cleanup.
     ///
     /// For Viewport 2.0, this method gets invoked by
     /// _OnMayaEndRenderCallback() and is what does the actual cleanup work.
@@ -355,11 +366,12 @@ private:
 
     typedef std::unordered_map<SdfPath, HdxIntersector::Hit, SdfPath::Hash> HitBatch;
 
-    /// \brief a cache of all selection results gathered since the last display
-    /// refresh.
+    /// A cache of all selection results gathered since the last selection was
+    /// computed.
     HitBatch _selectResults;
 
-    /// \brief Hydra engine objects used to render batches.
+    /// Hydra engine objects used to render batches.
+    ///
     /// Note that the Hydra render index is constructed with and is dependent
     /// on the render delegate. At destruction time, the render index uses the
     /// delegate to destroy Hydra prims, so the delegate must be destructed
@@ -369,6 +381,13 @@ private:
     HdEngine _hdEngine;
     HdStRenderDelegate _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
+
+    /// The root ID of the batch renderer itself, and the top of the path
+    /// hierarchies for shape adapter delegates, one for the legacy viewport
+    /// and one for Viewport 2.0.
+    SdfPath _rootId;
+    SdfPath _legacyViewportPrefix;
+    SdfPath _viewport2Prefix;
 
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
 

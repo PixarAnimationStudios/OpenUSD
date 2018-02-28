@@ -31,6 +31,7 @@
 #include "usdMaya/usdPrimProvider.h"
 
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -53,6 +54,14 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+#define PXRUSDMAYA_PROXY_SHAPE_TOKENS \
+    ((MayaTypeName, "pxrUsdProxyShape"))
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
+                         PXRUSDMAYA_API,
+                         PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
 /// Returns the PIXMAYA_ENABLE_BOUNDING_BOX_MODE env setting.

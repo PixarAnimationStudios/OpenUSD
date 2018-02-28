@@ -85,6 +85,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    ((BatchRendererRootName, "MayaHdBatchRenderer"))
+    ((LegacyViewport, "LegacyViewport"))
+    ((Viewport2, "Viewport2"))
     ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
 );
 
@@ -146,6 +149,16 @@ HdRenderIndex*
 UsdMayaGLBatchRenderer::GetRenderIndex() const
 {
     return _renderIndex.get();
+}
+
+SdfPath
+UsdMayaGLBatchRenderer::GetDelegatePrefix(const bool isViewport2) const
+{
+    if (isViewport2) {
+        return _viewport2Prefix;
+    }
+
+    return _legacyViewportPrefix;
 }
 
 bool
@@ -416,14 +429,18 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
                                                  false);
 
+    _rootId = SdfPath::AbsoluteRootPath().AppendChild(
+        _tokens->BatchRendererRootName);
+    _legacyViewportPrefix = _rootId.AppendChild(_tokens->LegacyViewport);
+    _viewport2Prefix = _rootId.AppendChild(_tokens->Viewport2);
+
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));
     if (!TF_VERIFY(_renderIndex)) {
         return;
     }
 
     _taskDelegate.reset(
-        new PxrMayaHdSceneDelegate(_renderIndex.get(),
-                                   SdfPath("/MayaHdSceneDelegate")));
+        new PxrMayaHdSceneDelegate(_renderIndex.get(), _rootId));
 
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
     _selectionTracker.reset(new HdxSelectionTracker());
@@ -653,6 +670,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     // we want to compute selection against what's actually being rendered.
 
     bool useViewport2Buckets = false;
+    SdfPath shapeAdapterDelegateId = shapeAdapter->GetDelegateID();
 
     MStatus status;
     const M3dView::RendererName rendererName = view.getRendererName(&status);
@@ -660,6 +678,15 @@ UsdMayaGLBatchRenderer::TestIntersection(
             rendererName == M3dView::kViewport2Renderer &&
             _viewport2UsesLegacySelection) {
         useViewport2Buckets = true;
+
+        // We also have to "re-write" the shape adapter's delegateId path.
+        // Since we're looking for intersections with Viewport 2.0 delegates,
+        // we need to look for selection results using a Viewport 2.0-prefixed
+        // path. Note that this assumes that the rest of the path after the
+        // prefix is identical between the two viewport renderers.
+        shapeAdapterDelegateId =
+            shapeAdapterDelegateId.ReplacePrefix(_legacyViewportPrefix,
+                                                 _viewport2Prefix);
     }
 
     _ShapeAdapterBucketsMap& bucketsMap = useViewport2Buckets ?
@@ -694,7 +721,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     }
 
     const HdxIntersector::Hit* hitInfo =
-        TfMapLookupPtr(_selectResults, shapeAdapter->GetDelegateID());
+        TfMapLookupPtr(_selectResults, shapeAdapterDelegateId);
     if (!hitInfo) {
         if (_selectResults.empty()) {
             // If nothing was selected previously AND nothing is selected now,
