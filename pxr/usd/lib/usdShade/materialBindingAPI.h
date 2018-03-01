@@ -637,7 +637,7 @@ public:
     /// binding resolution for a tree of prims.
     using CollectionQueryCache = 
         tbb::concurrent_unordered_map<SdfPath, 
-            std::unique_ptr<UsdCollectionAPI::MembershipQuery>, SdfPath::Hash>;
+            std::shared_ptr<UsdCollectionAPI::MembershipQuery>, SdfPath::Hash>;
 
     /// Alias for a unique_ptr to a DirectBinding object.
     using DirectBindingPtr = std::unique_ptr<DirectBinding>;
@@ -670,7 +670,7 @@ public:
     /// bindings to avoid redundant computations for the shared ancestor 
     /// prims and to re-use the computed results for leaf prims.
     using BindingsCache = tbb::concurrent_unordered_map<SdfPath,
-            std::unique_ptr<BindingsAtPrim>, SdfPath::Hash>;
+            std::shared_ptr<BindingsAtPrim>, SdfPath::Hash>;
 
     /// \overload
     /// Computes the resolved bound material for this prim, for the given 
