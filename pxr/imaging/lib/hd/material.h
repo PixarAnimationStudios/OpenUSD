@@ -42,11 +42,9 @@ public:
         // XXX: Got to skip varying and force sync bits for now
         DirtySurfaceShader    = 1 << 2,
         DirtyParams           = 1 << 3,
-        DirtyComputeShader    = 1 << 4,
-        DirtyResource         = 1 << 5,
+        DirtyResource         = 1 << 4,
         AllDirty              = (DirtySurfaceShader
                                  |DirtyParams
-                                 |DirtyComputeShader
                                  |DirtyResource)
     };
 
