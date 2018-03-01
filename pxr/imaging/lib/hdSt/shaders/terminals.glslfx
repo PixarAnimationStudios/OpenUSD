@@ -184,13 +184,13 @@ vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 }
 
 --- --------------------------------------------------------------------------
--- glsl Fragment.PointsColor
+-- glsl Fragment.PointColor
 
 vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    vec4 pointsColor = vec4(vec3(0.18), 1.0);
-#if defined(HD_HAS_pointsColor)
-    pointsColor = HdGet_pointsColor();
+    vec4 pointColor = vec4(vec3(0.18), 1.0);
+#if defined(HD_HAS_pointColor)
+    pointColor = HdGet_pointColor();
 #endif
-    return ApplyColorOverrides(pointsColor);
+    return ApplyColorOverrides(pointColor);
 }

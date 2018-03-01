@@ -91,7 +91,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((surfaceOutlineFS,        "Fragment.SurfaceOutline"))
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((hullColorFS,             "Fragment.HullColor"))
-    ((pointsColorFS,           "Fragment.PointsColor"))
+    ((pointColorFS,            "Fragment.PointColor"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
@@ -232,8 +232,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->constantColorFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {
         terminalFS = _tokens->hullColorFS;
-    } else if (shadingTerminal == HdMeshReprDescTokens->pointsColor) {
-        terminalFS = _tokens->pointsColorFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->pointColor) {
+        terminalFS = _tokens->pointColorFS;
     } else if (!shadingTerminal.IsEmpty()) {
         terminalFS = shadingTerminal;
     } else {

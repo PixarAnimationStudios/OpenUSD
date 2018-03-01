@@ -101,13 +101,6 @@ vec4  GetWireframeColor() {
     return vec4(0,0,0,0);
 #endif
 }
-vec4 GetPointColor() {
-#if defined(HD_HAS_pointColor)
-    return HdGet_pointColor();
-#else
-    return vec4(0,0,0,1);
-#endif
-}
 
 bool IsFlipped(MAT4 m)
 {
