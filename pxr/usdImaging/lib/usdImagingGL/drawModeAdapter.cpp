@@ -351,7 +351,9 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             if (drawModeColorAttr) {
                 drawModeColorAttr.Get(&schemaColor);
             }
-            VtValue fallback = VtValue(schemaColor);
+            VtValue fallback = VtValue(GfVec4f(
+                schemaColor[0], schemaColor[1], schemaColor[2], 1.0f));
+
             TfTokenVector samplerParams = { _tokens->cardsUv };
             for (int i = 0; i < 6; ++i) {
                 attr = prim.GetAttribute(textureAttrs[i]);

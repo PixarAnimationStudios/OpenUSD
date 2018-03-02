@@ -28,7 +28,7 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     const int Z_NEG = 32;
 
     // XXX: This is a terrible way to do this.
-    vec3 diffuse = HdGet_color().rgb;
+    vec4 diffuse = color;
     const int texAssign = HdGet_cardsTexAssign();
     if (texAssign == X_POS) {
 #ifdef HD_HAS_textureXPos
@@ -56,7 +56,8 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 #endif
     }
 
-    color.rgb = FallbackLighting(Peye.xyz, Neye, diffuse);
+    color.rgb = FallbackLighting(Peye.xyz, Neye, diffuse.rgb);
+    color.a = diffuse.a;
     return color;
 }
 #else
@@ -64,8 +65,7 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    vec3 diffuse = HdGet_color().rgb;
-    color.rgb = FallbackLighting(Peye.xyz, Neye, diffuse);
+    color.rgb = FallbackLighting(Peye.xyz, Neye, color.rgb);
     return color;
 }
 #endif
