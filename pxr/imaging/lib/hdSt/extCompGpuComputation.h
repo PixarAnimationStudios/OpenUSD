@@ -38,11 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 class HdExtComputation;
-class HdStExtCompGpuComputation;
-class HdStGLSLProgram;
 typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
 
-typedef boost::shared_ptr<HdStExtCompGpuComputation>
+typedef boost::shared_ptr<class HdStExtCompGpuComputation>
                                 HdStExtCompGpuComputationSharedPtr;
 
 /// \class HdStExtCompGpuComputation
@@ -90,7 +88,7 @@ public:
             SdfPath const &id,
             HdStExtCompGpuComputationResourceSharedPtr const &resource,
             TfToken const &primvarName,
-            HdBufferSpecVector const &outputBufferSpecs,
+            TfToken const &computationOutputName,
             int numElements);
 
     /// Creates a GPU computation implementing the given abstract computation.
@@ -104,31 +102,21 @@ public:
     /// outputs.
     ///
     /// \param[in] sceneDelegate the delegate to pull scene inputs from.
-    /// \param[in] computation the abstract computation in the HdRenderIndex
+    /// \param[in] sourceComp the abstract computation in the HdRenderIndex
     /// this instance actually implements.
-    /// \param[in] computationSources the buffer source vector of inputs to the
-    /// computation.
-    /// \param[in] primvarName the name of the primvar in the destination
-    /// HdBufferArrayRange that this computation with output results to.
-    /// \param[in] outputBufferSpecs the buffer layout of the primvars in
-    /// the destinationHdBufferArrayRange that will be allocated by all 
-    /// computations that operate on it. This makes sure that duplicate
-    /// allocations are not made and that HdBufferArrayRange resources are
-    /// reused when shared among Rprims.
-    /// \param[in] primInputSpecs the buffer layout of the input sources that
-    /// will be loaded into the HdStExtCompGpuComputationResource,
+    /// \param[in] computationOutputName the name of the output value for
+    /// this computation.
+    /// \param[in] destinationPrimvar the buffer source representing the
+    /// output value in the destination
+    /// HdBufferArrayRange that this computation will output results to.
     /// \see HdExtComputation
     HDST_API
-    static std::pair<
-        HdStExtCompGpuComputationSharedPtr,
-        HdStExtCompGpuComputationBufferSourceSharedPtr>
-    CreateComputation(
+    static HdStExtCompGpuComputationSharedPtr
+    CreateGpuComputation(
         HdSceneDelegate *sceneDelegate,
-        const HdExtComputation &computation,
-        HdBufferSourceVector *computationSources,
-        TfToken const &primvarName,
-        HdBufferSpecVector const &outputBufferSpecs,
-        HdBufferSpecVector const &primInputSpecs);
+        HdExtComputation const *sourceComp,
+        TfToken const &computationOutputName,
+        HdBufferSourceSharedPtr const &destinationPrimvar);
 
     HDST_API
     virtual ~HdStExtCompGpuComputation() = default;
@@ -167,8 +155,8 @@ public:
 private:
     SdfPath                                      _id;
     HdStExtCompGpuComputationResourceSharedPtr   _resource;
-    TfToken                                      _dstName;
-    HdBufferSpecVector                           _outputSpecs;
+    TfToken                                      _primvarName;
+    TfToken                                      _computationOutputName;
     int                                          _numElements;
 
     std::vector<int32_t>                         _uniforms;
@@ -195,11 +183,13 @@ private:
 ///
 /// The caller is expected to pass these computation on these computations
 /// onto the resource registry (associating them with BARs if it is
-/// expected the primvar will be downloaded)
+/// expected the primvar will be downloaded)  Additional sources that
+/// should be associated with BARs but do not otherwise need to be scheduled
+/// for commit will be returned in reserveOnlySources.
 /// 
 /// The computation may also need to add sources that are resolved against
 /// internal BARs that are not to be associated with the primvar BAR. Those
-/// are returned in the computationSources vector.
+/// are returned in the separateComputationSources vector.
 /// The caller is expected to add them to the resource registry if the
 /// computation is needed.
 HDST_API
@@ -209,8 +199,9 @@ void HdSt_GetExtComputationPrimVarsComputations(
     HdInterpolation interpolationMode,
     HdDirtyBits dirtyBits,
     HdBufferSourceVector *sources,
-    HdComputationVector *computations,
-    HdBufferSourceVector *computationSources);
+    HdBufferSourceVector *reserveOnlySources,
+    HdBufferSourceVector *separateComputationSources,
+    HdComputationVector *computations);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

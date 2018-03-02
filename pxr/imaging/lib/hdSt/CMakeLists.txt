@@ -41,6 +41,7 @@ pxr_library(hdSt
         extCompGpuComputation
         extCompGpuComputationBufferSource
         extCompGpuComputationResource
+        extCompGpuPrimvarBufferSource
         fallbackLightingShader
         geometricShader
         glConversions

@@ -541,9 +541,20 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     primVarNames.insert(primVarNames.end(), vars.begin(), vars.end());
 
     HdBufferSourceVector sources;
+    HdBufferSourceVector reserveOnlySources;
+    HdBufferSourceVector separateComputationSources;
     HdComputationVector computations;
     sources.reserve(primVarNames.size());
-    computations.reserve(primVarNames.size());
+
+    HdSt_GetExtComputationPrimVarsComputations(
+        id,
+        sceneDelegate,
+        HdInterpolationVertex,
+        *dirtyBits,
+        &sources,
+        &reserveOnlySources,
+        &separateComputationSources,
+        &computations);
 
     TF_FOR_ALL(nameIt, primVarNames) {
         if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
@@ -587,16 +598,6 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    HdBufferSourceVector computationSources;
-    HdSt_GetExtComputationPrimVarsComputations(
-        id,
-        sceneDelegate,
-        HdInterpolationVertex,
-        *dirtyBits,
-        &sources,
-        &computations,
-        &computationSources);
-
     // XXX: To Do: Check primvar counts against Topology expected counts
     // XXX: To Do: Width / Normal Interpolation
     // XXX: To Do: Custom Primvar Interpolation
@@ -609,14 +610,13 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
     if (!drawItem->GetVertexPrimVarRange() ||
         !drawItem->GetVertexPrimVarRange()->IsValid()) {
-        // initialize buffer array
+
+        // new buffer specs
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(it, sources) {
-            (*it)->AddBufferSpecs(&bufferSpecs);
-        }
-        TF_FOR_ALL(it, computations) {
-            (*it)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+        HdBufferSpec::AddBufferSpecs(&bufferSpecs, reserveOnlySources);
+        HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primVar, bufferSpecs);
@@ -635,8 +635,8 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                              *it);
         }
     }
-    if (!computationSources.empty()) {
-        TF_FOR_ALL(it, computationSources) {
+    if (!separateComputationSources.empty()) {
+        TF_FOR_ALL(it, separateComputationSources) {
             resourceRegistry->AddSource(*it);
         }
     }

@@ -36,7 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStExtCompGpuComputationBufferSource;
 typedef boost::shared_ptr<class HdStExtCompGpuComputationBufferSource>
     HdStExtCompGpuComputationBufferSourceSharedPtr;
 
@@ -100,8 +99,6 @@ protected:
     
 private:
     
-    SdfPath                                    _id;
-    TfToken                                    _primvarName;
     HdBufferSourceVector                       _inputs;
     HdStExtCompGpuComputationResourceSharedPtr _resource;
     

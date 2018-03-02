@@ -173,15 +173,7 @@ HdStExtCompGpuComputationResource::AllocateInternalRange(
     if (!_internalRange && internalSources->size() > 0) {
         HdBufferSpecVector bufferSpecs;
         for (HdBufferSourceSharedPtr const &source: *internalSources) {
-            // This currently needs the element count as the array size as the
-            // SSBO allocator needs all data in one stripe.
-            //
-            // XXX:Arrays: Should this support array-valued types?  If
-            // yes, we should multiply numElements onto the count.
-            //
-            HdTupleType tupleType = source->GetTupleType();
-            tupleType.count = source->GetNumElements();
-            bufferSpecs.emplace_back(source->GetName(), tupleType);
+            source->AddBufferSpecs(&bufferSpecs);
         }
 
         _internalRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
