@@ -206,6 +206,7 @@ class "APISchemaBase"
 
 class "ModelAPI" 
 (
+    inherits = </APISchemaBase>
     doc = """UsdModelAPI is an API schema that provides an interface to a prim's
     model qualities, if it does, in fact, represent the root prim of a model.
     
@@ -229,6 +230,7 @@ class "ModelAPI"
 
 class "CollectionAPI"
 (
+    inherits = </APISchemaBase>
     doc = """ This is a general purpose API schema, used to describe a 
     collection of heterogeneous objects within the scene. "Objects" here may be 
     prims or properties belonging to prims or other collections. It's an add-on 
@@ -312,6 +314,7 @@ class "CollectionAPI"
 
 class "ClipsAPI"
 (
+    inherits = </APISchemaBase>
     doc = """ UsdClipsAPI is an API schema that provides an interface to
     a prim's clip metadata. Clips are a "value resolution" feature that 
     allows one to specify a sequence of usd files (clips) to be consulted, 

@@ -1848,6 +1848,7 @@ class "GeomModelAPI"
 
 class "MotionAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdGeomMotionAPI encodes data that can live on any prim that
     may affect computations involving:
     - computed motion for motion blur

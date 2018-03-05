@@ -300,13 +300,12 @@ class ClassInfo(object):
             (parentUsdName, parentClassName,
              self.parentCppClassName, self.parentBaseFileName) = \
              _ExtractNames(parentPrim, parentCustomData)
-        elif self.cppClassName == "UsdTyped" or \
-             self.cppClassName == 'UsdAPISchemaBase':
+        # Only Typed and APISchemaBase are allowed to have no inherits, since 
+        # these are the core base types for all the typed and API schemas 
+        # respectively.
+        elif self.cppClassName in ["UsdTyped", 'UsdAPISchemaBase']:
             self.parentCppClassName = "UsdSchemaBase"
             self.parentBaseFileName = "schemaBase"
-        else:
-            self.parentCppClassName = "UsdAPISchemaBase"
-            self.parentBaseFileName = "apiSchemaBase"
 
         # Extra Class Metadata
         self.doc = _SanitizeDoc(sdfPrim.documentation, '\n/// ')
@@ -338,10 +337,15 @@ class ClassInfo(object):
             raise Exception(errorMsg('Schema classes must either inherit '
                                      'Typed(IsA), or neither inherit typed '
                                      'nor provide a typename(API).'))
-        
+
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             not sdfPrim.path.name.endswith('API'):
-            raise Exception(errorMsg('API schemas must named with an API suffix.'))
+            raise Exception(errorMsg('API schemas must be named with an API suffix.'))
+        
+        if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
+            (not self.parentCppClassName):
+            raise Exception(errorMsg("API schemas must explicitly inherit from "
+                    "UsdAPISchemaBase."))
 
         if not self.isApi and self.isMultipleApply:
             raise Exception(errorMsg('Non API schemas cannot be marked with '

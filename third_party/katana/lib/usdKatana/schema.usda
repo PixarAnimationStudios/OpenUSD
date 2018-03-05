@@ -54,6 +54,7 @@ class BlindDataObject "BlindDataObject" (
 }
 
 class "LookAPI"(
+    inherits = </APISchemaBase>
     doc = """Katana-specific extensions of UsdShadeMaterial."""
 ) {
     uniform string katana:primName (

@@ -71,6 +71,7 @@ class "Light" (
 }
 
 class "ListAPI" (
+    inherits = </APISchemaBase>
     doc = """API schema to support discovery and publishing of lights in a scene.
 
     \\section UsdLuxListAPI_Discovery Discovering Lights via Traversal
@@ -213,6 +214,7 @@ class "ListAPI" (
 }
 
 class "ShapingAPI" (
+    inherits = </APISchemaBase>
     doc = """Controls for shaping a light's emission."""
 ) {
     float shaping:focus = 0 (
@@ -251,6 +253,7 @@ class "ShapingAPI" (
 }
 
 class "ShadowAPI" (
+    inherits = </APISchemaBase>
     doc = """Controls to refine a light's shadow behavior.  These are
     non-physical controls that are valuable for visual lighting work."""
 ) {

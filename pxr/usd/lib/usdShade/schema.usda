@@ -300,6 +300,7 @@ class Shader "Shader" (
 
 class "ConnectableAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdShadeConnectableAPI is an API schema that provides a common
     interface for creating outputs and making connections between shading 
     parameters and outputs. The interface is common to all UsdShade schemas
@@ -332,6 +333,7 @@ class "ConnectableAPI"
 
 class "MaterialBindingAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
     (represented by UsdCollectionAPI objects). 

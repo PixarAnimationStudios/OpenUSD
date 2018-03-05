@@ -75,6 +75,7 @@ over "GLOBAL" (
 }
 
 class "HydraLookAPI" (
+    inherits = </APISchemaBase>
     doc = """
           """
     customData = {
