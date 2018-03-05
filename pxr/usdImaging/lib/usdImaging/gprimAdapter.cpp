@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
 
@@ -264,6 +265,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             // primvars descriptions.
             TfTokenVector matPrimvars = 
                 _delegate->GetMaterialPrimvars(usdMaterialPath);
+
+            // XXX:HACK:  Currently GetMaterialPrimvars() does not return
+            // correct results, so in the meantime let's just ask USD
+            // for the list of primvars.
+            if (_delegate->GetRenderIndex().
+                GetRenderDelegate()->CanComputeMaterialNetworks()) {
+                matPrimvars.clear();
+                for (auto const& attr: prim.GetAttributes()) {
+                    if (UsdGeomPrimvar pv = UsdGeomPrimvar(attr)) {
+                        matPrimvars.push_back(pv.GetPrimvarName());
+                    }
+                }
+            }
 
             for (auto const &p : matPrimvars) {
                 _ComputeAndMergePrimvar(
