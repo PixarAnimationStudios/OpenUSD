@@ -3290,6 +3290,11 @@ class PointInstancer "PointInstancer" (
     prim itself (or the UsdGeomImageable::ComputeLocalToWorldTransform() of the 
     PointInstancer to put the instance directly into world space)
 
+    If neither *velocities* nor *angularVelocities* are authored, we fallback to
+    standard position and orientation computation logic (using linear
+    interpolation between timeSamples) as described by
+    .
+
     \\anchor UsdGeom_PITimeScaling
     <b>Scaling Velocities for Interpolation</b>
     
@@ -3298,11 +3303,18 @@ class PointInstancer "PointInstancer" (
     ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
     in units/second, while we are interpolating in UsdTimeCode ordinates.
     
+    Additionally, if *motion:velocityScale* is authored or inherited (see
+    UsdGeomMotionAPI::ComputeVelocityScale()), it is used to scale both the
+    velocity and angular velocity by a constant value during computation. The
+    *motion:velocityScale* attribute is encoded by UsdGeomMotionAPI.
+
     We provide both high and low-level API's for dealing with the
     transformation as a matrix, both will compute the instance matrices using
     multiple threads; the low-level API allows the client to cache unvarying
     inputs so that they need not be read duplicately when computing over
     time.
+
+    See also .
     
     Primvars on PointInstancer
     

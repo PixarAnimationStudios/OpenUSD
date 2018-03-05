@@ -190,18 +190,13 @@ position computation logic.  We are effectively considering this a silent error
 condition, because we do not, at this time, want to require integration to 
 compute positions.
 
-\li Othewise, if the bracketing timeSamples for *velocities* from the
-requested timeSample have the *same ordinates* as those for *points*, or if
-the lower timeSample for *velocities* is earlier than the lower timeSample
-for *points* and the upper timeSample for *velocities* is at or later than
-the upper timeSample for *points*, then **use the lower *velocities* 
-timeSample and the lower *points* timeSample** for the computations described 
-below. 
+\li Otherwise, if the bracketing timeSamples for *velocities* from the
+requested timeSample have the *same ordinates* as those for *points* then **use
+the lower *velocities* timeSample and the lower *points* timeSample** for the
+computations described below. 
 
 <b>In summary,</b> we stipulate that the timeSampling of the *points* and
-<em>velocities</em> attributes be compatible.  We allow the velocities to be
-sampled at at a lower frequency than *points* (e.g. points in a constant
-velocity field) but not at a higher frequency, and we do not allow velocities
+<em>velocities</em> attributes be compatible.  We do not allow velocities
 to be recorded at times at which there is not a corresponding *points*
 sample.  This is to simplify and expedite the calculations required to
 compute a position at any requested time.  Since most simulators produce both
