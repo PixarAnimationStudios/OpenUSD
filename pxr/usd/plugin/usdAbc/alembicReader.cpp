@@ -218,15 +218,16 @@ _PostUnsupportedValueWarning(
 //
 
 struct _AlembicFixName {
-    char operator()(char x) const
-    {
-        return isalnum(x) ? x : '_';
+    std::string operator()(std::string const &x) const {
+        return TfMakeValidIdentifier(x);
     }
 };
 struct _AlembicFixNamespacedName {
-    char operator()(char x) const
-    {
-        return isalnum(x) || x == ':' ? x : '_';
+    std::string operator()(std::string const &x) const {
+        auto elems = TfStringSplit(x, ":");
+        std::transform(elems.begin(), elems.end(), elems.begin(),
+                       TfMakeValidIdentifier);
+        return TfStringJoin(elems, ":");
     }
 };
 
@@ -259,7 +260,7 @@ _CleanName(
 
         // If name is not a valid identifier then substitute characters.
         if (!test(name)) {
-            std::transform(name.begin(), name.end(), name.begin(), fixer);
+            name = fixer(name);
         }
     }
 
