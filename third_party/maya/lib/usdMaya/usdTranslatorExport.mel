@@ -54,6 +54,9 @@ global proc string usdTranslatorExport_AppendFromTextField(string $currentOption
 
 global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $currentOptions, string $arg, string $widget) {
     string $rawValue = `textFieldGrp -q -text $widget`;
+    if (size($rawValue) == 0) {
+        return $currentOptions;
+    }
 
     string $buffer[];
     int $numTokens = `tokenize $rawValue ";, " $buffer`;
@@ -62,6 +65,9 @@ global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $cur
     string $token;
     for ($i = 0; $i < $numTokens; ++$i) {
         $token = $buffer[$i];
+        if (size($token) == 0) {
+            continue;
+        }
         $currentOptions = $currentOptions + ";" + $arg + "=" + (float) $token;
     }
 
