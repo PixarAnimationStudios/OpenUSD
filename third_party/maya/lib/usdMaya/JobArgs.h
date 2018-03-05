@@ -32,6 +32,13 @@
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
+
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -113,6 +120,10 @@ struct JobExportArgs
     TfToken rootKind;
 };
 
+PXRUSDMAYA_API
+std::ostream& operator <<(std::ostream& out, const JobExportArgs& exportArgs);
+
+
 struct JobImportArgs
 {
     PXRUSDMAYA_API
@@ -128,8 +139,11 @@ struct JobImportArgs
     bool importWithProxyShapes;
 };
 
+PXRUSDMAYA_API
+std::ostream& operator <<(std::ostream& out, const JobImportArgs& exportArgs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 
 #endif // PXRUSDMAYA_JOBARGS_H
