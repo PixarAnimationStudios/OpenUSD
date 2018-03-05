@@ -412,7 +412,6 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     renderSetupTaskParams.enableHardwareShading = true;
     renderSetupTaskParams.depthBiasUseDefault = true;
     renderSetupTaskParams.depthFunc = HdCmpFuncLess;
-    renderSetupTaskParams.cullStyle = renderParams.cullStyle;
     renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
 
     // Store the updated render setup task params back in the cache and mark

@@ -31,7 +31,6 @@
 #include "pxrUsdMayaGL/api.h"
 
 #include "pxr/base/gf/vec4f.h"
-#include "pxr/imaging/hd/enums.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -45,20 +44,15 @@ struct PxrMayaHdRenderParams
     //
     bool enableLighting = true;
 
-    // Geometry Params
-    //
-    HdCullStyle cullStyle = HdCullStyleNothing;
-
     // Color Params
     //
     GfVec4f overrideColor = GfVec4f(0.0f);
     GfVec4f wireframeColor = GfVec4f(0.0f);
 
-    /// \brief Helper function to find a batch key for the render params
+    /// Helper function to find a batch key for the render params
     size_t Hash() const
     {
         size_t hash = size_t(enableLighting);
-        boost::hash_combine(hash, cullStyle);
         boost::hash_combine(hash, overrideColor);
         boost::hash_combine(hash, wireframeColor);
 

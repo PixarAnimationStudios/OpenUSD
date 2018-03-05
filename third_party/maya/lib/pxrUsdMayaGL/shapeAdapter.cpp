@@ -506,12 +506,14 @@ PxrMayaHdShapeAdapter::_Sync(
 
     // Maya 2016 SP2 lacks MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling
     // for whatever reason...
-    _renderParams.cullStyle = HdCullStyleNothing;
+    HdCullStyle cullStyle = HdCullStyleNothing;
 #if MAYA_API_VERSION >= 201603
     if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
-        _renderParams.cullStyle = HdCullStyleBackUnlessDoubleSided;
+        cullStyle = HdCullStyleBackUnlessDoubleSided;
     }
 #endif
+
+    _delegate->SetCullStyleFallback(cullStyle);
 
     return true;
 }

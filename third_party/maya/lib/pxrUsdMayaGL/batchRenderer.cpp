@@ -43,14 +43,18 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -442,6 +446,28 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _taskDelegate.reset(
         new PxrMayaHdSceneDelegate(_renderIndex.get(), _rootId));
 
+    const TfTokenVector renderTags({HdTokens->geometry, HdTokens->proxy});
+
+    _legacyViewportRprimCollection.SetName(TfToken(
+        TfStringPrintf("%s_%s",
+                       _tokens->BatchRendererRootName.GetText(),
+                       _tokens->LegacyViewport.GetText())));
+    _legacyViewportRprimCollection.SetReprName(HdTokens->refined);
+    _legacyViewportRprimCollection.SetRootPath(_legacyViewportPrefix);
+    _legacyViewportRprimCollection.SetRenderTags(renderTags);
+    _renderIndex->GetChangeTracker().AddCollection(
+        _legacyViewportRprimCollection.GetName());
+
+    _viewport2RprimCollection.SetName(TfToken(
+        TfStringPrintf("%s_%s",
+                       _tokens->BatchRendererRootName.GetText(),
+                       _tokens->Viewport2.GetText())));
+    _viewport2RprimCollection.SetReprName(HdTokens->refined);
+    _viewport2RprimCollection.SetRootPath(_viewport2Prefix);
+    _viewport2RprimCollection.SetRenderTags(renderTags);
+    _renderIndex->GetChangeTracker().AddCollection(
+        _viewport2RprimCollection.GetName());
+
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
     _selectionTracker.reset(new HdxSelectionTracker());
 
@@ -813,6 +839,52 @@ UsdMayaGLBatchRenderer::TestIntersection(
     return true;
 }
 
+HdRprimCollectionVector
+UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
+        _ShapeAdapterBucketsMap& bucketsMap,
+        const bool singleSelection) const
+{
+    HdRprimCollectionVector rprimCollections;
+
+    if (bucketsMap.empty()) {
+        return rprimCollections;
+    }
+
+    // Assume the shape adapters are for Viewport 2.0 until we inspect the
+    // first one.
+    bool isViewport2 = true;
+
+    for (auto& iter : bucketsMap) {
+        _ShapeAdapterSet& shapeAdapters = iter.second.second;
+
+        for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
+            shapeAdapter->UpdateVisibility();
+
+            isViewport2 = shapeAdapter->IsViewport2();
+
+            if (singleSelection) {
+                // If we're in single-selection mode, only update visibility
+                // for the shape adapters. We'll use the full viewport renderer
+                // collection for selection instead of the individual shape
+                // adapter collections.
+                continue;
+            }
+
+            rprimCollections.push_back(shapeAdapter->GetRprimCollection());
+        }
+    }
+
+    if (singleSelection) {
+        if (isViewport2) {
+            rprimCollections.push_back(_viewport2RprimCollection);
+        } else {
+            rprimCollections.push_back(_legacyViewportRprimCollection);
+        }
+    }
+
+    return rprimCollections;
+}
+
 void
 UsdMayaGLBatchRenderer::_ComputeSelection(
         _ShapeAdapterBucketsMap& bucketsMap,
@@ -820,9 +892,14 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
+    const HdRprimCollectionVector rprimCollections =
+        _GetIntersectionRprimCollections(bucketsMap, singleSelection);
+
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-        "____________ SELECTION STAGE START ______________ (singleSelect = %d)\n",
-        singleSelection);
+        "____________ SELECTION STAGE START ______________ "
+        "(singleSelection = %s, %zu collection(s))\n",
+        singleSelection ? "true" : "false",
+        rprimCollections.size());
 
     // We may miss very small objects with this setting, but it's faster.
     const unsigned int pickResolution = 256u;
@@ -836,75 +913,58 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
 
     _selectResults.clear();
 
-    for (const auto& iter : bucketsMap) {
-        const size_t paramsHash = iter.first;
-        const _ShapeAdapterSet& shapeAdapters = iter.second.second;
-
+    for (const HdRprimCollection& rprimCollection : rprimCollections) {
         TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
-            "--- pickBucket, parameters hash: %zu, bucket size %zu\n",
-            paramsHash,
-            shapeAdapters.size());
+            "--- Intersection Testing with collection: %s\n",
+            rprimCollection.GetName().GetText());
 
-        for (PxrMayaHdShapeAdapter* shapeAdapter : shapeAdapters) {
-            shapeAdapter->UpdateVisibility();
+        qparams.renderTags = rprimCollection.GetRenderTags();
 
-            const HdRprimCollection& rprimCollection =
-                shapeAdapter->GetRprimCollection();
+        HdxIntersector::Result result;
 
-            // Re-query the shape adapter for the render params rather than
-            // using what's in the queue.
-            const PxrMayaHdRenderParams& renderParams =
-                shapeAdapter->GetRenderParams(nullptr, nullptr);
+        glPushAttrib(GL_VIEWPORT_BIT |
+                     GL_ENABLE_BIT |
+                     GL_COLOR_BUFFER_BIT |
+                     GL_DEPTH_BUFFER_BIT |
+                     GL_STENCIL_BUFFER_BIT |
+                     GL_TEXTURE_BIT |
+                     GL_POLYGON_BIT);
+        const bool r = _intersector->Query(qparams,
+                                           rprimCollection,
+                                           &_hdEngine,
+                                           &result);
+        glPopAttrib();
+        if (!r) {
+            continue;
+        }
 
-            qparams.renderTags = rprimCollection.GetRenderTags();
-            qparams.cullStyle = renderParams.cullStyle;
+        HdxIntersector::HitSet hits;
 
-            HdxIntersector::Result result;
-
-            glPushAttrib(GL_VIEWPORT_BIT |
-                         GL_ENABLE_BIT |
-                         GL_COLOR_BUFFER_BIT |
-                         GL_DEPTH_BUFFER_BIT |
-                         GL_STENCIL_BUFFER_BIT |
-                         GL_TEXTURE_BIT |
-                         GL_POLYGON_BIT);
-            const bool r = _intersector->Query(qparams,
-                                               rprimCollection,
-                                               &_hdEngine,
-                                               &result);
-            glPopAttrib();
-            if (!r) {
+        if (singleSelection) {
+            HdxIntersector::Hit hit;
+            if (!result.ResolveNearest(&hit)) {
                 continue;
             }
 
-            HdxIntersector::HitSet hits;
+            hits.insert(hit);
+        }
+        else if (!result.ResolveUnique(&hits)) {
+            continue;
+        }
 
-            if (singleSelection) {
-                HdxIntersector::Hit hit;
-                if (!result.ResolveNearest(&hit)) {
-                    continue;
-                }
+        for (const HdxIntersector::Hit& hit : hits) {
+            auto itIfExists =
+                _selectResults.insert(
+                    std::make_pair(hit.delegateId, hit));
 
-                hits.insert(hit);
-            }
-            else if (!result.ResolveUnique(&hits)) {
+            const bool &inserted = itIfExists.second;
+            if (inserted) {
                 continue;
             }
 
-            for (const HdxIntersector::Hit& hit : hits) {
-                auto itIfExists =
-                    _selectResults.insert(
-                        std::make_pair(hit.delegateId, hit));
-
-                const bool &inserted = itIfExists.second;
-                if (inserted) {
-                    continue;
-                }
-
-                HdxIntersector::Hit& existingHit = itIfExists.first->second;
-                if (hit.ndcDepth < existingHit.ndcDepth) {
-                    existingHit = hit;
-                }
+            HdxIntersector::Hit& existingHit = itIfExists.first->second;
+            if (hit.ndcDepth < existingHit.ndcDepth) {
+                existingHit = hit;
             }
         }
     }
