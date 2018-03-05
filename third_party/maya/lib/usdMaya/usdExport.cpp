@@ -442,10 +442,10 @@ try
     // Create stage and process static data
     if (usdWriteJob.beginJob(fileName, append, startTime, endTime)) {
         if (jobArgs.exportAnimation) {
-            MTime oldCurTime = MAnimControl::currentTime();
-            for (double i=startTime;i<(endTime+1);i++) {
+            const MTime oldCurTime = MAnimControl::currentTime();
+            for (double i = startTime; i < (endTime + 1.0); ++i) {
                 for (double sampleTime : frameSamples) {
-                    double actualTime = i + sampleTime;
+                    const double actualTime = i + sampleTime;
                     if (verbose) {
                         MString info;
                         info = actualTime;
@@ -459,7 +459,8 @@ try
                     }
                 }
             }
-            // set the time back
+
+            // Set the time back.
             MGlobal::viewFrame(oldCurTime);
         }
 
