@@ -784,6 +784,18 @@ class TestUsdPrim(unittest.TestCase):
 
             self.assertTrue(root.HasAPI(Usd.ModelAPI))
 
+            # The schemaType that's passed into HasAPI must derive from 
+            # UsdAPISchemaBase and must not be UsdAPISchemaBase.
+            with self.assertRaises(RuntimeError):
+                root.HasAPI(Usd.Typed)
+            with self.assertRaises(RuntimeError):
+                root.HasAPI(Usd.APISchemaBase)
+
+            # Try calling HasAPI a random TfType that isn't a derivative of 
+            # SchemaBase.
+            with self.assertRaises(RuntimeError):
+                root.HasAPI(Sdf.ListOpType)
+
             self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
 
             # Switch the edit target to the session layer and test bug 156929
