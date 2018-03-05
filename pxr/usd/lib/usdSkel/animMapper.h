@@ -74,7 +74,7 @@ public:
         static_assert(!std::is_pointer<T>::value, "");
         static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         static_assert(!VtIsArray<T>::value, "");
-        return _Remap(source, target, elementSize);
+        return _Remap(source, target, elementSize, defaultValue);
     }
 
     /// Type-erased remapping of data from \p source into \p target.
