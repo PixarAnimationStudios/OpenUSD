@@ -67,7 +67,9 @@ over "GLOBAL" (
             }
             dictionary collection = {
                 string doc = """This is the namespace prefix used by 
-                UsdGeomCollectionAPI for authoring collections."""
+                the deprecated UsdGeomCollectionAPI for authoring collections.
+                Use UsdTokens->collection instead, which is used by the new
+                collection schema UsdCollectionAPI."""
             }
             dictionary upAxis = {
                 string doc = """Stage-level metadata that encodes a scene's

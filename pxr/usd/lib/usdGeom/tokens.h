@@ -128,7 +128,7 @@ struct UsdGeomTokensType {
     const TfToken closed;
     /// \brief "collection"
     /// 
-    /// This is the namespace prefix used by  UsdGeomCollectionAPI for authoring collections.
+    /// This is the namespace prefix used by  the deprecated UsdGeomCollectionAPI for authoring collections. Use UsdTokens->collection instead, which is used by the new collection schema UsdCollectionAPI.
     const TfToken collection;
     /// \brief "constant"
     /// 

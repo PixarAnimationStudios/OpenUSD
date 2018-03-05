@@ -45,6 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdGeomCollectionAPI
 /// 
+/// \deprecated This API schema has been deprecated in favor of UsdCollectionAPI.
+/// 
 /// This is a general purpose API schema, used to describe a collection of 
 /// heterogeneous objects within the scene. "Objects" here may be prims, 
 /// properties or face-sets belonging to prims. It's an add-on schema that can 
