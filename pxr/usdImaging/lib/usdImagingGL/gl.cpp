@@ -28,7 +28,7 @@
 #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #include "pxr/usdImaging/usdImagingGL/refEngine.h"
 
-#include "pxr/imaging/hdSt/renderContextCaps.h"
+#include "pxr/imaging/hdx/rendererPluginRegistry.h"
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -52,20 +52,18 @@ _IsEnabledHydra()
         TF_CODING_ERROR("OpenGL context required, using reference renderer");
         return false;
     }
-    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
-        return false;
-    }
     if (TfGetenv("HD_ENABLED", "1") != "1") {
         return false;
     }
-    if (!UsdImagingGLHdEngine::IsDefaultPluginAvailable()) {
-        return false;
-    }
+    
+    // Check to see if we have a default plugin for the renderer
+    TfToken defaultPlugin = 
+        HdxRendererPluginRegistry::GetInstance().GetDefaultPluginId();
 
-    return true;
+    return !defaultPlugin.IsEmpty();
 }
 
-}
+} // anonymous namespace
 
 /*static*/
 bool

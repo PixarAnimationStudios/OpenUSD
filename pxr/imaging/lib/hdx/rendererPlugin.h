@@ -59,6 +59,15 @@ public:
     ///
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) = 0;
 
+    ///
+    /// Returns \c true if this renderer plugin is supported in the running 
+    /// process and \c false if not.
+    /// 
+    /// This gives the plugin a chance to perform some runtime checks to make
+    /// sure that the system meets minimum requirements.
+    ///
+    virtual bool IsSupported() const = 0;
+
 protected:
     HdxRendererPlugin() = default;
     HDX_API

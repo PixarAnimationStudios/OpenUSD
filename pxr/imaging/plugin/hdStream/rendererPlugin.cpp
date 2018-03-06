@@ -47,4 +47,11 @@ HdStreamRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
     delete renderDelegate;
 }
 
+bool
+HdStreamRendererPlugin::IsSupported() const
+{
+    return HdStRenderDelegate::IsSupported();
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

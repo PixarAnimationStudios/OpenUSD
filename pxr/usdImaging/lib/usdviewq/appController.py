@@ -1208,13 +1208,20 @@ class AppController(QtCore.QObject):
                 action.triggered.connect(lambda pluginType=pluginType:
                         self._rendererPluginChanged(pluginType))
 
-            # If any plugins exist, the first render plugin is the default one.
+            # If any plugins exist, set the first one we find supported as the
+            # default
+            foundPlugin = False
             if len(self._ui.rendererPluginActionGroup.actions()) > 0:
-                self._ui.rendererPluginActionGroup.actions()[0].setChecked(True)
-                self._stageView.SetRendererPlugin(pluginTypes[0])
+                i = 0
+                for pluginType in pluginTypes:
+                    if self._stageView.SetRendererPlugin(pluginType):
+                        self._ui.rendererPluginActionGroup.actions()[i].setChecked(True)
+                        foundPlugin = True
+                        break
+                    i += 1
 
             # Otherwise, put a no-op placeholder in.
-            else:
+            if not foundPlugin:
                 action = self._ui.menuRendererPlugin.addAction('Default')
                 action.setCheckable(True)
                 action.setChecked(True)

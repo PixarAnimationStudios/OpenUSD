@@ -50,21 +50,6 @@ HfPluginRegistry::~HfPluginRegistry()
 {
 }
 
-TfToken
-HfPluginRegistry::GetDefaultPluginId()
-{
-    if (!_pluginCachePopulated) {
-        _DiscoverPlugins();
-    }
-
-    if (!TF_VERIFY(!_pluginEntries.empty())) {
-        return TfToken();
-    }
-
-
-    return _pluginEntries[0].GetId();
-}
-
 void
 HfPluginRegistry::GetPluginDescs(HfPluginDescVector *plugins)
 {

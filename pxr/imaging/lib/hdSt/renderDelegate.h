@@ -100,6 +100,11 @@ public:
     HDST_API
     virtual void CommitResources(HdChangeTracker *tracker) override;
 
+    // Returns whether or not HdStRenderDelegate can run on the current
+    // hardware.
+    HDST_API
+    static bool IsSupported();
+
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;

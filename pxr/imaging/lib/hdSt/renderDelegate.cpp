@@ -34,6 +34,7 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/points.h"
+#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/texture.h"
@@ -297,6 +298,12 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     // see bug126621. currently dispatch buffers need to be released
     //                more frequently than we expect.
     _resourceRegistry->GarbageCollectDispatchBuffers();
+}
+
+bool
+HdStRenderDelegate::IsSupported()
+{
+    return HdStRenderContextCaps::GetInstance().SupportsHydra();
 }
 
 

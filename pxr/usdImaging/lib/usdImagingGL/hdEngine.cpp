@@ -934,7 +934,7 @@ UsdImagingGLHdEngine::IsDefaultPluginAvailable()
 {
     HfPluginDescVector descs;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&descs);
-    return descs.size() > 0;
+    return !descs.empty();
 }
 
 /* virtual */
@@ -959,6 +959,11 @@ UsdImagingGLHdEngine::SetRendererPlugin(TfToken const &id)
         // It's a no-op to load the same plugin twice.
         HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
         return true;
+    } else if (!plugin->IsSupported()) {
+        // Don't do anything if the plugin isn't supported on the running
+        // system, just return that we're not able to set it.
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+        return false;
     }
 
     // Pull old delegate/task controller state.
