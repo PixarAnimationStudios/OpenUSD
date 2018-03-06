@@ -62,7 +62,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
         signalDefaultMaterialChanged is emitted properly.
         """
 
-        vsDM = ViewSettingsDataModel(None)
+        vsDM = ViewSettingsDataModel(None, None)
         counter = SignalCounter(vsDM.signalDefaultMaterialChanged)
 
 
@@ -132,7 +132,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
     def test_Complexity(self):
         """Test that complexity must use the preset complexities."""
 
-        vsDM = ViewSettingsDataModel(None)
+        vsDM = ViewSettingsDataModel(None, None)
 
         vsDM.complexity = Complexities.MEDIUM
         self.assertEquals(vsDM.complexity, Complexities.MEDIUM)
@@ -152,7 +152,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
         showMask_Opaque.
         """
 
-        vsDM = ViewSettingsDataModel(None)
+        vsDM = ViewSettingsDataModel(None, None)
 
         # Check default.
         self.assertEquals(vsDM.cameraMaskMode, CameraMaskModes.NONE)
@@ -174,7 +174,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
     def test_ClearColor(self):
         """Test that setting clearColorText changes the value of clearColor."""
 
-        vsDM = ViewSettingsDataModel(None)
+        vsDM = ViewSettingsDataModel(None, None)
 
         # Check default.
         self.assertEquals(vsDM.clearColorText, ClearColors.DARK_GREY)
@@ -196,7 +196,7 @@ class TestViewSettingsDataModel(unittest.TestCase):
         highlightColor.
         """
 
-        vsDM = ViewSettingsDataModel(None)
+        vsDM = ViewSettingsDataModel(None, None)
 
         # Check default.
         self.assertEquals(vsDM.highlightColorName, HighlightColors.YELLOW)

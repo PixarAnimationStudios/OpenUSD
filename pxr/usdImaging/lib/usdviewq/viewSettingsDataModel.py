@@ -23,13 +23,15 @@
 #
 
 from qt import QtCore
+from pxr import UsdGeom, Sdf
 
 from common import (RenderModes, PickModes, SelectionHighlightModes,
-    CameraMaskModes, Complexities)
+    CameraMaskModes, Complexities, PrintWarning)
 
 import settings2
 from settings2 import StateSource
 from constantGroup import ConstantGroup
+from freeCamera import FreeCamera
 
 
 class ClearColors(ConstantGroup):
@@ -73,9 +75,11 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     # emitted when any aspect of the defaultMaterial changes
     signalDefaultMaterialChanged = QtCore.Signal()
 
-    def __init__(self, parent):
+    def __init__(self, rootDataModel, parent):
         QtCore.QObject.__init__(self)
         StateSource.__init__(self, parent, "model")
+
+        self._rootDataModel = rootDataModel
 
         self._cameraMaskColor = tuple(self.stateProperty("cameraMaskColor", default=[0.1, 0.1, 0.1, 1.0]))
         self._cameraReticlesColor = tuple(self.stateProperty("cameraReticlesColor", default=[0.0, 0.7, 1.0, 1.0]))
@@ -131,6 +135,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
         self._complexity = Complexities.LOW
         self._freeCamera = None
+        self._cameraPath = None
 
     def onSaveState(self, state):
         state["cameraMaskColor"] = list(self._cameraMaskColor)
@@ -537,4 +542,36 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
     @freeCamera.setter
     def freeCamera(self, value):
+        if not isinstance(value, FreeCamera):
+            raise TypeError("Free camera must be a FreeCamera object.")
         self._freeCamera = value
+
+    @property
+    def cameraPath(self):
+        return self._cameraPath
+
+    @cameraPath.setter
+    def cameraPath(self, value):
+        if ((not isinstance(value, Sdf.Path) or not value.IsPrimPath())
+                and value is not None):
+            raise TypeError("Expected prim path, got: {}".format(value))
+        self._cameraPath = value
+
+    @property
+    def cameraPrim(self):
+        if self.cameraPath is not None and self._rootDataModel.stage is not None:
+            return self._rootDataModel.stage.GetPrimAtPath(self.cameraPath)
+        else:
+            return None
+
+    @cameraPrim.setter
+    def cameraPrim(self, value):
+        if value is not None:
+            if value.IsA(UsdGeom.Camera):
+                self.cameraPath = value.GetPrimPath()
+            else:
+                PrintWarning("Incorrect Prim Type",
+                    "Attempted to view the scene using the prim '%s', but "
+                    "the prim is not a UsdGeom.Camera." % (value.GetName()))
+        else:
+            self.cameraPath = None

@@ -27,6 +27,8 @@ from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
 
+DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
+
 class Complexities(ConstantGroup):
     """The available complexity settings for Usdview."""
 

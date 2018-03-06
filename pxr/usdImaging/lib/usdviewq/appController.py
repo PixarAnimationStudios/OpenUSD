@@ -115,7 +115,7 @@ class UsdviewDataModel(RootDataModel):
         super(UsdviewDataModel, self).__init__(printTiming)
 
         self._selectionDataModel = SelectionDataModel(self)
-        self._viewSettingsDataModel = ViewSettingsDataModel(settings2)
+        self._viewSettingsDataModel = ViewSettingsDataModel(self, settings2)
 
     @property
     def selection(self):
@@ -1867,10 +1867,10 @@ class AppController(QtCore.QObject):
                 # to be at the time.  If we had a starting selection AND a
                 # primCam, then before framing, switch back to the prim camera
                 if selectPrim == self._initialSelectPrim and self._startingPrimCamera:
-                    self._stageView.setCameraPrim(self._startingPrimCamera)
+                    self._dataModel.viewSettings.cameraPrim = self._startingPrimCamera
                 self._frameSelection()
             else:
-                self._stageView.setCameraPrim(self._startingPrimCamera)
+                self._dataModel.viewSettings.cameraPrim = self._startingPrimCamera
                 self._stageView.updateView()
 
     def _changeRenderMode(self, mode):
@@ -2258,8 +2258,8 @@ class AppController(QtCore.QObject):
             cameraPath = camera.GetPath()
         for action in self._ui.menuCamera.actions():
             action.setChecked(action.data() == cameraPath)
+        self._dataModel.viewSettings.cameraPrim = camera
         if self._stageView:
-            self._stageView.setCameraPrim(camera)
             self._stageView.updateGL()
 
     def _refreshCameraListAndMenu(self, preserveCurrCamera):
@@ -2267,21 +2267,20 @@ class AppController(QtCore.QObject):
             self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
         currCamera = self._startingPrimCamera
         if self._stageView:
-            currCamera = self._stageView.getCameraPrim()
+            currCamera = self._dataModel.viewSettings.cameraPrim
             self._stageView.allSceneCameras = self._allSceneCameras
             # if the stageView is holding an expired camera, clear it first
             # and force search for a new one
             if currCamera != None and not (currCamera and currCamera.IsActive()):
                 currCamera = None
-                self._stageView.setCameraPrim(None)
+                self._dataModel.viewSettings.cameraPrim = None
                 preserveCurrCamera = False
 
         if not preserveCurrCamera:
             cameraWasSet = False
             def setCamera(camera):
                 self._startingPrimCamera = currCamera = camera
-                if self._stageView:
-                    self._stageView.setCameraPrim(camera)
+                self._dataModel.viewSettings.cameraPrim = camera
                 cameraWasSet = True
 
             if self._startingPrimCameraPath:
