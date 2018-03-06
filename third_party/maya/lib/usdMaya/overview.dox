@@ -1,19 +1,34 @@
 /*!
-\mainpage
+\page usd_maya_page_front Maya USD Support
+\if ( PIXAR_MFB_BUILD )
+\publicLib
+\endif
 
-Provides core translation between Usd and Maya.  This library also contains
-some of the logic for usd assembly references.
+\subpage usd_maya_lib_usdMaya_page_front
+
+*/
+
+/*!
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdMaya: Translation between USD and Maya
+\publicLib
+\else
+\page usd_maya_lib_usdMaya_page_front UsdMaya: Translation between USD and Maya
+\endif
+
+Provides core translation between USD and Maya. This library also contains
+some of the logic for USD assembly references.
 
 <h3>Translation Plugins</h3>
 
-Plugins can provide new translation functions for Usd types that are not known
+Plugins can provide new translation functions for USD types that are not known
 to the core system.
 
 \sa PxrUsdMayaPrimReaderRegistry
 
 <h3>Chaser Plugins</h3>
 
-Plugins to the export process can be provided an enabled as needed.
+Plugins to the export process can be provided and enabled as needed.
 
 \sa PxrUsdMayaChaserRegistry
 

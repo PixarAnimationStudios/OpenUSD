@@ -25,22 +25,24 @@
 
 import sys, os, argparse, shutil, subprocess, tempfile, platform, stat
 
-# This finds all modules in the pxr/ source area, such as ar, usdGeom etc.
-def _getModules(pxrSourceRoot):
+# This finds all modules in the source area. For example, it will find ar,
+# usdGeom, etc. in the pxr source area, or usdKatana, usdMaya, etc. in the
+# third_party source area.
+def _getModules(sourceRoot):
     modules = []
     topLevel = []
-    for p in os.listdir(pxrSourceRoot):
+    for p in os.listdir(sourceRoot):
         # Ignore any hidden directories
         if os.path.basename(p).startswith('.'):
             continue
 
         # add all lib/ subdirs, such as usdGeom
-        path = os.path.join(os.path.join(pxrSourceRoot, p), 'lib/')
+        path = os.path.join(os.path.join(sourceRoot, p), 'lib/')
         if os.path.isdir(path):
             topLevel.append(path)
 
         # add all plugin subdirs, such as usdAbc
-        path = os.path.join(os.path.join(pxrSourceRoot, p), 'plugin/')
+        path = os.path.join(os.path.join(sourceRoot, p), 'plugin/')
         if os.path.isdir(path):
             topLevel.append(path)
 
@@ -53,18 +55,21 @@ def _getModules(pxrSourceRoot):
                 continue
             elif os.path.basename(p).startswith('testenv'):
                 continue
-            path = os.path.join(os.path.join(pxrSourceRoot, t), p)
+            path = os.path.join(os.path.join(sourceRoot, t), p)
             if os.path.isdir(path):
                 modules.append(path)
     return modules
 
-def _generateDocs(pxrSourceRoot, pxrBuildRoot, installLoc, 
+def _generateDocs(pxrSourceRoot, thirdSourceRoot, pxrBuildRoot, installLoc, 
                   doxygenBin, dotBin):
     docsLoc = os.path.join(installLoc, 'src/modules')
     if not os.path.exists(docsLoc):
         os.makedirs(docsLoc)
 
-    for mod in _getModules(pxrSourceRoot):
+    modules = _getModules(pxrSourceRoot)
+    modules.extend(_getModules(thirdSourceRoot))
+
+    for mod in modules:
         target = os.path.join(docsLoc, os.path.basename(mod))
         # This ensures that we get a fresh view of the source
         # on each build invocation.
@@ -132,19 +137,22 @@ def _generateInstallLoc(installRoot):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Generate USD documentation.") 
-    p.add_argument("source",  help="The path to the pxr source root.")
-    p.add_argument("build",   help="The path to the build directory root.")
-    p.add_argument("install", help="The install root for generated docs.")
-    p.add_argument("doxygen", help="The path to the doxygen executable.")
-    p.add_argument("dot",     help="The path to the dot executable.")
+    p.add_argument("source",       help="The path to the pxr source root.")
+    p.add_argument("third_source", help="The path to the third_party source root.")
+    p.add_argument("build",        help="The path to the build directory root.")
+    p.add_argument("install",      help="The install root for generated docs.")
+    p.add_argument("doxygen",      help="The path to the doxygen executable.")
+    p.add_argument("dot",          help="The path to the dot executable.")
     args = p.parse_args()
 
     # Ensure all paths exist first
-    _checkPath(args.doxygen, 'doxygen', os.X_OK)
+    _checkPath(args.source, 'source', os.R_OK)
+    _checkPath(args.third_source, 'third_source', os.R_OK)
     _checkPath(args.build, 'build', os.R_OK)
     _checkPath(args.install, 'install', os.W_OK)
-    _checkPath(args.source, 'source', os.R_OK)
+    _checkPath(args.doxygen, 'doxygen', os.X_OK)
     _checkPath(args.dot, 'dot', os.X_OK)
      
     installPath = _generateInstallLoc(args.install)
-    _generateDocs(args.source, args.build, installPath, args.doxygen, args.dot) 
+    _generateDocs(args.source, args.third_source, args.build, installPath,
+        args.doxygen, args.dot) 
