@@ -64,9 +64,22 @@ void GlfDefaultDebugOutputMessageCallback(
 GLF_API
 char const * GlfDebugEnumToString(GLenum debugEnum);
 
+/// Emit a GlfDebugGroup tracing the current function.
+#define GLF_GROUP_FUNCTION() \
+    GlfDebugGroup __glf_group_function(__ARCH_PRETTY_FUNCTION__)
+
+/// Emit a GlfDebugGroup tracing the current scope with the given string.
+#define GLF_GROUP_SCOPE(str) \
+    GlfDebugGroup __glf_group_scope(str)
+
 /// \class GlfDebugGroup
 ///
 /// Represents a GL debug group in Glf
+/// 
+/// The debug group conditionally adds debug objects to the GL stream
+/// based on the value to the environment variable GLF_ENABLE_DIAGNOSTIC_TRACE.
+/// If set to 1 (true) the debug objects will be pushed and popped in
+/// the command stream as long as the GL implementation and version supports it.
 ///
 class GlfDebugGroup {
     public:
@@ -82,6 +95,18 @@ class GlfDebugGroup {
     GlfDebugGroup(GlfDebugGroup const&) = delete;
     GlfDebugGroup& operator =(GlfDebugGroup const&) = delete;
 };
+
+/// Label a buffer object to improve tracing in the debug output.
+GLF_API
+void GlfDebugLabelBuffer(GLuint id, char const *label);
+
+/// Label a shader object to improve tracing in the debug output.
+GLF_API
+void GlfDebugLabelShader(GLuint id, char const *label);
+
+/// Label a program object to improve tracing in the debug output.
+GLF_API
+void GlfDebugLabelProgram(GLuint id, char const *label);
 
 /// \class GlfGLQueryObject
 ///
