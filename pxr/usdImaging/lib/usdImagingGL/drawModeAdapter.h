@@ -129,6 +129,11 @@ protected:
                              UsdImagingIndexProxy* index);
 
 private:
+    // For cards rendering, check if we're rendering any faces with 0 area;
+    // if so, issue a warning.
+    void _SanityCheckFaceSizes(SdfPath const& cachePath,
+                               GfRange3d const& extents, uint8_t axes_mask);
+
     // Check whether the given cachePath is a path to the draw mode material.
     bool _IsMaterialPath(SdfPath const& path);
     // Check whether the given cachePath is a path to a draw mode texture.

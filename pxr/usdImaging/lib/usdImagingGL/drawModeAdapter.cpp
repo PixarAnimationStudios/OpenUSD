@@ -482,8 +482,12 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                         axes_mask);
                 } else {
                     TF_CODING_ERROR("<%s> Unexpected card geometry mode %s",
-                        prim.GetPath().GetText(), cardGeometry.GetText());
+                        cachePath.GetText(), cardGeometry.GetText());
                 }
+
+                // Issue warnings for zero-area faces that we're supposedly
+                // drawing.
+                _SanityCheckFaceSizes(cachePath, extent, axes_mask);
             }
 
             // Merge "cardsUv" and "cardsTexAssign" primvars
@@ -497,7 +501,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             _MergePrimvar(primvar, &primvars);
         } else {
             TF_CODING_ERROR("<%s> Unexpected draw mode %s",
-                prim.GetPath().GetText(), drawMode.GetText());
+                cachePath.GetText(), drawMode.GetText());
         }
 
         // Merge "points" primvar
@@ -605,43 +609,43 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
             max = GfVec3f(extents.GetMax()),
             mid = (min+max)/2.0f;
     VtVec3fArray pt = VtVec3fArray(24);
-    float eps = 0.00001f;
+    GfVec3f eps = 0.001f * (max-min);
 
     // +X
-    pt[ 0] = GfVec3f(mid[0] + eps, min[1], min[2]);
-    pt[ 1] = GfVec3f(mid[0] + eps, max[1], min[2]);
-    pt[ 2] = GfVec3f(mid[0] + eps, max[1], max[2]);
-    pt[ 3] = GfVec3f(mid[0] + eps, min[1], max[2]);
+    pt[ 0] = GfVec3f(mid[0] + eps[0], min[1], min[2]);
+    pt[ 1] = GfVec3f(mid[0] + eps[0], max[1], min[2]);
+    pt[ 2] = GfVec3f(mid[0] + eps[0], max[1], max[2]);
+    pt[ 3] = GfVec3f(mid[0] + eps[0], min[1], max[2]);
 
     // -X
-    pt[ 4] = GfVec3f(mid[0] - eps, min[1], min[2]);
-    pt[ 5] = GfVec3f(mid[0] - eps, max[1], min[2]);
-    pt[ 6] = GfVec3f(mid[0] - eps, max[1], max[2]);
-    pt[ 7] = GfVec3f(mid[0] - eps, min[1], max[2]);
+    pt[ 4] = GfVec3f(mid[0] - eps[0], min[1], min[2]);
+    pt[ 5] = GfVec3f(mid[0] - eps[0], max[1], min[2]);
+    pt[ 6] = GfVec3f(mid[0] - eps[0], max[1], max[2]);
+    pt[ 7] = GfVec3f(mid[0] - eps[0], min[1], max[2]);
 
     // +Y
-    pt[ 8] = GfVec3f(min[0], mid[1] + eps, min[2]);
-    pt[ 9] = GfVec3f(max[0], mid[1] + eps, min[2]);
-    pt[10] = GfVec3f(max[0], mid[1] + eps, max[2]);
-    pt[11] = GfVec3f(min[0], mid[1] + eps, max[2]);
+    pt[ 8] = GfVec3f(min[0], mid[1] + eps[1], min[2]);
+    pt[ 9] = GfVec3f(max[0], mid[1] + eps[1], min[2]);
+    pt[10] = GfVec3f(max[0], mid[1] + eps[1], max[2]);
+    pt[11] = GfVec3f(min[0], mid[1] + eps[1], max[2]);
 
     // -Y
-    pt[12] = GfVec3f(min[0], mid[1] - eps, min[2]);
-    pt[13] = GfVec3f(max[0], mid[1] - eps, min[2]);
-    pt[14] = GfVec3f(max[0], mid[1] - eps, max[2]);
-    pt[15] = GfVec3f(min[0], mid[1] - eps, max[2]);
+    pt[12] = GfVec3f(min[0], mid[1] - eps[1], min[2]);
+    pt[13] = GfVec3f(max[0], mid[1] - eps[1], min[2]);
+    pt[14] = GfVec3f(max[0], mid[1] - eps[1], max[2]);
+    pt[15] = GfVec3f(min[0], mid[1] - eps[1], max[2]);
 
     // +Z
-    pt[16] = GfVec3f(min[0], min[1], mid[2] + eps);
-    pt[17] = GfVec3f(max[0], min[1], mid[2] + eps);
-    pt[18] = GfVec3f(max[0], max[1], mid[2] + eps);
-    pt[19] = GfVec3f(min[0], max[1], mid[2] + eps);
+    pt[16] = GfVec3f(min[0], min[1], mid[2] + eps[2]);
+    pt[17] = GfVec3f(max[0], min[1], mid[2] + eps[2]);
+    pt[18] = GfVec3f(max[0], max[1], mid[2] + eps[2]);
+    pt[19] = GfVec3f(min[0], max[1], mid[2] + eps[2]);
 
     // -Z
-    pt[20] = GfVec3f(min[0], min[1], mid[2] - eps);
-    pt[21] = GfVec3f(max[0], min[1], mid[2] - eps);
-    pt[22] = GfVec3f(max[0], max[1], mid[2] - eps);
-    pt[23] = GfVec3f(min[0], max[1], mid[2] - eps);
+    pt[20] = GfVec3f(min[0], min[1], mid[2] - eps[2]);
+    pt[21] = GfVec3f(max[0], min[1], mid[2] - eps[2]);
+    pt[22] = GfVec3f(max[0], max[1], mid[2] - eps[2]);
+    pt[23] = GfVec3f(min[0], max[1], mid[2] - eps[2]);
 
     // Generate one face per axis direction, for included axes.
     int numFaces = ((axes_mask & zAxis) ? 2 : 0) +
@@ -687,6 +691,33 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
 
     *points = VtValue(pt);
     *topo = VtValue(topology);
+}
+
+void
+UsdImagingGLDrawModeAdapter::_SanityCheckFaceSizes(SdfPath const& cachePath,
+        GfRange3d const& extents, uint8_t axes_mask)
+{
+    GfVec3d min = extents.GetMin(),
+            max = extents.GetMax();
+    bool zeroX = (min[0] == max[0]);
+    bool zeroY = (min[1] == max[1]);
+    bool zeroZ = (min[2] == max[2]);
+
+    if ((axes_mask & xAxis) && (zeroY || zeroZ)) {
+        // XXX: validation
+        TF_WARN("Cards rendering for <%s>: X+/X- faces have zero area.",
+                cachePath.GetText());
+    }
+    if ((axes_mask & yAxis) && (zeroX || zeroZ)) {
+        // XXX: validation
+        TF_WARN("Cards rendering for <%s>: Y+/Y- faces have zero area.",
+                cachePath.GetText());
+    }
+    if ((axes_mask & zAxis) && (zeroX || zeroY)) {
+        // XXX: validation
+        TF_WARN("Cards rendering for <%s>: Z+/Z- faces have zero area.",
+                cachePath.GetText());
+    }
 }
 
 void
@@ -886,9 +917,11 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
         face_assign.push_back((axes_mask & yNeg) ? yNeg : yPos);
     }
     if (axes_mask & zAxis) {
-        uv_faces.push_back((axes_mask & zPos) ? uv_normal : uv_flipped);
+        // (Z+) and (Z-) have the same (s,t) facing so we don't need to flip uvs
+        // when borrowing a texture from the other side of the axis.
+        uv_faces.push_back(uv_normal);
         face_assign.push_back((axes_mask & zPos) ? zPos : zNeg);
-        uv_faces.push_back((axes_mask & zNeg) ? uv_normal : uv_flipped);
+        uv_faces.push_back(uv_normal);
         face_assign.push_back((axes_mask & zNeg) ? zNeg : zPos);
     }
 
