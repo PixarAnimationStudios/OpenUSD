@@ -183,20 +183,27 @@ namespace {
                                const std::string& referencedRealPath,
                                const std::string& resultRealPath)
     {
+        // Use TfNormPath to ensure consistent formatting across platforms.
         std::string resultingIdentifier;
         if (TfGetPathName(referencedIdentifier).empty()) {
-            resultingIdentifier = "./" + referencedIdentifier;
-        } else {
-            std::string resultDir = TfGetPathName(resultRealPath);
-            if (TfStringStartsWith(referencedRealPath, resultDir)) {
-                resultingIdentifier = std::string(referencedRealPath).replace(0, 
-                    resultDir.length(), "./");
+            resultingIdentifier = "./" + TfNormPath(referencedIdentifier);
+        } else if (!resultRealPath.empty()) {
+            // resultRealPath may be empty if the result layer is an anonymous
+            // layer. In that case, we cannot relativize referencedIdentifier.
+            const std::string normResultRealPath = TfNormPath(resultRealPath);
+            const std::string normReferencedRealPath = 
+                TfNormPath(referencedRealPath);
+
+            std::string resultDir = TfGetPathName(normResultRealPath);
+            if (!resultDir.empty() && 
+                TfStringStartsWith(normReferencedRealPath, resultDir)) {
+                resultingIdentifier = normReferencedRealPath;
+                resultingIdentifier.replace(0, resultDir.length(), "./");
             }
         }
 
-        return resultingIdentifier.empty() ? 
-                referencedIdentifier 
-                : resultingIdentifier;
+        return resultingIdentifier.empty() ?
+            referencedIdentifier : resultingIdentifier;
     }
 
     // During parallel generation, we will generate non-relative paths
