@@ -539,12 +539,6 @@ UsdImagingGLHdEngine::TestIntersection(
     int *outHitInstanceIndex,
     int *outHitElementIndex)
 {
-    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
-        TF_CODING_ERROR("Current GL context doesn't support Hydra");
-
-       return false;
-    }
-
     SdfPath rootPath = _delegate->GetPathForIndex(root.GetPath());
     SdfPathVector roots(1, rootPath);
     _UpdateHydraCollection(&_intersectCollection, roots, params, &_renderTags);
@@ -604,11 +598,6 @@ UsdImagingGLHdEngine::TestIntersectionBatch(
     PathTranslatorCallback pathTranslator,
     HitBatch *outHit)
 {
-    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
-        TF_CODING_ERROR("Current GL context doesn't support Hydra");
-       return false;
-    }
-
     _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
 
     static const HdCullStyle USD_2_HD_CULL_STYLE[] =
