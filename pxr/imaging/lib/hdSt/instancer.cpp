@@ -214,7 +214,8 @@ HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
 
     // quick sanity check
     // instance indices should not exceed the size of instance primvars.
-    TF_FOR_ALL (it, instanceIndices) {
+    for (auto it = instanceIndices.cbegin();
+         it != instanceIndices.cend(); ++it) {
         if (*it >= _numInstancePrimVars) {
             TF_WARN("Instance index exceeds the number of instance primvars"
                     " (%d >= %d) for <%s>",
@@ -336,7 +337,7 @@ HdStInstancer::GetInstanceIndices(SdfPath const &prototypeId)
         instanceIndices[j*instanceIndexWidth] = j; // global idx
         for (int i = 0; i < instancerNumLevels; ++i) {
             instanceIndices[j*instanceIndexWidth + i + 1] =
-                instanceIndicesArray[i][currents[i]];
+                instanceIndicesArray[i].cdata()[currents[i]];
         }
         ++currents[0];
         for (int i = 0; i < instancerNumLevels-1; ++i) {
