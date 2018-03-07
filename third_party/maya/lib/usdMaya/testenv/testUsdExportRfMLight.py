@@ -28,6 +28,7 @@ import unittest
 
 from pxr import Gf
 from pxr import Usd
+from pxr import UsdGeom
 from pxr import UsdLux
 
 from maya import cmds
@@ -35,6 +36,9 @@ from maya import standalone
 
 
 class testUsdExportRfMLight(unittest.TestCase):
+
+    START_TIMECODE = 1.0
+    END_TIMECODE = 5.0
 
     @classmethod
     def setUpClass(cls):
@@ -47,7 +51,8 @@ class testUsdExportRfMLight(unittest.TestCase):
         usdFilePath = os.path.abspath('RfMLightsTest.usda')
         cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='pxrRis')
+            shadingMode='pxrRis',
+            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE))
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -60,6 +65,9 @@ class testUsdExportRfMLight(unittest.TestCase):
         Tests that the USD stage was opened successfully.
         """
         self.assertTrue(self._stage)
+
+        self.assertEqual(self._stage.GetStartTimeCode(), self.START_TIMECODE)
+        self.assertEqual(self._stage.GetEndTimeCode(), self.END_TIMECODE)
 
     def _ValidateUsdLuxLight(self, lightTypeName):
         primPathFormat = '/RfMLightsTest/Lights/%s'
@@ -129,6 +137,27 @@ class testUsdExportRfMLight(unittest.TestCase):
         expectedTemperature = 6500.0 + testNumber
         self.assertTrue(Gf.IsClose(lightSchema.GetColorTemperatureAttr().Get(),
             expectedTemperature, 1e-6))
+
+    def _ValidateDiskLightXformAnimation(self):
+        lightPrimPath = '/RfMLightsTest/Lights/DiskLight'
+        lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
+        self.assertTrue(lightPrim)
+
+        diskLight = UsdLux.DiskLight(lightPrim)
+        self.assertTrue(diskLight)
+
+        xformOps = diskLight.GetOrderedXformOps()
+        self.assertEqual(len(xformOps), 1)
+
+        translateOp = xformOps[0]
+
+        self.assertEqual(translateOp.GetOpName(), 'xformOp:translate')
+        self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
+
+        for frame in xrange(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
+            expectedTranslation = Gf.Vec3d(1.0, float(frame), 1.0)
+            self.assertTrue(
+                Gf.IsClose(translateOp.Get(frame), expectedTranslation, 1e-6))
 
     def _ValidateUsdLuxDistantLightAngle(self):
         lightPrimPath = '/RfMLightsTest/Lights/DistantLight'
@@ -233,6 +262,8 @@ class testUsdExportRfMLight(unittest.TestCase):
         correctly.
         """
         self._ValidateUsdLuxLight('DiskLight')
+        self._ValidateDiskLightXformAnimation()
+
         self._ValidateUsdLuxLight('DistantLight')
         self._ValidateUsdLuxLight('DomeLight')
         self._ValidateUsdLuxLight('MeshLight')

@@ -31,11 +31,15 @@ from pxr import Usd
 from pxr import UsdLux
 
 from maya import OpenMaya
+from maya import OpenMayaAnim
 from maya import cmds
 from maya import standalone
 
 
 class testUsdImportRfMLight(unittest.TestCase):
+
+    START_TIMECODE = 1.0
+    END_TIMECODE = 5.0
 
     @classmethod
     def setUpClass(cls):
@@ -47,7 +51,8 @@ class testUsdImportRfMLight(unittest.TestCase):
         # Import from USD.
         usdFilePath = os.path.abspath('RfMLightsTest.usda')
         cmds.loadPlugin('pxrUsd')
-        cmds.usdImport(file=usdFilePath, shadingMode='pxrRis')
+        cmds.usdImport(file=usdFilePath, shadingMode='pxrRis',
+            readAnimData=True)
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -61,41 +66,44 @@ class testUsdImportRfMLight(unittest.TestCase):
         """
         self.assertTrue(self._stage)
 
+        self.assertEqual(self._stage.GetStartTimeCode(), self.START_TIMECODE)
+        self.assertEqual(self._stage.GetEndTimeCode(), self.END_TIMECODE)
+
     def _GetMayaDependencyNode(self, objectName):
          selectionList = OpenMaya.MSelectionList()
          selectionList.add(objectName)
          mObj = OpenMaya.MObject()
          selectionList.getDependNode(0, mObj)
 
-         depFn = OpenMaya.MFnDependencyNode(mObj)
-         self.assertTrue(depFn)
+         depNodeFn = OpenMaya.MFnDependencyNode(mObj)
+         self.assertTrue(depNodeFn)
 
-         return depFn
+         return depNodeFn
 
     def _ValidateMayaLight(self, lightTypeName):
         nodePathFormat = '|RfMLightsTest|Lights|{lightTypeName}|{lightTypeName}Shape'
         nodePath = nodePathFormat.format(lightTypeName=lightTypeName)
 
-        depFn = self._GetMayaDependencyNode(nodePath)
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
 
         testNumber = None
         if lightTypeName == 'DiskLight':
-            self.assertEqual(depFn.typeName(), 'PxrDiskLight')
+            self.assertEqual(depNodeFn.typeName(), 'PxrDiskLight')
             testNumber = 1
         elif lightTypeName == 'DistantLight':
-            self.assertEqual(depFn.typeName(), 'PxrDistantLight')
+            self.assertEqual(depNodeFn.typeName(), 'PxrDistantLight')
             testNumber = 2
         elif lightTypeName == 'DomeLight':
-            self.assertEqual(depFn.typeName(), 'PxrDomeLight')
+            self.assertEqual(depNodeFn.typeName(), 'PxrDomeLight')
             testNumber = 3
         elif lightTypeName == 'MeshLight':
-            self.assertEqual(depFn.typeName(), 'PxrMeshLight')
+            self.assertEqual(depNodeFn.typeName(), 'PxrMeshLight')
             testNumber = 4
         elif lightTypeName == 'RectLight':
-            self.assertEqual(depFn.typeName(), 'PxrRectLight')
+            self.assertEqual(depNodeFn.typeName(), 'PxrRectLight')
             testNumber = 5
         elif lightTypeName == 'SphereLight':
-            self.assertEqual(depFn.typeName(), 'PxrSphereLight')
+            self.assertEqual(depNodeFn.typeName(), 'PxrSphereLight')
             testNumber = 6
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
@@ -133,6 +141,29 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedTemperature = 6500.0 + testNumber
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.temperature' % nodePath),
             expectedTemperature, 1e-6))
+
+    def _ValidatePxrDiskLightTransformAnimation(self):
+        nodePath = '|RfMLightsTest|Lights|DiskLight'
+
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+
+        animatedPlugs = OpenMaya.MPlugArray()
+        OpenMayaAnim.MAnimUtil.findAnimatedPlugs(depNodeFn.object(),
+            animatedPlugs)
+        self.assertEqual(animatedPlugs.length(), 1)
+
+        translateYPlug = animatedPlugs[0]
+        self.assertEqual(translateYPlug.name(), 'DiskLight.translateY')
+
+        animObjs = OpenMaya.MObjectArray()
+        OpenMayaAnim.MAnimUtil.findAnimation(translateYPlug, animObjs)
+        self.assertEqual(animObjs.length(), 1)
+
+        animCurveFn = OpenMayaAnim.MFnAnimCurve(animObjs[0])
+
+        for frame in xrange(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
+            value = animCurveFn.evaluate(OpenMaya.MTime(frame))
+            self.assertTrue(Gf.IsClose(float(frame), value, 1e-6))
 
     def _ValidatePxrDistantLightAngle(self):
         nodePath = '|RfMLightsTest|Lights|DistantLight|DistantLightShape'
@@ -222,6 +253,8 @@ class testUsdImportRfMLight(unittest.TestCase):
             loaded=True))
 
         self._ValidateMayaLight('DiskLight')
+        self._ValidatePxrDiskLightTransformAnimation()
+
         self._ValidateMayaLight('DistantLight')
         self._ValidateMayaLight('DomeLight')
         self._ValidateMayaLight('MeshLight')

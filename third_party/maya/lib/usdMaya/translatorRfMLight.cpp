@@ -1185,12 +1185,6 @@ PxrUsdMayaTranslatorRfMLight::Read(
                             lightSchema.GetPath());
     }
 
-    // Read Xformable attributes onto the transform node.
-    PxrUsdMayaTranslatorXformable::Read(lightSchema,
-                                        mayaNodeTransformObj,
-                                        args,
-                                        context);
-
     const MString nodeName =
         TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
 
