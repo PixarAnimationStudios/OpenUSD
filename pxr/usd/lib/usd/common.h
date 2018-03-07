@@ -80,11 +80,6 @@ typedef std::map<class TfToken, VtValue,
                  TfDictionaryLessThan
                  > UsdMetadataValueMap;
 
-/// Returns true if the pipeline is configured to process / generate 
-/// USD only and stop generating tidScenes.
-USD_API
-bool UsdIsRetireLumosEnabled();
-
 /// Returns true if Add() methods in the USD API, when given
 /// UsdListPositionTempDefault, should author "add" operations
 /// in SdfListOp values instead of prepends. Used for backwards

@@ -36,7 +36,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdCommon()
 {
-    def("IsRetireLumosEnabled", UsdIsRetireLumosEnabled);
     def("UsesInverseLayerOffset", UsdUsesInverseLayerOffset);
     def("PrepLayerOffset", UsdPrepLayerOffset);
 
