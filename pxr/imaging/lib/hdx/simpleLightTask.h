@@ -29,7 +29,6 @@
 #include "pxr/imaging/hdx/version.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
@@ -84,7 +83,6 @@ private:
 
     // Should be weak ptrs
     HdxSimpleLightingShaderSharedPtr _lightingShader;
-    int _collectionVersion;
     bool _enableShadows;
     GfVec4f _viewport;
 

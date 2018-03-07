@@ -780,8 +780,7 @@ UsdImagingGLHdEngine::SetLightingStateFromOpenGL()
     }
     _lightingContextForOpenGLState->SetStateFromOpenGL();
 
-    // Don't use the bypass lighting task.
-    _taskController->SetLightingState(_lightingContextForOpenGLState, false);
+    _taskController->SetLightingState(_lightingContextForOpenGLState);
 }
 
 /* virtual */
@@ -800,19 +799,14 @@ UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightVector const &lights,
     _lightingContextForOpenGLState->SetSceneAmbient(sceneAmbient);
     _lightingContextForOpenGLState->SetUseLighting(lights.size() > 0);
 
-    // Don't use the bypass lighting task.
-    _taskController->SetLightingState(_lightingContextForOpenGLState, false);
+    _taskController->SetLightingState(_lightingContextForOpenGLState);
 }
 
 /* virtual */
 void
 UsdImagingGLHdEngine::SetLightingState(GlfSimpleLightingContextPtr const &src)
 {
-    // Use the bypass lighting task; leave all lighting plumbing work to
-    // the incoming lighting context.
-    // XXX: the bypass lighting task will be removed when Phd takes over
-    // all imaging in Presto.
-    _taskController->SetLightingState(src, true);
+    _taskController->SetLightingState(src);
 }
 
 /* virtual */

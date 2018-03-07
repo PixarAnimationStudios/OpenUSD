@@ -35,7 +35,6 @@ pxr_library(hdx
         shadowTask
         simpleLightingShader
         simpleLightTask
-        simpleLightBypassTask
         taskController
         tokens
         types
