@@ -268,7 +268,7 @@ GusdCurvesWrapper::refine(
     VtVec3fArray usdPoints;
     pointsAttr.Get(&usdPoints, m_time);
 
-    GT_Int32Array* segEndPointIndicies = NULL;
+    UT_IntrusivePtr<GT_Int32Array> segEndPointIndicies;
     int numSegmentEndPoints = usdPoints.size();
     if( !refineForViewport ) {
 
