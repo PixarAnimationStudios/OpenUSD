@@ -805,7 +805,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._isFirstImage = True
 
-        self._dataModel.viewSettings.signalDefaultMaterialChanged.connect(self.updateGL)
+        # update() whenever a visible view setting (one which affects the view)
+        # is changed.
+        self._dataModel.viewSettings.signalVisibleSettingChanged.connect(
+            self.update)
+
         self._dataModel.signalStageReplaced.connect(self._stageReplaced)
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
@@ -1899,7 +1903,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         if pickResults[0] is not None and pickResults[1] != Sdf.Path.emptyPath:
             self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
-            self.updateGL()
+            self.updateView()
 
     def pick(self, pickFrustum):
         '''

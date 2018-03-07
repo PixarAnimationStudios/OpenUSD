@@ -104,6 +104,19 @@ class Complexities(ConstantGroup):
         prevIndex = max(0, Complexities._ordered.index(comp) - 1)
         return Complexities._ordered[prevIndex]
 
+class ClearColors(ConstantGroup):
+    """Names of available background colors."""
+    BLACK = "Black"
+    DARK_GREY = "Grey (Dark)"
+    LIGHT_GREY = "Grey (Light)"
+    WHITE = "White"
+
+class HighlightColors(ConstantGroup):
+    """Names of available highlight colors for selected objects."""
+    WHITE = "White"
+    YELLOW = "Yellow"
+    CYAN = "Cyan"
+
 class UIBaseColors(ConstantGroup):
     RED = QtGui.QBrush(QtGui.QColor(230, 132, 131))
     LIGHT_SKY_BLUE = QtGui.QBrush(QtGui.QColor(135, 206, 250))
