@@ -52,6 +52,8 @@
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hf/diagnostic.h"
+
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/vt/value.h"
@@ -108,13 +110,17 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                   forcedRepr,
                   &originalDirtyBits);
 
-    TfToken calcReprName = _GetReprName(delegate, reprName,
-                                        forcedRepr, dirtyBits);
-    _GetRepr(delegate, calcReprName, dirtyBits);
+    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
+    _UpdateRepr(delegate, calcReprName, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
+HdMeshTopologySharedPtr
+HdStMesh::GetTopology() const
+{
+    return _topology;
+}
 
 static bool
 _IsEnabledForceQuadrangulate()
@@ -132,7 +138,7 @@ HdStMesh::IsEnabledPackedNormals()
 }
 
 int
-HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc)
+HdStMesh::_GetRefineLevelForDesc(HdMeshReprDesc desc) const
 {
     if (desc.geomStyle == HdMeshGeomStyleHull         ||
         desc.geomStyle == HdMeshGeomStyleHullEdgeOnly ||
@@ -174,7 +180,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // note: if we add topologyId computation in delegate,
         // we can move this copy into topologyInstance.IsFirstInstance() block
         int refineLevel = GetRefineLevel(sceneDelegate);
-        HdMeshTopology meshTopology = GetMeshTopology(sceneDelegate);
+        HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
 
         // If the topology requires none subdivision scheme then force
         // refinement level to be 0 since we do not want subdivision.
@@ -194,15 +200,15 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // hashing.
         _topologyId = topology->ComputeHash();
 
-        // Salt the hash with refinement level and usePtexIndices.
+        // Salt the hash with refinement level and useQuadIndices.
         // (refinement level is moved into HdMeshTopology)
         //
-        // Specifically for ptexIndices, we could do better here because all we
+        // Specifically for quad indices, we could do better here because all we
         // really need is the ability to compute quad indices late, however
         // splitting the topology shouldn't be a huge cost either.
-        bool usePtexIndices = _UsePtexIndices(sceneDelegate->GetRenderIndex());
-        _topologyId = ArchHash64((const char*)&usePtexIndices,
-            sizeof(usePtexIndices), _topologyId);
+        bool useQuadIndices = _UseQuadIndices(sceneDelegate->GetRenderIndex(), topology);
+        _topologyId = ArchHash64((const char*)&useQuadIndices,
+            sizeof(useQuadIndices), _topologyId);
 
         {
             // XXX: Should be HdSt_MeshTopologySharedPtr
@@ -230,7 +236,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // we also need quadinfo if requested.
                 // Note that this is needed even if refineLevel > 0, in case
                 // HdMeshGeomStyleHull is going to be used.
-                if (usePtexIndices) {
+                if (useQuadIndices) {
                     // Quadrangulate preprocessing
                     HdSt_QuadInfoBuilderComputationSharedPtr quadInfoBuilder =
                         topology->GetQuadInfoBuilderComputation(
@@ -292,14 +298,14 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // create coarse points indices
                 source = _topology->GetPointsIndexBuilderComputation();
             } else if (refineLevelForDesc > 0) {
-                // create refined indices and primitiveParam
+                // create refined indices, primitiveParam and edgeIndices
                 source = _topology->GetOsdIndexBuilderComputation();
-            } else if (_UsePtexIndices(sceneDelegate->GetRenderIndex())) {
+            } else if (_UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology)) {
                 // not refined = quadrangulate
-                // create quad indices and primitiveParam
+                // create quad indices, primitiveParam and edgeIndices
                 source = _topology->GetQuadIndexBuilderComputation(GetId());
             } else {
-                // create triangle indices and primitiveParam
+                // create triangle indices, primitiveParam and edgeIndices
                 source = _topology->GetTriangleIndexBuilderComputation(GetId());
             }
             HdBufferSourceVector sources;
@@ -574,11 +580,11 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             // index into; the inverse is when we issue a warning and skip
             // update.
             if (source->GetNumElements() < numPoints) {
-                TF_CODING_ERROR(
-                    "Vertex primvar %s for prim %s has only %d elements, while"
+                HF_VALIDATION_WARN(id, 
+                    "Vertex primvar %s has only %d elements, while"
                     " its topology expects at least %d elements. Skipping "
                     " primvar update.",
-                    nameIt->GetText(), id.GetText(),
+                    nameIt->GetText(),
                     source->GetNumElements(), numPoints);
 
                 if (*nameIt == HdTokens->points) {
@@ -589,9 +595,8 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(),
                            HdBufferArrayRangeSharedPtr());
 
-                    TF_CODING_ERROR(
-                    "Skipping prim %s because its points data is insufficient.",
-                    id.GetText());
+                    HF_VALIDATION_WARN(id, 
+                      "Skipping prim because its points data is insufficient.");
 
                     return;
                 }
@@ -599,10 +604,10 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 continue;
 
             } else if (source->GetNumElements() > numPoints) {
-                TF_WARN(
-                    "Vertex primvar %s for prim %s has %d elements, while"
+                HF_VALIDATION_WARN(id,
+                    "Vertex primvar %s has %d elements, while"
                     " its topology references only upto element index %d.",
-                    nameIt->GetText(), id.GetText(),
+                    nameIt->GetText(),
                     source->GetNumElements(), numPoints);
 
                 // If the primvar has more data than needed, we issue a warning,
@@ -613,7 +618,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             if (refineLevel > 0) {
                 source = _RefinePrimVar(source, isVarying,
                                         &computations, _topology);
-            } else if (_UsePtexIndices(renderIndex)) {
+            } else if (_UseQuadIndices(renderIndex, _topology)) {
                 source = _QuadrangulatePrimVar(source, &computations, _topology,
                                                GetId(), resourceRegistry);
             }
@@ -642,7 +647,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         TF_VERIFY(_vertexAdjacency);
         bool doRefine = (refineLevel > 0);
-        bool doQuadrangulate = _UsePtexIndices(renderIndex);
+        bool doQuadrangulate = _UseQuadIndices(renderIndex, _topology);
 
         // we can't use packed normals for refined/quad,
         // let's migrate the buffer to full precision
@@ -934,24 +939,24 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
             // verify primvar length
             if (source->GetNumElements() != numFaceVaryings) {
-                TF_WARN(
+                HF_VALIDATION_WARN(id, 
                     "# of facevaryings mismatch (%d != %d)"
-                    " for primvar %s, prim %s",
+                    " for primvar %s",
                     source->GetNumElements(), numFaceVaryings,
-                    nameIt->GetText(), id.GetText());
+                    nameIt->GetText());
                 continue;
             }
 
-            // FaceVarying primvar requires quadrangulation (both coarse and
-            // refined) or triangulation (coase only), but refinement of the
+            // FaceVarying primvar requires quadrangulation or triangulation,
+            // depending on the subdivision scheme, but refinement of the
             // primvar is not needed even if the repr is refined, since we only
             // support linear interpolation until OpenSubdiv 3.1 supports it.
 
             //
             // XXX: there is a bug of quad and tris confusion. see bug 121414
             //
-            if (_UsePtexIndices(sceneDelegate->GetRenderIndex()) ||
-                refineLevel > 0) {
+            if (_UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology) ||
+                 (refineLevel > 0 && !_topology->RefinesToTriangles())) {
                 source = _QuadrangulateFaceVaryingPrimVar(source, _topology,
                                                           GetId(), resourceRegistry);
             } else {
@@ -1016,10 +1021,9 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
             // verify primvar length
             if (source->GetNumElements() != numFaces) {
-                TF_WARN(
-                    "# of faces mismatch (%d != %d) for primvar %s, prim %s",
-                    source->GetNumElements(), numFaces,
-                    nameIt->GetText(), id.GetText());
+                HF_VALIDATION_WARN(id,
+                    "# of faces mismatch (%d != %d) for primvar %s",
+                    source->GetNumElements(), numFaces, nameIt->GetText());
                 continue;
             }
 
@@ -1050,8 +1054,16 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 }
 
 bool
-HdStMesh::_UsePtexIndices(const HdRenderIndex &renderIndex) const
+HdStMesh::_UseQuadIndices(
+        const HdRenderIndex &renderIndex,
+        HdSt_MeshTopologySharedPtr const & topology) const
 {
+    // We should never quadrangulate for subdivision schemes
+    // which refine to triangles (like Loop)
+    if (topology->RefinesToTriangles()) {
+        return false;
+    }
+
     const HdStMaterial *material = static_cast<const HdStMaterial *>(
                                   renderIndex.GetSprim(HdPrimTypeTokens->material,
                                                        GetMaterialId()));
@@ -1252,13 +1264,13 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
             primType =
                 HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS;
         }
-    } else if (_UsePtexIndices(renderIndex)) {
-        // quadrangulate coarse mesh (for ptex)
+    } else if (_UseQuadIndices(renderIndex, _topology)) {
+        // quadrangulate coarse mesh (e.g. for ptex)
         primType = HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS;
     }
 
     // resolve geom style, cull style
-    HdCullStyle cullStyle = _cullStyle;
+    HdCullStyle cullStyle = desc.cullStyle;
     HdMeshGeomStyle geomStyle = desc.geomStyle;
 
     // We need to use smoothNormals flag per repr (and not requireSmoothNormals)
@@ -1268,15 +1280,15 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear &&
         _topology->GetScheme() != PxOsdOpenSubdivTokens->none;
 
-    // if the prim doesn't have an opinion about cullstyle,
-    // use repr's default (it could also be DontCare, then renderPass's
+    // if the repr doesn't have an opinion about cullstyle, use the
+    // prim's default (it could also be DontCare, then renderPass's
     // cullStyle is going to be used).
     //
     // i.e.
-    //   Rprim CullStyle > Repr CullStyle > RenderPass CullStyle
+    //   Repr CullStyle > Rprim CullStyle > RenderPass CullStyle
     //
     if (cullStyle == HdCullStyleDontCare) {
-        cullStyle = desc.cullStyle;
+        cullStyle = _cullStyle;
     }
 
     bool blendWireframeColor = desc.blendWireframeColor;
@@ -1288,23 +1300,29 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     const HdStMaterial *material = static_cast<const HdStMaterial *>(
         renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
     if (material) {
-        const std::string & displacementShader = 
-            material->GetDisplacementShaderSource(sceneDelegate);
-        if (!displacementShader.empty()) {
-            hasCustomDisplacementTerminal = true;
+        HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
+        if (shaderCode) {
+            hasCustomDisplacementTerminal =
+                !(shaderCode->GetSource(HdShaderTokens->geometryShader).empty());
         }
     }
+
+    // Enable displacement shading only if the repr enables it, and the
+    // entrypoint exists.
+    bool useCustomDisplacement =
+        hasCustomDisplacementTerminal && desc.useCustomDisplacement;
 
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  desc.shadingTerminal,
-                                 hasCustomDisplacementTerminal,
+                                 useCustomDisplacement,
                                  smoothNormals,
-                                 _doubleSided,
+                                 _doubleSided || desc.doubleSided,
                                  hasFaceVaryingPrimVars,
                                  blendWireframeColor,
                                  cullStyle,
-                                 geomStyle);
+                                 geomStyle,
+                                 desc.lineWidth);
 
     HdStResourceRegistrySharedPtr resourceRegistry =
         boost::static_pointer_cast<HdStResourceRegistry>(
@@ -1339,6 +1357,15 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
         // dirty
         bits |= HdChangeTracker::DirtySubdivTags |
                 HdChangeTracker::DirtyRefineLevel;
+    }
+
+    // A change of material means that the Quadrangulate state may have
+    // changed.
+    if (bits & HdChangeTracker::DirtyMaterialId) {
+        bits |= (HdChangeTracker::DirtyPoints   |
+                HdChangeTracker::DirtyNormals  |
+                HdChangeTracker::DirtyPrimVar  |
+                HdChangeTracker::DirtyTopology);
     }
 
     // If points or topology changed, recompute smooth normals.
@@ -1433,30 +1460,18 @@ HdStMesh::_InitRepr(TfToken const &reprName, HdDirtyBits *dirtyBits)
 
 }
 
-HdReprSharedPtr const &
-HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
-                   TfToken const &reprName,
-                   HdDirtyBits *dirtyBits)
+void
+HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                      TfToken const &reprName,
+                      HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprName);
-    _ReprVector::iterator reprIt = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprName));
-
-    if (reprIt == _reprs.end()) {
-        // Hydra should have called _InitRepr earlier in sync when
-        // before sending dirty bits to the delegate.
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s on prim %s.",
-                        reprName.GetText(), GetId().GetText());
-
-        static const HdReprSharedPtr ERROR_RETURN;
-        return ERROR_RETURN;
+    HdReprSharedPtr const &curRepr = _GetRepr(reprName);
+    if (!curRepr) {
+        return;
     }
-
-    // _reprs holds a pair of (TfToken, HdReprSharedPtr)
-    HdReprSharedPtr const &curRepr = reprIt->second;
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         std::cout << "HdStMesh::GetRepr " << GetId()
@@ -1479,6 +1494,8 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
                       HdChangeTracker::NewRepr)) {
         needsSetGeometricShader = true;
     }
+
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprName);
 
     // iterate through all reprdescs for the current repr to figure out if any 
     // of them requires smoothnormals
@@ -1555,8 +1572,6 @@ HdStMesh::_GetRepr(HdSceneDelegate *sceneDelegate,
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
-
-    return curRepr;
 }
 
 HdDirtyBits

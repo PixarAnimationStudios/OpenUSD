@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_CYLINDER_ADAPTER_H
 #define USDIMAGING_CYLINDER_ADAPTER_H
 
+/// \file usdImaging/cylinderAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"

@@ -1,0 +1,43 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates the basic behavior of the inherits arc
+    """
+)
+
+def "Group" (
+    """
+    This example has a reference to a character group.
+    The character group has several instances of a model,
+    along with an override of that model's class (so as to
+    affect all the instances).  One of the instances in 
+    the group then overrides that class opinion.
+    Back in the root layer, we override the class.
+    This example shows how class overrides work and also how
+    references strongly "encapsulate" the strength of their 
+    contents, including any internal opinions about classes.
+    """
+    add references = @./group.sdf@</Group>
+)
+{
+    over "Model_2"
+    {
+        string value = "Root-layer override just for this instance."
+    }
+}
+
+class Prim "_class_Model"
+{
+    string value = "Root layer's override for the class."
+}
+
+def "NonExistentInherit" (
+    """
+    This example demonstrates the behavior when there are inherit arcs
+    targeting prims with no opinions. In particular, this is not considered
+    a composition error.
+    """
+    references = @./nonexistent.sdf@</NonExistentInherit>
+)
+{
+}

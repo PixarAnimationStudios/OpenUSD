@@ -27,43 +27,5 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-
-bool
-_ArrayStackCheck(size_t aize, const Vt_Reserved* reserved)
-{
-    return true;
-}
-
-bool
-_ArrayCompareSize(
-    size_t aSize, const Vt_Reserved* aReserved,
-    size_t bSize, const Vt_Reserved* bReserved)
-{
-    return aSize == bSize;
-}
-
-}
-
-bool
-(*_vtArrayStackCheck)(
-    size_t size, const Vt_Reserved* reserved) = _ArrayStackCheck;
-bool
-(*_vtArrayCompareSize)(
-    size_t aSize, const Vt_Reserved* aReserved,
-    size_t bSize, const Vt_Reserved* bReserved) = _ArrayCompareSize;
-
-bool
-Vt_ArrayStackCheck(size_t size, const Vt_Reserved* reserved)
-{
-    return (*_vtArrayStackCheck)(size, reserved);
-}
-
-bool
-Vt_ArrayCompareSize(size_t aSize, const Vt_Reserved* aReserved,
-                    size_t bSize, const Vt_Reserved* bReserved)
-{
-    return (*_vtArrayCompareSize)(aSize, aReserved, bSize, bReserved);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

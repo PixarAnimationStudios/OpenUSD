@@ -349,7 +349,7 @@ Because such a limit may vary among different DCC applications, we feel that
 it is inappropriate to hard-code any such restrictions at the file storage
 level. Instead, for clients that require a strict limit on the number of
 influences per point, UsdSkel provides helper method,
-\ref UsdSkelTruncateInfluences, that can be used to enforce such limits
+\ref UsdSkelResizeInfluences, that can be used to enforce such limits
 within each client, as necessary.
 
 
@@ -388,5 +388,5 @@ we suggest that joint influences be sorted from largest weight value to
 smallest. The \ref UsdSkelSortInfluences utility can be used to do so.
 UsdSkel does not currently *require* sorted joint influences, but may later
 add such restrictions, since they enable some skinning optimizations like 
-\ref UsdSkelTruncateInfluences.
+\ref UsdSkelResizeInfluences.
 */

@@ -76,14 +76,6 @@ class Material "Material" (
 {
 }
 
-class Look "Look" (
-    doc = """\\deprecated Deprecated in favor of Material.
-    Please refer to UsdMaterial
-    """
-)
-{
-}
-
 class Shader "Shader" (
     doc = '''Base class for all USD shaders. Shaders are the building blocks
     of shading networks. While UsdShadeShader objects are not target specific,
@@ -148,7 +140,7 @@ class "ConnectableAPI" (
 class "MaterialBindingAPI" (
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
-    (represented UsdCollectionAPI objects). 
+    (represented by UsdCollectionAPI objects). 
     
     In the USD shading model, each renderable gprim computes a single 
     <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
@@ -231,6 +223,10 @@ class "MaterialBindingAPI" (
     not authored (i.e. empty) on a binding-relationship, the default behavior 
     matches UsdShadeTokens->weakerThanDescendants.
 
+    \\note If a material binding relationship is a built-in property defined as 
+    part of a typed prim's schema, a fallback value should not be provided for 
+    it. This is because the \"material resolution\" algorithm only conisders 
+    <i>authored</i> properties.
     """
 )
 {

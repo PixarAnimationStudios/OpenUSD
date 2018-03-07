@@ -60,7 +60,7 @@ public:
     HD_API
     virtual ~HdBprim();
 
-    /// Returns the identifer by which this buffer is known. This
+    /// Returns the identifier by which this buffer is known. This
     /// identifier is a common associative key used by the SceneDelegate,
     /// RenderIndex, and for binding to the buffer
     SdfPath const& GetID() const { return _id; }

@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_DELEGATE_H
 #define USDIMAGING_DELEGATE_H
 
+/// \file usdImaging/delegate.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
@@ -532,7 +534,7 @@ private:
                          _AdapterSharedPtr, TfToken::HashFunctor> _AdapterMap;
     _AdapterMap _adapterMap;
 
-    // Per-Primitive tracking data.
+    // Per-Hydra-Primitive tracking data
     struct _PrimInfo {
         _AdapterSharedPtr adapter;          // The adapter to use for the prim
         UsdPrim           usdPrim;          // Reference to the Usd prim
@@ -600,6 +602,7 @@ private:
     SdfPathVector _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
+    UsdImaging_MaterialBindingSupplementalCache _matBindingSupplCache;
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_MaterialNetworkBindingCache _materialNetworkBindingCache;
     UsdImaging_VisCache _visCache;
@@ -610,6 +613,8 @@ private:
 
     // Display guides rendering
     bool _displayGuides;
+
+    const bool _hasDrawModeAdapter;
 
     UsdImagingDelegate() = delete;
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;
@@ -715,13 +720,28 @@ public:
         _instancersToRemove.push_back(instancerPath);
     }
 
+    USDIMAGING_API
+    bool HasRprim(SdfPath const &cachePath);
+
+    USDIMAGING_API
     void MarkRprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
+    USDIMAGING_API
     void MarkSprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
+    USDIMAGING_API
     void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
+
+    USDIMAGING_API
     void MarkInstancerDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
 
+    USDIMAGING_API
     bool IsRprimTypeSupported(TfToken const& typeId) const;
+
+    USDIMAGING_API
     bool IsSprimTypeSupported(TfToken const& typeId) const;
+
+    USDIMAGING_API
     bool IsBprimTypeSupported(TfToken const& typeId) const;
 
     // Check if the given path has been populated yet.
@@ -732,6 +752,7 @@ public:
     USDIMAGING_API
     void Repopulate(SdfPath const& usdPath);
 
+    USDIMAGING_API
     UsdImagingPrimAdapterSharedPtr GetMaterialAdapter(
         UsdPrim const& materialPrim);
 

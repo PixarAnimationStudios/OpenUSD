@@ -21,6 +21,7 @@ pxr_library(usd
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        apiSchemaBase
         attribute
         clipsAPI
         attributeQuery
@@ -88,6 +89,7 @@ pxr_library(usd
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAPISchemaBase.cpp
         wrapAttribute.cpp
         wrapAttributeQuery.cpp
         wrapClipsAPI.cpp

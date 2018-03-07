@@ -73,15 +73,18 @@ public:
                       TfToken const   &reprName,
                       bool             forcedRepr) override;
 
+    /// Topology (member) getter
+    HDST_API
+    virtual HdMeshTopologySharedPtr GetTopology() const override;
+
     /// Returns whether packed (10_10_10 bits) normals to be used
     HDST_API
     static bool IsEnabledPackedNormals();
 
 protected:
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBitsState) override;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBitsState) override;
 
     HdBufferArrayRangeSharedPtr
     _GetSharedPrimvarRange(uint64_t primvarId,
@@ -90,10 +93,8 @@ protected:
                 bool * isFirstInstance,
                 HdStResourceRegistrySharedPtr const &resourceRegistry) const;
 
-    HdDirtyBits _PropagateDirtyBits(
-        HdDirtyBits dirtyBits);
-
-    bool _UsePtexIndices(const HdRenderIndex &renderIndex) const;
+    bool _UseQuadIndices(const HdRenderIndex &renderIndex,
+                         HdSt_MeshTopologySharedPtr const & topology) const;
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,
@@ -127,7 +128,7 @@ protected:
                                   HdDirtyBits *dirtyBits,
                                   TfTokenVector const &primVarNames);
 
-    int _GetRefineLevelForDesc(HdMeshReprDesc desc);
+    int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
 
     virtual HdDirtyBits _GetInitialDirtyBits() const override;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;

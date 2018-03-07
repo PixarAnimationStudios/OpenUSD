@@ -39,7 +39,9 @@
 #include "gusd/USD_DataCache.h"
 #include "gusd/UT_Error.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/notice.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -50,6 +52,12 @@
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_EXPANDRELS, true,
+                      "Expand maked stage loads to include targets "
+                      "of relationships.");
+
 
 namespace {
 
@@ -510,8 +518,11 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
 
         UsdStageRefPtr stage =
             mask ? UsdStage::OpenMasked(rootLayer, sessionLayer,
+                                        ArGetResolver().GetCurrentContext(),
                                         *mask, opts.GetLoadSet())
-            : UsdStage::Open(rootLayer, sessionLayer, opts.GetLoadSet());
+            : UsdStage::Open(rootLayer, sessionLayer,
+                             ArGetResolver().GetCurrentContext(),
+                             opts.GetLoadSet());
 
         if(stage) {
             if(edit) {
@@ -560,13 +571,6 @@ GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
     UT_ASSERT_P(stage);
     UT_ASSERT_P(!stage->GetPopulationMask().IsEmpty());
 
-    // Expand the population mask to include relationship targets.
-    // TODO: This currently will test all relationships, and may be very
-    // expensive. For performance, it may be necessary to limit the set
-    // of relationships that are searched (skipping, say, shaders).
-    // TODO: This currently does not consider attribute connections.
-    stage->ExpandPopulationMask();
-
     // Expand the population mask to contain any existing prims of the
     // given kind. This is done to limit the number of masked stages that
     // we create. For instance, if the user passes in leaf prim paths, we
@@ -596,6 +600,15 @@ GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
         }
         if(changed)
             stage->SetPopulationMask(popMask);
+    }
+
+    if(TfGetEnvSetting(GUSD_STAGEMASK_EXPANDRELS)) {
+        // Expand the population mask to include relationship targets.
+        // TODO: This currently will test all relationships, and may be very
+        // expensive. For performance, it may be necessary to limit the set
+        // of relationships that are searched (skipping, say, shaders).
+        // TODO: This currently does not consider attribute connections.
+        stage->ExpandPopulationMask();
     }
 }
 

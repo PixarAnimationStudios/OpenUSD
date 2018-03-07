@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_POINT_INSTANCER_ADAPTER_H
 #define USDIMAGING_POINT_INSTANCER_ADAPTER_H
 
+/// \file usdImaging/pointInstancerAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"

@@ -72,12 +72,15 @@ struct JobExportArgs
     bool exportAnimation;
     bool excludeInvisible;
     bool exportDefaultCameras;
+    bool exportSkin;
+    bool autoSkelRoots;
 
     bool exportMeshUVs;
     bool normalizeMeshUVs;
     
     bool exportMaterialCollections;
     std::string materialCollectionsPath;
+    bool exportCollectionBasedBindings;
 
     bool normalizeNurbs;
     bool exportNurbsExplicitUV;

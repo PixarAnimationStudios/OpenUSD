@@ -156,6 +156,7 @@ public:
                         VtVec3fArray const &points,
                         VtIntArray const &curveVertexCounts,
                         VtVec3fArray const &normals,
+                        TfToken const &type,
                         TfToken const &basis,
                         VtValue const &color,
                         Interpolation colorInterpolation,
@@ -165,7 +166,7 @@ public:
 
     /// Add a basis curves prim containing two curves
     HD_API
-    void AddCurves(SdfPath const &id, TfToken const &basis,
+    void AddCurves(SdfPath const &id, TfToken const &type, TfToken const &basis,
                    GfMatrix4f const &transform,
                    HdUnitTestDelegate::Interpolation colorInterp=HdUnitTestDelegate::CONSTANT,
                    HdUnitTestDelegate::Interpolation widthInterp=HdUnitTestDelegate::CONSTANT,
@@ -394,6 +395,7 @@ private:
         _Curves(VtVec3fArray const &points,
                 VtIntArray const &curveVertexCounts,
                 VtVec3fArray const &normals,
+                TfToken const &type,
                 TfToken const &basis,
                 VtValue const &color,
                 Interpolation colorInterpolation,
@@ -401,6 +403,7 @@ private:
                 Interpolation widthInterpolation) :
             points(points), curveVertexCounts(curveVertexCounts), 
             normals(normals),
+            type(type),
             basis(basis),
             color(color), colorInterpolation(colorInterpolation),
             width(width), widthInterpolation(widthInterpolation) { }
@@ -408,6 +411,7 @@ private:
         VtVec3fArray points;
         VtIntArray curveVertexCounts;
         VtVec3fArray normals;
+        TfToken type;
         TfToken basis;
         VtValue color;
         Interpolation colorInterpolation;

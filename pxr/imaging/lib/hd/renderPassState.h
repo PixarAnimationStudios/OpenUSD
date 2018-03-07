@@ -99,6 +99,22 @@ public:
     void SetWireframeColor(GfVec4f const &color);
     const GfVec4f& GetWireframeColor() const { return _wireframeColor; }
 
+    /// Set a point color for rendering where the R, G and B components
+    /// are the color and the alpha component is the blend value
+    HD_API
+    void SetPointColor(GfVec4f const &color);
+    const GfVec4f& GetPointColor() const { return _pointColor; }
+
+    /// Set the point size for unselected points.
+    HD_API
+    void SetPointSize(float size);
+    float GetPointSize() const { return _pointSize; }
+
+    /// Set the point size for selected points.
+    HD_API
+    void SetPointSelectedSize(float size);
+    float GetPointSelectedSize() const { return _pointSelectedSize; }
+
     /// XXX: Hacky way of disabling lighting
     HD_API
     void SetLightingEnabled(bool enabled);
@@ -145,6 +161,22 @@ public:
     HdCompareFunction GetDepthFunc() const { return _depthFunc; }
 
     HD_API
+    void SetStencil(HdCompareFunction func, int ref, int mask,
+                    HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass);
+    HdCompareFunction GetStencilFunc() const { return _stencilFunc; }
+    int GetStencilRef() const { return _stencilRef; }
+    int GetStencilMask() const { return _stencilMask; }
+    HdStencilOp GetStencilFailOp() const { return _stencilFailOp; }
+    HdStencilOp GetStencilDepthFailOp() const { return _stencilZFailOp; }
+    HdStencilOp GetStencilDepthPassOp() const { return _stencilZPassOp; }
+    HD_API
+    void SetStencilEnabled(bool enabled);
+    
+    HD_API
+    void SetLineWidth(float width);
+    float GetLineWidth() const { return _lineWidth; }
+    
+    HD_API
     void SetAlphaToCoverageUseDefault(bool useDefault);
     bool GetAlphaToCoverageUseDefault() const { return _alphaToCoverageUseDefault; }
 
@@ -179,6 +211,9 @@ protected:
 
     GfVec4f _overrideColor;
     GfVec4f _wireframeColor;
+    GfVec4f _pointColor;
+    float _pointSize;
+    float _pointSelectedSize;
     bool _lightingEnabled;
     float _alphaThreshold;
     float _tessLevel;
@@ -196,6 +231,18 @@ protected:
     HdCompareFunction _depthFunc;
     HdCullStyle _cullStyle;
 
+    // Stencil RenderPassState
+    HdCompareFunction _stencilFunc;
+    int _stencilRef;
+    int _stencilMask;
+    HdStencilOp _stencilFailOp;
+    HdStencilOp _stencilZFailOp;
+    HdStencilOp _stencilZPassOp;
+    bool _stencilEnabled;
+    
+    // Line width
+    float _lineWidth;
+    
     // alpha to coverage
     bool _alphaToCoverageUseDefault;
     bool _alphaToCoverageEnabled;

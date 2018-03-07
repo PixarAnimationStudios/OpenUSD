@@ -28,6 +28,7 @@
 #include "usdMaya/MayaTransformWriter.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MString.h>
 
@@ -48,10 +49,9 @@ class MayaMeshWriter : public MayaTransformWriter
                    usdWriteJobCtx& jobCtx);
     virtual ~MayaMeshWriter() {};
 
-    virtual void write(const UsdTimeCode &usdTime);
-    
-    /// \override
-    virtual bool exportsGprims() const;
+    virtual void write(const UsdTimeCode &usdTime) override;
+    virtual void postExport() override;
+    virtual bool exportsGprims() const override;
 
   protected:
     bool writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &primSchema);
@@ -59,6 +59,22 @@ class MayaMeshWriter : public MayaTransformWriter
   private:
     bool isMeshValid();
     void assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &primSchema);
+
+    /// Writes skeleton skinning data for the mesh if it has skin clusters.
+    /// This method will internally determine, based on the job export args,
+    /// whether the prim has skinning data and whether it is eligible for
+    /// skinning data export.
+    /// If skinning data is successfully exported, then returns the pre-skin
+    /// mesh object. Otherwise, if no skeleton data was exported (whether there
+    /// was an error, or this mesh had no skinning, or this mesh was skipped),
+    /// returns a null MObject.
+    /// This should only be called once at the default time.
+    MObject writeSkinningData(UsdGeomMesh& primSchema);
+
+    /// Writes the UsdSkel relationships that connect this mesh to the correct
+    /// Skeleton. We do this separately to make sure that the Skeleton exists
+    /// before writing the relationship.
+    void writeSkinningRels(UsdGeomMesh& primSchema);
 
     bool _GetMeshUVSetData(
         const MFnMesh& mesh,
@@ -140,6 +156,12 @@ class MayaMeshWriter : public MayaTransformWriter
     /// component has no authored value.
     static const GfVec3f _ColorSetDefaultRGB;
     static const float _ColorSetDefaultAlpha;
+
+    /// Root joint of the skin cluster's influence joints.
+    /// (The root joint might not be in our influences list).
+    MDagPath _skelRootJoint;
+    /// Input mesh before any skeletal deformations, cached between iterations.
+    MObject _skelInputMesh;
 };
 
 typedef std::shared_ptr<MayaMeshWriter> MayaMeshWriterPtr;

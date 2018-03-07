@@ -60,6 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawingCoord0)                             \
     (drawingCoord1)                             \
     (drawingCoordI)                             \
+    (edgeIndices)                               \
     (elementCount)                              \
     (extent)                                    \
     (faceColors)                                \
@@ -185,6 +186,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (viewport)                                  \
     (vertexShader)                              \
     (wireframeColor)                            \
+    (pointColor)                                \
+    (pointSize)                                 \
+    (pointSelectedSize)                         \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
 

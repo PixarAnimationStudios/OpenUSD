@@ -36,26 +36,101 @@
 
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
-#include "pxr/base/tf/stringUtils.h"
 
-#include <boost/container/vector.hpp>
-#include <boost/operators.hpp>
-#include <boost/preprocessor.hpp>
-#include <boost/smart_ptr/intrusive_ptr.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
-#include <iostream>
-#include <vector>
-
-#include <boost/functional/hash.hpp>
+#include <cstdlib>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Helper class for clients that create VtArrays referring to foreign-owned
+// data.
+class Vt_ArrayForeignDataSource
+{
+public:
+    Vt_ArrayForeignDataSource() : _refCount(0), _detachedFn(nullptr) {}
+    explicit Vt_ArrayForeignDataSource(
+        void (*detachedFn)(Vt_ArrayForeignDataSource *self),
+        size_t initRefCount = 0)
+        : _refCount(initRefCount)
+        , _detachedFn(detachedFn) {}
+    
+private:
+    template <class T> friend class VtArray;
+    // Invoked when no more arrays share this data source.
+    void _ArraysDetached() { _detachedFn(this); }
+protected:
+    std::atomic<size_t> _refCount;
+    void (*_detachedFn)(Vt_ArrayForeignDataSource *self);
+};
+
+// Private base class helper for VtArray implementation.
+class Vt_ArrayBase
+{
+public:
+    Vt_ArrayBase() : _shapeData { 0 }, _foreignSource(nullptr) {}
+
+    Vt_ArrayBase(Vt_ArrayBase const &other) = default;
+    Vt_ArrayBase(Vt_ArrayBase &&other) : Vt_ArrayBase(other) {
+        other._shapeData.clear();
+        other._foreignSource = nullptr;
+    }
+
+    Vt_ArrayBase &operator=(Vt_ArrayBase const &other) = default;
+    Vt_ArrayBase &operator=(Vt_ArrayBase &&other) {
+        if (this == &other)
+            return *this;
+        *this = other;
+        other._shapeData.clear();
+        other._foreignSource = nullptr;
+        return *this;
+    }
+    
+protected:
+    // Control block header for native data representation.  Houses refcount and
+    // capacity.  For arrays with native data, this structure always lives
+    // immediately preceding the start of the array's _data in memory.  See
+    // _GetControlBlock() for details.
+    struct _ControlBlock {
+        _ControlBlock() : nativeRefCount(0), capacity(0) {}
+        _ControlBlock(size_t initCount, size_t initCap)
+            : nativeRefCount(initCount), capacity(initCap) {}
+        mutable std::atomic<size_t> nativeRefCount;
+        size_t capacity;
+    };
+    
+    _ControlBlock &_GetControlBlock(void *nativeData) {
+        TF_DEV_AXIOM(!_foreignSource);
+        return *(reinterpret_cast<_ControlBlock *>(nativeData) - 1);
+    }
+    
+    _ControlBlock const &_GetControlBlock(void *nativeData) const {
+        TF_DEV_AXIOM(!_foreignSource);
+        return *(reinterpret_cast<_ControlBlock *>(nativeData) - 1);
+    }
+
+    // Mutable ref count, as is standard.
+    std::atomic<size_t> &_GetNativeRefCount(void *nativeData) const {
+        return _GetControlBlock(nativeData).nativeRefCount;
+    }
+
+    size_t &_GetCapacity(void *nativeData) {
+        return _GetControlBlock(nativeData).capacity;
+    }
+    size_t const &_GetCapacity(void *nativeData) const {
+        return _GetControlBlock(nativeData).capacity;
+    }
+
+    Vt_ShapeData _shapeData;
+    Vt_ArrayForeignDataSource *_foreignSource;
+};
 
 /// \class VtArray 
 ///
@@ -110,10 +185,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \endcode
 ///
 template<typename ELEM>
-class VtArray {
-
-    typedef boost::container::vector<ELEM> _VecType;
-
+class VtArray : public Vt_ArrayBase {
   public:
 
     /// Type this array holds.
@@ -162,163 +234,270 @@ class VtArray {
 
     /// @}
 
-    /// Create a size=0 array.
-    VtArray() {}
+    /// Create an empty array.
+    VtArray() : _data(nullptr) {}
 
-    /// Create a size=n array.
-    explicit VtArray(unsigned int n)
-    {
-        resize(n);
+    /// Copy \p other.  The new array shares underlying data with \p other.
+    VtArray(VtArray const &other) : Vt_ArrayBase(other)
+                                  , _data(other._data) {
+        if (!_data)
+            return;
+
+        if (ARCH_LIKELY(!_foreignSource)) {
+            _GetNativeRefCount(_data).fetch_add(1, std::memory_order_relaxed);
+        }
+        else {
+            _foreignSource->_refCount.fetch_add(1, std::memory_order_relaxed);
+        }
+    }
+    
+    /// Move from \p other.  The new array takes ownership of \p other's
+    /// underlying data.
+    VtArray(VtArray &&other) : Vt_ArrayBase(std::move(other))
+                             , _data(other._data) {
+        other._data = nullptr;
     }
 
+    /// Copy assign from \p other.  This array shares underlying data with
+    /// \p other.
+    VtArray &operator=(VtArray const &other) {
+        // This might look recursive but it's really invoking move-assign, since
+        // we create a temporary copy (an rvalue).
+        if (this != &other)
+            *this = VtArray(other);
+        return *this;
+    }
+
+    /// Move assign from \p other.  This array takes ownership of \p other's
+    /// underlying data.
+    VtArray &operator=(VtArray &&other) {
+        if (this == &other)
+            return *this;
+        _DecRef();
+        static_cast<Vt_ArrayBase &>(*this) = std::move(other);
+        _data = other._data;
+        other._data = nullptr;
+        return *this;
+    }
+
+    /// Create an array filled with \p n copies of \p value.
+    explicit VtArray(size_t n, value_type const &value = value_type())
+        : VtArray() {
+        assign(n, value);
+    }
+
+    ~VtArray() { _DecRef(); }
+    
     /// \addtogroup STL_API
     /// @{
     
-    /// Return an iterator to the start of the array.  Iterators are
-    /// currently linear regardless of dimension.
+    /// Return a non-const iterator to the start of the array.  The underlying
+    /// data is copied if it is not uniquely owned.
     iterator begin() { return iterator(data()); }
-    /// Returns an iterator to the end of the array.  Iterators are
-    /// currently linear regardless of dimension.
+    /// Returns a non-const iterator to the end of the array.  The underlying
+    /// data is copied if it is not uniquely owned.
     iterator end() { return iterator(data() + size()); }
 
-    /// Return a const iterator to the start of the array.  Iterators
-    /// are currently linear regardless of dimension.
+    /// Return a const iterator to the start of the array.
     const_iterator begin() const { return const_iterator(data()); }
-    /// Return a const iterator to the end of the array.  Iterators are
-    /// currently linear regardless of dimension.
+    /// Return a const iterator to the end of the array.
     const_iterator end() const { return const_iterator(data() + size()); }
 
-    /// Return a const iterator to the start of the array.  Iterators
-    /// are currently linear regardless of dimension.
+    /// Return a const iterator to the start of the array.
     const_iterator cbegin() const { return begin(); }
-    /// Return a const iterator to the end of the array.  Iterators are
-    /// currently linear regardless of dimension.
+    /// Return a const iterator to the end of the array.
     const_iterator cend() const { return end(); }
 
-    /// Return a reverse iterator to the end of the array.  Iterators are
-    /// currently linear regardless of dimension.
+    /// Return a non-const reverse iterator to the end of the array.  The
+    /// underlying data is copied if it is not uniquely owned.
     reverse_iterator rbegin() { return reverse_iterator(end()); }
-    /// Return a reverse iterator to the start of the array.  Iterators
-    /// are currently linear regardless of dimension.
+    /// Return a reverse iterator to the start of the array.  The underlying
+    /// data is copied if it is not uniquely owned.
     reverse_iterator rend() { return reverse_iterator(begin()); }
 
     /// Return a const reverse iterator to the end of the array.
-    /// Iterators are currently linear regardless of dimension.
     const_reverse_iterator rbegin() const {
         return const_reverse_iterator(end());
     }
     /// Return a const reverse iterator to the start of the array.
-    /// Iterators are currently linear regardless of dimension.
     const_reverse_iterator rend() const {
         return const_reverse_iterator(begin());
     }
 
     /// Return a const reverse iterator to the end of the array.
-    /// Iterators are currently linear regardless of dimension.
     const_reverse_iterator crbegin() const { return rbegin(); }
     /// Return a const reverse iterator to the start of the array.
-    /// Iterators are currently linear regardless of dimension.
     const_reverse_iterator crend() const { return rend(); }
 
-    /// Return a pointer to this array's data.
-    pointer data() { _Detach(); return _data ? _data->vec.data() : NULL; }
+    /// Return a non-const pointer to this array's data.  The underlying data is
+    /// copied if it is not uniquely owned.
+    pointer data() { _DetachIfNotUnique(); return _data; }
     /// Return a const pointer to this array's data.
-    const_pointer data() const { return _data ? _data->vec.data() : NULL; }
+    const_pointer data() const { return _data; }
     /// Return a const pointer to the data held by this array.
-    const_pointer cdata() const { return data(); }
+    const_pointer cdata() const { return _data; }
 
-    /// Append an element to array.
+    /// Append an element to array.  The underlying data is first copied if it
+    /// is not uniquely owned.
     void push_back(ElementType const &elem) {
-        if (Vt_ArrayStackCheck(size(), _GetReserved())) {
-            if (!_data)
-                _data.reset(new _Data());
-            else
-                _Detach();
-
-            _Data *d = _data.get();
-            d->vec.push_back(elem);
+        // If this is a non-pxr array with rank > 1, disallow push_back.
+        if (ARCH_UNLIKELY(_shapeData.otherDims[0])) {
+            TF_CODING_ERROR("Array rank %u != 1", _shapeData.GetRank());
+            return;
         }
+        // If we don't own the data, or if we need more space, realloc.
+        size_t curSize = size();
+        if (ARCH_UNLIKELY(
+                _foreignSource || !_IsUnique() || curSize == capacity())) {
+            value_type *newData = _AllocateCopy(
+                _data, _CapacityForSize(curSize + 1), curSize);
+            _DecRef();
+            _data = newData;
+        }
+        // Copy the value.
+        ::new (static_cast<void*>(_data + curSize)) value_type(elem);
+        // Adjust size.
+        ++_shapeData.totalSize;
     }
 
-    /// Remove the last element of an array.
+    /// Remove the last element of an array.  The underlying data is first
+    /// copied if it is not uniquely owned.
     void pop_back() {
-        if (Vt_ArrayStackCheck(size(), _GetReserved())) {
-            _Detach();
-
-            _Data *d = _data.get();
-            d->vec.pop_back();
+        // If this is a presto array with rank > 1, disallow push_back.
+        if (ARCH_UNLIKELY(_shapeData.otherDims[0])) {
+            TF_CODING_ERROR("Array rank %u != 1", _shapeData.GetRank());
+            return;
         }
+        _DetachIfNotUnique();
+        // Invoke the destructor.
+        (_data + size() - 1)->~value_type();
+        // Adjust size.
+        --_shapeData.totalSize;
     }
 
     /// Return the total number of elements in this array.
-    size_t size() const { return _data ? _data->vec.size() : 0; }
+    size_t size() const { return _shapeData.totalSize; }
 
-    /// Equivalent to size() == 0.
-    bool empty() const { return size() == 0; }
-    
-    /// Ensure enough memory is allocated to hold \p num elements.
-    void reserve(size_t num) {
-        if (num >= size()) {
-            if (!_data)
-                _data.reset(new _Data);
-            else
-                _Detach();
-            _data->vec.reserve(num);
+    /// Return the number of items this container can grow to hold without
+    /// triggering a (re)allocation.  Note that if the underlying data is not
+    /// uniquely owned, a reallocation can occur upon object insertion even if
+    /// there is remaining capacity.
+    size_t capacity() const {
+        if (!_data) {
+            return 0;
         }
+        // We do not allow mutation to foreign source data, so always report
+        // foreign sourced arrays as at capacity.
+        return ARCH_UNLIKELY(_foreignSource) ? size() : _GetCapacity(_data);
     }
 
-    /// Return a reference to the first element in this array.  Invokes
+    /// Return true if this array contains no elements, false otherwise.
+    bool empty() const { return size() == 0; }
+    
+    /// Ensure enough memory is allocated to hold \p num elements.  Note that
+    /// this currently does not ensure that the underlying data is uniquely
+    /// owned.  If that is desired, invoke a method like data() first.
+    void reserve(size_t num) {
+        if (num <= capacity())
+            return;
+        
+        value_type *newData =
+            _data ? _AllocateCopy(_data, num, size()) : _AllocateNew(num);
+
+        _DecRef();
+        _data = newData;
+    }
+
+    /// Return a non-const reference to the first element in this array.  The
+    /// underlying data is copied if it is not uniquely owned.  Invokes
     /// undefined behavior if the array is empty.
     reference front() { return *begin(); }
-    /// Return a const reference to the first element in this array.
-    /// Invokes undefined behavior if the array is empty.
+    /// Return a const reference to the first element in this array.  Invokes
+    /// undefined behavior if the array is empty.
     const_reference front() const { return *begin(); }
 
-    /// Return a reference to the last element in this array.  Invokes
-    /// undefined behavior if the array is empty.
+    /// Return a reference to the last element in this array.  The underlying
+    /// data is copied if it is not uniquely owned.  Invokes undefined behavior
+    /// if the array is empty.
     reference back() { return *rbegin(); }
-    /// Return a const reference to the last element in this array.
-    /// Invokes undefined behavior if the array is empty.
+    /// Return a const reference to the last element in this array.  Invokes
+    /// undefined behavior if the array is empty.
     const_reference back() const { return *rbegin(); }
 
-    /// Resize this array.
-    /// Preserves existing data that remains, value-initializes any newly added
-    /// data.  For example, resize(10) on an array of size 5 would change the
-    /// size to 10, the first 5 elements would be left unchanged and the last
-    /// 5 elements would be value-initialized.
-    void resize(size_t num) {
-        if (size() == num) {
+    /// Resize this array.  Preserve existing elements that remain,
+    /// value-initialize any newly added elements.  For example, calling
+    /// resize(10) on an array of size 5 would change the size to 10, the first
+    /// 5 elements would be left unchanged and the last 5 elements would be
+    /// value-initialized.
+    void resize(size_t newSize) {
+        const size_t oldSize = size();
+        if (oldSize == newSize) {
             return;
         }
-        if (num == 0) {
+        if (newSize == 0) {
             clear();
             return;
         }
 
-        TfAutoMallocTag tag("VtArray::reshape");
+        const bool growing = newSize > oldSize;
+        value_type *newData = _data;
 
-        if (!_data)
-            _data.reset(new _Data);
-
-        if (_data->IsUnique()) {
-            _data->vec.resize(num);
-        } else {
-            // Detach from existing vec and copy contents.
-            _DataPtr newData(new _Data(*_data, _NoValues()));
-            if (num != 0) {
-                size_t numToCopy = std::min(num, _data->vec.size());
-                newData->vec.resize(num);
-                std::copy(_data->vec.begin(), _data->vec.begin() + numToCopy,
-                          newData->vec.begin());
+        if (!_data) {
+            // Allocate newSize elements and initialize.
+            newData = _AllocateNew(newSize);
+            std::uninitialized_fill_n(newData, newSize, value_type());
+        }
+        else if (_IsUnique()) {
+            if (growing) {
+                if (newSize > _GetCapacity(_data)) {
+                    newData = _AllocateCopy(_data, newSize, oldSize);
+                }
+                // fill with newly added elements from oldSize to newSize.
+                std::uninitialized_fill(
+                    newData + oldSize, newData + newSize, value_type());
             }
+            else {
+                // destroy removed elements
+                for (auto *cur = newData + newSize,
+                         *end = newData + oldSize; cur != end; ++cur) {
+                    cur->~value_type();
+                }
+            }
+        }
+        else {
+            newData =
+                _AllocateCopy(_data, newSize, growing ? oldSize : newSize);
+            if (growing) {
+                // fill with newly added elements from oldSize to newSize.
+                std::uninitialized_fill(
+                    newData + oldSize, newData + newSize, value_type());
+            }
+        }
+
+        // If we created new data, clean up the old and move over to the new.
+        if (newData != _data) {
+            _DecRef();
             _data = newData;
         }
+        // Adjust size.
+        _shapeData.totalSize = newSize;
     }        
 
     /// Equivalent to resize(0).
-    void clear()
-    {
-        _data.reset();
+    void clear() {
+        if (!_data)
+            return;
+        if (_IsUnique()) {
+            // Clear out elements, run dtors, keep capacity.
+            for (value_type *p = _data, *e = _data + size(); p != e; ++p) {
+                p->~value_type();
+            }
+        }
+        else {
+            // Detach to empty.
+            _DecRef();
+        }
+        _shapeData.totalSize = 0;
     }
 
     /// Assign array contents.
@@ -346,7 +525,9 @@ class VtArray {
 
     /// Swap the contents of this array with \p other.
     void swap(VtArray &other) { 
-        _data.swap(other._data);
+        std::swap(_data, other._data);
+        std::swap(_shapeData, other._shapeData);
+        std::swap(_foreignSource, other._foreignSource);
     }
 
     /// @}
@@ -364,15 +545,17 @@ class VtArray {
     /// Tests if two arrays are identical, i.e. that they share
     /// the same underlying copy-on-write data.  See also operator==().
     bool IsIdentical(VtArray const & other) const {
-        return _data == other._data;
+        return
+            _data == other._data &&
+            _shapeData == other._shapeData &&
+            _foreignSource == other._foreignSource;
     }
 
     /// Tests two arrays for equality.  See also IsIdentical().
     bool operator == (VtArray const & other) const {
-        return IsIdentical(other) || 
-            (Vt_ArrayCompareSize(size(), _GetReserved(),
-                                 other.size(), other._GetReserved()) &&
-             std::equal(begin(), end(), other.begin()));
+        return IsIdentical(other) ||
+            (*_GetShapeData() == *other._GetShapeData() &&
+             std::equal(cbegin(), cend(), other.cbegin()));
     }
 
     /// Tests two arrays for inequality.
@@ -393,17 +576,12 @@ ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
 ARCH_PRAGMA_POP
 
   public:
-    // XXX -- Public so VtValue::_ArrayHelper<T,U>::GetReserved() has access.
-    Vt_Reserved* _GetReserved() {
-        if (!_data) {
-            _data.reset(new _Data);
-        } else {
-            _Detach();
-        }
-        return &_data->reserved;
+    // XXX -- Public so VtValue::_ArrayHelper<T,U>::GetShapeData() has access.
+    Vt_ShapeData const *_GetShapeData() const {
+        return &_shapeData;
     }
-    const Vt_Reserved* _GetReserved() const {
-        return _data ? &_data->reserved : 0;
+    Vt_ShapeData *_GetShapeData() {
+        return &_shapeData;
     }
 
   private:
@@ -423,7 +601,7 @@ ARCH_PRAGMA_POP
     /// Outputs a comma-separated list of the values in the array.
     friend std::ostream &operator <<(std::ostream &out, const VtArray &self) {
         VtArray::_Streamer streamer(self.cdata());
-        VtStreamOutArray(&streamer, self.size(), self._GetReserved(), out);
+        VtStreamOutArray(&streamer, self.size(), self._GetShapeData(), out);
         return out;
     }
 
@@ -432,48 +610,78 @@ ARCH_PRAGMA_POP
         lhs.swap(rhs);
     }
 
-    void _Detach() {
-        if (_data && !_data->IsUnique())
-            _data.reset(new _Data(*_data));
+    void _DetachIfNotUnique() {
+        if (_IsUnique())
+            return;
+        // Copy to local.
+        auto *newData = _AllocateCopy(_data, size(), size());
+        _DecRef();
+        _data = newData;
     }
 
-    struct _NoValues {};
-    struct _Data {
+    inline bool _IsUnique() const {
+        return !_data ||
+            (ARCH_LIKELY(!_foreignSource) && _GetNativeRefCount(_data) == 1);
+    }
 
-        _Data() : _refCount(0) {}
-
-        _Data(_Data const &other) 
-            : vec(other.vec), reserved(other.reserved), _refCount(0) {}
-
-        _Data(_Data const &other, _NoValues) 
-            : reserved(other.reserved), _refCount(0) {}
-
-        _Data &operator=(_Data const &other) {
-            vec = other.vec;
-            reserved = other.reserved;
-            return *this;
+    inline size_t _CapacityForSize(size_t sz) const {
+        // Currently just successive powers of two.
+        size_t cap = 1;
+        while (cap < sz) {
+            cap += cap;
         }
+        return cap;
+    }
 
-        bool IsUnique() const { return _refCount == 1; }
+    value_type *_AllocateNew(size_t capacity) {
+        TfAutoMallocTag2 tag("VtArray::_AllocateNew", __ARCH_PRETTY_FUNCTION__);
+        // Need space for the control block and capacity elements.
+        void *data = malloc(
+            sizeof(_ControlBlock) + capacity * sizeof(value_type));
+        // Placement-new a control block.
+        ::new (data) _ControlBlock(/*count=*/1, capacity);
+        // Data starts after the block.
+        return reinterpret_cast<value_type *>(
+            static_cast<_ControlBlock *>(data) + 1);
+    }
 
-        _VecType vec;
-        Vt_Reserved reserved;
+    value_type *_AllocateCopy(value_type *src, size_t newCapacity,
+                              size_t numToCopy) {
+        // Allocate and copy elements.
+        value_type *newData = _AllocateNew(newCapacity);
+        std::uninitialized_copy(src, src + numToCopy, newData);
+        return newData;
+    }
 
-    private:
-        mutable std::atomic<size_t> _refCount;
-
-        friend inline void intrusive_ptr_add_ref(_Data const *d) {
-            d->_refCount++;
+    void _DecRef() {
+        if (!_data)
+            return;
+        if (ARCH_LIKELY(!_foreignSource)) {
+            // Drop the refcount.  If we take it to zero, destroy the data.
+            if (_GetNativeRefCount(_data).fetch_sub(
+                    1, std::memory_order_release) == 1) {
+                std::atomic_thread_fence(std::memory_order_acquire);
+                for (value_type *p = _data, *e = _data + _shapeData.totalSize;
+                     p != e; ++p) {
+                    p->~value_type();
+                }
+                free(std::addressof(_GetControlBlock(_data)));
+            }
         }
-        friend inline void intrusive_ptr_release(_Data const *d) {
-            if (--d->_refCount == 0)
-                delete d;
+        else {
+            // Drop the refcount in the foreign source.  If we take it to zero,
+            // invoke the function pointer to alert the foreign source.
+            if (_foreignSource->_refCount.fetch_sub(
+                    1, std::memory_order_release) == 1) {
+                std::atomic_thread_fence(std::memory_order_acquire);
+                _foreignSource->_ArraysDetached();
+            }
         }
-    };
-
-    typedef boost::intrusive_ptr<_Data> _DataPtr;
-
-    _DataPtr _data;
+        _foreignSource = nullptr;
+        _data = nullptr;
+    }
+    
+    value_type *_data;
 };
 
 template <class ELEM>

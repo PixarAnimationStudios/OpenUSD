@@ -210,6 +210,14 @@ public:
                                          const UsdTimeCode &time,
                                          VtVec3fArray *extent);
 
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    static bool ComputeExtentFromPlugins(const UsdGeomBoundable &boundable,
+                                         const UsdTimeCode &time,
+                                         const GfMatrix4d &transform,
+                                         VtVec3fArray *extent);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

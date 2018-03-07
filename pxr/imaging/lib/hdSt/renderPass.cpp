@@ -149,8 +149,10 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     if (collectionChanged) {
         HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
         TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
+                                            "(repr = %s)"
                                             "version: %d -> %d\n", 
                                              collection.GetName().GetText(),
+                                             collection.GetReprName().GetText(),
                                              _collectionVersion,
                                              collectionVersion);
 

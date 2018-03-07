@@ -45,6 +45,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static HdRenderPassStateSharedPtr
+_InitIdRenderPassState(HdRenderIndex *index)
+{
+    HdRenderPassStateSharedPtr rps =
+        index->GetRenderDelegate()->CreateRenderPassState();
+
+    if (HdStRenderPassState* extendedState =
+            dynamic_cast<HdStRenderPassState*>(
+                rps.get())) {
+        extendedState->SetRenderPassShader(
+            boost::make_shared<HdStRenderPassShader>(
+                HdxPackageRenderPassIdShader()));
+    }
+
+    return rps;
+}
 
 HdxIntersector::HdxIntersector(HdRenderIndex *index)
     : _index(index)
@@ -59,19 +75,18 @@ HdxIntersector::_Init(GfVec2i const& size)
     HdRprimCollection col(HdTokens->geometry, HdTokens->hull);
     _pickableRenderPass = 
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
-    _unpickableRenderPass = 
+    _occluderRenderPass = 
         _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
-    // initialize renderPassState with ID render shader
-    _pickableRenderPassState = boost::make_shared<HdStRenderPassState>(
-        boost::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
-
-    // Turn off color writes for the unpickables (we only want to condition the
-    // depth buffer)
-    _unpickableRenderPassState = boost::make_shared<HdStRenderPassState>(
-        boost::make_shared<HdStRenderPassShader>(HdxPackageRenderPassIdShader()));
-    _unpickableRenderPassState->SetColorMaskUseDefault(false);
-    _unpickableRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
+    // initialize renderPassStates with ID render shader
+    _pickableRenderPassState = _InitIdRenderPassState(_index);
+    _occluderRenderPassState = _InitIdRenderPassState(_index);
+    // Turn off color writes for the occluders, wherein we want to only
+    // condition the depth buffer and not write out any IDs.
+    // XXX: This is a hacky alternative to using a different shader mixin to
+    // accomplish the same thing.
+    _occluderRenderPassState->SetColorMaskUseDefault(false);
+    _occluderRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.
@@ -99,26 +114,15 @@ HdxIntersector::_Init(GfVec2i const& size)
         _drawTarget->AddAttachment(
             "elementId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
         _drawTarget->AddAttachment(
+            "edgeId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
+        _drawTarget->AddAttachment(
+            "pointId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
+        _drawTarget->AddAttachment(
             "depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8);
             //"depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
 
         _drawTarget->Unbind();
     }
-}
-
-void HdxNoDepthMask()
-{
-    // The depth mask is expected to render something, which is used to
-    // condition the stencil buffer -- whatever gets rendered is available for
-    // picking. Here, we want everything to be available for picking, so we
-    // could render a full-screen primitive, but clearing the stencil buffer is
-    // much simpler.
-    
-    // Clear the stencil buffer to 1.0 to enable all following stencil tests to
-    // pass.
-    glClearStencil(1);
-    glClear(GL_STENCIL_BUFFER_BIT);
-    glClearStencil(0);
 }
 
 void
@@ -150,6 +154,54 @@ HdxIntersector::SetResolution(GfVec2i const& widthHeight)
         _drawTarget->Bind();
         _drawTarget->SetSize(widthHeight);
         _drawTarget->Unbind();
+    }
+}
+
+void
+HdxIntersector::_ConditionStencilWithGLCallback(DepthMaskCallback maskCallback)
+{
+    // Setup stencil state and prevent writes to color buffer.
+    // We don't use the pickable/unpickable render pass state below, since
+    // the callback uses immediate mode GL, and doesn't conform to Hydra's
+    // command buffer based execution philosophy.
+    {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, 1, 1);
+        glStencilOp(GL_KEEP,     // stencil failed
+                    GL_KEEP,     // stencil passed, depth failed
+                    GL_REPLACE); // stencil passed, depth passed
+    }
+    
+    //
+    // Condition the stencil buffer.
+    //
+    maskCallback();
+
+    // We expect any GL state changes are restored.
+    {
+        // Clear depth incase the depthMaskCallback pollutes the depth buffer.
+        glClear(GL_DEPTH_BUFFER_BIT);
+        // Restore color outputs & setup state for rendering
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glDisable(GL_CULL_FACE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glFrontFace(GL_CCW);
+    }
+    
+    // Update the stencil state for the render passes
+    {
+        HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
+                                               _occluderRenderPassState};
+        for (auto& state : states) {
+            state->SetStencilEnabled(true);
+            state->SetStencil(HdCmpFuncLess,
+                            /*ref=*/0,
+                            /*mask=*/1,
+                            /*sFail*/HdStencilOpKeep,
+                            /*sPassZFail*/HdStencilOpKeep,
+                            /*sPassZPass*/HdStencilOpKeep);
+        }
     }
 }
 
@@ -224,27 +276,13 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         // context, which may not be the case at constructon time.
         _Init(GfVec2i(128,128));
     }
-
-    GfVec2i size(_drawTarget->GetSize());
-    GfVec4i viewport(0, 0, size[0], size[1]);
-
     if (!TF_VERIFY(_pickableRenderPass) || 
-        !TF_VERIFY(_unpickableRenderPass)) {
+        !TF_VERIFY(_occluderRenderPass)) {
         return false;
     }
 
-    // Setup state based on incoming params.
-    _pickableRenderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _pickableRenderPassState->SetClipPlanes(params.clipPlanes);
-    _pickableRenderPassState->SetCullStyle(params.cullStyle);
-    _pickableRenderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
-    _pickableRenderPassState->SetLightingEnabled(false);
-
-    _unpickableRenderPassState->SetAlphaThreshold(params.alphaThreshold);
-    _unpickableRenderPassState->SetClipPlanes(params.clipPlanes);
-    _unpickableRenderPassState->SetCullStyle(params.cullStyle);
-    _unpickableRenderPassState->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
-    _unpickableRenderPassState->SetLightingEnabled(false);
+    GfVec2i size(_drawTarget->GetSize());
+    GfVec4i viewport(0, 0, size[0], size[1]);
 
     // Use a separate drawTarget (framebuffer object) for each GL context
     // that uses this renderer, but the drawTargets share attachments/textures.
@@ -259,11 +297,14 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     //
     // Setup GL raster state
     //
-
-    GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0,
+    // XXX: We should use the pickMode param to bind only the attachments
+    // that are necessary. This should affect the shader code generated as well.
+    GLenum drawBuffers[5] = { GL_COLOR_ATTACHMENT0,
                               GL_COLOR_ATTACHMENT1,
-                              GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, drawBuffers);
+                              GL_COLOR_ATTACHMENT2,
+                              GL_COLOR_ATTACHMENT3,
+                              GL_COLOR_ATTACHMENT4};
+    glDrawBuffers(5, drawBuffers);
     
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_BLEND);
@@ -287,30 +328,28 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
         GLuint vao;
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
-        // Setup stencil state and prevent writes to color buffer.
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, 1, 1);
-        glStencilOp(GL_KEEP,     // stencil failed
-                    GL_KEEP,     // stencil passed, depth failed
-                    GL_REPLACE); // stencil passed, depth passed
 
-        //
-        // Condition the stencil buffer.
-        //
-        params.depthMaskCallback();
-        // we expect any GL state changes are restored.
+        bool needStencilConditioning = (params.depthMaskCallback != nullptr);
 
-        // Disable stencil updates and setup the stencil test.
-        glStencilFunc(GL_LESS, 0, 1);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        // Clear depth incase the depthMaskCallback pollutes the depth buffer.
-        glClear(GL_DEPTH_BUFFER_BIT);
-        // Restore color outputs & setup state for rendering
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glDisable(GL_CULL_FACE);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glFrontFace(GL_CCW);
+        if (needStencilConditioning) {
+            _ConditionStencilWithGLCallback(params.depthMaskCallback);
+        } else {
+            // disable stencil
+            _pickableRenderPassState->SetStencilEnabled(false);
+            _occluderRenderPassState->SetStencilEnabled(false);
+        }
+        
+
+        // Update render pass states based on incoming params.
+        HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
+                                               _occluderRenderPassState};
+        for (auto& state : states) {
+            state->SetAlphaThreshold(params.alphaThreshold);
+            state->SetClipPlanes(params.clipPlanes);
+            state->SetCullStyle(params.cullStyle);
+            state->SetCamera(params.viewMatrix, params.projectionMatrix, viewport);
+            state->SetLightingEnabled(false);
+        }
 
         //
         // Enable conservative rasterization, if available.
@@ -325,18 +364,51 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
 
         HdTaskSharedPtrVector tasks;
         //
-        // Unpickable prims (condition the depth buffer so they can occlude,
-        // but don't write to the attachments of the draw target)
-        //
-        if (pickablesCol.GetExcludePaths().size() > 0)
-        {
-            HdRprimCollection unpickablesCol = 
+        // For point picking, the caller is expected to have set the "points"
+        // repr on the collection, and thus we won't get occlusion. In this
+        // case, we render the hull of the pickables and unpickables to account
+        // for occlusion, and then do the ID render pass.
+        // 
+        // In all other cases, if we have unpickable prims, we swap the include
+        // and exclude paths of the input collection and render the resulting
+        // prims into the depth buffer.
+        const bool pickPoints = (params.pickMode == HdxIntersector::PickPoints);
+        const bool hasUnpickables = (!pickablesCol.GetExcludePaths().empty());
+
+        if (pickPoints) {
+            HdRprimCollection occluderCol = pickablesCol;
+            // While we'd prefer not to override/use repr's configured by Hydra
+            // (in this case, the HdRenderIndex), we make an exception here.
+            // 'hull' is used because point picking on meshes works only when
+            // unrefined.
+            occluderCol.SetReprName(HdTokens->hull);
+            if (!occluderCol.GetExcludePaths().empty()) {
+                // add the "unpickables" to the prims rendered to the depth
+                // buffer
+                SdfPathVector netIncludePaths = occluderCol.GetRootPaths();
+                SdfPathVector const& excludePaths = 
+                    occluderCol.GetExcludePaths();
+                netIncludePaths.insert(netIncludePaths.end(),
+                                       excludePaths.begin(),
+                                       excludePaths.end());
+                occluderCol.SetRootPaths(netIncludePaths);
+            }
+
+            _occluderRenderPass->SetRprimCollection(occluderCol);
+            
+            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                    _occluderRenderPass,
+                    _occluderRenderPassState,
+                    params.renderTags));
+
+        } else if (hasUnpickables) {
+            HdRprimCollection occluderCol =
                 pickablesCol.CreateInverseCollection();
-            _unpickableRenderPass->SetRprimCollection(unpickablesCol);
+            _occluderRenderPass->SetRprimCollection(occluderCol);
 
             tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                    _unpickableRenderPass,
-                    _unpickableRenderPassState,
+                    _occluderRenderPass,
+                    _occluderRenderPassState,
                     params.renderTags));
         }
         
@@ -374,6 +446,8 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     std::unique_ptr<unsigned char[]> primId(new unsigned char[len*4]);
     std::unique_ptr<unsigned char[]> instanceId(new unsigned char[len*4]);
     std::unique_ptr<unsigned char[]> elementId(new unsigned char[len*4]);
+    std::unique_ptr<unsigned char[]> edgeId(new unsigned char[len*4]);
+    std::unique_ptr<unsigned char[]> pointId(new unsigned char[len*4]);
     std::unique_ptr<float[]> depths(new float[len]);
 
     glBindTexture(GL_TEXTURE_2D,
@@ -389,6 +463,14 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &elementId[0]);
 
     glBindTexture(GL_TEXTURE_2D,
+        drawTarget->GetAttachments().at("edgeId")->GetGlTextureName());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &edgeId[0]);
+    
+    glBindTexture(GL_TEXTURE_2D,
+        drawTarget->GetAttachments().at("pointId")->GetGlTextureName());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pointId[0]);
+
+    glBindTexture(GL_TEXTURE_2D,
         drawTarget->GetAttachments().at("depth")->GetGlTextureName());
     glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
                     &depths[0]);
@@ -400,7 +482,8 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     if (result) {
         *result = HdxIntersector::Result(
             std::move(primId), std::move(instanceId), std::move(elementId),
-            std::move(depths), _index, params, viewport);
+            std::move(edgeId), std::move(pointId), std::move(depths),
+            _index, params, viewport);
     }
 
     drawTarget->Unbind();
@@ -418,6 +501,8 @@ HdxIntersector::Result::Result()
 HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
                         std::unique_ptr<unsigned char[]> instanceIds,
                         std::unique_ptr<unsigned char[]> elementIds,
+                        std::unique_ptr<unsigned char[]> edgeIds,
+                        std::unique_ptr<unsigned char[]> pointIds,
                         std::unique_ptr<float[]> depths,
                         HdRenderIndex const *index,
                         HdxIntersector::Params params,
@@ -425,6 +510,8 @@ HdxIntersector::Result::Result(std::unique_ptr<unsigned char[]> primIds,
     : _primIds(std::move(primIds))
     , _instanceIds(std::move(instanceIds))
     , _elementIds(std::move(elementIds))
+    , _edgeIds(std::move(edgeIds))
+    , _pointIds(std::move(pointIds))
     , _depths(std::move(depths))
     , _index(index)
     , _params(params)
@@ -450,6 +537,8 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     unsigned char const* primIds = _primIds.get();
     unsigned char const* instanceIds = _instanceIds.get();
     unsigned char const* elementIds = _elementIds.get();
+    unsigned char const* edgeIds = _edgeIds.get();
+    unsigned char const* pointIds = _pointIds.get();
 
     GfVec3d hitPoint(0,0,0);
     gluUnProject(x, y, z,
@@ -462,17 +551,21 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
 
     int idIndex = index*4;
 
-    int primId = HdxRenderSetupTask::DecodeIDRenderColor(&primIds[idIndex]);
+    int primId = HdxIntersector::DecodeIDRenderColor(&primIds[idIndex]);
     hit->objectId = _index->GetRprimPathFromPrimId(primId);
 
     if (!hit->IsValid()) {
         return false;
     }
 
-    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int instanceIndex = HdxIntersector::DecodeIDRenderColor(
             &instanceIds[idIndex]);
-    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int elementIndex = HdxIntersector::DecodeIDRenderColor(
             &elementIds[idIndex]);
+    int edgeIndex = HdxIntersector::DecodeIDRenderColor(
+            &edgeIds[idIndex]);
+    int pointIndex = HdxIntersector::DecodeIDRenderColor(
+            &pointIds[idIndex]);
 
     bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
                                                            &(hit->delegateId),
@@ -485,7 +578,9 @@ HdxIntersector::Result::_ResolveHit(int index, int x, int y, float z,
     hit->worldSpaceHitPoint = GfVec3f(hitPoint);
     hit->ndcDepth = float(z);
     hit->instanceIndex = instanceIndex;
-    hit->elementIndex = elementIndex; 
+    hit->elementIndex = elementIndex;
+    hit->edgeIndex = edgeIndex;
+    hit->pointIndex = pointIndex;
 
     if (TfDebug::IsEnabled(HDX_INTERSECT)) {
         std::cout << *hit << std::endl;
@@ -500,20 +595,28 @@ HdxIntersector::Result::_GetHash(int index) const
     unsigned char const* primIds = _primIds.get();
     unsigned char const* instanceIds = _instanceIds.get();
     unsigned char const* elementIds = _elementIds.get();
+    unsigned char const* edgeIds = _edgeIds.get();
+    unsigned char const* pointIds = _pointIds.get();
 
     int idIndex = index*4;
 
-    int primId = HdxRenderSetupTask::DecodeIDRenderColor(
+    int primId = HdxIntersector::DecodeIDRenderColor(
             &primIds[idIndex]);
-    int instanceIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int instanceIndex = HdxIntersector::DecodeIDRenderColor(
             &instanceIds[idIndex]);
-    int elementIndex = HdxRenderSetupTask::DecodeIDRenderColor(
+    int elementIndex = HdxIntersector::DecodeIDRenderColor(
             &elementIds[idIndex]);
+    int edgeIndex = HdxIntersector::DecodeIDRenderColor(
+            &edgeIds[idIndex]);
+    int pointIndex = HdxIntersector::DecodeIDRenderColor(
+            &pointIds[idIndex]);
 
     size_t hash = 0;
     boost::hash_combine(hash, primId);
     boost::hash_combine(hash, instanceIndex);
     boost::hash_combine(hash, elementIndex);
+    boost::hash_combine(hash, size_t(edgeIndex));
+    boost::hash_combine(hash, size_t(pointIndex));
 
     return hash;
 }
@@ -636,6 +739,8 @@ HdxIntersector::Hit::GetHash() const
     boost::hash_combine(hash, instancerId);
     boost::hash_combine(hash, instanceIndex);
     boost::hash_combine(hash, elementIndex);
+    boost::hash_combine(hash, edgeIndex);
+    boost::hash_combine(hash, pointIndex);
     boost::hash_combine(hash, worldSpaceHitPoint[0]);
     boost::hash_combine(hash, worldSpaceHitPoint[1]);
     boost::hash_combine(hash, worldSpaceHitPoint[2]);
@@ -654,6 +759,8 @@ HdxIntersector::Hit::HitSetHash::operator()(Hit const& hit) const
     boost::hash_combine(hash, hit.instancerId.GetHash());
     boost::hash_combine(hash, hit.instanceIndex);
     boost::hash_combine(hash, hit.elementIndex);
+    boost::hash_combine(hash, hit.edgeIndex);
+    boost::hash_combine(hash, hit.pointIndex);
 
     return hash;
 }
@@ -665,7 +772,9 @@ HdxIntersector::Hit::HitSetEq::operator()(Hit const& a, Hit const& b) const
        && a.objectId == b.objectId
        && a.instancerId == b.instancerId
        && a.instanceIndex == b.instanceIndex
-       && a.elementIndex == b.elementIndex;
+       && a.elementIndex == b.elementIndex
+       && a.edgeIndex == b.edgeIndex
+       && a.pointIndex == b.pointIndex;
 }
 
 bool
@@ -682,6 +791,8 @@ HdxIntersector::Hit::operator==(Hit const& lhs) const
        && instancerId == lhs.instancerId
        && instanceIndex == lhs.instanceIndex
        && elementIndex == lhs.elementIndex
+       && edgeIndex == lhs.edgeIndex
+       && pointIndex == lhs.pointIndex
        && worldSpaceHitPoint == lhs.worldSpaceHitPoint
        && ndcDepth == lhs.ndcDepth;
 }
@@ -694,6 +805,8 @@ operator<<(std::ostream& out, HdxIntersector::Hit const & h)
         << "Instancer: <" << h.instancerId << "> "
         << "Instance: [" << h.instanceIndex << "] "
         << "Element: [" << h.elementIndex << "] "
+        << "Edge: [" << h.edgeIndex  << "] "
+        << "Point: [" << h.pointIndex  << "] "
         << "HitPoint: (" << h.worldSpaceHitPoint << ") "
         << "Depth: (" << h.ndcDepth << ") ";
     return out;

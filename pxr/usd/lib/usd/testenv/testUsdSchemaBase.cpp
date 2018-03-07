@@ -26,6 +26,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/clipsAPI.h"
+#include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/schemaBase.h"
 
@@ -131,14 +132,32 @@ TestPrimQueries()
     assert(!prim.HasAPI<UsdModelAPI>());
     
     printf("--------Applying UsdModelAPI -------\n");
-    UsdModelAPI::Apply(stage, path);
+    UsdModelAPI::Apply(prim);
     assert(!prim.HasAPI<UsdClipsAPI>());
     assert(prim.HasAPI<UsdModelAPI>());
 
     printf("--------Applying UsdClipsAPI -------\n");
-    UsdClipsAPI::Apply(stage, path);
+    UsdClipsAPI::Apply(prim);
     assert(prim.HasAPI<UsdClipsAPI>());
     assert(prim.HasAPI<UsdModelAPI>());
+
+    UsdCollectionAPI coll = UsdCollectionAPI::ApplyCollection(prim, 
+            TfToken("testColl"));
+    assert(prim.HasAPI<UsdCollectionAPI>());
+
+    assert(prim.HasAPI<UsdCollectionAPI>(
+            /*instanceName*/ TfToken("testColl")));
+
+    assert(!prim.HasAPI<UsdCollectionAPI>(
+            /*instanceName*/ TfToken("nonExistentColl")));
+
+    std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
+    TfErrorMark mark;
+    // Passing in a non-empty instance name with a single-apply API schema like
+    // ModelAPI results in a coding error
+    assert(!prim.HasAPI<UsdModelAPI>(/*instanceName*/ TfToken("instance")));
+    TF_VERIFY(!mark.IsClean());
+    std::cerr << "--- END EXPECTED ERROR --" << std::endl;
 }
 
 int main(int argc, char** argv)

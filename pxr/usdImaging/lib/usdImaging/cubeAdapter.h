@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_CUBE_ADAPTER_H
 #define USDIMAGING_CUBE_ADAPTER_H
 
+/// \file usdImaging/cubeAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"

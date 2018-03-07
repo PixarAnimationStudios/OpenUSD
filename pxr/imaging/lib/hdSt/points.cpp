@@ -71,9 +71,8 @@ HdStPoints::Sync(HdSceneDelegate* delegate,
                   forcedRepr,
                   dirtyBits);
 
-    TfToken calcReprName = _GetReprName(delegate, reprName,
-                                        forcedRepr, dirtyBits);
-    _GetRepr(delegate, calcReprName, dirtyBits);
+    TfToken calcReprName = _GetReprName(reprName, forcedRepr);
+    _UpdateRepr(delegate, calcReprName, dirtyBits);
 
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
@@ -125,40 +124,38 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     TF_VERIFY(drawItem->GetConstantPrimVarRange());
 }
 
-HdReprSharedPtr const &
-HdStPoints::_GetRepr(HdSceneDelegate *sceneDelegate,
-                     TfToken const &reprName,
-                     HdDirtyBits *dirtyBits)
+void
+HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                        TfToken const &reprName,
+                        HdDirtyBits *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _PointsReprConfig::DescArray descs = _GetReprDesc(reprName);
+    // XXX: We only support smoothHull for now
+    _PointsReprConfig::DescArray descs = _GetReprDesc(HdTokens->smoothHull);
+    HdReprSharedPtr const &curRepr = _smoothHullRepr;
 
-    _ReprVector::iterator it = _reprs.begin();
-    if (_reprs.empty()) {
-        // Hydra should have called _InitRepr earlier in sync when
-        // before sending dirty bits to the delegate.
-        TF_CODING_ERROR("_InitRepr() should be called for repr %s.",
-                        reprName.GetText());
-
-        static const HdReprSharedPtr ERROR_RETURN;
-
-        return ERROR_RETURN;
+    if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
+        std::cout << "HdStPoints::_UpdateRepr " << GetId()
+                  << " Repr = " << HdTokens->smoothHull << "\n";
+        HdChangeTracker::DumpDirtyBits(*dirtyBits);
     }
 
-    // points don't have multiple draw items (for now)
-    if (HdChangeTracker::IsDirty(*dirtyBits)) {
-        if (descs[0].geomStyle != HdPointsGeomStyleInvalid) {
-            HdStDrawItem *drawItem =
-                static_cast<HdStDrawItem*>(_reprs[0].second->GetDrawItem(0));
-            _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
+    int drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+        const HdPointsReprDesc &desc = descs[descIdx];
+
+        if (desc.geomStyle != HdPointsGeomStyleInvalid) {
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                curRepr->GetDrawItem(drawItemIndex++));
+            if (HdChangeTracker::IsDirty(*dirtyBits)) {
+                _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
+            }
         }
-
-        *dirtyBits &= ~HdChangeTracker::NewRepr;
     }
 
-    return it->second;
+    *dirtyBits &= ~HdChangeTracker::NewRepr;
 }
 
 void
@@ -274,28 +271,33 @@ void
 HdStPoints::_InitRepr(TfToken const &reprName,
                       HdDirtyBits *dirtyBits)
 {
-    _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprName);
+    // We only support smoothHull for now, everything else points to it.
+    // TODO: Handle other styles
+    if (!_smoothHullRepr) {
+        _smoothHullRepr = HdReprSharedPtr(new HdRepr());
+        *dirtyBits |= HdChangeTracker::NewRepr;
 
-    if (_reprs.empty()) {
-        _reprs.emplace_back(reprName, boost::make_shared<HdRepr>());
-
-        HdReprSharedPtr &repr = _reprs.back().second;
-
+        _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprName);
         // allocate all draw items
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
             const HdPointsReprDesc &desc = descs[descIdx];
 
             if (desc.geomStyle != HdPointsGeomStyleInvalid) {
                 HdDrawItem *drawItem = new HdStDrawItem(&_sharedData);
-                repr->AddDrawItem(drawItem);
+                _smoothHullRepr->AddDrawItem(drawItem);
             }
         }
-
-        *dirtyBits |= HdChangeTracker::NewRepr;
     }
-
+     
+    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+                                            _ReprComparator(reprName));
+    bool isNew = it == _reprs.end();
+    if (isNew) {
+        // add new repr
+        it = _reprs.insert(_reprs.end(),
+            std::make_pair(reprName, _smoothHullRepr));
+    }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -75,11 +75,44 @@ typedef std::unordered_map<TfToken,
 
 /// \class HdRenderIndex
 ///
-/// The mapping from client scenegraph to the render engine's scene.
-///
-/// The HdRenderIndex only tracks primitives that result in draw calls and
-/// relies on the HdSceneDelegate to provide any hierarchical or other
-/// computed values.
+/// The Hydra render index is a flattened representation of the client scene 
+/// graph, which may be composed of several self-contained scene graphs, each of
+/// which provides a HdSceneDelegate adapter for data access.
+/// 
+/// Thus, multiple HdSceneDelegate's may be tied to the same HdRenderIndex.
+/// 
+/// The render index, however, is tied to a single HdRenderDelegate, which
+/// handles the actual creation and deletion of Hydra scene primitives. These
+/// include geometry and non-drawable objects (such as the camera and texture
+/// buffers). The render index simply holds a handle to these primitives, and 
+/// tracks any changes to them via the HdChangeTracker. 
+/// It also tracks computations and tasks that may update resources and render a
+/// subset of the renderable primitives.
+/// 
+/// The render index orchestrates the "syncing" of scene primitives, by
+/// providing the relevant scene delegate for data access, and leaves resource
+/// management to the rendering backend (via HdResourceRegistry).
+/// 
+/// It also provides "execution" functionality for application facing Hydra
+/// concepts (such as HdTask/HdRenderPass) in computing the set of HdDrawItems
+/// for a given HdRprimCollection, for rendering.
+/// 
+/// \sa
+/// HdChangeTracker
+/// HdDrawItem
+/// HdRenderDelegate
+/// HdRprimCollection
+/// HdSceneDelegate
+/// 
+/// \note
+/// The current design ties a HdRenderIndex to a HdRenderDelegate.
+/// However, the HdRenderIndex isn't tied to a viewer (viewport). 
+/// It is common to have multiple viewers image the composed scene (for example,
+/// with different cameras), in which case the HdRenderIndex and
+/// HdRenderDelegate are shared by the viewers.
+/// 
+/// If two viewers use different HdRenderDelegate's, then it may unfortunately 
+/// require populating two HdRenderIndex's.
 ///
 class HdRenderIndex final : public boost::noncopyable {
 public:
@@ -114,7 +147,7 @@ public:
     void RemoveSubtree(const SdfPath &root, HdSceneDelegate* sceneDelegate);
 
     // ---------------------------------------------------------------------- //
-    /// Given a prim id, returns the path of the correspoding rprim
+    /// Given a prim id, returns the path of the corresponding rprim
     /// or an empty path if none is found.
     HD_API
     SdfPath GetRprimPathFromPrimId(int primId) const;
@@ -122,19 +155,34 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Synchronization
     // ---------------------------------------------------------------------- //
-    HD_API
-    HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
-    /// Synchronize all objects in the DirtyList
+    /// Adds the dirty list to the sync queue. The actual processing of the
+    /// dirty list happens later in SyncAll().
+    /// 
+    /// This is typically called from HdRenderPass::Sync. However, the current
+    /// call chain ties it to SyncAll, i.e.
+    /// HdRenderIndex::SyncAll > .... > HdRenderPass::Sync > HdRenderIndex::Sync
     HD_API
     void Sync(HdDirtyListSharedPtr const &dirtyList);
 
-    /// Processes all pending dirty lists 
+    /// Syncs input tasks, B & S prims, (external) computations and processes 
+    /// all pending dirty lists (which syncs the R prims). At the end of this
+    /// step, all the resources that need to be updated have handles to their
+    /// data sources.
+    /// This is the first phase in Hydra's execution. See HdEngine::Execute
     HD_API
     void SyncAll(HdTaskSharedPtrVector const &tasks, HdTaskContext *taskContext);
 
-    /// Returns a vector of Rprim IDs that are bound to the given DelegateID.
+    // ---------------------------------------------------------------------- //
+    /// \name Execution
+    // ---------------------------------------------------------------------- //
 
+    /// Returns a tag based grouping of the list of relevant draw items for the 
+    /// collection.
+    /// The is typically called during render pass execution, which is the 
+    /// final phase in the Hydra's execution. See HdRenderPass::Execute
+    HD_API
+    HdDrawItemView GetDrawItems(HdRprimCollection const& collection);
 
     // ---------------------------------------------------------------------- //
     /// \name Change Tracker
@@ -144,7 +192,7 @@ public:
     HdChangeTracker const& GetChangeTracker() const { return _tracker; }
 
     // ---------------------------------------------------------------------- //
-    /// \name Rprim Support
+    /// \name Renderable prims (e.g. meshes, basis curves)
     // ---------------------------------------------------------------------- //
 
     /// Returns whether the rprim type is supported by this render index.
@@ -224,7 +272,7 @@ public:
     /// \name Task Support
     // ---------------------------------------------------------------------- //
 
-    /// Inserts a new task into the render index with an identifer of \p id.
+    /// Inserts a new task into the render index with an identifier of \p id.
     template <typename T>
     void InsertTask(HdSceneDelegate* delegate, SdfPath const& id);
 

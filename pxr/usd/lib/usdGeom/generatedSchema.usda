@@ -710,7 +710,7 @@ class "Gprim" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -843,7 +843,7 @@ class Cube "Cube" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -982,7 +982,7 @@ class Sphere "Sphere" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1132,7 +1132,7 @@ class Cylinder "Cylinder" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1281,7 +1281,7 @@ class Capsule "Capsule" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1432,7 +1432,7 @@ class Cone "Cone" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1591,7 +1591,7 @@ class "PointBased" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -1839,7 +1839,7 @@ class Mesh "Mesh" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2139,7 +2139,7 @@ class NurbsPatch "NurbsPatch" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2399,7 +2399,7 @@ class "Curves" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2690,7 +2690,7 @@ class BasisCurves "BasisCurves" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -2913,7 +2913,7 @@ class NurbsCurves "NurbsCurves" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (
@@ -3108,7 +3108,7 @@ class Points "Points" (
     float[] primvars:displayOpacity (
         doc = """Companion to displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     rel proxyPrim (

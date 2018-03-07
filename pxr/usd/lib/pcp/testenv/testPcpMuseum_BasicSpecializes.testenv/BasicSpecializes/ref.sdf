@@ -27,3 +27,14 @@ def "Multi" (
 )
 {
 }
+
+def "NonExistentSpecializes" (
+    specializes = </NonExistentBase>
+)
+{
+    def "Child" (
+        specializes = </NonExistentSpecializes/Base>
+    )
+    {
+    }
+}

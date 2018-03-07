@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdBasisCurvesTopology::HdBasisCurvesTopology()
   : HdTopology()
   , _curveType(HdTokens->linear)
-  , _curveBasis(HdTokens->bezier)
+  , _curveBasis(TfToken())
   , _curveWrap(HdTokens->nonperiodic)
   , _curveVertexCounts()
   , _curveIndices()
@@ -62,6 +62,16 @@ HdBasisCurvesTopology::HdBasisCurvesTopology(const TfToken &curveType,
   , _curveVertexCounts(curveVertexCounts)
   , _curveIndices(curveIndices)
 {
+    if (_curveType != HdTokens->linear && _curveType != HdTokens->cubic){
+        TF_WARN("Curve type must be 'linear' or 'cubic'.  Got: '%s'", _curveType.GetText());
+        _curveType = HdTokens->linear;
+        _curveBasis = TfToken();
+    }
+    if (curveBasis == HdTokens->linear && curveType == HdTokens->cubic){
+        TF_WARN("Basis 'linear' passed in to 'cubic' curveType.  Converting 'curveType' to 'linear'.");
+        _curveType = HdTokens->linear;
+        _curveBasis = TfToken();
+    }
     HD_PERF_COUNTER_INCR(HdPerfTokens->basisCurvesTopology);
 }
 
@@ -134,6 +144,10 @@ HdBasisCurvesTopology::CalculateNeededNumberOfControlPoints() const
 size_t
 HdBasisCurvesTopology::CalculateNeededNumberOfVaryingControlPoints() const
 {
+    if (GetCurveType() == HdTokens->linear){
+        // For linear curves, varying and vertex interpolation is identical.
+        return CalculateNeededNumberOfControlPoints();
+    }
     size_t numVerts= 0;
     int numSegs = 0, vStep = 0;
     bool wrap = GetCurveWrap() == HdTokens->periodic;

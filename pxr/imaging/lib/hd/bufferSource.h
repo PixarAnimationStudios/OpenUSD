@@ -103,7 +103,7 @@ public:
         return _state >= RESOLVED;
     }
 
-    /// Returns true if an error occured during resolve.
+    /// Returns true if an error occurred during resolve.
     bool HasResolveError() const {
         return _state == RESOLVE_ERROR;
     }
@@ -131,13 +131,13 @@ public:
     HD_API
     virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
 
-    /// Returns true if this buffer has a chained buffer.
+    /// Returns true if this buffer has any chained buffer(s)
     HD_API
     virtual bool HasChainedBuffer() const;
 
-    /// Returns the chained buffer.
+    /// Returns the vector of chained buffers.
     HD_API
-    virtual HdBufferSourceSharedPtr GetChainedBuffer() const;
+    virtual HdBufferSourceVector GetChainedBuffers() const;
 
     /// @}
 
@@ -222,7 +222,7 @@ public:
     HD_API
     virtual HdTupleType GetTupleType() const override;
     HD_API
-    virtual int GetNumElements() const;
+    virtual int GetNumElements() const override;
 
 protected:
     void _SetResult(HdBufferSourceSharedPtr const &result) {
@@ -241,15 +241,15 @@ public:
     HD_API
     virtual TfToken const &GetName() const override;
     HD_API
-    virtual void const* GetData() const;
+    virtual void const* GetData() const override;
     HD_API
     virtual size_t ComputeHash() const override;
     HD_API
-    virtual int GetNumElements() const;
+    virtual int GetNumElements() const override;
     HD_API
     virtual HdTupleType GetTupleType() const override;
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
 };
 
 

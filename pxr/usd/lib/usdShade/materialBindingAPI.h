@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -36,7 +36,7 @@
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/tokens.h"
-    
+#include <tbb/concurrent_unordered_map.h>
 
 #include "pxr/base/vt/value.h"
 
@@ -59,7 +59,7 @@ class SdfAssetPath;
 ///
 /// UsdShadeMaterialBindingAPI is an API schema that provides an 
 /// interface for binding materials to prims or collections of prims 
-/// (represented UsdCollectionAPI objects). 
+/// (represented by UsdCollectionAPI objects). 
 /// 
 /// In the USD shading model, each renderable gprim computes a single 
 /// <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
@@ -142,9 +142,13 @@ class SdfAssetPath;
 /// not authored (i.e. empty) on a binding-relationship, the default behavior 
 /// matches UsdShadeTokens->weakerThanDescendants.
 /// 
+/// \note If a material binding relationship is a built-in property defined as 
+/// part of a typed prim's schema, a fallback value should not be provided for 
+/// it. This is because the "material resolution" algorithm only conisders 
+/// <i>authored</i> properties.
 /// 
 ///
-class UsdShadeMaterialBindingAPI : public UsdSchemaBase
+class UsdShadeMaterialBindingAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -158,12 +162,17 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents a 
+    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
+    /// to the same prim multiple times with different instance names. 
+    static const bool IsMultipleApply = false;
+
     /// Construct a UsdShadeMaterialBindingAPI on UsdPrim \p prim .
     /// Equivalent to UsdShadeMaterialBindingAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdShadeMaterialBindingAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -171,7 +180,7 @@ public:
     /// Should be preferred over UsdShadeMaterialBindingAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdShadeMaterialBindingAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -200,15 +209,21 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "MaterialBindingAPI" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid UsdShadeMaterialBindingAPI object is returned upon success. 
+    /// An invalid (or empty) UsdShadeMaterialBindingAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     USDSHADE_API
     static UsdShadeMaterialBindingAPI 
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -274,55 +289,131 @@ public:
     std::vector<UsdRelationship> GetCollectionBindingRels(
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose) const;
 
-    /// Returns the UsdShadeMaterial targeted by the given direct-binding 
-    /// relationship. 
-    USDSHADE_API
-    static UsdShadeMaterial GetDirectBinding(
-        const UsdRelationship &directBindingRel);
+    /// \class DirectBinding
+    /// This class represents a direct material binding.
+    class DirectBinding {
+    public:
+        /// Default constructor initializes a DirectBinding object with 
+        /// invalid material and bindingRel data members.
+        DirectBinding() 
+        {}
 
-    /// \struct CollectionBinding 
-    /// This struct is used to represent a collection-based material binding,
-    /// which contains two objects - a collection and a bound material.
-    struct CollectionBinding {
-        UsdCollectionAPI collection;
-        UsdShadeMaterial material;
+        USDSHADE_API
+        explicit DirectBinding(const UsdRelationship &bindingRel);
+
+        /// Gets the material object that this direct binding binds to.
+        USDSHADE_API
+        UsdShadeMaterial GetMaterial() const;
+
+        /// Returns the path to the material that is bound to by this 
+        /// direct binding.
+        const SdfPath &GetMaterialPath() const {
+            return _materialPath;
+        }
+
+        /// Returns the binding-relationship that represents this direct 
+        /// binding.
+        const UsdRelationship &GetBindingRel() const {
+            return _bindingRel;
+        }
+
+        /// Returns the purpose of the direct binding.
+        const TfToken &GetMaterialPurpose() const {
+            return _materialPurpose;
+        }
+
+    private:
+        // The path to the material that is bound to.
+        SdfPath _materialPath; 
+        
+        // The binding relationship.
+        UsdRelationship _bindingRel;
+
+        // The purpose of the material binding.
+        TfToken _materialPurpose;
     };
 
-    /// Returns the {UsdCollectionAPI, UsdShadeMaterial} pair targeted by the 
-    /// given collection-based material-binding relationship. 
-    USDSHADE_API
-    static CollectionBinding GetCollectionBinding(
-        const UsdRelationship &collBindingRel);
+    /// \class CollectionBinding 
+    /// This struct is used to represent a collection-based material binding,
+    /// which contains two objects - a collection and a bound material.
+    class CollectionBinding {
+    public:
+        /// Default constructor initializes a CollectionBinding object with 
+        /// invalid collection, material and bindingRel data members.
+        CollectionBinding() 
+        {}
 
-    /// Returns the directly bound material on this prim for the given 
-    /// material purpose.
+        /// Constructs a CollectionBinding object from the given collection-
+        /// binding relationship. This inspects the targets of the relationship
+        /// and determines the bound collection and the target material that 
+        /// the collection is bound to. 
+        USDSHADE_API
+        explicit CollectionBinding(const UsdRelationship &collBindingRel);
+
+        /// Constructs and returns the material object that this 
+        /// collection-based binding binds to.
+        USDSHADE_API
+        UsdShadeMaterial GetMaterial() const;
+
+        /// Constructs and returns the CollectionAPI object for the collection 
+        /// that is bound by this collection-binding.
+        USDSHADE_API
+        UsdCollectionAPI GetCollection() const;
+        
+        /// Returns true if the CollectionBinding points to a valid material
+        /// and collection.
+        bool IsValid() const {
+            return GetCollection() && GetMaterial();
+        }
+        /// Returns the path to the collection that is bound by this binding.
+        const SdfPath &GetCollectionPath() const { 
+            return _collectionPath;
+        }
+
+        /// Returns the path to the material that is bound to by this binding.
+        const SdfPath &GetMaterialPath() const { 
+            return _materialPath;
+        }
+
+        /// Returns the binding-relationship that represents this collection-
+        /// based binding.
+        const UsdRelationship &GetBindingRel() const {
+            return _bindingRel;
+        }
+
+    private:
+        // The collection being bound.
+        SdfPath _collectionPath;
+
+        // The material that is bound to. 
+        SdfPath _materialPath;
+
+        // The relationship that binds the collection to the material.
+        UsdRelationship _bindingRel;
+    };
+
+    using CollectionBindingVector = std::vector<CollectionBinding>;
+
+    /// Computes and returns the direct binding for the given material purpose 
+    /// on this prim. 
     /// 
-    /// The output parameter \p bindingRel is populated with the 
-    /// direct binding relationship used to resolve the directly bound 
-    /// material. The returned \p bindingRel always has the exact 
-    /// specified \p materialPurpose (i.e. the all-purpose binding is not 
-    /// returned if a special purpose binding is requested). 
-    /// 
+    /// The returned binding always has the specified \p materialPurpose
+    /// (i.e. the all-purpose binding is not returned if a special purpose 
+    /// binding is requested).
+    ///
     /// If the direct binding is to a prim that is not a Material, this does not 
     /// generate an error, but the returned Material will be invalid (i.e. 
     /// evaluate to false).
-    /// 
-    /// The python version of this API returns a tuple containing the 
-    /// bound material and the binding-relationship.
     USDSHADE_API
-    UsdShadeMaterial GetDirectlyBoundMaterial(
-        const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        UsdRelationship *bindingRel=nullptr) const;
+    DirectBinding GetDirectBinding(
+        const TfToken &materialPurpose=UsdShadeTokens->allPurpose) const;
 
     /// Returns all the collection-based bindings on this prim for the given
     /// material purpose.
     /// 
-    /// The output parameter \p bindingRels is populated with the 
-    /// list of collection binding relationships that correspond to the 
-    /// returned list of collection-based bindings. 
-    /// The returned \p bindingRels always have the specified \p materialPurpose
-    /// (i.e. the all-purpose binding is not returned if a special purpose 
-    /// binding is requested). 
+    /// The returned CollectionBinding objects always have the specified 
+    /// \p materialPurpose (i.e. the all-purpose binding is not returned if a 
+    /// special purpose binding is requested). 
     ///
     /// If one or more collection based bindings are to prims that are not 
     /// Materials, this does not generate an error, but the corresponding 
@@ -339,10 +430,8 @@ public:
     /// be stronger than the ones that come later. See rule #6 in 
     /// \ref UsdShadeMaterialBindingAPI_MaterialResolution.
     USDSHADE_API
-    std::vector<CollectionBinding> 
-    GetCollectionBindings(
-        const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        std::vector<UsdRelationship> *bindingRels=nullptr) const;
+    CollectionBindingVector GetCollectionBindings(
+        const TfToken &materialPurpose=UsdShadeTokens->allPurpose) const;
     
     /// Resolves the 'bindMaterialAs' token-valued metadata on the given binding 
     /// relationship and returns it.
@@ -535,6 +624,11 @@ public:
     /// </li> 
     /// </ul>
     /// 
+    /// \note If a material binding relationship is a built-in property defined 
+    /// as part of a typed prim schema, a fallback value should not be provided 
+    /// for it. This is because the "material resolution" algorithm only 
+    /// conisders <i>authored</i> properties.
+    /// 
     /// @{
 
     /// An unordered list of collection paths mapped to the associated 
@@ -542,20 +636,53 @@ public:
     /// MembershipQuery objects for collections that are encountered during 
     /// binding resolution for a tree of prims.
     using CollectionQueryCache = 
-        std::unordered_map<SdfPath, 
-                           UsdCollectionAPI::MembershipQuery, 
-                           SdfPath::Hash>;
+        tbb::concurrent_unordered_map<SdfPath, 
+            std::shared_ptr<UsdCollectionAPI::MembershipQuery>, SdfPath::Hash>;
+
+    /// Alias for a unique_ptr to a DirectBinding object.
+    using DirectBindingPtr = std::unique_ptr<DirectBinding>;
+
+    struct BindingsAtPrim {
+        /// Inspects all the material:binding* properties on the \p prim and 
+        /// computes direct and collection-based bindings for the given 
+        /// value of \p materialPurpose.
+        USDSHADE_API
+        BindingsAtPrim(const UsdPrim &prim, const TfToken &materialPurpose);
+
+        /// If the prim has a restricted purpose direct binding, then it is 
+        /// stored here. If there is no restricted purpose binding on the prim, 
+        /// then the all-purpose direct binding is stored.
+        DirectBindingPtr directBinding;
+         
+        /// The ordered list of restricted-purpose collection bindings on the 
+        /// prim.
+        CollectionBindingVector restrictedPurposeCollBindings;
+
+        /// The ordered list of all-purpose collection bindings on the prim.
+        CollectionBindingVector allPurposeCollBindings;
+    };
+
+    /// BindingsAtPrim needs to invoke private _GetCollectionBindings().
+    friend struct BindingsAtPrim;
+
+    /// An unordered list of prim-paths mapped to the corresponding set of 
+    /// bindings at the associated prim. This is used when computing resolved 
+    /// bindings to avoid redundant computations for the shared ancestor 
+    /// prims and to re-use the computed results for leaf prims.
+    using BindingsCache = tbb::concurrent_unordered_map<SdfPath,
+            std::shared_ptr<BindingsAtPrim>, SdfPath::Hash>;
 
     /// \overload
     /// Computes the resolved bound material for this prim, for the given 
     /// material purpose. 
     /// 
-    /// This overload of ComputeBoundMaterial makes use of the 
-    /// CollectionQueryCache that's passed in, \p collectionQueryCache, to avoid 
-    /// re-computing the MembershipQuery object multiple times per collection 
-    /// while resolving bindings for a tree of prims. If a collection that's 
-    /// not in the map is encountered during binding resolution, its 
-    /// MembershipQuery object is computed and added to the unordered map.
+    /// This overload of ComputeBoundMaterial makes use of the BindingsCache 
+    /// (\p bindingsCache) and CollectionQueryCache (\p collectionQueryCache) 
+    /// that are passed in, to avoid redundant binding computations and 
+    /// computations of MembershipQuery objects for collections. 
+    /// It would be beneficial to make use of these when resolving bindings for 
+    /// a tree of prims. These caches are populated lazily as more and more 
+    /// bindings are resolved.
     /// 
     /// When the goal is to compute the bound material for a range (or list) of 
     /// prims, it is recommended to use this version of ComputeBoundMaterial(). 
@@ -564,10 +691,13 @@ public:
     /// 
     /// \code
     /// std::vector<std::pair<UsdPrim, UsdShadeMaterial> primBindings; 
-    /// UsdShadeMaterialBindingAPI::CollectionQueryCache cache;
+    /// UsdShadeMaterialBindingAPI::BindingsCache bindingsCache;
+    /// UsdShadeMaterialBindingAPI::CollectionQueryCache collQueryCache;
+    /// 
     /// for (auto prim : UsdPrimRange(rootPrim)) {
     ///     UsdShadeMaterial boundMaterial = 
-    ///           UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(&cache);
+    ///           UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial(
+    ///           &bindingsCache, &collQueryCache);
     ///     if (boundMaterial) {
     ///         primBindings.emplace_back({prim, boundMaterial});
     ///     }
@@ -584,6 +714,7 @@ public:
     /// bound material and the "winning" binding relationship.
     USDSHADE_API
     UsdShadeMaterial ComputeBoundMaterial(
+        BindingsCache *bindingsCache,
         CollectionQueryCache *collectionQueryCache,
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
         UsdRelationship *bindingRel=nullptr) const;
@@ -609,16 +740,25 @@ public:
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
         UsdRelationship *bindingRel=nullptr) const;
 
-    /// Static API for efficiently computing the resolved material bindings for 
-    /// a vector of UsdPrims, \p prims for the given \p marerialPurpose.
+    /// Static API for efficiently and concurrently computing the resolved 
+    /// material bindings for a vector of UsdPrims, \p prims for the 
+    /// given \p materialPurpose.
     /// 
-    /// The size of the returned vector matches the size of the input vector,
-    /// \p prims. If a prim is not bound to any material, an invalid 
-    /// or empty UsdShadeMaterial is returned corresponding to it.
+    /// The size of the returned vector always matches the size of the input 
+    /// vector, \p prims. If a prim is not bound to any material, an invalid 
+    /// or empty UsdShadeMaterial is returned at the index corresponding to it.
+    /// 
+    /// If the pointer \p bindingRels points to a valid vector, then it is 
+    /// populated with the set of all "winning" binding relationships.
+    /// 
+    /// The python version of this method returns a tuple containing two lists -
+    /// the bound materials and the corresponding "winning" binding 
+    /// relationships.
     USDSHADE_API
     static std::vector<UsdShadeMaterial> ComputeBoundMaterials(
         const std::vector<UsdPrim> &prims, 
-        const TfToken &materialPurpose=UsdShadeTokens->allPurpose);
+        const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
+        std::vector<UsdRelationship> *bindingRels=nullptr);
 
     /// @}
         
@@ -737,6 +877,12 @@ private:
     UsdRelationship _CreateCollectionBindingRel(
         const TfToken &bindingName,
         const TfToken &materialPurpose) const;
+
+    // Helper method for getting collection bindings when the set of all 
+    // collection binding relationship names for the required purpose is 
+    // known.
+    CollectionBindingVector _GetCollectionBindings(
+        const TfTokenVector &collBindingPropertyNames) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -60,6 +61,15 @@ TF_INSTANTIATE_SINGLETON(UsdSchemaRegistry);
 TF_MAKE_STATIC_DATA(TfType, _schemaBaseType) {
     *_schemaBaseType = TfType::Find<UsdSchemaBase>();
 }
+
+TF_MAKE_STATIC_DATA(TfType, _apiSchemaBaseType) {
+    *_apiSchemaBaseType = TfType::Find<UsdAPISchemaBase>();
+}
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (multipleApplyAPISchemas)
+);
 
 template <class T>
 static void
@@ -191,6 +201,17 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     SdfChangeBlock block;
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
+            VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
+            if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
+                    _tokens->multipleApplyAPISchemas)) {
+                const VtStringArray &multipleApplyAPISchemas = 
+                        VtDictionaryGet<VtStringArray>(customDataDict, 
+                            _tokens->multipleApplyAPISchemas);
+                for (const auto &apiSchemaName : multipleApplyAPISchemas) {
+                    _multipleApplyAPISchemaNames.insert(TfToken(apiSchemaName));
+                }
+            }
+
             _AddSchema(generatedSchema, _schematics, disallowedFields);
         }
     }
@@ -363,6 +384,24 @@ UsdSchemaRegistry::IsConcrete(const TfType& primType)
 {
     auto primSpec = GetPrimDefinition(primType);
     return (primSpec && !primSpec->GetTypeName().IsEmpty());
+}
+
+bool 
+UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfType& apiSchemaType)
+{
+    // Return false if apiSchemaType is not an API schema.
+    if (!apiSchemaType.IsA(*_apiSchemaBaseType)) {
+        return false;
+    }
+
+    for (const auto& alias : _schemaBaseType->GetAliases(apiSchemaType)) {
+        if (_multipleApplyAPISchemaNames.find(TfToken(alias)) !=  
+                _multipleApplyAPISchemaNames.end()) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

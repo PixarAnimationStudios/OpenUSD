@@ -32,26 +32,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// DrawingCoord is a bundle of buffer array ranges that are used for drawing.
-//
-// Hd_DrawBatch requires drawitem to have 7 different types of buffer
-// resources (some of them are optional) as a drawing coordinate.
-//
-// a. Constant
-// b. Vertex Primvars
-// c. Topology
-// d. Element Primvars  (optional)
-// e. Instance PrimVars (optional)
-// f. Instance Index    (optional)
-// g. FaceVarying Primvars (optional)
-//
-
 /// \class HdDrawingCoord
 ///
-/// A tiny 6-integers entity which provides a mapping between the client
-/// facing interface to the actual internal location stored in the
-/// HdBufferArrayRangeContainer, which is owned by rprim.
+/// A tiny set of integers, which provides an indirection mapping from the 
+/// conceptual space of an HdRprim's resources (topological, primvar & 
+/// instancing) to the index within HdBufferArrayRangeContainer, where the
+/// resource is stored.
+/// 
+/// Each HdDrawItem contains a HdDrawingCoord, with the relevant compositional
+/// hierarchy being:
+/// 
+///  HdRprim
+///  |
+///  +--HdRepr(s)
+///  |    |
+///  |    +--HdDrawItem(s)----------.
+///  |         |                    |
+///  |         +--HdDrawingCoord    |
+///  |                              | (mapping provided by HdDrawingCoord)
+///  +--HdRprimSharedData           |
+///     |                           |
+///     +--HdBARContainer  <--------+
+///  
 ///
 /// Having this indirection provides a recipe for how to configure
 /// a drawing coordinate, which is a bundle of HdBufferArrayRanges, while

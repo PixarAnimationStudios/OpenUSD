@@ -54,43 +54,5 @@ operator<<(std::ostream& out, const HdxShaderInputs& pv)
     return out;
 }
 
-// HdxTextureParameters implementation
-bool
-operator==(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs)
-{
-    return  lhs.wrapS == rhs.wrapS                  && 
-            lhs.wrapT == rhs.wrapT                  && 
-            lhs.minFilter == rhs.minFilter          && 
-            lhs.magFilter == rhs.magFilter          && 
-            lhs.cropTop == rhs.cropTop              && 
-            lhs.cropBottom == rhs.cropBottom        && 
-            lhs.cropLeft == rhs.cropLeft            && 
-            lhs.cropRight == rhs.cropRight          && 
-            lhs.textureMemory == rhs.textureMemory  && 
-            lhs.isPtex == rhs.isPtex;
-}
-
-bool
-operator!=(const HdxTextureParameters& lhs, const HdxTextureParameters& rhs)
-{
-    return !(lhs == rhs);
-}
-
-std::ostream&
-operator<<(std::ostream& out, const HdxTextureParameters& pv)
-{
-    out << pv.wrapS << " " 
-        << pv.wrapT << " "
-        << pv.minFilter << " "
-        << pv.magFilter << " "
-        << pv.cropTop << " "
-        << pv.cropBottom << " "
-        << pv.cropLeft << " "
-        << pv.cropRight << " "
-        << pv.textureMemory << " "
-        << pv.isPtex;
-    return out;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 

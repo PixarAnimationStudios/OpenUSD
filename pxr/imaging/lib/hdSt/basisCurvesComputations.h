@@ -43,12 +43,12 @@ class HdBasisCurvesTopology;
 class HdSt_BasisCurvesIndexBuilderComputation : public HdComputedBufferSource {
 public:
     HdSt_BasisCurvesIndexBuilderComputation(HdBasisCurvesTopology *topology,
-                                            bool supportSmoothCurves);
+                                            bool forceLines);
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
     virtual bool HasChainedBuffer() const override;
-    virtual HdBufferSourceSharedPtr GetChainedBuffer() const override;
+    virtual HdBufferSourceVector GetChainedBuffers() const override;
 
 protected:
     virtual bool _CheckValid() const override;
@@ -68,10 +68,10 @@ public:
 private:
     IndexAndPrimIndex _BuildLinesIndexArray();
     IndexAndPrimIndex _BuildLineSegmentIndexArray();
-    IndexAndPrimIndex _BuildSmoothCurveIndexArray();
+    IndexAndPrimIndex _BuildCubicIndexArray();
                                     
     HdBasisCurvesTopology *_topology;
-    bool _supportSmoothCurves;
+    bool _forceLines;
 
     HdBufferSourceSharedPtr _primitiveParam;    
 };
@@ -84,18 +84,18 @@ class HdSt_BasisCurvesWidthsInterpolaterComputation
 public:
     HdSt_BasisCurvesWidthsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtFloatArray authoredWidths);
-    virtual bool Resolve();
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual bool Resolve() override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     HdBasisCurvesTopology *_topology;
     VtFloatArray _authoredWidths;
 };
 
-/// Compute vertex normals based on \p authoredNormals, doing interpolation as
+/// Compute varying normals based on \p authoredNormals, doing interpolation as
 /// necessary 
 ///
 class HdSt_BasisCurvesNormalsInterpolaterComputation
@@ -103,11 +103,11 @@ class HdSt_BasisCurvesNormalsInterpolaterComputation
 public:
     HdSt_BasisCurvesNormalsInterpolaterComputation(HdBasisCurvesTopology *topology,
                                                 VtVec3fArray authoredNormals);
-    virtual bool Resolve();
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual bool Resolve() override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     HdBasisCurvesTopology *_topology;

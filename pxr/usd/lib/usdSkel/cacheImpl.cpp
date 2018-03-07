@@ -77,6 +77,9 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelDefinition(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
 
+    if(!prim || !prim.IsActive())
+        return nullptr;
+
     if(prim.IsInstanceProxy())
         return FindOrCreateSkelDefinition(prim.GetPrimInMaster());
 
@@ -101,6 +104,9 @@ UsdSkel_AnimQueryImplRefPtr
 UsdSkel_CacheImpl::ReadScope::FindOrCreateAnimQuery(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
+
+    if(!prim || !prim.IsActive())
+        return nullptr;
 
     if(prim.IsInstanceProxy())
         return FindOrCreateAnimQuery(prim.GetPrimInMaster());
@@ -185,12 +191,16 @@ UsdSkel_CacheImpl::ReadScope::GetInheritedSkelQuery(const UsdPrim& prim) const
 
 UsdSkelSkeletonQuery
 UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkelQuery(
+    const UsdPrim& instancePrim,
     const UsdPrim& skelPrim,
     const UsdSkelAnimQuery& animQuery)
 {
     // TODO: We currently do not deduplicate skeleton queries,
     // but it may be worthwhile to do so.
-    return UsdSkelSkeletonQuery(FindOrCreateSkelDefinition(skelPrim),
+    // Similarly, with many instances, it might be necessary to find
+    // a way to share the anim->skel anim mappers.
+    return UsdSkelSkeletonQuery(instancePrim,
+                                FindOrCreateSkelDefinition(skelPrim),
                                 animQuery);
 }
 
@@ -262,7 +272,7 @@ UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
             _PrimToSkelQueryMap::accessor a;
             if(_cache->_skelQueryCache.insert(a, prim)) {
                 a->second = _FindOrCreateSkelQuery(
-                    _GetFirstTarget(rel, targets), animQuery);
+                    prim, _GetFirstTarget(rel, targets), animQuery);
             }
             key.skelQuery = a->second;
 

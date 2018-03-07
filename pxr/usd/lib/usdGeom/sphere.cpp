@@ -172,3 +172,68 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomSphere::ComputeExtent(double radius, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    (*extent)[0] = GfVec3f(-radius);
+    (*extent)[1] = GfVec3f(radius);
+
+    return true;
+}
+
+bool
+UsdGeomSphere::ComputeExtent(double radius, const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfBBox3d bbox = GfBBox3d(
+        GfRange3d(GfVec3d(-radius), GfVec3d(radius)), transform);
+    GfRange3d range = bbox.ComputeAlignedRange();
+    (*extent)[0] = GfVec3f(range.GetMin());
+    (*extent)[1] = GfVec3f(range.GetMax());
+
+    return true;
+}
+
+static bool
+_ComputeExtentForSphere(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
+    VtVec3fArray* extent)
+{
+    const UsdGeomSphere sphereSchema(boundable);
+    if (!TF_VERIFY(sphereSchema)) {
+        return false;
+    }
+
+    double radius;
+    if (!sphereSchema.GetRadiusAttr().Get(&radius)) {
+        return false;
+    }
+
+    if (transform) {
+        return UsdGeomSphere::ComputeExtent(radius, *transform, extent);
+    } else {
+        return UsdGeomSphere::ComputeExtent(radius, extent);
+    }
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomSphere>(
+        _ComputeExtentForSphere);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

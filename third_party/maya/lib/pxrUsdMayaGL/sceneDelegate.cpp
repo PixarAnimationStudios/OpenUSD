@@ -31,6 +31,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
@@ -45,8 +46,11 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/camera.h"
 #include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
+#include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
+#include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/MDrawContext.h>
@@ -58,8 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (simpleLightTask)
-    (camera)
+    (selectionTask)
 );
 
 
@@ -76,8 +79,8 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
     _rootId = delegateID.AppendChild(
         TfToken(TfStringPrintf("_UsdImaging_%p", this)));
 
-    _simpleLightTaskId = _rootId.AppendChild(_tokens->simpleLightTask);
-    _cameraId = _rootId.AppendChild(_tokens->camera);
+    _simpleLightTaskId = _rootId.AppendChild(HdxPrimitiveTokens->simpleLightTask);
+    _cameraId = _rootId.AppendChild(HdPrimTypeTokens->camera);
 
     // camera
     {
@@ -152,18 +155,21 @@ PxrMayaHdSceneDelegate::SetCameraState(
             _simpleLightTaskId,
             HdChangeTracker::DirtyParams);
 
-        // Update all render tasks.
-        for (const auto& it : _renderTaskIdMap) {
-            const SdfPath& renderTaskId = it.second;
+        // Update all render setup tasks.
+        for (const auto& it : _renderSetupTaskIdMap) {
+            const SdfPath& renderSetupTaskId = it.second;
 
-            HdxRenderTaskParams renderTaskParams =
-                _GetValue<HdxRenderTaskParams>(renderTaskId, HdTokens->params);
+            HdxRenderTaskParams renderSetupTaskParams =
+                _GetValue<HdxRenderTaskParams>(renderSetupTaskId,
+                                               HdTokens->params);
 
-            renderTaskParams.viewport = _viewport;
-            _SetValue(renderTaskId, HdTokens->params, renderTaskParams);
+            renderSetupTaskParams.viewport = _viewport;
+            _SetValue(renderSetupTaskId,
+                      HdTokens->params,
+                      renderSetupTaskParams);
 
             GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-                renderTaskId,
+                renderSetupTaskId,
                 HdChangeTracker::DirtyParams);
         }
     }
@@ -234,10 +240,10 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
     for (size_t i = 0; i < lights.size(); ++i) {
         _ValueCache& cache = _valueCacheMap[_lightIds[i]];
         // store GlfSimpleLight directly.
-        cache[HdStLightTokens->params] = VtValue(lights[i]);
-        cache[HdStLightTokens->transform] = VtValue();
-        cache[HdStLightTokens->shadowParams] = VtValue(HdxShadowParams());
-        cache[HdStLightTokens->shadowCollection] = VtValue();
+        cache[HdLightTokens->params] = VtValue(lights[i]);
+        cache[HdLightTokens->transform] = VtValue();
+        cache[HdLightTokens->shadowParams] = VtValue(HdxShadowParams());
+        cache[HdLightTokens->shadowCollection] = VtValue();
 
         // Only mark as dirty the parameters to avoid unnecessary invalidation
         // specially marking as dirty lightShadowCollection will trigger
@@ -275,33 +281,82 @@ PxrMayaHdSceneDelegate::GetSetupTasks()
     return tasks;
 }
 
-HdTaskSharedPtr
-PxrMayaHdSceneDelegate::GetRenderTask(
+HdTaskSharedPtrVector
+PxrMayaHdSceneDelegate::GetRenderTasks(
         const size_t hash,
         const PxrMayaHdRenderParams& renderParams,
         const HdRprimCollectionVector& rprimCollections)
 {
-    // select bucket
+    SdfPath renderSetupTaskId;
+    if (!TfMapLookup(_renderSetupTaskIdMap, hash, &renderSetupTaskId)) {
+        // Create a new render setup task if one does not exist for this hash.
+        renderSetupTaskId = _rootId.AppendChild(
+            TfToken(TfStringPrintf("%s_%zx",
+                                   HdxPrimitiveTokens->renderSetupTask.GetText(),
+                                   hash)));
+
+        GetRenderIndex().InsertTask<HdxRenderSetupTask>(this,
+                                                        renderSetupTaskId);
+
+        HdxRenderTaskParams renderSetupTaskParams;
+        renderSetupTaskParams.camera = _cameraId;
+        // Initialize viewport to the latest value since render setup tasks can
+        // be lazily instantiated, potentially even after SetCameraState().
+        renderSetupTaskParams.viewport = _viewport;
+
+        _ValueCache& cache = _valueCacheMap[renderSetupTaskId];
+        cache[HdTokens->params] = VtValue(renderSetupTaskParams);
+        cache[HdTokens->children] = VtValue(SdfPathVector());
+        cache[HdTokens->collection] = VtValue();
+
+        _renderSetupTaskIdMap[hash] = renderSetupTaskId;
+    }
+
     SdfPath renderTaskId;
     if (!TfMapLookup(_renderTaskIdMap, hash, &renderTaskId)) {
         // Create a new render task if one does not exist for this hash.
         renderTaskId = _rootId.AppendChild(
-            TfToken(TfStringPrintf("renderTask%zx", hash)));
+            TfToken(TfStringPrintf("%s_%zx",
+                                   HdxPrimitiveTokens->renderTask.GetText(),
+                                   hash)));
 
         GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
+
+        // Note that the render task has no params of its own. All of the
+        // render params are on the render setup task instead.
         _ValueCache& cache = _valueCacheMap[renderTaskId];
-        HdxRenderTaskParams taskParams;
-        taskParams.camera = _cameraId;
-        // Initialize viewport to the latest value since render tasks can be
-        // lazily instantiated, potentially even after SetCameraState().
-        taskParams.viewport = _viewport;
-        cache[HdTokens->params] = VtValue(taskParams);
+        cache[HdTokens->params] = VtValue();
         cache[HdTokens->children] = VtValue(SdfPathVector());
         cache[HdTokens->collection] = VtValue();
 
         _renderTaskIdMap[hash] = renderTaskId;
     }
 
+    SdfPath selectionTaskId;
+    if (!TfMapLookup(_selectionTaskIdMap, hash, &selectionTaskId)) {
+        // Create a new selection task if one does not exist for this hash.
+        selectionTaskId = _rootId.AppendChild(
+            TfToken(TfStringPrintf("%s_%zx",
+                                   _tokens->selectionTask.GetText(),
+                                   hash)));
+
+        GetRenderIndex().InsertTask<HdxSelectionTask>(this, selectionTaskId);
+        HdxSelectionTaskParams selectionTaskParams;
+        selectionTaskParams.enableSelection = true;
+
+        // Note that the selection color is a constant zero value. This is to
+        // mimic selection behavior in Maya where the wireframe color is what
+        // changes to indicate selection and not the object color. As a result,
+        // we don't need to dirty the selectionTaskParams below.
+        selectionTaskParams.selectionColor = GfVec4f(0.0f);
+
+        _ValueCache& cache = _valueCacheMap[selectionTaskId];
+        cache[HdTokens->params] = VtValue(selectionTaskParams);
+        cache[HdTokens->children] = VtValue(SdfPathVector());
+        cache[HdTokens->collection] = VtValue();
+
+        _selectionTaskIdMap[hash] = selectionTaskId;
+    }
 
     //
     // (meta-XXX): The notes below are actively being addressed with an
@@ -341,45 +396,43 @@ PxrMayaHdSceneDelegate::GetRenderTask(
     // transition within Hydra itself.
     //
 
-    // update value cache
-    _SetValue(renderTaskId, HdTokens->collection, rprimCollections);
+    // Get the render setup task params from the value cache.
+    HdxRenderTaskParams renderSetupTaskParams =
+        _GetValue<HdxRenderTaskParams>(renderSetupTaskId, HdTokens->params);
 
-    // invalidate
+    // Update the render setup task params.
+    renderSetupTaskParams.overrideColor = renderParams.overrideColor;
+    renderSetupTaskParams.wireframeColor = renderParams.wireframeColor;
+    renderSetupTaskParams.enableLighting = renderParams.enableLighting;
+    renderSetupTaskParams.enableIdRender = false;
+    renderSetupTaskParams.alphaThreshold = 0.1f;
+    renderSetupTaskParams.tessLevel = 32.0f;
+    const float tinyThreshold = 0.9f;
+    renderSetupTaskParams.drawingRange = GfVec2f(tinyThreshold, -1.0f);
+    renderSetupTaskParams.enableHardwareShading = true;
+    renderSetupTaskParams.depthBiasUseDefault = true;
+    renderSetupTaskParams.depthFunc = HdCmpFuncLess;
+    renderSetupTaskParams.cullStyle = renderParams.cullStyle;
+    renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
+
+    // Store the updated render setup task params back in the cache and mark
+    // them dirty.
+    _SetValue(renderSetupTaskId, HdTokens->params, renderSetupTaskParams);
+    GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+        renderSetupTaskId,
+        HdChangeTracker::DirtyParams);
+
+
+    // Update the collections on the render task and mark them dirty.
+    _SetValue(renderTaskId, HdTokens->collection, rprimCollections);
     GetRenderIndex().GetChangeTracker().MarkTaskDirty(
         renderTaskId,
         HdChangeTracker::DirtyCollection);
 
-    // update render params in the value cache
-    HdxRenderTaskParams taskParams =
-        _GetValue<HdxRenderTaskParams>(renderTaskId, HdTokens->params);
 
-    // update params
-    taskParams.overrideColor         = renderParams.overrideColor;
-    taskParams.wireframeColor        = renderParams.wireframeColor;
-    taskParams.enableLighting        = renderParams.enableLighting;
-    taskParams.enableIdRender        = false;
-    taskParams.alphaThreshold        = 0.1f;
-    taskParams.tessLevel             = 32.0f;
-    const float tinyThreshold        = 0.9f;
-    taskParams.drawingRange          = GfVec2f(tinyThreshold, -1.0f);
-    taskParams.depthBiasUseDefault   = true;
-    taskParams.depthFunc             = HdCmpFuncLess;
-    taskParams.cullStyle             = renderParams.cullStyle;
-    taskParams.geomStyle             = HdGeomStylePolygons;
-    taskParams.enableHardwareShading = true;
-
-    // note that taskParams.rprims and taskParams.viewport are not updated
-    // in this function, and needed to be preserved.
-
-    // store into cache
-    _SetValue(renderTaskId, HdTokens->params, taskParams);
-
-    // invalidate
-    GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-        renderTaskId,
-        HdChangeTracker::DirtyParams);
-
-    return GetRenderIndex().GetTask(renderTaskId);
+    return { GetRenderIndex().GetTask(renderSetupTaskId),
+             GetRenderIndex().GetTask(renderTaskId),
+             GetRenderIndex().GetTask(selectionTaskId) };
 }
 
 

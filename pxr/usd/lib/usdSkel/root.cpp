@@ -122,7 +122,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdSkel/cache.h"
+#include "pxr/usd/usdSkel/skeletonQuery.h"
+#include "pxr/usd/usdSkel/skinningQuery.h"
+#include "pxr/usd/usdSkel/utils.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 UsdSkelRoot
 UsdSkelRoot::Find(const UsdPrim& prim)
@@ -134,5 +144,86 @@ UsdSkelRoot::Find(const UsdPrim& prim)
     }
     return UsdSkelRoot();
 }
+
+
+/// Plugin extent method.
+static bool
+_ComputeExtent(const UsdGeomBoundable& boundable,
+               const UsdTimeCode& time,
+               const GfMatrix4d* transform,
+               VtVec3fArray* extent)
+{
+    const UsdSkelRoot skelRoot(boundable);
+    if(!TF_VERIFY(skelRoot)) {
+        return false;
+    }
+
+    UsdSkelCache skelCache;
+    skelCache.Populate(skelRoot);
+
+    UsdGeomXformCache xfCache;
+
+    GfRange3d bbox;
+    VtVec3fArray skelExtent;
+
+    // Iterate over all bounds skeletons beneath the skel root.
+    // TODO: USD instancing?
+    for(const auto& prim : UsdPrimRange(skelRoot.GetPrim())) {
+
+        if(UsdSkelSkeletonQuery skelQuery = skelCache.GetSkelQuery(prim)) {
+
+            // Compute skel-space joint transforms.
+            // The extent for this skel is based on the pivots of all bones,
+            // with some additional padding.
+            VtMatrix4dArray skelXforms;
+            if(!skelQuery.ComputeJointSkelTransforms(&skelXforms, time))
+                continue;
+
+            // Pre-compute a constant padding metric across all prims
+            // skinned by this skeleton. 
+            float padding = 0;
+            VtMatrix4dArray skelRestXforms;
+            if(skelQuery.ComputeJointSkelTransforms(
+                   &skelRestXforms, time, /*atRest*/ true)) {
+                
+                std::vector<std::pair<UsdPrim,UsdSkelSkinningQuery> > skinnedPrims;
+                if(skelCache.ComputeSkinnedPrims(prim, &skinnedPrims)) {
+                    for(const auto& pair : skinnedPrims) {
+                        float skelPadding = pair.second.ComputeExtentsPadding(
+                            skelRestXforms, UsdGeomBoundable(pair.first)); 
+                        padding = std::max(padding, skelPadding);
+                    }
+                }
+            }
+
+            // Compute the final, padded extents from the skel-space
+            // transforms, in the space of the SkelRoot prim.
+            bool resetXformStack = false;
+            GfMatrix4d skelRootXform =
+                xfCache.ComputeRelativeTransform(prim, skelRoot.GetPrim(),
+                                                 &resetXformStack);
+            if(!resetXformStack && transform) {
+                skelRootXform *= *transform;
+            }
+            UsdSkelComputeJointsExtent(skelXforms, &skelExtent,
+                                       padding, &skelRootXform);
+
+            for(const auto& p : skelExtent)
+                bbox.UnionWith(p);
+        }
+    }
+
+    extent->resize(2);
+    (*extent)[0] = GfVec3f(bbox.GetMin());
+    (*extent)[1] = GfVec3f(bbox.GetMax());
+
+    return true;
+}        
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdSkelRoot>(_ComputeExtent);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -119,16 +119,15 @@ public:
                       bool             forcedRepr) override;
 
 protected:
-    // Return the named repr object for this Rprim. Repr objects are
+    // Update the named repr object for this Rprim. Repr objects are
     // created to support specific reprName tokens, and contain a list of
     // HdDrawItems to be passed to the renderpass (via the renderpass calling
     // HdRenderIndex::GetDrawItems()). Draw items contain prim data to be
     // rendered, but HdEmbreeMesh bypasses them for now, so this function is
     // a no-op.
-    virtual HdReprSharedPtr const&
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBits) override;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBits) override;
 
     // Inform the scene graph which state needs to be downloaded in the
     // first Sync() call: in this case, topology and points data to build

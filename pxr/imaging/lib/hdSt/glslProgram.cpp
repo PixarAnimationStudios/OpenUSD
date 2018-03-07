@@ -133,7 +133,7 @@ HdStGLSLProgram::CompileShader(GLenum type,
     std::string logString;
     if (!HdStGLUtils::GetShaderCompileStatus(shader, &logString)) {
         // XXX:validation
-        TF_WARN("Failed to compile shader (%s): \n%s",
+        TF_WARN("Failed to compile shader (%s): %s",
                 shaderType, logString.c_str());
 
         // shader is no longer needed.
@@ -177,7 +177,7 @@ HdStGLSLProgram::Link()
     bool success = true;
     if (!HdStGLUtils::GetProgramLinkStatus(program, &logString)) {
         // XXX:validation
-        TF_WARN("Failed to link shader: \n%s", logString.c_str());
+        TF_WARN("Failed to link shader: %s", logString.c_str());
         success = false;
     }
 

@@ -45,7 +45,7 @@ public:
 
     virtual ~HdSt_BasisCurvesTopology();
 
-    HdBufferSourceSharedPtr GetIndexBuilderComputation(bool supportSmoothCurves);
+    HdBufferSourceSharedPtr GetIndexBuilderComputation(bool forceLines);
 
 private:
     // Must be created through factory

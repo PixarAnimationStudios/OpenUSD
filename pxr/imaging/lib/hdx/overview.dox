@@ -10,7 +10,20 @@
 
 \anchor hdx_mainpage
 
-Hdx builds on the render framework established by Hd, providing abstractions
-and extensions useful for clients writing scenegraph delegates.
+Hdx builds on the abstractions established by Hd, providing abstractions
+and extensions useful for clients interested in using Hydra for imaging.
 
+It currently houses common rendering tasks, such as:
+\li HdxRenderSetupTask 
+\li HdxRenderTask
+\li HdxSelectionTask
+\li HdxSimpleLightTask
+\li HdxShadowTask
+
+It also houses HdxTaskController, which wraps the above tasks and provides 
+setters for these tasks' params. It attempts to encapsulate some of the
+task-specific boiler plate code when using Hydra to render a scene.
+
+usdview makes use of HdxTaskController via UsdImagingGLHdEngine to render a USD
+stage.
 */

@@ -49,10 +49,10 @@ HdSt_BasisCurvesTopology::~HdSt_BasisCurvesTopology()
 }
 
 HdBufferSourceSharedPtr
-HdSt_BasisCurvesTopology::GetIndexBuilderComputation(bool supportSmoothCurves)
+HdSt_BasisCurvesTopology::GetIndexBuilderComputation(bool forceLines)
 {
     return HdBufferSourceSharedPtr(
-        new HdSt_BasisCurvesIndexBuilderComputation(this, supportSmoothCurves));
+        new HdSt_BasisCurvesIndexBuilderComputation(this, forceLines));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

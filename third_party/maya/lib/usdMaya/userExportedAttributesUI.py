@@ -60,7 +60,7 @@ except ImportError:
 if usePySide2:
     # Maya 2017 and later
     from PySide2 import QtCore
-    from PySide2.QtCore import QStringListModel
+    from PySide2.QtGui import QStringListModel
     from PySide2.QtWidgets import QAbstractItemView
     from PySide2.QtWidgets import QCheckBox
     from PySide2.QtWidgets import QComboBox

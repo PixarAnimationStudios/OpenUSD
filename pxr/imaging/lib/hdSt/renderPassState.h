@@ -66,8 +66,12 @@ public:
     ///   glEnable(GL_POLYGON_OFFSET_FILL)
     ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
     ///   glEnable(GL_PROGRAM_POINT_SIZE);
+    ///   glEnable(GL_STENCIL_TEST);
     ///   glPolygonOffset()
     ///   glDepthFunc()
+    ///   glStencilFunc()
+    ///   glStencilOp()
+    ///   glLineWidth()
     HDST_API
     virtual void Bind() override;
 

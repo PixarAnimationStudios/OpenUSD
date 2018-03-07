@@ -32,10 +32,12 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
@@ -66,11 +68,13 @@
 #include <maya/MObject.h>
 #include <maya/MPoint.h>
 #include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MTime.h>
+#include <maya/MViewport2Renderer.h>
 
 #include <map>
 #include <string>
@@ -79,6 +83,10 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
+                        PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
 // Hydra performs its own high-performance frustum culling, so
@@ -596,7 +604,8 @@ UsdMayaProxyShape::computeOutStageData(MDataBlock& dataBlock)
         }
         else {
             MGlobal::displayWarning(
-                MPxNode::name() + ": Stage primPath '" + MString(inData->primPath.GetText()) +
+                MPxSurfaceShape::name() + ": Stage primPath '" +
+                MString(inData->primPath.GetText()) +
                 "'' not a parent of primPath '");
         }
     } else {
@@ -737,6 +746,18 @@ UsdMayaProxyShape::isStageValid() const
     }
 
     return true;
+}
+
+/* virtual */
+MStatus
+UsdMayaProxyShape::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
+{
+    // If/when the MPxDrawOverride for the proxy shape specifies
+    // isAlwaysDirty=false to improve performance, we must be sure to notify
+    // the Maya renderer that the geometry is dirty and needs to be redrawn
+    // when any plug on the proxy shape is dirtied.
+    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+    return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
 }
 
 /* virtual */

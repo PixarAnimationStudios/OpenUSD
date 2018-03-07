@@ -494,7 +494,7 @@ class "Gprim" (
         }
         doc = """Companion to \\em displayColor that specifies opacity, broken
         out as an independent attribute rather than an rgba color, both so that
-        each can be indepedently overridden, and because shaders rarely consume
+        each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
     
@@ -534,6 +534,11 @@ class Cube "Cube" (
     
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
     double size = 2.0 (
         doc = """Indicates the length of each edge of the cube.  If you
@@ -555,6 +560,11 @@ class Sphere "Sphere" (
     
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
     double radius = 1.0 (
         doc = """Indicates the sphere's radius.  If you
@@ -576,6 +586,11 @@ class Cylinder "Cylinder" (
     
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
     double height = 2 (
         doc = """The size of the cylinder's spine along the specified
@@ -605,6 +620,11 @@ class Capsule "Capsule" (
     doc = """Defines a primitive capsule, i.e. a cylinder capped by two half
     spheres, centered at the origin, whose spine is along the specified
     \\em axis."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
     double height = 1.0 (
         doc = """The size of the capsule's spine along the specified
@@ -638,6 +658,11 @@ class Cone "Cone" (
     
     The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
     they all pack into the same volume/bounds."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
     double height = 2.0 (
         doc = """The size of the cone's spine along the specified
@@ -1505,6 +1530,11 @@ class PointInstancer "PointInstancer" (
     """
 
     inherits = </Boundable>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
 ) {
   rel prototypes (
       doc = """<b>Required property</b>. Orders and targets the prototype root 

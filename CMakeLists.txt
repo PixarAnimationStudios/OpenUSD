@@ -120,12 +120,13 @@ if (${PXR_BUILD_DOCUMENTATION})
     
     set(DOCS_DIR "${CMAKE_BINARY_DIR}") 
     set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")         
-    set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
+    set(PXR_SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
+    set(THIRD_PARTY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party")
                                                                                  
     add_custom_target(                                                           
         documentation                                                            
         ALL                                                                      
-        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
+        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${PXR_SOURCE_DIR} ${THIRD_PARTY_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
         DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
     ) 
 

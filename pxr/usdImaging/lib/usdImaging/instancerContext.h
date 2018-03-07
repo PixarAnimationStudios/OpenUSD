@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_INSTANCER_CONTEXT_H
 #define USDIMAGING_INSTANCER_CONTEXT_H
 
+/// \file usdImaging/instancerContext.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usd/sdf/path.h"
@@ -54,7 +56,7 @@ public:
     SdfPath instanceMaterialId;
 
     /// The instancer's prim Adapter. Useful when an adapter is needed, but the
-    /// default adapter may be overriden for the sake of instancing.
+    /// default adapter may be overridden for the sake of instancing.
     UsdImagingPrimAdapterSharedPtr instancerAdapter;
 };
 

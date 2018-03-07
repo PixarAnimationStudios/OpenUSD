@@ -71,10 +71,10 @@ public:
     /// identifier, primId.
     /// typeId is the type of the prim to create, which is allocated using
     /// the provided render delegate.  The Scene delegate provided is
-    /// assosiated with the prim and is the one used to pull the data for the
+    /// associated with the prim and is the one used to pull the data for the
     /// prim during sync processing.
     /// As well as being inserted into this index, the prim is added to the
-    /// change tracker, with the inital dirty state provided by the prim itself.
+    /// change tracker, with the initial dirty state provided by the prim itself.
     ///
     void InsertPrim(const TfToken &typeId,
                     HdSceneDelegate *sceneDelegate,
@@ -136,14 +136,14 @@ public:
     /// specified by InitPrimTypes.
     ///
     /// If the render delegate fails to create a prim, this function returns
-    /// false and the index is remain uninitalized and shouldn't be used.
+    /// false and the index is remain uninitialized and shouldn't be used.
     ///
     bool CreateFallbackPrims(HdRenderDelegate *renderDelegate);
 
     ///
     /// Clean-up function for the index.  Uses the delegate to deallocate
     /// the memory used by the fallback prims.  The index is returned to
-    /// an uninitalized state and shouldn't be used, unless reinintalized.
+    /// an uninitialized state and shouldn't be used, unless reinintialized.
     ///
     void DestroyFallbackPrims(HdRenderDelegate *renderDelegate);
 

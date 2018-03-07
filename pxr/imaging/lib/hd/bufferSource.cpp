@@ -58,10 +58,10 @@ HdBufferSource::HasChainedBuffer() const
     return false;
 }
 
-HdBufferSourceSharedPtr
-HdBufferSource::GetChainedBuffer() const
+HdBufferSourceVector
+HdBufferSource::GetChainedBuffers() const
 {
-    return HdBufferSourceSharedPtr();
+    return HdBufferSourceVector();
 }
 
 bool

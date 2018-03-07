@@ -114,7 +114,7 @@ ForkFunc Arch_nonLockingFork =
 #endif
 #endif
 
-/*** Stack Logging Global Varaibles ***/
+/*** Stack Logging Global Variables ***/
 
 // Stores the application's launch time
 static time_t _appLaunchTime;
@@ -124,7 +124,7 @@ static time_t _appLaunchTime;
 // to set this value.
 static bool _shouldLogStackToDb = false;
 
-// This string holds the path the the script used to log sessions
+// This string holds the path the script used to log sessions
 // to a database.
 static const char * _logStackToDbCmd = nullptr;
 
@@ -447,7 +447,7 @@ _MakeArgv(
 
 #if !defined(ARCH_OS_WINDOWS)
 /* We use a 'non-locking' fork so that we won't get hung up if we've
- * had malloc corrupton when we crash.  The crash recovery behavior
+ * had malloc corruption when we crash.  The crash recovery behavior
  * can be tested with ArchTestCrash(), which should crash with this
  * malloc corruption.
  */
@@ -841,7 +841,7 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
         if (FILE* stackFd = ArchOpenFile(stackTrace, "a")) {
             if (FILE* sessionLogFd = ArchOpenFile(sessionLog, "r")) {
                 fputs("\n\n********** Session Log **********\n\n", stackFd);
-                // Cat the sesion log
+                // Cat the session log
                 char line[4096];
                 while (fgets(line, 4096, sessionLogFd)) {
                     fputs(line, stackFd);

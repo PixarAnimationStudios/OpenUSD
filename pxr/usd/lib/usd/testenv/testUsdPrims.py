@@ -510,13 +510,23 @@ class TestUsdPrim(unittest.TestCase):
             return list(x for x in chars)
 
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('PropertyReorder.'+fmt)
+            sl = Sdf.Layer.CreateAnonymous(fmt)
+            s = Usd.Stage.CreateInMemory('PropertyReorder.'+fmt, sl)
             f = s.OverridePrim('/foo')
 
-            for name in reversed(l('abcdefg')):
+            s.SetEditTarget(s.GetRootLayer())
+            for name in reversed(l('abcd')):
+                f.CreateAttribute(name, Sdf.ValueTypeNames.Int)
+
+            s.SetEditTarget(s.GetSessionLayer())
+            for name in reversed(l('defg')):
                 f.CreateAttribute(name, Sdf.ValueTypeNames.Int)
 
             self.assertEqual(f.GetPropertyNames(), l('abcdefg'))
+
+            pred = lambda tok : tok in ['a', 'd', 'f']
+            self.assertEqual(f.GetPropertyNames(predicate=pred),
+                             l('adf'))
 
             f.SetPropertyOrder(l('edc'))
             self.assertEqual(f.GetPropertyNames(), l('edcabfg'))
@@ -532,6 +542,9 @@ class TestUsdPrim(unittest.TestCase):
 
             f.SetPropertyOrder(l('d'))
             self.assertEqual(f.GetPropertyNames(), l('dabcefg'))
+
+            self.assertEqual(f.GetPropertyNames(predicate=pred),
+                             l('daf'))
 
             f.SetPropertyOrder(l('xyz'))
             self.assertEqual(f.GetPropertyNames(), l('abcdefg'))
@@ -755,17 +768,45 @@ class TestUsdPrim(unittest.TestCase):
 
     def test_AppliedSchemas(self):
         for fmt in allFormats:
-            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt)
-            root = s.DefinePrim('/hello')
+            sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
+            s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt, sessionLayer)
+
+            s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
+
+            root = s.OverridePrim('/hello')
             self.assertEqual([], root.GetAppliedSchemas())
-            Usd.ModelAPI.Apply(s, '/hello')
+
+            rootModelAPI = Usd.ModelAPI.Apply(root)
+            self.assertTrue(rootModelAPI)
+
+            root = rootModelAPI.GetPrim()
+            self.assertTrue(root)
+
+            self.assertTrue(root.HasAPI(Usd.ModelAPI))
+
             self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
-            Usd.ClipsAPI.Apply(s, '/hello')
-            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+
+            # Switch the edit target to the session layer and test bug 156929
+            s.SetEditTarget(Usd.EditTarget(s.GetSessionLayer()))
+            sessionClipsAPI = Usd.ClipsAPI.Apply(root)
+            self.assertTrue(sessionClipsAPI)
+            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+
+            self.assertTrue(root.HasAPI(Usd.ClipsAPI))
 
             # Ensure duplicates aren't picked up
-            Usd.ClipsAPI.Apply(s, '/hello')
-            self.assertEqual(['ModelAPI', 'ClipsAPI'], root.GetAppliedSchemas())
+            anotherSessionClipsAPI = Usd.ClipsAPI.Apply(root)
+            self.assertTrue(anotherSessionClipsAPI)
+            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+
+            # Add a duplicate in the root layer and ensure that there are no 
+            # duplicates in the composed result.
+            s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
+            rootClipsAPI = Usd.ClipsAPI.Apply(root)
+            self.assertTrue(rootClipsAPI)
+            self.assertEqual(['ClipsAPI', 'ModelAPI'], 
+                             root.GetAppliedSchemas())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -61,7 +61,7 @@ HdBasisCurves::ConfigureRepr(TfToken const &reprName,
     HD_TRACE_FUNCTION();
 
     if (IsEnabledForceRefinedCurves()) {
-        desc.geomStyle = HdBasisCurvesGeomStyleRefined;
+        desc.geomStyle = HdBasisCurvesGeomStylePatch;
     }
 
     _reprDescConfig.Append(reprName, _BasisCurvesReprConfig::DescArray{desc});

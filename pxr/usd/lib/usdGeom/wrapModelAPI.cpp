@@ -136,7 +136,7 @@ void wrapUsdGeomModelAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
 
         .def("IsConcrete",
@@ -146,6 +146,10 @@ void wrapUsdGeomModelAPI()
         .def("IsTyped",
             static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
         .staticmethod("IsTyped")
+
+        .def("IsMultipleApply", 
+            static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
+        .staticmethod("IsMultipleApply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -301,6 +305,8 @@ WRAP_CUSTOM {
         .def("CreateConstraintTarget", &UsdGeomModelAPI::CreateConstraintTarget)
         .def("GetConstraintTargets", &UsdGeomModelAPI::GetConstraintTargets,
             return_value_policy<TfPySequenceToList>())
+
+        .def("ComputeModelDrawMode", &UsdGeomModelAPI::ComputeModelDrawMode)
     ;
 }
 

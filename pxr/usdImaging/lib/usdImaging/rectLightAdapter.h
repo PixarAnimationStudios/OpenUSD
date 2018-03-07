@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_RECT_LIGHT_ADAPTER_H
 #define USDIMAGING_RECT_LIGHT_ADAPTER_H
 
+/// \file usdImaging/rectLightAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"

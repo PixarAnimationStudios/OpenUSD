@@ -34,50 +34,81 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,              "mesh.glslfx"))
+
+    // normal mixins
     ((smooth,                  "MeshNormal.Smooth"))
     ((flat,                    "MeshNormal.Flat"))
     ((limit,                   "MeshNormal.Limit"))
+
     ((doubleSidedFS,           "MeshNormal.Fragment.DoubleSided"))
     ((singleSidedFS,           "MeshNormal.Fragment.SingleSided"))
+
+    // wireframe mixins
     ((edgeNoneGS,              "MeshWire.Geometry.NoEdge"))
     ((edgeNoneFS,              "MeshWire.Fragment.NoEdge"))
+
     ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
-    ((hullEdgeOnlyNoBlendFS,   "MeshWire.Fragment.HullEdgeOnlyNoBlend"))
+
     ((edgeOnSurfGS,            "MeshWire.Geometry.Edge"))
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeOnlyFS,         "MeshPatchWire.Fragment.EdgeOnly"))
     ((patchEdgeOnSurfFS,       "MeshPatchWire.Fragment.EdgeOnSurface"))
+
+    // edge id mixins (for edge picking & selection)
+    ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
+    ((edgeIdBaryGS,            "EdgeId.Geometry.Bary"))
+    ((edgeIdRectGS,            "EdgeId.Geometry.Rect"))
+    ((edgeIdBaryFallbackFS,    "EdgeId.Fragment.BaryFallback"))
+    ((edgeIdBaryFS,            "EdgeId.Fragment.Bary"))
+    ((edgeIdRectFS,            "EdgeId.Fragment.Rect"))
+
+    // point id mixins (for point picking & selection)
+    ((pointIdVS,               "PointId.Vertex"))
+    ((pointIdFS,               "PointId.Fragment.Points"))
+    ((pointIdFallbackFS,       "PointId.Fragment.Fallback"))
+
+    // main for all the shader stages
     ((mainVS,                  "Mesh.Vertex"))
     ((mainBSplineTCS,          "Mesh.TessControl.BSpline"))
     ((mainBezierTES,           "Mesh.TessEval.Bezier"))
+    ((mainTriangleTessGS,      "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
+    ((mainFS,                  "Mesh.Fragment"))
+
+    // instancing related mixins
+    ((instancing,              "Instancing.Transform"))
+
+    // terminals
+    ((customDisplacementGS,    "Geometry.CustomDisplacement"))
+    ((noCustomDisplacementGS,  "Geometry.NoCustomDisplacement"))
     ((commonFS,                "Fragment.CommonTerminals"))
     ((surfaceFS,               "Fragment.Surface"))
     ((surfaceUnlitFS,          "Fragment.SurfaceUnlit"))
     ((surfaceSheerFS,          "Fragment.SurfaceSheer"))
+    ((surfaceOutlineFS,        "Fragment.SurfaceOutline"))
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((hullColorFS,             "Fragment.HullColor"))
-    ((mainFS,                  "Mesh.Fragment"))
-    ((instancing,              "Instancing.Transform"))
-    ((displacementGS,          "Geometry.Displacement"))
+    ((pointColorFS,            "Fragment.PointColor"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
-    bool hasCustomDisplacementTerminal,
+    bool useCustomDisplacement,
     bool smoothNormals,
     bool doubleSided,
     bool faceVarying,
     bool blendWireframeColor,
     HdCullStyle cullStyle,
-    HdMeshGeomStyle geomStyle)
+    HdMeshGeomStyle geomStyle,
+    float lineWidth)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , polygonMode(HdPolygonModeFill)
+    , lineWidth(lineWidth)
     , isFaceVarying(faceVarying)
     , glslfx(_tokens->baseGLSLFX)
 {
@@ -90,8 +121,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     VS[0] = _tokens->instancing;
     VS[1] = (smoothNormals ? _tokens->smooth
                            : _tokens->flat);
-    VS[2] = _tokens->mainVS;
-    VS[3] = TfToken();
+    VS[2] = _tokens->pointIdVS;
+    VS[3] = _tokens->mainVS;
+    VS[4] = TfToken();
 
     // tessellation control shader
     const bool isPrimTypePatches = 
@@ -116,33 +148,49 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
               geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
                                                           : _tokens->edgeNoneGS);
 
-    GS[3] = HdSt_GeometricShader::IsPrimTypeQuads(primType)? 
-                _tokens->mainQuadGS : _tokens->mainTriangleGS;
-    GS[4] = TfToken();
+    bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
+    bool isPrimTypeQuads = HdSt_GeometricShader::IsPrimTypeQuads(primType);
+    bool isPrimTypeCoarseTris =
+        primType == HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
 
-    // Optimization : If the mesh does not provide a custom displacement shader
-    //                we have an opportunity to fully disable the geometry
-    //                stage.
-    if (!hasCustomDisplacementTerminal) {
-        // Geometry shader (along with the displacement shader) 
-        // can be fully disabled in the folowing condition.
-        if (smoothNormals
+    TfToken gsEdgeIdMixin = _tokens->edgeIdNoneGS;
+    if (isPrimTypeCoarseTris) {
+        // emit bary coord per vertex when we triangulate to help compute the
+        // edgeId
+        gsEdgeIdMixin = _tokens->edgeIdBaryGS;
+    } else if (!isPrimTypePoints) {
+        // emit face uv per vertex if using patches (adaptive subdiv) or
+        // quads (uniform or quadrangulation) or
+        // loop to help compute the edge id.
+        gsEdgeIdMixin = _tokens->edgeIdRectGS;
+    }
+    GS[3] = gsEdgeIdMixin;
+
+    // Displacement shading can be disabled explicitly, or if the entrypoint
+    // doesn't exist (resolved in HdStMesh).
+    GS[4] = (!useCustomDisplacement) ?
+        _tokens->noCustomDisplacementGS :
+        _tokens->customDisplacementGS;
+
+    GS[5] = isPrimTypeQuads? _tokens->mainQuadGS :
+                (isPrimTypePatches ? _tokens->mainTriangleTessGS
+                                   : _tokens->mainTriangleGS);
+    GS[6] = TfToken();
+
+    // Optimization : If the mesh is skipping displacement shading, we have an
+    // opportunity to fully disable the geometry stage.
+    if (!useCustomDisplacement
+            && smoothNormals
             && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
             && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
             && (!isFaceVarying)) {
             
-            GS[0] = TfToken();
-        } else {
-            // If we were not able to disable the geometry stage
-            // then we will add a very simple displacement shader.
-            GS[4] = _tokens->displacementGS;
-            GS[5] = TfToken();
-        }
+        GS[0] = TfToken();
     }
 
     // Optimization : Points don't need any sort of geometry shader so
     //                we ignore it here.
-    if (HdSt_GeometricShader::IsPrimTypePoints(primType)) {
+    if (isPrimTypePoints) {
         GS[0] = TfToken();
     }
 
@@ -159,12 +207,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                   geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->patchEdgeOnSurfFS
                                                               : _tokens->edgeNoneFS));
     } else {
-        if (geomStyle == HdMeshGeomStyleEdgeOnly) {
+        if (geomStyle == HdMeshGeomStyleEdgeOnly ||
+            geomStyle == HdMeshGeomStyleHullEdgeOnly) {
             FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
                                         : _tokens->edgeOnlyNoBlendFS;
-        } else if (geomStyle == HdMeshGeomStyleHullEdgeOnly) {
-            FS[3] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
-                                        : _tokens->hullEdgeOnlyNoBlendFS;
         } else if (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
                    geomStyle == HdMeshGeomStyleHullEdgeOnSurf) {
             FS[3] = _tokens->edgeOnSurfFS;
@@ -180,10 +226,14 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         terminalFS = _tokens->surfaceUnlitFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderSheer) {
         terminalFS = _tokens->surfaceSheerFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->surfaceShaderOutline) {
+        terminalFS = _tokens->surfaceOutlineFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->constantColor) {
         terminalFS = _tokens->constantColorFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {
         terminalFS = _tokens->hullColorFS;
+    } else if (shadingTerminal == HdMeshReprDescTokens->pointColor) {
+        terminalFS = _tokens->pointColorFS;
     } else if (!shadingTerminal.IsEmpty()) {
         terminalFS = shadingTerminal;
     } else {
@@ -192,8 +242,41 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     FS[4] = terminalFS;
     FS[5] = _tokens->commonFS;
-    FS[6] = _tokens->mainFS;
-    FS[7] = TfToken();
+
+    // edge id
+    uint8_t fsIndex = 6;
+    if (!GS[0].IsEmpty()) {
+        if (isPrimTypeCoarseTris) {
+            FS[fsIndex++] = _tokens->edgeIdBaryFS;
+             TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdBaryGS);
+        } else {
+            // XXX: loop uses this path, and we still call it "rectangular
+            // parametrization". need a better name.
+            FS[fsIndex++] = _tokens->edgeIdRectFS;
+            TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdRectGS);
+        }
+    } else {
+        // the GS stage is skipped if we're dealing with points or triangles.
+        // (see "Optimization" above)
+
+        // for triangles, emit the fallback version.
+        if (HdSt_GeometricShader::IsPrimTypeTriangles(primType)) {
+            FS[fsIndex++] = _tokens->edgeIdBaryFallbackFS;
+        }
+
+        // for points, it isn't so simple. we don't know if the 'edgeIndices'
+        // buffer was bound.
+        // if the points repr alone is used, then it won't be generated.
+        // (see GetPointsIndexBuilderComputation)
+        // if any other *IndexBuilderComputation was used, and we then use the
+        // points repr, the binding will exist.
+        // we handle this scenario in hdStCodeGen since it has the binding info.
+    }
+
+    FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
+                                      _tokens->pointIdFallbackFS;
+    FS[fsIndex++] = _tokens->mainFS;
+    FS[fsIndex] = TfToken();
 }
 
 HdSt_MeshShaderKey::~HdSt_MeshShaderKey()

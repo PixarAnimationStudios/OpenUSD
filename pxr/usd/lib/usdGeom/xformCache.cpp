@@ -134,6 +134,11 @@ GfMatrix4d
 UsdGeomXformCache::GetLocalTransformation(const UsdPrim &prim, 
                                           bool *resetsXformStack)
 {
+    if(!resetsXformStack) {
+        TF_CODING_ERROR("'resetsXformStack' pointer is null.");
+        return GfMatrix4d(1);
+    }
+
     _Entry *entry = _GetCacheEntryForPrim(prim);
     GfMatrix4d xform(1.); 
     if (TF_VERIFY(entry)) {
@@ -143,6 +148,27 @@ UsdGeomXformCache::GetLocalTransformation(const UsdPrim &prim,
         *resetsXformStack = false;
     }
 
+    return xform;
+}
+
+GfMatrix4d
+UsdGeomXformCache::ComputeRelativeTransform(const UsdPrim &prim,
+                                            const UsdPrim &ancestor,
+                                            bool *resetXformStack)
+{
+    GfMatrix4d xform(1.);
+
+    if(!resetXformStack) {
+        TF_CODING_ERROR("'resetXformStack' pointer is null.");
+        return xform;
+    }
+
+    for(UsdPrim p = prim; p && p != ancestor; p = p.GetParent()) {
+        xform *= GetLocalTransformation(p, resetXformStack);
+        if(*resetXformStack) {
+            break;
+        }
+    }
     return xform;
 }
 

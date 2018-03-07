@@ -93,7 +93,8 @@ public:
 
     private:
         UsdSkelSkeletonQuery
-        _FindOrCreateSkelQuery(const UsdPrim& skelPrim,
+        _FindOrCreateSkelQuery(const UsdPrim& instancePrim,
+                               const UsdPrim& skelPrim,
                                const UsdSkelAnimQuery& animQuery);
 
         UsdSkelSkinningQuery

@@ -41,6 +41,9 @@ HdRenderPassState::HdRenderPassState()
     , _cullMatrix(1)
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
+    , _pointSize(3.0)
+    , _pointSelectedSize(3.0)
     , _lightingEnabled(true)
     , _alphaThreshold(0.5f)
     , _tessLevel(32.0)
@@ -51,6 +54,14 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
     , _cullStyle(HdCullStyleNothing)
+    , _stencilFunc(HdCmpFuncAlways)
+    , _stencilRef(0)
+    , _stencilMask(~0)
+    , _stencilFailOp(HdStencilOpKeep)
+    , _stencilZFailOp(HdStencilOpKeep)
+    , _stencilZPassOp(HdStencilOpKeep)
+    , _stencilEnabled(false)
+    , _lineWidth(1.0f)
     , _alphaToCoverageUseDefault(true)
     , _alphaToCoverageEnabled(true)
     , _colorMaskUseDefault(true)
@@ -105,6 +116,24 @@ void
 HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 {
     _wireframeColor = color;
+}
+
+void
+HdRenderPassState::SetPointColor(GfVec4f const &color)
+{
+    _pointColor = color;
+}
+
+void
+HdRenderPassState::SetPointSize(float size)
+{
+    _pointSize = size;
+}
+
+void
+HdRenderPassState::SetPointSelectedSize(float size)
+{
+    _pointSelectedSize = size;
 }
 
 void
@@ -172,6 +201,31 @@ void
 HdRenderPassState::SetDepthFunc(HdCompareFunction depthFunc)
 {
     _depthFunc = depthFunc;
+}
+
+void
+HdRenderPassState::SetStencil(HdCompareFunction func,
+        int ref, int mask,
+        HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
+{
+    _stencilFunc = func;
+    _stencilRef = ref;
+    _stencilMask = mask;
+    _stencilFailOp = fail;
+    _stencilZFailOp = zfail;
+    _stencilZPassOp = zpass;
+}
+
+void
+HdRenderPassState::SetStencilEnabled(bool enabled)
+{
+    _stencilEnabled = enabled;
+}
+
+void
+HdRenderPassState::SetLineWidth(float width)
+{
+    _lineWidth = width;
 }
 
 void

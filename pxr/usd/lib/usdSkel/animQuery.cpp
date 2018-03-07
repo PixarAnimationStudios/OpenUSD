@@ -104,6 +104,16 @@ UsdSkelAnimQuery::JointTransformsMightBeTimeVarying() const
 }
 
 
+bool
+UsdSkelAnimQuery::TransformMightBeTimeVarying() const
+{
+    if(TF_VERIFY(IsValid(), "invalid anim query.")) {
+        return _impl->TransformMightBeTimeVarying();
+    }
+    return false;
+}
+
+
 VtTokenArray
 UsdSkelAnimQuery::GetJointOrder() const
 {

@@ -162,7 +162,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Companion to \em displayColor that specifies opacity, broken
     /// out as an independent attribute rather than an rgba color, both so that
-    /// each can be indepedently overridden, and because shaders rarely consume
+    /// each can be independently overridden, and because shaders rarely consume
     /// rgba parameters.
     ///
     /// \n  C++ Type: VtArray<float>

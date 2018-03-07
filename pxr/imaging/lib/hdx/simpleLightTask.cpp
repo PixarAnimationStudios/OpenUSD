@@ -54,6 +54,8 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     : HdSceneTask(delegate, id) 
     , _cameraId()
     , _lightIds()
+    , _lightIncludePaths()
+    , _lightExcludePaths()
     , _numLights(0)
     , _lightingShader(new HdxSimpleLightingShader())
     , _collectionVersion(0)
@@ -131,15 +133,8 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             return;
         }
 
-        // Extract all light paths for each type of light
-        static const TfTokenVector lightTypes = 
-            {HdPrimTypeTokens->simpleLight,
-             HdPrimTypeTokens->rectLight,
-             HdPrimTypeTokens->sphereLight};
-        _numLights = _AppendLightsOfType(renderIndex, lightTypes,
-                          params.lightIncludePaths,
-                          params.lightExcludePaths,
-                          &_lightIds);
+        _lightIncludePaths = params.lightIncludePaths;
+        _lightExcludePaths = params.lightExcludePaths;
         _cameraId = params.cameraPath;
         _enableShadows = params.enableShadows;
         _viewport = params.viewport;
@@ -187,6 +182,17 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         windowPolicy = vtWindowPolicy.Get<CameraUtilConformWindowPolicy>();
     }
 
+    // Extract all light paths for each type of light
+    static const TfTokenVector lightTypes = 
+        {HdPrimTypeTokens->simpleLight,
+            HdPrimTypeTokens->rectLight,
+            HdPrimTypeTokens->sphereLight};
+    _lightIds.clear();
+    _numLights = _AppendLightsOfType(renderIndex, lightTypes,
+                        _lightIncludePaths,
+                        _lightExcludePaths,
+                        &_lightIds);
+
     // We rebuild the lights array every time, but avoid reallocating
     // the array every frame as this was showing up as a significant portion
     // of the time in this function.
@@ -214,7 +220,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 
             // Take a copy of the simple light into our temporary array and
             // update it with viewer-dependant values.
-            VtValue vtLightParams = light->Get(HdStLightTokens->params);
+            VtValue vtLightParams = light->Get(HdLightTokens->params);
                 _glfSimpleLights.push_back(
                     vtLightParams.GetWithDefault<GlfSimpleLight>(GlfSimpleLight()));
 
@@ -228,7 +234,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             // If the light is in camera space we need to transform
             // the position and spot direction to the right space.
             if (glfl.IsCameraSpaceLight()) {
-                VtValue vtXform = light->Get(HdStLightTokens->transform);
+                VtValue vtXform = light->Get(HdLightTokens->transform);
                 const GfMatrix4d &lightXform =
                     vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>()
                                                     : GfMatrix4d(1);
@@ -242,7 +248,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             }
 
             VtValue vLightShadowParams = 
-                light->Get(HdStLightTokens->shadowParams);
+                light->Get(HdLightTokens->shadowParams);
             HdxShadowParams lightShadowParams = 
                 vLightShadowParams.GetWithDefault<HdxShadowParams>
                     (HdxShadowParams());

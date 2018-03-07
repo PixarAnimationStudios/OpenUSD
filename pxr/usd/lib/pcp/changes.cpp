@@ -28,6 +28,7 @@
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/dependencies.h"
+#include "pxr/usd/pcp/instancing.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/pathTranslation.h"
@@ -686,26 +687,17 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
         // and the cache at each path.
         //
         //  Prim:
-        //     Add first spec   -- prim graph change (1)
-        //     Remove last spec -- prim graph change (2)
-        //     Add non-inert    -- prim graph change
-        //     Remove non-inert -- prim graph change
-        //     Add/remove inert -- update specs
+        //     Add/remove inert     -- insignificant change (*)
+        //     Add/remove non-inert -- significant change
         //
         //  Property:
-        //     Add/remove inert     -- significant change
-        //     Add/remove non-inert -- insignificant change
+        //     Add/remove inert     -- insignificant change
+        //     Add/remove non-inert -- significant change
         //
-        // 1) We can't tell here if we're adding the first prim spec because
-        // these results are independent of the Pcp caches/layer stacks.  So
-        // when adding we assume we might be adding the first spec.  Later
-        // we'll check more carefully.
-        //
-        // 2) We can't tell if we're removing the last prim spec because we
-        // don't cache prim stacks.  So we'll just ignore the remove last
-        // spec case;  non-inert removes are prim graph changes anyway and
-        // inert removes will cause PcpCache::Apply() to check if any
-        // specs remain and, if not, blow the prim graph.
+        // (*) We may be adding the first prim spec or removing the last prim 
+        // spec from a composed prim in this case.  We'll check for this in
+        // DidChangeSpecs and upgrade to a significant change if we discover
+        // this is the case.
         //
         // Note that in the below code, the order of the if statements does
         // matter, as a spec could be added, then removed (for example) within 
@@ -1161,41 +1153,76 @@ PcpChanges::DidChangeSignificantly(PcpCache* cache, const SdfPath& path)
     _GetCacheChanges(cache).didChangeSignificantly.insert(path);
 }
 
+static bool
+_HasAnySpecs(const PcpPrimIndex& primIndex)
+{
+    for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+        if (PcpComposeSiteHasPrimSpecs(node)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 PcpChanges::DidChangeSpecs(
     PcpCache* cache, const SdfPath& path,
     const SdfLayerHandle& changedLayer, const SdfPath& changedPath)
 {
-    // If we're adding an inert prim spec, it may correspond to a node that
-    // was culled in the prim index at path. If so, we need to rebuild that
-    // index to pick up the new node. We don't need to rebuild the indexes
-    // for namespace descendants because those should not be affected.
-    //
-    // XXX: We could also rebuild the index if we removed the last prim spec 
-    //      from a layer stack, to cull the corresponding node. The cost for
-    //      determining whether this is the case may outweigh the benefit,
-    //      though.
     if (path.IsPrimPath()) {
         TF_VERIFY(changedPath.IsPrimOrPrimVariantSelectionPath());
-
-        bool shouldRebuildIndex = false;
+        const bool primWasAdded = changedLayer->HasSpec(changedPath);
+        const bool primWasRemoved = !primWasAdded;
 
         const PcpPrimIndex* primIndex = cache->FindPrimIndex(path);
-        const PcpNodeRef nodeForChangedSpec = 
-            primIndex
-            ? primIndex->GetNodeProvidingSpec(changedLayer, changedPath)
-            : PcpNodeRef();
+        if (primIndex) {
+            // If the inert spec removed was the last spec in this prim index,
+            // the composed prim no longer exists, so mark it as a significant 
+            // change.
+            if (primWasRemoved && !_HasAnySpecs(*primIndex)) {
+                DidChangeSignificantly(cache, path);
+                return;
+            }
 
-        if (!nodeForChangedSpec) {
-            const bool primWasAdded = changedLayer->HasSpec(changedPath);
-            if (primWasAdded) {
-                shouldRebuildIndex = true;
+            const PcpNodeRef nodeForChangedSpec = 
+                primIndex->GetNodeProvidingSpec(changedLayer, changedPath);
+            if (nodeForChangedSpec) {
+                // If this prim index is instanceable, the addition or removal
+                // of an inert spec could affect whether this node is considered
+                // instanceable, which would change the prim index's instancing
+                // key. Mark it as a significant change if this is the case.
+                //
+                // Note that we don't handle the case where the node for this
+                // spec can't be found, because it should never happen. This is
+                // because instanceable nodes cannot be ancestral nodes, and
+                // non-ancestral nodes are never culled/removed from the graph,
+                // so we should always be able to find them. 
+                // 
+                // See Pcp_ChildNodeIsInstanceable and _NodeCanBeCulled.
+                if (primIndex->IsInstanceable() &&
+                    Pcp_ChildNodeInstanceableChanged(nodeForChangedSpec)) {
+                    DidChangeSignificantly(cache, path);
+                    return;
+                }
+            }
+            else if (primWasAdded) {
+                // If we're adding an inert prim spec, it may correspond to a 
+                // node that was culled in the prim index at path. If so, we 
+                // need to rebuild that index to pick up the new node. We don't 
+                // need to rebuild the indexes for namespace descendants because
+                // those should not be affected.
+                _GetCacheChanges(cache).didChangePrims.insert(path);
+                return;
             }
         }
-
-        if (shouldRebuildIndex) {
-            _GetCacheChanges(cache).didChangePrims.insert(path);
-            return;
+        else {
+            // If no prim index was found for this path, we assume that if we're
+            // adding an inert spec, it's the first one for this composed prim,
+            // so mark it as a significant change.
+            if (primWasAdded) {
+                DidChangeSignificantly(cache, path);
+                return;
+            }
         }
     }
 

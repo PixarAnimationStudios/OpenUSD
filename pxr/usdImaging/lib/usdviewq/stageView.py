@@ -26,7 +26,7 @@ Module that provides the StageView class.
 '''
 
 from math import tan, atan, floor, ceil, radians as rad
-import os
+import os, sys
 from time import time
 
 from qt import QtCore, QtGui, QtWidgets, QtOpenGL
@@ -1718,7 +1718,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         # update rendering parameters
         self._renderParams.frame = self._dataModel.currentFrame
-        self._renderParams.complexity = self._dataModel.viewSettings.complexity
+        self._renderParams.complexity = self._dataModel.viewSettings.complexity.value
         self._renderParams.drawMode = renderMode
         self._renderParams.showGuides = self._dataModel.viewSettings.displayGuide
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy
@@ -1736,7 +1736,13 @@ class StageView(QtOpenGL.QGLWidget):
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
-        renderer.Render(pseudoRoot, self._renderParams)
+        try:
+            renderer.Render(pseudoRoot, self._renderParams)
+        except Tf.ErrorException as e:
+            # If we encounter an error during a render, we want to continue
+            # running. Just log the error and continue.
+            sys.stderr.write(
+                "ERROR: Usdview encountered an error while rendering.{}\n".format(e))
         self._forceRefresh = False
 
 
@@ -2162,7 +2168,7 @@ class StageView(QtOpenGL.QGLWidget):
             if self._cameraPrim:
                 camName = self._cameraPrim.GetName()
 
-            toPrint = {"Complexity" : self._dataModel.viewSettings.complexity,
+            toPrint = {"Complexity" : self._dataModel.viewSettings.complexity.name,
                        "Camera" : camName}
             self._hud.updateGroup("BottomRight",
                                   self.width()-200, self.height()-self._hud._HUDLineSpacing*2,
@@ -2377,7 +2383,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         # update rendering parameters
         self._renderParams.frame = self._dataModel.currentFrame
-        self._renderParams.complexity = self._dataModel.viewSettings.complexity
+        self._renderParams.complexity = self._dataModel.viewSettings.complexity.value
         self._renderParams.drawMode = self._renderModeDict[self._dataModel.viewSettings.renderMode]
         self._renderParams.showGuides = self._dataModel.viewSettings.displayGuide
         self._renderParams.showProxy = self._dataModel.viewSettings.displayProxy

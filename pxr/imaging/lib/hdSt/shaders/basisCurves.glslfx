@@ -29,9 +29,24 @@
 
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
+
+// Known issues:
+// * The direction of the 'v' post tessellation is inconsistent between 
+// curve representations with regards to whether it increases from left to right
+// or right to left. If we start using materials that require 'v', we should fix 
+// this to be both consistent and match the RenderMan default orientation.
+//
+// * RenderMan uses 'u' describe the parameter along curve profile and 'v' to
+// describe the curve length.  It's opposite here.  It would be good to align
+// these once we start to use 'u' and 'v' in curve materials.
+//
+// * We might want to explore using fractional_even_spacing to better preserve
+// the shape of cubic curves.
+//
 
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.Vertex
+-- glsl Curves.Vertex.Patch
 
 out CurveVertexData
 {
@@ -41,6 +56,7 @@ out CurveVertexData
 
 // We will either generate a camera facing normal or use the authored normal.
 vec3 getNormal(MAT4 transform);
+void ProcessPointId(); // pointId.glslfx
 
 void main(void)
 {
@@ -52,24 +68,55 @@ void main(void)
                                   GetWorldToViewInverseMatrix()));
 
     ProcessPrimVars();
+
+    ProcessPointId();
 }
 
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.TessellationControl
+-- glsl Curves.Vertex.Normal.Implicit
 
-layout(vertices = 4) out;
-
-in CurveVertexData
+vec3 getNormal(MAT4 transform)
 {
-    vec4 Peye;
-    vec3 Neye;
-} inData[gl_MaxPatchVertices];
+    // Generate a camera-facing normal in camera/eye space, designed to match
+    // RenderMan.
+    return vec3(0, 0, 1);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Vertex.Normal.Oriented
+
+vec3 getNormal(MAT4 transform)
+{
+    return (transform * vec4(HdGet_normals(), 0)).xyz;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Vertex.Wire
 
 out CurveVertexData
 {
     vec4 Peye;
-    vec3 Neye;
-} outData[4];
+} outData;
+
+void ProcessPointId(); // pointId.glslfx
+
+void main(void)
+{
+    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    vec4 point     = vec4(HdGet_points().xyz, 1);
+
+    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+
+    ProcessPrimVars();
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    ProcessPointId();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Shared
 
 float GetMaxTess()
 {
@@ -90,6 +137,122 @@ vec2 projectToScreen(MAT4 projMat, vec4 vertex, vec2 screen_size)
     return (clamp(res.xy, -1.3, 1.3) + 1) * (screen_size * 0.5);
 }
 
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Linear.Patch
+
+layout(vertices = 2) out;
+
+in CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[gl_MaxPatchVertices];
+
+out CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData[2];
+
+void determineLODSettings();
+void main(void)
+{
+    if(gl_InvocationID == 0) {
+       determineLODSettings();
+    }
+
+    outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
+    outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
+
+    ProcessPrimVars();
+}
+
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Linear.Ribbon
+
+// Use the length of the control points in screen space to determine how many 
+// times to subdivide the curve.
+void determineLODSettings()
+{
+    gl_TessLevelOuter[0] = 1;
+    gl_TessLevelOuter[1] = 1;
+    gl_TessLevelOuter[2] = 1;
+    gl_TessLevelOuter[3] = 1;
+
+    gl_TessLevelInner[0] = 1;
+    gl_TessLevelInner[1] = 1;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Linear.HalfTube
+
+// Use the width of the control points in screen space to determine how 
+// many times to subdivide the curve.  NOTE.  As a quick hack, we leverage the
+// fact that the normal isn't normalized at this point in the pipeline to 
+// provide a quick estimate of width in eye space.  If that becomes a bad
+// assumption in the future, this needs to be reworked.
+void determineLODSettings()
+{
+    MAT4 projMat = GetProjectionMatrix();
+    vec4 viewport = GetViewport();
+    vec2 screen_size = vec2(viewport.z, viewport.w);
+
+    // NOTE. We've observed that outData.Neye is not normalized, and 
+    // we're using its length as an estimator of the accumulated transform
+    float wEye0 = HdGet_widths(0) * length(inData[0].Neye);
+    float wEye1 = HdGet_widths(1) * length(inData[1].Neye);
+
+    // project a point that is 'w' units away from the origin
+    vec2 v_w0 = projectToScreen(projMat, vec4(wEye0, 0, 0, 1), screen_size);
+    vec2 v_w1 = projectToScreen(projMat, vec4(wEye1, 0, 0, 1), screen_size);
+
+    float maxTess = GetMaxTess();
+    // reduce the tessellation in the width by this value.
+    float widthDecimation = 10.0;
+
+    float maxWidthScreenSpace = max(length(v_w0), length(v_w1));
+
+    float level_w = clamp(maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation, 1, maxTess);
+
+    gl_TessLevelOuter[0] = 1;
+    gl_TessLevelOuter[1] = level_w;
+    gl_TessLevelOuter[2] = 1;
+    gl_TessLevelOuter[3] = level_w;
+
+    gl_TessLevelInner[0] = level_w;
+    gl_TessLevelInner[1] = 1;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Cubic.Wire
+
+layout(vertices = 4) out;
+
+in CurveVertexData
+{
+    vec4 Peye;
+} inData[gl_MaxPatchVertices];
+
+out CurveVertexData
+{
+    vec4 Peye;
+} outData[4];
+
+void determineLODSettings();
+void main(void)
+{
+    if(gl_InvocationID == 0) {
+       determineLODSettings();
+    }
+
+    outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
+
+    ProcessPrimVars();
+}
+
+// Use the length of the control points in screen space to determine how many 
+// times to subdivide the curve.
 void determineLODSettings()
 {
     MAT4 projMat = GetProjectionMatrix();
@@ -100,9 +263,67 @@ void determineLODSettings()
     vec2 v2 = projectToScreen(projMat, inData[2].Peye, screen_size);
     vec2 v3 = projectToScreen(projMat, inData[3].Peye, screen_size);
 
+    float maxTess = GetMaxTess();
+
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0, GetMaxTess());
+    float level = clamp(dist / GetPixelToTessRatio(), 0, maxTess);
+
+    gl_TessLevelOuter[0] = 1;
+    gl_TessLevelOuter[1] = level;
+}
+
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Cubic.Patch
+
+layout(vertices = 4) out;
+
+in CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[gl_MaxPatchVertices];
+
+out CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData[4];
+
+void determineLODSettings();
+void main(void)
+{
+    if(gl_InvocationID == 0) {
+	     determineLODSettings();
+    }
+
+    outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
+    outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
+
+    ProcessPrimVars();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Cubic.Ribbon
+
+// Use the length of the control points in screen space to determine how many 
+// times to subdivide the curve.
+void determineLODSettings()
+{
+    MAT4 projMat = GetProjectionMatrix();
+    vec4 viewport = GetViewport();
+    vec2 screen_size = vec2(viewport.z, viewport.w);
+    vec2 v0 = projectToScreen(projMat, inData[0].Peye, screen_size);
+    vec2 v1 = projectToScreen(projMat, inData[1].Peye, screen_size);
+    vec2 v2 = projectToScreen(projMat, inData[2].Peye, screen_size);
+    vec2 v3 = projectToScreen(projMat, inData[3].Peye, screen_size);
+
+    float maxTess = GetMaxTess();
+
+    // Need to handle off screen
+    float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
+    float level = clamp(dist / GetPixelToTessRatio(), 0, maxTess);
 
     gl_TessLevelOuter[0] = level;
     gl_TessLevelOuter[1] = 1;
@@ -113,22 +334,63 @@ void determineLODSettings()
     gl_TessLevelInner[1] = level;
 }
 
-void main(void)
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessControl.Cubic.HalfTube
+
+// Use the width & length of the control points in screen space to determine how 
+// many times to subdivide the curve.  NOTE.  As a quick hack, we leverage the
+// fact that the normal isn't normalized at this point in the pipeline to 
+// provide a quick estimate of width in eye space.  If that becomes a bad
+// assumption in the future, this needs to be reworked.
+void determineLODSettings()
 {
-    if(gl_InvocationID == 0) {
-	determineLODSettings();
-    }
+    MAT4 projMat = GetProjectionMatrix();
+    vec4 viewport = GetViewport();
+    vec2 screen_size = vec2(viewport.z, viewport.w);
+    vec2 v0 = projectToScreen(projMat, inData[0].Peye, screen_size);
+    vec2 v1 = projectToScreen(projMat, inData[1].Peye, screen_size);
+    vec2 v2 = projectToScreen(projMat, inData[2].Peye, screen_size);
+    vec2 v3 = projectToScreen(projMat, inData[3].Peye, screen_size);
 
-    outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
-    outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
+    // NOTE. We've observed that outData.Neye is not normalized, and 
+    // we're using its length as an estimator of the accumulated transform
+    float wEye0 = HdGet_widths(0) * length(inData[0].Neye);
+    float wEye1 = HdGet_widths(1) * length(inData[1].Neye);
+    float wEye2 = HdGet_widths(2) * length(inData[2].Neye);
+    float wEye3 = HdGet_widths(3) * length(inData[3].Neye);
 
-    ProcessPrimVars();
+    // project a point that is 'w' units away from the origin
+    vec2 v_w0 = projectToScreen(projMat, vec4(wEye0, 0, 0, 1), screen_size);
+    vec2 v_w1 = projectToScreen(projMat, vec4(wEye1, 0, 0, 1), screen_size);
+    vec2 v_w2 = projectToScreen(projMat, vec4(wEye2, 0, 0, 1), screen_size);
+    vec2 v_w3 = projectToScreen(projMat, vec4(wEye3, 0, 0, 1), screen_size);
+
+    float maxTess = GetMaxTess();
+    // reduce the tessellation in the width by this value.
+    float widthDecimation = 10.0;
+
+    // Need to handle off screen
+    float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
+    float level = clamp(dist / GetPixelToTessRatio(), 0, maxTess);
+
+    float maxWidthScreenSpace = 
+      max(max(max(length(v_w0), length(v_w1)), length(v_w2)), length(v_w3));
+
+    float level_w = clamp(maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation, 1, maxTess);
+
+    gl_TessLevelOuter[0] = level;
+    gl_TessLevelOuter[1] = level_w;
+    gl_TessLevelOuter[2] = level;
+    gl_TessLevelOuter[3] = level_w;
+
+    gl_TessLevelInner[0] = level_w;
+    gl_TessLevelInner[1] = level;
 }
 
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.TessellationEvaluation
+-- glsl Curves.TessEval.Cubic.Wire
 
-layout(quads, fractional_odd_spacing, ccw) in;
+layout(isolines, fractional_odd_spacing) in;
 
 struct Coeffs
 {
@@ -139,26 +401,19 @@ struct Coeffs
 in CurveVertexData
 {
     vec4 Peye;
-    vec3 Neye;
 } inData[gl_MaxPatchVertices];
 
-out VertexData
+out CurveVertexData
 {
     vec4 Peye;
-    vec3 Neye;
 } outData;
 
-// Predefine so that we can later swap in the correct one depending
-// on what type of curve we have
 Coeffs evaluateBasis(float u, float u2, float u3);
-float evaluateWidths(vec4 basis, float u);
-vec3 interpNormal(vec4 basis, float u);
 
 void main()
 {
-    float u, v;
-    u = gl_TessCoord.y;
-    v = gl_TessCoord.x;
+    float u = gl_TessCoord.x;
+    float v = .5;
 
     vec4 cv0 = inData[0].Peye;
     vec4 cv1 = inData[1].Peye;
@@ -167,35 +422,68 @@ void main()
 
     Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
     vec4 basis = coeffs.basis;
-    vec4 tangent_basis = coeffs.tangent_basis;
     vec4 pos = basis[0] * cv0 + 
-	       basis[1] * cv1 + 
-	       basis[2] * cv2 + 
-	       basis[3] * cv3; 
-
-    vec4 tangent = tangent_basis[0] * cv0 + 
-		   tangent_basis[1] * cv1 + 
-		   tangent_basis[2] * cv2 + 
-		   tangent_basis[3] * cv3; 
-
-    tangent = normalize(tangent);
-
-    outData.Neye = interpNormal(basis, u);
-
-    // XXX: The result of this cross product is not stable, which
-    // causes the ribbons to twist. Once we fix this issue, we should use Neye
-    // directly in the fragment shader to avoid the faceted shading that results
-    // from screen-space derivatives.
-    vec3 up = normalize(cross(tangent.xyz, outData.Neye));
-
-    float width = evaluateWidths(basis, u);
-    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-    vec4 widthVec = GetWorldToViewMatrix() * transform 
-                  * vec4(up, 0);
-
-    pos = vec4(pos.xyz + up * length(widthVec.xyz) * width * (v - 0.5), 1.0);
+         basis[1] * cv1 + 
+         basis[2] * cv2 + 
+         basis[3] * cv3; 
 
     outData.Peye = pos;
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    // XXX: needs more work.
+    ProcessPrimVars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessEval.Patch
+
+layout(quads, fractional_odd_spacing, ccw) in;
+
+in CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[gl_MaxPatchVertices];
+
+out CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+out float u;
+out float v;
+
+// Predefine so that we can later swap in the correct one depending
+// on what type of curve we have
+
+void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
+              out float width, out vec3 normal);
+// it's the responsibility of orient to store Neye, usually with either
+// the computed normal or the tangent (from which the normal will be computed
+// in the fragment shader.)
+vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal);
+void main()
+{
+    u = gl_TessCoord.y;
+    v = gl_TessCoord.x;
+
+    vec4 position;
+    vec4 tangent;
+    float width;
+    vec3 normal;
+
+    evaluate(u, v, position, tangent, width, normal);
+    vec3 direction = orient(v, position, tangent, normal);
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 scaledDirection = GetWorldToViewMatrix() * transform 
+                  * vec4(direction, 0);
+    vec3 offset = direction * length(scaledDirection.xyz) * width * 0.5;
+    position.xyz = position.xyz + offset;
+    position.w = 1;
+
+    outData.Peye = position;
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -205,43 +493,166 @@ void main()
 }
 
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.Vertex.Normal.CameraFacing
+-- glsl Curves.TessEval.Linear.Patch
 
-vec3 getNormal(MAT4 transform)
+vec3 evaluateNormal(float u)
 {
-    // Generate a camera-facing normal in camera/eye space, designed to match
-    // RenderMan.
-    return vec3(0, 0, 1);
+    // XXX: This clamp is a hack to mask some odd orientation flipping issues 
+    u = clamp(u, 1e-3, 1.0 - 1e-3);
+    return mix(inData[0].Neye, inData[1].Neye, u);
+}
+
+void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
+              out float width, out vec3 normal){
+    vec4 p0 = inData[0].Peye;
+    vec4 p1 = inData[1].Peye;
+
+    float w0 = HdGet_widths(0);
+    float w1 = HdGet_widths(1);
+
+    position = p0 * (1.0 - u) + p1 * u;
+    tangent = normalize(p1 - p0);
+    width = w0 * (1.0 - u) + w1 * u;
+    normal = normalize(evaluateNormal(u));
 }
 
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.Vertex.Normal.Authored
-
-vec3 getNormal(MAT4 transform)
+-- glsl Curves.TessEval.Cubic.Patch
+struct Coeffs
 {
-    return (transform * vec4(HdGet_normals(), 0)).xyz;
-}
+  vec4 basis;
+  vec4 tangent_basis;
+};
 
---- --------------------------------------------------------------------------
--- glsl BasisCurves.TES.Normal.CameraFacing
-
-vec3 interpNormal(vec4 basis, float u)
-{
-    return inData[0].Neye;
-}
-
---- --------------------------------------------------------------------------
--- glsl BasisCurves.TES.Normal.Authored
-
+Coeffs evaluateBasis(float u, float u2, float u3);
+float evaluateWidths(vec4 basis, float u);
 vec3 evaluateNormal(vec4 basis, float u);
 
-vec3 interpNormal(vec4 basis, float u)
-{
-    return normalize(evaluateNormal(basis, u));
+void evaluate(float u, float v, out vec4 position, out vec4 tangent, 
+              out float width, out vec3 normal){
+    vec4 p0 = inData[0].Peye;
+    vec4 p1 = inData[1].Peye;
+    vec4 p2 = inData[2].Peye;
+    vec4 p3 = inData[3].Peye;
+
+    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+
+    position = coeffs.basis[0] * p0 +
+               coeffs.basis[1] * p1 +
+               coeffs.basis[2] * p2 +
+               coeffs.basis[3] * p3;
+
+    tangent = coeffs.tangent_basis[0] * p0 + 
+              coeffs.tangent_basis[1] * p1 +
+              coeffs.tangent_basis[2] * p2 + 
+              coeffs.tangent_basis[3] * p3;
+
+    width = evaluateWidths(coeffs.basis, u);
+    normal = normalize(evaluateNormal(coeffs.basis, u));
+    tangent = normalize(tangent);
 }
 
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.BezierBasis
+-- glsl Curves.TessEval.HalfTube
+
+vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
+    outData.Neye = tangent.xyz;
+    vec3 d = normalize(cross(position.xyz, tangent.xyz));
+    vec3 n = normalize(cross(d, tangent.xyz));
+
+    vec3 norm_pos = mix(n, d, (2.0*v) - 1.0);
+    vec3 norm_neg = mix(-d, n, (2.0*v));
+    normal = normalize(mix(norm_neg, norm_pos, step(0.5, v)));
+    return normal;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessEval.Ribbon.Oriented
+
+vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
+    outData.Neye = normal;
+    return normalize(cross(tangent.xyz, normal)  * (v - 0.5));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessEval.Ribbon.Implicit
+
+vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal){
+    outData.Neye = tangent.xyz;
+    // NOTE: lava/lib/basisCurves currently uses tangent X position instead of
+    // tangent X normal. We should do a more thorough evaluation to see which
+    // is better but to minimize regressions, we're going to keep this as 
+    // tangent X normal for now.
+    return normalize(cross(tangent.xyz, normal)  * (v - 0.5));
+}
+
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Cubic.Normals.Basis
+
+vec3 evaluateNormal(vec4 basis, float u)
+{   
+    vec3 n0 = inData[0].Neye;
+    vec3 n1 = inData[2].Neye;
+    vec3 n2 = inData[2].Neye;
+    vec3 n3 = inData[3].Neye;
+    return n0 * basis.x 
+         + n1 * basis.y
+         + n2 * basis.z 
+         + n3 * basis.w;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Cubic.Normals.Linear
+
+// HdSt only supports vertex (cubic) primvar indexes and expands varying 
+// (linear) primvars so we pull the data out of only the two interior indices.
+// This may not be valid for all potential basis, but works well for curves with 
+// vstep = 1 and bezier, the only supported cubic curves in HdSt.
+
+vec3 evaluateNormal(vec4 basis, float u)
+{   
+    // XXX: This clamp is a hack to mask some odd orientation flipping issues 
+    // for oriented bezier curves.
+    u = clamp(u, 1e-3, 1.0 - 1e-3);
+    return mix(inData[1].Neye, inData[2].Neye, u);
+}
+
+#endif
+
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Cubic.Widths.Basis
+
+float evaluateWidths(vec4 basis, float u)
+{
+    float w0 = HdGet_widths(0);
+    float w1 = HdGet_widths(1);
+    float w2 = HdGet_widths(2);
+    float w3 = HdGet_widths(3);
+    return w0 * basis.x 
+         + w1 * basis.y
+         + w2 * basis.z 
+         + w3 * basis.w;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Cubic.Widths.Linear
+
+// HdSt only supports vertex (cubic) primvar indexes and expands varying 
+// (linear) primvars so we pull the data out of only the two interior indices.
+// (ie. w0 -> widths[1], w1 -> widths[2])
+// This may not be valid for all potential basis, but works well for curves with 
+// vstep = 1 and bezier, the only supported cubic curves in HdSt.
+float evaluateWidths(vec4 basis, float u)
+{
+    float w0 = HdGet_widths(1);
+    float w1 = HdGet_widths(2);
+    return mix(w0, w1, u);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.BezierBasis
 
 Coeffs evaluateBasis(float u, float u2, float u3)
 {
@@ -258,26 +669,8 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   return Coeffs(basis, tangent_basis);
 }
 
-float evaluateWidths(vec4 basis, float u)
-{
-    return HdGet_widths(0)*basis.x 
-         + HdGet_widths(1)*basis.y
-         + HdGet_widths(2)*basis.z 
-         + HdGet_widths(3)*basis.w;
-}
-
-#ifdef HD_HAS_normals
-vec3 evaluateNormal(vec4 basis, float u)
-{
-    return inData[0].Neye*basis.x 
-         + inData[1].Neye*basis.y
-         + inData[2].Neye*basis.z 
-         + inData[3].Neye*basis.w;
-}
-#endif
-
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.LinearBasis
+-- glsl Curves.LinearBasis
 
 Coeffs evaluateBasis(float u, float u2, float u3)
 {
@@ -294,26 +687,8 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   return Coeffs(basis, tangent_basis);
 }
 
-float evaluateWidths(vec4 basis, float u)
-{
-    return HdGet_widths(0)*basis.x 
-         + HdGet_widths(1)*basis.y
-         + HdGet_widths(2)*basis.z 
-         + HdGet_widths(3)*basis.w;
-}
-
-#ifdef HD_HAS_normals
-vec3 evaluateNormal(vec4 basis, float u)
-{
-    return HdGet_normals(0)*basis.x 
-         + HdGet_normals(1)*basis.y
-         + HdGet_normals(2)*basis.z 
-         + HdGet_normals(3)*basis.w;
-}
-#endif
-
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.CatmullRomBasis
+-- glsl Curves.CatmullRomBasis
 
 Coeffs evaluateBasis(float u, float u2, float u3)
 {
@@ -330,20 +705,8 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   return Coeffs(basis, tangent_basis);
 }
 
-float evaluateWidths(vec4 basis, float u)
-{
-    return mix(HdGet_widths(2), HdGet_widths(1), u);
-}
-
-#ifdef HD_HAS_normals
-vec3 evaluateNormal(vec4 basis, float u)
-{
-    return mix(HdGet_normals(2), HdGet_normals(1), u);
-}
-#endif
-
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.BsplineBasis
+-- glsl Curves.BsplineBasis
 
 Coeffs evaluateBasis(float u, float u2, float u3)
 {
@@ -360,82 +723,10 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   return Coeffs(basis, tangent_basis);
 }
 
-float evaluateWidths(vec4 basis, float u)
-{
-    return mix(HdGet_widths(2), HdGet_widths(1), u);
-}
-
-#ifdef HD_HAS_normals
-vec3 evaluateNormal(vec4 basis, float u)
-{
-    return mix(HdGet_normals(2), HdGet_normals(1), u);
-}
-#endif
-
 --- --------------------------------------------------------------------------
--- glsl BasisCurves.Fragment
+-- glsl Curves.Fragment.Wire
 
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData;
-
-void main(void)
-{
-#ifdef HD_HAS_color
-    vec4 color = HdGet_color();
-#else
-    vec4 color = vec4(1);
-#endif
-    color.rgb = ApplyColorOverrides(color).rgb;
-
-    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
-
-    // XXX: Neye is interpolated in from previous stages, however the
-    // polarity is not stable due to instability in the cross-product in the
-    // TessEval shader. Once that is fixed, we could use Neye directly here.
-    // The normal computed here results in faceted shading.
-    //
-    vec3 Neye = normalize(cross(dFdx(Peye), dFdy(Peye)));
-
-    vec4 patchCoord = vec4(0);
-    color.rgb = mix(color.rgb, 
-                    ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
-                    GetLightingBlendAmount());
-
-    if (ShouldDiscardByAlpha(color)) {
-        discard;
-    }
-
-    RenderColor(color);
-}
-
---- --------------------------------------------------------------------------
--- glsl Line.Vertex
-
-out VertexData
-{
-    vec4 Peye;
-} outData;
-
-void main(void)
-{
-    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
-    vec4 point     = vec4(HdGet_points().xyz, 1);
-
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
-
-    ProcessPrimVars();
-
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-    ApplyClipPlanes(outData.Peye);
-}
-
---- --------------------------------------------------------------------------
--- glsl Line.Fragment
-
-in VertexData
+in CurveVertexData
 {
     vec4 Peye;
 } inData;
@@ -463,4 +754,107 @@ void main(void)
     }
 
     RenderColor(color);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Fragment.Patch
+
+/// In the previous stage, we may have stored the tangent in Neye from which
+/// we plan to compute a normal in the fragment shader.
+in CurveVertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData;
+
+centroid in float u;
+centroid in float v;
+
+vec3 fragmentNormal(vec3 position, vec3 normal, float v);
+void main(void)
+{
+#ifdef HD_HAS_color
+    vec4 color = HdGet_color();
+#else
+    vec4 color = vec4(1);
+#endif
+    color.rgb = ApplyColorOverrides(color).rgb;
+
+    vec3 Peye = inData.Peye.xyz / inData.Peye.w;
+
+    vec3 Neye = fragmentNormal(Peye, inData.Neye, v);
+
+    vec4 patchCoord = vec4(0);
+    color.rgb = mix(color.rgb, 
+                    ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord).rgb,
+                    GetLightingBlendAmount());
+
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+
+    RenderColor(color);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Fragment.HalfTube
+
+vec3 fragmentNormal(in vec3 position, in vec3 tangent, in float v)
+{
+    vec3 d = normalize(cross(position, tangent));
+    vec3 n = normalize(cross(d, tangent));
+    vec3 norm_pos = mix(n, d, (2.0*v) - 1.0);
+    vec3 norm_neg = mix(-d, n, (2.0*v));
+    return normalize(mix(norm_neg, norm_pos, step(0.5, v)));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Fragment.Ribbon.Round
+
+float remapFragmentV(float v){
+    // As we are using a plane to approximate a tube, we don't want to shade 
+    // based on v but rather the projection of the tube's v onto the plane
+    return clamp((asin(v * 2.0 - 1.0) / (3.146 / 2.0) + 1.0) / 2.0, 0.0, 1.0);
+}
+
+vec3 fragmentNormal(vec3 position, in vec3 tangent, float v)
+{
+
+    // we slightly bias v towards 0.5 based on filterwidth as a hack to 
+    // minimize aliasing
+    v = mix(remapFragmentV(v), 0.5, min(fwidth(v), .2));
+
+    vec3 d = normalize(cross(position, tangent));
+    vec3 n = normalize(cross(d, tangent));
+    vec3 norm_pos = mix(n, d, (2.0*v) - 1.0);
+    vec3 norm_neg = mix(-d, n, (2.0*v));
+
+    return normalize(mix(norm_neg, norm_pos, step(0.5, v)));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Fragment.Ribbon.Oriented
+
+vec3 fragmentNormal(vec3 position, in vec3 normal, float v)
+{
+    normal = normalize(normal);
+    if (gl_FrontFacing){
+      return normal;
+    }
+    else{
+      return -normal;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Fragment.Hair
+
+// XXX: Neye is interpolated in from previous stages, however the
+// polarity is not stable due to instability in the cross-product in the
+// TessEval shader. Once that is fixed, we could use Neye directly here.
+// The normal computed here results in faceted shading.
+//
+vec3 fragmentNormal(vec3 position, in vec3 unused, float v)
+{
+    return cross(dFdx(position), dFdy(position));
 }

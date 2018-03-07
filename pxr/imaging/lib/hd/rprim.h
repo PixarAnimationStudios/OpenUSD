@@ -95,9 +95,8 @@ public:
     /// If no draw items exist, or reprName cannot be found, nullptr
     /// will be returned.
     HD_API
-    const std::vector<HdDrawItem*>* GetDrawItems(HdSceneDelegate* delegate,
-                                                 TfToken const &reprName,
-                                                 bool forced);
+    const std::vector<HdDrawItem*>* GetDrawItems(TfToken const &reprName,
+                                                 bool forced) const;
 
     /// Returns the render tag associated to this rprim
     HD_API
@@ -121,7 +120,7 @@ public:
 
     /// Returns true if any dirty flags are set for this rprim.
     HD_API
-    bool IsDirty(HdChangeTracker &changeTracker);
+    bool IsDirty(HdChangeTracker &changeTracker) const;
 
     /// Set the unique instance id
     HD_API
@@ -197,11 +196,12 @@ protected:
               TfToken const &reprName, bool forced,
               HdDirtyBits *dirtyBits);
 
+    HD_API
+    HdReprSharedPtr const & _GetRepr(TfToken const &reprName) const;
 
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBits) = 0;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBits) = 0;
 
     HD_API
     void _UpdateVisibility(HdSceneDelegate *sceneDelegate,
@@ -229,9 +229,10 @@ protected:
                       HdComputationVector const &computations) const;
 
     HD_API
-    TfToken _GetReprName(HdSceneDelegate* delegate,
-                         TfToken const &defaultReprName, bool forced,
-                         HdDirtyBits *dirtyBits);
+    TfToken _GetReprName(TfToken const &defaultReprName, bool forced) const;
+
+    HD_API
+    void _UpdateReprName(HdSceneDelegate* delegate, HdDirtyBits *dirtyBits);
 
     virtual HdDirtyBits _GetInitialDirtyBits() const = 0;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const = 0;

@@ -157,7 +157,7 @@ UsdLuxLinkingAPI::ComputeLinkMap() const
         result[p] = true;
     }
     if (!includeByDefault) {
-        result[SdfPath::AbsoluteRootPath()] = includeByDefault;
+        result[SdfPath::AbsoluteRootPath()] = false;
     }
     return result;
 }

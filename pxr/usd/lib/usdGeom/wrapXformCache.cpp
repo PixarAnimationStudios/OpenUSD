@@ -44,6 +44,19 @@ _GetLocalTransformation(
     return make_tuple(localXform, resetsXformStack);
 }
 
+static
+tuple
+_ComputeRelativeTransform(UsdGeomXformCache& self,
+                          const UsdPrim& prim,
+                          const UsdPrim& ancestor)
+{
+    bool resetXformStack;
+    GfMatrix4d xform =
+        self.ComputeRelativeTransform(prim, ancestor, &resetXformStack);
+    
+    return make_tuple(xform, resetXformStack);
+}
+
 } // anonymous namespace 
 
 void wrapUsdGeomXformCache()
@@ -58,6 +71,8 @@ void wrapUsdGeomXformCache()
              &XformCache::GetParentToWorldTransform, arg("prim"))
         .def("GetLocalTransformation",
              &_GetLocalTransformation, arg("prim"))
+        .def("ComputeRelativeTransform",
+             &_ComputeRelativeTransform, (arg("prim"), arg("ancestor")))
         .def("Clear", &XformCache::Clear)
         .def("SetTime", &XformCache::SetTime, arg("time"))
         .def("GetTime", &XformCache::GetTime)

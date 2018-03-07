@@ -172,3 +172,68 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdGeomCube::ComputeExtent(double size, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    (*extent)[0] = GfVec3f(size * -0.5);
+    (*extent)[1] = GfVec3f(size * 0.5);
+
+    return true;
+}
+
+bool
+UsdGeomCube::ComputeExtent(double size, const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfBBox3d bbox = GfBBox3d(
+        GfRange3d(GfVec3d(size * -0.5), GfVec3d(size * 0.5)), transform);
+    GfRange3d range = bbox.ComputeAlignedRange();
+    (*extent)[0] = GfVec3f(range.GetMin());
+    (*extent)[1] = GfVec3f(range.GetMax());
+
+    return true;
+}
+
+static bool
+_ComputeExtentForCube(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
+    VtVec3fArray* extent)
+{
+    const UsdGeomCube cubeSchema(boundable);
+    if (!TF_VERIFY(cubeSchema)) {
+        return false;
+    }
+
+    double size;
+    if (!cubeSchema.GetSizeAttr().Get(&size)) {
+        return false;
+    }
+
+    if (transform) {
+        return UsdGeomCube::ComputeExtent(size, *transform, extent);
+    } else {
+        return UsdGeomCube::ComputeExtent(size, extent);
+    }
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomCube>(
+        _ComputeExtentForCube);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -312,7 +312,7 @@ SDF_API const TfEnum &SdfGetUnitFromName( const std::string &name );
 /// Defaults to "true" if the string is not recognized.
 ///
 /// If parseOK is supplied, the pointed-to bool will be set to indicate
-/// whether the parse was succesful.
+/// whether the parse was successful.
 SDF_API bool SdfBoolFromString( const std::string &, bool *parseOk = NULL );
 
 /// Given a value, returns if there is a valid corresponding valueType.

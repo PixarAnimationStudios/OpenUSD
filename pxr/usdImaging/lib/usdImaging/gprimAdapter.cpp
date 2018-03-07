@@ -41,9 +41,6 @@
 
 #include "pxr/base/tf/type.h"
 
-// XXX: feels wrong
-#include "pxr/imaging/glf/ptexTexture.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

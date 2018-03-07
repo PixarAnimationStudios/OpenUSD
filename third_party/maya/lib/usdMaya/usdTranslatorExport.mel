@@ -115,6 +115,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Export material collections" exportMaterialCollectionsCheckBox;
         textFieldGrp -l "Material collections path:" materialCollectionsPathField;
+
+        checkBox -l "Export collection-based material bindings" exportCollectionBasedBindingsCheckBox;
         
         checkBox -l "Export UVs" exportUVsCheckBox;
 
@@ -142,6 +144,11 @@ global proc int usdTranslatorExport (string $parent,
 	        menuItem -l "CatmullClark SDiv";
 	        menuItem -l "Loop SDiv";
 
+        optionMenuGrp -l "Export Skin Clusters:" exportSkinClustersPopup;
+            menuItem -l "None";
+            menuItem -l "All (Automatically Create SkelRoots)";
+            menuItem -l "Only Under SkelRoots";
+
         checkBox -l "Export Animation" -cc ("usdTranslatorExport_AnimationCB") animationCheckBox;
 
         columnLayout -width 100 animOptsCol;
@@ -168,6 +175,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportMaterialCollectionsCheckBox");
                 } else if ($optionBreakDown[0] == "materialCollectionsPath") {
                     textFieldGrp -e -text $optionBreakDown[1] materialCollectionsPathField;
+                } else if ($optionBreakDown[0] == "exportCollectionBasedBindings") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportCollectionBasedBindingsCheckBox");
                 } else if ($optionBreakDown[0] == "normalizeUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
@@ -184,6 +193,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     optionMenuGrp -e -value $optionBreakDown[1] defaultMeshSchemePopup;
+                } else if ($optionBreakDown[0] == "exportSkin") {
+                    optionMenuGrp -e -value $optionBreakDown[1] exportSkinClustersPopup;
                 } else if ($optionBreakDown[0] == "exportVisibility") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
                 } else if ($optionBreakDown[0] == "animation") {
@@ -219,6 +230,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportCollectionBasedBindings", "exportCollectionBasedBindingsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeUVs", "normalizeUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");
@@ -227,6 +239,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeXForm", "mergeXFormCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportInstances", "exportInstancesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
+        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkin", "exportSkinClustersPopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");

@@ -1189,9 +1189,12 @@ PxrUsdKatanaUtils::FindLightPaths(const UsdStageRefPtr& stage)
 }
 
 std::string
-PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
-        const SdfPath& path,
-        const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs)
+PxrUsdKatanaUtils::_ConvertUsdPathToKatLocation(
+        const SdfPath &path,
+        const std::string &isolatePathString,
+        const std::string &rootPathString,
+        const std::string &sessionPathString,
+        bool allowOutsideIsolation)
 {
     if (!TF_VERIFY(path.IsAbsolutePath())) {
         return std::string();
@@ -1199,8 +1202,7 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
 
     // Convert to the corresponding katana location by stripping
     // off the leading rootPath and prepending rootLocation.
-    std::string isolatePathString = usdInArgs->GetIsolatePath();
-    
+    //
     // absolute path: starts with '/'
     std::string pathString = path.GetString(); 
     if (!isolatePathString.empty()) {
@@ -1209,21 +1211,30 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
         } else {
             // no good guess about the katana target location: 
             //   isolatePath is not a prefix of the prim being cooked
-            std::cerr << "UsdIn: Failed to compute katana path for"
+            if (allowOutsideIsolation) {
+                // So we are returning the path using the session location
+                // For materials.
+                if (sessionPathString.empty() && pathString.empty()) {
+                    return "/";
+                }
+                return sessionPathString + pathString;
+            } else {
+                std::cerr << "UsdIn: Failed to compute katana path for"
                 " usd path: " << path << " with given isolatePath: " <<
                 isolatePathString << std::endl;
-            return std::string();
+                return std::string();
+            }
         }
     } 
 
-    // this expected to be an absolute path or empty string
-    std::string rootKatanaLocation = usdInArgs->GetRootLocationPath();
-    // minimum expected path is "/"
-    if (rootKatanaLocation.empty() && pathString.empty()) { 
+    // The rootPath is expected to be an absolute path or empty string.
+    //
+    // minimum expected path is '/'
+    if (rootPathString.empty() && pathString.empty()) { 
         return "/";
     }
 
-    std::string resultKatanaLocation = rootKatanaLocation;
+    std::string resultKatanaLocation = rootPathString;
     resultKatanaLocation += pathString;
    
     return resultKatanaLocation;
@@ -1232,7 +1243,20 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
 std::string
 PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
         const SdfPath& path,
-        const PxrUsdKatanaUsdInPrivateData& data)
+        const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs,
+        bool allowOutsideIsolation)
+{
+    return _ConvertUsdPathToKatLocation(path, usdInArgs->GetIsolatePath(),
+                                        usdInArgs->GetRootLocationPath(),
+                                        usdInArgs->GetSessionLocationPath(),
+                                        allowOutsideIsolation);
+}
+
+std::string
+PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
+        const SdfPath& path,
+        const PxrUsdKatanaUsdInPrivateData& data,
+        bool allowOutsideIsolation)
 {
     if (!TF_VERIFY(path.IsAbsolutePath())) {
         return std::string();
@@ -1248,7 +1272,8 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
             data.GetMasterPath(), data.GetInstancePath());
     }
 
-    return ConvertUsdPathToKatLocation(nonMasterPath, data.GetUsdInArgs());
+    return ConvertUsdPathToKatLocation(nonMasterPath, data.GetUsdInArgs(), 
+                                       allowOutsideIsolation);
 }
 
 std::string
@@ -1378,7 +1403,7 @@ PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
     // calculate the material group. It can be either "/" or an absolute
     // path (no trailing '/')
     std::string materialGroupKatanaPath = 
-        ConvertUsdPathToKatLocation(path.GetParentPath(), data);
+        ConvertUsdPathToKatLocation(path.GetParentPath(), data, true);
 
     UsdPrim prim = 
         UsdUtilsGetPrimAtPathWithForwarding(

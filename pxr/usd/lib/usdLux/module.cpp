@@ -39,6 +39,7 @@ TF_WRAP_MODULE
     // Indentation shows class hierarchy.
     TF_WRAP(UsdLuxLight);
     {
+        TF_WRAP(UsdLuxCylinderLight);
         TF_WRAP(UsdLuxDiskLight);
         TF_WRAP(UsdLuxDistantLight);
         TF_WRAP(UsdLuxRectLight);

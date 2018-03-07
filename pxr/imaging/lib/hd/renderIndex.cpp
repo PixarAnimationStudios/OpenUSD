@@ -656,21 +656,22 @@ HdRenderIndex::_ConfigureReprs()
                                          /*smoothNormals=*/true,
                                          /*blendWireframeColor=*/true));
 
+    // TODO: Port over wire on surf geometry shader from internal code base
+    // (internal pixar bug 129550)
     HdBasisCurves::ConfigureRepr(HdTokens->hull,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->smoothHull,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->wire,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdTokens->wireOnSurf,
-                                 HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->refined,
-                                 HdBasisCurvesGeomStyleRefined);
-    // XXX: draw coarse line for refinedWire (filed as bug 129550)
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdTokens->refinedWire,
-                                  HdBasisCurvesGeomStyleLine);
+                                 HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdTokens->refinedWireOnSurf,
-                                 HdBasisCurvesGeomStyleRefined);
+                                 HdBasisCurvesGeomStylePatch);
 
     HdPoints::ConfigureRepr(HdTokens->hull,
                             HdPointsGeomStylePoints);
@@ -1508,8 +1509,7 @@ HdRenderIndex::_AppendDrawItems(
             // Extract the draw items and assign them to the right command buffer
             // based on the tag
             if (const std::vector<HdDrawItem*> *drawItems =
-                          rprimInfo.rprim->GetDrawItems(rprimInfo.sceneDelegate,
-                                                        reprName,
+                          rprimInfo.rprim->GetDrawItems(reprName,
                                                         forcedRepr)) {
 
                 const TfToken &rprimTag = rprimInfo.rprim->GetRenderTag(

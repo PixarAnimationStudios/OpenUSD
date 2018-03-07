@@ -31,7 +31,7 @@ from time import time, sleep
 from collections import deque, OrderedDict
 
 # Usd Library Components
-from pxr import Usd, UsdGeom, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
+from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
 
 # UI Components
 from ._usdviewq import Utils
@@ -59,7 +59,7 @@ from common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts, GetAttri
                     PickModes, SelectionHighlightModes, CameraMaskModes,
                     PropTreeWidgetTypeIsRel, PrimNotFoundException,
                     GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
-                    GetPrimsLoadability, GetClosestBoundMaterial)
+                    GetPrimsLoadability, Complexities)
 
 import settings2
 from settings2 import StateSource
@@ -391,7 +391,16 @@ class AppController(QtCore.QObject):
                     'Ignoring...' % parserData.primPath
                 self._initialSelectPrim = None
 
-            self._dataModel.viewSettings.complexity = parserData.complexity
+            try:
+                self._dataModel.viewSettings.complexity = Complexities.fromId(
+                    parserData.complexity)
+            except ValueError:
+                fallback = Complexities.LOW
+                sys.stderr.write(("Error: Invalid complexity '{}'. "
+                    "Using fallback '{}' instead.\n").format(
+                        parserData.complexity, fallback.id))
+                self._dataModel.viewSettings.complexity = fallback
+
 
             self._timeSamples = None
             self._stageView = None
@@ -753,7 +762,15 @@ class AppController(QtCore.QObject):
 
             self._ui.actionAdjust_FOV.triggered.connect(self._adjustFOV)
 
-            self._ui.actionComplexity.triggered.connect(self._adjustComplexity)
+            self._ui.complexityGroup = QtWidgets.QActionGroup(self._mainWindow)
+            self._ui.complexityGroup.setExclusive(True)
+            for action in (self._ui.actionLow,
+                           self._ui.actionMedium,
+                           self._ui.actionHigh,
+                           self._ui.actionVery_High):
+                self._ui.complexityGroup.addAction(action)
+            self._updateComplexityMenu()
+            self._ui.complexityGroup.triggered.connect(self._changeComplexity)
 
             self._ui.actionDisplay_Guide.toggled.connect(self._toggleDisplayGuide)
 
@@ -924,8 +941,17 @@ class AppController(QtCore.QObject):
             self._ui.actionJump_to_Model_Root.triggered.connect(
                 self.selectEnclosingModel)
 
-            self._ui.actionJump_to_Bound_Material.triggered.connect(
-                self.selectBoundMaterial)
+            self._ui.actionJump_to_Bound_Preview_Material.triggered.connect(
+                self.selectBoundPreviewMaterial)
+
+            self._ui.actionJump_to_Bound_Full_Material.triggered.connect(
+                self.selectBoundFullMaterial)
+
+            self._ui.actionSelect_Preview_Binding_Relationship.triggered.connect(
+                self.selectPreviewBindingRel)
+
+            self._ui.actionSelect_Full_Binding_Relationship.triggered.connect(
+                self.selectFullBindingRel)
 
             self._ui.actionMake_Visible.triggered.connect(self.visSelectedPrims)
             # Add extra, Presto-inspired shortcut for Make Visible
@@ -1032,8 +1058,6 @@ class AppController(QtCore.QObject):
 
         with Timer() as t:
             loadSet = Usd.Stage.LoadNone if self._unloaded else Usd.Stage.LoadAll
-            preloadSet = loadSet if self._noRender else Usd.Stage.LoadNone
-
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
@@ -1048,57 +1072,9 @@ class AppController(QtCore.QObject):
             if popMask:
                 for p in populationMaskPaths:
                     popMask.Add(p)
-                stage = Usd.Stage.OpenMasked(layer, popMask, preloadSet)
+                stage = Usd.Stage.OpenMasked(layer, popMask, loadSet)
             else:
-                stage = Usd.Stage.Open(layer, preloadSet)
-
-            # no point in optimizing for editing if we're not redrawing
-            if stage and not self._noRender:
-                # as described in bug #99309, UsdStage change processing
-                # can't yet tell the difference between an effectively
-                # "inert" change caused by adding an empty Over primSpec, and
-                # creation of a primSpec that has real effect on the stage.
-                # Therefore there is a massive invalidation from the root of
-                # the stage when the first edit on the stage is made
-                # (e.g. invising something), and while the UsdStage itself
-                # recovers quickly, clients like Hydra must throw everything
-                # away and start over.  Here, we limit the propagation of
-                # invalidation due to creation of new overs to the enclosing
-                # model by pre-populating the session layer with overs for
-                # the interior of the model hierarchy, before the renderer
-                # starts listening for changes.
-                #
-                # When bug #99309 is fixed, we can eliminate the "preloadSet"
-                # and double-stage load. It turns out to be typically
-                # enormously expensive to recompose the whole stage (which is
-                # what happens if we add the overs directly to stage's session
-                # layer).  So we "preload" the stage above in an unloaded state
-                # and add the overs to a detached layer that we will then use
-                # to open the stage a second time with the desired load-state,
-                # while still holding the preload-stage open.  This turns out
-                # to be much, much cheaper for scenes that are properly
-                # payloaded for scalability.
-                sl = Sdf.Layer.CreateAnonymous("usdview-session.usda")
-
-                # We can only safely do Sdf-level ops inside an Sdf.ChangeBlock,
-                # so gather all the paths from the UsdStage first.
-                # We don't technically need the ChangeBlock since no-one is
-                # listening to this detached layer, but good batch-editing
-                # practice.
-                modelPaths = [p.GetPath() for p in \
-                                  Usd.PrimRange.Stage(stage,
-                                                      Usd.PrimIsModel) ]
-                with Sdf.ChangeBlock():
-                    for mpp in modelPaths:
-                        parent = sl.GetPrimAtPath(mpp.GetParentPath())
-                        Sdf.PrimSpec(parent, mpp.name, Sdf.SpecifierOver)
-
-                if popMask:
-                    stage2 = Usd.Stage.OpenMasked(
-                        layer, sl, popMask, loadSet)
-                else:
-                    stage2 = Usd.Stage.Open(layer, sl, loadSet)
-                stage = stage2
+                stage = Usd.Stage.Open(layer, loadSet)
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
@@ -1395,26 +1371,37 @@ class AppController(QtCore.QObject):
 
     # Option windows ==========================================================
 
-    def _incrementComplexity(self):
-        self._dataModel.viewSettings.complexity += .1
+    def _updateComplexityMenu(self):
+        """Update the complexity menu so the current complexity setting is
+        checked.
+        """
+        complexityName = self._dataModel.viewSettings.complexity.name
+        for action in (self._ui.actionLow,
+                       self._ui.actionMedium,
+                       self._ui.actionHigh,
+                       self._ui.actionVery_High):
+            action.setChecked(str(action.text()) == complexityName)
+
+    def _setComplexity(self, complexity):
+        """Set the complexity and update the UI."""
+        self._dataModel.viewSettings.complexity = complexity
+        self._updateComplexityMenu()
         if self._stageView:
             self._stageView.update()
+
+    def _incrementComplexity(self):
+        """Jump up to the next level of complexity."""
+        self._setComplexity(Complexities.next(
+            self._dataModel.viewSettings.complexity))
 
     def _decrementComplexity(self):
-        self._dataModel.viewSettings.complexity -= .1
-        if self._stageView:
-            self._stageView.update()
+        """Jump back to the previous level of complexity."""
+        self._setComplexity(Complexities.prev(
+            self._dataModel.viewSettings.complexity))
 
-    def _adjustComplexity(self):
-        complexity= QtWidgets.QInputDialog.getDouble(self._mainWindow,
-            "Adjust complexity", "Enter a value between 1 and 2.\n\n"
-            "You can also use ctrl+ or ctrl- to adjust the\n"
-            "complexity without invoking this dialog.\n",
-            self._dataModel.viewSettings.complexity, 1.0,2.0,2)
-        if complexity[1]:
-            self._dataModel.viewSettings.complexity = complexity[0]
-            if self._stageView:
-                self._stageView.update()
+    def _changeComplexity(self, action):
+        """Update the complexity from a selected QAction."""
+        self._setComplexity(Complexities.fromName(action.text()))
 
     def _adjustFOV(self):
         fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",
@@ -2701,18 +2688,66 @@ class AppController(QtCore.QObject):
                 else:
                     self._dataModel.selection.addPrim(prim)
 
-    def selectBoundMaterial(self):
-        """Iterates through all selected prims, selecting their bound materials
-        instead.
+    def selectBoundMaterialForPurpose(self, materialPurpose):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
         """
         oldPrims = self._dataModel.selection.getPrims()
-
         with self._dataModel.selection.batchPrimChanges:
             self._dataModel.selection.clearPrims()
             for prim in oldPrims:
-                material, bound = GetClosestBoundMaterial(prim)
-                if material:
-                    self._dataModel.selection.addPrim(material)
+                (boundMaterial, bindingRel) = \
+                    UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                        materialPurpose=materialPurpose)
+                if boundMaterial:
+                    self._dataModel.selection.addPrim(boundMaterial.GetPrim())
+
+    def selectBindingRelForPurpose(self, materialPurpose):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
+        """
+        relsToSelect = []
+        oldPrims = self._dataModel.selection.getPrims()
+        with self._dataModel.selection.batchPrimChanges:
+            self._dataModel.selection.clearPrims()
+            for prim in oldPrims:
+                (boundMaterial, bindingRel) = \
+                    UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                        materialPurpose=materialPurpose)
+                if boundMaterial and bindingRel:
+                    self._dataModel.selection.addPrim(bindingRel.GetPrim())
+                    relsToSelect.append(bindingRel)
+
+        with self._dataModel.selection.batchPropChanges:
+            self._dataModel.selection.clearProps()
+            for rel in relsToSelect:
+                self._dataModel.selection.addProp(rel)
+
+    def selectBoundPreviewMaterial(self):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
+        """
+        self.selectBoundMaterialForPurpose(
+            materialPurpose=UsdShade.Tokens.preview)
+
+    def selectBoundFullMaterial(self):
+        """Iterates through all selected prims, selecting their bound preview
+           materials.
+        """
+        self.selectBoundMaterialForPurpose(
+            materialPurpose=UsdShade.Tokens.full)
+
+    def selectPreviewBindingRel(self):
+        """Iterates through all selected prims, computing their resolved 
+        "preview" bindings and selecting the cooresponding binding relationship.
+        """
+        self.selectBindingRelForPurpose(materialPurpose=UsdShade.Tokens.preview)
+
+    def selectFullBindingRel(self):
+        """Iterates through all selected prims, computing their resolved 
+        "full" bindings and selecting the cooresponding binding relationship.
+        """
+        self.selectBindingRelForPurpose(materialPurpose=UsdShade.Tokens.full)    
 
     def _getCommonPrims(self, pathsList):
         commonPrefix = os.path.commonprefix(pathsList)
@@ -3025,6 +3060,8 @@ class AppController(QtCore.QObject):
         frame = self._dataModel.currentFrame
         treeWidget = self._ui.propertyView
 
+        scrollPosition = treeWidget.verticalScrollBar().value()
+
         # get a dictionary of prim attribs/members and store it in self._attributeDict
         self._attributeDict = self._getAttributeDict()
         with self._propertyViewSelectionBlocker:
@@ -3105,6 +3142,12 @@ class AppController(QtCore.QObject):
             currRow += 1
 
         self._updateAttributeViewSelection()
+
+        # For some reason, resetting the scrollbar position here only works on a
+        # frame change, not when the prim changes. When the prim changes, the
+        # scrollbar always stays at the top of the list and setValue() has no
+        # effect.
+        treeWidget.verticalScrollBar().setValue(scrollPosition)
 
     def _updateAttributeView(self):
         """ Sets the contents of the attribute value viewer """
@@ -3758,7 +3801,8 @@ class AppController(QtCore.QObject):
         removeEnabled = False
         anyImageable = False
         anyModels = False
-        anyBoundMaterials = False
+        anyBoundPreviewMaterials = False
+        anyBoundFullMaterials = False
         anyActive = False
         anyInactive = False
         for prim in self._dataModel.selection.getPrims():
@@ -3767,16 +3811,33 @@ class AppController(QtCore.QObject):
                 anyImageable = anyImageable or bool(imageable)
                 removeEnabled = removeEnabled or HasSessionVis(prim)
             anyModels = anyModels or GetEnclosingModelPrim(prim) is not None
-            material, bound = GetClosestBoundMaterial(prim)
-            anyBoundMaterials = anyBoundMaterials or material is not None
+            
+            (previewMat,previewBindingRel) =\
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.preview)
+            anyBoundPreviewMaterials |= bool(previewMat)
+            
+            (fullMat,fullBindingRel) =\
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.full)            
+            anyBoundFullMaterials |= bool(fullMat)
+            
             if prim.IsActive():
                 anyActive = True
             else:
                 anyInactive = True
 
         self._ui.actionJump_to_Model_Root.setEnabled(anyModels)
-        self._ui.actionJump_to_Bound_Material.setEnabled(anyBoundMaterials)
-
+        
+        self._ui.actionJump_to_Bound_Preview_Material.setEnabled(
+                anyBoundPreviewMaterials)
+        self._ui.actionSelect_Preview_Binding_Relationship.setEnabled(
+                anyBoundPreviewMaterials)
+        
+        self._ui.actionJump_to_Bound_Full_Material.setEnabled(
+                anyBoundFullMaterials)
+        self._ui.actionSelect_Full_Binding_Relationship.setEnabled(
+                anyBoundFullMaterials)
         self._ui.actionRemove_Session_Visibility.setEnabled(removeEnabled)
         self._ui.actionMake_Visible.setEnabled(anyImageable)
         self._ui.actionVis_Only.setEnabled(anyImageable)
@@ -3839,21 +3900,50 @@ class AppController(QtCore.QObject):
             # It is sadly much much faster to regenerate the entire view
             self._resetPrimView()
 
-    def activateSelectedPrims(self):
+    def _setSelectedPrimsActivation(self, active):
+        """Activate or deactivate all selected prims."""
+
         with BusyContext():
-            primNames=[]
+
+            # We can only activate/deactivate prims which are not in a master.
+            paths = []
             for item in self.getSelectedItems():
-                item.setActive(True)
-                primNames.append(item.name)
-            self.editComplete("Activated %s." % primNames)
+                if item.prim.IsPseudoRoot():
+                    print("WARNING: Cannot change activation of pseudoroot.")
+                elif item.isInMaster:
+                    print("WARNING: The prim <" + str(item.prim.GetPrimPath()) +
+                        "> is in a master. Cannot change activation.")
+                else:
+                    paths.append(item.prim.GetPrimPath())
+
+            # If we are deactivating prims, clear the selection so it doesn't
+            # hold onto paths from inactive prims.
+            if not active:
+                self._dataModel.selection.clear()
+
+            # If we try to deactivate prims one at a time in Usd, some may have
+            # become invalid by the time we get to them. Instead, we set the
+            # active state all at once through Sdf.
+            layer = self._dataModel.stage.GetEditTarget().GetLayer()
+            with Sdf.ChangeBlock():
+                for path in paths:
+                    sdfPrim = Sdf.CreatePrimInLayer(layer, path)
+                    sdfPrim.active = active
+
+            # Refresh primView to support the stage changes.
+            self.updateGUI()
+
+            pathNames = ", ".join(path.name for path in paths)
+            if active:
+                self.editComplete("Deactivated {}.".format(pathNames))
+            else:
+                self.editComplete("Activated {}.".format(pathNames))
+
+    def activateSelectedPrims(self):
+        self._setSelectedPrimsActivation(True)
 
     def deactivateSelectedPrims(self):
-        with BusyContext():
-            primNames=[]
-            for item in self.getSelectedItems():
-                item.setActive(False)
-                primNames.append(item.name)
-            self.editComplete("Deactivated %s." % primNames)
+        self._setSelectedPrimsActivation(False)
 
     def loadSelectedPrims(self):
         with BusyContext():
@@ -4064,18 +4154,42 @@ class AppController(QtCore.QObject):
                         propertyStr += "<br> -- <em>instance of prototype &lt;%s&gt;</em>" % str(currProtoPath)
 
             # Material info - this IS expected
-            materialStr = "<hr><b>Material assignment:</b><br>"
-            material, bound = GetClosestBoundMaterial(prim)
-            if material:
-                materialPath = material.GetPath()
-                # if the material is in the same model, make path model-relative
-                materialStr += _MakeModelRelativePath(materialPath, model)
+            materialStr = "<hr><b>Material assignment:</b>"
+            materialAssigns = {}
+            materialAssigns['generic'] = (genericMat, genericBindingRel) = \
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.allPurpose)
+            materialAssigns[UsdShade.Tokens.preview] = \
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.preview)
+            materialAssigns[UsdShade.Tokens.full] = \
+                UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial(
+                    materialPurpose=UsdShade.Tokens.full)
 
-                if bound != prim:
-                    boundPath = _MakeModelRelativePath(bound.GetPath(),
-                                                       model)
-                    materialStr += "<br><small><em>Material binding inherited from ancestor:</em></small><br> %s" % str(boundPath)
-            else:
+            gotValidMaterial = False
+            for purpose, materialAssign in materialAssigns.iteritems():
+                (material, bindingRel) = materialAssign
+                if not material:
+                    continue
+
+                gotValidMaterial = True
+
+                # skip specific purpose binding display if it is the same
+                # as the generic binding.
+                if purpose != 'generic' and bindingRel == genericBindingRel:
+                    continue
+
+                # if the material is in the same model, make path 
+                # model-relative
+                materialStr += "<br><em>%s</em>: %s" % (purpose, 
+                        _MakeModelRelativePath(material.GetPath(), model))
+
+                bindingRelPath = _MakeModelRelativePath(
+                        bindingRel.GetPath(), model)
+                materialStr += "<br><small><em>Material binding "\
+                    "relationship: %s</em></small>" % str(bindingRelPath)
+
+            if not gotValidMaterial:
                 materialStr += "<small><em>No assigned Material!</em></small>"
 
             # Instance / master info, if this prim is a native instance, else

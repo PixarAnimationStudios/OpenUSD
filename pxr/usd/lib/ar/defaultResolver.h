@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
+#include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include <tbb/enumerable_thread_specific.h>
@@ -52,6 +53,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// resolver will then examine the directories specified via the following
 /// mechanisms (in order):
 ///
+///    - The currently-bound ArDefaultResolverContext
 ///    - ArDefaultResolver::SetDefaultSearchPath
 ///    - The environment variable PXR_AR_DEFAULT_SEARCH_PATH. This is
 ///      expected to be a list of directories delimited by the platform's 
@@ -150,16 +152,23 @@ private:
     using _CachePtr = std::shared_ptr<_Cache>;
     _CachePtr _GetCurrentCache();
 
+    const ArDefaultResolverContext* _GetCurrentContext();
+
     std::string _ResolveNoCache(const std::string& path);
 
 private:
-    std::vector<std::string> _searchPath;
+    ArDefaultResolverContext _fallbackContext;
 
     using _CachePtrStack = std::vector<_CachePtr>;
     using _PerThreadCachePtrStack = 
         tbb::enumerable_thread_specific<_CachePtrStack>;
-
     _PerThreadCachePtrStack _threadCacheStack;
+
+    using _ContextStack = std::vector<const ArDefaultResolverContext*>;
+    using _PerThreadContextStack = 
+        tbb::enumerable_thread_specific<_ContextStack>;
+    _PerThreadContextStack _threadContextStack;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

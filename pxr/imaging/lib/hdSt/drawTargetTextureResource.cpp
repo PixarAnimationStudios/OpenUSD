@@ -29,18 +29,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
 HdSt_DrawTargetTextureResource::HdSt_DrawTargetTextureResource()
  : HdStTextureResource()
  , _attachment()
  , _sampler(0)
+ , _borderColor(0.0,0.0,0.0,0.0)
+ , _maxAnisotropy(16.0)
 {
     // GL initialization guard for headless unit testing
     if (glGenSamplers) {
         glGenSamplers(1, &_sampler);
     }
-
-
 }
 
 HdSt_DrawTargetTextureResource::~HdSt_DrawTargetTextureResource()
@@ -64,8 +63,6 @@ HdSt_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
                                           HdMinFilter minFilter,
                                           HdMagFilter magFilter)
 {
-    static const float borderColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-
     // Convert params to Gl
     GLenum glWrapS = HdStGLConversions::GetWrap(wrapS);
     GLenum glWrapT = HdStGLConversions::GetWrap(wrapT);
@@ -76,10 +73,11 @@ HdSt_DrawTargetTextureResource::SetSampler(HdWrap wrapS,
     glSamplerParameteri(_sampler, GL_TEXTURE_WRAP_T, glWrapT);
     glSamplerParameteri(_sampler, GL_TEXTURE_MIN_FILTER, glMinFilter);
     glSamplerParameteri(_sampler, GL_TEXTURE_MAG_FILTER, glMagFilter);
-    glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0);
-    glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glSamplerParameterf(_sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, 
+                        _maxAnisotropy);
+    glSamplerParameterfv(_sampler, GL_TEXTURE_BORDER_COLOR, 
+                         _borderColor.GetArray());
 }
-
 
 bool
 HdSt_DrawTargetTextureResource::IsPtex() const

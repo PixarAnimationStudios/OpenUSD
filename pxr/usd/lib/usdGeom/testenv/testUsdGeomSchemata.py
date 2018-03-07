@@ -647,13 +647,13 @@ class TestUsdGeomSchemata(unittest.TestCase):
         self.assertEqual([], root.GetAppliedSchemas())
 
         # Check duplicates
-        UsdGeom.MotionAPI.Apply(s, '/hello')
+        UsdGeom.MotionAPI.Apply(root)
         self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
-        UsdGeom.MotionAPI.Apply(s, '/hello')
+        UsdGeom.MotionAPI.Apply(root)
         self.assertEqual(['MotionAPI'], root.GetAppliedSchemas())
         
         # Ensure duplicates aren't picked up
-        UsdGeom.ModelAPI.Apply(s, '/hello')
+        UsdGeom.ModelAPI.Apply(root)
         self.assertEqual(['MotionAPI', 'GeomModelAPI'], root.GetAppliedSchemas())
 
     def test_IsA(self):
@@ -690,11 +690,11 @@ class TestUsdGeomSchemata(unittest.TestCase):
             self.assertFalse(prim.HasAPI(t))
 
         # Apply our schemas to this prim
-        UsdGeom.ModelAPI.Apply(s, '/prim')
-        UsdGeom.MotionAPI.Apply(s, '/prim')
+        UsdGeom.ModelAPI.Apply(prim)
+        UsdGeom.MotionAPI.Apply(prim)
 
         # Note that were applying an ancestor type of UsdGeomModelAPI
-        Usd.ModelAPI.Apply(s, '/prim')
+        Usd.ModelAPI.Apply(prim)
 
         # Check that all our applied schemas show up
         for t in types:

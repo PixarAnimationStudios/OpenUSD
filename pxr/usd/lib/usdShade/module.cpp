@@ -36,6 +36,5 @@ TF_WRAP_MODULE
     TF_WRAP(UsdShadeNodeGraph);
     TF_WRAP(UsdShadeMaterial); 
     TF_WRAP(UsdShadeMaterialBindingAPI);
-    TF_WRAP(UsdShadeLook); 
     TF_WRAP(UsdShadeTokens);
 }

@@ -188,6 +188,11 @@ WRAP_CUSTOM {
             .staticmethod("HasMaterialFaceSet")
 
         ;
+
+    TfPyRegisterStlSequencesFromPython<UsdShadeMaterial>();
+    to_python_converter<std::vector<UsdShadeMaterial>,
+                        TfPySequenceToPython<std::vector<UsdShadeMaterial>>>();
+
 }
 
 } // anonymous namespace

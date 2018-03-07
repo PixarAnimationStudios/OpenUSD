@@ -23,10 +23,10 @@
 # language governing permissions and limitations under the Apache License.
 
 # This tests a set of sample sdf files that are either expected to load
-# succesfully, or to emit warnings.  Files with _bad_ in the name are
+# successfully, or to emit warnings.  Files with _bad_ in the name are
 # expected to emit warnings, but in no case should they cause a crash.
 #
-# For files that we expect to read succesfully, we take the further step
+# For files that we expect to read successfully, we take the further step
 # of writing them out, reading in what we wrote, and writing it out again,
 # and then comparing the two versions written to make sure they are the
 # same.  This is to detect any accumulative error, such as quoting or
@@ -48,7 +48,7 @@ def removeFiles(*filenames):
 
 class TestSdfParsing(unittest.TestCase):
     def test_Basic(self):
-        # NOTE: Any file with "_bad_" in the name is a file that should not load succesfully.
+        # NOTE: Any file with "_bad_" in the name is a file that should not load successfully.
         # NOTE: This list is reverse sorted.  Add new tests at the top!
         # This will mean that your new test runs first and you can spot
         # failures much quicker.

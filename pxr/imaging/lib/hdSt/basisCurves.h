@@ -48,6 +48,27 @@ typedef boost::shared_ptr<class HdSt_BasisCurvesTopology>
 ///
 /// A collection of curves using a particular basis.
 ///
+/// Render mode is dependent on both the HdBasisCurvesGeomStyle, refinement level,
+/// and the authored primvars.
+///
+/// If style is set to HdBasisCurvesGeomStyleWire, the curves will always draw
+/// as infinitely thin wires.  Cubic curves will be refined if complexity is
+/// above 0, otherwise they draw the unrefined control points. (This may
+/// provide a misleading representation for Catmull-Rom and Bspline curves.)
+///
+/// If style is set to HdBasisCurvesGeomStylePatch, the curves will draw as
+/// patches ONLY if refinement level is above 0.  Otherwise, they draw
+/// as the unrefined control points (see notes on HdBasisCurvesGeomStyleWire).
+///
+/// Curves rendered as patches may be rendered as ribbons or halftubes.
+/// Curves with primvar authored normals will always render as ribbons.
+/// Curves without primvar authored normals are assumed to be round and may be
+/// rendered in one of three styles:
+///   * if complexity is 1, a camera facing normal is used
+///   * if complexity is 2, a fake "bumped" round normal is used
+///   * if complexity is 3 or above, the patch is displaced into a half tube
+/// We plan for future checkins will remove the need for the camera facing normal
+/// mode, using the fake "bumped" round normal instead.
 class HdStBasisCurves final: public HdBasisCurves {
 public:
     HF_MALLOC_TAG_NEW("new HdStBasisCurves");
@@ -66,10 +87,9 @@ public:
                       bool             forcedRepr) override;
 
 protected:
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBitsState) override;
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBitsState) override;
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdStDrawItem *drawItem,
@@ -101,11 +121,17 @@ private:
         DirtyHullIndices    = (DirtyIndices       << 1)
     };
 
-    /// We only support drawing smooth curves for a small subset of all the
-    /// curves that hydra needs to support
-    /// We will fallback to line segments for unsupported curves.
-    bool _SupportsSmoothCurves(const HdBasisCurvesReprDesc &desc,
-                               int refineLevel);
+    // When processing primvars, these will get set to if we determine that
+    // we should do cubic basis interpolation on the normals and widths.
+    // NOTE: I worry that it may be possible for these to get out of sync.
+    // The right long term fix is likely to maintain proper separation between 
+    // varying and vertex primvars throughout the HdSt rendering pipeline.
+    bool _basisWidthInterpolation = false;
+    bool _basisNormalInterpolation = false;
+
+    bool _SupportsRefinement(int refineLevel);
+    bool _SupportsUserWidths(HdStDrawItem* drawItem);
+    bool _SupportsUserNormals(HdStDrawItem* drawItem);
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdStDrawItem *drawItem,

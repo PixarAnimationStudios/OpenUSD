@@ -33,6 +33,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef std::unique_ptr<HdxDrawTargetRenderPass>
+                                               HdxDrawTargetRenderPassUniquePtr;
+typedef std::vector<HdxDrawTargetRenderPassUniquePtr>
+                                          HdxDrawTargetRenderPassUniquePtrVector;
 
 HdxDrawTargetResolveTask::HdxDrawTargetResolveTask(HdSceneDelegate* delegate,
                                                    SdfPath const& id)
@@ -55,20 +59,47 @@ HdxDrawTargetResolveTask::_Execute(HdTaskContext* ctx)
 
     // Extract the list of render pass for draw targets from the task context.
     // This list is set from drawTargetTask.cpp during Sync phase.
-    std::vector< std::unique_ptr<HdxDrawTargetRenderPass> >  *passes;
-    if (!_GetTaskContextData(ctx, HdxTokens->drawTargetRenderPasses, &passes)) {
+    HdTaskContext::const_iterator valueIt =
+                                   ctx->find(HdxTokens->drawTargetRenderPasses);
+    if (valueIt == ctx->cend()) {
+        TF_CODING_ERROR("drawTargetRenderPasses token missing from "
+                        "task context");
         return;
     }
 
-    // Iterate through all renderpass (drawtarget renderpass), extract the
-    // draw target and resolve them if needed. We need to resolve them to 
-    // regular buffers so use them in the rest of the pipeline.
-    size_t numDrawTargets = passes->size();
-    if (numDrawTargets > 0) {
-        std::vector<GlfDrawTarget*> drawTargets(numDrawTargets);
+    std::vector<GlfDrawTarget*> drawTargets;
+
+
+    const VtValue &valueVt = (valueIt->second);
+    if (valueVt.IsHolding<HdxDrawTargetRenderPass *>()) {
+        drawTargets.resize(1);
+
+        HdxDrawTargetRenderPass *pass =
+                              valueVt.UncheckedGet<HdxDrawTargetRenderPass *>();
+
+        drawTargets[0] = boost::get_pointer(pass->GetDrawTarget());
+
+    } else if (valueVt.IsHolding<HdxDrawTargetRenderPassUniquePtrVector *>()) {
+        HdxDrawTargetRenderPassUniquePtrVector *passes =
+               valueVt.UncheckedGet<HdxDrawTargetRenderPassUniquePtrVector *>();
+
+        // Iterate through all renderpass (drawtarget renderpass), extract the
+        // draw target and resolve them if needed. We need to resolve them to 
+        // regular buffers so use them in the rest of the pipeline.
+ 
+        size_t numDrawTargets = passes->size();
+
+        drawTargets.resize(numDrawTargets);
         for (size_t i = 0; i < numDrawTargets; ++i) {
             drawTargets[i] = boost::get_pointer((*passes)[i]->GetDrawTarget());
         }
+    } else {
+        TF_CODING_ERROR("drawTargetRenderPasses in task context is of "
+                        "unexpected type");
+        return;
+    }
+
+    if (!drawTargets.empty()) {
         GlfDrawTarget::Resolve(drawTargets);
     }
 }

@@ -37,13 +37,14 @@ struct HdSt_MeshShaderKey
 {
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
-                       bool hasCustomDisplacementTerminal,
+                       bool useCustomDisplacement,
                        bool smoothNormals,
                        bool doubleSided,
                        bool faceVarying,
                        bool blendWireframeColor,
                        HdCullStyle cullStyle,
-                       HdMeshGeomStyle geomStyle);
+                       HdMeshGeomStyle geomStyle,
+                       float lineWidth);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"
@@ -61,6 +62,7 @@ struct HdSt_MeshShaderKey
     bool IsCullingPass() const { return false; }
     HdCullStyle GetCullStyle() const { return cullStyle; }
     HdPolygonMode GetPolygonMode() const { return polygonMode; }
+    float GetLineWidth() const { return lineWidth; }
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const {
         return primType; 
     }
@@ -69,13 +71,14 @@ struct HdSt_MeshShaderKey
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
     HdPolygonMode polygonMode;
+    float lineWidth;
     bool isFaceVarying;
     TfToken glslfx;
-    TfToken VS[4];
+    TfToken VS[5];
     TfToken TCS[3];
     TfToken TES[3];
-    TfToken GS[6];
-    TfToken FS[8];
+    TfToken GS[7];
+    TfToken FS[10];
 };
 
 

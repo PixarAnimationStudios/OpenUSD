@@ -83,11 +83,27 @@ public:
     GfMatrix4d GetParentToWorldTransform(const UsdPrim& prim);
 
     /// Returns the local transformation of the prim. Uses the cached 
-    /// XformQuery to compute the result quickly. The result of this call
-    /// is not cached.
+    /// XformQuery to compute the result quickly. The \p resetsXformStack
+    /// pointer must be valid. It will be set to true if \p prim resets
+    /// the transform stack.
+    /// The result of this call is cached.
     USDGEOM_API
     GfMatrix4d GetLocalTransformation(const UsdPrim &prim,
                                       bool *resetsXformStack);
+
+    /// Returns the result of concatenating all transforms beneath \p ancestor
+    /// that affect \p prim. This includes the local transform of \p prim
+    /// itself, but not the local transform of \p ancestor. If \p ancestor is
+    /// not an ancestor of \p prim, the resulting transform is the
+    /// local-to-world transformation of \p prim.    
+    /// The \p resetXformTsack pointer must be valid. If any intermediate prims
+    /// reset the transform stack, \p resetXformStack will be set to true.
+    /// Intermediate transforms are cached, but the result of this call itself
+    /// is not cached.
+    USDGEOM_API
+    GfMatrix4d ComputeRelativeTransform(const UsdPrim &prim,
+                                        const UsdPrim &ancestor,
+                                        bool *resetXformStack);
 
     /// Whether the attribute named \p attrName, belonging to the 
     /// given \p prim affects the local transform value at the prim.

@@ -53,7 +53,7 @@ void TfPyConvertPythonExceptionToTfErrors();
 /// A boost.python call policy class which, when applied to a wrapped
 /// function, will create an error mark before calling the function, and check
 /// that error mark after the function has completed.  If any TfErrors have
-/// occured, they will be raised as python exceptions.
+/// occurred, they will be raised as python exceptions.
 ///
 /// This facility does not need to be used by clients in general.  It is only
 /// required for wrapped functions and methods that do not appear directly in an

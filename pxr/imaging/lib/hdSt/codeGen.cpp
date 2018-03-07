@@ -511,6 +511,7 @@ HdSt_CodeGen::Compile()
     switch(_geometricShader->GetPrimitiveType())
     {
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
         {
             // patch interpolation
@@ -529,11 +530,10 @@ HdSt_CodeGen::Compile()
         }
 
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         {
             // barycentric interpolation
              _procGS  << "void ProcessPrimVars(int index) {\n"
-                      << "   vec2 localST = vec2[](vec2(1,0), vec2(0,1), vec2(0,0))[index];\n";
+                      << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(0,1))[index];\n";
             break;            
         }
 
@@ -816,7 +816,7 @@ HdSt_CodeGen::CompileComputeProgram()
 
             std::string logString;
             HdStGLUtils::GetShaderCompileStatus(shader, &logString);
-            TF_WARN("Failed to compile compute shader:\n%s\n",
+            TF_WARN("Failed to compile compute shader: %s",
                     logString.c_str());
             glDeleteShader(shader);
             return HdStGLSLProgramSharedPtr();
@@ -1857,6 +1857,74 @@ HdSt_CodeGen::_GenerateElementPrimVar()
         << "int GetAggregatedElementID();\n";
 
 
+    if (_metaData.edgeIndexBinding.binding.IsValid()) {
+
+        HdBinding binding = _metaData.edgeIndexBinding.binding;
+
+        _EmitDeclaration(declarations, _metaData.edgeIndexBinding);
+        _EmitAccessor(accessors, _metaData.edgeIndexBinding.name,
+                    _metaData.edgeIndexBinding.dataType, binding,
+                    "GetDrawingCoord().primitiveCoord");
+
+        // Authored EdgeID getter
+        // abs() is needed below, since both branches may get executed, and
+        // we need to guard against array oob indexing.
+        accessors
+            << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
+            << "  if (primitiveEdgeID == -1) {\n"
+            << "    return -1;\n"
+            << "  }\n"
+            << "  return HdGet_edgeIndices()[abs(primitiveEdgeID)];\n;"
+            << "}\n";
+
+        // Primitive EdgeID getter
+        if (_geometricShader->IsPrimTypePoints()) {
+            // we get here only if we're rendering a mesh with the edgeIndices
+            // binding and using a points repr. since there is no GS stage, we
+            // generate fallback versions.
+            // note: this scenario can't be handled in meshShaderKey, since it
+            // doesn't know whether an edgeIndices binding exists.
+            accessors
+                << "int GetPrimitiveEdgeId() {\n"
+                << "  return -1;\n"
+                << "}\n";
+            accessors
+                << "bool IsFragmentOnEdge() {\n"
+                << "  return false;\n"
+                << "}\n";
+        }
+        else if (_geometricShader->IsPrimTypeBasisCurves()) {
+            // basis curves don't have an edge indices buffer bound, so we 
+            // shouldn't ever get here.
+            TF_VERIFY(false, "edgeIndexBinding shouldn't be found on a "
+                             "basis curve");
+        }
+        else if (_geometricShader->IsPrimTypeMesh()) {
+            // nothing to do. meshShaderKey takes care of it.
+        }
+    } else {
+        // The functions below are used in picking (id render) and selection
+        // highlighting, and are expected to be defined. Generate fallback
+        // versions when we don't bind an edgeIndices buffer.
+        accessors
+            << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
+            << "  return -1;\n"
+            << "}\n";
+        accessors
+            << "int GetPrimitiveEdgeId() {\n"
+            << "  return -1;\n"
+            << "}\n";
+        accessors
+            << "bool IsFragmentOnEdge() {\n"
+            << "return false;\n"
+            << "}\n";
+    }
+    declarations
+        << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
+        << "int GetPrimitiveEdgeId();\n"
+        << "bool IsFragmentOnEdge();\n";
+
+    // Uniform primvar data declarations & accessors
     TF_FOR_ALL (it, _metaData.elementData) {
         HdBinding binding = it->first;
         TfToken const &name = it->second.name;
@@ -2054,9 +2122,9 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
             {
                 // barycentric interpolation within a triangle.
                 _procGS << "   outPrimVars." << name
-                    << "  = HdGet_" << name << "(0) * localST.x "
-                    << "  + HdGet_" << name << "(1) * localST.y "
-                    << "  + HdGet_" << name << "(2) * (1-localST.x-localST.y);\n";                
+                    << "  = HdGet_" << name << "(0) * (1-localST.x-localST.y) "
+                    << "  + HdGet_" << name << "(1) * localST.x "
+                    << "  + HdGet_" << name << "(2) * localST.y;\n";                
                 break;  
             }
 

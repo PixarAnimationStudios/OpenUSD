@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/subset.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 
 #include <maya/MFnMeshData.h>
 #include <maya/MFnSet.h>
@@ -172,10 +173,11 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
     MFnDagNode(shapeObj).getPath(shapeDagPath);
 
     MStatus status;
+    UsdShadeMaterialBindingAPI bindingAPI(primSchema.GetPrim());
     MObject shadingEngine = PxrUsdMayaTranslatorMaterial::Read(
             shadingMode,
-            UsdShadeMaterial::GetBoundMaterial(primSchema.GetPrim()), 
-            primSchema, 
+            bindingAPI.ComputeBoundMaterial(),
+            primSchema,
             context);
 
     if (shadingEngine.isNull()) {
@@ -188,8 +190,8 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 
     // If the gprim does not have a material faceSet which represents per-face 
     // shader assignments, assign the shading engine to the entire gprim.
-    std::vector<UsdGeomSubset> faceSubsets = 
-        UsdShadeMaterial::GetMaterialBindSubsets(primSchema);
+    std::vector<UsdGeomSubset> faceSubsets = UsdShadeMaterialBindingAPI(
+            primSchema.GetPrim()).GetMaterialBindSubsets();
 
     bool hasOldStyleFaceSets = UsdShadeMaterial::HasMaterialFaceSet(
         primSchema.GetPrim());
@@ -244,8 +246,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
         }
 
         for (const auto &subset: faceSubsets) {
+            UsdShadeMaterialBindingAPI subsetBindingAPI(subset.GetPrim());
             UsdShadeMaterial boundMaterial = 
-                UsdShadeMaterial::GetBoundMaterial(subset.GetPrim());
+                    subsetBindingAPI.ComputeBoundMaterial();
             if (boundMaterial) {
                 MObject faceSubsetShadingEngine = 
                     PxrUsdMayaTranslatorMaterial::Read(shadingMode, 
@@ -390,12 +393,9 @@ PxrUsdMayaTranslatorMaterial::AssignMaterial(
 void
 PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
         const UsdStageRefPtr& stage,
-        const PxrUsdMayaUtil::ShapeSet& bindableRoots,
         const TfToken& shadingMode,
-        bool mergeTransformAndShape,
-        SdfPath overrideRootPath,
         const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
-        const SdfPath &materialCollectionsPath)
+        const PxrUsdMayaExportParams &exportParams)
 {
     if (shadingMode == PxrUsdMayaShadingModeTokens->none) {
         return;
@@ -404,8 +404,7 @@ PxrUsdMayaTranslatorMaterial::ExportShadingEngines(
     if (auto exporterCreator =
             PxrUsdMayaShadingModeRegistry::GetExporter(shadingMode)) {
         if (auto exporter = exporterCreator()) {
-            exporter->DoExport(stage, bindableRoots, mergeTransformAndShape,    
-                overrideRootPath, dagPathToUsdMap, materialCollectionsPath);
+            exporter->DoExport(stage, dagPathToUsdMap, exportParams);
         }
     }
     else {

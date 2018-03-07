@@ -24,12 +24,16 @@
 #ifndef USDIMAGING_PRIM_ADAPTER_H
 #define USDIMAGING_PRIM_ADAPTER_H
 
+/// \file usdImaging/primAdapter.h
+
 #include "pxr/pxr.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
@@ -69,6 +73,7 @@ public:
     UsdImagingPrimAdapter()
     {}
 
+    USDIMAGING_API
     virtual ~UsdImagingPrimAdapter();
 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
@@ -80,11 +85,13 @@ public:
 
     // Allows the adapter to prune traversal by culling the children below the
     // given prim.
+    USDIMAGING_API
     virtual bool ShouldCullChildren(UsdPrim const& prim);
 
     // Indicates the adapter is a multiplexing adapter (e.g. PointInstancer),
     // potentially managing its children. This flag is used in nested
     // instancer cases to determine which adapter is assigned to which prim.
+    USDIMAGING_API
     virtual bool IsInstancerAdapter();
 
     // Indicates whether the prim bound to this adapter is native-instanceable.
@@ -95,6 +102,7 @@ public:
     // Indicates that this adapter populates the render index only when
     // directed by the population of another prim, e.g. materials are
     // populated on behalf of prims which use the material.
+    USDIMAGING_API
     virtual bool IsPopulatedIndirectly();
 
     // ---------------------------------------------------------------------- //
@@ -151,11 +159,13 @@ public:
     /// When a PrimResync event occurs, the prim may have been deleted entirely,
     /// adapter plug-ins should override this method to free any per-prim state
     /// that was accumulated in the adapter.
+    USDIMAGING_API
     virtual void ProcessPrimResync(SdfPath const& primPath,
                                    UsdImagingIndexProxy* index);
 
     /// Removes all associated Rprims and dependencies from the render index
     /// without scheduling them for repopulation. 
+    USDIMAGING_API
     virtual void ProcessPrimRemoval(SdfPath const& primPath,
                                    UsdImagingIndexProxy* index);
 
@@ -165,22 +175,27 @@ public:
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index) = 0;
 
+    USDIMAGING_API
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
     virtual void MarkReprDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
                                UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
     virtual void MarkCullStyleDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index);
 
+    USDIMAGING_API
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index);
@@ -198,6 +213,7 @@ public:
     /// If \protoPath is an instancer and also instanced by another parent
     /// instancer, return the instanceCountForThisLevel as the number of
     /// instances.
+    USDIMAGING_API
     virtual SdfPath GetPathForInstanceIndex(
         SdfPath const &protoPath, int instanceIndex,
         int *instanceCountForThisLevel, int *absoluteInstanceIndex,
@@ -206,6 +222,7 @@ public:
 
     /// Returns the instancer path for given \p instancePath. If it's not
     /// instanced path, returns empty.
+    USDIMAGING_API
     virtual SdfPath GetInstancer(SdfPath const &instancePath);
 
     // ---------------------------------------------------------------------- //
@@ -217,6 +234,7 @@ public:
     /// the \p instancerPath. This method can be used if instancerPath
     /// can't be inferred from protoPath, such as nested instancing.
     /// \p protoPath can be either rprim or child instancer.
+    USDIMAGING_API
     virtual SdfPath GetPathForInstanceIndex(
         SdfPath const &instancerPath, SdfPath const &protoPath,
         int instanceIndex, int *instanceCountForThisLevel,
@@ -227,12 +245,14 @@ public:
     /// Returns the instance index array for \p protoRprimPath, instanced
     /// by \p instancerPath. \p instancerPath must be managed by this
     /// adapter.
+    USDIMAGING_API
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
                                           SdfPath const &protoRprimPath);
 
     /// Returns the transform of \p protoInstancerPath relative to
     /// \p instancerPath. \p instancerPath must be managed by this
     /// adapter.
+    USDIMAGING_API
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &instancerPath,
         SdfPath const &protoInstancerPath,
@@ -241,48 +261,72 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Selection
     // ---------------------------------------------------------------------- //
+    USDIMAGING_API
     virtual bool PopulateSelection(HdxSelectionHighlightMode const& highlightMode,
                                    SdfPath const &usdPath,
                                    VtIntArray const &instanceIndices,
                                    HdxSelectionSharedPtr const &result);
 
     // ---------------------------------------------------------------------- //
+    /// \name Texture resources
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual HdTextureResource::ID
+    GetTextureResourceID(UsdPrim const& usdPrim, SdfPath const &id,
+                         UsdTimeCode time, size_t salt) const;
+
+    USDIMAGING_API
+    virtual HdTextureResourceSharedPtr
+    GetTextureResource(UsdPrim const& usdPrim, SdfPath const &id,
+                       UsdTimeCode time) const;
+
+    // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 
     /// The root transform provided by the delegate. 
+    USDIMAGING_API
     GfMatrix4d GetRootTransform() const;
 
     /// A thread-local XformCache provided by the delegate.
+    USDIMAGING_API
     void SetDelegate(UsdImagingDelegate* delegate);
 
+    USDIMAGING_API
     bool IsChildPath(SdfPath const& path) const;
     
     /// Returns true if the given prim is visible, taking into account inherited
     /// visibility values. Inherited values are strongest, Usd has no notion of
     /// "super vis/invis".
+    USDIMAGING_API
     bool GetVisible(UsdPrim const& prim, UsdTimeCode time);
 
     /// Fetches the transform for the given prim at the given time from a
     /// pre-computed cache of prim transforms. Requesting transforms at
     /// incoherent times is currently inefficient.
+    USDIMAGING_API
     GfMatrix4d GetTransform(UsdPrim const& prim, UsdTimeCode time,
                             bool ignoreRootTransform = false);
 
     /// Gets the material path for the given prim, walking up namespace if
     /// necessary.  
+    USDIMAGING_API
     SdfPath GetMaterialId(UsdPrim const& prim);
 
     /// Gets the instancer ID for the given prim and instancerContext.
+    USDIMAGING_API
     SdfPath GetInstancerBinding(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext);
 
     /// Returns the depending rprim paths which don't exist in descendants.
     /// Used for change tracking over subtree boundary (e.g. instancing)
+    USDIMAGING_API
     virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
 
     /// Gets the model:drawMode attribute for the given prim, walking up
     /// the namespace if necessary.
+    USDIMAGING_API
     TfToken GetModelDrawMode(UsdPrim const& prim);
 
     // ---------------------------------------------------------------------- //
@@ -311,20 +355,24 @@ protected:
         prim.GetAttribute(key).Get<T>(out, time);
     }
 
+    USDIMAGING_API
     UsdImagingValueCache* _GetValueCache();
 
+    USDIMAGING_API
     UsdPrim _GetPrim(SdfPath const& usdPath) const;
 
     // Returns the prim adapter for the given \p prim, or an invalid pointer if
     // no adapter exists. If \p prim is an instance and \p ignoreInstancing
     // is \c true, the instancing adapter will be ignored and an adapter will
     // be looked up based on \p prim's type.
+    USDIMAGING_API
     const UsdImagingPrimAdapterSharedPtr& 
     _GetPrimAdapter(UsdPrim const& prim, bool ignoreInstancing = false);
 
     // Determines if an attribute is varying and if so, sets the given
     // \p dirtyFlag in the \p dirtyFlags and increments a perf counter. Returns
     // true if the attribute is varying.
+    USDIMAGING_API
     bool _IsVarying(UsdPrim prim, TfToken const& attrName, 
            HdDirtyBits dirtyFlag, TfToken const& perfToken,
            HdDirtyBits* dirtyFlags, bool isInherited);
@@ -332,11 +380,13 @@ protected:
     // Determines if the prim's transform (CTM) is varying and if so, sets the 
     // given \p dirtyFlag in the \p dirtyFlags and increments a perf counter. 
     // Returns true if the prim's transform is varying.
+    USDIMAGING_API
     bool _IsTransformVarying(UsdPrim prim,
                              HdDirtyBits dirtyFlag,
                              TfToken const& perfToken,
                              HdDirtyBits* dirtyFlags);
 
+    USDIMAGING_API
     void _MergePrimvar(UsdImagingValueCache::PrimvarInfo const& primvar, 
                        PrimvarInfoVector* vec);
 

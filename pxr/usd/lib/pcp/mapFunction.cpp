@@ -275,7 +275,7 @@ _Map(const SdfPath& path,
     // to be fixed, they must be certain to recurse on target paths
     // themselves.
     //
-    // XXX: It may be preferrable to have PcpMapFunction be in charge
+    // XXX: It may be preferable to have PcpMapFunction be in charge
     //      of doing that, but some path translation issues make that
     //      infeasible for now.
 

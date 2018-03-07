@@ -29,6 +29,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
+#include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdSkel/animQuery.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/topology.h"
@@ -50,6 +51,17 @@ _ComputeAnimTransform(UsdSkelSkeletonQuery& self, UsdTimeCode time)
 {
     GfMatrix4d xform;
     if(!self.ComputeAnimTransform(&xform, time))
+        xform.SetIdentity();
+    return xform;
+}
+
+
+GfMatrix4d
+_ComputeLocalToWorldTransform(UsdSkelSkeletonQuery& self,
+                              UsdGeomXformCache& xfCache)
+{
+    GfMatrix4d xform;
+    if(!self.ComputeLocalToWorldTransform(&xform, &xfCache))
         xform.SetIdentity();
     return xform;
 }
@@ -97,6 +109,9 @@ void wrapUsdSkelSkeletonQuery()
         
         .def("__str__", &This::GetDescription)
 
+        .def("GetPrim", &This::GetPrim,
+             return_value_policy<return_by_value>())
+
         .def("GetSkeleton", &This::GetSkeleton,
              return_value_policy<return_by_value>())
 
@@ -110,6 +125,9 @@ void wrapUsdSkelSkeletonQuery()
         
         .def("ComputeAnimTransform", &_ComputeAnimTransform,
              (arg("time")=UsdTimeCode::Default()))
+
+        .def("ComputeLocalToWorldTransform", &_ComputeLocalToWorldTransform,
+             (arg("xfCache")))
         
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
              (arg("time")=UsdTimeCode::Default(), arg("atRest")=false))
