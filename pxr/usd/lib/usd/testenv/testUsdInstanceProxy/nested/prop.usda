@@ -11,4 +11,10 @@ def Scope "Prop"
     def Scope "anim"
     {
     }
+
+    def Scope "inactive" (
+        active = False
+    )
+    {
+    }
 }

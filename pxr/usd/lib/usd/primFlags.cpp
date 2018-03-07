@@ -31,6 +31,9 @@ const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate =
     UsdPrimIsActive && UsdPrimIsDefined && 
     UsdPrimIsLoaded && !UsdPrimIsAbstract;
 
+const Usd_PrimFlagsPredicate UsdPrimAllPrimsPredicate = 
+    Usd_PrimFlagsPredicate::Tautology();
+
 bool
 Usd_PrimFlagsPredicate::operator()(const UsdPrim &prim) const
 {

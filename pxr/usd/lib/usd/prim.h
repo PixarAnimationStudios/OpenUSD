@@ -1359,7 +1359,7 @@ UsdPrim::GetFilteredChildren(const Usd_PrimFlagsPredicate &pred) const
 UsdPrimSiblingRange
 UsdPrim::GetAllChildren() const
 {
-    return GetFilteredChildren(Usd_PrimFlagsPredicate::Tautology());
+    return GetFilteredChildren(UsdPrimAllPrimsPredicate);
 }
 
 UsdPrimSiblingRange
@@ -1556,7 +1556,7 @@ UsdPrim::GetFilteredDescendants(const Usd_PrimFlagsPredicate &pred) const
 UsdPrimSubtreeRange
 UsdPrim::GetAllDescendants() const
 {
-    return GetFilteredDescendants(Usd_PrimFlagsPredicate::Tautology());
+    return GetFilteredDescendants(UsdPrimAllPrimsPredicate);
 }
 
 UsdPrimSubtreeRange

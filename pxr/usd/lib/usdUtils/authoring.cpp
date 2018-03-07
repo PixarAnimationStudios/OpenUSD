@@ -107,8 +107,8 @@ _GetPathsToExcludeBelowCommonAncestor(
 
     // Travere beneath the common prefix to find all the paths that don't 
     // belong to the collection. 
-    UsdPrimRange commonAncestorRange(commonAncestor, 
-                                     UsdTraverseInstanceProxies());
+    UsdPrimRange commonAncestorRange(
+        commonAncestor, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
     for (auto primIt = commonAncestorRange.begin(); 
          primIt != commonAncestorRange.end() ; 
          ++primIt) 
@@ -191,8 +191,8 @@ _ComputePathsToIncludeAndExclude(
 
     // We have all the information needed to compute the optimal set of 
     // included paths and excluded paths.
-    UsdPrimRange commonAncestorRange(commonAncestor, 
-                                     UsdTraverseInstanceProxies());
+    UsdPrimRange commonAncestorRange(
+        commonAncestor, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
     for (auto primIt = commonAncestorRange.begin(); 
          primIt != commonAncestorRange.end() ; 
          ++primIt) 

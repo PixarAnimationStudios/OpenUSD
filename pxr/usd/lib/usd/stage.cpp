@@ -3269,8 +3269,7 @@ UsdStage::Traverse(const Usd_PrimFlagsPredicate &predicate)
 UsdPrimRange
 UsdStage::TraverseAll()
 {
-    return UsdPrimRange::Stage(UsdStagePtr(this),
-                                  Usd_PrimFlagsPredicate::Tautology());
+    return UsdPrimRange::Stage(UsdStagePtr(this), UsdPrimAllPrimsPredicate);
 }
 
 bool

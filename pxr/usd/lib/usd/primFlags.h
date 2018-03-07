@@ -521,6 +521,11 @@ extern unspecified UsdPrimHasDefiningSpecifier;
 /// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
 extern unspecified UsdPrimDefaultPredicate;
 
+/// Predicate that includes all prims.
+///
+/// See \ref Usd_PrimFlags "Prim predicate flags" for more information.
+extern unspecified UsdPrimAllPrimsPredicate;
+
 #else
 
 static const Usd_PrimFlags UsdPrimIsActive = Usd_PrimActiveFlag;
@@ -534,6 +539,7 @@ static const Usd_PrimFlags UsdPrimHasDefiningSpecifier
     = Usd_PrimHasDefiningSpecifierFlag;
 
 USD_API extern const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate;
+USD_API extern const Usd_PrimFlagsPredicate UsdPrimAllPrimsPredicate;
 
 #endif // doxygen
 
@@ -545,12 +551,13 @@ USD_API extern const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate;
 /// \code
 /// // Return all children of the specified prim.  
 /// // If prim is an instance, return all children as instance proxy prims.
-/// prim.GetFilteredChildren(UsdTraverseInstanceProxies())
+/// prim.GetFilteredChildren(
+///     UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate))
 ///
 /// // Return children of the specified prim that pass the default predicate.
 /// // If prim is an instance, return the children that pass this predicate
 /// // as instance proxy prims.
-/// prim.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimDefaultPredicate));
+/// prim.GetFilteredChildren(UsdTraverseInstanceProxies());
 ///
 /// // Return all model or group children of the specified prim.
 /// // If prim is an instance, return the children that pass this predicate 
@@ -573,12 +580,13 @@ UsdTraverseInstanceProxies(Usd_PrimFlagsPredicate predicate)
 }
 
 /// \overload
-/// Convenience method equivalent to calling UsdTraverseInstanceProxies with a
-/// default-constructed tautology predicate.
+/// Convenience method equivalent to calling UsdTraverseInstanceProxies
+/// with the UsdPrimDefaultPredicate that is used by default for prim 
+/// traversals.
 inline Usd_PrimFlagsPredicate
 UsdTraverseInstanceProxies()
 {
-    return UsdTraverseInstanceProxies(Usd_PrimFlagsPredicate::Tautology());
+    return UsdTraverseInstanceProxies(UsdPrimDefaultPredicate);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
