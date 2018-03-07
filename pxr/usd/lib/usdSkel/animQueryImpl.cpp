@@ -65,6 +65,8 @@ public:
     
     virtual bool JointTransformsMightBeTimeVarying() const override;
 
+    virtual bool TransformMightBeTimeVarying() const override;
+
     virtual bool ComputeTransform(GfMatrix4d* xform,
                                   UsdTimeCode time) const override;
 
@@ -143,6 +145,13 @@ UsdSkel_PackedJointAnimationQueryImpl::JointTransformsMightBeTimeVarying() const
     return _translations.ValueMightBeTimeVarying() ||
            _rotations.ValueMightBeTimeVarying() ||
            _scales.ValueMightBeTimeVarying();
+}
+
+
+bool
+UsdSkel_PackedJointAnimationQueryImpl::TransformMightBeTimeVarying() const
+{
+    return _xformQuery.TransformMightBeTimeVarying();
 }
 
 

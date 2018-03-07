@@ -207,8 +207,8 @@ UsdGeomPointBased::SetNormalsInterpolation(TfToken const &interpolation)
 }
 
 bool
-UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points, 
-    VtVec3fArray* extent)  
+UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
+    VtVec3fArray* extent)
 {
     // Create Sized Extent
     extent->resize(2);
@@ -216,19 +216,41 @@ UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
     // Calculate bounds
     GfRange3d bbox;
     TF_FOR_ALL(pointsItr, points) {
-        bbox.UnionWith(GfVec3f(*pointsItr));
+        bbox.UnionWith(*pointsItr);
     }
 
     (*extent)[0] = GfVec3f(bbox.GetMin());
     (*extent)[1] = GfVec3f(bbox.GetMax());
-    
+
+    return true;
+}
+
+bool
+UsdGeomPointBased::ComputeExtent(const VtVec3fArray& points,
+    const GfMatrix4d& transform, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    // Calculate bounds
+    GfRange3d bbox;
+    TF_FOR_ALL(pointsItr, points) {
+        GfVec3f point = *pointsItr;
+        point = transform.Transform(point);
+        bbox.UnionWith(point);
+    }
+
+    (*extent)[0] = GfVec3f(bbox.GetMin());
+    (*extent)[1] = GfVec3f(bbox.GetMax());
+
     return true;
 }
 
 static bool
 _ComputeExtentForPointBased(
-    const UsdGeomBoundable& boundable, 
-    const UsdTimeCode& time, 
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent) 
 {
     const UsdGeomPointBased pointBased(boundable);
@@ -241,7 +263,11 @@ _ComputeExtentForPointBased(
         return false;
     }
 
-    return UsdGeomPointBased::ComputeExtent(points, extent);
+    if (transform) {
+        return UsdGeomPointBased::ComputeExtent(points, *transform, extent);
+    } else {
+        return UsdGeomPointBased::ComputeExtent(points, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

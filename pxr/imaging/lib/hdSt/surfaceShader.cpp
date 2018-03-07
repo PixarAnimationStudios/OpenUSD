@@ -178,6 +178,20 @@ HdStSurfaceShader::ComputeHash() const
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
     boost::hash_combine(hash, 
         ArchHash(_geometrySource.c_str(), _geometrySource.size()));
+
+    // Add in texture format that effects shader (ignore handles)
+    boost::hash_combine(hash, _textureDescriptors.size());
+    for (TextureDescriptorVector::const_iterator
+                                        texIt  = _textureDescriptors.cbegin();
+                                        texIt != _textureDescriptors.cend();
+                                      ++texIt)
+    {
+        const TextureDescriptor &texDesc = *texIt;
+
+        boost::hash_combine(hash, texDesc.name);
+        boost::hash_combine(hash, texDesc.type);
+    }
+
     return hash;
 }
 

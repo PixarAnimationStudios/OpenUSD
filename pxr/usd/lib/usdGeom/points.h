@@ -226,6 +226,13 @@ public:
     USDGEOM_API
     static bool ComputeExtent(const VtVec3fArray& points,
         const VtFloatArray& widths, VtVec3fArray* extent);
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    static bool ComputeExtent(const VtVec3fArray& points,
+        const VtFloatArray& widths, const GfMatrix4d& transform,
+        VtVec3fArray* extent);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

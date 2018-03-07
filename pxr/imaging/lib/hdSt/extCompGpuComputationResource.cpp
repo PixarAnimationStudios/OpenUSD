@@ -125,7 +125,7 @@ HdStExtCompGpuComputationResource::Resolve()
                     HdStGLUtils::GetProgramLinkStatus(
                         glslProgram->GetProgram().GetId(),
                         &logString);
-                    TF_WARN("Failed to link compute shader:\n%s\n",
+                    TF_WARN("Failed to link compute shader: %s",
                             logString.c_str());
                     return false;
                 }

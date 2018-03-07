@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_SPHERE_LIGHT_ADAPTER_H
 #define USDIMAGING_SPHERE_LIGHT_ADAPTER_H
 
+/// \file usdImaging/sphereLightAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"

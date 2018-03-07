@@ -51,12 +51,9 @@ class HdRenderIndex;
 class HdRprimCollection;
 
 typedef boost::shared_ptr<class HdRenderPass> HdRenderPassSharedPtr;
-typedef boost::shared_ptr<class HdStRenderPassState> HdStRenderPassStateSharedPtr;
+typedef boost::shared_ptr<class HdRenderPassState> HdRenderPassStateSharedPtr;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-
-HDX_API
-void HdxNoDepthMask();
 
 class HdxIntersector {
 public:
@@ -68,6 +65,20 @@ public:
     HdxIntersector(HdRenderIndex *index);
     HDX_API
     ~HdxIntersector() = default;
+
+    /// The ID render pass encodes the ID as color in a specific order.
+    /// Use this method to ensure the read back is done in an endian
+    /// correct fashion.
+    ///
+    /// As packing of IDs may change in the future we encapuslate the
+    /// correct behavior here.
+    /// \param idColor a byte buffer of length 4.
+    static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
+        return (int32_t(idColor[0] & 0xff) << 0)  |
+               (int32_t(idColor[1] & 0xff) << 8)  |
+               (int32_t(idColor[2] & 0xff) << 16) |
+               (int32_t(idColor[3] & 0xff) << 24);
+    }
 
     /// Given some parameters, populate a collection of resulting hit points,
     /// potentially running commands on the GPU to accelerate the query. Return
@@ -95,18 +106,27 @@ public:
     /// selection.
     typedef std::function<void(void)> DepthMaskCallback;
 
+    enum PickMode {
+        PickPrimsAndInstances = 1 << 0,
+        PickFaces             = 1 << 1,
+        PickEdges             = 1 << 2,
+        PickPoints            = 1 << 3
+    };
+
     struct Params {
         Params() 
             : hitMode(HitFirst)
+            , pickMode(PickPrimsAndInstances)
             , projectionMatrix(1)
             , viewMatrix(1)
             , alphaThreshold(0.0f)
             , cullStyle(HdCullStyleNothing)
-            , depthMaskCallback(HdxNoDepthMask)
+            , depthMaskCallback(nullptr)
             , renderTags()
         {}
 
         HitMode hitMode;
+        PickMode pickMode;
         GfMatrix4d projectionMatrix;
         GfMatrix4d viewMatrix;
         float alphaThreshold;
@@ -122,6 +142,8 @@ public:
         SdfPath instancerId;
         int instanceIndex;
         int elementIndex;
+        int edgeIndex;
+        int pointIndex;
         GfVec3f worldSpaceHitPoint;
         float ndcDepth;
 
@@ -129,6 +151,7 @@ public:
             return !objectId.IsEmpty();
         }
 
+        HDX_API
         size_t GetHash() const;
         struct Hash {
             inline size_t operator()(Hit const& hit) const {
@@ -142,13 +165,15 @@ public:
         HDX_API
         bool operator==(Hit const& lhs) const;
 
-        // Depth and position are ignored, used for object/element/instance
+        // Depth and position are ignored, used for object/instance/subprimitive
         // aggregation.
         struct HitSetHash {
+            HDX_API
             size_t operator()(Hit const& hit) const;
         };
         // Equality ignores depth and position.
         struct HitSetEq{
+            HDX_API
             bool operator()(Hit const& a, Hit const& b) const;
         };
     };
@@ -164,6 +189,8 @@ public:
         Result(std::unique_ptr<unsigned char[]> primIds,
                std::unique_ptr<unsigned char[]> instanceIds,
                std::unique_ptr<unsigned char[]> elementIds,
+               std::unique_ptr<unsigned char[]> edgeIds,
+               std::unique_ptr<unsigned char[]> pointIds,
                std::unique_ptr<float[]> depths,
                HdRenderIndex const *index,
                Params params,
@@ -204,6 +231,8 @@ public:
         std::unique_ptr<unsigned char[]> _primIds;
         std::unique_ptr<unsigned char[]> _instanceIds;
         std::unique_ptr<unsigned char[]> _elementIds;
+        std::unique_ptr<unsigned char[]> _edgeIds;
+        std::unique_ptr<unsigned char[]> _pointIds;
         std::unique_ptr<float[]> _depths;
         HdRenderIndex const *_index;
         Params _params;
@@ -212,13 +241,17 @@ public:
 
 private:
     void _Init(GfVec2i const&);
+    void _ConditionStencilWithGLCallback(DepthMaskCallback callback);
 
-    // Create a shared render pass for pickables and unpickables
+    // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
-    HdRenderPassSharedPtr _unpickableRenderPass;
+    HdRenderPassSharedPtr _occluderRenderPass;
 
-    HdStRenderPassStateSharedPtr _pickableRenderPassState;
-    HdStRenderPassStateSharedPtr _unpickableRenderPassState;
+    // Having separate render pass states allows us to queue up the tasks
+    // corresponding to each of the above render passes. It also lets us use
+    // different shader mixins if we choose to (we don't currently.)
+    HdRenderPassStateSharedPtr _pickableRenderPassState;
+    HdRenderPassStateSharedPtr _occluderRenderPassState;
 
     // A single draw target is shared for all contexts. Since the FBO cannot be
     // shared, we clone the attachements on each request.

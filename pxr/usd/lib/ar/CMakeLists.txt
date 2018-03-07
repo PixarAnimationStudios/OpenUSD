@@ -16,6 +16,7 @@ pxr_library(ar
         api.h
         assetInfo.h
         defaultResolver.h
+        defaultResolverContext.h
         resolver.h
         resolverContext.h
         resolverContextBinder.h
@@ -37,6 +38,7 @@ pxr_library(ar
         resolverScopedCache.cpp
         debugCodes.cpp
         defaultResolver.cpp
+        defaultResolverContext.cpp
 
     PYTHON_CPPFILES
         pyResolverContext.cpp
@@ -45,6 +47,7 @@ pxr_library(ar
     PYMODULE_CPPFILES
         module.cpp
         wrapDefaultResolver.cpp
+        wrapDefaultResolverContext.cpp
         wrapResolver.cpp
         wrapResolverContext.cpp
         wrapResolverContextBinder.cpp

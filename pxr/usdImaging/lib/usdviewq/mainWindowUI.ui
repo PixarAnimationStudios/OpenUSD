@@ -1153,7 +1153,7 @@
     </widget>
     <widget class="QMenu" name="menuPickMode">
      <property name="title">
-      <string>Pick mode...</string>
+      <string>Pick mode</string>
      </property>
      <addaction name="actionPick_Prims"/>
      <addaction name="actionPick_Models"/>
@@ -1161,7 +1161,7 @@
     </widget>
     <widget class="QMenu" name="menuSelection_Highlighting">
      <property name="title">
-      <string>Selection Highlighting...</string>
+      <string>Selection Highlighting</string>
      </property>
      <widget class="QMenu" name="menuHighlightColor">
       <property name="title">
@@ -1198,7 +1198,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Lights...</string>
+      <string>Lights</string>
      </property>
      <addaction name="actionAmbient_Only"/>
      <addaction name="separator"/>
@@ -1208,7 +1208,7 @@
     </widget>
     <widget class="QMenu" name="menuShading_Mode">
      <property name="title">
-      <string>Shading Mode...</string>
+      <string>Shading Mode</string>
      </property>
      <addaction name="actionWireframe"/>
      <addaction name="actionWireframeOnSurface"/>
@@ -1234,7 +1234,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Camera...</string>
+      <string>Camera</string>
      </property>
      <addaction name="actionFreeCam"/>
     </widget>
@@ -1243,7 +1243,7 @@
       <bool>true</bool>
      </property>
      <property name="title">
-      <string>Camera Guides...</string>
+      <string>Camera Guides</string>
      </property>
      <widget class="QMenu" name="menuCamera_Masking">
       <property name="title">
@@ -1271,7 +1271,7 @@
     </widget>
     <widget class="QMenu" name="menuDisplay">
      <property name="title">
-      <string>Display Purposes...</string>
+      <string>Display Purposes</string>
      </property>
      <addaction name="actionDisplay_Guide"/>
      <addaction name="actionDisplay_Proxy"/>
@@ -1296,8 +1296,17 @@
     </widget>
     <widget class="QMenu" name="menuRendererPlugin">
      <property name="title">
-      <string>Hydra Renderer...</string>
+      <string>Hydra Renderer</string>
      </property>
+    </widget>
+    <widget class="QMenu" name="menuComplexity">
+     <property name="title">
+      <string>Complexity</string>
+     </property>
+     <addaction name="actionLow"/>
+     <addaction name="actionMedium"/>
+     <addaction name="actionHigh"/>
+     <addaction name="actionVery_High"/>
     </widget>
     <addaction name="actionToggle_Viewer_Mode"/>
     <addaction name="separator"/>
@@ -1308,7 +1317,7 @@
     <addaction name="actionRecompute_Clipping_Planes"/>
     <addaction name="actionAdjust_Clipping"/>
     <addaction name="actionAdjust_Default_Material"/>
-    <addaction name="actionComplexity"/>
+    <addaction name="menuComplexity"/>
     <addaction name="menuBBox"/>
     <addaction name="separator"/>
     <addaction name="actionFrame_Selection"/>
@@ -1347,7 +1356,11 @@
     <addaction name="actionFind_Prims"/>
     <addaction name="actionJump_to_Stage_Root"/>
     <addaction name="actionJump_to_Model_Root"/>
-    <addaction name="actionJump_to_Bound_Material"/>
+    <addaction name="separator"/>
+    <addaction name="actionJump_to_Bound_Preview_Material"/>
+    <addaction name="actionJump_to_Bound_Full_Material"/>
+    <addaction name="actionSelect_Preview_Binding_Relationship"/>
+    <addaction name="actionSelect_Full_Binding_Relationship"/>
     <addaction name="separator"/>
     <addaction name="actionMake_Visible"/>
     <addaction name="actionVis_Only"/>
@@ -1737,11 +1750,6 @@
    </property>
    <property name="text">
     <string>Redraw While Frame Scrubbing</string>
-   </property>
-  </action>
-  <action name="actionComplexity">
-   <property name="text">
-    <string>Adjust Complexity...</string>
    </property>
   </action>
   <action name="actionIncrementComplexity1">
@@ -2378,9 +2386,9 @@
     <string>Unload</string>
    </property>
   </action>
-  <action name="actionJump_to_Bound_Material">
+  <action name="actionJump_to_Bound_Preview_Material">
    <property name="text">
-    <string>Jump to Bound Material</string>
+    <string>Jump to Bound Preview Material</string>
    </property>
    <property name="shortcut">
     <string>Shift+L</string>
@@ -2470,6 +2478,53 @@
   <action name="actionCameraReticles_Color">
    <property name="text">
     <string>Select Color...</string>
+   </property>
+  </action>
+  <action name="actionLow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Low</string>
+   </property>
+  </action>
+  <action name="actionMedium">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Medium</string>
+   </property>
+  </action>
+  <action name="actionHigh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>High</string>
+   </property>
+  </action>
+  <action name="actionVery_High">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Very High</string>
+   </property>
+  </action>
+  <action name="actionJump_to_Bound_Full_Material">
+   <property name="text">
+    <string>Jump to Bound Full Material</string>
+   </property>
+  </action>
+  <action name="actionSelect_Preview_Binding_Relationship">
+   <property name="text">
+    <string>Select Preview Binding Relationship</string>
+   </property>
+  </action>
+  <action name="actionSelect_Full_Binding_Relationship">
+   <property name="text">
+    <string>Select Full Binding Relationship</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">

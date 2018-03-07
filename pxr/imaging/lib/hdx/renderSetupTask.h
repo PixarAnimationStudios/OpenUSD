@@ -70,20 +70,6 @@ public:
         return _renderTags;
     }
 
-    /// The ID render pass encodes the ID as color in a specific order.
-    /// Use this method to ensure the read back is done in an endian
-    /// correct fashion.
-    ///
-    /// As packing of IDs may change in the future we encapuslate the
-    /// correct behavior here.
-    /// \param idColor a byte buffer of length 4.
-    static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
-        return (int32_t(idColor[0] & 0xff) << 0)  |
-               (int32_t(idColor[1] & 0xff) << 8)  |
-               (int32_t(idColor[2] & 0xff) << 16) |
-               (int32_t(idColor[3] & 0xff) << 24);
-    }
-
 protected:
     /// Execute render pass task
     HDX_API
@@ -118,6 +104,9 @@ struct HdxRenderTaskParams : public HdTaskParams
     HdxRenderTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
+        , pointColor(GfVec4f(0,0,0,1))
+        , pointSize(3.0)
+        , pointSelectedSize(3.0)
         , enableLighting(false)
         , enableIdRender(false)
         , alphaThreshold(0.0)
@@ -130,6 +119,12 @@ struct HdxRenderTaskParams : public HdTaskParams
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
+        , stencilFunc(HdCmpFuncAlways)
+        , stencilRef(0)
+        , stencilMask(~0)
+        , stencilFailOp(HdStencilOpKeep)
+        , stencilZFailOp(HdStencilOpKeep)
+        , stencilZPassOp(HdStencilOpKeep)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
         , geomStyle(HdGeomStylePolygons)
         , complexity(HdComplexityLow)
@@ -142,6 +137,9 @@ struct HdxRenderTaskParams : public HdTaskParams
     // RasterState
     GfVec4f overrideColor;
     GfVec4f wireframeColor;
+    GfVec4f pointColor;
+    float pointSize;
+    float pointSelectedSize;
     bool enableLighting;
     bool enableIdRender;
     float alphaThreshold;
@@ -161,6 +159,15 @@ struct HdxRenderTaskParams : public HdTaskParams
     float depthBiasSlopeFactor;
 
     HdCompareFunction depthFunc;
+
+    // Stencil
+    HdCompareFunction stencilFunc;
+    int stencilRef;
+    int stencilMask;
+    HdStencilOp stencilFailOp;
+    HdStencilOp stencilZFailOp;
+    HdStencilOp stencilZPassOp;
+    bool stencilEnable;
 
     // Viewer's Render Style
     HdCullStyle cullStyle;

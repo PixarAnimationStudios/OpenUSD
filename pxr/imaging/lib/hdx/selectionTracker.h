@@ -56,13 +56,18 @@ enum HdxSelectionHighlightMode {
 /// \class HdxSelection
 ///
 /// HdxSelection holds a collection of items which are rprims, instances of
-/// rprim, sub elements of rprim (such as faces, verts). HdxSelectionTracker
-/// takes HdxSelection and generates GPU buffer to be used for highlighting.
+/// rprim and subprimitives of rprim, such as elements (faces when dealing with 
+/// meshes, individual curves when dealing with basis curves) and edges.
+/// 
+/// HdxSelectionTracker takes HdxSelection and generates a GPU buffer to be used 
+/// for highlighting.
 ///
 class HdxSelection {
 public:
     typedef TfHashMap<SdfPath, std::vector<VtIntArray>, SdfPath::Hash> InstanceMap;
-    typedef TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> ElementMap;
+    typedef TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> ElementIndicesMap;
+    typedef ElementIndicesMap EdgeIndicesMap;
+    typedef ElementIndicesMap PointIndicesMap;
 
     HdxSelection() = default;
 
@@ -79,6 +84,16 @@ public:
     void AddElements(HdxSelectionHighlightMode const& mode,
                      SdfPath const &path,
                      VtIntArray const &elementIndices);
+    
+    HDX_API
+    void AddEdges(HdxSelectionHighlightMode const& mode,
+                  SdfPath const &path,
+                  VtIntArray const &edgeIndices);
+    
+    HDX_API
+    void AddPoints(HdxSelectionHighlightMode const& mode,
+                   SdfPath const &path,
+                   VtIntArray const &pointIndices);
 
     SdfPathVector const&
     GetSelectedPrims(HdxSelectionHighlightMode const& mode) const;
@@ -86,8 +101,14 @@ public:
     InstanceMap const&
     GetSelectedInstances(HdxSelectionHighlightMode const& mode) const;
 
-    ElementMap const&
+    ElementIndicesMap const&
     GetSelectedElements(HdxSelectionHighlightMode const& mode) const;
+
+    EdgeIndicesMap const&
+    GetSelectedEdges(HdxSelectionHighlightMode const& mode) const;
+    
+    PointIndicesMap const&
+    GetSelectedPoints(HdxSelectionHighlightMode const& mode) const;
 
 protected:
     struct _SelectedEntities {
@@ -100,9 +121,17 @@ protected:
         /// also a vector (because of nested instancing).
         InstanceMap instances;
 
-        // The selected elements (faces, points, edges) , if any, for the selected
-        // objects. This maps from object path to a vector of element indices.
-        ElementMap elements;
+        // The selected elements, if any, for the selected objects. This maps
+        // from object path to a vector of element indices.
+        ElementIndicesMap elements;
+
+        // The selected edges, if any, for the selected objects. This maps from 
+        // object path to a vector of (authored) edge indices.
+        EdgeIndicesMap edges;
+
+        // The selected points, if any, for the selected objects. This maps from
+        // object path to a vector of point (vertex) indices.
+        PointIndicesMap points;
     };
 
     _SelectedEntities _selEntities[HdxSelectionHighlightModeCount];
@@ -156,6 +185,7 @@ protected:
     HDX_API
     virtual bool _GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
                                       HdRenderIndex const* index,
+                                      size_t modeOffset,
                                       std::vector<int>* offsets) const;
 
 private:

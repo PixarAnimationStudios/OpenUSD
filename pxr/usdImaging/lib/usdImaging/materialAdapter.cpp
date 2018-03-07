@@ -100,13 +100,24 @@ UsdImagingMaterialAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     if (requestedBits & HdMaterial::DirtyResource) {
-        // Walk the material network and generate a HdMaterialNetwork structure
-        // to store it in the value cache.
-        HdMaterialNetwork materialNetwork;
-        _GetMaterialNetwork(prim, &materialNetwork);
+        // Walk the material network and generate a HdMaterialNetworkMap
+        // structure to store it in the value cache.
+        HdMaterialNetworkMap materialNetworkMap;
+        _GetMaterialNetworkMap(prim, &materialNetworkMap);
 
-        valueCache->GetMaterialResource(cachePath) = materialNetwork;
-        valueCache->GetMaterialPrimvars(cachePath) = materialNetwork.primvars;
+        valueCache->GetMaterialResource(cachePath) = materialNetworkMap;
+
+        // Compute union of primvars from all networks
+        std::vector<TfToken> primvars;
+        for (const auto& entry: materialNetworkMap.map) {
+            primvars.insert(primvars.end(),
+                            entry.second.primvars.begin(),
+                            entry.second.primvars.end());
+        }
+        std::sort(primvars.begin(), primvars.end());
+        primvars.erase(std::unique(primvars.begin(), primvars.end()),
+                       primvars.end());
+        valueCache->GetMaterialPrimvars(cachePath) = primvars;
     }
 }
 
@@ -185,13 +196,12 @@ bool visitNode(UsdShadeShader const & shadeNode,
         node.type = TfToken("PbsNetworkMaterialStandIn_2");
     }
 
-    // Protect against inserting the same node twice, and return false. 
-    // Authoring tools could guarantee that too during content creation.
+    // Protect against inserting the same node twice.  This can happen
+    // when, for example, multiple connections exist to the same node.
     auto dup = std::find(std::begin(materialNetwork->nodes), 
                          std::end(materialNetwork->nodes), 
                          node);
     if (dup != std::end(materialNetwork->nodes)) {
-        TF_WARN("UsdShade Shader node duplicated: %s.", node.path.GetText());
         return false;
     }
 
@@ -208,16 +218,15 @@ bool visitNode(UsdShadeShader const & shadeNode,
             // Store the relationship
             HdMaterialRelationship relationship;
             relationship.sourceId = shadeNode.GetPath();
-            relationship.sourceTerminal = shadeNodeInputs[i].GetFullName();
+            relationship.sourceTerminal = shadeNodeInputs[i].GetBaseName();
             relationship.remoteId = source.GetPath();
             relationship.remoteTerminal = outputName;
             materialNetwork->relationships.push_back(relationship);
         } else {
             // Parameters detected, let's store it
-            HdValueAndRole entry;
-            shadeNodeInputs[i].Get(&entry.value);
-            entry.role = shadeNodeInputs[i].GetAttr().GetRoleName();
-            node.parameters[shadeNodeInputs[i].GetFullName()] = entry;
+            if (shadeNodeInputs[i].Get(&value)) {
+                node.parameters[shadeNodeInputs[i].GetBaseName()] = value;
+            }
         }
     }
 
@@ -253,8 +262,8 @@ void walkGraph(UsdShadeShader const & shadeNode,
 }
 
 void 
-UsdImagingMaterialAdapter::_GetMaterialNetwork(UsdPrim const &usdPrim, 
-                                               HdMaterialNetwork *materialNetwork)
+UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim, 
+    HdMaterialNetworkMap *materialNetworkMap)
 {
     // This function expects a usdPrim of type Material. However, it will
     // only be able to fill the HdMaterialNetwork structures if the Material
@@ -262,15 +271,27 @@ UsdImagingMaterialAdapter::_GetMaterialNetwork(UsdPrim const &usdPrim,
     // will return the HdMaterialNetwork structures without any change.
     UsdRiMaterialAPI m(usdPrim);
 
+    // For each network type:
     // Resolve the binding to the first node which
     // is usually the standin node in the case of a UsdRi.
     // If it fails to provide a relationship then we are not in a 
-    // usdPrim that contains a correct bxdf terminal to a UsdShade Shader node.
-    if( UsdRelationship matRel = m.GetBxdfOutput().GetRel() ) {
-        UsdShadeShader shadeNode(
-            UsdImaging_MaterialStrategy::GetTargetedShader(
-                usdPrim.GetPrim(), matRel));
-        walkGraph(shadeNode, materialNetwork);
+    // usdPrim that contains a correct terminal to a UsdShade Shader node.
+    if( UsdShadeOutput bxdfOut = m.GetBxdfOutput() ) {
+        UsdShadeConnectableAPI source;
+        TfToken sourceName;
+        UsdShadeAttributeType sourceType;
+        bxdfOut.GetConnectedSource(&source, &sourceName, &sourceType);
+        walkGraph(source,
+                  &materialNetworkMap->map[UsdImagingTokens->bxdf]);
+    }
+
+    if( UsdShadeOutput dispOut = m.GetDisplacementOutput() ) {
+        UsdShadeConnectableAPI source;
+        TfToken sourceName;
+        UsdShadeAttributeType sourceType;
+        dispOut.GetConnectedSource(&source, &sourceName, &sourceType);
+        walkGraph(source,
+                  &materialNetworkMap->map[UsdImagingTokens->displacement]);
     }
 }
 

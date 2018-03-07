@@ -51,6 +51,13 @@ TF_REGISTRY_FUNCTION(TfType)
 {% endif %}
 }
 
+{% if cls.isApi %}
+TF_DEFINE_PRIVATE_TOKENS(
+    _schemaTokens,
+    ({{ cls.primName }})
+);
+
+{% endif %}
 /* virtual */
 {{ cls.cppClassName }}::~{{ cls.cppClassName }}()
 {
@@ -88,67 +95,25 @@ TF_REGISTRY_FUNCTION(TfType)
 {{ cls.cppClassName }}
 {% if cls.isPrivateApply %}
 {% if not cls.isMultipleApply %}
-{{ cls.cppClassName }}::_Apply(const UsdStagePtr &stage, const SdfPath &path)
+{{ cls.cppClassName }}::_Apply(const UsdPrim &prim)
 {% else %}
-{{ cls.cppClassName }}::_Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
+{{ cls.cppClassName }}::_Apply(const UsdPrim &prim, const TfToken &name)
 {% endif %}
 {% else %}
 {% if not cls.isMultipleApply %}
-{{ cls.cppClassName }}::Apply(const UsdStagePtr &stage, const SdfPath &path)
+{{ cls.cppClassName }}::Apply(const UsdPrim &prim)
 {% else %}
-{{ cls.cppClassName }}::Apply(const UsdStagePtr &stage, const SdfPath &path, const TfToken &name)
+{{ cls.cppClassName }}::Apply(const UsdPrim &prim, const TfToken &name)
 {% endif %}
 {% endif %}
 {
-    // Ensure we have a valid stage, path and prim
-    if (!stage) {
-        TF_CODING_ERROR("Invalid stage");
-        return {{ cls.cppClassName }}();
-    }
-
-    if (path == SdfPath::AbsoluteRootPath()) {
-        TF_CODING_ERROR("Cannot apply an api schema on the pseudoroot");
-        return {{ cls.cppClassName }}();
-    }
-
-    auto prim = stage->GetPrimAtPath(path);
-    if (!prim) {
-        TF_CODING_ERROR("Prim at <%s> does not exist.", path.GetText());
-        return {{ cls.cppClassName }}();
-    }
-
 {% if cls.isMultipleApply %}
-    TfToken apiName(std::string("{{ cls.primName }}") 
-                    + std::string(":") 
-                    + name.GetString());
+    return UsdAPISchemaBase::_MultipleApplyAPISchema<{{ cls.cppClassName }}>(
+            prim, _schemaTokens->{{ cls.primName }}, name);
 {% else %}
-    TfToken apiName("{{ cls.primName }}");  
+    return UsdAPISchemaBase::_ApplyAPISchema<{{ cls.cppClassName }}>(
+            prim, _schemaTokens->{{ cls.primName }});
 {% endif %}
-
-    // Get the current listop at the edit target
-    UsdEditTarget editTarget = stage->GetEditTarget();
-    SdfPrimSpecHandle primSpec = editTarget.GetPrimSpecForScenePath(path);
-    SdfTokenListOp listOp = primSpec->GetInfo(UsdTokens->apiSchemas)
-                                    .UncheckedGet<SdfTokenListOp>();
-
-    // Append our name to the prepend list, if it doesnt exist locally
-    TfTokenVector prepends = listOp.GetPrependedItems();
-    if (std::find(prepends.begin(), prepends.end(), apiName) != prepends.end()) { 
-        return {{ cls.cppClassName }}();
-    }
-
-    SdfTokenListOp prependListOp;
-    prepends.push_back(apiName);
-    prependListOp.SetPrependedItems(prepends);
-    auto result = listOp.ApplyOperations(prependListOp);
-    if (!result) {
-        TF_CODING_ERROR("Failed to prepend api name to current listop.");
-        return {{ cls.cppClassName }}();
-    }
-
-    // Set the listop at the current edit target and return the API prim
-    primSpec->SetInfo(UsdTokens->apiSchemas, VtValue(*result));
-    return {{ cls.cppClassName }}(prim);
 }
 {% endif %}
 

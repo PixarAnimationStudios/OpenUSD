@@ -24,6 +24,8 @@
 #ifndef USD_ADAPTER_REGISTRY_H
 #define USD_ADAPTER_REGISTRY_H
 
+/// \file usdImaging/adapterRegistry.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/singleton.h"
@@ -76,6 +78,11 @@ public:
     static UsdImagingAdapterRegistry& GetInstance() {
         return TfSingleton<UsdImagingAdapterRegistry>::GetInstance();
     }
+
+    /// Returns true if an adapter has been registered to handle the given
+    /// \p adapterKey.
+    USDIMAGING_API
+    bool HasAdapter(TfToken const& adapterKey);
 
     /// Returns a new instance of the UsdImagingPrimAdapter that has been
     /// registered to handle the given \p adapterKey. This key is either

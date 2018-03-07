@@ -208,3 +208,110 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+static bool
+_ComputeExtentMax(double height, double radius, const TfToken& axis,
+    GfVec3f* max)
+{
+    // The height is increased by the capsule's radius from the hemispheres on
+    // either side of the capsule.
+    float halfHeightWithCap = height * 0.5 + radius;
+
+    if (axis == UsdGeomTokens->x) {
+        *max = GfVec3f(halfHeightWithCap, radius, radius);
+    } else if (axis == UsdGeomTokens->y) {
+        *max = GfVec3f(radius, halfHeightWithCap, radius);
+    } else if (axis == UsdGeomTokens->z) {
+        *max = GfVec3f(radius, radius, halfHeightWithCap);
+    } else {
+      return false; // invalid axis
+    }
+
+    return true;
+}
+
+bool
+UsdGeomCapsule::ComputeExtent(double height, double radius, const TfToken& axis,
+    VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfVec3f max;
+    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+        return false;
+    }
+
+    (*extent)[0] = -max;
+    (*extent)[1] = max;
+
+    return true;
+}
+
+bool
+UsdGeomCapsule::ComputeExtent(double height, double radius, const TfToken& axis,
+    const GfMatrix4d& transform, VtVec3fArray* extent)
+{
+    // Create Sized Extent
+    extent->resize(2);
+
+    GfVec3f max;
+    if (!_ComputeExtentMax(height, radius, axis, &max)) {
+        return false;
+    }
+
+    GfBBox3d bbox = GfBBox3d(GfRange3d(-max, max), transform);
+    GfRange3d range = bbox.ComputeAlignedRange();
+    (*extent)[0] = GfVec3f(range.GetMin());
+    (*extent)[1] = GfVec3f(range.GetMax());
+
+    return true;
+}
+
+static bool
+_ComputeExtentForCapsule(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
+    VtVec3fArray* extent)
+{
+    const UsdGeomCapsule capsuleSchema(boundable);
+    if (!TF_VERIFY(capsuleSchema)) {
+        return false;
+    }
+
+    double height;
+    if (!capsuleSchema.GetHeightAttr().Get(&height)) {
+        return false;
+    }
+
+    double radius;
+    if (!capsuleSchema.GetRadiusAttr().Get(&radius)) {
+        return false;
+    }
+
+    TfToken axis;
+    if (!capsuleSchema.GetAxisAttr().Get(&axis)) {
+        return false;
+    }
+
+    if (transform) {
+        return UsdGeomCapsule::ComputeExtent(
+            height, radius, axis, *transform, extent);
+    } else {
+        return UsdGeomCapsule::ComputeExtent(height, radius, axis, extent);
+    }
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomCapsule>(
+        _ComputeExtentForCapsule);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -132,6 +132,13 @@ public:
     USDSKEL_API
     bool JointTransformsMightBeTimeVarying() const;
 
+    /// Return true if it possible, but not certain, that the root transform
+    /// of the animation query changes over time, false otherwise.
+    ///
+    /// \sa UsdAttribute::ValueMightBeTimeVayring
+    USDSKEL_API
+    bool TransformMightBeTimeVarying() const;
+
     /// Returns an array of tokens describing the ordering of joints in the
     /// animation.
     ///

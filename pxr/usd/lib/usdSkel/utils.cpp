@@ -503,7 +503,8 @@ bool
 UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
                            size_t count,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad)
+                           float pad,
+                           const GfMatrix4d* rootXform)
 {
     if(!extent) {
         TF_CODING_ERROR("'extent' pointer is null.");
@@ -518,11 +519,15 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
     GfRange3d bbox;
     if(count > 0) {
         for(size_t i = 0;i < count; ++i) {
-            bbox.UnionWith(xforms[i].ExtractTranslation());
+            GfVec3d pivot = xforms[i].ExtractTranslation();
+            bbox.UnionWith(rootXform ? rootXform->Transform(pivot) : pivot);
         }
-        bbox.SetMin(bbox.GetMin()-pad);
-        bbox.SetMax(bbox.GetMax()-pad);
+
+        const GfVec3f padVec(pad);
+        bbox.SetMin(bbox.GetMin()-padVec);
+        bbox.SetMax(bbox.GetMax()+padVec);
     }
+
 
     extent->resize(2);
     (*extent)[0] = GfVec3f(bbox.GetMin());
@@ -534,12 +539,13 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& xforms,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad)
+                           float pad,
+                           const GfMatrix4d* rootXform)
 {
     TRACE_FUNCTION();
 
-    return UsdSkelComputeJointsExtent(xforms.cdata(),
-                                      xforms.size(), extent, pad);
+    return UsdSkelComputeJointsExtent(xforms.cdata(), xforms.size(),
+                                      extent, pad, rootXform);
 }
 
 
@@ -548,17 +554,16 @@ namespace {
 /// Validate the size of a weight/index array for a given
 /// number of influences per component.
 /// Throws a warning for failed validation.
-template <typename T>
 bool
-_ValidateArrayShape(T* array, int numInfluencesPerComponent)
+_ValidateArrayShape(size_t size, int numInfluencesPerComponent)
 {
     if(numInfluencesPerComponent > 0) {
-        if(array->size()%numInfluencesPerComponent == 0) {
+        if(size%numInfluencesPerComponent == 0) {
             return true;
         } else {
             TF_WARN("Unexpected array size [%zu]: Size must be a multiple of "
                     "the number of influences per component [%d].",
-                    array->size(), numInfluencesPerComponent);
+                    size, numInfluencesPerComponent);
         }
     } else {
         TF_WARN("Invalid number of influences per component (%d): "
@@ -618,7 +623,7 @@ UsdSkelNormalizeWeights(VtFloatArray* weights,
         return false;
     }
 
-    if(!_ValidateArrayShape(weights, numInfluencesPerComponent))
+    if(!_ValidateArrayShape(weights->size(), numInfluencesPerComponent))
         return false;
 
     return _NormalizeWeights(weights->data(), weights->size(),
@@ -692,7 +697,7 @@ UsdSkelSortInfluences(VtIntArray* indices,
         return false;
     }
 
-    if(!_ValidateArrayShape(weights, numInfluencesPerComponent)) {
+    if(!_ValidateArrayShape(weights->size(), numInfluencesPerComponent)) {
         return false;
     }
 
@@ -748,10 +753,10 @@ namespace {
 
 template <typename T>
 bool
-_TruncateInfluences(T* array, int numInfluencesPerComponent,
-                    int maxNumInfluencesPerComponent)
+_ResizeInfluences(VtArray<T>* array, int srcNumInfluencesPerComponent,
+                  int newNumInfluencesPerComponent, T defaultVal)
 {
-    if(numInfluencesPerComponent <= maxNumInfluencesPerComponent)
+    if(srcNumInfluencesPerComponent == newNumInfluencesPerComponent)
         return true;
 
     if(!array) {
@@ -759,23 +764,52 @@ _TruncateInfluences(T* array, int numInfluencesPerComponent,
         return false;
     }
 
-    if(!_ValidateArrayShape(array, numInfluencesPerComponent))
+    if(!_ValidateArrayShape(array->size(), srcNumInfluencesPerComponent))
         return false;
 
-    size_t numComponents = array->size()/numInfluencesPerComponent;
+    size_t numComponents = array->size()/srcNumInfluencesPerComponent;
+    if(numComponents == 0)
+        return true;
 
-    // Truncate influences in-place.
-    auto* data = array->data();
-    for(size_t i = 1; i < numComponents; ++i) {
-        size_t srcStart = i*numInfluencesPerComponent;
-        size_t srcEnd = srcStart + maxNumInfluencesPerComponent;
-        size_t dstStart = i*maxNumInfluencesPerComponent;
+    if(newNumInfluencesPerComponent < srcNumInfluencesPerComponent) {
+        // Truncate influences in-place.
+        auto* data = array->data();
+        for(size_t i = 1; i < numComponents; ++i) {
+            size_t srcStart = i*srcNumInfluencesPerComponent;
+            size_t srcEnd = srcStart + newNumInfluencesPerComponent;
+            size_t dstStart = i*newNumInfluencesPerComponent;
 
-        TF_DEV_AXIOM(srcEnd <= array->size());
-        TF_DEV_AXIOM((dstStart + (srcEnd-srcStart)) <= array->size());
-        std::copy(data + srcStart, data + srcEnd, data + dstStart);
+            TF_DEV_AXIOM(srcEnd <= array->size());
+            TF_DEV_AXIOM((dstStart + (srcEnd-srcStart)) <= array->size());
+            std::copy(data + srcStart, data + srcEnd, data + dstStart);
+        }
+        array->resize(numComponents*newNumInfluencesPerComponent);
+    } else {
+        // Expand influences in-place.
+        // This is possible IFF all elements are copied in *reverse order*
+        array->resize(numComponents*newNumInfluencesPerComponent);
+
+        auto* data = array->data();
+        for(size_t i = 0; i < numComponents; ++i) { 
+            // Reverse the order.
+            size_t idx = numComponents-i-1;
+
+            // Copy source values (*reverse order*)
+            for(int j = (srcNumInfluencesPerComponent-1); j >= 0; --j) {
+                TF_DEV_AXIOM(
+                    (idx*newNumInfluencesPerComponent + j) < array->size());
+
+                data[idx*newNumInfluencesPerComponent + j] =
+                    data[idx*srcNumInfluencesPerComponent + j];
+            }
+            // Initialize values not filled by copying from src.
+            TF_DEV_AXIOM((idx+1)*newNumInfluencesPerComponent <= array->size());
+            std::fill(data + idx*newNumInfluencesPerComponent +
+                      srcNumInfluencesPerComponent,
+                      data + (idx+1)*newNumInfluencesPerComponent, defaultVal);
+
+        }
     }
-    array->resize(numComponents*maxNumInfluencesPerComponent);
     return true;
 }
 
@@ -783,29 +817,29 @@ _TruncateInfluences(T* array, int numInfluencesPerComponent,
 
 
 bool
-UsdSkelTruncateInfluences(VtIntArray* indices,
-                          int numInfluencesPerComponent,
-                          int maxNumInfluencesPerComponent)
+UsdSkelResizeInfluences(VtIntArray* indices,
+                        int srcNumInfluencesPerComponent,
+                        int newNumInfluencesPerComponent)
 {
     TRACE_FUNCTION();
-    return _TruncateInfluences(indices, numInfluencesPerComponent,
-                               maxNumInfluencesPerComponent);
+    return _ResizeInfluences(indices, srcNumInfluencesPerComponent,
+                             newNumInfluencesPerComponent, 0);
 }
 
 
 bool
-UsdSkelTruncateInfluences(VtFloatArray* weights,
-                          int numInfluencesPerComponent,
-                          int maxNumInfluencesPerComponent)
+UsdSkelResizeInfluences(VtFloatArray* weights,
+                        int srcNumInfluencesPerComponent,
+                        int newNumInfluencesPerComponent)
 {
     TRACE_FUNCTION();
 
-    if(_TruncateInfluences(weights, numInfluencesPerComponent,
-                           maxNumInfluencesPerComponent)) {
-        if(numInfluencesPerComponent >= maxNumInfluencesPerComponent) {
+    if(_ResizeInfluences(weights, srcNumInfluencesPerComponent,
+                         newNumInfluencesPerComponent, 0.0f)) {
+        if(newNumInfluencesPerComponent < srcNumInfluencesPerComponent) {
             // Some weights have been stripped off. Need to renormalize.
             return UsdSkelNormalizeWeights(
-                weights, maxNumInfluencesPerComponent);
+                weights, newNumInfluencesPerComponent);
         }
         return true;
     }
@@ -1205,17 +1239,17 @@ _BakeSkinnedPoints(const UsdPrim& prim,
                 xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeAnimTransform(&skelLocalToWorld, time)) {
+            if(!skelQuery.ComputeLocalToWorldTransform(
+                   &skelLocalToWorld, xfCache)) {
                 TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                     "[UsdSkelBakeSkinning]   Failed computing "
-                    "anim transform\n");
+                    "skel local-to-world transform\n");
                 return false;
             }
-            skelLocalToWorld *= xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d skelToGprimXf =
                 skelLocalToWorld*gprimLocalToWorld.GetInverse();
-           
+
             for(auto& pt : skinnedPoints) {
                 pt = skelToGprimXf.Transform(pt);
             }
@@ -1298,13 +1332,13 @@ _BakeSkinnedTransform(const UsdPrim& prim,
             xfCache->SetTime(time);
 
             GfMatrix4d skelLocalToWorld;
-            if(!skelQuery.ComputeAnimTransform(&skelLocalToWorld, time)) {
+            if(!skelQuery.ComputeLocalToWorldTransform(
+                   &skelLocalToWorld, xfCache)) {
                 TF_DEBUG(USDSKEL_BAKESKINNING).Msg(
                     "[UsdSkelBakeSkinning]   Failed computing "
-                    "anim transform\n");
+                    "skel local-to-world transform\n");
                 return false;
             }
-            skelLocalToWorld *= xfCache->GetLocalToWorldTransform(prim);
 
             GfMatrix4d newLocalXform;
             

@@ -85,6 +85,13 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         sel->Sync(&index);
     }
 
+    // If the resource registry doesn't support uniform or single bars,
+    // there's nowhere to put selection state, so don't compute it.
+    if (!(resourceRegistry->HasSingleStorageAggregationStrategy()) ||
+        !(resourceRegistry->HasUniformAggregationStrategy())) {
+        return;
+    }
+
     if (sel && (paramsChanged || sel->GetVersion() != _lastVersion)) {
 
         _lastVersion = sel->GetVersion();

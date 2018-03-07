@@ -22,15 +22,32 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+
+#include "usdMaya/shadingModeExporter.h"
+#include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/translatorMaterial.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/valueTypeName.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 
@@ -40,7 +57,10 @@
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
+
+#include <string>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,6 +76,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((MayaShaderName, "lambert"))
     ((DefaultShaderId, "PxrDiffuse"))
+    ((DefaultShaderOutputName, "out"))
 );
 
 
@@ -197,6 +218,29 @@ private:
                 transparencyIA.Set(VtValue(transparency));
                 dispOpacityIA.Set(VtValue(1.0f - transparencyAvg));
             }
+
+            UsdShadeOutput shaderDefaultOutput =
+                shaderSchema.CreateOutput(_tokens->DefaultShaderOutputName,
+                                          SdfValueTypeNames->Token);
+            if (!shaderDefaultOutput) {
+                return;
+            }
+
+            UsdShadeOutput materialSurfaceOutput =
+                material.CreateOutput(UsdShadeTokens->surface,
+                                      shaderDefaultOutput.GetTypeName());
+            if (!materialSurfaceOutput) {
+                return;
+            }
+
+            materialSurfaceOutput.ConnectToSource(shaderDefaultOutput);
+
+            // XXX: For backwards compatibility, we continue to author the
+            // UsdRi Bxdf source until consumers (e.g. PxrUsdIn) are updated to
+            // look at the outputs:surface terminal.
+            UsdRiMaterialAPI(materialPrim).SetBxdfSource(
+                shaderDefaultOutput.GetAttr().GetPath());
+
         }
     }
 };
@@ -204,10 +248,14 @@ private:
 
 TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaShadingModeExportContext, displayColor)
 {
-    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterExporter("displayColor", []() -> PxrUsdMayaShadingModeExporterPtr {
-        return PxrUsdMayaShadingModeExporterPtr(
-            static_cast<PxrUsdMayaShadingModeExporter*>(new DisplayColorShadingModeExporter()));
-    });
+    PxrUsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
+        "displayColor",
+        []() -> PxrUsdMayaShadingModeExporterPtr {
+            return PxrUsdMayaShadingModeExporterPtr(
+                static_cast<PxrUsdMayaShadingModeExporter*>(
+                    new DisplayColorShadingModeExporter()));
+        }
+    );
 }
 
 DEFINE_SHADING_MODE_IMPORTER(displayColor, context)

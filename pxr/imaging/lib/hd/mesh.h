@@ -39,8 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (surfaceShader)              \
     (surfaceShaderUnlit)         \
     (surfaceShaderSheer)         \
+    (surfaceShaderOutline)       \
     (constantColor)              \
-    (hullColor)
+    (hullColor)                  \
+    (pointColor)
 
 TF_DECLARE_PUBLIC_TOKENS(HdMeshReprDescTokens, HD_API,
         HD_MESH_REPR_DESC_TOKENS);
@@ -54,19 +56,38 @@ struct HdMeshReprDesc {
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
                    bool smoothNormals = false,
-                   bool blendWireframeColor = true)
+                   bool blendWireframeColor = true,
+                   bool doubleSided = false,
+                   float lineWidth = 0,
+                   bool useCustomDisplacement = true)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
         , smoothNormals(smoothNormals)
         , blendWireframeColor(blendWireframeColor)
+        , doubleSided(doubleSided)
+        , lineWidth(lineWidth)
+        , useCustomDisplacement(useCustomDisplacement)
         {}
 
+    /// The rendering style: draw refined/unrefined, edge, points, etc.
     HdMeshGeomStyle geomStyle;
+    /// The culling style: draw front faces, back faces, etc.
     HdCullStyle     cullStyle;
+    /// Specifies how the fragment color should be computed from surfaceShader;
+    /// this can be used to render a mesh lit, unlit, unshaded, etc.
     TfToken         shadingTerminal;
+    /// Does this mesh need to generate smooth normals?
     bool            smoothNormals;
+    /// Should the wireframe color be blended into the color primvar?
     bool            blendWireframeColor;
+    /// Should this mesh be treated as double-sided? The resolved value is
+    /// (prim.doubleSided || repr.doubleSided).
+    bool            doubleSided;
+    /// How big (in pixels) should line drawing be?
+    float           lineWidth;
+    /// Should this mesh use displacementShader() to displace points?
+    bool            useCustomDisplacement;
 };
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.
@@ -84,12 +105,14 @@ public:
     inline VtValue     GetShadingStyle(HdSceneDelegate* delegate)  const;
 
     ///
-    /// Topology
+    /// Topological accessors via the scene delegate
     ///
     inline HdMeshTopology  GetMeshTopology(HdSceneDelegate* delegate) const;
     inline int             GetRefineLevel(HdSceneDelegate* delegate)  const;
     inline PxOsdSubdivTags GetSubdivTags(HdSceneDelegate* delegate)   const;
 
+    /// Topology getter
+    virtual HdMeshTopologySharedPtr  GetTopology() const;
 
     ///
     /// Primvars Accessors
@@ -162,6 +185,12 @@ inline PxOsdSubdivTags
 HdMesh::GetSubdivTags(HdSceneDelegate* delegate) const
 {
     return delegate->GetSubdivTags(GetId());
+}
+
+inline HdMeshTopologySharedPtr
+HdMesh::GetTopology() const
+{
+    return HdMeshTopologySharedPtr();
 }
 
 inline VtValue

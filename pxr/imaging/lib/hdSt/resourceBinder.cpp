@@ -275,23 +275,37 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(topologyBar_);
 
         TF_FOR_ALL (it, topologyBar->GetResources()) {
-            if (it->first == HdTokens->indices) {
-                // IBO. no need for codegen
-                _bindingMap[HdTokens->indices] = HdBinding(HdBinding::INDEX_ATTR, 0);
-            } else {
-                // primitive parameter (for all tris, quads and patches)
-                HdBinding primitiveParamBinding =
-                    locator.GetBinding(arrayBufferBindingType, it->first);
-                _bindingMap[it->first] = primitiveParamBinding;
+            TfToken const& name = it->first;
+            HdStBufferResourceGLSharedPtr const& resource = it->second;
 
-                HdTupleType valueType = it->second->GetTupleType();
+            if (name == HdTokens->indices) {
+                // IBO. no need for codegen
+                _bindingMap[name] = HdBinding(HdBinding::INDEX_ATTR, 0);
+            } else {
+                // We expect the following additional topology based info:
+                // - primitive parameter (for all tris, quads and patches) OR
+                // - edge indices (for all tris, quads and patches)
+                HdBinding binding =
+                    locator.GetBinding(arrayBufferBindingType, name);
+                _bindingMap[name] = binding;
+
+                HdTupleType valueType = resource->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
-                metaDataOut->primitiveParamBinding =
-                    MetaData::BindingDeclaration(
-                        /*name=*/it->first,
-                        /*type=*/glType,
-                                                 /*binding=*/primitiveParamBinding);
+
+                auto bindingDecl = MetaData::BindingDeclaration(
+                                     /*name=*/name,
+                                     /*type=*/glType,
+                                     /*binding=*/binding);
+
+                if (name == HdTokens->primitiveParam) {
+                    metaDataOut->primitiveParamBinding = bindingDecl;
+                } else if (name == HdTokens->edgeIndices) {
+                    metaDataOut->edgeIndexBinding = bindingDecl;
+                } else {
+                    TF_WARN("Unexpected topological resource '%s'\n",
+                    name.GetText());
+                }
             }
         }
     }
@@ -1145,6 +1159,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, instanceIndexBaseBinding.dataType);
     boost::hash_combine(hash, primitiveParamBinding.binding.GetValue());
     boost::hash_combine(hash, primitiveParamBinding.dataType);
+    boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
+    boost::hash_combine(hash, edgeIndexBinding.dataType);
 
     // separators are inserted to distinguish primvars have a same layout
     // but different interpolation.

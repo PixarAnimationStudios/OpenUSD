@@ -58,11 +58,14 @@ public:
 private:
     GlfDrawTarget::AttachmentRefPtr  _attachment;
     GLuint                           _sampler;
-
+    GfVec4f                          _borderColor;
+    float                            _maxAnisotropy;
 
     // No copying
-    HdSt_DrawTargetTextureResource(const HdSt_DrawTargetTextureResource &)             = delete;
-    HdSt_DrawTargetTextureResource &operator =(const HdSt_DrawTargetTextureResource &) = delete;
+    HdSt_DrawTargetTextureResource(
+        const HdSt_DrawTargetTextureResource &) = delete;
+    HdSt_DrawTargetTextureResource &operator =(
+        const HdSt_DrawTargetTextureResource &) = delete;
 };
 
 

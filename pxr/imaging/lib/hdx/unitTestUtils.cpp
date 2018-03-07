@@ -26,38 +26,169 @@
 #include "pxr/imaging/hdx/unitTestUtils.h"
 
 #include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include <boost/functional/hash.hpp>
+#include <unordered_map>
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+struct AggregatedHit {
+    AggregatedHit(HdxIntersector::Hit const& h) : hit(h) {}
+
+    HdxIntersector::Hit const& hit;
+    std::set<int> elementIndices;
+    std::set<int> edgeIndices;
+    std::set<int> pointIndices;
+};
+
+static size_t
+_GetPartialHitHash(HdxIntersector::Hit const& hit)
+{
+    size_t hash = 0;
+
+    boost::hash_combine(hash, hit.delegateId.GetHash());
+    boost::hash_combine(hash, hit.objectId.GetHash());
+    boost::hash_combine(hash, hit.instancerId.GetHash());
+    boost::hash_combine(hash, hit.instanceIndex);
+
+    return hash;
+}
+
+typedef std::unordered_map<size_t, AggregatedHit> AggregatedHits;
+
+// aggregates subprimitive hits to the same prim/instance
+static AggregatedHits
+_AggregateHits(HdxIntersector::HitSet const& hits)
+{
+    AggregatedHits aggrHits;
+
+    for (auto const& hit : hits) {
+        size_t hitHash = _GetPartialHitHash(hit);
+        const auto& it = aggrHits.find(hitHash);
+        if (it != aggrHits.end()) {
+            // aggregate the element and edge indices
+            AggregatedHit& aHit = it->second;
+            aHit.elementIndices.insert(hit.elementIndex);
+            if (hit.edgeIndex != -1) {
+                aHit.edgeIndices.insert(hit.edgeIndex);
+            }
+            if (hit.pointIndex != -1) {
+                aHit.pointIndices.insert(hit.pointIndex);
+            }
+            continue;
+        }
+
+        // add a new entry
+        AggregatedHit aHitNew(hit);
+        aHitNew.elementIndices.insert(hit.elementIndex);
+        if (hit.edgeIndex != -1) {
+            aHitNew.edgeIndices.insert(hit.edgeIndex);
+        }
+        if (hit.pointIndex != -1) {
+            aHitNew.pointIndices.insert(hit.pointIndex);
+        }
+        aggrHits.insert( std::make_pair(hitHash, aHitNew) );
+    }
+
+    return aggrHits;
+}
+
+static void
+_ProcessHit(AggregatedHit const& aHit,
+            HdxIntersector::PickMode pickMode,
+            HdxSelectionHighlightMode highlightMode,
+            /*out*/HdxSelectionSharedPtr selection)
+{
+    HdxIntersector::Hit const& hit = aHit.hit;
+
+    switch(pickMode) {
+        case HdxIntersector::PickPrimsAndInstances:
+        {
+            if (!hit.instancerId.IsEmpty()) {
+                // XXX :this doesn't work for nested instancing.
+                VtIntArray instanceIndex;
+                instanceIndex.push_back(hit.instanceIndex);
+                selection->AddInstance(highlightMode, hit.objectId,
+                                       instanceIndex);
+
+                std::cout << "Picked instance " << instanceIndex << " of "
+                          <<  "rprim " << hit.objectId << std::endl;
+
+                // we should use GetPathForInstanceIndex instead of it->objectId
+                //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
+                // and also need to add some APIs to compute VtIntArray instanceIndex.
+            } else {
+                selection->AddRprim(highlightMode, hit.objectId);
+
+                std::cout << "Picked rprim " << hit.objectId << std::endl;
+            }
+
+            break;
+        }
+
+        case HdxIntersector::PickFaces:
+        {
+            VtIntArray elements(aHit.elementIndices.size());
+            elements.assign(aHit.elementIndices.begin(),
+                            aHit.elementIndices.end());
+            selection->AddElements(highlightMode, hit.objectId, elements);
+
+            std::cout << "Picked faces ";
+            for(const auto& element : elements) {
+                std::cout << element << ", ";
+            }
+            std::cout << " of prim " << hit.objectId << std::endl;
+
+            break;
+        }
+
+        case HdxIntersector::PickEdges:
+        {
+            if (!aHit.edgeIndices.empty()) {
+                VtIntArray edges(aHit.edgeIndices.size());
+                edges.assign(aHit.edgeIndices.begin(), aHit.edgeIndices.end());
+                selection->AddEdges(highlightMode, hit.objectId, edges);
+
+                std::cout << "Picked edges ";
+                for(const auto& edge : edges) {
+                    std::cout << edge << ", ";
+                }
+                std::cout << " of prim " << hit.objectId << std::endl;
+            }
+            
+            break;
+        }
+
+        case HdxIntersector::PickPoints:
+        {
+            if (!aHit.pointIndices.empty()) {
+                VtIntArray points(aHit.pointIndices.size());
+                points.assign(aHit.pointIndices.begin(), aHit.pointIndices.end());
+                selection->AddPoints(highlightMode, hit.objectId, points);
+
+                std::cout << "Picked points ";
+                for(const auto& point : points) {
+                    std::cout << point << ", ";
+                }
+                std::cout << " of prim " << hit.objectId << std::endl;
+            }
+            
+            break;
+        }
+        
+        default:
+            std::cout << "Unsupported picking mode." << std::endl;
+    }
+}
+
+} // end anonymous namespace
+
+
 namespace HdxUnitTestUtils {
-
-struct HitHash {
-    // make a partial hash excluding elementId, ndcDepth, wsHitPoint,
-    // allowing us to group hits to different elements of the same object
-    // instance
-    size_t operator()(HdxIntersector::Hit const& hit) const {
-        size_t hash = 0;
-        boost::hash_combine(hash, hit.delegateId.GetHash());
-        boost::hash_combine(hash, hit.objectId.GetHash());
-        boost::hash_combine(hash, hit.instancerId.GetHash());
-        boost::hash_combine(hash, hit.instanceIndex);
-        return hash;
-    }
-};
-
-struct HitEq {
-    bool operator()(HdxIntersector::Hit const& a, 
-                    HdxIntersector::Hit const& b) const {
-        return a.delegateId    == b.delegateId    &&
-               a.objectId      == b.objectId      &&
-               a.instancerId   == b.instancerId   &&
-               a.instanceIndex == b.instanceIndex;
-    }
-};
 
 Picker::Picker() : _selectionTracker(new HdxSelectionTracker()) {}
 
@@ -70,27 +201,8 @@ Picker::InitIntersector(HdRenderIndex* renderIndex)
 }
 
 void
-Picker::SetPickParams(PickParams const& pp)
-{
-    _pParams = pp;
-
-    #if 1
-    using namespace std;
-    cout << "PickParams" << endl;
-    cout << "width = " << _pParams.screenWidth << endl;
-    cout << "height  = " << _pParams.screenHeight << endl;
-    #endif
-}
-
-void
-Picker::SetHighlightMode(HdxSelectionHighlightMode mode)
-{
-    _pParams.highlightMode = mode;
-}
-
-void
 Picker::Pick(GfVec2i const& startPos,
-              GfVec2i const& endPos)
+             GfVec2i const& endPos)
 {
     if (!_intersector)
         return;
@@ -101,7 +213,6 @@ Picker::Pick(GfVec2i const& startPos,
     float const& height                     = _pParams.screenHeight;
     GfFrustum const& frustum                = _pParams.viewFrustum;
     GfMatrix4d const& viewMatrix            = _pParams.viewMatrix;
-    HdxSelectionHighlightMode const& mode   = _pParams.highlightMode;
 
     int fwidth  = std::max(pickRadius[0], std::abs(startPos[0] - endPos[0]));
     int fheight = std::max(pickRadius[1], std::abs(startPos[1] - endPos[1]));
@@ -120,6 +231,7 @@ Picker::Pick(GfVec2i const& startPos,
     pickFrustum.SetWindow(GfRange2d(min, max));
 
     HdxIntersector::Params iParams;
+    iParams.pickMode         = _pParams.pickMode;
     iParams.hitMode          = HdxIntersector::HitFirst;
     iParams.projectionMatrix = pickFrustum.ComputeProjectionMatrix();
     iParams.viewMatrix       = viewMatrix;
@@ -135,32 +247,11 @@ Picker::Pick(GfVec2i const& startPos,
     HdxIntersector::HitSet hits;
     HdxSelectionSharedPtr selection(new HdxSelection);
     if (result.ResolveUnique(&hits)) {
-        std::unordered_set<HdxIntersector::Hit, HitHash, HitEq> aggregatedHits;
+        AggregatedHits aggrHits = _AggregateHits(hits);
 
-        // Aggregate hits to the same object instance (see HitHash)
-        TF_FOR_ALL(it, hits) {
-            aggregatedHits.insert(*it);
-            std::cout << "object: " << it->objectId << " "
-                      << "instancer: " << it->instancerId << " "
-                      << "instanceIndex: " << it->instanceIndex << " "
-                      << "elementIndex: " << it->elementIndex << " "
-                      << "hit: " << it->worldSpaceHitPoint << " "
-                      << "ndcDepth: " << it->ndcDepth << "\n";
-
-        }
-
-        for(const auto& hit : aggregatedHits) {
-            if (!hit.instancerId.IsEmpty()) {
-                // XXX :this doesn't work for nested instancing.
-                VtIntArray instanceIndex;
-                instanceIndex.push_back(hit.instanceIndex);
-                selection->AddInstance(mode, hit.objectId, instanceIndex);
-                // we should use GetPathForInstanceIndex instead of it->objectId
-                //SdfPath path = _delegate->GetPathForInstanceIndex(it->objectId, it->instanceIndex);
-                // and also need to add some APIs to compute VtIntArray instanceIndex.
-            } else {
-                selection->AddRprim(mode, hit.objectId);
-            }
+        for(const auto& pair : aggrHits) {
+            _ProcessHit(pair.second, _pParams.pickMode, _pParams.highlightMode,
+                        selection);
         }
     }
 

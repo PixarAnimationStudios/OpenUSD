@@ -86,7 +86,7 @@ public:
     USD_API
     bool HasAuthoredVariant(const std::string& variantName) const;
 
-    /// Return the the variant selection for this VariantSet.  If there is
+    /// Return the variant selection for this VariantSet.  If there is
     /// no selection, return the empty string.
     USD_API
     std::string GetVariantSelection() const;

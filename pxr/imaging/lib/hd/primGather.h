@@ -30,6 +30,8 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <vector>
+#include <tbb/enumerable_thread_specific.h>
+#include <tbb/blocked_range.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -170,10 +172,14 @@ private:
 
     };
     typedef std::vector<_Range> _RangeArray;
+    typedef tbb::enumerable_thread_specific<_RangeArray> _ConcurrentRangeArray;
+    typedef tbb::blocked_range<size_t>                   _ConcurrentRange;
 
-    _PathFilterArray  _filterList;
-    _RangeArray       _gatheredRanges;
-    _RangeArray       _resultRanges;
+
+
+    _PathFilterArray      _filterList;
+    _RangeArray           _gatheredRanges;
+    _ConcurrentRangeArray _resultRanges;
 
 
 
@@ -196,16 +202,23 @@ private:
 
     void _GatherPaths(const SdfPathVector &paths);
 
-    void _DoPredicateTest(const SdfPathVector &paths,
-                          size_t               begin,
-                          size_t               end,
-                          FilterPredicateFn    predicateFn,
-                          void                *predicateParam);
+    // Outer Loop called for each range in vector
+    void _DoPredicateTestOnRange(const SdfPathVector &paths,
+                                 const _Range        &range,
+                                 FilterPredicateFn    predicateFn,
+                                 void                *predicateParam);
 
+    // Inner Loop over each prim in a sub range of _Range.
+    void _DoPredicateTestOnPrims(const SdfPathVector &paths,
+                                 _ConcurrentRange    &range,
+                                 FilterPredicateFn    predicateFn,
+                                 void                *predicateParam);
 
-    void _WriteResults(const SdfPathVector &paths,
-                       const _RangeArray &ranges,
-                       SdfPathVector *results) const;
+    template <class Iterator>
+    static void _WriteResults(const SdfPathVector &paths,
+                              const Iterator &rangesBegin,
+                              const Iterator &rangesEnd,
+                              SdfPathVector *results);
 
     void _FilterSubTree(const SdfPathVector &paths,
                         const SdfPath       &rootPath);

@@ -10,8 +10,6 @@ pxr_library(usdImaging
         tracelite
         vt
         work
-        garch
-        glf
         hd
         hdx
         pxOsd
@@ -38,7 +36,6 @@ pxr_library(usdImaging
         delegate
         inheritedCache
         instancerContext
-        package
         tokens
         unitTestHelper
         valueCache
@@ -48,9 +45,7 @@ pxr_library(usdImaging
         cubeAdapter
         cylinderAdapter
         domeLightAdapter
-        drawModeAdapter
         gprimAdapter
-        hydraMaterialAdapter
         instanceAdapter
         lightAdapter
         materialAdapter
@@ -69,6 +64,5 @@ pxr_library(usdImaging
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/drawMode.glslfx
 )
 

@@ -290,15 +290,6 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         for child in [self.child(i) for i in xrange(self.childCount())]:
             child._pushVisRecursive(myComputedVis, authoredVisHasChanged)
 
-    def setActive(self, active):
-        if self.isInMaster:
-            print "WARNING: The prim <" + str(self.prim.GetPath()) + \
-                   "> is in a master. Cannot change activation."
-            return
-
-        self.prim.SetActive(active)
-        self.activeChanged()
-
     def setLoaded(self, loaded):
         if self.prim.IsMaster():
             print "WARNING: The prim <" + str(self.prim.GetPath()) + \

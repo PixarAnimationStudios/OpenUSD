@@ -160,6 +160,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         DEST testusdviewUpAxis_yUp
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testUsdviewDeactivate
+        DEST testusdviewDeactivate
+    )
+
     pxr_register_test(testusdviewAlive                                               
         PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
         PYTHON
@@ -342,6 +347,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     pxr_register_test(testusdviewUpAxis_yUp
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_yUp.py testYUp.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewDeactivate
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewDeactivate.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 

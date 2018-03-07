@@ -142,6 +142,10 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         assert not doryStage.GetPrimAtPath('/World/sets')
         assert not doryStage.GetPrimAtPath('/World/anim/chars/NemoGroup')
 
+        assert not doryStage._GetPcpCache().FindPrimIndex('/World/sets')
+        assert not doryStage._GetPcpCache().FindPrimIndex(
+            '/World/anim/chars/NemoGroup')
+
         doryAndNemoMask = (Usd.StagePopulationMask()
                            .Add('/World/anim/chars/DoryGroup')
                            .Add('/World/anim/chars/NemoGroup'))
@@ -156,6 +160,22 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         assert doryStage.GetPrimAtPath('/World/anim/chars/DoryGroup/Dory')
         assert doryStage.GetPrimAtPath('/World/anim/chars/NemoGroup')
         assert doryStage.GetPrimAtPath('/World/anim/chars/NemoGroup/Nemo')
+
+        assert doryStage._GetPcpCache().FindPrimIndex(
+            '/World/anim/chars/NemoGroup')
+
+        doryStage.SetPopulationMask(doryMask)
+
+        assert doryStage.GetPrimAtPath('/World')
+        assert doryStage.GetPrimAtPath('/World/anim')
+        assert doryStage.GetPrimAtPath('/World/anim/chars')
+        assert doryStage.GetPrimAtPath('/World/anim/chars/DoryGroup')
+        assert doryStage.GetPrimAtPath('/World/anim/chars/DoryGroup/Dory')
+        assert not doryStage.GetPrimAtPath('/World/anim/chars/NemoGroup')
+        assert not doryStage.GetPrimAtPath('/World/anim/chars/NemoGroup/Nemo')
+
+        assert not doryStage._GetPcpCache().FindPrimIndex(
+            '/World/anim/chars/NemoGroup')
         
         doryAndNemoStage = Usd.Stage.OpenMasked(
             unmasked.GetRootLayer(), doryAndNemoMask)

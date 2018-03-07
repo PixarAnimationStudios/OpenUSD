@@ -54,7 +54,6 @@ class SdfAssetPath;
 ///
 /// Light emitted from one side of a circular disk.
 /// The disk is centered in the XY plane and emits light along the -Z axis.
-/// The disk has a diameter of 1 unit in local space.
 ///
 class UsdLuxDiskLight : public UsdLuxLight
 {

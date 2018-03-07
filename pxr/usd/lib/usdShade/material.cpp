@@ -144,10 +144,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_DEFINE_ENV_SETTING(
-    USD_HONOR_LEGACY_USD_LOOK, true,
-    "If on, keep reading look bindings when material bindings are missing.");
-
-TF_DEFINE_ENV_SETTING(
     USD_USE_LEGACY_BASE_MATERIAL, false,
     "If on, store base material as derivesFrom relationship.");
 
@@ -158,54 +154,25 @@ TF_DEFINE_ENV_SETTING(
 bool 
 UsdShadeMaterial::Bind(const UsdPrim& prim) const
 {
-    // delete old relationship, if any
-    UsdRelationship oldRel = 
-        prim.GetRelationship(UsdShadeTokens->lookBinding);
-    if (oldRel) {
-        oldRel.BlockTargets();
-    }
-
     return UsdShadeMaterialBindingAPI(prim).Bind(*this);
 }
 
 bool 
 UsdShadeMaterial::Unbind(const UsdPrim& prim)
 {
-    // delete old relationship too, if any
-    UsdRelationship oldRel = 
-        prim.GetRelationship(UsdShadeTokens->lookBinding);
-    if (oldRel) {
-        oldRel.BlockTargets();
-    }
-
     return UsdShadeMaterialBindingAPI(prim).UnbindDirectBinding();
 }
 
 UsdRelationship
 UsdShadeMaterial::GetBindingRel(const UsdPrim& prim)
 {
-    UsdRelationship rel = UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
-    if (TfGetEnvSetting(USD_HONOR_LEGACY_USD_LOOK)) {
-        if (!rel) {
-            // honor legacy assets using UsdShadeLook
-            return prim.GetRelationship(UsdShadeTokens->lookBinding);
-        }
-    }
-    return rel;
+    return UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
 }
 
 UsdShadeMaterial
 UsdShadeMaterial::GetBoundMaterial(const UsdPrim &prim)
 {
-    if (UsdRelationship rel = UsdShadeMaterial::GetBindingRel(prim)) {
-        SdfPathVector targetPaths;
-        rel.GetForwardedTargets(&targetPaths);
-        if ((targetPaths.size() == 1) && targetPaths.front().IsPrimPath()) {
-            return UsdShadeMaterial(
-                prim.GetStage()->GetPrimAtPath(targetPaths.front()));
-        }
-    }
-    return UsdShadeMaterial();
+    return UsdShadeMaterialBindingAPI(prim).ComputeBoundMaterial();
 }
 
 std::pair<UsdStagePtr, UsdEditTarget >

@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Points "Points" () {
+    point3f[] points = [(0, 0, 0), (0, 2, 0), (3, 0, 2)]
+}
+
+def Points "StrangePoints" (
+    references = </Points>
+) {
+    matrix4d xformOp:transform = ( (0.8047378541243649, 0.5058793634016806, -0.15530860876302277, 0), (-0.31061721752604554, 0.8047378541243649, 0.2529396817008403, 0), (0.5058793634016806, -0.31061721752604554, 0.40236892706218247, 0), (1, 2, 1.5, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Cube "StrangePointsComputedExtent" () {
+    Vec3f[] extent = [(0.3787655532360077, 2.0, 1.5), (4.4259724617004395, 3.609475612640381, 2.0058794021606445)]
+    uniform token visibility = "invisible"
+}

@@ -38,9 +38,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 UsdSkelSkeletonQuery::UsdSkelSkeletonQuery(
+    const UsdPrim& prim,
     const UsdSkel_SkelDefinitionRefPtr& definition,
     const UsdSkelAnimQuery& animQuery)
-    : _definition(definition), _animQuery(animQuery)
+    : _prim(prim), _definition(definition), _animQuery(animQuery)
 {
     if(definition && animQuery) {
         _animToSkelMapper = UsdSkelAnimMapper(animQuery.GetJointOrder(),
@@ -83,6 +84,24 @@ UsdSkelSkeletonQuery::ComputeAnimTransform(GfMatrix4d* xform,
 
         // No anim; fallback to using identity.
         xform->SetIdentity();
+        return true;
+    }
+    return false;
+}
+
+
+bool
+UsdSkelSkeletonQuery::ComputeLocalToWorldTransform(
+    GfMatrix4d* xform,
+    UsdGeomXformCache* xfCache) const
+{
+    if(!xfCache) {
+        TF_CODING_ERROR("'xfCache' pointer is null.");
+        return false;
+    }
+
+    if(ComputeAnimTransform(xform, xfCache->GetTime())) {
+        *xform *= xfCache->GetLocalToWorldTransform(_prim);
         return true;
     }
     return false;
@@ -239,6 +258,13 @@ UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtMatrix4dArray* xforms,
         }
     }
     return false;
+}
+
+
+const UsdPrim&
+UsdSkelSkeletonQuery::GetPrim() const
+{
+    return _prim;
 }
 
 

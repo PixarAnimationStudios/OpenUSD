@@ -130,6 +130,44 @@ HdStGLConversions::GetGlDepthFunc(HdCompareFunction func)
     return HD_2_GL_DEPTH_FUNC[func];
 }
 
+GLenum
+HdStGLConversions::GetGlStencilFunc(HdCompareFunction func)
+{
+    static GLenum HD_2_GL_STENCIL_FUNC[] =
+    {
+        GL_NEVER,    // HdCmpFuncNever
+        GL_LESS,     // HdCmpFuncLess
+        GL_EQUAL,    // HdCmpFuncEqual
+        GL_LEQUAL,   // HdCmpFuncLEqual
+        GL_GREATER,  // HdCmpFuncGreater
+        GL_NOTEQUAL, // HdCmpFuncNotEqual
+        GL_GEQUAL,   // HdCmpFuncGEqual
+        GL_ALWAYS,   // HdCmpFuncAlways
+    };
+    static_assert((sizeof(HD_2_GL_STENCIL_FUNC) / sizeof(HD_2_GL_STENCIL_FUNC[0])) == HdCmpFuncLast, "Mismatch enum sizes in convert function");
+
+    return HD_2_GL_STENCIL_FUNC[func];
+}
+
+GLenum
+HdStGLConversions::GetGlStencilOp(HdStencilOp op)
+{
+    static GLenum HD_2_GL_STENCIL_OP[] =
+    {
+        GL_KEEP,      // HdStencilOpKeep
+        GL_ZERO,      // HdStencilOpZero
+        GL_REPLACE,   // HdStencilOpReplace
+        GL_INCR,      // HdStencilOpIncrement
+        GL_INCR_WRAP, // HdStencilOpIncrementWrap
+        GL_DECR,      // HdStencilOpDecrement
+        GL_DECR_WRAP, // HdStencilOpDecrementWrap
+        GL_INVERT,    // HdStencilOpInvert
+    };
+    static_assert((sizeof(HD_2_GL_STENCIL_OP) / sizeof(HD_2_GL_STENCIL_OP[0])) == HdStencilOpLast, "Mismatch enum sizes in convert function");
+
+    return HD_2_GL_STENCIL_OP[op];
+}
+
 GLenum 
 HdStGLConversions::GetMinFilter(HdMinFilter filter)
 {

@@ -86,6 +86,9 @@ HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
+        // vec3 will suffice, but this unifies it for all the cases
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
     } else if (_topology->RefinesToBSplinePatches()) {
         // bi-cubic bspline patches
         // Note that we don't have an HdType corresponding to
@@ -96,12 +99,16 @@ HdSt_OsdIndexComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
         // 3+1 (includes sharpness)
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec4, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
     } else {
         // quads (catmark, bilinear)
         specs->emplace_back(HdTokens->indices,
                             HdTupleType {HdTypeInt32Vec4, 1});
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
+        specs->emplace_back(HdTokens->edgeIndices,
+                            HdTupleType {HdTypeInt32Vec4, 1});
     }
 }
 
@@ -113,10 +120,10 @@ HdSt_OsdIndexComputation::HasChainedBuffer() const
 }
 
 /*virtual*/
-HdBufferSourceSharedPtr
-HdSt_OsdIndexComputation::GetChainedBuffer() const
+HdBufferSourceVector
+HdSt_OsdIndexComputation::GetChainedBuffers() const
 {
-    return _primitiveBuffer;
+    return { _primitiveBuffer, _edgeIndicesBuffer };
 }
 
 /*virtual*/

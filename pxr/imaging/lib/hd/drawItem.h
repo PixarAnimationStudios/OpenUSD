@@ -44,10 +44,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdDrawItem
 ///
-/// A draw item represents a single component of the collective
-/// visual representation of an HdRprim.  For example, a mesh rprim might
-/// use one draw item for its subdivided surface and another for
-/// its hull lines.
+/// A draw item is a light-weight representation of an HdRprim's resources and 
+/// material to be used for rendering. The visual representation (HdRepr) of an
+/// HdRprim might require multiple draw items.
+/// 
+/// HdDrawItem(s) are created by the HdRprim (HdMesh, HdBasisCurve, ..) for each
+/// HdRepr. The relevant compositional hierarchy is:
+/// 
+///  HdRprim
+///  |
+///  +--HdRepr(s)
+///       |
+///       +--HdDrawItem(s)
+///
+///  HdDrawItem(s) are consumed by HdRenderPass for its HdRprimCollection via
+///  HdRenderIndex::GetDrawItems.
+///
+/// \note
+/// Rendering backends may choose to specialize this class.
 ///
 class HdDrawItem {
 public:

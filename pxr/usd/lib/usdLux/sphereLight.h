@@ -53,7 +53,6 @@ class SdfAssetPath;
 /// \class UsdLuxSphereLight
 ///
 /// Light emitted outward from a sphere.
-/// The sphere has a diameter of 1 unit in local space.
 ///
 class UsdLuxSphereLight : public UsdLuxLight
 {

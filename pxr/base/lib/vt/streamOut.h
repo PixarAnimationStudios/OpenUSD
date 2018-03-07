@@ -96,10 +96,10 @@ public:
     virtual void Next(std::ostream&) = 0;
 };
 
-struct Vt_Reserved;
+struct Vt_ShapeData;
 
 VT_API void VtStreamOutArray(VtStreamOutIterator*, size_t size,
-                             const Vt_Reserved*, std::ostream&);
+                             const Vt_ShapeData*, std::ostream&);
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 VT_API std::ostream &VtStreamOut(class TfPyObjWrapper const &, std::ostream &);

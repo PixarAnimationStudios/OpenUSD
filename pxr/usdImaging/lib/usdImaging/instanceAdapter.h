@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_INSTANCE_ADAPTER_H
 #define USDIMAGING_INSTANCE_ADAPTER_H
 
+/// \file usdImaging/instanceAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 

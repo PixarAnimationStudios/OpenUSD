@@ -134,10 +134,18 @@ _MakeTransforms(const VtVec3fArray& translations,
                 
 
 VtVec3fArray
-_ComputeJointsExtent(const VtMatrix4dArray& xforms, const GfVec3f& pad)
+_ComputeJointsExtent(const VtMatrix4dArray& xforms, float pad,
+                     const object& rootXformObj)
 {
     VtVec3fArray extent;
-    UsdSkelComputeJointsExtent(xforms, &extent, pad);
+
+    extract<GfMatrix4d> x(rootXformObj);
+    if(x.check()) {
+        const GfMatrix4d& rootXform = x;
+        UsdSkelComputeJointsExtent(xforms, &extent, pad, &rootXform);
+    } else {
+        UsdSkelComputeJointsExtent(xforms, &extent, pad);
+    }
     return extent;
 }
 
@@ -174,19 +182,19 @@ _ExpandConstantInfluencesToVarying(object& arrayObj, size_t size)
 
 
 bool
-_TruncateInfluences(object& arrayObj,
-                    int numInfluencesPerPoint,
-                    int maxNumInfluencesPerPoint)
+_ResizeInfluences(object& arrayObj,
+                  int srcNumInfluencesPerPoint,
+                  int newNumInfluencesPerPoint)
 {
     extract<VtIntArray&> x(arrayObj);
     if(x.check()) {
         VtIntArray& array = x;   
-        return UsdSkelTruncateInfluences(
-            &array, numInfluencesPerPoint, maxNumInfluencesPerPoint);
+        return UsdSkelResizeInfluences(
+            &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
     } else {
         VtFloatArray& array = extract<VtFloatArray&>(arrayObj);
-        return UsdSkelTruncateInfluences(
-            &array, numInfluencesPerPoint, maxNumInfluencesPerPoint);
+        return UsdSkelResizeInfluences(
+            &array, srcNumInfluencesPerPoint, newNumInfluencesPerPoint);
     }
 }
 
@@ -246,7 +254,7 @@ void wrapUsdSkelUtils()
         (arg("translations"), arg("rotations"), arg("scales")));
         
     def("ComputeJointsExtent", &_ComputeJointsExtent,
-        (arg("xforms"), arg("pad")=GfVec3f(0,0,0)));
+        (arg("xforms"), arg("pad")=0.0f, arg("rootXform")=object()));
 
     def("NormalizeWeights", &_NormalizeWeights,
         (arg("weights"), arg("numInfluencesPerComponent")));
@@ -258,10 +266,10 @@ void wrapUsdSkelUtils()
         &_ExpandConstantInfluencesToVarying,
         (arg("array"), arg("size")));
 
-    def("TruncateInfluences", &_TruncateInfluences,
+    def("ResizeInfluences", &_ResizeInfluences,
         (arg("array"),
-         arg("numInfluencesPerComponent"),
-         arg("maxNumInfluencesPerComponent")));
+         arg("srcNumInfluencesPerComponent"),
+         arg("newNumInfluencesPerComponent")));
 
     def("SkinPointsLBS", &_SkinPointsLBS,
         (arg("geomBindTransform"),

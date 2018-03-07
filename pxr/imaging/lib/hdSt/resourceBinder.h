@@ -242,6 +242,7 @@ public:
         BindingDeclaration culledInstanceIndexArrayBinding;
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
+        BindingDeclaration edgeIndexBinding;
 
         StructBlockBinding customInterleavedBindings;
         std::vector<BindingDeclaration> customBindings;

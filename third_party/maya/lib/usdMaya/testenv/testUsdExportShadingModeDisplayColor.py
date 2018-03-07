@@ -100,13 +100,28 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         materialInput = material.GetInput('transparency')
         self.assertTrue(materialInput)
 
-        # Validate the Shader prim created for the lambert material on the
-        # Maya mesh.
-        shaderPrimPath = material.GetPath().AppendChild('RedLambertSG_lambert')
-        shaderPrim = self._stage.GetPrimAtPath(shaderPrimPath)
-        self.assertTrue(shaderPrim)
-        shader = UsdShade.Shader(shaderPrim)
+        # Validate the surface shader that is connected to the material.
+        # XXX: Note that the expected number of outputs here is two rather than
+        # one, since we are still authoring the UsdRi Bxdf source in addition
+        # to the surface terminal for backwards compatibility. When consumers
+        # are updated to use the surface terminal instead, this test will have
+        # to be updated.
+        materialOutputs = material.GetOutputs()
+        self.assertEqual(len(materialOutputs), 2)
+        materialOutput = material.GetOutput('surface')
+        (connectableAPI, outputName, outputType) = materialOutput.GetConnectedSource()
+        self.assertEqual(outputName, 'out')
+        shader = UsdShade.Shader(connectableAPI)
         self.assertTrue(shader)
+        self.assertEqual(shader.GetPrim().GetName(), 'RedLambertSG_lambert')
+
+        # XXX: Validate the UsdRi Bxdf. This must also be removed when we no
+        # longer author it.
+        from pxr import UsdRi
+        usdRiMaterialAPI = UsdRi.MaterialAPI(material.GetPrim())
+        self.assertTrue(usdRiMaterialAPI)
+        bxdf = usdRiMaterialAPI.GetBxdf()
+        self.assertEqual(bxdf.GetPrim(), shader.GetPrim())
 
         shaderId = shader.GetIdAttr().Get()
         self.assertEqual(shaderId, 'PxrDiffuse')

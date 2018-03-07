@@ -58,6 +58,12 @@ set(PXR_INSTALL_LOCATION ""
     "Intended final location for plugin resource files."
 )
 
+set(PXR_OVERRIDE_PLUGINPATH_NAME ""
+    CACHE
+    STRING
+    "Name of the environment variable that will be used to get plugin paths."
+)
+
 set(PXR_ALL_LIBS ""
     CACHE
     INTERNAL

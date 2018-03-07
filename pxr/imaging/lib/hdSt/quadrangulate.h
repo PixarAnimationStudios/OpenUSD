@@ -114,10 +114,10 @@ class HdSt_MeshTopology;
 class HdSt_QuadInfoBuilderComputation : public HdNullBufferSource {
 public:
     HdSt_QuadInfoBuilderComputation(HdSt_MeshTopology *topology, SdfPath const &id);
-    virtual bool Resolve();
+    virtual bool Resolve() override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -149,20 +149,21 @@ public:
         HdSt_MeshTopology *topology,
         HdSt_QuadInfoBuilderComputationSharedPtr const &quadInfoBuilder,
         SdfPath const &id);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual bool Resolve();
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual bool Resolve() override;
 
-    virtual bool HasChainedBuffer() const;
-    virtual HdBufferSourceSharedPtr GetChainedBuffer() const;
+    virtual bool HasChainedBuffer() const override;
+    virtual HdBufferSourceVector GetChainedBuffers() const override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
     HdSt_MeshTopology *_topology;
     HdSt_QuadInfoBuilderComputationSharedPtr _quadInfoBuilder;
     HdBufferSourceSharedPtr _primitiveParam;
+    HdBufferSourceSharedPtr _quadsEdgeIndices;
 };
 
 /// \class HdSt_QuadrangulateTableComputation
@@ -174,11 +175,11 @@ public:
     HdSt_QuadrangulateTableComputation(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &quadInfoBuilder);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual bool Resolve();
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual bool Resolve() override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -200,12 +201,12 @@ public:
     virtual bool Resolve() override;
     virtual HdTupleType GetTupleType() const override;
 
-    virtual bool HasPreChainedBuffer() const;
-    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
+    virtual bool HasPreChainedBuffer() const override;
+    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
 
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -224,11 +225,11 @@ public:
                                            HdBufferSourceSharedPtr const &source,
                                            SdfPath const &id);
 
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual bool Resolve();
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual bool Resolve() override;
 
 protected:
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     SdfPath const _id;
@@ -248,9 +249,9 @@ public:
                                HdType dataType,
                                SdfPath const &id);
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry);
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
-    virtual int GetNumOutputElements() const;
+                         HdResourceRegistry *resourceRegistry) override;
+    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual int GetNumOutputElements() const override;
 
 private:
     SdfPath const _id;

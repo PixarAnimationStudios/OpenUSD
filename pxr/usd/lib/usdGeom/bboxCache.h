@@ -382,6 +382,12 @@ private:
     // bbox volume > 0.
     bool _Resolve(const UsdPrim& prim, _PurposeToBBoxMap *bboxes);
 
+    // Compute the extent of a UsdGeomBoundable object. Return true if the
+    // computation succeeds and false on failure.
+    bool _ComputeExtent(
+        const UsdGeomBoundable& boundableObj,
+        VtVec3fArray* extent) const;
+
     // Resolves a single prim. This method must be thread safe. Assumes the
     // cache entry has been created for \p prim.
     //

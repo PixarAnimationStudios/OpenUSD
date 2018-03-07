@@ -215,6 +215,10 @@ bool getRotOrder(MTransformationMatrix::RotationOrder iOrder,
 PXRUSDMAYA_API
 bool isAnimated(MObject & object, bool checkParent = false);
 
+// Determine if a specific Maya plug is animated or not.
+PXRUSDMAYA_API
+bool isPlugAnimated(const MPlug& plug);
+
 // determine if a Maya Object is intermediate
 PXRUSDMAYA_API
 bool isIntermediate(const MObject & object);
@@ -366,7 +370,7 @@ void Connect(
 PXRUSDMAYA_API
 PXR_NS::SdfPath MDagPathToUsdPath(const MDagPath& dagPath, bool mergeTransformAndShape);
 
-/// Conveniency function to retreive custom data
+/// Convenience function to retrieve custom data
 PXRUSDMAYA_API
 bool GetBoolCustomData(PXR_NS::UsdAttribute obj, PXR_NS::TfToken key, bool defaultValue);
 
@@ -390,6 +394,13 @@ bool getPlugValue(MFnDependencyNode const &depNode,
 
     return false;
 }
+
+// Like getPlugValue, but gets the matrix stored inside the MFnMatrixData on a
+// plug.
+// Returns true upon success, placing the matrix in the outVal parameter.
+bool getPlugMatrix(const MFnDependencyNode& depNode,
+                   const MString& attr,
+                   MMatrix* outVal);
 
 /// Given an \p usdAttr , extract the value at the default timecode and write
 /// it on \p attrPlug.

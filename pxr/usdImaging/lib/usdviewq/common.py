@@ -27,6 +27,81 @@ from pxr import Tf, Sdf, Kind, Usd, UsdGeom, UsdShade
 from customAttributes import CustomAttribute
 from constantGroup import ConstantGroup
 
+class Complexities(ConstantGroup):
+    """The available complexity settings for Usdview."""
+
+    class _Complexity(object):
+        """Class which represents a level of mesh refinement complexity. Each level
+        has a string identifier, a display name, and a float complexity value.
+        """
+
+        def __init__(self, compId, name, value):
+            self._id = compId
+            self._name = name
+            self._value = value
+
+        @property
+        def id(self):
+            return self._id
+
+        @property
+        def name(self):
+            return self._name
+
+        @property
+        def value(self):
+            return self._value
+
+    LOW       = _Complexity("low",      "Low",       1.0)
+    MEDIUM    = _Complexity("medium",   "Medium",    1.1)
+    HIGH      = _Complexity("high",     "High",      1.2)
+    VERY_HIGH = _Complexity("veryhigh", "Very High", 1.3)
+
+    _ordered = (LOW, MEDIUM, HIGH, VERY_HIGH)
+
+    @classmethod
+    def ordered(cls):
+        """Get an tuple of all complexity levels in order."""
+        return Complexities._ordered
+
+    @classmethod
+    def fromId(cls, compId):
+        """Get a complexity from its identifier."""
+        matches = [comp for comp in Complexities if comp.id == compId]
+        if len(matches) == 0:
+            raise ValueError("No complexity with id '{}'".format(compId))
+        return matches[0]
+
+    @classmethod
+    def fromName(cls, name):
+        """Get a complexity from its display name."""
+        matches = [comp for comp in Complexities if comp.name == name]
+        if len(matches) == 0:
+            raise ValueError("No complexity with name '{}'".format(name))
+        return matches[0]
+
+    @classmethod
+    def next(cls, comp):
+        """Get the next highest level of complexity. If already at the highest
+        level, return it.
+        """
+        if comp not in Complexities:
+            raise ValueError("Invalid complexity: {}".format(comp))
+        nextIndex = min(
+            len(Complexities._ordered) - 1,
+            Complexities._ordered.index(comp) + 1)
+        return Complexities._ordered[nextIndex]
+
+    @classmethod
+    def prev(cls, comp):
+        """Get the next lowest level of complexity. If already at the lowest
+        level, return it.
+        """
+        if comp not in Complexities:
+            raise ValueError("Invalid complexity: {}".format(comp))
+        prevIndex = max(0, Complexities._ordered.index(comp) - 1)
+        return Complexities._ordered[prevIndex]
+
 class UIBaseColors(ConstantGroup):
     RED = QtGui.QBrush(QtGui.QColor(230, 132, 131))
     LIGHT_SKY_BLUE = QtGui.QBrush(QtGui.QColor(135, 206, 250))
@@ -390,25 +465,6 @@ def GetEnclosingModelPrim(prim):
         prim = prim.GetParent()
 
     return prim
-
-# This should be codified in UsdShadeMaterial API
-def GetClosestBoundMaterial(prim):
-    """If 'prim' or any of its ancestors are bound to a Material, return the
-    *closest in namespace* bound Material prim, as well as the prim on which the
-    binding was found.  If none of 'prim's ancestors has a binding, return
-    (None, None)"""
-    if not prim:
-        return (None, None)
-    # XXX We should not need to guard against pseudoRoot.  Remove when
-    # bug/122473 is addressed
-    psr = prim.GetStage().GetPseudoRoot()
-    while prim and prim != psr:
-        material = UsdShade.Material.GetBoundMaterial(prim)
-        if material:
-            return (material.GetPrim(), prim)
-        prim = prim.GetParent()
-
-    return (None, None)
 
 def GetPrimLoadability(prim):
     """Return a tuple of (isLoadable, isLoaded) for 'prim', according to

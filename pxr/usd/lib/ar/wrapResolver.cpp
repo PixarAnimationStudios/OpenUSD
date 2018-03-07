@@ -48,6 +48,7 @@ wrapResolver()
         .def("CreateDefaultContext", &This::CreateDefaultContext)
         .def("CreateDefaultContextForAsset", 
              &This::CreateDefaultContextForAsset)
+        .def("GetCurrentContext", &This::GetCurrentContext)
 
         .def("AnchorRelativePath", &This::AnchorRelativePath)
         .def("Resolve", &This::Resolve)

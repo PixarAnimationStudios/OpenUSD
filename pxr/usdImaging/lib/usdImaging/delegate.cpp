@@ -29,10 +29,6 @@
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/glf/ptexTexture.h"
-#include "pxr/imaging/glf/textureHandle.h"
-#include "pxr/imaging/glf/textureRegistry.h"
-
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/enums.h"
@@ -44,7 +40,6 @@
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/textureResource.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -115,11 +110,16 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime(), GetRootCompensation())
-    , _materialBindingCache(GetTime(), GetRootCompensation())
-    , _materialNetworkBindingCache(GetTime(), GetRootCompensation())
+    , _materialBindingCache(GetTime(), GetRootCompensation(), 
+                            &_matBindingSupplCache)
+    , _materialNetworkBindingCache(GetTime(), GetRootCompensation(),
+                                   &_matBindingSupplCache)
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _displayGuides(true)
+    , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
+                           .HasAdapter(UsdImagingAdapterKeyTokens
+                                       ->drawModeAdapterKey) )
 {
 }
 
@@ -208,7 +208,7 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     TfToken adapterKey;
     if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
-    } else if (_IsDrawModeApplied(prim)) {
+    } else if (_hasDrawModeAdapter && _IsDrawModeApplied(prim)) {
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else {
         adapterKey = prim.GetTypeName();
@@ -522,6 +522,13 @@ UsdImagingIndexProxy::RefreshInstancer(SdfPath const& instancerPath)
     MarkInstancerDirty(instancerPath, HdChangeTracker::AllDirty);
 }
 
+bool
+UsdImagingIndexProxy::HasRprim(SdfPath const &cachePath)
+{
+    return _delegate->GetRenderIndex().HasRprim(
+        _delegate->GetPathForIndex(cachePath));
+}
+
 void
 UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
@@ -712,7 +719,7 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
 
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                      "[Sync] PREP: <%s> dirtyFlags: %d [%s]\n",
+                      "[Sync] PREP: <%s> dirtyFlags: 0x%x [%s]\n",
                       usdPath.GetText(), 
                       primInfo.dirtyBits,
                       HdChangeTracker::StringifyDirtyBits(
@@ -759,7 +766,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         _AdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Sync] PREP: <%s> dirtyFlags: 0x%d [%s]\n",
+                    "[Sync] PREP: <%s> dirtyFlags: 0x%x [%s]\n",
                     usdPath.GetText(), 
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(primInfo->dirtyBits).c_str());
@@ -786,7 +793,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         _AdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", usdPath.GetText())) {
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Sync] PREP Instancer: <%s> dirtyFlags: %d [%s]\n",
+                    "[Sync] PREP Instancer: <%s> dirtyFlags: 0x%x [%s]\n",
                     usdPath.GetText(),
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(
@@ -1094,6 +1101,7 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         // Need to invalidate all caches if any stage objects have changed. This
         // invalidation is overly conservative, but correct.
         _xformCache.Clear();
+        _matBindingSupplCache.Clear();
         _materialBindingCache.Clear();
         _materialNetworkBindingCache.Clear();
         _visCache.Clear();
@@ -1257,7 +1265,7 @@ UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
 // -------------------------------------------------------------------------- //
 void 
 UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
-                                UsdStageWeakPtr const& sender)
+                                      UsdStageWeakPtr const& sender)
 {
     if (!sender || !TF_VERIFY(sender == _stage))
         return;
@@ -1265,10 +1273,12 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                             "from stage with root layer @%s@\n",
                         sender->GetRootLayer()->GetIdentifier().c_str());
 
+    using PathRange = UsdNotice::ObjectsChanged::PathRange;
+
     // These paths are subtree-roots representing entire subtrees that may have
     // changed. In this case, we must dump all cached data below these points
     // and repopulate those trees.
-    SdfPathVector const& pathsToResync = notice.GetResyncedPaths();
+    const PathRange pathsToResync = notice.GetResyncedPaths();
     _pathsToResync.insert(_pathsToResync.end(), 
                           pathsToResync.begin(), pathsToResync.end());
     
@@ -1276,9 +1286,16 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
     // non-structural way, for example setting a value. These paths may be paths
     // to prims or properties, in which case we should sparsely invalidate
     // cached data associated with the path.
-    SdfPathVector const& pathsToUpdate = notice.GetChangedInfoOnlyPaths();
-    _pathsToUpdate.insert(_pathsToUpdate.end(), 
-                          pathsToUpdate.begin(), pathsToUpdate.end());
+    const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
+    for (PathRange::const_iterator it = pathsToUpdate.begin(); 
+         it != pathsToUpdate.end(); ++it) {
+        // Ignore all changes to prims that have not changed any field values, 
+        // since these changes cannot affect any composed values consumed by 
+        // the adapters.
+        if (!it->IsAbsoluteRootOrPrimPath() || it.HasChangedFields()) {
+            _pathsToUpdate.push_back(*it);
+        }
+    }
 
     if (TfDebug::IsEnabled(USDIMAGING_CHANGES)) {
         TF_FOR_ALL(it, pathsToResync) {
@@ -1408,11 +1425,27 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
                 // The prim wasn't in the _primInfoMap, this could happen
                 // because the prim just came into existence.
 
-                const _AdapterSharedPtr &adapter = _AdapterLookup(*iter);
+                _AdapterSharedPtr adapter = _AdapterLookup(*iter);
                 if (!adapter) {
-                    // This prim has no prim adapter, continue traversing
-                    // descendants.    
-                    continue;
+                    // Special case for adding UsdGeomSubset prims
+                    // (which do not get an adapter); resync the
+                    // containing mesh.
+                    if (UsdGeomSubset(*iter)) {
+                        UsdPrim parentPrim = iter->GetParent();
+                        adapter = _AdapterLookup(parentPrim);
+                        TF_DEBUG(USDIMAGING_CHANGES)
+                            .Msg("[Resync Prim]: Populating <%s> on behalf "
+                                 "of subset <%s>\n",
+                                 parentPrim.GetPath().GetText(),
+                                 iter->GetPath().GetText());
+                        proxy->Repopulate(parentPrim.GetPath());
+                        iter.PruneChildren();
+                        continue;
+                    } else {
+                        // This prim has no prim adapter, continue traversing
+                        // descendants.    
+                        continue;
+                    }
                 }
 
                 // This prim has an adapter, but wasn't in our adapter map, so
@@ -2815,14 +2848,12 @@ UsdImagingDelegate::GetDisplacementShaderSource(SdfPath const &materialId)
     SdfPath usdPath = GetPathForUsd(materialId);
     std::string source;
 
-    // Hydra calls GetDisplacementShaderSource multiple times, so we need to
-    // use Find not Extract here.
-    if (!_valueCache.FindDisplacementShaderSource(usdPath, &source)) {
+    if (!_valueCache.ExtractDisplacementShaderSource(usdPath, &source)) {
         TF_DEBUG(HD_SAFE_MODE).Msg(
             "WARNING: Slow displacement shader source fetch for %s\n",
             materialId.GetText());
         _UpdateSingleValue(usdPath, HdMaterial::DirtySurfaceShader);
-        TF_VERIFY(_valueCache.FindDisplacementShaderSource(
+        TF_VERIFY(_valueCache.ExtractDisplacementShaderSource(
                   usdPath, &source));
     }
 
@@ -2914,50 +2945,14 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
 HdTextureResource::ID
 UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
 {
-    // Compute the hash, but we need to validate that the texture exists
-    // (in case we need to return a fallback texture).
-    size_t hash = textureId.GetHash();
-    // salt with renderindex to prevent hash collision in non-shared imaging
-    boost::hash_combine(hash, &GetRenderIndex());
-
-    if (textureId == SdfPath())
-        return HdTextureResource::ID(hash);
-
     SdfPath usdPath = GetPathForUsd(textureId);
-
-    UsdPrim prim = _stage->GetPrimAtPath(usdPath.GetPrimPath());
-    if (!prim)
-        return HdTextureResource::ID(hash);
-
-    UsdAttribute attr = prim.GetAttribute(usdPath.GetNameToken());
-    SdfAssetPath asset;
-    if (!attr || !attr.Get(&asset, _time))
-        return HdTextureResource::ID(hash);
-
-    TfToken filePath = TfToken(asset.GetResolvedPath());
-    // Fallback to the literal path if it couldn't be resolved.
-    if (filePath.IsEmpty())
-        filePath = TfToken(asset.GetAssetPath());
-
-    bool isPtex = GlfIsSupportedPtexTexture(filePath);
-    
-    if (!TfPathExists(filePath)) {
-        if (isPtex) {
-            TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback " 
-                    "textures are not supported for ptex", 
-                    filePath.GetText(), usdPath.GetText());
-
-            return HdTextureResource::ComputeFallbackPtexHash(); 
-        } else {
-            TF_WARN("Unable to find Texture '%s' with path '%s'. A black " 
-                    "texture will be substituted in its place.", 
-                    filePath.GetText(), usdPath.GetText());
-
-            return HdTextureResource::ComputeFallbackUVHash();
-        }
+    _PrimInfo *primInfo = GetPrimInfo(usdPath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetTextureResourceID(primInfo->usdPrim, usdPath, _time,
+                                   (size_t) &GetRenderIndex() );
     }
-
-    return HdTextureResource::ID(hash);
+    return HdTextureResource::ID(-1);
 }
 
 HdTextureResourceSharedPtr
@@ -2965,102 +2960,13 @@ UsdImagingDelegate::GetTextureResource(SdfPath const &textureId)
 {
     // PERFORMANCE: We should schedule this to be updated during Sync, rather
     // than pulling values on demand.
- 
-    if (!TF_VERIFY(textureId != SdfPath()))
-        return HdTextureResourceSharedPtr();
-
     SdfPath usdPath = GetPathForUsd(textureId);
-
-    UsdPrim prim = _stage->GetPrimAtPath(usdPath.GetPrimPath());
-    if (!TF_VERIFY(prim))
-        return HdTextureResourceSharedPtr();
-
-    UsdAttribute attr = prim.GetAttribute(usdPath.GetNameToken());
-    SdfAssetPath asset;
-    if (!TF_VERIFY(attr) || !TF_VERIFY(attr.Get(&asset, _time)))
-        return HdTextureResourceSharedPtr();
-
-    TfToken filePath = TfToken(asset.GetResolvedPath());
-    // Fallback to the literal path if it couldn't be resolved.
-    if (filePath.IsEmpty())
-        filePath = TfToken(asset.GetAssetPath());
-
-    bool isPtex = GlfIsSupportedPtexTexture(filePath);
-
-    TfToken wrapS = UsdHydraTokens->repeat;
-    TfToken wrapT = UsdHydraTokens->repeat;
-    TfToken minFilter = UsdHydraTokens->linear;
-    TfToken magFilter = UsdHydraTokens->linear;
-    float memoryLimit = 0.0f;
-
-    // Mode overrides for UsdHydraTexture
-    UsdShadeShader shader(prim);
-    if (shader) {
-        UsdAttribute attr = UsdHydraTexture(shader).GetTextureMemoryAttr();
-        if (attr) attr.Get(&memoryLimit);
-        if (!isPtex) {
-            UsdHydraUvTexture uvt(shader);
-            attr = uvt.GetWrapSAttr();
-            if (attr) attr.Get(&wrapS);
-            attr = uvt.GetWrapTAttr();
-            if (attr) attr.Get(&wrapT);
-            attr = uvt.GetMinFilterAttr();
-            if (attr) attr.Get(&minFilter);
-            attr = uvt.GetMagFilterAttr();
-            if (attr) attr.Get(&magFilter);
-        }
+    _PrimInfo *primInfo = GetPrimInfo(usdPath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetTextureResource(primInfo->usdPrim, usdPath, _time);
     }
-
-    TF_DEBUG(USDIMAGING_TEXTURES).Msg(
-            "Loading texture: id(%s), isPtex(%s)\n",
-            usdPath.GetText(),
-            isPtex ? "true" : "false");
- 
-    if (!TfPathExists(filePath)) {
-        TF_WARN("Unable to find Texture '%s' with path '%s'.", 
-            filePath.GetText(), usdPath.GetText());
-        return HdTextureResourceSharedPtr();
-    }
-
-    HdTextureResourceSharedPtr texResource;
-
-    TF_DEBUG(USDIMAGING_TEXTURES).Msg("    Loading texture: %s\n", 
-                                    filePath.GetText());
-    TfStopwatch timer;
-    timer.Start();
-    GlfTextureHandleRefPtr texture =
-        GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
-    texture->AddMemoryRequest(memoryLimit);
-    HdWrap wrapShd = (wrapS == UsdHydraTokens->clamp) ? HdWrapClamp
-                 : (wrapS == UsdHydraTokens->repeat) ? HdWrapRepeat
-                 : HdWrapBlack; 
-    HdWrap wrapThd = (wrapT == UsdHydraTokens->clamp) ? HdWrapClamp
-                 : (wrapT == UsdHydraTokens->repeat) ? HdWrapRepeat
-                 : HdWrapBlack; 
-    HdMagFilter magFilterHd = 
-                 (magFilter == UsdHydraTokens->nearest) ? HdMagFilterNearest
-                 : HdMagFilterLinear; 
-    HdMinFilter minFilterHd = 
-                 (minFilter == UsdHydraTokens->nearest) ? HdMinFilterNearest
-                 : (minFilter == UsdHydraTokens->nearestMipmapNearest) 
-                                ? HdMinFilterNearestMipmapNearest
-                 : (minFilter == UsdHydraTokens->nearestMipmapLinear) 
-                                ? HdMinFilterNearestMipmapLinear
-                 : (minFilter == UsdHydraTokens->linearMipmapNearest) 
-                                ? HdMinFilterLinearMipmapNearest
-                 : (minFilter == UsdHydraTokens->linearMipmapLinear) 
-                                ? HdMinFilterLinearMipmapLinear
-                 : HdMinFilterLinear; 
-
-    texResource = HdTextureResourceSharedPtr(
-        new HdStSimpleTextureResource(texture, isPtex, wrapShd, wrapThd,
-                                      minFilterHd, magFilterHd));
-    timer.Stop();
-
-    TF_DEBUG(USDIMAGING_TEXTURES).Msg("    Load time: %.3f s\n", 
-                                     timer.GetSeconds());
-
-    return texResource;
+    return nullptr;
 }
 
 VtValue 

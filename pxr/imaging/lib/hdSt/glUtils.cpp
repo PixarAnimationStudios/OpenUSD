@@ -40,6 +40,7 @@
 #include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -28,6 +28,7 @@
 #include "usdMaya/MayaMeshWriter.h"
 #include "usdMaya/MayaNurbsCurveWriter.h"
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
+#include "usdMaya/MayaSkeletonWriter.h"
 #include "usdMaya/MayaTransformWriter.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/stageCache.h"
@@ -245,6 +246,11 @@ MayaPrimWriterPtr usdWriteJobCtx::_createPrimWriter(
     // coming before base classes (e.g. instancer before transform).
     if (mArgs.exportInstances && curDag.isInstanced() && !instanceSource) {
         MayaTransformWriterPtr primPtr(new MayaTransformWriter(curDag, writePath, instanceSource, *this));
+        if (primPtr->isValid()) {
+            return primPtr;
+        }
+    } else if (ob.hasFn(MFn::kJoint)) {
+        MayaSkeletonWriterPtr primPtr(new MayaSkeletonWriter(curDag, writePath, *this));
         if (primPtr->isValid()) {
             return primPtr;
         }

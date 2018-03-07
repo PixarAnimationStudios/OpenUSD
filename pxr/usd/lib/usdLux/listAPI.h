@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
@@ -166,7 +166,7 @@ class SdfAssetPath;
 /// \section UsdLuxListAPI_Instancing Instancing
 /// 
 /// Where instances are present, UsdLuxListAPI::ComputeLightList() will
-/// return the instance-unqiue paths to any lights discovered within
+/// return the instance-unique paths to any lights discovered within
 /// those instances.  Lights within a UsdGeomPointInstancer will
 /// not be returned, however, since they cannot be referred to
 /// solely via paths.
@@ -177,7 +177,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
 /// as the value.
 ///
-class UsdLuxListAPI : public UsdSchemaBase
+class UsdLuxListAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -191,12 +191,17 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents a 
+    /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
+    /// to the same prim multiple times with different instance names. 
+    static const bool IsMultipleApply = false;
+
     /// Construct a UsdLuxListAPI on UsdPrim \p prim .
     /// Equivalent to UsdLuxListAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxListAPI(const UsdPrim& prim=UsdPrim())
-        : UsdSchemaBase(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -204,7 +209,7 @@ public:
     /// Should be preferred over UsdLuxListAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxListAPI(const UsdSchemaBase& schemaObj)
-        : UsdSchemaBase(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -233,15 +238,21 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Mark this schema class as applied to the prim at \p path in the 
-    /// current EditTarget. This information is stored in the apiSchemas
-    /// metadata on prims.  
-    ///
+    /// Applies this <b>single-apply</b> API schema to the given \p prim.
+    /// This information is stored by adding "ListAPI" to the 
+    /// token-valued, listOp metadata \em apiSchemas on the prim.
+    /// 
+    /// \return A valid UsdLuxListAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLuxListAPI object is returned upon 
+    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
+    /// resulting in failure. 
+    /// 
     /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
     ///
     USDLUX_API
     static UsdLuxListAPI 
-    Apply(const UsdStagePtr &stage, const SdfPath &path);
+    Apply(const UsdPrim &prim);
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -333,13 +344,13 @@ public:
     ///
     /// In ComputeModeConsultModelHierarchyCache, this does a traversal
     /// only of the model hierarchy. In this traversal, any lights that
-    /// live as model hiearchy prims are accumulated, as well as any
+    /// live as model hierarchy prims are accumulated, as well as any
     /// paths stored in lightList caches. The lightList:cacheBehavior
     /// attribute gives further control over the cache behavior; see the
     /// class overview for details.
     /// 
     /// When instances are present, ComputeLightList(ComputeModeIgnoreCache)
-    /// will return the instance-unqiue paths to any lights discovered
+    /// will return the instance-uniqiue paths to any lights discovered
     /// within those instances.  Lights within a UsdGeomPointInstancer
     /// will not be returned, however, since they cannot be referred to
     /// solely via paths.

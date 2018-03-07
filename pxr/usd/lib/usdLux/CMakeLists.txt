@@ -11,6 +11,7 @@ pxr_library(usdLux
 
     PUBLIC_CLASSES
         blackbody
+        cylinderLight
         diskLight
         distantLight
         domeLight
@@ -34,6 +35,7 @@ pxr_library(usdLux
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapCylinderLight.cpp
         wrapDiskLight.cpp
         wrapDistantLight.cpp
         wrapDomeLight.cpp

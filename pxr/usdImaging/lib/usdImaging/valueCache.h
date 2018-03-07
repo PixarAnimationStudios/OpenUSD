@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_VALUE_CACHE_H
 #define USDIMAGING_VALUE_CACHE_H
 
+/// \file usdImaging/valueCache.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/materialParam.h"

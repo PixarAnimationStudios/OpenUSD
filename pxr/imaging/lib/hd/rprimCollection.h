@@ -41,8 +41,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A named, semantic collection of objects.
 ///
 /// Note that the collection object itself doesn't hold HdRprim objects, rather
-/// it acts and addressing mechanism to identify a specific group of HdRprim 
+/// it acts as an addressing mechanism to identify a specific group of HdRprim 
 /// objects that can be requested from the HdRenderIndex.
+/// 
+/// HdDirtyList provides the above algorithmic functionality, while HdRenderPass
+/// uses HdRprimCollection to concisely represent the HdRprim's it operates on.
+/// 
+/// \sa
+/// HdRenderPass
+/// HdDirtyList
 ///
 class HdRprimCollection {
 public:
@@ -123,7 +130,7 @@ public:
 
     /// Sets all root paths for this collection, replacing any existing paths
     /// that were present previously. All paths must be absolute. Duplicate
-    /// paths are allowed, but may result in peformance degradation.
+    /// paths are allowed, but may result in performance degradation.
     HD_API
     void SetRootPaths(SdfPathVector const& rootPaths);
 
@@ -134,7 +141,7 @@ public:
     void SetRootPath(SdfPath const& rootPath);
 
     /// Sets all exclude paths for this collection. All paths must be absolute. 
-    /// Duplicate paths are allowed, but may result in peformance degradation.
+    /// Duplicate paths are allowed, but may result in performance degradation.
     HD_API
     void SetExcludePaths(SdfPathVector const& excludePaths);
 

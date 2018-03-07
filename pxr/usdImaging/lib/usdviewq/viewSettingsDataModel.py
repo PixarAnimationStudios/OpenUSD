@@ -25,7 +25,7 @@
 from qt import QtCore
 
 from common import (RenderModes, PickModes, SelectionHighlightModes,
-    CameraMaskModes)
+    CameraMaskModes, Complexities)
 
 import settings2
 from settings2 import StateSource
@@ -129,7 +129,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._showHUD_Performance = self.stateProperty("showHUDPerformance", default=True)
         self._showHUD_GPUstats = self.stateProperty("showHUDGPUStats", default=False)
 
-        self._complexity = 1.0
+        self._complexity = Complexities.LOW
         self._freeCamera = None
 
     def onSaveState(self, state):
@@ -225,13 +225,9 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
     @complexity.setter
     def complexity(self, value):
-        value = float(value)
-        if value > 1.999:
-            self._complexity = 2.0
-        elif value < 1.001:
-            self._complexity = 1.0
-        else:
-            self._complexity = value
+        if value not in Complexities:
+            raise ValueError("Expected Complexity, got: '{}'.".format(value))
+        self._complexity = value
 
     @property
     def renderMode(self):

@@ -99,7 +99,7 @@ public:
     /// Returns the max number of elements
     virtual size_t GetMaxNumElements() const = 0;
 
-    /// Sets the buffer array assosiated with this buffer;
+    /// Sets the buffer array associated with this buffer;
     virtual void SetBufferArray(HdBufferArray *bufferArray) = 0;
 
     /// Debug output

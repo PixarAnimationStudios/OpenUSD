@@ -156,6 +156,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/boundableComputeExtent.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/usd/usdGeom/pointBased.h"
+#include "pxr/usd/usdGeom/sphere.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -209,18 +211,61 @@ UsdGeomCurves::ComputeExtent(const VtVec3fArray& points,
     if (!UsdGeomPointBased::ComputeExtent(points, extent)) { 
         return false;
     }
- 
-    GfVec3f widthVec = GfVec3f(maxWidth/2.);
+
+    GfVec3f widthVec = GfVec3f(maxWidth * 0.5);
     (*extent)[0] -= widthVec;
     (*extent)[1] += widthVec;
 
     return true;
 }
 
+bool
+UsdGeomCurves::ComputeExtent(const VtVec3fArray& points, 
+    const VtFloatArray& widths, const GfMatrix4d& transform,
+    VtVec3fArray* extent)
+{
+    // XXX: All curves can be bounded by their control points, excluding
+    //      catmull rom and hermite. For now, we treat hermite and catmull
+    //      rom curves like their convex-hull counterparts. While there are
+    //      some bounds approximations we could perform, hermite's
+    //      implementation is not fully supported and catmull rom splines
+    //      are very rare. For simplicity, we ignore these odd corner cases
+    //      and provide a still reasonable approximation, but we also 
+    //      recognize there could be some out-of-bounds error. 
+
+    // We know nothing about the curve basis. Compute the extent as if it were 
+    // a point cloud with some max width (convex hull).
+    float maxWidth = (widths.size() > 0 ? 
+        *(std::max_element(widths.begin(), widths.end())) : 0);
+    
+    if (!UsdGeomPointBased::ComputeExtent(points, transform, extent)) { 
+        return false;
+    }
+
+    VtVec3fArray sphereExtent;
+
+    // We want to transform the sphere without translation. The translation
+    // was already applied to each point, so we just need to find the extent
+    // of each point.
+    GfMatrix4d transformDir(transform);
+    transformDir.SetTranslateOnly(GfVec3d(0.0));
+
+    if (!UsdGeomSphere::ComputeExtent(maxWidth * 0.5,
+                                      transformDir,
+                                      &sphereExtent)) {
+        return false;
+    }
+    (*extent)[0] += sphereExtent[0];
+    (*extent)[1] += sphereExtent[1];
+
+    return true;
+}
+
 static bool
 _ComputeExtentForCurves(
-    const UsdGeomBoundable& boundable, 
-    const UsdTimeCode& time, 
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
     VtVec3fArray* extent)
 {
     const UsdGeomCurves curves(boundable);
@@ -236,7 +281,11 @@ _ComputeExtentForCurves(
     VtFloatArray widths;
     curves.GetWidthsAttr().Get(&widths, time);
     
-    return UsdGeomCurves::ComputeExtent(points, widths, extent);
+    if (transform) {
+        return UsdGeomCurves::ComputeExtent(points, widths, *transform, extent);
+    } else {
+        return UsdGeomCurves::ComputeExtent(points, widths, extent);
+    }
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

@@ -44,14 +44,10 @@ public:
     PXRUSDMAYA_API
     virtual ~PxrUsdMayaShadingModeExporter();
 
-
     PXRUSDMAYA_API
     void DoExport(const UsdStageRefPtr& stage,
-                  const PxrUsdMayaUtil::ShapeSet& bindableRoots,
-                  bool mergeTransformAndShape,
-                  const SdfPath& overrideRootPath,
                   const PxrUsdMayaUtil::MDagPathMap<SdfPath>::Type& dagPathToUsdMap,
-                  const SdfPath &materialCollectionsPath);
+                  const PxrUsdMayaExportParams &exportParams);
 
     /// Called once, before any exports are started.
     ///

@@ -77,11 +77,12 @@ public:
     UsdSkelSkeletonQuery() {}
 
     USDSKEL_API
-    UsdSkelSkeletonQuery(const UsdSkel_SkelDefinitionRefPtr& definition,
+    UsdSkelSkeletonQuery(const UsdPrim& prim,
+                         const UsdSkel_SkelDefinitionRefPtr& definition,
                          const UsdSkelAnimQuery& anim=UsdSkelAnimQuery());
 
     /// Return true if this query is valid.
-    bool IsValid() const { return _definition; }
+    bool IsValid() const { return _prim && _definition; }
 
     /// Boolean conversion operator. Equivalent to IsValid().
     explicit operator bool() const { return IsValid(); }
@@ -90,7 +91,8 @@ public:
     /// same UsdSkelSkeletonQuery, false otherwise.
     friend bool operator==(const UsdSkelSkeletonQuery& lhs,
                            const UsdSkelSkeletonQuery& rhs) {
-        return lhs._definition == rhs._definition &&
+        return lhs._prim == rhs._prim &&
+               lhs._definition == rhs._definition &&
                lhs._animQuery == rhs._animQuery;
     }
 
@@ -104,6 +106,10 @@ public:
     // hash_value overload for std/boost hash.
     USDSKEL_API
     friend size_t hash_value(const UsdSkelSkeletonQuery& query);
+
+    /// Returns the prim at which this skeleton instance is bound.
+    USDSKEL_API
+    const UsdPrim& GetPrim() const;
 
     /// Returns the underlying Skeleton primitive corresponding to the
     /// bound skeleton instance, if any.
@@ -128,11 +134,18 @@ public:
 
     /// Compute a root animation transform. If no animation source is bound,
     /// an identity matrix is returned.
-    /// A Skeleton instance's local to world transform is:
-    ///     animTransform * skelInstanceLocalToWorld
     USDSKEL_API
     bool ComputeAnimTransform(GfMatrix4d* xform,
                               UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    /// Compute the local-to-world transform of the skeleton instance.
+    /// A Skeleton instance's local to world transform is:
+    /// \code
+    ///     animTransform * skelInstanceLocalToWorld
+    /// \endcode
+    USDSKEL_API
+    bool ComputeLocalToWorldTransform(GfMatrix4d* xform,
+                                      UsdGeomXformCache* xfCache) const;
     
     /// Compute joint transforms in joint-local space, at \p time.
     /// This returns transforms in joint order of the skeleton.
@@ -186,6 +199,7 @@ private:
                                     UsdTimeCode time) const;
 
 private:
+    UsdPrim _prim;
     UsdSkel_SkelDefinitionRefPtr _definition;
     UsdSkelAnimQuery _animQuery;
     UsdSkelAnimMapper _animToSkelMapper;

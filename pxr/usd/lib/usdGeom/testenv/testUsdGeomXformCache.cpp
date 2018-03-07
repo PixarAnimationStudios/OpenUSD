@@ -252,6 +252,46 @@ void VerifyTransforms(UsdStageRefPtr const& stage,
               bar.GetPath().GetText());
 
     // --------------------------------------------------------------------- //
+    // Test ComputeRelativeTransform
+    // --------------------------------------------------------------------- //
+
+    bool resetXformStack = false;
+
+    // /RootPrim relative to / : Should return xform.
+    ctm = xfCache.ComputeRelativeTransform(root, stage->GetPseudoRoot(),
+                                           &resetXformStack);
+    TF_VERIFY(ctm == xform,
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              root.GetPath().GetText(),
+              stage->GetPseudoRoot().GetPath().GetText());
+
+    // /RootPrim/Scope/Foo relative to /RootPrim. Should return xform.
+    ctm = xfCache.ComputeRelativeTransform(foo, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform),
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              foo.GetPath().GetText(), root.GetPath().GetText());
+
+    // /RootPrim/Scope/Foo/Bar relative to /RootPrim.
+    // fooBar resets the xform stack, so should return xform.
+    ctm = xfCache.ComputeRelativeTransform(fooBar, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform), 
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              fooBar.GetPath().GetText(), root.GetPath().GetText());
+
+    // /RootPrim/Scope/Foo/Bar/Baz relative to /RootPrim/Foo/Bar.
+    // fooBar resets the xform stack, so should return xform*xform.
+    ctm = xfCache.ComputeRelativeTransform(fooBarBaz, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform * xform),
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              fooBarBaz.GetPath().GetText(), root.GetPath().GetText());
+
+    // /RootPrim/Scope/Bar relative to /RootPrim. Should return xform.
+    ctm = xfCache.ComputeRelativeTransform(bar, root, &resetXformStack);
+    TF_VERIFY(ctm == (xform),
+              "ComputeRelativeTransform value for (%s,%s) is incorrect.",
+              bar.GetPath().GetText(), root.GetPath().GetText());
+
+    // --------------------------------------------------------------------- //
     // Test Nested Root
     // --------------------------------------------------------------------- //
 

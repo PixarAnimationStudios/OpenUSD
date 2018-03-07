@@ -199,7 +199,7 @@ namespace {
                 : resultingIdentifier;
     }
 
-    // During parallel generation, we will generate non-releative paths
+    // During parallel generation, we will generate non-relative paths
     // for clipAssetPaths so we need to make a post-processing pass.
     // We want to respect paths which have already been normalized,
     // meaning paths which already existed in the root layer.
@@ -479,7 +479,7 @@ namespace {
     // Model clip stitching works by creating a set of "overs" given the
     // specified topology file and stitchPath.
     // 
-    // After creating the the new structure, the clip data is aggregated, this
+    // After creating the new structure, the clip data is aggregated, this
     // includes clipManifestAssetPath, clipActive, 
     //          clipTimes, clipAssetPaths, clipPrimPath.
     //
@@ -493,7 +493,7 @@ namespace {
     // \p resultLayer the layer being merged into
     // \p clipLayer the layer we are merging clip data from
     // \p topologyLayer the layer with a reference topology
-    // \p stitchPath the prim path in the reference topolgy we need to emulate
+    // \p stitchPath the prim path in the reference topology we need to emulate
     // \p startTimeCode a frame number to start at for stage frames, 
     //    if no startTimeCode is supplied, the number will be taken from the most
     //    recently added clip data. If there is no other clip data, its taken 

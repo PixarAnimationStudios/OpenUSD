@@ -300,6 +300,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+#include "pxr/base/tf/registryManager.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX Bug 139215: When we enable this, we can remove
@@ -727,10 +730,11 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
 }
 
 bool
-UsdGeomPointInstancer::ComputeExtentAtTime(
+UsdGeomPointInstancer::_ComputeExtentAtTime(
     VtVec3fArray* extent,
     const UsdTimeCode time,
-    const UsdTimeCode baseTime) const
+    const UsdTimeCode baseTime,
+    const GfMatrix4d* transform) const
 {
     if (!extent) {
         TF_WARN("%s -- null container passed to ComputeExtentAtTime()",
@@ -817,6 +821,10 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
 
         // Apply the instance transform.
         thisBounds.Transform(instanceTransforms[instanceId]);
+        // Apply the optional transform.
+        if (transform) {
+            thisBounds.Transform(*transform);
+        }
         extentRange.UnionWith(thisBounds.ComputeAlignedRange());
     }
 
@@ -828,6 +836,53 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
     (*extent)[1] = GfVec3f(extentMax[0], extentMax[1], extentMax[2]);
 
     return true;
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTime(
+    VtVec3fArray* extent,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime) const
+{
+    return _ComputeExtentAtTime(extent, time, baseTime, nullptr);
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTime(
+    VtVec3fArray* extent,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d& transform) const
+{
+    return _ComputeExtentAtTime(extent, time, baseTime, &transform);
+}
+
+static bool
+_ComputeExtentForPointInstancer(
+    const UsdGeomBoundable& boundable,
+    const UsdTimeCode& time,
+    const GfMatrix4d* transform,
+    VtVec3fArray* extent)
+{
+    const UsdGeomPointInstancer pointInstancerSchema(boundable);
+    if (!TF_VERIFY(pointInstancerSchema)) {
+        return false;
+    }
+
+    // We use the input time as the baseTime because we don't care about
+    // velocity or angularVelocity.
+    if (transform) {
+        return pointInstancerSchema.ComputeExtentAtTime(
+            extent, time, time, *transform);
+    } else {
+        return pointInstancerSchema.ComputeExtentAtTime(extent, time, time);
+    }
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdGeomPointInstancer>(
+        _ComputeExtentForPointInstancer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

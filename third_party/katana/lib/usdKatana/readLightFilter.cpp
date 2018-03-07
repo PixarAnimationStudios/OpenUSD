@@ -84,24 +84,24 @@ struct _UsdBuilder {
     _UsdBuilder& SetSpline(std::string kat_prefix, std::string valueSuffix,
                            UsdRiSplineAPI spline) {
         // Knot count
-        {
-            UsdAttribute posAttr = spline.GetPositionsAttr();
-            VtFloatArray posVec;
-            posAttr.Get(&posVec);
-            _builder.set(kat_prefix, FnKat::IntAttribute(posVec.size()));
+        VtFloatArray posVec;
+        if (UsdAttribute posAttr = spline.GetPositionsAttr()) {
+            if (!posAttr.Get(&posVec)) {
+                FnLogWarn("Invalid spline positions type: " <<
+                          posAttr.GetTypeName().GetAsToken().GetString() <<
+                          ": " << posAttr.GetPath().GetString());
+                return *this;
+            }
         }
-        // Knot positions
-        Set( kat_prefix + "_Knots", spline.GetPositionsAttr() );
-        // Knot values
-        Set( kat_prefix + valueSuffix, spline.GetValuesAttr() );
+
         // Interpolation
+        std::string interp = "unknown";
         {
             VtValue val;
             UsdAttribute attr = spline.GetInterpolationAttr();
             if (attr.IsValid() && attr.HasAuthoredValueOpinion()
                 && attr.Get(&val, _time) && val.IsHolding<TfToken>()) {
-                TfToken t = val.Get<TfToken>();
-                std::string interp = "unknown";
+                TfToken t = val.UncheckedGet<TfToken>();
                 if (t == UsdRiTokens->linear) {
                     interp = "linear";
                 } else if (t == UsdRiTokens->catmullRom) {
@@ -110,11 +110,25 @@ struct _UsdBuilder {
                     interp = "bspline";
                 } else if (t == UsdRiTokens->constant) {
                     interp = "constant";
+                } else {
+                    FnLogWarn("Unsupported spline interpolation: " <<
+                              t.GetString() << ": " <<
+                              attr.GetPath().GetString());
+                    return *this;
                 }
-                _builder.set(kat_prefix + "_Interpolation",
-                             FnKat::StringAttribute(interp));
+            }
+            else {
+                FnLogWarn("Invalid spline interpolation: " <<
+                          attr.GetPath().GetString());
+                return *this;
             }
         }
+
+        _builder.set(kat_prefix, FnKat::IntAttribute(posVec.size()));
+        Set( kat_prefix + "_Knots", spline.GetPositionsAttr() );
+        Set( kat_prefix + valueSuffix, spline.GetValuesAttr() );
+        _builder.set(kat_prefix + "_Interpolation",
+                     FnKat::StringAttribute(interp));
         return *this;
     }
 };

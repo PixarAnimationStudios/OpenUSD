@@ -1004,6 +1004,30 @@ UsdGeomBBoxCache::_GetBBoxFromExtentsHint(
     return true;
 }
 
+bool
+UsdGeomBBoxCache::_ComputeExtent(const UsdGeomBoundable& boundableObj,
+                                 VtVec3fArray* extent) const
+{
+    // Display a message if the debug flag is enabled.
+    TF_DEBUG(USDGEOM_BBOX).Msg(
+        "[BBox Cache] WARNING: No valid extent authored for "
+        "<%s>. Computing a fallback value.",
+        boundableObj.GetPath().GetString().c_str());
+
+    // Create extent
+    bool successGettingExtent =
+        UsdGeomBoundable::ComputeExtentFromPlugins(
+            boundableObj, _time, extent);
+
+    if (!successGettingExtent) {
+        TF_DEBUG(USDGEOM_BBOX).Msg(
+            "[BBox Cache] WARNING: Unable to compute extent for "
+            "<%s>.", boundableObj.GetPath().GetString().c_str());
+    }
+
+    return successGettingExtent;
+}
+
 void
 UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                                const UsdPrim& prim,
@@ -1099,7 +1123,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     // Attempt to resolve a boundable prim's extent. If no extent is authored,
     // we attempt to create it for usdGeomPointBased and child classes. If
     // it cannot be created or found, the user is notified of an incorrect prim.
-    if (prim.IsA<UsdGeomBoundable>()) {
+    if (UsdGeomBoundable boundableObj = UsdGeomBoundable(prim)) {
         VtVec3fArray extent;
         // Read the extent of the geometry, an axis-aligned bounding box in
         // local space.
@@ -1121,7 +1145,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // If we failed to get extent, try to create it.
         if (!successGettingExtent) {
 
-            // If the prim is a PointBased, try to calculate the extent
+            // Try to calculate the extent.
             if (UsdGeomPointBased pointBasedObj = UsdGeomPointBased(prim)) {
 
                 // XXX: We check if the points attribute is authored on the
@@ -1140,30 +1164,12 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                     pointBasedObj.GetPointsAttr().HasAuthoredValueOpinion();
 
                 if (primHasAuthoredPoints) {
-                    TF_DEBUG(USDGEOM_BBOX).Msg(
-                        "[BBox Cache] WARNING: No valid extent authored for "
-                        "<%s>. Computing a fallback value.",
-                        prim.GetPath().GetString().c_str());
-
-                    // Create extent
-                    successGettingExtent =
-                        UsdGeomBoundable::ComputeExtentFromPlugins(
-                            pointBasedObj, _time, &extent);
-
-                    if (!successGettingExtent) {
-                        TF_DEBUG(USDGEOM_BBOX).Msg(
-                            "[BBox Cache] WARNING: Unable to compute extent for "
-                            "<%s>.", prim.GetPath().GetString().c_str());
-                    }
+                    successGettingExtent = _ComputeExtent(boundableObj, &extent);
                 }
 
             } else {
-                // Skip non-PointsBased prims without extent. Display a message
-                // if the debug flag is enabled.
-                TF_DEBUG(USDGEOM_BBOX).Msg("[BBox Cache] WARNING: No valid "
-                    "extent authored for <%s>.",
-                    prim.GetPath().GetString().c_str());
 
+                successGettingExtent = _ComputeExtent(boundableObj, &extent);
             }
         }
 

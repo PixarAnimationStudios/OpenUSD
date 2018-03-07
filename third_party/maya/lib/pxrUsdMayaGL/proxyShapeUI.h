@@ -28,7 +28,8 @@
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "usdMaya/proxyShape.h"
 
 #include <maya/M3dView.h>
 #include <maya/MDrawInfo.h>
@@ -72,9 +73,14 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
         UsdMayaProxyShapeUI();
         UsdMayaProxyShapeUI(const UsdMayaProxyShapeUI&);
 
-        virtual ~UsdMayaProxyShapeUI();
+        virtual ~UsdMayaProxyShapeUI() override;
 
         UsdMayaProxyShapeUI& operator=(const UsdMayaProxyShapeUI&);
+
+        // Note that MPxSurfaceShapeUI::select() is declared as const, so we
+        // must declare _shapeAdapter as mutable so that we're able to modify
+        // it.
+        mutable PxrMayaHdShapeAdapter _shapeAdapter;
 };
 
 

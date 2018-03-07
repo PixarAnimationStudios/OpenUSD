@@ -66,12 +66,14 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-uvs" , "-exportUVs", MSyntax::kBoolean);
     syntax.addFlag("-mcs" , "-exportMaterialCollections", MSyntax::kBoolean);
     syntax.addFlag("-mcp" , "-materialCollectionsPath", MSyntax::kString);
+    syntax.addFlag("-cbb" , "-exportCollectionBasedBindings", MSyntax::kBoolean);
     syntax.addFlag("-nuv" , "-normalizeMeshUVs" , MSyntax::kBoolean);
     syntax.addFlag("-nnu" , "-normalizeNurbs" , MSyntax::kBoolean);
     syntax.addFlag("-euv" , "-nurbsExplicitUVType" , MSyntax::kString);
     syntax.addFlag("-cls" , "-exportColorSets", MSyntax::kBoolean);
     syntax.addFlag("-dms" , "-defaultMeshScheme", MSyntax::kString);
     syntax.addFlag("-vis" , "-exportVisibility", MSyntax::kBoolean);
+    syntax.addFlag("-skn" , "-exportSkin", MSyntax::kString);
 
     syntax.addFlag("-fr" , "-frameRange"   , MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag("-pr" , "-preRoll"   , MSyntax::kDouble);
@@ -187,6 +189,11 @@ try
         jobArgs.materialCollectionsPath = stringVal.asChar();
     }
 
+    if (argData.isFlagSet("exportCollectionBasedBindings")) {
+        argData.getFlagArgument("exportCollectionBasedBindings", 0,
+                                jobArgs.exportCollectionBasedBindings);
+    }
+
     if (argData.isFlagSet("normalizeMeshUVs")) {
         argData.getFlagArgument("normalizeMeshUVs", 0, jobArgs.normalizeMeshUVs);
     }
@@ -227,6 +234,29 @@ try
 
     if (argData.isFlagSet("exportVisibility")) {
         argData.getFlagArgument("exportVisibility", 0, jobArgs.exportVisibility);
+    }
+
+    if (argData.isFlagSet("exportSkin")) {
+        MString stringVal;
+
+        argData.getFlagArgument("exportSkin", 0, stringVal);
+        if (stringVal == "none") {
+            jobArgs.exportSkin = false;
+        }
+        else if (stringVal == "auto") {
+            jobArgs.exportSkin = true;
+            jobArgs.autoSkelRoots = true;
+        }
+        else if (stringVal == "explicit") {
+            jobArgs.exportSkin = true;
+            jobArgs.autoSkelRoots = false;
+        }
+        else {
+            MGlobal::displayWarning(
+                    "Incorrect value for -exportSkin flag; assuming "
+                    "'-exportSkin none'");
+            jobArgs.exportSkin = false;
+        }
     }
 
     bool append = false;

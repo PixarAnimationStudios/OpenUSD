@@ -75,9 +75,11 @@ def _findEditorTools(usdFileName, readOnly):
     return (usdcatCmd, editorCmd)
 
 # this generates a temporary usd file which the user will edit.
-def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly):
+def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
+    fullPrefix = prefix or "tmp"
     import tempfile
-    (usdaFile, usdaFileName) = tempfile.mkstemp(suffix='.usda', dir=os.getcwd())
+    (usdaFile, usdaFileName) = tempfile.mkstemp(
+        prefix=fullPrefix, suffix='.usda', dir=os.getcwd())
  
     os.system(usdcatCmd + ' ' + usdFileName + '> ' + usdaFileName)
 
@@ -145,13 +147,18 @@ def main():
     parser.add_argument('-f', '--forcewrite', 
                         dest='forceWrite', action='store_true',
                         help='Override file permissions to allow writing.')
+    parser.add_argument('-p', '--prefix', 
+                        dest='prefix', action='store', type=str, default=None,
+                        help='Provide a prefix for the temporary file name.')
     parser.add_argument('usdFileName', help='The usd file to edit.')
     results = parser.parse_args()
 
     # pull args from result map so we don't need to write result. for each
-    readOnly, forceWrite, usdFileName = (results.readOnly, 
-                                         results.forceWrite,
-                                         results.usdFileName)
+    readOnly, forceWrite, usdFileName, prefix = (
+        results.readOnly,
+        results.forceWrite,
+        results.usdFileName,
+        results.prefix)
     
     # verify our usd file exists, and permissions args are sane
     if readOnly and forceWrite:
@@ -170,7 +177,7 @@ def main():
     
     # generate our temporary file with proper permissions and edit.
     usdaFile, usdaFileName = _generateTemporaryFile(usdcatCmd, usdFileName,
-                                                    readOnly) 
+                                                    readOnly, prefix)
     tempFileChanged = _editTemporaryFile(editorCmd, usdaFileName)
     
 

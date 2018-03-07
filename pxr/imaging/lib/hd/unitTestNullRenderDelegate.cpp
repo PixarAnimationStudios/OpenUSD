@@ -233,16 +233,18 @@ public:
     virtual void _InitRepr(TfToken const &reprName,
                            HdDirtyBits *dirtyBits) override
     {
+        _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
+                                                _ReprComparator(reprName));
+        if (it == _reprs.end()) {
+            _reprs.emplace_back(reprName, HdReprSharedPtr());
+        }
     }
 
 protected:
-    virtual HdReprSharedPtr const &
-        _GetRepr(HdSceneDelegate *sceneDelegate,
-                 TfToken const &reprName,
-                 HdDirtyBits *dirtyBits) override  {
-        static HdReprSharedPtr result = boost::make_shared<HdRepr>();
-        return result;
-    };
+    virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                             TfToken const &reprName,
+                             HdDirtyBits *dirtyBits) override  {
+    }
 
 private:
     Hd_NullRprim()                                 = delete;

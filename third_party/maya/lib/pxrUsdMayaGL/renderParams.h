@@ -31,10 +31,7 @@
 #include "pxrUsdMayaGL/api.h"
 
 #include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/token.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/usd/usd/timeCode.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -44,12 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct PxrMayaHdRenderParams
 {
-    // USD Params
-    //
-    UsdTimeCode timeCode = UsdTimeCode::Default();
-    uint8_t refineLevel = 0u;
-    TfToken geometryCol = HdTokens->geometry;
-
     // Raster Params
     //
     bool enableLighting = true;
@@ -57,8 +48,6 @@ struct PxrMayaHdRenderParams
     // Geometry Params
     //
     HdCullStyle cullStyle = HdCullStyleNothing;
-    TfToken drawRepr = HdTokens->refined;
-    TfTokenVector renderTags;
 
     // Color Params
     //
@@ -68,11 +57,8 @@ struct PxrMayaHdRenderParams
     /// \brief Helper function to find a batch key for the render params
     size_t Hash() const
     {
-        size_t hash = (refineLevel << 1) + enableLighting;
-        boost::hash_combine(hash, timeCode);
-        boost::hash_combine(hash, geometryCol);
+        size_t hash = size_t(enableLighting);
         boost::hash_combine(hash, cullStyle);
-        boost::hash_combine(hash, drawRepr);
         boost::hash_combine(hash, overrideColor);
         boost::hash_combine(hash, wireframeColor);
 

@@ -207,6 +207,25 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Compute the extent for the cube defined by the size of each dimension.
+    ///
+    /// \return true upon success, false if unable to calculate extent.
+    ///
+    /// On success, extent will contain an approximate axis-aligned bounding 
+    /// box of the cube defined by the size of each dimension.
+    ///
+    /// This function is to provide easy authoring of extent for usd authoring 
+    /// tools, hence it is static and acts outside a specific prim (as in 
+    /// attribute based methods).
+    USDGEOM_API
+    static bool ComputeExtent(double size, VtVec3fArray* extent);
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied.
+    USDGEOM_API
+    static bool ComputeExtent(double size, const GfMatrix4d& transform,
+        VtVec3fArray* extent);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

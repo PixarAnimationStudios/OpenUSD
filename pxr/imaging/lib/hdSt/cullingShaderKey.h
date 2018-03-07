@@ -50,6 +50,7 @@ struct HdSt_CullingShaderKey
     }
     HdCullStyle GetCullStyle() const { return HdCullStyleDontCare; }
     HdPolygonMode GetPolygonMode() const { return HdPolygonModeFill; }
+    float GetLineWidth() const { return 0; }
     bool IsFaceVarying() const { return false; }
 
     TfToken glslfx;

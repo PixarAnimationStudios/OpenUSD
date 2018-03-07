@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_GPRIM_ADAPTER_H
 #define USDIMAGING_GPRIM_ADAPTER_H
 
+/// \file usdImaging/gprimAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
@@ -136,7 +138,7 @@ protected:
 
     USDIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) final;
+                             UsdImagingIndexProxy* index) override;
 
 private:
 

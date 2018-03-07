@@ -58,7 +58,7 @@ public:
     HD_API
     virtual ~HdSprim();
 
-    /// Returns the identifer by which this state is known. This
+    /// Returns the identifier by which this state is known. This
     /// identifier is a common associative key used by the SceneDelegate,
     /// RenderIndex, and for binding to the state (e.g. camera, light)
     SdfPath const& GetID() const { return _id; }

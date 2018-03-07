@@ -142,7 +142,7 @@ protected:
 private:
     typedef std::vector<HdBufferArrayRangePtr> _RangeList;
 
-    // Vector of ranges assosiated with this buffer
+    // Vector of ranges associated with this buffer
     // We add values to the list in a multi-threaded fashion
     // but can later remove them in _RemoveUnusedRanges
     // than add more.

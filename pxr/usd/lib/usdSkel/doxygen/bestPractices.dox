@@ -44,7 +44,7 @@ Clients should not assume that the number of influences -- I.e,. the primvar
 _elementSize_ --  will be within some threshold that they consider _reasonable_.
 If it is desired that a maximum number of influences be enforced, the client
 should enforce that by truncating the resulting influences themselves. The
-\ref UsdSkelTruncateInfluences helper method may be used towards that end.
+\ref UsdSkelResizeInfluences helper method may be used towards that end.
 
 \section UsdSkel_BP_JointInfluences Joint Influences
 

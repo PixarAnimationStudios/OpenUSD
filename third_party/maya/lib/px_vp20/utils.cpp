@@ -48,6 +48,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MMatrix.h>
+#include <maya/MSelectionContext.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MStatus.h>
@@ -837,6 +838,62 @@ px_vp20Utils::RenderBoundingBox(
     glDeleteBuffers(1, &cubeLinesVBO);
 
     glUseProgram(0);
+
+    return true;
+}
+
+/* static */
+bool
+px_vp20Utils::GetSelectionMatrices(
+        const MHWRender::MSelectionInfo& selectionInfo,
+        const MHWRender::MDrawContext& context,
+        GfMatrix4d& viewMatrix,
+        GfMatrix4d& projectionMatrix)
+{
+    MStatus status;
+
+    const MMatrix viewMat =
+        context.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MMatrix projectionMat =
+        context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    int viewportOriginX;
+    int viewportOriginY;
+    int viewportWidth;
+    int viewportHeight;
+    status = context.getViewportDimensions(viewportOriginX,
+                                           viewportOriginY,
+                                           viewportWidth,
+                                           viewportHeight);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    unsigned int selectRectX;
+    unsigned int selectRectY;
+    unsigned int selectRectWidth;
+    unsigned int selectRectHeight;
+    status = selectionInfo.selectRect(selectRectX,
+                                      selectRectY,
+                                      selectRectWidth,
+                                      selectRectHeight);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MMatrix selectionMatrix;
+    selectionMatrix[0][0] = (double)viewportWidth / (double)selectRectWidth;
+    selectionMatrix[1][1] = (double)viewportHeight / (double)selectRectHeight;
+    selectionMatrix[3][0] =
+        ((double)viewportWidth - (double)(selectRectX * 2 + selectRectWidth)) /
+            (double)selectRectWidth;
+    selectionMatrix[3][1] =
+        ((double)viewportHeight - (double)(selectRectY * 2 + selectRectHeight)) /
+            (double)selectRectHeight;
+
+    projectionMat *= selectionMatrix;
+
+    viewMatrix = GfMatrix4d(viewMat.matrix);
+    projectionMatrix = GfMatrix4d(projectionMat.matrix);
 
     return true;
 }

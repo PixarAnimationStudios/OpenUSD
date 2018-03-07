@@ -338,11 +338,11 @@ VtValue::IsArrayValued() const {
     return v->_info && v->_info->isArray;
 }
 
-const Vt_Reserved*
-VtValue::_GetReserved() const
+const Vt_ShapeData*
+VtValue::_GetShapeData() const
 {
     VtValue const *v = _ResolveProxy();
-    return v->_info ? v->_info->GetReserved(v->_storage) : NULL;
+    return v->_info ? v->_info->GetShapeData(v->_storage) : NULL;
 }
 
 size_t

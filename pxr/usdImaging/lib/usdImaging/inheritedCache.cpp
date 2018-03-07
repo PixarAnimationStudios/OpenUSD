@@ -124,21 +124,7 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
 SdfPath
 UsdImaging_MaterialNetworkStrategy::GetBinding(UsdShadeMaterial const& material)
 {
-    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Look: %s\n", 
-        material.GetPath().GetText());
-
-    // ---------------------------------------------------------------------- //
-    // Shading networks - riLook:bxdf
-    // ---------------------------------------------------------------------- //
-    if (UsdRelationship matRel = 
-        UsdRiMaterialAPI(material).GetBxdfOutput().GetRel()) {
-
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                    matRel.GetPath().GetText());
-        return material.GetPath();
-    }
-
-    return SdfPath::EmptyPath();
+    return material.GetPath();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

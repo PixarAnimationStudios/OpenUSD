@@ -255,7 +255,7 @@ class VtValue
 #endif // PXR_PYTHON_SUPPORT_ENABLED
         virtual std::ostream & StreamOut(_Storage const &,
                                          std::ostream &) const = 0;
-        virtual const Vt_Reserved* GetReserved(_Storage const &) const = 0;
+        virtual const Vt_ShapeData* GetShapeData(_Storage const &) const = 0;
         virtual size_t GetNumElements(_Storage const &) const = 0;
         virtual bool ProxyHoldsType(_Storage const &,
                                     std::type_info const &) const = 0;
@@ -273,15 +273,15 @@ class VtValue
     // Array type helper.
     template <class T, class Enable=void>
     struct _ArrayHelper {
-        static const Vt_Reserved* GetReserved(T const &) { return NULL; }
+        static const Vt_ShapeData* GetShapeData(T const &) { return NULL; }
         static size_t GetNumElements(T const &) { return 0; }
         constexpr static std::type_info const &GetElementTypeid() { return typeid(void); }
     };
     template <class Array>
     struct _ArrayHelper<Array,
                         typename boost::enable_if<VtIsArray<Array> >::type> {
-        static const Vt_Reserved* GetReserved(Array const &obj) {
-            return obj._GetReserved();
+        static const Vt_ShapeData* GetShapeData(Array const &obj) {
+            return obj._GetShapeData();
         }
         static size_t GetNumElements(Array const &obj) {
             return obj.size();
@@ -367,8 +367,8 @@ class VtValue
             return VtStreamOut(GetObj(storage), out);
         }
 
-        virtual const Vt_Reserved* GetReserved(_Storage const &storage) const {
-            return _ArrayHelper<T>::GetReserved(GetObj(storage));
+        virtual const Vt_ShapeData* GetShapeData(_Storage const &storage) const {
+            return _ArrayHelper<T>::GetShapeData(GetObj(storage));
         }
 
         virtual size_t GetNumElements(_Storage const &storage) const {
@@ -919,9 +919,9 @@ public:
     operator << (std::ostream &out, const VtValue &self);
 
 private:
-    const Vt_Reserved* _GetReserved() const;
+    const Vt_ShapeData* _GetShapeData() const;
     size_t _GetNumElements() const;
-    friend struct Vt_ValueReservedAccess;
+    friend struct Vt_ValueShapeDataAccess;
 
     static void _Copy(VtValue const &src, VtValue &dst) {
         if (src.IsEmpty()) {
@@ -1070,9 +1070,9 @@ struct Vt_DefaultValueFactory {
     }
 };
 
-struct Vt_ValueReservedAccess {
-    static const Vt_Reserved* _GetReserved(const VtValue& value) {
-        return value._GetReserved();
+struct Vt_ValueShapeDataAccess {
+    static const Vt_ShapeData* _GetShapeData(const VtValue& value) {
+        return value._GetShapeData();
     }
 
     static size_t _GetNumElements(const VtValue& value) {

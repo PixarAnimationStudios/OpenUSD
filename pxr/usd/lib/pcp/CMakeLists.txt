@@ -302,8 +302,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testPcpMuseum_BasicClassOverride.testenv
-    DEST testPcpMuseum_BasicClassOverride
+    SRC testenv/testPcpMuseum_BasicInherits.testenv
+    DEST testPcpMuseum_BasicInherits
 )
 
 pxr_install_test_dir(
@@ -790,11 +790,11 @@ pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
     DIFF_COMPARE compositionResults_BasicRelocateToAnimInterface.txt 
 )
 
-pxr_register_test(testPcpMuseum_BasicClassOverride
+pxr_register_test(testPcpMuseum_BasicInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicClassOverride/root.sdf" 
-    STDOUT_REDIRECT compositionResults_BasicClassOverride.txt
-    DIFF_COMPARE compositionResults_BasicClassOverride.txt 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInherits/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicInherits.txt
+    DIFF_COMPARE compositionResults_BasicInherits.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicLocalAndGlobalClassCombination

@@ -13,7 +13,6 @@ pxr_library(usdShade
         connectableAPI
         debugCodes
         input
-        look
         material
         materialBindingAPI
         output
@@ -32,7 +31,6 @@ pxr_library(usdShade
         module.cpp
         wrapConnectableAPI.cpp
         wrapInput.cpp
-        wrapLook.cpp
         wrapMaterial.cpp
         wrapMaterialBindingAPI.cpp
         wrapOutput.cpp

@@ -665,17 +665,79 @@ WARN_LOGFILE           =
 # to be ordered by "package" and low-to-high-level module order.
 
 INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
+                                                                      \
+                         ## "base" package \
+                         src/modules/arch \
+                         src/modules/gf \
+                         src/modules/js \
+                         src/modules/plug \
+                         src/modules/tf \
+                         src/modules/tracelite \
+                         src/modules/vt \
+                         src/modules/work \
+                                                                      \
+                         ## "usd" package \
                          src/modules/ar \
+                         src/modules/kind \
+                         src/modules/pcp \
                          src/modules/sdf \
                          src/modules/usd \
                          src/modules/usdGeom \
-                         src/modules/usdImaging \
+                         src/modules/usdHydra \
+                         src/modules/usdLux \
                          src/modules/usdRi \
                          src/modules/usdShade \
+                         src/modules/usdSkel \
+                         src/modules/usdUI \
                          src/modules/usdUtils \
-                         src/modules/vt \
+                         src/modules/usdAbc \
+                                                                      \
+                         ## "imaging" package \
+                         src/modules/cameraUtil \
+                         src/modules/gal \
+                         src/modules/garch \
+                         src/modules/glf \
+                         src/modules/glfq \
+                         src/modules/hd \
+                         src/modules/hdSt \
+                         src/modules/hdx \
+                         src/modules/hf \
+                         src/modules/pxOsd \
+                         src/modules/hdEmbree \
+                         src/modules/hdStream \
+                                                                      \
+                         ## "usdImaging" package \
+                         src/modules/usdImaging \
+                         src/modules/usdImagingGL \
+                         src/modules/usdSkelImaging \
+                         src/modules/usdviewq \
+                                                                      \
+                         ## "houdini" package \
+                         src/modules/gusd/overview.dox \
+                         src/modules/gusd \
+                         src/modules/OP_gusd \
+                                                                      \
+                         ## "katana" package \
+                         src/modules/usdKatana/overview.dox \
+                         src/modules/katanaAttrfncApi \
+                         src/modules/katanaOpApi \
+                         src/modules/katanaPluginApi \
+                         src/modules/usdKatana \
+                         src/modules/pxrUsdIn \
+                         src/modules/pxrUsdInPrman \
+                         src/modules/pxrUsdInShipped \
+                         src/modules/vmp_usd \
+                                                                      \
+                         ## "maya" package \
+                         src/modules/usdMaya/overview.dox \
+                         src/modules/pxrUsdMayaGL \
+                         src/modules/px_vp20 \
+                         src/modules/usdMaya \
+                         src/modules/pxrUsd \
+                                                                      \
+                         ## Everything else \
                          src/modules
-                         
+
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is

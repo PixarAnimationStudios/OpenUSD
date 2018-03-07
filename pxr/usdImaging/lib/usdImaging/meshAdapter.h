@@ -24,6 +24,8 @@
 #ifndef USDIMAGING_MESH_ADAPTER_H
 #define USDIMAGING_MESH_ADAPTER_H
 
+/// \file usdImaging/meshAdapter.h
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
@@ -89,6 +91,17 @@ public:
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
                                               TfToken const& propertyName);
+
+    USDIMAGING_API
+    virtual void MarkDirty(UsdPrim const& prim,
+                           SdfPath const& cachePath,
+                           HdDirtyBits dirty,
+                           UsdImagingIndexProxy* index) override;
+
+protected:
+    USDIMAGING_API
+    virtual void _RemovePrim(SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) override;
 
 private:
     void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);

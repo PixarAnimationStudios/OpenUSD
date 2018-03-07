@@ -250,6 +250,20 @@ HdResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
     _pendingComputations.emplace_back(range, computation);
 }
 
+static void
+_CopyChainedBuffers(HdBufferSourceSharedPtr const&  src,
+                    HdBufferArrayRangeSharedPtr const& range)
+{
+    if (src->HasChainedBuffer()) {
+        HdBufferSourceVector chainedSrcs = src->GetChainedBuffers();
+        // traverse the tree in a DFS fashion
+        for(auto& c : chainedSrcs) {
+            range->CopyData(c);
+            _CopyChainedBuffers(c, range);
+        }
+    }
+}
+
 void
 HdResourceRegistry::Commit()
 {
@@ -375,14 +389,8 @@ HdResourceRegistry::Commit()
                 // execute copy
                 reqIt->range->CopyData(*srcIt);
 
-                // also copy daisy chains
-                if ((*srcIt)->HasChainedBuffer()) {
-                    HdBufferSourceSharedPtr src = (*srcIt)->GetChainedBuffer();
-                    while(src) {
-                        reqIt->range->CopyData(src);
-                        src = src->GetChainedBuffer();
-                    }
-                }
+                // also copy any chained buffers
+                _CopyChainedBuffers(*srcIt, reqIt->range);
             }
 
             if (TfDebug::IsEnabled(HD_BUFFER_ARRAY_RANGE_CLEANED)) {

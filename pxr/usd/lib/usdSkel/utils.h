@@ -119,11 +119,15 @@ UsdSkelConcatJointTransforms(const UsdSkelTopology& topology,
 
 
 /// Compute an extent from a set of skel-space joint transform.
+/// The \p rootXform may also be provided to provide an additional
+/// root transformation on top of all joints. This is useful for
+/// computing extents relative to a different space.
 USDSKEL_API
 bool
 UsdSkelComputeJointsExtent(const VtMatrix4dArray& joints,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad=GfVec3f(0,0,0));
+                           float pad=0.0f,
+                           const GfMatrix4d* rootXform=nullptr);
 
 
 /// \overload
@@ -132,7 +136,8 @@ bool
 UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
                            size_t numXforms,
                            VtVec3fArray* extent,
-                           const GfVec3f& pad=GfVec3f(0,0,0));
+                           const GfVec3f& pad=GfVec3f(0,0,0),
+                           const GfMatrix4d* rootXform=nullptr);
 
 
 /// @}
@@ -252,24 +257,24 @@ USDSKEL_API
 bool
 UsdSkelExpandConstantInfluencesToVarying(VtFloatArray* weights, size_t size);
 
-/// Truncate the number of influences in a weight or indices array,
-/// which initially has \p numInfluencesPerComponent influences to have
-/// no more than  \p maxNumInfluencesPerComponent influences per component.
-/// When truncating weight arrays, weights will be renormalized if needed.
-/// This is a convenience method for clients that have a fixed limit
-/// on the number of influences that they can support.
+/// Resize the number of influences per component in a weight or indices array,
+/// which initially has \p srcNumInfluencesPerComponent influences to have
+/// no more than \p newNumInfluencesPerComponent influences per component.
+/// If the size decreases, influences are additionally re-normalized.
+/// This is a convenience method for clients that require a fixed number of
+/// of influences.
 USDSKEL_API
 bool
-UsdSkelTruncateInfluences(VtIntArray* indices,
-                          int numInfluencesPerComponent,
-                          int maxNumInfluencesPerComponent);
+UsdSkelResizeInfluences(VtIntArray* indices,
+                        int srcNumInfluencesPerComponent,
+                        int newNumInfluencesPerComponent);
 
 /// \overload
 USDSKEL_API
 bool
-UsdSkelTruncateInfluences(VtFloatArray* weights,
-                          int numInfluencesPerComponent,
-                          int maxNumInfluencesPerComponent);
+UsdSkelResizeInfluences(VtFloatArray* weights,
+                        int srcNumInfluencesPerComponent,
+                        int newNumInfluencesPerComponent);
 
 
 /// @}

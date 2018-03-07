@@ -25,13 +25,6 @@ over "GLOBAL" (
                 denote a collection-based binding to a UsdShadeMaterial.
                 """
             }
-            dictionary lookBinding = {
-                string value = "look:binding"
-                string doc = """The relationship name on non shading prims to
-                denote a binding to a UsdShadeLook. This is a deprecated
-                relationship and is superceded by material:binding.
-                """
-            }
             dictionary materialVariant = {
                 string doc = """The variant name of material variation
                 described on a UsdShadeMaterial.
@@ -260,20 +253,6 @@ class Material "Material" (
 ) {
 }
 
-class Look "Look" (
-    inherits = </Material>
-    doc = """\\deprecated Deprecated in favor of Material.
-    Please refer to UsdMaterial
-    """
-    customData = {
-        string extraIncludes = """
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdGeom/faceSetAPI.h"
-"""
-    }
-) {
-}
-
 class Shader "Shader" (
     inherits = </Typed>
     doc = """Base class for all USD shaders. Shaders are the building blocks
@@ -355,7 +334,7 @@ class "MaterialBindingAPI"
 (
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
-    (represented UsdCollectionAPI objects). 
+    (represented by UsdCollectionAPI objects). 
     
     In the USD shading model, each renderable gprim computes a single 
     <b>resolved Material</b> that will be used to shade the gprim (exceptions, 
@@ -438,6 +417,10 @@ class "MaterialBindingAPI"
     not authored (i.e. empty) on a binding-relationship, the default behavior 
     matches UsdShadeTokens->weakerThanDescendants.
 
+    \\note If a material binding relationship is a built-in property defined as 
+    part of a typed prim's schema, a fallback value should not be provided for 
+    it. This is because the "material resolution" algorithm only conisders 
+    <i>authored</i> properties.
     """ 
     customData = {
         string extraIncludes = """
@@ -445,7 +428,7 @@ class "MaterialBindingAPI"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/tokens.h"
-    """
+#include <tbb/concurrent_unordered_map.h>"""
     }
 )
 {
