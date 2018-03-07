@@ -208,6 +208,26 @@ public:
     virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
 
     // -----------------------------------------------------------------------//
+    /// \name Motion samples
+    // -----------------------------------------------------------------------//
+
+    /// Store up to \a maxSampleCount transform samples in \a *samples.
+    /// Returns the number of samples returned.
+    /// \see GetTransform()
+    HD_API
+    virtual size_t
+    SampleTransform(SdfPath const & id, size_t maxSampleCount,
+                    float *times, GfMatrix4d *samples);
+
+    /// Store up to \a maxSampleCount primvar samples in \a *samples.
+    /// Returns the number of samples returned.
+    /// \see Get()
+    HD_API
+    virtual size_t
+    SamplePrimvar(SdfPath const& id, TfToken const& key,
+                  size_t maxSampleCount, float *times, VtValue *samples);
+
+    // -----------------------------------------------------------------------//
     /// \name Instancer prototypes
     // -----------------------------------------------------------------------//
 

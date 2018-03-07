@@ -93,6 +93,16 @@ static bool _IsEnabledDrawModeCache() {
     return _v;
 }
 
+// Apply a relative offset to the given timecode.
+// This has no effect in the case of the default timecode.
+static UsdTimeCode
+_OffsetTime(UsdTimeCode basis, float offset)
+{
+    return basis.IsNumeric()
+        ? UsdTimeCode(basis.GetValue() + offset)
+        : basis;
+}
+
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
 // -------------------------------------------------------------------------- //
@@ -122,6 +132,11 @@ UsdImagingDelegate::UsdImagingDelegate(
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
 {
+    // Default to 2 samples: this frame and the next frame.
+    // XXX In the future this should be configurable via negotation
+    // between frontend and backend, or be provided otherwise.
+    _timeSampleOffsets.push_back(0.0);
+    _timeSampleOffsets.push_back(1.0);
 }
 
 UsdImagingDelegate::~UsdImagingDelegate()
@@ -2544,6 +2559,48 @@ UsdImagingDelegate::_GetTransform(UsdPrim prim) const
     return ctm;
 }
 
+size_t
+UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
+                                    float *times, GfMatrix4d *samples)
+{
+    SdfPath usdPath = GetPathForUsd(id);
+    UsdPrim prim = _stage->GetPrimAtPath(usdPath);
+    UsdPrim root = _stage->GetPrimAtPath(_compensationPath);
+
+    // Provide the number of time samples configured in _timeSampleOffsets,
+    // but limited to the caller's declared capacity.
+    size_t numSamples = std::min(maxNumSamples, _timeSampleOffsets.size());
+
+    // XXX: Although UsdGeomXformCache is the way to compute
+    // local-to-world CTM's in UsdGeom, it seems perhaps less than
+    // ideal here.  For one thing, this cache is transient.  We
+    // could re-use the cache, but given that we adjust its time
+    // parameter in the inner loop, it seems likely to just be
+    // invalidated frequently.  Worth revisiting if this shows
+    // up in profiling real usage.
+    UsdGeomXformCache xformCache(0.0);
+    for (size_t i=0; i < numSamples; ++i) {
+        xformCache.SetTime(_OffsetTime(_time, _timeSampleOffsets[i]));
+        bool resetXformStack;
+        times[i] = _timeSampleOffsets[i];
+        samples[i] = xformCache
+            .ComputeRelativeTransform(prim, root, &resetXformStack);
+    }
+
+    // Some backends benefit if they can avoid time sample animation
+    // for fixed transforms.  This is difficult to compute explicitly
+    // due to the hierarchial nature of concated transforms, so we
+    // do a post-pass sweep to detect static transforms here.
+    for (size_t i=1; i < numSamples; ++i) {
+        if (samples[i] != samples[0]) {
+            // At least 1 sample is different, so return them all.
+            return numSamples;
+        }
+    }
+    // All samples are the same, so just return 1.
+    return 1;
+}
+
 bool
 UsdImagingDelegate::IsInInvisedPaths(SdfPath const &usdPath) const
 {
@@ -2666,6 +2723,56 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     }
 
     return value;
+}
+
+/*virtual*/
+size_t
+UsdImagingDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
+                                  size_t maxNumSamples,
+                                  float *times, VtValue *samples)
+{
+    SdfPath usdPath = GetPathForUsd(id);
+    UsdPrim usdPrim = _GetPrim(usdPath);
+
+    // Try as USD primvar.
+    if (UsdGeomPrimvar pv = UsdGeomGprim(usdPrim).GetPrimvar(key)) {
+        if (pv.ValueMightBeTimeVarying()) {
+            size_t numSamples = std::min(maxNumSamples,
+                                         _timeSampleOffsets.size());
+            for (size_t i=0; i < numSamples; ++i) {
+                times[i] = _timeSampleOffsets[i];
+                pv.Get(&samples[i], _OffsetTime(_time, _timeSampleOffsets[i]));
+            }
+            return numSamples;
+        } else {
+            // Return a single sample for non-varying primvars
+            times[0] = 0;
+            pv.Get(samples, _time);
+            return 1;
+        }
+    }
+
+    // Try as USD attribute.  This handles cases like "points" that
+    // are considered primvars by Hydra but non-primvar attributes by USD.
+    if (UsdAttribute attr = usdPrim.GetAttribute(key)) {
+        if (attr.ValueMightBeTimeVarying()) {
+            size_t numSamples = std::min(maxNumSamples,
+                                         _timeSampleOffsets.size());
+            for (size_t i=0; i < numSamples; ++i) {
+                times[i] = _timeSampleOffsets[i];
+                attr.Get(&samples[i],
+                         _OffsetTime(_time, _timeSampleOffsets[i]));
+            }
+            return numSamples;
+        } else {
+            // Return a single sample for non-varying primvars
+            times[0] = 0;
+            attr.Get(samples, _time);
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 /*virtual*/

@@ -314,6 +314,17 @@ public:
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
                                              SdfPath const &prototypeId);
 
+    // Motion samples
+    USDIMAGING_API
+    virtual size_t
+    SampleTransform(SdfPath const & id, size_t maxNumSamples,
+                    float *times, GfMatrix4d *samples) override;
+    USDIMAGING_API
+    virtual size_t
+    SamplePrimvar(SdfPath const& id, TfToken const& key,
+                  size_t maxNumSamples, float *times,
+                  VtValue *samples) override;
+
     // Material Support
     USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id);
@@ -597,6 +608,9 @@ private:
 
     /// The current time from which the delegate will read data.
     UsdTimeCode _time;
+
+    /// The requested time offsets for time samples.
+    std::vector<float> _timeSampleOffsets;
 
     int _refineLevelFallback;
     TfToken _reprFallback;

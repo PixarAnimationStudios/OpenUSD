@@ -120,6 +120,21 @@ HdSceneDelegate::GetTransform(SdfPath const & id)
 }
 
 /*virtual*/
+size_t
+HdSceneDelegate::SampleTransform(SdfPath const & id,
+                                 size_t maxSampleCount,
+                                 float *times,
+                                 GfMatrix4d *samples)
+{
+    if (maxSampleCount > 0) {
+        times[0] = 0;
+        samples[0] = GetTransform(id);
+        return 1;
+    }
+    return 0;
+}
+
+/*virtual*/
 bool
 HdSceneDelegate::GetVisible(SdfPath const & id)
 {
@@ -159,6 +174,21 @@ VtValue
 HdSceneDelegate::Get(SdfPath const& id, TfToken const& key)
 {
     return VtValue();
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
+                               size_t maxSampleCount,
+                               float *times,
+                               VtValue *samples)
+{
+    if (maxSampleCount > 0) {
+        times[0] = 0;
+        samples[0] = Get(id, key);
+        return 1;
+    }
+    return 0;
 }
 
 /*virtual*/
