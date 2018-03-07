@@ -872,6 +872,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     HD_TRACE_FUNCTION();
     if (!glBindBuffer) return; // glew initialized
 
+    GLF_GROUP_FUNCTION();
+
     //
     // compile
     //
@@ -1020,6 +1022,8 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     if ((    _useDrawArrays && _numTotalVertices == 0) ||
         (!_useDrawArrays && _numTotalElements == 0)) return;
 
+    GLF_GROUP_FUNCTION();
+    
     //
     // draw
     //
@@ -1035,6 +1039,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     GLuint programId = glslProgram->GetProgram().GetId();
     TF_VERIFY(programId);
 
+    GlfDebugLabelProgram(programId, "DrawingProgram");
     glUseProgram(programId);
 
     const HdSt_ResourceBinder &binder = program.GetBinder();

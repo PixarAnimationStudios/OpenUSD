@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -263,6 +264,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         TF_CODING_ERROR("_SimpleBufferArrayRange expired unexpectedly.");
         return;
     }
+
+    GLF_GROUP_FUNCTION();
+
     int numElements = range->GetNumElements();
 
     TF_FOR_ALL (bresIt, GetResources()) {
@@ -454,6 +458,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
                         bufferSource->GetName().GetText());
         return;
     }
+    GLF_GROUP_FUNCTION();
+
     HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
 
     if (glBufferSubData != NULL) {

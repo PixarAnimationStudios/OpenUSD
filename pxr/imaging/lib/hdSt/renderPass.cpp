@@ -34,6 +34,8 @@
 
 #include "pxr/base/gf/frustum.h"
 
+#include "pxr/imaging/glf/diagnostic.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
@@ -56,6 +58,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // Downcast render pass state
     HdStRenderPassStateSharedPtr stRenderPassState =
@@ -106,6 +109,8 @@ HdSt_RenderPass::_PrepareCommandBuffer(
     HdStRenderPassStateSharedPtr const &renderPassState)
 {
     HD_TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
+    
     // ------------------------------------------------------------------- #
     // SCHEDULE PREPARATION
     // ------------------------------------------------------------------- #

@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include <boost/make_shared.hpp>
 #include <vector>
@@ -293,6 +294,8 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
                       curRangeOwner_->GetResource(bresIt->first));
         }
     }
+
+    GLF_GROUP_FUNCTION();
 
     // count up total elements and update new offsets
     size_t totalNumElements = 0;
@@ -653,7 +656,8 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
                    VBO->GetTupleType().count)) {
         return;
     }
-
+    GLF_GROUP_FUNCTION();
+    
     HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
     if (glBufferSubData) {
         int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());

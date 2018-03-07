@@ -42,6 +42,7 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glslfx.h"
 
 
@@ -277,6 +278,8 @@ HdStRenderDelegate::_CreateFallbackMaterialPrim()
 void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
+    GLF_GROUP_FUNCTION();
+    
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE
     // --------------------------------------------------------------------- //

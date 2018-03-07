@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 
@@ -108,6 +109,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     HdStBufferArrayRangeGLSharedPtr indexBarCurrent;
     HdStBufferArrayRangeGLSharedPtr elementBarCurrent;
