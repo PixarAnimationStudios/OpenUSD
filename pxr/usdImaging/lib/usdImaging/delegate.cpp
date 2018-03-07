@@ -61,6 +61,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
@@ -1124,12 +1125,13 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         TF_FOR_ALL(pathIt, pathsToResync) {
             SdfPath path = *pathIt;
             if (path.IsPropertyPath()) {
-                _RefreshObject(path, &indexProxy);
+                _RefreshObject(path, TfTokenVector(), &indexProxy);
             } else if (path.IsTargetPath()) {
                 // TargetPaths are their own path type, when they change, resync
                 // the relationship at which they're rooted; i.e. per-target
                 // invalidation is not supported.
-                _RefreshObject(path.GetParentPath(), &indexProxy);
+                _RefreshObject(path.GetParentPath(), TfTokenVector(),
+                               &indexProxy);
             } else if (path.IsAbsoluteRootOrPrimPath()) {
                 _ResyncPrim(path, &indexProxy);
             } else {
@@ -1147,18 +1149,24 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
     // Process Updates.
     //
     if (!_pathsToUpdate.empty()) {
-        SdfPathVector pathsToUpdate;
+        _PathsToUpdateMap pathsToUpdate;
         std::swap(pathsToUpdate, _pathsToUpdate);
         TF_FOR_ALL(pathIt, pathsToUpdate) {
-            if (pathIt->IsPropertyPath() || pathIt->IsAbsoluteRootOrPrimPath()){
-                _RefreshObject(*pathIt, &indexProxy);
+            const SdfPath& path = pathIt->first;
+            const TfTokenVector& changedPrimInfoFields = pathIt->second;
+
+            if (path.IsPropertyPath() || path.IsAbsoluteRootOrPrimPath()){
+                // Note that changedPrimInfoFields will be empty if the
+                // path is a property path.
+                _RefreshObject(path, changedPrimInfoFields, &indexProxy);
+
                 // If any objects were removed as a result of the refresh (if it
                 // internally decided to resync), they must be ejected now,
                 // before the next call to _RefereshObject.
                 indexProxy._ProcessRemovals();
             } else {
                 TF_RUNTIME_ERROR("Unexpected path type to update: <%s>",
-                        pathIt->GetText());
+                        path.GetText());
             }
         }
     }
@@ -1289,11 +1297,19 @@ UsdImagingDelegate::_OnObjectsChanged(UsdNotice::ObjectsChanged const& notice,
     const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
     for (PathRange::const_iterator it = pathsToUpdate.begin(); 
          it != pathsToUpdate.end(); ++it) {
-        // Ignore all changes to prims that have not changed any field values, 
-        // since these changes cannot affect any composed values consumed by 
-        // the adapters.
-        if (!it->IsAbsoluteRootOrPrimPath() || it.HasChangedFields()) {
-            _pathsToUpdate.push_back(*it);
+        if (it->IsAbsoluteRootOrPrimPath()) {
+            // Ignore all changes to prims that have not changed any field
+            // values, since these changes cannot affect any composed values 
+            // consumed by the adapters.
+            const TfTokenVector changedFields = it.GetChangedFields();
+            if (!changedFields.empty()) {
+                TfTokenVector& changedPrimInfoFields = _pathsToUpdate[*it];
+                changedPrimInfoFields.insert(
+                    changedPrimInfoFields.end(),
+                    changedFields.begin(), changedFields.end());
+            }
+        } else if (it->IsPropertyPath()) {
+            _pathsToUpdate.emplace(*it, TfTokenVector());
         }
     }
 
@@ -1533,95 +1549,103 @@ UsdImagingDelegate::_ResyncPrim(SdfPath const& rootPath,
 
 void 
 UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath, 
+                                   TfTokenVector const& changedInfoFields,
                                    UsdImagingIndexProxy* proxy) 
 {
-    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: %s\n",
-            usdPath.GetText());
+    TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: %s %s\n",
+            usdPath.GetText(), TfStringify(changedInfoFields).c_str());
 
-    // If this is not a property path, resync the prim.
-    if (!usdPath.IsPropertyPath()) {
-        _ResyncPrim(usdPath, proxy);
-        return;
-    }
-
-    // We are now dealing with a property path.
-
-    SdfPath const& usdPrimPath = usdPath.GetPrimPath();
-    TfToken const& attrName = usdPath.GetNameToken();
-
-    // If either model:drawMode or model:applyDrawMode changes, we need to
-    // repopulate the whole subtree starting at the owning prim.
-    if (attrName == UsdGeomTokens->modelDrawMode ||
-        attrName == UsdGeomTokens->modelApplyDrawMode) {
-        _ResyncPrim(usdPath, proxy, true);
-        return;
-    }
-
-    // If we're sync'ing a non-inherited property on a parent prim, we should
-    // fall through this function without updating anything. The following
-    // if-statement should ensure this.
-
-    // XXX: We must always scan for prefixed children, due to rprim fan-out from
-    // plugins (such as the PointInstancer).
-    
     SdfPathVector affectedPrims;
-    if (attrName == UsdGeomTokens->visibility
-        || attrName == UsdGeomTokens->purpose
-        || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName))
-    {
-        // Because these are inherited attributes, we must update all
-        // children.
-        HdPrimGather gather;
 
-        gather.Subtree(_usdIds.GetIds(), usdPrimPath, &affectedPrims);
-    } else {
-        // Only include non-inherited properties for prims that we are
-        // explicitly tracking in the render index.
-        _PrimInfoMap::const_iterator it = _primInfoMap.find(usdPrimPath);
-        if (it == _primInfoMap.end()) {
+    if (usdPath.IsAbsoluteRootOrPrimPath()) {
+        if (!GetPrimInfo(usdPath)) {
             return;
         }
-        affectedPrims.push_back(usdPrimPath);
+        affectedPrims.push_back(usdPath);
+    } else if (usdPath.IsPropertyPath()) {
+        SdfPath const& usdPrimPath = usdPath.GetPrimPath();
+        TfToken const& attrName = usdPath.GetNameToken();
+
+        // If either model:drawMode or model:applyDrawMode changes, we need to
+        // repopulate the whole subtree starting at the owning prim.
+        if (attrName == UsdGeomTokens->modelDrawMode ||
+            attrName == UsdGeomTokens->modelApplyDrawMode) {
+            _ResyncPrim(usdPath, proxy, true);
+            return;
+        }
+
+        // If we're sync'ing a non-inherited property on a parent prim, we 
+        // should fall through this function without updating anything. 
+        // The following if-statement should ensure this.
+        
+        // XXX: We must always scan for prefixed children, due to rprim fan-out 
+        // from plugins (such as the PointInstancer).
+        if (attrName == UsdGeomTokens->visibility
+            || attrName == UsdGeomTokens->purpose
+            || UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName))
+        {
+            // Because these are inherited attributes, we must update all
+            // children.
+            HdPrimGather gather;
+
+            gather.Subtree(_usdIds.GetIds(), usdPrimPath, &affectedPrims);
+        } else {
+            // Only include non-inherited properties for prims that we are
+            // explicitly tracking in the render index.
+            if (!GetPrimInfo(usdPrimPath)) {
+                return;
+            }
+            affectedPrims.push_back(usdPrimPath);
+        }
     }
 
     // PERFORMANCE: We could execute this in parallel, for large numbers of
     // prims.
-    TF_FOR_ALL(usdPathIt, affectedPrims) {
-        SdfPath const& usdPath = *usdPathIt;
+    TF_FOR_ALL(affectedPrimPathIt, affectedPrims) {
+        SdfPath const& affectedPrimPath = *affectedPrimPathIt;
 
-        _PrimInfo *primInfo = GetPrimInfo(usdPath);
+        _PrimInfo *primInfo = GetPrimInfo(affectedPrimPath);
 
         // Due to the ResyncPrim condition when AllDirty is returned below, we
         // may or may not find an associated primInfo for every prim in
         // affectedPrims. If we find no primInfo, the prim that was previously
         // affected by this refresh no longer exists and can be ignored.
         if (primInfo != nullptr &&
-            TF_VERIFY(primInfo->adapter, "%s", usdPath.GetText())) {
+            TF_VERIFY(primInfo->adapter, "%s", affectedPrimPath.GetText())) {
             _AdapterSharedPtr &adapter = primInfo->adapter;
 
             // For the dirty bits that we've been told changed, go re-discover
             // variability and stage the associated data.
-            HdDirtyBits dirtyBits =
-                               adapter->ProcessPropertyChange(primInfo->usdPrim,
-                                                              usdPath,
-                                                              attrName);
+            HdDirtyBits dirtyBits = HdChangeTracker::Clean;
+            if (usdPath.IsAbsoluteRootOrPrimPath()) {
+                dirtyBits = adapter->ProcessPrimChange(
+                    primInfo->usdPrim, affectedPrimPath, changedInfoFields);
+            } else if (usdPath.IsPropertyPath()) {
+                dirtyBits = adapter->ProcessPropertyChange(
+                    primInfo->usdPrim, affectedPrimPath, usdPath.GetNameToken());
+            } else {
+                TF_VERIFY(false, "Unexpected path: <%s>", usdPath.GetText());
+            }
 
-            if (dirtyBits != HdChangeTracker::AllDirty) {
+            if (dirtyBits == HdChangeTracker::Clean) {
+                // Do nothing
+            } else if (dirtyBits != HdChangeTracker::AllDirty) {
                 // Update Variability
-                adapter->TrackVariabilityPrep(primInfo->usdPrim, usdPath);
+                adapter->TrackVariabilityPrep(primInfo->usdPrim, 
+                                              affectedPrimPath);
                 adapter->TrackVariability(primInfo->usdPrim,
-                                          usdPath,
+                                          affectedPrimPath,
                                           &primInfo->timeVaryingBits);
 
                 // Propagate the dirty bits back out to the change tracker.
                 HdDirtyBits combinedBits =
                     dirtyBits | primInfo->timeVaryingBits;
                 if (combinedBits != HdChangeTracker::Clean) {
-                    adapter->MarkDirty(primInfo->usdPrim, usdPath,
+                    adapter->MarkDirty(primInfo->usdPrim, affectedPrimPath,
                                        combinedBits, proxy);
                 }
             } else {
-                _ResyncPrim(usdPath, proxy);
+                _ResyncPrim(affectedPrimPath, proxy);
             }
         }
     }
@@ -2114,12 +2138,12 @@ UsdImagingDelegate::_MarkSubtreeVisibilityDirty(SdfPath const &subtreeRoot)
         if (!instancer.IsEmpty()) {
             // XXX: workaround for per-instance visibility in nested case.
             // testPxUsdGeomGLPopOut/test_*_5, test_*_6
-            _pathsToUpdate.push_back(subtreeRoot);
+            _pathsToResync.push_back(subtreeRoot);
             return;
         } else if (_instancerPrimPaths.find(usdPath) != _instancerPrimPaths.end()) {
             // XXX: workaround for per-instance visibility in nested case.
             // testPxUsdGeomGLPopOut/test_*_5, test_*_6
-            _pathsToUpdate.push_back(subtreeRoot);
+            _pathsToResync.push_back(subtreeRoot);
             return;
         } else {
             adapter->MarkVisibilityDirty(primInfo->usdPrim,

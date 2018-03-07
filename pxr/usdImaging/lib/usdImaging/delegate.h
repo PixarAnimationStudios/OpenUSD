@@ -447,7 +447,13 @@ private:
 
     // The lightest-weight update, it does fine-grained invalidation of
     // individual properties at the given path (prim or property).
-    void _RefreshObject(SdfPath const& path, UsdImagingIndexProxy* proxy);
+    //
+    // If \p path is a prim path, changedPrimInfoFields will be populated
+    // with the list of scene description fields that caused this prim to
+    // be refreshed.
+    void _RefreshObject(SdfPath const& path, 
+                        TfTokenVector const& changedPrimInfoFields,
+                        UsdImagingIndexProxy* proxy);
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
@@ -599,7 +605,13 @@ private:
     // Change processing
     TfNotice::Key _objectsChangedNoticeKey;
     SdfPathVector _pathsToResync;
-    SdfPathVector _pathsToUpdate;
+
+    // Map from path of Usd object to update to list of changed scene 
+    // description fields for that object. This list of fields is only
+    // populated for prim paths.
+    typedef std::unordered_map<SdfPath, TfTokenVector, SdfPath::Hash> 
+        _PathsToUpdateMap;
+    _PathsToUpdateMap _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
     UsdImaging_MaterialBindingSupplementalCache _matBindingSupplCache;

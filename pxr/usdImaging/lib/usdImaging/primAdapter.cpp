@@ -28,6 +28,8 @@
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
+#include "pxr/usd/sdf/schema.h"
+
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -89,6 +91,27 @@ UsdImagingPrimAdapter::IsPopulatedIndirectly()
 {
     // By default, do not delay population.
     return false;
+}
+
+/*virtual*/
+HdDirtyBits 
+UsdImagingPrimAdapter::ProcessPrimChange(UsdPrim const& prim,
+                                         SdfPath const& cachePath,
+                                         TfTokenVector const& changedFields)
+{
+    // By default, resync the prim if there are any changes to non-plugin
+    // fields and ignore changes to built-in fields. Schemas typically register
+    // their own plugin metadata fields instead of relying on built-in fields.
+    const SdfSchema& schema = SdfSchema::GetInstance();
+    for (const TfToken& field : changedFields) {
+        const SdfSchema::FieldDefinition* fieldDef = 
+            schema.GetFieldDefinition(field);
+        if (fieldDef && fieldDef->IsPlugin()) {
+            return HdChangeTracker::AllDirty;
+        }
+    }
+
+    return HdChangeTracker::Clean;
 }
 
 /*virtual*/

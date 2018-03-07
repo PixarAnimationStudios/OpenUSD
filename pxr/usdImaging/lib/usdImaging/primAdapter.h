@@ -150,7 +150,22 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    /// Returns a bit mask of attributes to be udpated, or
+    /// Returns a bit mask of attributes to be updated, or
+    /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
+    ///
+    /// \p changedFields contains a list of changed scene description fields
+    /// for this prim. This may be empty in certain cases, like the addition
+    /// of an inert prim spec for the given \p prim.
+    ///
+    /// The default implementation returns HdChangeTracker::AllDirty if any of
+    /// the changed fields are plugin metadata fields, HdChangeTracker::Clean
+    /// otherwise.
+    USDIMAGING_API
+    virtual HdDirtyBits ProcessPrimChange(UsdPrim const& prim,
+                                          SdfPath const& cachePath,
+                                          TfTokenVector const& changedFields);
+
+    /// Returns a bit mask of attributes to be updated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
