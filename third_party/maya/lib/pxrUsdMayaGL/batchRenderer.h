@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYAGL_BATCH_RENDERER_H
 #define PXRUSDMAYAGL_BATCH_RENDERER_H
 
-/// \file batchRenderer.h
+/// \file pxrUsdMayaGL/batchRenderer.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
@@ -36,7 +36,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"
-#include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -63,12 +62,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-TF_DEBUG_CODES(
-    PXRUSDMAYAGL_QUEUE_INFO,
-    PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING
-);
 
 
 /// UsdMayaGLBatchRenderer is a singleton that shapes can use to get consistent

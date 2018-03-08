@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYAGL_SHAPE_ADAPTER_H
 #define PXRUSDMAYAGL_SHAPE_ADAPTER_H
 
-/// \file shapeAdapter.h
+/// \file pxrUsdMayaGL/shapeAdapter.h
 
 #include "pxr/pxr.h"
 
@@ -32,7 +32,6 @@
 #include "pxrUsdMayaGL/renderParams.h"
 
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/tf/debug.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
@@ -49,11 +48,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-TF_DEBUG_CODES(
-    PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE
-);
 
 
 class UsdMayaProxyDrawOverride;

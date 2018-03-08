@@ -27,6 +27,7 @@
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/debugCodes.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/sceneDelegate.h"
 #include "pxrUsdMayaGL/shapeAdapter.h"
@@ -43,7 +44,6 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -59,7 +59,6 @@
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -94,18 +93,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((Viewport2, "Viewport2"))
     ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
 );
-
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_QUEUE_INFO,
-        "Prints out batch renderer queuing info.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING,
-        "Reports on changes in the sets of shape adapters registered with the "
-        "batch renderer.");
-}
 
 
 /// Struct to hold all the information needed for a draw request in the legacy

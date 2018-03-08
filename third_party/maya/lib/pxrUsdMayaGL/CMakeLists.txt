@@ -29,6 +29,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         batchRenderer
+        debugCodes
         hdRenderer
         proxyDrawOverride
         proxyShapeUI

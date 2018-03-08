@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/batchRenderer.h"
+#include "pxrUsdMayaGL/debugCodes.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 #include "usdMaya/proxyShape.h"
@@ -35,7 +36,6 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
@@ -73,14 +73,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((RenderGuidesTag, "render"))
 );
-
-
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE,
-        "Report Maya Hydra shape adapter lifecycle events.");
-}
 
 
 PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()
