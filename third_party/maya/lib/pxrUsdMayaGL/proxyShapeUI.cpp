@@ -26,7 +26,7 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
 #include "pxr/base/gf/vec3f.h"

@@ -21,15 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file softSelectHelper.h
-///
+#ifndef PXRUSDMAYAGL_SOFT_SELECT_HELPER_H
+#define PXRUSDMAYAGL_SOFT_SELECT_HELPER_H
 
-#ifndef PXRUSDMAYAGL_SOFTSELECTHELPER_H
-#define PXRUSDMAYAGL_SOFTSELECTHELPER_H
+/// \file pxrUsdMayaGL/softSelectHelper.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
+
 #include "pxr/base/tf/hash.h"
 
 #include <maya/MColor.h>
@@ -38,6 +37,7 @@
 #include <maya/MString.h>
 
 #include <unordered_map>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -103,4 +103,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYAGL_SOFTSELECTHELPER_H
+
+#endif // PXRUSDMAYAGL_SOFT_SELECT_HELPER_H

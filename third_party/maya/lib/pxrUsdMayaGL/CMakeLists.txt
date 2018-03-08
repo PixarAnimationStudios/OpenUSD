@@ -36,6 +36,7 @@ pxr_shared_library(${PXR_PACKAGE}
         sceneDelegate
         shapeAdapter
         softSelectHelper
+        usdProxyShapeAdapter
 
     DISABLE_PRECOMPILED_HEADERS
 )

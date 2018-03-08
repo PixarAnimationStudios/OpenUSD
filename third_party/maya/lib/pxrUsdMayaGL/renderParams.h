@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYAGL_RENDER_PARAMS_H
 #define PXRUSDMAYAGL_RENDER_PARAMS_H
 
-/// \file renderParams.h
+/// \file pxrUsdMayaGL/renderParams.h
 
 #include "pxr/pxr.h"
 

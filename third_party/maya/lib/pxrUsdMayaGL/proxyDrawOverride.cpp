@@ -26,7 +26,7 @@
 
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
 #include "usdMaya/proxyShape.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -103,7 +103,7 @@ UsdMayaProxyDrawOverride::transform(
     MStatus status;
     const MMatrix transform = objPath.inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
-        const_cast<PxrMayaHdShapeAdapter&>(_shapeAdapter).SetRootXform(
+        const_cast<PxrMayaHdUsdProxyShapeAdapter&>(_shapeAdapter).SetRootXform(
             GfMatrix4d(transform.matrix));
     }
 

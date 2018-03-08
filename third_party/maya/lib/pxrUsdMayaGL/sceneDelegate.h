@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYAGL_SCENE_DELEGATE_H
 #define PXRUSDMAYAGL_SCENE_DELEGATE_H
 
-/// \file sceneDelegate.h
+/// \file pxrUsdMayaGL/sceneDelegate.h
 
 #include "pxr/pxr.h"
 

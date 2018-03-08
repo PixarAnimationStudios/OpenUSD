@@ -21,26 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file hdRenderer.h
-///
+#ifndef PXRUSDMAYAGL_HD_RENDERER_H
+#define PXRUSDMAYAGL_HD_RENDERER_H
 
-#ifndef PXRUSDMAYAGL_HDRENDERER_H
-#define PXRUSDMAYAGL_HDRENDERER_H
+/// \file pxrUsdMayaGL/hdRenderer.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
 
-#include "pxr/usd/usd/stage.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 
 #include <memory>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -158,4 +163,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYAGL_HDRENDERER_H
+#endif // PXRUSDMAYAGL_HD_RENDERER_H
