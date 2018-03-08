@@ -24,8 +24,23 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/stackTrace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    VT_LOG_STACK_ON_ARRAY_DETACH_COPY, false,
+    "Log a stack trace when a VtArray is copied to detach it from shared "
+    "storage, to help track down unintended copies.");
+
+void
+Vt_ArrayBase::_DetachCopyHook(char const *funcName) const
+{
+    static bool log = TfGetEnvSetting(VT_LOG_STACK_ON_ARRAY_DETACH_COPY);
+    if (ARCH_UNLIKELY(log)) {
+        TfLogStackTrace(TfStringPrintf("Detach/copy VtArray (%s)", funcName));
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
