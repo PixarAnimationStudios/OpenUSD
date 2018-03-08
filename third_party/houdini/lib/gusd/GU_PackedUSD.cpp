@@ -782,6 +782,10 @@ GusdGU_PackedUSD::getInstanceKey(UT_Options& key) const
     if( !m_masterPathCacheValid ) {
         UsdPrim usdPrim = getUsdPrim();
 
+        if( !usdPrim ) {
+            return true;
+        }
+
         // Disambiguate masters of instances by including the stage pointer.
         // Sometimes instances are opened on different stages, so their
         // path will both be "/__Master_1" even if they are different prims.
