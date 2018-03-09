@@ -208,15 +208,6 @@ UsdRiStatementsAPI::CreateRiAttribute(
     return attr;
 }
 
-UsdRelationship
-UsdRiStatementsAPI::CreateRiAttributeAsRel(
-    const TfToken& name,
-    const string &nameSpace)
-{
-    TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
-    return GetPrim().CreateRelationship(fullName, /* custom = */ false);
-}
-
 std::vector<UsdProperty>
 UsdRiStatementsAPI::GetRiAttributes(
     const string &nameSpace) const
