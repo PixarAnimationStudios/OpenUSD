@@ -67,6 +67,10 @@ pxr_shared_library(${PXR_PACKAGE}
         MayaPrimWriter
         MayaTransformWriter
         FunctorPrimWriter
+
+        primReader
+        functorPrimReader
+
         JobArgs
         usdReadJob
         usdWriteJob

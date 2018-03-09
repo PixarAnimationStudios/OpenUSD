@@ -43,14 +43,14 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
         (PrimReader)
 );
 
-typedef std::map<TfToken, PxrUsdMayaPrimReaderRegistry::ReaderFn> _Registry;
+typedef std::map<TfToken, PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
 static _Registry _reg;
 
 /* static */
 void 
 PxrUsdMayaPrimReaderRegistry::Register(
         const TfType& t,
-        PxrUsdMayaPrimReaderRegistry::ReaderFn fn)
+        PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn fn)
 {
     TfToken tfTypeName(t.GetTypeName());
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
@@ -64,7 +64,7 @@ PxrUsdMayaPrimReaderRegistry::Register(
 }
 
 /* static */
-PxrUsdMayaPrimReaderRegistry::ReaderFn
+PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn
 PxrUsdMayaPrimReaderRegistry::Find(
         const TfToken& usdTypeName)
 {
@@ -75,7 +75,7 @@ PxrUsdMayaPrimReaderRegistry::Find(
     TfType tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
     std::string typeNameStr = tfType.GetTypeName();
     TfToken typeName(typeNameStr);
-    ReaderFn ret = NULL;
+    ReaderFactoryFn ret = NULL;
     if (TfMapLookup(_reg, typeName, &ret)) {
         return ret;
     }

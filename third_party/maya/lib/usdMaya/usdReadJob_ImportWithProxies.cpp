@@ -298,9 +298,12 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
             return false;
         }
 
-        if (PxrUsdMayaPrimReaderRegistry::ReaderFn primReader =
+        if (PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn =
                 PxrUsdMayaPrimReaderRegistry::Find(cameraPrim.GetTypeName())) {
-            primReader(args, &ctx);
+            PxrUsdMayaPrimReaderPtr primReader = factoryFn(args, &ctx);
+            if (primReader) {
+                primReader->Read();
+            }
         }
     }
 
