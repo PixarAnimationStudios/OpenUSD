@@ -47,6 +47,7 @@ pxr_library(glf
         baseTexture
         baseTextureData
         bindingMap
+        contextCaps
         diagnostic
         drawTarget
         glew

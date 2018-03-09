@@ -79,9 +79,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_MDI, "Report info related to multi-draw-indirect batches");
 
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RENDER_CONTEXT_CAPS,
-                                "Report when render context caps are initialized");
-
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_ADDED, "Report when rprims are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_CLEANED, "Report when rprims are fully cleaned");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_RPRIM_REMOVED, "Report when rprims are removed");

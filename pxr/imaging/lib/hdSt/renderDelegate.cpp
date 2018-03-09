@@ -34,7 +34,6 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/points.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/texture.h"
@@ -42,6 +41,7 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glslfx.h"
 
@@ -306,7 +306,7 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 bool
 HdStRenderDelegate::IsSupported()
 {
-    return HdStRenderContextCaps::GetInstance().SupportsHydra();
+    return (GlfContextCaps::GetInstance().glVersion >= 400);
 }
 
 

@@ -33,10 +33,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
+    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_CONTEXT_CAPS,
+        "Glf report when context caps are initialized and dump contents");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_ERROR_STACKTRACE,
-	"Glf dump stack trace on GL error");
+        "Glf dump stack trace on GL error");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_GLSLFX,
-	"Glf GLSLFX info");
+        "Glf GLSLFX info");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,
         "Glf texture image plugin registration");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_PLUGINS,

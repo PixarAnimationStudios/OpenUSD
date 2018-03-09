@@ -22,11 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
+
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceGL.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
@@ -140,11 +141,11 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
     // GL context caps
     const bool ssboEnabled
-        = HdStRenderContextCaps::GetInstance().shaderStorageBufferEnabled;
+        = GlfContextCaps::GetInstance().shaderStorageBufferEnabled;
     const bool bindlessUniformEnabled
-        = HdStRenderContextCaps::GetInstance().bindlessBufferEnabled;
+        = GlfContextCaps::GetInstance().bindlessBufferEnabled;
     const bool bindlessTextureEnabled
-        = HdStRenderContextCaps::GetInstance().bindlessTextureEnabled;
+        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
 
     HdBinding::Type arrayBufferBindingType = HdBinding::TBO;  // 3.0
     if (bindlessUniformEnabled) {
@@ -1086,7 +1087,7 @@ HdSt_ResourceBinder::BindUniformf(TfToken const &name,
 void
 HdSt_ResourceBinder::IntrospectBindings(HdStResourceGL const & programResource)
 {
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     GLuint program = programResource.GetId();
 

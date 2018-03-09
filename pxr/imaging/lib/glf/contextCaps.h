@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_RENDER_CONTEXT_CAPS_H
-#define HDST_RENDER_CONTEXT_CAPS_H
+#ifndef GLF_CONTEXT_CAPS_H
+#define GLF_CONTEXT_CAPS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/glf/api.h"
 #include "pxr/base/tf/singleton.h"
 
 #include <boost/noncopyable.hpp>
@@ -33,11 +33,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class HdStRenderContextCaps
+/// \class GlfContextCaps
 ///
 /// This class is intended to be a cache of the capabilites
 /// (resource limits and features) of the underlying
-///  render context.
+/// GL context.
 ///
 /// It serves two purposes.  Firstly to reduce driver
 /// transition overhead of querying these values.
@@ -51,16 +51,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     subscribe to when the caps changes, so they can
 ///     update and invalidate.
 ///
-class HdStRenderContextCaps : boost::noncopyable {
+class GlfContextCaps : boost::noncopyable {
 public:
-    HDST_API
-    static HdStRenderContextCaps &GetInstance();
 
-    /// Returns true if the current GL context supports Hydra.
-    /// Minimum OpenGL version to run Hydra is currently OpenGL 4.0.
-    /// Note that glew needs to be initialized too.
-    HDST_API
-    bool SupportsHydra() const;
+    GLF_API
+    static GlfContextCaps &GetInstance();
 
     // GL version
     int glVersion;                    // 400 (4.0), 410 (4.1), ...
@@ -88,20 +83,17 @@ public:
     // workarounds for driver issues
     bool copyBufferEnabled;
 
-    // GPU compute
-    bool gpuComputeEnabled;           // GPU subdivision, smooth normals  (4.3)
-
 private:
     void _LoadCaps();
-    HdStRenderContextCaps();
-    ~HdStRenderContextCaps() = default;
+    GlfContextCaps();
+    ~GlfContextCaps() = default;
 
-    friend class TfSingleton<HdStRenderContextCaps>;
+    friend class TfSingleton<GlfContextCaps>;
 };
 
-HDST_API_TEMPLATE_CLASS(TfSingleton<HdStRenderContextCaps>);
+GLF_API_TEMPLATE_CLASS(TfSingleton<GlfContextCaps>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_RENDER_CONTEXT_CAPS_H
+#endif // GLF_CONTEXT_CAPS_H
 

@@ -58,7 +58,6 @@ pxr_library(hdSt
         package
         persistentBuffer
         points
-        renderContextCaps
         renderDelegate
         renderPass
         renderPassShader

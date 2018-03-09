@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdSt/renderContextCaps.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
-#include "pxr/imaging/hd/debugCodes.h"
+#include "pxr/imaging/glf/debugCodes.h"
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -36,38 +36,27 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_INSTANTIATE_SINGLETON(HdStRenderContextCaps);
+TF_INSTANTIATE_SINGLETON(GlfContextCaps);
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SHADER_STORAGE_BUFFER, true,
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_STORAGE_BUFFER, true,
                       "Use GL shader storage buffer (OpenGL 4.3)");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_BINDLESS_BUFFER, false,
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_BUFFER, false,
                       "Use GL bindless buffer extention");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_BINDLESS_TEXTURE, false,
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extention");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_MULTI_DRAW_INDIRECT, true,
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use GL mult draw indirect extention");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_DIRECT_STATE_ACCESS, true,
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
-TF_DEFINE_ENV_SETTING(HD_ENABLE_COPY_BUFFER, true,
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
                       "Use GL copy buffer data");
 
-TF_DEFINE_ENV_SETTING(HD_GLSL_VERSION, 0,
+TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
                       "GLSL version");
 
-// To enable GPU compute features, OpenSubdiv must be configured to support
-// GLSL compute kernel.
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-// default to GPU
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
-                      "Enable GPU smooth, quadrangulation and refinement");
-#else
-// default to CPU
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
-                      "Enable GPU smooth, quadrangulation and refinement");
-#endif
 
 // Initialize members to ensure a sane starting state.
-HdStRenderContextCaps::HdStRenderContextCaps()
+GlfContextCaps::GlfContextCaps()
     : glVersion(0)
     , maxUniformBlockSize(0)
     , maxShaderStorageBlockSize(0)
@@ -83,13 +72,12 @@ HdStRenderContextCaps::HdStRenderContextCaps()
     , explicitUniformLocation(false)
     , shadingLanguage420pack(false)
     , copyBufferEnabled(true)
-    , gpuComputeEnabled(false)
 {
 }
 
 /*static*/
-HdStRenderContextCaps&
-HdStRenderContextCaps::GetInstance()
+GlfContextCaps&
+GlfContextCaps::GetInstance()
 {
     // Make sure the render context caps have been populated.
     // This needs to be called on a thread that has the gl context
@@ -102,23 +90,13 @@ HdStRenderContextCaps::GetInstance()
     // XXX: Move this to an render context change event api. (bug #124971)
 
     static std::once_flag renderContextLoad;
-    HdStRenderContextCaps& caps = TfSingleton<HdStRenderContextCaps>::GetInstance();
+    GlfContextCaps& caps = TfSingleton<GlfContextCaps>::GetInstance();
     std::call_once(renderContextLoad, [&caps](){ caps._LoadCaps(); });
     return caps;
 }
 
-bool
-HdStRenderContextCaps::SupportsHydra() const
-{
-    // Minimum OpenGL version to run Hydra. Currently, OpenGL 4.0.
-    if (glVersion >= 400) {
-        return true;
-    }
-    return false;
-}
-
 void
-HdStRenderContextCaps::_LoadCaps()
+GlfContextCaps::_LoadCaps()
 {
     // XXX: consider to move this class into glf
 
@@ -222,26 +200,26 @@ HdStRenderContextCaps::_LoadCaps()
     }
 
     // Environment variable overrides (only downgrading is possible)
-    if (!TfGetEnvSetting(HD_ENABLE_SHADER_STORAGE_BUFFER)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_SHADER_STORAGE_BUFFER)) {
         shaderStorageBufferEnabled = false;
     }
-    if (!TfGetEnvSetting(HD_ENABLE_BINDLESS_TEXTURE)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_TEXTURE)) {
         bindlessTextureEnabled = false;
     }
-    if (!TfGetEnvSetting(HD_ENABLE_BINDLESS_BUFFER)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_BUFFER)) {
         bindlessBufferEnabled = false;
     }
-    if (!TfGetEnvSetting(HD_ENABLE_MULTI_DRAW_INDIRECT)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
     }
-    if (!TfGetEnvSetting(HD_ENABLE_DIRECT_STATE_ACCESS)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_DIRECT_STATE_ACCESS)) {
         directStateAccessEnabled = false;
     }
 
     // For debugging and unit testing
-    if (TfGetEnvSetting(HD_GLSL_VERSION) > 0) {
+    if (TfGetEnvSetting(GLF_GLSL_VERSION) > 0) {
         // GLSL version override
-        glslVersion = std::min(glslVersion, TfGetEnvSetting(HD_GLSL_VERSION));
+        glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
 
         // downgrade to the overridden GLSL version
         explicitUniformLocation    &= (glslVersion >= 430);
@@ -253,28 +231,13 @@ HdStRenderContextCaps::_LoadCaps()
     }
 
     // For driver issues workaround
-    if (!TfGetEnvSetting(HD_ENABLE_COPY_BUFFER)) {
+    if (!TfGetEnvSetting(GLF_ENABLE_COPY_BUFFER)) {
         copyBufferEnabled = false;
     }
 
-    // GPU Compute
-    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-        if (glslVersion >= 430 && shaderStorageBufferEnabled) {
-            gpuComputeEnabled = true;
-        } else {
-            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
-                    "(OpenGL 4.3 required).\n");
-        }
-#else
-        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
-                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
-#endif
-    }
-
-    if (TfDebug::IsEnabled(HD_RENDER_CONTEXT_CAPS)) {
+    if (TfDebug::IsEnabled(GLF_DEBUG_CONTEXT_CAPS)) {
         std::cout
-            << "HdStRenderContextCaps: \n"
+            << "GlfContextCaps: \n"
             << "  GL version                         = "
             <<    glVersion << "\n"
             << "  GLSL version                       = "
@@ -304,8 +267,6 @@ HdStRenderContextCaps::_LoadCaps()
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
 
-            << "  GPU Compute                        = "
-            <<    gpuComputeEnabled << "\n"
             ;
 
         if (!copyBufferEnabled) {

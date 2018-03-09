@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -31,7 +32,6 @@
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/rendererPluginRegistry.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -654,12 +654,17 @@ void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
     // User is responsible for initializing GL context and glew
-    if (!HdStRenderContextCaps::GetInstance().SupportsHydra()) {
+    // XXX: This is the wrong check!  Clean up of this function to follow.
+    if (GlfContextCaps::GetInstance().glVersion < 400) {
         TF_CODING_ERROR("Current GL context doesn't support Hydra");
         return;
     }
 
-    // XXX: HdEngine should do this.
+    // We must bind a VAO (Vertex Array Object) because core profile 
+    // contexts do not have a default vertex array object. VAO objects are 
+    // container objects which are not shared between contexts, so we create 
+    // and bind a VAO here so that core rendering code does not have to 
+    // explicitly manage per-GL context state.
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);

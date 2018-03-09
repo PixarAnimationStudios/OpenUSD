@@ -30,7 +30,6 @@
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/extComputation.h"
@@ -358,7 +357,7 @@ HdSt_GetExtComputationPrimVarsComputations(
 
             if (sourceComp != nullptr) {
                 
-                if (HdStRenderContextCaps::GetInstance().gpuComputeEnabled &&
+                if (HdStGLUtils::IsGpuComputeEnabled() &&
                     !sourceComp->GetKernel().empty()) {
 
                     HdBufferSourceSharedPtr primVarBufferSource(

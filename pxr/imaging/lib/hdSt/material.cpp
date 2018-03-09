@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -160,7 +160,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
                 sources.push_back(source);
             } else if (paramIt->IsTexture()) {
-                bool bindless = HdStRenderContextCaps::GetInstance()
+                bool bindless = GlfContextCaps::GetInstance()
                                                         .bindlessTextureEnabled;
                 // register bindless handle
 
