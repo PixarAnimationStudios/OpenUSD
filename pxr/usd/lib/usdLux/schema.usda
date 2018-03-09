@@ -328,7 +328,7 @@ class DiskLight "DiskLight" (
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the disk."
     )
 }
@@ -337,13 +337,13 @@ class RectLight "RectLight" (
     inherits = </Light>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
-    The rectangle is 1 unit long in local space."""
+    The rectangle is 1 unit in length in the X and Y axis."""
 ) {
     float width = 1 (
-        doc = "Width of the rectangle."
+        doc = "Width of the rectangle, in the local X axis."
     )
     float height = 1 (
-        doc = "Height of the rectangle."
+        doc = "Height of the rectangle, in the local Y axis."
     )
     asset texture:file (
         doc = """A color texture to use on the rectangle."""
@@ -354,17 +354,35 @@ class SphereLight "SphereLight" (
     inherits = </Light>
     doc = """Light emitted outward from a sphere."""
 ) {
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the sphere."
+    )
+    bool treatAsPoint = false (
+        doc = """A hint that this light can be treated as a 'point'
+        light (effectively, a zero-radius sphere) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
 }
 
 class CylinderLight "CylinderLight" (
     inherits = </Light>
-    doc = """Light emitted outward from a cylinder."""
+    doc = """Light emitted outward from a cylinder.
+    The cylinder is centered at the origin and has its major axis on the X axis.
+    The cylinder does not emit light from the flat end-caps.
+    """
 ) {
-    float radius = 1 (
+    float length = 1 (
+        doc = "Width of the rectangle, in the local X axis."
+    )
+    float radius = 0.5 (
         doc = "Radius of the cylinder."
+    )
+    bool treatAsLine = false (
+        doc = """A hint that this light can be treated as a 'line'
+        light (effectively, a zero-radius cylinder) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
 }
 

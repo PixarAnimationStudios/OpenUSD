@@ -114,6 +114,23 @@ UsdLuxSphereLight::CreateRadiusAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
+UsdAttribute
+UsdLuxSphereLight::GetTreatAsPointAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->treatAsPoint);
+}
+
+UsdAttribute
+UsdLuxSphereLight::CreateTreatAsPointAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->treatAsPoint,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -132,6 +149,7 @@ UsdLuxSphereLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdLuxTokens->radius,
+        UsdLuxTokens->treatAsPoint,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -156,7 +156,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// \n  Fallback Value: 0.5
     USDLUX_API
     UsdAttribute GetRadiusAttr() const;
 
@@ -167,6 +167,30 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDLUX_API
     UsdAttribute CreateRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // TREATASPOINT 
+    // --------------------------------------------------------------------- //
+    /// A hint that this light can be treated as a 'point'
+    /// light (effectively, a zero-radius sphere) by renderers that
+    /// benefit from non-area lighting. Renderers that only support
+    /// area lights can disregard this.
+    ///
+    /// \n  C++ Type: bool
+    /// \n  Usd Type: SdfValueTypeNames->Bool
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: False
+    USDLUX_API
+    UsdAttribute GetTreatAsPointAttr() const;
+
+    /// See GetTreatAsPointAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreateTreatAsPointAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

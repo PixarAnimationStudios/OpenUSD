@@ -50,12 +50,25 @@ By convention, lights with a primary axis emit along -Z.
 Area lights are centered in the XY plane and are 1 unit in diameter.
 
 UsdLux objects are UsdGeomXformable, so they use its set of
-transform operators and inherit transforms hierarchically.
+transform operators, and inherit transforms hierarchically.
+It is recommended that only translation and rotations be used
+with lights, to avoid introducing difficulties for light sampling
+and integration.  Lights have explicit attributes to adjust their size.
 
 UsdLux includes both a light that uses arbitrary user-supplied geometry,
-as well as lights for specific shapes: spheres, rectangles, and
-disks. The latter exist because they often offer superior sampling
-behavior.
+as well as lights for specific shapes: spheres, rectangles, disks,
+and cylinders.  The specific shapes exist because they can support
+superior, analytic sampling methods.
+
+UsdLux is designed primarily for physically-based cinematic lighting with
+area lights.  Accordingly, it does not include zero-area point or line
+lights.  However, some backends benefit from a point or line approximation.
+This intent can be indicated using the treatAsPoint and treatAsLine
+attributes on UsdSphereLight and UsdCylinderLight.  These attributes
+are hints that avoid the need for backends to use heuristics (such as
+an arbitrary epsilon threshold) to determine the approximation. These
+hints can be set at the time of creation (or export) where the most
+information about the visual intent exists.
 
 To support efficient sampling, these specialized types place
 restrictions on their local-to-world transform. For example,
@@ -63,8 +76,6 @@ a sphere may only be scaled uniformly. Because arbitrary
 transforms may be inherited from parent prims, it is necessary to
 explicitly compute the "effective" transform for such lights using
 UsdLuxLight::ComputeEffectiveTransform().
-
-\b TODO: document effective transform API once added
 
 To clarify geometric semantics and aid pipeline integration,
 UsdLux includes code to compute guide geometry for interactive

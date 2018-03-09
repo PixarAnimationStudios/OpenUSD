@@ -157,7 +157,7 @@ public:
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
     /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: 1.0
+    /// \n  Fallback Value: 0.5
     USDLUX_API
     UsdAttribute GetRadiusAttr() const;
 
