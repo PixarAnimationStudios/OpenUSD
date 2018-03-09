@@ -10,7 +10,6 @@ endif()
 
 pxr_library(hdSt
     LIBRARIES
-        cameraUtil
         garch
         glf
         hd
@@ -27,7 +26,6 @@ pxr_library(hdSt
         basisCurves
         bufferArrayRangeGL
         bufferResourceGL
-        camera
         commandBuffer
         computeShader
         copyComputation

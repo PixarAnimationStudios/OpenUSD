@@ -44,7 +44,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
@@ -90,9 +90,9 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
 
         renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache& cache = _valueCacheMap[_cameraId];
-        cache[HdStCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdStCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdStCameraTokens->windowPolicy] = VtValue();  // no window policy.
+        cache[HdCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
+        cache[HdCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
+        cache[HdCameraTokens->windowPolicy] = VtValue();  // no window policy.
     }
 
     // simple lighting task (for Hydra native)
@@ -132,13 +132,13 @@ PxrMayaHdSceneDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache& cache = _valueCacheMap[_cameraId];
-    cache[HdStCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
-    cache[HdStCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
-    cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
+    cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
+    cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
+    cache[HdCameraTokens->windowPolicy] = VtValue(); // no window policy.
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
-                                                       HdStCamera::AllDirty);
+                                                       HdCamera::AllDirty);
 
     if (_viewport != viewport) {
         _viewport = viewport;

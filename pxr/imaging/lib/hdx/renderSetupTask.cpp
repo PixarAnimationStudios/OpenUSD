@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -169,18 +169,18 @@ void
 HdxRenderSetupTask::SyncCamera()
 {
     const HdRenderIndex &renderIndex = GetDelegate()->GetRenderIndex();
-    const HdStCamera *camera = static_cast<const HdStCamera *>(
+    const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 
     if (camera && _renderPassState) {
-        VtValue modelViewVt  = camera->Get(HdStCameraTokens->worldToViewMatrix);
-        VtValue projectionVt = camera->Get(HdStCameraTokens->projectionMatrix);
+        VtValue modelViewVt  = camera->Get(HdCameraTokens->worldToViewMatrix);
+        VtValue projectionVt = camera->Get(HdCameraTokens->projectionMatrix);
         GfMatrix4d modelView = modelViewVt.Get<GfMatrix4d>();
         GfMatrix4d projection= projectionVt.Get<GfMatrix4d>();
 
         // If there is a window policy available in this camera
         // we will extract it and adjust the projection accordingly.
-        VtValue windowPolicy = camera->Get(HdStCameraTokens->windowPolicy);
+        VtValue windowPolicy = camera->Get(HdCameraTokens->windowPolicy);
         if (windowPolicy.IsHolding<CameraUtilConformWindowPolicy>()) {
             const CameraUtilConformWindowPolicy policy = 
                 windowPolicy.Get<CameraUtilConformWindowPolicy>();
@@ -189,7 +189,7 @@ HdxRenderSetupTask::SyncCamera()
                 _viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
         }
 
-        const VtValue &vClipPlanes = camera->Get(HdStCameraTokens->clipPlanes);
+        const VtValue &vClipPlanes = camera->Get(HdCameraTokens->clipPlanes);
         const HdRenderPassState::ClipPlanesVector &clipPlanes =
             vClipPlanes.Get<HdRenderPassState::ClipPlanesVector>();
 

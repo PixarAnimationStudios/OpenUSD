@@ -25,10 +25,10 @@
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/drawTargetAttachmentDescArray.h"
 #include "pxr/imaging/hdSt/drawTargetTextureResource.h"
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -207,7 +207,7 @@ HdStDrawTarget::WriteToFile(const HdRenderIndex &renderIndex,
         return false;
     }
 
-    const HdStCamera *camera = _GetCamera(renderIndex);
+    const HdCamera *camera = _GetCamera(renderIndex);
     if (camera == nullptr) {
         TF_WARN("Missing camera\n");
         return false;
@@ -347,10 +347,10 @@ HdStDrawTarget::_SetAttachments(
 }
 
 
-const HdStCamera *
+const HdCamera *
 HdStDrawTarget::_GetCamera(const HdRenderIndex &renderIndex) const
 {
-    return static_cast<const HdStCamera *>(
+    return static_cast<const HdCamera *>(
             renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
 }
 

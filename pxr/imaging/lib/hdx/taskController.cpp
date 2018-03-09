@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/hdx/taskController.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
@@ -74,7 +74,7 @@ std::vector<GfVec4d>
 HdxTaskController::_Delegate::GetClipPlanes(SdfPath const& cameraId)
 {
     return GetParameter<std::vector<GfVec4d>>(cameraId,
-                HdStCameraTokens->clipPlanes);
+                HdCameraTokens->clipPlanes);
 }
 
 // ---------------------------------------------------------------------------
@@ -114,13 +114,13 @@ HdxTaskController::_CreateCamera()
     GetRenderIndex()->InsertSprim(HdPrimTypeTokens->camera,
         &_delegate, _cameraId);
 
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->windowPolicy,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->windowPolicy,
         VtValue());
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->worldToViewMatrix,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->projectionMatrix,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->clipPlanes,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->clipPlanes,
         VtValue(std::vector<GfVec4d>()));
 }
 
@@ -458,27 +458,27 @@ HdxTaskController::SetCameraMatrices(GfMatrix4d const& viewMatrix,
                                      GfMatrix4d const& projMatrix)
 {
     GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_cameraId,
-        HdStCameraTokens->worldToViewMatrix);
+        HdCameraTokens->worldToViewMatrix);
 
     if (viewMatrix != oldView) {
         // Cache the new view matrix
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->worldToViewMatrix,
+        _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
             viewMatrix);
         // Invalidate the camera
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyViewMatrix);
+            HdCamera::DirtyViewMatrix);
     }
 
     GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_cameraId,
-        HdStCameraTokens->projectionMatrix);
+        HdCameraTokens->projectionMatrix);
 
     if (projMatrix != oldProj) {
         // Cache the new proj matrix
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->projectionMatrix,
+        _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
             projMatrix);
         // Invalidate the camera
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyProjMatrix);
+            HdCamera::DirtyProjMatrix);
     }
 }
 
@@ -516,13 +516,13 @@ HdxTaskController::SetCameraClipPlanes(
     // Cache the clip planes
     std::vector<GfVec4d> oldClipPlanes =
         _delegate.GetParameter<std::vector<GfVec4d>>(_cameraId,
-            HdStCameraTokens->clipPlanes);
+            HdCameraTokens->clipPlanes);
 
     if (oldClipPlanes != clipPlanes) {
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->clipPlanes,
+        _delegate.SetParameter(_cameraId, HdCameraTokens->clipPlanes,
             clipPlanes);
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyClipPlanes);
+            HdCamera::DirtyClipPlanes);
     }
 }
 

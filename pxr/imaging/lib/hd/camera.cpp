@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -30,19 +30,19 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(HdStCameraTokens, HDST_CAMERA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdCameraTokens, HD_CAMERA_TOKENS);
 
-HdStCamera::HdStCamera(SdfPath const &id)
+HdCamera::HdCamera(SdfPath const &id)
  : HdSprim(id)
 {
 }
 
-HdStCamera::~HdStCamera()
+HdCamera::~HdCamera()
 {
 }
 
 void
-HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
+HdCamera::Sync(HdSceneDelegate *sceneDelegate,
                 HdRenderParam   *renderParam,
                 HdDirtyBits     *dirtyBits)
 {
@@ -56,7 +56,7 @@ HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    // HdStCamera communicates to the scene graph and caches all interesting
+    // HdCamera communicates to the scene graph and caches all interesting
     // values within this class.
     // Later on Get() is called from TaskState (RenderPass) to perform
     // aggregation/pre-computation, in order to make the shader execution
@@ -69,14 +69,14 @@ HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
 
         // extract view matrix
         VtValue vMatrix = sceneDelegate->Get(id,
-            HdStCameraTokens->worldToViewMatrix);
+            HdCameraTokens->worldToViewMatrix);
         worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
         worldToViewInverseMatrix = worldToViewMatrix.GetInverse();
 
         // store view matrix
-        _cameraValues[HdStCameraTokens->worldToViewMatrix] =
+        _cameraValues[HdCameraTokens->worldToViewMatrix] =
             VtValue(worldToViewMatrix);
-        _cameraValues[HdStCameraTokens->worldToViewInverseMatrix] =
+        _cameraValues[HdCameraTokens->worldToViewInverseMatrix] =
             VtValue(worldToViewInverseMatrix);
     }
 
@@ -85,21 +85,21 @@ HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
 
         // extract projection matrix
         VtValue vMatrix = sceneDelegate->Get(id,
-            HdStCameraTokens->projectionMatrix);
+            HdCameraTokens->projectionMatrix);
         projectionMatrix = vMatrix.Get<GfMatrix4d>();
 
         // store projection matrix
-        _cameraValues[HdStCameraTokens->projectionMatrix] =
+        _cameraValues[HdCameraTokens->projectionMatrix] =
             VtValue(projectionMatrix);
     }
 
     if (bits & DirtyWindowPolicy) {
-        _cameraValues[HdStCameraTokens->windowPolicy] =
-                sceneDelegate->Get(id, HdStCameraTokens->windowPolicy);
+        _cameraValues[HdCameraTokens->windowPolicy] =
+                sceneDelegate->Get(id, HdCameraTokens->windowPolicy);
     }
 
     if (bits & DirtyClipPlanes) {
-        _cameraValues[HdStCameraTokens->clipPlanes] =
+        _cameraValues[HdCameraTokens->clipPlanes] =
                 sceneDelegate->GetClipPlanes(id);
     }
 
@@ -108,12 +108,12 @@ HdStCamera::Sync(HdSceneDelegate *sceneDelegate,
 
 /* virtual */
 VtValue
-HdStCamera::Get(TfToken const &name) const
+HdCamera::Get(TfToken const &name) const
 {
     VtValue r;
 
     TF_VERIFY(TfMapLookup(_cameraValues, name, &r),
-            "HdStCamera - Unknown %s\n",
+            "HdCamera - Unknown %s\n",
             name.GetText());
 
     return r;
@@ -121,7 +121,7 @@ HdStCamera::Get(TfToken const &name) const
 
 /* virtual */
 HdDirtyBits
-HdStCamera::GetInitialDirtyBitsMask() const
+HdCamera::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
 }

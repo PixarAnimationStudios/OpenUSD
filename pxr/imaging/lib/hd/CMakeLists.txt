@@ -11,6 +11,7 @@ pxr_library(hd
         vt
         work
         sdf
+        cameraUtil
         hf
         pxOsd
         ${TBB_tbb_LIBRARY}
@@ -29,6 +30,7 @@ pxr_library(hd
         bufferResource
         bufferSource
         bufferSpec
+        camera
         changeTracker
         compExtCompInputSource
         computation

@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -134,7 +134,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         _sceneAmbient = params.sceneAmbient;
     }
 
-    const HdStCamera *camera = static_cast<const HdStCamera *>(
+    const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
     if (!TF_VERIFY(camera)) {
         return;
@@ -165,7 +165,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // Extract the camera window policy to adjust the frustum correctly for
     // lights that have shadows.
     CameraUtilConformWindowPolicy windowPolicy = CameraUtilFit;
-    const VtValue vtWindowPolicy = camera->Get(HdStCameraTokens->windowPolicy);
+    const VtValue vtWindowPolicy = camera->Get(HdCameraTokens->windowPolicy);
     const bool cameraHasWindowPolicy =
         vtWindowPolicy.IsHolding<CameraUtilConformWindowPolicy>();
     if (cameraHasWindowPolicy) {

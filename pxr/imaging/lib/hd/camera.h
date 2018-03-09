@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef HDST_CAMERA_H
-#define HDST_CAMERA_H
+#ifndef HD_CAMERA_H
+#define HD_CAMERA_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/sprim.h"
 
@@ -40,31 +40,31 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDST_CAMERA_TOKENS                      \
+#define HD_CAMERA_TOKENS                      \
     (clipPlanes)                                \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)                  \
     (projectionMatrix)                          \
     (windowPolicy)
 
-TF_DECLARE_PUBLIC_TOKENS(HdStCameraTokens, HDST_API, HDST_CAMERA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdCameraTokens, HD_API, HD_CAMERA_TOKENS);
 
 class HdSceneDelegate;
 
-/// \class HdStCamera
+/// \class HdCamera
 ///
-/// A camera model, used in conjunction with HdRenderPass.
+/// Hydra schema for a camera.
 ///
-class HdStCamera final : public HdSprim {
+class HdCamera : public HdSprim {
 public:
     typedef std::vector<GfVec4d> ClipPlanesVector;
 
-    HDST_API
-    HdStCamera(SdfPath const & id);
-    HDST_API
-    virtual ~HdStCamera();
+    HD_API
+    HdCamera(SdfPath const & id);
+    HD_API
+    virtual ~HdCamera();
 
-    // change tracking for HdStCamera
+    // change tracking for HdCamera
     enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyViewMatrix       = 1 << 0,
@@ -78,25 +78,25 @@ public:
     };
 
     /// Synchronizes state from the delegate to this object.
-    HDST_API
+    HD_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
     /// Accessor for tasks to get the parameters cached in this object.
-    HDST_API
+    HD_API
     virtual VtValue Get(TfToken const &token) const override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    HDST_API
+    HD_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-private:
+protected:
     TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _cameraValues;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDST_CAMERA_H
+#endif // HD_CAMERA_H
