@@ -717,15 +717,15 @@ class AppController(QtCore.QObject):
             self._ui.actionToggle_Viewer_Mode.triggered.connect(
                 self._toggleViewerMode)
 
-            self._ui.showBBoxes.toggled.connect(self._toggleShowBBoxes)
+            self._ui.showBBoxes.triggered.connect(self._toggleShowBBoxes)
 
-            self._ui.showAABBox.toggled.connect(self._toggleShowAABBox)
+            self._ui.showAABBox.triggered.connect(self._toggleShowAABBox)
 
-            self._ui.showOBBox.toggled.connect(self._toggleShowOBBox)
+            self._ui.showOBBox.triggered.connect(self._toggleShowOBBox)
 
-            self._ui.showBBoxPlayback.toggled.connect(self._toggleShowBBoxPlayback)
+            self._ui.showBBoxPlayback.triggered.connect(self._toggleShowBBoxPlayback)
 
-            self._ui.useExtentsHint.toggled.connect(self._setUseExtentsHint)
+            self._ui.useExtentsHint.triggered.connect(self._setUseExtentsHint)
 
             self._ui.showInterpreter.triggered.connect(self._showInterpreter)
 
@@ -776,21 +776,21 @@ class AppController(QtCore.QObject):
 
             self._ui.complexityGroup.triggered.connect(self._changeComplexity)
 
-            self._ui.actionDisplay_Guide.toggled.connect(self._toggleDisplayGuide)
+            self._ui.actionDisplay_Guide.triggered.connect(self._toggleDisplayGuide)
 
-            self._ui.actionDisplay_Proxy.toggled.connect(self._toggleDisplayProxy)
+            self._ui.actionDisplay_Proxy.triggered.connect(self._toggleDisplayProxy)
 
-            self._ui.actionDisplay_Render.toggled.connect(self._toggleDisplayRender)
+            self._ui.actionDisplay_Render.triggered.connect(self._toggleDisplayRender)
 
-            self._ui.actionDisplay_Camera_Oracles.toggled.connect(
+            self._ui.actionDisplay_Camera_Oracles.triggered.connect(
                 self._toggleDisplayCameraOracles)
 
-            self._ui.actionDisplay_PrimId.toggled.connect(self._toggleDisplayPrimId)
+            self._ui.actionDisplay_PrimId.triggered.connect(self._toggleDisplayPrimId)
 
-            self._ui.actionEnable_Hardware_Shading.toggled.connect(
+            self._ui.actionEnable_Hardware_Shading.triggered.connect(
                 self._toggleEnableHardwareShading)
 
-            self._ui.actionCull_Backfaces.toggled.connect(self._toggleCullBackfaces)
+            self._ui.actionCull_Backfaces.triggered.connect(self._toggleCullBackfaces)
 
             self._ui.attributeInspector.currentChanged.connect(
                 self._updateAttributeInspector)
@@ -848,19 +848,19 @@ class AppController(QtCore.QObject):
             self._ui.actionCollapse_All.triggered.connect(
                 self._ui.primView.collapseAll)
 
-            self._ui.actionShow_Inactive_Prims.toggled.connect(
+            self._ui.actionShow_Inactive_Prims.triggered.connect(
                 self._toggleShowInactivePrims)
 
-            self._ui.actionShow_All_Master_Prims.toggled.connect(
+            self._ui.actionShow_All_Master_Prims.triggered.connect(
                 self._toggleShowMasterPrims)
 
-            self._ui.actionShow_Undefined_Prims.toggled.connect(
+            self._ui.actionShow_Undefined_Prims.triggered.connect(
                 self._toggleShowUndefinedPrims)
 
-            self._ui.actionShow_Abstract_Prims.toggled.connect(
+            self._ui.actionShow_Abstract_Prims.triggered.connect(
                 self._toggleShowAbstractPrims)
 
-            self._ui.actionRollover_Prim_Info.toggled.connect(
+            self._ui.actionRollover_Prim_Info.triggered.connect(
                 self._toggleRolloverPrimInfo)
 
             self._ui.primViewLineEdit.returnPressed.connect(
