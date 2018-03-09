@@ -58,6 +58,7 @@ TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
 // Initialize members to ensure a sane starting state.
 GlfContextCaps::GlfContextCaps()
     : glVersion(0)
+    , coreProfile(false)
     , maxUniformBlockSize(0)
     , maxShaderStorageBlockSize(0)
     , maxTextureBufferSize(0)
@@ -156,6 +157,11 @@ GlfContextCaps::_LoadCaps()
                       &maxTextureBufferSize);
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
                       &uniformBufferOffsetAlignment);
+    }
+    if (glVersion >= 320) {
+        GLint profileMask = 0;
+        glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
+        coreProfile = (profileMask & GL_CONTEXT_CORE_PROFILE_BIT);
     }
     if (glVersion >= 420) {
         shadingLanguage420pack = true;

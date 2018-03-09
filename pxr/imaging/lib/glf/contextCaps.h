@@ -60,6 +60,9 @@ public:
     // GL version
     int glVersion;                    // 400 (4.0), 410 (4.1), ...
 
+    // Whether or not we are running with core profile
+    bool coreProfile;
+
     // Max constants
     int maxUniformBlockSize;
     int maxShaderStorageBlockSize;

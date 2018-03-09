@@ -654,23 +654,20 @@ void
 UsdImagingGLHdEngine::Render(RenderParams params)
 {
     // User is responsible for initializing GL context and glew
-    // XXX: This is the wrong check!  Clean up of this function to follow.
-    if (GlfContextCaps::GetInstance().glVersion < 400) {
-        TF_CODING_ERROR("Current GL context doesn't support Hydra");
-        return;
-    }
+    bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
 
-    // We must bind a VAO (Vertex Array Object) because core profile 
-    // contexts do not have a default vertex array object. VAO objects are 
-    // container objects which are not shared between contexts, so we create 
-    // and bind a VAO here so that core rendering code does not have to 
-    // explicitly manage per-GL context state.
     GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindVertexArray(0);
-
-    glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
+    if (isCoreProfileContext) {
+        // We must bind a VAO (Vertex Array Object) because core profile 
+        // contexts do not have a default vertex array object. VAO objects are 
+        // container objects which are not shared between contexts, so we create
+        // and bind a VAO here so that core rendering code does not have to 
+        // explicitly manage per-GL context state.
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+    } else {
+        glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling
@@ -715,8 +712,6 @@ UsdImagingGLHdEngine::Render(RenderParams params)
         }
     }
 
-    glBindVertexArray(vao);
-
     VtValue selectionValue(_selTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionValue);
     VtValue renderTags(_renderTags);
@@ -726,13 +721,20 @@ UsdImagingGLHdEngine::Render(RenderParams params)
         HdxTaskSetTokens->idRender : HdxTaskSetTokens->colorRender;
     _engine.Execute(*_renderIndex, _taskController->GetTasks(renderMode));
 
-    glBindVertexArray(0);
+    if (isCoreProfileContext) {
 
-    glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
+        glBindVertexArray(0);
+        // XXX: We should not delete the VAO on every draw call, but we 
+        // currently must because it is GL Context state and we do not control 
+        // the context.
+        glDeleteVertexArrays(1, &vao);
 
-    // XXX: We should not delete the VAO on every draw call, but we currently
-    // must because it is GL Context state and we do not control the context.
-    glDeleteVertexArrays(1, &vao);
+    } else {
+
+        glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
+
+    }
+
 }
 
 /*virtual*/
