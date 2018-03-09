@@ -839,6 +839,23 @@ public:
         const ProtoXformInclusion doProtoXforms = IncludeProtoXform,
         const MaskApplication applyMask = ApplyMask) const;
 
+    /// Compute the per-instance transforms as in
+    /// ComputeInstanceTransformsAtTime, but using multiple sample times. An
+    /// array of matrix arrays is returned where each matrix array contains the
+    /// instance transforms for the corresponding time in \p times .
+    ///
+    /// \param times - A vector containing the UsdTimeCodes at which we want to
+    ///                sample.
+    USDGEOM_API
+    bool
+    ComputeInstanceTransformsAtTimes(
+        std::vector<VtArray<GfMatrix4d>>* xformsArray,
+        const std::vector<UsdTimeCode>& times,
+        const UsdTimeCode baseTime,
+        const ProtoXformInclusion doProtoXforms = IncludeProtoXform,
+        const MaskApplication applyMask = ApplyMask) const;
+
+    /// \overload
     /// Perform the per-instance transform computation as described in
     /// \ref UsdGeomPointInstancer_transform . This does the same computation as
     /// the non-static ComputeInstanceTransformsAtTime method, but takes all
@@ -855,8 +872,8 @@ public:
     ///                     must be either the same size as \p protoIndices or
     ///                     empty. If it is empty, transforms are computed as if
     ///                     all velocities were zero in all dimensions.
-    /// \param velocitySampleTime - time at which the samples from \p velocities
-    ///                             were taken.
+    /// \param velocitiesSampleTime - time at which the samples from
+    ///                               \p velocities were taken.
     /// \param scales - array containing all instance scales. This array must be
     ///                 either the same size as \p protoIndices or empty. If it
     ///                 is empty, transforms are computed with no change in
@@ -872,8 +889,8 @@ public:
     ///                            is empty, transforms are computed as if all
     ///                            angular velocities were zero in all
     ///                            dimensions.
-    /// \param angularVelocitySampleTime - time at which the samples from
-    ///                             \p angularVelocities were taken.
+    /// \param angularVelocitiesSampleTime - time at which the samples from
+    ///                                      \p angularVelocities were taken.
     /// \param protoPaths - array containing the paths for all instance
     ///                     prototypes. If this array is not empty, prototype
     ///                     transforms are applied to the instance transforms.
@@ -893,11 +910,11 @@ public:
         const VtIntArray& protoIndices,
         const VtVec3fArray& positions,
         const VtVec3fArray& velocities,
-        UsdTimeCode velocitySampleTime,
+        UsdTimeCode velocitiesSampleTime,
         const VtVec3fArray& scales,
         const VtQuathArray& orientations,
         const VtVec3fArray& angularVelocities,
-        UsdTimeCode angularVelocitySampleTime,
+        UsdTimeCode angularVelocitiesSampleTime,
         const SdfPathVector& protoPaths,
         const std::vector<bool>& mask,
         float velocityScale = 1.0);
@@ -991,6 +1008,24 @@ private:
     bool _GetPrototypePathsForInstanceTransforms(
         const VtIntArray& protoIndices,
         SdfPathVector* protoPaths) const;
+
+    // Fetches data from attributes on a UsdGeomPointInstancer required for
+    // instance transform calculations.
+    bool _ComputeInstanceTransformsAtTimePreamble(
+        const UsdTimeCode baseTime,
+        const ProtoXformInclusion doProtoXforms,
+        const MaskApplication applyMask,
+        VtIntArray* protoIndices,
+        VtVec3fArray* positions,
+        VtVec3fArray* velocities,
+        UsdTimeCode* velocitiesSampleTime,
+        VtVec3fArray* scales,
+        VtQuathArray* orientations,
+        VtVec3fArray* angularVelocities,
+        UsdTimeCode* angularVelocitiesSampleTime,
+        SdfPathVector* protoPaths,
+        std::vector<bool>* mask,
+        float* velocityScale) const;
 
 public:
 

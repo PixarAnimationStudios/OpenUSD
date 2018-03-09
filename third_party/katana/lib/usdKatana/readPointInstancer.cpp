@@ -28,6 +28,7 @@
 #include "usdKatana/utils.h"
 
 #include "pxr/usd/usdGeom/pointInstancer.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/kind/registry.h"
@@ -80,225 +81,6 @@ namespace
                       "[WARNING PxrUsdKatanaReadPointInstancer]: " + message));
     }
 
-    // XXX This is based on
-    // UsdGeomPointInstancer::ComputeInstanceTransformsAtTime. Ideally, we would
-    // just use UsdGeomPointInstancer, but it does not currently support
-    // multi-sampled transforms or velocity.
-    //
-    size_t
-    _ComputeInstanceTransformsAtTime(
-        std::vector<std::vector<GfMatrix4d>>& xforms,
-        const UsdGeomPointInstancer& instancer,
-        const std::vector<UsdTimeCode>& sampleTimes,
-        const UsdTimeCode baseTime,
-        const double timeCodesPerSecond,
-        const size_t numInstances,
-        const UsdAttribute& positionsAttr,
-        const float velocityScale = 1.0f)
-    {
-        constexpr double epsilonTest = 1e-5;
-        const auto sampleCount = sampleTimes.size();
-        if (sampleCount == 0 || xforms.size() < sampleCount ||
-            baseTime.IsDefault()) {
-            return 0;
-        }
-
-        double upperTimeSample = 0.0;
-
-        bool positionsHasSamples = false;
-        double positionsLowerTimeSample = 0.0;
-        if (!positionsAttr.GetBracketingTimeSamples(
-                baseTime.GetValue(), &positionsLowerTimeSample,
-                &upperTimeSample, &positionsHasSamples)) {
-            return 0;
-        }
-
-        const auto velocitiesAttr = instancer.GetVelocitiesAttr();
-        const auto scalesAttr = instancer.GetScalesAttr();
-        const auto orientationsAttr = instancer.GetOrientationsAttr();
-        const auto angularVelocitiesAttr = instancer.GetAngularVelocitiesAttr();
-
-        VtVec3fArray positions;
-        VtVec3fArray velocities;
-        VtVec3fArray scales;
-        VtQuathArray orientations;
-        VtVec3fArray angularVelocities;
-
-        // Use velocity if it has almost the same lower time sample as positions
-        // and the array lengths are equal to the number of instances.
-        //
-        bool useVelocity = false;
-
-        if (positionsHasSamples and
-            positionsAttr.Get(&positions, positionsLowerTimeSample)) {
-            bool velocitiesHasSamples = false;
-            double velocitiesLowerTimeSample = 0.0;
-            if (velocitiesAttr.HasValue() and
-                velocitiesAttr.GetBracketingTimeSamples(
-                    baseTime.GetValue(), &velocitiesLowerTimeSample,
-                    &upperTimeSample, &velocitiesHasSamples) and
-                velocitiesHasSamples and
-                GfIsClose(velocitiesLowerTimeSample, positionsLowerTimeSample,
-                          epsilonTest)) {
-                if (velocitiesAttr.Get(&velocities,
-                                       positionsLowerTimeSample) and
-                    positions.size() == numInstances and
-                    velocities.size() == numInstances) {
-                    useVelocity = true;
-                }
-            }
-        }
-
-        // Use angular velocity if it has almost the same lower time sample as
-        // orientations and the array lengths are equal to the number of
-        // instances.
-        //
-        bool useAngularVelocity = false;
-
-        bool orientationsHasSamples = false;
-        double orientationsLowerTimeSample = 0.0;
-        if (orientationsAttr.GetBracketingTimeSamples(
-                baseTime.GetValue(), &orientationsLowerTimeSample,
-                &upperTimeSample, &orientationsHasSamples)) {
-
-            if (orientationsHasSamples and
-                orientationsAttr.Get(&orientations,
-                                     orientationsLowerTimeSample)) {
-                bool angularVelocitiesHasSamples = false;
-                double angularVelocitiesLowerTimeSample = 0.0;
-                if (angularVelocitiesAttr.HasValue() and
-                    angularVelocitiesAttr.GetBracketingTimeSamples(
-                        baseTime.GetValue(), &angularVelocitiesLowerTimeSample,
-                        &upperTimeSample, &angularVelocitiesHasSamples) and
-                    angularVelocitiesHasSamples and
-                    GfIsClose(angularVelocitiesLowerTimeSample,
-                              orientationsLowerTimeSample, epsilonTest)) {
-                    if (angularVelocitiesAttr.Get(
-                            &angularVelocities, orientationsLowerTimeSample) and
-                        orientations.size() == numInstances and
-                        angularVelocities.size() == numInstances) {
-                        useAngularVelocity = true;
-                    }
-                }
-            }
-        }
-
-        // If we encounter a topology mismatch while sampling, we'll try falling
-        // back on the value for the current (base) time. We'll also continue to
-        // use this fallback value for the remainder of our sampling loop.
-        //
-        bool usePreviousPositions = false;
-        VtVec3fArray basePositions;
-        if (!useVelocity) {
-            positionsAttr.Get(&basePositions, baseTime);
-        }
-        bool usePreviousOrientations = false;
-        VtQuathArray baseOrientations;
-        if (!useAngularVelocity) {
-            orientationsAttr.Get(&baseOrientations, baseTime);
-        }
-        bool usePreviousScales = false;
-        VtVec3fArray baseScales;
-        scalesAttr.Get(&baseScales, baseTime);
-
-        size_t validSamples = 0;
-
-        for (auto a = decltype(sampleCount){0}; a < sampleCount; ++a) {
-            std::vector<GfMatrix4d> &curr = xforms[a];
-            curr.reserve(numInstances);
-
-            float velocityMultiplier = 1.0f;
-            if (useVelocity) {
-                velocityMultiplier =
-                    static_cast<float>(
-                        (sampleTimes[a].GetValue() - positionsLowerTimeSample) /
-                        timeCodesPerSecond) *
-                    velocityScale;
-            } else if (!usePreviousPositions) {
-                positionsAttr.Get(&positions, sampleTimes[a]);
-                if (positions.size() != numInstances) {
-                    positions = basePositions;
-                    usePreviousPositions = true;
-                }
-            }
-
-            float angularVelocityMultiplier = 1.0f;
-            if (useAngularVelocity) {
-                angularVelocityMultiplier =
-                    static_cast<float>((sampleTimes[a].GetValue() -
-                                        orientationsLowerTimeSample) /
-                                       timeCodesPerSecond) *
-                    velocityScale;
-            } else if (!usePreviousOrientations) {
-                orientationsAttr.Get(&orientations, sampleTimes[a]);
-                if (!orientations.empty() and
-                    orientations.size() != numInstances) {
-                    orientations = baseOrientations;
-                    usePreviousOrientations = true;
-                }
-            }
-
-            if (useVelocity or useAngularVelocity) {
-                scales = baseScales;
-            } else if (!usePreviousScales) {
-                scalesAttr.Get(&scales, sampleTimes[a]);
-                if (!scales.empty() and scales.size() != numInstances) {
-                    scales = baseScales;
-                    usePreviousScales = true;
-                }
-            }
-
-            // Abort if topology still differs despite our resampling attempt.
-            //
-            if (positions.size() != numInstances) {
-                break;
-            }
-            if (!scales.empty() and scales.size() != numInstances) {
-                break;
-            }
-            if (!orientations.empty() and orientations.size() != numInstances) {
-                break;
-            }
-
-            for (auto i = decltype(numInstances){0}; i < numInstances; ++i) {
-                GfTransform transform;
-
-                // Apply positions.
-                //
-                if (useVelocity) {
-                    transform.SetTranslation(
-                        positions[i] + velocities[i] * velocityMultiplier);
-                } else {
-                    transform.SetTranslation(positions[i]);
-                }
-
-                // Apply scales and orientations. Note that these can be
-                // unspecified.
-                //
-                if (!scales.empty()) {
-                    transform.SetScale(scales[i]);
-                }
-                if (!orientations.empty()) {
-                    if (useAngularVelocity) {
-                        transform.SetRotation(
-                            GfRotation(orientations[i]) *
-                            GfRotation(angularVelocities[i],
-                                       (angularVelocityMultiplier *
-                                        angularVelocities[i].GetLength())));
-                    } else {
-                        transform.SetRotation(GfRotation(orientations[i]));
-                    }
-                }
-
-                curr.push_back(transform.GetMatrix());
-            }
-
-            ++validSamples;
-        }
-
-        return validSamples;
-    }
-
     // XXX This is based on UsdGeomPointInstancer::ComputeExtentAtTime. Ideally,
     // we would just use UsdGeomPointInstancer, however it does not account for
     // multi-sampled transforms (see bug 147526).
@@ -307,7 +89,7 @@ namespace
     _ComputeExtentAtTime(
         VtVec3fArray& extent,
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs,
-        const std::vector<std::vector<GfMatrix4d>>& xforms,
+        const std::vector<VtArray<GfMatrix4d>>& xforms,
         const std::vector<double>& motionSampleTimes,
         const VtIntArray& protoIndices,
         const SdfPathVector& protoPaths,
@@ -482,8 +264,29 @@ PxrUsdKatanaReadPointInstancer(
     // Compute instance transform matrices.
     //
 
-    const double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
+    // Get velocityScale from the opArgs.
+    //
+    float opArgVelocityScale = FnKat::FloatAttribute(
+        inputAttrs.getChildByName("opArgs.velocityScale")).getValue(1.0f, false);
+    if (opArgVelocityScale != 1.0f)
+    {
+        // Print deprecation warning:
+        //
+        FnLogWarn("velocityScale is deprecated. Use PxrUsdInAttributeSet to "
+            "author the UsdGeomPointInstancer's motion:velocityScale attribute "
+            "instead.");
 
+        // To support the old behavior, we only apply the opArg velocityScale if
+        // there is no velocityScale authored on the point instancer.
+        //
+        UsdGeomMotionAPI motionAPI(instancer.GetPrim());
+        UsdAttribute velocityScaleAttr = motionAPI.GetVelocityScaleAttr();
+        if (velocityScaleAttr and velocityScaleAttr.HasAuthoredValueOpinion())
+        {
+            opArgVelocityScale = 1.0f;
+        }
+    }
+    
     // Gather frame-relative sample times and add them to the current time to
     // generate absolute sample times.
     //
@@ -493,21 +296,18 @@ PxrUsdKatanaReadPointInstancer(
     std::vector<UsdTimeCode> sampleTimes(sampleCount);
     for (size_t a = 0; a < sampleCount; ++a)
     {
-        sampleTimes[a] = UsdTimeCode(currentTime + motionSampleTimes[a]);
+        sampleTimes[a] = UsdTimeCode(
+            currentTime + opArgVelocityScale * motionSampleTimes[a]);
     }
 
-    // Get velocityScale from the opArgs.
-    //
-    float velocityScale = FnKat::FloatAttribute(
-        inputAttrs.getChildByName("opArgs.velocityScale")).getValue(1.0f, false);
+    std::vector<VtArray<GfMatrix4d>> xformSamples(sampleCount);
 
-    // XXX Replace with UsdGeomPointInstancer::ComputeInstanceTransformsAtTime.
-    //
-    std::vector<std::vector<GfMatrix4d>> xformSamples(sampleCount);
-    const size_t numXformSamples =
-        _ComputeInstanceTransformsAtTime(xformSamples, instancer, sampleTimes,
-            UsdTimeCode(currentTime), timeCodesPerSecond, numInstances,
-            positionsAttr, velocityScale);
+    instancer.ComputeInstanceTransformsAtTimes(
+            &xformSamples,
+            sampleTimes,
+            UsdTimeCode(currentTime));
+    const size_t numXformSamples = xformSamples.size();
+
     if (numXformSamples == 0) {
         _LogAndSetError(instancerAttrMap, "Could not compute "
                                           "sample/topology-invarying instance "

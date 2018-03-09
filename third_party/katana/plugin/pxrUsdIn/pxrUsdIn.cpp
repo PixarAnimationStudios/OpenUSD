@@ -274,24 +274,6 @@ public:
             }
 
             //
-            // Pass along the prim's velocityScale; if it isn't authored, let the
-            // inherited value flow through.
-            //
-
-            float velocityScale = FnKat::FloatAttribute(
-                opArgs.getChildByName("velocityScale")).getValue(1.0f, false);
-            auto motionAPI = UsdGeomMotionAPI(prim);
-            UsdAttribute velocityScaleAttr = motionAPI.GetVelocityScaleAttr();
-            if (velocityScaleAttr and velocityScaleAttr.HasAuthoredValueOpinion() and
-                velocityScaleAttr.Get(&velocityScale, privateData->GetCurrentTime()))
-            {
-                opArgs = FnKat::GroupBuilder()
-                    .update(opArgs)
-                    .set("velocityScale", FnKat::FloatAttribute(velocityScale))
-                    .build();
-            }
-
-            //
             // Compute and set the 'bound' attribute.
             //
             // Note, bound computation is handled here because bounding

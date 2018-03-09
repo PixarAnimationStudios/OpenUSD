@@ -938,6 +938,89 @@ UsdGeomPointInstancer::_GetPrototypePathsForInstanceTransforms(
 }
 
 bool
+UsdGeomPointInstancer::_ComputeInstanceTransformsAtTimePreamble(
+    const UsdTimeCode baseTime,
+    const ProtoXformInclusion doProtoXforms,
+    const MaskApplication applyMask,
+    VtIntArray* protoIndices,
+    VtVec3fArray* positions,
+    VtVec3fArray* velocities,
+    UsdTimeCode* velocitiesSampleTime,
+    VtVec3fArray* scales,
+    VtQuathArray* orientations,
+    VtVec3fArray* angularVelocities,
+    UsdTimeCode* angularVelocitiesSampleTime,
+    SdfPathVector* protoPaths,
+    std::vector<bool>* mask,
+    float* velocityScale) const
+{
+
+    if (!_GetProtoIndicesForInstanceTransforms(
+            baseTime,
+            protoIndices)) {
+        return false;
+    }
+
+    // We determine the number of instances from the number of prototype
+    // indices. All other data (positions, velocities, orientations, etc.) is
+    // invalid if it does not conform to this count.
+    size_t numInstances = protoIndices->size();
+
+    if (numInstances == 0) {
+        return true;
+    }
+
+    if (!_GetPositionsAndVelocitiesForInstanceTransforms(
+            baseTime,
+            numInstances,
+            positions,
+            velocities,
+            velocitiesSampleTime)) {
+        return false;
+    }
+
+    // We don't currently support an attribute which linearly changes the
+    // scale (as velocity does for position). Instead, we lock the scale to
+    // the last authored value without performing any interpolation.
+    _GetScalesForInstanceTransforms(
+        baseTime,
+        numInstances,
+        scales);
+
+    _GetOrientationsAndAngularVelocitiesForInstanceTransforms(
+            baseTime,
+            numInstances,
+            orientations,
+            angularVelocities,
+            angularVelocitiesSampleTime);
+
+    if (doProtoXforms == IncludeProtoXform) {
+        if (!_GetPrototypePathsForInstanceTransforms(
+                *protoIndices,
+                protoPaths)) {
+            return false;
+        }
+    }
+
+    if (applyMask == ApplyMask) {
+        *mask = ComputeMaskAtTime(baseTime);
+        if (!(mask->empty() || mask->size() == numInstances)) {
+            TF_WARN(
+                "%s -- found mask of size [%zu], but expected size [%zu]",
+                GetPrim().GetPath().GetText(),
+                mask->size(),
+                numInstances);
+            return false;
+        }
+    }
+
+    *velocityScale = UsdGeomMotionAPI(GetPrim()).ComputeVelocityScale(
+        baseTime);
+
+    return true;
+}
+
+bool
 UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     VtArray<GfMatrix4d>* xforms,
     const UsdTimeCode time,
@@ -945,13 +1028,6 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     const ProtoXformInclusion doProtoXforms,
     const MaskApplication applyMask) const
 {
-
-    if (time.IsNumeric() != baseTime.IsNumeric()) {
-        TF_CODING_ERROR(
-            "%s -- time and baseTime must either both be numeric or both be default",
-            GetPrim().GetPath().GetText());
-    }
-
     if (!xforms) {
         TF_WARN(
             "%s -- null container passed to ComputeInstanceTransformsAtTime()",
@@ -959,80 +1035,48 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
         return false;
     }
 
+    if (time.IsNumeric() != baseTime.IsNumeric()) {
+        TF_CODING_ERROR(
+            "%s -- time and baseTime must either both be numeric or both be default",
+            GetPrim().GetPath().GetText());
+    }
+
     VtIntArray protoIndices;
-    if (!_GetProtoIndicesForInstanceTransforms(
+    VtVec3fArray positions;
+    VtVec3fArray velocities;
+    UsdTimeCode velocitiesSampleTime;
+    VtVec3fArray scales;
+    VtQuathArray orientations;
+    VtVec3fArray angularVelocities;
+    UsdTimeCode angularVelocitiesSampleTime;
+    SdfPathVector protoPaths;
+    std::vector<bool> mask;
+    float velocityScale;
+    if (!_ComputeInstanceTransformsAtTimePreamble(
             baseTime,
-            &protoIndices)) {
+            doProtoXforms,
+            applyMask,
+            &protoIndices,
+            &positions,
+            &velocities,
+            &velocitiesSampleTime,
+            &scales,
+            &orientations,
+            &angularVelocities,
+            &angularVelocitiesSampleTime,
+            &protoPaths,
+            &mask,
+            &velocityScale)) {
         return false;
     }
 
-    // We determine the number of instances from the number of prototype
-    // indices. All other data (positions, velocities, orientations, etc.) is
-    // invalid if it does not conform to this count.
     size_t numInstances = protoIndices.size();
-
     if (numInstances == 0) {
         xforms->clear();
         return true;
     }
 
-    VtVec3fArray positions;
-    VtVec3fArray velocities;
-    UsdTimeCode velocitiesSampleTime;
-    if (!_GetPositionsAndVelocitiesForInstanceTransforms(
-            baseTime,
-            numInstances,
-            &positions,
-            &velocities,
-            &velocitiesSampleTime)) {
-        return false;
-    }
-
-    // We don't currently support an attribute which linearly changes the
-    // scale (as velocity does for position). Instead, we lock the scale to
-    // the last authored value without performing any interpolation.
-    VtVec3fArray scales;
-    _GetScalesForInstanceTransforms(
-        baseTime,
-        numInstances,
-        &scales);
-
-    VtQuathArray orientations;
-    VtVec3fArray angularVelocities;
-    UsdTimeCode angularVelocitiesSampleTime;
-    _GetOrientationsAndAngularVelocitiesForInstanceTransforms(
-            baseTime,
-            numInstances,
-            &orientations,
-            &angularVelocities,
-            &angularVelocitiesSampleTime);
-
-    SdfPathVector protoPaths;
-    if (doProtoXforms == IncludeProtoXform) {
-        if (!_GetPrototypePathsForInstanceTransforms(
-                protoIndices,
-                &protoPaths)) {
-            return false;
-        }
-    }
-
-    std::vector<bool> mask;
-    if (applyMask == ApplyMask) {
-        mask = ComputeMaskAtTime(baseTime);
-        if (!(mask.empty() || mask.size() == numInstances)) {
-            TF_WARN(
-                "%s -- found mask of size [%zu], but expected size [%zu]",
-                GetPrim().GetPath().GetText(),
-                mask.size(),
-                numInstances);
-            return false;
-        }
-    }
-
     UsdStageWeakPtr stage = GetPrim().GetStage();
-
-    float velocityScale = UsdGeomMotionAPI(GetPrim()).ComputeVelocityScale(
-        baseTime);
 
     // If there are no valid velocities or angular velocities, we fallback to
     // "standard" computation logic (linear interpolation between samples).
@@ -1080,6 +1124,122 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
 }
 
 bool
+UsdGeomPointInstancer::ComputeInstanceTransformsAtTimes(
+    std::vector<VtArray<GfMatrix4d>>* xformsArray,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const ProtoXformInclusion doProtoXforms,
+    const MaskApplication applyMask) const
+{
+    size_t numSamples = times.size();
+    for (auto time : times) {
+        if (time.IsNumeric() != baseTime.IsNumeric()) {
+            TF_CODING_ERROR(
+                "%s -- all sample times in times and baseTime must either all "
+                "be numeric or all be default",
+                GetPrim().GetPath().GetText());
+        }
+    }
+
+    VtIntArray protoIndices;
+    VtVec3fArray positions;
+    VtVec3fArray velocities;
+    UsdTimeCode velocitiesSampleTime;
+    VtVec3fArray scales;
+    VtQuathArray orientations;
+    VtVec3fArray angularVelocities;
+    UsdTimeCode angularVelocitiesSampleTime;
+    SdfPathVector protoPaths;
+    std::vector<bool> mask;
+    float velocityScale;
+    if (!_ComputeInstanceTransformsAtTimePreamble(
+            baseTime,
+            doProtoXforms,
+            applyMask,
+            &protoIndices,
+            &positions,
+            &velocities,
+            &velocitiesSampleTime,
+            &scales,
+            &orientations,
+            &angularVelocities,
+            &angularVelocitiesSampleTime,
+            &protoPaths,
+            &mask,
+            &velocityScale)) {
+        return false;
+    }
+
+    size_t numInstances = protoIndices.size();
+    if (numInstances == 0) {
+        xformsArray->clear();
+        xformsArray->resize(numSamples);
+        return true;
+    }
+
+    UsdStageWeakPtr stage = GetPrim().GetStage();
+
+    std::vector<VtArray<GfMatrix4d>> xformsArrayData;
+    xformsArrayData.resize(numSamples);
+    bool useInterpolated = (velocities.empty() && angularVelocities.empty());
+    for (size_t i = 0; i < numSamples; i++) {
+
+        UsdTimeCode time = times[i];
+        VtArray<GfMatrix4d>* xforms = &(xformsArrayData[i]);
+
+        // If there are no valid velocities or angular velocities, we fallback to
+        // "standard" computation logic (linear interpolation between samples).
+        if (useInterpolated) {
+
+            // Try to fetch the positions, scales, and orientations at the sample
+            // time. If this fails or the fetched data don't have the correct
+            // topology, we fallback to the data from the base time.
+
+            VtVec3fArray interpolatedPositions;
+            if (GetPositionsAttr().Get(&interpolatedPositions, time)
+                    && interpolatedPositions.size() == numInstances) {
+                positions = interpolatedPositions;
+            }
+
+            VtVec3fArray interpolatedScales;
+            if (GetScalesAttr().Get(&interpolatedScales, time)
+                    && interpolatedScales.size() == numInstances) {
+                scales = interpolatedScales;
+            }
+
+            VtQuathArray interpolatedOrientations;
+            if (GetOrientationsAttr().Get(&interpolatedOrientations, time)
+                    && interpolatedOrientations.size() == numInstances) {
+                orientations = interpolatedOrientations;
+            }
+
+        }
+
+        if (!UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
+                xforms,
+                stage,
+                time,
+                protoIndices,
+                positions,
+                velocities,
+                velocitiesSampleTime,
+                scales,
+                orientations,
+                angularVelocities,
+                angularVelocitiesSampleTime,
+                protoPaths,
+                mask,
+                velocityScale)) {
+            return false;
+        }
+
+    }
+
+    *xformsArray = xformsArrayData;
+    return true;
+}
+
+bool
 UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     VtArray<GfMatrix4d>* xforms,
     UsdStageWeakPtr& stage,
@@ -1087,11 +1247,11 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     const VtIntArray& protoIndices,
     const VtVec3fArray& positions,
     const VtVec3fArray& velocities,
-    UsdTimeCode velocitySampleTime,
+    UsdTimeCode velocitiesSampleTime,
     const VtVec3fArray& scales,
     const VtQuathArray& orientations,
     const VtVec3fArray& angularVelocities,
-    UsdTimeCode angularVelocitySampleTime,
+    UsdTimeCode angularVelocitiesSampleTime,
     const SdfPathVector& protoPaths,
     const std::vector<bool>& mask,
     float velocityScale)
@@ -1102,11 +1262,11 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     double timeCodesPerSecond = stage->GetTimeCodesPerSecond();
     float velocityMultiplier =
         velocityScale * static_cast<float>(
-            (time.GetValue() - velocitySampleTime.GetValue())
+            (time.GetValue() - velocitiesSampleTime.GetValue())
             / timeCodesPerSecond);
     float angularVelocityMultiplier =
         velocityScale * static_cast<float>(
-            (time.GetValue() - angularVelocitySampleTime.GetValue())
+            (time.GetValue() - angularVelocitiesSampleTime.GetValue())
             / timeCodesPerSecond);
 
     xforms->assign(numInstances, GfMatrix4d(1.0));
