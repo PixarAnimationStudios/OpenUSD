@@ -158,13 +158,21 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
 }
 
 static void
-_ExpandPopulationMask(UsdStage &self, boost::python::object pypred)
+_ExpandPopulationMask(UsdStage &self,
+                      boost::python::object pyRelPred,
+                      boost::python::object pyAttrPred)
 {
-    using Predicate = std::function<bool (UsdRelationship const &)>;
-    Predicate pred;
-    if (pypred != boost::python::object())
-        pred = boost::python::extract<Predicate>(pypred);
-    return self.ExpandPopulationMask(pred);
+    using RelPredicate = std::function<bool (UsdRelationship const &)>;
+    using AttrPredicate = std::function<bool (UsdAttribute const &)>;
+    RelPredicate relPred;
+    AttrPredicate attrPred;
+    if (pyRelPred != boost::python::object()) {
+        relPred = boost::python::extract<RelPredicate>(pyRelPred);
+    }
+    if (pyAttrPred != boost::python::object()) {
+        attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
+    }
+    return self.ExpandPopulationMask(relPred, attrPred);
 }
 
 static object 
@@ -392,7 +400,8 @@ void wrapUsdStage()
         .def("GetPopulationMask", &UsdStage::GetPopulationMask)
         .def("SetPopulationMask", &UsdStage::SetPopulationMask, arg("mask"))
         .def("ExpandPopulationMask", &_ExpandPopulationMask,
-             arg("predicate")=object())
+             (arg("relationshipPredicate")=object(),
+              arg("attributePredicate")=object()))
 
         .def("GetPseudoRoot", &UsdStage::GetPseudoRoot)
 

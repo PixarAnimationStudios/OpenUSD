@@ -2177,7 +2177,8 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 
 void
 UsdStage::ExpandPopulationMask(
-    std::function<bool (UsdRelationship const &)> const &pred)
+    std::function<bool (UsdRelationship const &)> const &relPred,
+    std::function<bool (UsdAttribute const &)> const &attrPred)
 {
     if (GetPopulationMask().IncludesSubtree(SdfPath::AbsoluteRootPath()))
         return;
@@ -2186,20 +2187,30 @@ UsdStage::ExpandPopulationMask(
     // include them in the mask.  If the mask changes, call SetPopulationMask()
     // and redo.  Continue until the mask ceases expansion.  
     while (true) {
-        SdfPathVector tgtPaths =
-            GetPseudoRoot().FindAllRelationshipTargetPaths(pred, false);
+        auto root = GetPseudoRoot();
+        SdfPathVector
+            tgtPaths = root.FindAllRelationshipTargetPaths(relPred, false),
+            connPaths = root.FindAllAttributeConnectionPaths(attrPred, false);
         
         tgtPaths.erase(remove_if(tgtPaths.begin(), tgtPaths.end(),
                                  [this](SdfPath const &path) {
                                      return _populationMask.Includes(path);
                                  }),
                        tgtPaths.end());
+        connPaths.erase(remove_if(connPaths.begin(), connPaths.end(),
+                                 [this](SdfPath const &path) {
+                                     return _populationMask.Includes(path);
+                                 }),
+                       connPaths.end());
         
-        if (tgtPaths.empty())
+        if (tgtPaths.empty() && connPaths.empty())
             break;
 
         auto popMask = GetPopulationMask();
         for (auto const &path: tgtPaths) {
+            popMask.Add(path.GetPrimPath());
+        }
+        for (auto const &path: connPaths) {
             popMask.Add(path.GetPrimPath());
         }
         SetPopulationMask(popMask);

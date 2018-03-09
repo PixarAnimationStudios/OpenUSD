@@ -191,7 +191,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
 
         assert not doryAndNemoStage.GetPrimAtPath('/World/sets')
 
-    def test_Expansion(self):
+    def test_ExpansionRelationships(self):
         stage = Usd.Stage.CreateInMemory()
         a = stage.DefinePrim('/World/A')
         b = stage.DefinePrim('/World/B')
@@ -233,7 +233,63 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         assert not masked.GetPrimAtPath(e.GetPath())
 
         # Expand with a predicate that only consults relationships named 'pred'
-        masked.ExpandPopulationMask(lambda r: r.GetName() == 'pred')
+        masked.ExpandPopulationMask(
+            relationshipPredicate=lambda r: r.GetName() == 'pred')
+
+        assert masked.GetPrimAtPath(a.GetPath())
+        assert not masked.GetPrimAtPath(b.GetPath())
+        assert not masked.GetPrimAtPath(c.GetPath())
+        assert not masked.GetPrimAtPath(d.GetPath())
+        assert masked.GetPrimAtPath(e.GetPath())
+
+    def test_ExpansionConnections(self):
+        stage = Usd.Stage.CreateInMemory()
+        a = stage.DefinePrim('/World/A')
+        b = stage.DefinePrim('/World/B')
+        c = stage.DefinePrim('/World/C')
+        d = stage.DefinePrim('/World/D')
+        e = stage.DefinePrim('/World/E')
+
+        bAttr = b.CreateAttribute('attr', Sdf.ValueTypeNames.Float)
+        cAttr = c.CreateAttribute('attr', Sdf.ValueTypeNames.Float)
+        dAttr = d.CreateAttribute('attr', Sdf.ValueTypeNames.Float)
+        eAttr = e.CreateAttribute('attr', Sdf.ValueTypeNames.Float)
+
+        floatType = Sdf.ValueTypeNames.Float
+        a.CreateAttribute('a', floatType).AddConnection(bAttr.GetPath())
+        b.CreateAttribute('a', floatType).AddConnection(cAttr.GetPath())
+        c.CreateAttribute('a', floatType).AddConnection(dAttr.GetPath())
+
+        a.CreateAttribute('pred', floatType).AddConnection(eAttr.GetPath())
+        
+        mask = Usd.StagePopulationMask().Add(a.GetPath())
+        masked = Usd.Stage.OpenMasked(stage.GetRootLayer(), mask)
+        assert masked.GetPrimAtPath(a.GetPath())
+        assert not masked.GetPrimAtPath(b.GetPath())
+        assert not masked.GetPrimAtPath(c.GetPath())
+        assert not masked.GetPrimAtPath(d.GetPath())
+        assert not masked.GetPrimAtPath(e.GetPath())
+
+        # Now expand the mask for all connections.
+        masked.ExpandPopulationMask()
+
+        assert masked.GetPrimAtPath(a.GetPath())
+        assert masked.GetPrimAtPath(b.GetPath())
+        assert masked.GetPrimAtPath(c.GetPath())
+        assert masked.GetPrimAtPath(d.GetPath())
+        assert masked.GetPrimAtPath(e.GetPath())
+
+        masked.SetPopulationMask(Usd.StagePopulationMask().Add(a.GetPath()))
+     
+        assert masked.GetPrimAtPath(a.GetPath())
+        assert not masked.GetPrimAtPath(b.GetPath())
+        assert not masked.GetPrimAtPath(c.GetPath())
+        assert not masked.GetPrimAtPath(d.GetPath())
+        assert not masked.GetPrimAtPath(e.GetPath())
+
+        # Expand with a predicate that only consults attributes named 'pred'
+        masked.ExpandPopulationMask(
+            attributePredicate=lambda r: r.GetName() == 'pred')
 
         assert masked.GetPrimAtPath(a.GetPath())
         assert not masked.GetPrimAtPath(b.GetPath())

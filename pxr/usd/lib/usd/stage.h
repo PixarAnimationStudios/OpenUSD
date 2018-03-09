@@ -622,17 +622,20 @@ public:
     void SetPopulationMask(UsdStagePopulationMask const &mask);
 
     /// Expand this stage's population mask to include the targets of all
-    /// relationships that pass \p pred, recursively.  If \p pred is null,
-    /// include all relationship targets.
+    /// relationships that pass \p relPred and connections to all attributes
+    /// that pass \p attrPred recursively.  If \p relPred is null, include all
+    /// relationship targets; if \p attrPred is null, include all connections.
     ///
     /// This function can be used, for example, to expand a population mask for
     /// a given prim to include bound materials, if those bound materials are
-    /// expressed as relationships.
+    /// expressed as relationships or attribute connections.
     ///
-    /// See also UsdPrim::FindAllRelationshipTargetPaths().
+    /// See also UsdPrim::FindAllRelationshipTargetPaths() and
+    /// UsdPrim::FindAllAttributeConnectionPaths().
     USD_API
     void ExpandPopulationMask(
-        std::function<bool (UsdRelationship const &)> const &pred = nullptr);
+        std::function<bool (UsdRelationship const &)> const &relPred = nullptr,
+        std::function<bool (UsdAttribute const &)> const &attrPred = nullptr);
     
     /// @}
 
