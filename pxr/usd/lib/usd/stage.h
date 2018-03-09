@@ -393,6 +393,16 @@ public:
     /// Note that reloading anonymous layers clears their content, so
     /// invoking Reload() on a stage constructed via CreateInMemory()
     /// will clear its root layer.
+    ///
+    /// \note This method is considered a mutation, which has potentially
+    /// global effect!  Unlike the various Load() methods whose actions
+    /// affect only **this stage**, Reload() may cause layers to change their
+    /// contents, and because layers are global resources shared by
+    /// potentially many Stages, calling Reload() on one stage may result in
+    /// a mutation to any number of stages.  In general, unless you are
+    /// highly confident your stage is the only consumer of its layers, you
+    /// should only call Reload() when you are assured no other threads may
+    /// be reading from any Stages.
     USD_API
     void Reload();
 
