@@ -52,6 +52,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # Test an explicitOnly collection.
         explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "test:Explicit:Collection", Usd.Tokens.explicitOnly)
+
         self.assertTrue(explicitColl.HasNoIncludedPaths())
         self.assertEqual(['CollectionAPI:test:Explicit:Collection'],
                          testPrim.GetAppliedSchemas())
@@ -323,6 +324,11 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 excludeInstanceGeomMquery, stage, 
                 predicate=Usd.TraverseInstanceProxies())
         self.assertEqual(len(allIncObjects), 2)
+        
+    def test_invalidCollectionName(self):
+        with self.assertRaises(Exception):
+            explicitColl2 = Usd.CollectionAPI.ApplyCollection(testPrim,
+                "a:b(c)", Usd.Tokens.explicitOnly)
 
     def test_invalidCollections(self):
         invalidCollectionNames = ["invalidExpansionRule", 

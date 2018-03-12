@@ -144,6 +144,12 @@ UsdCollectionAPI::ApplyCollection(
     // Ensure that the collection name is valid.
     TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
 
+    if ( tokens.empty() )
+    {
+        TF_CODING_ERROR("Invalid collection name '%s'.", name.GetText());
+        return UsdCollectionAPI();
+    }
+
     TfToken baseName = *tokens.rbegin();
     if (IsSchemaPropertyBaseName(baseName)) {
         TF_CODING_ERROR("Invalid collection name '%s'. The base-name '%s' is a "
