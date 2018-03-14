@@ -3608,6 +3608,38 @@ UsdStage::_HandleLayersDidChange(
 
     _Recompose(changes, &recomposeChanges);
 
+    // Filter out all changes to objects beneath instances and remap
+    // them to the corresponding object in the instance's master. Do this
+    // after _Recompose so that the instancing cache is up-to-date.
+    auto remapChangesToMasters = [this](_PathsToChangesMap* changes) {
+        std::vector<_PathsToChangesMap::value_type> masterChanges;
+        for (auto it = changes->begin(); it != changes->end(); ) {
+            if (_IsObjectDescendantOfInstance(it->first)) {
+                const SdfPath primIndexPath = 
+                    it->first.GetAbsoluteRootOrPrimPath();
+                for (const SdfPath& pathInMaster :
+                     _instanceCache->GetPrimsInMastersUsingPrimIndexPath(
+                         primIndexPath)) {
+                    masterChanges.emplace_back(
+                        it->first.ReplacePrefix(primIndexPath, pathInMaster), 
+                        it->second);
+                }
+                it = changes->erase(it);
+                continue;
+            }
+            ++it;
+        }
+
+        for (const auto& entry : masterChanges) {
+            auto& value = (*changes)[entry.first];
+            value.insert(value.end(), entry.second.begin(), entry.second.end());
+        }
+    };
+
+    remapChangesToMasters(&recomposeChanges);
+    remapChangesToMasters(&otherResyncChanges);
+    remapChangesToMasters(&otherInfoChanges);
+
     // Add in all other paths that are marked as resynced.
     if (recomposeChanges.empty()) {
         recomposeChanges.swap(otherResyncChanges);
@@ -3618,14 +3650,6 @@ UsdStage::_HandleLayersDidChange(
         for (auto& entry : otherResyncChanges) {
             recomposeChanges[entry.first] = std::move(entry.second);
         }
-    }
-
-    for (auto it = recomposeChanges.begin(); it != recomposeChanges.end(); ) {
-        if (_IsObjectDescendantOfInstance(it->first)) {
-            it = recomposeChanges.erase(it);
-            continue;
-        }
-        ++it;
     }
 
     // Collect the paths in otherChangedPaths that aren't under paths that
@@ -3642,14 +3666,6 @@ UsdStage::_HandleLayersDidChange(
     // Now we want to remove all elements of otherInfoChanges that are
     // prefixed by elements in recomposeChanges or beneath instances.
     _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
-
-    for (auto it = otherInfoChanges.begin(); it != otherInfoChanges.end(); ) {
-        if (_IsObjectDescendantOfInstance(it->first)) {
-            it = otherInfoChanges.erase(it);
-            continue;
-        }
-        ++it;
-    }
 
     UsdStageWeakPtr self(this);
 
@@ -3696,22 +3712,6 @@ UsdStage::_Recompose(const PcpChanges &changes,
 
     if (changedUsedLayers) {
         _RegisterPerLayerNotices();
-    }
-}
-
-// Inserts entry into changedPaths at dstPath and merges in any values from
-// entry at srcPath.
-template <class ChangedPaths>
-static void 
-_MergeEntry(ChangedPaths* changedPaths, 
-            const SdfPath& dstPath, const SdfPath& srcPath)
-{
-    auto& dstValue = (*changedPaths)[dstPath];
-
-    auto srcIt = changedPaths->find(srcPath);
-    if (srcIt != changedPaths->end()) {
-        const auto& srcValue = srcIt->second;
-        dstValue.insert(dstValue.end(), srcValue.begin(), srcValue.end());
     }
 }
 
@@ -3798,7 +3798,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     _ComposePrimIndexesInParallel(
         primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
         "Recomposing stage", &instanceChanges);
-
+    
     // Determine what instance master prims on this stage need to
     // be recomposed due to instance prim index changes.
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _MasterToPrimIndexMap;
@@ -3810,24 +3810,20 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         for (const SdfPath& masterPath :
                  _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
             masterToPrimIndexMap[masterPath] = path;
-            _MergeEntry(pathsToRecompose, masterPath, path);
+            (*pathsToRecompose)[masterPath];
         }
     }
 
     for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.newMasterPrims[i]] =
             instanceChanges.newMasterPrimIndexes[i];
-        _MergeEntry(pathsToRecompose, 
-            instanceChanges.newMasterPrims[i], 
-            instanceChanges.newMasterPrimIndexes[i]);
+        (*pathsToRecompose)[instanceChanges.newMasterPrims[i]];
     }
 
     for (size_t i = 0; i != instanceChanges.changedMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.changedMasterPrims[i]] =
             instanceChanges.changedMasterPrimIndexes[i];
-        _MergeEntry(pathsToRecompose, 
-            instanceChanges.changedMasterPrims[i], 
-            instanceChanges.changedMasterPrimIndexes[i]);
+        (*pathsToRecompose)[instanceChanges.changedMasterPrims[i]];
     }
 
     if (pathsToRecompose->size() != origNumPathsToRecompose) {
