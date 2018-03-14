@@ -35,6 +35,7 @@
 #include "pxr/usd/usdLux/distantLight.h"
 #include "pxr/usd/usdLux/geometryLight.h"
 #include "pxr/usd/usdLux/sphereLight.h"
+#include "pxr/usd/usdLux/cylinderLight.h"
 #include "pxr/usd/usdLux/diskLight.h"
 #include "pxr/usd/usdLux/rectLight.h"
 #include "pxr/usd/usdLux/shapingAPI.h"
@@ -58,6 +59,18 @@ FnLogSetup("PxrUsdKatanaReadLight");
 using std::string;
 using std::vector;
 using FnKat::GroupBuilder;
+
+// Convert USD radius to light.size (which acts like diameter)
+static void
+_SetLightSizeFromRadius(PxrUsdKatanaAttrMap &geomBuilder,
+                        UsdAttribute radiusAttr,
+                        UsdTimeCode time)
+{
+    VtValue radiusVal;
+    radiusAttr.Get(&radiusVal, time);
+    float radius = radiusVal.Get<float>();
+    geomBuilder.set("light.size", FnKat::FloatAttribute(radius*2.0));
+}
 
 void
 PxrUsdKatanaReadLight(
@@ -121,14 +134,23 @@ PxrUsdKatanaReadLight(
     }
 
     if (UsdLuxSphereLight l = UsdLuxSphereLight(lightPrim)) {
-        geomBuilder.Set("light.size", l.GetRadiusAttr());
+        _SetLightSizeFromRadius(geomBuilder, l.GetRadiusAttr(),
+                                currentTimeCode);
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrSphereLight"));
     }
     if (UsdLuxDiskLight l = UsdLuxDiskLight(lightPrim)) {
-        geomBuilder.Set("light.size", l.GetRadiusAttr());
+        _SetLightSizeFromRadius(geomBuilder, l.GetRadiusAttr(),
+                                currentTimeCode);
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrDiskLight"));
+    }
+    if (UsdLuxCylinderLight l = UsdLuxCylinderLight(lightPrim)) {
+        _SetLightSizeFromRadius(geomBuilder, l.GetRadiusAttr(),
+                                currentTimeCode);
+        geomBuilder.Set("light.width", l.GetLengthAttr());
+        materialBuilder.set("prmanLightShader",
+                            FnKat::StringAttribute("PxrCylinderLight"));
     }
     if (UsdLuxRectLight l = UsdLuxRectLight(lightPrim)) {
         geomBuilder.Set("light.width", l.GetWidthAttr());
