@@ -29,6 +29,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/wrapArray.h"
 
 #include "pxr/base/gf/traits.h"
 
@@ -502,8 +503,10 @@ Vt_ArrayFromBuffer(TfPyObjWrapper const &obj,
     return isConvertible;
 }
 
+
+
 template <class T>
-static VtValue Vt_CastBufferToArray(VtValue const &v)
+static VtValue Vt_CastPyObjToArray(VtValue const &v)
 {
     VtValue ret;
     TfPyObjWrapper obj;
@@ -512,8 +515,12 @@ static VtValue Vt_CastBufferToArray(VtValue const &v)
 
     // Attempt to produce the requested VtArray.
     VtArray<T> array;
-    if (Vt_ArrayFromBuffer(obj, &array))
+    if (Vt_ArrayFromBuffer(obj, &array)) {
         ret.Swap(array);
+    }
+    else {
+        ret = Vt_ConvertFromPySequence<VtArray<T>>(obj);
+    }
 
     return ret;
 }
@@ -598,7 +605,7 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 #define VT_ADD_BUFFER_PROTOCOL(r, unused, elem)                         \
     Vt_AddBufferProtocol<VtArray<VT_TYPE(elem)> >();                    \
     VtValue::RegisterCast<TfPyObjWrapper, VtArray<VT_TYPE(elem)> >(     \
-        Vt_CastBufferToArray<VT_TYPE(elem)>);                           \
+        Vt_CastPyObjToArray<VT_TYPE(elem)>);                            \
     VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >(    \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                           \
     boost::python::def(BOOST_PP_STRINGIZE(VT_TYPE_NAME(elem))           \

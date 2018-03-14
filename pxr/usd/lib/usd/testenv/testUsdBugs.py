@@ -227,5 +227,18 @@ class TestUsdBugs(unittest.TestCase):
         self.assertEqual(master._GetSourcePrimIndex().rootNode.path,
                          nonInstancePrim.path)
 
+    def test_157758(self):
+        # Test that setting array values with various python sequences works.
+        from pxr import Usd, Sdf, Vt
+        s = Usd.Stage.CreateInMemory()
+        p = s.DefinePrim('/testPrim')
+        a = p.CreateAttribute('points', Sdf.ValueTypeNames.Float3Array)
+        a.Set([(1,2,3), (2,3,4), (3,4,5)])
+        self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(1,2,3), (2,3,4), (3,4,5)]))
+        a.Set(((3,2,1), (4,3,2), (5,4,3)))
+        self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(3,2,1), (4,3,2), (5,4,3)]))
+        a.Set(zip(range(3), range(3), range(3)))
+        self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(0,0,0), (1,1,1), (2,2,2)]))
+
 if __name__ == '__main__':
     unittest.main()
