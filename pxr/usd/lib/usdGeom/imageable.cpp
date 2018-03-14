@@ -239,12 +239,103 @@ UsdGeomImageable::GetAuthoredPrimvars() const
                          : std::vector<UsdProperty>());
 }
 
+std::vector<UsdGeomPrimvar>
+UsdGeomImageable::FindInheritedPrimvars() const
+{
+    TRACE_FUNCTION();
+    // Assume the number of primvars is relatively bounded and
+    // just use a vector to accumulate privmars up to the root prim.
+    std::vector<UsdGeomPrimvar> primvars;
+    UsdPrim prim = GetPrim();
+    if (!prim) {
+        return primvars;
+    }
+    TfToken const& prefix = UsdGeomPrimvar::_GetNamespacePrefix();
+    for (prim = prim.GetParent(); prim && !prim.IsPseudoRoot();
+         prim = prim.GetParent()) {
+        for (UsdProperty const& prop:
+             prim.GetAuthoredPropertiesInNamespace(prefix)) {
+            if (UsdGeomPrimvar pv = UsdGeomPrimvar(prop.As<UsdAttribute>())) {
+                // If the primvar is defined locally (authored or not),
+                // it cannot be inherited.
+                if (HasPrimvar(pv.GetPrimvarName())) {
+                    continue;
+                }
+                bool found = false;
+                for (UsdGeomPrimvar const& probe: primvars) {
+                    if (probe.GetName() == pv.GetName()) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    primvars.push_back(pv);
+                }
+            }
+        }
+    }
+    return primvars;
+}
+
+UsdGeomPrimvar 
+UsdGeomImageable::FindInheritedPrimvar(const TfToken &name) const
+{
+    TRACE_FUNCTION();
+    // If the primvar is defined locally (authored or not), it cannot
+    // be inherited.
+    if (HasPrimvar(name)) {
+        return UsdGeomPrimvar();
+    }
+    const TfToken attrName = UsdGeomPrimvar::_MakeNamespaced(name);
+    UsdPrim prim = GetPrim();
+    if (!prim) {
+        return UsdGeomPrimvar();
+    }
+    for (prim = prim.GetParent(); prim && !prim.IsPseudoRoot();
+         prim = prim.GetParent()) {
+        UsdAttribute attr = prim.GetAttribute(attrName);
+        if (attr && attr.IsAuthored()) {
+            if (UsdGeomPrimvar pv = UsdGeomPrimvar(attr)) {
+                return pv;
+            }
+        }
+    }
+    return UsdGeomPrimvar();
+}
+
 bool
 UsdGeomImageable::HasPrimvar(const TfToken &name) const
 {
     TfToken primvarName = UsdGeomPrimvar::_MakeNamespaced(name, /* quiet */true);
     return primvarName.IsEmpty() ? false : 
         UsdGeomPrimvar::IsPrimvar(GetPrim().GetAttribute(primvarName));
+}
+
+bool
+UsdGeomImageable::HasInheritedPrimvar(const TfToken &name) const
+{
+    TRACE_FUNCTION();
+    // If the primvar is defined locally (authored or not), it cannot
+    // be inherited.
+    if (HasPrimvar(name)) {
+        return false;
+    }
+    const TfToken attrName = UsdGeomPrimvar::_MakeNamespaced(name);
+    if (attrName.IsEmpty()) {
+        return false;
+    }
+    UsdPrim prim = GetPrim();
+    if (!prim) {
+        return false;
+    }
+    for (prim = prim.GetParent(); prim && !prim.IsPseudoRoot();
+         prim = prim.GetParent()) {
+        UsdAttribute attr = prim.GetAttribute(attrName);
+        if (attr && attr.IsAuthored() && UsdGeomPrimvar::IsPrimvar(attr)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /* static */

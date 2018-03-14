@@ -173,7 +173,13 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
         .def("GetAuthoredPrimvars", &UsdGeomImageable::GetAuthoredPrimvars,
              return_value_policy<TfPySequenceToList>())
+        .def("FindInheritedPrimvars", &UsdGeomImageable::FindInheritedPrimvars,
+             return_value_policy<TfPySequenceToList>())
+        .def("FindInheritedPrimvar", &UsdGeomImageable::FindInheritedPrimvar,
+             arg("name"))
         .def("HasPrimvar", &UsdGeomImageable::HasPrimvar, arg("name"))
+        .def("HasInheritedPrimvar", &UsdGeomImageable::HasInheritedPrimvar,
+             arg("name"))
         .def("GetOrderedPurposeTokens",
              &UsdGeomImageable::GetOrderedPurposeTokens,
              return_value_policy<TfPySequenceToList>())

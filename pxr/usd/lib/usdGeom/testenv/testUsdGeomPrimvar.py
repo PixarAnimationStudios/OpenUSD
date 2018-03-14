@@ -341,5 +341,71 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         foo.BlockIndices()
         self.assertFalse(foo.IsIndexed())
 
+    def test_PrimvarInheritance(self):
+        stage = Usd.Stage.CreateInMemory('primvarInheritance.usda')
+        s0 = UsdGeom.Mesh.Define(stage, '/s0')
+        s1 = UsdGeom.Mesh.Define(stage, '/s0/s1')
+        s2 = UsdGeom.Mesh.Define(stage, '/s0/s1/s2')
+        s3 = UsdGeom.Mesh.Define(stage, '/s0/s1/s2/s3')
+        s4 = UsdGeom.Mesh.Define(stage, '/s0/s1/s2/s3/s4')
+
+        u1 = s1.CreatePrimvar('u1', Sdf.ValueTypeNames.Float)
+        u1.SetInterpolation(UsdGeom.Tokens.constant)
+        u1.Set(1)
+
+        u2 = s2.CreatePrimvar('u2', Sdf.ValueTypeNames.Float)
+        u2.SetInterpolation(UsdGeom.Tokens.constant)
+        u2.Set(2)
+
+        u3 = s3.CreatePrimvar('u3', Sdf.ValueTypeNames.Float)
+        u3.SetInterpolation(UsdGeom.Tokens.constant)
+        u3.Set(3)
+
+        # u4 overrides u3 on prim s4.
+        u4 = s4.CreatePrimvar('u3', Sdf.ValueTypeNames.Float)
+        u4.SetInterpolation(UsdGeom.Tokens.constant)
+        u4.Set(4)
+
+        # Test FindInheritedPrimvars().
+        self.assertEqual(len(s0.FindInheritedPrimvars()), 0)
+        self.assertEqual(len(s1.FindInheritedPrimvars()), 0)
+        self.assertEqual(len(s2.FindInheritedPrimvars()), 1)
+        self.assertEqual(len(s3.FindInheritedPrimvars()), 2)
+        self.assertEqual(len(s4.FindInheritedPrimvars()), 2)
+
+        # Test HasInheritedPrimvar().
+        # s0
+        self.assertFalse(s0.HasInheritedPrimvar('u1'))
+        # s1
+        self.assertFalse(s1.HasInheritedPrimvar('u1'))
+        # s2
+        self.assertTrue(s2.HasInheritedPrimvar('u1'))
+        self.assertFalse(s2.HasInheritedPrimvar('u2'))
+        # s3
+        self.assertTrue(s3.HasInheritedPrimvar('u1'))
+        self.assertTrue(s3.HasInheritedPrimvar('u2'))
+        self.assertFalse(s3.HasInheritedPrimvar('u3'))
+        # s4
+        self.assertTrue(s4.HasInheritedPrimvar('u1'))
+        self.assertTrue(s4.HasInheritedPrimvar('u2'))
+        self.assertFalse(s4.HasInheritedPrimvar('u3')) # set locally!
+
+        # Test FindInheritedPrimvar().
+        # Confirm that an inherited primvar is bound to the source prim, which
+        # may be an ancestor.
+        self.assertFalse(s0.FindInheritedPrimvar('u1'))
+        self.assertFalse(s1.FindInheritedPrimvar('u1'))
+        self.assertEqual(s2.FindInheritedPrimvar('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s3.FindInheritedPrimvar('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s4.FindInheritedPrimvar('u1').GetAttr().GetPrim(),
+                s1.GetPrim())
+        self.assertEqual(s4.FindInheritedPrimvar('u2').GetAttr().GetPrim(),
+                s2.GetPrim())
+        # Confirm that if the primvar is overriden locally, it does not
+        # also get found as an inherited primvar.
+        self.assertFalse(s4.FindInheritedPrimvar('u3'))
+
 if __name__ == "__main__":
     unittest.main()

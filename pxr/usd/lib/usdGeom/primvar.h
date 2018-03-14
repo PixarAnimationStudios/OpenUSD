@@ -58,7 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \section Usd_What_Is_Primvar What is the Purpose of a Primvar?
 ///
-/// There are two key aspects of Primvar identity:
+/// There are three key aspects of Primvar identity:
 /// \li Primvars define a value that can vary across the primitive on which
 ///     they are defined, via prescribed interpolation rules
 /// \li Taken collectively on a prim, its Primvars describe the "per-primitive
@@ -70,6 +70,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     UsdShadeShader objects, \em not 
 ///     \ref UsdShadeNodeGraph_Interfaces "Interface Attributes" on UsdShadeMaterial
 ///     prims.
+/// \li *Primvars inherit down scene namespace.*  Regular USD attributes only
+///     apply to the prim on which they are specified, but primvars implicitly
+///     also apply to any child prims, unless those child prims have their
+///     own opinions about those primvars.  This capability necessarily
+///     entails added cost to check for inherited values, but the benefit
+///     is that it allows concise encoding of certain opinions that broadly
+///     affect large amounts of geometry.  See
+///     UsdGeomImageable::FindInheritedPrimvars().
 ///
 /// \section Usd_Creating_and_Accessing_Primvars Creating and Accessing Primvars
 /// 
@@ -194,7 +202,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \section Usd_UsdGeomPrimvar_Lifetime Lifetime Management and Primvar Validity
 ///
-/// UsdGeomPrimvar has an unspecified-bool-type operator that validates that
+/// UsdGeomPrimvar has an explicit bool operator that validates that
 /// the attribute IsDefined() and thus valid for querying and authoring
 /// values and metadata.  This is a fairly expensive query that we do 
 /// <b>not</b> cache, so if client code retains UsdGeomPrimvar objects, it should 
@@ -238,12 +246,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// example of how to layer schema onto a generic UsdAttribute object.  In both
 /// cases, the schema object wraps and contains the UsdObject.
 ///
+/// \section Usd_UsdGeomPrimvar_Inheritance Primvar Namespace Inheritance
+///
+/// Primvar values can be inherited down namespace.  That is, a primvar
+/// value set on a prim will also apply to any child prims, unless those
+/// children have their own opinions about those named primvars.
+///
+/// \sa UsdGeomImageable::FindInheritedPrimvars().
+///
 class UsdGeomPrimvar
 {
-    typedef const UsdAttribute UsdGeomPrimvar::*_UnspecifiedBoolType;
+public:
 
- public:
-  
     // Default constructor returns an invalid Primvar.  Exists for 
     // container classes
     UsdGeomPrimvar()
@@ -254,7 +268,7 @@ class UsdGeomPrimvar
     /// Speculative constructor that will produce a valid UsdGeomPrimvar when
     /// \p attr already represents an attribute that is Primvar, and
     /// produces an \em invalid Primvar otherwise (i.e. 
-    /// \ref UsdGeomPrimvar_bool_type "unspecified-bool-type()" will return false).
+    /// \ref UsdGeomPrimvar_bool "operator bool()" will return false).
     ///
     /// Calling \c UsdGeomPrimvar::IsPrimvar(attr) will return the same truth
     /// value as this constructor, but if you plan to subsequently use the
@@ -364,16 +378,12 @@ class UsdGeomPrimvar
     /// addition the attribute is identified as a Primvar.
     bool IsDefined() const { return IsPrimvar(_attr); }
 
-    /// \anchor UsdGeomPrimvar_bool_type
+    /// \anchor UsdGeomPrimvar_bool
     /// Return true if this Primvar is valid for querying and authoring
     /// values and metadata, which is identically equivalent to IsDefined().
-#ifdef doxygen
-    operator unspecified-bool-type() const();
-#else
-    operator _UnspecifiedBoolType() const {
+    explicit operator bool() const {
         return IsDefined() ? &UsdGeomPrimvar::_attr : 0;
     }
-#endif // doxygen
 
     /// \sa UsdAttribute::GetName()
     TfToken const &GetName() const { return _attr.GetName(); }
