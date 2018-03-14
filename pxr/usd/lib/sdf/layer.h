@@ -1472,7 +1472,8 @@ private:
     static bool _ComputeInfoToFindOrOpenLayer(
         const std::string& identifier,
         const SdfLayer::FileFormatArguments& args,
-        _FindOrOpenLayerInfo* info);
+        _FindOrOpenLayerInfo* info,
+        bool computeAssetInfo = false);
 
     // Open a layer, adding an entry to the registry and releasing
     // the registry lock.
@@ -1481,10 +1482,7 @@ private:
     static SdfLayerRefPtr _OpenLayerAndUnlockRegistry(
         Lock &lock,
         const _FindOrOpenLayerInfo& info,
-        bool metadataOnly,
-        std::string const &resolvedPath,
-        const ArAssetInfo &assetInfo,
-        bool isAnonymous);
+        bool metadataOnly);
 
     // Helper function to try to find the layer with \p identifier and
     // pre-resolved path \p resolvedPath in the registry.  Caller must hold
