@@ -298,6 +298,10 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
         return false;
     }
 
+    if (!mJobCtx.getSkelBindingsWriter().WriteSkelBindings(mJobCtx.mStage)) {
+        return false;
+    }
+
     // now we populate the chasers and run export default
     mChasers.clear();
     PxrUsdMayaChaserRegistry::FactoryContext ctx(mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);

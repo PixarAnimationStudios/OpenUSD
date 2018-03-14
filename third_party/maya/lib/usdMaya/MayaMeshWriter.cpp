@@ -440,13 +440,6 @@ MayaMeshWriter::exportsGprims() const
     return true;
 }
 
-void
-MayaMeshWriter::postExport()
-{
-    UsdGeomMesh primSchema(mUsdPrim);
-    writeSkinningRels(primSchema);
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

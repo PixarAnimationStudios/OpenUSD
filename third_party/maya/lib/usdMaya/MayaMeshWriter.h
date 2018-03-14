@@ -50,7 +50,6 @@ class MayaMeshWriter : public MayaTransformWriter
     virtual ~MayaMeshWriter() {};
 
     virtual void write(const UsdTimeCode &usdTime) override;
-    virtual void postExport() override;
     virtual bool exportsGprims() const override;
 
   protected:
@@ -70,11 +69,6 @@ class MayaMeshWriter : public MayaTransformWriter
     /// returns a null MObject.
     /// This should only be called once at the default time.
     MObject writeSkinningData(UsdGeomMesh& primSchema);
-
-    /// Writes the UsdSkel relationships that connect this mesh to the correct
-    /// Skeleton. We do this separately to make sure that the Skeleton exists
-    /// before writing the relationship.
-    void writeSkinningRels(UsdGeomMesh& primSchema);
 
     bool _GetMeshUVSetData(
         const MFnMesh& mesh,
@@ -157,9 +151,6 @@ class MayaMeshWriter : public MayaTransformWriter
     static const GfVec3f _ColorSetDefaultRGB;
     static const float _ColorSetDefaultAlpha;
 
-    /// Root joint of the skin cluster's influence joints.
-    /// (The root joint might not be in our influences list).
-    MDagPath _skelRootJoint;
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;
 };

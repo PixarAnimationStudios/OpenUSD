@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "usdMaya/api.h"
+#include "usdMaya/skelBindingsWriter.h"
 #include "usdMaya/JobArgs.h"
 
 #include <maya/MDagPath.h>
@@ -69,6 +70,11 @@ public:
             const SdfPath& usdPath = SdfPath());
     PXRUSDMAYA_API
     bool needToTraverse(const MDagPath& curDag);
+    PXRUSDMAYA_API
+    PxrUsdMaya_SkelBindingsWriter& getSkelBindingsWriter()
+    {
+        return mSkelBindingsWriter;
+    }
 protected:
     PXRUSDMAYA_API
     bool openFile(const std::string& filename, bool append);
@@ -97,6 +103,7 @@ private:
             bool instanceSource);
     UsdPrim mInstancesPrim;
     bool mNoInstances;
+    PxrUsdMaya_SkelBindingsWriter mSkelBindingsWriter;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
