@@ -22,5 +22,21 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from treeview import *
-from treemodel import *
+import _gusd
+from pxr import Tf
+Tf.PrepareModule(_gusd, locals())
+del Tf
+
+try:
+    import __DOC
+    __DOC.Execute(locals())
+    del __DOC
+except Exception:
+    try:
+        import __tmpDoc
+        __tmpDoc.Execute(locals())
+        del __tmpDoc
+    except:
+        pass
+
+

@@ -55,8 +55,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_EXPANDRELS, true,
-                      "Expand maked stage loads to include targets "
-                      "of relationships.");
+                      "Expand stage masks to include targets of relationships. "
+                      "It may be possible to disable this option, which may "
+                      "provide performance gains, but correctness cannot be "
+                      "guaranteed when doing so.");
+
+
+TF_DEFINE_ENV_SETTING(GUSD_STAGEMASK_ENABLE, true,
+                      "Enable use of stage masks when accessing prims from "
+                      "the cache. Note that disabling this feature may "
+                      "be very detrimental to performance when separately "
+                      "querying many prims with variant selections "
+                      "(or other types of stage edits).");
 
 
 namespace {
@@ -332,9 +342,12 @@ struct _SdfPathHashCmp
 };
 
 
+} /*namespace*/
+
+
 /// Cache holding stages for different sets of masked prims.
 /// These caches are created for a common set of stage options.
-class _MaskedStageCache
+class GusdStageCache::_MaskedStageCache
 {
 public:
     _MaskedStageCache(GusdStageCache::_Impl& stageCache, const _StageKey& key)
@@ -362,9 +375,6 @@ private:
     _StageMap               _map;
     const _StageKey         _stageKey;
 };
-
-
-} /*namespace*/
 
 
 /// Primary internal cache implementation.
@@ -446,9 +456,10 @@ private:
     using _StageMap = UT_ConcurrentHashMap<_StageKey,UsdStageRefPtr,
                                            _StageKeyHashCmp>;
 
-    using _MaskedStageCacheMap = UT_ConcurrentHashMap<_StageKey,
-                                                      _MaskedStageCache*,
-                                                      _StageKeyHashCmp>;
+    using _MaskedStageCacheMap =
+        UT_ConcurrentHashMap<_StageKey,
+                             GusdStageCache::_MaskedStageCache*,
+                             _StageKeyHashCmp>;
 
     struct _StageHashCmp
     {
@@ -580,11 +591,21 @@ GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
 
     if(!expandAtKind.IsEmpty()) {
         auto popMask = stage->GetPopulationMask();
-        bool changed = false;
+        bool foundAncestorToExpand = false;
 
-        UsdPrimRange range = stage->TraverseAll();
+        const auto modelSearchPredicate =
+            UsdPrimIsDefined && UsdPrimIsModel
+            && UsdPrimIsActive && !UsdPrimIsAbstract;
+
+        // Iterate over ancestor prims at each masked path,
+        // looking for possible points at which to expand the mask.
+        UsdPrimRange range = stage->Traverse(modelSearchPredicate);
         for(auto it = range.begin(); it != range.end(); ++it) {
+
             if(popMask.IncludesSubtree(it->GetPath())) {
+                // Don't traverse beneath the masking points, because
+                // masking guarantees that subtrees of the masking points
+                // are fully expanded and present.
                 it.PruneChildren();
                 continue;
             }
@@ -594,12 +615,41 @@ GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
                KindRegistry::IsA(kind, expandAtKind)) {
 
                 popMask.Add(it->GetPath());
-                changed = true;
+
+                foundAncestorToExpand = true;
                 it.PruneChildren();
             }
         }
-        if(changed)
+        if(foundAncestorToExpand) {
             stage->SetPopulationMask(popMask);
+        } else  if(!foundAncestorToExpand) {
+            // Couldn't find a reasonable enclosing model to expand to.
+            // This might mean that the kinds of prims we want to expand to are
+            // descendants of the masking point. Find out if that's the case.
+            // (Note that unlike the previous traversal, this traversal
+            // iterates *beneath* the masking sites)
+            bool havePrimsWithExpansionKind = false;
+            for(const auto& prim : stage->Traverse(modelSearchPredicate)) {
+                TfToken kind;
+                if(UsdModelAPI(prim).GetKind(&kind) &&
+                   KindRegistry::IsA(kind, expandAtKind)) {
+                    havePrimsWithExpansionKind = true;
+                    break;
+                }
+            }
+
+            if(!havePrimsWithExpansionKind) {
+                // No prims matching the target expandAtKind were found.
+                // This can happen if a stage isn't encoding appropriate
+                // kinds in its model hierarchy, or if a stage is using a
+                // non-standard kind hierarchy.
+                // Rather than risking creating a stage per leaf-prim queried
+                // from the cache, it's better to just expand to include the
+                // full stage.
+                stage->SetPopulationMask(UsdStagePopulationMask::All());
+                return;
+            }
+        }
     }
 
     if(TfGetEnvSetting(GUSD_STAGEMASK_EXPANDRELS)) {
@@ -607,7 +657,6 @@ GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
         // TODO: This currently will test all relationships, and may be very
         // expensive. For performance, it may be necessary to limit the set
         // of relationships that are searched (skipping, say, shaders).
-        // TODO: This currently does not consider attribute connections.
         stage->ExpandPopulationMask();
     }
 }
@@ -680,8 +729,10 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     UT_ASSERT_P(primPath.IsAbsolutePath());
     UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
 
-    if(primPath == SdfPath::AbsoluteRootPath()) {
-        // Take the cheap path!
+    if(primPath == SdfPath::AbsoluteRootPath() ||
+       !TfGetEnvSetting(GUSD_STAGEMASK_ENABLE)) {
+
+        // Access full stages.
         return FindOrOpenStage(path, opts, edit, err);
     }
 
@@ -707,7 +758,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     _MaskedStageCacheMap::accessor a;
     _StageKey newKey(path, opts, edit);
     if(_maskedCacheMap.insert(a, newKey))
-        a->second = new _MaskedStageCache(*this, newKey);
+        a->second = new GusdStageCache::_MaskedStageCache(*this, newKey);
     UT_ASSERT_P(a->second);
     return a->second->FindOrOpenStage(primPath, err);
 }
@@ -820,7 +871,7 @@ GusdStageCache::_Impl::FindStages(const UT_StringSet& paths,
 
 
 UsdStageRefPtr
-_MaskedStageCache::FindStage(const SdfPath& primPath)
+GusdStageCache::_MaskedStageCache::FindStage(const SdfPath& primPath)
 {
     UT_ASSERT_P(primPath.IsAbsolutePath());
     UT_ASSERT_P(primPath.IsAbsoluteRootOrPrimPath());
@@ -862,8 +913,8 @@ _MaskedStageCache::FindStage(const SdfPath& primPath)
 
 
 UsdStageRefPtr
-_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
-                                   GusdUT_ErrorContext* err)
+GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
+                                                   GusdUT_ErrorContext* err)
 {
     if(UsdStageRefPtr stage = FindStage(primPath))
         return stage;
@@ -952,7 +1003,7 @@ GusdStageCacheReader::~GusdStageCacheReader()
 UsdStageRefPtr
 GusdStageCacheReader::Find(const UT_StringRef& path,
                            const GusdStageOpts& opts,
-                           const GusdStageEditPtr& edit)
+                           const GusdStageEditPtr& edit) const
 {
     return path ? _cache._impl->FindStage(path, opts, edit) : TfNullPtr;
 }
@@ -1069,7 +1120,7 @@ GusdStageCacheReader::GetPrims(
     const UT_Array<SdfPath>& primPaths,
     const GusdDefaultArray<GusdStageEditPtr>& edits,
     UsdPrim* prims,
-    const GusdStageOpts opts,
+    const GusdStageOpts& opts,
     GusdUT_ErrorContext* err)
 {
     exint count = primPaths.size();

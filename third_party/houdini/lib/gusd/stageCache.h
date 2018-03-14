@@ -57,6 +57,10 @@ public:
 
     ~GusdStageCache();
 
+    GusdStageCache(const GusdStageCache&) = delete;
+
+    GusdStageCache& operator=(const GusdStageCache&) = delete;
+
     static GusdStageCache&  GetInstance();
 
     /// Add/remove auxiliary data caches.
@@ -91,7 +95,9 @@ public:
     static void ReloadLayers(const UT_Set<SdfLayerHandle>& layers);
 
 
-public://TEMP
+private:
+    class _MaskedStageCache;
+
     class _Impl;
     _Impl* const    _impl;
 
@@ -129,18 +135,22 @@ public:
     GusdStageCacheReader(GusdStageCache& cache=GusdStageCache::GetInstance())
         : GusdStageCacheReader(cache, false) {}
 
+    GusdStageCacheReader(const GusdStageCacheReader&) = delete;
+
+    GusdStageCacheReader& operator=(const GusdStageCacheReader&) = delete;
+
     ~GusdStageCacheReader();
 
     /// Find an existing stage on the cache.
     UsdStageRefPtr
     Find(const UT_StringRef& path,
          const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-         const GusdStageEditPtr& edit=nullptr);
+         const GusdStageEditPtr& edit=nullptr) const;
     
     /// Return a stage from the cache, if one exists.
     /// If not, attempt to open the stage and add it to the cache.
     UsdStageRefPtr
-    FindOrOpen(const UT_StringRef& assetPath,
+    FindOrOpen(const UT_StringRef& path,
                const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
                const GusdStageEditPtr& edit=nullptr,
                GusdUT_ErrorContext* err=nullptr);
@@ -163,20 +173,28 @@ public:
     /// edits has already been loaded on the cache, the prim will fetched from
     /// that stage instead.
     ///
+    /// This use of masking may be disabled by way of the GUSD_STAGEMASK_ENABLE
+    /// environment variable, but beware that doing so may significantly degrade
+    /// performance for certain access patterns, such as if many separate prims
+    /// are being queried from the cache with different stage edits.
+    ///
+    /// \subection Primitive Encapsulation
+    ///
     /// Because primitives are masked to include a subset of a stage,
-    /// there is an expectation that the caller follows encapsulation rules:
-    /// Ancestor prims are guanteed to be loaded, and all descendant prims
-    /// of the returned prims will also be loaded. There is no guarantee,
-    /// through, that either siblings or prims elsewhere in the scene
-    /// graph will be composed on the returned stage.
-    /// Any dependencies on unrelated prims (not descendants or ancestors)
-    /// must be defined by the presence of a relationships or attribute
-    /// connections (not supported yet).
-    /// Any attempt to reach implicit dependencies -- for example, a schema
-    /// that accesses other non-descendant prims using naming conventions --
+    /// there is an expectation that the caller follows _encapsulation_ rules.
+    /// When we read in a prim, we consider that prim to be encapsulated,
+    /// which means that if any other primitives from the stage are required
+    /// to process an encapsulated primitive, they are expected to either
+    /// be descendants or ancestors of the encapsulated prim, or the dependency
+    /// to that external prim must be discoverable using either relationships
+    /// or attribute connections.
+    /// Following those encapsulation rules, neither _siblings_ of the prim
+    /// being requested, or other prims in separate branches of the stage
+    /// are guaranteed to be loaded. Any attempt to reach other prims that
+    /// can't be discovered using the above rules for discovering dependencies
     /// may either fail or introduce non-deterministic behavior.
 
-    /// Get a prim from the cache, on a maksed stage.
+    /// Get a prim from the cache, on a masked stage.
     PrimStagePair
     GetPrim(const UT_StringRef& path,
             const SdfPath& primPath,
@@ -192,7 +210,7 @@ public:
              const UT_Array<SdfPath>& primPaths,
              const GusdDefaultArray<GusdStageEditPtr>& edits,
              UsdPrim* prims,
-             const GusdStageOpts opts=GusdStageOpts::LoadAll(),
+             const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
              GusdUT_ErrorContext* err=nullptr);
 
     /// Get a prim from the cache, given a prim path that may contain
@@ -229,7 +247,7 @@ public:
     /// @}
 
 protected:
-    GusdStageCacheReader(GusdStageCache& cache, bool writer=false);
+    GusdStageCacheReader(GusdStageCache& cache, bool writer);
 
 protected:
     GusdStageCache& _cache;
@@ -246,6 +264,10 @@ class GUSD_API GusdStageCacheWriter : public GusdStageCacheReader
 {
 public:
     GusdStageCacheWriter(GusdStageCache& cache=GusdStageCache::GetInstance());
+
+    GusdStageCacheWriter(const GusdStageCacheWriter&) = delete;
+
+    GusdStageCacheWriter& operator=(const GusdStageCacheWriter&) = delete;
 
     /// Clear out all cached items.
     /// If micro nodes have been instantiated for any stages, they will

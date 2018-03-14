@@ -94,6 +94,17 @@ pxr_shared_library(${PXR_PACKAGE}
         packedUsdWrapper
         pointsWrapper
         instancerWrapper
+
+    PYMODULE_FILES
+        __init__.py
+        treeview.py
+        treemodel.py
+
+    PYMODULE_CPPFILES
+        module.cpp
+        wrapStageCache.cpp
+        wrapStageEdit.cpp
+        wrapStageOpts.cpp
 )
 
 file(GLOB ICON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "site/icons/*")
@@ -104,7 +115,6 @@ install(
     DESTINATION
         ${PXR_INSTALL_SUBDIR}/config/Icons
 )
-
 
 install( 
     FILES
