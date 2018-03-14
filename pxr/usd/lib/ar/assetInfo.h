@@ -56,6 +56,16 @@ public:
 };
 
 /// \relates ArAssetInfo
+inline
+void swap(ArAssetInfo& lhs, ArAssetInfo& rhs)
+{
+    lhs.version.swap(rhs.version);
+    lhs.assetName.swap(rhs.assetName);
+    lhs.repoPath.swap(rhs.repoPath);
+    lhs.resolverInfo.Swap(rhs.resolverInfo);
+}
+
+/// \relates ArAssetInfo
 AR_API
 bool 
 operator==(const ArAssetInfo& lhs, const ArAssetInfo& rhs);
