@@ -723,7 +723,8 @@ class AppController(QtCore.QObject):
 
             self._ui.showOBBox.triggered.connect(self._toggleShowOBBox)
 
-            self._ui.showBBoxPlayback.triggered.connect(self._toggleShowBBoxPlayback)
+            self._ui.showBBoxPlayback.triggered.connect(
+                self._toggleShowBBoxPlayback)
 
             self._ui.useExtentsHint.triggered.connect(self._setUseExtentsHint)
 
@@ -776,21 +777,26 @@ class AppController(QtCore.QObject):
 
             self._ui.complexityGroup.triggered.connect(self._changeComplexity)
 
-            self._ui.actionDisplay_Guide.triggered.connect(self._toggleDisplayGuide)
+            self._ui.actionDisplay_Guide.triggered.connect(
+                self._toggleDisplayGuide)
 
-            self._ui.actionDisplay_Proxy.triggered.connect(self._toggleDisplayProxy)
+            self._ui.actionDisplay_Proxy.triggered.connect(
+                self._toggleDisplayProxy)
 
-            self._ui.actionDisplay_Render.triggered.connect(self._toggleDisplayRender)
+            self._ui.actionDisplay_Render.triggered.connect(
+                self._toggleDisplayRender)
 
             self._ui.actionDisplay_Camera_Oracles.triggered.connect(
                 self._toggleDisplayCameraOracles)
 
-            self._ui.actionDisplay_PrimId.triggered.connect(self._toggleDisplayPrimId)
+            self._ui.actionDisplay_PrimId.triggered.connect(
+                self._toggleDisplayPrimId)
 
             self._ui.actionEnable_Hardware_Shading.triggered.connect(
                 self._toggleEnableHardwareShading)
 
-            self._ui.actionCull_Backfaces.triggered.connect(self._toggleCullBackfaces)
+            self._ui.actionCull_Backfaces.triggered.connect(
+                self._toggleCullBackfaces)
 
             self._ui.attributeInspector.currentChanged.connect(
                 self._updateAttributeInspector)
@@ -897,23 +903,26 @@ class AppController(QtCore.QObject):
                 self._pickCameraMaskColor)
 
             self._ui.actionCameraReticles_Inside.triggered.connect(
-                self._updateCameraReticlesMenu)
+                self._updateCameraReticlesInsideMenu)
 
             self._ui.actionCameraReticles_Outside.triggered.connect(
-                self._updateCameraReticlesMenu)
+                self._updateCameraReticlesOutsideMenu)
 
             self._ui.actionCameraReticles_Color.triggered.connect(
                 self._pickCameraReticlesColor)
 
-            self._ui.actionHUD.triggered.connect(self._HUDMenuChanged)
+            self._ui.actionHUD.triggered.connect(self._showHUDChanged)
 
-            self._ui.actionHUD_Info.triggered.connect(self._HUDMenuChanged)
+            self._ui.actionHUD_Info.triggered.connect(self._showHUD_InfoChanged)
 
-            self._ui.actionHUD_Complexity.triggered.connect(self._HUDMenuChanged)
+            self._ui.actionHUD_Complexity.triggered.connect(
+                self._showHUD_ComplexityChanged)
 
-            self._ui.actionHUD_Performance.triggered.connect(self._HUDMenuChanged)
+            self._ui.actionHUD_Performance.triggered.connect(
+                self._showHUD_PerformanceChanged)
 
-            self._ui.actionHUD_GPUstats.triggered.connect(self._HUDMenuChanged)
+            self._ui.actionHUD_GPUstats.triggered.connect(
+                self._showHUD_GPUstatsChanged)
 
             self._mainWindow.addAction(self._ui.actionIncrementComplexity1)
             self._mainWindow.addAction(self._ui.actionIncrementComplexity2)
@@ -1867,37 +1876,38 @@ class AppController(QtCore.QObject):
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
 
-    def _toggleShowBBoxPlayback(self, state):
+    def _toggleShowBBoxPlayback(self):
         """Called when the menu item for showing BBoxes
         during playback is activated or deactivated."""
-        self._dataModel.viewSettings.showBBoxPlayback = state
+        self._dataModel.viewSettings.showBBoxPlayback = (
+            self._ui.showBBoxPlayback.isChecked())
 
-    def _setUseExtentsHint(self, state):
-        self._dataModel.useExtentsHint = state
+    def _setUseExtentsHint(self):
+        self._dataModel.useExtentsHint = self._ui.useExtentsHint.isChecked()
 
         self._updateAttributeView()
 
         #recompute and display bbox
         self._refreshBBox()
 
-    def _toggleShowBBoxes(self, state):
+    def _toggleShowBBoxes(self):
         """Called when the menu item for showing BBoxes
         is activated."""
-        self._dataModel.viewSettings.showBBoxes = state
+        self._dataModel.viewSettings.showBBoxes = self._ui.showBBoxes.isChecked()
         #recompute and display bbox
         self._refreshBBox()
 
-    def _toggleShowAABBox(self, state):
+    def _toggleShowAABBox(self):
         """Called when Axis-Aligned bounding boxes
         are activated/deactivated via menu item"""
-        self._dataModel.viewSettings.showAABBox = state
+        self._dataModel.viewSettings.showAABBox = self._ui.showAABBox.isChecked()
         # recompute and display bbox
         self._refreshBBox()
 
-    def _toggleShowOBBox(self, state):
+    def _toggleShowOBBox(self):
         """Called when Oriented bounding boxes
         are activated/deactivated via menu item"""
-        self._dataModel.viewSettings.showOBBox = state
+        self._dataModel.viewSettings.showOBBox = self._ui.showOBBox.isChecked()
         # recompute and display bbox
         self._refreshBBox()
 
@@ -1906,26 +1916,33 @@ class AppController(QtCore.QObject):
         if self._stageView:
             self._stageView.updateView(forceComputeBBox=True)
 
-    def _toggleDisplayGuide(self, checked):
-        self._dataModel.viewSettings.displayGuide = checked
+    def _toggleDisplayGuide(self):
+        self._dataModel.viewSettings.displayGuide = (
+            self._ui.actionDisplay_Guide.isChecked())
 
-    def _toggleDisplayProxy(self, checked):
-        self._dataModel.viewSettings.displayProxy = checked
+    def _toggleDisplayProxy(self):
+        self._dataModel.viewSettings.displayProxy = (
+            self._ui.actionDisplay_Proxy.isChecked())
 
-    def _toggleDisplayRender(self, checked):
-        self._dataModel.viewSettings.displayRender = checked
+    def _toggleDisplayRender(self):
+        self._dataModel.viewSettings.displayRender = (
+            self._ui.actionDisplay_Render.isChecked())
 
-    def _toggleDisplayCameraOracles(self, checked):
-        self._dataModel.viewSettings.displayCameraOracles = checked
+    def _toggleDisplayCameraOracles(self):
+        self._dataModel.viewSettings.displayCameraOracles = (
+            self._ui.actionDisplay_Camera_Oracles.isChecked())
 
-    def _toggleDisplayPrimId(self, checked):
-        self._dataModel.viewSettings.displayPrimId = checked
+    def _toggleDisplayPrimId(self):
+        self._dataModel.viewSettings.displayPrimId = (
+            self._ui.actionDisplay_PrimId.isChecked())
 
-    def _toggleEnableHardwareShading(self, checked):
-        self._dataModel.viewSettings.enableHardwareShading = checked
+    def _toggleEnableHardwareShading(self):
+        self._dataModel.viewSettings.enableHardwareShading = (
+            self._ui.actionEnable_Hardware_Shading.isChecked())
 
-    def _toggleCullBackfaces(self, checked):
-        self._dataModel.viewSettings.cullBackfaces = checked
+    def _toggleCullBackfaces(self):
+        self._dataModel.viewSettings.cullBackfaces = (
+            self._ui.actionCull_Backfaces.isChecked())
 
     def _showInterpreter(self):
         if self._interpreter is None:
@@ -2408,8 +2425,9 @@ class AppController(QtCore.QObject):
         self._populateChildren(self._ui.primView.itemFromIndex(index))
         self._scheduleResizePrimView()
 
-    def _toggleShowInactivePrims(self, checked):
-        self._dataModel.viewSettings.showInactivePrims = checked
+    def _toggleShowInactivePrims(self):
+        self._dataModel.viewSettings.showInactivePrims = (
+            self._ui.actionShow_Inactive_Prims.isChecked())
         # Note: _toggleShowInactivePrims, _toggleShowMasterPrims,
         #       _toggleShowUndefinedPrims, and _toggleShowAbstractPrims all call
         #       _resetPrimView after being toggled, but only from menu items.
@@ -2418,20 +2436,24 @@ class AppController(QtCore.QObject):
         #       when they are changed.
         self._resetPrimView()
 
-    def _toggleShowMasterPrims(self, checked):
-        self._dataModel.viewSettings.showAllMasterPrims = checked
+    def _toggleShowMasterPrims(self):
+        self._dataModel.viewSettings.showAllMasterPrims = (
+            self._ui.actionShow_All_Master_Prims.isChecked())
         self._resetPrimView()
 
-    def _toggleShowUndefinedPrims(self, checked):
-        self._dataModel.viewSettings.showUndefinedPrims = checked
+    def _toggleShowUndefinedPrims(self):
+        self._dataModel.viewSettings.showUndefinedPrims = (
+            self._ui.actionShow_Undefined_Prims.isChecked())
         self._resetPrimView()
 
-    def _toggleShowAbstractPrims(self, checked):
-        self._dataModel.viewSettings.showAbstractPrims = checked
+    def _toggleShowAbstractPrims(self):
+        self._dataModel.viewSettings.showAbstractPrims = (
+            self._ui.actionShow_Abstract_Prims.isChecked())
         self._resetPrimView()
 
-    def _toggleRolloverPrimInfo(self, checked):
-        self._dataModel.viewSettings.rolloverPrimInfo = checked
+    def _toggleRolloverPrimInfo(self):
+        self._dataModel.viewSettings.rolloverPrimInfo = (
+            self._ui.actionRollover_Prim_Info.isChecked())
         if self._stageView:
             self._stageView.rolloverPicking = self._dataModel.viewSettings.rolloverPrimInfo
 
@@ -3497,9 +3519,11 @@ class AppController(QtCore.QObject):
         )
         self._dataModel.viewSettings.cameraMaskColor = color
 
-    def _updateCameraReticlesMenu(self):
+    def _updateCameraReticlesInsideMenu(self):
         self._dataModel.viewSettings.showReticles_Inside = (
             self._ui.actionCameraReticles_Inside.isChecked())
+
+    def _updateCameraReticlesOutsideMenu(self):
         self._dataModel.viewSettings.showReticles_Outside = (
             self._ui.actionCameraReticles_Outside.isChecked())
 
@@ -3515,14 +3539,22 @@ class AppController(QtCore.QObject):
         )
         self._dataModel.viewSettings.cameraReticlesColor = color
 
-    def _HUDMenuChanged(self):
+    def _showHUDChanged(self):
         self._dataModel.viewSettings.showHUD = self._ui.actionHUD.isChecked()
+
+    def _showHUD_InfoChanged(self):
         self._dataModel.viewSettings.showHUD_Info = (
             self._ui.actionHUD_Info.isChecked())
+
+    def _showHUD_ComplexityChanged(self):
         self._dataModel.viewSettings.showHUD_Complexity = (
             self._ui.actionHUD_Complexity.isChecked())
+
+    def _showHUD_PerformanceChanged(self):
         self._dataModel.viewSettings.showHUD_Performance = (
             self._ui.actionHUD_Performance.isChecked())
+
+    def _showHUD_GPUstatsChanged(self):
         self._dataModel.viewSettings.showHUD_GPUstats = (
             self._ui.actionHUD_GPUstats.isChecked())
 
