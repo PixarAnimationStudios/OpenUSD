@@ -681,18 +681,8 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
             if (bindingsIt == bindingsCache->end()) {
                 TRACE_SCOPE("UsdShadeMaterialBindingAPI::ComputeBoundMaterial "
                         "(BindingsCache)");
-
-                // XXX: How do we prevent other threads from populating the same 
-                // BindingsAtPrim?
-                std::unique_ptr<BindingsAtPrim> bindingsAtP(
-                    new BindingsAtPrim(p, materialPurpose));
-
-                // XXX emplace does not work here due to a tbb bug.
-                // See https://software.intel.com/en-us/forums/
-                // intel-threading-building-blocks/topic/671548
-                // Luckily the copy should be cheap here.
-                bindingsIt = bindingsCache->insert(std::make_pair(
-                    p.GetPath(), std::move(bindingsAtP))).first;
+                bindingsIt = bindingsCache->emplace(p.GetPath(), 
+                    std::make_shared<BindingsAtPrim>(p, materialPurpose)).first;
             }
 
             const BindingsAtPrim &bindingsAtP = *bindingsIt->second;
@@ -731,16 +721,12 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                     TRACE_SCOPE("UsdShadeMaterialBindingAPI::"
                         "ComputeBoundMaterial (CollectionQuery)");
 
-                    std::unique_ptr<UsdCollectionAPI::MembershipQuery> 
-                        mQuery(new UsdCollectionAPI::MembershipQuery);
+                    std::shared_ptr<UsdCollectionAPI::MembershipQuery> mQuery =
+                        std::make_shared<UsdCollectionAPI::MembershipQuery>();
                     collection.ComputeMembershipQuery(mQuery.get());
 
-                    // XXX emplace does not work here due to a tbb bug.
-                    // See https://software.intel.com/en-us/forums/
-                    // intel-threading-building-blocks/topic/671548
-                    // Luckily the copy should be cheap here.
-                    collIt = collectionQueryCache->insert(std::make_pair(
-                            collectionPath, std::move(mQuery))).first;
+                    collIt = collectionQueryCache->emplace(
+                        collectionPath, mQuery).first; 
                 }
                 
                 bool isPrimIncludedInCollection = 
