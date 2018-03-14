@@ -55,7 +55,7 @@ have the following dependencies.
 | [CMake](https://cmake.org/documentation/)                         | 2.8.8 (Linux/OS X), 3.1.1 (Windows)    |   |
 | [Python](https://python.org)                                      | 2.7.5                                  | x |
 | [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows)    |   |
-| [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.3.1                                  |   |
+| [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.4 Update 6                           |   |
 
 The Imaging and USD Imaging components (located in pxr/imaging and pxr/usdImaging
 respectively) have the following additional dependencies. These components can
