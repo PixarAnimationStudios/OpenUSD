@@ -159,9 +159,6 @@ private:
     /// Returns the UsdGeomImagable "purpose" for this prim, including any
     /// inherited purpose. Inherited values are strongest.
     TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time);
-
-    /// Returns the path to the material used by this prim
-    SdfPath _GetMaterialId(UsdPrim const& prim);
 };
 
 

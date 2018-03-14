@@ -185,6 +185,11 @@ protected:
 
 private:
 
+    SdfPath _Populate(UsdPrim const& prim,
+                      UsdImagingIndexProxy* index,
+                      UsdImagingInstancerContext const* instancerContext,
+                      SdfPath const& parentProxyPath);
+
     struct _ProtoRprim;
     struct _ProtoGroup;
 
@@ -202,8 +207,10 @@ private:
     SdfPath 
     _InsertProtoRprim(UsdPrimRange::iterator *iter,
                       const TfToken& protoName,
-                      SdfPath instanceMaterialId,
+                      SdfPath materialId,
+                      TfToken drawMode,
                       SdfPath instancerPath,
+                      UsdImagingPrimAdapterSharedPtr const& primAdapter,
                       UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
                       UsdImagingIndexProxy* index,
                       bool *isLeafInstancer);
@@ -342,6 +349,9 @@ private:
         // The material path associated with this instancer.
         SdfPath materialId;
 
+        // The drawmode associated with this instancer.
+        TfToken drawMode;
+
         // Paths to Usd instance prims. Note that this is not necessarily
         // equivalent to all the instances that will be drawn. See below.
         std::vector<SdfPath> instancePaths;
@@ -394,23 +404,21 @@ private:
     //
     // For Usd scenegraph instancing, a master prim and its descendents
     // roughly correspond to the instancer and prototype prims. However,
-    // Hd requires a different instancer and rprims for different material
-    // bindings. This means we cannot use the Usd master prim as the
-    // instancer, because we can't represent this in the case where multiple
-    // Usd instances share the same master but have different bindings.
+    // Hd requires a different instancer and rprims for different combinations
+    // of inherited attributes (material binding, draw mode, etc).
+    // This means we cannot use the Usd master prim as the instancer, because
+    // we can't represent this in the case where multiple Usd instances share
+    // the same master but have different bindings.
     //
-    // Instead, we use the first instance of a master with a given material
-    // binding as our instancers. For example, if /A and /B are both
-    // instances of /__Master_1 but /A and /B have different material
+    // Instead, we use the first instance of a master with a given set of
+    // inherited attributes as our instancer. For example, if /A and /B are
+    // both instances of /__Master_1 but /A and /B have different material
     // bindings authored on them, both /A and /B will be instancers,
     // with their own set of rprims and instance indices.
     //
-    // The below is essentially a map from (master path, material binding)
-    // to instancer path. The data for this instancer is located in the
-    // _InstancerDataMap above.
-    typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash>
-        _MaterialIdToInstancerMap;
-    typedef TfHashMap<SdfPath, _MaterialIdToInstancerMap, SdfPath::Hash>
+    // The below is a multimap from master path to instancer path. The data
+    // for the instancer is located in the _InstancerDataMap above.
+    typedef TfHashMultiMap<SdfPath, SdfPath, SdfPath::Hash>
         _MasterToInstancerMap;
     _MasterToInstancerMap _masterToInstancerMap;
 };

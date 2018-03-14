@@ -76,6 +76,16 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
+    return _Populate(prim, index, instancerContext,
+                     SdfPath::AbsoluteRootPath());
+}
+
+SdfPath
+UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
+                            UsdImagingIndexProxy* index,
+                            UsdImagingInstancerContext const* instancerContext,
+                            SdfPath const& parentProxyPath)
+{
     TF_DEBUG(USDIMAGING_INSTANCER).Msg(
         "[Populate NI] prim=%s\n", prim.GetPath().GetText());
 
@@ -95,30 +105,6 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         return SdfPath();
     }
 
-    // This is a shared_ptr to the prim adapter for the current instancePrim.
-    const UsdImagingPrimAdapterSharedPtr instancedPrimAdapter = 
-        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
-
-    // If this instance prim itself is an imageable prim, we disable
-    // drawing and report the issue to the user. We can not instance
-    // a gprim (or instancer) directly since we can not derive any 
-    // scalability benefit from mesh-to-mesh instancing. 
-    //
-    // This won't happen when processing the instance's master, 
-    // since the master is never a drawable prim.
-    //
-    // IsNativeInstanceable() gives the adapter the option to override this
-    // behavior.
-    if (instancedPrimAdapter &&
-        !instancedPrimAdapter->IsNativeInstanceable(prim)) {
-        TF_WARN("The gprim at path <%s> was directly instanced. "
-                "In order to instance this prim, put the prim under an Xform, "
-                "and instance the Xform parent.",
-                prim.GetPath().GetText());
-
-        return SdfPath();
-    }
-
     // This is a shared_ptr to ourself. The InstancerContext requires the
     // adapter shared_ptr.
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter = 
@@ -126,26 +112,64 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
 
     const SdfPath& instanceMaterialId = instancerAdapter->GetMaterialId(prim);
 
-    // Store away the path of the given instance prim to use as the
-    // instancer for Hydra if this is the first time we've seen this 
-    // (master, material binding) pair.
-    const SdfPath& instancerPath = 
-        _masterToInstancerMap[masterPrim.GetPath()].insert(
-        std::make_pair(instanceMaterialId, instancePath)).first->second;
+    // Construct the instance proxy path for "instancePath" to look up the
+    // draw mode for this instance.  If this is a nested instance (meaning
+    // "prim" is part of a master), parentProxyPath contains the instance
+    // proxy path for the master we're currently in, so we can stitch the full
+    // proxy path together.
+    SdfPathVector instancerChain;
+    instancerChain = { instancePath };
+    if (prim.IsInMaster()) {
+        instancerChain.push_back(parentProxyPath);
+    }
+    const TfToken& instanceDrawMode = GetModelDrawMode(_GetPrim(
+        _GetPrimPathFromInstancerChain(instancerChain)));
+
+    // Check if there's an instance in use as a hydra instancer for this master
+    // with the appropriate inherited attributes.
+    SdfPath instancerPath;
+    auto range = _masterToInstancerMap.equal_range(masterPrim.GetPath());
+    for (auto it = range.first; it != range.second; ++it) {
+        _InstancerData& instancerData = _instancerData[it->second];
+        // If material ID or draw mode differ, split the instance.
+        if (instancerData.materialId == instanceMaterialId &&
+            instancerData.drawMode == instanceDrawMode) {
+            instancerPath = it->second;
+            break;
+        }
+    }
+
+    // If we didn't find a suitable hydra instancer for this master,
+    // add a new one.
+    if (instancerPath.IsEmpty()) {
+        _masterToInstancerMap.insert(
+            std::make_pair(masterPrim.GetPath(), instancePath));
+        instancerPath = instancePath;
+    }
 
     _InstancerData& instancerData = _instancerData[instancerPath];
     instancerData.dirtyBits = HdChangeTracker::AllDirty;
+
+    // Compute the instancer proxy path (which might be different than the
+    // one computed above, if instancePath and instancerPath are different...)
+    instancerChain = { instancerPath };
+    if (_GetPrim(instancerPath).IsInMaster()) {
+        instancerChain.push_back(parentProxyPath);
+    }
+    SdfPath instancerProxyPath = _GetPrimPathFromInstancerChain(instancerChain);
 
     std::vector<UsdPrim> nestedInstances;
 
     if(instancerData.instancePaths.empty()) {
         instancerData.masterPath = masterPrim.GetPath();
         instancerData.materialId = instanceMaterialId;
+        instancerData.drawMode = instanceDrawMode;
 
         // Add this instancer into the render index.
         UsdImagingInstancerContext ctx = { SdfPath(),
                                            TfToken(),
                                            SdfPath(),
+                                           TfToken(),
                                            instancerAdapter };
 
         // -------------------------------------------------------------- //
@@ -162,15 +186,11 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
         // -------------------------------------------------------------- //
         // Allocate the Rprims
         // -------------------------------------------------------------- //
-        int protoID = 0;
 
-        // The master is a typeless stub for instancing and should
-        // never itself be a renderable gprim, so we can skip it initially
-        // and just iterate over its children;
         UsdPrimRange range(masterPrim);
-        range.increment_begin();
-
+        int protoID = 0;
         int primCount = 0;
+
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             // If we encounter an instance in this master, save it aside
             // for a subsequent population pass since we'll need to populate
@@ -180,24 +200,60 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
                 continue;
             }
 
-            UsdImagingPrimAdapterSharedPtr const& adapter =
-                _GetPrimAdapter(*iter);
-            if (!adapter || adapter->IsPopulatedIndirectly()) {
+            // Stitch the current prim-in-master path to the instancer proxy
+            // path to get a full scene-scoped path that we can pass to
+            // _GetPrimAdapter (since _GetPrimAdapter needs the instance proxy
+            // path for inherited value resolution).
+            instancerChain = { iter->GetPath(), instancerProxyPath };
+            UsdPrim instanceProxyPrim =
+                _GetPrim(_GetPrimPathFromInstancerChain(instancerChain));
+            if (!instanceProxyPrim) {
+                continue;
+            }
+
+            UsdImagingPrimAdapterSharedPtr const& primAdapter =
+                _GetPrimAdapter(instanceProxyPrim, /*ignoreInstancing=*/ true);
+            if (!primAdapter || primAdapter->IsPopulatedIndirectly()) {
+                continue;
+            }
+
+            // If we're processing the master prim, it's normally not allowed
+            // to be imageable.  We can't instance a gprim (or instancer)
+            // directly since we don't derive any scalability benefit from
+            // mesh-to-mesh instancing.
+            //
+            // Exceptions (like cards mode) will be flagged by the function
+            // CanPopulateMaster() on their prim adapter.
+            //
+            // If the master prim has an adapter and shouldn't, generate a
+            // warning and continue.
+            if (iter->IsMaster() && primAdapter &&
+                !primAdapter->CanPopulateMaster()) {
+                TF_WARN("The gprim at path <%s> was directly instanced. "
+                        "In order to instance this prim, put the prim under an "
+                        "Xform, and instance the Xform parent.",
+                        iter->GetPath().GetText());
                 continue;
             }
                 
             // 
-            // Rprim allocation. 
+            // prototype allocation. 
             //
             const TfToken protoName(TfStringPrintf(
                 "proto_%s_id%d", iter->GetName().GetText(), protoID++));
-
             bool isLeafInstancer;
 
+            // Inherited attribute resolution...
+            SdfPath protoMaterialId = primAdapter->GetMaterialId(prim);
+            if (protoMaterialId.IsEmpty()) {
+                protoMaterialId = instanceMaterialId;
+            }
+            TfToken protoDrawMode = GetModelDrawMode(instanceProxyPrim);
+
             const SdfPath protoPath = 
-                _InsertProtoRprim(&iter, protoName,
-                                  instanceMaterialId,
-                                  instancerPath, instancerAdapter, index,
+                _InsertProtoRprim(&iter, protoName, protoMaterialId,
+                                  protoDrawMode, instancerPath,
+                                  primAdapter, instancerAdapter, index,
                                   &isLeafInstancer);
                     
             // 
@@ -205,7 +261,7 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             //
             _ProtoRprim& rproto = instancerData.primMap[protoPath];
             rproto.path = iter->GetPath();
-            rproto.adapter = adapter;
+            rproto.adapter = primAdapter;
             rproto.protoGroup = grp;
             ++primCount;
 
@@ -214,10 +270,12 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
             }
 
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-                "[Add Instance NI] <%s>  %s (%s), adapter = %p\n",
+                "[Add Instance NI] <%s>  %s (%s), adapter = %s\n",
                 instancerPath.GetText(), protoPath.GetText(),
                 iter->GetName().GetText(),
-                adapter.get());
+                primAdapter ?
+                    TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
+                    "none");
         }
         if (primCount > 0) {
             index->InsertInstancer(instancerPath,
@@ -279,7 +337,8 @@ UsdImagingInstanceAdapter::Populate(UsdPrim const& prim,
     // so now it's safe to re-enter this function to populate the
     // nested instances we discovered.
     TF_FOR_ALL(nestedInstanceIt, nestedInstances) {
-        Populate(*nestedInstanceIt, index, instancerContext);
+        _Populate(*nestedInstanceIt, index, instancerContext,
+                  instancerProxyPath);
     }
 
     return instancerPath;
@@ -289,8 +348,10 @@ SdfPath
 UsdImagingInstanceAdapter::_InsertProtoRprim(
     UsdPrimRange::iterator *it,
     TfToken const& protoName,
-    SdfPath instanceMaterialId,
+    SdfPath materialId,
+    TfToken drawMode,
     SdfPath instancerPath,
+    UsdImagingPrimAdapterSharedPtr const& primAdapter,
     UsdImagingPrimAdapterSharedPtr const& instancerAdapter,
     UsdImagingIndexProxy* index,
     bool *isLeafInstancer)
@@ -298,54 +359,20 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
     UsdPrim const& prim = **it;
     SdfPath protoPath;
 
-    *isLeafInstancer = true;
 
-    // Talk to the prim's native adapter to do population and material id
-    // queries on our behalf.
-    UsdImagingPrimAdapterSharedPtr const& adapter = 
-                        _GetPrimAdapter(prim, /* ignoreInstancing = */ true);
-
-    // If this prim is an instance, we can use the given instanceMaterialId
-    // Otherwise, this is a prim in a master; we need to see if there's any
-    // applicable bindings authored and only fallback to the instance binding
-    // if there isn't one.
-    auto getMaterialForPrim = 
-        [adapter, instanceMaterialId](UsdPrim const& prim) {
-            if (prim.IsInstance()) { 
-                return instanceMaterialId;
-            }
-            SdfPath materialId = adapter->GetMaterialId(prim);
-            return materialId.IsEmpty() ? 
-                instanceMaterialId : materialId;
-    };
-
-    // If this prim is an instance, we don't want Hydra to treat its rprim
-    // as a prototype to be shared with all other instances. Only prims in
-    // masters should be treated as prototypes for the instancer.
-    auto getInstancerPathForPrim = [instancerPath](UsdPrim const& prim) {
-        return prim.IsInstance() ? SdfPath() : instancerPath;
-    };
-
-    // Here we use the instancerAdapter so when AddDependency is called, the
-    // the InstanceAdapter will be registered to handle change processing and
-    // data access.
     UsdImagingInstancerContext ctx = { instancerPath,
                                        protoName,
-                                       getMaterialForPrim(prim),
+                                       materialId,
+                                       drawMode,
                                        instancerAdapter };
 
-    // There is no need to call AddDependency, as it will be picked up via the
-    // instancer context.
-    protoPath = adapter->Populate(prim, index, &ctx);
+    protoPath = primAdapter->Populate(prim, index, &ctx);
 
-    if (adapter->ShouldCullChildren(prim)) {
+    if (primAdapter->ShouldCullChildren(prim)) {
         it->PruneChildren();
     }
 
-    if (adapter->IsInstancerAdapter()) {
-        *isLeafInstancer = false;
-    }
-
+    *isLeafInstancer = !(primAdapter->IsInstancerAdapter());
     return protoPath;
 }
 
@@ -539,20 +566,17 @@ UsdImagingInstanceAdapter::_RunForAllInstancesToDrawImpl(
             }
 
             // Iterate over all instancers corresponding to different
-            // material variations of this master prim, since each instancer
+            // variations of this master prim, since each instancer
             // will cause another copy of this master prim to be drawn.
-            const _MaterialIdToInstancerMap* bindingToInstancerMap =
-                TfMapLookupPtr(_masterToInstancerMap, parentMaster.GetPath());
-            if (TF_VERIFY(bindingToInstancerMap)) {
-                for (const auto& i : *bindingToInstancerMap) {
-                    const UsdPrim instancerForMaterial = _GetPrim(i.second);
-                    if (TF_VERIFY(instancerForMaterial)) {
-                        continueIteration = _RunForAllInstancesToDrawImpl(
-                            instancerForMaterial, instanceContext, instanceIdx, 
-                            fn);
-                        if (!continueIteration) {
-                            break;
-                        }
+            auto range =
+                _masterToInstancerMap.equal_range(parentMaster.GetPath());
+            for (auto it = range.first; it != range.second; ++it) {
+                const UsdPrim instancer = _GetPrim(it->second);
+                if (TF_VERIFY(instancer)) {
+                    continueIteration = _RunForAllInstancesToDrawImpl(
+                        instancer, instanceContext, instanceIdx, fn);
+                    if (!continueIteration) {
+                        break;
                     }
                 }
             }
@@ -625,15 +649,13 @@ UsdImagingInstanceAdapter::_CountAllInstancesToDrawImpl(
                 parentMaster = parentMaster.GetParent();
             }
 
-            const _MaterialIdToInstancerMap* bindingToInstancerMap =
-                TfMapLookupPtr(_masterToInstancerMap, parentMaster.GetPath());
-            if (TF_VERIFY(bindingToInstancerMap)) {
-                for (const auto& i : *bindingToInstancerMap) {
-                    const UsdPrim instancerForMaterial = _GetPrim(i.second);
-                    if (TF_VERIFY(instancerForMaterial)) {
-                        drawCount += _CountAllInstancesToDrawImpl(
-                            instancerForMaterial, drawCounts);
-                    }
+            auto range =
+                _masterToInstancerMap.equal_range(parentMaster.GetPath());
+            for (auto it = range.first; it != range.second; ++it) {
+                const UsdPrim instancer = _GetPrim(it->second);
+                if (TF_VERIFY(instancer)) {
+                    drawCount += _CountAllInstancesToDrawImpl(
+                        instancer, drawCounts);
                 }
             }
         }
@@ -824,17 +846,6 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             // when applying the instancer transform.
             GfMatrix4d& childXf = _GetValueCache()->GetTransform(cachePath);
             childXf = childXf * GetRootTransform().GetInverse();
-        }
-
-        if (requestedBits & HdChangeTracker::DirtyMaterialId) {
-            // First try to get the material binded in the instance, if no 
-            // material is bound then access the material bound to 
-            // the master prim.
-            SdfPath p = GetMaterialId(prim);
-            if (p.IsEmpty()) {
-                p = GetMaterialId(_GetPrim(rproto.path));
-            }
-            valueCache->GetMaterialId(cachePath) = p;
         }
 
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
@@ -1111,17 +1122,11 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
     }
 
     // Remove this instancer's entry from the master -> instancer map.
-    auto materialIdIt = 
-        _masterToInstancerMap.find(instIt->second.masterPath);
-    if (TF_VERIFY(materialIdIt != _masterToInstancerMap.end())) {
-        _MaterialIdToInstancerMap& bindingMap = materialIdIt->second;
-        auto instancerIt = bindingMap.find(instIt->second.materialId);
-        if (TF_VERIFY(instancerIt != bindingMap.end())) {
-            bindingMap.erase(instancerIt);
-        }
-
-        if (bindingMap.empty()) {
-            _masterToInstancerMap.erase(materialIdIt);
+    auto range = _masterToInstancerMap.equal_range(instIt->second.masterPath);
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == instancerPath) {
+            _masterToInstancerMap.erase(it);
+            break;
         }
     }
 
@@ -1163,6 +1168,7 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
     _ProtoRprim const* r = nullptr;
     SdfPath instancerId;
     SdfPath materialId;
+    TfToken drawMode;
 
     if (it != _instancerData.end()) {
         _PrimMap::const_iterator primIt = it->second.primMap.find(cachePath);
@@ -1171,6 +1177,7 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
         }
         instancerId = instancerPath;
         materialId = it->second.materialId;
+        drawMode = it->second.drawMode;
         r = &(primIt->second);
     } else {
         // If we didn't find an instancerData entry, it's likely because the
@@ -1188,6 +1195,8 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
                 instancerId = pathInstancerDataPair.first;
                 materialId = 
                     pathInstancerDataPair.second.materialId;
+                drawMode =
+                    pathInstancerDataPair.second.drawMode;
                 r = &protoIt->second;
                 break;
             }
@@ -1200,6 +1209,7 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
 
     ctx->instancerId = instancerId;
     ctx->instanceMaterialId = materialId;
+    ctx->instanceDrawMode = drawMode;
     ctx->childName = TfToken();
     ctx->instancerAdapter = _GetSharedFromThis();
 

@@ -93,26 +93,31 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
                                     UsdImagingInstancerContext const*
                                        instancerContext)
 {
+    SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
+        prim.GetPath(), instancerContext);
+    SdfPath instancer = instancerContext ?
+        instancerContext->instancerId : SdfPath();
+
+    UsdPrim resolvedPrim = _ResolvePrim(prim, instancer);
+
     // The draw mode adapter only supports models. This is enforced in
     // UsdImagingDelegate::_IsDrawModeApplied.
-    if (!TF_VERIFY(prim.IsModel(), "<%s>", prim.GetPath().GetText())) {
+    if (!TF_VERIFY(resolvedPrim.IsModel(), "<%s>",
+                   prim.GetPath().GetText())) {
         return SdfPath();
     }
 
     // There should have been a non-default draw mode applied for this
     // adapter to be called; this is enforced in
     // UsdImagingDelegate::_IsDrawModeApplied.
-    TfToken drawMode = GetModelDrawMode(prim);
+    TfToken drawMode = GetModelDrawMode(resolvedPrim);
+    if (drawMode == UsdGeomTokens->default_ && instancerContext) {
+        drawMode = instancerContext->instanceDrawMode;
+    }
     if (!TF_VERIFY(drawMode != UsdGeomTokens->default_, "<%s>",
         prim.GetPath().GetText())) {
         return SdfPath();
     }
-
-    SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
-        prim.GetPath(), instancerContext);
-    SdfPath instancer = instancerContext ?
-        instancerContext->instancerId : SdfPath();
-    UsdPrim cachePrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
 
     // If this object is instanced, we need to use the instancer adapter for the
     // rprim, which will forward to the draw mode adapter but additionally
@@ -121,6 +126,11 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
         (instancerContext && instancerContext->instancerAdapter) ?
         instancerContext->instancerAdapter :
         shared_from_this();
+
+    // If this prim isn't instanced, cachePrim will be the same as "prim", but
+    // if it is instanced the instancer adapters expect us to pass in this
+    // prim, which should point to the instancer.
+    UsdPrim cachePrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
 
     if (drawMode == UsdGeomTokens->origin ||
         drawMode == UsdGeomTokens->bounds) {
@@ -143,26 +153,6 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
         index->InsertRprim(HdPrimTypeTokens->mesh,
             cachePath, instancer, cachePrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-
-        // Add all of the texture dependencies.
-        TfToken textureAttrs[6] = {
-            UsdGeomTokens->modelCardTextureXPos,
-            UsdGeomTokens->modelCardTextureYPos,
-            UsdGeomTokens->modelCardTextureZPos,
-            UsdGeomTokens->modelCardTextureXNeg,
-            UsdGeomTokens->modelCardTextureYNeg,
-            UsdGeomTokens->modelCardTextureZNeg,
-        };
-
-        for (int i = 0; i < 6; ++i) {
-            UsdAttribute attr = prim.GetAttribute(textureAttrs[i]);
-            if (attr && index->IsBprimTypeSupported(HdPrimTypeTokens->texture)
-                     && !index->IsPopulated(attr.GetPath())) {
-                index->InsertBprim(HdPrimTypeTokens->texture,
-                    attr.GetPath(), prim, shared_from_this());
-                HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-            }
-        }
     } else {
         TF_CODING_ERROR("Model <%s> has unsupported drawMode '%s'",
             prim.GetPath().GetText(), drawMode.GetText());
@@ -170,13 +160,38 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
     }
 
     // Additionally, insert the material.
-    SdfPath materialPath = prim.GetPath().AppendProperty(_tokens->material);
+    SdfPath materialPath = resolvedPrim.GetPath().
+        AppendProperty(_tokens->material);
     if (index->IsSprimTypeSupported(HdPrimTypeTokens->material) &&
         !index->IsPopulated(materialPath)) {
         index->InsertSprim(HdPrimTypeTokens->material,
-            materialPath, prim, shared_from_this());
+            materialPath, resolvedPrim, shared_from_this());
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     }
+
+    // Add all of the texture dependencies.
+    TfToken textureAttrs[6] = {
+        UsdGeomTokens->modelCardTextureXPos,
+        UsdGeomTokens->modelCardTextureYPos,
+        UsdGeomTokens->modelCardTextureZPos,
+        UsdGeomTokens->modelCardTextureXNeg,
+        UsdGeomTokens->modelCardTextureYNeg,
+        UsdGeomTokens->modelCardTextureZNeg,
+    };
+
+    for (int i = 0; i < 6; ++i) {
+        UsdAttribute attr = resolvedPrim.GetAttribute(textureAttrs[i]);
+        if (attr && index->IsBprimTypeSupported(HdPrimTypeTokens->texture)
+                 && !index->IsPopulated(attr.GetPath())) {
+            index->InsertBprim(HdPrimTypeTokens->texture,
+                    attr.GetPath(), resolvedPrim, shared_from_this());
+            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+        }
+    }
+
+    // Record the drawmode for use in UpdateForTime().
+    _drawModeMap.insert(std::make_pair(cachePath, drawMode));
+
     return cachePath;
 }
 
@@ -202,6 +217,17 @@ UsdImagingGLDrawModeAdapter::_IsTexturePath(SdfPath const& path)
         name == UsdGeomTokens->modelCardTextureZNeg;
 }
 
+const UsdPrim
+UsdImagingGLDrawModeAdapter::_ResolvePrim(UsdPrim const& prim,
+                                          SdfPath const& instancer)
+{
+    if (prim.IsMaster()) {
+        return _GetPrim(instancer);
+    }
+    return prim;
+}
+
+
 void
 UsdImagingGLDrawModeAdapter::_RemovePrim(SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index)
@@ -211,6 +237,7 @@ UsdImagingGLDrawModeAdapter::_RemovePrim(SdfPath const& cachePath,
     } else if (_IsTexturePath(cachePath)) {
         index->RemoveBprim(HdPrimTypeTokens->texture, cachePath);
     } else {
+        _drawModeMap.erase(cachePath);
         index->RemoveRprim(cachePath);
     }
 }
@@ -262,6 +289,10 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
         return;
     }
 
+    SdfPath instancer = instancerContext ?
+        instancerContext->instancerId : SdfPath();
+    UsdPrim resolvedPrim = _ResolvePrim(prim, instancer);
+
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
     // container during update.
@@ -275,21 +306,21 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     // Discover time-varying transforms.
-    _IsTransformVarying(prim,
+    _IsTransformVarying(resolvedPrim,
             HdChangeTracker::DirtyTransform,
             UsdImagingTokens->usdVaryingXform,
             timeVaryingBits);
 
-    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+    valueCache->GetVisible(cachePath) = GetVisible(resolvedPrim, time);
     // Discover time-varying visibility.
-    _IsVarying(prim,
+    _IsVarying(resolvedPrim,
             UsdGeomTokens->visibility,
             HdChangeTracker::DirtyVisibility,
             UsdImagingTokens->usdVaryingVisibility,
             timeVaryingBits,
             true);
 
-    TfToken purpose = _GetPurpose(prim, time);
+    TfToken purpose = _GetPurpose(resolvedPrim, time);
     // Empty purpose means there is no opinion, fall back to geom.
     if (purpose.IsEmpty())
         purpose = UsdGeomTokens->default_;
@@ -304,8 +335,12 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                                          UsdImagingInstancerContext const*
                                             instancerContext)
 {
+    SdfPath instancer = instancerContext ?
+        instancerContext->instancerId : SdfPath();
+    UsdPrim resolvedPrim = _ResolvePrim(prim, instancer);
+
     UsdImagingValueCache* valueCache = _GetValueCache();
-    UsdGeomModelAPI model(prim);
+    UsdGeomModelAPI model(resolvedPrim);
 
     if (_IsTexturePath(cachePath)) {
         // textures don't currently use UpdateForTime().
@@ -356,7 +391,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
             TfTokenVector samplerParams = { _tokens->cardsUv };
             for (int i = 0; i < 6; ++i) {
-                attr = prim.GetAttribute(textureAttrs[i]);
+                attr = resolvedPrim.GetAttribute(textureAttrs[i]);
                 if (attr) {
                     params.push_back(HdMaterialParam(
                                 textureNames[i], fallback,
@@ -365,17 +400,19 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             }
             valueCache->GetMaterialParams(cachePath) = params;
         }
+
+        return;
     }
 
     // Geometry aspect
     PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
-        valueCache->GetTransform(cachePath) = GetTransform(prim, time);
+        valueCache->GetTransform(cachePath) = GetTransform(resolvedPrim, time);
     }
 
     if (requestedBits & HdChangeTracker::DirtyVisibility) {
-        valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+        valueCache->GetVisible(cachePath) = GetVisible(resolvedPrim, time);
     }
 
     if (requestedBits & HdChangeTracker::DirtyDoubleSided) {
@@ -383,7 +420,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId) {
-        SdfPath materialPath = prim.GetPath().AppendProperty(_tokens->material);
+        SdfPath materialPath = resolvedPrim.GetPath().
+            AppendProperty(_tokens->material);
         valueCache->GetMaterialId(cachePath) = materialPath;
     }
 
@@ -415,10 +453,6 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         _MergePrimvar(primvar, &primvars);
     }
 
-    // If we're updating geometry, we need to compute the draw mode.
-    TfToken drawMode = UsdGeomTokens->default_, 
-            cardGeometry = UsdGeomTokens->cross;
-
     // We compute all of the below items together, since their derivations
     // aren't easily separable.
     HdDirtyBits geometryBits = HdChangeTracker::DirtyTopology |
@@ -427,8 +461,14 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                                HdChangeTracker::DirtyExtent;
 
     if (requestedBits & geometryBits) {
-        drawMode = GetModelDrawMode(prim);
+        TfToken drawMode = UsdGeomTokens->default_;
+        _DrawModeMap::const_iterator it = _drawModeMap.find(cachePath);
+        if (TF_VERIFY(it != _drawModeMap.end())) {
+            drawMode = it->second;
+        }
+
         UsdAttribute cardGeometryAttr = model.GetModelCardGeometryAttr();
+        TfToken cardGeometry = UsdGeomTokens->cross;
         if (cardGeometryAttr)
             cardGeometryAttr.Get(&cardGeometry);
 
@@ -439,7 +479,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         // Unless we're in cards "fromTexture" mode, compute the extents.
         if (!(drawMode == UsdGeomTokens->cards &&
               cardGeometry == UsdGeomTokens->fromTexture)) {
-            extent = _ComputeExtent(prim);
+            extent = _ComputeExtent(resolvedPrim);
         }
 
         if (drawMode == UsdGeomTokens->origin) {
@@ -456,7 +496,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 // In "fromTexture" mode, read all the geometry data in from
                 // the textures.
                 _GenerateCardsFromTextureGeometry(&topology, &points,
-                        &uv, &assign, &extent, prim);
+                        &uv, &assign, &extent, resolvedPrim);
             } else {
                 // Generate mask for suppressing axes with no textures
                 uint8_t axes_mask = 0;
@@ -968,7 +1008,6 @@ UsdImagingGLDrawModeAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time)
     // PERFORMANCE: Make this more efficient, see http://bug/90497
     return UsdGeomImageable(prim).ComputePurpose();
 }
-
 
 HdTextureResource::ID
 UsdImagingGLDrawModeAdapter::GetTextureResourceID(UsdPrim const& usdPrim,

@@ -238,16 +238,10 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
-        // XXX: need to validate gprim schema
-        UsdGeomGprim gprim(prim);
-        UsdImagingValueCache::PrimvarInfo primvar;
-        valueCache->GetColor(cachePath) =
-                        GetColorAndOpacity(prim, &primvar, time);
-        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
-
-        // Collect material required primvars
-        SdfPath usdMaterialPath = GetMaterialId(prim);
+    SdfPath usdMaterialPath;
+    if (requestedBits & (HdChangeTracker::DirtyPrimVar |
+                         HdChangeTracker::DirtyMaterialId)) {
+        usdMaterialPath = GetMaterialId(prim);
 
         // If we're processing this gprim on behalf of an instancer,
         // use the material binding specified by the instancer if we
@@ -255,9 +249,15 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         if (instancerContext && usdMaterialPath.IsEmpty()) {
             usdMaterialPath = instancerContext->instanceMaterialId;
         }
+    }
 
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
-                prim.GetPath().GetText(), usdMaterialPath.GetText());
+    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+        // XXX: need to validate gprim schema
+        UsdGeomGprim gprim(prim);
+        UsdImagingValueCache::PrimvarInfo primvar;
+        valueCache->GetColor(cachePath) =
+                        GetColorAndOpacity(prim, &primvar, time);
+        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
 
         if (!usdMaterialPath.IsEmpty()) {
             // Obtain the primvars used in the material bound to this prim
@@ -303,7 +303,11 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     if (requestedBits & HdChangeTracker::DirtyMaterialId){
-        valueCache->GetMaterialId(cachePath) = _GetMaterialId(prim);
+        valueCache->GetMaterialId(cachePath) = usdMaterialPath;
+
+        TF_DEBUG(USDIMAGING_SHADERS).Msg("Shader for <%s> is <%s>\n",
+                prim.GetPath().GetText(), usdMaterialPath.GetText());
+
     }
 }
 
@@ -678,15 +682,6 @@ UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim)
         return false;
 
     return _Get<bool>(prim, UsdGeomTokens->doubleSided, UsdTimeCode::Default());
-}
-
-SdfPath 
-UsdImagingGprimAdapter::_GetMaterialId(UsdPrim const& prim)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    return GetMaterialId(prim);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

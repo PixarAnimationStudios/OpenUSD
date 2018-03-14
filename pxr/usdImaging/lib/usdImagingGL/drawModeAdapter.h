@@ -67,7 +67,7 @@ public:
         return true;
     }
 
-    virtual bool IsNativeInstanceable(UsdPrim const& prim) { return true; }
+    virtual bool CanPopulateMaster() { return true; }
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -129,6 +129,11 @@ protected:
                              UsdImagingIndexProxy* index);
 
 private:
+    // If the input prim is a master, use the instancer path to get a copy of
+    // the instancing prim. We need this because master paths drop their
+    // attributes.
+    const UsdPrim _ResolvePrim(UsdPrim const& prim, SdfPath const& instancer);
+
     // For cards rendering, check if we're rendering any faces with 0 area;
     // if so, issue a warning.
     void _SanityCheckFaceSizes(SdfPath const& cachePath,
@@ -179,6 +184,11 @@ private:
     // Generate texture coordinates for cards "cross"/"box" mode.
     void _GenerateTextureCoordinates(VtValue* uv, VtValue* assign,
                                      uint8_t axes_mask);
+
+    // Map from cachePath to what drawMode it was populated as.
+    typedef TfHashMap<SdfPath, TfToken, SdfPath::Hash>
+        _DrawModeMap;
+    _DrawModeMap _drawModeMap;
 };
 
 
