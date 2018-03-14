@@ -346,7 +346,12 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                         "proto%d_%s_id%d", protoIndex,
                         iter->GetPath().GetName().c_str(), protoID++));
 
-                SdfPath const& materialId = GetMaterialId(*iter);
+                UsdPrim populatePrim = *iter;
+                if (iter->IsMaster() && TF_VERIFY(instancerChain.size() > 1)) {
+                    populatePrim = _GetPrim(instancerChain.at(1));
+                }
+
+                SdfPath const& materialId = GetMaterialId(populatePrim);
                 TfToken const& drawMode = GetModelDrawMode(instanceProxyPrim);
                 UsdImagingInstancerContext ctx = {
                     instancerContext->instancerId,
@@ -354,7 +359,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     materialId,
                     drawMode,
                     instancerContext->instancerAdapter };
-                protoPath = adapter->Populate(*iter, index, &ctx);
+                protoPath = adapter->Populate(populatePrim, index, &ctx);
             }
 
             if (adapter->ShouldCullChildren(*iter)) {
@@ -410,7 +415,7 @@ UsdImagingPointInstancerAdapter::TrackVariabilityPrep(UsdPrim const& prim,
             return;
         }
 
-        rproto.adapter->TrackVariabilityPrep(_GetPrim(rproto.paths.front()),
+        rproto.adapter->TrackVariabilityPrep(_GetProtoUsdPrim(rproto),
                                              cachePath);
     }
 }
@@ -472,7 +477,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         // adapter, since we must compute purpose relative to the model root,
         // however we have no way of communicating that currently.
         UsdPrim protoRootPrim = _GetPrim(rproto.prototype->protoRootPath);
-        UsdPrim protoPrim = _GetPrim(rproto.paths.front());
+        UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
         rproto.adapter->TrackVariability(protoPrim, cachePath,
                                         &rproto.variabilityBits);
         *timeVaryingBits |= rproto.variabilityBits;
@@ -701,7 +706,7 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
             return;
         }
 
-        rproto.adapter->UpdateForTimePrep(_GetPrim(rproto.paths.front()),
+        rproto.adapter->UpdateForTimePrep(_GetProtoUsdPrim(rproto),
                                           cachePath,
                                           time, requestedBits);
     } else {
@@ -727,12 +732,13 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                     // the parent instancer is up to date too.
                     // note that the parent instancer doesn't necessarily be
                     // UsdGeomPointInstancer, we delegate to the adapter
+                    UsdPrim parentInstancer = _GetPrim(parentInstancerPath);
                     UsdImagingPrimAdapterSharedPtr adapter =
-                        _GetPrimAdapter(_GetPrim(parentInstancerPath));
+                        _GetPrimAdapter(parentInstancer);
 
                     if (adapter) {
                         adapter->UpdateForTimePrep(
-                            _GetPrim(parentInstancerPath), parentInstancerPath,
+                            parentInstancer, parentInstancerPath,
                             time, requestedBits, instancerContext);
                     } else {
                         TF_CODING_ERROR("PI: adapter not found for %s\n",
@@ -794,7 +800,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
         if (protoReqBits != HdChangeTracker::Clean)
-            rproto.adapter->UpdateForTime(_GetPrim(rproto.paths.front()),
+            rproto.adapter->UpdateForTime(_GetProtoUsdPrim(rproto),
                                           cachePath, time, protoReqBits);
 
         // Make sure we always query and return visibility. This is done
@@ -973,8 +979,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             return HdChangeTracker::AllDirty;
         }
         return rproto.adapter->ProcessPropertyChange(
-            _GetPrim(rproto.paths.front()),
-                                                   cachePath, propertyName);
+            _GetProtoUsdPrim(rproto), cachePath, propertyName);
     }
 
     // Blast everything. This will trigger a prim resync; see ProcessPrimResync.
@@ -1277,6 +1282,28 @@ UsdImagingPointInstancerAdapter::_GetProtoRprim(SdfPath const& instrPath,
         return EMPTY;
     }
     return protoRprimIt->second;
+}
+
+const UsdPrim
+UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(_ProtoRprim const& proto)
+{
+    // proto.paths.front() is the most local path for the rprim.
+    // If it's not native-instanced, proto.paths will be size 1.
+    // If it is native-instanced, proto.paths may look like
+    //   /__Master_1/prim
+    //   /Instance
+    // where /__Master_1/prim is the pointer to the actual prim in question.
+    UsdPrim prim = _GetPrim(proto.paths.front());
+
+    // One exception: if the prototype is an instance, proto.paths looks like
+    //   /__Master_1
+    //   /Instance
+    // ... in which case, we want to return /Instance since masters drop all
+    // attributes.
+    if (prim.IsMaster() && TF_VERIFY(proto.paths.size() > 1)) {
+        prim = _GetPrim(proto.paths.at(1));
+    }
+    return prim;
 }
 
 bool

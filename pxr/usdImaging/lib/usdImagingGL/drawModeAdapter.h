@@ -129,11 +129,6 @@ protected:
                              UsdImagingIndexProxy* index);
 
 private:
-    // If the input prim is a master, use the instancer path to get a copy of
-    // the instancing prim. We need this because master paths drop their
-    // attributes.
-    const UsdPrim _ResolvePrim(UsdPrim const& prim, SdfPath const& instancer);
-
     // For cards rendering, check if we're rendering any faces with 0 area;
     // if so, issue a warning.
     void _SanityCheckFaceSizes(SdfPath const& cachePath,

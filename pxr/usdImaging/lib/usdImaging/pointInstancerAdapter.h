@@ -221,6 +221,9 @@ private:
     _ProtoRprim const& _GetProtoRprim(SdfPath const& instancerPath, 
                                       SdfPath const& cachePath) const;
 
+    // Gets the UsdPrim to use from the given _ProtoRprim.
+    const UsdPrim _GetProtoUsdPrim(_ProtoRprim const& proto);
+
     // Takes the transform in the value cache (this must exist before calling
     // this method) and applies a corrective transform to 1) remove any
     // transforms above the model root (root proto path) and 2) apply the 

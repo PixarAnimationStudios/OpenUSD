@@ -260,7 +260,14 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Update instancer data.
             //
             _ProtoRprim& rproto = instancerData.primMap[protoPath];
-            rproto.path = iter->GetPath();
+            if (iter->IsMaster()) {
+                // If the prototype we're populating is the master prim,
+                // our prim handle should be to the instance, since the master
+                // prim doesn't have attributes.
+                rproto.path = instancerPath;
+            } else {
+                rproto.path = iter->GetPath();
+            }
             rproto.adapter = primAdapter;
             rproto.protoGroup = grp;
             ++primCount;
@@ -356,9 +363,13 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
     UsdImagingIndexProxy* index,
     bool *isLeafInstancer)
 {
-    UsdPrim const& prim = **it;
-    SdfPath protoPath;
-
+    UsdPrim prim = **it;
+    if ((*it)->IsMaster()) {
+        // If the prototype we're populating is the master prim,
+        // our prim handle should be to the instance, since the master
+        // prim doesn't have attributes.
+        prim = _GetPrim(instancerPath);
+    }
 
     UsdImagingInstancerContext ctx = { instancerPath,
                                        protoName,
@@ -366,7 +377,7 @@ UsdImagingInstanceAdapter::_InsertProtoRprim(
                                        drawMode,
                                        instancerAdapter };
 
-    protoPath = primAdapter->Populate(prim, index, &ctx);
+    SdfPath protoPath = primAdapter->Populate(prim, index, &ctx);
 
     if (primAdapter->ShouldCullChildren(prim)) {
         it->PruneChildren();
@@ -410,7 +421,6 @@ UsdImagingInstanceAdapter::TrackVariabilityPrep(UsdPrim const& prim,
         if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
         }
-
         rproto.adapter->TrackVariabilityPrep(
             _GetPrim(rproto.path), cachePath, 
             &instancerContext);
@@ -771,7 +781,6 @@ UsdImagingInstanceAdapter::UpdateForTimePrep(UsdPrim const& prim,
         if (!TF_VERIFY(rproto.adapter, "%s", cachePath.GetText())) {
             return;
         }
-
         rproto.adapter->UpdateForTimePrep(
             _GetPrim(rproto.path), cachePath, time, requestedBits,
             &instancerContext);
