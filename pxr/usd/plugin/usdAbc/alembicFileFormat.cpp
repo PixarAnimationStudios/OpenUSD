@@ -110,7 +110,15 @@ UsdAbcAlembicFileFormat::Read(
 
     // XXX:
     // Do we need to pre- and/or post-process the existing AlembicData object?
-    _SwapLayerData(layer, data);
+    if (_LayerIsLoadingAsNew(layer)) {
+        // New layer, so we don't need undo inverses or notification.
+        // Just swap out the data.
+        _SwapLayerData(layer, data);
+    } else {
+        // Layer has pre-existing data.  Use _SetData() to provide
+        // fine-grained inverses and undo registration.
+        _SetLayerData(layer, data);
+    }
 
     return true;
 }
