@@ -501,7 +501,12 @@ public:
             if (masterMapping.isValid() && masterMapping.getNumberOfChildren())
             {
                 FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
-                
+
+                // By default there are collisions between the locations where the masters
+                // are written, so we are collecting them into a map based on the location parent.
+                // Where the first element is the list of prim paths and the second one is the
+                // list of prim names. So creating an array of strings will be simpler.
+                std::map<std::string, std::pair<std::vector<std::string>, std::vector<std::string>>> locationParents;
                 for (size_t i = 0, e = masterMapping.getNumberOfChildren();
                         i != e; ++i)
                 {
@@ -518,16 +523,24 @@ public:
                     }
                     
                     katanaPath = "Masters/" + katanaPath;
-                    
+
                     std::string leafName =
                             FnGeolibUtil::Path::GetLeafName(katanaPath);
                     std::string locationParent =
                             FnGeolibUtil::Path::GetLocationParent(katanaPath);
-                    
-                    sscb.setAttrAtLocation(locationParent, "usdPrimPath",
-                            FnKat::StringAttribute(masterName));
-                    sscb.setAttrAtLocation(locationParent, "usdPrimName",
-                            FnKat::StringAttribute(leafName));
+
+                    auto& elem = locationParents[locationParent];
+                    elem.first.push_back(masterName);
+                    elem.second.push_back(leafName);
+                }
+
+                for (const auto& locationParent: locationParents) {
+                    const auto& elem = locationParent.second;
+
+                    sscb.setAttrAtLocation(locationParent.first, "usdPrimPath",
+                        FnKat::StringAttribute(elem.first, 1));
+                    sscb.setAttrAtLocation(locationParent.first, "usdPrimName",
+                        FnKat::StringAttribute(elem.second, 1));
                 }
                 
                 FnKat::GroupAttribute childAttrs =
@@ -1083,41 +1096,51 @@ public:
                 .del("usdPrimName")
                 .build();
 
-            std::string primPath = primPathAttr.getValue("", false);
-            if (!primPath.empty())
+            // In case of instane masters the prims and prim names parameter can
+            // hold multiple values.
+            const auto prims = primPathAttr.getNearestSample(0.0f);
+            const auto primNames = primNameAttr.getNearestSample(0.0f);
+
+            const auto primCount = prims.size();
+            const auto primNameCount = primNames.size();
+
+            for (auto primId = decltype(primCount){0}; primId < primCount; ++primId)
             {
-                // Get the usd prim at the given source path.
-                //
-                UsdPrim prim = usdInArgs->GetStage()->GetPrimAtPath(
+                std::string primPath = prims[primId];
+
+                if (!primPath.empty())
+                {
+                    // Get the usd prim at the given source path.
+                    //
+                    UsdPrim prim = usdInArgs->GetStage()->GetPrimAtPath(
                         SdfPath(primPath));
 
-                // Get the desired name for the usd prim; if one isn't provided,
-                // ask the prim directly.
-                //
-                std::string nameToUse = prim.GetName();
-                if (primNameAttr.isValid())
-                {
-                    std::string primName = primNameAttr.getValue("", false);
-                    if (!primName.empty())
-                    {
-                        nameToUse = primName;
+                    // Get the desired name for the usd prim; if one isn't provided,
+                    // ask the prim directly.
+                    //
+                    std::string nameToUse = prim.GetName();
+                    if (primId < primNameCount) {
+                        std::string primName = primNames[primId];
+                        if (!primName.empty())
+                        {
+                            nameToUse = primName;
+                        }
                     }
-                }
 
-                // XXX In order for the prim's material hierarchy to get built
-                // out correctly via the PxrUsdInCore_LooksGroupOp, we'll need
-                // to override the original 'rootLocation' and 'isolatePath'
-                // UsdIn args.
-                //
-                ArgsBuilder ab;
-                ab.update(usdInArgs);
-                ab.rootLocation =
+                    // XXX In order for the prim's material hierarchy to get built
+                    // out correctly via the PxrUsdInCore_LooksGroupOp, we'll need
+                    // to override the original 'rootLocation' and 'isolatePath'
+                    // UsdIn args.
+                    //
+                    ArgsBuilder ab;
+                    ab.update(usdInArgs);
+                    ab.rootLocation =
                         interface.getOutputLocationPath() + "/" + nameToUse;
-                ab.isolatePath = primPath;
+                    ab.isolatePath = primPath;
 
-                // Build the prim using PxrUsdIn.
-                //
-                interface.createChild(
+                    // Build the prim using PxrUsdIn.
+                    //
+                    interface.createChild(
                         nameToUse,
                         "PxrUsdIn",
                         FnKat::GroupBuilder()
@@ -1126,8 +1149,9 @@ public:
                             .build(),
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(prim, ab.build(),
-                                privateData),
+                                                         privateData),
                         PxrUsdKatanaUsdInPrivateData::Delete);
+                }
             }
         }
         else
