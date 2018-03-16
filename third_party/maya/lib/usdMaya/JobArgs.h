@@ -118,6 +118,15 @@ struct JobExportArgs
     SdfPath usdModelRootOverridePath;
 
     TfToken rootKind;
+
+    PXRUSDMAYA_API
+    void setParentScope(const std::string& ps);
+
+    const SdfPath& getParentScope() const {
+        return parentScope;
+    }
+private:
+    SdfPath parentScope;
 };
 
 PXRUSDMAYA_API

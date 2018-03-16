@@ -74,6 +74,7 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-dms" , "-defaultMeshScheme", MSyntax::kString);
     syntax.addFlag("-vis" , "-exportVisibility", MSyntax::kBoolean);
     syntax.addFlag("-skn" , "-exportSkin", MSyntax::kString);
+    syntax.addFlag("-psc" , "-parentScope", MSyntax::kString);
 
     syntax.addFlag("-fr" , "-frameRange"   , MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag("-pr" , "-preRoll"   , MSyntax::kDouble);
@@ -257,6 +258,13 @@ try
                     "'-exportSkin none'");
             jobArgs.exportSkin = false;
         }
+    }
+
+    if (argData.isFlagSet("parentScope")) {
+        MString stringVal;
+        argData.getFlagArgument("parentScope", 0,
+                                stringVal);
+        jobArgs.setParentScope(stringVal.asChar());
     }
 
     bool append = false;

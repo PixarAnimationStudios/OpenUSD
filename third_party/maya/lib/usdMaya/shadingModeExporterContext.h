@@ -57,6 +57,9 @@ struct PxrUsdMayaExportParams {
     /// Shaders that are bound to prims under \p bindableRoot paths will get
     /// exported.  If \p bindableRoots is empty, it will export all.
     PxrUsdMayaUtil::ShapeSet bindableRoots;
+
+    /// Sets up the parentScope for creating materials.
+    SdfPath parentScope;
 };
 
 class PxrUsdMayaShadingModeExportContext
