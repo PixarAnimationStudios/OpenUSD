@@ -178,12 +178,26 @@ def _CamelCase(aString):
 Token = namedtuple('Token', ['id', 'value', 'desc'])
 
 class PropInfo(object):
+    class CodeGen:
+        """Specifies how code gen constructs get methods for a property
+        
+        - generated: Auto generate the full Public API
+        - custom: Generate the header only. User responsible for implementation.
+        
+        See documentation on Generating Schemas for more information.
+        """
+        Generated = 'generated'
+        Custom = 'custom'
+        
     def __init__(self, sdfProp):
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfProp.customData)
 
         self.name       = _CamelCase(sdfProp.name)
         self.apiName    = self.customData.get('apiName', self.name)
+        self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
+        if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
+            print ("Token '%s' is not valid." % self.apiGet)
         self.rawName    = sdfProp.name
         self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
         self.custom     = sdfProp.custom

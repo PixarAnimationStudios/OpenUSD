@@ -253,7 +253,13 @@ dictionary:
     attribute accessor.
     Note: The actual name of the property as defined on the prim is still
     primvars:displayColor.
-
+  - \b apiGetImplementation - Optionally control schema gen behavior for a property's 
+    'Get' implementation. Valid values:
+    - \e generated - Generate default header and implementation (Fallback value if unspecified).
+    - \e custom - Generate default header ONLY. User must supply the implementation
+    Custom should be used sparingly, primarily as a tool for API migration
+    Given the performance expectations of Get, it is NOT appropriate to 
+    add complicated validation logic in this method.
 
 \section Usd_ExampleSchema Example Schema Classes
 

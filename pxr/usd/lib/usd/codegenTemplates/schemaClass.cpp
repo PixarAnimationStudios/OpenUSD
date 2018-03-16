@@ -142,11 +142,13 @@ const TfType &
 
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName] %}
+{% if attr.apiGet != "custom" %}
 UsdAttribute
 {{ cls.cppClassName }}::Get{{ Proper(attr.apiName) }}Attr() const
 {
     return GetPrim().GetAttribute({{ tokensPrefix }}Tokens->{{ attr.name }});
 }
+{% endif %}
 
 UsdAttribute
 {{ cls.cppClassName }}::Create{{ Proper(attr.apiName) }}Attr(VtValue const &defaultValue, bool writeSparsely) const
@@ -162,11 +164,13 @@ UsdAttribute
 {% endfor %}
 {% for relName in cls.relOrder %}
 {% set rel = cls.rels[relName] %}
+{% if rel.apiGet != "custom" %}
 UsdRelationship
 {{ cls.cppClassName }}::Get{{ Proper(rel.apiName) }}Rel() const
 {
     return GetPrim().GetRelationship({{ tokensPrefix }}Tokens->{{ rel.name }});
 }
+{% endif %}
 
 UsdRelationship
 {{ cls.cppClassName }}::Create{{ Proper(rel.apiName) }}Rel() const
