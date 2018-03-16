@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class GfRange3d;
 class GfMatrix4d;
+class GfVec4d;
 
 /// \class GfPlane
 /// \ingroup group_gf_BasicGeometry
@@ -78,6 +79,12 @@ class GfPlane
         Set(p0, p1, p2);
     }
 
+    /// This constructor creates a plane given by the equation 
+    /// \p eqn[0] * x + \p eqn[1] * y + \p eqn[2] * z + \p eqn[3] = 0.
+    GfPlane(const GfVec4d &eqn) {
+        Set(eqn);
+    }
+
     /// Sets this to the plane perpendicular to \p normal and at \p distance
     /// units from the origin. The passed-in normal is normalized to unit
     /// length first.
@@ -101,6 +108,11 @@ class GfPlane
                             const GfVec3d &p1,
                             const GfVec3d &p2);
 
+    /// This method sets this to the plane given by the equation 
+    /// \p eqn[0] * x + \p eqn[1] * y + \p eqn[2] * z + \p eqn[3] = 0.
+    GF_API
+    void                Set(const GfVec4d &eqn);
+
     /// Returns the unit-length normal vector of the plane.
     const GfVec3d &     GetNormal() const {
         return _normal;
@@ -110,6 +122,10 @@ class GfPlane
     double              GetDistanceFromOrigin() const {
         return _distance;
     }
+
+    /// Give the coefficients of the equation of the plane. Suitable
+    /// to OpenGL calls to set the clipping plane.
+    GfVec4d             GetEquation() const;
 
     /// Component-wise equality test. The normals and distances must match
     /// exactly for planes to be considered equal.

@@ -27,6 +27,7 @@
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/gf/plane.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/vec4d.h"
 
 #include "pxr/base/tf/type.h"
 
@@ -53,6 +54,26 @@ GfPlane::Set(const GfVec3d &p0, const GfVec3d &p1, const GfVec3d &p2)
     _normal = GfCross(p1 - p0, p2 - p0).GetNormalized();
     _distance = GfDot(_normal, p0);
 }
+
+void
+GfPlane::Set(const GfVec4d &eqn)
+{
+    for (size_t i = 0; i < 3; i++) {
+        _normal[i] = eqn[i];
+    }
+    _distance = -eqn[3];
+
+    const double l = _normal.Normalize();
+    if (l != 0.0) {
+        _distance /= l;
+    }
+}
+
+GfVec4d
+GfPlane::GetEquation() const
+ {
+     return GfVec4d(_normal[0], _normal[1], _normal[2], -_distance);
+ }
 
 GfPlane &
 GfPlane::Transform(const GfMatrix4d &matrix) 

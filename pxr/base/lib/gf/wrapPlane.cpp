@@ -64,6 +64,7 @@ void wrapPlane()
         .def(init< const GfVec3d &, double >())
         .def(init< const GfVec3d &, const GfVec3d & >())
         .def(init< const GfVec3d &, const GfVec3d &, const GfVec3d & >())
+        .def(init< const GfVec4d & >())
 
         .def( TfTypePythonClass() )
 
@@ -74,6 +75,8 @@ void wrapPlane()
         .def("Set", (void (This::*)( const GfVec3d &, const GfVec3d &,
                                      const GfVec3d & ))
              &This::Set, return_self<>())
+        .def("Set", (void (This::*)(const GfVec4d &))
+             &This::Set, return_self<>())
 
         .add_property( "normal", getNormal)
         .add_property( "distanceFromOrigin", &This::GetDistanceFromOrigin )
@@ -81,6 +84,7 @@ void wrapPlane()
         .def( "GetDistance", &This::GetDistance )
         .def( "GetDistanceFromOrigin", &This::GetDistanceFromOrigin )
         .def( "GetNormal", getNormal)
+        .def( "GetEquation", &This::GetEquation )
         .def( "Project", &This::Project )
 
         .def( "Transform", &This::Transform, return_self<>() )
