@@ -80,10 +80,16 @@ public:
             usdWriteJobCtx& jobCtx);
     virtual ~MayaInstancerWriter() {};
     
+    PXRUSDMAYA_API
     virtual void write(const UsdTimeCode &usdTime) override;
+    PXRUSDMAYA_API
+    virtual void postExport() override;
+    PXRUSDMAYA_API
     virtual bool exportsGprims() const override;
+    PXRUSDMAYA_API
     virtual bool shouldPruneChildren() const override;
 
+protected:
     virtual bool writeInstancerAttrs(
             const UsdTimeCode& usdTime, const UsdGeomPointInstancer& instancer);
 

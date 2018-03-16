@@ -450,6 +450,14 @@ MayaInstancerWriter::writeInstancerAttrs(
     return true;
 }
 
+void
+MayaInstancerWriter::postExport()
+{
+    for (MayaPrimWriterPtr& writer : _prototypeWriters) {
+        writer->postExport();
+    }
+}
+
 bool
 MayaInstancerWriter::exportsGprims() const
 {
