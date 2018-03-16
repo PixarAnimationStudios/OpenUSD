@@ -51,9 +51,6 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
-#include "pxr/usd/usdHydra/shader.h"
-#include "pxr/usd/usdHydra/uvTexture.h"
-
 #include "pxr/usd/usdLux/domeLight.h"
 
 #include "pxr/base/work/loops.h"

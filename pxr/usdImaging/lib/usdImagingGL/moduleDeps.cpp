@@ -48,7 +48,6 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("tracelite"),
         TfToken("usd"),
         TfToken("usdGeom"),
-        TfToken("usdHydra"),
         TfToken("usdImaging"),
         TfToken("usdShade"),
         TfToken("vt"),

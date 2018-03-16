@@ -24,7 +24,6 @@
 #include "inheritedCache.h"
 
 #include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdHydra/lookAPI.h"
 #include "pxr/usd/usdRi/materialAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -77,7 +76,9 @@ UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
     // ---------------------------------------------------------------------- //
     // Hydra-only shader style - displayLook:bxdf
     // ---------------------------------------------------------------------- //
-    if (UsdRelationship matRel = UsdHydraLookAPI(material).GetBxdfRel()) {
+    static TfToken displayLookBxdf("displayLook:bxdf");
+    if (UsdRelationship matRel = 
+            material.GetPrim().GetRelationship(displayLookBxdf)) {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
                     matRel.GetPath().GetText());
 

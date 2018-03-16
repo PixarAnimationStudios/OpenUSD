@@ -37,9 +37,6 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/shader.h"
 
-#include "pxr/usd/usdHydra/shader.h"
-#include "pxr/usd/usdHydra/primvar.h"
-
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

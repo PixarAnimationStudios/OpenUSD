@@ -19,7 +19,6 @@ pxr_library(usdImagingGL
         usd
         usdGeom
         usdShade
-        usdHydra
         usdImaging
         ar
         ${Boost_PYTHON_LIBRARY}
