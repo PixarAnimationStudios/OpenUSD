@@ -98,10 +98,7 @@ class UsdviewApi(object):
     def cameraPrim(self):
         """The current camera prim."""
 
-        if self.__appController._stageView is not None:
-            return self.__appController._stageView.getCameraPrim()
-        else:
-            return None
+        return self.__appController._dataModel.viewSettings.cameraPrim
 
     @property
     def currentGfCamera(self):
