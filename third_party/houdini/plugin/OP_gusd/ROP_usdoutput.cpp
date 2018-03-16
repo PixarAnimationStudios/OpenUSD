@@ -1102,7 +1102,7 @@ closeStage(fpreal tend)
             }
 
             // Reload any stages on the cache matching this path.
-            // Note that this is deferred til the main event queue
+            // Note that this is not thread-safe.
             GusdStageCacheWriter cache;
             UT_StringSet paths;
             paths.insert(targetPath);

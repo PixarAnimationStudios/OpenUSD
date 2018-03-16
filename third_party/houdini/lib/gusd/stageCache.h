@@ -74,19 +74,30 @@ public:
 
     /// \section GusdStageCache_Reloading Reloading
     ///
-    /// Reloading stages and layers may potentially cause non-threadsafe
-    /// mutations to stages held by the cache, which may cause crashes
-    /// in other threads that are making use of those caches.
-    /// To avoid the need for intrusive and expensive locking around all
-    /// code that accesses a stage, reload operations are placed on Houdini's
-    /// single-threaded event queue, where it is expected that only a single
-    /// thread is accessing the stages while reload operations occur.
+    /// Stages and layers may be reloaded during an active sessions, but it's
+    /// important to understand the full implications of doing so.
+    /// When a layer is reloaded, change notifications are sent to any stages
+    /// referncing that layer, causing those stages to recompose, if necessary.
+    /// This operation is not thread-safe, and may result in a crash if another
+    /// thread is attempting to read from an affected stage at the same time.
+    /// Further, it must be noted that simply loading stages within separate
+    /// GusdStageCache instances also does not mean that that change
+    /// propopagation will be isolated only to stages of the stage cache
+    /// instance: Although it is possible to isolate the effect of changes
+    /// on the root layers of stages to some extent, secondary layers -- such
+    /// as sublayers and reference arcs -- are shared on a global cache.
+    /// The effect of reloading layers is _global_ and _immediate_.
     ///
-    /// This is the only safe way to reload stages and layers in Houdini.
-    /// Users should never directly call UsdStage::Reload() on stages returned
-    /// from the cache. Users also must not call SdfLayer::Reload() on any
-    /// layers returned by SdfLayer::FindOrOpen(), since stages internally
-    /// use such shared layers, and may be affected.
+    /// Rather than attempting to solve this problem with intrusive and
+    /// expensive locking -- which would only solve the problem for stages
+    /// held internally in a GusdStageCache, not for stages referenced from
+    /// other caches -- we prefer to address the problem by requiring that
+    /// reloading only be performed at certain points of Houdini's main event
+    /// loop, where it known to be safe.
+    /// An example of a 'safe' way to exec stage reloads is via a callback
+    /// triggered by a button in a node's GUI.
+    /// Users should never attempt to reload stages or layers during node
+    /// cook methods.
 
     /// Mark a set of stages for reload on the event queue.
     static void ReloadStages(const UT_Set<UsdStagePtr>& stages);
@@ -269,25 +280,42 @@ public:
 
     GusdStageCacheWriter& operator=(const GusdStageCacheWriter&) = delete;
 
-    /// Clear out all cached items.
-    /// If micro nodes have been instantiated for any stages, they will
-    /// be dirtied when the main event queue execs.
-    void    Clear();
-
-    /// Clear out all caches corresponding to a set of stage paths.
-    /// Note that layers are owned by a different cache, and may stay
-    /// active beyond this point.
-    void    Clear(const UT_StringSet& paths);
-
     /// Find all stages on the cache matching the given paths.
     /// Multiple stages may be found for each path.
     void    FindStages(const UT_StringSet& paths,
                        UT_Set<UsdStageRefPtr>& stages);
 
+    /// \section GusdStageCacheWriter_ReloadAndClear Reloading And Clearing
+    ///
+    /// During active sessions, the contents of a cache may be refreshed
+    /// by either reloading a subset of the stages that it contains, or by
+    /// removing stage entries from the cache.
+    /// In either case, if a stage is reloaded or evicted from the cache,
+    /// and if that stage has a micro node
+    /// (see: \ref GusdStageCacheReader::GetMicroNode), then that micro
+    /// node, and any OP_Node instances that reference it, are dirtied.
+    /// This means that any nodes whose cook is based on data from a cached
+    /// stage will properly update in response to Clear/Reload actions.
+    ///
+    /// \warn Dirty state propagation is not thread safe, and should only be
+    /// called at a safe point on the main thread, such as through a callback
+    /// triggered by a UI button. Also note that there may be side effects
+    /// from reloading stages that affect stages from *other caches*. See
+    /// \ref GusdStageCache_Reloading for more information on the caveats of
+    /// reloading.
+    
+    /// Clear out all cached items.
+    /// Note that layers are owned by a different cache, and may stay
+    /// active beyond this point.
+    void    Clear();
+
+    /// Variant of Clear() that causes any stages whose root layer has
+    /// an asset path in the \p paths set to be removed from the cache.
+    void    Clear(const UT_StringSet& paths);
+
     /// Reload all stages matching the given paths.
-    /// Actual reloading operations are deferred to the main event
-    /// queue (\see GusdStageCache_Reloading).
     void    ReloadStages(const UT_StringSet& paths);
+
 };
 
 

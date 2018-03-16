@@ -24,7 +24,7 @@
 #include "gusd/stageCache.h"
 
 #include <DEP/DEP_MicroNode.h>
-#include <UI/UI_Object.h>
+#include <OP/OP_Director.h>
 #include <UT/UT_ConcurrentHashMap.h>
 #include <UT/UT_Exit.h>
 #include <UT/UT_Interrupt.h>
@@ -101,8 +101,10 @@ public:
         // This should only occur on the main event queue, as happens
         // with stage reloads on the GusdStageCache.
         if(UT_Thread::isMainThread()) {
-            propagateDirty([](const DEP_MicroNode& node,
-                              const DEP_MicroNode& src) {});
+            OP_Node* node = OPgetDirector();
+            node->propagateDirtyMicroNode(*this, OP_INPUT_CHANGED,
+                                          /*data*/ nullptr, 
+                                          /*send_root_event*/ false);
         } else {
             TF_WARN("Change notification received for stage @%s@ outside of "
                     "the main event queue. This may indicate unsafe mutation "
@@ -125,155 +127,37 @@ private:
 };
 
 
-/// UI object that serves as an event queue for stage changes that are unsafe
-/// outside of the main event queue.
-class _EventQueue final : public UI_Object
-{
-public:
-    static _EventQueue&  GetInstance();
-
-    _EventQueue() : UI_Object() {}
-    virtual ~_EventQueue();
-
-    /// Event handler, called on the event queue.
-    /// This does the actual work of processing changes.
-    virtual void        handleEvent(UI_Event* event) override;
-
-    virtual const char* className() const override
-                        { return "GusdStageCache::_EventQueue"; }
-
-    /// Add stages to the reload queue.
-    void                ReloadStages(const UT_Set<UsdStagePtr>& stages);
-
-    /// Add layers to the reload queue.
-    void                ReloadLayers(const UT_Set<SdfLayerHandle>& layers);
-    
-    /// Add a micro node that was evicted from the cache.
-    /// The event queue takes ownership of the node.
-    void                AppendEvictedNode(_StageChangeMicroNode* node);
-
-private:
-    /// Mark the state dirty, setting an event on the event queue to
-    /// process reloads.
-    void                _MarkDirty();
-
-private:
-    bool                                _dirty;
-    UT_Lock                             _lock;
-    std::set<UsdStagePtr>               _stagesToReload;
-    std::set<SdfLayerHandle>            _layersToReload;
-    std::set<_StageChangeMicroNode*>    _evictedNodes;
-};
-
-
-_EventQueue::~_EventQueue()
-{
-    for(auto* microNode : _evictedNodes)
-        delete microNode;
-}
-
-
-_EventQueue&
-_EventQueue::GetInstance()
-{
-    static _EventQueue queue;
-    return queue;
-}
-
-
-void
-_EventQueue::_MarkDirty()
-{
-    if(!_dirty) {
-        // Haven't queued up an event yet. Send one.
-        generateEvent(UI_EVENT_REFRESH, this);
-    }
-    _dirty = true;
-}
-
-
-void
-_EventQueue::handleEvent(UI_Event* event)
-{
-    UT_AutoLock lock(_lock);
-
-    if(_dirty) {
-        {
-            // Use a change block so that layer change
-            // notifications will be batch-processed by stages.
-            SdfChangeBlock changeBlock;
-            for(const auto& layer : _layersToReload) {
-                if(layer)
-                    layer->Reload();
-            }
-            _layersToReload.clear();
-        }
-        for(const auto& stage : _stagesToReload) {
-            if(stage)
-                stage->Reload();
-        }
-        _stagesToReload.clear();
-
-        for(auto* microNode : _evictedNodes) {
-            UT_ASSERT_P(microNode);
-            microNode->SetDirty();
-
-            // The event queue takes ownership of the micro node. Kill it.
-            delete microNode;
-        }
-        _evictedNodes.clear();
-
-        _dirty = false;
-    }
-}
-
-
-void
-_EventQueue::ReloadLayers(const UT_Set<SdfLayerHandle>& layers)
-{
-    if(layers.size() > 0) {
-        UT_AutoLock lock(_lock);
-        _layersToReload.insert(layers.begin(), layers.end());
-        _MarkDirty();
-    }
-}
-
-
-void
-_EventQueue::ReloadStages(const UT_Set<UsdStagePtr>& stages)
-{
-    if(stages.size() > 0) {
-        UT_AutoLock lock(_lock);
-        _stagesToReload.insert(stages.begin(), stages.end());
-        _MarkDirty();
-    }
-}
-
-
-void
-_EventQueue::AppendEvictedNode(_StageChangeMicroNode* node)
-{
-    UT_ASSERT_P(node);
-    UT_AutoLock lock(_lock);
-    _evictedNodes.insert(node);
-    _MarkDirty();
-}
-
-
 } /*namespace*/
 
 
 void
 GusdStageCache::ReloadStages(const UT_Set<UsdStagePtr>& stages)
 {
-    _EventQueue::GetInstance().ReloadStages(stages);
+    if(!UT_Thread::isMainThread()) {
+        TF_WARN("Reloading USD stages on a secondary thread. "
+                "Beware that stage reloading is not thread-safe, and reloading "
+                "a stage may affect other stages, including stages for which a "
+                "reload request was not made! To ensure safety of reload "
+                "operations, stages should only be reloaded from within "
+                "Houdini's main thread.");
+    }
+    for(const auto& stage : stages)
+        stage->Reload();
 }
 
 
 void
 GusdStageCache::ReloadLayers(const UT_Set<SdfLayerHandle>& layers)
 {
-    _EventQueue::GetInstance().ReloadLayers(layers);
+    if(!UT_Thread::isMainThread()) {
+        TF_WARN("Reloading USD layers on a secondary thread. "
+                "Beware that layer reloading is not thread-safe, and reloading "
+                "a layer may affect any USD stages that reference that layer! "
+                "To ensure safety of reload operations, stages should only be "
+                "reloaded from within Houdini's main thread.");
+    }
+    for(const auto& layer : layers)
+        layer->Reload();
 }
 
 
@@ -428,8 +312,8 @@ public:
     /// Methods accessible to GusdStageCacheWriter.
     /// These require an exclusive lock to the stage.
 
-    void            Clear();
-    void            Clear(const UT_StringSet& paths);
+    void            Clear(bool propagateDirty=false);
+    void            Clear(const UT_StringSet& paths, bool propagateDirty=false);
 
     void            AddDataCache(GusdUSD_DataCache& cache)
                     {
@@ -471,9 +355,10 @@ private:
     };
 
 
-    using _MicroNodeMap = UT_ConcurrentHashMap<UsdStagePtr,
-                                               _StageChangeMicroNode*,
-                                               _StageHashCmp>;
+    using _MicroNodeMap =
+        UT_ConcurrentHashMap<UsdStagePtr,
+                             std::shared_ptr<_StageChangeMicroNode>,
+                             _StageHashCmp>;
 
     /// Mutex around the concurrent maps.
     /// An exclusive lock must be acquired when iterating over the maps.
@@ -497,12 +382,9 @@ private:
 
 GusdStageCache::_Impl::~_Impl()
 {
-    // Clear() entries, so that micro nodes are dirtied as expected. 
-    // Don't let this happen if Houdini is undergoing shutdown,
-    // though, as the UI queue may have already expired.
-    if(!UT_Exit::isExiting()) {
-        Clear();
-    }
+    // Clear entries, but don't propagate dirty states, as we
+    // cannot guarantee that state propagation is safe.
+    Clear(/*propagateDirty*/ false);
 }
 
 
@@ -773,18 +655,18 @@ GusdStageCache::_Impl::GetStageMicroNode(const UsdStagePtr& stage)
     {
         _MicroNodeMap::const_accessor a;
         if(_microNodeMap.find(a, stage))
-            return a->second;
+            return a->second.get();
     }
 
     _MicroNodeMap::accessor a;
     if(_microNodeMap.insert(a, stage))
-        a->second = new _StageChangeMicroNode(stage);
-    return a->second;
+        a->second.reset(new _StageChangeMicroNode(stage));
+    return a->second.get();
 }
 
 
 void
-GusdStageCache::_Impl::Clear()
+GusdStageCache::_Impl::Clear(bool propagateDirty)
 {
     // XXX: Caller should have an exclusive map lock!
     
@@ -803,24 +685,27 @@ GusdStageCache::_Impl::Clear()
         _dataCaches.clear();
     }
 
-    for(auto& pair : _microNodeMap) {
-        // Micro nodes must be deleted on the event queue.
-        _EventQueue::GetInstance().AppendEvictedNode(pair.second);
+    if(propagateDirty) {
+        for(auto& pair : _microNodeMap) {
+            pair.second->SetDirty();
+        }
     }
     _microNodeMap.clear();
 }
 
 
 void
-GusdStageCache::_Impl::Clear(const UT_StringSet& paths)
+GusdStageCache::_Impl::Clear(const UT_StringSet& paths, bool propagateDirty)
 {
     // XXX: Caller should have an exclusive map lock!
 
     UT_Array<_StageKey> keysToRemove;
+    UT_Set<UsdStageRefPtr> stagesBeingRemoved;
+
     for(const auto& pair : _stageMap) {
         if(paths.contains(pair.first.GetPath())) {
             keysToRemove.append(pair.first);
-            _microNodeMap.erase(pair.second);
+            stagesBeingRemoved.insert(pair.second);
         }
     }
     for(const auto& key : keysToRemove)
@@ -829,16 +714,26 @@ GusdStageCache::_Impl::Clear(const UT_StringSet& paths)
     keysToRemove.clear();
     for(auto& pair : _maskedCacheMap) {
         if(paths.contains(pair.first.GetPath())) {
-            delete pair.second;
-
-            // TODO: Iterate over the masked stages,
-            // erase the corresponding micro nodes.
-
             keysToRemove.append(pair.first);
+            pair.second->GetStages(stagesBeingRemoved);
+            delete pair.second;
         }
     }
     for(const auto& key : keysToRemove)
         _maskedCacheMap.erase(key);
+
+    // Update and clear micro nodes.
+    for(const UsdStageRefPtr& stage : stagesBeingRemoved) {
+
+        if(propagateDirty) {
+            _MicroNodeMap::accessor a;
+            if(_microNodeMap.find(a, stage)) {
+                a->second->SetDirty();
+            }
+        }
+        _microNodeMap.erase(stage);
+    }
+
 
     {
         UT_AutoLock lock(_dataCacheLock);
@@ -1208,14 +1103,14 @@ GusdStageCacheWriter::GusdStageCacheWriter(GusdStageCache& cache)
 void
 GusdStageCacheWriter::Clear()
 {
-    _cache._impl->Clear();
+    _cache._impl->Clear(/*propagateDirty*/ true);
 }
 
 
 void
 GusdStageCacheWriter::Clear(const UT_StringSet& paths)
 {
-    _cache._impl->Clear(paths);
+    _cache._impl->Clear(paths, /*propagateDirty*/ true);
 }
 
 
