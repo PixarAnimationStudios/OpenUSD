@@ -125,6 +125,7 @@ class GfPlane
 
     /// Give the coefficients of the equation of the plane. Suitable
     /// to OpenGL calls to set the clipping plane.
+    GF_API
     GfVec4d             GetEquation() const;
 
     /// Component-wise equality test. The normals and distances must match
