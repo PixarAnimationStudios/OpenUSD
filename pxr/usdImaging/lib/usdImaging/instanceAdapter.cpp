@@ -823,9 +823,10 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
 
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
+        UsdPrim protoPrim = _GetPrim(rproto.path);
+
         if (protoReqBits != HdChangeTracker::Clean) {
-            rproto.adapter->UpdateForTime(
-                _GetPrim(rproto.path), cachePath, 
+            rproto.adapter->UpdateForTime(protoPrim, cachePath, 
                 rproto.protoGroup->time, protoReqBits, &instancerContext);
         }
 
@@ -851,10 +852,20 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (requestedBits & HdChangeTracker::DirtyTransform) {
-            // Inverse out the root transform to avoid a double transformation
-            // when applying the instancer transform.
             GfMatrix4d& childXf = _GetValueCache()->GetTransform(cachePath);
-            childXf = childXf * GetRootTransform().GetInverse();
+            if (protoPrim.IsInstance()) {
+                // If the prototype we're processing is a master, protoPrim is
+                // a pointer to the instance for attribute lookup; but the
+                // instance transform for that instance is already part of the
+                // instanceTransform primvar.  Masters don't have any transform,
+                // aside from the root transform, so we can set the rprim
+                // transform to identity.
+                childXf.SetIdentity();
+            } else {
+                // Inverse out the root transform to avoid a double
+                // transformation when applying the instancer transform.
+                childXf = childXf * GetRootTransform().GetInverse();
+            }
         }
 
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {

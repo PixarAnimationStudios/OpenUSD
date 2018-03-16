@@ -799,8 +799,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
 
         // Allow the prototype's adapter to update, if there's anything left
         // to do.
+        UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
         if (protoReqBits != HdChangeTracker::Clean)
-            rproto.adapter->UpdateForTime(_GetProtoUsdPrim(rproto),
+            rproto.adapter->UpdateForTime(protoPrim,
                                           cachePath, time, protoReqBits);
 
         // Make sure we always query and return visibility. This is done
@@ -836,6 +837,17 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         if (requestedBits & HdChangeTracker::DirtyTransform) {
+            // If the prototype we're processing is a master, _GetProtoUsdPrim
+            // will return us the instance for attribute lookup; but the
+            // instance transform for that instance is already accounted for in
+            // _CorrectTransform.  Masters don't have any transform aside from
+            // the root transform, so override the result of UpdateForTime.
+            if (protoPrim.IsInstance()) {
+                _GetValueCache()->GetTransform(cachePath) = GetRootTransform();
+            }
+
+            // Correct the transform for various shenanigans: NI transforms,
+            // delegate root transform, proto root transform.
             _CorrectTransform(prim, _GetPrim(rproto.prototype->protoRootPath),
                               cachePath, rproto.paths, time);
         }
