@@ -60,13 +60,15 @@ void wrapUsdSkelTopology()
         .def(init<SdfPathVector>())
         .def(init<VtIntArray>())
 
+        .def("GetParent", &This::GetParent)
+        
         .def("GetParentIndices", &This::GetParentIndices,
              return_value_policy<return_by_value>())
-        
+
         .def("GetNumJoints", &This::GetNumJoints)
 
         .def("__len__", &This::GetNumJoints)
 
         .def("Validate", &This::Validate)
         ;
-}            
+}
