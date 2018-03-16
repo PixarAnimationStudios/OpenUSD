@@ -78,22 +78,12 @@ GfPlane::GetEquation() const
 GfPlane &
 GfPlane::Transform(const GfMatrix4d &matrix) 
 {
-    // Compute the point on the plane along the normal from the origin.
-    GfVec3d pointOnPlane = _distance * _normal;
-
-    // Transform the plane normal by the adjoint of the matrix to get
-    // the new normal.  The adjoint (inverse transpose) is used to
-    // multiply normals so they are not scaled incorrectly.
-    GfMatrix4d adjoint = matrix.GetInverse().GetTranspose();
-    _normal = adjoint.TransformDir(_normal).GetNormalized();
-
-    // Transform the point on the plane by the matrix.
-    pointOnPlane = matrix.Transform(pointOnPlane);
-
-    // The new distance is the projected distance of the vector to the
-    // transformed point onto the (unit) transformed normal. This is
-    // just a dot product.
-    _distance = GfDot(pointOnPlane, _normal);
+    // Transform the coefficients of the plane equation by the adjoint
+    // of the matrix to get the new normal.  The adjoint (inverse
+    // transpose) is also used to multiply so they are not scaled
+    // incorrectly.
+    const GfMatrix4d adjoint = matrix.GetInverse().GetTranspose();
+    Set(GetEquation() * adjoint);
 
     return *this;
 }
