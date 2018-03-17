@@ -29,6 +29,7 @@
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -99,6 +100,9 @@ TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
 //
 TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
                       "Enable bounding box rendering (slows refresh rate)");
+
+UsdMayaProxyShape::ClosestPointDelegate
+UsdMayaProxyShape::_sharedClosestPointDelegate = nullptr;
 
 bool
 UsdMayaIsBoundingBoxModeEnabled()
@@ -405,6 +409,13 @@ UsdMayaProxyShape::GetShapeAtDagPath(const MDagPath& dagPath)
     }
 
     return pShape;
+}
+
+/* static */
+void
+UsdMayaProxyShape::SetClosestPointDelegate(ClosestPointDelegate delegate)
+{
+    _sharedClosestPointDelegate = delegate;
 }
 
 /* virtual */
@@ -978,9 +989,7 @@ UsdMayaProxyShape::UsdMayaProxyShape(const PluginStaticData& psData) :
         _psData(psData),
         _useFastPlayback(false)
 {
-    //
-    // empty
-    //
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaProxyShape>();
 }
 
 /* virtual */
@@ -1015,6 +1024,37 @@ UsdMayaProxyShape::_CanBeSoftSelected() const
     }
     return softSelHandle.asBool();
 
+}
+
+bool
+UsdMayaProxyShape::closestPoint(
+    const MPoint& raySource,
+    const MVector& rayDirection,
+    MPoint& theClosestPoint,
+    MVector& theClosestNormal,
+    bool findClosestOnMiss,
+    double tolerance)
+{
+    if (_sharedClosestPointDelegate) {
+        GfRay ray(
+            GfVec3d(raySource.x, raySource.y, raySource.z),
+            GfVec3d(rayDirection.x, rayDirection.y, rayDirection.z));
+        GfVec3d hitPoint;
+        if (_sharedClosestPointDelegate(*this, ray, &hitPoint)) {
+            theClosestPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
+            // XXX: Need support in Hydra for sidecar information like surface
+            // normals in order to implement this. Right now, we're just
+            // returning a sane default of the up-axis.
+            theClosestNormal = MGlobal::upAxis();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool UsdMayaProxyShape::canMakeLive() const {
+    return (bool) _sharedClosestPointDelegate;
 }
 
 

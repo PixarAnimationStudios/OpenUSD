@@ -38,6 +38,9 @@ pxr_shared_library(${PXR_PACKAGE}
         softSelectHelper
         usdProxyShapeAdapter
 
+    CPPFILES
+        proxyShapeDelegate
+
     DISABLE_PRECOMPILED_HEADERS
 )
 

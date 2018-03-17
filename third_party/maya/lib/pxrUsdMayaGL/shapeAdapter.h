@@ -110,6 +110,9 @@ class PxrMayaHdShapeAdapter
         PXRUSDMAYAGL_API
         virtual const SdfPath& GetDelegateID() const;
 
+        PXRUSDMAYAGL_API
+        virtual const MDagPath& GetDagPath() const;
+
         /// Get whether this shape adapter is for use with Viewport 2.0.
         ///
         /// The shape adapter gets its viewport renderer affiliation from the

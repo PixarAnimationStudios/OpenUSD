@@ -117,6 +117,16 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
             { }
         };
 
+        /// Delegate function for computing the closest point on the proxy
+        /// shape to a given ray.
+        /// Both the input ray and the output point should be in the proxy
+        /// shape's local space.
+        /// Should return true if a point was found, and false otherwise.
+        /// (You could just treat this as a ray intersection and return true
+        /// if intersected, false if missed.)
+        typedef std::function<bool(const UsdMayaProxyShape&, const GfRay&,
+                GfVec3d*)> ClosestPointDelegate;
+
         PXRUSDMAYA_API
         static void* creator(const PluginStaticData& psData);
 
@@ -125,6 +135,9 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
 
         PXRUSDMAYA_API
         static UsdMayaProxyShape* GetShapeAtDagPath(const MDagPath& dagPath);
+
+        PXRUSDMAYA_API
+        static void SetClosestPointDelegate(ClosestPointDelegate delegate);
 
         // Virtual function overrides
         PXRUSDMAYA_API
@@ -139,6 +152,18 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         virtual MBoundingBox boundingBox() const override;
         PXRUSDMAYA_API
         virtual MSelectionMask getShapeSelectionMask() const override;
+
+        PXRUSDMAYA_API
+        bool closestPoint(
+                const MPoint& raySource,
+                const MVector& rayDirection,
+                MPoint& theClosestPoint,
+                MVector& theClosestNormal,
+                bool findClosestOnMiss,
+                double tolerance) override;
+
+        PXRUSDMAYA_API
+        bool canMakeLive() const override;
 
         // PxrUsdMayaUsdPrimProvider overrides:
         /**
@@ -225,6 +250,8 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
 
         bool _useFastPlayback;
+
+        static ClosestPointDelegate _sharedClosestPointDelegate;
 };
 
 

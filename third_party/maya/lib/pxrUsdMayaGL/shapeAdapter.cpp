@@ -221,6 +221,13 @@ PxrMayaHdShapeAdapter::GetDelegateID() const
 }
 
 /* virtual */
+const MDagPath&
+PxrMayaHdShapeAdapter::GetDagPath() const
+{
+    return _shapeDagPath;
+}
+
+/* virtual */
 bool
 PxrMayaHdShapeAdapter::IsViewport2() const
 {

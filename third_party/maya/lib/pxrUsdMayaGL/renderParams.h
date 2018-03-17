@@ -31,6 +31,7 @@
 #include "pxrUsdMayaGL/api.h"
 
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/token.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -49,12 +50,20 @@ struct PxrMayaHdRenderParams
     GfVec4f overrideColor = GfVec4f(0.0f);
     GfVec4f wireframeColor = GfVec4f(0.0f);
 
+    /// Custom bucketing on top of the regular bucketing based on render params.
+    /// Leave this as the empty token if you want to use the default bucket for
+    /// these params, along with its associated Hydra tasks.
+    /// Set this to a non-empty token if you want to render with separate
+    /// Hydra tasks, since these are allocated on a per-bucket basis.
+    TfToken customBucketName;
+
     /// Helper function to find a batch key for the render params
     size_t Hash() const
     {
         size_t hash = size_t(enableLighting);
         boost::hash_combine(hash, overrideColor);
         boost::hash_combine(hash, wireframeColor);
+        boost::hash_combine(hash, customBucketName);
 
         return hash;
     }
