@@ -439,10 +439,11 @@ UsdMayaGLBatchRenderer::PopulateCustomCollection(
 }
 
 // Since we're using a static singleton UsdMayaGLBatchRenderer object, we need
-// to make sure that we reset its state when switching to a new Maya scene.
+// to make sure that we reset its state when switching to a new Maya scene or
+// when opening a different scene.
 static
 void
-_OnMayaSceneUpdateCallback(void* clientData)
+_OnMayaNewOrOpenSceneCallback(void* clientData)
 {
     UsdMayaGLBatchRenderer::Reset();
 }
@@ -507,11 +508,23 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _intersector.reset(new HdxIntersector(_renderIndex.get()));
     _selectionTracker.reset(new HdxSelectionTracker());
 
-    static MCallbackId sceneUpdateCallbackId = 0;
-    if (sceneUpdateCallbackId == 0) {
-        sceneUpdateCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kSceneUpdate,
-                                       _OnMayaSceneUpdateCallback);
+    // The batch renderer needs to be reset when changing scenes (either by
+    // switching to a new empty scene or by opening a different scene). We
+    // listen for those two messages and *not* for kSceneUpdate messages since
+    // those are also emitted after a SaveAs operation, in which case we
+    // actually do not want to reset the batch renderer.
+    static MCallbackId afterNewCallbackId = 0;
+    if (afterNewCallbackId == 0) {
+        afterNewCallbackId =
+            MSceneMessage::addCallback(MSceneMessage::kAfterNew,
+                                       _OnMayaNewOrOpenSceneCallback);
+    }
+
+    static MCallbackId afterOpenCallbackId = 0;
+    if (afterOpenCallbackId == 0) {
+        afterOpenCallbackId =
+            MSceneMessage::addCallback(MSceneMessage::kAfterOpen,
+                                       _OnMayaNewOrOpenSceneCallback);
     }
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
