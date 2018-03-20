@@ -407,9 +407,9 @@ SdfLayer::_CreateNew(
         }
 
         // If not explicitly supplied one, try to determine the fileFormat 
-        // based on the identifier suffix,
+        // based on the local path suffix,
         if (!fileFormat) {
-            fileFormat = _GetFileFormatForPath(absIdentifier, args);
+            fileFormat = _GetFileFormatForPath(localPath, args);
             if (!TF_VERIFY(fileFormat))
                 return TfNullPtr;
         }
@@ -614,7 +614,8 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
         }
     }
 
-    info->fileFormat = _GetFileFormatForPath(layerPath, layerArgs);
+    info->fileFormat = _GetFileFormatForPath(
+        resolvedLayerPath.empty() ? layerPath : resolvedLayerPath, layerArgs);
     info->fileFormatArgs.swap(_CanonicalizeFileFormatArguments(
         layerPath, info->fileFormat, layerArgs));
 
