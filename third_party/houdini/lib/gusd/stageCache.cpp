@@ -42,6 +42,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverContext.h"
+#include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -398,6 +400,11 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
     // Catch Tf errors.
     GusdUT_TfErrorScope errorScope(err);
 
+    // TODO: Should consider including the context as a member of the
+    // stage opts, so that it can be reconfigured across different hip files.
+    ArResolverContext resolverContext = ArGetResolver().GetCurrentContext();
+    ArResolverContextBinder binder(resolverContext);
+
     // The root layer is shared, and not modified.
     if(SdfLayerRefPtr rootLayer = FindOrOpenLayer(path, err)) {
 
@@ -411,11 +418,10 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
 
         UsdStageRefPtr stage =
             mask ? UsdStage::OpenMasked(rootLayer, sessionLayer,
-                                        ArGetResolver().GetCurrentContext(),
+                                        resolverContext,
                                         *mask, opts.GetLoadSet())
             : UsdStage::Open(rootLayer, sessionLayer,
-                             ArGetResolver().GetCurrentContext(),
-                             opts.GetLoadSet());
+                             resolverContext, opts.GetLoadSet());
 
         if(stage) {
             if(edit) {
