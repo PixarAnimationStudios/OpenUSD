@@ -366,10 +366,7 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     // Unset the bit initially.
     (*dirtyFlags) &= ~dirtyFlag;
 
-    for (bool prime = true;prime ||
-          (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());
-          prime = false) 
-    {
+    do {
         UsdAttribute attr = prim.GetAttribute(attrName);
 
         if (attr.ValueMightBeTimeVarying()){
@@ -378,7 +375,8 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
             return true;
         } 
         prim = prim.GetParent();
-    }
+
+    } while (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());
 
     return false;
 }
@@ -397,10 +395,7 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
 
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
 
-    for (bool prime = true; 
-         prime || (prim.GetPath() != SdfPath::AbsoluteRootPath());
-         prime = false) 
-    {
+    do {
         bool mayXformVary = 
             xfCache.GetQuery(prim)->TransformMightBeTimeVarying();
         if (mayXformVary) {
@@ -417,7 +412,8 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
         }
 
         prim = prim.GetParent();
-    }
+
+    } while (prim.GetPath() != SdfPath::AbsoluteRootPath());
 
     return false;
 }

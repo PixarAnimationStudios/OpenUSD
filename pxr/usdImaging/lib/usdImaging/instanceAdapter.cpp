@@ -289,6 +289,11 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                                    /*parentPath=*/ctx.instancerId,
                                    _GetPrim(instancerPath),
                                    ctx.instancerAdapter);
+
+            // Ensure that the instance transforms are computed on the first
+            // call to UpdateForTime.
+            index->MarkInstancerDirty(instancerPath,
+                HdChangeTracker::DirtyPrimVar);
         } else if (nestedInstances.empty()) {
             // if this instance path ends up to have no prims in subtree
             // and not an instance itself , we don't need to track this path
@@ -499,16 +504,6 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
         // instance transform primvar is varying over time.
         if (instancerBits & HdChangeTracker::DirtyInstancer) {
             *timeVaryingBits |= HdChangeTracker::DirtyPrimVar;
-        }
-
-        VtMatrix4dArray instanceXforms;
-        if (_ComputeInstanceTransform(prim, &instanceXforms, time)) {
-            valueCache->GetPrimvar(
-                cachePath, HdTokens->instanceTransform) = instanceXforms;
-            UsdImagingValueCache::PrimvarInfo primvar;
-            primvar.name = HdTokens->instanceTransform;
-            primvar.interpolation = _tokens->instance;
-            _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
         }
     }
 }
@@ -737,13 +732,8 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
     bool operator()(
         const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
     {
-        HdDirtyBits dirtyBits;
         TF_FOR_ALL(primIt, instanceContext) {
-            if (adapter->_IsTransformVarying(
-                    *primIt, 
-                    HdChangeTracker::DirtyTransform,
-                    HdTokens->instancer,
-                    &dirtyBits)) {
+            if (_GetIsTransformVarying(*primIt)) {
                 result = true;
                 break;
             }
@@ -751,8 +741,32 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
         return !result;
     }
 
+    bool _GetIsTransformVarying(const UsdPrim& prim) {
+        bool transformVarying;
+        HdDirtyBits dirtyBits;
+
+        // Cache any _IsTransformVarying calls.
+        auto cacheIt = cache.find(prim);
+        if (cacheIt == cache.end()) {
+            transformVarying = adapter->_IsTransformVarying(
+                prim,
+                HdChangeTracker::DirtyTransform,
+                HdTokens->instancer,
+                &dirtyBits);
+            cache[prim] = transformVarying;
+        } else {
+            transformVarying = cacheIt->second;
+        }
+
+        return transformVarying;
+    }
+
     UsdImagingInstanceAdapter* adapter;
     bool result;
+
+    // We keep a simple cache directly on _IsInstanceTransformVaryingFn because
+    // we only need it during initialization and resyncs (not in UpdateForTime).
+    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> cache;
 };
 
 bool 
@@ -1304,23 +1318,43 @@ struct UsdImagingInstanceAdapter::_UpdateInstanceMapFn
     bool IsVisibilityVarying(const std::vector<UsdPrim>& instanceContext)
     {
         TF_FOR_ALL(primIt, instanceContext) {
-            HdDirtyBits dirtyBits;
-            if (adapter->_IsVarying(*primIt, 
-                           UsdGeomTokens->visibility, 
-                           HdChangeTracker::DirtyVisibility,
-                           UsdImagingTokens->usdVaryingVisibility,
-                           &dirtyBits,
-                           true)) {
+            if (_GetIsVisibilityVarying(*primIt)) {
                 return true;
             }
         }
         return false;
     }
 
+    bool _GetIsVisibilityVarying(const UsdPrim& prim) {
+        bool visibilityVarying;
+
+        auto cacheIt = varyingCache.find(prim);
+        if (cacheIt == varyingCache.end()) {
+            HdDirtyBits dirtyBits;
+            visibilityVarying = adapter->_IsVarying(
+                prim,
+                UsdGeomTokens->visibility,
+                HdChangeTracker::DirtyVisibility,
+                UsdImagingTokens->usdVaryingVisibility,
+                &dirtyBits,
+                true);
+            varyingCache[prim] = visibilityVarying;
+        } else {
+            visibilityVarying = cacheIt->second;
+        }
+
+        return visibilityVarying;
+    }
+
     UsdImagingInstanceAdapter* adapter;
     UsdTimeCode time;
     std::vector<_InstancerData::Visibility>* visibility;
     VtIntArray* indices;
+
+    // We keep a simple cache of visibility varying states directly on
+    // _UpdateInstanceMapFn because we only need it for the first draw and
+    // during resyncs.
+    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> varyingCache;
 };
 
 void
