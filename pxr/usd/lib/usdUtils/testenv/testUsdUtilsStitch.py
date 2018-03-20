@@ -114,6 +114,67 @@ class TestUsdUtilsStitch(unittest.TestCase):
                          [Sdf.Path('/World/fx/Letters.interface:value')],
                          'Connection on attribute has wrong target')
 
+    def test_Variants(self):
+        layer1 = Sdf.Layer.FindOrOpen('src/variants_1.usda')
+        layer2 = Sdf.Layer.FindOrOpen('src/variants_2.usda')
+
+        # First, stitch to an empty layer -- this should be equivalent
+        # to making a copy of the weaker layer.
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        UsdUtils.StitchLayers(l, layer1)
+        self.assertEqual(layer1.ExportToString(), l.ExportToString(),
+                         ("Expected:\n%s\nResult:\n%s" % 
+                          (layer1.ExportToString(), l.ExportToString())))
+
+        l = Sdf.Layer.CreateAnonymous('.usda')
+        UsdUtils.StitchLayers(l, layer2)
+        self.assertEqual(layer2.ExportToString(), l.ExportToString(),
+                         ("Expected:\n%s\nResult:\n%s" % 
+                          (layer2.ExportToString(), l.ExportToString())))
+
+        # Stitch the two layers together and verify that variants
+        # are merged as expected.
+        UsdUtils.StitchLayers(layer1, layer2)
+
+        self.assertTrue(layer1.GetObjectAtPath('/Root{a=x}Child'))
+        self.assertTrue(layer1.GetObjectAtPath('/Root{a=x}Child.testAttr'))
+        self.assertTrue(layer1.GetObjectAtPath('/Root{a=x}Child.testRel'))
+        self.assertTrue(layer1.GetObjectAtPath('/Root{a=x}Child_2'))
+        self.assertTrue(layer1.GetObjectAtPath('/Root{a=x}Child_2.testAttr'))
+        self.assertTrue(layer1.GetObjectAtPath('/Root{a=x}Child_2.testRel'))
+        self.assertTrue(layer1.GetObjectAtPath('/Root{b=x}Child'))
+
+        self.assertEqual(
+            layer1.GetAttributeAtPath('/Root{a=x}Child.testAttr')
+            .GetInfo('timeSamples'),
+            {1.0: 1.0, 2.0: 2.0})
+
+        self.assertEqual(
+            layer1.GetAttributeAtPath('/Root{a=x}Child_2.testAttr')
+            .GetInfo('timeSamples'),
+            {2.0: 2.0})
+
+        expectedTargets = Sdf.PathListOp()
+        expectedTargets.prependedItems = ['/Root/Test']
+        self.assertEqual(
+            layer1.GetRelationshipAtPath('/Root{a=x}Child.testRel')
+            .GetInfo('targetPaths'),
+            expectedTargets)
+
+        expectedTargets.prependedItems = ['/Root/Test2']
+        self.assertEqual(
+            layer1.GetRelationshipAtPath('/Root{a=x}Child_2.testRel')
+            .GetInfo('targetPaths'),
+            expectedTargets)
+
+        # XXX: Currently broken
+        # self.assertEqual(dict(layer1.GetPrimAtPath('/Root').variantSelections), 
+        #                  {'a':'x', 'b':'x'})
+
+        # expectedNames = Sdf.StringListOp()
+        # expectedNames.prependedItems = ['a', 'b']
+        # self.assertEqual(layer1.GetPrimAtPath('/Root').GetInfo('variantSetNames'), 
+        #                  expectedNames)
 
 if __name__ == '__main__':
     unittest.main()

@@ -92,10 +92,6 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// no fuzzying of the numbers, so, if strongLayer contains a timeSample
 /// 101.000001 and weakLayer contains one at 101.000002, both will be in
 /// strongLayer after the operation.
-///
-/// Verification is done post stitching to warn the user if time samples 
-/// outside of the range were provided or if a begin frame is missing to 
-/// corresponding end frame or vise-versa.
 USDUTILS_API
 void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer, 
                           const SdfLayerHandle& weakLayer,
