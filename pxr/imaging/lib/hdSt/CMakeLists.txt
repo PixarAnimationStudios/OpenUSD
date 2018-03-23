@@ -36,6 +36,7 @@ pxr_library(hdSt
         drawTargetAttachmentDesc
         drawTargetAttachmentDescArray
         drawTargetRenderPassState
+        extComputation
         extCompGpuComputation
         extCompGpuComputationBufferSource
         extCompGpuComputationResource

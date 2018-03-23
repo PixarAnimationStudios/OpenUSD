@@ -405,34 +405,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name ExtComputation Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking ExtComputation with the given \p id.
-    HD_API
-    void ExtComputationInserted(SdfPath const& id,
-                                HdDirtyBits initialDirtyState);
-
-    /// Stop tracking ExtComputation with the given \p id.
-    HD_API
-    void ExtComputationRemoved(SdfPath const& id);
-
-    /// Set the dirty flags to \p bits.
-    HD_API
-    void MarkExtComputationDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
-
-    /// Get the dirty bits for ExtComputation with the given \p id.
-    HD_API
-    HdDirtyBits GetExtComputationDirtyBits(SdfPath const& id) const;
-
-    /// Set the dirty flags to \p newBits.
-    HD_API
-    void MarkExtComputationClean(SdfPath const& id, HdDirtyBits newBits=Clean);
-
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name GarbageCollection Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -552,7 +524,6 @@ private:
     _IDStateMap _taskState;
     _IDStateMap _sprimState;
     _IDStateMap _bprimState;
-    _IDStateMap _extComputationState;
     _GeneralStateMap _generalState;
 
     // Collection versions / state.

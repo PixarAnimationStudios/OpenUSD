@@ -83,13 +83,15 @@ public:
     /// requires.
     /// outputs is a list of outputs by names that the computation produces.
     ///
-    /// numElements specifies the number of elements in the output.
+    /// dispatchCount specifies the number of kernel invocations to execute.
+    /// elementCount specifies the number of elements to allocate for output.
     HdStExtCompGpuComputation(
             SdfPath const &id,
             HdStExtCompGpuComputationResourceSharedPtr const &resource,
             TfToken const &primvarName,
             TfToken const &computationOutputName,
-            int numElements);
+            int dispatchCount,
+            int elementCount);
 
     /// Creates a GPU computation implementing the given abstract computation.
     /// When created this allocates HdStExtCompGpuComputationResource to be
@@ -139,6 +141,13 @@ public:
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;
 
+    /// Gets the number of GPU kernel invocations to execute.
+    /// It can be useful for this to be different than the number of output
+    /// elements, e.g. to run a per-curve kernel computing multiple points
+    /// per-curve.
+    HDST_API
+    int GetDispatchCount() const;
+
     /// Gets the number of elements in the output primvar.
     /// The number of elements produced by the computation must be known before
     /// doing the computation. The allocation of GPU resources needs to know
@@ -157,10 +166,9 @@ private:
     HdStExtCompGpuComputationResourceSharedPtr   _resource;
     TfToken                                      _primvarName;
     TfToken                                      _computationOutputName;
-    int                                          _numElements;
+    int                                          _dispatchCount;
+    int                                          _elementCount;
 
-    std::vector<int32_t>                         _uniforms;
-    
     HdStExtCompGpuComputation()                                        = delete;
     HdStExtCompGpuComputation(const HdStExtCompGpuComputation &)       = delete;
     HdStExtCompGpuComputation &operator = (const HdStExtCompGpuComputation &)

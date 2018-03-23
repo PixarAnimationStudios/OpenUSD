@@ -32,7 +32,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdExtComputation::HdExtComputation(SdfPath const &id)
- : _id(id)
+ : HdSprim(id)
+ , _dispatchCount(0)
  , _elementCount(0)
  , _sceneInputs()
  , _computationInputs()
@@ -43,7 +44,16 @@ HdExtComputation::HdExtComputation(SdfPath const &id)
 
 void
 HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
+                       HdRenderParam   *renderParam,
                        HdDirtyBits     *dirtyBits)
+{
+    HdExtComputation::_Sync(sceneDelegate, renderParam, dirtyBits);
+}
+
+void
+HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
+                        HdRenderParam   *renderParam,
+                        HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -58,9 +68,9 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
     if (bits & DirtyInputDesc) {
         TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    dirty inputs\n");
         
-        _sceneInputs       = sceneDelegate->GetExtComputationInputNames(_id,
+        _sceneInputs       = sceneDelegate->GetExtComputationInputNames(GetID(),
                                                 HdExtComputationInputTypeScene);
-        _computationInputs = sceneDelegate->GetExtComputationInputNames(_id,
+        _computationInputs = sceneDelegate->GetExtComputationInputNames(GetID(),
                                           HdExtComputationInputTypeComputation);
 
 
@@ -68,7 +78,7 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         _computationSourceDescs.reserve(numComputationInputs);
         for (size_t inputNum = 0; inputNum < numComputationInputs; ++inputNum) {
             HdExtComputationInputParams params =
-                    sceneDelegate->GetExtComputationInputParams(_id,
+                    sceneDelegate->GetExtComputationInputParams(GetID(),
                                                   _computationInputs[inputNum]);
 
             if ((!params.sourceComputationId.IsEmpty()) &&
@@ -83,19 +93,35 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyOutputDesc) {
-        _outputs = sceneDelegate->GetExtComputationOutputNames(_id);
+        _outputs = sceneDelegate->GetExtComputationOutputNames(GetID());
+    }
+
+    if (bits & DirtyDispatchCount) {
+        VtValue vtDispatchCount =
+                sceneDelegate->Get(GetID(), HdTokens->dispatchCount);
+        // For backward compatibility, allow the dispatch count to be empty.
+        if (!vtDispatchCount.IsEmpty()) {
+            _dispatchCount = vtDispatchCount.Get<size_t>();
+        } else {
+            _dispatchCount = 0;
+        }
     }
 
     if (bits & DirtyElementCount) {
         VtValue vtElementCount =
-                                sceneDelegate->Get(_id, HdTokens->elementCount);
-        _elementCount = vtElementCount.Get<size_t>();
+                sceneDelegate->Get(GetID(), HdTokens->elementCount);
+        // For backward compatibility, allow the element count to be empty.
+        if (!vtElementCount.IsEmpty()) {
+            _elementCount = vtElementCount.Get<size_t>();
+        } else {
+            _elementCount = 0;
+        }
     }
 
     if (bits & DirtyKernel) {
-        _kernel = sceneDelegate->GetExtComputationKernel(_id);
-        TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    _kernel = '%s'\n",
-                _kernel.c_str());
+        _gpuKernelSource = sceneDelegate->GetExtComputationKernel(GetID());
+        TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    GpuKernelSource = '%s'\n",
+                _gpuKernelSource.c_str());
         // XXX we should update any created GPU computations as well
         // with the new kernel if we want to provide a good editing flow.
     }
@@ -104,9 +130,30 @@ HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 }
 
 HdDirtyBits
-HdExtComputation::GetInitialDirtyBits() const
+HdExtComputation::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
+}
+
+VtValue
+HdExtComputation::Get(TfToken const &token) const
+{
+    return VtValue();
+}
+
+size_t
+HdExtComputation::GetDispatchCount() const
+{
+    return (_dispatchCount > 0 ? _dispatchCount : _elementCount);
+}
+
+bool
+HdExtComputation::IsInputAggregation() const
+{
+    // Computations with no outputs act as input aggregators, i.e.
+    // schedule inputs for resolution, but don't directly schedule
+    // execution of a computation.
+    return GetOutputs().empty();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

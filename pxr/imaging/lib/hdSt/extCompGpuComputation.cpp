@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuPrimvarBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -50,27 +51,28 @@ HdStExtCompGpuComputation::HdStExtCompGpuComputation(
         HdStExtCompGpuComputationResourceSharedPtr const &resource,
         TfToken const &primvarName,
         TfToken const &computationOutputName,
-        int numElements)
+        int dispatchCount,
+        int elementCount)
  : HdComputation()
  , _id(id)
  , _resource(resource)
  , _primvarName(primvarName)
  , _computationOutputName(computationOutputName)
- , _numElements(numElements)
- , _uniforms()
+ , _dispatchCount(dispatchCount)
+ , _elementCount(elementCount)
 {
     
 }
 
 void
 HdStExtCompGpuComputation::Execute(
-    HdBufferArrayRangeSharedPtr const &range_,
+    HdBufferArrayRangeSharedPtr const &outputRange,
     HdResourceRegistry *resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    TF_VERIFY(range_);
+    TF_VERIFY(outputRange);
     TF_VERIFY(resourceRegistry);
 
     TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
@@ -80,29 +82,6 @@ HdStExtCompGpuComputation::Execute(
     if (!glDispatchCompute) {
         TF_WARN("glDispatchCompute not available");
         return;
-    }
-
-    HdStBufferArrayRangeGLSharedPtr range =
-        boost::static_pointer_cast<HdStBufferArrayRangeGL>(range_);
-
-    TF_VERIFY(range);
-    // XXX Currently these computations are always meant to be 1:1 to the
-    // output range. If that changes in the future we'll need to design some
-    // form of expansion or windowed computation extension to this.
-
-    // Chained computations can expand, but we don't support contraction yet.
-    TF_VERIFY(range->GetNumElements() >= GetNumOutputElements());
-    HdStBufferResourceGLNamedList const &resources = range->GetResources();
-
-    // Non-in-place sources should have been registered as resource registry
-    // sources already and Resolved. They go to an internal buffer range that
-    // was allocated in AllocateInternalBuffers
-    HdStBufferArrayRangeGLSharedPtr inputRange;
-    HdStBufferResourceGLNamedList inputResources;
-    if (_resource->GetInternalRange()) {
-        inputRange = boost::static_pointer_cast<HdStBufferArrayRangeGL>(
-                _resource->GetInternalRange());
-        inputResources = inputRange->GetResources();
     }
 
     HdStGLSLProgramSharedPtr const &computeProgram = _resource->GetProgram();
@@ -115,17 +94,25 @@ HdStExtCompGpuComputation::Execute(
     GLuint kernel = computeProgram->GetProgram().GetId();
     glUseProgram(kernel);
 
-    HdStBufferResourceGLSharedPtr outBuffer = range->GetResource(
-        _primvarName);
-    TF_VERIFY(outBuffer);
-    TF_VERIFY(outBuffer->GetId());
+    HdStBufferArrayRangeGLSharedPtr outputBar =
+        boost::static_pointer_cast<HdStBufferArrayRangeGL>(outputRange);
+    TF_VERIFY(outputBar);
+
+    HdStBufferResourceGLSharedPtr outBuffer =
+        outputBar->GetResource(_primvarName);
+    if (!TF_VERIFY(outBuffer) || !TF_VERIFY(outBuffer->GetId())) {
+        return;
+    };
 
     // Prepare uniform buffer for GPU computation
-    _uniforms.clear();
-    _uniforms.push_back(range->GetOffset());
+    // XXX: We'd really prefer to delegate this to the resource binder.
+    std::vector<int32_t> _uniforms;
+    _uniforms.push_back(outputBar->GetOffset());
+
     // Bind buffers as SSBOs to the indices matching the layout in the shader
-    TF_FOR_ALL(it, resources) {
-        TfToken name = (*it).first;
+    for (HdStBufferResourceGLNamedPair const & it: outputBar->GetResources()) {
+        TfToken name = it.first;
+        HdStBufferResourceGLSharedPtr const &buffer = it.second;
 
         // Map the output onto the destination primvar
         if (name == _primvarName) {
@@ -137,7 +124,6 @@ HdStExtCompGpuComputation::Execute(
         // No guarantee that we are hiding buffers that
         // shouldn't be written to for example.
         if (binding.IsValid()) {
-            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
             size_t componentSize = HdDataSizeOfType(
                 HdGetComponentType(buffer->GetTupleType().type));
             _uniforms.push_back(buffer->GetOffset() / componentSize);
@@ -146,21 +132,29 @@ HdStExtCompGpuComputation::Execute(
             binder.BindBuffer(name, buffer);
         } 
     }
-    TF_FOR_ALL(it, inputResources) {
-        TfToken const &name = (*it).first;
-        HdBinding const &binding = binder.GetBinding(name);
-        // These should all be valid as they are required inputs
-        if (TF_VERIFY(binding.IsValid())) {
-            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
-            HdTupleType tupleType = buffer->GetTupleType();
-            size_t componentSize =
-                HdDataSizeOfType(HdGetComponentType(tupleType.type));
-            _uniforms.push_back((inputRange->GetOffset() + buffer->GetOffset()) / componentSize);
-            // If allocated with a VBO allocator use the line below instead.
-            //_uniforms.push_back(buffer->GetStride() / buffer->GetComponentSize());
-            // This is correct for the SSBO allocator only
-            _uniforms.push_back(HdGetComponentCount(tupleType.type));
-            binder.BindBuffer(name, buffer);
+
+    for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()) {
+        HdStBufferArrayRangeGLSharedPtr const & inputBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(input);
+
+        for (HdStBufferResourceGLNamedPair const & it:
+                        inputBar->GetResources()) {
+            TfToken const &name = it.first;
+            HdStBufferResourceGLSharedPtr const &buffer = it.second;
+
+            HdBinding const &binding = binder.GetBinding(name);
+            // These should all be valid as they are required inputs
+            if (TF_VERIFY(binding.IsValid())) {
+                HdTupleType tupleType = buffer->GetTupleType();
+                size_t componentSize =
+                    HdDataSizeOfType(HdGetComponentType(tupleType.type));
+                _uniforms.push_back((inputBar->GetOffset() + buffer->GetOffset()) / componentSize);
+                // If allocated with a VBO allocator use the line below instead.
+                //_uniforms.push_back(buffer->GetStride() / buffer->GetComponentSize());
+                // This is correct for the SSBO allocator only
+                _uniforms.push_back(HdGetComponentCount(tupleType.type));
+                binder.BindBuffer(name, buffer);
+            }
         }
     }
     
@@ -175,9 +169,7 @@ HdStExtCompGpuComputation::Execute(
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
 
-    // The computation dimension is some thing we want to manage for
-    // users. Right now it is just the size of the output buffer.
-    glDispatchCompute((GLuint)GetNumOutputElements(), 1, 1);
+    glDispatchCompute((GLuint)GetDispatchCount(), 1, 1);
     GLF_POST_PENDING_GL_ERRORS();
 
     // For now we make sure the computation finishes right away.
@@ -189,25 +181,33 @@ HdStExtCompGpuComputation::Execute(
     // XXX this should go away once we use a graphics abstraction
     // as that would take care of cleaning state.
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
-    TF_FOR_ALL(it, resources) {
-        TfToken const &name = (*it).first;
+    for (HdStBufferResourceGLNamedPair const & it: outputBar->GetResources()) {
+        TfToken const &name = it.first;
+        HdStBufferResourceGLSharedPtr const &buffer = it.second;
+
         HdBinding const &binding = binder.GetBinding(name);
         // XXX we need a better way than this to pick
         // which buffers to bind on the output.
         // No guarantee that we are hiding buffers that
         // shouldn't be written to for example.
         if (binding.IsValid()) {
-            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
             binder.UnbindBuffer(name, buffer);
         } 
     }
-    TF_FOR_ALL(it, inputResources) {
-        TfToken const &name = (*it).first;
-        HdBinding const &binding = binder.GetBinding(name);
-        // These should all be valid as they are required inputs
-        if (TF_VERIFY(binding.IsValid())) {
-            HdStBufferResourceGLSharedPtr const &buffer = (*it).second;
-            binder.UnbindBuffer(name, buffer);
+    for (HdBufferArrayRangeSharedPtr const & input: _resource->GetInputs()) {
+        HdStBufferArrayRangeGLSharedPtr const & inputBar =
+            boost::static_pointer_cast<HdStBufferArrayRangeGL>(input);
+
+        for (HdStBufferResourceGLNamedPair const & it:
+                        inputBar->GetResources()) {
+            TfToken const &name = it.first;
+            HdStBufferResourceGLSharedPtr const &buffer = it.second;
+
+            HdBinding const &binding = binder.GetBinding(name);
+            // These should all be valid as they are required inputs
+            if (TF_VERIFY(binding.IsValid())) {
+                binder.UnbindBuffer(name, buffer);
+            }
         }
     }
 
@@ -221,9 +221,15 @@ HdStExtCompGpuComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 int
+HdStExtCompGpuComputation::GetDispatchCount() const
+{
+    return _dispatchCount;
+}
+
+int
 HdStExtCompGpuComputation::GetNumOutputElements() const
 {
-    return _numElements;
+    return _elementCount;
 }
 
 HdStExtCompGpuComputationResourceSharedPtr const &
@@ -242,7 +248,7 @@ HdStExtCompGpuComputation::CreateGpuComputation(
 {
     TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
             "GPU computation '%s' created for primvar '%s'\n",
-            sourceComp->GetId().GetText(), primvar->GetName().GetText());
+            sourceComp->GetID().GetText(), primvar->GetName().GetText());
 
     // Downcast the resource registry
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
@@ -251,12 +257,38 @@ HdStExtCompGpuComputation::CreateGpuComputation(
                               renderIndex.GetResourceRegistry());
 
     HdStComputeShaderSharedPtr shader(new HdStComputeShader());
-    shader->SetComputeSource(sourceComp->GetKernel());
+    shader->SetComputeSource(sourceComp->GetGpuKernelSource());
 
     // Map the output onto the destination primvar type
     HdBufferSpecVector outputBufferSpecs = {
         { computationOutputName, primvar->GetTupleType() }
     };
+
+    HdStExtComputation const *deviceSourceComp =
+        static_cast<HdStExtComputation const *>(sourceComp);
+    if (!TF_VERIFY(deviceSourceComp)) {
+        return nullptr;
+    }
+    HdBufferArrayRangeSharedPtrVector inputs;
+    inputs.push_back(deviceSourceComp->GetInputRange());
+
+    for (HdExtComputation::SourceComputationDesc const &desc:
+         sourceComp->GetComputationSourceDescs()) {
+        HdStExtComputation const * deviceInputComp =
+            static_cast<HdStExtComputation const *>(
+                renderIndex.GetSprim(
+                    HdPrimTypeTokens->extComputation,
+                    desc.computationId));
+        if (deviceInputComp && deviceInputComp->GetInputRange()) {
+            HdBufferArrayRangeSharedPtr input =
+                deviceInputComp->GetInputRange();
+            // skip duplicate inputs
+            if (std::find(inputs.begin(),
+                          inputs.end(), input) == inputs.end()) {
+                inputs.push_back(deviceInputComp->GetInputRange());
+            }
+        }
+    }
 
     // There is a companion resource that requires allocation
     // and resolution.
@@ -264,61 +296,17 @@ HdStExtCompGpuComputation::CreateGpuComputation(
             new HdStExtCompGpuComputationResource(
                 outputBufferSpecs,
                 shader,
+                inputs,
                 resourceRegistry));
 
     return HdStExtCompGpuComputationSharedPtr(
                 new HdStExtCompGpuComputation(
-                        sourceComp->GetId(),
+                        sourceComp->GetID(),
                         resource,
                         primvar->GetName(),
                         computationOutputName,
+                        sourceComp->GetDispatchCount(),
                         sourceComp->GetElementCount()));
-}
-
-static
-HdStExtCompGpuComputationBufferSourceSharedPtr
-_CreateGpuComputationBufferSource(
-    HdSceneDelegate *sceneDelegate,
-    HdExtComputation const *sourceComp,
-    HdStExtCompGpuComputationResourceSharedPtr const &resource)
-{
-    // Downcast the resource registry
-    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-    HdStResourceRegistrySharedPtr const& resourceRegistry = 
-        boost::dynamic_pointer_cast<HdStResourceRegistry>(
-                              renderIndex.GetResourceRegistry());
-
-    HdBufferSourceVector inputs;
-    for (const TfToken &inputName: sourceComp->GetSceneInputs()) {
-        VtValue inputValue = sceneDelegate->Get(sourceComp->GetId(), inputName);
-        size_t arraySize =
-            inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
-        HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(
-                    new HdVtBufferSource(inputName, inputValue, arraySize));
-        inputs.push_back(inputSource);
-    }
-
-    // This allocates a range suitable for the computation
-    // if one is needed. If one is not needed the
-    // internalSources will be empty.
-    HdBufferSourceVector internalSources;
-    resource->AllocateInternalRange(
-            inputs,
-            &internalSources,
-            resourceRegistry);
-    if (!internalSources.empty()) {
-        // Only add it if it is actually needed.
-        // Shortcut here if we are also primvar sharing
-        // as we may not want to actually add the range
-        // and the sources.
-        resourceRegistry->AddSources(
-            resource->GetInternalRange(),
-            internalSources);
-    }
-
-    return HdStExtCompGpuComputationBufferSourceSharedPtr(
-                new HdStExtCompGpuComputationBufferSource(
-                        inputs, resource));
 }
 
 void
@@ -341,24 +329,22 @@ HdSt_GetExtComputationPrimVarsComputations(
     TfTokenVector compPrimVars =
         sceneDelegate->GetExtComputationPrimVarNames(id, interpolationMode);
 
-    TF_FOR_ALL(compPrimVarIt, compPrimVars) {
-        TfToken const &compPrimVarName =  *compPrimVarIt;
+    for (TfToken const & compPrimVarName: compPrimVars) {
 
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, compPrimVarName)) {
             HdExtComputationPrimVarDesc primVarDesc =
-                sceneDelegate->GetExtComputationPrimVarDesc(id, compPrimVarName);
+                sceneDelegate->GetExtComputationPrimVarDesc(id,
+                                                            compPrimVarName);
 
-            HdExtComputation *sourceComp;
-            HdSceneDelegate *sourceCompSceneDelegate;
+            HdExtComputation const * sourceComp =
+                static_cast<HdExtComputation const *>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->extComputation,
+                                         primVarDesc.computationId));
 
-            renderIndex.GetExtComputationInfo(primVarDesc.computationId,
-                                              &sourceComp,
-                                              &sourceCompSceneDelegate);
-
-            if (sourceComp != nullptr) {
+            if (sourceComp && sourceComp->GetElementCount() > 0) {
                 
                 if (HdStGLUtils::IsGpuComputeEnabled() &&
-                    !sourceComp->GetKernel().empty()) {
+                    !sourceComp->GetGpuKernelSource().empty()) {
 
                     HdBufferSourceSharedPtr primVarBufferSource(
                             new HdStExtCompGpuPrimvarBufferSource(
@@ -368,16 +354,15 @@ HdSt_GetExtComputationPrimVarsComputations(
 
                     HdStExtCompGpuComputationSharedPtr gpuComputation = 
                         HdStExtCompGpuComputation::CreateGpuComputation(
-                            sourceCompSceneDelegate,
+                            sceneDelegate,
                             sourceComp,
                             primVarDesc.computationOutputName,
                             primVarBufferSource);
 
-                    HdBufferSourceSharedPtr gpuComputationSource = 
-                        _CreateGpuComputationBufferSource(
-                            sourceCompSceneDelegate,
-                            sourceComp,
-                            gpuComputation->GetResource());
+                    HdBufferSourceSharedPtr gpuComputationSource(
+                            new HdStExtCompGpuComputationBufferSource(
+                                HdBufferSourceVector(),
+                                gpuComputation->GetResource()));
 
                     reserveOnlySources->push_back(primVarBufferSource);
                     separateComputationSources->push_back(gpuComputationSource);
@@ -387,7 +372,7 @@ HdSt_GetExtComputationPrimVarsComputations(
 
                     HdExtCompCpuComputationSharedPtr cpuComputation =
                         HdExtCompCpuComputation::CreateComputation(
-                            sourceCompSceneDelegate,
+                            sceneDelegate,
                             *sourceComp,
                             separateComputationSources);
 

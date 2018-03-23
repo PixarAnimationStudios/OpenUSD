@@ -31,11 +31,14 @@
 #include "pxr/imaging/hdSt/computeShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStExtCompGpuComputationResource> 
     HdStExtCompGpuComputationResourceSharedPtr;
 typedef boost::shared_ptr<class HdStGLSLProgram> HdStGLSLProgramSharedPtr;
+typedef std::vector<HdBufferArrayRangeSharedPtr> HdBufferArrayRangeSharedPtrVector;
 
 /// \class HdStExtCompGpuComputationResource
 ///
@@ -61,9 +64,9 @@ public:
     /// be shared amongst. De-duplication of the compiled and linked program
     /// for runtime execution happens on a per-registry basis.
     ///
-    /// Memory for the internal computation buffers must be allocated by the
-    /// owning Rprim by calling AllocateInternalRange. This must be done prior
-    /// to a HdResourceRegistry::Commit in which the computation has been added.
+    /// Memory for the input computation buffers must be provided
+    /// This must be done prior to a HdResourceRegistry::Commit in
+    /// which the computation has been added.
     /// Note that the Resource allocates no memory on its own and can be
     /// speculatively created and later de-duplicated, or discarded,
     /// without wasting resources.
@@ -76,6 +79,7 @@ public:
     HdStExtCompGpuComputationResource(
         HdBufferSpecVector const &outputBufferSpecs,
         HdStComputeShaderSharedPtr const &kernel,
+        HdBufferArrayRangeSharedPtrVector const &inputs,
         HdStResourceRegistrySharedPtr const &registry
     );
 
@@ -83,8 +87,8 @@ public:
 
     /// Gets the HdBufferArrayRange that inputs should be loaded into using the
     /// resource binder.
-    HdBufferArrayRangeSharedPtr const &GetInternalRange() const {
-        return _internalRange;
+    HdBufferArrayRangeSharedPtrVector const &GetInputs() const {
+        return _inputs;
     }
 
     /// Gets the GPU HdStGLSLProgram to run to execute the computation.
@@ -108,31 +112,13 @@ public:
     HDST_API
     bool Resolve();
 
-    /// Allocate the required internal range for holding input data used by
-    /// a computation.
-    /// The passed in inputs are compared against the set of outputs that are
-    /// required and an array of actual used internal sources are returned.
-    /// If no sources are returned in internalSources no range is allocated.
-    /// \param[in] inputs the input sources the computation will use.
-    /// \param[out] internalSource the set of the input sources that the
-    /// computation will actually need to upload to its internal computation
-    /// buffer range. If empty no sources needed to be uploaded and no range
-    /// is allocated.
-    /// \param[in] resourceRegistry the registry that the internal buffer range
-    /// is allocated from, if needed.
-    HDST_API
-    void AllocateInternalRange(
-            HdBufferSourceVector const &inputs,
-            HdBufferSourceVector *internalSources,
-            HdResourceRegistrySharedPtr const &resourceRegistry);
-    
 private:
     HdBufferSpecVector                    _outputBufferSpecs;
     HdStComputeShaderSharedPtr            _kernel;
     HdStResourceRegistrySharedPtr         _registry;
     
     size_t                                _shaderSourceHash;
-    HdBufferArrayRangeSharedPtr           _internalRange;  
+    HdBufferArrayRangeSharedPtrVector     _inputs;  
     HdStGLSLProgramSharedPtr              _computeProgram;
     HdSt_ResourceBinder                   _resourceBinder;
     

@@ -40,13 +40,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+typedef boost::shared_ptr<class HdStBufferResourceGL>
+                                HdStBufferResourceGLSharedPtr;
 
-class HdStBufferResourceGL;
-
-typedef boost::shared_ptr<HdStBufferResourceGL> HdStBufferResourceGLSharedPtr;
-
-typedef std::vector<
-    std::pair<TfToken, HdStBufferResourceGLSharedPtr> > HdStBufferResourceGLNamedList;
+typedef std::pair<TfToken, HdStBufferResourceGLSharedPtr>
+                                HdStBufferResourceGLNamedPair;
+typedef std::vector<HdStBufferResourceGLNamedPair>
+                                HdStBufferResourceGLNamedList;
 
 /// \class HdStBufferResourceGL
 ///

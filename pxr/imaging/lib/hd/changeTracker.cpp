@@ -42,7 +42,6 @@ HdChangeTracker::HdChangeTracker()
     , _taskState()
     , _sprimState()
     , _bprimState()
-    , _extComputationState()
     , _generalState()
     , _collectionState()
     , _needsGarbageCollection(false)
@@ -396,59 +395,6 @@ HdChangeTracker::MarkBprimClean(SdfPath const& id, HdDirtyBits newBits)
     if (!TF_VERIFY(it != _bprimState.end()))
         return;
     it->second = newBits;
-}
-
-// ---------------------------------------------------------------------- //
-/// \name ExtComputation Object Tracking
-// ---------------------------------------------------------------------- //
-void
-HdChangeTracker::ExtComputationInserted(SdfPath const& id,
-                                        HdDirtyBits initialDirtyState)
-{
-    TF_DEBUG(HD_EXT_COMPUTATION_ADDED).Msg("ExtComputation Added: %s\n",
-                                           id.GetText());
-    _extComputationState[id] = initialDirtyState;
-}
-
-void
-HdChangeTracker::ExtComputationRemoved(SdfPath const& id)
-{
-    TF_DEBUG(HD_EXT_COMPUTATION_REMOVED).Msg("ExtComputation Removed: %s\n",
-                                             id.GetText());
-    _extComputationState.erase(id);
-}
-
-void
-HdChangeTracker::MarkExtComputationDirty(SdfPath const& id, HdDirtyBits bits)
-{
-    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
-        TF_CODING_ERROR("MarkExtComputationDirty called with bits == clean!");
-        return;
-    }
-
-    _IDStateMap::iterator it = _extComputationState.find(id);
-    if (!TF_VERIFY(it != _extComputationState.end()))
-        return;
-    it->second = it->second | bits;
-}
-
-HdDirtyBits
-HdChangeTracker::GetExtComputationDirtyBits(SdfPath const& id) const
-{
-    _IDStateMap::const_iterator it = _extComputationState.find(id);
-    if (!TF_VERIFY(it != _extComputationState.end()))
-        return Clean;
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkExtComputationClean(SdfPath const& id, HdDirtyBits newBits)
-{
-    _IDStateMap::iterator it = _extComputationState.find(id);
-    if (!TF_VERIFY(it != _extComputationState.end()))
-        return;
-
-    it->second =  newBits;
 }
 
 // -------------------------------------------------------------------------- //

@@ -62,7 +62,7 @@ HdExtCompCpuComputation::CreateComputation(
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    const SdfPath &id = computation.GetId();
+    const SdfPath &id = computation.GetID();
 
     Hd_ExtCompInputSourceSharedPtrVector inputs;
     for (const TfToken &inputName: computation.GetSceneInputs()) {
@@ -83,17 +83,28 @@ HdExtCompCpuComputation::CreateComputation(
         const HdExtComputation::SourceComputationDesc &sourceDesc =
             sourceDescs[inputNum];
 
-        HdExtComputation *sourceComp;
-        HdSceneDelegate *sourceCompSceneDelegate;
-
-        renderIndex.GetExtComputationInfo(sourceDesc.computationId,
-                                          &sourceComp,
-                                          &sourceCompSceneDelegate);
+        HdExtComputation const * sourceComp =
+            static_cast<HdExtComputation const *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->extComputation,
+                                     sourceDesc.computationId));
 
         if (sourceComp != nullptr) {
 
+            // Computations acting as input aggregations should schedule
+            // input values for commit, but will have no Cpu computation
+            // to create.
+            if (sourceComp->IsInputAggregation()) {
+                VtValue inputValue =
+                    sceneDelegate->Get(sourceDesc.computationId, inputName);
+                Hd_ExtCompInputSourceSharedPtr inputSource(
+                        new Hd_SceneExtCompInputSource(inputName, inputValue));
+                computationSources->push_back(inputSource);
+                inputs.push_back(inputSource);
+                continue;
+            }
+
             HdExtCompCpuComputationSharedPtr sourceCpuComputation =
-                CreateComputation(sourceCompSceneDelegate,
+                CreateComputation(sceneDelegate,
                                   *sourceComp,
                                   computationSources);
 

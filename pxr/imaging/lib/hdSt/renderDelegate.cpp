@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/basisCurves.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/light.h"
@@ -39,6 +40,7 @@
 #include "pxr/imaging/hdSt/texture.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/imaging/glf/contextCaps.h"
@@ -59,6 +61,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
     HdPrimTypeTokens->drawTarget,
+    HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->material,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
@@ -189,6 +192,8 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdStLight(sprimId, HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(sprimId);
+    } else  if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdStExtComputation(sprimId);
     } else  if (typeId == HdPrimTypeTokens->material) {
         return new HdStMaterial(sprimId);
     } else {
@@ -214,6 +219,8 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                              HdPrimTypeTokens->rectLight);
     } else  if (typeId == HdPrimTypeTokens->drawTarget) {
         return new HdStDrawTarget(SdfPath::EmptyPath());
+    } else  if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdStExtComputation(SdfPath::EmptyPath());
     } else  if (typeId == HdPrimTypeTokens->material) {
         return _CreateFallbackMaterialPrim();
     } else {

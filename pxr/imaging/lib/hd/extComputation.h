@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
@@ -57,13 +58,14 @@ class HdSceneDelegate;
 /// ExtComputations use a pull model, so processing is only triggered if
 /// a downstream computation or prim pulls on one the computations outputs.
 ///
-class HdExtComputation final {
+class HdExtComputation : public HdSprim {
 public:
     /// Construct a new ExtComputation identified by id.
+    HD_API
     HdExtComputation(SdfPath const &id);
 
     HD_API
-    ~HdExtComputation() = default;
+    virtual ~HdExtComputation() = default;
 
     ///
     /// Change tracking
@@ -78,12 +80,17 @@ public:
         DirtySceneInput       = 1 << 3,  ///< A scene input changed value
         DirtyCompInput        = 1 << 4,  ///< A computation input changed value
         DirtyKernel           = 1 << 5,  ///< The compute kernel binding changed
+
+        DirtyDispatchCount    = 1 << 6,  ///< The number of kernel
+                                         ///  invocations to execute changed
+
         AllDirty              = (DirtyInputDesc
                                 |DirtyOutputDesc
                                 |DirtyElementCount
                                 |DirtySceneInput
                                 |DirtyCompInput
-                                |DirtyKernel)
+                                |DirtyKernel
+                                |DirtyDispatchCount)
     };
 
     ///
@@ -95,25 +102,18 @@ public:
     };
     typedef std::vector<SourceComputationDesc> SourceComputationDescVector;
 
-    ///
-    /// Update the object with new data from the scene delegate
-    /// using dirtyBits to specify what needs to be updated.
-    ///
-    /// It is expected that the routine clears any dirty bits that
-    /// were synced.
-    ///
     HD_API
-    void Sync(HdSceneDelegate *sceneDelegate,
-              HdDirtyBits     *dirtyBits);
-    ///
-    /// Returns the set of dirty bits required for the first-sync of the
-    /// object.
-    ///
-    HD_API
-    HdDirtyBits GetInitialDirtyBits() const;
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override;
 
     HD_API
-    const SdfPath& GetId() const { return _id; }   
+    virtual VtValue Get(TfToken const &token) const override;
+
+    HD_API virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
+    HD_API
+    size_t GetDispatchCount() const;
 
     HD_API
     size_t GetElementCount() const { return _elementCount; }
@@ -135,16 +135,25 @@ public:
     const TfTokenVector& GetOutputs() const { return _outputs; }
 
     HD_API
-    const std::string& GetKernel() const { return _kernel; }
+    const std::string& GetGpuKernelSource() const { return _gpuKernelSource; }
 
+    HD_API
+    bool IsInputAggregation() const;
+
+protected:
+    HD_API
+    void
+    _Sync(HdSceneDelegate *sceneDelegate,
+          HdRenderParam   *renderParam,
+          HdDirtyBits     *dirtyBits);
 private:
-    SdfPath _id;
+    size_t                      _dispatchCount;
     size_t                      _elementCount;
     TfTokenVector               _sceneInputs;
     TfTokenVector               _computationInputs;
     SourceComputationDescVector _computationSourceDescs;
     TfTokenVector               _outputs;
-    std::string                 _kernel;
+    std::string                 _gpuKernelSource;
 
     // No default construction or copying
     HdExtComputation() = delete;

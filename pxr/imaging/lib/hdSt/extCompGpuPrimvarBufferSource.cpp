@@ -82,7 +82,7 @@ void
 HdStExtCompGpuPrimvarBufferSource::AddBufferSpecs(
         HdBufferSpecVector *specs) const
 {
-    specs->push_back(HdBufferSpec(_name, _tupleType));
+    specs->emplace_back(_name, _tupleType);
 }
 
 
