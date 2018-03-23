@@ -66,6 +66,10 @@ public:
     HD_API
     virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
 
+    /// Computes and returns a hash value for the underlying data.
+    HD_API
+    virtual size_t ComputeHash() const { return 0; }
+
     /// Extracts the primVar from the source computation.
     HD_API
     virtual bool Resolve() override;
