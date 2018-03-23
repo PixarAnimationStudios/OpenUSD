@@ -143,29 +143,25 @@ class "RiMaterialAPI" (
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdRi/rslShader.h"
-#include "pxr/usd/usdRi/risBxdf.h"
 """
     }
 ) {
     uniform token outputs:ri:surface (
+        displayGroup = "Outputs"
         customData = {
             string apiName = "surface"
         }
     )
     uniform token outputs:ri:displacement (
+        displayGroup = "Outputs"
         customData = {
             string apiName = "displacement"
         }
     )
     uniform token outputs:ri:volume (
+        displayGroup = "Outputs"
         customData = {
             string apiName = "volume"
-        }
-    )
-    uniform token outputs:ri:bxdf (
-        customData = {
-            string apiName = "bxdf"
         }
     )
 }

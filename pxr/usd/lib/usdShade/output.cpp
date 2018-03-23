@@ -100,7 +100,8 @@ UsdShadeOutput::UsdShadeOutput(
     TfToken attrName = _GetOutputAttrName(name);
     _prop = prim.GetAttribute(attrName);
     if (!_prop) {
-        _prop = prim.CreateAttribute(attrName, typeName, /* custom = */ false);
+        _prop = prim.CreateAttribute(attrName, typeName, /* custom = */ false,
+                SdfVariabilityUniform);
     }
 }
 

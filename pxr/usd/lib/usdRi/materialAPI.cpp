@@ -143,23 +143,6 @@ UsdRiMaterialAPI::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparse
                        writeSparsely);
 }
 
-UsdAttribute
-UsdRiMaterialAPI::GetBxdfAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->outputsRiBxdf);
-}
-
-UsdAttribute
-UsdRiMaterialAPI::CreateBxdfAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->outputsRiBxdf,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -180,7 +163,6 @@ UsdRiMaterialAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdRiTokens->outputsRiSurface,
         UsdRiTokens->outputsRiDisplacement,
         UsdRiTokens->outputsRiVolume,
-        UsdRiTokens->outputsRiBxdf,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -217,27 +199,27 @@ TF_DEFINE_PRIVATE_TOKENS(
     // These tokens are required for backwards compatibility. They're 
     // redefined here so we can stop relying on UsdRiLookAPI entirely.
     (ri)
-    ((riLookBxdf, "riLook:bxdf"))
     ((riLookDisplacement, "riLook:displacement"))
     ((riLookSurface, "riLook:surface"))
     ((riLookVolume, "riLook:volume"))
 
-
+    // deprecated tokens for handling backwards compatibility.
+    ((bxdfOutputAttrName, "outputs:ri:bxdf"))
+    ((riLookBxdf, "riLook:bxdf"))
 );
 
-template <typename ShaderType>
-ShaderType
+UsdShadeShader
 UsdRiMaterialAPI::_GetSourceShaderObject(const UsdShadeOutput &output,
                                          bool ignoreBaseMaterial) const
 {
     // If output doesn't have a valid property, return an invalid shader.
     if (!output.GetProperty()) {
-        return ShaderType();
+        return UsdShadeShader();
     }
 
     if (ignoreBaseMaterial && 
         UsdShadeConnectableAPI::IsSourceConnectionFromBaseMaterial(output)) {
-        return ShaderType();
+        return UsdShadeShader();
     }
 
     UsdShadeConnectableAPI source;
@@ -246,84 +228,112 @@ UsdRiMaterialAPI::_GetSourceShaderObject(const UsdShadeOutput &output,
 
     if (UsdShadeConnectableAPI::GetConnectedSource(output, 
             &source, &sourceName, &sourceType)) {
-        return ShaderType(source.GetPrim());
+        return source;
     }
 
-    return ShaderType();
+    return UsdShadeShader();
 }
 
-UsdShadeOutput 
-UsdRiMaterialAPI::_GetShadeOutput(const UsdAttribute &outputAttr, 
-                                  const TfToken &oldEncodingRelName) const
+UsdShadeOutput
+UsdRiMaterialAPI::_GetBxdfOutput(const UsdPrim &materialPrim) const
 {
-    if (outputAttr) {
-        return UsdShadeOutput(outputAttr);
+    // Check if the deprecated bxdf output is present.
+    if (const UsdAttribute bxdfAttr = materialPrim.GetAttribute(
+            _tokens->bxdfOutputAttrName)) {
+        return UsdShadeOutput(bxdfAttr);
     } else if (UsdShadeUtils::ReadOldEncoding()) {
-        if (UsdRelationship rel = GetPrim().GetRelationship(oldEncodingRelName))
-        {
+        if (const UsdRelationship rel = materialPrim.GetRelationship(
+                _tokens->riLookBxdf)) {
             return UsdShadeOutput(rel);
         }
     }
-    return UsdShadeOutput();
+    return UsdShadeOutput();    
 }
 
-UsdRiRslShader 
+UsdShadeShader
 UsdRiMaterialAPI::GetSurface(bool ignoreBaseMaterial) const
 {
-    return _GetSourceShaderObject<UsdRiRslShader>(GetSurfaceOutput(), 
-                                                  ignoreBaseMaterial);
+    if (UsdShadeShader surface = 
+            _GetSourceShaderObject(GetSurfaceOutput(), ignoreBaseMaterial)) {
+        return surface;
+    }
+
+    if (UsdShadeOutput bxdfOutput = _GetBxdfOutput(GetPrim())) {
+        return _GetSourceShaderObject(bxdfOutput, ignoreBaseMaterial);
+    }
+
+    return UsdShadeShader();
 }
 
-UsdRiRslShader 
+UsdShadeShader
 UsdRiMaterialAPI::GetDisplacement(bool ignoreBaseMaterial) const
 {
-    return _GetSourceShaderObject<UsdRiRslShader>(GetDisplacementOutput(), 
-                                                  ignoreBaseMaterial);
+    return _GetSourceShaderObject(GetDisplacementOutput(), ignoreBaseMaterial);
 }
 
-UsdRiRslShader 
+UsdShadeShader 
 UsdRiMaterialAPI::GetVolume(bool ignoreBaseMaterial) const
 {
-    return _GetSourceShaderObject<UsdRiRslShader>(GetVolumeOutput(), 
-                                                  ignoreBaseMaterial);    
-}
-
-UsdRiRisBxdf 
-UsdRiMaterialAPI::GetBxdf(bool ignoreBaseMaterial) const
-{
-    return _GetSourceShaderObject<UsdRiRisBxdf>(GetBxdfOutput(), 
-                                                ignoreBaseMaterial);
+    return _GetSourceShaderObject(GetVolumeOutput(), ignoreBaseMaterial);    
 }
 
 UsdShadeOutput 
 UsdRiMaterialAPI::GetSurfaceOutput() const
 {
-    return _GetShadeOutput(GetSurfaceAttr(), _tokens->riLookSurface);
+    const UsdShadeOutput op = UsdShadeMaterial(GetPrim()).GetSurfaceOutput(
+            _tokens->ri);
+    if (op) {
+        return op;
+    }
+
+    if (const UsdRelationship rel = GetPrim().GetRelationship(
+                _tokens->riLookSurface)) {
+        return UsdShadeOutput(rel);
+    }
+
+    return op;
 }
 
 UsdShadeOutput 
 UsdRiMaterialAPI::GetDisplacementOutput() const
 {
-    return _GetShadeOutput(GetDisplacementAttr(), _tokens->riLookDisplacement);
+    const UsdShadeOutput op = UsdShadeMaterial(GetPrim()).GetDisplacementOutput(
+            _tokens->ri);
+    if (op) {
+        return op;
+    }
+
+    if (const UsdRelationship rel = GetPrim().GetRelationship(
+                _tokens->riLookDisplacement)) {
+        return UsdShadeOutput(rel);
+    }
+
+    return op;
 }
 
 UsdShadeOutput 
 UsdRiMaterialAPI::GetVolumeOutput() const
 {
-    return _GetShadeOutput(GetVolumeAttr(), _tokens->riLookVolume);
-}
+    const UsdShadeOutput op = UsdShadeMaterial(GetPrim()).GetVolumeOutput(
+            _tokens->ri);
+    if (op) {
+        return op;
+    }
 
-UsdShadeOutput 
-UsdRiMaterialAPI::GetBxdfOutput() const
-{
-    return _GetShadeOutput(GetBxdfAttr(), _tokens->riLookBxdf);
+    if (const UsdRelationship rel = GetPrim().GetRelationship(
+                _tokens->riLookVolume)) {
+        return UsdShadeOutput(rel);
+    }
+
+    return op;
 }
 
 bool
 UsdRiMaterialAPI::SetSurfaceSource(const SdfPath &surfacePath) const
 {
     if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput surfaceOutput(CreateSurfaceAttr());
+        UsdShadeOutput surfaceOutput = UsdShadeMaterial(GetPrim())
+                .CreateSurfaceOutput(/*purpose*/ _tokens->ri);
         return UsdShadeConnectableAPI::ConnectToSource(
             surfaceOutput, surfacePath.IsPropertyPath() ? surfacePath :
                 surfacePath.AppendProperty(_tokens->defaultOutputName));
@@ -338,7 +348,8 @@ bool
 UsdRiMaterialAPI::SetDisplacementSource(const SdfPath &displacementPath) const
 {
     if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput displacementOutput(CreateDisplacementAttr());
+        UsdShadeOutput displacementOutput = UsdShadeMaterial(GetPrim())
+                .CreateDisplacementOutput(/*purpose*/ _tokens->ri);
         return UsdShadeConnectableAPI::ConnectToSource(
             displacementOutput, displacementPath.IsPropertyPath() ? 
                 displacementPath :
@@ -355,7 +366,8 @@ bool
 UsdRiMaterialAPI::SetVolumeSource(const SdfPath &volumePath) const
 {
     if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput volumeOutput(CreateVolumeAttr());
+        UsdShadeOutput volumeOutput = UsdShadeMaterial(GetPrim())
+                .CreateVolumeOutput(/*purpose*/ _tokens->ri);
         return UsdShadeConnectableAPI::ConnectToSource(
             volumeOutput, volumePath.IsPropertyPath() ? 
                 volumePath :
@@ -363,22 +375,6 @@ UsdRiMaterialAPI::SetVolumeSource(const SdfPath &volumePath) const
     } else if (UsdRelationship volumeRel = GetPrim().CreateRelationship(
                     _tokens->riLookVolume, /*custom*/ false)) {
         return volumeRel.SetTargets(std::vector<SdfPath>{volumePath});
-    }
-    return false;
-}
-
-bool
-UsdRiMaterialAPI::SetBxdfSource(const SdfPath &bxdfPath) const
-{
-    if (UsdShadeUtils::WriteNewEncoding()) {
-        UsdShadeOutput bxdfOutput(CreateBxdfAttr());
-        return UsdShadeConnectableAPI::ConnectToSource(
-            bxdfOutput, bxdfPath.IsPropertyPath() ? 
-                bxdfPath :
-                bxdfPath.AppendProperty(_tokens->defaultOutputName));
-    } else if (UsdRelationship bxdfRel = GetPrim().CreateRelationship(
-                    _tokens->riLookBxdf, /*custom*/ false)) {
-        return bxdfRel.SetTargets(std::vector<SdfPath>{bxdfPath});
     }
     return false;
 }

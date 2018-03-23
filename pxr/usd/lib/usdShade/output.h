@@ -332,7 +332,7 @@ public:
 
     /// Return true if this Output is valid for querying and authoring
     /// values and metadata, which is identically equivalent to IsDefined().
-    explicit operator bool() { 
+    explicit operator bool() const { 
         return IsDefined(); 
     }
 

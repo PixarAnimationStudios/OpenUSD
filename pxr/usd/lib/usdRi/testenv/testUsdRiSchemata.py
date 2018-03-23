@@ -31,7 +31,7 @@ class TestUsdRiSchemata(unittest.TestCase):
     def _TestOutput(self, schema, getOutputFn, setOutputSrcFn, getFn, 
                     validTargetObjectPath):
         output = getOutputFn(schema)
-        assert not output.GetProperty()
+        assert 'ri:' not in output.GetBaseName()
 
         assert setOutputSrcFn(schema, validTargetObjectPath)
 
@@ -79,7 +79,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         shader.GetSloPathAttr().Set('foo')
 
         print ("Test RiMaterialAPI")
-        riMaterial = UsdRi.MaterialAPI(material)
+        riMaterial = UsdRi.MaterialAPI.Apply(material.GetPrim())
         assert riMaterial
         assert riMaterial.GetPrim()
 
@@ -131,17 +131,9 @@ class TestUsdRiSchemata(unittest.TestCase):
         risMaterial = UsdRi.MaterialAPI(material.GetPrim())
         assert risMaterial 
         assert risMaterial.GetPrim()
-        assert not risMaterial.GetBxdf()
-
-        # Test the bxdf output
-        self._TestOutput(risMaterial,
-            UsdRi.MaterialAPI.GetBxdfOutput,
-            UsdRi.MaterialAPI.SetBxdfSource,
-            UsdRi.MaterialAPI.GetBxdf,
-            bxdf.GetPath())
 
         print ("Test riStatements")
-        riStatements = UsdRi.StatementsAPI(shader.GetPrim())
+        riStatements = UsdRi.StatementsAPI.Apply(shader.GetPrim())
         assert riStatements
         assert riStatements.GetPrim()
         attr = riStatements.CreateRiAttribute("ModelName", "string").\

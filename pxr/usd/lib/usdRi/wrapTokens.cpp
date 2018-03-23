@@ -137,7 +137,6 @@ void wrapUsdRiTokens()
     _AddToken(cls, "noLight", UsdRiTokens->noLight);
     _AddToken(cls, "off", UsdRiTokens->off);
     _AddToken(cls, "onVolumeBoundaries", UsdRiTokens->onVolumeBoundaries);
-    _AddToken(cls, "outputsRiBxdf", UsdRiTokens->outputsRiBxdf);
     _AddToken(cls, "outputsRiDisplacement", UsdRiTokens->outputsRiDisplacement);
     _AddToken(cls, "outputsRiSurface", UsdRiTokens->outputsRiSurface);
     _AddToken(cls, "outputsRiVolume", UsdRiTokens->outputsRiVolume);

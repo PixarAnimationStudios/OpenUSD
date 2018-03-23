@@ -76,26 +76,14 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         self.assertEqual(materialPath, '/MarbleCube/Looks/MarbleCubeSG')
 
         # Validate the surface shader that is connected to the material.
-        # XXX: Note that the expected number of outputs here is two rather than
-        # one, since we are still authoring the UsdRi Bxdf source in addition
-        # to the surface terminal for backwards compatibility. When consumers
-        # are updated to use the surface terminal instead, this test will have
-        # to be updated.
         materialOutputs = material.GetOutputs()
-        self.assertEqual(len(materialOutputs), 2)
-        materialOutput = material.GetOutput('surface')
+        self.assertEqual(len(materialOutputs), 4)
+        print self._stage.ExportToString()
+        materialOutput = material.GetOutput('ri:surface')
         (connectableAPI, outputName, outputType) = materialOutput.GetConnectedSource()
         self.assertEqual(outputName, 'out')
         shader = UsdShade.Shader(connectableAPI)
         self.assertTrue(shader)
-
-        # XXX: Validate the UsdRi Bxdf. This must also be removed when we no
-        # longer author it.
-        from pxr import UsdRi
-        usdRiMaterialAPI = UsdRi.MaterialAPI(material.GetPrim())
-        self.assertTrue(usdRiMaterialAPI)
-        bxdf = usdRiMaterialAPI.GetBxdf()
-        self.assertEqual(bxdf.GetPrim(), shader.GetPrim())
 
         shaderId = shader.GetIdAttr().Get()
         self.assertEqual(shaderId, 'PxrMayaMarble')

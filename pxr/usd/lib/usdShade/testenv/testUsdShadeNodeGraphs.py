@@ -27,6 +27,7 @@ import unittest
 
 NODEGRAPH_PATH = Sdf.Path('/MyNodeGraph')
 NESTED_NODEGRAPH_PATH = Sdf.Path('/MyNodeGraph/NestedNodeGraph')
+NESTED_NODEGRAPH_SHADER_PATH = Sdf.Path('/MyNodeGraph/NestedNodeGraph/NestedShader')
 
 # Names of shading prims and properties that we will be creating.
 SHADERS = ['ShaderOne', 'ShaderTwo', 'ShaderThree']
@@ -77,6 +78,10 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
             NESTED_NODEGRAPH_PATH)
         self.assertTrue(nestedNodeGraph)
     
+        nestedNodeGraphShader = UsdShade.Shader.Define(usdStage, 
+            NESTED_NODEGRAPH_SHADER_PATH)
+        self.assertTrue(nestedNodeGraphShader)
+
         nestedNodeGraphInput = nestedNodeGraph.CreateInput("NestedInput", 
             Sdf.ValueTypeNames.Float)
         self.assertTrue(nestedNodeGraphInput)
@@ -88,11 +93,14 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
             Sdf.ValueTypeNames.Int)
         self.assertTrue(nestedNodeGraphOutput)
     
+        nestedNodeGraphShaderOutput = nestedNodeGraphShader.CreateOutput("NestedShaderOutput", 
+            Sdf.ValueTypeNames.Int)
+        self.assertTrue(nestedNodeGraphShaderOutput)
+
         nodeGraphOutputThree = nodeGraph.GetOutput("OutputThree")
-        # This should trigger a warning since the source is outside the nested 
-        # nodeGraph, but should continue.
-        nestedNodeGraphOutput.ConnectToSource(nodeGraphOutputThree)
-    
+        nodeGraphOutputThree.ConnectToSource(nestedNodeGraphOutput)
+        nestedNodeGraphOutput.ConnectToSource(nestedNodeGraphShaderOutput)
+
         return usdStage
     
     def _TestOutputs(self, usdStage):
@@ -100,11 +108,15 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         Tests getting all the outputs of a nodeGraph.
         """
         nodeGraph = UsdShade.NodeGraph.Get(usdStage, NODEGRAPH_PATH)
-        nestedNodeGraph = UsdShade.NodeGraph.Get(usdStage, NESTED_NODEGRAPH_PATH)
-    
+        nestedNodeGraph = UsdShade.NodeGraph.Get(usdStage, 
+                NESTED_NODEGRAPH_PATH)
+        nestedNodeGraphShader = UsdShade.Shader.Get(usdStage, 
+                NESTED_NODEGRAPH_SHADER_PATH)
+
         self.assertTrue(nodeGraph)
         self.assertTrue(nestedNodeGraph)
-    
+        self.assertTrue(nestedNodeGraphShader)
+
         allOutputs = nodeGraph.GetOutputs()
         self.assertEqual(len(allOutputs), 3)
         
@@ -121,13 +133,26 @@ class TestUsdShadeNodeGraphs(unittest.TestCase):
         # outputs.
         nestedNodeGraphOutputs = nestedNodeGraph.GetOutputs()
         self.assertEqual(len(nestedNodeGraphOutputs), 1)
-    
+        nestedNodeGraphOutput = nestedNodeGraphOutputs[0]
+
+        nodeGraphOutput = nodeGraph.GetOutput("OutputThree")
+        outputSource = nodeGraphOutput.GetConnectedSource()
+        self.assertEqual(outputSource[0].GetPath(), nestedNodeGraph.GetPath())
+        self.assertEqual(outputSource[1], "NestedOutput")
+        self.assertEqual(outputSource[2], UsdShade.AttributeType.Output)
+
         nestedOutputSource = nestedNodeGraphOutputs[0].GetConnectedSource()
-    
-        self.assertEqual(nestedOutputSource[0].GetPath(), nodeGraph.GetPath())
-        self.assertTrue(nestedOutputSource[1] in outputNames)
+        self.assertEqual(nestedOutputSource[0].GetPath(), nestedNodeGraphShader.GetPath())
+        self.assertEqual(nestedOutputSource[1], "NestedShaderOutput")
         self.assertEqual(nestedOutputSource[2], UsdShade.AttributeType.Output)
-    
+
+        computedNodeGraphOutputSource = nodeGraph.ComputeOutputSource(
+            "OutputThree")
+        self.assertEqual(computedNodeGraphOutputSource[0].GetPath(), 
+                         nestedOutputSource[0].GetPath())
+        self.assertEqual(computedNodeGraphOutputSource[1:2], 
+                         nestedOutputSource[1:2])
+
     def _TestInputs(self, usdStage):
         nodeGraph = UsdShade.NodeGraph.Get(usdStage, NODEGRAPH_PATH)
         nestedNodeGraph = UsdShade.NodeGraph.Get(usdStage, NESTED_NODEGRAPH_PATH)

@@ -226,21 +226,9 @@ private:
                 return;
             }
 
-            UsdShadeOutput materialSurfaceOutput =
-                material.CreateOutput(UsdShadeTokens->surface,
-                                      shaderDefaultOutput.GetTypeName());
-            if (!materialSurfaceOutput) {
-                return;
-            }
-
-            materialSurfaceOutput.ConnectToSource(shaderDefaultOutput);
-
-            // XXX: For backwards compatibility, we continue to author the
-            // UsdRi Bxdf source until consumers (e.g. PxrUsdIn) are updated to
-            // look at the outputs:surface terminal.
-            UsdRiMaterialAPI(materialPrim).SetBxdfSource(
-                shaderDefaultOutput.GetAttr().GetPath());
-
+            UsdRiMaterialAPI riMaterialAPI(materialPrim);
+            riMaterialAPI.SetSurfaceSource(
+                    shaderDefaultOutput.GetAttr().GetPath());
         }
     }
 };

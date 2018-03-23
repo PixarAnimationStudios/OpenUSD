@@ -354,10 +354,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiPxrAovLight
     const TfToken onVolumeBoundaries;
-    /// \brief "outputs:ri:bxdf"
-    /// 
-    /// UsdRiMaterialAPI
-    const TfToken outputsRiBxdf;
     /// \brief "outputs:ri:displacement"
     /// 
     /// UsdRiMaterialAPI

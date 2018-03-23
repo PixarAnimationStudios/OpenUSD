@@ -43,9 +43,14 @@ UsdShadeTokensType::UsdShadeTokensType() :
     materialBindingCollection("material:binding:collection", TfToken::Immortal),
     materialVariant("materialVariant", TfToken::Immortal),
     outputs("outputs:", TfToken::Immortal),
+    outputsDisplacement("outputs:displacement", TfToken::Immortal),
+    outputsSurface("outputs:surface", TfToken::Immortal),
+    outputsVolume("outputs:volume", TfToken::Immortal),
     preview("preview", TfToken::Immortal),
     strongerThanDescendants("strongerThanDescendants", TfToken::Immortal),
     surface("surface", TfToken::Immortal),
+    universalRenderContext("", TfToken::Immortal),
+    volume("volume", TfToken::Immortal),
     weakerThanDescendants("weakerThanDescendants", TfToken::Immortal),
     allTokens({
         allPurpose,
@@ -65,9 +70,14 @@ UsdShadeTokensType::UsdShadeTokensType() :
         materialBindingCollection,
         materialVariant,
         outputs,
+        outputsDisplacement,
+        outputsSurface,
+        outputsVolume,
         preview,
         strongerThanDescendants,
         surface,
+        universalRenderContext,
+        volume,
         weakerThanDescendants
     })
 {
