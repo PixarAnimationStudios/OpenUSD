@@ -459,36 +459,6 @@ struct SdfValueTypeTraits<char[N]>
     static const bool IsValueType = true;
 };
 
-#define _SDF_MAKE_SCALAR_TYPENAME_TOKEN(r, unused, elem)                \
-    (SDF_VALUE_TAG(elem), BOOST_PP_STRINGIZE(SDF_VALUE_TYPENAME(elem)))
-
-#define _SDF_MAKE_SHAPED_TYPENAME_TOKEN(r, unused, elem)                       \
-    (BOOST_PP_CAT(SDF_VALUE_TAG(elem), Array),                                 \
-     BOOST_PP_STRINGIZE(SDF_VALUE_TYPENAME(elem)) "[]")
-
-#define _SDF_VALUE_TYPE_NAME_TOKENS                                            \
-    (Point) ((PointArray, "Point[]"))                                          \
-    (PointFloat) ((PointFloatArray, "PointFloat[]"))                           \
-    (Normal) ((NormalArray, "Normal[]"))                                       \
-    (NormalFloat) ((NormalFloatArray, "NormalFloat[]"))                        \
-    (Vector) ((VectorArray, "Vector[]"))                                       \
-    (VectorFloat) ((VectorFloatArray, "VectorFloat[]"))                        \
-    (Color) ((ColorArray, "Color[]"))                                          \
-    (ColorFloat) ((ColorFloatArray, "ColorFloat[]"))                           \
-    (Frame) ((FrameArray, "Frame[]"))                                          \
-    (Transform) ((TransformArray, "Transform[]"))                              \
-    (PointIndex) ((PointIndexArray, "PointIndex[]"))                           \
-    (EdgeIndex) ((EdgeIndexArray, "EdgeIndex[]"))                              \
-    (FaceIndex) ((FaceIndexArray, "FaceIndex[]"))                              \
-    (Schema) ((SchemaArray, "Schema[]"))
-
-#define SDF_VALUE_TYPE_NAME_TOKENS                                             \
-    _SDF_VALUE_TYPE_NAME_TOKENS                                                \
-    BOOST_PP_EXPAND(BOOST_PP_SEQ_TRANSFORM(                                    \
-                        _SDF_MAKE_SCALAR_TYPENAME_TOKEN, ~, SDF_VALUE_TYPES))  \
-    BOOST_PP_EXPAND(BOOST_PP_SEQ_TRANSFORM(                                    \
-                        _SDF_MAKE_SHAPED_TYPENAME_TOKEN, ~, SDF_VALUE_TYPES))
-
 #define SDF_VALUE_ROLE_NAME_TOKENS              \
     (Point)                                     \
     (Normal)                                    \
