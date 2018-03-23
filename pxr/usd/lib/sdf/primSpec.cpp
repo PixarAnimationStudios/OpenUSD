@@ -817,7 +817,7 @@ _FindOrCreateVariantSpec(const SdfPrimSpecHandle &primSpec,
 
     // Create a new variant set spec and add it to the variant set list.
     if (!varSetSpec) {
-        if (varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first))
+        if ((varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first)))
             primSpec->GetVariantSetNameList().Add(varSel.first);
     }
 

@@ -1303,7 +1303,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
         for (Usd_Resolver r(&prim.GetPrimIndex()); r.IsValid(); r.NextLayer()) {
             if (SdfPropertySpecHandle propSpec = r.GetLayer()->
                 GetPropertyAtPath(r.GetLocalPath().AppendProperty(propName))) {
-                if (specToCopy = TfDynamic_cast<TypedSpecHandle>(propSpec))
+                if ((specToCopy = TfDynamic_cast<TypedSpecHandle>(propSpec)))
                     break;
                 // Type mismatch.
                 TF_RUNTIME_ERROR("Spec type mismatch.  Failed to create %s for "
@@ -1788,7 +1788,7 @@ UsdStage::_IsValidForLoad(const SdfPath& path) const
         // Lets see if any ancestor exists, if so it's safe to attempt to load.
         SdfPath parentPath = path;
         while (parentPath != SdfPath::AbsoluteRootPath()) {
-            if (curPrim = GetPrimAtPath(parentPath)) {
+            if ((curPrim = GetPrimAtPath(parentPath))) {
                 break;
             }
             parentPath = parentPath.GetParentPath();
