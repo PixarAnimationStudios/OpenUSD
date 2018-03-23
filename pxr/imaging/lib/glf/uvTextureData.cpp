@@ -121,7 +121,8 @@ GlfUVTextureData::_GetNumMipLevelsValid(const GlfImageSharedPtr image) const
     // Count mips since certain formats will not fail when quering mips,
     // in that case 
     for (int mipCounter = 1; mipCounter < 32; mipCounter++) {
-        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath, mipCounter);
+        GlfImageSharedPtr image = GlfImage::OpenForReading(_filePath,
+            mipCounter, /*suppressErrors=*/ true);
         if (!image) {
             potentialMipLevels = mipCounter;
             break;

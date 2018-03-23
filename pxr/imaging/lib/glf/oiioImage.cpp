@@ -80,7 +80,8 @@ public:
                        VtDictionary const & metadata);
 
 protected:
-    virtual bool _OpenForReading(std::string const & filename, int subimage);
+    virtual bool _OpenForReading(std::string const & filename, int subimage,
+                                 bool suppressErrors);
     virtual bool _OpenForWriting(std::string const & filename);
 
 private:
@@ -389,7 +390,8 @@ Glf_OIIOImage::GetNumMipLevels() const
 
 /* virtual */
 bool
-Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage)
+Glf_OIIOImage::_OpenForReading(std::string const & filename, int subimage,
+                               bool suppressErrors)
 {
     _filename = filename;
     _subimage = subimage;
