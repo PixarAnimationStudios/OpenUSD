@@ -60,10 +60,19 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((_int, "int"))
     (hd_vec3)
     (hd_vec3_get)
+    (hd_vec3_set)
     (hd_ivec3)
     (hd_ivec3_get)
+    (hd_ivec3_set)
     (hd_dvec3)
     (hd_dvec3_get)
+    (hd_dvec3_set)
+    (hd_mat3)
+    (hd_mat3_get)
+    (hd_mat3_set)
+    (hd_dmat3)
+    (hd_dmat3_get)
+    (hd_dmat3_set)
     (inPrimVars)
     (ivec2)
     (ivec3)
@@ -75,6 +84,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (dvec2)
     (dvec3)
     (dvec4)
+    (mat3)
+    (mat4)
+    (dmat3)
+    (dmat4)
     ((ptexTextureSampler, "ptexTextureSampler"))
     (isamplerBuffer)
     (samplerBuffer)
@@ -195,12 +208,40 @@ _GetPackedTypeDefinitions()
     return "struct hd_ivec3 { int    x, y, z; };\n"
            "struct hd_vec3  { float  x, y, z; };\n"
            "struct hd_dvec3 { double x, y, z; };\n"
+           "struct hd_mat3  { float  m00, m01, m02,\n"
+           "                         m10, m11, m12,\n"
+           "                         m20, m21, m22; };\n"
+           "struct hd_dmat3 { double m00, m01, m02,\n"
+           "                         m10, m11, m12,\n"
+           "                         m20, m21, m22; };\n"
            "ivec3 hd_ivec3_get(hd_ivec3 v) { return ivec3(v.x, v.y, v.z); }\n"
            "ivec3 hd_ivec3_get(ivec3 v)    { return v; }\n"
            "vec3  hd_vec3_get(hd_vec3 v)   { return vec3(v.x, v.y, v.z); }\n"
            "vec3  hd_vec3_get(vec3 v)      { return v; }\n"
            "dvec3 hd_dvec3_get(hd_dvec3 v) { return dvec3(v.x, v.y, v.z); }\n"
            "dvec3 hd_dvec3_get(dvec3 v)    { return v; }\n"
+           "mat3  hd_mat3_get(hd_mat3 v)   { return mat3(v.m00, v.m01, v.m02,\n"
+           "                                             v.m10, v.m11, v.m12,\n"
+           "                                             v.m20, v.m21, v.m22); }\n"
+           "mat3  hd_mat3_get(mat3 v)      { return v; }\n"
+           "dmat3 hd_dmat3_get(hd_dmat3 v) { return dmat3(v.m00, v.m01, v.m02,\n"
+           "                                              v.m10, v.m11, v.m12,\n"
+           "                                              v.m20, v.m21, v.m22); }\n"
+           "dmat3 hd_dmat3_get(dmat3 v)    { return v; }\n"
+           "hd_ivec3 hd_ivec3_set(hd_ivec3 v) { return v; }\n"
+           "hd_ivec3 hd_ivec3_set(ivec3 v)    { return hd_ivec3(v.x, v.y, v.z); }\n"
+           "hd_vec3 hd_vec3_set(hd_vec3 v)    { return v; }\n"
+           "hd_vec3 hd_vec3_set(vec3 v)       { return hd_vec3(v.x, v.y, v.z); }\n"
+           "hd_dvec3 hd_dvec3_set(hd_dvec3 v) { return v; }\n"
+           "hd_dvec3 hd_dvec3_set(dvec3 v)    { return hd_dvec3(v.x, v.y, v.z); }\n"
+           "hd_mat3  hd_mat3_set(hd_mat3 v)   { return v; }\n"
+           "hd_mat3  hd_mat3_set(mat3 v)      { return hd_mat3(v[0][0], v[0][1], v[0][2],\n"
+           "                                                   v[1][0], v[1][1], v[1][2],\n"
+           "                                                   v[2][0], v[2][1], v[2][2]); }\n"
+           "hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }\n"
+           "hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],\n"
+           "                                                    v[1][0], v[1][1], v[1][2],\n"
+           "                                                    v[2][0], v[2][1], v[2][2]); }\n"
         // helper functions for 410 specification
         // applying a swizzle operator on int and float is not allowed in 410.
            "int hd_int_get(int v)          { return v; }\n"
@@ -218,6 +259,10 @@ _GetPackedType(TfToken const &token)
         return _tokens->hd_vec3;
     } else if (token == _tokens->dvec3) {
         return _tokens->hd_dvec3;
+    } else if (token == _tokens->mat3) {
+        return _tokens->hd_mat3;
+    } else if (token == _tokens->dmat3) {
+        return _tokens->hd_dmat3;
     }
     return token;
 }
@@ -231,6 +276,27 @@ _GetPackedTypeAccessor(TfToken const &token)
         return _tokens->hd_vec3_get;
     } else if (token == _tokens->dvec3) {
         return _tokens->hd_dvec3_get;
+    } else if (token == _tokens->mat3) {
+        return _tokens->hd_mat3_get;
+    } else if (token == _tokens->dmat3) {
+        return _tokens->hd_dmat3_get;
+    }
+    return token;
+}
+
+static TfToken const &
+_GetPackedTypeMutator(TfToken const &token)
+{
+    if (token == _tokens->ivec3) {
+        return _tokens->hd_ivec3_set;
+    } else if (token == _tokens->vec3) {
+        return _tokens->hd_vec3_set;
+    } else if (token == _tokens->dvec3) {
+        return _tokens->hd_dvec3_set;
+    } else if (token == _tokens->mat3) {
+        return _tokens->hd_mat3_set;
+    } else if (token == _tokens->dmat3) {
+        return _tokens->hd_dmat3_set;
     }
     return token;
 }
@@ -255,6 +321,14 @@ _GetFlatType(TfToken const &token)
     } else if (token == _tokens->dvec3) {
         return _tokens->_double;
     } else if (token == _tokens->dvec4) {
+        return _tokens->_double;
+    } else if (token == _tokens->mat3) {
+        return _tokens->_float;
+    } else if (token == _tokens->mat4) {
+        return _tokens->_float;
+    } else if (token == _tokens->dmat3) {
+        return _tokens->_double;
+    } else if (token == _tokens->dmat4) {
         return _tokens->_double;
     }
     return token;
@@ -299,6 +373,7 @@ namespace {
         case HdBinding::UNIFORM_ARRAY:
         case HdBinding::TBO:
         case HdBinding::BINDLESS_UNIFORM:
+        case HdBinding::BINDLESS_SSBO_RANGE:
         case HdBinding::TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
         case HdBinding::TEXTURE_PTEX_TEXEL:
@@ -378,7 +453,7 @@ HdSt_CodeGen::Compile()
     _genCommon << "#define MAT4 " <<
         HdStGLConversions::GetGLSLTypename(
             HdVtBufferSource::GetDefaultMatrixType()) << "\n";
-    // a trick to tightly pack vec3 into SSBO/UBO.
+    // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
     _genCommon << _GetPackedTypeDefinitions();
 
     // ------------------
@@ -699,8 +774,6 @@ HdSt_CodeGen::CompileComputeProgram()
     // GLSL version.
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     _genCommon << "#version " << caps.glslVersion << "\n";
-    // default workgroup size
-    _genCommon << "layout(local_size_x = 1, local_size_y = 1) in;\n";
 
     if (caps.bindlessBufferEnabled) {
         _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
@@ -716,10 +789,16 @@ HdSt_CodeGen::CompileComputeProgram()
         _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
     }
 
+    // default workgroup size (must follow #extension directives)
+    _genCommon << "layout(local_size_x = 1, local_size_y = 1) in;\n";
+
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Hydra shading. 
     _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";    
+
+    // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
+    _genCommon << _GetPackedTypeDefinitions();
     
     std::stringstream uniforms;
     std::stringstream declarations;
@@ -737,14 +816,18 @@ HdSt_CodeGen::CompileComputeProgram()
         TfToken const &name = it->second.name;
         HdBinding const &binding = it->first;
         TfToken const &dataType = it->second.dataType;
+
+        // For now, SSBO bindings use a flat type encoding.
+        TfToken declDataType =
+            (binding.GetType() == HdBinding::SSBO
+                ? _GetFlatType(dataType) : dataType);
         
         uniforms << "    int " << name << "Offset;\n";
         uniforms << "    int " << name << "Stride;\n";
         
         _EmitDeclaration(declarations,
                 name,
-                //compute shaders need vector types to be flat arrays
-                _GetFlatType(dataType),
+                declDataType,
                 binding, 0);
         // getter & setter
         {
@@ -765,12 +848,17 @@ HdSt_CodeGen::CompileComputeProgram()
         HdBinding const &binding = it->first;
         TfToken const &dataType = it->second.dataType;
         
+        // For now, SSBO bindings use a flat type encoding.
+        TfToken declDataType =
+            (binding.GetType() == HdBinding::SSBO
+                ? _GetFlatType(dataType) : dataType);
+
         uniforms << "    int " << name << "Offset;\n";
         uniforms << "    int " << name << "Stride;\n";
+
         _EmitDeclaration(declarations,
                 name,
-                //compute shaders need vector types to be flat arrays
-                _GetFlatType(dataType),
+                declDataType,
                 binding, 0);
         // getter
         {
@@ -854,10 +942,11 @@ static void _EmitDeclaration(std::stringstream &str,
                       name.GetText())) return;
 
     if (arraySize > 0) {
-        if (!TF_VERIFY(bindingType == HdBinding::UNIFORM_ARRAY                 ||
-                          bindingType == HdBinding::DRAW_INDEX_INSTANCE_ARRAY  ||
-                          bindingType == HdBinding::UBO                        ||
-                          bindingType == HdBinding::SSBO                       ||
+        if (!TF_VERIFY(bindingType == HdBinding::UNIFORM_ARRAY                ||
+                          bindingType == HdBinding::DRAW_INDEX_INSTANCE_ARRAY ||
+                          bindingType == HdBinding::UBO                       ||
+                          bindingType == HdBinding::SSBO                      ||
+                          bindingType == HdBinding::BINDLESS_SSBO_RANGE       ||
                           bindingType == HdBinding::BINDLESS_UNIFORM)) {
             // XXX: SSBO and BINDLESS_UNIFORM don't need arraySize, but for the
             // workaround of UBO allocation we're passing arraySize = 2
@@ -903,6 +992,10 @@ static void _EmitDeclaration(std::stringstream &str,
             << "  " << _GetPackedType(type).GetText()
             << " " << name.GetText() << "[];\n"
             << "};\n";
+        break;
+    case HdBinding::BINDLESS_SSBO_RANGE:
+        str << "uniform " << _GetPackedType(type).GetText()
+            << " *" << name.GetText() << ";\n";
         break;
     case HdBinding::TBO:
         str << "uniform " << _GetSamplerBufferType(type).GetText()
@@ -991,10 +1084,9 @@ static void _EmitComputeAccessor(
 {
     if (index) {
         str << type
-            << " HdGet_" << name << "(int localIndex) {\n"
-            << "  int index = " << index << ";\n";
+            << " HdGet_" << name << "(int localIndex) {\n";
         if (binding.GetType() == HdBinding::TBO) {
-
+            str << "  int index = " << index << ";\n";
             std::string swizzle = "";
             if (type == _tokens->vec4 || type == _tokens->ivec4) {
                 // nothing
@@ -1008,6 +1100,7 @@ static void _EmitComputeAccessor(
             str << "  return texelFetch("
                 << name << ", index)" << swizzle << ";\n}\n";
         } else if (binding.GetType() == HdBinding::SSBO) {
+            str << "  int index = " << index << ";\n";
             str << "  return " << type << "(";
             int numComponents = 1;
             if (type == _tokens->vec2 || type == _tokens->ivec2) {
@@ -1016,6 +1109,10 @@ static void _EmitComputeAccessor(
                 numComponents = 3;
             } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
                 numComponents = 4;
+            } else if (type == _tokens->mat3 || type == _tokens->dmat3) {
+                numComponents = 9;
+            } else if (type == _tokens->mat4 || type == _tokens->dmat4) {
+                numComponents = 16;
             }
             for (int c = 0; c < numComponents; ++c) {
                 if (c > 0) {
@@ -1024,9 +1121,12 @@ static void _EmitComputeAccessor(
                 str << name << "[index + " << c << "]";
             }
             str << ");\n}\n";
+        } else if (binding.GetType() == HdBinding::BINDLESS_SSBO_RANGE) {
+            str << "  return " << _GetPackedTypeAccessor(type) << "("
+                << name << "[localIndex]);\n}\n";
         } else {
             str << "  return " << _GetPackedTypeAccessor(type) << "("
-                << name << "[index]);\n}\n";
+                << name << "[localIndex]);\n}\n";
         }
     } else {
         // non-indexed, only makes sense for uniform or vertex.
@@ -1053,9 +1153,10 @@ static void _EmitComputeMutator(
 {
     if (index) {
         str << "void"
-            << " HdSet_" << name << "(int localIndex, " << type << " value) {\n"
-            << "  int index = " << index << ";\n";
+            << " HdSet_" << name << "(int localIndex, "
+            << type << " value) {\n";
         if (binding.GetType() == HdBinding::SSBO) {
+            str << "  int index = " << index << ";\n";
             int numComponents = 1;
             if (type == _tokens->vec2 || type == _tokens->ivec2) {
                 numComponents = 2;
@@ -1063,6 +1164,10 @@ static void _EmitComputeMutator(
                 numComponents = 3;
             } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
                 numComponents = 4;
+            } else if (type == _tokens->mat3 || type == _tokens->dmat3) {
+                numComponents = 9;
+            } else if (type == _tokens->mat4 || type == _tokens->dmat4) {
+                numComponents = 16;
             }
             if (numComponents == 1) {
                 str << "  "
@@ -1074,10 +1179,13 @@ static void _EmitComputeMutator(
                         << "value[" << c << "];\n";
                 }
             }
-            str << "}\n";
+        } else if (binding.GetType() == HdBinding::BINDLESS_SSBO_RANGE) {
+            str << name << "[localIndex] = "
+                << _GetPackedTypeMutator(type) << "(value);\n";
         } else {
             TF_WARN("mutating non-SSBO not supported");
         }
+        str << "}\n";
     } else {
         TF_WARN("mutating non-indexed data not supported");
     }

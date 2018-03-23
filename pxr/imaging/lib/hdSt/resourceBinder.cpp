@@ -76,6 +76,8 @@ namespace {
             case HdBinding::SSBO:
                 return HdBinding(HdBinding::SSBO, ssboLocation++);
                 break;
+            case HdBinding::BINDLESS_SSBO_RANGE:
+                return HdBinding(HdBinding::BINDLESS_SSBO_RANGE, uniformLocation++);
             case HdBinding::TBO:
                 return HdBinding(HdBinding::TBO, uniformLocation++, textureUnit++);
                 break;
@@ -614,6 +616,11 @@ HdSt_ResourceBinder::ResolveComputeBindings(
         return;
     }
 
+    // GL context caps
+    HdBinding::Type bindingType =
+        (GlfContextCaps::GetInstance().bindlessBufferEnabled
+         ? HdBinding::BINDLESS_SSBO_RANGE : HdBinding::SSBO);
+
     // binding assignments
     BindingLocator locator;
 
@@ -622,7 +629,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     
     // read-write per prim data
     for (HdBufferSpec const& spec: readWriteBufferSpecs) {
-        HdBinding binding = locator.GetBinding(HdBinding::SSBO, spec.name);
+        HdBinding binding = locator.GetBinding(bindingType, spec.name);
         _bindingMap[spec.name] = binding;
         metaDataOut->computeReadWriteData[binding] =
             MetaData::PrimVar(spec.name,
@@ -632,7 +639,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     
     // read-only per prim data
     for (HdBufferSpec const& spec: readOnlyBufferSpecs) {
-        HdBinding binding = locator.GetBinding(HdBinding::SSBO, spec.name);
+        HdBinding binding = locator.GetBinding(bindingType, spec.name);
         _bindingMap[spec.name] = binding;
         metaDataOut->computeReadOnlyData[binding] =
             MetaData::PrimVar(spec.name,
@@ -739,6 +746,14 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, loc,
                          buffer->GetId());
         break;
+    case HdBinding::BINDLESS_SSBO_RANGE:
+        // at least in nvidia driver 346.59, this query call doesn't show
+        // any pipeline stall.
+        if (!glIsNamedBufferResidentNV(buffer->GetId())) {
+            glMakeNamedBufferResidentNV(buffer->GetId(), GL_READ_WRITE);
+        }
+        glUniformui64NV(loc, buffer->GetGPUAddress()+offset);
+        break;
     case HdBinding::DISPATCH:
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->GetId());
         break;
@@ -811,6 +826,11 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
         break;
     case HdBinding::SSBO:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, loc, 0);
+        break;
+    case HdBinding::BINDLESS_SSBO_RANGE:
+        if (glIsNamedBufferResidentNV(buffer->GetId())) {
+            glMakeNamedBufferNonResidentNV(buffer->GetId());
+        }
         break;
     case HdBinding::DISPATCH:
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);

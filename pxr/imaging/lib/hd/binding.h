@@ -55,6 +55,7 @@ public:
                 VERTEX_ATTR,         // vertex-attribute
                 INDEX_ATTR,          // GL_ELEMENT_ARRAY_BUFFER
                 SSBO,                //
+                BINDLESS_SSBO_RANGE, //
                 UBO,                 //
                 BINDLESS_UNIFORM,    //
                 UNIFORM,             //
