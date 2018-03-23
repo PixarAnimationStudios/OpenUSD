@@ -653,6 +653,14 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
         }
     }
 
+    // If the interpolation we're passing back is constant, truncate the array
+    // if necessary so that we don't have an array-valued color in the shader.
+    // We will have already warned above about one or both of the primvars
+    // having constant interpolation but multiple values.
+    if (colorInterp == UsdGeomTokens->constant && result.size() > 1) {
+        result.resize(1);
+    }
+
     if (primvarInfo) {
         primvarInfo->name = HdTokens->color;
         primvarInfo->interpolation = colorInterp;
