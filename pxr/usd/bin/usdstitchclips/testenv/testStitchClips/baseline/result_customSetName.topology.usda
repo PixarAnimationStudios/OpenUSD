@@ -1,8 +1,6 @@
 #usda 1.0
 (
-    endFrame = 101
     endTimeCode = 109
-    startFrame = 101
     startTimeCode = 101
 )
 

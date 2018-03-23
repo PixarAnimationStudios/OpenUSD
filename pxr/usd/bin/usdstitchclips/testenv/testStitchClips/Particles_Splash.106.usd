@@ -1,7 +1,7 @@
 #usda 1.0
 (
-    endFrame = 106
-    startFrame = 106
+    endTimeCode = 106
+    startTimeCode = 106
 )
 
 def Xform "World" (
