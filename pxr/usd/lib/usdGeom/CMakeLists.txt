@@ -113,6 +113,7 @@ pxr_test_scripts(
     testenv/testUsdGeomConsts.py
     testenv/test_UsdGeomCurves.py
     testenv/testUsdGeomFaceSetAPI.py
+    testenv/testUsdGeomMesh.py
     testenv/testUsdGeomMotionAPI.py
     testenv/testUsdGeomNoPlugLoad.py
     testenv/testUsdGeomPointInstancer.py
@@ -261,6 +262,12 @@ pxr_register_test(testUsdGeomCurves
 pxr_register_test(testUsdGeomFaceSetAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomFaceSetAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomMesh
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMesh"
     EXPECTED_RETURN_CODE 0
 )
 
