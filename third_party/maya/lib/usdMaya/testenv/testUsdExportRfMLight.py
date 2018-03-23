@@ -200,6 +200,8 @@ class testUsdExportRfMLight(unittest.TestCase):
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
 
+        self.assertTrue(lightPrim.HasAPI(UsdLux.ShapingAPI))
+
         shapingAPI = UsdLux.ShapingAPI(lightPrim)
         self.assertTrue(shapingAPI)
 
@@ -231,6 +233,8 @@ class testUsdExportRfMLight(unittest.TestCase):
         lightPrimPath = '/RfMLightsTest/Lights/RectLight'
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
+
+        self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
 
         shadowAPI = UsdLux.ShadowAPI(lightPrim)
         self.assertTrue(shadowAPI)

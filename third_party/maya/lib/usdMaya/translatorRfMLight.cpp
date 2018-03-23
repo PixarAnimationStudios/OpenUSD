@@ -603,7 +603,9 @@ static
 bool
 _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    UsdLuxShapingAPI shapingAPI(lightSchema);
+    UsdLuxShapingAPI shapingAPI =
+        PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(
+            lightSchema.GetPrim());
     if (!shapingAPI) {
         return false;
     }
@@ -835,7 +837,9 @@ static
 bool
 _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    UsdLuxShadowAPI shadowAPI(lightSchema);
+    UsdLuxShadowAPI shadowAPI =
+        PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(
+            lightSchema.GetPrim());
     if (!shadowAPI) {
         return false;
     }
