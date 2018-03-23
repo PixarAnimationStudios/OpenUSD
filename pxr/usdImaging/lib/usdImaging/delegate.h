@@ -643,9 +643,8 @@ private:
     _PathsToUpdateMap _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
-    UsdImaging_MaterialBindingSupplementalCache _matBindingSupplCache;
+    UsdImaging_MaterialBindingImplData _materialBindingImplData;
     UsdImaging_MaterialBindingCache _materialBindingCache;
-    UsdImaging_MaterialNetworkBindingCache _materialNetworkBindingCache;
     UsdImaging_VisCache _visCache;
     UsdImaging_DrawModeCache _drawModeCache;
 

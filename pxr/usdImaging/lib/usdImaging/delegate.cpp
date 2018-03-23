@@ -79,6 +79,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (instance)
     (texturePath)
+    (Material)
+    (HydraPbsSurface)
 );
 
 // This environment variable matches a set of similar ones in
@@ -108,10 +110,11 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
     , _xformCache(GetTime(), GetRootCompensation())
+    , _materialBindingImplData(parentIndex->GetRenderDelegate()->
+            CanComputeMaterialNetworks() ? UsdShadeTokens->full 
+                                         : UsdShadeTokens->preview)
     , _materialBindingCache(GetTime(), GetRootCompensation(), 
-                            &_matBindingSupplCache)
-    , _materialNetworkBindingCache(GetTime(), GetRootCompensation(),
-                                   &_matBindingSupplCache)
+                            &_materialBindingImplData)
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _displayGuides(true)
@@ -222,14 +225,8 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         // for backwards compatibility.
         bool useMaterialNetworks = GetRenderIndex().
             GetRenderDelegate()->CanComputeMaterialNetworks();
-        if (useMaterialNetworks) {
-            if (adapterKey == TfToken("Look")) {
-                adapterKey = TfToken("Material");
-            }
-        } else {
-            if (adapterKey == TfToken("Shader")) {
-                adapterKey = TfToken("HydraPbsSurface");
-            }
+        if (!useMaterialNetworks && adapterKey == _tokens->Material) {
+            adapterKey = _tokens->HydraPbsSurface;
         }
     }
 
@@ -899,15 +896,6 @@ namespace {
             materialBindingCache->GetValue(primToBind);
         }
     };
-    struct _PopulateMaterialNetworkBindingCache {
-        UsdPrim primToBind;
-        UsdImaging_MaterialNetworkBindingCache const* materialBindingCache;
-        void operator()() const {
-            // Just calling GetValue will populate the cache for this prim and
-            // potentially all ancestors.
-            materialBindingCache->GetValue(primToBind);
-        }
-    };
 };
 
 void
@@ -923,11 +911,6 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
     // Force initialization of SchemaRegistry (doing this in parallel causes all
     // threads to block).
     UsdSchemaRegistry::GetInstance();
-
-    // If we are using material networks the correct binding cache with
-    // the correct binding strategy needs to be updated.
-    bool useMaterialNetworks = GetRenderIndex().
-        GetRenderDelegate()->CanComputeMaterialNetworks();
 
     // Build a TfHashSet of excluded prims for fast rejection.
     TfHashSet<SdfPath, SdfPath::Hash> excludedSet;
@@ -981,15 +964,9 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 // If we are using full networks, we will populate the 
                 // binding cache that has the strategy to compute the correct
                 // bindings.
-                if (useMaterialNetworks) {
-                    _PopulateMaterialNetworkBindingCache wu = 
-                        { *iter, &_materialNetworkBindingCache};
-                    bindingDispatcher.Run(wu);    
-                } else {
-                    _PopulateMaterialBindingCache wu = 
-                        { *iter, &_materialBindingCache};
-                    bindingDispatcher.Run(wu);
-                }
+                _PopulateMaterialBindingCache wu = 
+                    { *iter, &_materialBindingCache};
+                 bindingDispatcher.Run(wu);
                 
                 leafPaths.push_back(std::make_pair(*iter, adapter));
                 if (adapter->ShouldCullChildren(*iter)) {
@@ -1104,9 +1081,8 @@ UsdImagingDelegate::_ProcessChangesForTimeUpdate(UsdTimeCode time)
         // Need to invalidate all caches if any stage objects have changed. This
         // invalidation is overly conservative, but correct.
         _xformCache.Clear();
-        _matBindingSupplCache.Clear();
+        _materialBindingImplData.ClearCaches();
         _materialBindingCache.Clear();
-        _materialNetworkBindingCache.Clear();
         _visCache.Clear();
         _drawModeCache.Clear();
     }
@@ -2039,7 +2015,6 @@ UsdImagingDelegate::_ComputeRootCompensation(SdfPath const & usdPath)
     _compensationPath = usdPath;
     _xformCache.SetRootPath(usdPath);
     _materialBindingCache.SetRootPath(usdPath);
-    _materialNetworkBindingCache.SetRootPath(usdPath);
     _visCache.SetRootPath(usdPath);
     _drawModeCache.SetRootPath(usdPath);
 

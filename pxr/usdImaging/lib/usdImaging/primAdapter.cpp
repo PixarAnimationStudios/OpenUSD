@@ -535,24 +535,11 @@ UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim)
 
     // No need to worry about time here, since relationships do not have time
     // samples.
-
-    // If the renderer supports full material network then this function
-    // will try to return a binding that is compatible..
-    bool useMaterialNetworks = _delegate->GetRenderIndex().
-        GetRenderDelegate()->CanComputeMaterialNetworks();
-
     if (_IsEnabledBindingCache()) {
-        if (useMaterialNetworks) {
-            return _delegate->_materialNetworkBindingCache.GetValue(prim);
-        } else {
-            return _delegate->_materialBindingCache.GetValue(prim);
-        }
+        return _delegate->_materialBindingCache.GetValue(prim);
     } else {
-        if (useMaterialNetworks) {
-            return UsdImaging_MaterialNetworkStrategy::ComputeMaterialPath(prim);
-        } else {
-            return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim);
-        }
+        return UsdImaging_MaterialStrategy::ComputeMaterialPath(prim, 
+                &_delegate->_materialBindingImplData);
     }
 }
 

@@ -276,21 +276,13 @@ UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim,
     // is usually the standin node in the case of a UsdRi.
     // If it fails to provide a relationship then we are not in a 
     // usdPrim that contains a correct terminal to a UsdShade Shader node.
-    if( UsdShadeOutput bxdfOut = m.GetBxdfOutput() ) {
-        UsdShadeConnectableAPI source;
-        TfToken sourceName;
-        UsdShadeAttributeType sourceType;
-        bxdfOut.GetConnectedSource(&source, &sourceName, &sourceType);
-        walkGraph(source,
+    if (UsdShadeShader surfaceShader = m.GetSurface()) {
+        walkGraph(surfaceShader,
                   &materialNetworkMap->map[UsdImagingTokens->bxdf]);
     }
 
-    if( UsdShadeOutput dispOut = m.GetDisplacementOutput() ) {
-        UsdShadeConnectableAPI source;
-        TfToken sourceName;
-        UsdShadeAttributeType sourceType;
-        dispOut.GetConnectedSource(&source, &sourceName, &sourceType);
-        walkGraph(source,
+    if (UsdShadeShader dispShader = m.GetDisplacement()) {
+        walkGraph(dispShader,
                   &materialNetworkMap->map[UsdImagingTokens->displacement]);
     }
 }

@@ -31,6 +31,7 @@
 #include "pxr/imaging/glf/glslfxConfig.h"
 
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -41,6 +42,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define GLF_GLSLFX_TOKENS  \
+    (glslfx)
+
+TF_DECLARE_PUBLIC_TOKENS(GlfGLSLFXTokens, GLF_API, GLF_GLSLFX_TOKENS);
 
 /// \class GlfGLSLFX
 ///
