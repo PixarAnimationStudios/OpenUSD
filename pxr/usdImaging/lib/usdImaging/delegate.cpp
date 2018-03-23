@@ -2449,24 +2449,11 @@ UsdImagingDelegate::PopulateSelection(
         return adapter->PopulateSelection(highlightMode, usdPath,
                                           instanceIndices, result);
     } else {
-        // Select rprims that are part of the path subtree. Exclude proto paths 
-        // since they will be added later in this function when iterating 
-        // through the different instances.
-        SdfPathVector const& rprimPaths = GetRenderIndex().GetRprimSubtree(path);
-        TF_FOR_ALL (rprimPath, rprimPaths) {
-            if ((*rprimPath).IsPropertyPath()) {
-                continue;
-            }
-            result->AddRprim(highlightMode, *rprimPath);
-            added = true;
-        }
 
-        // Iterate the adapter map to figure out if there is (at least) one
-        // instancer under the selected path, and then populate the selection
-
+        // Select prims that are part of the path subtree. Exclude prototypes
+        // since they are handled by their instancers' PopulateSelection calls.
         SdfPathVector affectedPrims;
         HdPrimGather gather;
-
         gather.Subtree(_usdIds.GetIds(), usdPath, &affectedPrims);
 
         size_t numPrims = affectedPrims.size();
@@ -2484,19 +2471,20 @@ UsdImagingDelegate::PopulateSelection(
             }
 
             _AdapterSharedPtr const &adapter = primInfo->adapter;
-            
-            // Check if the there is an instancer associated to that path
-            // if so, let's populate the selection to that instance.
-            SdfPath instancerPath = adapter->GetInstancer(primPath);
-            if (!instancerPath.IsEmpty()) {                
-                // We don't need to take into account specific indices when 
-                // doing subtree selections.
-                added |= adapter->PopulateSelection(highlightMode,
-                                                    usdPath,
-                                                    VtIntArray(), 
-                                                    result);
-                break;
+
+            // PopulateSelection works as expected on un-instanced rprims.
+            // For PointInstancers, PopulateSelection adds all of their
+            // children. For native instances, PopulateSelection will add
+            // selections for all of the prims/instances that are logically
+            // below primPath.
+            //
+            // This means that if we run across a property path (instanced
+            // rprim), we should skip it so the instance adapters can work.
+            if (primPath.IsPropertyPath()) {
+                continue;
             }
+            added |= adapter->PopulateSelection(highlightMode, primPath,
+                                                VtIntArray(), result);
         }
     }
     return added;

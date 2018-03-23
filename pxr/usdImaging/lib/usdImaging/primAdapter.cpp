@@ -296,7 +296,11 @@ UsdImagingPrimAdapter::PopulateSelection(HdxSelectionHighlightMode const& mode,
 
     // insert itself into the selection map.
     // XXX: should check the existence of the path
-    result->AddInstance(mode, indexPath, instanceIndices);
+    if (instanceIndices.size() == 0) {
+        result->AddRprim(mode, indexPath);
+    } else {
+        result->AddInstance(mode, indexPath, instanceIndices);
+    }
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg("PopulateSelection: (prim) %s\n",
                                        indexPath.GetText());
