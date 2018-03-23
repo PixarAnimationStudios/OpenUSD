@@ -1133,6 +1133,31 @@ PxrUsdMayaUtil::Connect(
     dgMod.doIt();
 }
 
+MPlug
+PxrUsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
+{
+    unsigned int numChildren = plug.numChildren();
+    for(unsigned int i = 0; i < numChildren; ++i) {
+        MPlug child = plug.child(i);
+
+        // We can't get at the name of just the *component*
+        // plug.name() gives us node.plug[index].compound, etc.
+        // partialName() also has no form that just gives us the name.
+        MString childName = child.name();
+        if(childName.length() > name.length()) {
+            int index = childName.rindex('.');
+            if(index >= 0) {
+                MString childSuffix = 
+                    childName.substring(index+1, childName.length());
+                if(childSuffix == name) {
+                    return child;
+                }
+            }
+        }
+    }
+    return MPlug();
+}
+
 // XXX: see logic in MayaTransformWriter.  It's unfortunate that this
 // logic is in 2 places.  we should merge.
 static bool
@@ -1200,6 +1225,14 @@ _GetVec(
 
 }
 
+MMatrix
+PxrUsdMayaUtil::GfMatrixToMMatrix(const GfMatrix4d& mx)
+{
+    MMatrix mayaMx;
+    std::copy(mx.GetArray(), mx.GetArray()+16, mayaMx[0]);
+    return mayaMx;
+}
+
 bool
 PxrUsdMayaUtil::getPlugMatrix(
         const MFnDependencyNode& depNode,
@@ -1223,6 +1256,28 @@ PxrUsdMayaUtil::getPlugMatrix(
     }
 
     *outVal = plugMatrixData.matrix();
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::setPlugMatrix(const MFnDependencyNode& depNode,
+                              const MString& attr,
+                              const GfMatrix4d& mx)
+{
+    MStatus status;
+    MPlug plug = depNode.findPlug(attr, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    return setPlugMatrix(mx, plug);
+}
+
+bool
+PxrUsdMayaUtil::setPlugMatrix(const GfMatrix4d& mx, MPlug& plug)
+{
+    MStatus status;
+    MObject mxObj = MFnMatrixData().create(GfMatrixToMMatrix(mx), &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = plug.setValue(mxObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
     return true;
 }
 

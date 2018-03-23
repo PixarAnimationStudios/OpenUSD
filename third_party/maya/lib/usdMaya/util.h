@@ -360,6 +360,10 @@ void Connect(
         const MPlug& dstPlug,
         bool clearDstPlug);
 
+/// Get a named child plug of \p plug by name.
+PXRUSDMAYA_API
+MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
+
 /// For \p dagPath, returns a UsdPath corresponding to it.  
 /// If \p mergeTransformAndShape and the dagPath is a shapeNode, it will return
 /// the same value as MDagPathToUsdPath(transformPath) where transformPath is
@@ -395,12 +399,27 @@ bool getPlugValue(MFnDependencyNode const &depNode,
     return false;
 }
 
+/// Convert a Gf matrix to an MMatrix.
+PXRUSDMAYA_API
+MMatrix GfMatrixToMMatrix(const GfMatrix4d& mx);
+
 // Like getPlugValue, but gets the matrix stored inside the MFnMatrixData on a
 // plug.
 // Returns true upon success, placing the matrix in the outVal parameter.
+PXRUSDMAYA_API
 bool getPlugMatrix(const MFnDependencyNode& depNode,
                    const MString& attr,
                    MMatrix* outVal);
+
+/// Set a matrix value on plug name \p attr, of \p depNode.
+/// Returns true if the value was set on the plug successfully, false otherwise.
+PXRUSDMAYA_API
+bool setPlugMatrix(const MFnDependencyNode& depNode,
+                   const MString& attr,
+                   const GfMatrix4d& mx);
+
+PXRUSDMAYA_API
+bool setPlugMatrix(const GfMatrix4d& mx, MPlug& plug);
 
 /// Given an \p usdAttr , extract the value at the default timecode and write
 /// it on \p attrPlug.
