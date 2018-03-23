@@ -77,7 +77,7 @@ public:
             bool writeAnim);
     
     PXRUSDMAYA_API
-    virtual void write(const UsdTimeCode &usdTime);
+    virtual void write(const UsdTimeCode &usdTime) override;
 
     PXRUSDMAYA_API
     virtual bool exportsGprims() const override;
@@ -85,7 +85,7 @@ public:
     PXRUSDMAYA_API
     virtual bool exportsReferences() const override;
 
-    virtual bool isShapeAnimated() const { return mIsShapeAnimated; };
+    virtual bool isShapeAnimated() const override { return mIsShapeAnimated; };
 
     const MDagPath& getTransformDagPath() { return mXformDagPath; };
 
