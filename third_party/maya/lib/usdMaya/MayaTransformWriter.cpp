@@ -519,7 +519,8 @@ MayaTransformWriter::MayaTransformWriter(
             }
 
             if (isInstance) {
-                const auto masterPath = mWriteJobCtx.getMasterPath(getDagPath());
+                const auto masterPath = mWriteJobCtx.getOrCreateMasterPath(
+                        getDagPath());
                 if (!masterPath.IsEmpty()){
                     mUsdPrim.GetReferences().AddReference(SdfReference("", masterPath));
                     mUsdPrim.SetInstanceable(true);
@@ -560,6 +561,44 @@ bool MayaTransformWriter::writeTransformAttrs(
     return true;
 }
 
+bool MayaTransformWriter::isInstance() const
+{
+    // 1. Instance sources aren't instances.
+    // 2. Nothing is an instance if we're not exporting with instances.
+    // 3. Because we only currently do gprim-level instancing, transforms are
+    //    never instances. (This might change in the future.)
+    // 4. Only Maya-instanced things are instanced!
+    return !mIsInstanceSource
+            && getArgs().exportInstances
+            && !getDagPath().hasFn(MFn::kTransform)
+            && getDagPath().isInstanced();
+}
+
+bool MayaTransformWriter::exportsGprims() const
+{
+    if (isInstance()) {
+        MayaPrimWriterPtr primWriter = mWriteJobCtx.getMasterPrimWriter(
+                getDagPath());
+        if (primWriter) {
+            return primWriter->exportsGprims();
+        }
+    }
+
+    return MayaPrimWriter::exportsGprims();
+}
+    
+bool MayaTransformWriter::exportsReferences() const
+{
+    if (isInstance()) {
+        MayaPrimWriterPtr primWriter = mWriteJobCtx.getMasterPrimWriter(
+                getDagPath());
+        if (primWriter) {
+            return primWriter->exportsReferences();
+        }
+    }
+
+    return MayaPrimWriter::exportsReferences();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

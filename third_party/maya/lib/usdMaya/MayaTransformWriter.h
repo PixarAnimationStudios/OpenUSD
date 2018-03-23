@@ -79,6 +79,12 @@ public:
     PXRUSDMAYA_API
     virtual void write(const UsdTimeCode &usdTime);
 
+    PXRUSDMAYA_API
+    virtual bool exportsGprims() const override;
+    
+    PXRUSDMAYA_API
+    virtual bool exportsReferences() const override;
+
     virtual bool isShapeAnimated() const { return mIsShapeAnimated; };
 
     const MDagPath& getTransformDagPath() { return mXformDagPath; };
@@ -88,6 +94,9 @@ protected:
     bool writeTransformAttrs(
             const UsdTimeCode& usdTime, 
             UsdGeomXformable& primSchema);
+
+    PXRUSDMAYA_API
+    bool isInstance() const;
 
 private:
     MDagPath mXformDagPath;

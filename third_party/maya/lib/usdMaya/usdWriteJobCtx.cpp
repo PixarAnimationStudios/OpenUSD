@@ -71,7 +71,7 @@ usdWriteJobCtx::usdWriteJobCtx(const JobExportArgs& args) : mArgs(args), mNoInst
 
 }
 
-SdfPath usdWriteJobCtx::getMasterPath(const MDagPath& dg)
+SdfPath usdWriteJobCtx::getOrCreateMasterPath(const MDagPath& dg)
 {
     const MObjectHandle handle(dg.node());
     const auto it = mMasterToUsdPath.find(handle);
@@ -86,23 +86,41 @@ SdfPath usdWriteJobCtx::getMasterPath(const MDagPath& dg)
         auto dagCopy = allInstances[0];
         const auto usdPath = getUsdPathFromDagPath(dagCopy, true);
         dagCopy.pop();
+
         // This will get auto destroyed, because we are not storing it in the list
         MayaTransformWriterPtr transformPrimWriter(new MayaTransformWriter(dagCopy, usdPath.GetParentPath(), true, *this));
-        if (transformPrimWriter != nullptr && transformPrimWriter->isValid()) {
-            transformPrimWriter->write(UsdTimeCode::Default());
-            mMasterToUsdPath.insert(std::make_pair(handle, transformPrimWriter->getUsdPath()));
-        } else {
+        if (!transformPrimWriter || !transformPrimWriter->isValid()) {
             return SdfPath();
         }
+
+        transformPrimWriter->write(UsdTimeCode::Default());
+        mMasterToUsdPath[handle] = transformPrimWriter->getUsdPath();
+
         auto primWriter = _createPrimWriter(allInstances[0], SdfPath(), true);
-        if (primWriter != nullptr) {
-            primWriter->write(UsdTimeCode::Default());
-            mMayaPrimWriterList.push_back(primWriter);
-            return transformPrimWriter->getUsdPath();
-        } else {
+        if (!primWriter) { // Note that _createPrimWriter ensures validity.
             return SdfPath();
+        }
+
+        primWriter->write(UsdTimeCode::Default());
+        mMasterToPrimWriter[handle] = mMayaPrimWriterList.size();
+        mMayaPrimWriterList.push_back(primWriter);
+        return transformPrimWriter->getUsdPath();
+    }
+}
+
+const MayaPrimWriterPtr
+usdWriteJobCtx::getMasterPrimWriter(const MDagPath& dg) const
+{
+    const MObjectHandle handle(dg.node());
+    const auto it = mMasterToPrimWriter.find(handle);
+    if (it != mMasterToPrimWriter.end()) {
+        size_t i = it->second;
+        if (i < mMayaPrimWriterList.size()) {
+            return mMayaPrimWriterList[i];
         }
     }
+
+    return nullptr;
 }
 
 bool usdWriteJobCtx::needToTraverse(const MDagPath& curDag)
