@@ -152,6 +152,10 @@ public:
     /// Returns the current time.
     UsdTimeCode GetTime() const { return _time; }
 
+    /// Apply a relative offset to the current time.
+    /// This has no effect in the case of the default USD timecode.
+    UsdTimeCode GetTimeWithOffset(float offset) const;
+
     /// Returns the refinement level that is used when prims have no explicit
     /// level set.
     ///
@@ -321,6 +325,12 @@ public:
                     float *times, GfMatrix4d *samples) override;
     USDIMAGING_API
     virtual size_t
+    SampleInstancerTransform(SdfPath const &instancerId,
+                             SdfPath const &prototypeId,
+                             size_t maxSampleCount, float *times,
+                             GfMatrix4d *samples) override;
+    USDIMAGING_API
+    virtual size_t
     SamplePrimvar(SdfPath const& id, TfToken const& key,
                   size_t maxNumSamples, float *times,
                   VtValue *samples) override;
@@ -400,6 +410,11 @@ public:
         return usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
     }
 
+    /// Convert the given Hydra ID to a UsdImaging cache path,
+    /// by stripping the scene delegate prefix.
+    ///
+    /// The UsdImaging cache path is the same as a USD prim path,
+    /// except for instanced prims, which get a name-mangled encoding.
     SdfPath GetPathForUsd(SdfPath const& indexPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();

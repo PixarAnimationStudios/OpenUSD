@@ -141,6 +141,24 @@ public:
                                             SdfPath *rprimPath=NULL,
                                             SdfPathVector *instanceContext=NULL);
 
+    virtual size_t
+    SampleInstancerTransform(UsdPrim const& instancerPrim,
+                             SdfPath const& instancerPath,
+                             UsdTimeCode time,
+                             const std::vector<float>& configuredSampleTimes,
+                             size_t maxSampleCount,
+                             float *times,
+                             GfMatrix4d *samples) override;
+
+    virtual size_t
+    SamplePrimvar(UsdPrim const& usdPrim,
+                  SdfPath const& cachePath,
+                  TfToken const& key,
+                  UsdTimeCode time,
+                  const std::vector<float>& configuredSampleTimes,
+                  size_t maxNumSamples, float *times,
+                  VtValue *samples) override;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //

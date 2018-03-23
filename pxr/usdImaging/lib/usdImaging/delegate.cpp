@@ -90,16 +90,6 @@ static bool _IsEnabledDrawModeCache() {
     return _v;
 }
 
-// Apply a relative offset to the given timecode.
-// This has no effect in the case of the default timecode.
-static UsdTimeCode
-_OffsetTime(UsdTimeCode basis, float offset)
-{
-    return basis.IsNumeric()
-        ? UsdTimeCode(basis.GetValue() + offset)
-        : basis;
-}
-
 // -------------------------------------------------------------------------- //
 // Delegate Implementation.
 // -------------------------------------------------------------------------- //
@@ -1278,6 +1268,12 @@ UsdImagingDelegate::SetTimes(const std::vector<UsdImagingDelegate*>& delegates,
             delegates[i]->_ApplyTimeVaryingState();
         }
     }
+}
+
+UsdTimeCode
+UsdImagingDelegate::GetTimeWithOffset(float offset) const
+{
+    return _time.IsNumeric() ? UsdTimeCode(_time.GetValue() + offset) : _time;
 }
 
 // -------------------------------------------------------------------------- //
@@ -2577,7 +2573,7 @@ UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
     // up in profiling real usage.
     UsdGeomXformCache xformCache(0.0);
     for (size_t i=0; i < numSamples; ++i) {
-        xformCache.SetTime(_OffsetTime(_time, _timeSampleOffsets[i]));
+        xformCache.SetTime(GetTimeWithOffset(_timeSampleOffsets[i]));
         bool resetXformStack;
         times[i] = _timeSampleOffsets[i];
         samples[i] = xformCache
@@ -2730,45 +2726,13 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
 {
     SdfPath usdPath = GetPathForUsd(id);
     UsdPrim usdPrim = _GetPrim(usdPath);
-
-    // Try as USD primvar.
-    if (UsdGeomPrimvar pv = UsdGeomGprim(usdPrim).GetPrimvar(key)) {
-        if (pv.ValueMightBeTimeVarying()) {
-            size_t numSamples = std::min(maxNumSamples,
-                                         _timeSampleOffsets.size());
-            for (size_t i=0; i < numSamples; ++i) {
-                times[i] = _timeSampleOffsets[i];
-                pv.Get(&samples[i], _OffsetTime(_time, _timeSampleOffsets[i]));
-            }
-            return numSamples;
-        } else {
-            // Return a single sample for non-varying primvars
-            times[0] = 0;
-            pv.Get(samples, _time);
-            return 1;
-        }
+    _PrimInfo *primInfo = GetPrimInfo(usdPath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->SamplePrimvar(usdPrim, usdPath, key,
+                            _time, _timeSampleOffsets,
+                            maxNumSamples, times, samples);
     }
-
-    // Try as USD attribute.  This handles cases like "points" that
-    // are considered primvars by Hydra but non-primvar attributes by USD.
-    if (UsdAttribute attr = usdPrim.GetAttribute(key)) {
-        if (attr.ValueMightBeTimeVarying()) {
-            size_t numSamples = std::min(maxNumSamples,
-                                         _timeSampleOffsets.size());
-            for (size_t i=0; i < numSamples; ++i) {
-                times[i] = _timeSampleOffsets[i];
-                attr.Get(&samples[i],
-                         _OffsetTime(_time, _timeSampleOffsets[i]));
-            }
-            return numSamples;
-        } else {
-            // Return a single sample for non-varying primvars
-            times[0] = 0;
-            attr.Get(samples, _time);
-            return 1;
-        }
-    }
-
     return 0;
 }
 
@@ -2935,6 +2899,25 @@ UsdImagingDelegate::GetInstancerTransform(SdfPath const &instancerId,
     }
 
     return ctm;
+}
+
+/*virtual*/
+size_t
+UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
+                                             SdfPath const &prototypeId,
+                                             size_t maxSampleCount,
+                                             float *times,
+                                             GfMatrix4d *samples)
+{
+    SdfPath usdPath = GetPathForUsd(instancerId);
+    _PrimInfo *primInfo = GetPrimInfo(usdPath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->SampleInstancerTransform(primInfo->usdPrim, usdPath,
+                                       _time, _timeSampleOffsets,
+                                       maxSampleCount, times, samples);
+    }
+    return 0;
 }
 
 /*virtual*/

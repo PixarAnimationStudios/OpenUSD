@@ -242,6 +242,30 @@ public:
     USDIMAGING_API
     virtual SdfPath GetInstancer(SdfPath const &instancePath);
 
+    /// Sample the instancer transform for the given prim.
+    /// \see HdSceneDelegate::SampleInstancerTransform()
+    USDIMAGING_API
+    virtual size_t
+    SampleInstancerTransform(UsdPrim const& instancerPrim,
+                             SdfPath const& instancerPath,
+                             UsdTimeCode time,
+                             const std::vector<float>& configuredSampleTimes,
+                             size_t maxSampleCount,
+                             float *times,
+                             GfMatrix4d *samples);
+
+    /// Sample the primvar for the given prim.
+    /// \see HdSceneDelegate::SamplePrimvar()
+    USDIMAGING_API
+    virtual size_t
+    SamplePrimvar(UsdPrim const& usdPrim,
+                  SdfPath const& cachePath,
+                  TfToken const& key,
+                  UsdTimeCode time,
+                  const std::vector<float>& configuredSampleTimes,
+                  size_t maxNumSamples, float *times,
+                  VtValue *samples);
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //

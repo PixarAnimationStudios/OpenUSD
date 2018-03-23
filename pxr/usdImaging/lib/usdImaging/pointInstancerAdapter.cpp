@@ -36,6 +36,7 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -1762,6 +1763,71 @@ UsdImagingPointInstancerAdapter::GetPathForInstanceIndex(
         *instanceCount = 0;
     }
     return instancerPath;
+}
+
+/*virtual*/
+size_t
+UsdImagingPointInstancerAdapter::SampleInstancerTransform(
+    UsdPrim const& instancerPrim,
+    SdfPath const& instancerPath,
+    UsdTimeCode time,
+    const std::vector<float>& configuredSampleTimes,
+    size_t maxSampleCount,
+    float *times,
+    GfMatrix4d *samples)
+{
+    // This code must match how UpdateForTime() computes instancerTransform.
+    _InstancerDataMap::iterator inst = _instancerData.find(instancerPath);
+    if (!TF_VERIFY(inst != _instancerData.end(),
+                   "Unknown instancer %s", instancerPath.GetText())) {
+        return 0;
+    }
+    size_t numSamples = std::min(maxSampleCount, configuredSampleTimes.size());
+    SdfPath parentInstancerPath = inst->second.parentInstancerPath;
+    if (!parentInstancerPath.IsEmpty()) {
+        // if nested, double transformation should be avoided.
+        UsdImagingPrimAdapterSharedPtr adapter =
+            _GetPrimAdapter(_GetPrim(parentInstancerPath));
+
+        // parentInstancer doesn't necessarily be UsdGeomPointInstancer.
+        // lookup and delegate adapter to compute the instancer transform.
+        for (size_t i=0; i < numSamples; ++i) {
+            times[i] = configuredSampleTimes[i];
+            samples[i] = adapter->GetRelativeInstancerTransform(
+                parentInstancerPath, instancerPath, configuredSampleTimes[i]);
+        }
+    } else {
+        // if not nested, simply put the transform of the instancer.
+        for (size_t i=0; i < numSamples; ++i) {
+            UsdTimeCode sceneTime =
+                _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+            times[i] = configuredSampleTimes[i];
+            samples[i] = GetRelativeInstancerTransform(
+                parentInstancerPath, instancerPath, sceneTime);
+        }
+    }
+    return numSamples;
+}
+
+size_t
+UsdImagingPointInstancerAdapter::SamplePrimvar(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    TfToken const& key,
+    UsdTimeCode time, const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *times, VtValue *samples)
+{
+    TfToken usdKey = key;
+    if (key == _tokens->translate) {
+        usdKey = UsdGeomTokens->positions;
+    } else if (key == _tokens->scale) {
+        usdKey = UsdGeomTokens->scales;
+    } else if (key == _tokens->rotate) {
+        usdKey = UsdGeomTokens->orientations;
+    }
+    return UsdImagingPrimAdapter::SamplePrimvar(
+        usdPrim, cachePath, usdKey, time, configuredSampleTimes,
+        maxNumSamples, times, samples);
 }
 
 /*virtual*/

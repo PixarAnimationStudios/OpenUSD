@@ -190,6 +190,72 @@ UsdImagingPrimAdapter::GetInstancer(SdfPath const &cachePath)
 }
 
 /*virtual*/
+size_t
+UsdImagingPrimAdapter::SampleInstancerTransform(
+    UsdPrim const& instancerPrim,
+    SdfPath const& instancerPath,
+    UsdTimeCode time,
+    const std::vector<float> &,
+    size_t maxSampleCount,
+    float *times,
+    GfMatrix4d *samples)
+{
+    return 0;
+}
+
+size_t
+UsdImagingPrimAdapter::SamplePrimvar(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath,
+    TfToken const& key,
+    UsdTimeCode time, const std::vector<float>& configuredSampleTimes,
+    size_t maxNumSamples, float *times, VtValue *samples)
+{
+    // Try as USD primvar.
+    if (UsdGeomPrimvar pv = UsdGeomGprim(usdPrim).GetPrimvar(key)) {
+        if (pv.ValueMightBeTimeVarying()) {
+            size_t numSamples = std::min(maxNumSamples,
+                                         configuredSampleTimes.size());
+            for (size_t i=0; i < numSamples; ++i) {
+                UsdTimeCode sceneTime =
+                    _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+                times[i] = configuredSampleTimes[i];
+                pv.Get(&samples[i], sceneTime);
+            }
+            return numSamples;
+        } else {
+            // Return a single sample for non-varying primvars
+            times[0] = 0;
+            pv.Get(samples, time);
+            return 1;
+        }
+    }
+
+    // Try as USD attribute.  This handles cases like "points" that
+    // are considered primvars by Hydra but non-primvar attributes by USD.
+    if (UsdAttribute attr = usdPrim.GetAttribute(key)) {
+        if (attr.ValueMightBeTimeVarying()) {
+            size_t numSamples = std::min(maxNumSamples,
+                                         configuredSampleTimes.size());
+            for (size_t i=0; i < numSamples; ++i) {
+                UsdTimeCode sceneTime =
+                    _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+                times[i] = configuredSampleTimes[i];
+                attr.Get(&samples[i], sceneTime);
+            }
+            return numSamples;
+        } else {
+            // Return a single sample for non-varying primvars
+            times[0] = 0;
+            attr.Get(samples, time);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/*virtual*/
 SdfPath 
 UsdImagingPrimAdapter::GetPathForInstanceIndex(
     SdfPath const &protoPath,

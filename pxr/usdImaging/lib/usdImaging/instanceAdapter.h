@@ -150,6 +150,24 @@ public:
 
     virtual SdfPath GetInstancer(SdfPath const &cachePath);
 
+    virtual size_t
+    SampleInstancerTransform(UsdPrim const& instancerPrim,
+                             SdfPath const& instancerPath,
+                             UsdTimeCode time,
+                             const std::vector<float>& configuredSampleTimes,
+                             size_t maxSampleCount,
+                             float *times,
+                             GfMatrix4d *samples) override;
+
+    virtual size_t
+    SamplePrimvar(UsdPrim const& usdPrim,
+                  SdfPath const& cachePath,
+                  TfToken const& key,
+                  UsdTimeCode time,
+                  const std::vector<float>& configuredSampleTimes,
+                  size_t maxNumSamples, float *times,
+                  VtValue *samples) override;
+
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support
     // ---------------------------------------------------------------------- //
@@ -244,9 +262,9 @@ private:
     // Computes the transforms for all instances corresponding to the given
     // instancer.
     struct _ComputeInstanceTransformFn;
-    bool _ComputeInstanceTransform(UsdPrim const& instancer,
-                                   VtMatrix4dArray* transforms,
-                                   UsdTimeCode time);
+    bool _ComputeInstanceTransforms(UsdPrim const& instancer,
+                                    VtMatrix4dArray* transforms,
+                                    UsdTimeCode time);
 
     // Returns true if any of the instances corresponding to the given
     // instancer has a varying transform.

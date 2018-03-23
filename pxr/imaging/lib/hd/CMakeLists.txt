@@ -77,6 +77,7 @@ pxr_library(hd
         task
         texture
         textureResource
+        timeSampleArray
         tokens
         topology
         types
