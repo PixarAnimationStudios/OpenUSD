@@ -972,6 +972,19 @@ PxrUsdKatanaReadPrim(
     }
 
     _AddExtraAttributesOrNamespaces(prim, data, attrs);
+
+    // 
+    // Store the applied apiSchemas metadata as a list of typeName strings
+    //
+    TfTokenVector appliedSchemaTokens = prim.GetAppliedSchemas();
+    if (!appliedSchemaTokens.empty()){
+        std::vector<std::string> appliedSchemas(appliedSchemaTokens.size());
+        std::transform(appliedSchemaTokens.begin(), appliedSchemaTokens.end(), 
+                       appliedSchemas.begin(), [](const TfToken& token){ 
+            return token.GetString();
+        });
+        attrs.set("info.usd.apiSchemas", FnKat::StringAttribute(appliedSchemas));
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
