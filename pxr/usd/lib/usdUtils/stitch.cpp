@@ -24,8 +24,10 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/stitch.h"
 
-#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/copyUtils.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schema.h"
 
 #include "pxr/base/vt/value.h"
@@ -41,28 +43,89 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 VtValue
-_Reduce(const VtDictionary &src, const VtDictionary &dst)
+_Reduce(
+    SdfVariantSelectionMap& stronger,
+    const SdfVariantSelectionMap& weaker
+)
+{
+    stronger.insert(weaker.begin(), weaker.end());
+    return VtValue::Take(stronger);
+}
+
+VtValue
+_Reduce(const VtDictionary &stronger, const VtDictionary &weaker)
 {
     // Dictionaries compose keys recursively.
-    return VtValue(VtDictionaryOverRecursive(src, dst));
+    return VtValue(VtDictionaryOverRecursive(stronger, weaker));
+}
+
+// "Fix" a list op to only use composable features.
+template <typename T>
+SdfListOp<T>
+_FixListOp(SdfListOp<T> op)
+{
+    std::vector<T> items;
+    items = op.GetAppendedItems();
+    for (const T& item: op.GetAddedItems()) {
+        if (std::find(items.begin(), items.end(), item) == items.end()) {
+            items.push_back(item);
+        }
+    }
+    op.SetAppendedItems(items);
+    op.SetAddedItems(std::vector<T>());
+    op.SetOrderedItems(std::vector<T>());
+    return op;
+}
+
+template <typename T>
+VtValue
+_Reduce(const SdfListOp<T> &stronger, const SdfListOp<T> &weaker)
+{
+    boost::optional<SdfListOp<T>> r = stronger.ApplyOperations(weaker);
+    if (r) {
+        return VtValue(*r);
+    }
+    // List ops that use added or reordered items cannot, in general, be
+    // composed into another listop. In those cases, we fall back to a
+    // best-effort approximation by discarding reorders and converting
+    // adds to appends.
+    r = _FixListOp(stronger).ApplyOperations(_FixListOp(weaker));
+    if (r) {
+        return VtValue(*r);
+    }
+    // The approximation used should always be composable,
+    // so error if that didn't work.
+    TF_CODING_ERROR("Could not reduce listOp %s over %s",
+                    TfStringify(stronger).c_str(), TfStringify(weaker).c_str());
+    return VtValue();
 }
 
 template <class T>
 static bool
 _MergeValue(
-    const TfToken& field,
+    const TfToken& field, const VtValue& fallback,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath,
     boost::optional<VtValue>* valueToCopy)
 {
+    if (!fallback.IsHolding<T>()) {
+        return false;
+    }
+
     T srcValue, dstValue;
     if (!TF_VERIFY(srcLayer->HasField(srcPath, field, &srcValue))
         || !TF_VERIFY(dstLayer->HasField(dstPath, field, &dstValue))) {
         return false;
     }
 
-    *valueToCopy = _Reduce(srcValue, dstValue);
-    return true;
+    VtValue mergedValue = _Reduce(srcValue, dstValue);
+    if (!mergedValue.IsEmpty()) {
+        (*valueToCopy) = VtValue();
+        (*valueToCopy)->Swap(mergedValue);
+        return true;
+    }
+
+    return false;
 }
 
 static bool
@@ -159,6 +222,18 @@ _MergeValueFn(
         }
         return false;
     }
+    else if (field == SdfFieldKeys->TimeCodesPerSecond) {
+        double srcTPS, dstTPS;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcTPS));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstTPS));
+        if (srcTPS != dstTPS) {
+            TF_WARN(
+                "Mismatched timeCodesPerSecond values in @%s@ and @%s@",
+                srcLayer->GetIdentifier().c_str(),
+                dstLayer->GetIdentifier().c_str());
+        }
+        return false;
+    }
     else if (field == SdfFieldKeys->FramePrecision) {
         double srcPrecision, dstPrecision;
         TF_VERIFY(srcLayer->HasField(srcPath, field, &srcPrecision));
@@ -172,14 +247,31 @@ _MergeValueFn(
         return false;
     }
 
-    // Merge fields based on type.
+    // Merge fields based on type. If the field is not one of these types,
+    // return false to indicate that the stronger value should not be
+    // copied over.
     const VtValue fallback = srcLayer->GetSchema().GetFallback(field); 
-    if (fallback.IsHolding<VtDictionary>()) {
-        return _MergeValue<VtDictionary>(
-            field, srcLayer, srcPath, dstLayer, dstPath, valueToCopy);
-    }
-
-    return false;
+    return _MergeValue<VtDictionary>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfVariantSelectionMap>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfIntListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfUIntListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfUInt64ListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfTokenListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfStringListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfPathListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfReferenceListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfUnregisteredValueListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        ;
 }
 
 static bool
@@ -196,12 +288,16 @@ _DontCopyChildrenFn(
 template <class T>
 static bool
 _MergeChildren(
-    const TfToken& field,
+    const TfToken& field, const VtValue& fallback,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath,
     boost::optional<VtValue>* finalSrcValue, 
     boost::optional<VtValue>* finalDstValue)
 {
+    if (!fallback.IsHolding<T>()) {
+        return false;
+    }
+
     T srcChildren, dstChildren;
     if (!TF_VERIFY(srcLayer->HasField(srcPath, field, &srcChildren))
         || !TF_VERIFY(dstLayer->HasField(dstPath, field, &dstChildren))) {
@@ -253,15 +349,13 @@ _MergeChildrenFn(
     // There are children under both the source and destination spec.
     // We need to merge the two lists. 
     const VtValue fallback = srcLayer->GetSchema().GetFallback(childrenField); 
-    if (fallback.IsHolding<std::vector<TfToken>>()) {
-        return _MergeChildren<std::vector<TfToken>>(
-            childrenField, srcLayer, srcPath, dstLayer, dstPath, 
-            finalSrcChildren, finalDstChildren);
-    }
-    else if (fallback.IsHolding<std::vector<SdfPath>>()) {
-        return _MergeChildren<std::vector<SdfPath>>(
-            childrenField, srcLayer, srcPath, dstLayer, dstPath, 
-            finalSrcChildren, finalDstChildren);
+    if (_MergeChildren<std::vector<TfToken>>(
+            childrenField, fallback, srcLayer, srcPath, dstLayer, dstPath, 
+            finalSrcChildren, finalDstChildren)
+        || _MergeChildren<std::vector<SdfPath>>(
+            childrenField, fallback, srcLayer, srcPath, dstLayer, dstPath, 
+            finalSrcChildren, finalDstChildren)) {
+        return true;
     }
 
     TF_CODING_ERROR(

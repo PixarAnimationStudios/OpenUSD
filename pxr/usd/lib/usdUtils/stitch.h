@@ -42,69 +42,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
-/// The function will recurse down the root prims of each layer,
-/// either making clean copies if no path match is found or recursing to
-/// any subelements such as properties and metadata.
+/// Merge all scene description in \p weakLayer into \p strongLayer.
 ///
-/// When stitching occurs, the prims are at the same level of a hierarchy
-/// For example, if the trees look like this
+/// Prims and properties in \p weakLayer that do not exist in \p strongLayer
+/// will be copied into \p strongLayer. Prims and properties that do
+/// exist in \p strongLayer will be merged with the existing scene
+/// description.
 ///
-/// (pseudoroot)          (pseudoroot)
-/// |                     |
-/// |                     |
-/// |___(def "foo")       |___(def "foo")
-///     |                     |
-///     |_(timeSamples)       |_(timeSamples)
-///        |_ {101: (.....)}    |_ {102: (.....)}
+/// Merging prims and properties is done on a field-by-field basis.
+/// In general, if a field has a value in \p strongLayer, the value from
+/// \p weakLayer will be ignored. However, certain fields have special
+/// rules for merging values together:
 ///
-/// We would see the def "foo" in our \p weakLayer
-/// already exists in our \p strongLayer ,
-/// pictured on the left, so we would recurse into the "foo" prims
-/// and see if there were any subelements we could copy over, this 
-/// would involve examining their timeSample maps(just as one example,
-/// all items with an infoKey are examined). A map-join is done on 
-/// the timeSample maps with the strong keys taking precedence, so we get
-/// this
+/// - For map and dictionary-valued fields (including time samples),
+///   a dictionary merge is performed; values in the weaker dictionary
+///   are copied into the stronger dictionary only if the key does not
+///   already exist.
 ///
-/// (pseudoroot)
-/// |
-/// |
-/// |___(def "foo")
-///     |
-///     |_(timeSamples)
-///       |_ {101: (....), 102: (....)
+/// - For listOp-valued fields, the listOps will be combined into a 
+///   single listOp. The historical "add" and "reorder" list op operations
+///   cannot be combined in this way; "add" will be converted to "append", 
+///   and "reorder" will be discarded.
 ///
-/// Note that for non map types, if the key is already populated in the
-/// corresponding strong prim, we do nothing, and if it isn't we copy over
-/// the corresponding value in the weak prim.
-///
-/// Stitching also involves examining layer-level properties, such as
-/// frames-per-second. This is done in the same way
-/// as it is with prims, with the strong layer taking precedence
-/// and the weak layers element being copied over if none exists in the strong.
-//
-/// The exception is start frame and end frame. These are calculated
-/// by taking the minimum frame seen across the layers as the start frame
-/// and the maximum frame across the layers as the end frame.
-///
-/// For list edited data, like references, inherits and relationships,
-/// the stronger layer will win in conflict, no merging is done.
-///
-/// Also note that for time samples, the values are directly examined with
-/// no fuzzying of the numbers, so, if strongLayer contains a timeSample
-/// 101.000001 and weakLayer contains one at 101.000002, both will be in
-/// strongLayer after the operation.
+/// - The minimum startTimeCode value and maximum endTimeCode value will
+///   be used.
 USDUTILS_API
 void UsdUtilsStitchLayers(
     const SdfLayerHandle& strongLayer, 
     const SdfLayerHandle& weakLayer);
 
-/// This function will stitch all data collectable with ListInfoKeys()
-/// from the SdfLayer API. In the case of dictionaries, it will do 
-/// a dictionary style composition. In the case of flat data, 
-/// we will follow our traditional rule: If \p strongObj has the key 
-/// already, nothing changes, if it does not and \p weakObj does, 
-/// we will copy \p weakObj's info over.
+/// Merge the scene description for \p weakObj into \p strongObj.
+///
+/// See documentation on UsdUtilsStitchLayers for a description of
+/// the merging behavior.
 USDUTILS_API
 void UsdUtilsStitchInfo(
     const SdfSpecHandle& strongObj, 

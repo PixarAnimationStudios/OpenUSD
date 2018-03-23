@@ -97,22 +97,36 @@ class TestUsdUtilsStitch(unittest.TestCase):
             self.assertTrue(self.layers[0].Export(tempUsd.name))
 
     def test_TargetPathCopy(self):
-        primPath = '/World/fx/Letters/points'
-        primWithTargets = self.layers[3].GetPrimAtPath(primPath) 
-        relationshipInPrim = primWithTargets.relationships[0]
-        self.assertTrue(relationshipInPrim, 'Relationship not stitched')
-        addedPaths = relationshipInPrim.targetPathList.addedItems
-        self.assertEqual(len(addedPaths), 3, 'Paths missing in relationship')
+        relPath = '/World/fx/Letters/points.prototypes'
+        rel = self.layers[3].GetRelationshipAtPath(relPath)
+        self.assertTrue(rel, 'Relationship not stitched')
+
+        expectedTargets = Sdf.PathListOp()
+        expectedTargets.prependedItems = [
+            '/World/fx/Letters/points/Prototypes/obj/proto_2',
+            '/World/fx/Letters/points/Prototypes/obj/proto_3',
+            '/World/fx/Letters/points/Prototypes/obj/proto_1',
+            '/World/fx/Letters/points/Prototypes/obj/proto_4'
+        ]
+        self.assertEqual(rel.GetInfo('targetPaths'), expectedTargets)
 
     def test_ConnectionPathCopy(self):
         attrPath = '/World/fx/Letters/points.internalValue'
-        attrWithConnections = self.layers[3].GetAttributeAtPath(attrPath) 
-        pathList = attrWithConnections.connectionPathList.addedItems
-        self.assertTrue(len(pathList) > 0,
-                        'Connection missing on attribute')
-        self.assertEqual(pathList,
-                         [Sdf.Path('/World/fx/Letters.interface:value')],
-                         'Connection on attribute has wrong target')
+        attr = self.layers[3].GetAttributeAtPath(attrPath) 
+        self.assertTrue(attr, 'Attribute not stitched')
+
+        expectedTargets = Sdf.PathListOp()
+        expectedTargets.prependedItems = [
+            '/World/fx/Letters.interface:value'
+        ]
+        self.assertEqual(attr.GetInfo('connectionPaths'), expectedTargets)
+
+    def test_Dictionary(self):
+        layer = self.layers[3]
+        self.assertEqual(layer.GetPrimAtPath('/World').GetInfo('customData'),
+                         { 'zUp': True,
+                           'testInt': 1,
+                           'testString': 'foo' })
 
     def test_Variants(self):
         layer1 = Sdf.Layer.FindOrOpen('src/variants_1.usda')
@@ -155,7 +169,7 @@ class TestUsdUtilsStitch(unittest.TestCase):
             {2.0: 2.0})
 
         expectedTargets = Sdf.PathListOp()
-        expectedTargets.prependedItems = ['/Root/Test']
+        expectedTargets.prependedItems = ['/Root/Test', '/Root/Test2']
         self.assertEqual(
             layer1.GetRelationshipAtPath('/Root{a=x}Child.testRel')
             .GetInfo('targetPaths'),
@@ -167,14 +181,13 @@ class TestUsdUtilsStitch(unittest.TestCase):
             .GetInfo('targetPaths'),
             expectedTargets)
 
-        # XXX: Currently broken
-        # self.assertEqual(dict(layer1.GetPrimAtPath('/Root').variantSelections), 
-        #                  {'a':'x', 'b':'x'})
+        self.assertEqual(dict(layer1.GetPrimAtPath('/Root').variantSelections), 
+                         {'a':'x', 'b':'x'})
 
-        # expectedNames = Sdf.StringListOp()
-        # expectedNames.prependedItems = ['a', 'b']
-        # self.assertEqual(layer1.GetPrimAtPath('/Root').GetInfo('variantSetNames'), 
-        #                  expectedNames)
+        expectedNames = Sdf.StringListOp()
+        expectedNames.prependedItems = ['a', 'b']
+        self.assertEqual(layer1.GetPrimAtPath('/Root').GetInfo('variantSetNames'), 
+                         expectedNames)
 
 if __name__ == '__main__':
     unittest.main()
