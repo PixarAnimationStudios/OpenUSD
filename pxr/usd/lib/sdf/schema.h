@@ -362,65 +362,51 @@ protected:
     public:
         explicit _ValueTypeRegistrar(Sdf_ValueTypeRegistry*);
 
-        /// Register a value type and it's corresponding array value type.
-        void AddType(const std::string& name,
-                     const VtValue& defaultValue,
-                     const VtValue& defaultArrayValue,
-                     TfEnum defaultUnit, const TfToken& role,
-                     const SdfTupleDimensions& dimensions);
-
-        /// Register a value type and it's corresponding array value type.
-        /// Returns the (scalar) value type.  In this case the default values
-        /// are empty.  This is useful for types provided by plugins;  you
-        /// don't need to load the plugin just to register the type. However,
-        /// there is no default value.
-        void AddType(const std::string& name,
-                     const TfType& type, const TfType& arrayType,
-                     TfEnum defaultUnit, const TfToken& role,
-                     const SdfTupleDimensions& dimensions);
-
-        /// Register a value type and it's corresponding array value type.
-        template <class T>
-        void AddType(const std::string& name, T defaultValue,
-                     TfEnum defaultUnit,
-                     const TfToken& role = TfToken(),
-                     const SdfTupleDimensions& dimensions =
-                         SdfTupleDimensions())
+        class Type
         {
-            AddType(name, VtValue(defaultValue), VtValue(VtArray<T>()),
-                    defaultUnit, role, dimensions);
-        }
+        public:
+            // Specify a type with the given name, default value, and default
+            // array value of VtArray<T>.
+            template <class T>
+            Type(const std::string& name, const T& defaultValue)
+                : _name(name)
+                , _defaultValue(defaultValue)
+                , _defaultArrayValue(VtArray<T>())
+            { }
 
-        /// Register a value type and it's corresponding array value type.
-        /// The default unit is the default dimensionless unit.
-        template <class T>
-        void AddType(const std::string& name, T defaultValue,
-                     const TfToken& role = TfToken())
-        {
-            AddType(name, VtValue(defaultValue), VtValue(VtArray<T>()),
-                    TfEnum(), role, SdfTupleDimensions());
-        }
+            // Specify a type with the given name and underlying C++ type.
+            // No default value or array value will be registered.
+            Type(const std::string& name, const TfType& type)
+                : _name(name)
+                , _type(type)
+            { }
 
-        /// Register a value type and it's corresponding array value type.
-        /// The default unit is the default dimensionless unit.
-        template <class T>
-        void AddType(const std::string& name, T defaultValue,
-                     const TfToken& role,
-                     const SdfTupleDimensions& dimensions)
-        {
-            AddType(name, VtValue(defaultValue), VtValue(VtArray<T>()),
-                    TfEnum(), role, dimensions);
-        }
+            // Set shape for this type. Defaults to shapeless.
+            Type& Dimensions(const SdfTupleDimensions& dims)
+            { _dimensions = dims; return *this; }
 
-        /// Register a value type and it's corresponding array value type.
-        /// The default unit is the default dimensionless unit.
-        template <class T>
-        void AddType(const std::string& name, T defaultValue,
-                     const SdfTupleDimensions& dimensions)
-        {
-            AddType(name, VtValue(defaultValue), VtValue(VtArray<T>()),
-                    TfEnum(), TfToken(), dimensions);
-        }
+            // Set default unit for this type. Defaults to dimensionless unit.
+            Type& DefaultUnit(TfEnum unit) { _unit = unit; return *this; }
+
+            // Set role for this type. Defaults to no role.
+            Type& Role(const TfToken& role) { _role = role; return *this; }
+
+            // Indicate that arrays of this type are not supported.
+            Type& NoArrays() { _defaultArrayValue = VtValue(); return *this; }
+
+        private:
+            friend class _ValueTypeRegistrar;
+
+            std::string _name;
+            TfType _type;
+            VtValue _defaultValue, _defaultArrayValue;
+            TfEnum _unit;
+            TfToken _role;
+            SdfTupleDimensions _dimensions;
+        };
+
+        /// Register a value type and its corresponding array value type.
+        void AddType(const Type& type);
 
     private:
         Sdf_ValueTypeRegistry* _registry;

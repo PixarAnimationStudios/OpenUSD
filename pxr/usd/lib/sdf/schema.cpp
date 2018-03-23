@@ -403,25 +403,18 @@ SdfSchemaBase::_ValueTypeRegistrar::_ValueTypeRegistrar(
 }
 
 void
-SdfSchemaBase::_ValueTypeRegistrar::AddType(
-    const std::string& name,
-    const VtValue& defaultValue,
-    const VtValue& defaultArrayValue,
-    TfEnum defaultUnit, const TfToken& role,
-    const SdfTupleDimensions& dimensions)
+SdfSchemaBase::_ValueTypeRegistrar::AddType(const Type& type)
 {
-    _registry->AddType(name, defaultValue, defaultArrayValue,
-                       defaultUnit, role, dimensions);
-}
-
-void
-SdfSchemaBase::_ValueTypeRegistrar::AddType(
-    const std::string& name,
-    const TfType& type, const TfType& arrayType,
-    TfEnum defaultUnit, const TfToken& role,
-    const SdfTupleDimensions& dimensions)
-{
-    _registry->AddType(name, type, arrayType, defaultUnit, role, dimensions);
+    if (!type._defaultValue.IsEmpty() || !type._defaultArrayValue.IsEmpty()) {
+        _registry->AddType(
+            type._name, type._defaultValue, type._defaultArrayValue,
+            type._unit, type._role, type._dimensions);
+    }
+    else {
+        _registry->AddType(
+            type._name, type._type, /* arrayType = */ TfType(), 
+            type._unit, type._role, type._dimensions);
+    }
 }
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -1521,7 +1514,7 @@ SdfSchema::~SdfSchema()
 void
 SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
 {
-    typedef SdfTupleDimensions Dim;
+    using T = _ValueTypeRegistrar::Type;
     const TfEnum& length  = SdfDefaultUnit(TfEnum(SdfLengthUnit(0)));
     const TfToken& point  = SdfValueRoleNames->Point;
     const TfToken& vector = SdfValueRoleNames->Vector;
@@ -1532,97 +1525,115 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     TfRegistryManager::GetInstance().SubscribeTo<TfType>();
 
     // Simple types.
-    r.AddType("bool",   bool());
+    r.AddType(T("bool",   bool()));
     // XXX: We also need to fix the VT_INTEGRAL_BUILTIN_VALUE_TYPES
     //       macro to use 'int8_t' if we add 'char'.
-    //r.AddType("char",   int8_t());
-    r.AddType("uchar",  uint8_t());
-    //r.AddType("short",  int16_t());
-    //r.AddType("ushort", uint16_t());
-    r.AddType("int",    int32_t());
-    r.AddType("uint",   uint32_t());
-    r.AddType("int64",  int64_t());
-    r.AddType("uint64", uint64_t());
-    r.AddType("half",   GfHalf(0.0));
-    r.AddType("float",  float());
-    r.AddType("double", double());
-    r.AddType("string", std::string());
-    r.AddType("token",  TfToken());
-    r.AddType("asset",  SdfAssetPath());
+    //r.AddType(T("char",   int8_t());
+    r.AddType(T("uchar",  uint8_t()));
+    //r.AddType(T("short",  int16_t());
+    //r.AddType(T("ushort", uint16_t());
+    r.AddType(T("int",    int32_t()));
+    r.AddType(T("uint",   uint32_t()));
+    r.AddType(T("int64",  int64_t()));
+    r.AddType(T("uint64", uint64_t()));
+    r.AddType(T("half",   GfHalf(0.0)));
+    r.AddType(T("float",  float()));
+    r.AddType(T("double", double()));
+    r.AddType(T("string", std::string()));
+    r.AddType(T("token",  TfToken()));
+    r.AddType(T("asset",  SdfAssetPath()));
 
     // Compound types.
-    r.AddType("double2",    GfVec2d(0.0), Dim(2));
-    r.AddType("double3",    GfVec3d(0.0), Dim(3));
-    r.AddType("double4",    GfVec4d(0.0), Dim(4));
-    r.AddType("float2",     GfVec2f(0.0), Dim(2));
-    r.AddType("float3",     GfVec3f(0.0), Dim(3));
-    r.AddType("float4",     GfVec4f(0.0), Dim(4));
-    r.AddType("half2",      GfVec2h(0.0), Dim(2));
-    r.AddType("half3",      GfVec3h(0.0), Dim(3));
-    r.AddType("half4",      GfVec4h(0.0), Dim(4));
-    r.AddType("int2",       GfVec2i(0.0), Dim(2));
-    r.AddType("int3",       GfVec3i(0.0), Dim(3));
-    r.AddType("int4",       GfVec4i(0.0), Dim(4));
-    r.AddType("point3h",    GfVec3h(0.0), length, point, Dim(3));
-    r.AddType("point3f",    GfVec3f(0.0), length, point, Dim(3));
-    r.AddType("point3d",    GfVec3d(0.0), length, point, Dim(3));
-    r.AddType("vector3h",   GfVec3h(0.0), length, vector, Dim(3));
-    r.AddType("vector3f",   GfVec3f(0.0), length, vector, Dim(3));
-    r.AddType("vector3d",   GfVec3d(0.0), length, vector, Dim(3));
-    r.AddType("normal3h",   GfVec3h(0.0), length, normal, Dim(3));
-    r.AddType("normal3f",   GfVec3f(0.0), length, normal, Dim(3));
-    r.AddType("normal3d",   GfVec3d(0.0), length, normal, Dim(3));
-    r.AddType("color3h",    GfVec3h(0.0), color, Dim(3));
-    r.AddType("color3f",    GfVec3f(0.0), color, Dim(3));
-    r.AddType("color3d",    GfVec3d(0.0), color, Dim(3));
-    r.AddType("color4h",    GfVec4h(0.0), color, Dim(4));
-    r.AddType("color4f",    GfVec4f(0.0), color, Dim(4));
-    r.AddType("color4d",    GfVec4d(0.0), color, Dim(4));
-    r.AddType("quath",      GfQuath(1.0), Dim(4));
-    r.AddType("quatf",      GfQuatf(1.0), Dim(4));
-    r.AddType("quatd",      GfQuatd(1.0), Dim(4));
-    r.AddType("matrix2d",   GfMatrix2d(1.0), Dim(2, 2));
-    r.AddType("matrix3d",   GfMatrix3d(1.0), Dim(3, 3));
-    r.AddType("matrix4d",   GfMatrix4d(1.0), Dim(4, 4));
-    r.AddType("frame4d",    GfMatrix4d(1.0), SdfValueRoleNames->Frame, Dim(4, 4));
+    r.AddType(T("double2",  GfVec2d(0.0)).Dimensions(2));
+    r.AddType(T("double3",  GfVec3d(0.0)).Dimensions(3));
+    r.AddType(T("double4",  GfVec4d(0.0)).Dimensions(4));
+    r.AddType(T("float2",   GfVec2f(0.0)).Dimensions(2));
+    r.AddType(T("float3",   GfVec3f(0.0)).Dimensions(3));
+    r.AddType(T("float4",   GfVec4f(0.0)).Dimensions(4));
+    r.AddType(T("half2",    GfVec2h(0.0)).Dimensions(2));
+    r.AddType(T("half3",    GfVec3h(0.0)).Dimensions(3));
+    r.AddType(T("half4",    GfVec4h(0.0)).Dimensions(4));
+    r.AddType(T("int2",     GfVec2i(0.0)).Dimensions(2));
+    r.AddType(T("int3",     GfVec3i(0.0)).Dimensions(3));
+    r.AddType(T("int4",     GfVec4i(0.0)).Dimensions(4));
+    r.AddType(T("point3h",  GfVec3h(0.0)).DefaultUnit(length).Role(point)
+                                         .Dimensions(3));
+    r.AddType(T("point3f",  GfVec3f(0.0)).DefaultUnit(length).Role(point)
+                                         .Dimensions(3));
+    r.AddType(T("point3d",  GfVec3d(0.0)).DefaultUnit(length).Role(point)
+                                         .Dimensions(3));
+    r.AddType(T("vector3h", GfVec3h(0.0)).DefaultUnit(length).Role(vector)
+                                         .Dimensions(3));
+    r.AddType(T("vector3f", GfVec3f(0.0)).DefaultUnit(length).Role(vector)
+                                         .Dimensions(3));
+    r.AddType(T("vector3d", GfVec3d(0.0)).DefaultUnit(length).Role(vector)
+                                         .Dimensions(3));
+    r.AddType(T("normal3h", GfVec3h(0.0)).DefaultUnit(length).Role(normal)
+                                         .Dimensions(3));
+    r.AddType(T("normal3f", GfVec3f(0.0)).DefaultUnit(length).Role(normal)
+                                         .Dimensions(3));
+    r.AddType(T("normal3d", GfVec3d(0.0)).DefaultUnit(length).Role(normal)
+                                         .Dimensions(3));
+    r.AddType(T("color3h",  GfVec3h(0.0)).Role(color).Dimensions(3));
+    r.AddType(T("color3f",  GfVec3f(0.0)).Role(color).Dimensions(3));
+    r.AddType(T("color3d",  GfVec3d(0.0)).Role(color).Dimensions(3));
+    r.AddType(T("color4h",  GfVec4h(0.0)).Role(color).Dimensions(4));
+    r.AddType(T("color4f",  GfVec4f(0.0)).Role(color).Dimensions(4));
+    r.AddType(T("color4d",  GfVec4d(0.0)).Role(color).Dimensions(4));
+    r.AddType(T("quath",    GfQuath(1.0)).Dimensions(4));
+    r.AddType(T("quatf",    GfQuatf(1.0)).Dimensions(4));
+    r.AddType(T("quatd",    GfQuatd(1.0)).Dimensions(4));
+    r.AddType(T("matrix2d", GfMatrix2d(1.0)).Dimensions({2, 2}));
+    r.AddType(T("matrix3d", GfMatrix3d(1.0)).Dimensions({3, 3}));
+    r.AddType(T("matrix4d", GfMatrix4d(1.0)).Dimensions({4, 4}));
+    r.AddType(T("frame4d",  GfMatrix4d(1.0)).Role(SdfValueRoleNames->Frame)
+                                            .Dimensions({4, 4}));
 
     // XXX: Legacy types.  We can remove these when assets are
     //      updated.  parserHelpers.cpp adds support for reading
     //      old text Usd files but we also need support for binary
     //      files.  We also need these for places we confuse Sdf
     //      and Sd.
-    r.AddType("Vec2i",      GfVec2i(0.0), Dim(2));
-    r.AddType("Vec2h",      GfVec2h(0.0), Dim(2));
-    r.AddType("Vec2f",      GfVec2f(0.0), Dim(2));
-    r.AddType("Vec2d",      GfVec2d(0.0), Dim(2));
-    r.AddType("Vec3i",      GfVec3i(0.0), Dim(3));
-    r.AddType("Vec3h",      GfVec3h(0.0), Dim(3));
-    r.AddType("Vec3f",      GfVec3f(0.0), Dim(3));
-    r.AddType("Vec3d",      GfVec3d(0.0), Dim(3));
-    r.AddType("Vec4i",      GfVec4i(0.0), Dim(4));
-    r.AddType("Vec4h",      GfVec4h(0.0), Dim(4));
-    r.AddType("Vec4f",      GfVec4f(0.0), Dim(4));
-    r.AddType("Vec4d",      GfVec4d(0.0), Dim(4));
-    r.AddType("Point",      GfVec3d(0.0), length, point, Dim(3));
-    r.AddType("PointFloat", GfVec3f(0.0), length, point, Dim(3));
-    r.AddType("Normal",     GfVec3d(0.0), length, normal, Dim(3));
-    r.AddType("NormalFloat",GfVec3f(0.0), length, normal, Dim(3));
-    r.AddType("Vector",     GfVec3d(0.0), length, vector, Dim(3));
-    r.AddType("VectorFloat",GfVec3f(0.0), length, vector, Dim(3));
-    r.AddType("Color",      GfVec3d(0.0), color, Dim(3));
-    r.AddType("ColorFloat", GfVec3f(0.0), color, Dim(3));
-    r.AddType("Quath",      GfQuath(1.0), Dim(4));
-    r.AddType("Quatf",      GfQuatf(1.0), Dim(4));
-    r.AddType("Quatd",      GfQuatd(1.0), Dim(4));
-    r.AddType("Matrix2d",   GfMatrix2d(1.0), Dim(2, 2));
-    r.AddType("Matrix3d",   GfMatrix3d(1.0), Dim(3, 3));
-    r.AddType("Matrix4d",   GfMatrix4d(1.0), Dim(4, 4));
-    r.AddType("Frame",      GfMatrix4d(1.0), SdfValueRoleNames->Frame, Dim(4, 4));
-    r.AddType("Transform",  GfMatrix4d(1.0), SdfValueRoleNames->Transform, Dim(4, 4));
-    r.AddType("PointIndex", int(),     SdfValueRoleNames->PointIndex);
-    r.AddType("EdgeIndex",  int(),     SdfValueRoleNames->EdgeIndex);
-    r.AddType("FaceIndex",  int(),     SdfValueRoleNames->FaceIndex);
-    r.AddType("Schema",     TfToken(), SdfValueRoleNames->Schema);
+    r.AddType(T("Vec2i",      GfVec2i(0.0)).Dimensions(2));
+    r.AddType(T("Vec2h",      GfVec2h(0.0)).Dimensions(2));
+    r.AddType(T("Vec2f",      GfVec2f(0.0)).Dimensions(2));
+    r.AddType(T("Vec2d",      GfVec2d(0.0)).Dimensions(2));
+    r.AddType(T("Vec3i",      GfVec3i(0.0)).Dimensions(3));
+    r.AddType(T("Vec3h",      GfVec3h(0.0)).Dimensions(3));
+    r.AddType(T("Vec3f",      GfVec3f(0.0)).Dimensions(3));
+    r.AddType(T("Vec3d",      GfVec3d(0.0)).Dimensions(3));
+    r.AddType(T("Vec4i",      GfVec4i(0.0)).Dimensions(4));
+    r.AddType(T("Vec4h",      GfVec4h(0.0)).Dimensions(4));
+    r.AddType(T("Vec4f",      GfVec4f(0.0)).Dimensions(4));
+    r.AddType(T("Vec4d",      GfVec4d(0.0)).Dimensions(4));
+    r.AddType(T("Point",      GfVec3d(0.0)).DefaultUnit(length).Role(point)
+                                           .Dimensions(3));
+    r.AddType(T("PointFloat", GfVec3f(0.0)).DefaultUnit(length).Role(point)
+                                           .Dimensions(3));
+    r.AddType(T("Normal",     GfVec3d(0.0)).DefaultUnit(length).Role(normal)
+                                           .Dimensions(3));
+    r.AddType(T("NormalFloat",GfVec3f(0.0)).DefaultUnit(length).Role(normal)
+                                           .Dimensions(3));
+    r.AddType(T("Vector",     GfVec3d(0.0)).DefaultUnit(length).Role(vector)
+                                           .Dimensions(3));
+    r.AddType(T("VectorFloat",GfVec3f(0.0)).DefaultUnit(length).Role(vector)
+                                           .Dimensions(3));
+    r.AddType(T("Color",      GfVec3d(0.0)).Role(color).Dimensions(3));
+    r.AddType(T("ColorFloat", GfVec3f(0.0)).Role(color).Dimensions(3));
+    r.AddType(T("Quath",      GfQuath(1.0)).Dimensions(4));
+    r.AddType(T("Quatf",      GfQuatf(1.0)).Dimensions(4));
+    r.AddType(T("Quatd",      GfQuatd(1.0)).Dimensions(4));
+    r.AddType(T("Matrix2d",   GfMatrix2d(1.0)).Dimensions({2, 2}));
+    r.AddType(T("Matrix3d",   GfMatrix3d(1.0)).Dimensions({3, 3}));
+    r.AddType(T("Matrix4d",   GfMatrix4d(1.0)).Dimensions({4, 4}));
+    r.AddType(T("Frame",      GfMatrix4d(1.0)).Role(SdfValueRoleNames->Frame)
+                                              .Dimensions({4, 4}));
+    r.AddType(T("Transform",  GfMatrix4d(1.0)).Role(SdfValueRoleNames->Transform)
+                                              .Dimensions({4, 4}));
+    r.AddType(T("PointIndex", int()).Role(SdfValueRoleNames->PointIndex));
+    r.AddType(T("EdgeIndex",  int()).Role(SdfValueRoleNames->EdgeIndex));
+    r.AddType(T("FaceIndex",  int()).Role(SdfValueRoleNames->FaceIndex));
+    r.AddType(T("Schema",     TfToken()).Role(SdfValueRoleNames->Schema));
 }
 
 void 
