@@ -71,6 +71,16 @@ pxr_build_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
         testenv/testUsdUtilsCoalescingDiagnosticDelegate.cpp
 )
 
+pxr_build_test(testUsdUtilsStitchCpp
+    LIBRARIES
+        sdf
+        tf
+        usd
+        usdUtils
+    CPPFILES
+        testenv/testUsdUtilsStitch.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsAuthoring
     DEST testUsdUtilsAuthoring

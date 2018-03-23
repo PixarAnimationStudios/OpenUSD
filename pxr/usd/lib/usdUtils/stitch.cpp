@@ -71,11 +71,29 @@ _MergeValueFn(
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
     boost::optional<VtValue>* valueToCopy,
-    bool ignoreTimeSamples)
+    const UsdUtilsStitchValueFn& stitchFn)
 {
-    // Ignore merging time samples if specified.
-    if (field == SdfFieldKeys->TimeSamples && ignoreTimeSamples) {
-        return false;
+    TF_VERIFY(srcPath == dstPath);
+
+    if (stitchFn) {
+        VtValue value;
+
+        // Note that the source layer corresponds to the weaker layer and
+        // the destination layer corresponds to the stronger layer in the
+        // callback signature.
+        using Status = UsdUtilsStitchValueStatus;
+        const Status status = stitchFn(
+            field, srcPath, dstLayer, fieldInDst, srcLayer, fieldInSrc, &value);
+
+        if (status == Status::NoStitchedValue) {
+            return false;
+        }
+        else if (status == Status::UseSuppliedValue) {
+            (*valueToCopy) = VtValue();
+            (*valueToCopy)->Swap(value);
+            return true;
+        }
+        // Fall through to default stitching behavior.
     }
 
     // Field does not exist in source; don't copy this over, since that will
@@ -259,9 +277,18 @@ _MergeChildrenFn(
 // ----------------------------------------------------------------------------
 
 void
-UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
-                   const SdfSpecHandle& weakObj,
-                   bool ignoreTimeSamples)
+UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj,
+    const SdfSpecHandle& weakObj)
+{
+    UsdUtilsStitchInfo(strongObj, weakObj, UsdUtilsStitchValueFn());
+}
+
+void
+UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj,
+    const SdfSpecHandle& weakObj,
+    const UsdUtilsStitchValueFn& stitchValueFn)
 {
     namespace ph = std::placeholders;
 
@@ -271,14 +298,23 @@ UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
         /* shouldCopyValueFn = */ std::bind(
             _MergeValueFn, 
             ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, 
-            ph::_8, ph::_9, ignoreTimeSamples),
+            ph::_8, ph::_9, std::cref(stitchValueFn)),
         /* shouldCopyChildrenFn = */ _DontCopyChildrenFn);
 }
 
 void 
-UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
-                     const SdfLayerHandle& weakLayer,
-                     bool ignoreTimeSamples)
+UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer,
+    const SdfLayerHandle& weakLayer)
+{
+    UsdUtilsStitchLayers(strongLayer, weakLayer, UsdUtilsStitchValueFn());
+}
+
+void 
+UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer,
+    const SdfLayerHandle& weakLayer,
+    const UsdUtilsStitchValueFn& stitchValueFn)
 {
     namespace ph = std::placeholders;
   
@@ -288,7 +324,7 @@ UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
         /* shouldCopyValueFn = */ std::bind(
             _MergeValueFn, 
             ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, 
-            ph::_8, ph::_9, ignoreTimeSamples),
+            ph::_8, ph::_9, std::cref(stitchValueFn)),
         /* shouldCopyChildrenFn = */ _MergeChildrenFn);
 }
 

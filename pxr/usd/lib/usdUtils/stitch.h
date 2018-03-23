@@ -36,6 +36,8 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
@@ -93,9 +95,9 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// 101.000001 and weakLayer contains one at 101.000002, both will be in
 /// strongLayer after the operation.
 USDUTILS_API
-void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer, 
-                          const SdfLayerHandle& weakLayer,
-                          bool ignoreTimeSamples = false);
+void UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer, 
+    const SdfLayerHandle& weakLayer);
 
 /// This function will stitch all data collectable with ListInfoKeys()
 /// from the SdfLayer API. In the case of dictionaries, it will do 
@@ -104,10 +106,61 @@ void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
 /// already, nothing changes, if it does not and \p weakObj does, 
 /// we will copy \p weakObj's info over.
 USDUTILS_API
-void UsdUtilsStitchInfo(const SdfSpecHandle& strongObj, 
-                        const SdfSpecHandle& weakObj,
-                        bool ignoreTimeSamples = false);
+void UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj, 
+    const SdfSpecHandle& weakObj);
 
+/// \name Advanced Stitching API
+/// @{
+
+/// Status enum returned by UsdUtilsStitchValueFn describing the
+/// desired value stitching behavior.
+enum class UsdUtilsStitchValueStatus
+{
+    NoStitchedValue, ///< Don't stitch values for this field.
+    UseDefaultValue, ///< Use the default stitching behavior for this field.
+    UseSuppliedValue ///< Use the value supplied in stitchedValue.
+};
+
+/// Callback for customizing how values are stitched together. 
+/// 
+/// This callback will be invoked for each field being stitched from the 
+/// source spec at \p path in \p weakLayer to the destination spec at 
+/// \p path in \p strongLayer. \p fieldInStrongLayer and \p fieldInWeakLayer 
+/// indicates whether the field has values in either layer.
+///
+/// The callback should return a UsdUtilsStitchValueStatus to indicate the
+/// desired behavior. Note that if the callback returns UseSuppliedValue and
+/// supplies an empty VtValue in \p stitchedValue, the field will be removed
+/// from the destination spec.
+using UsdUtilsStitchValueFn = std::function<
+    UsdUtilsStitchValueStatus(
+        const TfToken& field, const SdfPath& path,
+        const SdfLayerHandle& strongLayer, bool fieldInStrongLayer,
+        const SdfLayerHandle& weakLayer, bool fieldInWeakLayer,
+        VtValue* stitchedValue)>;
+
+/// Advanced version of UsdUtilsStitchLayers that accepts a \p stitchValueFn
+/// callback to customize how fields in \p strongLayer and \p weakLayer are
+/// stitched together. See documentation on UsdUtilsStitchValueFn for more
+/// details.
+USDUTILS_API
+void UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer, 
+    const SdfLayerHandle& weakLayer,
+    const UsdUtilsStitchValueFn& stitchValueFn);
+
+/// Advanced version of UsdUtilsStitchInfo that accepts a \p stitchValueFn
+/// callback to customize how fields in \p strongObj and \p weakObj are
+/// stitched together. See documentation on UsdUtilsStitchValueFn for more
+/// details.
+USDUTILS_API
+void UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj, 
+    const SdfSpecHandle& weakObj,
+    const UsdUtilsStitchValueFn& stitchValueFn);
+
+/// @}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

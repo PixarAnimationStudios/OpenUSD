@@ -35,9 +35,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void 
 wrapStitch()
 {
-    def("StitchLayers", UsdUtilsStitchLayers, (arg("strongLayer"), 
-                                              arg("weakLayer"),
-                                              arg("ignoreTimeSamples") = false));
-    def("StitchInfo", UsdUtilsStitchInfo, arg("strongObj"), arg("weakObj"),
-                                          arg("ignoreTimeSamples") = false);
+    def("StitchLayers", 
+        (void(*)(const SdfLayerHandle&, const SdfLayerHandle&))
+            &UsdUtilsStitchLayers,
+        (arg("strongLayer"), arg("weakLayer")));
+    def("StitchInfo", 
+        (void(*)(const SdfSpecHandle&, const SdfSpecHandle&))
+            &UsdUtilsStitchInfo, 
+        (arg("strongObj"), arg("weakObj")));
 }
