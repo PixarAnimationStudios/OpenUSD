@@ -60,6 +60,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (textureZNeg)
 
     (worldtoscreen)
+
+    (displayRoughness)
 );
 
 namespace {
@@ -517,6 +519,13 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
 
             primvar.name = _tokens->cardsTexAssign;
             primvar.interpolation = UsdGeomTokens->uniform;
+            _MergePrimvar(primvar, &primvars);
+
+            // XXX: backdoor into the material system.
+            valueCache->GetPrimvar(cachePath, _tokens->displayRoughness) =
+                VtValue(1.0f);
+            primvar.name = _tokens->displayRoughness;
+            primvar.interpolation = UsdGeomTokens->constant;
             _MergePrimvar(primvar, &primvars);
         } else {
             TF_CODING_ERROR("<%s> Unexpected draw mode %s",
