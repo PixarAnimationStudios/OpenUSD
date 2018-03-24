@@ -28,6 +28,22 @@ from pxr import Sdf,Usd,Tf
 allFormats = ['usd' + c for c in 'ac']
 
 class TestUsdStage(unittest.TestCase):
+    def test_AnonymousIdentifiersDisplayName(self):
+        # Ensure anonymous identifiers work as expected
+
+        for fmt in allFormats:
+            ident = 'anonIdent.' + fmt
+            s = Usd.Stage.CreateInMemory(ident)
+            assert s.GetRootLayer().GetDisplayName() == ident
+
+            identWithColons = 'anonIdent:afterColon.' + fmt
+            s = Usd.Stage.CreateInMemory(identWithColons)
+            assert s.GetRootLayer().GetDisplayName() == identWithColons
+
+            # This name is provided by default in stage
+            s = Usd.Stage.CreateInMemory()
+            assert s.GetRootLayer().GetDisplayName() == 'tmp.usda'
+
     def test_UsedLayers(self):
         for fmt in allFormats:
             sMain = Usd.Stage.CreateInMemory('testUsedLayers.'+fmt)
