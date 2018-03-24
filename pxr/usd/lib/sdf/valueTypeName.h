@@ -49,7 +49,8 @@ public:
     SdfTupleDimensions() : size(0) {}
     SdfTupleDimensions(size_t m) : size(1) { d[0] = m; }
     SdfTupleDimensions(size_t m, size_t n) : size(2) { d[0] = m; d[1] = n; }
-    SdfTupleDimensions(size_t s[2]) : size(2) { d[0] = s[0]; d[1] = s[1]; }
+    SdfTupleDimensions(const size_t (&s)[2])
+        : size(2) { d[0] = s[0]; d[1] = s[1]; }
 
     bool operator==(const SdfTupleDimensions& rhs) const;
 
