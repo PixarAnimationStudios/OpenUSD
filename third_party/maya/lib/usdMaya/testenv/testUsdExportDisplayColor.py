@@ -189,6 +189,14 @@ class testUsdExportDisplayColor(unittest.TestCase):
 
         self._AssertMeshDisplayColorAndOpacity(cubeMesh)
 
+        # If whole mesh is assigned to a "empty shading group", then it should
+        # be equiv to "UnassignedCube" case above.  Currently, this means it
+        # gets exported with no displayColor/Opacity authored (which is
+        # unfortunately different from you have per-face assignments to the same
+        # empty shading group).
+        cubeMesh = self._GetCubeMesh('ShadingGroupNoShader')
+        self._AssertMeshDisplayColorAndOpacity(cubeMesh)
+
     def testExportPolyCubeOneAssignedFace(self):
         """
         Tests exporting a cube that has no object-level shader assigned and
@@ -208,6 +216,42 @@ class testUsdExportDisplayColor(unittest.TestCase):
         self._AssertMeshDisplayColorAndOpacity(cubeMesh, expectedColors,
             expectedOpacities, UsdGeom.Tokens.uniform,
             expectedIndices, expectedUnauthoredValuesIndex)
+
+    def testExportMeshInEmptyShadingGroup(self):
+        """
+        Tests exporting a cube where either all of it or faces are assigned to a
+        shadingGroup that has it's surface material deleted.
+        """
+
+        # If all faces are in the empty shading group, all faces get opacity=0.
+        allFaces = self._GetCubeMesh('ShadingGroupNoShaderAllFaces')
+        expectedColors = Vt.Vec3fArray([
+            (0.5, 0.5, 0.5)])
+        expectedOpacities = Vt.FloatArray([
+            0.0])
+        expectedIndices = Vt.IntArray([0, 0, 0, 0, 0, 0])
+        expectedUnauthoredValuesIndex = 0
+        self._AssertMeshDisplayColorAndOpacity(allFaces, expectedColors,
+            expectedOpacities, UsdGeom.Tokens.uniform,
+            expectedIndices, expectedUnauthoredValuesIndex)
+
+        # If some are "empty shading group", but not all, then empty ones get
+        # opacity 0.
+        oneFace = self._GetCubeMesh('ShadingGroupNoShaderOneFace')
+        expectedColors = Vt.Vec3fArray([
+            (1, 0, 0),  
+            (0, 0, 1), 
+            (0.21763764, 0.21763764, 0.21763764),  # initialShadingGroup
+            (0.5, 0.5, 0.5)])
+        expectedOpacities = Vt.FloatArray([1, 1, 1, 0])
+        expectedIndices = [3, 1, 2, 2, 0, 2]
+        expectedUnauthoredValuesIndex = 3
+        self._AssertMeshDisplayColorAndOpacity(oneFace, expectedColors,
+            expectedOpacities, UsdGeom.Tokens.uniform,
+            expectedIndices, expectedUnauthoredValuesIndex)
+
+        # note, there is one test case for having a whole mesh assigned to an
+        # "empty shading group" in testExportPolyCubeUnassigned.
 
 
 if __name__ == '__main__':

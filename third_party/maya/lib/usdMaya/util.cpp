@@ -752,21 +752,21 @@ _GetLinearShaderColor(
         VtArray<int> *assignmentIndices)
 {
     MObjectArray shaderObjs;
-    if (_getAttachedMayaShaderObjects(node, numComponents, &shaderObjs, assignmentIndices)) {
-        if (assignmentIndices && interpolation) {
-            if (assignmentIndices->empty()) {
-                *interpolation = UsdGeomTokens->constant;
-            } else {
-                *interpolation = UsdGeomTokens->uniform;
-            }
-        }
-
+    bool hasAttachedShader = _getAttachedMayaShaderObjects(
+            node, numComponents, &shaderObjs, assignmentIndices);
+    if (hasAttachedShader) {
         _getMayaShadersColor(shaderObjs, RGBData, AlphaData);
-
-        return true;
     }
 
-    return false;
+    if (assignmentIndices && interpolation) {
+        if (assignmentIndices->empty()) {
+            *interpolation = UsdGeomTokens->constant;
+        } else {
+            *interpolation = UsdGeomTokens->uniform;
+        }
+    }
+
+    return hasAttachedShader;
 }
 
 bool
