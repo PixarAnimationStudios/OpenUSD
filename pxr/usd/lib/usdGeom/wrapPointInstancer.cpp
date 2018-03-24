@@ -299,6 +299,21 @@ _ComputeExtentAtTime(
     return extent;
 }
 
+static
+std::vector<VtVec3fArray>
+_ComputeExtentAtTimes(
+    const UsdGeomPointInstancer& self,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime)
+{
+    std::vector<VtVec3fArray> extents;
+
+    // On error we'll be returning an empty array.
+    self.ComputeExtentAtTimes(&extents, times, baseTime);
+
+    return extents;
+}
+
 WRAP_CUSTOM {
 
     typedef UsdGeomPointInstancer This;
@@ -359,11 +374,16 @@ WRAP_CUSTOM {
         .def("ComputeExtentAtTime",
              &_ComputeExtentAtTime,
              (arg("time"), arg("baseTime")))
+        .def("ComputeExtentAtTimes",
+             &_ComputeExtentAtTimes,
+             (arg("times"), arg("baseTime")))
 
         ;
     TfPyRegisterStlSequencesFromPython<UsdTimeCode>();
     to_python_converter<std::vector<VtArray<GfMatrix4d>>,
         TfPySequenceToPython<std::vector<VtArray<GfMatrix4d>>>>();
+    to_python_converter<std::vector<VtVec3fArray>,
+        TfPySequenceToPython<std::vector<VtVec3fArray>>>();
 }
 
 } // anonymous namespace

@@ -180,3 +180,23 @@ def PointInstancer "OneInstanceProtoXform" (
         }
     }
 }
+
+def PointInstancer "MultiInstanceForExtents" (
+    references = </Base>
+) {
+    int[] protoIndices = [ 0, 1, 1 ]
+    Vec3f[] positions.timeSamples = {
+        0: [ (0,0,0), (0,0,0), (0,0,0) ],
+        10: [ (25,25,25), (-25,25,25), (0,50,0) ]
+    }
+    Quath[] orientations.timeSamples = {
+        0: [ (1,0,0,0), (1,0,0,0), (0,0,0,1) ],
+        10: [ (0,0,0,1), (0,0,0,1), (1,0,0,0) ]
+    }
+    Vec3f[] velocities.timeSamples = {
+        0: [ (60,60,60), (-60,60,60), (0,120,0) ]
+    }
+    Vec3f[] angularVelocities.timeSamples = {
+        0: [ (0,0,432), (0,0,432), (0,0,-432) ]
+    }
+}

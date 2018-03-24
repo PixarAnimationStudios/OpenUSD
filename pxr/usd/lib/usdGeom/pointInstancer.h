@@ -1079,11 +1079,63 @@ public:
                         const UsdTimeCode baseTime,
                         const GfMatrix4d& transform) const;
 
+    /// Compute the extent of the point instancer as in
+    /// \ref ComputeExtentAtTime , but across multiple \p times . This is
+    /// equivalent to, but more efficient than, calling ComputeExtentAtTime
+    /// several times. Each element in \p extents is the computed extent at the
+    /// corresponding time in \p times .
+    ///
+    /// As in \ref ComputeExtentAtTime, if there is no error, we return \c true
+    /// and \p extents will be the tightest bounds we can compute efficiently.
+    /// If an error occurs computing the extent at any time, \c false will be
+    /// returned and \p extents will be left untouched.
+    ///
+    /// \param times - A vector containing the UsdTimeCodes at which we want to
+    ///                sample.
+    USDGEOM_API
+    bool ComputeExtentAtTimes(
+                        std::vector<VtVec3fArray>* extents,
+                        const std::vector<UsdTimeCode>& times,
+                        const UsdTimeCode baseTime) const;
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied at
+    /// each time.
+    USDGEOM_API
+    bool ComputeExtentAtTimes(
+                        std::vector<VtVec3fArray>* extents,
+                        const std::vector<UsdTimeCode>& times,
+                        const UsdTimeCode baseTime,
+                        const GfMatrix4d& transform) const;
+
 private:
+
+    bool _ComputeExtentAtTimePreamble(
+        UsdTimeCode baseTime,
+        VtIntArray* protoIndices,
+        std::vector<bool>* mask,
+        UsdRelationship* prototypes,
+        SdfPathVector* protoPaths) const;
+
+    bool _ComputeExtentFromTransforms(
+        VtVec3fArray* extent,
+        const VtIntArray& protoIndices,
+        const std::vector<bool>& mask,
+        const UsdRelationship& prototypes,
+        const SdfPathVector& protoPaths,
+        const VtMatrix4dArray& instanceTransforms,
+        UsdTimeCode time,
+        const GfMatrix4d* transform) const;
 
     bool _ComputeExtentAtTime(
         VtVec3fArray* extent,
         const UsdTimeCode time,
+        const UsdTimeCode baseTime,
+        const GfMatrix4d* transform) const;
+
+    bool _ComputeExtentAtTimes(
+        std::vector<VtVec3fArray>* extent,
+        const std::vector<UsdTimeCode>& times,
         const UsdTimeCode baseTime,
         const GfMatrix4d* transform) const;
 };

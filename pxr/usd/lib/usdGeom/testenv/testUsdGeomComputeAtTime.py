@@ -30,6 +30,9 @@ from pxr import Vt, Gf, Sdf, Usd, UsdGeom
 # Maximum tolerated error between the values of a matrix during comparison.
 MATRIX_TOLERANCE = 0.01
 
+# Maximum tolerated error between the values of extents during comparison.
+EXTENT_TOLERANCE = 0.0001
+
 
 def timeRange(time):
     """Iterate over all times within 1 unit of a given time in
@@ -42,9 +45,9 @@ def timeRange(time):
     return tr
 
 
-class TestUsdGeomComputeInstanceTransformAtTimeBase(object):
+class TestUsdGeomComputeAtTimeBase(object):
     """Base class for testing UsdGeomPointInstancer's
-    ComputeInstanceTransformAtTime method.
+    ComputeInstanceTransformAtTime and ComputeExtentAtTime methods.
     """
 
     def assertMatrixListsEqual(self, list1, list2):
@@ -62,6 +65,21 @@ class TestUsdGeomComputeInstanceTransformAtTimeBase(object):
     def assertAllMatrixListsEqual(self, lists1, lists2):
         for list1, list2 in zip(lists1, lists2):
             self.assertMatrixListsEqual(list1, list2)
+
+    def assertExtentsEqual(self, ext1, ext2):
+        try:
+            # Each extent has 2 points: a min point and a max point. Each point
+            # has x, y, and z dimensions which we compare between the given
+            # extents.
+            for i in range(2): # Loop over min and max.
+                for d in range(3): # Loop over x, y, z dimensions.
+                    self.assertTrue(
+                        Gf.IsClose(ext1[i][d], ext2[i][d], EXTENT_TOLERANCE))
+        except AssertionError:
+            # Print a more descriptive message.
+            raise AssertionError(
+                "Extents not equal:\n{}\n{}".format(ext1, ext2))
+
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
             xformInclusion=UsdGeom.IncludeProtoXform):
@@ -267,15 +285,41 @@ class TestUsdGeomComputeInstanceTransformAtTimeBase(object):
             for time, delta in tr]
         self.assertAllMatrixListsEqual(xformsArray, compares)
 
+    def compareExtents(self, pi, times, baseTime, expectedExtents):
+        """This method should be overridden to call both the single sample
+        and multisample version of ComputeExtentAtTime, then compare the results
+        to the expected extents.
+        """
+        raise NotImplementedError
 
-class TestUsdGeomComputeInstanceTransformAtTime(
-        unittest.TestCase, TestUsdGeomComputeInstanceTransformAtTimeBase):
-    """Test UsdGeomPointInstancer's ComputeInstanceTransformAtTime method."""
+    def test_Extent(self):
+        stage = Usd.Stage.Open("test.usda")
+        pi = UsdGeom.PointInstancer(
+            stage.GetPrimAtPath("/MultiInstanceForExtents"))
+
+        times = [0, 1, 2]
+        expectedExtents = [
+            [(-1, -1, -1), (1, 1, 1)],
+            [(-3.7600734, 1.2399265, -1), (3.7600734, 6.2600737, 3.5)],
+            [(-6.3968024, 3.6031978, -1), (6.3968024, 11.396802, 6)]
+        ]
+        self.compareExtents(pi, times, 0, expectedExtents)
+
+
+class TestUsdGeomComputeAtTime(
+        unittest.TestCase, TestUsdGeomComputeAtTimeBase):
+    """Test UsdGeomPointInstancer's ComputeInstanceTransformAtTime and
+    ComputeExtentAtTime methods."""
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
             xformInclusion=UsdGeom.IncludeProtoXform):
         return [pi.ComputeInstanceTransformsAtTime(time, baseTime, xformInclusion)
                 for time, delta in tr]
+
+    def compareExtents(self, pi, times, baseTime, expectedExtents):
+        for time, expectedExtent in zip(times, expectedExtents):
+            computedExtent = pi.ComputeExtentAtTime(time, baseTime)
+            self.assertExtentsEqual(computedExtent, expectedExtent)
 
     def test_NoInstancesDefault(self):
         stage = Usd.Stage.Open("test.usda")
@@ -295,10 +339,10 @@ class TestUsdGeomComputeInstanceTransformAtTime(
         self.assertMatrixListsEqual(xforms, compare)
 
 
-class TestUsdGeomComputeInstanceTransformAtTimeMultisampled(
-        unittest.TestCase, TestUsdGeomComputeInstanceTransformAtTimeBase):
-    """Test the multisampling version of UsdGeomPointInstancer's
-    ComputeInstanceTransformAtTime method.
+class TestUsdGeomComputeAtTimeMultisampled(
+        unittest.TestCase, TestUsdGeomComputeAtTimeBase):
+    """Test the multisampling versions of UsdGeomPointInstancer's
+    ComputeInstanceTransformAtTime and ComputeExtentAtTime methods.
     """
 
     def computeInstanceTransforms(self, pi, tr, baseTime,
@@ -306,17 +350,22 @@ class TestUsdGeomComputeInstanceTransformAtTimeMultisampled(
         return pi.ComputeInstanceTransformsAtTimes(
             [time for time, delta in tr], baseTime, xformInclusion)
 
+    def compareExtents(self, pi, times, baseTime, expectedExtents):
+        computedExtents = pi.ComputeExtentAtTimes(times, baseTime)
+        for computedExtent, expectedExtent in zip(
+                computedExtents, expectedExtents):
+            self.assertExtentsEqual(computedExtent, expectedExtent)
+
     def test_NoInstancesDefault(self):
         stage = Usd.Stage.Open("test.usda")
         pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/NoInstances"))
 
         xformsArray = pi.ComputeInstanceTransformsAtTimes(
             [Usd.TimeCode.Default()], Usd.TimeCode.Default())
-        print(xformsArray)
         self.assertEqual(len(xformsArray), 1)
         self.assertEqual(len(xformsArray[0]), 0)
 
-    def Qtest_OneInstanceNoSamplesDefault(self):
+    def test_OneInstanceNoSamplesDefault(self):
         stage = Usd.Stage.Open("test.usda")
         pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceNoSamples"))
 

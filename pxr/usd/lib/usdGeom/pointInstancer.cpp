@@ -1318,72 +1318,62 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
 }
 
 bool
-UsdGeomPointInstancer::_ComputeExtentAtTime(
-    VtVec3fArray* extent,
-    const UsdTimeCode time,
-    const UsdTimeCode baseTime,
-    const GfMatrix4d* transform) const
+UsdGeomPointInstancer::_ComputeExtentAtTimePreamble(
+    UsdTimeCode baseTime,
+    VtIntArray* protoIndices,
+    std::vector<bool>* mask,
+    UsdRelationship* prototypes,
+    SdfPathVector* protoPaths) const
 {
-    if (!extent) {
-        TF_WARN("%s -- null container passed to ComputeExtentAtTime()",
-                GetPrim().GetPath().GetText());
-        return false;
-    }
-
-    VtIntArray protoIndices;
-    if (!GetProtoIndicesAttr().Get(&protoIndices, time)) {
+    if (!GetProtoIndicesAttr().Get(protoIndices, baseTime)) {
         TF_WARN("%s -- no prototype indices",
                 GetPrim().GetPath().GetText());
         return false;
     }
 
-    const std::vector<bool> mask = ComputeMaskAtTime(time);
-    if (!mask.empty() && mask.size() != protoIndices.size()) {
+    *mask = ComputeMaskAtTime(baseTime);
+    if (!mask->empty() && mask->size() != protoIndices->size()) {
         TF_WARN("%s -- mask.size() [%zu] != protoIndices.size() [%zu]",
                 GetPrim().GetPath().GetText(),
-                mask.size(),
-                protoIndices.size());
+                mask->size(),
+                protoIndices->size());
         return false;
     }
 
-    const UsdRelationship prototypes = GetPrototypesRel();
-    SdfPathVector protoPaths;
-    if (!prototypes.GetTargets(&protoPaths) || protoPaths.empty()) {
+    *prototypes = GetPrototypesRel();
+    if (!prototypes->GetTargets(protoPaths) || protoPaths->empty()) {
         TF_WARN("%s -- no prototypes",
                 GetPrim().GetPath().GetText());
         return false;
     }
 
     // verify that all the protoIndices are in bounds.
-    TF_FOR_ALL(iter, protoIndices) {
+    TF_FOR_ALL(iter, *protoIndices) {
         const int protoIndex = *iter;
         if (protoIndex < 0 || 
-            static_cast<size_t>(protoIndex) >= protoPaths.size()) {
+            static_cast<size_t>(protoIndex) >= protoPaths->size()) {
             TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",
                     GetPrim().GetPath().GetText(),
                     protoIndex,
-                    protoPaths.size());
+                    protoPaths->size());
             return false;
         }
     }
 
-    // Note that we do NOT apply any masking when computing the instance
-    // transforms. This is so that for a particular instance we can determine
-    // both its transform and its prototype. Otherwise, the instanceTransforms
-    // array would have masked instances culled out and we would lose the
-    // mapping to the prototypes.
-    // Masked instances will be culled before being applied to the extent below.
-    VtMatrix4dArray instanceTransforms;
-    if (!ComputeInstanceTransformsAtTime(&instanceTransforms,
-                                         time,
-                                         baseTime,
-                                         IncludeProtoXform,
-                                         IgnoreMask)) {
-        TF_WARN("%s -- could not compute instance transforms",
-                GetPrim().GetPath().GetText());
-        return false;
-    }
+    return true;
+}
 
+bool
+UsdGeomPointInstancer::_ComputeExtentFromTransforms(
+    VtVec3fArray* extent,
+    const VtIntArray& protoIndices,
+    const std::vector<bool>& mask,
+    const UsdRelationship& prototypes,
+    const SdfPathVector& protoPaths,
+    const VtMatrix4dArray& instanceTransforms,
+    UsdTimeCode time,
+    const GfMatrix4d* transform) const
+{
     UsdStageWeakPtr stage = GetPrim().GetStage();
     const TfTokenVector purposes {
         UsdGeomTokens->default_,
@@ -1391,7 +1381,6 @@ UsdGeomPointInstancer::_ComputeExtentAtTime(
         UsdGeomTokens->render
     };
     UsdGeomBBoxCache bboxCache(time, purposes);
-    bboxCache.SetTime(time);
 
     GfRange3d extentRange;
 
@@ -1427,6 +1416,129 @@ UsdGeomPointInstancer::_ComputeExtentAtTime(
 }
 
 bool
+UsdGeomPointInstancer::_ComputeExtentAtTime(
+    VtVec3fArray* extent,
+    const UsdTimeCode time,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d* transform) const
+{
+    if (!extent) {
+        TF_CODING_ERROR("%s -- null container passed to ComputeExtentAtTime()",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    VtIntArray protoIndices;
+    std::vector<bool> mask;
+    UsdRelationship prototypes;
+    SdfPathVector protoPaths;
+    if (!_ComputeExtentAtTimePreamble(
+            baseTime,
+            &protoIndices,
+            &mask,
+            &prototypes,
+            &protoPaths)) {
+        return false;
+    }
+
+    // Note that we do NOT apply any masking when computing the instance
+    // transforms. This is so that for a particular instance we can determine
+    // both its transform and its prototype. Otherwise, the instanceTransforms
+    // array would have masked instances culled out and we would lose the
+    // mapping to the prototypes.
+    // Masked instances will be culled before being applied to the extent below.
+    VtMatrix4dArray instanceTransforms;
+    if (!ComputeInstanceTransformsAtTime(&instanceTransforms,
+                                         time,
+                                         baseTime,
+                                         IncludeProtoXform,
+                                         IgnoreMask)) {
+        TF_WARN("%s -- could not compute instance transforms",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    return _ComputeExtentFromTransforms(
+        extent,
+        protoIndices,
+        mask,
+        prototypes,
+        protoPaths,
+        instanceTransforms,
+        time,
+        transform);
+}
+
+bool
+UsdGeomPointInstancer::_ComputeExtentAtTimes(
+    std::vector<VtVec3fArray>* extents,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d* transform) const
+{
+    if (!extents) {
+        TF_CODING_ERROR("%s -- null container passed to ComputeExtentAtTimes()",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    VtIntArray protoIndices;
+    std::vector<bool> mask;
+    UsdRelationship prototypes;
+    SdfPathVector protoPaths;
+    if (!_ComputeExtentAtTimePreamble(
+            baseTime,
+            &protoIndices,
+            &mask,
+            &prototypes,
+            &protoPaths)) {
+        return false;
+    }
+
+    // Note that we do NOT apply any masking when computing the instance
+    // transforms. This is so that for a particular instance we can determine
+    // both its transform and its prototype. Otherwise, the instanceTransforms
+    // array would have masked instances culled out and we would lose the
+    // mapping to the prototypes.
+    // Masked instances will be culled before being applied to the extent below.
+    std::vector<VtMatrix4dArray> instanceTransformsArray;
+    if (!ComputeInstanceTransformsAtTimes(
+            &instanceTransformsArray,
+            times,
+            baseTime,
+            IncludeProtoXform,
+            IgnoreMask)) {
+        TF_WARN("%s -- could not compute instance transforms",
+                GetPrim().GetPath().GetText());
+        return false;
+    }
+
+    std::vector<VtVec3fArray> computedExtents;
+    computedExtents.resize(times.size());
+
+    for (size_t i = 0; i < times.size(); i++) {
+
+        const UsdTimeCode& time = times[i];
+        const VtMatrix4dArray& instanceTransforms = instanceTransformsArray[i];
+
+        if (!_ComputeExtentFromTransforms(
+                &(computedExtents[i]),
+                protoIndices,
+                mask,
+                prototypes,
+                protoPaths,
+                instanceTransforms,
+                time,
+                transform)) {
+            return false;
+        }
+    }
+
+    extents->swap(computedExtents);
+    return true;
+}
+
+bool
 UsdGeomPointInstancer::ComputeExtentAtTime(
     VtVec3fArray* extent,
     const UsdTimeCode time,
@@ -1443,6 +1555,25 @@ UsdGeomPointInstancer::ComputeExtentAtTime(
     const GfMatrix4d& transform) const
 {
     return _ComputeExtentAtTime(extent, time, baseTime, &transform);
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTimes(
+    std::vector<VtVec3fArray>* extents,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime) const
+{
+    return _ComputeExtentAtTimes(extents, times, baseTime, nullptr);
+}
+
+bool
+UsdGeomPointInstancer::ComputeExtentAtTimes(
+    std::vector<VtVec3fArray>* extents,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const GfMatrix4d& transform) const
+{
+    return _ComputeExtentAtTimes(extents, times, baseTime, &transform);
 }
 
 static bool
