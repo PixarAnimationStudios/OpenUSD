@@ -23,9 +23,9 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-import unittest, os, numpy
+import unittest, os
 
-from pixar import Usd, UsdSkel
+from pxr import Gf, Usd, UsdSkel
 
 from maya import cmds
 from maya import standalone
@@ -34,7 +34,15 @@ import maya.api.OpenMaya as OM
 
 
 def _MMatrixToGf(mx):
-    return Gf.Matrix4d(*numpy.array(mx))
+    gfmx = Gf.Matrix4d()
+    for i in xrange(4):
+        for j in xrange(4):
+            gfmx[i][j] = mx[i*4+j]
+    return gfmx
+
+
+def _GfMatrixToList(mx):
+    return [mx[i][j] for i in xrange(4) for j in xrange(4)]
 
 
 def _GetDepNode(name):
@@ -42,10 +50,15 @@ def _GetDepNode(name):
     selectionList.add(name)
     return OM.MFnDependencyNode(selectionList.getDependNode(0))
 
-    
-def _ArrayIsClose(a, b, threshold=1e-5):
-    return max(numpy.absolute(numpy.array(a).ravel() -
-                              numpy.array(b).ravel())) < threshold
+
+def _ArraysAreClose(a, b, threshold=1e-5):
+    if not len(a) == len(b):
+        return False
+
+    for i in xrange(len(a)):
+        if not Gf.IsClose(a[i], b[i], threshold):
+            return False
+    return True
 
 
 class testUsdImportSkeleton(unittest.TestCase):
@@ -74,7 +87,8 @@ class testUsdImportSkeleton(unittest.TestCase):
 
                 jointXf = cmds.getAttr("%s.matrix"%joint.name())
 
-                self.assertTrue(_ArrayIsClose(usdXforms[i], jointXf))
+                self.assertTrue(_ArraysAreClose(
+                    _GfMatrixToList(usdXforms[i]), jointXf))
 
             # Check skel-space transforms
             usdXforms = usdSkelQuery.ComputeJointSkelTransforms(time)
@@ -82,7 +96,8 @@ class testUsdImportSkeleton(unittest.TestCase):
             for i,joint in enumerate(joints):
                 jointXf = cmds.getAttr("%s.worldMatrix"%joint.name())
                 
-                self.assertTrue(_ArrayIsClose(usdXforms[i], jointXf))
+                self.assertTrue(_ArraysAreClose(
+                    _GfMatrixToList(usdXforms[i]), jointXf))
 
 
     def _ValidateJointBindPoses(self, usdSkelQuery, joints):
@@ -92,7 +107,8 @@ class testUsdImportSkeleton(unittest.TestCase):
 
             bindPose = cmds.getAttr("%s.bindPose"%joint.name())
 
-            self.assertTrue(_ArrayIsClose(bindPose, restXforms[i]))
+            self.assertTrue(_ArraysAreClose(
+                bindPose, _GfMatrixToList(restXforms[i])))
 
 
     def _ValidateJoints(self, usdSkelQuery, joints):
@@ -147,9 +163,9 @@ class testUsdImportSkeleton(unittest.TestCase):
         self.assertEqual(cmds.getAttr("%s.inheritsTransform"%name), False)
 
         # Mesh's transform should match the geomBindTransform.
-        self.assertTrue(_ArrayIsClose(
+        self.assertTrue(_ArraysAreClose(
             cmds.getAttr("%s.worldMatrix"%name),
-            usdSkinningQuery.GetGeomBindTransform()))
+            _GfMatrixToList(usdSkinningQuery.GetGeomBindTransform())))
 
 
     def _ValidateSkinClusterRig(self, joints, skinClusterName, groupPartsName,
@@ -166,8 +182,9 @@ class testUsdImportSkeleton(unittest.TestCase):
         self.assertEqual(groupId.typeName, "groupId")
 
         self.assertTrue(
-            _ArrayIsClose(cmds.getAttr("%s.geomMatrix"%skinClusterName),
-                          usdSkinningQuery.GetGeomBindTransform()))
+            _ArraysAreClose(cmds.getAttr("%s.geomMatrix"%skinClusterName),
+                            _GfMatrixToList(
+                                usdSkinningQuery.GetGeomBindTransform())))
 
         connections = cmds.listConnections(
             "%s.groupId"%groupIdName,
@@ -205,9 +222,9 @@ class testUsdImportSkeleton(unittest.TestCase):
             # bindPreMatrix should be the inverse of the skel-
             # rest tranfsorm.
 
-            self.assertTrue(_ArrayIsClose(
+            self.assertTrue(_ArraysAreClose(
                 cmds.getAttr("%s.bindPreMatrix[%d]"%(skinClusterName,i)),
-                skelRestXforms[i].GetInverse()))
+                _GfMatrixToList(skelRestXforms[i].GetInverse())))
 
 
     def test_SkelImport(self):
