@@ -85,7 +85,7 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
                                         HdDirtyBits* timeVaryingBits,
                                         UsdImagingInstancerContext const* 
-                                            instancerContext)
+                                            instancerContext) const
 {
     // Early return when called on behalf of a UsdGeomSubset.
     if (UsdGeomSubset(prim)) {
@@ -189,7 +189,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                                      UsdTimeCode time,
                                      HdDirtyBits requestedBits,
                                      UsdImagingInstancerContext const*
-                                         instancerContext)
+                                         instancerContext) const
 {
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[UpdateForTime] Mesh path: <%s>\n",
                                      prim.GetPath().GetText());
@@ -258,7 +258,7 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
 void
 UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
                                          VtValue* topo,
-                                         UsdTimeCode time)
+                                         UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -302,7 +302,7 @@ UsdImagingMeshAdapter::_GetMeshTopology(UsdPrim const& prim,
 void
 UsdImagingMeshAdapter::_GetPoints(UsdPrim const& prim,
                                    VtValue* value,
-                                   UsdTimeCode time)
+                                   UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -315,7 +315,7 @@ UsdImagingMeshAdapter::_GetPoints(UsdPrim const& prim,
 void
 UsdImagingMeshAdapter::_GetSubdivTags(UsdPrim const& prim,
                                        SubdivTags* tags,
-                                       UsdTimeCode time)
+                                       UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

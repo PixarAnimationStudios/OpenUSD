@@ -83,7 +83,7 @@ UsdImagingMaterialAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const*
-                                              instancerContext)
+                                              instancerContext) const
 {
     // XXX: Time-varying parameters are not yet implemented
 }
@@ -95,7 +95,7 @@ UsdImagingMaterialAdapter::UpdateForTime(UsdPrim const& prim,
                                        UsdTimeCode time,
                                        HdDirtyBits requestedBits,
                                        UsdImagingInstancerContext const*
-                                           instancerContext)
+                                           instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
@@ -263,7 +263,7 @@ void walkGraph(UsdShadeShader const & shadeNode,
 
 void 
 UsdImagingMaterialAdapter::_GetMaterialNetworkMap(UsdPrim const &usdPrim, 
-    HdMaterialNetworkMap *materialNetworkMap)
+    HdMaterialNetworkMap *materialNetworkMap) const
 {
     // This function expects a usdPrim of type Material. However, it will
     // only be able to fill the HdMaterialNetwork structures if the Material

@@ -67,7 +67,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
     /// Thread Safe.
     USDIMAGING_API
@@ -76,7 +76,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     USDIMAGING_API
     static VtValue GetMeshPoints(UsdPrim const& prim, 

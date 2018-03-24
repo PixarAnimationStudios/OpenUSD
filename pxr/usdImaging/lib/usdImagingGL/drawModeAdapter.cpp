@@ -196,13 +196,13 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
 }
 
 bool
-UsdImagingGLDrawModeAdapter::_IsMaterialPath(SdfPath const& path)
+UsdImagingGLDrawModeAdapter::_IsMaterialPath(SdfPath const& path) const
 {
     return IsChildPath(path) && path.GetNameToken() == _tokens->material;
 }
 
 bool
-UsdImagingGLDrawModeAdapter::_IsTexturePath(SdfPath const& path)
+UsdImagingGLDrawModeAdapter::_IsTexturePath(SdfPath const& path) const
 {
     if (!IsChildPath(path)) {
         return false;
@@ -271,7 +271,7 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             HdDirtyBits* timeVaryingBits,
                                             UsdImagingInstancerContext const*
-                                               instancerContext)
+                                               instancerContext) const
 {
     if (_IsMaterialPath(cachePath) || _IsTexturePath(cachePath)) {
         // Shader/texture aspects aren't time-varying.
@@ -318,7 +318,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                                          UsdTimeCode time,
                                          HdDirtyBits requestedBits,
                                          UsdImagingInstancerContext const*
-                                            instancerContext)
+                                            instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
     UsdGeomModelAPI model(prim);
@@ -565,7 +565,7 @@ UsdImagingGLDrawModeAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
 void
 UsdImagingGLDrawModeAdapter::_GenerateOriginGeometry(
-        VtValue *topo, VtValue *points, GfRange3d const& extents)
+        VtValue *topo, VtValue *points, GfRange3d const& extents) const
 {
     // Origin: vertices are (0,0,0); (1,0,0); (0,1,0); (0,0,1)
     VtVec3fArray pt = VtVec3fArray(4);
@@ -590,7 +590,7 @@ UsdImagingGLDrawModeAdapter::_GenerateOriginGeometry(
 
 void
 UsdImagingGLDrawModeAdapter::_GenerateBoundsGeometry(
-        VtValue *topo, VtValue *points, GfRange3d const& extents)
+        VtValue *topo, VtValue *points, GfRange3d const& extents) const
 {
     // Bounding box: vertices are for(i: 0 -> 7) {
     //   ((i & 1) ? z : -z) +
@@ -627,7 +627,7 @@ UsdImagingGLDrawModeAdapter::_GenerateBoundsGeometry(
 void
 UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
         VtValue *topo, VtValue *points, GfRange3d const& extents,
-        uint8_t axes_mask)
+        uint8_t axes_mask) const
 {
     // Cards (Cross) vertices:
     // - +/-X vertices (CCW wrt +X)
@@ -723,7 +723,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsCrossGeometry(
 
 void
 UsdImagingGLDrawModeAdapter::_SanityCheckFaceSizes(SdfPath const& cachePath,
-        GfRange3d const& extents, uint8_t axes_mask)
+        GfRange3d const& extents, uint8_t axes_mask) const
 {
     GfVec3d min = extents.GetMin(),
             max = extents.GetMax();
@@ -751,7 +751,7 @@ UsdImagingGLDrawModeAdapter::_SanityCheckFaceSizes(SdfPath const& cachePath,
 void
 UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
         VtValue *topo, VtValue *points, GfRange3d const& extents,
-        uint8_t axes_mask)
+        uint8_t axes_mask) const
 {
     // Bounding box: vertices are for(i: 0 -> 7) {
     //   ((i & 1) ? z : -z) +
@@ -805,7 +805,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsBoxGeometry(
 void
 UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
         VtValue *topo, VtValue *points, VtValue *uv, VtValue *assign,
-        GfRange3d *extents, UsdPrim const& prim)
+        GfRange3d *extents, UsdPrim const& prim) const
 {
     UsdGeomModelAPI model(prim);
     std::vector<std::pair<GfMatrix4d, int>> faces;
@@ -874,7 +874,7 @@ UsdImagingGLDrawModeAdapter::_GenerateCardsFromTextureGeometry(
 
 bool
 UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
-    UsdAttribute const& attr, GfMatrix4d *mat)
+    UsdAttribute const& attr, GfMatrix4d *mat) const
 {
     // This function expects the input attribute to be an image asset path.
     SdfAssetPath asset;
@@ -909,7 +909,7 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
 
 void
 UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
-        VtValue *uv, VtValue *assign, uint8_t axes_mask)
+        VtValue *uv, VtValue *assign, uint8_t axes_mask) const
 {
     // Note: this function depends on the vertex order of the generated
     // card faces. Per spec, the texture axes are:
@@ -967,7 +967,7 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
 }
 
 std::string
-UsdImagingGLDrawModeAdapter::_GetSurfaceShaderSource()
+UsdImagingGLDrawModeAdapter::_GetSurfaceShaderSource() const
 {
     GlfGLSLFX gfx (UsdImagingGLPackageDrawModeShader());
     if (!gfx.IsValid()) {
@@ -978,7 +978,7 @@ UsdImagingGLDrawModeAdapter::_GetSurfaceShaderSource()
 }
 
 GfRange3d
-UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim)
+UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -991,6 +991,7 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim)
 
 TfToken
 UsdImagingGLDrawModeAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time)
+    const
 {
     HD_TRACE_FUNCTION();
     // PERFORMANCE: Make this more efficient, see http://bug/90497

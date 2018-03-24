@@ -67,7 +67,7 @@ UsdImagingPointsAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const* 
-                                              instancerContext)
+                                              instancerContext) const
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
@@ -93,7 +93,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
                                        UsdTimeCode time,
                                        HdDirtyBits requestedBits,
                                        UsdImagingInstancerContext const* 
-                                           instancerContext)
+                                           instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
@@ -145,7 +145,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
 void
 UsdImagingPointsAdapter::_GetPoints(UsdPrim const& prim, 
                                    VtValue* value, 
-                                   UsdTimeCode time)
+                                   UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     if (!prim.GetAttribute(UsdGeomTokens->points).Get(value, time)) {

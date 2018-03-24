@@ -437,7 +437,7 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext)
+                                      instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
@@ -512,7 +512,7 @@ template <typename Functor>
 void
 UsdImagingInstanceAdapter::_RunForAllInstancesToDraw(
     UsdPrim const& instancer,
-    Functor* fn)
+    Functor* fn) const
 {
     const _InstancerData* instancerData = 
         TfMapLookupPtr(_instancerData, instancer.GetPath());
@@ -535,7 +535,7 @@ UsdImagingInstanceAdapter::_RunForAllInstancesToDrawImpl(
     UsdPrim const& instancer, 
     std::vector<UsdPrim> *instanceContext,
     size_t* instanceIdx,
-    Functor* fn)
+    Functor* fn) const
 {
     // NOTE: This logic is almost exactly similar to the logic in
     // _CountAllInstancesToDrawImpl. If you're updating this function, you
@@ -599,7 +599,7 @@ UsdImagingInstanceAdapter::_RunForAllInstancesToDrawImpl(
 
 size_t 
 UsdImagingInstanceAdapter::_CountAllInstancesToDraw(
-    UsdPrim const& instancer)
+    UsdPrim const& instancer) const
 {
     // Memoized table of instancer path to the total number of 
     // times that instancer will be drawn.
@@ -610,7 +610,7 @@ UsdImagingInstanceAdapter::_CountAllInstancesToDraw(
 size_t 
 UsdImagingInstanceAdapter::_CountAllInstancesToDrawImpl(
     UsdPrim const& instancer,
-    _InstancerDrawCounts* drawCounts)
+    _InstancerDrawCounts* drawCounts) const
 {
     // NOTE: This logic is almost exactly similar to the logic in
     // _RunForAllInstancesToDrawImpl. If you're updating this function, you
@@ -673,7 +673,7 @@ UsdImagingInstanceAdapter::_CountAllInstancesToDrawImpl(
 struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
 {
     _ComputeInstanceTransformFn(
-        UsdImagingInstanceAdapter* adapter_, const UsdTimeCode& time_) 
+        const UsdImagingInstanceAdapter* adapter_, const UsdTimeCode& time_) 
         : adapter(adapter_), time(time_) 
     { }
 
@@ -704,7 +704,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceTransformFn
         return true;
     }
 
-    UsdImagingInstanceAdapter* adapter;
+    const UsdImagingInstanceAdapter* adapter;
     UsdTimeCode time;
     VtMatrix4dArray result;
 };
@@ -713,7 +713,7 @@ bool
 UsdImagingInstanceAdapter::_ComputeInstanceTransforms(
     UsdPrim const& instancer,
     VtMatrix4dArray* outTransforms,
-    UsdTimeCode time)
+    UsdTimeCode time) const
 {
     _ComputeInstanceTransformFn computeXform(this, time);
     _RunForAllInstancesToDraw(instancer, &computeXform);
@@ -723,7 +723,7 @@ UsdImagingInstanceAdapter::_ComputeInstanceTransforms(
 
 struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
 {
-    _IsInstanceTransformVaryingFn(UsdImagingInstanceAdapter* adapter_)
+    _IsInstanceTransformVaryingFn(const UsdImagingInstanceAdapter* adapter_)
         : adapter(adapter_), result(false) { }
 
     void Initialize(size_t numInstances)
@@ -761,7 +761,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
         return transformVarying;
     }
 
-    UsdImagingInstanceAdapter* adapter;
+    const UsdImagingInstanceAdapter* adapter;
     bool result;
 
     // We keep a simple cache directly on _IsInstanceTransformVaryingFn because
@@ -771,6 +771,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
 
 bool 
 UsdImagingInstanceAdapter::_IsInstanceTransformVarying(UsdPrim const& instancer)
+    const 
 {
     _IsInstanceTransformVaryingFn isTransformVarying(this);
     _RunForAllInstancesToDraw(instancer, &isTransformVarying);
@@ -806,7 +807,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                SdfPath const& cachePath, 
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const*)
+                               UsdImagingInstancerContext const*) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
@@ -1256,7 +1257,7 @@ UsdImagingInstanceAdapter::_PrimIsInstancer(UsdPrim const& prim) const
 UsdImagingInstanceAdapter::_ProtoRprim const&
 UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
                                           SdfPath const& cachePath,
-                                          UsdImagingInstancerContext* ctx)
+                                          UsdImagingInstancerContext* ctx) const
 {
     static _ProtoRprim const EMPTY;
 
@@ -1307,7 +1308,9 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
     ctx->instanceMaterialId = materialId;
     ctx->instanceDrawMode = drawMode;
     ctx->childName = TfToken();
-    ctx->instancerAdapter = _GetSharedFromThis();
+    // XXX: Note the const_cast here is not ideal at all.
+    ctx->instancerAdapter = 
+        const_cast<UsdImagingInstanceAdapter *>(this)->_GetSharedFromThis();
 
     return *r;
 }
@@ -1322,7 +1325,7 @@ UsdImagingInstanceAdapter::_GetSharedFromThis()
 struct UsdImagingInstanceAdapter::_UpdateInstanceMapFn
 {
     _UpdateInstanceMapFn(
-        UsdImagingInstanceAdapter* adapter_, const UsdTimeCode& time_,
+        const UsdImagingInstanceAdapter* adapter_, const UsdTimeCode& time_,
         std::vector<_InstancerData::Visibility>* visibility_, 
         VtIntArray* indices_)
         : adapter(adapter_), time(time_), 
@@ -1408,7 +1411,7 @@ struct UsdImagingInstanceAdapter::_UpdateInstanceMapFn
         return visibilityVarying;
     }
 
-    UsdImagingInstanceAdapter* adapter;
+    const UsdImagingInstanceAdapter* adapter;
     UsdTimeCode time;
     std::vector<_InstancerData::Visibility>* visibility;
     VtIntArray* indices;
@@ -1422,7 +1425,7 @@ struct UsdImagingInstanceAdapter::_UpdateInstanceMapFn
 void
 UsdImagingInstanceAdapter::_UpdateInstanceMap(
                     UsdPrim const& instancerPrim, 
-                    UsdTimeCode time)
+                    UsdTimeCode time) const
 {
     // We expect the instancerData entry for this instancer to be established
     // before this method is called. This map should also never be accessed and
@@ -1461,7 +1464,7 @@ UsdImagingInstanceAdapter::_UpdateInstanceMap(
 
 int
 UsdImagingInstanceAdapter::_UpdateDirtyBits(
-                    UsdPrim const& instancerPrim)
+                    UsdPrim const& instancerPrim) const
 {
     // We expect the instancerData entry for this instancer to be established
     // before this method is called. This map should also never be accessed and
@@ -1816,7 +1819,7 @@ UsdImagingInstanceAdapter::GetInstanceIndices(SdfPath const &instancerPath,
 GfMatrix4d
 UsdImagingInstanceAdapter::GetRelativeInstancerTransform(
     SdfPath const &parentInstancerPath,
-    SdfPath const &instancerPath, UsdTimeCode time)
+    SdfPath const &instancerPath, UsdTimeCode time) const
 {
     // regardless the parentInstancerPath is empty or not,
     // we subtract the root transform.

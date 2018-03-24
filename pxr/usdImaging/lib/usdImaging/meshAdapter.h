@@ -71,7 +71,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
 
     /// Thread Safe.
@@ -81,7 +81,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing
@@ -104,9 +104,11 @@ protected:
                              UsdImagingIndexProxy* index) override;
 
 private:
-    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
-    void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, UsdTimeCode time);
-    void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, UsdTimeCode time);
+    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time) const;
+    void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, 
+            UsdTimeCode time) const;
+    void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, 
+            UsdTimeCode time) const ;
 };
 
 

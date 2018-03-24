@@ -125,7 +125,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                                          SdfPath const& cachePath,
                                          HdDirtyBits* timeVaryingBits,
                                          UsdImagingInstancerContext const* 
-                                             instancerContext)
+                                             instancerContext) const
 {
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
@@ -198,7 +198,7 @@ UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     SdfPath const& cachePath,
     TfToken const& primvarName,
     UsdTimeCode time,
-    UsdImagingValueCache* valueCache)
+    UsdImagingValueCache* valueCache) const
 {
     UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(primvarName);
 
@@ -231,7 +231,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                   instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
@@ -383,7 +383,7 @@ UsdImagingGprimAdapter::MarkVisibilityDirty(UsdPrim const& prim,
 // -------------------------------------------------------------------------- //
 
 GfRange3d 
-UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time)
+UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -669,7 +669,7 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
 }
 
 TfToken
-UsdImagingGprimAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time)
+UsdImagingGprimAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
     // PERFORMANCE: Make this more efficient, see http://bug/90497
@@ -677,7 +677,7 @@ UsdImagingGprimAdapter::_GetPurpose(UsdPrim const& prim, UsdTimeCode time)
 }
 
 bool 
-UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim)
+UsdImagingGprimAdapter::_GetDoubleSided(UsdPrim const& prim) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

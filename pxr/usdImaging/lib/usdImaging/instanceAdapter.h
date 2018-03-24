@@ -74,7 +74,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
     virtual void UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
@@ -89,7 +89,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -178,7 +178,7 @@ public:
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &parentInstancerPath,
         SdfPath const &instancerPath,
-        UsdTimeCode time);
+        UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Selection
@@ -245,31 +245,32 @@ private:
     // Updates per-frame data in the instancer map. This is primarily used
     // during update to send new instance indices out to Hydra.
     struct _UpdateInstanceMapFn;
-    void _UpdateInstanceMap(UsdPrim const& instancerPrim, UsdTimeCode time);
+    void _UpdateInstanceMap(UsdPrim const& instancerPrim, 
+            UsdTimeCode time) const;
 
     // Update the dirty bits per-instancer. This is only executed once per
     // instancer, this method uses the instancer mutex to avoid redundant work.
     //
     // Returns the instancer's dirty bits.
-    int _UpdateDirtyBits(UsdPrim const& instancerPrim);
+    int _UpdateDirtyBits(UsdPrim const& instancerPrim) const;
 
     // Gets the associated _ProtoRprim and instancer context for the given 
     // instancer and cache path.
     _ProtoRprim const& _GetProtoRprim(SdfPath const& instancerPath, 
                                       SdfPath const& cachePath,
-                                      UsdImagingInstancerContext* ctx);
+                                      UsdImagingInstancerContext* ctx) const;
 
     // Computes the transforms for all instances corresponding to the given
     // instancer.
     struct _ComputeInstanceTransformFn;
     bool _ComputeInstanceTransforms(UsdPrim const& instancer,
                                     VtMatrix4dArray* transforms,
-                                    UsdTimeCode time);
+                                    UsdTimeCode time) const;
 
     // Returns true if any of the instances corresponding to the given
     // instancer has a varying transform.
     struct _IsInstanceTransformVaryingFn;
-    bool _IsInstanceTransformVarying(UsdPrim const& instancer);
+    bool _IsInstanceTransformVarying(UsdPrim const& instancer) const;
 
     struct _GetPathForInstanceIndexFn;
     struct _PopulateInstanceSelectionFn;
@@ -301,17 +302,17 @@ private:
     // transform of each instance to draw is the combined transforms
     // of the prims in each context.
     template <typename Functor>
-    void _RunForAllInstancesToDraw(UsdPrim const& instancer, Functor* fn);
+    void _RunForAllInstancesToDraw(UsdPrim const& instancer, Functor* fn) const;
     template <typename Functor>
     bool _RunForAllInstancesToDrawImpl(UsdPrim const& instancer, 
                                        std::vector<UsdPrim>* instanceContext,
                                        size_t* instanceIdx,
-                                       Functor* fn);
+                                       Functor* fn) const;
 
     typedef TfHashMap<SdfPath, size_t, SdfPath::Hash> _InstancerDrawCounts;
-    size_t _CountAllInstancesToDraw(UsdPrim const& instancer);
+    size_t _CountAllInstancesToDraw(UsdPrim const& instancer) const;
     size_t _CountAllInstancesToDrawImpl(UsdPrim const& instancer,
-                                        _InstancerDrawCounts* drawCounts);
+                                        _InstancerDrawCounts* drawCounts) const;
 
     // A proto group represents a complete set of rprims for a given prototype
     // declared on the instancer.
@@ -407,9 +408,11 @@ private:
     };
 
     // Map from instancer path to instancer data.
+    // Note: this map is modified in multithreaded code paths and must be
+    // locked.
     typedef boost::unordered_map<SdfPath, _InstancerData, SdfPath::Hash> 
         _InstancerDataMap;
-    _InstancerDataMap _instancerData;
+    mutable _InstancerDataMap _instancerData;
 
     // Map from instance to instancer.
     // XXX: consider to move this forwarding map into HdRenderIndex.

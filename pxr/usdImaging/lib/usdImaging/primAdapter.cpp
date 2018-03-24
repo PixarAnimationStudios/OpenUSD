@@ -338,7 +338,7 @@ UsdImagingPrimAdapter::IsChildPath(SdfPath const& path) const
 }
 
 UsdImagingValueCache* 
-UsdImagingPrimAdapter::_GetValueCache() 
+UsdImagingPrimAdapter::_GetValueCache() const
 {
     return &_delegate->_valueCache; 
 }
@@ -359,7 +359,7 @@ UsdImagingPrimAdapter::_GetPrim(SdfPath const& usdPath) const
 
 const UsdImagingPrimAdapterSharedPtr& 
 UsdImagingPrimAdapter::_GetPrimAdapter(UsdPrim const& prim,
-                                       bool ignoreInstancing)
+                                       bool ignoreInstancing) const
 {
     return _delegate->_AdapterLookup(prim, ignoreInstancing);
 }
@@ -412,7 +412,7 @@ UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
 void 
 UsdImagingPrimAdapter::_MergePrimvar(
                     UsdImagingValueCache::PrimvarInfo const& primvar, 
-                    PrimvarInfoVector* vec) 
+                    PrimvarInfoVector* vec) const
 {
     PrimvarInfoVector::iterator it = std::find(vec->begin(), vec->end(), 
                                                 primvar);
@@ -428,7 +428,7 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
                                   HdDirtyBits dirtyFlag,
                                   TfToken const& perfToken,
                                   HdDirtyBits* dirtyFlags,
-                                  bool isInherited)
+                                  bool isInherited) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -455,7 +455,7 @@ bool
 UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
                                            HdDirtyBits dirtyFlag,
                                            TfToken const& perfToken,
-                                           HdDirtyBits* dirtyFlags)
+                                           HdDirtyBits* dirtyFlags) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -490,7 +490,7 @@ UsdImagingPrimAdapter::_IsTransformVarying(UsdPrim prim,
 
 GfMatrix4d 
 UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
-                                    bool ignoreRootTransform)
+                                    bool ignoreRootTransform) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -510,7 +510,7 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim, UsdTimeCode time,
 }
 
 bool
-UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time)
+UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
 {
     HD_TRACE_FUNCTION();
 
@@ -529,7 +529,7 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time)
 }
 
 SdfPath
-UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim)
+UsdImagingPrimAdapter::GetMaterialId(UsdPrim const& prim) const
 {
     HD_TRACE_FUNCTION();
 
@@ -576,7 +576,7 @@ UsdImagingPrimAdapter::GetInstanceIndices(SdfPath const &instancerPath,
 GfMatrix4d
 UsdImagingPrimAdapter::GetRelativeInstancerTransform(
     SdfPath const &instancerPath,
-    SdfPath const &protoInstancerPath, UsdTimeCode time)
+    SdfPath const &protoInstancerPath, UsdTimeCode time) const
 {
     return GfMatrix4d(1);
 }

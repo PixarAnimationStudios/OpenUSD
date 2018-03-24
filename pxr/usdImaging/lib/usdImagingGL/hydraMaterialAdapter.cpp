@@ -138,7 +138,7 @@ UsdImagingGLHydraMaterialAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const*
-                                              instancerContext)
+                                              instancerContext) const
 {
     if (IsChildPath(cachePath)) {
         // Textures aren't time-varying.
@@ -306,7 +306,7 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
     SdfPath const& cachePath,
     UsdTimeCode time,
     HdDirtyBits requestedBits,
-    UsdImagingInstancerContext const* instancerContext)
+    UsdImagingInstancerContext const* instancerContext) const
 {
     if (IsChildPath(cachePath)) {
         // Textures aren't stored in the value cache.

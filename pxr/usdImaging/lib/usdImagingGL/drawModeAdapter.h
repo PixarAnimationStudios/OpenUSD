@@ -78,7 +78,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
     USDIMAGINGGL_API
     virtual void UpdateForTime(UsdPrim const& prim,
@@ -86,7 +86,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -132,53 +132,55 @@ private:
     // For cards rendering, check if we're rendering any faces with 0 area;
     // if so, issue a warning.
     void _SanityCheckFaceSizes(SdfPath const& cachePath,
-                               GfRange3d const& extents, uint8_t axes_mask);
+                               GfRange3d const& extents, uint8_t axes_mask) 
+        const;
 
     // Check whether the given cachePath is a path to the draw mode material.
-    bool _IsMaterialPath(SdfPath const& path);
+    bool _IsMaterialPath(SdfPath const& path) const;
     // Check whether the given cachePath is a path to a draw mode texture.
 
-    bool _IsTexturePath(SdfPath const& path);
+    bool _IsTexturePath(SdfPath const& path) const;
     // Computes the extents of the given prim, using UsdGeomBBoxCache.
     // The extents are computed at UsdTimeCode::EarliestTime() (and are not
     // animated), and they are computed for purposes default/proxy/render.
-    GfRange3d _ComputeExtent(UsdPrim const& prim);
+    GfRange3d _ComputeExtent(UsdPrim const& prim) const;
 
     // Returns the UsdGeomImagable "purpose" for this prim, including any
     // inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(UsdPrim const& prim, UsdTimeCode time);
+    TfToken _GetPurpose(UsdPrim const& prim, UsdTimeCode time) const;
 
     // Returns the draw mode surface shader.
-    std::string _GetSurfaceShaderSource();
+    std::string _GetSurfaceShaderSource() const;
 
     // Generate geometry for "origin" draw mode.
     void _GenerateOriginGeometry(VtValue* topo, VtValue* points,
-                                 GfRange3d const& extents);
+                                 GfRange3d const& extents) const;
 
     // Generate geometry for "bounds" draw mode.
     void _GenerateBoundsGeometry(VtValue* topo, VtValue* points,
-                                 GfRange3d const& extents);
+                                 GfRange3d const& extents) const;
 
     // Generate geometry for "cards" draw mode, with cardGeometry "cross".
     void _GenerateCardsCrossGeometry(VtValue* topo, VtValue* points,
-            GfRange3d const& extents, uint8_t axes_mask);
+            GfRange3d const& extents, uint8_t axes_mask) const;
 
     // Generate geometry for "cards" draw mode, with cardGeometry "box".
     void _GenerateCardsBoxGeometry(VtValue* topo, VtValue* points,
-            GfRange3d const& extents, uint8_t axes_mask);
+            GfRange3d const& extents, uint8_t axes_mask) const;
 
     // Generate geometry for "cards" draw mode, with cardGeometry "fromTexture".
     void _GenerateCardsFromTextureGeometry(VtValue* topo, VtValue* points,
             VtValue* uv, VtValue* assign, GfRange3d* extents,
-            UsdPrim const& prim);
+            UsdPrim const& prim) const;
 
     // Given an asset attribute pointing to a texture, pull the "worldtoscreen"
     // matrix out of image metadata.
-    bool _GetMatrixFromImageMetadata(UsdAttribute const& attr, GfMatrix4d* mat);
+    bool _GetMatrixFromImageMetadata(UsdAttribute const& attr, GfMatrix4d* mat)
+        const;
 
     // Generate texture coordinates for cards "cross"/"box" mode.
     void _GenerateTextureCoordinates(VtValue* uv, VtValue* assign,
-                                     uint8_t axes_mask);
+                                     uint8_t axes_mask) const;
 
     // Map from cachePath to what drawMode it was populated as.
     typedef TfHashMap<SdfPath, TfToken, SdfPath::Hash>

@@ -66,7 +66,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
     /// Thread Safe.
     USDIMAGING_API
@@ -75,7 +75,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -147,18 +147,18 @@ private:
                            SdfPath const& cachePath,
                            TfToken const &primvarName,
                            UsdTimeCode time,
-                           UsdImagingValueCache* valueCache);
+                           UsdImagingValueCache* valueCache) const;
 
     /// Reads the extent from the given prim. If the extent is not authored,
     /// an empty GfRange3d is returned, the extent will not be computed.
-    GfRange3d _GetExtent(UsdPrim const& prim, UsdTimeCode time);
+    GfRange3d _GetExtent(UsdPrim const& prim, UsdTimeCode time) const;
 
     /// Returns the doubleSided state for a given prim.
-    bool _GetDoubleSided(UsdPrim const& prim);
+    bool _GetDoubleSided(UsdPrim const& prim) const;
 
     /// Returns the UsdGeomImagable "purpose" for this prim, including any
     /// inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time);
+    TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time) const;
 };
 
 

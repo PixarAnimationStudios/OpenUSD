@@ -72,7 +72,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
     virtual void UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
@@ -87,7 +87,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -176,7 +176,7 @@ public:
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &instancerPath,
         SdfPath const &protoInstancerPath,
-        UsdTimeCode time);
+        UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Selection
@@ -227,20 +227,21 @@ private:
 
     // Returns true if the instancer is visible, taking into account all
     // parent instancers visibilities.
-    bool _GetInstancerVisible(SdfPath const &instancerPath, UsdTimeCode time);
+    bool _GetInstancerVisible(SdfPath const &instancerPath, UsdTimeCode time) 
+        const;
 
     // Update the dirty bits per-instancer. This is only executed once per
     // instancer, this method uses the instancer mutex to avoid redundant work.
     //
     // Returns the instancer's dirty bits.
-    int _UpdateDirtyBits(UsdPrim const& instancerPrim);
+    int _UpdateDirtyBits(UsdPrim const& instancerPrim) const;
 
     // Gets the associated _ProtoRprim for the given instancer and cache path.
     _ProtoRprim const& _GetProtoRprim(SdfPath const& instancerPath, 
                                       SdfPath const& cachePath) const;
 
     // Gets the UsdPrim to use from the given _ProtoRprim.
-    const UsdPrim _GetProtoUsdPrim(_ProtoRprim const& proto);
+    const UsdPrim _GetProtoUsdPrim(_ProtoRprim const& proto) const;
 
     // Takes the transform in the value cache (this must exist before calling
     // this method) and applies a corrective transform to 1) remove any
@@ -250,7 +251,7 @@ private:
                            UsdPrim const& proto,
                            SdfPath const& cachePath,
                            SdfPathVector const& protoPathChain,
-                           UsdTimeCode time);
+                           UsdTimeCode time) const;
 
     // Similar to CorrectTransform, requires a visibility value exist in the
     // ValueCache, removes any visibility opinions above the model root (proto
@@ -258,12 +259,12 @@ private:
     void _ComputeProtoVisibility(UsdPrim const& protoRoot,
                                  UsdPrim const& protoGprim,
                                  UsdTimeCode time,
-                                 bool* vis);
+                                 bool* vis) const;
 
     // Computes the Purpose for the prototype, stopping at the proto root.
     void _ComputeProtoPurpose(UsdPrim const& protoRoot,
                               UsdPrim const& protoGprim,
-                              TfToken* purpose);
+                              TfToken* purpose) const;
 
     /*
       PointInstancer (InstancerData)
@@ -355,10 +356,11 @@ private:
 
     // A map of instancer data, one entry per instancer prim that has been
     // populated.
+    // Note: this is accessed in multithreaded code paths and must be protected
     typedef boost::unordered_map<SdfPath /*instancerPath*/, 
                                  _InstancerData, 
                                  SdfPath::Hash> _InstancerDataMap;
-    _InstancerDataMap _instancerData;
+    mutable _InstancerDataMap _instancerData;
 };
 
 

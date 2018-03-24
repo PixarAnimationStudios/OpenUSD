@@ -105,7 +105,7 @@ UsdSkelImagingSkelRootAdapter::TrackVariability(
     const UsdPrim& prim,
     const SdfPath& cachePath,
     HdDirtyBits* timeVaryingBits,
-    const UsdImagingInstancerContext* instancerContext)
+    const UsdImagingInstancerContext* instancerContext) const
 {
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
@@ -174,7 +174,7 @@ UsdSkelImagingSkelRootAdapter::UpdateForTime(
     const SdfPath& cachePath,
     UsdTimeCode time,
     HdDirtyBits requestedBits,
-    const UsdImagingInstancerContext* instancerContext)
+    const UsdImagingInstancerContext* instancerContext) const
 {
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
@@ -302,7 +302,7 @@ UsdSkelImagingSkelRootAdapter::_GetExtent(
 
 
 UsdSkelImagingSkelRootAdapter::_SkelInstance*
-UsdSkelImagingSkelRootAdapter::_GetSkelInstance(const SdfPath& cachePath)
+UsdSkelImagingSkelRootAdapter::_GetSkelInstance(const SdfPath& cachePath) const
 {
     auto it = _instanceCache.find(cachePath);
     return it != _instanceCache.end() ? it->second.get() : nullptr;

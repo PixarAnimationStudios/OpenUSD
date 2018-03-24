@@ -426,7 +426,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext)
+                                      instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
 
@@ -761,7 +761,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                   instancerContext) const
 {
     UsdImagingValueCache* valueCache = _GetValueCache();
     if (IsChildPath(cachePath)) {
@@ -1298,7 +1298,8 @@ UsdImagingPointInstancerAdapter::_GetProtoRprim(SdfPath const& instrPath,
 }
 
 const UsdPrim
-UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(_ProtoRprim const& proto)
+UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(
+    _ProtoRprim const& proto) const
 {
     // proto.paths.front() is the most local path for the rprim.
     // If it's not native-instanced, proto.paths will be size 1.
@@ -1321,7 +1322,7 @@ UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(_ProtoRprim const& proto)
 
 bool
 UsdImagingPointInstancerAdapter::_GetInstancerVisible(
-    SdfPath const &instancerPath, UsdTimeCode time)
+    SdfPath const &instancerPath, UsdTimeCode time) const
 {
     bool visible = UsdImagingPrimAdapter::GetVisible(
         _GetPrim(instancerPath.GetPrimPath()), time);
@@ -1425,6 +1426,7 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
 
 int
 UsdImagingPointInstancerAdapter::_UpdateDirtyBits(UsdPrim const& instancerPrim)
+    const
 {
     // We expect the instancerData entry for this instancer to be established
     // before this method is called. This map should also never be accessed and
@@ -1515,7 +1517,7 @@ UsdImagingPointInstancerAdapter::_CorrectTransform(UsdPrim const& instancer,
                                                    UsdPrim const& protoRoot,
                                                    SdfPath const& cachePath,
                                                    SdfPathVector const& protoPathChain,
-                                                   UsdTimeCode time)
+                                                   UsdTimeCode time) const
 {
     // Subtract out the parent transform from prototypes (in prototype time).
     //
@@ -1583,7 +1585,7 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
                                  UsdPrim const& protoRoot,
                                  UsdPrim const& protoGprim,
                                  UsdTimeCode time,
-                                 bool* vis)
+                                 bool* vis) const
 {
     if (!TF_VERIFY(vis)) { return; }
     if (!protoGprim.GetPath().HasPrefix(protoGprim.GetPath())) {
@@ -1626,7 +1628,7 @@ void
 UsdImagingPointInstancerAdapter::_ComputeProtoPurpose(
                                  UsdPrim const& protoRoot,
                                  UsdPrim const& protoGprim,
-                                 TfToken* purpose)
+                                 TfToken* purpose) const
 {
     if (!TF_VERIFY(purpose)) { return; }
     if (!protoGprim.GetPath().HasPrefix(protoGprim.GetPath())) {
@@ -1906,7 +1908,7 @@ UsdImagingPointInstancerAdapter::GetInstanceIndices(
 GfMatrix4d
 UsdImagingPointInstancerAdapter::GetRelativeInstancerTransform(
     SdfPath const &parentInstancerPath, SdfPath const &cachePath,
-    UsdTimeCode time)
+    UsdTimeCode time) const
 {
     GfMatrix4d transformRoot(1); // target to world.
 
