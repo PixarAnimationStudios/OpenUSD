@@ -101,20 +101,7 @@ UsdUsdcFileFormat::Read(const SdfLayerBasePtr& layerBase,
     if (!crateData || !crateData->Open(resolvedPath))
         return false;
 
-    // Just swap out the data - unlike text layers fully populated into memory,
-    // we have no way of tracking change state for undo and inverses.
-
-    // XXX  Is this right?
-    if (_LayerIsLoadingAsNew(layer)) {
-        // New layer, so we don't need undo inverses or notification.
-        // Just swap out the data.
-        _SwapLayerData(layer, data);
-    } else {
-        // Layer has pre-existing data.  Use _SetData() to provide
-        // fine-grained inverses and undo registration.
-        _SetLayerData(layer, data);
-    }
-
+    _SetLayerData(layer, data);
     return true;
 }
 

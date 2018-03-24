@@ -177,16 +177,7 @@ SdfTextFileFormat::Read(
         return false;
     }
 
-    if (_LayerIsLoadingAsNew(layer)) {
-        // New layer, so we don't need undo inverses or notification.
-        // Just swap out the data.
-        _SwapLayerData(layer, data);
-    } else {
-        // Layer has pre-existing data.  Use _SetData() to provide
-        // fine-grained inverses and undo registration.
-        _SetLayerData(layer, data);
-    }
-
+    _SetLayerData(layer, data);
     return true;
 }
 
@@ -356,16 +347,7 @@ SdfTextFileFormat::ReadFromString(
         return false;
     }
 
-    if (_LayerIsLoadingAsNew(layer)) {
-        // New layer, so we don't need undo inverses or notification.
-        // Just swap out the data.
-        _SwapLayerData(layer, data);
-    } else {
-        // Layer has pre-existing data.  Use _SetData() to provide
-        // fine-grained inverses and undo registration.
-        _SetLayerData(layer, data);
-    }
-
+    _SetLayerData(layer, data);
     return true;
 }
 
