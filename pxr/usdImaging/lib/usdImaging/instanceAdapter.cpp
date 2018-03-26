@@ -1308,9 +1308,10 @@ UsdImagingInstanceAdapter::_GetProtoRprim(SdfPath const& instancerPath,
     ctx->instanceMaterialId = materialId;
     ctx->instanceDrawMode = drawMode;
     ctx->childName = TfToken();
-    // XXX: Note the const_cast here is not ideal at all.
-    ctx->instancerAdapter = 
-        const_cast<UsdImagingInstanceAdapter *>(this)->_GetSharedFromThis();
+    // Note: use a null adapter here.  The UsdImagingInstancerContext is
+    // not really used outside of population.  We should clean this up and
+    // remove these contexts from everything outside of population.
+    ctx->instancerAdapter = UsdImagingPrimAdapterSharedPtr();
 
     return *r;
 }
