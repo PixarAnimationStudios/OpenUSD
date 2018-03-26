@@ -45,6 +45,7 @@ public:
         CoreType(Empty);
 
         TfType type;
+        std::string cppTypeName;
         TfToken role;
         SdfTupleDimensions dim;
         VtValue value;

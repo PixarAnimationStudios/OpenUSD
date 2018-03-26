@@ -402,17 +402,30 @@ SdfSchemaBase::_ValueTypeRegistrar::_ValueTypeRegistrar(
     // Do nothing
 }
 
+static std::string
+_GetTypeName(const TfType& type, const std::string& cppTypeName)
+{
+    return (cppTypeName.empty() ? 
+            (type ? type.GetTypeName() : std::string()) :
+            cppTypeName);
+}
+
 void
 SdfSchemaBase::_ValueTypeRegistrar::AddType(const Type& type)
 {
     if (!type._defaultValue.IsEmpty() || !type._defaultArrayValue.IsEmpty()) {
         _registry->AddType(
-            type._name, type._defaultValue, type._defaultArrayValue,
+            type._name, type._defaultValue, type._defaultArrayValue, 
+            _GetTypeName(type._defaultValue.GetType(), type._cppTypeName),
+            _GetTypeName(type._defaultArrayValue.GetType(), 
+                         type._arrayCppTypeName),
             type._unit, type._role, type._dimensions);
     }
     else {
         _registry->AddType(
             type._name, type._type, /* arrayType = */ TfType(), 
+            _GetTypeName(type._type, type._cppTypeName),
+            /* arrayCppTypeName = */ std::string(),
             type._unit, type._role, type._dimensions);
     }
 }
@@ -1529,17 +1542,19 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     // XXX: We also need to fix the VT_INTEGRAL_BUILTIN_VALUE_TYPES
     //       macro to use 'int8_t' if we add 'char'.
     //r.AddType(T("char",   int8_t());
-    r.AddType(T("uchar",  uint8_t()));
+    r.AddType(T("uchar",  uint8_t()).CPPTypeName("unsigned char"));
     //r.AddType(T("short",  int16_t());
     //r.AddType(T("ushort", uint16_t());
-    r.AddType(T("int",    int32_t()));
-    r.AddType(T("uint",   uint32_t()));
-    r.AddType(T("int64",  int64_t()));
-    r.AddType(T("uint64", uint64_t()));
-    r.AddType(T("half",   GfHalf(0.0)));
+    r.AddType(T("int",    int32_t()).CPPTypeName("int"));
+    r.AddType(T("uint",   uint32_t()).CPPTypeName("unsigned int"));
+    r.AddType(T("int64",  int64_t()).CPPTypeName("int64_t"));
+    r.AddType(T("uint64", uint64_t()).CPPTypeName("uint64_t"));
+    r.AddType(T("half",   GfHalf(0.0)).CPPTypeName("GfHalf"));
     r.AddType(T("float",  float()));
     r.AddType(T("double", double()));
-    r.AddType(T("string", std::string()));
+    // TfType reports "string" as the typename for "std::string", but we want
+    // the fully-qualified name for documentation purposes.
+    r.AddType(T("string", std::string()).CPPTypeName("std::string"));
     r.AddType(T("token",  TfToken()));
     r.AddType(T("asset",  SdfAssetPath()));
 

@@ -99,6 +99,13 @@ public:
     SDF_API
     const TfType& GetType() const;
 
+    /// Returns the C++ type name for this type.  This may not be the same
+    /// as the type name returned by GetType().GetTypeName(), since that
+    /// method may have had additional transformations applied for
+    /// readability.
+    SDF_API
+    const std::string& GetCPPTypeName() const;
+
     /// Returns the type's role.
     SDF_API
     const TfToken& GetRole() const;

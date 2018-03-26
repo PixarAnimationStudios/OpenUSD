@@ -381,6 +381,17 @@ protected:
                 , _type(type)
             { }
 
+            // Set C++ type name string for this type. Defaults to type name
+            // from TfType.
+            Type& CPPTypeName(const std::string& cppTypeName)
+            {
+                _cppTypeName = cppTypeName;
+                if (!_defaultArrayValue.IsEmpty()) {
+                    _arrayCppTypeName = "VtArray<" + cppTypeName + ">";
+                }
+                return *this;
+            }
+
             // Set shape for this type. Defaults to shapeless.
             Type& Dimensions(const SdfTupleDimensions& dims)
             { _dimensions = dims; return *this; }
@@ -392,7 +403,12 @@ protected:
             Type& Role(const TfToken& role) { _role = role; return *this; }
 
             // Indicate that arrays of this type are not supported.
-            Type& NoArrays() { _defaultArrayValue = VtValue(); return *this; }
+            Type& NoArrays() 
+            { 
+                _defaultArrayValue = VtValue(); 
+                _arrayCppTypeName = std::string();
+                return *this; 
+            }
 
         private:
             friend class _ValueTypeRegistrar;
@@ -400,6 +416,7 @@ protected:
             std::string _name;
             TfType _type;
             VtValue _defaultValue, _defaultArrayValue;
+            std::string _cppTypeName, _arrayCppTypeName;
             TfEnum _unit;
             TfToken _role;
             SdfTupleDimensions _dimensions;
