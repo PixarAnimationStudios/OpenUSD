@@ -221,14 +221,7 @@ class AttrInfo(PropInfo):
         
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
         self.fallback = sdfProp.default
-
-        self.cppType = sdfProp.typeName.type.typeName
-        # XXX: not sure why, but std::string maps to string, perhaps a
-        # result of calling this from Python. Remap it to std::string here
-        # manually.
-        if self.cppType == 'string':
-            self.cppType = 'std::string'
-
+        self.cppType = sdfProp.typeName.cppTypeName
         self.usdType = "SdfValueTypeNames->%s" % (
             valueTypeNameToStr[sdfProp.typeName])
         

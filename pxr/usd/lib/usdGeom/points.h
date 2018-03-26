@@ -185,7 +185,7 @@ public:
     /// binary state on Id'd points without adding a separate 
     /// primvar.
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback

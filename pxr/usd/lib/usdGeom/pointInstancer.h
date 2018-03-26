@@ -399,7 +399,7 @@ public:
     /// binary state on Id'd instances without adding a separate primvar.
     /// See also \ref UsdGeomPointInstancer_varyingTopo
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
@@ -558,7 +558,7 @@ public:
     /// A list of id's to make invisible at the evaluation time.
     /// See \ref UsdGeomPointInstancer_invisibleIds .
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: []

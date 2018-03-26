@@ -281,7 +281,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: long
+    /// \n  C++ Type: int64_t
     /// \n  Usd Type: SdfValueTypeNames->Int64
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0
@@ -302,7 +302,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: unsigned long
+    /// \n  C++ Type: uint64_t
     /// \n  Usd Type: SdfValueTypeNames->UInt64
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0
@@ -323,7 +323,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: pxr_half::half
+    /// \n  C++ Type: GfHalf
     /// \n  Usd Type: SdfValueTypeNames->Half
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: 0.0
@@ -1247,7 +1247,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
@@ -1268,7 +1268,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<unsigned long>
+    /// \n  C++ Type: VtArray<uint64_t>
     /// \n  Usd Type: SdfValueTypeNames->UInt64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
@@ -1289,7 +1289,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<pxr_half::half>
+    /// \n  C++ Type: VtArray<GfHalf>
     /// \n  Usd Type: SdfValueTypeNames->HalfArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
@@ -1352,7 +1352,7 @@ public:
     // --------------------------------------------------------------------- //
     /// 
     ///
-    /// \n  C++ Type: VtArray<string>
+    /// \n  C++ Type: VtArray<std::string>
     /// \n  Usd Type: SdfValueTypeNames->StringArray
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
