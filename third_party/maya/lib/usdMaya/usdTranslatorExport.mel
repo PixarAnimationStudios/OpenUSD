@@ -78,12 +78,6 @@ global proc string usdTranslatorExport_AppendMultiFloatFromTextField(string $cur
     return $currentOptions;
 }
 
-global proc string usdTranslatorExport_AppendFromTextField(string $currentOptions, string $arg, string $widget) {
-    string $rawValue = `textFieldGrp -q -text $widget`;
-    $currentOptions = $currentOptions + ";" + $arg + "=" + $rawValue;
-    return $currentOptions;
-}
-
 global proc int usdTranslatorExport (string $parent,
                                      string $action,
                                      string $initialSettings,
