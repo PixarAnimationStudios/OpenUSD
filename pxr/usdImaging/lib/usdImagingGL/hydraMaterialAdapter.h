@@ -130,9 +130,11 @@ private:
     /// shader.
     UsdPrim _GetSurfaceShaderPrim(const UsdShadeMaterial &material) const;
 
-    /// \brief Returns the information in the material graph
-    /// (identified by \c SdfPath objects) that this \p prim uses.
-    void _GatherMaterialData(
+    /// \brief Populates the information in the material graph
+    /// (identified by \c SdfPath objects) that this \p materialPrim uses.
+    /// 
+    /// Returns false if the material prim has an invalid material graph.
+    bool _GatherMaterialData(
         UsdPrim const& materialPrim,
         UsdPrim *shaderPrim,
         SdfPathVector *textureIDs,

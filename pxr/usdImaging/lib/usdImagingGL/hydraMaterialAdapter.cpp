@@ -91,22 +91,22 @@ UsdImagingGLHydraMaterialAdapter::Populate(UsdPrim const& prim,
         return cachePath;
     }
 
+    // Extract the textures from the graph of this material.
+    SdfPathVector textures;
+    TfTokenVector primvars;
+    HdMaterialParamVector params;
+    UsdPrim surfaceShaderPrim;
+    if (!_GatherMaterialData(prim, &surfaceShaderPrim, &textures, &primvars, 
+                             &params)) {
+        return prim.GetPath();
+    }
+
     index->InsertSprim(HdPrimTypeTokens->material,
                        cachePath,
                        prim, shared_from_this());
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     if (index->IsBprimTypeSupported(HdPrimTypeTokens->texture)) {
-
-        // Extract the textures from the graph of this material.
-        SdfPathVector textures;
-        TfTokenVector primvars;
-        HdMaterialParamVector params;
-
-        UsdPrim surfaceShaderPrim;
-        _GatherMaterialData(prim, &surfaceShaderPrim, &textures, &primvars, 
-                            &params);
-
         TF_FOR_ALL(textureIt, textures) {
             // Textures are inserted as property paths, with the property being
             // the texture asset path.  Some textures will have sibling
@@ -323,8 +323,12 @@ UsdImagingGLHydraMaterialAdapter::UpdateForTime(
     if (requestedBits & HdMaterial::DirtySurfaceShader ||
         requestedBits & HdMaterial::DirtyParams) 
     {
-        _GatherMaterialData(prim, &surfaceShaderPrim, &textures, &primvars, 
-                            &params);
+        if (!_GatherMaterialData(prim, &surfaceShaderPrim, &textures, &primvars, 
+                                 &params)) {       
+            TF_CODING_ERROR("Failed to gather material data for already "
+                "populated material prim <%s>.", prim.GetPath().GetText());
+            return;
+        }
     }
 
     UsdImagingValueCache* valueCache = _GetValueCache();
@@ -415,7 +419,9 @@ UsdImagingGLHydraMaterialAdapter::_GetShaderSource(
         srcAttr = shader.GetInput(filename);
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Loading UsdShade shader: %s\n",
                     srcAttr.GetPath().GetText());
-    } else {
+    } 
+
+    if (!srcAttr) {
         // ------------------------------------------------------------------ //
         // Deprecated
         // ------------------------------------------------------------------ //
@@ -496,7 +502,7 @@ UsdImagingGLHydraMaterialAdapter::_GetMaterialParamValue(
     return value;
 }
 
-void
+bool
 UsdImagingGLHydraMaterialAdapter::_GatherMaterialData(
     UsdPrim const &materialPrim,
     UsdPrim *shaderPrim,
@@ -513,7 +519,7 @@ UsdImagingGLHydraMaterialAdapter::_GatherMaterialData(
             shaderPrim->GetPath().GetText());
     } else {
         TF_DEBUG(USDIMAGING_SHADERS).Msg("- No valid surface shader!\n");
-        return;
+        return false;
     }
 
     if (UsdShadeShader s = UsdShadeShader(*shaderPrim)) {
@@ -522,6 +528,8 @@ UsdImagingGLHydraMaterialAdapter::_GatherMaterialData(
         _WalkShaderNetworkDeprecated(*shaderPrim, textureIDs, primvars, 
                                      params);
     }
+
+    return true;
 }
 
 void

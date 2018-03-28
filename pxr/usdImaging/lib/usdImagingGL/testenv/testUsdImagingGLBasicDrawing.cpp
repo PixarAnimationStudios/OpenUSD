@@ -284,7 +284,12 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             }
         }
 
-        _engine->Render(_stage->GetPseudoRoot(), params);
+        {
+            TfErrorMark mark;
+            _engine->Render(_stage->GetPseudoRoot(), params);
+            TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");
+        }
+
         std::cout << "itemsDrawn " << perfLog.GetCounter(HdTokens->itemsDrawn) << std::endl;
         std::cout << "totalItemCount " << perfLog.GetCounter(HdTokens->totalItemCount) << std::endl;
 
