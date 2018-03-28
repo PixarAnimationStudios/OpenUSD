@@ -186,6 +186,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
 
@@ -204,9 +205,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riLookVolume, "riLook:volume"))
 
     // deprecated tokens for handling backwards compatibility.
+    ((bxdfOutputName, "ri:bxdf"))
     ((bxdfOutputAttrName, "outputs:ri:bxdf"))
     ((riLookBxdf, "riLook:bxdf"))
 );
+
+TF_DEFINE_ENV_SETTING(
+    USD_RI_WRITE_BXDF_OUTPUT, true, 
+    "If set to false, then \"ri:surface\" output is created instead of the "
+    "\"ri:bxdf\" output, when UsdRiMaterialAPI::SetSurfaceSource() is "
+    "invoked.");
 
 UsdShadeShader
 UsdRiMaterialAPI::_GetSourceShaderObject(const UsdShadeOutput &output,
@@ -331,6 +339,27 @@ UsdRiMaterialAPI::GetVolumeOutput() const
 bool
 UsdRiMaterialAPI::SetSurfaceSource(const SdfPath &surfacePath) const
 {
+    static const bool writeBxdfOutput = 
+            TfGetEnvSetting(USD_RI_WRITE_BXDF_OUTPUT);
+    if (writeBxdfOutput) {
+        if (UsdShadeUtils::WriteNewEncoding()) {
+            if (UsdShadeOutput bxdfOutput = UsdShadeMaterial(GetPrim())
+                    .CreateOutput(_tokens->bxdfOutputName, 
+                                  SdfValueTypeNames->Token)) {
+                const SdfPath sourcePath = surfacePath.IsPropertyPath() ? 
+                    surfacePath : 
+                    surfacePath.AppendProperty(_tokens->defaultOutputName);
+                return UsdShadeConnectableAPI::ConnectToSource(
+                    bxdfOutput, sourcePath);
+            }
+        } else if (UsdRelationship bxdfRel= GetPrim().CreateRelationship(
+                    _tokens->riLookBxdf, /*custom*/ false)) {
+            return bxdfRel.SetTargets(
+                    std::vector<SdfPath>{surfacePath.GetPrimPath()});
+        }
+        return false;
+    }
+
     if (UsdShadeUtils::WriteNewEncoding()) {
         UsdShadeOutput surfaceOutput = UsdShadeMaterial(GetPrim())
                 .CreateSurfaceOutput(/*purpose*/ _tokens->ri);
@@ -341,6 +370,8 @@ UsdRiMaterialAPI::SetSurfaceSource(const SdfPath &surfacePath) const
                     _tokens->riLookSurface, /*custom*/ false)) {
         return surfaceRel.SetTargets(std::vector<SdfPath>{surfacePath});
     }
+
+    
     return false;
 }
 

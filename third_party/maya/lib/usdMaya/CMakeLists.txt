@@ -442,6 +442,7 @@ pxr_register_test(testUsdExportShadingModeDisplayColor
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        USD_RI_WRITE_BXDF_OUTPUT=0
 )
 
 pxr_install_test_dir(
@@ -456,6 +457,7 @@ pxr_register_test(testUsdExportShadingModePxrRis
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        USD_RI_WRITE_BXDF_OUTPUT=0
 )
 
 pxr_install_test_dir(
