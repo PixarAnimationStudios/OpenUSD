@@ -440,11 +440,18 @@ _GetMaterialAttr(
         std::string handle = _CreateShadingNode(
             surfaceShader.GetPrim(), currentTime,
             nodesBuilder, interfaceBuilder, "prman", flatten);
-        terminalsBuilder.set("prmanSurface",
-                             FnKat::StringAttribute(handle));
-        // Also export a prmanBxdf terminal for backwards compatibility.
-        terminalsBuilder.set("prmanBxdf",
-                             FnKat::StringAttribute(handle));
+    
+        // If the source shader type is an RslShader, then publish it 
+        // as a prmanSurface terminal. If not, fallback to the 
+        // prmanBxdf terminal.
+        UsdRiRslShader rslShader(surfaceShader.GetPrim());
+        if (rslShader) {
+            terminalsBuilder.set("prmanSurface",
+                                 FnKat::StringAttribute(handle));
+        } else {
+            terminalsBuilder.set("prmanBxdf",
+                                 FnKat::StringAttribute(handle));
+        }
     }
 
     // look for displacement

@@ -243,11 +243,6 @@
       </attr>
     </attr>
     <attr name="terminals" type="GroupAttr">
-      <attr name="prmanSurface" tupleSize="1" type="StringAttr">
-        <sample size="1" time="0">
-          <str value="PxrDisney5"/>
-        </sample>
-      </attr>
       <attr name="prmanBxdf" tupleSize="1" type="StringAttr">
         <sample size="1" time="0">
           <str value="PxrDisney5"/>
