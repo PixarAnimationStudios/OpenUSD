@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Usd, Vt, Sdf
+from pxr import Usd, Vt, Sdf, Tf
 import unittest
 
 stage = Usd.Stage.Open("./Test.usda")
@@ -388,6 +388,15 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         mqueryC = collectionC.ComputeMembershipQuery()
         self.assertEqual(len(ComputeIncObjs(mqueryC, stage)), 9)
+
+    def test_InvalidApplyCollection(self):
+        # ----------------------------------------------------------
+        # Test ApplyCollection when passed a string that doesn't tokenize to
+        # make sure we don't crash in that case, but issue a coding error.
+        with self.assertRaises(Tf.ErrorException):
+            Usd.CollectionAPI.ApplyCollection(testPrim, "", 
+                    Usd.Tokens.explicitOnly)
+
 
 if __name__ == "__main__":
     unittest.main()
