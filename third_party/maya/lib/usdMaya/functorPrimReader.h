@@ -47,28 +47,25 @@ class PxrUsdMayaFunctorPrimReader : public PxrUsdMayaPrimReader
 {
 public:
     typedef std::function< bool (
-            const PxrUsdMayaPrimReaderArgs&, 
+            const PxrUsdMayaPrimReaderArgs&,
             PxrUsdMayaPrimReaderContext*) > ReaderFn;
 
     PXRUSDMAYA_API
     PxrUsdMayaFunctorPrimReader(
-            const PxrUsdMayaPrimReaderArgs&, 
-            PxrUsdMayaPrimReaderContext*,
+            const PxrUsdMayaPrimReaderArgs&,
             ReaderFn);
 
     PXRUSDMAYA_API
-    bool Read() override;
+    bool Read(PxrUsdMayaPrimReaderContext* context) override;
 
     PXRUSDMAYA_API
     static PxrUsdMayaPrimReaderPtr Create(
-            const PxrUsdMayaPrimReaderArgs&, 
-            PxrUsdMayaPrimReaderContext*,
+            const PxrUsdMayaPrimReaderArgs&,
             ReaderFn readerFn);
 
     PXRUSDMAYA_API
     static std::function< PxrUsdMayaPrimReaderPtr(
-            const PxrUsdMayaPrimReaderArgs&, 
-            PxrUsdMayaPrimReaderContext*) >
+            const PxrUsdMayaPrimReaderArgs&) >
             CreateFactory(ReaderFn readerFn);
 
 private:

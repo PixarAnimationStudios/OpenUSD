@@ -35,37 +35,33 @@ class PxrUsdMayaPrimReader
 {
 public:
     PXRUSDMAYA_API
-    PxrUsdMayaPrimReader(
-            const PxrUsdMayaPrimReaderArgs&,
-            PxrUsdMayaPrimReaderContext*);
+    PxrUsdMayaPrimReader(const PxrUsdMayaPrimReaderArgs&);
     virtual ~PxrUsdMayaPrimReader() {};
 
     /// Reads the USD prim given by the prim reader args into a Maya shape,
     /// modifying the prim reader context as a result.
+    /// Callers must ensure \p context is non-null.
     /// Returns true if successful.
-    virtual bool Read() = 0;
+    virtual bool Read(PxrUsdMayaPrimReaderContext* context) = 0;
 
     /// Whether this prim reader specifies a PostReadSubtree step.
     virtual bool HasPostReadSubtree() const;
 
     /// An additional import step that runs after all descendants of this prim
     /// have been processed.
+    /// Callers must ensure \p context is non-null.
     /// For example, if we have prims /A, /A/B, and /C, then the import steps
     /// are run in the order:
     /// (1) Read A (2) Read B (3) PostReadSubtree B (4) PostReadSubtree A,
     /// (5) Read C (6) PostReadSubtree C
-    virtual void PostReadSubtree();
+    virtual void PostReadSubtree(PxrUsdMayaPrimReaderContext* context);
 
 protected:
     /// Input arguments. Read data about the input USD prim from here.
     const PxrUsdMayaPrimReaderArgs& _GetArgs();
-    /// Output context. Write data here to inform the read job about any Maya
-    /// nodes added as well as further traversal behavior.
-    PxrUsdMayaPrimReaderContext* _GetContext();
 
 private:
-    const PxrUsdMayaPrimReaderArgs& _args;
-    PxrUsdMayaPrimReaderContext* _context;
+    const PxrUsdMayaPrimReaderArgs _args;
 };
 
 typedef std::shared_ptr<PxrUsdMayaPrimReader> PxrUsdMayaPrimReaderPtr;

@@ -43,21 +43,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrUsdMayaPrimReaderSkelRoot : public PxrUsdMayaPrimReader
 {
 public:
-    PxrUsdMayaPrimReaderSkelRoot(const PxrUsdMayaPrimReaderArgs& args,
-                                 PxrUsdMayaPrimReaderContext* ctx)
-        : PxrUsdMayaPrimReader(args, ctx) {}
+    PxrUsdMayaPrimReaderSkelRoot(const PxrUsdMayaPrimReaderArgs& args)
+        : PxrUsdMayaPrimReader(args) {}
 
     virtual ~PxrUsdMayaPrimReaderSkelRoot() {}
 
-    virtual bool Read() override;
+    virtual bool Read(PxrUsdMayaPrimReaderContext* context) override;
 
     virtual bool HasPostReadSubtree() const override { return true; }
 
-    virtual void PostReadSubtree() override;
+    virtual void PostReadSubtree(PxrUsdMayaPrimReaderContext* context) override;
 
 protected:
     bool _ReadSkel(const UsdSkelSkeletonQuery& skelQuery,
-                   MObject& bindingSiteNode);
+                   MObject& bindingSiteNode,
+                   PxrUsdMayaPrimReaderContext* context);
 
 private:
     // TODO: Ideally, we'd share the cache across different models
@@ -69,17 +69,16 @@ private:
 
 TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, UsdSkelRoot) {
     PxrUsdMayaPrimReaderRegistry::Register<UsdSkelRoot>(
-        [](const PxrUsdMayaPrimReaderArgs& args,
-           PxrUsdMayaPrimReaderContext* ctx)
+        [](const PxrUsdMayaPrimReaderArgs& args)
         {
             return PxrUsdMayaPrimReaderPtr(
-                new PxrUsdMayaPrimReaderSkelRoot(args, ctx));
+                new PxrUsdMayaPrimReaderSkelRoot(args));
         });
 }
 
 
 bool
-PxrUsdMayaPrimReaderSkelRoot::Read()
+PxrUsdMayaPrimReaderSkelRoot::Read(PxrUsdMayaPrimReaderContext* context)
 {
     const UsdPrim& prim = _GetArgs().GetUsdPrim();
     if(!TF_VERIFY(prim))
@@ -89,20 +88,21 @@ PxrUsdMayaPrimReaderSkelRoot::Read()
     // The skel root itself is a transform, so produce a transform.
     // The rest of the skel is produced as a post sub-tree process.
     MObject parentNode =
-        _GetContext()->GetMayaNode(prim.GetPath().GetParentPath(),
-                                   /*findAncestors*/ true);
+        context->GetMayaNode(prim.GetPath().GetParentPath(),
+                            /*findAncestors*/ true);
 
     MStatus status;
     MObject obj;
     return PxrUsdMayaTranslatorUtil::CreateTransformNode(prim, parentNode,
                                                          _GetArgs(),
-                                                         _GetContext(),
+                                                         context,
                                                          &status, &obj);
 }
 
 
 void
-PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree()
+PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree(
+    PxrUsdMayaPrimReaderContext* context)
 {
     UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
     if(!TF_VERIFY(skelRoot))
@@ -113,10 +113,10 @@ PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree()
     for(const UsdPrim& prim : UsdPrimRange(skelRoot.GetPrim())) {
         if(UsdSkelSkeletonQuery skelQuery = _cache.GetSkelQuery(prim)) {
             MObject bindingSiteNode =
-                _GetContext()->GetMayaNode(prim.GetPath(),
+                context->GetMayaNode(prim.GetPath(),
                                            /*findAncestors*/ true);
             if(!bindingSiteNode.isNull()) {
-                _ReadSkel(skelQuery, bindingSiteNode);
+                _ReadSkel(skelQuery, bindingSiteNode, context);
             }
         }
     }
@@ -125,13 +125,14 @@ PxrUsdMayaPrimReaderSkelRoot::PostReadSubtree()
 
 bool
 PxrUsdMayaPrimReaderSkelRoot::_ReadSkel(const UsdSkelSkeletonQuery& skelQuery,
-                                        MObject& bindingSiteNode)
+                                        MObject& bindingSiteNode,
+                                        PxrUsdMayaPrimReaderContext* context)
 {
     // Build out a joint hierarchy.
     std::vector<MObject> joints;
     if(!PxrUsdMayaTranslatorSkel::CreateJoints(
            skelQuery, bindingSiteNode,
-           _GetArgs(), _GetContext(), &joints)) {
+           _GetArgs(), context, &joints)) {
         return false;
     }
 
@@ -140,7 +141,7 @@ PxrUsdMayaPrimReaderSkelRoot::_ReadSkel(const UsdSkelSkeletonQuery& skelQuery,
     // functions based on the definition of the bind pose.
     MObject bindPose;
     if(!PxrUsdMayaTranslatorSkel::CreateBindPose(
-           skelQuery, joints, _GetContext(), &bindPose)) {
+           skelQuery, joints, context, &bindPose)) {
         return false;
     }
 
@@ -159,7 +160,7 @@ PxrUsdMayaPrimReaderSkelRoot::_ReadSkel(const UsdSkelSkeletonQuery& skelQuery,
             // Add a skin cluster to skin this prim.
             success &= PxrUsdMayaTranslatorSkel::CreateSkinCluster(
                 skelQuery, pair.second, joints, pair.first,
-                _GetArgs(), _GetContext(), bindPose);
+                _GetArgs(), context, bindPose);
         }
     }
     return success;

@@ -27,39 +27,35 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PxrUsdMayaFunctorPrimReader::PxrUsdMayaFunctorPrimReader(
     const PxrUsdMayaPrimReaderArgs& args, 
-    PxrUsdMayaPrimReaderContext* context,
     ReaderFn readerFn)
-    : PxrUsdMayaPrimReader(args, context), _readerFn(readerFn)
+    : PxrUsdMayaPrimReader(args), _readerFn(readerFn)
 {
 }
 
 bool
-PxrUsdMayaFunctorPrimReader::Read()
+PxrUsdMayaFunctorPrimReader::Read(PxrUsdMayaPrimReaderContext* context)
 {
-    return _readerFn(_GetArgs(), _GetContext());
+    TF_VERIFY(context);
+    return _readerFn(_GetArgs(), context);
 }
 
 /* static */
 PxrUsdMayaPrimReaderPtr
 PxrUsdMayaFunctorPrimReader::Create(
         const PxrUsdMayaPrimReaderArgs& args, 
-        PxrUsdMayaPrimReaderContext* context,
         ReaderFn readerFn)
 {
-    return std::make_shared<PxrUsdMayaFunctorPrimReader>(
-            args, context, readerFn);
+    return std::make_shared<PxrUsdMayaFunctorPrimReader>(args, readerFn);
 }
 
 /* static */
 std::function< PxrUsdMayaPrimReaderPtr(
-        const PxrUsdMayaPrimReaderArgs&, 
-        PxrUsdMayaPrimReaderContext*) >
+        const PxrUsdMayaPrimReaderArgs&) >
 PxrUsdMayaFunctorPrimReader::CreateFactory(ReaderFn readerFn)
 {
     return std::bind(
             Create,
             std::placeholders::_1,
-            std::placeholders::_2,
             readerFn);
 }
 

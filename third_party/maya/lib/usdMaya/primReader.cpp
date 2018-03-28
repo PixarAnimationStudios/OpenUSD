@@ -25,10 +25,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrUsdMayaPrimReader::PxrUsdMayaPrimReader(
-    const PxrUsdMayaPrimReaderArgs& args,
-    PxrUsdMayaPrimReaderContext* context)
-    : _args(args), _context(context)
+PxrUsdMayaPrimReader::PxrUsdMayaPrimReader(const PxrUsdMayaPrimReaderArgs& args)
+    : _args(args)
 {
 }
 
@@ -39,19 +37,13 @@ PxrUsdMayaPrimReader::HasPostReadSubtree() const
 }
 
 void
-PxrUsdMayaPrimReader::PostReadSubtree()
+PxrUsdMayaPrimReader::PostReadSubtree(PxrUsdMayaPrimReaderContext*)
 {
 }
 
 const PxrUsdMayaPrimReaderArgs&
 PxrUsdMayaPrimReader::_GetArgs() {
     return _args;
-}
-
-PxrUsdMayaPrimReaderContext*
-PxrUsdMayaPrimReader::_GetContext()
-{
-    return _context;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

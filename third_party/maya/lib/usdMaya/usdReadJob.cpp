@@ -270,7 +270,7 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                                               mArgs.useCustomFrameRange,
                                               mArgs.startTime,
                                               mArgs.endTime);
-                PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
+                PxrUsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
                 // If we are NOT importing on behalf of an assembly, then we'll
                 // create reference assembly nodes that target the asset file
@@ -298,7 +298,7 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                     // Note that if assemblyRep == "Import", the assembly reader
                     // will NOT run and we will fall through to the prim reader
                     // below.
-                    MObject parentNode = ctx.GetMayaNode(
+                    MObject parentNode = readCtx.GetMayaNode(
                             prim.GetPath().GetParentPath(), false);
                     if (PxrUsdMayaTranslatorModelAssembly::Read(
                             prim,
@@ -306,10 +306,10 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                             assetPrimPath,
                             parentNode,
                             args,
-                            &ctx,
+                            &readCtx,
                             _assemblyTypeName,
                             mArgs.assemblyRep)) {
-                        if (ctx.GetPruneChildren()) {
+                        if (readCtx.GetPruneChildren()) {
                             primIt.PruneChildren();
                         }
                         continue;
@@ -319,13 +319,13 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                 TfToken typeName = prim.GetTypeName();
                 if (PxrUsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
                         = PxrUsdMayaPrimReaderRegistry::Find(typeName)) {
-                    PxrUsdMayaPrimReaderPtr primReader = factoryFn(args, &ctx);
+                    PxrUsdMayaPrimReaderPtr primReader = factoryFn(args);
                     if (primReader) {
-                        primReader->Read();
+                        primReader->Read(&readCtx);
                         if (primReader->HasPostReadSubtree()) {
                             primReaders[prim.GetPath()] = primReader;
                         }
-                        if (ctx.GetPruneChildren()) {
+                        if (readCtx.GetPruneChildren()) {
                             primIt.PruneChildren();
                         }
                     }
@@ -334,9 +334,10 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
             else {
                 // This is the PostReadSubtree step, if the PrimReader has
                 // specified one.
+                PxrUsdMayaPrimReaderContext postReadCtx(&mNewNodeRegistry);
                 auto primReaderIt = primReaders.find(prim.GetPath());
                 if (primReaderIt != primReaders.end()) {
-                    primReaderIt->second->PostReadSubtree();
+                    primReaderIt->second->PostReadSubtree(&postReadCtx);
                 }
             }
         }

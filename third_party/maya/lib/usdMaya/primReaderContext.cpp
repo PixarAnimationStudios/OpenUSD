@@ -75,6 +75,11 @@ PxrUsdMayaPrimReaderContext::GetPruneChildren() const
     return _prune;
 }
 
+/// Sets whether traversal should automatically continue into this prim's
+/// children. This only has an effect if set during the
+/// PxrUsdMayaPrimReader::Read() step, and not in the
+/// PxrUsdMayaPrimReader::PostReadSubtree() step, since in the latter, the
+/// children have already been processed.
 void
 PxrUsdMayaPrimReaderContext::SetPruneChildren(
         bool prune)

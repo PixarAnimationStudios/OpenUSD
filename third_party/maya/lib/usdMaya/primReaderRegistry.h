@@ -62,8 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct PxrUsdMayaPrimReaderRegistry
 {
     typedef std::function< PxrUsdMayaPrimReaderPtr (
-            const PxrUsdMayaPrimReaderArgs&, 
-            PxrUsdMayaPrimReaderContext*) > ReaderFactoryFn;
+            const PxrUsdMayaPrimReaderArgs&) > ReaderFactoryFn;
 
     /// \brief Register \p fn as a reader provider for \p type.
     PXRUSDMAYA_API
@@ -76,8 +75,7 @@ struct PxrUsdMayaPrimReaderRegistry
     /// \code{.cpp}
     /// class MyReader : public PxrUsdMayaPrimReader {
     ///     static PxrUsdMayaPrimReaderPtr Create(
-    ///             const PxrUsdMayaPrimReaderArgs&, 
-    ///             PxrUsdMayaPrimReaderContext*);
+    ///             const PxrUsdMayaPrimReaderArgs&);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(PxrUsdMayaPrimReaderRegistry, MyType) {
     ///     PxrUsdMayaPrimReaderRegistry::Register<MyType>(MyReader::Create);
