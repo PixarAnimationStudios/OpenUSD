@@ -10,6 +10,7 @@ pxr_shared_library(${PXR_PACKAGE}
         ar
         sdf
         usd
+        usdHydra
         usdImaging
         usdImagingGL
         usdShade
