@@ -10,7 +10,7 @@ pxr_library(usd
         ar
         plug
         tf
-        tracelite
+        trace
         vt
         work
         ${Boost_PYTHON_LIBRARY}

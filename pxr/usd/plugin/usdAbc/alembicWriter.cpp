@@ -30,7 +30,7 @@
 #include "pxr/usd/usdGeom/xformOp.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/schemaRegistry.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <Alembic/Abc/OArchive.h>

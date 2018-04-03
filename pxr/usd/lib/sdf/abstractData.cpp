@@ -23,7 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/abstractData.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <iostream>
 #include <vector>

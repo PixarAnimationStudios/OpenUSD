@@ -35,7 +35,7 @@
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <ostream>
 

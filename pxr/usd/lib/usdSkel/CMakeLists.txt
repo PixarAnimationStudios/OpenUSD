@@ -6,7 +6,7 @@ pxr_library(usdSkel
         arch
         gf
         tf
-        tracelite
+        trace
         vt
         work
         sdf

@@ -1,0 +1,58 @@
+/*!
+\page trace_page_front Trace: Performance tracking
+\if ( PIXAR_MFB_BUILD )
+\mainpage  Trace: Performance tracking
+\publicLib
+\endif
+
+\section trace_overview Overview
+
+Defines utility classes for counting, timing, measuring, and recording events.
+The TraceCollector class records TraceEvent objects. The TraceReporter class
+contains functions to generate reports on events gathered by the TraceCollector
+object.
+
+Defines an interface for RAII-based performance tracking.
+
+Instrumentation is done by adding TRACE macros to code.
+
+For example:
+
+\code
+#include "pxr/base/trace/trace.h"
+
+// Typical usage.
+void Foo()
+{
+    TRACE_FUNCTION();
+    ...
+    {
+        // More work is done here that needs timing separated.
+        TRACE_SCOPE("Inner Scope");
+        ...
+    }
+}
+\endcode
+
+Adding Trace macros does have a small overhead. Sometimes a performance 
+sensitive function may have a slow path that is taken infrequently, but timing 
+information is needed. In cases like this, it is possible to reduce the overhead
+of the instrumentation to specific scopes.
+
+\code
+// This is an example of a performance sensitive function that has a slow path.
+void PerformanceSensitiveFunction(bool slowPath)
+{
+    // No TRACE Macro is used in the fast path to avoid any overhead.
+    if (slowPath) {
+        // This will only pay the overhead cost of the trace instrumentation on
+        // the slow path.
+        TRACE_FUNCTION_SCOPE("Slow path");
+        ...
+    }
+    ...
+}
+\endcode
+
+
+*/

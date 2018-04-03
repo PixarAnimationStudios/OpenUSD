@@ -34,7 +34,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 

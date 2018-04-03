@@ -121,9 +121,8 @@ Following is a deeper indexing of the four packages.
   <a href="http://rapidjson.org/">RapidJSON</a> package, which is what our
   plugin system uses for multi-threaded plugin discovery. 
 
-- \ref tracelite_page_front module provides a stubbed interface for embeddable
-  performance-profiling tagging.  USD does not yet ship with an implementation
-  of this interface, but may at some point in the future.
+- \ref trac_page_front module provides an interface for embeddable
+  performance-profiling tagging.
 
 - \ref vt_page_front module provides many of the concrete types that Sdf
   is able to recognize and serialize.  It provides a copy-on-write

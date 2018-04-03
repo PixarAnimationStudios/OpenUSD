@@ -32,7 +32,7 @@
 #include "pxr/usd/sdf/layer.h"
 //#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"

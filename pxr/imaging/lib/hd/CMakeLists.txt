@@ -7,7 +7,7 @@ pxr_library(hd
     LIBRARIES
         plug
         tf
-        tracelite
+        trace
         vt
         work
         sdf

@@ -38,7 +38,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("arch"),
         TfToken("js"),
         TfToken("tf"),
-        TfToken("tracelite"),
+        TfToken("trace"),
         TfToken("work")
     };
     TfScriptModuleLoader::GetInstance().

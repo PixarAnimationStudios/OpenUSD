@@ -7,7 +7,7 @@ pxr_library(usdImaging
         gf
         tf
         plug
-        tracelite
+        trace
         vt
         work
         hd

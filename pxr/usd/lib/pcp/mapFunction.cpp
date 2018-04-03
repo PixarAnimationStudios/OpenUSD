@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapFunction.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/mallocTag.h"

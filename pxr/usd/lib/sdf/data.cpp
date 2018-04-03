@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/data.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
 
 #include <iostream>

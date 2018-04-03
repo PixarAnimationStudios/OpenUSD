@@ -4,7 +4,7 @@ set(PXR_PACKAGE work)
 pxr_library(work
     LIBRARIES
         tf
-        tracelite
+        trace
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS

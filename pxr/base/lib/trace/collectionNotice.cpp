@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,27 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef TRACELITE_API_H
-#define TRACELITE_API_H
 
-#include "pxr/base/arch/export.h"
+#include "pxr/base/trace/collectionNotice.h"
 
-#if defined(PXR_STATIC)
-#   define TRACELITE_API
-#   define TRACELITE_API_TEMPLATE_CLASS(...)
-#   define TRACELITE_API_TEMPLATE_STRUCT(...)
-#   define TRACELITE_LOCAL
-#else
-#   if defined(TRACELITE_EXPORTS)
-#       define TRACELITE_API ARCH_EXPORT
-#       define TRACELITE_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
-#       define TRACELITE_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
-#   else
-#       define TRACELITE_API ARCH_IMPORT
-#       define TRACELITE_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
-#       define TRACELITE_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
-#   endif
-#   define TRACELITE_LOCAL ARCH_HIDDEN
-#endif
+#include "pxr/pxr.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
 
-#endif
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define< TraceCollectionAvailable,
+        TfType::Bases<TfNotice> >();
+}
+
+TraceCollectionAvailable::~TraceCollectionAvailable() {}
+
+PXR_NAMESPACE_CLOSE_SCOPE

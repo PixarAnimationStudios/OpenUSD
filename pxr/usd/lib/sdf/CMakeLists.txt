@@ -6,7 +6,7 @@ pxr_library(sdf
         arch
         tf
         gf
-        tracelite
+        trace
         vt
         work
         ar

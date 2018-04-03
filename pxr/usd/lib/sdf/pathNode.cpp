@@ -33,7 +33,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stl.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_hash_map.h>

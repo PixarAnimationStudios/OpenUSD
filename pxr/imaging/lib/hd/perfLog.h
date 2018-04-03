@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/debugCodes.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/singleton.h"

@@ -27,7 +27,7 @@
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/layerStack.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <tbb/concurrent_hash_map.h>
 

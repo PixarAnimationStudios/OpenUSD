@@ -8,7 +8,7 @@ pxr_library(usdGeom
         plug
         vt
         sdf
-        tracelite
+        trace
         usd
         work
         ${Boost_PYTHON_LIBRARY}

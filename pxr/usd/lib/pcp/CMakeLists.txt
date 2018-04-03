@@ -4,7 +4,7 @@ set(PXR_PACKAGE pcp)
 pxr_library(pcp
     LIBRARIES
         tf
-        tracelite
+        trace
         vt
         sdf
         work

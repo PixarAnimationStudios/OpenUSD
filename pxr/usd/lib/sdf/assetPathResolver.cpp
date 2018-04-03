@@ -28,7 +28,7 @@
 #include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/debugCodes.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolver.h"

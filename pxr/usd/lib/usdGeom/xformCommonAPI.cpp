@@ -25,7 +25,7 @@
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include "pxr/base/gf/rotation.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/assign/list_of.hpp>
 #include <map>

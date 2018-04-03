@@ -33,7 +33,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "pxr/usd/usd/primRange.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/stringUtils.h"

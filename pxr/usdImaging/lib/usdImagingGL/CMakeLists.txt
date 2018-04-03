@@ -7,7 +7,7 @@ pxr_library(usdImagingGL
         gf
         tf
         plug
-        tracelite
+        trace
         vt
         work
         garch

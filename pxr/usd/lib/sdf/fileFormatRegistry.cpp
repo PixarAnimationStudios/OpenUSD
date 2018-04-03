@@ -30,7 +30,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticTokens.h"

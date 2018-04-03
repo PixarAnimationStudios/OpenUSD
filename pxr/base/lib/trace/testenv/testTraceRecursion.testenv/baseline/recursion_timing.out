@@ -1,0 +1,13 @@
+
+Tree view  ==============
+   inclusive    exclusive        
+                 0.000 ms       1 samples    Main Thread
+  105.000 ms    23.000 ms       3 samples    | *A
+   78.000 ms    23.000 ms       3 samples    |   *B
+   55.000 ms    16.000 ms       2 samples    |   | *C
+                                             |   |   [A]
+                                             |   |   [B]
+   11.000 ms    19.000 ms       2 samples    |   | *F
+    7.000 ms     8.000 ms       2 samples    |   | *D
+   13.000 ms    16.000 ms       2 samples    |   *E
+

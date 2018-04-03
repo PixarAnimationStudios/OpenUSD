@@ -23,7 +23,7 @@
 //
 #include "pxr/usd/usdSkel/topology.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
