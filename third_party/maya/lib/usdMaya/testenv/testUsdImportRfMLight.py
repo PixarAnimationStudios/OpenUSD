@@ -28,7 +28,6 @@ import unittest
 
 from pxr import Gf
 from pxr import Usd
-from pxr import UsdLux
 
 from maya import OpenMaya
 from maya import OpenMayaAnim
@@ -105,8 +104,18 @@ class testUsdImportRfMLight(unittest.TestCase):
         elif lightTypeName == 'SphereLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrSphereLight')
             testNumber = 6
+        elif lightTypeName == 'AovLight':
+            self.assertEqual(depNodeFn.typeName(), 'PxrAovLight')
+            testNumber = 7
+        elif lightTypeName == 'EnvDayLight':
+            self.assertEqual(depNodeFn.typeName(), 'PxrEnvDayLight')
+            testNumber = 8
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
+
+        if lightTypeName == 'AovLight':
+            # PxrAovLight doesn't have any of the below attributes.
+            return
 
         expectedIntensity = 1.0 + (testNumber * 0.1)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath),
@@ -123,6 +132,10 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedSpecular = 1.0 + (testNumber * 0.1)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.specular' % nodePath),
             expectedSpecular, 1e-6))
+
+        if lightTypeName == 'EnvDayLight':
+            # PxrEnvDayLight doesn't have any of the below attributes.
+            return
 
         # PxrDomeLight has no normalize attribute
         if lightTypeName != 'DomeLight':
@@ -185,6 +198,100 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedTextureFile = './DomeLight_texture.tex'
         self.assertEqual(cmds.getAttr('%s.lightColorMap' % nodePath),
             expectedTextureFile)
+
+    def _ValidatePxrAovLight(self):
+        nodePath = '|RfMLightsTest|Lights|AovLight|AovLightShape'
+
+        expectedAovName = 'testAovName'
+        self.assertEqual(cmds.getAttr('%s.aovName' % nodePath),
+            expectedAovName)
+
+        expectedInPrimaryHit = False
+        self.assertEqual(cmds.getAttr('%s.inPrimaryHit' % nodePath),
+            expectedInPrimaryHit)
+
+        expectedInReflection = True
+        self.assertEqual(cmds.getAttr('%s.inReflection' % nodePath),
+            expectedInReflection)
+
+        expectedInRefraction = True
+        self.assertEqual(cmds.getAttr('%s.inRefraction' % nodePath),
+            expectedInRefraction)
+
+        expectedInvert = True
+        self.assertEqual(cmds.getAttr('%s.invert' % nodePath), expectedInvert)
+
+        expectedOnVolumeBoundaries = False
+        self.assertEqual(cmds.getAttr('%s.onVolumeBoundaries' % nodePath),
+            expectedOnVolumeBoundaries)
+
+        expectedUseColor = True
+        self.assertEqual(cmds.getAttr('%s.useColor' % nodePath),
+            expectedUseColor)
+
+        expectedUseThroughput = False
+        self.assertEqual(cmds.getAttr('%s.useThroughput' % nodePath),
+            expectedUseThroughput)
+
+    def _ValidatePxrEnvDayLight(self):
+        nodePath = '|RfMLightsTest|Lights|EnvDayLight|EnvDayLightShape'
+
+        expectedDay = 8
+        self.assertEqual(cmds.getAttr('%s.day' % nodePath), expectedDay)
+
+        expectedHaziness = 1.8
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.haziness' % nodePath),
+            expectedHaziness, 1e-6))
+
+        expectedHour = 8.8
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.hour' % nodePath),
+            expectedHour, 1e-6))
+
+        expectedLatitude = 80.0
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.latitude' % nodePath),
+            expectedLatitude, 1e-6))
+
+        expectedLongitude = -80.0
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.longitude' % nodePath),
+            expectedLongitude, 1e-6))
+
+        expectedMonth = 8
+        self.assertEqual(cmds.getAttr('%s.month' % nodePath), expectedMonth)
+
+        expectedSkyTint = Gf.Vec3f(0.8)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.skyTintR' % nodePath),
+            expectedSkyTint[0], 1e-6))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.skyTintG' % nodePath),
+            expectedSkyTint[1], 1e-6))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.skyTintB' % nodePath),
+            expectedSkyTint[2], 1e-6))
+
+        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.8)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunDirectionX' % nodePath),
+            expectedSunDirection[0], 1e-6))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunDirectionY' % nodePath),
+            expectedSunDirection[1], 1e-6))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunDirectionZ' % nodePath),
+            expectedSunDirection[2], 1e-6))
+
+        expectedSunSize = 0.8
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunSize' % nodePath),
+            expectedSunSize, 1e-6))
+
+        expectedSunTint = Gf.Vec3f(0.8)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunTintR' % nodePath),
+            expectedSunTint[0], 1e-6))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunTintG' % nodePath),
+            expectedSunTint[1], 1e-6))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.sunTintB' % nodePath),
+            expectedSunTint[2], 1e-6))
+
+        expectedYear = 2018
+        self.assertEqual(cmds.getAttr('%s.year' % nodePath), expectedYear)
+
+        expectedZone = 8.0
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.zone' % nodePath),
+            expectedZone, 1e-6))
 
     def _ValidateMayaLightShaping(self):
         nodePath = '|RfMLightsTest|Lights|DiskLight|DiskLightShape'
@@ -260,11 +367,16 @@ class testUsdImportRfMLight(unittest.TestCase):
         self._ValidateMayaLight('MeshLight')
         self._ValidateMayaLight('RectLight')
         self._ValidateMayaLight('SphereLight')
+        self._ValidateMayaLight('AovLight')
+        self._ValidateMayaLight('EnvDayLight')
 
         self._ValidatePxrDistantLightAngle()
 
         self._ValidatePxrRectLightTextureFile()
         self._ValidatePxrDomeLightTextureFile()
+
+        self._ValidatePxrAovLight()
+        self._ValidatePxrEnvDayLight()
 
         self._ValidateMayaLightShaping()
 

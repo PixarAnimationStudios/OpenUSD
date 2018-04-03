@@ -30,6 +30,7 @@ from pxr import Gf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import UsdLux
+from pxr import UsdRi
 
 from maya import cmds
 from maya import standalone
@@ -95,11 +96,21 @@ class testUsdExportRfMLight(unittest.TestCase):
         elif lightTypeName == 'SphereLight':
             self.assertTrue(lightPrim.IsA(UsdLux.SphereLight))
             testNumber = 6
+        elif lightTypeName == 'AovLight':
+            self.assertTrue(lightPrim.IsA(UsdRi.PxrAovLight))
+            testNumber = 7
+        elif lightTypeName == 'EnvDayLight':
+            self.assertTrue(lightPrim.IsA(UsdRi.PxrEnvDayLight))
+            testNumber = 8
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
 
         lightSchema = UsdLux.Light(lightPrim)
         self.assertTrue(lightSchema)
+
+        if lightTypeName == 'AovLight':
+            # PxrAovLight doesn't have any of the below attributes.
+            return
 
         expectedIntensity = 1.0 + (testNumber * 0.1)
         self.assertTrue(Gf.IsClose(lightSchema.GetIntensityAttr().Get(),
@@ -116,6 +127,10 @@ class testUsdExportRfMLight(unittest.TestCase):
         expectedSpecular = 1.0 + (testNumber * 0.1)
         self.assertTrue(Gf.IsClose(lightSchema.GetSpecularAttr().Get(),
             expectedSpecular, 1e-6))
+
+        if lightTypeName == 'EnvDayLight':
+            # PxrEnvDayLight doesn't have any of the below attributes.
+            return
 
         if lightTypeName == 'DomeLight':
             # PxrDomeLight has no normalize attribute
@@ -195,6 +210,96 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertEqual(domeLight.GetTextureFileAttr().Get(),
             expectedTextureFile)
 
+    def _ValidateUsdRiPxrAovLight(self):
+        lightPrimPath = '/RfMLightsTest/Lights/AovLight'
+        lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
+        self.assertTrue(lightPrim)
+
+        aovLight = UsdRi.PxrAovLight(lightPrim)
+        self.assertTrue(aovLight)
+
+        expectedAovName = 'testAovName'
+        self.assertEqual(aovLight.GetAovNameAttr().Get(), expectedAovName)
+
+        expectedInPrimaryHit = False
+        self.assertEqual(aovLight.GetInPrimaryHitAttr().Get(),
+            expectedInPrimaryHit)
+
+        expectedInReflection = True
+        self.assertEqual(aovLight.GetInReflectionAttr().Get(),
+            expectedInReflection)
+
+        expectedInRefraction = True
+        self.assertEqual(aovLight.GetInRefractionAttr().Get(),
+            expectedInRefraction)
+
+        expectedInvert = True
+        self.assertEqual(aovLight.GetInvertAttr().Get(), expectedInvert)
+
+        expectedOnVolumeBoundaries = False
+        self.assertEqual(aovLight.GetOnVolumeBoundariesAttr().Get(),
+            expectedOnVolumeBoundaries)
+
+        expectedUseColor = True
+        self.assertEqual(aovLight.GetUseColorAttr().Get(), expectedUseColor)
+
+        expectedUseThroughput = False
+        self.assertEqual(aovLight.GetUseThroughputAttr().Get(),
+            expectedUseThroughput)
+
+    def _ValidateUsdRiPxrEnvDayLight(self):
+        lightPrimPath = '/RfMLightsTest/Lights/EnvDayLight'
+        lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
+        self.assertTrue(lightPrim)
+
+        envDayLight = UsdRi.PxrEnvDayLight(lightPrim)
+        self.assertTrue(envDayLight)
+
+        expectedDay = 8
+        self.assertEqual(envDayLight.GetDayAttr().Get(), expectedDay)
+
+        expectedHaziness = 1.8
+        self.assertTrue(Gf.IsClose(envDayLight.GetHazinessAttr().Get(),
+            expectedHaziness, 1e-6))
+
+        expectedHour = 8.8
+        self.assertTrue(Gf.IsClose(envDayLight.GetHourAttr().Get(),
+            expectedHour, 1e-6))
+
+        expectedLatitude = 80.0
+        self.assertTrue(Gf.IsClose(envDayLight.GetLatitudeAttr().Get(),
+            expectedLatitude, 1e-6))
+
+        expectedLongitude = -80.0
+        self.assertTrue(Gf.IsClose(envDayLight.GetLongitudeAttr().Get(),
+            expectedLongitude, 1e-6))
+
+        expectedMonth = 8
+        self.assertEqual(envDayLight.GetMonthAttr().Get(), expectedMonth)
+
+        expectedSkyTint = Gf.Vec3f(0.8)
+        self.assertTrue(Gf.IsClose(envDayLight.GetSkyTintAttr().Get(),
+            expectedSkyTint, 1e-6))
+
+        expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.8)
+        self.assertTrue(Gf.IsClose(envDayLight.GetSunDirectionAttr().Get(),
+            expectedSunDirection, 1e-6))
+
+        expectedSunSize = 0.8
+        self.assertTrue(Gf.IsClose(envDayLight.GetSunSizeAttr().Get(),
+            expectedSunSize, 1e-6))
+
+        expectedSunTint = Gf.Vec3f(0.8)
+        self.assertTrue(Gf.IsClose(envDayLight.GetSunTintAttr().Get(),
+            expectedSunTint, 1e-6))
+
+        expectedYear = 2018
+        self.assertEqual(envDayLight.GetYearAttr().Get(), expectedYear)
+
+        expectedZone = 8.0
+        self.assertTrue(Gf.IsClose(envDayLight.GetZoneAttr().Get(),
+            expectedZone, 1e-6))
+
     def _ValidateUsdLuxShapingAPI(self):
         lightPrimPath = '/RfMLightsTest/Lights/DiskLight'
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
@@ -273,11 +378,16 @@ class testUsdExportRfMLight(unittest.TestCase):
         self._ValidateUsdLuxLight('MeshLight')
         self._ValidateUsdLuxLight('RectLight')
         self._ValidateUsdLuxLight('SphereLight')
+        self._ValidateUsdLuxLight('AovLight')
+        self._ValidateUsdLuxLight('EnvDayLight')
 
         self._ValidateUsdLuxDistantLightAngle()
 
         self._ValidateUsdLuxRectLightTextureFile()
         self._ValidateUsdLuxDomeLightTextureFile()
+
+        self._ValidateUsdRiPxrAovLight()
+        self._ValidateUsdRiPxrEnvDayLight()
 
         self._ValidateUsdLuxShapingAPI()
 
