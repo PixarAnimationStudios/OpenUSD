@@ -366,18 +366,19 @@ UsdMayaProxyShape::initialize(PluginStaticData* psData)
     //
     // add attribute dependencies
     //
-    retValue = attributeAffects(psData->inStageData, psData->inStageDataCached);
-    retValue = attributeAffects(psData->inStageData, psData->outStageData);
-
     retValue = attributeAffects(psData->filePath, psData->inStageDataCached);
     retValue = attributeAffects(psData->filePath, psData->outStageData);
+
+    retValue = attributeAffects(psData->primPath, psData->inStageDataCached);
+    retValue = attributeAffects(psData->primPath, psData->outStageData);
 
     retValue = attributeAffects(psData->variantKey, psData->inStageDataCached);
     retValue = attributeAffects(psData->variantKey, psData->outStageData);
 
-    retValue = attributeAffects(psData->inStageDataCached, psData->outStageData);
+    retValue = attributeAffects(psData->inStageData, psData->inStageDataCached);
+    retValue = attributeAffects(psData->inStageData, psData->outStageData);
 
-    retValue = attributeAffects(psData->primPath, psData->outStageData);
+    retValue = attributeAffects(psData->inStageDataCached, psData->outStageData);
 
     return retValue;
 }
@@ -432,27 +433,32 @@ UsdMayaProxyShape::postConstructor()
 MStatus
 UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-    MStatus retValue = MS::kUnknownParameter;
-
-    //
-    // make sure the state of the model is normal
-    //
-
-    if(plug == _psData.inStageDataCached)
-    {
-        retValue = computeInStageDataCached(dataBlock);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    }
-    else if(plug == _psData.outStageData)
-    {
-        retValue = computeOutStageData(dataBlock);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    }
-    else {
+    if (plug == _psData.excludePrimPaths ||
+            plug == _psData.time ||
+            plug == _psData.complexity ||
+            plug == _psData.tint ||
+            plug == _psData.tintColor ||
+            plug == _psData.displayGuides ||
+            plug == _psData.displayRenderGuides) {
+        // If the attribute that needs to be computed is one of these, then it
+        // does not affect the ouput stage data, but it *does* affect imaging
+        // the shape. In that case, we notify Maya that the shape needs to be
+        // redrawn and let it take care of computing the attribute. This covers
+        // the case where an attribute on the proxy shape may have an incoming
+        // connection from another node (e.g. "time1.outTime" being connected
+        // to the proxy shape's "time" attribute). In that case,
+        // setDependentsDirty() might not get called and only compute() might.
+        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
         return MS::kUnknownParameter;
     }
+    else if (plug == _psData.inStageDataCached) {
+        return computeInStageDataCached(dataBlock);
+    }
+    else if (plug == _psData.outStageData) {
+        return computeOutStageData(dataBlock);
+    }
 
-    return MS::kSuccess;
+    return MS::kUnknownParameter;
 }
 
 MStatus
