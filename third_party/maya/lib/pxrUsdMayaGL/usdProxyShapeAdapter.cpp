@@ -84,7 +84,16 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility()
         return false;
     }
 
-    const bool isVisible = (displayStatus != MHWRender::kInvisible);
+    // The displayStatus() method above does not account for things like
+    // display layers, so we also check the shape's dag path for its visibility
+    // state.
+    const bool dagPathIsVisible = _shapeDagPath.isVisible(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    const bool isVisible =
+        (displayStatus != MHWRender::kInvisible) && dagPathIsVisible;
 
     if (_delegate && _delegate->GetRootVisibility() != isVisible) {
         _delegate->SetRootVisibility(isVisible);
