@@ -184,14 +184,6 @@ class TestUsdRiSchemata(unittest.TestCase):
         self.assertEqual(UsdRi.StatementsAPI(group).GetModelScopedCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelScopedCoordinateSystems(), [])
-
-        self.assertFalse(riStatements.GetFocusRegionAttr().IsValid())
-        assert(riStatements.CreateFocusRegionAttr() is not None)
-        assert(riStatements.GetFocusRegionAttr() is not None)
-        self.assertTrue(riStatements.GetFocusRegionAttr().IsValid())
-        self.assertEqual(riStatements.GetFocusRegionAttr().Get(), None)
-        riStatements.CreateFocusRegionAttr(9.0, True)
-        self.assertEqual(riStatements.GetFocusRegionAttr().Get(), 9.0)
         
     def test_Metadata(self):
         stage = Usd.Stage.CreateInMemory()

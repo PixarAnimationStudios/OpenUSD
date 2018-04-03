@@ -7,14 +7,6 @@ class "StatementsAPI" (
     doc = "Container namespace schema for all renderman statements"
 )
 {
-    float ri:focusRegion (
-        doc = """Represents the value of the 'focusregion' option to RiCamera 
-        in centimeters. Specifies the stretch of space along the camera view 
-        axis surrounding the focus plane that contains everything that will 
-        be rendered in perfect focus.  If unauthored, a value of zero should
-        be assumed. <b>Note:</b> this parameter may not be supportable in
-        RIS renders in RenderMan 19 and above."""
-    )
 }
 
 class RslShader "RslShader"

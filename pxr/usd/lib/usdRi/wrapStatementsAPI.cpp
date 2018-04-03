@@ -48,13 +48,6 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateFocusRegionAttr(UsdRiStatementsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFocusRegionAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 } // anonymous namespace
 
@@ -100,13 +93,6 @@ void wrapUsdRiStatementsAPI()
 
         .def(!self)
 
-        
-        .def("GetFocusRegionAttr",
-             &This::GetFocusRegionAttr)
-        .def("CreateFocusRegionAttr",
-             &_CreateFocusRegionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
     ;
 

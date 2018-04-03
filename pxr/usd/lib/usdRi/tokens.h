@@ -434,10 +434,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiLightFilterAPI
     const TfToken riExposure;
-    /// \brief "ri:focusRegion"
-    /// 
-    /// UsdRiStatementsAPI
-    const TfToken riFocusRegion;
     /// \brief "ri:intensity"
     /// 
     /// UsdRiLightFilterAPI

@@ -31,7 +31,6 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdRi/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -142,32 +141,6 @@ private:
     // override SchemaBase virtuals.
     USDRI_API
     virtual const TfType &_GetTfType() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // FOCUSREGION 
-    // --------------------------------------------------------------------- //
-    /// Represents the value of the 'focusregion' option to RiCamera 
-    /// in centimeters. Specifies the stretch of space along the camera view 
-    /// axis surrounding the focus plane that contains everything that will 
-    /// be rendered in perfect focus.  If unauthored, a value of zero should
-    /// be assumed. <b>Note:</b> this parameter may not be supportable in
-    /// RIS renders in RenderMan 19 and above.
-    ///
-    /// \n  C++ Type: float
-    /// \n  Usd Type: SdfValueTypeNames->Float
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    USDRI_API
-    UsdAttribute GetFocusRegionAttr() const;
-
-    /// See GetFocusRegionAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateFocusRegionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
