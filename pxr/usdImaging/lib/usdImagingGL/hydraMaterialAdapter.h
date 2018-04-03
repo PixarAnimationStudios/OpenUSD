@@ -46,15 +46,16 @@ public:
     virtual ~UsdImagingGLHydraMaterialAdapter();
 
     USDIMAGINGGL_API
-    virtual SdfPath Populate(UsdPrim const& prim,
-                     UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+    virtual SdfPath Populate(
+            UsdPrim const& prim,
+            UsdImagingIndexProxy* index,
+            UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     USDIMAGINGGL_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     USDIMAGINGGL_API
-    virtual bool IsPopulatedIndirectly();
+    virtual bool IsPopulatedIndirectly() override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -66,7 +67,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const;
+                                      instancerContext = NULL) const override;
 
 
     /// Thread Safe.
@@ -76,7 +77,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const;
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -85,15 +86,16 @@ public:
     /// Returns a bit mask of attributes to be udpated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
     USDIMAGINGGL_API
-    virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
-                                              SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+    virtual HdDirtyBits ProcessPropertyChange(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& propertyName) override;
 
     USDIMAGINGGL_API
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Texture resources
