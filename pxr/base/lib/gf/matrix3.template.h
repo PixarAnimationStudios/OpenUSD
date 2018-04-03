@@ -28,10 +28,9 @@
 {% extends "matrix.template.h" %}
 
 {% block forwardDeclarations %}
-{% if SCL == 'double' -%}
 class GfRotation;
 class GfQuaternion;
-{% endif %}
+class GfQuat{{ SCL[0] }};
 {% endblock %}
 
 {% block classDocs %}
@@ -68,6 +67,10 @@ class GfQuaternion;
     /// Constructor. Initialize matrix from rotation.
     GF_API
     {{ MAT }}(const GfRotation& rot);
+
+    /// Constructor. Initialize matrix from a quaternion.
+    GF_API
+    explicit {{ MAT }}(const GfQuat{{ SCL[0] }}& rot);
 
 {% endblock customConstructors %}
 
@@ -116,6 +119,10 @@ class GfQuaternion;
 
     /// Sets the matrix to specify a rotation equivalent to \e rot.
     GF_API
+    {{ MAT }}& SetRotate(const GfQuat{{ SCL[0] }} &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot.
+    GF_API
     {{ MAT }}& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
@@ -151,6 +158,12 @@ class GfQuaternion;
     GfQuaternion ExtractRotationQuaternion() const;
 
     /// @}
+
+private:
+    /// Set the matrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat({{ SCL }} r, const GfVec3{{ SCL[0] }}& i);
+
 {% endblock customXformFunctions %}
 
 /* #endif */

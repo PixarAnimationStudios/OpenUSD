@@ -54,6 +54,7 @@ struct GfIsGfMatrix<class GfMatrix4f> { static const bool value = true; };
 
 class GfMatrix4d;
 class GfMatrix4f;
+class GfQuatf;
 class GfRotation;
 class GfMatrix3f;
 
@@ -497,6 +498,16 @@ public:
     /// Sets the matrix to specify a rotation equivalent to \e rot,
     /// and clears the translation.
     GF_API
+    GfMatrix4f& SetRotate(const GfQuatf &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// without clearing the translation.
+    GF_API
+    GfMatrix4f& SetRotateOnly(const GfQuatf &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// and clears the translation.
+    GF_API
     GfMatrix4f& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a rotation equivalent to \e rot,
@@ -690,6 +701,11 @@ private:
 
     /// Diagonalizes the upper 3x3 matrix of a matrix known to be symmetric.
     void _Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const;
+
+    /// Set the 3x3 submatrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat(float r, const GfVec3f& i);
+
 
 private:
     /// Matrix storage, in row-major order.

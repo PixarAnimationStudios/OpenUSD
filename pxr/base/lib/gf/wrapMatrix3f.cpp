@@ -32,6 +32,7 @@
 
 #include "pxr/base/gf/pyBufferUtils.h"
 
+#include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/rotation.h"
 
 #include "pxr/base/tf/pyUtils.h"
@@ -284,6 +285,7 @@ void wrapMatrix3f()
         .def(init< const vector< vector<float> >& >())
         .def(init< const vector< vector<double> >& >())
         .def(init< const GfRotation& >())
+        .def(init< const GfQuatf& >())
 
         .def( TfTypePythonClass() )
 
@@ -350,7 +352,12 @@ void wrapMatrix3f()
         .def( GfVec3f() * self )
 
         .def("SetScale", (This & (This::*)( const GfVec3f & ))&This::SetScale, return_self<>())
-        .def("SetRotate", &This::SetRotate, return_self<>())
+        .def("SetRotate",
+             (This & (This::*)( const GfQuatf & )) &This::SetRotate,
+             return_self<>())
+        .def("SetRotate",
+             (This & (This::*)( const GfRotation & )) &This::SetRotate,
+             return_self<>())
         .def("ExtractRotation", &This::ExtractRotation)
         .def("SetScale", (This & (This::*)( float ))&This::SetScale, return_self<>())
 

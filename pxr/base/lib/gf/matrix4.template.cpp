@@ -31,6 +31,7 @@
 {% block customIncludes %}
 #include "pxr/base/gf/homogeneous.h"
 #include "pxr/base/gf/matrix3{{ SCL[0] }}.h"
+#include "pxr/base/gf/quat{{ SCL[0] }}.h"
 #include "pxr/base/gf/rotation.h"
 {% endblock customIncludes %}
 
@@ -341,28 +342,53 @@ bool
     return *this;
 }
 
-{{ MAT }} &
-{{ MAT }}::SetRotate(const GfRotation &rot)
+void
+{{MAT}}::_SetRotateFromQuat({{ SCL }} r, const GfVec3{{ SCL[0] }}& i)
 {
-    GfQuaternion quat = rot.GetQuaternion();
-
-    double  r = quat.GetReal();
-    GfVec3d i = quat.GetImaginary();
-
-
     _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
     _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
     _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
-    _mtx[0][3] = 0.0;
 
     _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
     _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
     _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
-    _mtx[1][3] = 0.0;
 
     _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
     _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
     _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
+}
+
+{{ MAT }} &
+{{ MAT }}::SetRotate(const GfQuat{{ SCL[0] }} &rot)
+{
+    SetRotateOnly(rot);
+
+    _mtx[0][3] = 0.0;
+    _mtx[1][3] = 0.0;
+    _mtx[2][3] = 0.0;
+
+    _mtx[3][0] = 0.0;
+    _mtx[3][1] = 0.0;
+    _mtx[3][2] = 0.0;
+    _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+{{ MAT }} &
+{{ MAT }}::SetRotateOnly(const GfQuat{{ SCL[0] }} &rot)
+{
+    _SetRotateFromQuat(rot.GetReal(), rot.GetImaginary());
+    return *this;
+}
+
+{{ MAT }} &
+{{ MAT }}::SetRotate(const GfRotation &rot)
+{
+    SetRotateOnly(rot);
+
+    _mtx[0][3] = 0.0;
+    _mtx[1][3] = 0.0;
     _mtx[2][3] = 0.0;
 
     _mtx[3][0] = 0.0;
@@ -377,23 +403,7 @@ bool
 {{ MAT }}::SetRotateOnly(const GfRotation &rot)
 {
     GfQuaternion quat = rot.GetQuaternion();
-
-    double  r = quat.GetReal();
-    GfVec3d i = quat.GetImaginary();
-
-
-    _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
-    _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
-    _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
-
-    _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
-    _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
-    _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
-
-    _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
-    _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
-    _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
-
+    _SetRotateFromQuat(quat.GetReal(), GfVec3{{ SCL[0] }}(quat.GetImaginary()));
     return *this;
 }
 

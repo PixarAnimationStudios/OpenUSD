@@ -28,11 +28,13 @@
 {% extends "wrapMatrix.template.cpp" %}
 
 {% block customIncludes %}
+#include "pxr/base/gf/quat{{ SCL[0] }}.h"
 #include "pxr/base/gf/rotation.h"
 {% endblock customIncludes %}
 
 {% block customInit %}
         .def(init< const GfRotation& >())
+        .def(init< const GfQuat{{ SCL[0] }}& >())
 {% endblock customInit %}
 
 {% block customDefs %}
@@ -48,7 +50,12 @@
 
 {% block customXformDefs %}
         .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }} & ))&This::SetScale, return_self<>())
-        .def("SetRotate", &This::SetRotate, return_self<>())
+        .def("SetRotate",
+             (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotate,
+             return_self<>())
+        .def("SetRotate",
+             (This & (This::*)( const GfRotation & )) &This::SetRotate,
+             return_self<>())
         .def("ExtractRotation", &This::ExtractRotation)
         .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale, return_self<>())
 

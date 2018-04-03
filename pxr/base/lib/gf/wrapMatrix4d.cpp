@@ -36,6 +36,7 @@
 #include "pxr/base/gf/pyBufferUtils.h"
 
 #include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/rotation.h"
 
 #include "pxr/base/tf/pyUtils.h"
@@ -405,6 +406,13 @@ void wrapMatrix4d()
 
         .def("SetTranslate", &This::SetTranslate, return_self<>())
         .def("SetTranslateOnly", &This::SetTranslateOnly, return_self<>())
+
+        .def("SetRotate",
+	     (This & (This::*)( const GfQuatd & )) &This::SetRotate,
+	     return_self<>())
+        .def("SetRotateOnly",
+	     (This & (This::*)( const GfQuatd & )) &This::SetRotateOnly,
+	     return_self<>())
 
         .def("SetRotate",
 	     (This & (This::*)( const GfRotation & )) &This::SetRotate,

@@ -50,6 +50,9 @@ struct GfIsGfMatrix<class GfMatrix3f> { static const bool value = true; };
 
 class GfMatrix3d;
 class GfMatrix3f;
+class GfRotation;
+class GfQuaternion;
+class GfQuatf;
 
 /// \class GfMatrix3f
 /// \ingroup group_gf_LinearAlgebra
@@ -143,6 +146,10 @@ public:
     /// Constructor. Initialize matrix from rotation.
     GF_API
     GfMatrix3f(const GfRotation& rot);
+
+    /// Constructor. Initialize matrix from a quaternion.
+    GF_API
+    explicit GfMatrix3f(const GfQuatf& rot);
 
     /// This explicit constructor converts a "double" matrix to a "float" matrix.
     GF_API
@@ -410,6 +417,10 @@ public:
 
     /// Sets the matrix to specify a rotation equivalent to \e rot.
     GF_API
+    GfMatrix3f& SetRotate(const GfQuatf &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot.
+    GF_API
     GfMatrix3f& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
@@ -445,6 +456,12 @@ public:
     GfQuaternion ExtractRotationQuaternion() const;
 
     /// @}
+
+private:
+    /// Set the matrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat(float r, const GfVec3f& i);
+
 
 private:
     /// Matrix storage, in row-major order.
