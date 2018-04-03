@@ -89,9 +89,17 @@ bool MayaNurbsCurveWriter::writeNurbsCurveAttrs(const UsdTimeCode &usdTime, UsdG
     // How to repeat the end knots.
     bool wrap = false;
     MFnNurbsCurve::Form form(curveFn.form());
-    if (form == MFnNurbsCurve::kClosed ||
-        form == MFnNurbsCurve::kPeriodic){
+    switch (form) {
+    case MFnNurbsCurve::kClosed:
+        primSchema.GetFormAttr().Set(UsdGeomTokens->closed);
         wrap = true;
+        break;
+    case MFnNurbsCurve::kPeriodic:
+        primSchema.GetFormAttr().Set(UsdGeomTokens->periodic);
+        wrap = true;
+        break;
+    default:
+        primSchema.GetFormAttr().Set(UsdGeomTokens->open);
     }
 
     // Get curve attrs ======

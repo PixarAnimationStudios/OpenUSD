@@ -1290,6 +1290,13 @@ class NurbsCurves "NurbsCurves" (
         knots['i'th curve slice][order[i]-1]. The maxium must be less 
         than or equal to the last element's value in knots['i'th curve slice].
 	Range maps to (vmin, vmax) in the RenderMan spec.""")
+
+	uniform token form = "open" (
+	    allowedTokens = ["open", "closed", "periodic"]
+	    doc = """Interpret the control grid and knot vectors as representing
+	    an open, geometrically closed, or geometrically closed and C2 continuous
+	    curve."""
+	)
 }
 
 class Points "Points" (

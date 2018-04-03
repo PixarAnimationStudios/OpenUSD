@@ -110,6 +110,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "familyName", UsdGeomTokens->familyName);
     _AddToken(cls, "focalLength", UsdGeomTokens->focalLength);
     _AddToken(cls, "focusDistance", UsdGeomTokens->focusDistance);
+    _AddToken(cls, "form", UsdGeomTokens->form);
     _AddToken(cls, "fromTexture", UsdGeomTokens->fromTexture);
     _AddToken(cls, "fStop", UsdGeomTokens->fStop);
     _AddToken(cls, "guide", UsdGeomTokens->guide);

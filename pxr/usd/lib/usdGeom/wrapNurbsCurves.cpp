@@ -70,6 +70,13 @@ _CreateRangesAttr(UsdGeomNurbsCurves &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double2Array), writeSparsely);
 }
 
+static UsdAttribute
+_CreateFormAttr(UsdGeomNurbsCurves &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateFormAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+
 } // anonymous namespace
 
 void wrapUsdGeomNurbsCurves()
@@ -129,6 +136,13 @@ void wrapUsdGeomNurbsCurves()
              &This::GetRangesAttr)
         .def("CreateRangesAttr",
              &_CreateRangesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+
+        .def("GetFormAttr",
+             &This::GetFormAttr)
+        .def("CreateFormAttr",
+             &_CreateFormAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

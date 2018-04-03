@@ -124,7 +124,7 @@ struct UsdGeomTokensType {
     const TfToken clippingRange;
     /// \brief "closed"
     /// 
-    /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
+    /// Possible value for UsdGeomNurbsCurves::GetFormAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
     const TfToken closed;
     /// \brief "collection"
     /// 
@@ -246,6 +246,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomCamera
     const TfToken focusDistance;
+    /// \brief "form"
+    /// 
+    /// UsdGeomNurbsCurves
+    const TfToken form;
     /// \brief "fromTexture"
     /// 
     /// Possible value for UsdGeomModelAPI::GetModelCardGeometryAttr()
@@ -396,7 +400,7 @@ struct UsdGeomTokensType {
     const TfToken normals;
     /// \brief "open"
     /// 
-    /// Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Default value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Default value for UsdGeomNurbsPatch::GetUFormAttr()
+    /// Possible value for UsdGeomNurbsCurves::GetFormAttr(), Default value for UsdGeomNurbsCurves::GetFormAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Default value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Default value for UsdGeomNurbsPatch::GetUFormAttr()
     const TfToken open;
     /// \brief "order"
     /// 
@@ -424,7 +428,7 @@ struct UsdGeomTokensType {
     const TfToken partition;
     /// \brief "periodic"
     /// 
-    /// Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
+    /// Possible value for UsdGeomNurbsCurves::GetFormAttr(), Possible value for UsdGeomBasisCurves::GetWrapAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomNurbsPatch::GetUFormAttr()
     const TfToken periodic;
     /// \brief "perspective"
     /// 

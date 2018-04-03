@@ -74,6 +74,11 @@ class SdfAssetPath;
 /// authored one value per curve.  'knots' should be the concatentation of
 /// all batched curves.
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
+/// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
+/// as the value.
+///
 class UsdGeomNurbsCurves : public UsdGeomCurves
 {
 public:
@@ -240,6 +245,30 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateRangesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // FORM
+    // --------------------------------------------------------------------- //
+    /// Interpret the control grid and knot vectors as representing
+    /// an open, geometrically closed, or geometrically closed and C2 continuous
+    /// curve.
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: open
+    /// \n  \ref UsdGeomTokens "Allowed Values": [open, closed, periodic]
+    USDGEOM_API
+    UsdAttribute GetFormAttr() const;
+
+    /// See GetFormAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateFormAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

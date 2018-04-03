@@ -2870,6 +2870,12 @@ class NurbsCurves "NurbsCurves" (
         the extent of all children, as they will be pruned from BBox computation
         during traversal."""
     )
+    uniform token form = "open" (
+        allowedTokens = ["open", "closed", "periodic"]
+        doc = """Interpret the control grid and knot vectors as representing
+        an open, geometrically closed, or geometrically closed and C2 continuous
+        curve."""
+    )
     double[] knots (
         doc = """Knot vector providing curve parameterization.
         The length of the slice of the array for the ith curve 

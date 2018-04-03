@@ -78,6 +78,7 @@ PxrUsdMayaTranslatorCurves::Create(
     VtArray<float>   curveWidths;
     VtArray<GfVec2d> curveRanges;
     VtArray<double>  curveKnots;
+    TfToken          curveForm;
 
     // LIMITATION:  xxx REVISIT xxx
     //   Non-animated Attrs
@@ -125,10 +126,27 @@ PxrUsdMayaTranslatorCurves::Create(
         return false; // invalid nurbscurves, so exit
     }
 
+    //By default, the form is "open"
+    MFnNurbsCurve::Form mayaCurveForm = MFnNurbsCurve::kOpen;
+
     if (UsdGeomNurbsCurves nurbsSchema = UsdGeomNurbsCurves(prim)) {
+        VtArray<double>  usdCurveKnots;
         nurbsSchema.GetOrderAttr().Get(&curveOrder);   // not animatable
-        nurbsSchema.GetKnotsAttr().Get(&curveKnots);   // not animatable
+        nurbsSchema.GetKnotsAttr().Get(&usdCurveKnots);// not animatable
         nurbsSchema.GetRangesAttr().Get(&curveRanges); // not animatable
+
+        curveKnots.resize(usdCurveKnots.size() - 2);
+        for (size_t i = 1; i < usdCurveKnots.size() - 1; ++i) {
+            curveKnots[i - 1] = usdCurveKnots[i];
+        }
+
+        nurbsSchema.GetFormAttr().Get(&curveForm);
+        if (curveForm == UsdGeomTokens->closed) {
+            mayaCurveForm = MFnNurbsCurve::kClosed;
+        }
+        else if (curveForm == UsdGeomTokens->periodic) {
+            mayaCurveForm = MFnNurbsCurve::kPeriodic;
+        }
     } else {
 
         // Handle basis curves originally modelled in Maya as nurbs.
@@ -181,7 +199,6 @@ PxrUsdMayaTranslatorCurves::Create(
 
     int mayaDegree = curveOrder[curveIndex] - 1;
 
-    MFnNurbsCurve::Form mayaCurveForm = MFnNurbsCurve::kOpen; // HARDCODED
     bool mayaCurveCreate2D = false;
     bool mayaCurveCreateRational = true;
 
