@@ -254,15 +254,24 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
             HdStLight::AllDirty);
     }
 
-    // sadly the material also comes from lighting context right now...
     HdxSimpleLightTaskParams taskParams =
         _GetValue<HdxSimpleLightTaskParams>(_simpleLightTaskId,
                                             HdTokens->params);
-    taskParams.sceneAmbient = _lightingContext->GetSceneAmbient();
-    taskParams.material = _lightingContext->GetMaterial();
+
+    // Sadly the material also comes from the lighting context right now...
+    bool hasSceneAmbientChanged = false;
+    if (taskParams.sceneAmbient != _lightingContext->GetSceneAmbient()) {
+        taskParams.sceneAmbient = _lightingContext->GetSceneAmbient();
+        hasSceneAmbientChanged = true;
+    }
+    bool hasMaterialChanged = false;
+    if (taskParams.material != _lightingContext->GetMaterial()) {
+        taskParams.material = _lightingContext->GetMaterial();
+        hasMaterialChanged = true;
+    }
 
     // invalidate HdxSimpleLightTask too
-    if (hasNumLightsChanged) {
+    if (hasNumLightsChanged || hasSceneAmbientChanged || hasMaterialChanged) {
         _SetValue(_simpleLightTaskId, HdTokens->params, taskParams);
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(

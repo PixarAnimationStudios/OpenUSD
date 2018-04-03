@@ -1258,8 +1258,28 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     if (vp2Context) {
         _taskDelegate->SetLightingStateFromMayaDrawContext(*vp2Context);
     } else {
+        // Maya does not appear to use GL_LIGHT_MODEL_AMBIENT, but it leaves
+        // the default value of (0.2, 0.2, 0.2, 1.0) in place. The first time
+        // that the viewport is set to use lights in the scene (instead of the
+        // default lights or the no/flat lighting modes), the value is reset to
+        // (0.0, 0.0, 0.0, 1.0), and it does not get reverted if/when the
+        // lighting mode is changed back.
+        // Since in the legacy viewport we get the lighting context from
+        // OpenGL, we read in GL_LIGHT_MODEL_AMBIENT as the scene ambient. We
+        // therefore need to explicitly set GL_LIGHT_MODEL_AMBIENT to the
+        // zero/no ambient value before we do, otherwise we would end up using
+        // the "incorrect" (i.e. not what Maya itself uses) default value.
+        // This is not a problem in Viewport 2.0, since we do not consult
+        // OpenGL at all for any of the lighting context state.
+        glPushAttrib(GL_LIGHTING_BIT);
+
+        const GfVec4f zeroAmbient(0.0f, 0.0f, 0.0f, 1.0f);
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, zeroAmbient.data());
+
         _taskDelegate->SetLightingStateFromVP1(worldToViewMatrix,
-                                                projectionMatrix);
+                                               projectionMatrix);
+
+        glPopAttrib(); // GL_LIGHTING_BIT
     }
 
     // The legacy viewport does not support color management,
