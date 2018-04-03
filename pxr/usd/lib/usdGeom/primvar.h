@@ -524,7 +524,11 @@ public:
     USDGEOM_API
     bool IsIndexed() const;
 
-
+    /// Returns a valid indices attribute if the primvar is indexed. Returns 
+    /// an invalid attribute otherwise.
+    USDGEOM_API
+    UsdAttribute GetIndicesAttr() const;
+    
     /// Set the index that represents unauthored values in the indices array.
     /// 
     /// Some apps (like Maya) allow you to author primvars sparsely over a 

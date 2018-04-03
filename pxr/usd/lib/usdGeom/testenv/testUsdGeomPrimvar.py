@@ -141,6 +141,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertEqual( u1.Get(), None )
 
         self.assertFalse(u1.IsIndexed())
+        self.assertFalse(u1.GetIndicesAttr())
         self.assertEqual(u1.ComputeFlattened(), None)
 
         uVal = Vt.FloatArray([1.1,2.1,3.1])
@@ -152,6 +153,7 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
         self.assertTrue(u1.SetIndices(indices))
         self.assertTrue(u1.IsIndexed())
+        self.assertTrue(u1.GetIndicesAttr())
 
         self.assertEqual(u1.GetIndices(), indices)
         for a, b in zip(u1.ComputeFlattened(),
@@ -338,8 +340,10 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         indices = Vt.IntArray([0, 1, 2, 2, 1, 0])
         self.assertTrue(foo.SetIndices(indices))
         self.assertTrue(foo.IsIndexed())
+        self.assertTrue(foo.GetIndicesAttr())
         foo.BlockIndices()
         self.assertFalse(foo.IsIndexed())
+        self.assertFalse(foo.GetIndicesAttr())
 
     def test_PrimvarInheritance(self):
         stage = Usd.Stage.CreateInMemory('primvarInheritance.usda')
