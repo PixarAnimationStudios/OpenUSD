@@ -256,6 +256,11 @@ public:
     void SetDisplayGuides(bool displayGuides);
     bool GetDisplayGuides() const { return _displayGuides; }
 
+    /// Returns whether draw modes are enabled.
+    USDIMAGING_API
+    void SetUsdDrawModesEnabled(bool enableUsdDrawModes);
+    bool GetUsdDrawModesEnabled() const { return _enableUsdDrawModes; }
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
@@ -656,6 +661,7 @@ private:
 
     // Display guides rendering
     bool _displayGuides;
+    bool _enableUsdDrawModes;
 
     const bool _hasDrawModeAdapter;
 

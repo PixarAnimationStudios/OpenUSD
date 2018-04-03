@@ -118,6 +118,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _visCache(GetTime(), GetRootCompensation())
     , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
     , _displayGuides(true)
+    , _enableUsdDrawModes(true)
     , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
                            .HasAdapter(UsdImagingAdapterKeyTokens
                                        ->drawModeAdapterKey) )
@@ -214,7 +215,8 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
     TfToken adapterKey;
     if (!ignoreInstancing && prim.IsInstance()) {
         adapterKey = UsdImagingAdapterKeyTokens->instanceAdapterKey;
-    } else if (_hasDrawModeAdapter && _IsDrawModeApplied(prim)) {
+    } else if (_hasDrawModeAdapter && _enableUsdDrawModes &&
+               _IsDrawModeApplied(prim)) {
         adapterKey = UsdImagingAdapterKeyTokens->drawModeAdapterKey;
     } else {
         adapterKey = prim.GetTypeName();
@@ -1687,6 +1689,19 @@ UsdImagingDelegate::SetDisplayGuides(bool displayGuides)
     // Geometry that was assigned to a command buffer to be rendered might
     // now be hidden or the contrary, so we need to rebuild the collections.
     GetRenderIndex().GetChangeTracker().MarkAllCollectionsDirty();
+}
+
+void
+UsdImagingDelegate::SetUsdDrawModesEnabled(bool enableUsdDrawModes)
+{
+    if (_enableUsdDrawModes != enableUsdDrawModes) {
+        if (_primInfoMap.size() > 0) {
+            TF_CODING_ERROR("SetUsdDrawModesEnabled() was called after "
+                            "population; this is currently unsupported...");
+        } else {
+            _enableUsdDrawModes = enableUsdDrawModes;
+        }
+    }
 }
 
 /*virtual*/

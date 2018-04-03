@@ -191,7 +191,8 @@ private:
                               const RenderParams& params);
 
     static void _Populate(const UsdImagingGLHdEngineSharedPtrVector& engines,
-                          const UsdPrimVector& rootPrims);
+                          const UsdPrimVector& rootPrims,
+                          const RenderParams& params);
     static void _SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engines,
                           const UsdPrimVector& rootPrims,
                           const std::vector<UsdTimeCode>& times,

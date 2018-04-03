@@ -25,7 +25,8 @@
 #define USDIMAGINGGL_VERSION_H
 
 // 0 -> 1: added IDRenderColor decode and direct Rprim path fetching.
-#define USDIMAGINGGL_API_VERSION 1
+// 1 -> 2: added RenderParams::enableUsdDrawModes
+#define USDIMAGINGGL_API_VERSION 2
 
 #endif // USDIMAGINGGL_VERSION_H
 

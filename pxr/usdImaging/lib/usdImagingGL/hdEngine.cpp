@@ -193,6 +193,7 @@ UsdImagingGLHdEngine::PrepareBatch(const UsdPrim& root, RenderParams params)
 
     if (_CanPrepareBatch(root, params)) {
         if (!_isPopulated) {
+            _delegate->SetUsdDrawModesEnabled(params.enableUsdDrawModes);
             _delegate->Populate(root.GetStage()->GetPrimAtPath(_rootPath),
                                _excludedPrimPaths);
             _delegate->SetInvisedPrimPaths(_invisedPrimPaths);
@@ -263,7 +264,7 @@ UsdImagingGLHdEngine::_PrepareBatch(
 {
     HD_TRACE_FUNCTION();
 
-    _Populate(engines, rootPrims);
+    _Populate(engines, rootPrims, params);
     _SetTimes(engines, rootPrims, times, params);
 }
 
@@ -296,7 +297,8 @@ UsdImagingGLHdEngine::_SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engin
 /* static */
 void 
 UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engines,
-                              const UsdPrimVector& rootPrims)
+                              const UsdPrimVector& rootPrims,
+                              const RenderParams& params)
 {
     HD_TRACE_FUNCTION();
 
@@ -312,6 +314,8 @@ UsdImagingGLHdEngine::_Populate(const UsdImagingGLHdEngineSharedPtrVector& engin
 
     for (size_t i = 0; i < engines.size(); ++i) {
         if (!engines[i]->_isPopulated) {
+            engines[i]->_delegate->SetUsdDrawModesEnabled(
+                params.enableUsdDrawModes);
             delegatesToPopulate.push_back(engines[i]->_delegate);
             primsToPopulate.push_back(
                 rootPrims[i].GetStage()->GetPrimAtPath(engines[i]->_rootPath));
