@@ -145,7 +145,7 @@ private:
     // Helper method for the _DiscoverPrimvars methods above.
     void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,
                            SdfPath const& cachePath,
-                           TfToken const &primvarName,
+                           UsdGeomPrimvar const& primvar,
                            UsdTimeCode time,
                            UsdImagingValueCache* valueCache) const;
 

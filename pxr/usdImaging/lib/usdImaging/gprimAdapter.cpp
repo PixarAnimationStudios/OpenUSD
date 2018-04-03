@@ -196,32 +196,26 @@ void
 UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     UsdGeomGprim const& gprim,
     SdfPath const& cachePath,
-    TfToken const& primvarName,
+    UsdGeomPrimvar const& primvar,
     UsdTimeCode time,
     UsdImagingValueCache* valueCache) const
 {
-    UsdGeomPrimvar primvarAttr = gprim.GetPrimvar(primvarName);
-
-    if (!primvarAttr) {
-        return;
-    }
-
     VtValue v;
-    if (primvarAttr.ComputeFlattened(&v, time)) {
+    if (primvar.ComputeFlattened(&v, time)) {
 
         TF_DEBUG(USDIMAGING_SHADERS).Msg("Found primvar %s\n",
-            primvarName.GetText());
+            primvar.GetPrimvarName().GetText());
 
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = primvarName;
-        primvar.interpolation = primvarAttr.GetInterpolation();
-        valueCache->GetPrimvar(cachePath, primvar.name) = v;
-        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+        UsdImagingValueCache::PrimvarInfo pvInfo;
+        pvInfo.name = primvar.GetPrimvarName();
+        pvInfo.interpolation = primvar.GetInterpolation();
+        valueCache->GetPrimvar(cachePath, pvInfo.name) = v;
+        _MergePrimvar(pvInfo, &valueCache->GetPrimvars(cachePath));
 
     } else {
 
         TF_DEBUG(USDIMAGING_SHADERS).Msg( "\t\t No primvar on <%s> named %s\n",
-            gprim.GetPath().GetText(), primvarName.GetText());
+            gprim.GetPath().GetText(), primvar.GetPrimvarName().GetText());
     }
 }
 
@@ -257,28 +251,40 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
 
         if (!usdMaterialPath.IsEmpty()) {
-            // Obtain the primvars used in the material bound to this prim
-            // and check if they are in this prim, if so, add them to the 
-            // primvars descriptions.
-            TfTokenVector matPrimvars = 
-                _delegate->GetMaterialPrimvars(usdMaterialPath);
-
-            // XXX:HACK:  Currently GetMaterialPrimvars() does not return
+            // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
             // for the list of primvars.
             if (_delegate->GetRenderIndex().
                 GetRenderDelegate()->CanComputeMaterialNetworks()) {
-                matPrimvars.clear();
-                for (auto const& attr: prim.GetAttributes()) {
-                    if (UsdGeomPrimvar pv = UsdGeomPrimvar(attr)) {
-                        matPrimvars.push_back(pv.GetPrimvarName());
+                if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
+                    // Local (non-inherited) primvars
+                    for (auto const &pv: imageable.GetPrimvars()) {
+                        _ComputeAndMergePrimvar(
+                            gprim, cachePath, pv, time, valueCache);
+                    }
+                    // Inherited primvars
+                    for (auto const &pv: imageable.FindInheritedPrimvars()) {
+                        _ComputeAndMergePrimvar(
+                            gprim, cachePath, pv, time, valueCache);
                     }
                 }
-            }
-
-            for (auto const &p : matPrimvars) {
-                _ComputeAndMergePrimvar(
-                    gprim, cachePath, p, time, valueCache);
+            } else {
+                // Obtain the primvars used in the material bound to this prim
+                // and check if they are in this prim, if so, add them to the 
+                // primvars descriptions.
+                TfTokenVector matPrimvarNames = 
+                    _delegate->GetMaterialPrimvars(usdMaterialPath);
+                for (auto const &pvName : matPrimvarNames) {
+                    UsdGeomPrimvar pv = gprim.GetPrimvar(pvName);
+                    if (!pv) {
+                        // If not found, try as inherited primvar.
+                        pv = gprim.FindInheritedPrimvar(pvName);
+                    }
+                    if (pv) {
+                        _ComputeAndMergePrimvar(
+                            gprim, cachePath, pv, time, valueCache);
+                    }
+                }
             }
         }
     }

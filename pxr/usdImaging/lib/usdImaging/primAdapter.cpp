@@ -211,23 +211,32 @@ UsdImagingPrimAdapter::SamplePrimvar(
     UsdTimeCode time, const std::vector<float>& configuredSampleTimes,
     size_t maxNumSamples, float *times, VtValue *samples)
 {
+    HD_TRACE_FUNCTION();
+
     // Try as USD primvar.
-    if (UsdGeomPrimvar pv = UsdGeomGprim(usdPrim).GetPrimvar(key)) {
-        if (pv.ValueMightBeTimeVarying()) {
-            size_t numSamples = std::min(maxNumSamples,
-                                         configuredSampleTimes.size());
-            for (size_t i=0; i < numSamples; ++i) {
-                UsdTimeCode sceneTime =
-                    _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
-                times[i] = configuredSampleTimes[i];
-                pv.Get(&samples[i], sceneTime);
+    if (UsdGeomGprim gprim = UsdGeomGprim(usdPrim)) {
+        UsdGeomPrimvar pv = gprim.GetPrimvar(key);
+        if (!pv) {
+            // Try as inherited primvar.
+            pv = gprim.FindInheritedPrimvar(key);
+        }
+        if (pv) {
+            if (pv.ValueMightBeTimeVarying()) {
+                size_t numSamples = std::min(maxNumSamples,
+                                             configuredSampleTimes.size());
+                for (size_t i=0; i < numSamples; ++i) {
+                    UsdTimeCode sceneTime =
+                        _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+                    times[i] = configuredSampleTimes[i];
+                    pv.Get(&samples[i], sceneTime);
+                }
+                return numSamples;
+            } else {
+                // Return a single sample for non-varying primvars
+                times[0] = 0;
+                pv.Get(samples, time);
+                return 1;
             }
-            return numSamples;
-        } else {
-            // Return a single sample for non-varying primvars
-            times[0] = 0;
-            pv.Get(samples, time);
-            return 1;
         }
     }
 
