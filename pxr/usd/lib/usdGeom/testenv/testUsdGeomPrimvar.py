@@ -343,7 +343,8 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
         self.assertTrue(foo.GetIndicesAttr())
         foo.BlockIndices()
         self.assertFalse(foo.IsIndexed())
-        self.assertFalse(foo.GetIndicesAttr())
+        # The indices value is blocked, but the attribute continues to exist.
+        self.assertTrue(foo.GetIndicesAttr())
 
     def test_PrimvarInheritance(self):
         stage = Usd.Stage.CreateInMemory('primvarInheritance.usda')
