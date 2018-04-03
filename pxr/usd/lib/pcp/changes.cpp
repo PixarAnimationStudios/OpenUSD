@@ -535,6 +535,7 @@ PcpChanges::DidChange(const std::vector<PcpCache*>& caches,
 
                                 _DidChangeSublayer(i->first /* cache */,
                                                    i->second /* stack */,
+                                                   sublayerPath,
                                                    sublayer,
                                                    sublayerChange,
                                                    debugSummary,
@@ -961,8 +962,9 @@ PcpChanges::DidMuteLayer(
     PCP_APPEND_DEBUG("  Did mute layer @%s@\n", layerId.c_str());
 
     if (!layerStacks.empty()) {
-        _DidChangeSublayerAndLayerStacks(cache, layerStacks, mutedLayer,
-                                         _SublayerRemoved, debugSummary);
+        _DidChangeSublayerAndLayerStacks(
+            cache, layerStacks, layerId, mutedLayer, _SublayerRemoved, 
+            debugSummary);
     }
 
     if (debugSummary && !debugSummary->empty()) {
@@ -988,8 +990,9 @@ PcpChanges::DidUnmuteLayer(
     PCP_APPEND_DEBUG("  Did unmute layer @%s@\n", layerId.c_str());
 
     if (!layerStacks.empty()) {
-        _DidChangeSublayerAndLayerStacks(cache, layerStacks, unmutedLayer,
-                                         _SublayerAdded, debugSummary);
+        _DidChangeSublayerAndLayerStacks(
+            cache, layerStacks, layerId, unmutedLayer, _SublayerAdded, 
+            debugSummary);
     }
 
     if (debugSummary && !debugSummary->empty()) {
@@ -1022,8 +1025,9 @@ PcpChanges::DidMaybeFixSublayer(
         layer ? layer->GetIdentifier().c_str() : "invalid",
         sublayerPath.c_str());
 
-    _DidChangeSublayerAndLayerStacks(cache, layerStacks, sublayer,
-                                     _SublayerAdded, debugSummary);
+    _DidChangeSublayerAndLayerStacks(
+        cache, layerStacks, sublayerPath, sublayer, _SublayerAdded, 
+        debugSummary);
 
     if (debugSummary && !debugSummary->empty()) {
         TfDebug::Helper().Msg("PcpChanges::DidMaybeFixSublayer\n%s",
@@ -1035,6 +1039,7 @@ void
 PcpChanges::_DidChangeSublayerAndLayerStacks(
     PcpCache* cache,
     const PcpLayerStackPtrVector& layerStacks,
+    const std::string& sublayerPath,
     const SdfLayerHandle& sublayer,
     _SublayerChangeType sublayerChange,
     std::string* debugSummary)
@@ -1043,12 +1048,11 @@ PcpChanges::_DidChangeSublayerAndLayerStacks(
     static const bool requiresLayerStackOffsetsChange = false;
     bool requiresSignificantChange = false;
 
-    bool loaded = _DidChangeSublayer(cache, layerStacks,
-                                     sublayer,
-                                     sublayerChange,
-                                     debugSummary,
-                                     &requiresSignificantChange);
-    if (loaded) {
+    _DidChangeSublayer(cache, layerStacks,
+                       sublayerPath, sublayer, sublayerChange,
+                       debugSummary, &requiresSignificantChange);
+
+    if (sublayer) {
         // Layer was loaded.  The layer stacks are changed.
         TF_FOR_ALL(layerStack, layerStacks) {
             _DidChangeLayerStack(*layerStack,
@@ -1658,10 +1662,11 @@ PcpChanges::_LoadSublayerForChange(
     return sublayer;
 }
 
-bool
+void
 PcpChanges::_DidChangeSublayer(
     PcpCache* cache,
     const PcpLayerStackPtrVector& layerStacks,
+    const std::string& sublayerPath,
     const SdfLayerHandle& sublayer,
     _SublayerChangeType sublayerChange,
     std::string* debugSummary,
@@ -1673,32 +1678,13 @@ PcpChanges::_DidChangeSublayer(
                      sublayer ? (*significant ? "significant"
                                               : "insignificant")
                               : "invalid",
-                     sublayer ? sublayer->GetIdentifier().c_str() 
-                              : "invalid",
+                     sublayerPath.c_str(),
                      sublayerChange == _SublayerAdded ? "added" : "removed");
 
     if (!sublayer) {
-        // If we're processing the removal of a sublayer and can't find the
-        // sublayer in question, there are a couple of possibilities:
-        //
-        // 1. The sublayer was invalid to begin with; e.g., there was a bogus
-        //    sublayer specified that is now being removed. 
-        // 2. The sublayer was renamed; this shows up as a remove of the old
-        //    sublayer and an add of the new sublayer.
-        // 3. The sublayer had been opened and valid, but unexpectedly became 
-        //    invalid before hitting this code.
-        //
-        // In cases 1 and 2, we don't want to emit an error. However, in case
-        // 3 we'd ideally emit a coding error. Unfortunately, distinguishing
-        // between case 3 and the others is not possible with the information
-        // Sd currently provides -- we'd really need to know if a sublayer has
-        // been renamed. So for now, just skip the coding error in all cases.
-        if (sublayerChange == _SublayerRemoved) {
-            return false;
-        }
-
-        TF_CODING_ERROR("Can't find or open sublayer");
-        return false;
+        // If the added or removed sublayer is invalid, it has no effect on
+        // composed results so we don't need to register any changes.
+        return;
     }
 
     // Keep the layer alive to avoid reparsing.
@@ -1759,8 +1745,6 @@ PcpChanges::_DidChangeSublayer(
             }
         }
     }
-
-    return true;
 }
 
 void

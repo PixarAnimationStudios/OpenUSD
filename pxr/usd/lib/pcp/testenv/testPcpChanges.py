@@ -60,6 +60,29 @@ class TestPcpChanges(unittest.TestCase):
         self.assertTrue(pi)
         self.assertEqual(pi.primStack, [primSpec])
 
+    def test_InvalidSublayerAdd(self):
+        invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
+
+        layer = Sdf.Layer.CreateAnonymous()
+        layerStackId = Pcp.LayerStackIdentifier(layer)
+        pcp = Pcp.Cache(layerStackId)
+
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        self.assertEqual(len(errs), 0)
+        self.assertEqual(len(layerStack.localErrors), 0)
+
+        with Pcp._TestChangeProcessor(pcp):
+            layer.subLayerPaths.append(invalidSublayerId)
+
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        # This is potentially surprising. Layer stacks are recomputed
+        # immediately during change processing, so any composition
+        # errors generated during that process won't be reported 
+        # during the call to ComputeLayerStack. The errors will be
+        # stored in the layer stack's localErrors field, however.
+        self.assertEqual(len(errs), 0)
+        self.assertEqual(len(layerStack.localErrors), 1)
+
     def test_InvalidSublayerRemoval(self):
         invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
 
@@ -69,13 +92,17 @@ class TestPcpChanges(unittest.TestCase):
         layerStackId = Pcp.LayerStackIdentifier(layer)
         pcp = Pcp.Cache(layerStackId)
 
-        self.assertEqual(len(pcp.ComputeLayerStack(layerStackId)[1]), 1)
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        self.assertEqual(len(errs), 1)
+        self.assertEqual(len(layerStack.localErrors), 1)
         self.assertTrue(pcp.IsInvalidSublayerIdentifier(invalidSublayerId))
 
         with Pcp._TestChangeProcessor(pcp):
             layer.subLayerPaths.remove(invalidSublayerId)
 
-        self.assertEqual(len(pcp.ComputeLayerStack(layerStackId)[1]), 0)
+        (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
+        self.assertEqual(len(errs), 0)
+        self.assertEqual(len(layerStack.localErrors), 0)
         self.assertFalse(pcp.IsInvalidSublayerIdentifier(invalidSublayerId))
 
     def test_UnusedVariantChanges(self):
