@@ -38,9 +38,11 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MFnArrayAttrsData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 #include <maya/MString.h>
@@ -146,6 +148,17 @@ struct PxrUsdMayaWriteUtil
     static bool WriteClassInherits(
             const UsdPrim& usdPrim,
             const std::vector<std::string>& inheritClassNames);
+
+    /// Given \p inputPointsData (native Maya particle data), writes the
+    /// arrays as point-instancer attributes on the given \p instancer
+    /// schema object.
+    /// Returns true if successful.
+    PXRUSDMAYA_API
+    static bool WriteArrayAttrsToInstancer(
+            MFnArrayAttrsData& inputPointsData,
+            const UsdGeomPointInstancer& instancer,
+            const size_t numPrototypes,
+            const UsdTimeCode& usdTime);
 
     /// \}
 

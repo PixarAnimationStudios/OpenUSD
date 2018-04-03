@@ -26,6 +26,7 @@
 #include "usdMaya/UserTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
+#include "pxr/base/gf/rotation.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
@@ -873,6 +874,147 @@ PxrUsdMayaWriteUtil::WriteClassInherits(
         UsdPrim classPrim = stage->CreateClassPrim(inheritPath);
         inherits.AddInherit(classPrim.GetPath());
     }
+    return true;
+}
+
+template <typename MArrayType, typename M, typename V>
+static VtArray<V>
+_MapMayaToVtArray(
+    const MArrayType& mayaArray,
+    const std::function<V (const M)> mapper)
+{
+    VtArray<V> vtArray(mayaArray.length());
+    for (unsigned int i = 0; i < mayaArray.length(); ++i) {
+        vtArray[i] = mapper(mayaArray[i]);
+    }
+    return vtArray;
+}
+
+// static
+bool
+PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
+    MFnArrayAttrsData& inputPointsData,
+    const UsdGeomPointInstancer& instancer,
+    const size_t numPrototypes,
+    const UsdTimeCode& usdTime)
+{
+    MStatus status;
+
+    // All Maya instancers should provide id's (though this isn't
+    // required by UsdGeomPointInstancer). We need to know the id's attr
+    // in order to figure out how many instances there are.
+    size_t numInstances = 0;
+    MFnArrayAttrsData::Type type;
+    if (inputPointsData.checkArrayExist("id", type) &&
+            type == MFnArrayAttrsData::kDoubleArray) {
+        const MDoubleArray id = inputPointsData.doubleArray("id", &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        VtArray<int64_t> vtArray = _MapMayaToVtArray<
+            MDoubleArray, double, int64_t>(
+            id,
+            [](double x) {
+                return (int64_t) x;
+            });
+        instancer.CreateIdsAttr().Set(vtArray, usdTime);
+        numInstances = vtArray.size();
+    }
+    else {
+        TF_WARN("Missing 'id' array attribute on instancer");
+        return false;
+    }
+
+    // Export the rest of the per-instance array attrs.
+    // Some attributes might be missing elements; pad the array according to
+    // Maya's fallback behavior up to the numInstances.
+    if (inputPointsData.checkArrayExist("objectIndex", type) &&
+            type == MFnArrayAttrsData::kDoubleArray) {
+        const MDoubleArray objectIndex = inputPointsData.doubleArray(
+                "objectIndex", &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        VtArray<int> vtArray = _MapMayaToVtArray<MDoubleArray, double, int>(
+            objectIndex,
+            [numPrototypes](double x) {
+                if (x < numPrototypes) {
+                    return (int) x;
+                }
+                else {
+                    // Return the *last* prototype if out of bounds.
+                    return (int) numPrototypes - 1;
+                }
+            });
+        instancer.CreateProtoIndicesAttr().Set(vtArray, usdTime);
+    }
+    else {
+        VtArray<int> vtArray;
+        vtArray.assign(numInstances, 0);
+        instancer.CreateProtoIndicesAttr().Set(vtArray, usdTime);
+    }
+
+    if (inputPointsData.checkArrayExist("position", type) &&
+            type == MFnArrayAttrsData::kVectorArray) {
+        const MVectorArray position = inputPointsData.vectorArray("position",
+                &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        VtVec3fArray vtArray = _MapMayaToVtArray<
+            MVectorArray, const MVector&, GfVec3f>(
+            position,
+            [](const MVector& v) {
+                return GfVec3f(v.x, v.y, v.z);
+            });
+        instancer.CreatePositionsAttr().Set(vtArray, usdTime);
+    }
+    else {
+        VtVec3fArray vtArray;
+        vtArray.assign(numInstances, GfVec3f(0.0f));
+        instancer.CreatePositionsAttr().Set(vtArray, usdTime);
+    }
+
+    if (inputPointsData.checkArrayExist("rotation", type) &&
+            type == MFnArrayAttrsData::kVectorArray) {
+        const MVectorArray rotation = inputPointsData.vectorArray("rotation", 
+                &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        VtQuathArray vtArray = _MapMayaToVtArray<
+            MVectorArray, const MVector&, GfQuath>(
+            rotation,
+            [](const MVector& v) {
+                GfRotation rot = GfRotation(GfVec3d::XAxis(), v.x)
+                        * GfRotation(GfVec3d::YAxis(), v.y)
+                        * GfRotation(GfVec3d::ZAxis(), v.z);
+                return GfQuath(rot.GetQuat());
+            });
+        instancer.CreateOrientationsAttr().Set(vtArray, usdTime);
+    }
+    else {
+        VtQuathArray vtArray;
+        vtArray.assign(numInstances, GfQuath(0.0f));
+        instancer.CreateOrientationsAttr().Set(vtArray, usdTime);
+    }
+
+    if (inputPointsData.checkArrayExist("scale", type) &&
+            type == MFnArrayAttrsData::kVectorArray) {
+        const MVectorArray scale = inputPointsData.vectorArray("scale",
+                &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        VtVec3fArray vtArray = _MapMayaToVtArray<
+            MVectorArray, const MVector&, GfVec3f>(
+            scale,
+            [](const MVector& v) {
+                return GfVec3f(v.x, v.y, v.z);
+            });
+        instancer.CreateScalesAttr().Set(vtArray, usdTime);
+    }
+    else {
+        VtVec3fArray vtArray;
+        vtArray.assign(numInstances, GfVec3f(1.0));
+        instancer.CreateScalesAttr().Set(vtArray, usdTime);
+    }
+
     return true;
 }
 
