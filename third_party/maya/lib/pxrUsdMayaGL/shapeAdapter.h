@@ -59,19 +59,19 @@ class PxrMayaHdShapeAdapter
 {
     public:
 
-        /// Update the shape adapter's state from the given \c MPxSurfaceShape
-        /// and the legacy viewport display state.
+        /// Update the shape adapter's state from the shape with the given
+        /// \p shapeDagPath and the legacy viewport display state.
         PXRUSDMAYAGL_API
         virtual bool Sync(
-                MPxSurfaceShape* surfaceShape,
+                const MDagPath& shapeDagPath,
                 const M3dView::DisplayStyle legacyDisplayStyle,
                 const M3dView::DisplayStatus legacyDisplayStatus);
 
-        /// Update the shape adapter's state from the given \c MPxSurfaceShape
-        /// and the Viewport 2.0 display state.
+        /// Update the shape adapter's state from the shape with the given
+        /// \p shapeDagPath and the Viewport 2.0 display state.
         PXRUSDMAYAGL_API
         virtual bool Sync(
-                MPxSurfaceShape* surfaceShape,
+                const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus);
 
@@ -126,8 +126,8 @@ class PxrMayaHdShapeAdapter
 
     protected:
 
-        /// Update the shape adapter's state from the given \c MPxSurfaceShape
-        /// and display state.
+        /// Update the shape adapter's state from the shape with the given
+        /// \p dagPath and display state.
         ///
         /// This method should be called by both public versions of Sync() and
         /// should perform shape data updates that are common to both the
@@ -136,7 +136,7 @@ class PxrMayaHdShapeAdapter
         /// equivalents before calling this method.
         PXRUSDMAYAGL_API
         virtual bool _Sync(
-                MPxSurfaceShape* surfaceShape,
+                const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus) = 0;
 

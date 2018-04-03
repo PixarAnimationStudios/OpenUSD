@@ -147,7 +147,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
     }
 
     if (!_shapeAdapter.Sync(
-            shape,
+            objPath,
             frameContext.getDisplayStyle(),
             MHWRender::MGeometryUtilities::displayStatus(objPath))) {
         return nullptr;
@@ -207,12 +207,6 @@ UsdMayaProxyDrawOverride::userSelect(
         return false;
     }
 
-    UsdMayaProxyShape* shape =
-        UsdMayaProxyShape::GetShapeAtDagPath(_shapeAdapter._shapeDagPath);
-    if (!shape) {
-        return false;
-    }
-
     const unsigned int displayStyle = context.getDisplayStyle();
     const MHWRender::DisplayStatus displayStatus =
         MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter._shapeDagPath);
@@ -223,7 +217,8 @@ UsdMayaProxyDrawOverride::userSelect(
     // first time. We do not add it to the batch renderer though, since that
     // must have already been done to have caused the shape to be drawn and
     // become eligible for selection.
-    if (!_shapeAdapter.Sync(shape, displayStyle, displayStatus)) {
+    if (!_shapeAdapter.Sync(
+            _shapeAdapter._shapeDagPath, displayStyle, displayStatus)) {
         return false;
     }
 

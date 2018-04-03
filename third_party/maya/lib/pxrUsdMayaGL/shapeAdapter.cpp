@@ -113,7 +113,7 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus legacyDisplayStatus)
 /* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
-        MPxSurfaceShape* surfaceShape,
+        const MDagPath& shapeDagPath,
         const M3dView::DisplayStyle legacyDisplayStyle,
         const M3dView::DisplayStatus legacyDisplayStatus)
 {
@@ -129,7 +129,7 @@ PxrMayaHdShapeAdapter::Sync(
         "Synchronizing PxrMayaHdShapeAdapter for legacy viewport: %p\n",
         this);
 
-    const bool success = _Sync(surfaceShape, displayStyle, displayStatus);
+    const bool success = _Sync(shapeDagPath, displayStyle, displayStatus);
 
     if (success) {
         // The legacy viewport does not support color management, so we roll
@@ -154,7 +154,7 @@ PxrMayaHdShapeAdapter::Sync(
 /* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
-        MPxSurfaceShape* surfaceShape,
+        const MDagPath& shapeDagPath,
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
@@ -165,7 +165,7 @@ PxrMayaHdShapeAdapter::Sync(
         "Synchronizing PxrMayaHdShapeAdapter for Viewport 2.0: %p\n",
         this);
 
-    return _Sync(surfaceShape, displayStyle, displayStatus);
+    return _Sync(shapeDagPath, displayStyle, displayStatus);
 }
 
 /* virtual */

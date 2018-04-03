@@ -76,7 +76,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
         return;
     }
 
-    if (!_shapeAdapter.Sync(shape,
+    if (!_shapeAdapter.Sync(shapeDagPath,
                             drawInfo.displayStyle(),
                             drawInfo.displayStatus())) {
         return;
@@ -148,7 +148,12 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    if (!_shapeAdapter.Sync(shape,
+    MDagPath shapeDagPath;
+    if (!MDagPath::getAPathTo(shape->thisMObject(), shapeDagPath)) {
+        return false;
+    }
+
+    if (!_shapeAdapter.Sync(shapeDagPath,
                             view.displayStyle(),
                             view.displayStatus(selectInfo.selectPath()))) {
         return false;

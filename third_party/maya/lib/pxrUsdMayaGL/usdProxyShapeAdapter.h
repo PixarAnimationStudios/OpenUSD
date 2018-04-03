@@ -78,8 +78,8 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
 
     protected:
 
-        /// Update the shape adapter's state from the given \c MPxSurfaceShape
-        /// and display state.
+        /// Update the shape adapter's state from the shape with the given
+        /// \p shapeDagPath and display state.
         ///
         /// This method should be called by both public versions of Sync() and
         /// should perform shape data updates that are common to both the
@@ -88,7 +88,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// equivalents before calling this method.
         PXRUSDMAYAGL_API
         virtual bool _Sync(
-                MPxSurfaceShape* surfaceShape,
+                const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus) override;
 

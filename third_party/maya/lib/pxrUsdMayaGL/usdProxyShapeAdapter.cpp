@@ -128,14 +128,15 @@ PxrMayaHdUsdProxyShapeAdapter::GetDelegateID() const
 /* virtual */
 bool
 PxrMayaHdUsdProxyShapeAdapter::_Sync(
-        MPxSurfaceShape* surfaceShape,
+        const MDagPath& shapeDagPath,
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
-    UsdMayaProxyShape* usdProxyShape =
-        dynamic_cast<UsdMayaProxyShape*>(surfaceShape);
+    UsdMayaProxyShape* usdProxyShape = 
+            UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
-        TF_WARN("Failed to get UsdMayaProxyShape.");
+        TF_WARN("Failed to get UsdMayaProxyShape for '%s'",
+                shapeDagPath.fullPathName().asChar());
         return false;
     }
 
@@ -161,13 +162,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 
     // Check for updates to the shape or changes in the batch renderer that
     // require us to re-initialize the shape adapter.
-    MStatus status;
-    const MFnDagNode dagNodeFn(usdProxyShape->thisMObject(), &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    MDagPath shapeDagPath;
-    status = dagNodeFn.getPath(shapeDagPath);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
     HdRenderIndex* renderIndex =
         UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
     if (!(shapeDagPath == _shapeDagPath) ||
@@ -217,6 +211,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
             _rprimCollection.GetName());
     }
 
+    MStatus status;
     const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
