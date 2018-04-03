@@ -66,7 +66,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const;
+                                      instancerContext = NULL) const override;
 
     /// Thread Safe.
     USDIMAGING_API
@@ -75,7 +75,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const;
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -84,33 +84,33 @@ public:
     USDIMAGING_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& property);
+                                              TfToken const& property) override;
 
 
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
 
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      UsdImagingIndexProxy* index);
+                                      UsdImagingIndexProxy* index) override;
 
     virtual void MarkReprDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
-                               UsdImagingIndexProxy* index);
+                               UsdImagingIndexProxy* index) override;
 
     virtual void MarkCullStyleDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
-                                     UsdImagingIndexProxy* index);
+                                     UsdImagingIndexProxy* index) override;
 
 
     /// Returns the color and opacity for a given prim, taking into account

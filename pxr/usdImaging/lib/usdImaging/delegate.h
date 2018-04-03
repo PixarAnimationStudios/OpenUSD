@@ -92,7 +92,7 @@ public:
     virtual ~UsdImagingDelegate();
 
     USDIMAGING_API
-    virtual void Sync(HdSyncRequestVector* request);
+    virtual void Sync(HdSyncRequestVector* request) override;
 
     // Helper for clients who don't want to drive the sync behavior (unit
     // tests). Note this method is not virtual.
@@ -102,7 +102,7 @@ public:
     /// Opportunity for the delegate to clean itself up after
     /// performing parrellel work during sync phase
     USDIMAGING_API
-    virtual void PostSyncCleanup();
+    virtual void PostSyncCleanup() override;
 
     // TODO: Populate implies that multiple stages can be loaded at once, though
     // this is not currently supported.
@@ -260,63 +260,57 @@ public:
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
+    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) override;
     USDIMAGING_API
-    virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
+    virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     USDIMAGING_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) override;
     typedef PxOsdSubdivTags SubdivTags;
 
     // XXX: animated subdiv tags are not currently supported
     // XXX: subdiv tags currently feteched on demand 
     USDIMAGING_API
-    virtual SubdivTags GetSubdivTags(SdfPath const& id);
+    virtual SubdivTags GetSubdivTags(SdfPath const& id) override;
 
     USDIMAGING_API
-    virtual GfRange3d GetExtent(SdfPath const & id);
+    virtual GfRange3d GetExtent(SdfPath const & id) override;
     USDIMAGING_API
-    virtual GfMatrix4d GetTransform(SdfPath const & id);
+    virtual GfMatrix4d GetTransform(SdfPath const & id) override;
     USDIMAGING_API
-    virtual bool GetVisible(SdfPath const & id);
+    virtual bool GetVisible(SdfPath const & id) override;
     USDIMAGING_API
-    virtual GfVec4f GetColorAndOpacity(SdfPath const & id);
+    virtual bool GetDoubleSided(SdfPath const & id) override;
     USDIMAGING_API
-    virtual bool GetDoubleSided(SdfPath const & id);
-    USDIMAGING_API
-    virtual HdCullStyle GetCullStyle(SdfPath const &id);
+    virtual HdCullStyle GetCullStyle(SdfPath const &id) override;
 
     /// Gets the explicit refinement level for the given prim, if no level is
     /// explicitly set, the fallback is returned; also see 
     /// GetRefineLevelFallback().
     USDIMAGING_API
-    virtual int GetRefineLevel(SdfPath const& id);
-
-    /// Returns the ranges of instances.
-    USDIMAGING_API
-    virtual VtVec2iArray GetInstances(SdfPath const& id);
+    virtual int GetRefineLevel(SdfPath const& id) override;
 
     USDIMAGING_API
-    virtual VtValue Get(SdfPath const& id, TfToken const& key);
+    virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
-    virtual TfToken GetReprName(SdfPath const &id);
+    virtual TfToken GetReprName(SdfPath const &id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id) override;
     USDIMAGING_API
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
-                                          SdfPath const &prototypeId);
+                                          SdfPath const &prototypeId) override;
     USDIMAGING_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId);
+                                             SdfPath const &prototypeId) override;
 
     // Motion samples
     USDIMAGING_API
@@ -337,31 +331,31 @@ public:
 
     // Material Support
     USDIMAGING_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &id);
+    virtual std::string GetSurfaceShaderSource(SdfPath const &id) override;
     USDIMAGING_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &id);
+    virtual std::string GetDisplacementShaderSource(SdfPath const &id) override;
     USDIMAGING_API
     virtual VtValue GetMaterialParamValue(SdfPath const &id,
-                                          TfToken const &paramName);
+                                          TfToken const &paramName) override;
     USDIMAGING_API
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id) override;
 
     // Texture Support
     USDIMAGING_API
-    HdTextureResource::ID GetTextureResourceID(SdfPath const &id);
+    HdTextureResource::ID GetTextureResourceID(SdfPath const &id) override;
     USDIMAGING_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id);
+    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id) override;
 
     // Light Support
     USDIMAGING_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 
-                                       TfToken const &paramName);
+                                       TfToken const &paramName) override;
 
     // Material Support
     USDIMAGING_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
     USDIMAGING_API
-    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId) override;
 
     // Instance path resolution
 
@@ -393,10 +387,18 @@ public:
                                             int instanceIndex,
                                             int *absoluteInstanceIndex,
                                             SdfPath *rprimPath=NULL,
-                                            SdfPathVector *instanceContext=NULL);
+                                            SdfPathVector *instanceContext=NULL) override;
 
 public:
+    USDIMAGING_API
+    GfVec4f GetColorAndOpacity(SdfPath const & id);
+
+    /// Returns the ranges of instances.
+    USDIMAGING_API
+    VtVec2iArray GetInstances(SdfPath const& id);
+
     // Converts a UsdStage path to a path in the render index.
+    USDIMAGING_API
     SdfPath GetPathForIndex(SdfPath const& usdPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();
@@ -415,6 +417,7 @@ public:
     ///
     /// The UsdImaging cache path is the same as a USD prim path,
     /// except for instanced prims, which get a name-mangled encoding.
+    USDIMAGING_API
     SdfPath GetPathForUsd(SdfPath const& indexPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();

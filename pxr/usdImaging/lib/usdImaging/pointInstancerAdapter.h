@@ -52,11 +52,11 @@ public:
     virtual SdfPath Populate(
         UsdPrim const& prim,
         UsdImagingIndexProxy* index,
-        UsdImagingInstancerContext const* instancerContext = NULL);
+        UsdImagingInstancerContext const* instancerContext = NULL) override;
 
-    virtual bool ShouldCullChildren(UsdPrim const& prim) { return true; }
+    virtual bool ShouldCullChildren(UsdPrim const& prim) override { return true; }
 
-    virtual bool IsInstancerAdapter() { return true; }
+    virtual bool IsInstancerAdapter() override { return true; }
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -65,21 +65,21 @@ public:
     virtual void TrackVariabilityPrep(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       UsdImagingInstancerContext const* 
-                                          instancerContext = NULL);
+                                          instancerContext = NULL) override;
 
     /// Thread Safe.
     virtual void TrackVariability(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL) const;
+                                      instancerContext = NULL) const override;
 
     virtual void UpdateForTimePrep(UsdPrim const& prim,
                                    SdfPath const& cachePath, 
                                    UsdTimeCode time,
                                    HdDirtyBits requestedBits,
                                    UsdImagingInstancerContext const* 
-                                       instancerContext = NULL);
+                                       instancerContext = NULL) override;
 
     /// Thread Safe.
     virtual void UpdateForTime(UsdPrim const& prim,
@@ -87,7 +87,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL) const;
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -95,38 +95,38 @@ public:
 
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+                                              TfToken const& propertyName) override;
 
     virtual void ProcessPrimResync(SdfPath const& usdPath,
-                                   UsdImagingIndexProxy* index);
+                                   UsdImagingIndexProxy* index) override;
 
     virtual void ProcessPrimRemoval(SdfPath const& usdPath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
 
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      UsdImagingIndexProxy* index);
+                                      UsdImagingIndexProxy* index) override;
 
     virtual void MarkReprDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
-                               UsdImagingIndexProxy* index);
+                               UsdImagingIndexProxy* index) override;
 
     virtual void MarkCullStyleDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
-                                     UsdImagingIndexProxy* index);
+                                     UsdImagingIndexProxy* index) override;
 
 
 
@@ -139,7 +139,7 @@ public:
                                             int *instanceCountForThisLevel,
                                             int *absoluteInstanceIndex,
                                             SdfPath *rprimPath=NULL,
-                                            SdfPathVector *instanceContext=NULL);
+                                            SdfPathVector *instanceContext=NULL) override;
 
     virtual size_t
     SampleInstancerTransform(UsdPrim const& instancerPrim,
@@ -168,15 +168,15 @@ public:
                                             int *instanceCountForThisLevel,
                                             int *absoluteInstanceIndex,
                                             SdfPath *rprimPath,
-                                            SdfPathVector *instanceContext);
+                                            SdfPathVector *instanceContext) override;
 
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerPath,
-                                          SdfPath const &protoRprimPath);
+                                          SdfPath const &protoRprimPath) override;
 
     virtual GfMatrix4d GetRelativeInstancerTransform(
         SdfPath const &instancerPath,
         SdfPath const &protoInstancerPath,
-        UsdTimeCode time) const;
+        UsdTimeCode time) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Selection
@@ -185,17 +185,17 @@ public:
                                 HdxSelectionHighlightMode const& highlightMode,
                                 SdfPath const &path,
                                 VtIntArray const &instanceIndices,
-                                HdxSelectionSharedPtr const &result);
+                                HdxSelectionSharedPtr const &result) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 
-    virtual SdfPathVector GetDependPaths(SdfPath const &path) const;
+    virtual SdfPathVector GetDependPaths(SdfPath const &path) const override;
 
 protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
-                             UsdImagingIndexProxy* index) final;
+                             UsdImagingIndexProxy* index) override final;
 
 private:
     struct _ProtoRprim;
