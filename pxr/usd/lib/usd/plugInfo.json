@@ -114,6 +114,12 @@
                             "UsdAPISchemaBase"
                         ]
                     }, 
+                    "UsdSchemaBase": {}, 
+                    "UsdTyped": {
+                        "bases": [
+                            "UsdSchemaBase"
+                        ]
+                    }, 
                     "UsdUsdFileFormat": {
                         "bases": [
                             "SdfFileFormat"
