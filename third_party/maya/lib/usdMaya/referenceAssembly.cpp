@@ -72,18 +72,15 @@
 #include <string>
 #include <vector>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens, PXRUSDMAYA_VARIANT_SET_TOKENS);
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_REF_ASSEMBLIES, true,
-                      "Uses USD scene assemblies for set dressing");
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaVariantSetTokens, PXRUSDMAYA_VARIANT_SET_TOKENS);
 
 TF_DEFINE_ENV_SETTING(PIXMAYA_USE_USD_ASSEM_NAMESPACE, true,
                       "Prefixes unrolled USD assemblies with namespaces");
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_DEBUG_USD_ASSEM, false,
-                      "Displays debug information for unrolling USD assemblies");
 
 bool
 UsdMayaUseUsdAssemblyNamespace()
