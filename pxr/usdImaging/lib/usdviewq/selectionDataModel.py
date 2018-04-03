@@ -24,7 +24,7 @@
 
 from collections import OrderedDict
 
-from pxr import Sdf
+from pxr import Sdf, Gf
 from qt import QtCore
 
 from customAttributes import (ComputedPropertyNames, BoundingBoxAttribute,
@@ -323,6 +323,7 @@ class SelectionDataModel(QtCore.QObject):
     # When emitted, includes two sets: one of newly selected prims, and one of
     # newly deselected prims.
     signalPrimSelectionChanged = QtCore.Signal(set, set)
+    signalPointSelectionChanged = QtCore.Signal(Gf.Vec3d)
 
     signalPropSelectionChanged = QtCore.Signal()
     signalComputedPropSelectionChanged = QtCore.Signal()
@@ -346,8 +347,9 @@ class SelectionDataModel(QtCore.QObject):
         self.batchComputedPropChanges = Blocker(
             exitCallback=self._computedPropSelectionChanged)
 
-        self._primSelection = _PrimSelection()
+        self._pointSelection = (0.0, 0.0, 0.0)
 
+        self._primSelection = _PrimSelection()
         # The path selection should never be empty. If it ever is, we
         # immediately add the root path before returning to user control (see
         # _primSelectionChanged).
@@ -362,6 +364,8 @@ class SelectionDataModel(QtCore.QObject):
         self._computedPropSelection = _PropSelection()
 
     ### Internal Operations ###
+    def _pointSelectionChanged(self):
+        self.signalPointSelectionChanged.emit(self._pointSelection)
 
     def _primSelectionChanged(self):
         """Should be called whenever a change is made to _primSelection. Some
@@ -556,9 +560,19 @@ class SelectionDataModel(QtCore.QObject):
 
     def clear(self):
         """Clear all selections."""
-
+        self.clearPoint()
         self.clearPrims()
         self.clearProps()
+
+    def clearPoint(self):
+        self._pointSelection = (0.0, 0.0, 0.0)
+
+    def setPoint(self, point):
+        self._pointSelection = point
+        self._pointSelectionChanged()
+
+    def getPoint(self):
+        return self._pointSelection
 
     ### Prim Path Operations ###
 
