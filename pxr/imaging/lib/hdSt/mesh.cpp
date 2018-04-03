@@ -1114,11 +1114,8 @@ HdStMesh::_UseQuadIndices(
                         renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    HdStShaderCodeSharedPtr ss = material->GetShaderCode();
-
-    TF_FOR_ALL(it, ss->GetParams()) {
-        if (it->IsPtex())
-            return true;
+    if (material->HasPtex()) {
+        return true;
     }
 
     // Fallback to the environment variable, which allows forcing of

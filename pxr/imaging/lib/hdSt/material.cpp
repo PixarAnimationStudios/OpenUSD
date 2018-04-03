@@ -102,6 +102,7 @@ private:
 HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
  , _surfaceShader(new HdStSurfaceShader)
+ , _hasPtex(false)
 {
 }
 
@@ -148,6 +149,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         const HdMaterialParamVector &params = GetMaterialParams(sceneDelegate);
         _surfaceShader->SetParams(params);
 
+        bool hasPtex = false;
         TF_FOR_ALL(paramIt, params) {
             if (paramIt->IsPrimvar()) {
                 // skip -- maybe not necessary, but more memory efficient
@@ -197,6 +199,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 tex.name = paramIt->GetName();
 
                 if (texResource->IsPtex()) {
+                    hasPtex = true;
                     tex.type =
                             HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
                     tex.handle =
@@ -255,11 +258,16 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _surfaceShader->SetTextureDescriptors(textures);
         _surfaceShader->SetBufferSources(sources, resourceRegistry);
 
-        // XXX Forcing rprims to have a dirty material id to re-evaluate their
-        // material state as we don't know whuch rprims are bound to this one.
-        HdChangeTracker& changeTracker =
+        if (_hasPtex != hasPtex) {
+            _hasPtex = hasPtex;
+
+            // XXX Forcing rprims to have a dirty material id to re-evaluate
+            // their material state as we don't know which rprims are bound to
+            // this one.
+            HdChangeTracker& changeTracker =
                              sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
+            changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
+        }
     }
 
     *dirtyBits = Clean;
