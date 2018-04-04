@@ -55,6 +55,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ivec2)
     (ivec3)
     (ivec4)
+    (constantPrimvars)
     (primitiveParam)
 );
 
@@ -190,7 +191,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // constant primvar (per-object)
     HdBinding constantPrimVarBinding =
                 locator.GetBinding(structBufferBindingType,
-                                   HdTokens->constantPrimVars);
+                                   _tokens->constantPrimvars);
 
     if (HdBufferArrayRangeSharedPtr constantBar_ =
         drawItem->GetConstantPrimVarRange()) {
@@ -198,7 +199,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         HdStBufferArrayRangeGLSharedPtr constantBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
 
-        MetaData::StructBlock sblock(HdTokens->constantPrimVars);
+        MetaData::StructBlock sblock(_tokens->constantPrimvars);
         TF_FOR_ALL (it, constantBar->GetResources()) {
             HdTupleType valueType = it->second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -219,7 +220,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     }
 
      // constant primvars are interleaved into single struct.
-    _bindingMap[HdTokens->constantPrimVars] = constantPrimVarBinding;
+    _bindingMap[_tokens->constantPrimvars] = constantPrimVarBinding;
 
     // instance primvar (per-instance)
     int instancerNumLevels = drawItem->GetInstancePrimVarNumLevels();
@@ -862,7 +863,7 @@ HdSt_ResourceBinder::BindConstantBuffer(
     if (!constantBar) return;
 
     // constant buffer is interleaved. we just need to bind a buffer.
-    BindBuffer(HdTokens->constantPrimVars, constantBar->GetResource());
+    BindBuffer(_tokens->constantPrimvars, constantBar->GetResource());
 }
 
 void
@@ -871,7 +872,7 @@ HdSt_ResourceBinder::UnbindConstantBuffer(
 {
     if (!constantBar) return;
 
-    UnbindBuffer(HdTokens->constantPrimVars, constantBar->GetResource());
+    UnbindBuffer(_tokens->constantPrimvars, constantBar->GetResource());
 }
 
 void

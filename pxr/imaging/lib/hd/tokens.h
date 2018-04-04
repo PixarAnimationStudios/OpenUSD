@@ -45,7 +45,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (color)                                     \
     (collection)                                \
     (computeShader)                             \
-    (constantPrimVars)                          \
     (cubic)                                     \
     (culledInstanceIndices)                     \
     (cullStyle)                                 \
@@ -75,7 +74,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instancer)                                 \
     (instancerTransform)                        \
     (instancerTransformInverse)                 \
-    (instancePrimVars)                          \
     (instanceCountInput)                        \
     (instanceIndices)                           \
     (instanceIndexBase)                         \
