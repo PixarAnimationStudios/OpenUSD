@@ -42,6 +42,7 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/singleton.h"
@@ -83,6 +84,15 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+// XXX: Supporting area selections in depth (where an object that is occluded
+// by another object in the selection is also selected) currently comes with a
+// significant performance penalty if the number of objects grows large, so for
+// now we only expose that behavior with an env setting.
+TF_DEFINE_ENV_SETTING(PXRMAYAHD_ENABLE_DEPTH_SELECTION,
+                      false,
+                      "Enables area selection of objects occluded in depth");
 
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -941,7 +951,7 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomCollection(
 HdRprimCollectionVector
 UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         _ShapeAdapterBucketsMap& bucketsMap,
-        const bool singleSelection) const
+        const bool useDepthSelection) const
 {
     HdRprimCollectionVector rprimCollections;
 
@@ -961,11 +971,11 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
 
             isViewport2 = shapeAdapter->IsViewport2();
 
-            if (singleSelection) {
-                // If we're in single-selection mode, only update visibility
-                // for the shape adapters. We'll use the full viewport renderer
-                // collection for selection instead of the individual shape
-                // adapter collections.
+            if (!useDepthSelection) {
+                // If we don't care about selecting in depth, only update
+                // visibility for the shape adapters. We'll use the full
+                // viewport renderer collection for selection instead of the
+                // individual shape adapter collections.
                 continue;
             }
 
@@ -973,7 +983,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionRprimCollections(
         }
     }
 
-    if (singleSelection) {
+    if (!useDepthSelection) {
         if (isViewport2) {
             rprimCollections.push_back(_viewport2RprimCollection);
         } else {
@@ -988,7 +998,7 @@ bool
 UsdMayaGLBatchRenderer::_TestIntersection(
     const HdRprimCollection& rprimCollection,
     HdxIntersector::Params queryParams,
-    bool singleSelection,
+    const bool singleSelection,
     HdxIntersector::HitSet* outHitSet)
 {
     queryParams.renderTags = rprimCollection.GetRenderTags();
@@ -1033,8 +1043,15 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
+    // If the enable depth selection env setting has not been turned on, then
+    // we can optimize area/marquee selections by handling collections
+    // similarly to a single selection, where we test intersections against the
+    // single, viewport renderer-based collection.
+    const bool useDepthSelection =
+        (!singleSelection && TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION));
+
     const HdRprimCollectionVector rprimCollections =
-        _GetIntersectionRprimCollections(bucketsMap, singleSelection);
+        _GetIntersectionRprimCollections(bucketsMap, useDepthSelection);
 
     TF_DEBUG(PXRUSDMAYAGL_QUEUE_INFO).Msg(
         "____________ SELECTION STAGE START ______________ "

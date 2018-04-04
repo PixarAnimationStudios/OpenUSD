@@ -304,7 +304,7 @@ private:
     bool _TestIntersection(
             const HdRprimCollection& rprimCollection,
             HdxIntersector::Params queryParams,
-            bool singleSelection,
+            const bool singleSelection,
             HdxIntersector::HitSet* outHitSet);
 
     /// Handler for Maya Viewport 2.0 end render notifications.
@@ -422,18 +422,19 @@ private:
 
     /// Gets the vector of rprim collections to use for intersection testing.
     ///
-    /// As an optimization for the single selection case of intersection
-    /// testing, we use a single HdRprimCollection that includes all shape
-    /// adapters/delegates registered with the batch renderer for the active
-    /// viewport renderer (legacy viewport or Viewport 2.0), since we're only
-    /// interested in the single nearest hit. This is much faster than testing
-    /// against each shape adapter's collection individually. In the
-    /// non-single/area selection case, we fall back to testing each shape
-    /// adapter collection individually so that occluded shapes will be
-    /// included in the selection.
+    /// As an optimization for when we do not need to do intersection testing
+    /// against all objects in depth (i.e. with single selections or when the
+    /// PXRMAYAHD_ENABLE_DEPTH_SELECTION env setting is disabled), we use a
+    /// single HdRprimCollection that includes all shape adapters/delegates
+    /// registered with the batch renderer for the active viewport renderer
+    /// (legacy viewport or Viewport 2.0), since we're only interested in the
+    /// single nearest hit in depth for a particular pixel. This is much faster
+    /// than testing against each shape adapter's collection individually.
+    /// Otherwise, we test each shape adapter's collection individually so that
+    /// occluded shapes will be included in the selection.
     HdRprimCollectionVector _GetIntersectionRprimCollections(
             _ShapeAdapterBucketsMap& bucketsMap,
-            const bool singleSelection) const;
+            const bool useDepthSelection) const;
 
     /// Populates the selection results using the given parameters by
     /// performing intersection tests against all of the shapes in the given
