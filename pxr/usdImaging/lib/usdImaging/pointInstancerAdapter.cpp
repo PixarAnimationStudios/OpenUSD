@@ -1819,17 +1819,28 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     UsdTimeCode time, const std::vector<float>& configuredSampleTimes,
     size_t maxNumSamples, float *times, VtValue *samples)
 {
-    TfToken usdKey = key;
-    if (key == _tokens->translate) {
-        usdKey = UsdGeomTokens->positions;
-    } else if (key == _tokens->scale) {
-        usdKey = UsdGeomTokens->scales;
-    } else if (key == _tokens->rotate) {
-        usdKey = UsdGeomTokens->orientations;
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        _ProtoRprim const& rproto = _GetProtoRprim(usdPrim.GetPath(),
+                                                   cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(rproto);
+        return rproto.adapter->SamplePrimvar(
+            protoPrim, cachePath, key, time, configuredSampleTimes,
+            maxNumSamples, times, samples);
+    } else {
+        // Map Hydra-PI transform keys to their USD equivalents.
+        TfToken usdKey = key;
+        if (key == _tokens->translate) {
+            usdKey = UsdGeomTokens->positions;
+        } else if (key == _tokens->scale) {
+            usdKey = UsdGeomTokens->scales;
+        } else if (key == _tokens->rotate) {
+            usdKey = UsdGeomTokens->orientations;
+        }
+        return UsdImagingPrimAdapter::SamplePrimvar(
+            usdPrim, cachePath, usdKey, time, configuredSampleTimes,
+            maxNumSamples, times, samples);
     }
-    return UsdImagingPrimAdapter::SamplePrimvar(
-        usdPrim, cachePath, usdKey, time, configuredSampleTimes,
-        maxNumSamples, times, samples);
 }
 
 /*virtual*/

@@ -1180,7 +1180,7 @@ UsdImagingInstanceAdapter::SamplePrimvar(
                                      configuredSampleTimes.size());
         for (size_t i=0; i < numSamples; ++i) {
             UsdTimeCode sceneTime =
-                _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+                _GetTimeWithOffset(configuredSampleTimes[i]);
             times[i] = configuredSampleTimes[i];
             VtMatrix4dArray xf;
             _ComputeInstanceTransforms(usdPrim, &xf, sceneTime);

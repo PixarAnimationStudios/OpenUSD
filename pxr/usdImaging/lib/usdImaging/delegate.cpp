@@ -2703,11 +2703,10 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id, TfToken const& key,
                                   float *times, VtValue *samples)
 {
     SdfPath usdPath = GetPathForUsd(id);
-    UsdPrim usdPrim = _GetPrim(usdPath);
     _PrimInfo *primInfo = GetPrimInfo(usdPath);
     if (TF_VERIFY(primInfo)) {
         return primInfo->adapter
-            ->SamplePrimvar(usdPrim, usdPath, key,
+            ->SamplePrimvar(primInfo->usdPrim, usdPath, key,
                             _time, _timeSampleOffsets,
                             maxNumSamples, times, samples);
     }

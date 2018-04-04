@@ -420,6 +420,8 @@ protected:
     USDIMAGING_API
     SdfPath _GetPrimPathFromInstancerChain(SdfPathVector const& instancerChain);
 
+    UsdTimeCode _GetTimeWithOffset(float offset) const;
+
     // Determines if an attribute is varying and if so, sets the given
     // \p dirtyFlag in the \p dirtyFlags and increments a perf counter. Returns
     // true if the attribute is varying.

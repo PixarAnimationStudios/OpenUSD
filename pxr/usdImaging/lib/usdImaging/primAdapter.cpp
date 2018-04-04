@@ -418,6 +418,12 @@ UsdImagingPrimAdapter::_GetPrimPathFromInstancerChain(
     return primPath;
 }
 
+UsdTimeCode
+UsdImagingPrimAdapter::_GetTimeWithOffset(float offset) const
+{
+    return _delegate->GetTimeWithOffset(offset);
+}
+
 void 
 UsdImagingPrimAdapter::_MergePrimvar(
                     UsdImagingValueCache::PrimvarInfo const& primvar, 
