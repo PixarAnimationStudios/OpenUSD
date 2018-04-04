@@ -22,6 +22,7 @@ pxr_library(usdUtils
         introspection
         pipeline
         registeredVariantSet
+        sparseValueWriter
         stageCache
         stitch
         stitchClips
@@ -41,6 +42,7 @@ pxr_library(usdUtils
         wrapIntrospection.cpp
         wrapPipeline.cpp
         wrapRegisteredVariantSet.cpp
+        wrapSparseValueWriter.cpp
         wrapStageCache.cpp
         wrapStitch.cpp
         wrapStitchClips.cpp
@@ -50,7 +52,8 @@ pxr_library(usdUtils
 )
 
 pxr_test_scripts(
-    testenv/testUsdUtilsAuthoring.py 
+    testenv/testUsdUtilsAuthoring.py
+    testenv/testUsdUtilsSparseValueWriter.py  
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
     testenv/testUsdUtilsDependencyExtractor.py 
     testenv/testUsdUtilsFlattenLayerStack.py
@@ -139,6 +142,12 @@ pxr_install_test_dir(
 pxr_register_test(testUsdUtilsAuthoring
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAuthoring"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsSparseValueWriter
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsSparseValueWriter"
     EXPECTED_RETURN_CODE 0
 )
 
