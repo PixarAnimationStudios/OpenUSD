@@ -187,7 +187,7 @@ public:
     inline TfTokenVector GetPrimvarUniformNames(HdSceneDelegate* delegate)     const;
     inline TfTokenVector GetPrimvarConstantNames(HdSceneDelegate* delegate)    const;
 
-    inline VtValue GetPrimVar(HdSceneDelegate* delegate, const TfToken &name)  const;
+    inline VtValue GetPrimvar(HdSceneDelegate* delegate, const TfToken &name)  const;
 
 protected:
     /// Update objects representation based on dirty bits.
@@ -211,7 +211,7 @@ protected:
     /// since we're tracking dirtiness in a single bit (e.g. DirtyTransform)
     /// unlike vertex primvars (DirtyPoints-DirtyRefinedPoints)
     HD_API
-    void _PopulateConstantPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateConstantPrimvars(HdSceneDelegate *sceneDelegate,
                                    HdDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits);
 
@@ -340,7 +340,7 @@ HdRprim::GetPrimvarConstantNames(HdSceneDelegate* delegate) const
 }
 
 inline VtValue
-HdRprim::GetPrimVar(HdSceneDelegate* delegate, const TfToken &name) const
+HdRprim::GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const
 {
     return delegate->Get(GetId(), name);
 }

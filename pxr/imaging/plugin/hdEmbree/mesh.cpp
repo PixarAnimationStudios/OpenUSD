@@ -362,7 +362,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
     //
     // While iterating primvars, we skip "points" (vertex positions) because
     // the points primvar is processed by _PopulateRtMesh. We only call
-    // GetPrimVar on primvars that have been marked dirty.
+    // GetPrimvar on primvars that have been marked dirty.
     //
     // Currently, hydra doesn't have a good way of communicating changes in
     // the set of primvars, so we only ever add and update to the primvar set.
@@ -372,7 +372,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
             _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
+                GetPrimvar(sceneDelegate, *nameIt),
                 HdInterpolationVertex
             };
         }
@@ -382,7 +382,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
             _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
+                GetPrimvar(sceneDelegate, *nameIt),
                 HdInterpolationVarying
             };
         }
@@ -392,7 +392,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
             _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
+                GetPrimvar(sceneDelegate, *nameIt),
                 HdInterpolationFaceVarying
             };
         }
@@ -402,7 +402,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
             _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
+                GetPrimvar(sceneDelegate, *nameIt),
                 HdInterpolationUniform
             };
         }
@@ -412,7 +412,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
             _primvarSourceMap[*nameIt] = {
-                GetPrimVar(sceneDelegate, *nameIt),
+                GetPrimvar(sceneDelegate, *nameIt),
                 HdInterpolationConstant
             };
         }

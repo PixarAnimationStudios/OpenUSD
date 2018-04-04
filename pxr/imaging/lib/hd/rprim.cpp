@@ -279,7 +279,7 @@ HdRprim::GetInitialDirtyBitsMask() const
 }
 
 void
-HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
+HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits)
 {

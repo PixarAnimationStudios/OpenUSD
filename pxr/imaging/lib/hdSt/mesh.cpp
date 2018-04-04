@@ -599,7 +599,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         // TODO: We don't need to pull primvar metadata every time a
         // value changes, but we need support from the delegate.
 
-        VtValue value =  GetPrimVar(sceneDelegate, *nameIt);
+        VtValue value =  GetPrimvar(sceneDelegate, *nameIt);
 
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source(
@@ -972,7 +972,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
             continue;
         }
 
-        VtValue value = GetPrimVar(sceneDelegate, *nameIt);
+        VtValue value = GetPrimvar(sceneDelegate, *nameIt);
         if (!value.IsEmpty()) {
 
             HdBufferSourceSharedPtr source(new HdVtBufferSource(
@@ -1055,7 +1055,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
         if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
             continue;
 
-        VtValue value = GetPrimVar(sceneDelegate, *nameIt);
+        VtValue value = GetPrimvar(sceneDelegate, *nameIt);
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source(new HdVtBufferSource(
                                                *nameIt,
@@ -1197,7 +1197,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* CONSTANT PRIMVARS */
-    _PopulateConstantPrimVars(sceneDelegate, drawItem, dirtyBits);
+    _PopulateConstantPrimvars(sceneDelegate, drawItem, dirtyBits);
 
     /* INSTANCE PRIMVARS */
     if (!GetInstancerId().IsEmpty()) {
