@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/materialParam.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
@@ -100,6 +101,10 @@ public:
         }
         static Key DoubleSided(SdfPath const& path) {
             static TfToken attr("doubleSided");
+            return Key(path, attr);
+        }
+        static Key CullStyle(SdfPath const& path) {
+            static TfToken attr("cullStyle");
             return Key(path, attr);
         }
         static Key Extent(SdfPath const& path) {
@@ -298,6 +303,7 @@ public:
     void Clear(SdfPath const& path) {
         _Erase<VtValue>(Key::Color(path));
         _Erase<bool>(Key::DoubleSided(path));
+        _Erase<HdCullStyle>(Key::CullStyle(path));
         _Erase<GfRange3d>(Key::Extent(path));
         _Erase<VtValue>(Key::InstanceIndices(path));
         _Erase<TfToken>(Key::Purpose(path));
@@ -339,6 +345,9 @@ public:
     }
     bool& GetDoubleSided(SdfPath const& path) const {
         return _Get<bool>(Key::DoubleSided(path));
+    }
+    HdCullStyle& GetCullStyle(SdfPath const& path) const {
+        return _Get<HdCullStyle>(Key::CullStyle(path));
     }
     GfRange3d& GetExtent(SdfPath const& path) const {
         return _Get<GfRange3d>(Key::Extent(path));
@@ -411,6 +420,9 @@ public:
     bool FindDoubleSided(SdfPath const& path, bool* value) const {
         return _Find(Key::DoubleSided(path), value);
     }
+    bool FindCullStyle(SdfPath const& path, HdCullStyle* value) const {
+        return _Find(Key::CullStyle(path), value);
+    }
     bool FindExtent(SdfPath const& path, GfRange3d* value) const {
         return _Find(Key::Extent(path), value);
     }
@@ -475,6 +487,9 @@ public:
     }
     bool ExtractDoubleSided(SdfPath const& path, bool* value) {
         return _Extract(Key::DoubleSided(path), value);
+    }
+    bool ExtractCullStyle(SdfPath const& path, HdCullStyle* value) {
+        return _Extract(Key::CullStyle(path), value);
     }
     bool ExtractExtent(SdfPath const& path, GfRange3d* value) {
         return _Extract(Key::Extent(path), value);
@@ -544,6 +559,7 @@ public:
         _GarbageCollect(_boolCache);
         _GarbageCollect(_tokenCache);
         _GarbageCollect(_rangeCache);
+        _GarbageCollect(_cullStyleCache);
         _GarbageCollect(_matrixCache);
         _GarbageCollect(_vec4Cache);
         _GarbageCollect(_valueCache);
@@ -569,6 +585,10 @@ private:
     // extent
     typedef _TypedCache<GfRange3d> _RangeCache;
     mutable _RangeCache _rangeCache;
+
+    // cullstyle
+    typedef _TypedCache<HdCullStyle> _CullStyleCache;
+    mutable _CullStyleCache _cullStyleCache;
 
     // transform
     typedef _TypedCache<GfMatrix4d> _MatrixCache;
@@ -607,6 +627,9 @@ private:
     }
     void _GetCache(_RangeCache **cache) const {
         *cache = &_rangeCache;
+    }
+    void _GetCache(_CullStyleCache **cache) const {
+        *cache = &_cullStyleCache;
     }
     void _GetCache(_MatrixCache **cache) const {
         *cache = &_matrixCache;
