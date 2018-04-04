@@ -299,17 +299,17 @@ public:
     USDIMAGING_API
     virtual TfToken GetReprName(SdfPath const &id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarVertexNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarVaryingNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarFacevaryingNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarUniformNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarConstantNames(SdfPath const& id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarInstanceNames(SdfPath const& id) override;
     USDIMAGING_API
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
                                           SdfPath const &prototypeId) override;

@@ -801,7 +801,7 @@ Hdx_UnitTestDelegate::GetRefineLevel(SdfPath const& id)
 }
 
 TfTokenVector
-Hdx_UnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
+Hdx_UnitTestDelegate::GetPrimvarVertexNames(SdfPath const& id)
 {
     TfTokenVector names;
     names.push_back(HdTokens->points);
@@ -814,7 +814,7 @@ Hdx_UnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
 }
 
 TfTokenVector
-Hdx_UnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
+Hdx_UnitTestDelegate::GetPrimvarConstantNames(SdfPath const& id)
 {
     TfTokenVector names;
     if(_meshes.find(id) != _meshes.end()) {
@@ -826,7 +826,7 @@ Hdx_UnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
 }
 
 TfTokenVector
-Hdx_UnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
+Hdx_UnitTestDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
 {
     TfTokenVector names;
     if (_meshes.find(id) != _meshes.end()) {
@@ -838,7 +838,7 @@ Hdx_UnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
 }
 
 TfTokenVector
-Hdx_UnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
+Hdx_UnitTestDelegate::GetPrimvarUniformNames(SdfPath const& id)
 {
     TfTokenVector names;
     if(_meshes.find(id) != _meshes.end()) {
@@ -850,7 +850,7 @@ Hdx_UnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
 }
 
 TfTokenVector
-Hdx_UnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
+Hdx_UnitTestDelegate::GetPrimvarInstanceNames(SdfPath const &id)
 {
     TfTokenVector names;
     if (_instancers.find(id) != _instancers.end()) {

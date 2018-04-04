@@ -845,7 +845,7 @@ HdUnitTestDelegate::GetReprName(SdfPath const &id)
 
 /* virtual */
 TfTokenVector
-HdUnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimvarVertexNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -878,7 +878,7 @@ HdUnitTestDelegate::GetPrimVarVertexNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-HdUnitTestDelegate::GetPrimVarVaryingNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimvarVaryingNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -893,7 +893,7 @@ HdUnitTestDelegate::GetPrimVarVaryingNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-HdUnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -908,7 +908,7 @@ HdUnitTestDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-HdUnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimvarUniformNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -930,7 +930,7 @@ HdUnitTestDelegate::GetPrimVarUniformNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-HdUnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
+HdUnitTestDelegate::GetPrimvarConstantNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
 
@@ -959,7 +959,7 @@ HdUnitTestDelegate::GetPrimVarConstantNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-HdUnitTestDelegate::GetPrimVarInstanceNames(SdfPath const &id)
+HdUnitTestDelegate::GetPrimvarInstanceNames(SdfPath const &id)
 {
     HD_TRACE_FUNCTION();
 

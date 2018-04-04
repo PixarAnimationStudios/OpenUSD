@@ -460,29 +460,29 @@ public:
     /// \name Primitive Variables
     // -----------------------------------------------------------------------//
 
-    /// Returns the vertex-rate primVar names.
+    /// Returns the vertex-rate primvar names.
     HD_API
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarVertexNames(SdfPath const& id);
 
-    /// Returns the varying-rate primVar names.
+    /// Returns the varying-rate primvar names.
     HD_API
-    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarVaryingNames(SdfPath const& id);
 
-    /// Returns the Facevarying-rate primVar names.
+    /// Returns the Facevarying-rate primvar names.
     HD_API
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarFacevaryingNames(SdfPath const& id);
 
-    /// Returns the Uniform-rate primVar names.
+    /// Returns the Uniform-rate primvar names.
     HD_API
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarUniformNames(SdfPath const& id);
 
-    /// Returns the Constant-rate primVar names.
+    /// Returns the Constant-rate primvar names.
     HD_API
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarConstantNames(SdfPath const& id);
 
-    /// Returns the Instance-rate primVar names.
+    /// Returns the Instance-rate primvar names.
     HD_API
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarInstanceNames(SdfPath const& id);
 
 private:
     HdRenderIndex *_index;

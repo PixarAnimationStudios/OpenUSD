@@ -86,7 +86,7 @@ HdEmbreeInstancer::_SyncPrimvars()
             // primvar names and then cache each one.
 
             TfTokenVector primVarNames;
-            primVarNames = GetDelegate()->GetPrimVarInstanceNames(id);
+            primVarNames = GetDelegate()->GetPrimvarInstanceNames(id);
 
             TF_FOR_ALL(nameIt, primVarNames) {
                 if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt)) {

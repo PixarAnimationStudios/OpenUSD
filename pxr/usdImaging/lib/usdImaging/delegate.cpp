@@ -2752,7 +2752,7 @@ UsdImagingDelegate::_GetPrimvarNames(SdfPath const& usdPath,
 
 /* virtual */
 TfTokenVector
-UsdImagingDelegate::GetPrimVarVertexNames(SdfPath const& id)
+UsdImagingDelegate::GetPrimvarVertexNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
@@ -2761,7 +2761,7 @@ UsdImagingDelegate::GetPrimVarVertexNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-UsdImagingDelegate::GetPrimVarVaryingNames(SdfPath const& id)
+UsdImagingDelegate::GetPrimvarVaryingNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
@@ -2770,7 +2770,7 @@ UsdImagingDelegate::GetPrimVarVaryingNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-UsdImagingDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
+UsdImagingDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
@@ -2779,7 +2779,7 @@ UsdImagingDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-UsdImagingDelegate::GetPrimVarUniformNames(SdfPath const& id)
+UsdImagingDelegate::GetPrimvarUniformNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
@@ -2788,7 +2788,7 @@ UsdImagingDelegate::GetPrimVarUniformNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-UsdImagingDelegate::GetPrimVarConstantNames(SdfPath const& id)
+UsdImagingDelegate::GetPrimvarConstantNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);
@@ -2797,7 +2797,7 @@ UsdImagingDelegate::GetPrimVarConstantNames(SdfPath const& id)
 
 /* virtual */
 TfTokenVector
-UsdImagingDelegate::GetPrimVarInstanceNames(SdfPath const& id)
+UsdImagingDelegate::GetPrimvarInstanceNames(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     SdfPath usdPath = GetPathForUsd(id);

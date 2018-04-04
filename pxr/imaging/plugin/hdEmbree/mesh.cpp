@@ -367,7 +367,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
     // Currently, hydra doesn't have a good way of communicating changes in
     // the set of primvars, so we only ever add and update to the primvar set.
 
-    TfTokenVector names = GetPrimVarVertexNames(sceneDelegate);
+    TfTokenVector names = GetPrimvarVertexNames(sceneDelegate);
     TF_FOR_ALL(nameIt, names) {
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
@@ -377,7 +377,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
             };
         }
     }
-    names = GetPrimVarVaryingNames(sceneDelegate);
+    names = GetPrimvarVaryingNames(sceneDelegate);
     TF_FOR_ALL(nameIt, names) {
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
@@ -387,7 +387,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
             };
         }
     }
-    names = GetPrimVarFacevaryingNames(sceneDelegate);
+    names = GetPrimvarFacevaryingNames(sceneDelegate);
     TF_FOR_ALL(nameIt, names) {
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
@@ -397,7 +397,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
             };
         }
     }
-    names = GetPrimVarUniformNames(sceneDelegate);
+    names = GetPrimvarUniformNames(sceneDelegate);
     TF_FOR_ALL(nameIt, names) {
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {
@@ -407,7 +407,7 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
             };
         }
     }
-    names = GetPrimVarConstantNames(sceneDelegate);
+    names = GetPrimvarConstantNames(sceneDelegate);
     TF_FOR_ALL(nameIt, names) {
         if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, *nameIt) &&
             *nameIt != HdTokens->points) {

@@ -521,8 +521,8 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primVarNames = GetPrimVarVertexNames(sceneDelegate);
-    TfTokenVector const& vars = GetPrimVarVaryingNames(sceneDelegate);
+    TfTokenVector primVarNames = GetPrimvarVertexNames(sceneDelegate);
+    TfTokenVector const& vars = GetPrimvarVaryingNames(sceneDelegate);
     // XXX: It's sort of a waste to do basis width interpolation by default, 
     // but in testImagingComputation there seems to be a way to initialize this
     // shader with cubic widths where widths doesn't appear in the vertex 
@@ -655,7 +655,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    TfTokenVector primVarNames = GetPrimVarUniformNames(sceneDelegate);
+    TfTokenVector primVarNames = GetPrimvarUniformNames(sceneDelegate);
 
     HdBufferSourceVector sources;
     sources.reserve(primVarNames.size());

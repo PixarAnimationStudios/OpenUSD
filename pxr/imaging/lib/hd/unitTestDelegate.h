@@ -320,17 +320,18 @@ public:
     HD_API
     virtual TfToken GetReprName(SdfPath const &id);
     HD_API
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarVertexNames(SdfPath const& id) override;
     HD_API
-    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarVaryingNames(SdfPath const& id) override;
     HD_API
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarFacevaryingNames(SdfPath const& id) 
+        override;
     HD_API
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarUniformNames(SdfPath const& id) override;
     HD_API
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarConstantNames(SdfPath const& id) override;
     HD_API
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarInstanceNames(SdfPath const& id) override;
 
     HD_API
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,

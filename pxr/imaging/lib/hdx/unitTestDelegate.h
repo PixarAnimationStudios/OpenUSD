@@ -151,11 +151,12 @@ public:
     virtual bool GetVisible(SdfPath const& id);
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const &id);
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
+    virtual TfTokenVector GetPrimvarVertexNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarConstantNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarInstanceNames(SdfPath const &id) override;
+    virtual TfTokenVector GetPrimvarUniformNames(SdfPath const& id) override;
+    virtual TfTokenVector GetPrimvarFacevaryingNames(SdfPath const& id) 
+        override;
     virtual VtIntArray GetInstanceIndices(SdfPath const& instancerId,
                                           SdfPath const& prototypeId);
 

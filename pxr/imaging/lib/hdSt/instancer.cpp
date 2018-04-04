@@ -110,7 +110,7 @@ HdStInstancer::GetInstancePrimVars()
                 GetDelegate()->GetRenderIndex().GetResourceRegistry());
 
             TfTokenVector primVarNames;
-            primVarNames = GetDelegate()->GetPrimVarInstanceNames(instancerId);
+            primVarNames = GetDelegate()->GetPrimvarInstanceNames(instancerId);
 
             // for all instance primvars
             HdBufferSourceVector sources;

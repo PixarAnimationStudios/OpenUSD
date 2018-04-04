@@ -379,42 +379,42 @@ HdSceneDelegate::GetExtComputationOutputNames(SdfPath const& id)
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetPrimVarVertexNames(SdfPath const& id)
+HdSceneDelegate::GetPrimvarVertexNames(SdfPath const& id)
 {
     return TfTokenVector();
 }
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetPrimVarVaryingNames(SdfPath const& id)
+HdSceneDelegate::GetPrimvarVaryingNames(SdfPath const& id)
 {
     return TfTokenVector();
 }
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetPrimVarFacevaryingNames(SdfPath const& id)
+HdSceneDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
 {
     return TfTokenVector();
 }
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetPrimVarUniformNames(SdfPath const& id)
+HdSceneDelegate::GetPrimvarUniformNames(SdfPath const& id)
 {
     return TfTokenVector();
 }
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetPrimVarConstantNames(SdfPath const& id)
+HdSceneDelegate::GetPrimvarConstantNames(SdfPath const& id)
 {
     return TfTokenVector();
 }
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetPrimVarInstanceNames(SdfPath const& id)
+HdSceneDelegate::GetPrimvarInstanceNames(SdfPath const& id)
 {
     return TfTokenVector();
 }
