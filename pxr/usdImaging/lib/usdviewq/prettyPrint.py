@@ -53,7 +53,7 @@ def prettyPrint(v):
         for i in range(len(v)):
             dialog.setValue(i)
             result += str(i) + ": " + prettyPrint(v[i]) + "\n"
-            if (dialog.wasCanceled()):
+            if dialog.wasCanceled():
                 return "Pretty-printing canceled"
         result += "]\n"
         dialog.done(0)
@@ -66,7 +66,7 @@ def prettyPrint(v):
         for i in range(len(v)):
             dialog.setValue(i)
             result += str(i) + ": " + prettyPrint(v[i]) + "\n"
-            if (dialog.wasCanceled()):
+            if dialog.wasCanceled():
                 return "Pretty-printing canceled"
         result += ")\n"
         dialog.done(0)

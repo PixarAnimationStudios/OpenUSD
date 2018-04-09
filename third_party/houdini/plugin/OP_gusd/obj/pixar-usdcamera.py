@@ -33,7 +33,7 @@ if node:
     # shot specific USD file.
     try:
         f = hou.findFile( 'scripts/obj/pixar-usdcamera-site.py' )
-        if( f ):
+        if f:
             execfile( f )
 
     except:

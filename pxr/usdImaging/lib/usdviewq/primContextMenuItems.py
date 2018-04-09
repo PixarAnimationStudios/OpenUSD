@@ -353,7 +353,7 @@ class IsolateCopyPrimMenuItem(PrimContextMenuItem):
         guessOutFile = os.getcwd() + "/" + focusPrim.GetName() + "_copy.usd"
         (outFile, _) = QtWidgets.QFileDialog.getSaveFileName(None,
             "Specify the Usd file to create", guessOutFile, 'Usd files (*.usd)')
-        if (outFile.rsplit('.')[-1] != 'usd'):
+        if outFile.rsplit('.')[-1] != 'usd':
             outFile += '.usd'
 
         if inFile == outFile:

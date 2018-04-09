@@ -98,7 +98,7 @@ def SendMail(usdviewApi):
                         msg.as_string())
         server.quit()
 
-class EmailInfo():
+class EmailInfo:
     '''A class to represent necessary fields in an email'''
     def __init__(self='', sender='', sendee='', subject='', body='',
                  imagetype=''):

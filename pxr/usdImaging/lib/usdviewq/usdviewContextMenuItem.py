@@ -28,7 +28,7 @@
 # in which a user right-clicks in an area with no item but still
 # receives a context menu.
 #
-class UsdviewContextMenuItem():
+class UsdviewContextMenuItem:
     def isValid(self):
         ''' Menu items which have an invalid internal item are considered invalid.
             Header menus don't contain an internal _item attribute, so we

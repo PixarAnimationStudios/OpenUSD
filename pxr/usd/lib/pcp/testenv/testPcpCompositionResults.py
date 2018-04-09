@@ -150,7 +150,7 @@ for layerPath in args.layer:
             continue
 
         print '-'*72
-        print 'Results for composing <%s>' % (primPath)
+        print 'Results for composing <%s>' % primPath
 
         # Gather all applied variant selections.
         vselMap = {}
@@ -275,7 +275,7 @@ for layerPath in args.layer:
         if len(propStackMap) > 0:
             print '\nProperty stacks:'
             for propPath in sorted(propStackMap.keys()):
-                print '%s:' % (propPath)
+                print '%s:' % propPath
                 for propSpec in propStackMap[propPath]:
                     # Determine a short form of the spec's layer's path.
                     layerLabel = GetLayerLabel(propSpec.layer)
@@ -283,7 +283,7 @@ for layerPath in args.layer:
 
         def _PrintTargets(targetMap):
             for propPath in sorted(targetMap.keys()):
-                print '%s:' % (propPath)
+                print '%s:' % propPath
                 for targetPath in targetMap[propPath]:
                     print '    %s' % targetPath
                     # Target paths should never include variant selections.
@@ -305,7 +305,7 @@ for layerPath in args.layer:
         if len(errors) > 0:
             PrintErrorMessage(errorFile, '-'*72)
             PrintErrorMessage(errorFile, 
-                              'Errors while composing <%s>\n' % (primPath))
+                              'Errors while composing <%s>\n' % primPath)
             PrintErrors(errorFile, errors)
 
         print ''

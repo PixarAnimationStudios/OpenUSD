@@ -154,46 +154,46 @@ class TestGfInterval(unittest.TestCase):
         # operators
         i1 = Gf.Interval(10, 20, False, True)
         i1 &= Gf.Interval(15, 25, False, False)
-        self.assertEqual(i1.min, 15, ("&="))
-        self.assertEqual(i1.max, 20, ("&="))
+        self.assertEqual(i1.min, 15, "&=")
+        self.assertEqual(i1.max, 20, "&=")
         self.assertTrue(i1.minOpen)
         self.assertTrue(i1.maxClosed)
 
         i1 = Gf.Interval(10, 20) & Gf.Interval(15, 25)
-        self.assertEqual(i1.min, 15, ("&"))
-        self.assertEqual(i1.max, 20, ("&"))
+        self.assertEqual(i1.min, 15, "&")
+        self.assertEqual(i1.max, 20, "&")
         self.assertTrue(i1.minClosed)
         self.assertTrue(i1.maxClosed)
 
         i1 = Gf.Interval(10, 20)
         i1 |= Gf.Interval(15, 25)
-        self.assertEqual(i1.min, 10, ("|="))
-        self.assertEqual(i1.max, 25, ("|="))
+        self.assertEqual(i1.min, 10, "|=")
+        self.assertEqual(i1.max, 25, "|=")
 
         i1 = Gf.Interval(10, 20) | Gf.Interval(15, 25)
-        self.assertEqual(i1.min, 10, ("|"))
-        self.assertEqual(i1.max, 25, ("|"))
+        self.assertEqual(i1.min, 10, "|")
+        self.assertEqual(i1.max, 25, "|")
 
         i1 = Gf.Interval(10, 20)
         i1 += Gf.Interval(30, 40)
-        self.assertTrue(i1.min == 40 and i1.max == 60, ("+="))
+        self.assertTrue(i1.min == 40 and i1.max == 60, "+=")
 
         i1 = Gf.Interval(10, 20)
         i1 -= Gf.Interval(30, 40)
-        self.assertTrue(i1.min == -30 and i1.max == -10, ("-="))
+        self.assertTrue(i1.min == -30 and i1.max == -10, "-=")
 
         i1 = Gf.Interval(10, 20)
         i1 *= Gf.Interval(30, 40)
-        self.assertTrue(i1.min == 300 and i1.max == 800, ("*="))
+        self.assertTrue(i1.min == 300 and i1.max == 800, "*=")
 
         i1 = -Gf.Interval(10, 20)
-        self.assertTrue(i1.min == -20 and i1.max == -10, ("unary -"))
+        self.assertTrue(i1.min == -20 and i1.max == -10, "unary -")
 
         i1 = Gf.Interval(10, 20) + Gf.Interval(20, 30)
-        self.assertTrue(i1.min == 30 and i1.max == 50, ("+"))
+        self.assertTrue(i1.min == 30 and i1.max == 50, "+")
 
         i1 = Gf.Interval(10, 20) - Gf.Interval(20, 30)
-        self.assertTrue(i1.min == -20 and i1.max == 0, ("-"))
+        self.assertTrue(i1.min == -20 and i1.max == 0, "-")
 
         i1 = Gf.Interval(10, 20) * Gf.Interval(20, 30)
         self.assertEqual(i1.min, 200)
@@ -264,9 +264,9 @@ class TestGfInterval(unittest.TestCase):
 
         # Test representations
         self.assertTrue(i1.min == eval(repr(i1)).min and \
-            i1.max == eval(repr(i1)).max, ("repr"))
+                        i1.max == eval(repr(i1)).max, "repr")
 
-        self.assertTrue(len(str(Gf.Interval())), ("str"))
+        self.assertTrue(len(str(Gf.Interval())), "str")
 
 if __name__ == '__main__':
     unittest.main()
