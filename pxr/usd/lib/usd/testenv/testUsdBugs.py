@@ -91,7 +91,7 @@ class TestUsdBugs(unittest.TestCase):
 
         y = Sdf.CreatePrimInLayer(l1, '/x/y')
         y.specifier = Sdf.SpecifierDef
-        y.payload = Sdf.Payload(l2.identifier, '/ypay');
+        y.payload = Sdf.Payload(l2.identifier, '/ypay')
 
         s = Usd.Stage.Open(l1, Usd.Stage.LoadAll)
 

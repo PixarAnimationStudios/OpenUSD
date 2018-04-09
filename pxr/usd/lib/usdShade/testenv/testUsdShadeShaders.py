@@ -143,7 +143,7 @@ class TestUsdShadeShaders(unittest.TestCase):
         # Test boundaries of parameter type-testing when connecting
         print "Test Typed Input Connections"
 
-        colInput = pale.CreateInput("col1", Sdf.ValueTypeNames.Color3f);
+        colInput = pale.CreateInput("col1", Sdf.ValueTypeNames.Color3f)
         self.assertTrue(colInput)
         self.assertTrue(colInput.ConnectToSource(whiterPale, "colorOut"))
         outputAttr = whiterPale.GetPrim().GetAttribute("outputs:colorOut")

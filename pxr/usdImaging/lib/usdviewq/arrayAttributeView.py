@@ -58,8 +58,9 @@ class _ArrayAttributeModel(QtCore.QAbstractListModel):
         self.endInsertRows()
 
     def canFetchMore(self, index):
-        return self._publishedRows < self._rowCount;
-            
+        return self._publishedRows < self._rowCount
+
+
 class ArrayAttributeView(QtWidgets.QListView):
     def __init__(self, parent):
         super(ArrayAttributeView, self).__init__(parent)

@@ -229,22 +229,22 @@ class TestUsdMetadata(unittest.TestCase):
 
             for obj in [foo, attr, rel]:
                 self.assertEqual(obj.GetDocumentation(), "")
-                self.assertFalse(obj.HasAuthoredDocumentation());
+                self.assertFalse(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), None)
 
                 self.assertEqual(obj.SetDocumentation("foo"), True)
                 self.assertEqual(obj.GetDocumentation(), "foo")
-                self.assertTrue(obj.HasAuthoredDocumentation());
+                self.assertTrue(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), "foo")
 
                 self.assertEqual(obj.SetDocumentation(""), True)
                 self.assertEqual(obj.GetDocumentation(), "")
-                self.assertTrue(obj.HasAuthoredDocumentation());
+                self.assertTrue(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), "")
 
                 self.assertEqual(obj.ClearDocumentation(), True)
                 self.assertEqual(obj.GetDocumentation(), "")
-                self.assertFalse(obj.HasAuthoredDocumentation());
+                self.assertFalse(obj.HasAuthoredDocumentation())
                 self.assertEqual(obj.GetMetadata("documentation"), None)
 
     def test_DisplayName(self):
@@ -258,22 +258,22 @@ class TestUsdMetadata(unittest.TestCase):
 
             for prop in [attr, rel]:
                 self.assertEqual(prop.GetDisplayName(), "")
-                self.assertFalse(prop.HasAuthoredDisplayName());
+                self.assertFalse(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), None)
 
                 self.assertEqual(prop.SetDisplayName("foo"), True)
                 self.assertEqual(prop.GetDisplayName(), "foo")
-                self.assertTrue(prop.HasAuthoredDisplayName());
+                self.assertTrue(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), "foo")
 
                 self.assertEqual(prop.SetDisplayName(""), True)
                 self.assertEqual(prop.GetDisplayName(), "")
-                self.assertTrue(prop.HasAuthoredDisplayName());
+                self.assertTrue(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), "")
 
                 self.assertEqual(prop.ClearDisplayName(), True)
                 self.assertEqual(prop.GetDisplayName(), "")
-                self.assertFalse(prop.HasAuthoredDisplayName());
+                self.assertFalse(prop.HasAuthoredDisplayName())
                 self.assertEqual(prop.GetMetadata("displayName"), None)
 
     def test_DisplayGroup(self):
@@ -287,17 +287,17 @@ class TestUsdMetadata(unittest.TestCase):
 
             for prop in [attr, rel]:
                 self.assertEqual(prop.GetDisplayGroup(), "")
-                self.assertFalse(prop.HasAuthoredDisplayGroup());
+                self.assertFalse(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), None)
 
                 self.assertEqual(prop.SetDisplayGroup("foo"), True)
                 self.assertEqual(prop.GetDisplayGroup(), "foo")
-                self.assertTrue(prop.HasAuthoredDisplayGroup());
+                self.assertTrue(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), "foo")
 
                 self.assertEqual(prop.SetDisplayGroup(""), True)
                 self.assertEqual(prop.GetDisplayGroup(), "")
-                self.assertTrue(prop.HasAuthoredDisplayGroup());
+                self.assertTrue(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), "")
 
                 self.assertEqual(prop.SetNestedDisplayGroups(
@@ -309,7 +309,7 @@ class TestUsdMetadata(unittest.TestCase):
 
                 self.assertEqual(prop.ClearDisplayGroup(), True)
                 self.assertEqual(prop.GetDisplayGroup(), "")
-                self.assertFalse(prop.HasAuthoredDisplayGroup());
+                self.assertFalse(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), None)
 
     def test_BasicCustomData(self):

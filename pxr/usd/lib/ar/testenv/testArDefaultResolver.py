@@ -149,7 +149,8 @@ class TestArDefaultResolver(unittest.TestCase):
                                                     "/test/path/2"]))
         self.assertEqual(eval(repr(context)), context)
 
-        self.assertNotEqual(emptyContext, context);
+        self.assertNotEqual(emptyContext, context)
+
 
 if __name__ == '__main__':
     unittest.main()
