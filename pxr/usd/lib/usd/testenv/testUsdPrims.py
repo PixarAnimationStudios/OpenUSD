@@ -663,7 +663,7 @@ class TestUsdPrim(unittest.TestCase):
             s = Usd.Stage.CreateInMemory('Instanceable.'+fmt)
             p = s.DefinePrim('/Instanceable', 'Mesh')
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == None
+            assert p.GetMetadata('instanceable') is None
             assert not p.HasAuthoredInstanceable()
 
             p.SetInstanceable(True)
@@ -678,7 +678,7 @@ class TestUsdPrim(unittest.TestCase):
 
             p.ClearInstanceable()
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == None
+            assert p.GetMetadata('instanceable') is None
             assert not p.HasAuthoredInstanceable()
 
     def test_GetComposedPrimChildrenAsMetadataTest(self):

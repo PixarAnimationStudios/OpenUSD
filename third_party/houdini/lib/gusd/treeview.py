@@ -909,7 +909,7 @@ class TreeView(QFrame):
                 # Check if this index itself matches filterString so its parent
                 # can be notified whether to hide or unhide it.
                 match = index.internalPointer().matchesFilter(filterString)
-                return (match == None)
+                return (match is None)
 
         # Helper method to traverse the tree and unhide all items.
         def Unhide(index):

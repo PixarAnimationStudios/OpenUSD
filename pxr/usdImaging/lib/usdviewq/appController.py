@@ -2180,7 +2180,7 @@ class AppController(QtCore.QObject):
             self._stageView.allSceneCameras = self._allSceneCameras
             # if the stageView is holding an expired camera, clear it first
             # and force search for a new one
-            if currCamera != None and not (currCamera and currCamera.IsActive()):
+            if currCamera is not None and not (currCamera and currCamera.IsActive()):
                 currCamera = None
                 self._dataModel.viewSettings.cameraPrim = None
                 preserveCurrCamera = False

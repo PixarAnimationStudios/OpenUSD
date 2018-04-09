@@ -886,19 +886,19 @@ class TestSdfPath(unittest.TestCase):
             # Do a few simple cases directly.
             paths = map(Sdf.Path, ['/a', '/a/b/c/d', '/b/a', '/b/c/d/e'])
             flp = Sdf.Path.FindLongestPrefix
-            assert flp(paths, '/x') == None
+            assert flp(paths, '/x') is None
             assert flp(paths, '/a') == Sdf.Path('/a')
             assert flp(paths, '/a/a/a') == Sdf.Path('/a')
             assert flp(paths, '/a/c/d/e/f') == Sdf.Path('/a')
             assert flp(paths, '/a/b/c/d') == Sdf.Path('/a/b/c/d')
             assert flp(paths, '/a/b/c/d/a/b/c/d') == Sdf.Path('/a/b/c/d')
             assert flp(paths, '/a/b/c/e/f/g') == Sdf.Path('/a')
-            assert flp(paths, '/b') == None
+            assert flp(paths, '/b') is None
             assert flp(paths, '/b/a/b/c/d/e') == Sdf.Path('/b/a')
             assert flp(paths, '/b/c/d/e/f/g') == Sdf.Path('/b/c/d/e')
             assert flp(paths, '/b/c/d/e') == Sdf.Path('/b/c/d/e')
-            assert flp(paths, '/b/c/x/y/z') == None
-        
+            assert flp(paths, '/b/c/x/y/z') is None
+
         testFindPrefixedRangeAndFindLongestPrefix()
         
         Sdf._DumpPathStats()

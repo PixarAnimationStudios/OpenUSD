@@ -567,7 +567,7 @@ class HUD():
     def draw(self, qglwidget):
         from OpenGL import GL
 
-        if (self._glslProgram == None):
+        if (self._glslProgram is None):
             self.compileProgram()
 
         if (self._glslProgram.program == 0):
@@ -684,17 +684,17 @@ class StageView(QtOpenGL.QGLWidget):
     @property
     def showReticles(self):
         return ((self._dataModel.viewSettings.showReticles_Inside or self._dataModel.viewSettings.showReticles_Outside)
-                and self._dataModel.viewSettings.cameraPrim != None)
+                and self._dataModel.viewSettings.cameraPrim is not None)
 
     @property
     def _fitCameraInViewport(self):
        return ((self._dataModel.viewSettings.showMask or self._dataModel.viewSettings.showMask_Outline or self.showReticles)
-               and self._dataModel.viewSettings.cameraPrim != None)
+               and self._dataModel.viewSettings.cameraPrim is not None)
 
     @property
     def _cropImageToCameraViewport(self):
        return ((self._dataModel.viewSettings.showMask and self._dataModel.viewSettings.showMask_Opaque)
-               and self._dataModel.viewSettings.cameraPrim != None)
+               and self._dataModel.viewSettings.cameraPrim is not None)
 
     @property
     def cameraPrim(self):
@@ -951,7 +951,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):
-        if self._simpleGLSLProgram == None:
+        if self._simpleGLSLProgram is None:
             self._simpleGLSLProgram = GLSLProgram(
             """#version 140
                uniform mat4 mvpMatrix;
@@ -1774,7 +1774,7 @@ class StageView(QtOpenGL.QGLWidget):
         If our current camera corresponds to a prim, create a FreeCamera
         that has the same view and use it.
         """
-        if self._dataModel.viewSettings.cameraPrim != None:
+        if self._dataModel.viewSettings.cameraPrim is not None:
             # cameraPrim may no longer be valid, so use the last-computed
             # gf camera
             if self._lastComputedGfCamera:

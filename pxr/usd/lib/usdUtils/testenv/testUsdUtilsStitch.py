@@ -74,22 +74,22 @@ class TestUsdUtilsStitch(unittest.TestCase):
                         len(set().union(*[timesamples_a, timesamples_b])))
 
     def test_FrameInfoMerged(self):
-        hasFps = self.layers[1].framesPerSecond != None or \
-                 self.layers[2].framesPerSecond != None
-        hasFramePrec = self.layers[1].framePrecision != None or \
-                       self.layers[2].framePrecision != None
-        hasEndTimeCode = self.layers[1].endTimeCode != None or \
-                         self.layers[2].endTimeCode != None
-        hasStartTimeCode = self.layers[1].startTimeCode != None or \
-                           self.layers[2].startTimeCode != None
-        
-        self.assertTrue(((hasFps and self.layers[0].framesPerSecond != None) or \
+        hasFps = self.layers[1].framesPerSecond is not None or \
+                 self.layers[2].framesPerSecond is not None
+        hasFramePrec = self.layers[1].framePrecision is not None or \
+                       self.layers[2].framePrecision is not None
+        hasEndTimeCode = self.layers[1].endTimeCode is not None or \
+                         self.layers[2].endTimeCode is not None
+        hasStartTimeCode = self.layers[1].startTimeCode is not None or \
+                           self.layers[2].startTimeCode is not None
+
+        self.assertTrue(((hasFps and self.layers[0].framesPerSecond is not None) or \
                          (not hasFps)), 'Missing fps')
-        self.assertTrue((hasFramePrec and self.layers[0].framePrecision != None) or \
+        self.assertTrue((hasFramePrec and self.layers[0].framePrecision is not None) or \
                         (not hasFramePrec), 'Missing fps')
-        self.assertTrue(((hasStartTimeCode and self.layers[0].startTimeCode != None) or \
+        self.assertTrue(((hasStartTimeCode and self.layers[0].startTimeCode is not None) or \
                          (not hasStartTimeCode)), 'Missing fps')
-        self.assertTrue(((hasEndTimeCode and self.layers[0].endTimeCode != None) or \
+        self.assertTrue(((hasEndTimeCode and self.layers[0].endTimeCode is not None) or \
                          (not hasEndTimeCode)), 'Missing fps')
  
     def test_ValidFileCreation(self):

@@ -295,14 +295,14 @@ def DownloadURL(url, context, force, dontExtract = None):
             if tarfile.is_tarfile(filename):
                 archive = tarfile.open(filename)
                 rootDir = archive.getnames()[0].split('/')[0]
-                if dontExtract != None:
+                if dontExtract is not None:
                     members = (m for m in archive.getmembers() 
                                if not any((fnmatch.fnmatch(m.name, p)
                                            for p in dontExtract)))
             elif zipfile.is_zipfile(filename):
                 archive = zipfile.ZipFile(filename)
                 rootDir = archive.namelist()[0].split('/')[0]
-                if dontExtract != None:
+                if dontExtract is not None:
                     members = (m for m in archive.getnames() 
                                if not any((fnmatch.fnmatch(m, p)
                                            for p in dontExtract)))
