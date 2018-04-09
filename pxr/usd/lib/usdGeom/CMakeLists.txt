@@ -111,7 +111,7 @@ pxr_test_scripts(
     testenv/testUsdGeomCollectionAPI.py
     testenv/testUsdGeomConstraintTarget.py
     testenv/testUsdGeomConsts.py
-    testenv/test_UsdGeomCurves.py
+    testenv/testUsdGeomCurves.py
     testenv/testUsdGeomFaceSetAPI.py
     testenv/testUsdGeomMesh.py
     testenv/testUsdGeomMotionAPI.py
@@ -255,7 +255,7 @@ pxr_register_test(testUsdGeomCreateAttribute
 
 pxr_register_test(testUsdGeomCurves
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/test_UsdGeomCurves"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomCurves"
     EXPECTED_RETURN_CODE 0
 )
 
