@@ -146,6 +146,7 @@ struct JobImportArgs
     double startTime;
     double endTime;
     bool importWithProxyShapes;
+    bool useEulerFilter;
 };
 
 PXRUSDMAYA_API

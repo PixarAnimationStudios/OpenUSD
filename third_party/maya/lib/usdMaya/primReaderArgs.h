@@ -49,7 +49,8 @@ public:
             const bool readAnimData,
             const bool useCustomFrameRange,
             const double startTime,
-            const double endTime);
+            const double endTime,
+            const bool useEulerFilter);
 
     /// \brief return the usd prim that should be read.
     PXRUSDMAYA_API
@@ -70,6 +71,9 @@ public:
     double GetStartTime() const;
     PXRUSDMAYA_API
     double GetEndTime() const;
+
+    PXRUSDMAYA_API
+    const bool& GetUseEulerFilter() const;
     
     bool ShouldImportUnboundShaders() const {
         // currently this is disabled.
@@ -84,6 +88,7 @@ private:
     const bool _useCustomFrameRange;
     const double _startTime;
     const double _endTime;
+    const bool _useEulerFilter;
 };
 
 

@@ -115,6 +115,8 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
                 jobArgs.endTime = theOption[1].asDouble();
             } else if (theOption[0] == MString("useCustomFrameRange")) {
                 jobArgs.useCustomFrameRange = theOption[1].asInt();
+            } else if (theOption[0] == MString("useEulerFilter")) {
+                jobArgs.useEulerFilter = theOption[1].asInt();
             }
         }
     }
