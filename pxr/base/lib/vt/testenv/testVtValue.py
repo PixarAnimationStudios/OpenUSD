@@ -79,8 +79,8 @@ class TestVtValue(unittest.TestCase):
                 'key3' : [1,2,3,'one','two','three'],
                 'key4' : ['four', 'five', { 'six' : 7, 'eight' : [ {'nine':9} ] } ],
                 'key5' : { 'key6' : 'value' },
-                'key5' : None,
-                'key6' : u'value',
+                'key6' : None,
+                'key7' : u'value',
                 }
 
         bad1 = {1 : 2}
@@ -90,7 +90,7 @@ class TestVtValue(unittest.TestCase):
 
         vtdict = Vt._ReturnDictionary(good)
         self.assertEqual(good, vtdict)
-        self.assertEqual(vtdict['key6'], 'value')
+        self.assertEqual(vtdict['key7'], 'value')
 
         with self.assertRaises(TypeError):
             Vt._ReturnDictionary(bad1)

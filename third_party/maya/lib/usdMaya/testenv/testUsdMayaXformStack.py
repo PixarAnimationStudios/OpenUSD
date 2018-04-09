@@ -686,10 +686,8 @@ class testUsdMayaXformStack(unittest.TestCase):
         self.stage = Usd.Stage.CreateInMemory()
         self.prim = self.stage.DefinePrim('/myPrim', 'Xform')
         self.xform = UsdGeom.Xform(self.prim)
-        self.ops = {}
+        self.ops = {'transform': self.xform.AddTransformOp(opSuffix='transform')}
 
-        self.ops['transform'] = self.xform.AddTransformOp(opSuffix='transform')
-        
     def makeXformOpsAndExpectedClassifications(self, stack, opNames, expectEmpty=False):
         orderedOps = []
         expected = []

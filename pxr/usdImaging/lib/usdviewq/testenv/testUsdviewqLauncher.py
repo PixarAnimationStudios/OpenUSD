@@ -38,11 +38,11 @@ class ValidationOnlyLauncher(Launcher):
         super(ValidationOnlyLauncher, self).__init__()
         self._args = None
 
-    def Run(self, args=[]):
+    def Run(self, args=None):
         """Run the launcher, and optionally provide a list of command line
         arguments. By default, no arguments are used.
         """
-
+        args = args or []
         self._args = [sys.argv[0]] + args
         super(ValidationOnlyLauncher, self).Run()
 

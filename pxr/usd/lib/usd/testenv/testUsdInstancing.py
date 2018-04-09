@@ -73,12 +73,14 @@ def ValidateExpectedInstances(stage, expectedInstances):
                     "Found unexpected instance prim <%s> with master <%s>" % \
                     (prim.GetPath(), prim.GetMaster().GetPath())
 
-def ValidateExpectedChanges(noticeListener, expectedResyncs = [], 
-                            expectedChangedInfo = []):
+def ValidateExpectedChanges(noticeListener, expectedResyncs=None,
+                            expectedChangedInfo=None):
     """
     Validate the expected changes received by the noticeListener.
     expectedResyncs and expectedChangedInfo are lists of prim paths.
     """
+    expectedResyncs = expectedResyncs or []
+    expectedChangedInfo = expectedChangedInfo or []
     assert set(noticeListener.resyncedPrimPaths) == \
         set([Sdf.Path(p) for p in expectedResyncs]), \
         "Expected resyncs for %s, got %s" % \
