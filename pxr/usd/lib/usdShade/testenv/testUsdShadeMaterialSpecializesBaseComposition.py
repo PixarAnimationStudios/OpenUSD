@@ -33,9 +33,9 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         return material
 
     def test_BasicSetup(self):
-        '''
+        """
         Test that we can get base materials at all.
-        '''
+        """
         stage = Usd.Stage.Open('library.usda')
         self.assertTrue(stage)
 
@@ -45,10 +45,10 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         self.assertEqual(child.GetBaseMaterial().GetPath(), base.GetPath())
 
     def test_SpecializesNotPresentIsIgnored(self):
-        '''
+        """
         Test that we don't think a material is a child if its parent doesn't
         exist on the stage.
-        '''
+        """
         stage = Usd.Stage.Open('asset.usda')
         self.assertTrue(stage)
 
@@ -57,10 +57,10 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         self.assertFalse(mat.HasBaseMaterial())
 
     def test_ParentIsAcrossReferenceArc(self):
-        '''
+        """
         Test that we can get base materials when the parent and child are
         across a reference arc.
-        '''
+        """
         stage = Usd.Stage.Open('set_with_specialized_materials.usda')
         self.assertTrue(stage)
 
@@ -71,9 +71,9 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         self.assertEqual(child.GetBaseMaterial().GetPath(), base.GetPath())
 
     def test_MultipleReferencedParents(self):
-        '''
+        """
         Make sure we get a parent with multiple references in our parents.
-        '''
+        """
         stage = Usd.Stage.Open('multiple_referenced_parents.usda')
         self.assertTrue(stage)
 
@@ -84,10 +84,10 @@ class TestUsdShadeMaterialSpecializesBaseComposition(unittest.TestCase):
         self.assertEqual(child.GetBaseMaterial().GetPath(), base.GetPath())
 
     def test_ParentMaterialConcealedBehindNonMaterial(self):
-        '''
+        """
         Test that we find the right specializes arc when some are not
         materials.
-        '''
+        """
         stage = Usd.Stage.Open('concealed_parent_material.usda')
         self.assertTrue(stage)
 

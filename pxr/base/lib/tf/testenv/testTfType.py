@@ -242,9 +242,9 @@ class TestTfType(unittest.TestCase):
 
     def test_InheritanceResolution(self):
         def CheckTfTypeOrderVsPython(classObj):
-            '''Assert that the order of GetAllAncestorTypes() matches Python's
+            """Assert that the order of GetAllAncestorTypes() matches Python's
             native 'mro' method resolution order -- while accounting for the extra
-            root TfType.'''
+            root TfType."""
             t = Tf.Type.Find( classObj )
             # We should have a valid TfType.
             self.assertFalse(t.isUnknown)

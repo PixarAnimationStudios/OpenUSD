@@ -26,7 +26,7 @@ import sys
 from pxr import Sdf,Usd,Tf
 
 def RenamingSpec():
-    '''Test renaming a SdfPrimSpec.'''
+    """Test renaming a SdfPrimSpec."""
     stage = Usd.Stage.CreateInMemory()
     layer = stage.GetRootLayer()
 
@@ -40,7 +40,7 @@ def RenamingSpec():
     assert stage.GetPrimAtPath('/parent_renamed/child')
 
 def ChangeInsignificantSublayer():
-    '''Test making changes after adding an insignificant sublayer.'''
+    """Test making changes after adding an insignificant sublayer."""
     stage = Usd.Stage.CreateInMemory()
     layer = stage.GetRootLayer()
 

@@ -259,7 +259,7 @@ class TestPython(unittest.TestCase):
 
 
     def test_EnumInvalidBitwiseOperations(self):
-        '''Bitwise operations are not permitted between enum values of different types.'''
+        """Bitwise operations are not permitted between enum values of different types."""
         with self.assertRaises(TypeError):
             Tf._Alpha & Tf._Enum.Two
             assert False, "Should not permit bitwise AND between different enum types"
@@ -271,7 +271,7 @@ class TestPython(unittest.TestCase):
             Tf._Alpha ^ Tf._Enum.Two
 
     def test_EnumOneObjectPerUniqueValue(self):
-        '''Only one object should be created for each unique value per type.'''
+        """Only one object should be created for each unique value per type."""
         value1 = Tf._Alpha | Tf._Delta
         value2 = Tf._Alpha | Tf._Delta
         self.assertIs(value1, value2)
@@ -377,7 +377,7 @@ class TestPython(unittest.TestCase):
 
         # Test classmethod error handling.
         class _TestException(Exception):
-            '''A sample exception to raise.'''
+            """A sample exception to raise."""
             pass
         def _TestCallableWithException():
             raise _TestException()

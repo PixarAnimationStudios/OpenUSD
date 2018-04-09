@@ -148,7 +148,7 @@ def _diff(fileName, baselineDir, verbose):
     return subprocess.call(cmd) == 0
 
 def _copyTree(src, dest):
-    ''' Copies the contents of src into dest.'''
+    """ Copies the contents of src into dest."""
     if not os.path.exists(dest):
         os.makedirs(dest)
     for item in os.listdir(src):

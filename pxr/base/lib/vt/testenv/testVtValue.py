@@ -38,8 +38,8 @@ def err( msg ):
 class TestVtValue(unittest.TestCase):
 
     def test_AutoConversion(self):
-        '''Call a func that takes a VtValue without a VtValue (test
-           auto-conversion)'''
+        """Call a func that takes a VtValue without a VtValue (test
+           auto-conversion)"""
         self.assertEqual(Vt._test_ValueTypeName(1.234), 'double')
         self.assertEqual(Vt._test_ValueTypeName('hello'), 'string')
         self.assertEqual(Vt._test_ValueTypeName(Ellipsis), 'TfPyObjWrapper')

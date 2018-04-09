@@ -388,7 +388,7 @@ class Controller(QtCore.QObject):
 
     @_Redirected
     def write(self, text):
-        'Simulate stdin, stdout, and stderr.'
+        """Simulate stdin, stdout, and stderr."""
 
         # Move the cursor to the end of the document
         self.textEdit.moveCursor(QtGui.QTextCursor.End)

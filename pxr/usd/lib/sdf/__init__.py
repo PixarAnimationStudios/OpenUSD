@@ -27,15 +27,15 @@ Tf.PrepareModule(_sdf, locals())
 del _sdf, Tf
 
 def Find(layerFileName, scenePath=None):
-    '''Find(layerFileName, scenePath) -> object
+    """Find(layerFileName, scenePath) -> object
 
 layerFileName: string
 scenePath: Path
 
-If given a single string argument, returns the menv layer with 
-the given filename.  If given two arguments (a string and a Path), finds 
-the menv layer with the given filename and returns the scene object 
-within it at the given path.'''
+If given a single string argument, returns the menv layer with
+the given filename.  If given two arguments (a string and a Path), finds
+the menv layer with the given filename and returns the scene object
+within it at the given path."""
     layer = Layer.Find(layerFileName)
     if (scenePath is None): return layer
     return layer.GetObjectAtPath(scenePath)

@@ -33,13 +33,13 @@
 from pxr.Usdviewq.qt import QtWidgets, QtCore
 
 def _GetSenderAddress():
-    '''Returns an email address used to auto-fill the 'From' field.'''
+    """Returns an email address used to auto-fill the 'From' field."""
     return ""
 
 def SendMail(usdviewApi):
-    '''This method creates a local SMTP server, runs the dialog
+    """This method creates a local SMTP server, runs the dialog
        and upon successful completion, sends the info to the intended
-       recipient.'''
+       recipient."""
     import smtplib
     import tempfile
     from email.mime.text import MIMEText
@@ -99,7 +99,7 @@ def SendMail(usdviewApi):
         server.quit()
 
 class EmailInfo():
-    '''A class to represent necessary fields in an email'''
+    """A class to represent necessary fields in an email"""
     def __init__(self='', sender='', sendee='', subject='', body='',
                  imagetype=''):
         self.sender = sender
@@ -109,8 +109,8 @@ class EmailInfo():
         self.imagetype = imagetype
 
 def _GenerateLayout(dialog, allowScreenCapSel):
-    '''This method generates the full dialog, containing the text fields,
-       buttons and combobox for choosing the type of screenshot'''
+    """This method generates the full dialog, containing the text fields,
+       buttons and combobox for choosing the type of screenshot"""
     (fields, textLayout) = _GenerateTextFields(dialog)
     buttonLayout = _GenerateButtons(dialog, fields, allowScreenCapSel)
 
@@ -122,10 +122,10 @@ def _GenerateLayout(dialog, allowScreenCapSel):
     return layout
 
 def _GenerateTextFields(dialog):
-    '''This method generates the layout containing the text fields to
+    """This method generates the layout containing the text fields to
         be filled by the user, such as sender, sendee and message.
         Note that this takes a reference to the dialog because the buttons
-        need to create a signal handler which uses the text field info'''
+        need to create a signal handler which uses the text field info"""
     # construct text layout
     senderLabel = QtWidgets.QLabel("From: ")
     sendeeLabel = QtWidgets.QLabel("To: ")
@@ -167,9 +167,9 @@ def _GenerateTextFields(dialog):
             fieldsLayout)
 
 def _GenerateButtons(dialog, fields, allowScreenCapSel):
-    '''This method generates the buttons used in our sendmail
+    """This method generates the buttons used in our sendmail
        dialog. This includes creating signal handlers which batch
-       the inputted info for sending across the wire.'''
+       the inputted info for sending across the wire."""
 
     # construct buttons
     cancelBt = QtWidgets.QPushButton("Cancel")
@@ -203,8 +203,8 @@ def _GenerateButtons(dialog, fields, allowScreenCapSel):
     return buttonLayout
 
 def _GetSendMailInfo(usdviewApi, allowScreenCapSel):
-    '''This method takes the generated dialog, runs it and returns the
-       inputted information upon the dialogs completion'''
+    """This method takes the generated dialog, runs it and returns the
+       inputted information upon the dialogs completion"""
     window = usdviewApi.qMainWindow
     dialog = QtWidgets.QDialog(window)
     dialog.setWindowTitle("Send Screenshot...")
@@ -220,10 +220,10 @@ def _GetSendMailInfo(usdviewApi, allowScreenCapSel):
     return dialog.emailInfo
 
 def _GenerateDefaultInfo(usdviewApi, dialog):
-    '''This method generates default information for the sender and
+    """This method generates default information for the sender and
        bodyfields of the sendmail dialog. For the sender, it calls the
        _GetSenderAddress function. For the body, it generates some
-       information based on the current UsdStage.'''
+       information based on the current UsdStage."""
     from time import strftime, gmtime
     import os
 
@@ -252,7 +252,7 @@ def _GenerateDefaultInfo(usdviewApi, dialog):
     return EmailInfo(sender, sendee, subject, body)
 
 def _FillDataFromDialog(dialog, fields, imagetype):
-    '''This method simply fills members of the dialog object'''
+    """This method simply fills members of the dialog object"""
     dialog.emailInfo.sender = fields["sender"].text()
     dialog.emailInfo.sendee = fields["sendee"].text()
     dialog.emailInfo.subject = fields["subject"].text()
@@ -261,7 +261,7 @@ def _FillDataFromDialog(dialog, fields, imagetype):
     return dialog
 
 def _ValidMailInfo(mailInfo):
-    '''This method asserts that the fields are non empty.'''
+    """This method asserts that the fields are non empty."""
     return (mailInfo.sender  and \
             mailInfo.sendee  and \
             mailInfo.subject and \

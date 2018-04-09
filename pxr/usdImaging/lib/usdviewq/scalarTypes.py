@@ -22,9 +22,9 @@
 # language governing permissions and limitations under the Apache License.
 #
 def GetScalarTypeFromAttr(attr):
-    '''
+    """
     returns the (scalar, isArray) where isArray is True if it was an array type
-    '''
+    """
     # Usd.Attribute and customAttributes.CustomAttribute have a
     # GetTypeName function, while Sdf.AttributeSpec has a typeName attr.
     if hasattr(attr, 'GetTypeName'):

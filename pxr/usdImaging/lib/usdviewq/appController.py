@@ -1969,7 +1969,7 @@ class AppController(QtCore.QObject):
     # Screen capture functionality ===========================================
 
     def GrabWindowShot(self):
-        '''Returns a QImage of the full usdview window '''
+        """Returns a QImage of the full usdview window """
         # generate an image of the window. Due to how Qt's rendering
         # works, this will not pick up the GL Widget(_stageView)'s
         # contents, and we'll need to compose it separately.
@@ -1988,7 +1988,7 @@ class AppController(QtCore.QObject):
         return windowShot
 
     def GrabViewportShot(self):
-        '''Returns a QImage of the current stage view in usdview.'''
+        """Returns a QImage of the current stage view in usdview."""
         if self._stageView:
             return self._stageView.grabFrameBuffer()
         else:
@@ -3566,8 +3566,8 @@ class AppController(QtCore.QObject):
             self._ui.actionHUD_GPUstats.isChecked())
 
     def _getHUDStatKeys(self):
-        ''' returns the keys of the HUD with PRIM and NOTYPE and the top and
-         CV, VERT, and FACE at the bottom.'''
+        """ returns the keys of the HUD with PRIM and NOTYPE and the top and
+         CV, VERT, and FACE at the bottom."""
         keys = [k for k in self._upperHUDInfo.keys() if k not in (
             HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE, HUDEntries.PRIM, HUDEntries.NOTYPE)]
         keys = [HUDEntries.PRIM, HUDEntries.NOTYPE] + keys + [HUDEntries.CV, HUDEntries.VERT, HUDEntries.FACE]

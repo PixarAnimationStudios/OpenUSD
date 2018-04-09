@@ -23,10 +23,10 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-'''
-Creates a shot with separate layers for departments.  
+"""
+Creates a shot with separate layers for departments.
 
-'''
+"""
 
 import os
 def main():

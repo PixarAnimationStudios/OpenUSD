@@ -36,7 +36,7 @@ class InvalidUsdviewOption(Exception):
 
 
 class Launcher(object):
-    '''
+    """
     Base class for argument parsing and validation for UsdView
 
     Subclasses can choose to override
@@ -44,14 +44,14 @@ class Launcher(object):
       -- RegisterOptions()
       -- ParseOptions()
       -- ValidateOptions()
-    '''
+    """
     def __init__(self):
         pass
 
     def Run(self):
-        '''
+        """
         the main entry point to launch a process using UsdView.
-        '''
+        """
 
         parser = argparse.ArgumentParser(prog=sys.argv[0],
                                          description=self.GetHelpDescription())
@@ -67,21 +67,21 @@ class Launcher(object):
             totalTimer.PrintTime('open and close usdview')
 
     def GetHelpDescription(self):
-        '''return the help description'''
+        """return the help description"""
         return 'View a usd file'
 
     def RegisterPositionals(self, parser):
-        '''
+        """
         register positional arguments on the ArgParser
-        '''
+        """
         parser.add_argument('usdFile', action='store',
                             type=str,
                             help='The file to view')
 
     def RegisterOptions(self, parser):
-        '''
+        """
         register optional arguments on the ArgParser
-        '''
+        """
         parser.add_argument('--renderer', action='store',
                             type=str, choices=['opt', 'simple'], dest='renderer',
                             help='Which renderer to use', default='opt')
@@ -160,17 +160,17 @@ class Launcher(object):
 
 
     def ParseOptions(self, parser):
-        '''
+        """
         runs the parser on the arguments
-        '''
+        """
         return parser.parse_args()
 
     def ValidateOptions(self, arg_parse_result):
-        '''
+        """
         Validate and potentially modifies the parsed arguments. Raises
         InvalidUsdviewOption if an invalid option is found. If a child has
         overridden ParseOptions, ValidateOptions is an opportunity to move
-        '''
+        """
 
         # split arg_parse_result.populationMask into paths.
         if arg_parse_result.populationMask:
@@ -238,9 +238,9 @@ class Launcher(object):
         return (app, appController)
 
     def __LaunchProcess(self, arg_parse_result):
-        '''
+        """
         after the arguments have been parsed, launch the UI in a forked process
-        '''
+        """
         # Initialize concurrency limit as early as possible so that it is
         # respected by subsequent imports.
         (app, appController) = self.LaunchPreamble(arg_parse_result)

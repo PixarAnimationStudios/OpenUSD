@@ -240,9 +240,9 @@ def "Foo" {
             len(l.GetAttributeAtPath('/foo.test').GetInfo('timeSamples')), 2)
 
     def test_TimeSamplesWithOffset(self):
-        '''
+        """
         Test the effect of SdfLayerOffset on timesample API.
-        '''
+        """
         stage = Usd.Stage.CreateInMemory()
 
         # Set up a simple prim </Source>

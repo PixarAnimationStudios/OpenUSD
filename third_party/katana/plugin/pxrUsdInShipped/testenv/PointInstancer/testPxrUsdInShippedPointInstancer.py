@@ -32,7 +32,7 @@ class TestPxrOpUsdInInternalPointInstancer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        '''Procedurally create nodes for testing.'''
+        """Procedurally create nodes for testing."""
 
         # Add a PxrUsdIn node and set its motion sample times
         pxrUsdInNode = NodegraphAPI.CreateNode(
@@ -60,7 +60,7 @@ class TestPxrOpUsdInInternalPointInstancer(unittest.TestCase):
         NodegraphAPI.SetCurrentTime(50)
 
     def cleanUpTestFile(self, testfile):
-        '''Prep the given test file for a baseline compare.'''
+        """Prep the given test file for a baseline compare."""
         cwd = os.getcwd() + '/'
         with open(testfile, 'r') as f:
             contents = f.read()
@@ -84,7 +84,7 @@ class TestPxrOpUsdInInternalPointInstancer(unittest.TestCase):
             f.write(newContents)
 
     def compareAgainstBaseline(self, testfile):
-        '''Compare the given test file to its associated baseline file.'''
+        """Compare the given test file to its associated baseline file."""
         baselinefile = testfile.replace('test.', 'baseline.')
         print 'Comparing %s against baseline %s' % \
                 (os.path.abspath(testfile), os.path.abspath(baselinefile))
@@ -93,7 +93,7 @@ class TestPxrOpUsdInInternalPointInstancer(unittest.TestCase):
         return False
 
     def test_motion(self):
-        '''Change the PxrUsdIn's file and verify the dumped result.'''
+        """Change the PxrUsdIn's file and verify the dumped result."""
 
         # test.motion.usda is a UsdGeomPointInstancer with positions,
         # orientations, scales, velocities, and angular velocities
@@ -109,7 +109,7 @@ class TestPxrOpUsdInInternalPointInstancer(unittest.TestCase):
         self.assertTrue(self.compareAgainstBaseline(testfile))
 
     def test_translateOnly(self):
-        '''Change the PxrUsdIn's file and verify the dumped result.'''
+        """Change the PxrUsdIn's file and verify the dumped result."""
 
         # test.translateOnly.usda is a UsdGeomPointInstancer with positions
         NodegraphAPI.GetNode('PxrUsdIn').getParameter('fileName').setValue(

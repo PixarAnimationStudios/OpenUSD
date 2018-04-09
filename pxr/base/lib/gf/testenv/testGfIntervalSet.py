@@ -31,12 +31,12 @@ from pxr import Gf
 # Utilities
 
 def subsets(l):
-    '''yield the subsets of list l'''
+    """yield the subsets of list l"""
     for bits in range(2**len(l)):
         yield [l[i] for i in range(len(l)) if bits & (2**i)]
 
 def permute(l):
-    '''yield the permutations of list l'''
+    """yield the permutations of list l"""
     if len(l) <= 1:
         yield l
     else:

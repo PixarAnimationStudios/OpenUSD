@@ -175,13 +175,13 @@ class FreeCamera(QtCore.QObject):
         return minDist, maxDist
 
     def setClippingPlanes(self, stageBBox):
-        '''Computes and sets automatic clipping plane distances using the
+        """Computes and sets automatic clipping plane distances using the
            camera's position and orientation, the bouding box
            surrounding the stage, and the distance to the closest rendered
            object in the central view of the camera (closestVisibleDist).
 
            If either of the "override" clipping attributes are not None,
-           we use those instead'''
+           we use those instead"""
 
         debugClipping = Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING)
 

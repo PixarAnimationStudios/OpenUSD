@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-'''
+"""
 This script assumes you have models at
 
   models/
@@ -34,7 +34,7 @@ It will create a new "set" (aggregate) model, Room_set at
 
   models/Room_set
 
-'''
+"""
 
 import os
 ASSET_BASE = os.path.join(os.getcwd(), 'models')
@@ -104,13 +104,13 @@ def main():
     stage.GetRootLayer().Save()
     
 def _AddModel(stage, path, refPath):
-    '''
+    """
     Adds a reference to refPath at the given path in the stage.  This will make
     sure the model hierarchy is maintained by ensuring that all ancestors of
     the path have "kind" set to "group".
 
     returns the referenced model.
-    '''
+    """
 
     from pxr import Kind, Sdf, Usd, UsdGeom
 

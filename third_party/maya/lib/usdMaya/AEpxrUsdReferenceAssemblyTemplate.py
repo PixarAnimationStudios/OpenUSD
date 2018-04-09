@@ -38,13 +38,13 @@ except ImportError:
 # ========================================================================
 
 class EditorTemplateBeginScrollLayout( object ):
-    '''Add beginLayout/endLayout commands for the context block
+    """Add beginLayout/endLayout commands for the context block
 
     Example:
         with EditorTemplateBeginScrollLayout():
             with EditorTemplateBeginLayout('MyLayout', collapse=True)
                 cmds.editorTemplate(addControl='filePath')
-    '''
+    """
     def __init__(self):
         pass
     def __enter__(self):
@@ -54,12 +54,12 @@ class EditorTemplateBeginScrollLayout( object ):
 
 
 class EditorTemplateBeginLayout( object ):
-    '''Add beginLayout/endLayout commands for the context block
+    """Add beginLayout/endLayout commands for the context block
 
     Example:
         with EditorTemplateBeginLayout('MyLayout', collapse=True):
             cmds.editorTemplate(addControl='filePath')
-    '''
+    """
     def __init__(self, name, collapse=True):
         self.name = name
         self.collapse = collapse
@@ -70,12 +70,12 @@ class EditorTemplateBeginLayout( object ):
 
 
 class SetUITemplatePushTemplate( object ):
-    '''Add setUITemplate push/pop commands for the context block
+    """Add setUITemplate push/pop commands for the context block
 
     Example:
         with SetUITemplatePushTemplate():
             ...
-    '''
+    """
     def __init__(self):
         pass
     def __enter__(self):
@@ -262,8 +262,8 @@ def editorTemplate(nodeName):
 
 
 def addMelFunctionStubs():
-    '''Add the MEL function stubs needed to call these python functions
-    '''
+    """Add the MEL function stubs needed to call these python functions
+    """
     mel.eval('''
 global proc AEpxrUsdReferenceAssemblyTemplate_filePath_New( string $nodeAttr ) 
 {

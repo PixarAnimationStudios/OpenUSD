@@ -64,10 +64,10 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         return Pcp.Cache(layerStackId, payloadDecorator=decorator)
 
     def test_Basic(self):
-        '''Test that composing a prim with payloads causes
+        """Test that composing a prim with payloads causes
         the appropriate decorator functions to be called and that the
         arguments generated from those functions are taken into account
-        when opening the payload layers.'''
+        when opening the payload layers."""
 
         rootLayerFile = 'basic/root.sdf'
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
@@ -130,10 +130,10 @@ class TestPcpPayloadDecorator(unittest.TestCase):
                 "Got prim changes %s" % cp.GetPrimChanges()
 
     def TestSiblingStrength():
-        '''Test that Pcp.PayloadDecorator is invoked and that the
+        """Test that Pcp.PayloadDecorator is invoked and that the
         Pcp.PayloadContext finds the correct strongest values in cases
         where multiple arcs of the same type, both directly and ancestrally,
-        are present.'''
+        are present."""
         testDir = 'sibling_strength'
 
         rootLayerFile = os.path.join(testDir, 'root.sdf')
@@ -156,9 +156,9 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         assert Sdf.Layer.Find(childPayloadLayerId)
 
     def TestInheritFromPayload():
-        '''Test that Pcp.PayloadContext does not pick up values from
+        """Test that Pcp.PayloadContext does not pick up values from
         class overrides when the inherit that introduces the class is authored
-        inside the payload.'''
+        inside the payload."""
         testDir = 'inherit_from_payload'
 
         rootLayerFile = os.path.join(testDir, 'root.sdf')
@@ -174,9 +174,9 @@ class TestPcpPayloadDecorator(unittest.TestCase):
         assert Sdf.Layer.Find(ref1LayerId)
         
     def test_Changes(self):
-        '''Test that the appropriate prim indexes are recomposed based
+        """Test that the appropriate prim indexes are recomposed based
         on whether Pcp.PayloadDecorator decides a change is relevant to
-        payload decoration.'''
+        payload decoration."""
         class TestChangeDecorator(Pcp.PayloadDecorator):
             def __init__(self):
                 super(TestChangeDecorator, self).__init__()

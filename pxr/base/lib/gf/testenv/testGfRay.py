@@ -149,8 +149,8 @@ class TestGfRay(unittest.TestCase):
         r.Intersect(p2,p3,p1)
 
     def test_IntersectTriangle(self):
-        '''Ray originates on surface of triangle, direction equal to triangle normal
-        (CCW winding)'''
+        """Ray originates on surface of triangle, direction equal to triangle normal
+        (CCW winding)"""
         r = Gf.Ray(Gf.Vec3d(0, 0, 0), Gf.Vec3d.ZAxis())
         (hit, distance, barycentricCoords, frontFacing) = \
             r.Intersect(Gf.Vec3d(0, 0, 0), Gf.Vec3d(1, 0, 0), Gf.Vec3d(0, 1, 0)) 

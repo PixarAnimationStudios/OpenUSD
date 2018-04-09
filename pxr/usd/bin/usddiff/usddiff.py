@@ -221,9 +221,9 @@ def _runDiff(baseline, comparison, flatten, noeffect):
     return diffResult
 
 def _findFiles(args):
-    '''Return a 3-tuple of lists: (baseline-only, matching, comparison-only).
+    """Return a 3-tuple of lists: (baseline-only, matching, comparison-only).
     baseline-only and comparison-only are lists of individual files, while
-    matching is a list of corresponding pairs of files.'''
+    matching is a list of corresponding pairs of files."""
     import os
     import stat
     from pxr import Ar

@@ -395,7 +395,7 @@ class TestUsdValueClips(unittest.TestCase):
         ValidateAttributeTimeSamples(self.assertEqual, attr3)
 
     def test_ClipStrengthOrdering(self):
-        '''Tests strength of clips during resolution'''
+        """Tests strength of clips during resolution"""
 
         rootLayerFile = 'ordering/root.usda'
         clipFile = 'ordering/clip.usda'

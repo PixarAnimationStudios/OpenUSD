@@ -79,11 +79,11 @@ def insertReference( destFile, path, reffile ):
     stage.GetRootLayer().Save()
 
 def findMatchingReference( sdfPrim, fileName ):
-    '''
+    """
     Recursivly introspect prims looking for references to the given file name.
     If a reference to the file is found, return the path of the prim it was
     found in.
-    '''
+    """
 
     for ref in sdfPrim.referenceList.GetAddedOrExplicitItems():
         if ref.assetPath == fileName:
@@ -97,15 +97,15 @@ def findMatchingReference( sdfPrim, fileName ):
     return None
 
 def addReference( stage, path, fileName, targetPrim ):
-    '''
+    """
     Add a reference to the given USD stage at the given path.
-    
-    If defaultPrim is not None, the the referencee contains a default prim and 
+
+    If defaultPrim is not None, the the referencee contains a default prim and
     we can contruct the reference to use it.
 
-    Otherwise, create the reference to point to the first found rootPrim. 
+    Otherwise, create the reference to point to the first found rootPrim.
     (We are assume these files will only have one root prim)
-    '''
+    """
 
     prim = stage.GetPrimAtPath( path )
     if not prim:
@@ -127,9 +127,9 @@ def addReference( stage, path, fileName, targetPrim ):
         refList.AddReference( Sdf.Reference( fileName ))
 
 def getMetaData( fileName ):
-    ''' 
+    """
     Grab some meta data from a USD file
-    '''
+    """
 
     frameRange = None
     defaultPrim = None

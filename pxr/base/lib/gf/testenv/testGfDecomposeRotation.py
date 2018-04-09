@@ -40,8 +40,8 @@ axes = {'XYZ' : (fbAxis, lrAxis, swAxis),
         'ZYX' : (swAxis, lrAxis, fbAxis) }
 
 def ComposeRotation(rotOrder, rotVals):
-    '''Recomposes a rotation using the given rotation order and a list of
-    angles in radians.'''
+    """Recomposes a rotation using the given rotation order and a list of
+    angles in radians."""
     twRot = Gf.Rotation(axes[rotOrder][2], Gf.RadiansToDegrees(rotVals[0]))
     fbRot = Gf.Rotation(axes[rotOrder][0], Gf.RadiansToDegrees(rotVals[1]))
     lrRot = Gf.Rotation(axes[rotOrder][1], Gf.RadiansToDegrees(rotVals[2]))
@@ -128,7 +128,7 @@ class TestGfDecomposeRotation(unittest.TestCase):
             self.assertTrue(IsMatrixClose(ComposeRotation(key, result), rot))
 
     def test_DecomposeRotationsAllAngles(self):
-        '''Test decomposing all four angles'''
+        """Test decomposing all four angles"""
 
         rot = Gf.Matrix4d(
             -0.77657773110174733, 0.41334436580878597, -0.47547183177449759, 0.0,
@@ -509,7 +509,7 @@ class TestGfDecomposeRotation(unittest.TestCase):
             expectedResult = (1.178097, -1.570796, 1.178097, 0.0))
 
     def test_DecomposeWithSwingShift(self):
-        '''Tests decomposing into four angles using swing shift'''
+        """Tests decomposing into four angles using swing shift"""
 
         # Rotation matrix without swing
         rot = Gf.Matrix4d(
@@ -654,9 +654,9 @@ class TestGfDecomposeRotation(unittest.TestCase):
         self.assertTrue(IsMatrixClose(ComposeRotation('XYZ', result), rotWithSwing))
 
     def test_DecomposeRotation3(self):
-        '''Test DecomposeRotation3, should be identical to zero Sw except it returns
+        """Test DecomposeRotation3, should be identical to zero Sw except it returns
         a 3-tuple.  Minimally tested with and without hints as the functionality
-        is more thoroughly tested in the zero Sw case above.'''
+        is more thoroughly tested in the zero Sw case above."""
 
         rot = Gf.Matrix4d(
             -0.77657773110174733, 0.41334436580878597, -0.47547183177449759, 0.0,
@@ -696,9 +696,9 @@ class TestGfDecomposeRotation(unittest.TestCase):
 
 
     def test_GimbalLockEdgeCases(self):
-        '''Test the gimbal lock edge where one or more angles is 90 degrees.  We
+        """Test the gimbal lock edge where one or more angles is 90 degrees.  We
         catch them all by creating rotations using all permutations of the three
-        rotation axes.'''
+        rotation axes."""
 
         # Create all the permutations of axis switching rotation matrices.
         # XXX: Note that we only use right handed matrices as the tests for 

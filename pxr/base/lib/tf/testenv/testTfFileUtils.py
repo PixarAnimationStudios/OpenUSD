@@ -121,10 +121,10 @@ class TestFileUtils(unittest.TestCase):
             os.unlink(self.copyLink)
 
     def VerifyDirStructure(self, rootDir):
-        '''
+        """
         Verifies if given rootdir and all subdirs created by SetupDirStructure
         exist.
-        '''
+        """
 
         self.assertTrue(os.path.isdir(rootDir))
         self.assertTrue(os.path.isdir("%s/sub1" % rootDir))
@@ -138,10 +138,10 @@ class TestFileUtils(unittest.TestCase):
         self.assertTrue(os.path.isdir("%s/sub3/sub3sub2" % rootDir))
 
     def VerifyDirAndFileStructure(self, rootDir):
-        '''
+        """
         Verifies if given rootdir and all subdirs created by SetupDirStructure
         exist.
-        '''
+        """
 
         self.VerifyDirStructure(rootDir)
 
