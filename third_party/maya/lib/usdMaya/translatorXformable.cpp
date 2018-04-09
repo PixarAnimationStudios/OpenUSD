@@ -288,7 +288,19 @@ static bool _pushUSDXformOpToMayaXform(
                                 PxrUsdMayaXformStack::RotateOrderFromOpType<MEulerRotation::RotationOrder>(
                                         xformop.GetOpType());
                         MEulerRotation eulerRot(xValue[i], yValue[i], zValue[i], MrotOrder);
+
+                        // For all rotations except the first one, we can check for Euler flips.
+                        // The first rotation can't be validated against a previous value so we always take it as it is.
+                        if (args.GetUseEulerFilter() && i > 0)
+                        {
+                            size_t previousRotationIndex = i - 1;
+                            MEulerRotation previousRotation(xValue[previousRotationIndex],
+                                                            yValue[previousRotationIndex],
+                                                            zValue[previousRotationIndex], MrotOrder);
+                            eulerRot.setToClosestSolution(previousRotation);
+                        }
                         eulerRot.reorderIt(MEulerRotation::kXYZ);
+
                         xValue[i] = eulerRot.x;
                         yValue[i] = eulerRot.y;
                         zValue[i] = eulerRot.z;
@@ -341,6 +353,9 @@ static bool _pushUSDXformToMayaXform(
         TxVal.resize(tSamples.size()); TyVal.resize(tSamples.size()); TzVal.resize(tSamples.size());
         RxVal.resize(tSamples.size()); RyVal.resize(tSamples.size()); RzVal.resize(tSamples.size());
         SxVal.resize(tSamples.size()); SyVal.resize(tSamples.size()); SzVal.resize(tSamples.size());
+
+        MEulerRotation previousRotation;
+
         for (unsigned int ti=0; ti < tSamples.size(); ++ti) {
             UsdTimeCode time(tSamples[ti]);
             if (xformSchema.GetLocalTransformation(&localXform, 
@@ -354,7 +369,21 @@ static bool _pushUSDXformToMayaXform(
                              localXform, &xlate, &rotate, &scale);
                 }
                 TxVal[ti]=xlate [0]; TyVal[ti]=xlate [1]; TzVal[ti]=xlate [2];
+
+                // For all rotations except the first one, we have to check for Euler flips.
+                // The first rotation can't be validated against a previous value so we take it as it is.
+                if (args.GetUseEulerFilter() && ti != 0)
+                {
+                    MEulerRotation currentRotation(rotate[0], rotate[1], rotate[2]);
+                    currentRotation.setToClosestSolution(previousRotation);
+                    rotate[0] = currentRotation[0];
+                    rotate[1] = currentRotation[1];
+                    rotate[2] = currentRotation[2];
+                }
+                // Remember the current (fixed) rotation for the next time sample.
+                previousRotation = MEulerRotation(rotate[0], rotate[1], rotate[2]);
                 RxVal[ti]=rotate[0]; RyVal[ti]=rotate[1]; RzVal[ti]=rotate[2];
+
                 SxVal[ti]=scale [0]; SyVal[ti]=scale [1]; SzVal[ti]=scale [2];
                 timeArray.set(MTime(tSamples[ti]), ti);
             } 

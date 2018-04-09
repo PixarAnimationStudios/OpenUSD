@@ -160,7 +160,8 @@ JobImportArgs::JobImportArgs()
         useCustomFrameRange(false),
         startTime(1.0),
         endTime(1.0),
-        importWithProxyShapes(false)
+        importWithProxyShapes(false),
+        useEulerFilter(true)
 {
 }
 
@@ -174,7 +175,8 @@ operator <<(std::ostream& out, const JobImportArgs& exportArgs)
         << "useCustomFrameRange: " << _StringifyBool(exportArgs.useCustomFrameRange) << std::endl
         << "startTime: " << exportArgs.startTime << std::endl
         << "endTime: " << exportArgs.endTime << std::endl
-        << "importWithProxyShapes: " << _StringifyBool(exportArgs.importWithProxyShapes) << std::endl;
+        << "importWithProxyShapes: " << _StringifyBool(exportArgs.importWithProxyShapes) << std::endl
+        << "useEulerFilter: " << _StringifyBool(exportArgs.useEulerFilter) << std::endl;
 
     return out;
 }

@@ -397,7 +397,8 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
             defaultJobArgs.readAnimData,
             defaultJobArgs.useCustomFrameRange,
             defaultJobArgs.startTime,
-            defaultJobArgs.endTime);
+            defaultJobArgs.endTime,
+            defaultJobArgs.useEulerFilter);
 
     return _ReadToCamera(usdCamera, cameraObject, args, NULL);
 }

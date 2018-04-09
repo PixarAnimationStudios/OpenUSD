@@ -34,7 +34,8 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const bool readAnimData,
         const bool useCustomFrameRange,
         const double startTime,
-        const double endTime)
+        const double endTime,
+        const bool useEulerFilter)
     : 
         _prim(prim),
         _shadingMode(shadingMode),
@@ -42,7 +43,8 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         _readAnimData(readAnimData),
         _useCustomFrameRange(useCustomFrameRange),
         _startTime(startTime),
-        _endTime(endTime)
+        _endTime(endTime),
+        _useEulerFilter(useEulerFilter)
 {
 }
 const UsdPrim&
@@ -79,6 +81,11 @@ double
 PxrUsdMayaPrimReaderArgs::GetEndTime() const
 {
     return _endTime;
+}
+const bool&
+PxrUsdMayaPrimReaderArgs::GetUseEulerFilter() const
+{
+    return _useEulerFilter;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

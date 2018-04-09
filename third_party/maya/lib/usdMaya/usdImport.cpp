@@ -73,6 +73,7 @@ MSyntax usdImport::createSyntax()
     syntax.addFlag("-var" , "-variant"          , MSyntax::kString, MSyntax::kString);
     syntax.addFlag("-ar" , "-assemblyRep"       , MSyntax::kString);
     syntax.addFlag("-fr" , "-frameRange"        , MSyntax::kDouble, MSyntax::kDouble);
+    syntax.addFlag("-ef", "-useEulerFilter"     , MSyntax::kBoolean);
     syntax.makeFlagMultiUse("variant");
 
     syntax.enableQuery(false);
@@ -190,6 +191,11 @@ MStatus usdImport::doIt(const MArgList & args)
         jobArgs.useCustomFrameRange = true;
         argData.getFlagArgument("frameRange", 0, jobArgs.startTime);
         argData.getFlagArgument("frameRange", 1, jobArgs.endTime);
+    }
+
+    if (argData.isFlagSet("useEulerFilter"))
+    {
+        argData.getFlagArgument("useEulerFilter", 0, jobArgs.useEulerFilter);
     }
 
     // Create the command

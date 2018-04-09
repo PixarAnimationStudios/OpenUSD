@@ -182,6 +182,7 @@ pxr_test_scripts(
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportCamera.py
         testenv/testUsdImportColorSets.py
+        testenv/testUsdImportEulerFilter.py
         testenv/testUsdImportFrameRange.py
         testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdImportRfMLight.py
@@ -529,6 +530,20 @@ pxr_register_test(testUsdImportColorSets
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
 )
+
+pxr_install_test_dir(
+        SRC testenv/UsdImportEulerFilterTest
+        DEST testUsdImportEulerFilter
+)
+pxr_register_test(testUsdImportEulerFilter
+        CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImportEulerFilter"
+        TESTENV testUsdImportEulerFilter
+        ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        )
 
 pxr_install_test_dir(
     SRC testenv/UsdImportFrameRangeTest
