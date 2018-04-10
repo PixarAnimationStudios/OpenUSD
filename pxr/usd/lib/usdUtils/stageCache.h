@@ -33,6 +33,7 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
 
 #include <string>
 #include <vector>
@@ -61,7 +62,7 @@ public:
     /// session layer with those opinions.
     USDUTILS_API
     static SdfLayerRefPtr GetSessionLayerForVariantSelections(
-        const TfToken& modelName,
+        const SdfPath& primPath,
         const std::vector<std::pair<std::string, std::string> > &variantSelections);
 };
 

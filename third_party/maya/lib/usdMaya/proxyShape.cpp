@@ -518,12 +518,10 @@ UsdMayaProxyShape::computeInStageDataCached(MDataBlock& dataBlock)
                 dataBlock.inputValue(_psData.primPath, &retValue).asString();
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-            std::vector<std::string> primPathEltStrs =
-                TfStringTokenize(primPathMString.asChar(),"/");
-            if (primPathEltStrs.size() > 0) {
+            if (primPathMString.length() > 0) {
                 sessionLayer =
                     UsdUtilsStageCache::GetSessionLayerForVariantSelections(
-                        TfToken(primPathEltStrs[0]), variantSelections);
+                        SdfPath(primPathMString.asChar()), variantSelections);
             }
         }
 
