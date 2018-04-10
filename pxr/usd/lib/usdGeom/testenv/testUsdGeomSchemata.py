@@ -656,7 +656,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
         UsdGeom.ModelAPI.Apply(root)
         self.assertEqual(['MotionAPI', 'GeomModelAPI'], root.GetAppliedSchemas())
 
-    def test_IsA(self):
+    def test_IsATypeless(self):
         from pxr import Usd, Tf
         s = Usd.Stage.CreateInMemory()
         spherePrim = s.DefinePrim('/sphere', typeName='Sphere')
