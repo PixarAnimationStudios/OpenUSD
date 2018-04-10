@@ -144,9 +144,9 @@ class TreeModel(QAbstractItemModel):
     def __init__(self, headers, node=None):
         super(TreeModel, self).__init__(parent=None)
 
-        self._rootItem = TreeItem(headers,\
-                                  parent=None,\
-                                  primPath='/',\
+        self._rootItem = TreeItem(headers,
+                                  parent=None,
+                                  primPath='/',
                                   hasUnloadedPayload=False)
         self._stage = None
         self._primPathToItemMap = {}
@@ -270,10 +270,10 @@ class TreeModel(QAbstractItemModel):
                 variantSets = prim.GetVariantSets()
                 for name in variantSets.GetNames():
                     variantSet = variantSets.GetVariantSet(name)
-                    variants.append(VariantInfo(\
-                        name = name,\
-                        choices = variantSet.GetVariantNames(),\
-                        initialSelection = variantSet.GetVariantSelection(),\
+                    variants.append(VariantInfo(
+                        name = name,
+                        choices = variantSet.GetVariantNames(),
+                        initialSelection = variantSet.GetVariantSelection(),
                         enabled = False))
 
                 data = [primName, importState, primTypeName, variants]
@@ -496,7 +496,7 @@ class TreeModel(QAbstractItemModel):
                 children = [item.child(i) for i in range(item.childCount())]
                 for child in children:
                     UncheckNonSelected(child)
-                    children.extend(\
+                    children.extend(
                         [child.child(i) for i in range(child.childCount())])
 
             self.SetImportState(item, value)
@@ -576,7 +576,7 @@ class TreeModel(QAbstractItemModel):
         paths = primPath.GetPrefixes()
         i = 0
         while i < len(paths):
-            item = self._primPathToItemMap.get(\
+            item = self._primPathToItemMap.get(
                 paths[i].StripAllVariantSelections(), None)
 
             # Not finding this item means this primPath can't be included,
@@ -591,9 +591,9 @@ class TreeModel(QAbstractItemModel):
             # Copy each oldVariant into newVariants. However, don't copy the
             # _enabled flag. Instead, start all the newVariants as disabled.
             for oldVariant in oldVariants:
-                newVariants.append(VariantInfo(oldVariant._name,\
-                                               oldVariant._choices,\
-                                               oldVariant._initialSelection,\
+                newVariants.append(VariantInfo(oldVariant._name,
+                                               oldVariant._choices,
+                                               oldVariant._initialSelection,
                                                enabled = False))
             i += 1
             # Update prim and newVariants from variant selections in primPath.

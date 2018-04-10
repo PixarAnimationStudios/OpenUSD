@@ -292,7 +292,7 @@ class TestGfVec(unittest.TestCase):
             l = Gf.GetLength( v1 )
             l2 = v1.GetLength()
             self.assertTrue(Gf.IsClose(l, l2, eps), repr(l) + ' ' + repr(l2))
-            self.assertTrue(Gf.IsClose(l, math.sqrt(Gf.Dot(v1, v1)), eps), \
+            self.assertTrue(Gf.IsClose(l, math.sqrt(Gf.Dot(v1, v1)), eps),
                 ' '.join([repr(x) for x in [l, v1, math.sqrt(Gf.Dot(v1, v1))]]))
 
             # Normalize...

@@ -220,7 +220,7 @@ class TestVtArray(unittest.TestCase):
             src = Vt.DoubleArray(length, fill)
             result = Array.FromNumpy(numpy.array(src, copy=False))
             self.assertEqual(len(list(result)), expLen)
-            self.assertTrue(all([x == expVal for x in result]), \
+            self.assertTrue(all([x == expVal for x in result]),
                 '%s != %s' % (list(result), [expVal]*len(list(result))))
 
         # Formerly failed, now produces a 1-d length-1 array.

@@ -207,7 +207,7 @@ class Launcher(object):
                 arg_parse_result.camera = camPath
 
         if arg_parse_result.clearSettings and arg_parse_result.defaultSettings:
-            raise InvalidUsdviewOption("cannot supply both --clearsettings " \
+            raise InvalidUsdviewOption("cannot supply both --clearsettings "
                                        "and --defaultsettings.")
 
     def LaunchPreamble(self, arg_parse_result):
