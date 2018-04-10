@@ -240,6 +240,7 @@ public:
     // Private Class functions
     MStatus computeInStageDataCached(MDataBlock& dataBlock);
     MStatus computeOutStageData(MDataBlock& dataBlock);
+    SdfPath getPrimPath(MDataBlock& dataBlock, SdfLayerRefPtr rootLayer);
 
     // After discussion with Autodesk, we've decided to adopt the namespace
     // handling functionality from their sample assembly reference
