@@ -64,6 +64,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_ENV_SETTING(USD_KATANA_IMPORT_OLD_STYLE_COLLECTIONS, true, 
         "Whether old-style collections encoded using UsdGeomCollectionAPI "
         "must be imported by katana.");
+TF_DEFINE_ENV_SETTING(USD_KATANA_ALLOW_CUSTOM_MATERIAL_SCOPES, false,
+        "Set to true to enable custom names for the parent scope "
+        "of materials. Otherwise only scopes named Looks are allowed.");
 
 FnLogSetup("PxrUsdKatanaReadPrim");
 
@@ -145,12 +148,15 @@ _GetMaterialAssignAttr(
             // path mapping
             std::string location =
                 PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(targetPath, data);
+
+            static const bool allowCustomScopes = 
+                TfGetEnvSetting(USD_KATANA_ALLOW_CUSTOM_MATERIAL_SCOPES);
                 
             // XXX Materials containing only display terminals are causing issues
             //     with katana material manipulation workflows.
             //     For now: exclude any material assign which doesn't include
             //     /Looks/ in the path
-            if (location.find(UsdKatanaTokens->katanaLooksScopePathSubstring)
+            if (!allowCustomScopes && location.find(UsdKatanaTokens->katanaLooksScopePathSubstring)
                     == std::string::npos)
             {
                 return FnKat::Attribute();
