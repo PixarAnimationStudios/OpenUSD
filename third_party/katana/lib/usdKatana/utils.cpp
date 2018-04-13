@@ -28,12 +28,9 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/tf/pathUtils.h"
 #include "pxr/usd/kind/registry.h"
-#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/attribute.h"
@@ -65,55 +62,14 @@ FnLogSetup("PxrUsdKatanaUtils::SGG");
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-static std::string
-_ResolvePath(const std::string& path)
+static const std::string&
+_ResolveAssetPath(const SdfAssetPath& assetPath)
 {
-    return ArGetResolver().Resolve(path);
-}
-
-static std::string
-_ResolveSearchPath(const std::string& searchPath)
-{
-    std::vector<std::string> splitPath = TfStringSplit(searchPath, "/");
-    if (splitPath.size() < 2)
-        return "";
-
-    std::string pathToResolve = _ResolvePath(splitPath[0]);
-    if (pathToResolve.empty())
-        return "";
-
-    std::vector<std::string> pathElemsRemain(++(splitPath.begin()), 
-                                             splitPath.end());
-    pathToResolve = TfStringCatPaths(pathToResolve,
-                                     TfStringJoin(pathElemsRemain, "/"));
-    return _ResolvePath(pathToResolve);
-}
-
-static std::string
-_ResolveAssetPath(const std::string &assetPath, bool asModel)
-{
-    // TODO: Implement same-model reference behavior (e.g. working on 
-    // src/OtterHair, resolving a path like OtterHair/hairman/Foo.ihair). It's 
-    // not clear how to handle same-model references with Ar as it's a very 
-    // specific Pr feature.
-    if (asModel && ArGetResolver().IsSearchPath(assetPath))
-    {
-        std::string resolvedPath = _ResolveSearchPath(assetPath);
-        if (!resolvedPath.empty())
-        {
-            return resolvedPath;
-        }
-    }
-
-    std::string modelName, relPath;
-    const std::string resolvedPath = _ResolvePath(assetPath);
-    if (!resolvedPath.empty())
-        return resolvedPath;
-
-    // If we could not resolve the path, return the given input-- i.e., this
-    // may be a new asset path to which a DSO is writing.
-    return assetPath;
+    if (! assetPath.GetResolvedPath().empty())
+        return assetPath.GetResolvedPath();
+    if (! assetPath.GetAssetPath().empty())
+        TF_WARN("No resolved path for @%s@", assetPath.GetAssetPath().c_str());
+    return assetPath.GetAssetPath();
 }
 
 double
@@ -268,10 +224,10 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         }
     }
     if (val.IsHolding<SdfAssetPath>()) {
-        std::string assetPath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
+        const SdfAssetPath& assetPath(val.UncheckedGet<SdfAssetPath>());
         return FnKat::StringAttribute(
-            resolvePaths ?  _ResolveAssetPath(assetPath, pathsAsModel)
-            : assetPath );
+            resolvePaths ?  _ResolveAssetPath(assetPath)
+            : assetPath.GetAssetPath());
     }
     if (val.IsHolding<TfToken>()) {
         const TfToken &myVal = val.UncheckedGet<TfToken>();
@@ -537,7 +493,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         TF_FOR_ALL(strItr, assetArray) {
             stringBuilder.push_back(
                 resolvePaths ?
-                _ResolveAssetPath(strItr->GetAssetPath(), pathsAsModel)
+                _ResolveAssetPath(*strItr)
                 : strItr->GetAssetPath());
         }
         FnKat::GroupBuilder attrBuilder;
@@ -1939,9 +1895,8 @@ PxrUsdKatanaUtilsLightListAccess::_Set(
     const std::string& name, const VtValue& value)
 {
     if (TF_VERIFY(!_key.empty(), "Light path not set or not absolute")) {
-        constexpr bool asShaderParam = true;
         FnKat::Attribute attr =
-            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(value, asShaderParam);
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(value);
         if (TF_VERIFY(attr.isValid(),
                       "Failed to convert value for %s", name.c_str())) {
             _lightListBuilder.set(_key + name, attr);

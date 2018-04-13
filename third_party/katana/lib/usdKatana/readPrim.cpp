@@ -648,7 +648,7 @@ _AddExtraAttributesOrNamespaces(
                 }
                 
                 FnKat::Attribute attr = 
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue);
                 
                 if (!attr.isValid())
                 {
@@ -666,8 +666,7 @@ _AddExtraAttributesOrNamespaces(
                 UsdRelationship & usdRelationship = (*I);
                 
                 FnKat::StringAttribute attr = 
-                    PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(
-                        usdRelationship, true);
+                    PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(usdRelationship);
                 if (!attr.isValid())
                 {
                     continue;
@@ -739,7 +738,7 @@ _AddCustomProperties(
         }
         
         FnKat::Attribute attr =
-            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true);
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue);
 
         if (!attr.isValid())
         {

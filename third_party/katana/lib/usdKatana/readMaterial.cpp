@@ -203,7 +203,7 @@ _GatherShadingParameters(
         if (flatten || 
             !PxrUsdKatana_IsAttrValFromBaseMaterial(attr)) {
             paramsBuilder.set(inputId,
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue, true));
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue));
         }
     }
     
@@ -228,8 +228,7 @@ _GatherShadingParameters(
                 }
                 
                 paramsBuilder.set(attr.GetName().GetString(),
-                        PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
-                                vtValue, true));
+                        PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue));
             }
         }
     }
@@ -765,7 +764,7 @@ _UnrollInterfaceFromPrim(const UsdPrim& prim,
         if (interfaceInput.GetAttr().Get(&attrVal) && !attrVal.IsEmpty()) {
             materialBuilder.set(
                     TfStringPrintf("parameters.%s", renamedParam.c_str()),
-                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(attrVal, true));
+                    PxrUsdKatanaUtils::ConvertVtValueToKatAttr(attrVal));
         }
 
         if (interfaceInputConsumers.count(interfaceInput) == 0) {
