@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from math import tan, atan, floor, ceil, radians as rad
+from math import atan, radians as rad
 from pxr import Gf, Tf
 
 from qt import QtCore
@@ -111,7 +111,7 @@ class FreeCamera(QtCore.QObject):
         return clone
 
 
-    def _updateCameraTransform(self):
+    def _pushToCameraTransform(self):
         """
         Updates the camera's transform matrix, that is, the matrix that brings
         the camera to the origin, with the camera view pointing down:
@@ -137,6 +137,39 @@ class FreeCamera(QtCore.QObject):
         self._camera.focusDistance = self.dist
 
         self._cameraTransformDirty = False
+
+    def _pullFromCameraTransform(self):
+        """
+        Updates parameters (center, rotTheta, etc.) from the camera transform.
+        """
+        # reads the transform set on the camera and updates all the other
+        # parameters.  This is the inverse of _pushToCameraTransform
+        cam_transform = self._camera.transform
+        dist = self._camera.focusDistance
+        frustum = self._camera.frustum
+        cam_pos = frustum.position
+        cam_axis = frustum.ComputeViewDirection()
+
+        # Compute translational parts
+        self._dist = dist
+        self._selSize = dist / 10.0
+        self._center = cam_pos + dist * cam_axis
+
+        # self._YZUpMatrix influences the behavior about how the
+        # FreeCamera will tumble. It is the identity or a rotation about the
+        # x-Axis.
+
+        # Compute rotational part
+        transform = cam_transform * self._YZUpMatrix
+        transform.Orthonormalize()
+        rotation = transform.ExtractRotation()
+
+        # Decompose and set angles
+        self._rotTheta, self._rotPhi, self._rotPsi = -rotation.Decompose(
+            Gf.Vec3d.YAxis(), Gf.Vec3d.XAxis(), Gf.Vec3d.ZAxis())
+
+        self._cameraTransformDirty = True
+
 
     def _rangeOfBoxAlongRay(self, camRay, bbox, debugClipping=False):
         maxDist = -float('inf')
@@ -240,7 +273,7 @@ class FreeCamera(QtCore.QObject):
                     # the last time setClosestVisibleDistFromPoint() was called.
                     # Clamp to precisionNear, which gives a balance between
                     # clipping as we zoom in, vs bad z-fighting as we zoom in.
-                    # See adjustDist() for comment about better solution.
+                    # See AdjustDistance() for comment about better solution.
                     halfClose = max(precisionNear, halfClose, computedNear)
                     if debugClipping:
                         print "ADJUSTING: Accounting for zoom-in"
@@ -270,7 +303,7 @@ class FreeCamera(QtCore.QObject):
     def computeGfCamera(self, stageBBox):
         """Makes sure the FreeCamera's computed parameters are up-to-date, and
         returns the GfCamera object."""
-        self._updateCameraTransform()
+        self._pushToCameraTransform()
         self.setClippingPlanes(stageBBox)
         return self._camera
 
@@ -300,7 +333,26 @@ class FreeCamera(QtCore.QObject):
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
             print "Resetting closest distance to {}; CameraPos: {}, closestPoint: {}".format(self._closestVisibleDist, camPos, point)
 
-    def adjustDist(self, scaleFactor):
+    def ComputePixelsToWorldFactor(self, viewportHeight):
+        '''Computes the ratio that converts pixel distance into world units.
+
+        It treats the pixel distances as if they were projected to a plane going
+        through the camera center.'''
+        self._pushToCameraTransform()
+        frustumHeight = self._camera.frustum.window.GetSize()[1]
+        return frustumHeight * self._dist / viewportHeight
+
+    def Tumble(self, dTheta, dPhi):
+        ''' Tumbles the camera around the center point by (dTheta, dPhi) degrees. '''
+        self._rotTheta += dTheta
+        self._rotPhi += dPhi
+        self._cameraTransformDirty = True
+        self.signalFrustumChanged.emit()
+
+    def AdjustDistance(self, scaleFactor):
+        '''Scales the distance of the freeCamera from it's center typically be
+        scaleFactor unless it puts the camera into a "stuck" state.'''
+
         # When dist gets very small, you can get stuck and not be able to
         # zoom back out, if you just keep multiplying.  Switch to addition
         # in that case, choosing an incr that works for the scale of the
@@ -331,55 +383,60 @@ class FreeCamera(QtCore.QObject):
                     self._lastFramedDist + \
                     self.dist
 
-    def Truck(self, offX, offY, height):
-        self._updateCameraTransform()
+    def Truck(self, deltaRight, deltaUp):
+        ''' Moves the camera by (deltaRight, deltaUp) in worldspace coordinates. 
+
+        This is similar to a camera Truck/Pedestal.
+        '''
+        # need to update the camera transform before we access the frustum
+        self._pushToCameraTransform()
         frustum = self._camera.frustum
         cam_up = frustum.ComputeUpVector()
         cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
+        self._center += (deltaRight * cam_right + deltaUp * cam_up)
+        self._cameraTransformDirty = True
+        self.signalFrustumChanged.emit()
 
-        # Figure out distance in world space of a point 'dist' into the
-        # screen from center to top of frame
-        offRatio = frustum.window.GetSize()[1] * self._dist / height
+    def PanTilt(self, dPan, dTilt):
+        ''' Rotates the camera around the current camera base (approx. the film
+        plane).  Both parameters are in degrees.
 
-        self.center += - offRatio * offX * cam_right
-        self.center +=   offRatio * offY * cam_up
+        This moves the center point that we normally tumble around.
+
+        This is similar to a camera Pan/Tilt.
+        '''
+        self._camera.transform = (
+                Gf.Matrix4d(1.0).SetRotate(Gf.Rotation(Gf.Vec3d.XAxis(), dTilt)) *
+                Gf.Matrix4d(1.0).SetRotate(Gf.Rotation(Gf.Vec3d.YAxis(), dPan)) *
+                self._camera.transform)
+        self._pullFromCameraTransform()
+
+        # When we Pan/Tilt, we don't want to roll the camera so we just zero it
+        # out here.
+        self._rotPsi = 0.0
 
         self._cameraTransformDirty = True
         self.signalFrustumChanged.emit()
 
-    @staticmethod
-    def FromGfCamera(cam, isZUp):
-        # Get the data from the camera and its frustum
-        cam_transform = cam.transform
-        dist = cam.focusDistance
-        frustum = cam.frustum
-        cam_pos = frustum.position
-        cam_axis = frustum.ComputeViewDirection()
-
-        # Create a new FreeCamera setting the camera to be the given camera
-        self = FreeCamera(isZUp)
-        self._camera = cam
-
-        # Compute translational parts
-        self._dist = dist
-        self._selSize = dist / 10.0
-        self._center = cam_pos + dist * cam_axis
-
-        # self._YZUpMatrix influences the behavior about how the
-        # FreeCamera will tumble. It is the identity or a rotation about the
-        # x-Axis.
-
-        # Compute rotational part
-        transform = cam_transform * self._YZUpMatrix
-        transform.Orthonormalize()
-        rotation = transform.ExtractRotation()
-
-        # Decompose and set angles
-        self._rotTheta, self._rotPhi, self._rotPsi =-rotation.Decompose(
-            Gf.Vec3d.YAxis(), Gf.Vec3d.XAxis(), Gf.Vec3d.ZAxis())
-
+    def Walk(self, dForward, dRight):
+        ''' Specialized camera movement that moves it on the "horizontal" plane
+        '''
+        # need to update the camera transform before we access the frustum
+        self._pushToCameraTransform()
+        frustum = self._camera.frustum
+        cam_up = frustum.ComputeUpVector().GetNormalized()
+        cam_forward = frustum.ComputeViewDirection().GetNormalized()
+        cam_right = Gf.Cross(cam_forward, cam_up)
+        delta = dForward * cam_forward + dRight * cam_right
+        self._center += delta
         self._cameraTransformDirty = True
+        self.signalFrustumChanged.emit()
 
+    @staticmethod
+    def FromGfCamera(gfCamera, isZUp):
+        self = FreeCamera(isZUp)
+        self._camera = gfCamera
+        self._pullFromCameraTransform()
         return self
 
     @property

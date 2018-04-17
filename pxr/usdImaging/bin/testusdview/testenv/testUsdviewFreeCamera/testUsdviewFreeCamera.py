@@ -51,17 +51,38 @@ def _SetFreeCamera(appController, gfCam, isZUp):
 def _testFreeCameraTumble(appController):
     # test tumbling around
     freeCam = _GetFreeCamera(appController)
-    freeCam.rotTheta += 90
+    freeCam.Tumble(90, 0)
     _takeShot(appController, "block_R.png")
-    freeCam.rotTheta += 90
+    freeCam.Tumble(90, 0)
     _takeShot(appController, "block_B.png")
-    freeCam.rotTheta += 90
+    freeCam.Tumble(90, 0)
     _takeShot(appController, "block_L.png")
     freeCam.rotTheta = 0
     _takeShot(appController, "block_F.png")
 
-    freeCam.rotPhi = 45
+    freeCam.Tumble(0, 45)
     _takeShot(appController, "phi45.png")
+
+def _testFreeCameraAdjustDistance(appController):
+    freeCam = _GetFreeCamera(appController)
+    freeCam.AdjustDistance(0.5)
+    _takeShot(appController, "adjustDist_05.png")
+
+    freeCam.AdjustDistance(2)
+    _takeShot(appController, "adjustDist_05_20.png")
+
+def _testFreeCameraTruck(appController):
+    freeCam = _GetFreeCamera(appController)
+    freeCam.Truck(1, 1)
+    _takeShot(appController, "truck_1_1.png")
+
+    freeCam.Truck(-2, -2)
+    _takeShot(appController, "truck_-1_-1.png")
+
+    # test that tumble and truck does the right thing
+    freeCam.rotTheta = -45
+    freeCam.Truck(1, 0)
+    _takeShot(appController, "rot_truck.png")
 
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
@@ -71,6 +92,12 @@ def testUsdviewInputFunction(appController):
     _takeShot(appController, "start.png")
 
     _testFreeCameraTumble(appController)
+    _SetFreeCamera(appController, startGfCam, startIsZUp)
+
+    _testFreeCameraAdjustDistance(appController)
+    _SetFreeCamera(appController, startGfCam, startIsZUp)
+
+    _testFreeCameraTruck(appController)
     _SetFreeCamera(appController, startGfCam, startIsZUp)
 
     _takeShot(appController, "end.png")
