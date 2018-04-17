@@ -44,6 +44,7 @@
 
 #include <math.h>
 #include <iostream>
+#include <numeric>
 #include <map>
 #include <vector>
 
@@ -756,8 +757,16 @@ TraceReporter::_PendingEventNode::_PendingEventNode(
 TraceReporter::_PendingEventNode::Child 
 TraceReporter::_PendingEventNode::Close(TimeStamp end)
 {
+    // The new node should have a time that is at least as long as the time of 
+    // its children.
+    TimeStamp childTime = std::accumulate(
+        children.begin(), children.end(), 0, 
+        [](TimeStamp ts, const Child& b) -> TimeStamp {
+            return ts + b.node->GetInclusiveTime();
+        });
+    
     TraceEventNodeRefPtr node = 
-    TraceEventNode::New(id, key, end-start);
+        TraceEventNode::New(id, key, std::max(end-start, childTime));
     for (Child& child : children) {
         node->Append(child.node);
     }

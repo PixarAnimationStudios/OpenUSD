@@ -1,7 +1,7 @@
 
 Tree view  ==============
    inclusive    exclusive        
-                 0.000 ms       1 samples    Main Thread
+    7.000 ms                    1 samples    Main Thread
     7.000 ms     1.000 ms       1 samples    | R
     6.000 ms     2.000 ms       2 samples    |   *A
     5.000 ms     2.000 ms       2 samples    |   | *B

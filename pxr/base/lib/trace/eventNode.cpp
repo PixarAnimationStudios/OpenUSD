@@ -51,8 +51,9 @@ TraceEventNode::Append(Id id, const TfToken &key,
     }
 
     // Update our exclusive time to discount our new child's time.
-    _exclusiveTs -= ts;
-    _recursiveExclusiveTs -= ts;
+    _exclusiveTs = (_exclusiveTs >= ts) ? _exclusiveTs - ts : 0;
+    _recursiveExclusiveTs = 
+        (_recursiveExclusiveTs >= ts) ? _recursiveExclusiveTs - ts : 0;
 
     return n;
 }
@@ -77,10 +78,11 @@ TraceEventNode::Append(TraceEventNodeRefPtr child) {
         _children.push_back(child);
         _childrenByKey[child->GetKey()] = _children.size() - 1;
     }
-
+    
     // Update our exclusive time to discount our new child's time.
-    _exclusiveTs -= child->_ts;
-    _recursiveExclusiveTs -= child->_ts;
+    _exclusiveTs = (_exclusiveTs >= child->_ts) ? _exclusiveTs - child->_ts : 0;
+    _recursiveExclusiveTs = (_recursiveExclusiveTs >= child->_ts)
+        ? _recursiveExclusiveTs - child->_ts : 0;
 }
 
 TraceEventNode::TimeStamp 
