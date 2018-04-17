@@ -1918,6 +1918,10 @@ class StageView(QtOpenGL.QGLWidget):
             # error has already been issued
             return None, Sdf.Path.emptyPath, None, None, None
 
+        # this import is here to make sure the create_first_image stat doesn't
+        # regress..
+        from OpenGL import GL
+
         # Need a correct OpenGL Rendering context for FBOs
         self.makeCurrent()
 
