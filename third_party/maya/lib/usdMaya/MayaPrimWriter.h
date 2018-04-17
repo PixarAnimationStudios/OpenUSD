@@ -74,6 +74,16 @@ class MayaPrimWriter
     /// Base implementation does nothing.
     PXRUSDMAYA_API
     virtual void postExport();
+
+    /// Gets all of the prim paths that this prim writer has created.
+    /// The base implementation just gets the single generated prim's path.
+    /// Prim writers that generate more than one USD prim from a single Maya
+    /// node should override this function to indicate all the prims they
+    /// create.
+    /// Implementations should add to outPaths instead of replacing. The return
+    /// value should indicate whether any items were added to outPaths.
+    PXRUSDMAYA_API
+    virtual bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const;
     
 public:
     const MDagPath&        getDagPath()    const { return mDagPath; }

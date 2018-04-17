@@ -194,6 +194,16 @@ MayaPrimWriter::setExportsVisibility(bool exports)
     mExportsVisibility = exports;
 }
 
+bool
+MayaPrimWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+{
+    if (!getUsdPath().IsEmpty()) {
+        outPaths->push_back(getUsdPath());
+        return true;
+    }
+    return false;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

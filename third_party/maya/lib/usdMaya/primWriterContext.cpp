@@ -36,7 +36,8 @@ PxrUsdMayaPrimWriterContext::PxrUsdMayaPrimWriterContext(
     _stage(stage),
     _exportsGprims(false),
     _exportsReferences(false),
-    _pruneChildren(false)
+    _pruneChildren(false),
+    _authoredPaths({authorPath})
 {
 }
 
@@ -92,6 +93,26 @@ bool
 PxrUsdMayaPrimWriterContext::GetPruneChildren() const
 {
     return _pruneChildren;
+}
+
+const SdfPathVector&
+PxrUsdMayaPrimWriterContext::GetAuthoredPaths() const
+{
+    return _authoredPaths;
+}
+
+void
+PxrUsdMayaPrimWriterContext::SetAuthoredPaths(
+    const SdfPathVector& authoredPaths)
+{
+    _authoredPaths = authoredPaths;
+}
+
+void
+PxrUsdMayaPrimWriterContext::SetAuthoredPaths(
+    SdfPathVector&& authoredPaths)
+{
+    _authoredPaths = std::move(authoredPaths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

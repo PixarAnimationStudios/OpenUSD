@@ -80,6 +80,9 @@ public:
     virtual bool shouldPruneChildren() const override;    
 
     PXRUSDMAYA_API
+    virtual bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
+
+    PXRUSDMAYA_API
     static MayaPrimWriterPtr Create(
             const MDagPath& dag,
             const SdfPath& path,
@@ -100,6 +103,7 @@ private:
     bool _exportsGprims;
     bool _exportsReferences;
     bool _pruneChildren;
+    SdfPathVector _authoredPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

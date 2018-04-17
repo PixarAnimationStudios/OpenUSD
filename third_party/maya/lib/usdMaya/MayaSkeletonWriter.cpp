@@ -386,4 +386,16 @@ MayaSkeletonWriter::isShapeAnimated() const
     return _animatedJoints.size() > 0;
 }
 
+bool
+MayaSkeletonWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+{
+    bool hasPrims = MayaPrimWriter::getAllAuthoredUsdPaths(outPaths);
+    SdfPath animPath = getUsdPath().AppendChild(_tokens->Animation);
+    if (getUsdStage()->GetPrimAtPath(animPath)) {
+        outPaths->push_back(animPath);
+        hasPrims = true;
+    }
+    return hasPrims;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

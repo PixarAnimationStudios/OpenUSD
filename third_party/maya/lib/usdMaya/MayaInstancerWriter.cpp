@@ -60,6 +60,7 @@ MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
     TF_AXIOM(primSchema);
     mUsdPrim = primSchema.GetPrim();
     TF_AXIOM(mUsdPrim);
+    UsdModelAPI(mUsdPrim).SetKind(KindTokens->assembly);
 }
 
 /* virtual */
@@ -204,6 +205,7 @@ MayaInstancerWriter::writeInstancerAttrs(
 
         const UsdPrim prototypesGroupPrim = getUsdStage()->DefinePrim(
                 instancer.GetPrim().GetPath().AppendChild(_tokens->Prototypes));
+        UsdModelAPI(prototypesGroupPrim).SetKind(KindTokens->group);
         UsdRelationship prototypesRel = instancer.CreatePrototypesRel();
 
         const unsigned int numElements = inputHierarchy.numElements();
@@ -227,9 +229,6 @@ MayaInstancerWriter::writeInstancerAttrs(
                     .AppendChild(prototypeName);
             UsdPrim prototypePrim = getUsdStage()->DefinePrim(
                     prototypeUsdPath);
-
-            // Set kind for prototypes to subcomponent.
-            UsdModelAPI(prototypePrim).SetKind(KindTokens->subcomponent);
 
             // Try to be conservative and only create an intermediary xformOp
             // with the instancerTranslate if we can ensure that we don't need
@@ -266,9 +265,23 @@ MayaInstancerWriter::writeInstancerAttrs(
         return false;
     }
 
-    // Actual write (@ both default time and animated time).
+    // Actual write of prototypes (@ both default time and animated time).
     for (MayaPrimWriterPtr& writer : _prototypeWriters) {
         writer->write(usdTime);
+
+        if (usdTime.IsDefault()) {
+            // Prototypes should have kind component or derived (don't stomp
+            // over existing component-derived kinds).
+            // (Note that ModelKindWriter's fix-up stage might change this.)
+            if (const UsdPrim writerPrim = writer->getPrim()) {
+                UsdModelAPI primModelAPI(writerPrim);
+                TfToken kind;
+                primModelAPI.GetKind(&kind);
+                if (!KindRegistry::IsA(kind, KindTokens->component)) {
+                    primModelAPI.SetKind(KindTokens->component);
+                }
+            }
+        }
     }
 
     // Write the instancerTranslate xformOp for all prims that need it.
@@ -335,7 +348,7 @@ MayaInstancerWriter::postExport()
 }
 
 bool
-MayaInstancerWriter::exportsGprims() const
+MayaInstancerWriter::exportsReferences() const
 {
     return true;
 }
@@ -344,6 +357,23 @@ bool
 MayaInstancerWriter::shouldPruneChildren() const
 {
     return true;
+}
+
+bool
+MayaInstancerWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+{
+    bool hasPrims = MayaPrimWriter::getAllAuthoredUsdPaths(outPaths);
+    SdfPath protosPath = getUsdPath().AppendChild(_tokens->Prototypes);
+    if (getUsdStage()->GetPrimAtPath(protosPath)) {
+        outPaths->push_back(protosPath);
+        hasPrims = true;
+    }
+    for (const MayaPrimWriterPtr primWriter : _prototypeWriters) {
+        if (primWriter->getAllAuthoredUsdPaths(outPaths)) {
+            hasPrims = true;
+        }
+    }
+    return hasPrims;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

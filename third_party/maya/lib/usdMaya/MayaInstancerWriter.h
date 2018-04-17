@@ -85,9 +85,11 @@ public:
     PXRUSDMAYA_API
     virtual void postExport() override;
     PXRUSDMAYA_API
-    virtual bool exportsGprims() const override;
+    virtual bool exportsReferences() const override;
     PXRUSDMAYA_API
     virtual bool shouldPruneChildren() const override;
+    PXRUSDMAYA_API
+    virtual bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
 
 protected:
     virtual bool writeInstancerAttrs(

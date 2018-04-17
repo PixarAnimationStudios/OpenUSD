@@ -89,7 +89,8 @@ class testUsdExportPointInstancer(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
             shadingMode='none',
-            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE))
+            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE),
+            kind='component')
 
         cls.stage = Usd.Stage.Open(usdFilePath)
 
@@ -142,9 +143,15 @@ class testUsdExportPointInstancer(unittest.TestCase):
 
         # Check that the USD prims have correct type name, references, kinds,
         # kinds, instancerTranslate xformOps.
-        prototypesPrim = self.stage.GetPrimAtPath(
-                "/InstancerTest/%s/Prototypes" % instancerName)
+        instancerPrim = self.stage.GetPrimAtPath(
+                "/InstancerTest/%s" % instancerName)
+        self.assertEqual(Usd.ModelAPI(instancerPrim).GetKind(),
+                Kind.Tokens.subcomponent)
+
+        prototypesPrim = instancerPrim.GetChild("Prototypes")
         self.assertEqual(len(prototypesPrim.GetChildren()), 3)
+        self.assertEqual(Usd.ModelAPI(prototypesPrim).GetKind(),
+                Kind.Tokens.subcomponent)
 
         prototype0 = prototypesPrim.GetChild("prototype_0")
         self._AssertPrototype(prototype0, "Xform", 2, True)

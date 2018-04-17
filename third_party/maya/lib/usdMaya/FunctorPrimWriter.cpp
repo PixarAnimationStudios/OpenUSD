@@ -60,6 +60,7 @@ FunctorPrimWriter::write(
     _exportsGprims = ctx.GetExportsGprims();
     _exportsReferences = ctx.GetExportsReferences();
     _pruneChildren = ctx.GetPruneChildren();
+    _authoredPaths = ctx.GetAuthoredPaths();
 
     mUsdPrim = stage->GetPrimAtPath(authorPath);
     if (!mUsdPrim) {
@@ -89,6 +90,19 @@ bool
 FunctorPrimWriter::shouldPruneChildren() const
 {
     return _pruneChildren;
+}
+
+bool
+FunctorPrimWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+{
+    if (!_authoredPaths.empty()) {
+        outPaths->insert(
+                outPaths->end(),
+                _authoredPaths.begin(),
+                _authoredPaths.end());
+        return true;
+    }
+    return false;
 }
 
 /* static */
