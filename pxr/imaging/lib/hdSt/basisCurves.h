@@ -96,11 +96,11 @@ protected:
                            HdDirtyBits *dirtyBits,
                            const HdBasisCurvesReprDesc &desc);
 
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits);
 
-    void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 

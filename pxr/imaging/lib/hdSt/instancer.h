@@ -86,7 +86,7 @@ public:
     /// buffer range data.
     HDST_API
     void PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
-                          HdDirtyBits *dirtyBits, int instancePrimVarSlot);
+                          HdDirtyBits *dirtyBits, int instancePrimvarSlot);
 
 protected:
     HDST_API
@@ -97,7 +97,7 @@ private:
     std::mutex _instanceLock;
     int _numInstancePrimvars;
 
-    HdBufferArrayRangeSharedPtr _instancePrimVarRange;
+    HdBufferArrayRangeSharedPtr _instancePrimvarRange;
     TfHashMap<SdfPath,
               HdBufferArrayRangeSharedPtr,
               SdfPath::Hash> _instanceIndexRangeMap;

@@ -226,7 +226,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
                 // if refined, we submit a subdivision preprocessing
                 // no matter what desc says
-                // (see the lengthy comment in PopulateVertexPrimVar)
+                // (see the lengthy comment in PopulateVertexPrimvar)
                 if (refineLevel > 0) {
                     // OpenSubdiv preprocessing
                     HdBufferSourceSharedPtr
@@ -389,7 +389,7 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
 }
 
 static HdBufferSourceSharedPtr
-_QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
+_QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
                       HdComputationVector *computations,
                       HdSt_MeshTopologySharedPtr const &topology,
                       SdfPath const &id,
@@ -425,7 +425,7 @@ _QuadrangulatePrimVar(HdBufferSourceSharedPtr const &source,
 }
 
 static HdBufferSourceSharedPtr
-_QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
+_QuadrangulateFaceVaryingPrimvar(HdBufferSourceSharedPtr const &source,
                                  HdSt_MeshTopologySharedPtr const &topology,
                                  SdfPath const &id,
                                  HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -444,7 +444,7 @@ _QuadrangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
 }
 
 static HdBufferSourceSharedPtr
-_TriangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
+_TriangulateFaceVaryingPrimvar(HdBufferSourceSharedPtr const &source,
                                HdSt_MeshTopologySharedPtr const &topology,
                                SdfPath const &id,
                                HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -460,7 +460,7 @@ _TriangulateFaceVaryingPrimVar(HdBufferSourceSharedPtr const &source,
 }
 
 static HdBufferSourceSharedPtr
-_RefinePrimVar(HdBufferSourceSharedPtr const &source,
+_RefinePrimvar(HdBufferSourceSharedPtr const &source,
                bool varying,
                HdComputationVector *computations,
                HdSt_MeshTopologySharedPtr const &topology)
@@ -488,7 +488,7 @@ _RefinePrimVar(HdBufferSourceSharedPtr const &source,
 }
 
 void
-HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   bool requireSmoothNormals)
@@ -573,10 +573,10 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     for (HdBufferSourceSharedPtr const & source: reserveOnlySources) {
         HdBufferSourceSharedPtr compSource; 
         if (refineLevel > 0) {
-            compSource = _RefinePrimVar(source, false, // Should support varying
+            compSource = _RefinePrimvar(source, false, // Should support varying
                                     &computations, _topology);
         } else if (_UseQuadIndices(renderIndex, _topology)) {
-            compSource = _QuadrangulatePrimVar(source, &computations, _topology,
+            compSource = _QuadrangulatePrimvar(source, &computations, _topology,
                                            GetId(), resourceRegistry);
         }
         // Don't schedule compSource for commit
@@ -645,10 +645,10 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             }
 
             if (refineLevel > 0) {
-                source = _RefinePrimVar(source, isVarying,
+                source = _RefinePrimvar(source, isVarying,
                                         &computations, _topology);
             } else if (_UseQuadIndices(renderIndex, _topology)) {
-                source = _QuadrangulatePrimVar(source, &computations, _topology,
+                source = _QuadrangulatePrimvar(source, &computations, _topology,
                                                GetId(), resourceRegistry);
             }
 
@@ -709,10 +709,10 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                                                               usePackedNormals);
 
                 if (doRefine) {
-                    normal = _RefinePrimVar(normal, /*varying=*/false,
+                    normal = _RefinePrimvar(normal, /*varying=*/false,
                                                       &computations, _topology);
                 } else if (doQuadrangulate) {
-                    normal = _QuadrangulatePrimVar(normal,
+                    normal = _QuadrangulatePrimvar(normal,
                                                    &computations,
                                                    _topology,
                                                    id,
@@ -944,7 +944,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
+HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                        HdStDrawItem *drawItem,
                                        HdDirtyBits *dirtyBits,
                                        HdMeshReprDesc desc)
@@ -953,20 +953,20 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-    TfTokenVector primVarNames = GetPrimvarFacevaryingNames(sceneDelegate);
-    if (primVarNames.empty()) return;
+    TfTokenVector primvarNames = GetPrimvarFacevaryingNames(sceneDelegate);
+    if (primvarNames.empty()) return;
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdBufferSourceVector sources;
-    sources.reserve(primVarNames.size());
+    sources.reserve(primvarNames.size());
 
     int refineLevel = _GetRefineLevelForDesc(desc);
     int numFaceVaryings = _topology ? _topology->GetNumFaceVaryings() : 0;
 
-    TF_FOR_ALL(nameIt, primVarNames) {
+    TF_FOR_ALL(nameIt, primvarNames) {
         // note: facevarying primvars don't have to be refined.
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,*nameIt)) {
             continue;
@@ -999,10 +999,10 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
             //
             if (_UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology) ||
                  (refineLevel > 0 && !_topology->RefinesToTriangles())) {
-                source = _QuadrangulateFaceVaryingPrimVar(source, _topology,
+                source = _QuadrangulateFaceVaryingPrimvar(source, _topology,
                                                           GetId(), resourceRegistry);
             } else {
-                source = _TriangulateFaceVaryingPrimVar(source, _topology,
+                source = _TriangulateFaceVaryingPrimvar(source, _topology,
                                                         GetId(), resourceRegistry);
             }
             sources.push_back(source);
@@ -1032,10 +1032,10 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                    HdStDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits,
-                                   TfTokenVector const &primVarNames)
+                                   TfTokenVector const &primvarNames)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1047,11 +1047,11 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
 
     HdBufferSourceVector sources;
-    sources.reserve(primVarNames.size());
+    sources.reserve(primvarNames.size());
 
     int numFaces = _topology ? _topology->GetNumFaces() : 0;
 
-    TF_FOR_ALL(nameIt, primVarNames) {
+    TF_FOR_ALL(nameIt, primvarNames) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
@@ -1243,23 +1243,23 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* FACEVARYING PRIMVARS */
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateFaceVaryingPrimVars(sceneDelegate, drawItem, dirtyBits, desc);
+        _PopulateFaceVaryingPrimvars(sceneDelegate, drawItem, dirtyBits, desc);
     }
 
     /* VERTEX PRIMVARS */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id))) {
-        _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits,
+        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits,
                                 requireSmoothNormals);
     }
 
     /* ELEMENT PRIMVARS */
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        TfTokenVector uniformPrimVarNames =
+        TfTokenVector uniformPrimvarNames =
                                          GetPrimvarUniformNames(sceneDelegate);
-        if (!uniformPrimVarNames.empty()) {
-            _PopulateElementPrimVars(sceneDelegate, drawItem, dirtyBits,
-                                     uniformPrimVarNames);
+        if (!uniformPrimvarNames.empty()) {
+            _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits,
+                                     uniformPrimvarNames);
         }
     }
 
@@ -1270,7 +1270,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 
     TF_VERIFY(drawItem->GetConstantPrimvarRange());
-    // Topology and VertexPrimVar may be null, if the mesh has zero faces.
+    // Topology and VertexPrimvar may be null, if the mesh has zero faces.
     // Element primvar, Facevarying primvar and Instance primvar are optional
 }
 
@@ -1281,7 +1281,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    bool hasFaceVaryingPrimVars =
+    bool hasFaceVaryingPrimvars =
         (bool)drawItem->GetFaceVaryingPrimvarRange();
 
     int refineLevel = _GetRefineLevelForDesc(desc);
@@ -1357,7 +1357,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  useCustomDisplacement,
                                  smoothNormals,
                                  _doubleSided || desc.doubleSided,
-                                 hasFaceVaryingPrimVars,
+                                 hasFaceVaryingPrimvars,
                                  blendWireframeColor,
                                  cullStyle,
                                  geomStyle,
@@ -1424,7 +1424,7 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     }
 
     // If smooth Normals are dirty and we are doing CPU smooth normals
-    // then the smooth normals computation needs the Points primVar
+    // then the smooth normals computation needs the Points primvar
     // so mark Points as dirty, so that the scene delegate will provide
     // the data.
     if ((bits & DirtySmoothNormals) && !HdStGLUtils::IsGpuComputeEnabled()) {

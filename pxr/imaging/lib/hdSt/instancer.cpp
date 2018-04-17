@@ -43,7 +43,7 @@ HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
 
 void
 HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
-                                HdDirtyBits *dirtyBits, int instancePrimVarSlot)
+                                HdDirtyBits *dirtyBits, int instancePrimvarSlot)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -61,7 +61,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     while (currentInstancer) {
         // allocate instance primvar slot in the drawing coordinate.
         drawingCoord->SetInstancePrimvarIndex(level,
-                                              instancePrimVarSlot + level);
+                                              instancePrimvarSlot + level);
         sharedData->barContainer.Set(
             drawingCoord->GetInstancePrimvarIndex(level),
             currentInstancer->GetInstancePrimvars());
@@ -109,12 +109,12 @@ HdStInstancer::GetInstancePrimvars()
                 boost::static_pointer_cast<HdStResourceRegistry>(
                 GetDelegate()->GetRenderIndex().GetResourceRegistry());
 
-            TfTokenVector primVarNames;
-            primVarNames = GetDelegate()->GetPrimvarInstanceNames(instancerId);
+            TfTokenVector primvarNames;
+            primvarNames = GetDelegate()->GetPrimvarInstanceNames(instancerId);
 
             // for all instance primvars
             HdBufferSourceVector sources;
-            sources.reserve(primVarNames.size());
+            sources.reserve(primvarNames.size());
 
             // Always reset numInstancePrimvars, for the case the number of
             // instances are varying.
@@ -122,7 +122,7 @@ HdStInstancer::GetInstancePrimvars()
             // instance primvars are varying.
             _numInstancePrimvars = 0;
 
-            TF_FOR_ALL(nameIt, primVarNames) {
+            TF_FOR_ALL(nameIt, primvarNames) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, 
                                                     *nameIt)) {
                     VtValue value = GetDelegate()->Get(instancerId, *nameIt);
@@ -176,18 +176,18 @@ HdStInstancer::GetInstancePrimvars()
 
             if (!sources.empty()) {
                 // if the instance BAR has not been allocated, create new one
-                if (!_instancePrimVarRange) {
+                if (!_instancePrimvarRange) {
                     HdBufferSpecVector bufferSpecs;
                     HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
-                    _instancePrimVarRange =
+                    _instancePrimvarRange =
                         resourceRegistry->AllocateNonUniformBufferArrayRange(
                             HdTokens->primvar, bufferSpecs);
                 }
-                TF_VERIFY(_instancePrimVarRange->IsValid());
+                TF_VERIFY(_instancePrimvarRange->IsValid());
 
                 // schedule to sync gpu
-                resourceRegistry->AddSources(_instancePrimVarRange, sources);
+                resourceRegistry->AddSources(_instancePrimvarRange, sources);
             }
 
             // Clear the dirtyBits of this instancer since we just scheduled to
@@ -201,7 +201,7 @@ HdStInstancer::GetInstancePrimvars()
         }
     }
 
-    return _instancePrimVarRange;
+    return _instancePrimvarRange;
 }
 
 void

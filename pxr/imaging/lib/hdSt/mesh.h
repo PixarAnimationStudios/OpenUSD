@@ -113,20 +113,20 @@ protected:
 
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  bool requireSmoothNormals);
 
-    void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                       HdStDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
                                       HdMeshReprDesc desc);
 
-    void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
-                                  TfTokenVector const &primVarNames);
+                                  TfTokenVector const &primvarNames);
 
     int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
 

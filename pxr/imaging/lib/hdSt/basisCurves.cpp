@@ -134,11 +134,11 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         // primvars, so we need to see refined dirty for updating coarse
         // vertex primvars if there is only refined reprs being updated.
         // we'll fix the change tracking in order to address this craziness.
-        _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits);
-        _PopulateElementPrimVars(sceneDelegate, drawItem, dirtyBits);
+        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits);
+        _PopulateElementPrimvars(sceneDelegate, drawItem, dirtyBits);
     }
 
-    // Topology and VertexPrimVar may be null, if the curve has zero line
+    // Topology and VertexPrimvar may be null, if the curve has zero line
     // segments.
     TF_VERIFY(drawItem->GetConstantPrimvarRange());
 }
@@ -508,7 +508,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                          HdStDrawItem *drawItem,
                                          HdDirtyBits *dirtyBits)
 {
@@ -643,7 +643,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                           HdStDrawItem *drawItem,
                                           HdDirtyBits *dirtyBits)
 {

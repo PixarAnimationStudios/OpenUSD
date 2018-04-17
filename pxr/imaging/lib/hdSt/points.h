@@ -65,7 +65,7 @@ protected:
                              TfToken const &reprName,
                              HdDirtyBits *dirtyBitsState) override;
 
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBitsState);
 

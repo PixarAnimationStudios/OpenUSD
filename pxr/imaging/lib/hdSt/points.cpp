@@ -116,7 +116,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* PRIMVAR */
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits);
+        _PopulateVertexPrimvars(sceneDelegate, drawItem, dirtyBits);
     }
 
     // VertexPrimvar may be null, if there are no points in the prim.
@@ -159,7 +159,7 @@ HdStPoints::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                     HdStDrawItem *drawItem,
                                     HdDirtyBits *dirtyBits)
 {
