@@ -64,12 +64,18 @@ struct JsValue::_Holder : private boost::noncopyable
         : value(Js_Null()), type(JsValue::NullType) { }
     _Holder(const JsObject& value)
         : value(value), type(JsValue::ObjectType) { }
+    _Holder(JsObject&& value)
+        : value(std::move(value)), type(JsValue::ObjectType) { }
     _Holder(const JsArray& value)
         : value(value), type(JsValue::ArrayType) { }
+    _Holder(JsArray&& value)
+        : value(std::move(value)), type(JsValue::ArrayType) { }
     _Holder(const char* value)
         : value(std::string(value)), type(JsValue::StringType) { }
     _Holder(const std::string& value)
         : value(value), type(JsValue::StringType) { }
+    _Holder(std::string&& value)
+        : value(std::move(value)), type(JsValue::StringType) { }
     _Holder(bool value)
         : value(value), type(JsValue::BoolType) { }
     _Holder(int value)
@@ -112,8 +118,20 @@ JsValue::JsValue(const JsObject& value)
     // Do Nothing.
 }
 
+JsValue::JsValue(JsObject&& value)
+    : _holder(new _Holder(std::move(value)))
+{
+    // Do Nothing.
+}
+
 JsValue::JsValue(const JsArray& value)
     : _holder(new _Holder(value))
+{
+    // Do Nothing.
+}
+
+JsValue::JsValue(JsArray&& value)
+    : _holder(new _Holder(std::move(value)))
 {
     // Do Nothing.
 }
@@ -126,6 +144,12 @@ JsValue::JsValue(const char* value)
 
 JsValue::JsValue(const std::string& value)
     : _holder(new _Holder(value))
+{
+    // Do Nothing.
+}
+
+JsValue::JsValue(std::string&& value)
+    : _holder(new _Holder(std::move(value)))
 {
     // Do Nothing.
 }

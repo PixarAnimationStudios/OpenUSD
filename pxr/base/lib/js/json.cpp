@@ -57,39 +57,39 @@ PXR_NAMESPACE_USING_DIRECTIVE
 struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
 {
     bool Null() {
-        values.push_back(JsValue());
+        values.emplace_back();
         return true;
     }
     bool Bool(bool b) {
-        values.push_back(JsValue(b));
+        values.emplace_back(b);
         return true;
     }
     bool Int(int i) {
-        values.push_back(JsValue(i));
+        values.emplace_back(i);
         return true;
     }
     bool Uint(unsigned u) {
-        values.push_back(JsValue(static_cast<uint64_t>(u)));
+        values.emplace_back(static_cast<uint64_t>(u));
         return true;
     }
     bool Int64(int64_t i) {
-        values.push_back(JsValue(i));
+        values.emplace_back(i);
         return true;
     }
     bool Uint64(uint64_t u) {
-        values.push_back(JsValue(u));
+        values.emplace_back(u);
         return true;
     }
     bool Double(double d) {
-        values.push_back(JsValue(d));
+        values.emplace_back(d);
         return true;
     }
     bool String(const char* str, rj::SizeType length, bool /* copy */) {
-        values.push_back(JsValue(std::string(str, length)));
+        values.emplace_back(std::string(str, length));
         return true;
     }
     bool Key(const char* str, rj::SizeType length, bool /* copy */) {
-        keys.push_back(std::string(str, length));
+        keys.emplace_back(str, length);
         return true;
     }
     bool StartObject() {
@@ -101,23 +101,26 @@ struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
 
         JsObject object;
         for (size_t i = 0; i < memberCount; ++i) {
-            object.insert(std::make_pair(keys[kstart + i], values[vstart + i]));
+            object.insert(
+                std::make_pair(
+                    std::move(keys[kstart + i]),
+                    std::move(values[vstart + i])));
         }
 
         keys.resize(kstart);
         values.resize(vstart);
 
-        values.push_back(JsValue(object));
+        values.emplace_back(std::move(object));
         return true;
     }
     bool StartArray() {
         return true;
     }
     bool EndArray(rj::SizeType elementCount) {
-        const std::vector<JsValue> valueArray(
+        std::vector<JsValue> valueArray(
             values.end() - elementCount, values.end());
         values.resize(values.size() - elementCount);
-        values.push_back(JsValue(valueArray));
+        values.emplace_back(std::move(valueArray));
         return true;
     }
 
