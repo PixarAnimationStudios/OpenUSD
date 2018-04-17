@@ -621,6 +621,7 @@ public:
     /// @}
 private:
     friend class UsdGeomImageable;
+    friend class UsdGeomPrimvarsAPI;
     
     /// Validate that the given \p name contains the primvars namespace.
     /// Does not validate name as a legal property identifier

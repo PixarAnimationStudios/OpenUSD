@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -214,29 +215,28 @@ UsdImagingPrimAdapter::SamplePrimvar(
     HD_TRACE_FUNCTION();
 
     // Try as USD primvar.
-    if (UsdGeomGprim gprim = UsdGeomGprim(usdPrim)) {
-        UsdGeomPrimvar pv = gprim.GetPrimvar(key);
-        if (!pv) {
-            // Try as inherited primvar.
-            pv = gprim.FindInheritedPrimvar(key);
-        }
-        if (pv) {
-            if (pv.ValueMightBeTimeVarying()) {
-                size_t numSamples = std::min(maxNumSamples,
-                                             configuredSampleTimes.size());
-                for (size_t i=0; i < numSamples; ++i) {
-                    UsdTimeCode sceneTime =
-                        _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
-                    times[i] = configuredSampleTimes[i];
-                    pv.Get(&samples[i], sceneTime);
-                }
-                return numSamples;
-            } else {
-                // Return a single sample for non-varying primvars
-                times[0] = 0;
-                pv.Get(samples, time);
-                return 1;
+    UsdGeomPrimvarsAPI primvars(usdPrim);
+    UsdGeomPrimvar pv = primvars.GetPrimvar(key);
+    if (!pv) {
+        // Try as inherited primvar.
+        pv = primvars.FindInheritedPrimvar(key);
+    }
+    if (pv) {
+        if (pv.ValueMightBeTimeVarying()) {
+            size_t numSamples = std::min(maxNumSamples,
+                                         configuredSampleTimes.size());
+            for (size_t i=0; i < numSamples; ++i) {
+                UsdTimeCode sceneTime =
+                    _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+                times[i] = configuredSampleTimes[i];
+                pv.Get(&samples[i], sceneTime);
             }
+            return numSamples;
+        } else {
+            // Return a single sample for non-varying primvars
+            times[0] = 0;
+            pv.Get(samples, time);
+            return 1;
         }
     }
 

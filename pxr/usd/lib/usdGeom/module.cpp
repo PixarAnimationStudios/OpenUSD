@@ -34,6 +34,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdGeomFaceSetAPI);
     TF_WRAP(UsdGeomModelAPI);
     TF_WRAP(UsdGeomPrimvar);
+    TF_WRAP(UsdGeomPrimvarsAPI);
     TF_WRAP(UsdGeomTokens);
     TF_WRAP(UsdGeomXformOp);
     TF_WRAP(UsdGeomXformCommonAPI);

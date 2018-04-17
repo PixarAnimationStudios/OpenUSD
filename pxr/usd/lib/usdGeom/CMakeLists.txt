@@ -21,7 +21,6 @@ pxr_library(usdGeom
         tokens
         bboxCache
         constraintTarget
-        primvar
         xformCache
         basisCurves
         boundable
@@ -45,6 +44,8 @@ pxr_library(usdGeom
         pointBased
         pointInstancer
         points
+        primvar
+        primvarsAPI
         scope
         sphere
         subset
@@ -85,6 +86,7 @@ pxr_library(usdGeom
         wrapPointInstancer.cpp
         wrapPoints.cpp
         wrapPrimvar.cpp
+        wrapPrimvarsAPI.cpp
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp

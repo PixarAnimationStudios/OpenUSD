@@ -61,9 +61,9 @@ class SdfAssetPath;
 /// what geometry should be included for processing by rendering and other
 /// computations.
 /// 
-/// Imageable also introduces the concept (and API) of geometric
-/// "primitive variables", as UsdGeomPrimvar, which interpolate across a 
-/// primitive and can override shader inputs.
+/// <Deprecated> Imageable also provides API for accessing primvars, which
+/// have been moved to the UsdGeomPrimvarsAPI schema.  This API is planned
+/// to be removed, UsdGeomPrimvarsAPI should be used directly instead.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.

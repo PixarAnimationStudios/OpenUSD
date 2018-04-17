@@ -4,15 +4,15 @@
 )
 
 class "Imageable" (
-    doc = '''Base class for all prims that may require rendering or 
+    doc = """Base class for all prims that may require rendering or 
     visualization of some sort. The primary attributes of Imageable 
     are visibility and purpose, which each provide instructions for
     what geometry should be included for processing by rendering and other
     computations.
-    
-    Imageable also introduces the concept (and API) of geometric
-    "primitive variables", as UsdGeomPrimvar, which interpolate across a 
-    primitive and can override shader inputs.'''
+
+    <Deprecated> Imageable also provides API for accessing primvars, which
+    have been moved to the UsdGeomPrimvarsAPI schema.  This API is planned
+    to be removed, UsdGeomPrimvarsAPI should be used directly instead."""
 )
 {
     rel proxyPrim (
@@ -84,6 +84,14 @@ class "Imageable" (
         deactivating geometry prims, invisible geometry is still 
         available for inspection, for positioning, for defining volumes, etc.'''
     )
+}
+
+class "PrimvarsAPI" (
+    doc = """UsdGeomPrimvarsAPI encodes geometric \"primitive variables\",
+    as UsdGeomPrimvar, which interpolate across a primitive's topology,
+    can override shader inputs, and inherit down namespace."""
+)
+{
 }
 
 class "Xformable" (

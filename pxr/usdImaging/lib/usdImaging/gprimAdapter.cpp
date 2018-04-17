@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/material.h"
@@ -254,19 +255,18 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
             // for the list of primvars.
+            UsdGeomPrimvarsAPI primvars(gprim);
             if (_delegate->GetRenderIndex().
                 GetRenderDelegate()->CanComputeMaterialNetworks()) {
-                if (UsdGeomImageable imageable = UsdGeomImageable(prim)) {
-                    // Local (non-inherited) primvars
-                    for (auto const &pv: imageable.GetPrimvars()) {
-                        _ComputeAndMergePrimvar(
-                            gprim, cachePath, pv, time, valueCache);
-                    }
-                    // Inherited primvars
-                    for (auto const &pv: imageable.FindInheritedPrimvars()) {
-                        _ComputeAndMergePrimvar(
-                            gprim, cachePath, pv, time, valueCache);
-                    }
+                // Local (non-inherited) primvars
+                for (auto const &pv: primvars.GetPrimvars()) {
+                    _ComputeAndMergePrimvar(
+                        gprim, cachePath, pv, time, valueCache);
+                }
+                // Inherited primvars
+                for (auto const &pv: primvars.FindInheritedPrimvars()) {
+                    _ComputeAndMergePrimvar(
+                        gprim, cachePath, pv, time, valueCache);
                 }
             } else {
                 // Obtain the primvars used in the material bound to this prim
@@ -275,10 +275,10 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 TfTokenVector matPrimvarNames = 
                     _delegate->GetMaterialPrimvars(usdMaterialPath);
                 for (auto const &pvName : matPrimvarNames) {
-                    UsdGeomPrimvar pv = gprim.GetPrimvar(pvName);
+                    UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
                     if (!pv) {
                         // If not found, try as inherited primvar.
-                        pv = gprim.FindInheritedPrimvar(pvName);
+                        pv = primvars.FindInheritedPrimvar(pvName);
                     }
                     if (pv) {
                         _ComputeAndMergePrimvar(
