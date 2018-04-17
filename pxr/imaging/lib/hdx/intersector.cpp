@@ -645,9 +645,11 @@ HdxIntersector::Result::_GetHash(int index) const
 bool
 HdxIntersector::Result::_IsPrimIdValid(int index) const
 {
+    unsigned char const* primIds = _primIds.get();
+
     // The ID buffer is a pointer to unsigned char; since ID's are 4 byte ints,
     // stride by 4 while indexing into it.
-    int primId = _primIds.get()[index * 4];
+    int primId = HdxIntersector::DecodeIDRenderColor(&primIds[index * 4]);
     // All color channels are cleared to 1, so when cast as int, an unwritten
     // pixel is encoded as -1. See HdxIntersector::HdxIntersectorQuery(..)
     return (primId != -1);
