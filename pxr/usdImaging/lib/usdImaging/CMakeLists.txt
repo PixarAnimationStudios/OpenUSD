@@ -33,6 +33,7 @@ pxr_library(usdImaging
         adapterRegistry
         debugCodes
         delegate
+        indexProxy
         inheritedCache
         instancerContext
         tokens
