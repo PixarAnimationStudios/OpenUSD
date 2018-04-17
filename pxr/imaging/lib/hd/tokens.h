@@ -207,6 +207,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (material)                                  \
     /* Sprims Lights */                         \
     (simpleLight)                               \
+    (cylinderLight)                             \
+    (diskLight)                                 \
+    (distantLight)                              \
     (domeLight)                                 \
     (rectLight)                                 \
     (sphereLight)                               \
