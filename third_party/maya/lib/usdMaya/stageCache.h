@@ -30,6 +30,7 @@
 
 #include "usdMaya/api.h"
 
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stageCache.h"
 
 #include <string>
@@ -59,6 +60,14 @@ public:
     PXRUSDMAYA_API
     static size_t EraseAllStagesWithRootLayerPath(
             const std::string& layerPath);
+
+    /// Gets (or creates) a shared session layer tied with the given variant
+    /// selections and draw mode on the given root path.
+    /// The stage is cached for the lifetime of the current Maya scene.
+    static SdfLayerRefPtr GetSharedSessionLayer(
+            const SdfPath& rootPath,
+            const std::map<std::string, std::string> variantSelections,
+            const TfToken& drawMode);
 };
 
 

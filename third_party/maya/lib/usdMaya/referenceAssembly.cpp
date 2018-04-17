@@ -40,6 +40,7 @@
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdGeom/modelAPI.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdUtils/stageCache.h"
@@ -231,6 +232,19 @@ MStatus UsdMayaReferenceAssembly::initialize(
     status = addAttribute(psData->repNamespace);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    psData->drawMode = typedAttrFn.create(
+        "drawMode",
+        "dm",
+        MFnData::kString,
+        MObject::kNullObj,
+        &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    typedAttrFn.setReadable(false);
+    typedAttrFn.setStorable(false);
+    typedAttrFn.setWritable(true);
+    status = addAttribute(psData->drawMode);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     // inStageData or filepath-> inStageDataCached -> outStageData
     psData->inStageDataCached = typedAttrFn.create(
         "inStageDataCached",
@@ -273,6 +287,9 @@ MStatus UsdMayaReferenceAssembly::initialize(
 
     status = attributeAffects(psData->primPath, psData->outStageData);
 
+    status = attributeAffects(psData->drawMode, psData->inStageDataCached);
+    status = attributeAffects(psData->drawMode, psData->outStageData);
+
 
     // Also see setDependentsDirty() for variantSets dynamically added
 
@@ -299,6 +316,9 @@ UsdMayaReferenceAssembly::UsdMayaReferenceAssembly(
     //
     _representations[std::string(UsdMayaRepresentationCollapsed::_assemblyType.asChar())] = 
         boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationCollapsed(this, UsdMayaRepresentationCollapsed::_assemblyType) );
+
+    _representations[std::string(UsdMayaRepresentationCards::_assemblyType.asChar())] = 
+        boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationCards(this, UsdMayaRepresentationCards::_assemblyType) );
 
     _representations[std::string(UsdMayaRepresentationPlayback::_assemblyType.asChar())] = 
         boost::shared_ptr<MPxRepresentation>( new UsdMayaRepresentationPlayback(this, UsdMayaRepresentationPlayback::_assemblyType) );
@@ -657,9 +677,9 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
         SdfPath        primPath;
 
         if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-            SdfLayerRefPtr sessionLayer;
-            std::vector<std::pair<std::string, std::string> > varSelsVec;
             MFnDependencyNode depNodeFn(thisMObject());
+
+            std::map<std::string, std::string> varSels;
             TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
             const std::set<std::string> varSetNamesForCache = _GetVariantSetNamesForStageCache(depNodeFn);
             TF_FOR_ALL(variantSet, varSetNamesForCache) {
@@ -669,14 +689,22 @@ MStatus UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock
                 if (!varSetPlg.isNull()) {
                     MString varSetVal = varSetPlg.asString();
                     if (varSetVal.length() > 0) {
-                        varSelsVec.push_back(
-                            std::make_pair(*variantSet, varSetVal.asChar()));
+                        varSels[*variantSet] = varSetVal.asChar();
                     }
                 }
             }
             
-            sessionLayer = UsdUtilsStageCache::GetSessionLayerForVariantSelections(
-                modelName, varSelsVec);
+            TfToken drawMode;
+            MPlug drawModePlug = depNodeFn.findPlug(_psData.drawMode, true);
+            if (!drawModePlug.isNull()) {
+                drawMode = TfToken(drawModePlug.asString().asChar());
+            }
+
+            SdfLayerRefPtr sessionLayer =
+                    UsdMayaStageCache::GetSharedSessionLayer(
+                        SdfPath::AbsoluteRootPath().AppendChild(modelName),
+                        varSels,
+                        drawMode);
 
             // If we have assembly edits, do not share session layers with
             // other models that have our same set of variant selections,
@@ -798,26 +826,63 @@ MStatus UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
         MGlobal::displayWarning(MPxNode::name() + ": Stage primPath MISSING");
     }
 
-    // Handle UsdPrim variant overrides for subassemblies (i.e., assemblies
-    // brought in by aggregate models).
+    // Handle UsdPrim variant overrides and draw modes for subassemblies (i.e.,
+    // assemblies brought in by aggregate models).
+    // Note that if we need to make any changes to the session layer here, we
+    // must create a new UsdStage because the input stage might be shared
+    // between multiple assemblies.
     MFnAssembly assemblyFn(thisMObject());
     if (usdPrim && !assemblyFn.isTopLevel()) {
-        std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
         MFnDependencyNode depNodeFn(thisMObject());
+
+        std::vector<std::string> variantSetNames = usdPrim.GetVariantSets().GetNames();
+        std::map<std::string, std::string> varSets;
         TF_FOR_ALL(variantSet, variantSetNames) {
             MString variantSetPlugName(PxrUsdMayaVariantSetTokens->PlugNamePrefix.GetText());
             variantSetPlugName += variantSet->c_str();
             MPlug varSetPlg = depNodeFn.findPlug(variantSetPlugName, true);
             if (!varSetPlg.isNull()) {
                 MString varSetVal = varSetPlg.asString();
-                if (varSetVal.length() > 0) {
-                    std::string varSetValStr = varSetVal.asChar();
-                    usdPrim.GetVariantSet(*variantSet).SetVariantSelection(varSetValStr);
-                }
-                else {
-                    usdPrim.GetVariantSet(*variantSet).ClearVariantSelection();
+                std::string newVarSelect = varSetVal.asChar();
+                std::string existingVarSelect = usdPrim
+                        .GetVariantSet(*variantSet)
+                        .GetVariantSelection();
+                if (newVarSelect != existingVarSelect) {
+                    varSets[*variantSet] = newVarSelect;
                 }
             }
+        }
+
+        TfToken drawMode;
+        MPlug drawModePlug = depNodeFn.findPlug(_psData.drawMode, true);
+        if (!drawModePlug.isNull()) {
+            TfToken newDrawMode(drawModePlug.asString().asChar());
+            TfToken existingDrawMode =
+                    UsdGeomModelAPI(usdPrim).ComputeModelDrawMode();
+            if (newDrawMode != existingDrawMode) {
+                drawMode = newDrawMode;
+            }
+        }
+
+        // There's something that we need to modify on the session layer.
+        // Replace usdStage with a new stage where we can just insert our new
+        // session layer.
+        if (!varSets.empty() || !drawMode.IsEmpty()) {
+            SdfLayerRefPtr newLayer = UsdMayaStageCache::GetSharedSessionLayer(
+                    usdPrim.GetPath(),
+                    varSets,
+                    drawMode);
+            SdfLayerRefPtr oldLayer = usdPrim.GetStage()->GetSessionLayer();
+
+            SdfLayerRefPtr sessionLayer = SdfLayer::CreateAnonymous();
+            sessionLayer->TransferContent(oldLayer);
+            sessionLayer->TransferContent(newLayer);
+
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            usdStage = UsdStage::Open(usdPrim.GetStage()->GetRootLayer(),
+                                      sessionLayer,
+                                      ArGetResolver().GetCurrentContext());
+            usdStage->SetEditTarget(usdStage->GetSessionLayer());
         }
     }
 
@@ -1123,6 +1188,7 @@ bool UsdMayaRepresentationBase::inactivate()
 // =========================================================
 
 const MString UsdMayaRepresentationCollapsed::_assemblyType("Collapsed");
+const MString UsdMayaRepresentationCards::_assemblyType("Cards");
 const MString UsdMayaRepresentationPlayback::_assemblyType("Playback");
 
 bool UsdMayaRepresentationProxyBase::activate()
@@ -1273,6 +1339,36 @@ UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
 
 void
 UsdMayaRepresentationCollapsed::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
+                                                    MDGModifier &dgMod)
+{
+    dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.fastPlayback, true), false);
+    
+    // Call parent for common proxy overrides
+    UsdMayaRepresentationProxyBase::_OverrideProxyPlugs(shapeFn, dgMod);
+}
+
+bool
+UsdMayaRepresentationCards::activate()
+{
+    MFnDagNode dagFn(getAssembly()->thisMObject());
+    MPlug drawMode = dagFn.findPlug(_psData.drawMode, true);
+    drawMode.setString("cards");
+
+    return UsdMayaRepresentationProxyBase::activate();
+}
+
+bool
+UsdMayaRepresentationCards::inactivate()
+{
+    MFnDagNode dagFn(getAssembly()->thisMObject());
+    MPlug drawMode = dagFn.findPlug(_psData.drawMode, true);
+    drawMode.setString("");
+
+    return UsdMayaRepresentationProxyBase::inactivate();
+}
+
+void
+UsdMayaRepresentationCards::_OverrideProxyPlugs(MFnDependencyNode &shapeFn,
                                                     MDGModifier &dgMod)
 {
     dgMod.newPlugValueBool(shapeFn.findPlug(_psData.proxyShape.fastPlayback, true), false);
