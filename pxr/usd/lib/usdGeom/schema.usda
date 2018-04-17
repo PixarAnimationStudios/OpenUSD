@@ -49,7 +49,7 @@ over "GLOBAL" (
                 interpolation between vertices."""
             }
             dictionary faceVarying = {
-                string doc = """Possible value for UsdGeomPrimVar::SetInterpolation.
+                string doc = """Possible value for UsdGeomPrimvar::SetInterpolation.
                 For polygons and subdivision surfaces, four values are
                 interpolated over each face of the mesh. Bilinear interpolation 
                 is used for interpolation between the four values."""
