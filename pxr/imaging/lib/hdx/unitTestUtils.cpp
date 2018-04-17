@@ -99,13 +99,13 @@ _AggregateHits(HdxIntersector::HitSet const& hits)
 
 static void
 _ProcessHit(AggregatedHit const& aHit,
-            HdxIntersector::PickMode pickMode,
+            HdxIntersector::PickTarget pickTarget,
             HdxSelectionHighlightMode highlightMode,
             /*out*/HdxSelectionSharedPtr selection)
 {
     HdxIntersector::Hit const& hit = aHit.hit;
 
-    switch(pickMode) {
+    switch(pickTarget) {
         case HdxIntersector::PickPrimsAndInstances:
         {
             if (!hit.instancerId.IsEmpty()) {
@@ -231,7 +231,8 @@ Picker::Pick(GfVec2i const& startPos,
     pickFrustum.SetWindow(GfRange2d(min, max));
 
     HdxIntersector::Params iParams;
-    iParams.pickMode         = _pParams.pickMode;
+    iParams.pickTarget         = _pParams.pickTarget;
+    iParams.pickThrough        = _pParams.pickThrough;
     iParams.hitMode          = HdxIntersector::HitFirst;
     iParams.projectionMatrix = pickFrustum.ComputeProjectionMatrix();
     iParams.viewMatrix       = viewMatrix;
@@ -250,7 +251,7 @@ Picker::Pick(GfVec2i const& startPos,
         AggregatedHits aggrHits = _AggregateHits(hits);
 
         for(const auto& pair : aggrHits) {
-            _ProcessHit(pair.second, _pParams.pickMode, _pParams.highlightMode,
+            _ProcessHit(pair.second, _pParams.pickTarget, _pParams.highlightMode,
                         selection);
         }
     }

@@ -297,7 +297,7 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
     //
     // Setup GL raster state
     //
-    // XXX: We should use the pickMode param to bind only the attachments
+    // XXX: We should use the pickTarget param to bind only the attachments
     // that are necessary. This should affect the shader code generated as well.
     GLenum drawBuffers[5] = { GL_COLOR_ATTACHMENT0,
                               GL_COLOR_ATTACHMENT1,
@@ -311,9 +311,11 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);  
+    glDepthFunc(GL_LEQUAL);
 
-    glClearColor(0,0,0,0);
+    // Clear all color channels to 1, so when cast as int, an unwritten pixel
+    // is encoded as -1.
+    glClearColor(1,1,1,1);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
@@ -362,60 +364,79 @@ HdxIntersector::Query(HdxIntersector::Params const& params,
             glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
         }
 
+        // XXX: Make HdxIntersector a task with multiple passes, instead of the
+        // multi-task usage below.
         HdTaskSharedPtrVector tasks;
-        //
-        // For point picking, the caller is expected to have set the "points"
-        // repr on the collection, and thus we won't get occlusion. In this
-        // case, we render the hull of the pickables and unpickables to account
-        // for occlusion, and then do the ID render pass.
-        // 
-        // In all other cases, if we have unpickable prims, we swap the include
+
+        // The picking operation is composed of one or more ceonceptual passes 
+        // as follows:
+        // (i) [optional] depth-only pass for "unpickable" prims: This ensures 
+        // that occlusion is honored during picking. We swap the include
         // and exclude paths of the input collection and render the resulting
         // prims into the depth buffer.
-        const bool pickPoints = (params.pickMode == HdxIntersector::PickPoints);
-        const bool hasUnpickables = (!pickablesCol.GetExcludePaths().empty());
-
-        if (pickPoints) {
-            HdRprimCollection occluderCol = pickablesCol;
-            // While we'd prefer not to override/use repr's configured by Hydra
-            // (in this case, the HdRenderIndex), we make an exception here.
-            // 'hull' is used because point picking on meshes works only when
-            // unrefined.
-            occluderCol.SetReprName(HdTokens->hull);
-            if (!occluderCol.GetExcludePaths().empty()) {
-                // add the "unpickables" to the prims rendered to the depth
-                // buffer
-                SdfPathVector netIncludePaths = occluderCol.GetRootPaths();
-                SdfPathVector const& excludePaths = 
-                    occluderCol.GetExcludePaths();
-                netIncludePaths.insert(netIncludePaths.end(),
-                                       excludePaths.begin(),
-                                       excludePaths.end());
-                occluderCol.SetRootPaths(netIncludePaths);
-            }
-
-            _occluderRenderPass->SetRprimCollection(occluderCol);
-            
-            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                    _occluderRenderPass,
-                    _occluderRenderPassState,
-                    params.renderTags));
-
-        } else if (hasUnpickables) {
-            HdRprimCollection occluderCol =
-                pickablesCol.CreateInverseCollection();
-            _occluderRenderPass->SetRprimCollection(occluderCol);
-
-            tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
-                    _occluderRenderPass,
-                    _occluderRenderPassState,
-                    params.renderTags));
-        }
-        
-        // 
-        // Pickable prims (id render)
+        // We currently skip this pass when "picking through" prims.
+        // XXX: This shouldn't be tied to pick through; it should be a separate
+        // knob.
         //
-        // XXX: make intersector a Task
+        // (ii) [optional] depth-only hull pass for "pickable" prims: This is
+        // relevant only when picking points, when pickThrough isn't set.
+        // To ensure hidden points aren't picked, we render the hull of the 
+        // pickable prims to the depth buffer.
+        //
+        // (iii) [mandatory] id render for "pickable" prims: This writes out the
+        // various id's for prims that pass the depth test.
+
+        if (!params.pickThrough) {
+            const bool pickPoints =
+                (params.pickTarget == HdxIntersector::PickPoints);
+            const bool hasUnpickables =
+                (!pickablesCol.GetExcludePaths().empty());
+
+            if (pickPoints) {
+                // Passes (i) and (ii) are combined into a single occlusion pass
+                HdRprimCollection occluderCol = pickablesCol;
+
+                // While we'd prefer not to override/use repr's configured by Hydra
+                // (in HdRenderIndex::_ConfigureReprs), we make an exception here.
+                // Point picking support is limited to unrefined meshes currently,
+                // and so we can use 'hull' to do the depth-only pass w/ both
+                // pickables and unpickables.
+                occluderCol.SetReprName(HdTokens->hull);
+                if (!occluderCol.GetExcludePaths().empty()) {
+                    // add the "unpickables" to the prims rendered to the depth
+                    // buffer
+                    SdfPathVector netIncludePaths = occluderCol.GetRootPaths();
+                    SdfPathVector const& excludePaths = 
+                        occluderCol.GetExcludePaths();
+                    netIncludePaths.insert(netIncludePaths.end(),
+                                           excludePaths.begin(),
+                                           excludePaths.end());
+                    occluderCol.SetRootPaths(netIncludePaths);
+                }
+
+                _occluderRenderPass->SetRprimCollection(occluderCol);
+
+                tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                        _occluderRenderPass,
+                        _occluderRenderPassState,
+                        params.renderTags));
+            }
+            else if (hasUnpickables) {
+                // Pass (i) from above
+                HdRprimCollection occluderCol =
+                    pickablesCol.CreateInverseCollection();
+                _occluderRenderPass->SetRprimCollection(occluderCol);
+
+                tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
+                        _occluderRenderPass,
+                        _occluderRenderPassState,
+                        params.renderTags));
+            }
+        }
+
+        // 
+        // Pass (iii) from above
+        //
         _pickableRenderPass->SetRprimCollection(pickablesCol);
         tasks.push_back(boost::make_shared<HdxIntersector_DrawTask>(
                 _pickableRenderPass,
@@ -622,6 +643,17 @@ HdxIntersector::Result::_GetHash(int index) const
 }
 
 bool
+HdxIntersector::Result::_IsPrimIdValid(int index) const
+{
+    // The ID buffer is a pointer to unsigned char; since ID's are 4 byte ints,
+    // stride by 4 while indexing into it.
+    int primId = _primIds.get()[index * 4];
+    // All color channels are cleared to 1, so when cast as int, an unwritten
+    // pixel is encoded as -1. See HdxIntersector::HdxIntersectorQuery(..)
+    return (primId != -1);
+}
+
+bool
 HdxIntersector::Result::ResolveNearest(HdxIntersector::Hit* hit) const
 {
     TRACE_FUNCTION();
@@ -630,16 +662,21 @@ HdxIntersector::Result::ResolveNearest(HdxIntersector::Hit* hit) const
         return false;
     }
 
+    int width = _viewport[2];
+    int height = _viewport[3];
+    float const* depths = _depths.get();
     int xMin = 0;
     int yMin = 0;
     double zMin = 1.0;
     int zMinIndex = -1;
-    float const* depths = _depths.get();
 
-    // Find the smallest value (nearest pixel) in the z buffer
-    for (int y=0, i=0; y < _viewport[2]; y++) {
-        for (int x=0; x < _viewport[3]; x++, i++) {
-            if (depths[i] < zMin) {
+    // Find the smallest value (nearest pixel) in the z buffer that is a valid
+    // prim. The last part is important since the depth buffer may be
+    // populated with occluders (which aren't picked, and thus won't update any
+    // of the ID buffers)
+    for (int y=0, i=0; y < height; y++) {
+        for (int x=0; x < width; x++, i++) {
+            if (_IsPrimIdValid(i) && depths[i] < zMin) {
                 xMin = x;
                 yMin = y;
                 zMin = depths[i];
@@ -662,11 +699,15 @@ HdxIntersector::Result::ResolveAll(HdxIntersector::HitVector* allHits) const
 
     if (!IsValid()) { return false; }
 
+    int width = _viewport[2];
+    int height = _viewport[3];
     float const* depths = _depths.get();
 
     int hitCount = 0;
-    for (int y=0, i=0; y < _viewport[2]; y++) {
-        for (int x=0; x < _viewport[3]; x++, i++) {
+    for (int y=0, i=0; y < height; y++) {
+        for (int x=0; x < width; x++, i++) {
+            if (!_IsPrimIdValid(i)) continue;
+
             Hit hit;
             if (_ResolveHit(i, x, y, depths[i], &hit)) {
                 hitCount++;
@@ -695,6 +736,8 @@ HdxIntersector::Result::ResolveUnique(HdxIntersector::HitSet* hitSet) const
         HD_TRACE_SCOPE("unique indices");
         size_t previousHash = 0;
         for (int i = 0; i < width * height; ++i) {
+            if (!_IsPrimIdValid(i)) continue;
+           
             size_t hash = _GetHash(i);
             // As an optimization, keep track of the previous hash value and
             // reject indices that match it without performing a map lookup.
