@@ -733,17 +733,36 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
 {
     value->resize(indices.size());
     bool success = true;
+
+    std::vector<size_t> invalidIndexPositions;
     for (size_t i=0; i < indices.size(); i++) {
         int index = indices[i];
         if (index >= 0 && index < authored.size()) {
             (*value)[i] = authored[index];
         } else {
-            TF_WARN("Index %d at element %zu is out of range [0,%ld) for "
-                "primvar <%s>.", index, i, authored.size(),
-                _attr.GetPath().GetText());
+            invalidIndexPositions.push_back(i);
             success = false;
         }
     }
+
+    if (!invalidIndexPositions.empty()) {
+        std::vector<std::string> invalidPositionsStrVec;
+        // Print a maximum of 5 invalid index positions.
+        size_t numElementsToPrint = std::min(invalidIndexPositions.size(), 
+                                             size_t(5));
+        invalidPositionsStrVec.reserve(numElementsToPrint);
+        for (size_t i = 0; i < numElementsToPrint ; ++i) {
+            invalidPositionsStrVec.push_back(
+                    TfStringify(invalidIndexPositions[i]));
+        }
+
+        TF_WARN("Found %ld invalid indices at positions [%s%s] that are out of "
+            "range [0,%ld) for primvar <%s>.", invalidIndexPositions.size(), 
+            TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
+            invalidIndexPositions.size() > 5 ? ", ..." : "",
+            authored.size(), _attr.GetPath().GetText());
+    }
+
     return success;
 }
 

@@ -161,6 +161,14 @@ class TestUsdGeomPrimvarAPI(unittest.TestCase):
             self.assertTrue(Gf.IsClose(a, b, 1e-5))
         self.assertNotEqual(u1.ComputeFlattened(), u1.Get())
 
+        indicesWithInvalid = Vt.IntArray([0, 3, 2, 2, -1, 0])
+        self.assertTrue(u1.SetIndices(indicesWithInvalid))
+        self.assertTrue(u1.ComputeFlattened() is None)
+
+        indicesWithInvalid = Vt.IntArray([4, 5, 6, 7, -1, 8])
+        self.assertTrue(u1.SetIndices(indicesWithInvalid))
+        self.assertTrue(u1.ComputeFlattened() is None)
+        
         self.assertEqual(u1.GetUnauthoredValuesIndex(), -1)
         self.assertTrue(u1.SetUnauthoredValuesIndex(2))
         self.assertEqual(u1.GetUnauthoredValuesIndex(), 2)
