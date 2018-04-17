@@ -27,7 +27,6 @@
 #include "pxr/base/work/dispatcher.h"
 
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/poolAllocator.h"
 #include "pxr/base/tf/stopwatch.h"
 
 #include <atomic>
@@ -97,15 +96,6 @@ public:
         return --_waitCount == 0;
     }
 
-    // Custom new and delete operators for pool management.
-    static void *operator new(size_t) {
-        return _allocator.Alloc();
-    }
-    static void  operator delete (void *ptr) {
-        return _allocator.Free(ptr);
-    }
-
-
 private:
 
     // The index of this node in the graph.
@@ -122,16 +112,7 @@ private:
 
     // The number of inputs that are left to run before this node can run.
     mutable std::atomic<size_t> _waitCount;
-
-    // Pool allocator so that this test program runs fast.
-    static TfPoolAllocator _allocator;
 };
-
-// Create our pool allocator for Node.  We need this simply for speed.
-#define SIZE_PER_OBJECT   sizeof(Node)
-#define OBJECTS_PER_CHUNK 100000
-TfPoolAllocator Node::_allocator(
-                       SIZE_PER_OBJECT, SIZE_PER_OBJECT*OBJECTS_PER_CHUNK);
 
 
 class Graph 
