@@ -156,11 +156,6 @@ pxr_install_test_dir(
     DEST testTraceRecursion7
 )
 
-pxr_install_test_dir(
-    SRC testenv/testTraceSerialization.testenv
-    DEST testTraceSerialization
-)
-
 pxr_register_test(testTraceCategory
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCategory"
 )
@@ -240,7 +235,6 @@ pxr_register_test(testTraceReporter
 
 pxr_register_test(testTraceSerialization
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceSerialization"
-    DIFF_COMPARE trace.json
 )
 
 pxr_register_test(testTraceCounters
