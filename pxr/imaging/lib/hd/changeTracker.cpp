@@ -127,8 +127,18 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     it->second = oldBits | bits;
     ++_changeCount;
 
-    if (bits & DirtyVisibility) 
+    if (bits & DirtyVisibility) {
         ++_visChangeCount;
+    }
+
+    if (bits & DirtyRenderTag) {
+        // Need to treat this like a scene edit
+        //  - DirtyLists will filter out prims that don't match render tag,
+        //  - Batches filter out prim that don't match render tag,
+        // So both need to be rebuilt.
+        // So increment the render index version.
+        ++_indexVersion;
+    }
 }
 
 void

@@ -79,7 +79,7 @@ public:
         DirtyInstancer              = 1 << 16,
         DirtyInstanceIndex          = 1 << 17,
         DirtyRepr                   = 1 << 18,
-        DirtyPurpose                = 1 << 19,
+        DirtyRenderTag              = 1 << 19,
         DirtyComputationPrimvarDesc = 1 << 20,
         AllSceneDirtyBits           = ((1<<21) - 1),
 
