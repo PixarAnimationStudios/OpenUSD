@@ -85,10 +85,10 @@ HdEmbreeInstancer::_SyncPrimvars()
             // If this instancer has dirty primvars, get the list of
             // primvar names and then cache each one.
 
-            TfTokenVector primVarNames;
-            primVarNames = GetDelegate()->GetPrimvarInstanceNames(id);
+            TfTokenVector primvarNames;
+            primvarNames = GetDelegate()->GetPrimvarInstanceNames(id);
 
-            TF_FOR_ALL(nameIt, primVarNames) {
+            TF_FOR_ALL(nameIt, primvarNames) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt)) {
                     VtValue value = GetDelegate()->Get(id, *nameIt);
                     if (!value.IsEmpty()) {
