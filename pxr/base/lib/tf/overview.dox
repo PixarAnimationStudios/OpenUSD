@@ -85,7 +85,7 @@ The high-level grouping of C++ classes and functions is as follows:
    
 <ul>
 	<li> \link group_tf_Memory \b Memory \b Management - \endlink 
-		TfRefPtr,  TfWeakPtr,  TfRefBase,  TfWeakBase,  TfFixedSizeAllocator, TfPoolAllocator,  TfMallocTag
+		TfRefPtr,  TfWeakPtr,  TfRefBase,  TfWeakBase,  TfMallocTag
 	<li> \link group_tf_RuntimeTyping \b Runtime \b Typing - \endlink 
 		TfType,  TfEnum,  TfTypeInfoMap
 	<li> \link group_tf_Path \b Path \b Utilities - \endlink

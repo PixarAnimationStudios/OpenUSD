@@ -56,7 +56,6 @@ pxr_library(tf
         pathUtils
         patternMatcher
         pointerAndBits
-        poolAllocator
         pyLock
         refBase
         refCount
