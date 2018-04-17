@@ -114,7 +114,7 @@ public:
 private:
     void _GenerateDrawingCoord();
     void _GenerateConstantPrimVar();
-    void _GenerateInstancePrimVar();
+    void _GenerateInstancePrimvar();
     void _GenerateElementPrimVar();
     void _GenerateVertexPrimVar();
     void _GenerateShaderParameters();

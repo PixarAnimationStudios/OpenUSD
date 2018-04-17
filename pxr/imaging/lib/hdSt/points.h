@@ -79,7 +79,7 @@ private:
     HdReprSharedPtr _smoothHullRepr;
 
     enum DrawingCoord {
-        InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
+        InstancePrimvar = HdDrawingCoord::CustomSlotsBegin
     };
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,

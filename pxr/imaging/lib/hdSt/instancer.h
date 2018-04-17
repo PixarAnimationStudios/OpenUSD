@@ -75,7 +75,7 @@ public:
 
     /// Populates instance primvars and returns the buffer range.
     HDST_API
-    HdBufferArrayRangeSharedPtr GetInstancePrimVars();
+    HdBufferArrayRangeSharedPtr GetInstancePrimvars();
 
     /// Populates the instance index indirection buffer for \p prototypeId and
     /// returns the buffer range.
@@ -95,7 +95,7 @@ protected:
 
 private:
     std::mutex _instanceLock;
-    int _numInstancePrimVars;
+    int _numInstancePrimvars;
 
     HdBufferArrayRangeSharedPtr _instancePrimVarRange;
     TfHashMap<SdfPath,

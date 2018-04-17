@@ -37,7 +37,7 @@ HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
                              SdfPath const &id,
                              SdfPath const &parentId)
     : HdInstancer(delegate, id, parentId)
-    , _numInstancePrimVars(0)
+    , _numInstancePrimvars(0)
 {
 }
 
@@ -53,7 +53,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
 
     /* INSTANCE PRIMVARS */
     // Populate all instance primvars by backtracing hierarachy.
-    // GetInstancePrimVars() will update instance primvars if necessary.
+    // GetInstancePrimvars() will update instance primvars if necessary.
     // Update INSTANCE PRIMVARS first so that GetInstanceIndices() can
     // detect inconsistency between indices and the size of primvar arrays.
     int level = 0;
@@ -64,7 +64,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
                                               instancePrimVarSlot + level);
         sharedData->barContainer.Set(
             drawingCoord->GetInstancePrimvarIndex(level),
-            currentInstancer->GetInstancePrimVars());
+            currentInstancer->GetInstancePrimvars());
 
         // next
         currentInstancer = static_cast<HdStInstancer*>(
@@ -83,7 +83,7 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
 }
 
 HdBufferArrayRangeSharedPtr
-HdStInstancer::GetInstancePrimVars()
+HdStInstancer::GetInstancePrimvars()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -116,11 +116,11 @@ HdStInstancer::GetInstancePrimVars()
             HdBufferSourceVector sources;
             sources.reserve(primVarNames.size());
 
-            // Always reset numInstancePrimVars, for the case the number of
+            // Always reset numInstancePrimvars, for the case the number of
             // instances are varying.
             // XXX: This might overlook the error that only a subset of
             // instance primvars are varying.
-            _numInstancePrimVars = 0;
+            _numInstancePrimvars = 0;
 
             TF_FOR_ALL(nameIt, primVarNames) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, 
@@ -149,13 +149,13 @@ HdStInstancer::GetInstancePrimVars()
 
                         // Latch onto the first numElements we see.
                         int numElements = source->GetNumElements();
-                        if (_numInstancePrimVars == 0) {
-                            _numInstancePrimVars = numElements;
+                        if (_numInstancePrimvars == 0) {
+                            _numInstancePrimvars = numElements;
                         }
 
-                        if (numElements != _numInstancePrimVars) {
+                        if (numElements != _numInstancePrimvars) {
                             // This Rprim is now potentially in a bad state.
-                            // to prevent crashes, trim down _numInstancePrimVars.
+                            // to prevent crashes, trim down _numInstancePrimvars.
                             //
                             // Also note that this will not catch time-varying update
                             // errors.
@@ -163,10 +163,10 @@ HdStInstancer::GetInstancePrimVars()
                                     "(%d vs %d) for <%s>.",
                                     nameIt->GetText(),
                                     source->GetNumElements(),
-                                    _numInstancePrimVars,
+                                    _numInstancePrimvars,
                                     instancerId.GetText());
-                            _numInstancePrimVars
-                                = std::min(numElements, _numInstancePrimVars);
+                            _numInstancePrimvars
+                                = std::min(numElements, _numInstancePrimvars);
                         }
 
                         sources.push_back(source);
@@ -216,10 +216,10 @@ HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
     // instance indices should not exceed the size of instance primvars.
     for (auto it = instanceIndices.cbegin();
          it != instanceIndices.cend(); ++it) {
-        if (*it >= _numInstancePrimVars) {
+        if (*it >= _numInstancePrimvars) {
             TF_WARN("Instance index exceeds the number of instance primvars"
                     " (%d >= %d) for <%s>",
-                    *it, _numInstancePrimVars, instancerId.GetText());
+                    *it, _numInstancePrimvars, instancerId.GetText());
             instanceIndices.clear();
             // insert 0-th index as placeholder (0th should always exist, since
             // we don't populate instance primvars with numElements == 0).

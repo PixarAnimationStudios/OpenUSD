@@ -623,7 +623,7 @@ HdSt_CodeGen::Compile()
 
     // generate primvars
     _GenerateConstantPrimVar();
-    _GenerateInstancePrimVar();
+    _GenerateInstancePrimvar();
     _GenerateElementPrimVar();
     _GenerateVertexPrimVar();
 
@@ -1579,7 +1579,7 @@ HdSt_CodeGen::_GenerateConstantPrimVar()
 }
 
 void
-HdSt_CodeGen::_GenerateInstancePrimVar()
+HdSt_CodeGen::_GenerateInstancePrimvar()
 {
     /*
       // --------- instance data declaration ----------
