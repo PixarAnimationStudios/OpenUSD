@@ -365,6 +365,13 @@ private:
 {% endif %}
 };
 
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose({{ MAT }} const &m1, {{ MAT }} const &m2, double tolerance);
+
 /// Output a {{ MAT }}
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, {{ MAT }} const &);

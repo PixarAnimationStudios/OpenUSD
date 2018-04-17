@@ -715,6 +715,13 @@ private:
     friend class GfMatrix4d;
 };
 
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix4f const &m1, GfMatrix4f const &m2, double tolerance);
+
 /// Output a GfMatrix4f
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfMatrix4f const &);

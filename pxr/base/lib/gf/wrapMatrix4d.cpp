@@ -44,6 +44,7 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 #include <boost/python/errors.hpp>
 #include <boost/python/extract.hpp>
@@ -291,6 +292,9 @@ void wrapMatrix4d()
     typedef GfMatrix4d This;
 
     static const tuple _dimension = make_tuple(4, 4);
+
+    def("IsClose", (bool (*)(const GfMatrix4d &m1, const GfMatrix4d &m2, double))
+        GfIsClose);
     
     class_<This> cls( "Matrix4d", no_init);
     cls

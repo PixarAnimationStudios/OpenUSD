@@ -620,6 +620,11 @@ class TestGfMatrix(unittest.TestCase):
                     maxEltErr = max(maxEltErr, abs(r[i][j] - m[i][j]))
             self.assertTrue(Gf.IsClose(maxEltErr, 0.0, 1e-5))
 
+            # IsClose
+            self.assertFalse(Gf.IsClose(Matrix(1), Matrix(1.0001), 1e-5))
+            self.assertTrue(Gf.IsClose(Matrix(1), Matrix(1.000001), 1e-5))
+
+
     def test_Matrix4Factoring(self):
         Matrices = [(Gf.Matrix4d, Gf.Vec3d),
                     (Gf.Matrix4f, Gf.Vec3f)]

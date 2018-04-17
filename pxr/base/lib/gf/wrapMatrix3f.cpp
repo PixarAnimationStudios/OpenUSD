@@ -40,6 +40,7 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 #include <boost/python/errors.hpp>
 #include <boost/python/extract.hpp>
@@ -267,6 +268,9 @@ void wrapMatrix3f()
     typedef GfMatrix3f This;
 
     static const tuple _dimension = make_tuple(3, 3);
+
+    def("IsClose", (bool (*)(const GfMatrix3f &m1, const GfMatrix3f &m2, double))
+        GfIsClose);
     
     class_<This> cls( "Matrix3f", no_init);
     cls
