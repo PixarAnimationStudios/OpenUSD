@@ -271,21 +271,53 @@ public:
         }
     }
 
-    /// Record a counter value  for a name \a key and delta \a value  if
-    /// collection of events is enabled.
+    /// Record a counter \a delta for a name \a key if collection of events is
+    /// enabled.
+    void RecordCounterDelta(const TraceKey &key, 
+                            double delta, 
+                            TraceCategoryId cat = TraceCategory::Default) {
+        // Only record counter values if the collector is enabled.
+        if (ARCH_UNLIKELY(IsEnabled())) {
+            _PerThreadData *threadData = _GetThreadData();
+            threadData->EmplaceEvent(
+                TraceEvent::CounterDelta, key, delta, cat);
+        }
+    }
+
+    /// Record a counter \a delta for a name \a key  if collection of events is 
+    /// enabled.
+    void RecordCounterDelta(const Key &key, 
+                            double delta, 
+                            TraceCategoryId cat = TraceCategory::Default) {
+
+        if (ARCH_UNLIKELY(IsEnabled())) {
+            _PerThreadData *threadData = _GetThreadData();
+            threadData->CounterDelta(key, delta, cat);
+        }
+    }
+
+    /// Record a counter \a value for a name \a key if collection of events is
+    /// enabled.
     void RecordCounterValue(const TraceKey &key, 
                             double value, 
                             TraceCategoryId cat = TraceCategory::Default) {
         // Only record counter values if the collector is enabled.
-        //
-        // XXX: Add support for turning specific counters on / off.
-        //      We could do this by creating a CounterKey, which is a
-        //      TraceKeyToken, but also has a stable index!
-        //
-        if (IsEnabled() && value > 0.0) {
+        if (ARCH_UNLIKELY(IsEnabled())) {
             _PerThreadData *threadData = _GetThreadData();
             threadData->EmplaceEvent(
-                TraceEvent::Counter, key, value, cat);
+                TraceEvent::CounterValue, key, value, cat);
+        }
+    }
+
+    /// Record a counter \a value for a name \a key and delta \a value  if
+    /// collection of events is enabled.
+    void RecordCounterValue(const Key &key, 
+                            double value, 
+                            TraceCategoryId cat = TraceCategory::Default) {
+
+        if (ARCH_UNLIKELY(IsEnabled())) {
+            _PerThreadData *threadData = _GetThreadData();
+            threadData->CounterValue(key, value, cat);
         }
     }
 
@@ -412,6 +444,12 @@ private:
                 AtomicRef lock(_writing);
                 _EndScope(key, cat);
             }
+
+            TRACE_API void CounterDelta(
+                const Key&, double value, TraceCategoryId cat);
+
+            TRACE_API void CounterValue(
+                const Key&, double value, TraceCategoryId cat);
 
             template <typename T>
             void StoreData(

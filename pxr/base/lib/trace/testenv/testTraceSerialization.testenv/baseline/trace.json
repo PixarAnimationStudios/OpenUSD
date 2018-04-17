@@ -5,7 +5,7 @@
                         "category": 0,
                         "key": "Test Counter",
                         "ts": 3000.0,
-                        "type": "Counter",
+                        "type": "CounterDelta",
                         "value": 1.0
                     }, {
                         "category": 0,
@@ -41,8 +41,14 @@
                         "category": 0,
                         "key": "Test Counter",
                         "ts": 12000.0,
-                        "type": "Counter",
+                        "type": "CounterDelta",
                         "value": 1.0
+                    }, {
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 13000.0,
+                        "type": "CounterValue",
+                        "value": -1.0
                     }],
                 "thread": "MainThread"
             }, {
@@ -50,7 +56,7 @@
                         "category": 0,
                         "key": "Test Counter",
                         "ts": 4000.0,
-                        "type": "Counter",
+                        "type": "CounterDelta",
                         "value": 1.0
                     }, {
                         "category": 0,
@@ -86,8 +92,14 @@
                         "category": 0,
                         "key": "Test Counter",
                         "ts": 13000.0,
-                        "type": "Counter",
+                        "type": "CounterDelta",
                         "value": 1.0
+                    }, {
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 14000.0,
+                        "type": "CounterValue",
+                        "value": -1.0
                     }],
                 "thread": "Thread 1"
             }]
@@ -126,7 +138,7 @@
             "ts": 0.0
         }, {
             "cat": "Default",
-            "dur": 12000.0,
+            "dur": 13000.0,
             "libTraceCatId": 0,
             "name": "OuterScope",
             "ph": "X",
@@ -183,7 +195,7 @@
             "ts": 0.0
         }, {
             "cat": "Default",
-            "dur": 12000.0,
+            "dur": 13000.0,
             "libTraceCatId": 0,
             "name": "OuterScope",
             "ph": "X",
@@ -238,7 +250,7 @@
             "ts": 12000.0
         }, {
             "args": {
-                "value": 4.0
+                "value": -1.0
             },
             "cat": "",
             "name": "Test Counter",
@@ -246,5 +258,15 @@
             "pid": 0,
             "tid": 0,
             "ts": 13000.0
+        }, {
+            "args": {
+                "value": -1.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 14000.0
         }]
 }

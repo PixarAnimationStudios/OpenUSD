@@ -191,7 +191,8 @@ TraceReporter::OnEvent(
         case TraceEvent::EventType::End:
             _OnEndEvent(threadIndex, key, e);
             break;
-        case TraceEvent::EventType::Counter:
+        case TraceEvent::EventType::CounterDelta:
+        case TraceEvent::EventType::CounterValue:
             _OnCounterEvent(threadIndex, key, e);
             break;
         case TraceEvent::EventType::Timespan:
@@ -261,8 +262,8 @@ TraceReporter::_OnEndEvent(
 }
 
 void
-TraceReporter::_OnCounterEvent(
-    const TraceThreadId& threadIndex, const TfToken& key, const TraceEvent& e) 
+TraceReporter::_OnCounterEvent( 
+    const TraceThreadId& threadIndex, const TfToken& key, const TraceEvent& e)
 {
     // For counter events, add the counter key to the map of counters
     // and create a new counter index, if necessary. Also, increment
@@ -271,6 +272,14 @@ TraceReporter::_OnCounterEvent(
     // counter values at the node. We will propagate these values to
     // the parents in a post-processing step in
     // _ComputeInclusiveCounterValues.
+
+    bool isDelta = false;
+    switch (e.GetType()) {
+        case TraceEvent::EventType::CounterDelta: isDelta = true; break;
+        case TraceEvent::EventType::CounterValue: break;
+        default: return;
+    }
+
     _ThreadStackMap::iterator it = _threadStacks.find(threadIndex);
     if (it != _threadStacks.end()) {
         _PendingNodeStack& stack = it->second;
@@ -279,7 +288,12 @@ TraceReporter::_OnCounterEvent(
         CounterMap::iterator it =
             _counters.insert(
                 std::make_pair(key, 0.0)).first;
-        it->second += e.GetCounterValue();
+
+        if (isDelta) {
+            it->second += e.GetCounterValue();
+        } else {
+            it->second = e.GetCounterValue();
+        }
 
         // Insert the counter index into the map, if one does not
         // already exist. If no counter index existed in the map, 
@@ -290,9 +304,14 @@ TraceReporter::_OnCounterEvent(
         if (res.second) {
             ++_counterIndex;
         }
-        // Set the counter value on the current node.
-        stack.back().counters.push_back(
-            {e.GetTimeStamp(), res.first->second, e.GetCounterValue()});
+
+        // It only makes sense to store delta values in the specific nodes at 
+        // the moment. This might need to be revisted in the future.
+        if (isDelta) {
+            // Set the counter value on the current node.
+            stack.back().counters.push_back(
+                {e.GetTimeStamp(), res.first->second, e.GetCounterValue()});
+        }
     }
 }
 
@@ -647,6 +666,13 @@ TraceReporter::GetSingleEventRoot()
 {
     return _singleEventGraph->GetRoot();
 }
+
+TraceSingleEventGraphRefPtr
+TraceReporter::GetSingleEventGraph()
+{
+    return _singleEventGraph;
+}
+
 
 const TraceReporter::CounterMap &
 TraceReporter::GetCounters() const

@@ -43,16 +43,17 @@ void
 TraceSingleEventTreeReport::OnEndCollection()
 {
     _threadStacks.clear();
-    // Convert the counter delta values to absolute values;
+    // Convert the counter deltas and values to absolute values;
     TraceSingleEventGraph::CounterMap counterValues;
-    for (const TraceSingleEventGraph::CounterMap::value_type& c 
-        : _counterDeltas) {
+    for (const _CounterMap::value_type& c : _counterDeltas) {
 
         double curValue = 0;
-        for (const TraceSingleEventGraph::CounterValues::value_type& v 
-            : c.second) {
-
-            curValue += v.second;
+        for (const _CounterValues::value_type& v : c.second) {
+            if (v.second.isDelta) {
+                curValue += v.second.value;
+            } else {
+                curValue = v.second.value;
+            }
             counterValues[c.first].insert(std::make_pair(v.first, curValue));
         }
     }
@@ -113,8 +114,11 @@ TraceSingleEventTreeReport::OnEvent(
         case TraceEvent::EventType::End:
             _OnEnd(threadIndex, key, e);
             break;
-        case TraceEvent::EventType::Counter:
-            _OnCounter(threadIndex, key, e);
+        case TraceEvent::EventType::CounterDelta:
+            _OnCounterDelta(threadIndex, key, e);
+            break;
+        case TraceEvent::EventType::CounterValue:
+            _OnCounterValue(threadIndex, key, e);
             break;
         case TraceEvent::EventType::Timespan:
             _OnTimespan(threadIndex, key, e);
@@ -216,12 +220,23 @@ TraceSingleEventTreeReport::_OnTimespan(
     currentChildren.push_back(node);
 }
 
+
 void
-TraceSingleEventTreeReport::_OnCounter(
+TraceSingleEventTreeReport::_OnCounterValue(
     const TraceThreadId&, const TfToken& key, const TraceEvent& e)
 {
     _counterDeltas[key].insert(
-        std::make_pair(e.GetTimeStamp(), e.GetCounterValue()));
+        std::make_pair(e.GetTimeStamp(),
+            _CounterValue{e.GetCounterValue(), false}));
+}
+
+void
+TraceSingleEventTreeReport::_OnCounterDelta(
+    const TraceThreadId&, const TfToken& key, const TraceEvent& e)
+{
+    _counterDeltas[key].insert(
+        std::make_pair(e.GetTimeStamp(),
+            _CounterValue{e.GetCounterValue(), true}));
 }
 
 void

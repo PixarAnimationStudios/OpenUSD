@@ -320,6 +320,26 @@ TraceCollector::_PerThreadData::_EndScope(
     _events.load(std::memory_order_acquire)->EmplaceBack(TraceEvent::End, key, cat);
 }
 
+void
+TraceCollector::_PerThreadData::CounterDelta(
+    const Key& key, double value, TraceCategoryId cat)
+{
+    AtomicRef lock(_writing);
+    EventList* events = _events.load(std::memory_order_acquire);
+    events->EmplaceBack(
+        TraceEvent::CounterDelta, events->CacheKey(key), value, cat);
+}
+
+void
+TraceCollector::_PerThreadData::CounterValue(
+    const Key& key, double value, TraceCategoryId cat)
+{
+    AtomicRef lock(_writing);
+    EventList* events = _events.load(std::memory_order_acquire);
+    events->EmplaceBack(
+        TraceEvent::CounterValue, events->CacheKey(key), value, cat);
+}
+
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 
 void 

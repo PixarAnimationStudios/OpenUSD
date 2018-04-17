@@ -55,7 +55,8 @@ public:
     enum BeginTag { Begin };
     enum EndTag { End };
     enum TimespanTag { Timespan };
-    enum CounterTag { Counter };
+    enum CounterDeltaTag { CounterDelta };
+    enum CounterValueTag { CounterValue };
     enum DataTag { Data };
     /// @}
 
@@ -65,7 +66,8 @@ public:
         Begin, ///< The event represents the beginning timestamp of a scope.
         End, ///< The event represents the ending timestamp of a scope.
         Timespan, ///< The event represents begin and end timestamp of a scope.
-        Counter, ///< The event represents a change in a counter.
+        CounterDelta, ///< The event represents a change in a counter.
+        CounterValue, ///< The event represents the value of a counter.
         ScopeData,
         ///< The event stores data that is associated with its enclosing scope.
     };
@@ -170,14 +172,26 @@ public:
         new (&_payload) TimeStamp(startTime);
     }
 
-    /// Constructor for Counter events.
-    TraceEvent( CounterTag,
+    /// Constructor for Counter delta events.
+    TraceEvent( CounterDeltaTag,
                 const Key& key, 
                 double value, 
                 TraceCategoryId cat) :
         _key(key),
         _category(cat),
-        _type(_InternalEventType::Counter),
+        _type(_InternalEventType::CounterDelta),
+        _time(ArchGetTickTime()) {
+        new (&_payload) double(value);
+    }
+
+    /// Constructor for Counter value events.
+    TraceEvent( CounterValueTag,
+                const Key& key, 
+                double value, 
+                TraceCategoryId cat) :
+        _key(key),
+        _category(cat),
+        _type(_InternalEventType::CounterValue),
         _time(ArchGetTickTime()) {
         new (&_payload) double(value);
     }
@@ -250,7 +264,8 @@ private:
         Begin,
         End,
         Timespan,
-        Counter,
+        CounterDelta,
+        CounterValue,
         ScopeData,
         ScopeDataLarge,
     };

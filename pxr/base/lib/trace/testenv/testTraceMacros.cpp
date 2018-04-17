@@ -37,7 +37,9 @@ TestMacros() {
         TRACE_SCOPE("Test Scope");
         {
             TRACE_FUNCTION_SCOPE("Inner Scope");
+            TRACE_COUNTER_DELTA("Counter A", 1);
         }
+        TRACE_COUNTER_VALUE("Counter B", 2);
     }
 }
 
@@ -62,6 +64,16 @@ int main(int argc, char* argv[]) {
     TraceEventNodeRefPtr innerScopeNode = 
         scopeNode->GetChild("TestMacros (Inner Scope)");
     TF_AXIOM(innerScopeNode);
+
+    const TraceReporter::CounterMap& counters = reporter->GetCounters();
+    TraceReporter::CounterMap::const_iterator it =
+        counters.find(TfToken("Counter A"));
+    TF_AXIOM(it != counters.end());
+    TF_AXIOM(it->second == 1.0);
+
+    it = counters.find(TfToken("Counter B"));
+    TF_AXIOM(it != counters.end());
+    TF_AXIOM(it->second == 2.0);
 
     return 0;
 }

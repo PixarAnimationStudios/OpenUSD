@@ -127,6 +127,9 @@ public:
     /// Returns the root node of the timeline call graph.
     TRACE_API TraceSingleEventNodeRefPtr GetSingleEventRoot();
 
+    /// Returns the timeline event graph
+    TRACE_API TraceSingleEventGraphRefPtr GetSingleEventGraph();
+
     /// \name Counters
     /// @{
 

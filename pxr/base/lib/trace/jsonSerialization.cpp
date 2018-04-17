@@ -96,7 +96,8 @@ _EventTypeToString(TraceEvent::EventType t) {
     switch(t) {
         case TraceEvent::EventType::Begin: return "Begin";
         case TraceEvent::EventType::End: return "End";
-        case TraceEvent::EventType::Counter: return "Counter";
+        case TraceEvent::EventType::CounterDelta: return "CounterDelta";
+        case TraceEvent::EventType::CounterValue: return "CounterValue";
         case TraceEvent::EventType::Timespan: return "Timespan";
         case TraceEvent::EventType::ScopeData: return "Data";
         case TraceEvent::EventType::Unknown: return "Unknown";
@@ -110,8 +111,10 @@ _EventTypeFromString(const std::string& s) {
         return TraceEvent::EventType::Begin;
     } else if (s == "End") {
         return TraceEvent::EventType::End;
-    } else if (s == "Counter") {
-        return TraceEvent::EventType::Counter;
+    } else if (s == "CounterDelta") {
+        return TraceEvent::EventType::CounterDelta;
+    } else if (s == "CounterValue") {
+        return TraceEvent::EventType::CounterValue;
     } else if (s == "Timespan") {
         return TraceEvent::EventType::Timespan;
     } else if (s == "Data") {
@@ -146,7 +149,8 @@ _TraceEventToJSON(const TfToken& key, const TraceEvent& e)
         case TraceEvent::EventType::End:
             event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
             break;
-        case TraceEvent::EventType::Counter:
+        case TraceEvent::EventType::CounterDelta:
+        case TraceEvent::EventType::CounterValue:
             event["ts"] = JsValue(_TicksToMicroSeconds(e.GetTimeStamp()));
             event["value"] = JsValue(e.GetCounterValue());
             break;
@@ -225,12 +229,26 @@ _TraceEventFromJSON(
                     }
                 }
                 break;
-            case TraceEvent::EventType::Counter:
+            case TraceEvent::EventType::CounterDelta:
                 {
                     boost::optional<double> value = 
                         _JsGetValue<double>(js, "value");
                     if (ts && value) {
-                        TraceEvent event(TraceEvent::Counter,
+                        TraceEvent event(TraceEvent::CounterDelta,
+                            list.CacheKey(*keyStr), 
+                            *value,
+                            *category);
+                        event.SetTimeStamp(*ts);
+                        unorderedEvents.emplace_back(event);
+                    }
+                }
+                break;
+            case TraceEvent::EventType::CounterValue:
+                {
+                    boost::optional<double> value = 
+                        _JsGetValue<double>(js, "value");
+                    if (ts && value) {
+                        TraceEvent event(TraceEvent::CounterValue,
                             list.CacheKey(*keyStr), 
                             *value,
                             *category);
@@ -332,7 +350,8 @@ public:
         // chrome format.
         switch (event.GetType()) {
             case TraceEvent::EventType::ScopeData:
-            case TraceEvent::EventType::Counter:
+            case TraceEvent::EventType::CounterDelta:
+            case TraceEvent::EventType::CounterValue:
                 _events.emplace_back(_TraceEventToJSON(key, event));
                 break;
             case TraceEvent::EventType::Begin:

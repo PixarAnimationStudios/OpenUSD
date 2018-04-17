@@ -33,7 +33,6 @@ pxr_library(trace
         singleEventTreeReport
         staticKeyData
         threads
-        trace
 
     PRIVATE_CLASSES
         jsonSerialization
@@ -42,6 +41,7 @@ pxr_library(trace
         api.h
         concurrentList.h
         stringHash.h
+        trace.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -105,6 +105,13 @@ pxr_build_test(testTraceSerialization
         trace
     CPPFILES
         testenv/testTraceSerialization.cpp
+)
+
+pxr_build_test(testTraceCounters
+    LIBRARIES
+        trace
+    CPPFILES
+        testenv/testTraceCounters.cpp
 )
 
 pxr_test_scripts(
@@ -234,4 +241,8 @@ pxr_register_test(testTraceReporter
 pxr_register_test(testTraceSerialization
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceSerialization"
     DIFF_COMPARE trace.json
+)
+
+pxr_register_test(testTraceCounters
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCounters"
 )

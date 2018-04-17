@@ -44,7 +44,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
     static constexpr TraceStaticKeyData counterKey("Test Counter");
     {
         TraceEvent counterEvent(
-            TraceEvent::Counter,
+            TraceEvent::CounterDelta,
             counterKey,
             1,
             TraceCategory::Default
@@ -131,7 +131,7 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
 
     {
         TraceEvent counterEvent(
-            TraceEvent::Counter,
+            TraceEvent::CounterDelta,
             counterKey,
             1,
             TraceCategory::Default
@@ -139,10 +139,20 @@ CreateTestEvents(TraceEvent::TimeStamp timeStampOffset)
         counterEvent.SetTimeStamp(11*ms + timeStampOffset);
         events->EmplaceBack(counterEvent);
     }
+    {
+        TraceEvent counterEvent(
+            TraceEvent::CounterValue,
+            counterKey,
+            -1,
+            TraceCategory::Default
+        );
+        counterEvent.SetTimeStamp(12*ms + timeStampOffset);
+        events->EmplaceBack(counterEvent);
+    }
     static constexpr TraceStaticKeyData keyOuter("OuterScope");
     events->EmplaceBack(TraceEvent::Timespan, keyOuter,
         0 + timeStampOffset,
-        12*ms + timeStampOffset,
+        13*ms + timeStampOffset,
         TraceCategory::Default);
     return events;
 }

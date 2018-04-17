@@ -38,9 +38,9 @@ void TestCounters()
     constexpr static TraceStaticKeyData scopeKey("TestScope");
     constexpr static TraceStaticKeyData counterKey1("Test Counter 1");
     TraceCollector::GetInstance().BeginScope(scopeKey, PerfCategory);
-    TraceCollector::GetInstance().RecordCounterValue(counterKey1, 1, PerfCategory);
+    TraceCollector::GetInstance().RecordCounterDelta(counterKey1, 1, PerfCategory);
     TraceCollector::GetInstance().EndScope(scopeKey, PerfCategory);
-    TRACE_COUNTER("Default Category counter", 1);
+    TRACE_COUNTER_DELTA("Default Category counter", 1);
 }
 
 // Simple Reporter that accumulates all the counters in a custom category
@@ -60,7 +60,7 @@ public:
     
     virtual void OnEvent(
         const TraceThreadId&, const TfToken& k, const TraceEvent& e) override {
-        if (e.GetType() != TraceEvent::EventType::Counter) {
+        if (e.GetType() != TraceEvent::EventType::CounterDelta) {
             return;
         }
 
