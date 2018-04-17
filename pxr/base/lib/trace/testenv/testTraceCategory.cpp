@@ -29,17 +29,21 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 // Declare a custom Trace category
-constexpr TraceCategoryId PerfCategory 
-    = TraceCategory::CreateTraceCategoryId("CustomPerfCounter");
+struct PerfCategory {
+    static constexpr TraceCategoryId GetId() { 
+        return TraceCategory::CreateTraceCategoryId("CustomPerfCounter"); 
+    }
+    static bool IsEnabled() { return TraceCollector::IsEnabled(); }
+};
 
 // Record a scope and counter with the new category
 void TestCounters()
 {
     constexpr static TraceStaticKeyData scopeKey("TestScope");
     constexpr static TraceStaticKeyData counterKey1("Test Counter 1");
-    TraceCollector::GetInstance().BeginScope(scopeKey, PerfCategory);
-    TraceCollector::GetInstance().RecordCounterDelta(counterKey1, 1, PerfCategory);
-    TraceCollector::GetInstance().EndScope(scopeKey, PerfCategory);
+    TraceCollector::GetInstance().BeginScope<PerfCategory>(scopeKey);
+    TraceCollector::GetInstance().RecordCounterDelta<PerfCategory>(counterKey1, 1);
+    TraceCollector::GetInstance().EndScope<PerfCategory>(scopeKey);
     TRACE_COUNTER_DELTA("Default Category counter", 1);
 }
 
@@ -55,7 +59,7 @@ public:
         TfNotice::Register(TfCreateWeakPtr(this), &This::_OnCollection);
     }
     virtual bool AcceptsCategory(TraceCategoryId id) {
-        return id == PerfCategory;
+        return id == PerfCategory::GetId();
     }
     
     virtual void OnEvent(
@@ -102,7 +106,7 @@ main(int argc, char *argv[])
     PerfReporterRefPtr perfReporter =
         TfCreateRefPtr(new PerfReporter());
     TraceCategory::GetInstance().RegisterCategory(
-        PerfCategory, "CustomPerfCounter");
+        PerfCategory::GetId(), "CustomPerfCounter");
 
     TraceCollector* collector = &TraceCollector::GetInstance();
     TraceReporterPtr reporter = TraceReporter::GetGlobalReporter();

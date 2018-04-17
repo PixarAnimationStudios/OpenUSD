@@ -54,8 +54,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(TraceCollector);
 
-static const size_t _MAX_STACK_DEPTH = 256;
-
 std::atomic<int> TraceCollector::_isEnabled(0);
 
 TraceCollector::_PerThreadData* TraceCollector::_GetThreadData()
@@ -113,7 +111,7 @@ TraceCollector::SetEnabled(bool isEnabled)
 }
 
 TraceCollector::TimeStamp
-TraceCollector::BeginEvent(const Key& key, TraceCategoryId cat)
+TraceCollector::_BeginEvent(const Key& key, TraceCategoryId cat)
 {
     TfAutoMallocTag2 tag("Trace", "TraceCollector::BeginEvent");
     if (!IsEnabled())
@@ -124,7 +122,7 @@ TraceCollector::BeginEvent(const Key& key, TraceCategoryId cat)
 }
 
 TraceCollector::TimeStamp
-TraceCollector::EndEvent(const Key& key, TraceCategoryId cat)
+TraceCollector::_EndEvent(const Key& key, TraceCategoryId cat)
 {
     TfAutoMallocTag2 tag("Trace", "TraceCollector::EndEvent (key)");
     if (!IsEnabled()) {
@@ -136,7 +134,7 @@ TraceCollector::EndEvent(const Key& key, TraceCategoryId cat)
 }
 
 void
-TraceCollector::EndEventAtTime(const Key& key, double ms, TraceCategoryId cat)
+TraceCollector::_EndEventAtTime(const Key& key, double ms, TraceCategoryId cat)
 {
     TfAutoMallocTag2 tag("Trace",
         "TraceCollector::EndEventAtTime (key, double)");
@@ -149,7 +147,7 @@ TraceCollector::EndEventAtTime(const Key& key, double ms, TraceCategoryId cat)
 }
 
 void
-TraceCollector::BeginEventAtTime(const Key& key, double ms, TraceCategoryId cat)
+TraceCollector::_BeginEventAtTime(const Key& key, double ms, TraceCategoryId cat)
 {
     TfAutoMallocTag2 tag("Trace",
         "TraceCollector::BeginEventAtTime (key, double)");
