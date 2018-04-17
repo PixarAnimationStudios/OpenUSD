@@ -58,7 +58,7 @@ _BuildArray(T values[], int numValues)
 HdUnitTestDelegate::HdUnitTestDelegate(HdRenderIndex *parentIndex,
                                          SdfPath const& delegateID)
   : HdSceneDelegate(parentIndex, delegateID)
-  , _hasInstancePrimVars(true), _refineLevel(0), _visibility(true)
+  , _hasInstancePrimvars(true), _refineLevel(0), _visibility(true)
 {
 }
 
@@ -406,7 +406,7 @@ HdUnitTestDelegate::UpdateRprims(float time)
 }
 
 void
-HdUnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
+HdUnitTestDelegate::UpdateCurvePrimvarsInterpMode(float time)
 {
     // update curve prims to use uniform color
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
@@ -424,7 +424,7 @@ HdUnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
 }
 
 void
-HdUnitTestDelegate::UpdateInstancerPrimVars(float time)
+HdUnitTestDelegate::UpdateInstancerPrimvars(float time)
 {
     // update instancers
     TF_FOR_ALL (it, _instancers) {
@@ -964,7 +964,7 @@ HdUnitTestDelegate::GetPrimvarInstanceNames(SdfPath const &id)
     HD_TRACE_FUNCTION();
 
     TfTokenVector names;
-    if (!_hasInstancePrimVars) return names;
+    if (!_hasInstancePrimvars) return names;
     if (_instancers.find(id) != _instancers.end()) {
         names.push_back(_tokens->scale);
         names.push_back(_tokens->rotate);

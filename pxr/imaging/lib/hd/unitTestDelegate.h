@@ -54,7 +54,7 @@ public:
     HdUnitTestDelegate(HdRenderIndex *parentIndex,
                         SdfPath const& delegateID);
 
-    void SetUseInstancePrimVars(bool v) { _hasInstancePrimVars = v; }
+    void SetUseInstancePrimvars(bool v) { _hasInstancePrimvars = v; }
 
     HD_API
     void SetRefineLevel(int level);
@@ -280,11 +280,11 @@ public:
     HD_API
     void UpdateRprims(float time);
     HD_API
-    void UpdateInstancerPrimVars(float time);
+    void UpdateInstancerPrimvars(float time);
     HD_API
     void UpdateInstancerPrototypes(float time);
     HD_API
-    void UpdateCurvePrimVarsInterpMode(float time);
+    void UpdateCurvePrimvarsInterpMode(float time);
 
     // ---------------------------------------------------------------------- //
     // utility functions generating test case
@@ -491,7 +491,7 @@ private:
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
     SdfPathMap _materialBindings;
 
-    bool _hasInstancePrimVars;
+    bool _hasInstancePrimvars;
     int _refineLevel;
     bool _visibility;
     std::map<SdfPath, int> _refineLevels;
