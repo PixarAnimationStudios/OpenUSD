@@ -273,8 +273,16 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 // Obtain the primvars used in the material bound to this prim
                 // and check if they are in this prim, if so, add them to the 
                 // primvars descriptions.
-                TfTokenVector matPrimvarNames = 
-                    _delegate->GetMaterialPrimvars(usdMaterialPath);
+                TfTokenVector matPrimvarNames;
+                VtValue vtMaterialPrimvars;
+                if (valueCache->FindMaterialPrimvars(usdMaterialPath, 
+                        &vtMaterialPrimvars)) {
+                    if (vtMaterialPrimvars.IsHolding<TfTokenVector>()) {
+                        matPrimvarNames = 
+                            vtMaterialPrimvars.Get<TfTokenVector>();
+                    }
+                }
+
                 for (auto const &pvName : matPrimvarNames) {
                     UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
                     if (!pv) {
