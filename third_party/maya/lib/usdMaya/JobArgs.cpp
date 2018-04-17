@@ -165,16 +165,16 @@ JobImportArgs::JobImportArgs()
 }
 
 std::ostream&
-operator <<(std::ostream& out, const JobImportArgs& exportArgs)
+operator <<(std::ostream& out, const JobImportArgs& importArgs)
 {
-    out << "shadingMode: " << exportArgs.shadingMode << std::endl
-        << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl
-        << "assemblyRep: " << exportArgs.assemblyRep << std::endl
-        << "readAnimData: " << _StringifyBool(exportArgs.readAnimData) << std::endl
-        << "useCustomFrameRange: " << _StringifyBool(exportArgs.useCustomFrameRange) << std::endl
-        << "startTime: " << exportArgs.startTime << std::endl
-        << "endTime: " << exportArgs.endTime << std::endl
-        << "importWithProxyShapes: " << _StringifyBool(exportArgs.importWithProxyShapes) << std::endl;
+    out << "shadingMode: " << importArgs.shadingMode << std::endl
+        << "defaultMeshScheme: " << importArgs.defaultMeshScheme << std::endl
+        << "assemblyRep: " << importArgs.assemblyRep << std::endl
+        << "readAnimData: " << _StringifyBool(importArgs.readAnimData) << std::endl
+        << "useCustomFrameRange: " << _StringifyBool(importArgs.useCustomFrameRange) << std::endl
+        << "startTime: " << importArgs.startTime << std::endl
+        << "endTime: " << importArgs.endTime << std::endl
+        << "importWithProxyShapes: " << _StringifyBool(importArgs.importWithProxyShapes) << std::endl;
 
     return out;
 }
