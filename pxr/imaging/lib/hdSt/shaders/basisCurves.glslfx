@@ -67,7 +67,7 @@ void main(void)
     outData.Neye = getNormal(transpose(transformInv *
                                   GetWorldToViewInverseMatrix()));
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 
     ProcessPointId();
 }
@@ -107,7 +107,7 @@ void main(void)
 
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -164,7 +164,7 @@ void main(void)
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
     outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 
@@ -248,7 +248,7 @@ void main(void)
 
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 // Use the length of the control points in screen space to determine how many 
@@ -301,7 +301,7 @@ void main(void)
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
     outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 --- --------------------------------------------------------------------------
@@ -432,7 +432,7 @@ void main()
     ApplyClipPlanes(outData.Peye);
 
     // XXX: needs more work.
-    ProcessPrimVars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+    ProcessPrimvars(u, v, 0, 1, 0, 1); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
@@ -489,7 +489,7 @@ void main()
     ApplyClipPlanes(outData.Peye);
 
     // XXX: needs more work.
-    ProcessPrimVars(u, v, 0, 1, 0, 1); // interpolate varying primvars
+    ProcessPrimvars(u, v, 0, 1, 0, 1); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------

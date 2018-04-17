@@ -242,7 +242,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
                 metaDataOut->instanceData[instancePrimvarBinding] =
-                    MetaData::NestedPrimVar(
+                    MetaData::NestedPrimvar(
                         /*name=*/it->first,
                         /*type=*/glType,
                         /*level=*/i);
@@ -266,7 +266,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             HdTupleType valueType = it->second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->vertexData[vertexPrimvarBinding] =
-                MetaData::PrimVar(/*name=*/it->first,
+                MetaData::Primvar(/*name=*/it->first,
                                   /*type=*/glType);
         }
     }
@@ -329,7 +329,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->elementData[elementPrimvarBinding] =
-                MetaData::PrimVar(/*name=*/it->first,
+                MetaData::Primvar(/*name=*/it->first,
                                   /*type=*/glType);
         }
     }
@@ -349,7 +349,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->fvarData[fvarPrimvarBinding] =
-                MetaData::PrimVar(/*name=*/it->first,
+                MetaData::Primvar(/*name=*/it->first,
                                   /*type=*/glType);
         }
     }
@@ -525,7 +525,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                         MetaData::ShaderParameterAccessor(
                             /*name=*/it->GetName(),
                             /*type=*/glType,
-                            /*inPrimVars=*/it->GetSamplerCoordinates());
+                            /*inPrimvars=*/it->GetSamplerCoordinates());
                     _bindingMap[it->GetName()] = textureBinding; // used for non-bindless
                 }
             } else if (it->IsPrimvar()) {
@@ -533,7 +533,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     = MetaData::ShaderParameterAccessor(
                     /*name=*/it->GetName(),
                     /*type=*/glType,
-                    /*inPrimVars=*/it->GetSamplerCoordinates());
+                    /*inPrimvars=*/it->GetSamplerCoordinates());
             } else {
                 TF_CODING_ERROR("Can't resolve %s", it->GetName().GetText());
             }
@@ -633,7 +633,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
         HdBinding binding = locator.GetBinding(bindingType, spec.name);
         _bindingMap[spec.name] = binding;
         metaDataOut->computeReadWriteData[binding] =
-            MetaData::PrimVar(spec.name,
+            MetaData::Primvar(spec.name,
                               HdStGLConversions::GetGLSLTypename(
                                              spec.tupleType.type));
     }
@@ -643,7 +643,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
         HdBinding binding = locator.GetBinding(bindingType, spec.name);
         _bindingMap[spec.name] = binding;
         metaDataOut->computeReadOnlyData[binding] =
-            MetaData::PrimVar(spec.name,
+            MetaData::Primvar(spec.name,
                               HdStGLConversions::GetGLSLTypename(
                                              spec.tupleType.type));
     }
@@ -1221,7 +1221,7 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, instanceData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
-        NestedPrimVar const &primvar = it->second;
+        NestedPrimvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());
         boost::hash_combine(hash, primvar.dataType);
         boost::hash_combine(hash, primvar.level);
@@ -1229,21 +1229,21 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, vertexData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
-        PrimVar const &primvar = it->second;
+        Primvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());
         boost::hash_combine(hash, primvar.dataType);
     }
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, elementData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
-        PrimVar const &primvar = it->second;
+        Primvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());
         boost::hash_combine(hash, primvar.dataType);
     }
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, fvarData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
-        PrimVar const &primvar = it->second;
+        Primvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());
         boost::hash_combine(hash, primvar.dataType);
     }

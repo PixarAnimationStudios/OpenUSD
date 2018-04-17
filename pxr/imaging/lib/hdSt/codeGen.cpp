@@ -73,11 +73,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (hd_dmat3)
     (hd_dmat3_get)
     (hd_dmat3_set)
-    (inPrimVars)
+    (inPrimvars)
     (ivec2)
     (ivec3)
     (ivec4)
-    (outPrimVars)
+    (outPrimvars)
     (vec2)
     (vec3)
     (vec4)
@@ -580,9 +580,9 @@ HdSt_CodeGen::Compile()
     }
 
     // prep interstage plumbing function
-    _procVS  << "void ProcessPrimVars() {\n";
-    _procTCS << "void ProcessPrimVars() {\n";
-    _procTES << "void ProcessPrimVars(float u, float v, int i0, int i1, int i2, int i3) {\n";
+    _procVS  << "void ProcessPrimvars() {\n";
+    _procTCS << "void ProcessPrimvars() {\n";
+    _procTES << "void ProcessPrimvars(float u, float v, int i0, int i1, int i2, int i3) {\n";
     // geometry shader plumbing
     switch(_geometricShader->GetPrimitiveType())
     {
@@ -592,7 +592,7 @@ HdSt_CodeGen::Compile()
         {
             // patch interpolation
             _procGS << "vec4 GetPatchCoord(int index);\n"
-                    << "void ProcessPrimVars(int index) {\n"
+                    << "void ProcessPrimvars(int index) {\n"
                     << "   vec2 localST = GetPatchCoord(index).xy;\n";
             break;            
         }
@@ -600,7 +600,7 @@ HdSt_CodeGen::Compile()
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
         {
             // quad interpolation
-            _procGS  << "void ProcessPrimVars(int index) {\n"
+            _procGS  << "void ProcessPrimvars(int index) {\n"
                      << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(1,1), vec2(0,1))[index];\n";
             break;            
         }
@@ -608,7 +608,7 @@ HdSt_CodeGen::Compile()
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         {
             // barycentric interpolation
-             _procGS  << "void ProcessPrimVars(int index) {\n"
+             _procGS  << "void ProcessPrimvars(int index) {\n"
                       << "   vec2 localST = vec2[](vec2(0,0), vec2(1,0), vec2(0,1))[index];\n";
             break;            
         }
@@ -622,10 +622,10 @@ HdSt_CodeGen::Compile()
     _GenerateDrawingCoord();
 
     // generate primvars
-    _GenerateConstantPrimVar();
+    _GenerateConstantPrimvar();
     _GenerateInstancePrimvar();
-    _GenerateElementPrimVar();
-    _GenerateVertexPrimVar();
+    _GenerateElementPrimvar();
+    _GenerateVertexPrimvar();
 
     //generate shader parameters
     _GenerateShaderParameters();
@@ -1507,7 +1507,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
 
 }
 void
-HdSt_CodeGen::_GenerateConstantPrimVar()
+HdSt_CodeGen::_GenerateConstantPrimvar()
 {
     /*
       // --------- constant data declaration ----------
@@ -1656,7 +1656,7 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
 }
 
 void
-HdSt_CodeGen::_GenerateElementPrimVar()
+HdSt_CodeGen::_GenerateElementPrimvar()
 {
     /*
     Accessing uniform primvar data:
@@ -1889,7 +1889,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
                 default:
                 {
                     TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
-                      "unexpected in _GenerateElementPrimVar().",
+                      "unexpected in _GenerateElementPrimvar().",
                       _geometricShader->GetPrimitiveType());
                 }
             }
@@ -1930,7 +1930,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
         }
         else {
             TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
-                  "unexpected in _GenerateElementPrimVar().",
+                  "unexpected in _GenerateElementPrimvar().",
                   _geometricShader->GetPrimitiveType());
         }
     } else {
@@ -2057,44 +2057,44 @@ HdSt_CodeGen::_GenerateElementPrimVar()
 }
 
 void
-HdSt_CodeGen::_GenerateVertexPrimVar()
+HdSt_CodeGen::_GenerateVertexPrimvar()
 {
     /*
       // --------- vertex data declaration (VS) ----------
       layout (location = 0) in vec3 normals;
       layout (location = 1) in vec3 points;
 
-      out PrimVars {
+      out Primvars {
           vec3 normals;
           vec3 points;
-      } outPrimVars;
+      } outPrimvars;
 
-      void ProcessPrimVars() {
-          outPrimVars.normals = normals;
-          outPrimVars.points = points;
+      void ProcessPrimvars() {
+          outPrimvars.normals = normals;
+          outPrimvars.points = points;
       }
 
       // --------- geometry stage plumbing -------
-      in PrimVars {
+      in Primvars {
           vec3 normals;
           vec3 points;
-      } inPrimVars[];
-      out PrimVars {
+      } inPrimvars[];
+      out Primvars {
           vec3 normals;
           vec3 points;
-      } outPrimVars;
+      } outPrimvars;
 
-      void ProcessPrimVars(int index) {
-          outPrimVars = inPrimVars[index];
+      void ProcessPrimvars(int index) {
+          outPrimvars = inPrimvars[index];
       }
 
       // --------- vertex data accessors (used in geometry/fragment shader) ---
-      in PrimVars {
+      in Primvars {
           vec3 normals;
           vec3 points;
-      } inPrimVars;
+      } inPrimvars;
       vec3 HdGet_normals(int localIndex=0) {
-          return inPrimVars.normals;
+          return inPrimvars.normals;
       }
     */
 
@@ -2103,7 +2103,7 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
     std::stringstream accessorsVS, accessorsTCS, accessorsTES,
         accessorsGS, accessorsFS;
 
-    interstageStruct << "PrimVars {\n";
+    interstageStruct << "Primvars {\n";
 
     // vertex varying
     TF_FOR_ALL (it, _metaData.vertexData) {
@@ -2122,29 +2122,29 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
         // primvar accessors
         _EmitAccessor(accessorsVS, name, dataType, binding);
 
-        _EmitStructAccessor(accessorsTCS, _tokens->inPrimVars,
+        _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "gl_InvocationID");
-        _EmitStructAccessor(accessorsTES, _tokens->inPrimVars,
+        _EmitStructAccessor(accessorsTES, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
-        _EmitStructAccessor(accessorsGS,  _tokens->inPrimVars,
+        _EmitStructAccessor(accessorsGS,  _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
-        _EmitStructAccessor(accessorsFS,  _tokens->inPrimVars,
+        _EmitStructAccessor(accessorsFS,  _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1);
 
         // interstage plumbing
-        _procVS << "  outPrimVars." << name
+        _procVS << "  outPrimvars." << name
                 << " = " << name << ";\n";
-        _procTCS << "  outPrimVars[gl_InvocationID]." << name
-                 << " = inPrimVars[gl_InvocationID]." << name << ";\n";
+        _procTCS << "  outPrimvars[gl_InvocationID]." << name
+                 << " = inPrimvars[gl_InvocationID]." << name << ";\n";
         // procTES linearly interpolate vertex/varying primvars here.
         // XXX: needs smooth interpolation for vertex primvars?
-        _procTES << "  outPrimVars." << name
-                 << " = mix(mix(inPrimVars[i3]." << name
-                 << "         , inPrimVars[i2]." << name << ", u),"
-                 << "       mix(inPrimVars[i1]." << name
-                 << "         , inPrimVars[i0]." << name << ", u), v);\n";
-        _procGS  << "  outPrimVars." << name
-                 << " = inPrimVars[index]." << name << ";\n";
+        _procTES << "  outPrimvars." << name
+                 << " = mix(mix(inPrimvars[i3]." << name
+                 << "         , inPrimvars[i2]." << name << ", u),"
+                 << "       mix(inPrimvars[i1]." << name
+                 << "         , inPrimvars[i0]." << name << ", u), v);\n";
+        _procGS  << "  outPrimvars." << name
+                 << " = inPrimvars[index]." << name << ";\n";
     }
 
     /*
@@ -2164,8 +2164,8 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
       };
 
       // --------- geometry stage plumbing -------
-      void ProcessPrimVars(int index) {
-          outPrimVars = inPrimVars[index];
+      void ProcessPrimvars(int index) {
+          outPrimvars = inPrimvars[index];
       }
 
       // --------- facevarying data accessors ----------
@@ -2194,20 +2194,20 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
 
         // primvar accessors (only in GS and FS)
         _EmitAccessor(accessorsGS, name, dataType, binding, "GetFVarIndex(localIndex)");
-        _EmitStructAccessor(accessorsFS, _tokens->inPrimVars, name, dataType,
+        _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
                             /*arraySize=*/1, NULL);
 
         // interstage plumbing
-        _procVS << "  outPrimVars." << name
+        _procVS << "  outPrimvars." << name
                 << " = " << dataType << "(0);\n";
-        _procTCS << "  outPrimVars[gl_InvocationID]." << name
-                 << " = inPrimVars[gl_InvocationID]." << name << ";\n";
+        _procTCS << "  outPrimvars[gl_InvocationID]." << name
+                 << " = inPrimvars[gl_InvocationID]." << name << ";\n";
         // TODO: facevarying tessellation
-        _procTES << "  outPrimVars." << name
-                 << " = mix(mix(inPrimVars[i3]." << name
-                 << "         , inPrimVars[i2]." << name << ", u),"
-                 << "       mix(inPrimVars[i1]." << name
-                 << "         , inPrimVars[i0]." << name << ", u), v);\n";
+        _procTES << "  outPrimvars." << name
+                 << " = mix(mix(inPrimvars[i3]." << name
+                 << "         , inPrimvars[i2]." << name << ", u),"
+                 << "       mix(inPrimvars[i1]." << name
+                 << "         , inPrimvars[i0]." << name << ", u), v);\n";
 
 
         switch(_geometricShader->GetPrimitiveType())
@@ -2217,7 +2217,7 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:            
             {
                 // linear interpolation within a quad.
-                _procGS << "   outPrimVars." << name
+                _procGS << "   outPrimvars." << name
                     << "  = mix("
                     << "mix(" << "HdGet_" << name << "(0),"
                     <<           "HdGet_" << name << "(1), localST.x),"
@@ -2230,7 +2230,7 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
             {
                 // barycentric interpolation within a triangle.
-                _procGS << "   outPrimVars." << name
+                _procGS << "   outPrimvars." << name
                     << "  = HdGet_" << name << "(0) * (1-localST.x-localST.y) "
                     << "  + HdGet_" << name << "(1) * localST.x "
                     << "  + HdGet_" << name << "(2) * localST.y;\n";                
@@ -2257,30 +2257,30 @@ HdSt_CodeGen::_GenerateVertexPrimVar()
 
     _genVS << vertexInputs.str()
            << "out " << interstageStruct.str()
-           << " outPrimVars;\n"
+           << " outPrimvars;\n"
            << accessorsVS.str();
 
     _genTCS << "in " << interstageStruct.str()
-            << " inPrimVars[gl_MaxPatchVertices];\n"
+            << " inPrimvars[gl_MaxPatchVertices];\n"
             << "out " << interstageStruct.str()
-            << " outPrimVars[HD_NUM_PATCH_VERTS];\n"
+            << " outPrimvars[HD_NUM_PATCH_VERTS];\n"
             << accessorsTCS.str();
 
     _genTES << "in " << interstageStruct.str()
-            << " inPrimVars[gl_MaxPatchVertices];\n"
+            << " inPrimvars[gl_MaxPatchVertices];\n"
             << "out " << interstageStruct.str()
-            << " outPrimVars;\n"
+            << " outPrimvars;\n"
             << accessorsTES.str();
 
     _genGS << fvarDeclarations.str()
            << "in " << interstageStruct.str()
-           << " inPrimVars[HD_NUM_PRIMITIVE_VERTS];\n"
+           << " inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
            << "out " << interstageStruct.str()
-           << " outPrimVars;\n"
+           << " outPrimvars;\n"
            << accessorsGS.str();
 
     _genFS << "in " << interstageStruct.str()
-           << " inPrimVars;\n"
+           << " inPrimvars;\n"
            << accessorsFS.str();
 
     // ---------
@@ -2331,12 +2331,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
 
       * bindless 2D texture
       <type> HdGet_<name>(int localIndex=0) {
-          return texture(sampler2D(shaderData[GetDrawingCoord().shaderCoord].<name>), <inPrimVars>).xxx;
+          return texture(sampler2D(shaderData[GetDrawingCoord().shaderCoord].<name>), <inPrimvars>).xxx;
       }
 
       * non-bindless 2D texture
       <type> HdGet_<name>(int localIndex=0) {
-          return texture(samplers_2d[<offset> + drawIndex * <stride>], <inPrimVars>).xxx;
+          return texture(samplers_2d[<offset> + drawIndex * <stride>], <inPrimvars>).xxx;
       }
 
       * bindless Ptex texture
@@ -2439,11 +2439,11 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
                 << "  return texture(sampler2D(shaderData[shaderCoord]." << it->second.name << "), ";
 
-            if (!it->second.inPrimVars.empty()) {
+            if (!it->second.inPrimvars.empty()) {
                 accessors 
                     << "\n"
-                    << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
-                    << " HdGet_" << it->second.inPrimVars[0] << "().xy\n"
+                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] << ")\n"
+                    << " HdGet_" << it->second.inPrimvars[0] << "().xy\n"
                     << "#else\n"
                     << "vec2(0.0, 0.0)\n"
                     << "#endif\n";
@@ -2478,11 +2478,11 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << it->second.dataType
                 << " HdGet_" << it->second.name
                 << "() { return HdGet_" << it->second.name << "(";
-            if (!it->second.inPrimVars.empty()) {
+            if (!it->second.inPrimvars.empty()) {
                 accessors
                     << "\n"
-                    << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
-                    << "HdGet_" << it->second.inPrimVars[0] << "().xy\n"
+                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] << ")\n"
+                    << "HdGet_" << it->second.inPrimvars[0] << "().xy\n"
                     << "#else\n"
                     << "vec2(0.0, 0.0)\n"
                     << "#endif\n";
@@ -2552,12 +2552,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
             // If this shader and it's connected primvar have the same name, we
             // are good to go, else we must alias the parameter to the primvar
             // accessor.
-            if (it->second.name != it->second.inPrimVars[0]) {
+            if (it->second.name != it->second.inPrimvars[0]) {
                 accessors
                     << it->second.dataType
                     << " HdGet_" << it->second.name << "() {\n"
-                    << "#if defined(HD_HAS_" << it->second.inPrimVars[0] << ")\n"
-                    << "  return HdGet_" << it->second.inPrimVars[0] << "();\n"
+                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] << ")\n"
+                    << "  return HdGet_" << it->second.inPrimvars[0] << "();\n"
                     << "#else\n"
                     << "  return " << it->second.dataType << "(0);\n"
                     << "#endif\n"
