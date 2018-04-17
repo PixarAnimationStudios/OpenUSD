@@ -253,6 +253,28 @@ public:
                             stages.insert(pair.second);
                     }
 
+    /// Load a range of [start,end) prims from this cache. The range corresponds
+    /// to a *subset* of the prims in \p primPaths.
+    /// The \p rangeFn functor must implement `operator()(exint)` which, given
+    /// an index of an element in the [start,end) range, returns the index in
+    /// \p primPaths identifying which primitive should be loaded.
+    /// The resulting UsdPrim is written into \p prims at the same index.
+    template <typename PrimRangeFn>
+    bool            LoadPrimRange(const PrimRangeFn& rangeFn,
+                                  exint start, exint end,
+                                  const UT_Array<SdfPath>& primPaths,
+                                  UsdPrim* prims,
+                                  GusdUT_ErrorContext* err);
+
+private:
+    /// Open a new stage with the given mask.
+    /// The \p invokingPrimPath is the path at which FindOrOpenStage() was
+    /// called to begin the stage opening procedure. This may be set to an
+    /// empty path for other loading scenarios.
+    UsdStageRefPtr  _OpenStage(const UsdStagePopulationMask& mask,
+                               const SdfPath& invokingPrimPath,
+                               GusdUT_ErrorContext* err=nullptr);
+
 private:
     using _StageMap = UT_ConcurrentHashMap<SdfPath,UsdStageRefPtr,
                                            _SdfPathHashCmp>;
@@ -306,6 +328,38 @@ public:
                                           const SdfPath& primPath,
                                           GusdUT_ErrorContext* err=nullptr);
 
+    /// Open a new stage with an explicit mask.
+    /// This is used when externally requesting a set of prims, so that
+    /// prims may still be loaded behind masks, but in a batch that allows
+    /// them to share the same stage.
+    UsdStageRefPtr  OpenMaskedStage(const UT_StringRef& path,
+                                    const GusdStageOpts& opts,
+                                    const GusdStageEditPtr& edit,
+                                    const UsdStagePopulationMask& mask,
+                                    GusdUT_ErrorContext* err=nullptr);
+
+    /// Load each prim from \p primPaths from the cache, writing resulting
+    /// UsdPrim instances to \p prim. The \p paths and \p edits arrays are
+    /// indexed at the same element from \p primPaths being loaded.
+    /// Although the cache attempts to batch prims together when it's possible
+    /// for them to share the same stage, there are no guarantees that prims
+    /// returned by this method will be sharing the same stage.
+    bool            LoadPrims(const GusdDefaultArray<UT_StringHolder>& paths,
+                              const UT_Array<SdfPath>& primPaths,
+                              const GusdDefaultArray<GusdStageEditPtr>& edits,
+                              UsdPrim* prims,
+                              const GusdStageOpts& opts,
+                              GusdUT_ErrorContext* err=nullptr);
+
+    /// Variant of the above method when a range of prims is being pulled from
+    /// a common stage configuration.
+    bool            LoadPrims(const UT_StringHolder& path,
+                              const GusdStageOpts& opts,
+                              const GusdStageEditPtr& edit,
+                              const UT_Array<SdfPath>& primPaths,
+                              UsdPrim* prims,
+                              GusdUT_ErrorContext* err=nullptr);
+
     DEP_MicroNode*  FindStageMicroNode(const UsdStagePtr& stage);
 
     DEP_MicroNode*  GetStageMicroNode(const UsdStagePtr& stage);
@@ -334,9 +388,38 @@ public:
     void            FindStages(const UT_StringSet& paths,
                                UT_Set<UsdStageRefPtr>& stages) const;
 
+    /// Load a range of [start,end) prims from the cache. The range corresponds
+    /// to a *subset* of the prims in \p primPaths.
+    /// The \p rangeFn functor must implement `operator()(exint)` which, given
+    /// an index of an element in the range [start,end), returns the index in
+    /// \p primPaths identifying which primitive should be loaded.
+    /// The resulting UsdPrim is written into \p prims at the same index.
+    ///
+    /// If the configured error severity is less than UT_ERROR_ABORT,
+    /// prim loading will continue even after load errors have occurred.
+    template <typename PrimRangeFn>
+    bool            LoadPrimRange(const PrimRangeFn& rangeFn,
+                                  exint start, exint end,
+                                  const UT_StringHolder& path,
+                                  const GusdStageOpts& opts,
+                                  const GusdStageEditPtr& edit,
+                                  const UT_Array<SdfPath>& primPaths,
+                                  UsdPrim* prims,
+                                  GusdUT_ErrorContext* err=nullptr);
+
 protected:
     /// Expand the set of masked prims on a stage.
     void            _ExpandStageMask(UsdStageRefPtr& stage);
+
+    /// Get a range of prims from \p stage, using the same range
+    /// encoding as LoadPrimRange.
+    template <typename PrimRangeFn>
+    bool            _GetPrimsInRange(const PrimRangeFn& rangeFn,
+                                     exint start, exint end,
+                                     const UsdStageRefPtr& stage,
+                                     const UT_Array<SdfPath>& primPaths,
+                                     UsdPrim* prims,
+                                     GusdUT_ErrorContext* err=nullptr);
 
 private:
     using _StageMap = UT_ConcurrentHashMap<_StageKey,UsdStageRefPtr,
@@ -652,6 +735,318 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
 }
 
 
+template <typename PrimRangeFn>
+bool
+GusdStageCache::_Impl::_GetPrimsInRange(const PrimRangeFn& rangeFn,
+                                        exint start, exint end,
+                                        const UsdStageRefPtr& stage,
+                                        const UT_Array<SdfPath>& primPaths,
+                                        UsdPrim* prims,
+                                        GusdUT_ErrorContext* err)
+{
+    // XXX: Could do this in parallel, but profiling suggests it's not worth it.
+
+    UT_AutoInterrupt task("Get prims from stage");
+
+    char bcnt = 0;
+
+    for(exint i = start; i < end; ++i) {
+        if(BOOST_UNLIKELY(!++bcnt && task.wasInterrupted()))
+            return false;
+
+        exint primIndex = rangeFn(i);
+        UT_ASSERT_P(primIndex >= 0 && primIndex < primPaths.size());
+
+        const SdfPath& primPath = primPaths(primIndex);
+        if(!primPath.IsEmpty()) {
+            prims[primIndex] =
+                GusdUSD_Utils::GetPrimFromStage(stage, primPath, err);
+            if(!prims[primIndex]) {
+                if(!err || (*err)() >= UT_ERROR_ABORT) {
+                    return false;
+                }
+            }
+        }
+    }
+    return !task.wasInterrupted();
+}
+
+
+template <typename PrimRangeFn>
+bool
+GusdStageCache::_Impl::LoadPrimRange(const PrimRangeFn& rangeFn,
+                                     exint start, exint end,
+                                     const UT_StringHolder& path,
+                                     const GusdStageOpts& opts,
+                                     const GusdStageEditPtr& edit,
+                                     const UT_Array<SdfPath>& primPaths,
+                                     UsdPrim* prims,
+                                     GusdUT_ErrorContext* err)
+{
+    // XXX: Empty paths should be caught earlier.
+    UT_ASSERT(path);
+
+    if(start == end)
+        return true;
+
+    bool useFullStage = !TfGetEnvSetting(GUSD_STAGEMASK_ENABLE);
+    if(!useFullStage) {
+        // Check if any of the prims in the range are the absolute root;
+        // If so, we should load a complete stage.
+        for(exint i = start; i < end; ++i) {
+            if(primPaths(rangeFn(i)) == SdfPath::AbsoluteRootPath()) {
+                useFullStage = true;
+                break;
+            }
+        }
+    }
+
+    if(useFullStage) {
+        if(UsdStageRefPtr stage = FindOrOpenStage(path, opts, edit, err)) {
+            return _GetPrimsInRange(rangeFn, start, end,
+                                    stage, primPaths, prims, err);
+        } else {
+            // Whether or not this is an error depends on the error context.
+            return err && (*err)() < UT_ERROR_ABORT;
+        }
+    }
+
+    {
+        // Find an existing _MaskedStageCache for this configuration.
+
+        _MaskedStageCacheMap::const_accessor a;
+        if(_maskedCacheMap.find(
+               a, _StageKey(UTmakeUnsafeRef(path), opts, edit))) {
+            UT_ASSERT_P(a->second);
+            return a->second->LoadPrimRange(rangeFn, start, end,
+                                            primPaths, prims, err);
+        }
+    }
+
+    // Make a new sub cache to hold the masked stages   
+    // for this stage configuration.
+    _MaskedStageCacheMap::accessor a;
+    _StageKey newKey(path, opts, edit);
+    if(_maskedCacheMap.insert(a, newKey))
+        a->second = new GusdStageCache::_MaskedStageCache(*this, newKey);
+    UT_ASSERT_P(a->second);
+    return a->second->LoadPrimRange(rangeFn, start, end, primPaths, prims, err);
+}
+
+
+namespace {
+
+
+/// Key used in batched prim loading.
+/// This identifies the stage for a prim, as well the index that the
+/// entry maps into inside of a range during batched loads.
+struct _PrimLoadKey
+{
+    _PrimLoadKey() = default;
+
+    _PrimLoadKey(const UT_StringHolder& path,
+                 const GusdStageEditPtr& edit,
+                 exint primIndex)
+        : path(path), edit(edit), primIndex(primIndex) {}
+
+    /// Check if a prim loaded with this key can be loaded on the same
+    /// stage as a prim loaded for key \p o.
+    bool    CanShareStage(const _PrimLoadKey& o) const
+            { return edit == o.edit && path == o.path; }
+    
+    bool    operator<(const _PrimLoadKey& o) const
+            {
+                UT_ASSERT_P(path);
+                UT_ASSERT_P(o.path);
+                return path < o.path ||
+                       (path == o.path &&
+                        (edit < o.edit ||
+                         edit == o.edit && primIndex < o.primIndex));
+            }
+
+    UT_StringHolder     path;
+    GusdStageEditPtr    edit;
+    exint               primIndex;
+};
+
+
+/// Object holding a set of prim load keys.
+/// This object is compatible as a range functor on the the LoadPrimRange()
+/// methods of the cache.
+struct _PrimLoadRange
+{
+    exint   operator()(exint i) const   { return keys(i).primIndex; }
+
+    /// Sort the load keys. This is done in order to
+    /// produce contiguous load sets.
+    void    Sort();
+
+    /// Compute ranges of elements in the array that share the same stage.
+    void    ComputeSharedStageRanges(
+                UT_Array<std::pair<exint,exint> >& ranges) const;
+    
+    UT_Array<_PrimLoadKey> keys;
+};
+
+
+void
+_PrimLoadRange::Sort()
+{
+    UTparallelSort<UT_Array<_PrimLoadKey>::iterator>(
+        keys.begin(), keys.end());
+}
+
+
+void
+_PrimLoadRange::ComputeSharedStageRanges(
+    UT_Array<std::pair<exint,exint> >& ranges) const
+{
+    if(keys.size() == 0)
+        return;
+
+    exint start = 0;
+    auto prev = keys(0);
+
+    for(exint i = 1; i < keys.size(); ++i) {
+        if(!keys(i).CanShareStage(prev)) {
+            ranges.emplace_back(start, i);
+            prev = keys(i);
+            start = i;
+        }
+    }
+    // Handle the last entry.
+    ranges.emplace_back(start, keys.size());
+}
+
+
+} // namespace
+
+
+bool
+GusdStageCache::_Impl::LoadPrims(
+    const GusdDefaultArray<UT_StringHolder>& paths,
+    const UT_Array<SdfPath>& primPaths,
+    const GusdDefaultArray<GusdStageEditPtr>& edits,
+    UsdPrim* prims,
+    const GusdStageOpts& opts,
+    GusdUT_ErrorContext* err)
+{
+    const exint count = primPaths.size();
+    if(count == 0) {
+        return true;
+    }
+
+    UT_AutoInterrupt task("Load USD prims");
+
+    if(paths.IsConstant() && !paths.GetDefault()) {
+        // No file paths, so will get back only invalid prims.
+        return true;
+    }
+
+    if(paths.IsConstant() && edits.IsConstant()) {
+        // Optimization: all file paths and edits are the same,
+        // so prims can be pulled from the same stage.
+        return LoadPrims(paths.GetDefault(), opts,
+                         edits.GetDefault(), primPaths, prims, err);
+    }
+
+    UT_ASSERT(edits.IsConstant() || edits.size() == count);
+    UT_ASSERT(paths.IsConstant() || paths.size() == count);
+
+    // Build up keys for loading.
+
+    _PrimLoadRange primRange;
+    primRange.keys.setCapacity(count);
+    for(exint i = 0; i < count; ++i) {
+        // Only include valid entries.
+        if(paths(i) && primPaths(i).IsAbsoluteRootOrPrimPath() &&
+           primPaths(i).IsAbsolutePath()) {
+            primRange.keys.emplace_back(paths(i), edits(i), i);
+        }
+    }
+
+    // Sort the entries. This means that all entries that should reference
+    // the same stage -- I.e., the same (path,edit) pair -- will be
+    // contiguous on the array.
+    primRange.Sort();
+
+    // Identify the ranges of prims that may be able to share the same stage.
+    UT_Array<std::pair<exint,exint> > ranges;
+    primRange.ComputeSharedStageRanges(ranges);
+
+    // We now have contiguous ranges of prims, identifying which
+    // prims can be loaded on the same stage.
+    // Dispatch across these ranges to load prims.
+
+    std::atomic_bool workerInterrupt(false);
+
+    UTparallelFor(
+        UT_BlockedRange<size_t>(0, ranges.size()),
+        [&](const UT_BlockedRange<size_t>& r)
+        {
+            auto* boss = UTgetInterrupt();
+            
+            for(size_t i = r.begin(); i < r.end(); ++i) {
+                if(BOOST_UNLIKELY(boss->opInterrupt() || workerInterrupt)) {
+                    return;
+                }
+
+                const auto& range = ranges(i);
+                
+                // Can get the file/edit from the first key in the range.
+                const auto& key = primRange.keys(range.first);
+
+                if(!LoadPrimRange(primRange, range.first, range.second,
+                                  key.path, opts, key.edit,
+                                  primPaths, prims, err)) {
+                    // Interrupt the other worker threads.
+                    workerInterrupt = true;
+                    break;
+                }
+            }
+        });
+    
+    return !task.wasInterrupted() && !workerInterrupt;
+}
+
+
+namespace {
+
+
+struct _IdentityPrimRangeFn
+{
+    exint operator()(exint i) const { return i; }
+};
+
+
+} /*namespace*/
+
+
+bool
+GusdStageCache::_Impl::LoadPrims(const UT_StringHolder& path,
+                                 const GusdStageOpts& opts,
+                                 const GusdStageEditPtr& edit,
+                                 const UT_Array<SdfPath>& primPaths,
+                                 UsdPrim* prims,
+                                 GusdUT_ErrorContext* err)
+{
+    if(!path) {
+        // Not an error: no prims are loaded.
+        return true;
+    }
+
+    // Optimization:
+    // May already have a full stage loaded that we can reference.
+    if(UsdStageRefPtr stage = FindStage(path, opts, edit)) {
+        return _GetPrimsInRange(_IdentityPrimRangeFn(), 0, primPaths.size(),
+                                stage, primPaths, prims, err);
+    }
+
+    return LoadPrimRange(_IdentityPrimRangeFn(), 0, primPaths.size(),
+                         path, opts, edit, primPaths, prims, err);
+}
+
+
 DEP_MicroNode*
 GusdStageCache::_Impl::GetStageMicroNode(const UsdStagePtr& stage)
 {
@@ -824,28 +1219,125 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
     if(_map.insert(a, primPath)) {
 
         UsdStagePopulationMask mask(std::vector<SdfPath>({primPath}));
-        a->second = _stageCache.OpenNewStage(_stageKey.GetPath(),
-                                             _stageKey.GetOpts(),
-                                             _stageKey.GetEdit(),
-                                             &mask, err);
+
+        a->second = _OpenStage(mask, primPath, err);
         if(!a->second) {
             _map.erase(a);
             return TfNullPtr;
         }
+    }
+    return a->second;
+}
 
-        // The mask may have been expanded so that the stage
-        // includes additional prims. Make sure all such paths
-        // are mapped on the cache.
-        for(const auto& maskedPath :
-                a->second->GetPopulationMask().GetPaths()) {
-            if(maskedPath != primPath) {
+
+UsdStageRefPtr
+GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask,
+                                              const SdfPath& invokingPrimPath,
+                                              GusdUT_ErrorContext* err)
+{
+    UsdStageRefPtr stage =
+        _stageCache.OpenNewStage(_stageKey.GetPath(), _stageKey.GetOpts(),
+                                 _stageKey.GetEdit(), &mask, err);
+
+    if(stage) {
+        // Make sure that all paths included in the mask are
+        // mapped on the cache.
+        // Pull the stage mask from the stage itself when doing this,
+        // since the mask may have been expanded to include more prims
+        // than our initial mask.
+        for(const auto& maskedPath : stage->GetPopulationMask().GetPaths()) {
+
+            // If the stage is being opened via FindOrOpenStage(), we already
+            // have an accessor with exclusive write access at the
+            // invokingPrimPath. The mutex on element access in not recursive,
+            // so be careful to avoid attempting to re-lock that same prim,
+            // or else we'll hit a deadlock.
+
+            if(maskedPath != invokingPrimPath) {
                 _StageMap::accessor other;
-                if(_map.insert(other, maskedPath))
-                    other->second = a->second;
+                if(_map.insert(other, maskedPath)) {
+                    other->second = stage;
+                }
             }
         }
     }
-    return a->second;
+    return stage;
+}
+
+
+template <typename PrimRangeFn>
+bool
+GusdStageCache::_MaskedStageCache::LoadPrimRange(
+    const PrimRangeFn& rangeFn,
+    exint start, exint end,
+    const UT_Array<SdfPath>& primPaths,
+    UsdPrim* prims,
+    GusdUT_ErrorContext* err)
+{
+    if(start == end)
+        return true;
+    
+    UT_ASSERT_P(end > start);
+    UT_ASSERT_P(prims);
+
+    // Extract prims that can be found on existing stages.
+    // If the prims can't be found, append them to arrays for batched loading.
+    UT_Array<exint> primIndicesForBatchedLoad;
+    std::vector<SdfPath> primPathsForBatchedLoad;
+
+    for(exint i = start; i < end; ++i) {
+        exint primIndex = rangeFn(i);
+        UT_ASSERT_P(primIndex >= 0 && primIndex < primPaths.size());
+        
+        const SdfPath& primPath = primPaths(primIndex);
+        if(!primPath.IsEmpty()) {
+            if(UsdStageRefPtr stage = FindStage(primPath)) {
+                prims[primIndex] =
+                    GusdUSD_Utils::GetPrimFromStage(stage, primPath, err);
+                if(!prims[primIndex]) {
+                    if(!err || (*err)() >= UT_ERROR_ABORT)
+                        return false;
+                }
+            } else {
+                // No existing stage may contain this prim.
+                // Append to the mask for batched loading.
+                primIndicesForBatchedLoad.append(primIndex);
+                primPathsForBatchedLoad.emplace_back(primPath);
+            }
+        }
+    }
+
+    if(primPathsForBatchedLoad.size() > 0) {
+        UT_ASSERT_P(primIndicesForBatchedLoad.size() ==
+                    primPathsForBatchedLoad.size());
+        
+        // Open a stage with a mask holding all currently unloaded prims.
+        if(UsdStageRefPtr stage =
+           _OpenStage(UsdStagePopulationMask(
+                          std::move(primPathsForBatchedLoad)),
+                      SdfPath(), err)) {
+
+            // Get all prims in the range.
+            for(exint i = 0; i < primIndicesForBatchedLoad.size(); ++i) {
+                exint primIndex = primIndicesForBatchedLoad(i);
+                const SdfPath& primPath = primPaths(primIndex);
+
+                UT_ASSERT_P(!primPath.IsEmpty());
+
+                prims[primIndex] =
+                    GusdUSD_Utils::GetPrimFromStage(stage, primPath, err);
+
+                if(!prims[primIndex]) {
+                    if(!err || (*err)() >= UT_ERROR_ABORT)
+                        return false;
+                }
+            }
+        } else {
+            if(!err || (*err)() >= UT_ERROR_ABORT)
+                return false;
+        }
+    }
+    return true;
 }
 
 
@@ -1024,80 +1516,8 @@ GusdStageCacheReader::GetPrims(
     const GusdStageOpts& opts,
     GusdUT_ErrorContext* err)
 {
-    exint count = primPaths.size();
-    if(count == 0)
-        return true;
-
-    UT_ASSERT_P(prims);
-
-    UT_AutoInterrupt task("Load USD prims");
-
-    if(filePaths.IsConstant() && !filePaths.GetDefault()) {
-        // no file paths, so will get back null prims.
-        return true;
-    }
-
-    if(filePaths.IsConstant() && edits.IsConstant()) {
-        // Optimization:
-        // May be possible to find a full stage satisfying our needs.
-        if(UsdStageRefPtr stage = Find(filePaths.GetDefault(), opts,
-                                       edits.GetDefault())) {
-            
-            for(exint i = 0; i < count; ++i) {
-                prims[i] =
-                    GusdUSD_Utils::GetPrimFromStage(stage, primPaths(i), err);
-                if(!prims[i]) {
-                    if(!err || (*err)() >= UT_ERROR_ABORT) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-    }
-
-    UT_ASSERT(edits.IsConstant() || edits.size() == count);
-    UT_ASSERT(filePaths.IsConstant() || filePaths.size() == count);
-
-    // TODO: Stage composition supports threading, but if a small number
-    //       of stages are going to be created, we may miss out on threading
-    //       opportunities, because threads will be blocked waiting for
-    //       other threads to return cached stages.
-    //       If this becomes a problem for performance it may be better to
-    //       break this into separate Find/FindOrOpen stages, with stage
-    //       requests being grouped to reduce contention.
-
-    std::atomic_bool workerInterrupt(false);
-
-#if HDK_API_VERSION < 16050000
-    UTparallelForHeavyItems(
-	    UT_BlockedRange<exint>(0, count),
-	    [&](const UT_BlockedRange<exint>& r)
-#else
-    UTparallelForEachNumber(count, [&](const UT_BlockedRange<exint>& r)
-#endif
-    {
-        auto* boss = UTgetInterrupt();
-        char bcnt = 0;
-
-        for(exint i = r.begin(); i < r.end(); ++i) {
-            if(BOOST_UNLIKELY(!++bcnt && (boss->opInterrupt() || 
-                                          workerInterrupt))) {
-                return;
-            }
-
-            prims[i] = GetPrim(filePaths(i), primPaths(i),
-                               edits(i), opts, err).first;
-            if(!prims[i]) {
-                if(!err || (*err)() >= UT_ERROR_ABORT) {
-                    // Interrupt the other worker threads.
-                    workerInterrupt = true;
-                    break;
-                }
-            }
-        }
-    });
-    return !task.wasInterrupted() && !workerInterrupt;
+    return _cache._impl->LoadPrims(filePaths, primPaths,
+                                   edits, prims, opts, err);
 }
 
 

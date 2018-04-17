@@ -83,7 +83,7 @@ CreateSdfPath(const UT_StringRef& pathStr,
         std::string errStr;
         if(!SdfPath::IsValidPathString(str, &errStr)) {
             UT_WorkBuffer buf;
-            buf.sprintf("Failed parsing path <%s>: %s",
+            buf.sprintf("Failed parsing path '%s': %s",
                         pathStr.c_str(), errStr.c_str());
             err->AddError(buf.buffer());
         }
@@ -111,14 +111,14 @@ GetPrimFromStage(const UsdStagePtr& stage,
         UsdPrim prim = stage->GetPrimAtPath(path);
         if(!prim && err) {
             UT_WorkBuffer buf;
-            buf.sprintf("Prim <%s> not found in stage @%s@.",
+            buf.sprintf("Prim '%s' not found in stage @%s@.",
                         path.GetText(),
                         stage->GetRootLayer()->GetIdentifier().c_str());
             err->AddError(buf.buffer());
         }
         return prim;
     }
-    // Get an emptry prim for an empty path (not an error!)
+    // Get an empty prim for an empty path (not an error!)
     return UsdPrim();
 }
 

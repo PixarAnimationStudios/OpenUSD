@@ -106,8 +106,61 @@ _GetPrim(GusdStageCache& self,
         _ExtractPtr<GusdStageEditPtr>(edit), opts);
     return boost::python::make_tuple(pair.first, _StageRefToObj(pair.second));
 }
-          
 
+
+template <typename T, typename ExtractT=T>
+GusdDefaultArray<T>
+_ObjectToDefaultArray(const object& o)
+{
+    GusdDefaultArray<T> array;
+    if(!o) {
+        return array;
+    }
+    
+    extract<ExtractT> constVal(o);
+    if(constVal.check()) {
+        array.SetDefault(T(constVal));
+    }
+
+    list vals = extract<list>(o);
+    array.GetArray().setSize(len(vals));
+    for(exint i = 0; i < array.size(); ++i) {
+        array(i) = T(extract<ExtractT>(vals[i]));
+    }
+    return array;
+}
+
+
+template <typename T>
+UT_Array<T>
+_ListToArray(const list& l)
+{
+    UT_Array<T> array;
+    array.setSize(len(l));
+    for(exint i = 0; i < array.size(); ++i)
+        array(i) = extract<T>(l[i]);
+    return array;
+}
+
+
+std::vector<UsdPrim>
+_GetPrims(GusdStageCache& self,
+          const object& filePaths,
+          const list& primPaths,
+          const object& edits,
+          const GusdStageOpts& opts)
+{
+    std::vector<UsdPrim> prims(len(primPaths));
+
+    GusdStageCacheReader(self).GetPrims(
+        _ObjectToDefaultArray<UT_StringHolder,std::string>(filePaths),
+        _ListToArray<SdfPath>(primPaths),
+        _ObjectToDefaultArray<GusdStageEditPtr>(edits),
+        prims.data(), opts);
+
+    return prims;
+}
+          
 
 tuple
 _GetPrimWithVariants(GusdStageCache& self,
@@ -185,7 +238,12 @@ void wrapGusdStageCache()
               arg("edit")=GusdStageEditPtr(),
               arg("opts")=GusdStageOpts::LoadAll()))
 
-        // TODO: Wrap GetPrims() ?
+        .def("GetPrims", &_GetPrims,
+             (arg("filePaths"),
+              arg("primPaths"),
+              arg("edits")=object(),
+              arg("opts")=GusdStageOpts::LoadAll()),
+             return_value_policy<TfPySequenceToList>())
 
         .def("GetPrimWithVariants", &_GetPrimWithVariants,
              (arg("path"),

@@ -406,7 +406,53 @@ GusdSOP_usdimport::_Cook(OP_Context& ctx)
     }
     return getInput(0) ? _ExpandPrims(ctx, trav, errContext)
                        : _CreateNewPrims(ctx, trav, errContext);
-}                           
+}
+
+
+namespace {
+
+
+GusdStageBasicEdit*
+_CreateEdit(const SdfPath& variantSelPath)
+{
+    if(!variantSelPath.IsEmpty()) {
+        GusdStageBasicEdit* edit = new GusdStageBasicEdit();
+        edit->GetVariants().append(variantSelPath);
+        return edit;
+    }
+    return nullptr;
+}
+
+
+void
+_GetStageEditsForVariants(const UT_Array<SdfPath>& variants,
+                          GusdDefaultArray<GusdStageEditPtr>& edits)
+{
+    if(variants.size() > 0) {
+        // Check if there are any variant selections, and if so, if they all match.
+        bool varying = false;
+        SdfPath firstVariant = variants(0);
+        for(exint i = 1; i < variants.size(); ++i) {
+            if(variants(i) != firstVariant) {
+                varying = true;
+                break;
+            }
+        }
+
+        if(varying) {
+            edits.GetArray().setSize(variants.size());
+            for(exint i = 0; i < variants.size(); ++i) {
+                edits.GetArray()(i).reset(_CreateEdit(variants(i)));
+            }
+        } else {
+            edits.Clear();
+            edits.GetDefault().reset(_CreateEdit(firstVariant));
+        }
+    }
+}
+
+
+} // namespace
 
 
 OP_ERROR
@@ -442,14 +488,7 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
 
     // Get stage edits applying any of our variants.
     GusdDefaultArray<GusdStageEditPtr> edits;
-    edits.GetArray().setSize(variants.size());
-    for(exint i = 0; i < variants.size(); ++i) {
-        if(!variants(i).IsEmpty()) {
-            GusdStageBasicEdit* edit = new GusdStageBasicEdit;
-            edit->GetVariants().append(variants(i));
-            edits.GetArray()(i).reset(edit);
-        }
-    }
+    _GetStageEditsForVariants(variants, edits);
     
     // Load the root prims.
     UT_Array<UsdPrim> rootPrims;
