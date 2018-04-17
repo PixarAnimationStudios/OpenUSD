@@ -159,15 +159,15 @@ UsdImagingDelegate::~UsdImagingDelegate()
 bool
 UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
 {
-    // Draw modes can only be applied to models.
-    if (!prim.IsModel()) { return false; }
-
-    // Draw modes can't be applied to the pseudo-root.
-    if (!prim.GetParent()) { return false; }
+    // Compute the inherited drawMode.
+    TfToken drawMode = _GetModelDrawMode(prim);
+    // If draw mode is "default", no draw mode is applied.
+    if (drawMode == UsdGeomTokens->default_) {
+        return false;
+    }
 
     // Draw mode is only applied on models that are components, or which have
     // applyDrawMode = true.
-
     UsdGeomModelAPI model(prim);
     bool applyDrawMode = false;
     TfToken kind;
@@ -177,14 +177,7 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
     else if ((attr = model.GetModelApplyDrawModeAttr()))
         attr.Get(&applyDrawMode);
 
-    if (!applyDrawMode)
-        return false;
-
-    // Compute the inherited drawMode.
-    TfToken drawMode = _GetModelDrawMode(prim);
-
-    // If draw mode is "default", no draw mode is applied.
-    return drawMode != UsdGeomTokens->default_;
+    return applyDrawMode;
 }
 
 
@@ -192,6 +185,12 @@ TfToken
 UsdImagingDelegate::_GetModelDrawMode(UsdPrim const& prim)
 {
     HD_TRACE_FUNCTION();
+
+    // Draw modes can only be applied to models.
+    if (!prim.IsModel()) { return UsdGeomTokens->default_; }
+
+    // Draw modes can't be applied to the pseudo-root.
+    if (!prim.GetParent()) { return UsdGeomTokens->default_; }
 
     if (_IsEnabledDrawModeCache())
         return _drawModeCache.GetValue(prim);
