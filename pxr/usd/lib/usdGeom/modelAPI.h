@@ -126,7 +126,7 @@ class SdfAssetPath;
 /// If the metadata cannot be read in the right format, or the matrix can't
 /// be inverted, the card face is not drawn.
 /// 
-/// All card faces are drawn and textured as double-sided.
+/// All card faces are drawn and textured as single-sided.
 /// 
 /// \todo CreatePayload() 
 ///
