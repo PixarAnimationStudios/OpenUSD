@@ -124,6 +124,27 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "SphereLight"
+                    },
+                    "UsdImagingCylinderLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "CylinderLight"
+                    },
+                    "UsdImagingDiskLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "DiskLight"
+                    },
+                    "UsdImagingDistantLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "DistantLight"
                     }
                 }
             },
