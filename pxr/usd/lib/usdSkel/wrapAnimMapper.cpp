@@ -90,5 +90,7 @@ void wrapUsdSkelAnimMapper()
         .def("IsSparse", &This::IsSparse)
 
         .def("IsNull", &This::IsNull)
+
+        .def("__len__", &This::size)
         ;
 }            

@@ -153,6 +153,8 @@ public:
     /// defined by the animation are mapped into the skeleton's joint order.
     /// Any transforms not defined by the animation source use the transforms
     /// from the rest pose as a fallback value.
+    /// If valid transforms cannot be computed for the animation source, the
+    /// \p xforms are instead set to the rest transforms.
     USDSKEL_API
     bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                      UsdTimeCode time,

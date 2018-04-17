@@ -206,6 +206,13 @@ only identify a sparse subset of the joints in a skeleton. When an animation
 provides sparse data, fallback values are taken from the rest pose on the
 UsdSkelSkeleton primitive to which they apply.
 
+An animation source is only valid if its _translation_, _rotation_, and
+_scale_ components are all authored, storing arrays size to the same size
+as the authored _joints_ array.
+
+The effect of a packed animation prim may also be nullified by either
+deactivating the primitive, or by blocking the component attributes.
+
 \subsection Animation Root Transform
 
 A PackedJointAnimation is itself a UsdGeomXformable primitive, and may specify

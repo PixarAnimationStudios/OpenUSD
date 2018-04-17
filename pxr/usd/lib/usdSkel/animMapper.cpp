@@ -199,8 +199,6 @@ UsdSkelAnimMapper::_Remap(const VtArray<T>& source,
         return true;
     } else if(_flags&_OrderedMap) {
 
-        _ResizeArray(target, _targetSize*elementSize, defaultValue);
-
         size_t copyCount =
             std::min(source.size(), targetArraySize - _offset*elementSize);
         std::copy(source.cdata(), source.cdata()+copyCount,

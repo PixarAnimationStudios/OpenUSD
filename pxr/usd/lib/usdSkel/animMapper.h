@@ -114,6 +114,11 @@ public:
     USDSKEL_API
     bool IsNull() const;
 
+    /// Get the size of the output array that this mapper expects to
+    /// map data into.
+    USDSKEL_API
+    size_t size() const { return _targetSize; }
+
     bool operator==(const UsdSkelAnimMapper& o) const;
 
     bool operator!=(const UsdSkelAnimMapper& o) const {

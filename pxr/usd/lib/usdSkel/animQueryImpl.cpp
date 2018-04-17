@@ -107,11 +107,26 @@ UsdSkel_PackedJointAnimationQueryImpl::ComputeJointLocalTransforms(
        _rotations.Get(&rotations, time) &&
        _scales.Get(&scales, time)) {
 
-        if(UsdSkelMakeTransforms(translations, rotations, scales, xforms))
-            return true;
-
-        TF_WARN("%s -- failed composing transforms from components.",
-                _anim.GetPrim().GetPath().GetText());
+        if(UsdSkelMakeTransforms(translations, rotations, scales, xforms)) {
+            if(xforms->size() == _jointOrder.size()) {
+                return true;
+            } else {
+                if(xforms->size() == 0) {
+                    // XXX: If the size of all components was zero, we
+                    // infer that the arrays were *intentionally* authored as
+                    // empty, to nullify the animation. Since this is 
+                    // suspected to be intentional, we emit no warning.
+                    return false;
+                }
+                TF_WARN("%s -- size of transform component arrays [%zu] "
+                        "!= joint order size [%zu].",
+                        _anim.GetPrim().GetPath().GetText(),
+                        xforms->size(), _jointOrder.size());
+            }
+        } else {
+            TF_WARN("%s -- failed composing transforms from components.",
+                    _anim.GetPrim().GetPath().GetText());
+        }
     }
     return false;
 }

@@ -146,9 +146,17 @@ UsdSkelSkeletonQuery::_ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
 
     VtMatrix4dArray animXforms;
     if(_animQuery.ComputeJointLocalTransforms(&animXforms, time)) {
-        return _animToSkelMapper.Remap(animXforms, xforms);
+        return _animToSkelMapper.RemapTransforms(animXforms, xforms);
+    } else {
+        // Failed to compute anim xforms.
+        // Fall back to our rest transforms.
+        // These will have already been uninitialized above,
+        // unless we have a non-sparse mapping.
+        if(!_animToSkelMapper.IsSparse()) {
+            *xforms = _definition->GetJointLocalRestTransforms();
+        }
     }
-    return false;
+    return true;
 }
 
 
