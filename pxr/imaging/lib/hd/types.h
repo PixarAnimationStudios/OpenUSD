@@ -194,6 +194,11 @@ enum HdType
     /// Corresponds to GL_DOUBLE_MAT4
     HdTypeDoubleMat4,
 
+    HdTypeHalfFloat,
+    HdTypeHalfFloatVec2,
+    HdTypeHalfFloatVec3,
+    HdTypeHalfFloatVec4,
+
     /// Packed, reverse-order encoding of a 4-component vector into Int32.
     /// Corresponds to GL_INT_2_10_10_10_REV.
     /// \see HdVec4f_2_10_10_10_REV

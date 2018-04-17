@@ -34,12 +34,15 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2h.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/vec4h.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,6 +68,10 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdTypeFloatVec4);
     TF_ADD_ENUM_NAME(HdTypeFloatMat3);
     TF_ADD_ENUM_NAME(HdTypeFloatMat4);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloat);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloatVec2);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloatVec3);
+    TF_ADD_ENUM_NAME(HdTypeHalfFloatVec4);
     TF_ADD_ENUM_NAME(HdTypeDouble);
     TF_ADD_ENUM_NAME(HdTypeDoubleVec2);
     TF_ADD_ENUM_NAME(HdTypeDoubleVec3);
@@ -108,6 +115,10 @@ const void* HdGetValueData(const VtValue &value)
     TRY(GfVec2i);
     TRY(GfVec3i);
     TRY(GfVec4i);
+    TRY(GfHalf);
+    TRY(GfVec2h);
+    TRY(GfVec3h);
+    TRY(GfVec4h);
 
 #undef TRY
 
@@ -148,6 +159,10 @@ HdTupleType HdGetValueTupleType(const VtValue &value)
     TRY(GfVec2i, HdTypeInt32Vec2);
     TRY(GfVec3i, HdTypeInt32Vec3);
     TRY(GfVec4i, HdTypeInt32Vec4);
+    TRY(GfHalf, HdTypeHalfFloat);
+    TRY(GfVec2h, HdTypeHalfFloatVec2);
+    TRY(GfVec3h, HdTypeHalfFloatVec3);
+    TRY(GfVec4h, HdTypeHalfFloatVec4);
 
 #undef TRY
 
@@ -177,6 +192,10 @@ HdType HdGetComponentType(HdType t)
     case HdTypeDoubleMat3:
     case HdTypeDoubleMat4:
         return HdTypeDouble;
+    case HdTypeHalfFloatVec2:
+    case HdTypeHalfFloatVec3:
+    case HdTypeHalfFloatVec4:
+        return HdTypeHalfFloat;
     default:
         return t;
     }
@@ -189,16 +208,19 @@ size_t HdGetComponentCount(HdType t)
     case HdTypeUInt32Vec2:
     case HdTypeFloatVec2:
     case HdTypeDoubleVec2:
+    case HdTypeHalfFloatVec2:
         return 2;
     case HdTypeInt32Vec3:
     case HdTypeUInt32Vec3:
     case HdTypeFloatVec3:
     case HdTypeDoubleVec3:
+    case HdTypeHalfFloatVec3:
         return 3;
     case HdTypeInt32Vec4:
     case HdTypeUInt32Vec4:
     case HdTypeFloatVec4:
     case HdTypeDoubleVec4:
+    case HdTypeHalfFloatVec4:
         return 4;
     case HdTypeFloatMat3:
     case HdTypeDoubleMat3:
@@ -271,6 +293,14 @@ size_t HdDataSizeOfType(HdType t)
         return sizeof(double)*3*3;
     case HdTypeDoubleMat4:
         return sizeof(double)*4*4;
+    case HdTypeHalfFloat:
+        return sizeof(GfHalf);
+    case HdTypeHalfFloatVec2:
+        return sizeof(GfHalf)*2;
+    case HdTypeHalfFloatVec3:
+        return sizeof(GfHalf)*3;
+    case HdTypeHalfFloatVec4:
+        return sizeof(GfHalf)*4;
     case HdTypeInt32_2_10_10_10_REV:
         return sizeof(HdVec4f_2_10_10_10_REV);
     };
