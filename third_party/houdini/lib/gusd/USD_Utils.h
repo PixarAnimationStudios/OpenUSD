@@ -26,6 +26,8 @@
 
 #include "gusd/api.h"
 
+#include "gusd/error.h"
+
 #include <pxr/pxr.h>
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -34,6 +36,7 @@
 #include <SYS/SYS_Floor.h>
 #include <SYS/SYS_Math.h>
 #include <UT/UT_Array.h>
+#include <UT/UT_Error.h>
 #include <UT/UT_Map.h>
 #include <UT/UT_SharedPtr.h>
 #include <UT/UT_StringHolder.h>
@@ -41,8 +44,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class GusdUT_ErrorContext;
 
 
 namespace GusdUSD_Utils
@@ -57,43 +58,47 @@ double      GetNumericTime(UsdTimeCode time);
 
 
 /// Parse and construct and SdfPath from a string.
-/// Parse errors are collection in @a err.
 /// Returns true if there were no parse errors.
+/// Any errors that occur while attempting to construct the path are reported
+/// on the currently scoped error manager at a severity of \p sev.
 GUSD_API
 bool        CreateSdfPath(const UT_StringRef& pathStr,
                           SdfPath& path,
-                          GusdUT_ErrorContext* err=nullptr);
+                          UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 
 /// Get a prim from a stage.
-/// This provides common error reporting if the prim can't be found.
+/// If no prim can be found at \p path, an error is reported on the currently
+/// scoped error manager at a severity of \p sev.
 GUSD_API
 UsdPrim     GetPrimFromStage(const UsdStagePtr& stage,
                              const SdfPath& path,
-                             GusdUT_ErrorContext* err=nullptr);
+                             UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 
 /// Helper for creating and validating schema objects.
-/// This provides common error reporting when the prim doesn't
-/// match an expected schema type.
+/// If the prim doesn't match the expected schema type, an error is reported
+/// on the currently scoped error manager at a severity of \p sev.
 template <typename SchemaT>
 SchemaT     MakeSchemaObj(const UsdPrim& prim,
-                          GusdUT_ErrorContext* err=nullptr);
+                          UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 
-/** Given a string representing a list of whitespace-delimited paths,
-    which may or may not including variant specifications,
-    return an array of prim and variant paths.
-
-    The resulting @a primPaths and @a variantPaths arrays
-    will be the same size. If no variants are associated with a path,
-    then the corresponding entry in @a variants will be an empty path. */
+/// Given a string representing a list of whitespace-delimited paths,
+/// which may or may not include variant specifications,
+/// return an array of prim and variant paths.
+///
+/// The resulting @a primPaths and @a variantPaths arrays
+/// will be the same size. If no variants are associated with a path,
+/// then the corresponding entry in @a variants will be an empty path.
+/// If any errors occur while parsing the path, errors are reporeted on the
+/// currently scoped error manager at a severity of \p sev.
 GUSD_API
 bool        GetPrimAndVariantPathsFromPathList(
                 const char* str,
                 UT_Array<SdfPath>& primPaths,
                 UT_Array<SdfPath>& variants,
-                GusdUT_ErrorContext* err=NULL);
+                UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 /** Extract a prim path and variant selection from a path.*/
 GUSD_API
@@ -283,16 +288,16 @@ ClampTimeCode(UsdTimeCode t, double start, double end, int digits)
 
 template <typename SchemaT>
 SchemaT
-MakeSchemaObj(const UsdPrim& prim, GusdUT_ErrorContext* err)
+MakeSchemaObj(const UsdPrim& prim, UT_ErrorSeverity sev)
 {
     SchemaT obj(prim);
-    if(!obj && err) {
+    if(!obj) {
         static const std::string typeName =
             TfType::Find<SchemaT>().GetTypeName();
 
-        UT_WorkBuffer buf;
-        buf.sprintf("Prim <%s> is not a %s.",
-                    prim.GetPath().GetText(), typeName.c_str());
+        GUSD_GENERIC_ERR(sev).Msg(
+            "Prim '%s' is not a %s.",
+            prim.GetPath().GetText(), typeName.c_str());
     }
     return obj;
 }

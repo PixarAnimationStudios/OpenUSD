@@ -841,7 +841,7 @@ GusdGU_PackedUSD::visibleGT() const
 }
 
 UsdPrim 
-GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
+GusdGU_PackedUSD::getUsdPrim(UT_ErrorSeverity sev) const
 {
     if(m_usdPrim)
         return m_usdPrim;
@@ -851,7 +851,7 @@ GusdGU_PackedUSD::getUsdPrim(GusdUT_ErrorContext* err) const
     GusdStageCacheReader cache;
     m_usdPrim =
         cache.GetPrim(m_fileName, m_primPath.StripAllVariantSelections(),
-                      getStageEdit(), GusdStageOpts::LoadAll(), err).first;
+                      getStageEdit(), GusdStageOpts::LoadAll(), sev).first;
     return m_usdPrim;
 }
 

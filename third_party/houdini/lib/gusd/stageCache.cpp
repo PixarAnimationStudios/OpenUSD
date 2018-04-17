@@ -36,8 +36,8 @@
 #include <UT/UT_Thread.h>
 #include <UT/UT_WorkBuffer.h>
 
+#include "gusd/error.h"
 #include "gusd/USD_DataCache.h"
-#include "gusd/UT_Error.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/notice.h"
@@ -242,7 +242,7 @@ public:
     UsdStageRefPtr  FindStage(const SdfPath& primPath);
 
     UsdStageRefPtr  FindOrOpenStage(const SdfPath& primPath,
-                                    GusdUT_ErrorContext* err=nullptr);
+                                    UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     void            Clear() { _map.clear(); }
     
@@ -264,7 +264,7 @@ public:
                                   exint start, exint end,
                                   const UT_Array<SdfPath>& primPaths,
                                   UsdPrim* prims,
-                                  GusdUT_ErrorContext* err);
+                                  UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 private:
     /// Open a new stage with the given mask.
@@ -273,7 +273,7 @@ private:
     /// empty path for other loading scenarios.
     UsdStageRefPtr  _OpenStage(const UsdStagePopulationMask& mask,
                                const SdfPath& invokingPrimPath,
-                               GusdUT_ErrorContext* err=nullptr);
+                               UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 private:
     using _StageMap = UT_ConcurrentHashMap<SdfPath,UsdStageRefPtr,
@@ -300,13 +300,13 @@ public:
                                  const GusdStageOpts& opts,
                                  const GusdStageEditPtr& edit,
                                  const UsdStagePopulationMask* mask,
-                                 GusdUT_ErrorContext* err=nullptr);
+                                 UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     SdfLayerRefPtr  CreateSessionLayer(const GusdStageEdit& edit,
-                                       GusdUT_ErrorContext* err=nullptr);
+                                       UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     SdfLayerRefPtr  FindOrOpenLayer(const UT_StringRef& path,
-                                    GusdUT_ErrorContext* err=nullptr);
+                                    UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     UsdStageRefPtr  FindStage(const UT_StringRef& path,
                               const GusdStageOpts& opts,
@@ -315,7 +315,7 @@ public:
     UsdStageRefPtr  FindOrOpenStage(const UT_StringRef& path,
                                     const GusdStageOpts& opts,
                                     const GusdStageEditPtr& edit,
-                                    GusdUT_ErrorContext* err=nullptr);
+                                    UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     UsdStageRefPtr  FindMaskedStage(const UT_StringRef& path,
                                     const GusdStageOpts& opts,
@@ -326,7 +326,7 @@ public:
                                           const GusdStageOpts& opts,
                                           const GusdStageEditPtr& edit,
                                           const SdfPath& primPath,
-                                          GusdUT_ErrorContext* err=nullptr);
+                                          UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Open a new stage with an explicit mask.
     /// This is used when externally requesting a set of prims, so that
@@ -336,7 +336,7 @@ public:
                                     const GusdStageOpts& opts,
                                     const GusdStageEditPtr& edit,
                                     const UsdStagePopulationMask& mask,
-                                    GusdUT_ErrorContext* err=nullptr);
+                                    UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Load each prim from \p primPaths from the cache, writing resulting
     /// UsdPrim instances to \p prim. The \p paths and \p edits arrays are
@@ -349,7 +349,7 @@ public:
                               const GusdDefaultArray<GusdStageEditPtr>& edits,
                               UsdPrim* prims,
                               const GusdStageOpts& opts,
-                              GusdUT_ErrorContext* err=nullptr);
+                              UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Variant of the above method when a range of prims is being pulled from
     /// a common stage configuration.
@@ -358,7 +358,7 @@ public:
                               const GusdStageEditPtr& edit,
                               const UT_Array<SdfPath>& primPaths,
                               UsdPrim* prims,
-                              GusdUT_ErrorContext* err=nullptr);
+                              UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     DEP_MicroNode*  FindStageMicroNode(const UsdStagePtr& stage);
 
@@ -395,8 +395,8 @@ public:
     /// \p primPaths identifying which primitive should be loaded.
     /// The resulting UsdPrim is written into \p prims at the same index.
     ///
-    /// If the configured error severity is less than UT_ERROR_ABORT,
-    /// prim loading will continue even after load errors have occurred.
+    /// If \p sev is less than UT_ERROR_ABORT, prim loading will continue even
+    /// after load errors have occurred.
     template <typename PrimRangeFn>
     bool            LoadPrimRange(const PrimRangeFn& rangeFn,
                                   exint start, exint end,
@@ -405,7 +405,7 @@ public:
                                   const GusdStageEditPtr& edit,
                                   const UT_Array<SdfPath>& primPaths,
                                   UsdPrim* prims,
-                                  GusdUT_ErrorContext* err=nullptr);
+                                  UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 protected:
     /// Expand the set of masked prims on a stage.
@@ -419,7 +419,7 @@ protected:
                                      const UsdStageRefPtr& stage,
                                      const UT_Array<SdfPath>& primPaths,
                                      UsdPrim* prims,
-                                     GusdUT_ErrorContext* err=nullptr);
+                                     UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
 private:
     using _StageMap = UT_ConcurrentHashMap<_StageKey,UsdStageRefPtr,
@@ -477,11 +477,11 @@ UsdStageRefPtr
 GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
                                     const GusdStageOpts& opts,
                                     const GusdStageEditPtr& edit,
-                                    const UsdStagePopulationMask* mask, 
-                                    GusdUT_ErrorContext* err)
+                                    const UsdStagePopulationMask* mask,
+                                    UT_ErrorSeverity sev)
 {
     // Catch Tf errors.
-    GusdUT_TfErrorScope errorScope(err);
+    GusdTfErrorScope errorScope(sev);
 
     // TODO: Should consider including the context as a member of the
     // stage opts, so that it can be reconfigured across different hip files.
@@ -489,7 +489,7 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
     ArResolverContextBinder binder(resolverContext);
 
     // The root layer is shared, and not modified.
-    if(SdfLayerRefPtr rootLayer = FindOrOpenLayer(path, err)) {
+    if(SdfLayerRefPtr rootLayer = FindOrOpenLayer(path, sev)) {
 
         // Need a unique session layer on which to apply any edits.
         SdfLayerRefPtr sessionLayer;
@@ -511,7 +511,7 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
                 // Edits must apply on the session layer.
                 stage->SetEditTarget(UsdEditTarget(sessionLayer));
 
-                if(!edit->Apply(stage, err)) {
+                if(!edit->Apply(stage, sev)) {
                     return TfNullPtr;
                 }
 
@@ -522,11 +522,8 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
                 _ExpandStageMask(stage);
             return stage;
         } else {
-            if(err) {
-                UT_WorkBuffer buf;
-                buf.sprintf("Failed opening stage @%s@", path.c_str());
-                err->AddError(buf.buffer());
-            }
+            GUSD_GENERIC_ERR(sev).Msg(
+                "Failed opening stage @%s@", path.c_str());
         }
     }
     return TfNullPtr;
@@ -535,14 +532,14 @@ GusdStageCache::_Impl::OpenNewStage(const UT_StringRef& path,
 
 SdfLayerRefPtr
 GusdStageCache::_Impl::CreateSessionLayer(const GusdStageEdit& edit,
-                                          GusdUT_ErrorContext* err)
+                                          UT_ErrorSeverity sev)
 {
     static const std::string layerTag("GusdStageCache_SessionLayer.usda");
 
     if(SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(layerTag))
-        return edit.Apply(layer, err) ? layer : TfNullPtr;
-    if(err)
-        err->AddError("Internal error creating session layer.");
+        return edit.Apply(layer, sev) ? layer : TfNullPtr;
+
+    GUSD_GENERIC_ERR(sev).Msg("Internal error creating session layer.");
     return TfNullPtr;
 }
 
@@ -635,19 +632,15 @@ GusdStageCache::_Impl::_ExpandStageMask(UsdStageRefPtr& stage)
 
 SdfLayerRefPtr
 GusdStageCache::_Impl::FindOrOpenLayer(const UT_StringRef& path,
-                                       GusdUT_ErrorContext* err)
+                                       UT_ErrorSeverity sev)
 {
     // Catch Tf errors.
-    GusdUT_TfErrorScope errorScope(err);
+    GusdTfErrorScope errorScope(sev);
      
     if(SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path.toStdString()))
         return layer;
 
-    if(err) {
-        UT_WorkBuffer buf;
-        buf.sprintf("Failed opening layer @%s@", path.c_str());
-        err->AddError(buf.buffer());
-    }
+    GUSD_GENERIC_ERR(sev).Msg("Failed opening layer @%s@", path.c_str());
     return TfNullPtr;
 }
 
@@ -671,14 +664,14 @@ UsdStageRefPtr
 GusdStageCache::_Impl::FindOrOpenStage(const UT_StringRef& path,
                                        const GusdStageOpts& opts,
                                        const GusdStageEditPtr& edit,
-                                       GusdUT_ErrorContext* err)
+                                       UT_ErrorSeverity sev)
 {
     if(UsdStageRefPtr stage = FindStage(path, opts, edit))
         return stage;
 
     _StageMap::accessor a;
     if(_stageMap.insert(a, _StageKey(path, opts, edit))) {
-        a->second = OpenNewStage(path, opts, edit, /*mask*/ nullptr, err);
+        a->second = OpenNewStage(path, opts, edit, /*mask*/ nullptr, sev);
         if(!a->second) {
             _stageMap.erase(a);
             return TfNullPtr;
@@ -693,7 +686,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
                                              const GusdStageOpts& opts,
                                              const GusdStageEditPtr& edit,
                                              const SdfPath& primPath,
-                                             GusdUT_ErrorContext* err)
+                                             UT_ErrorSeverity sev)
 {
     // XXX: empty paths and invalid prim paths should be caught earlier.
     UT_ASSERT_P(path);
@@ -704,7 +697,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
        !TfGetEnvSetting(GUSD_STAGEMASK_ENABLE)) {
 
         // Access full stages.
-        return FindOrOpenStage(path, opts, edit, err);
+        return FindOrOpenStage(path, opts, edit, sev);
     }
 
     // May have an unmasked stage that matches our criteria.
@@ -720,7 +713,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
         if(_maskedCacheMap.find(
                a, _StageKey(UTmakeUnsafeRef(path), opts, edit))) {
             UT_ASSERT_P(a->second);
-            return a->second->FindOrOpenStage(primPath, err);
+            return a->second->FindOrOpenStage(primPath, sev);
         }
     }
 
@@ -731,7 +724,7 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     if(_maskedCacheMap.insert(a, newKey))
         a->second = new GusdStageCache::_MaskedStageCache(*this, newKey);
     UT_ASSERT_P(a->second);
-    return a->second->FindOrOpenStage(primPath, err);
+    return a->second->FindOrOpenStage(primPath, sev);
 }
 
 
@@ -742,7 +735,7 @@ GusdStageCache::_Impl::_GetPrimsInRange(const PrimRangeFn& rangeFn,
                                         const UsdStageRefPtr& stage,
                                         const UT_Array<SdfPath>& primPaths,
                                         UsdPrim* prims,
-                                        GusdUT_ErrorContext* err)
+                                        UT_ErrorSeverity sev)
 {
     // XXX: Could do this in parallel, but profiling suggests it's not worth it.
 
@@ -760,11 +753,9 @@ GusdStageCache::_Impl::_GetPrimsInRange(const PrimRangeFn& rangeFn,
         const SdfPath& primPath = primPaths(primIndex);
         if(!primPath.IsEmpty()) {
             prims[primIndex] =
-                GusdUSD_Utils::GetPrimFromStage(stage, primPath, err);
-            if(!prims[primIndex]) {
-                if(!err || (*err)() >= UT_ERROR_ABORT) {
-                    return false;
-                }
+                GusdUSD_Utils::GetPrimFromStage(stage, primPath, sev);
+            if(!prims[primIndex] && sev >= UT_ERROR_ABORT) {
+                return false;
             }
         }
     }
@@ -781,7 +772,7 @@ GusdStageCache::_Impl::LoadPrimRange(const PrimRangeFn& rangeFn,
                                      const GusdStageEditPtr& edit,
                                      const UT_Array<SdfPath>& primPaths,
                                      UsdPrim* prims,
-                                     GusdUT_ErrorContext* err)
+                                     UT_ErrorSeverity sev)
 {
     // XXX: Empty paths should be caught earlier.
     UT_ASSERT(path);
@@ -802,12 +793,13 @@ GusdStageCache::_Impl::LoadPrimRange(const PrimRangeFn& rangeFn,
     }
 
     if(useFullStage) {
-        if(UsdStageRefPtr stage = FindOrOpenStage(path, opts, edit, err)) {
+        if(UsdStageRefPtr stage = FindOrOpenStage(path, opts, edit, sev)) {
             return _GetPrimsInRange(rangeFn, start, end,
-                                    stage, primPaths, prims, err);
+                                    stage, primPaths, prims, sev);
         } else {
-            // Whether or not this is an error depends on the error context.
-            return err && (*err)() < UT_ERROR_ABORT;
+            // Whether or not this is an error depends on the
+            // reporting severity.
+            return sev < UT_ERROR_ABORT;
         }
     }
 
@@ -819,7 +811,7 @@ GusdStageCache::_Impl::LoadPrimRange(const PrimRangeFn& rangeFn,
                a, _StageKey(UTmakeUnsafeRef(path), opts, edit))) {
             UT_ASSERT_P(a->second);
             return a->second->LoadPrimRange(rangeFn, start, end,
-                                            primPaths, prims, err);
+                                            primPaths, prims, sev);
         }
     }
 
@@ -830,7 +822,7 @@ GusdStageCache::_Impl::LoadPrimRange(const PrimRangeFn& rangeFn,
     if(_maskedCacheMap.insert(a, newKey))
         a->second = new GusdStageCache::_MaskedStageCache(*this, newKey);
     UT_ASSERT_P(a->second);
-    return a->second->LoadPrimRange(rangeFn, start, end, primPaths, prims, err);
+    return a->second->LoadPrimRange(rangeFn, start, end, primPaths, prims, sev);
 }
 
 
@@ -929,7 +921,7 @@ GusdStageCache::_Impl::LoadPrims(
     const GusdDefaultArray<GusdStageEditPtr>& edits,
     UsdPrim* prims,
     const GusdStageOpts& opts,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     const exint count = primPaths.size();
     if(count == 0) {
@@ -947,7 +939,7 @@ GusdStageCache::_Impl::LoadPrims(
         // Optimization: all file paths and edits are the same,
         // so prims can be pulled from the same stage.
         return LoadPrims(paths.GetDefault(), opts,
-                         edits.GetDefault(), primPaths, prims, err);
+                         edits.GetDefault(), primPaths, prims, sev);
     }
 
     UT_ASSERT(edits.IsConstant() || edits.size() == count);
@@ -980,10 +972,14 @@ GusdStageCache::_Impl::LoadPrims(
 
     std::atomic_bool workerInterrupt(false);
 
+    GusdErrorTransport errTransport;
+
     UTparallelFor(
         UT_BlockedRange<size_t>(0, ranges.size()),
         [&](const UT_BlockedRange<size_t>& r)
         {
+            GusdAutoErrorTransport autoErrTransport(errTransport);
+
             auto* boss = UTgetInterrupt();
             
             for(size_t i = r.begin(); i < r.end(); ++i) {
@@ -998,7 +994,7 @@ GusdStageCache::_Impl::LoadPrims(
 
                 if(!LoadPrimRange(primRange, range.first, range.second,
                                   key.path, opts, key.edit,
-                                  primPaths, prims, err)) {
+                                  primPaths, prims, sev)) {
                     // Interrupt the other worker threads.
                     workerInterrupt = true;
                     break;
@@ -1028,7 +1024,7 @@ GusdStageCache::_Impl::LoadPrims(const UT_StringHolder& path,
                                  const GusdStageEditPtr& edit,
                                  const UT_Array<SdfPath>& primPaths,
                                  UsdPrim* prims,
-                                 GusdUT_ErrorContext* err)
+                                 UT_ErrorSeverity sev)
 {
     if(!path) {
         // Not an error: no prims are loaded.
@@ -1039,11 +1035,11 @@ GusdStageCache::_Impl::LoadPrims(const UT_StringHolder& path,
     // May already have a full stage loaded that we can reference.
     if(UsdStageRefPtr stage = FindStage(path, opts, edit)) {
         return _GetPrimsInRange(_IdentityPrimRangeFn(), 0, primPaths.size(),
-                                stage, primPaths, prims, err);
+                                stage, primPaths, prims, sev);
     }
 
     return LoadPrimRange(_IdentityPrimRangeFn(), 0, primPaths.size(),
-                         path, opts, edit, primPaths, prims, err);
+                         path, opts, edit, primPaths, prims, sev);
 }
 
 
@@ -1210,7 +1206,7 @@ GusdStageCache::_MaskedStageCache::FindStage(const SdfPath& primPath)
 
 UsdStageRefPtr
 GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
-                                                   GusdUT_ErrorContext* err)
+                                                   UT_ErrorSeverity sev)
 {
     if(UsdStageRefPtr stage = FindStage(primPath))
         return stage;
@@ -1220,7 +1216,7 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
 
         UsdStagePopulationMask mask(std::vector<SdfPath>({primPath}));
 
-        a->second = _OpenStage(mask, primPath, err);
+        a->second = _OpenStage(mask, primPath, sev);
         if(!a->second) {
             _map.erase(a);
             return TfNullPtr;
@@ -1233,11 +1229,11 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
 UsdStageRefPtr
 GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask,
                                               const SdfPath& invokingPrimPath,
-                                              GusdUT_ErrorContext* err)
+                                              UT_ErrorSeverity sev)
 {
     UsdStageRefPtr stage =
         _stageCache.OpenNewStage(_stageKey.GetPath(), _stageKey.GetOpts(),
-                                 _stageKey.GetEdit(), &mask, err);
+                                 _stageKey.GetEdit(), &mask, sev);
 
     if(stage) {
         // Make sure that all paths included in the mask are
@@ -1272,7 +1268,7 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
     exint start, exint end,
     const UT_Array<SdfPath>& primPaths,
     UsdPrim* prims,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     if(start == end)
         return true;
@@ -1293,11 +1289,9 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
         if(!primPath.IsEmpty()) {
             if(UsdStageRefPtr stage = FindStage(primPath)) {
                 prims[primIndex] =
-                    GusdUSD_Utils::GetPrimFromStage(stage, primPath, err);
-                if(!prims[primIndex]) {
-                    if(!err || (*err)() >= UT_ERROR_ABORT)
-                        return false;
-                }
+                    GusdUSD_Utils::GetPrimFromStage(stage, primPath, sev);
+                if(!prims[primIndex] && sev >= UT_ERROR_ABORT)
+                    return false;
             } else {
                 // No existing stage may contain this prim.
                 // Append to the mask for batched loading.
@@ -1315,7 +1309,7 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
         if(UsdStageRefPtr stage =
            _OpenStage(UsdStagePopulationMask(
                           std::move(primPathsForBatchedLoad)),
-                      SdfPath(), err)) {
+                      SdfPath(), sev)) {
 
             // Get all prims in the range.
             for(exint i = 0; i < primIndicesForBatchedLoad.size(); ++i) {
@@ -1325,15 +1319,13 @@ GusdStageCache::_MaskedStageCache::LoadPrimRange(
                 UT_ASSERT_P(!primPath.IsEmpty());
 
                 prims[primIndex] =
-                    GusdUSD_Utils::GetPrimFromStage(stage, primPath, err);
+                    GusdUSD_Utils::GetPrimFromStage(stage, primPath, sev);
 
-                if(!prims[primIndex]) {
-                    if(!err || (*err)() >= UT_ERROR_ABORT)
-                        return false;
-                }
+                if(!prims[primIndex] && sev >= UT_ERROR_ABORT)
+                    return false;
             }
         } else {
-            if(!err || (*err)() >= UT_ERROR_ABORT)
+            if(sev >= UT_ERROR_ABORT)
                 return false;
         }
     }
@@ -1406,10 +1398,10 @@ UsdStageRefPtr
 GusdStageCacheReader::FindOrOpen(const UT_StringRef& path,
                                  const GusdStageOpts& opts,
                                  const GusdStageEditPtr& edit,
-                                 GusdUT_ErrorContext* err)
+                                 UT_ErrorSeverity sev)
 {
     return path ? _cache._impl->FindOrOpenStage(
-        path, opts, edit, err) : TfNullPtr;
+        path, opts, edit, sev) : TfNullPtr;
 }
 
 
@@ -1425,17 +1417,17 @@ GusdStageCacheReader::GetPrim(const UT_StringRef& path,
                               const SdfPath& primPath,
                               const GusdStageEditPtr& edit,
                               const GusdStageOpts& opts,
-                              GusdUT_ErrorContext* err)
+                              UT_ErrorSeverity sev)
 {
     PrimStagePair pair;
     if(path && primPath.IsAbsolutePath() &&
        primPath.IsAbsoluteRootOrPrimPath()) {
 
         if((pair.second = _cache._impl->FindOrOpenMaskedStage(
-               path, opts, edit, primPath, err))) {
+               path, opts, edit, primPath, sev))) {
 
             pair.first =
-                GusdUSD_Utils::GetPrimFromStage(pair.second, primPath, err);
+                GusdUSD_Utils::GetPrimFromStage(pair.second, primPath, sev);
         }
 
     }
@@ -1447,13 +1439,13 @@ GusdStageCacheReader::PrimStagePair
 GusdStageCacheReader::GetPrimWithVariants(const UT_StringRef& path,
                                           const SdfPath& primPath,
                                           const GusdStageOpts& opts,
-                                          GusdUT_ErrorContext* err)
+                                          UT_ErrorSeverity sev)
 {
     GusdStageBasicEditPtr edit;
     SdfPath primPathWithoutVariants;
     GusdStageBasicEdit::GetPrimPathAndEditFromVariantsPath(
         primPath, primPathWithoutVariants, edit);
-    return GetPrim(path, primPathWithoutVariants, edit, opts, err);
+    return GetPrim(path, primPathWithoutVariants, edit, opts, sev);
 }
 
 
@@ -1461,12 +1453,12 @@ GusdStageCacheReader::PrimStagePair
 GusdStageCacheReader::GetPrimWithVariants(const UT_StringRef& path,
                                           const UT_StringRef& primPath,
                                           const GusdStageOpts& opts,
-                                          GusdUT_ErrorContext* err)
+                                          UT_ErrorSeverity sev)
 {
     if(primPath) {
         SdfPath usdPrimPath;
-        if(GusdUSD_Utils::CreateSdfPath(primPath, usdPrimPath, err))
-            return GetPrimWithVariants(path, usdPrimPath, opts, err);
+        if(GusdUSD_Utils::CreateSdfPath(primPath, usdPrimPath, sev))
+            return GetPrimWithVariants(path, usdPrimPath, opts, sev);
     }
     return PrimStagePair();
 }
@@ -1477,14 +1469,14 @@ GusdStageCacheReader::GetPrimWithVariants(const UT_StringRef& path,
                                           const SdfPath& primPath,
                                           const SdfPath& variants,
                                           const GusdStageOpts& opts,
-                                          GusdUT_ErrorContext* err)
+                                          UT_ErrorSeverity sev)
 {
     GusdStageBasicEditPtr edit;
     if(variants.ContainsPrimVariantSelection()) {
         edit.reset(new GusdStageBasicEdit);
         edit->GetVariants().append(variants);
     }
-    return GetPrim(path, primPath, edit, opts, err);
+    return GetPrim(path, primPath, edit, opts, sev);
 }
 
 
@@ -1493,14 +1485,14 @@ GusdStageCacheReader::GetPrimWithVariants(const UT_StringRef& path,
                                           const UT_StringRef& primPath,
                                           const UT_StringRef& variants,
                                           const GusdStageOpts& opts,
-                                          GusdUT_ErrorContext* err)
+                                          UT_ErrorSeverity sev)
 {
     if(primPath) {
         SdfPath sdfPrimPath, sdfVariants;
-        if(GusdUSD_Utils::CreateSdfPath(primPath, sdfPrimPath, err) &&
-           GusdUSD_Utils::CreateSdfPath(variants, sdfVariants, err)) {
+        if(GusdUSD_Utils::CreateSdfPath(primPath, sdfPrimPath, sev) &&
+           GusdUSD_Utils::CreateSdfPath(variants, sdfVariants, sev)) {
             return GetPrimWithVariants(path, sdfPrimPath,
-                                       sdfVariants, opts, err);
+                                       sdfVariants, opts, sev);
         }
     }
     return PrimStagePair();
@@ -1514,10 +1506,10 @@ GusdStageCacheReader::GetPrims(
     const GusdDefaultArray<GusdStageEditPtr>& edits,
     UsdPrim* prims,
     const GusdStageOpts& opts,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     return _cache._impl->LoadPrims(filePaths, primPaths,
-                                   edits, prims, opts, err);
+                                   edits, prims, opts, sev);
 }
 
 

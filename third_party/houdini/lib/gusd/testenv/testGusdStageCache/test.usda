@@ -1,0 +1,50 @@
+#usda 1.0
+
+
+def "Root" (
+    kind = "assembly"
+)
+{
+    def Scope "Component" (
+        kind = "component"
+    )
+    {
+        def "A"
+        {
+        }
+
+        def "B"
+        {
+            rel dependency = </Root/ExternalDependency>
+        }
+    }
+
+    def "NonReferencedPrim" {
+    }
+
+    def "ComponentlessHierarchy"
+    {
+    }
+
+    def "ExternalDependency"
+    {
+    }
+
+    def "ModelWithVariants" (
+        variants = {
+            string var = "A"                 
+        }
+        add variantSets = "var"
+    )
+    {
+        variantSet "var" = {
+            "A" {}
+            "B" {}
+            "C" {}
+        }
+    }
+}
+
+def "Root2"
+{
+}

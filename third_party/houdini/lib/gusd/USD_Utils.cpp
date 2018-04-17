@@ -23,8 +23,6 @@
 //
 #include "gusd/USD_Utils.h"
 
-#include "gusd/UT_Error.h"
-
 #include <UT/UT_ConcurrentHashMap.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_ParallelUtil.h>
@@ -50,7 +48,7 @@ namespace GusdUSD_Utils {
 
 bool
 CreateSdfPath(const UT_StringRef& pathStr,
-              SdfPath& path, GusdUT_ErrorContext* err)
+              SdfPath& path, UT_ErrorSeverity sev)
 {
     if(!pathStr)
         return true;
@@ -71,7 +69,7 @@ CreateSdfPath(const UT_StringRef& pathStr,
             return true;
         }
     }
-    
+
     std::string str(pathStr.toStdString());
 
     /* TODO: using 'IsValidPathString()' requires us to parse the
@@ -79,13 +77,11 @@ CreateSdfPath(const UT_StringRef& pathStr,
        time, and capture any warnings produced while parsing.
        This is not currently possible because Tf warnings can't
        be captured with TfMark. See BUG: 127366 */
-    if(err) {
+    if(sev > UT_ERROR_NONE) {
         std::string errStr;
         if(!SdfPath::IsValidPathString(str, &errStr)) {
-            UT_WorkBuffer buf;
-            buf.sprintf("Failed parsing path '%s': %s",
-                        pathStr.c_str(), errStr.c_str());
-            err->AddError(buf.buffer());
+            GUSD_GENERIC_ERR(sev).Msg("Failed parsing path '%s': %s",
+                                      pathStr.c_str(), errStr.c_str());
         }
     } else {
         if(!SdfPath::IsValidPathString(str))
@@ -103,18 +99,17 @@ CreateSdfPath(const UT_StringRef& pathStr,
 UsdPrim
 GetPrimFromStage(const UsdStagePtr& stage,
                  const SdfPath& path,
-                 GusdUT_ErrorContext* err)
+                 UT_ErrorSeverity sev)
 {
     UT_ASSERT_P(stage);
 
     if(!path.IsEmpty()) {
         UsdPrim prim = stage->GetPrimAtPath(path);
-        if(!prim && err) {
-            UT_WorkBuffer buf;
-            buf.sprintf("Prim '%s' not found in stage @%s@.",
-                        path.GetText(),
-                        stage->GetRootLayer()->GetIdentifier().c_str());
-            err->AddError(buf.buffer());
+        if(!prim) {
+            GUSD_GENERIC_ERR(sev).Msg(
+                "Prim '%s' not found in stage @%s@.",
+                path.GetText(),
+                stage->GetRootLayer()->GetIdentifier().c_str());
         }
         return prim;
     }
@@ -128,7 +123,7 @@ GetPrimAndVariantPathsFromPathList(
     const char* str,
     UT_Array<SdfPath>& primPaths,
     UT_Array<SdfPath>& variants,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     UT_WorkArgs args;
     UT_String tokenStr(str);
@@ -140,7 +135,7 @@ GetPrimAndVariantPathsFromPathList(
         UT_String arg(args(i));
         if(arg.isstring()) {
             SdfPath path;
-            if(CreateSdfPath(arg, path, err)) {
+            if(CreateSdfPath(arg, path, sev)) {
                 SdfPath primPath, variantsPath;
                 ExtractPrimPathAndVariants(path, primPath, variantsPath);
                 primPaths.append(primPath);

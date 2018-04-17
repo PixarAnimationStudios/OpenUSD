@@ -23,6 +23,7 @@
 //
 #include "SOP_usdimport.h"
 
+#include "gusd/error.h"
 #include "gusd/GU_USD.h"
 #include "gusd/PRM_Shared.h"
 #include "gusd/stageCache.h"
@@ -30,7 +31,6 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
-#include "gusd/UT_Error.h"
 #include "gusd/UT_StaticInit.h"
 
 #include <pxr/base/tf/pathUtils.h>
@@ -388,10 +388,8 @@ GusdSOP_usdimport::_Cook(OP_Context& ctx)
 
     ErrorChoice errorMode = static_cast<ErrorChoice>(evalInt("missingframe", 0, t ));
 
-    auto lockedMgr = getLockedErrorManager();
-    GusdUT_ErrorManager errMgr(*lockedMgr);
-    GusdUT_ErrorContext errContext(errMgr, 
-        errorMode == MISSINGFRAME_WARN ? UT_ERROR_WARNING : UT_ERROR_ABORT);
+    UT_ErrorSeverity errorSev =
+        errorMode == MISSINGFRAME_WARN ? UT_ERROR_WARNING : UT_ERROR_ABORT;
 
     const GusdUSD_Traverse* trav = NULL;
     if(traversal != _NOTRAVERSE_NAME) {
@@ -399,13 +397,12 @@ GusdSOP_usdimport::_Cook(OP_Context& ctx)
         trav = table.FindTraversal(traversal);
         
         if(!trav) {
-            UT_WorkBuffer buf;
-            buf.sprintf("Failed locating traversal '%s'", traversal.c_str());
-            return errContext.AddError(buf.buffer());
+            GUSD_ERR().Msg("Failed locating traversal '%s'", traversal.c_str());
+            return error();
         }
     }
-    return getInput(0) ? _ExpandPrims(ctx, trav, errContext)
-                       : _CreateNewPrims(ctx, trav, errContext);
+    return getInput(0) ? _ExpandPrims(ctx, trav, errorSev)
+                       : _CreateNewPrims(ctx, trav, errorSev);
 }
 
 
@@ -458,7 +455,7 @@ _GetStageEditsForVariants(const UT_Array<SdfPath>& variants,
 OP_ERROR
 GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
                                    const GusdUSD_Traverse* traverse,
-                                   GusdUT_ErrorContext& err)
+                                   UT_ErrorSeverity sev)
 {
     fpreal t = ctx.getTime();
 
@@ -480,8 +477,8 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
 
     UT_Array<SdfPath> primPaths, variants;
     if(!GusdUSD_Utils::GetPrimAndVariantPathsFromPathList(
-           primPath, primPaths, variants, &err))
-        return err();
+           primPath, primPaths, variants, sev))
+        return error();
 
     GusdDefaultArray<UT_StringHolder> filePaths;
     filePaths.SetConstant(file);
@@ -498,8 +495,8 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
         GusdStageCacheReader cache;
         if(!cache.GetPrims(filePaths, primPaths, edits,
                            rootPrims.data(),
-                           GusdStageOpts::LoadAll(), &err))
-            return err();
+                           GusdStageOpts::LoadAll(), sev))
+            return error();
     }
 
     GusdDefaultArray<UsdTimeCode> times;
@@ -523,12 +520,12 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
         UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
         if(opts) {
             if(!opts->Configure(*this, t))
-                return err();
+                return error();
         }
 
         if(!traverse->FindPrims(rootPrims, times, purposes, primIndexPairs,
                                 /*skip root*/ false, opts.get())) {
-            return err();
+            return error();
         }
 
         // Resize the prims and variants lists to match the size of
@@ -564,18 +561,18 @@ GusdSOP_usdimport::_CreateNewPrims(OP_Context& ctx,
         lods.SetConstant(vpLOD);
 
         GusdGU_USD::AppendPackedPrims(*gdp, prims, variants,
-                                      times, lods, purposes, &err);
+                                      times, lods, purposes);
     } else {
         GusdGU_USD::AppendRefPoints(*gdp, prims, GUSD_PATH_ATTR,
-                                    GUSD_PRIMPATH_ATTR, &err);
+                                    GUSD_PRIMPATH_ATTR);
     }
-    return err();
+    return error();
 }
 
 OP_ERROR
 GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
                                 const GusdUSD_Traverse* traverse,
-                                GusdUT_ErrorContext& err)
+                                UT_ErrorSeverity sev)
 {
     if(!traverse)
         return UT_ERROR_NONE; // Nothing to do!
@@ -596,8 +593,8 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
         GusdStageCacheReader cache;
         if(!GusdGU_USD::BindPrims(cache, rootPrims, *gdp, rng,
                                   /*variants*/ nullptr,
-                                  &purposes, &times, &err)) {
-            return err();
+                                  &purposes, &times, sev)) {
+            return error();
         }
     }
     if(!times.IsVarying())
@@ -609,18 +606,18 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
         UT_UniquePtr<GusdUSD_Traverse::Opts> opts(traverse->CreateOpts());
         if(opts) {
             if(!opts->Configure(*this, t))
-                return err();
+                return error();
         }
 
         if(!traverse->FindPrims(rootPrims, times, purposes, expandedPrims,
                                 /*skip root*/ true, opts.get()))
-            return err();
+            return error();
     }
 
     GA_AttributeFilter filter(GA_AttributeFilter::selectPublic());
     GusdGU_USD::AppendExpandedRefPoints(
         *gdp, *gdp, rng, expandedPrims, filter,
-        GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR, &err);
+        GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR);
 
     if(evalInt("import_delold", 0, t)) {
         if(packedPrims)
@@ -628,7 +625,7 @@ GusdSOP_usdimport::_ExpandPrims(OP_Context& ctx,
         else
             gdp->destroyPoints(rng); // , GA_DESTROY_DEGENERATE);
     }
-    return err();
+    return error();
 }
                                
 

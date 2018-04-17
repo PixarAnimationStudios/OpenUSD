@@ -31,13 +31,13 @@
 #include <OP/OP_Value.h>
 #include <PRM/PRM_Include.h>
 #include <PRM/PRM_Parm.h>
+#include <UT/UT_Error.h>
 #include <UT/UT_ThreadSpecificValue.h>
 #include <UT/UT_Version.h>
 
 #include "gusd/PRM_Shared.h"
 #include "gusd/stageCache.h"
 #include "gusd/UT_Assert.h"
-#include "gusd/UT_Error.h"
 #include "gusd/UT_Gf.h"
 
 #include "pxr/usd/usd/prim.h"
@@ -701,8 +701,10 @@ GusdOBJ_usdcamera::_LoadCamera(fpreal t, int thread)
     /* Other thread may already have loaded the cam, so only update if needed.*/
     if(_camParmsMicroNode.updateIfNeeded(t, thread))
     {
-        _errors.clearAndDestroyErrors();
         _cam = UsdGeomCamera();
+
+        _errors.clearAndDestroyErrors();
+        UT_ErrorManager::Scope errorScope(_errors);
 
         GusdPRM_Shared prmShared;
         UT_String usdPath, primPath;
@@ -710,12 +712,9 @@ GusdOBJ_usdcamera::_LoadCamera(fpreal t, int thread)
         evalStringT(usdPath, prmShared->filePathName.getToken(), 0, t, thread);
         evalStringT(primPath, prmShared->primPathName.getToken(), 0, t, thread);
 
-        GusdUT_ErrorManager errMgr(_errors);
-        GusdUT_ErrorContext err(errMgr);
-
         GusdStageCacheReader cache;
         if(UsdPrim prim = cache.GetPrimWithVariants(
-               usdPath, primPath, GusdStageOpts::LoadAll(), &err).first) {
+               usdPath, primPath, GusdStageOpts::LoadAll()).first) {
 
             // Track changes to the stage (eg., reloads)
             DEP_MicroNode* stageMicroNode =
@@ -723,7 +722,7 @@ GusdOBJ_usdcamera::_LoadCamera(fpreal t, int thread)
             UT_ASSERT_P(stageMicroNode);
             _camParmsMicroNode.addExplicitInput(*stageMicroNode);
 
-            _cam = GusdUSD_Utils::MakeSchemaObj<UsdGeomCamera>(prim, &err);
+            _cam = GusdUSD_Utils::MakeSchemaObj<UsdGeomCamera>(prim);
             return _cam;
         }
     }

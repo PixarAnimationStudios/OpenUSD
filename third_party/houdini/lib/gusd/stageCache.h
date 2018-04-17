@@ -25,6 +25,7 @@
 #define _GUSD_STAGECACHE_H_
 
 #include <UT/UT_Array.h>
+#include <UT/UT_Error.h>
 #include <UT/UT_Set.h>
 
 #include "gusd/defaultArray.h"
@@ -160,11 +161,14 @@ public:
     
     /// Return a stage from the cache, if one exists.
     /// If not, attempt to open the stage and add it to the cache.
+    /// If \p path is a non-empty path and stage opening fails, errors
+    /// are reporting to the currently scoped error manager at a severity
+    /// of \p sev.
     UsdStageRefPtr
     FindOrOpen(const UT_StringRef& path,
                const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
                const GusdStageEditPtr& edit=nullptr,
-               GusdUT_ErrorContext* err=nullptr);
+               UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Get a micro node for a stage.
     /// Micro nodes are created on demand, and are dirtied both for
@@ -206,23 +210,31 @@ public:
     /// may either fail or introduce non-deterministic behavior.
 
     /// Get a prim from the cache, on a masked stage.
+    /// If \p path and \p primPath are both valid, and either a stage load
+    /// error occurs or no prim can be found, errors are reported on the
+    /// currently scoped error manager at a severity of \p sev.
     PrimStagePair
     GetPrim(const UT_StringRef& path,
             const SdfPath& primPath,
             const GusdStageEditPtr& stageEdit=GusdStageEditPtr(),
             const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-            GusdUT_ErrorContext* err=nullptr);
+            UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Get multiple prims from the cache (in parallel).
     /// If the configured error severity is less than UT_ERROR_ABORT,
     /// prim loading will continue even after load errors have occurred.
+    /// If any stage load errors occur, or if any prims cannot be found, errors
+    /// are reported on the currently scoped error manager with a severity of
+    /// \p sev. If \p sev is less than UT_ERROR_ABORT, prim loading will
+    /// continue even when errors occur for some prims. Otherwise, loading
+    /// aborts upon the first error.
     bool
     GetPrims(const GusdDefaultArray<UT_StringHolder>& filePaths,
              const UT_Array<SdfPath>& primPaths,
              const GusdDefaultArray<GusdStageEditPtr>& edits,
              UsdPrim* prims,
              const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-             GusdUT_ErrorContext* err=nullptr);
+             UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Get a prim from the cache, given a prim path that may contain
     /// variant selections. This is a convenience for the common case
@@ -233,13 +245,13 @@ public:
     GetPrimWithVariants(const UT_StringRef& path,
                         const SdfPath& primPath,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     PrimStagePair
     GetPrimWithVariants(const UT_StringRef& path,
                         const UT_StringRef& primPath,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Different variations of the above the variants are stored separately.
     PrimStagePair
@@ -247,14 +259,14 @@ public:
                         const SdfPath& primPath,
                         const SdfPath& variants,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     PrimStagePair
     GetPrimWithVariants(const UT_StringRef& path,
                         const UT_StringRef& primPath,
                         const UT_StringRef& varaints,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
     /// @}
 
 protected:

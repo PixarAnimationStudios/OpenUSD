@@ -67,11 +67,11 @@
 #include <VOP/VOP_Node.h>
 
 #include "gusd/gusd.h"
+#include "gusd/error.h"
 #include "gusd/primWrapper.h"
 #include "gusd/refiner.h"
 #include "gusd/stageCache.h"
 #include "gusd/shaderWrapper.h"
-#include "gusd/UT_Error.h"
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_Version.h"
 #include "gusd/context.h"
@@ -841,17 +841,14 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // later be saved to disk (writing out all overlay edits)
         // and once saved, will then be cleared back out.
 
-        std::string err;
         {
-            GusdUT_StrErrorScope scope(&err);
-            GusdUT_ErrorContext errCtx(scope);
-
+            UT_ErrorManager::Scope scope;
             GusdStageCacheReader cache;
             m_usdStage = cache.FindOrOpen(refFile, GusdStageOpts::LoadAll(),
-                                          GusdStageEditPtr(), &errCtx);
-        }
-        if (!m_usdStage) {
-            return abort(err);
+                                          GusdStageEditPtr());
+            if (!m_usdStage) {
+                return abort(GusdGetErrors());
+            }
         }
 
         // BUG: Mutating stages returned from the cache is not safe!
