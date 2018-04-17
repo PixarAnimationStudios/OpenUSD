@@ -85,13 +85,13 @@ UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
     if (!_IsVarying(prim,
                        UsdGeomTokens->radius,
                        HdChangeTracker::DirtyPoints,
-                       UsdImagingTokens->usdVaryingPrimVar,
+                       UsdImagingTokens->usdVaryingPrimvar,
                        timeVaryingBits,
                        /*isInherited*/false)) {
         _IsVarying(prim,
                    UsdGeomTokens->height,
                    HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimVar,
+                   UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits,
                    /*isInherited*/false);
     }

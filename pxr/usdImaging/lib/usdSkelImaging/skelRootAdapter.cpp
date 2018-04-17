@@ -162,7 +162,7 @@ UsdSkelImagingSkelRootAdapter::TrackVariability(
     if(const UsdSkelAnimQuery& animQuery = instance->skelQuery.GetAnimQuery()) {
         if(animQuery.JointTransformsMightBeTimeVarying()) {
             (*timeVaryingBits) |= HdChangeTracker::DirtyPoints;
-            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimVar);
+            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimvar);
         }
     }
 }

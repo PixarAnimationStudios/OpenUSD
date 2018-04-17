@@ -103,7 +103,7 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
     _IsVarying(prim,
                UsdGeomTokens->points,
                HdChangeTracker::DirtyPoints,
-               UsdImagingTokens->usdVaryingPrimVar,
+               UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                /*isInherited*/false);
 
@@ -140,13 +140,13 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
             _IsVarying(subset.GetPrim(),
                        UsdGeomTokens->elementType,
                        HdChangeTracker::DirtyTopology,
-                       UsdImagingTokens->usdVaryingPrimVar,
+                       UsdImagingTokens->usdVaryingPrimvar,
                        timeVaryingBits,
                        /*isInherited*/false);
             _IsVarying(subset.GetPrim(),
                        UsdGeomTokens->indices,
                        HdChangeTracker::DirtyTopology,
-                       UsdImagingTokens->usdVaryingPrimVar,
+                       UsdImagingTokens->usdVaryingPrimvar,
                        timeVaryingBits,
                        /*isInherited*/false);
         }

@@ -142,7 +142,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
     if (!_IsVarying(prim,
                UsdGeomTokens->primvarsDisplayColor,
                HdChangeTracker::DirtyPrimvar,
-               UsdImagingTokens->usdVaryingPrimVar,
+               UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                false)) {
         // Only do this second check if the displayColor isn't already known
@@ -150,7 +150,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
         _IsVarying(prim,
                UsdGeomTokens->primvarsDisplayOpacity,
                HdChangeTracker::DirtyPrimvar,
-               UsdImagingTokens->usdVaryingPrimVar,
+               UsdImagingTokens->usdVaryingPrimvar,
                timeVaryingBits,
                false);
     }
