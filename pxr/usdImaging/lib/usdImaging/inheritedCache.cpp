@@ -31,17 +31,27 @@ void
 UsdImaging_MaterialBindingImplData::ClearCaches()
 {
     TRACE_FUNCTION();
-    // Speed up destuction of the cache by resetting the shared_ptrs held 
+
+    // Speed up destuction of the cache by resetting the unique_ptrs held 
     // within in parallel.
-    WorkParallelForEach(_bindingsCache.begin(), _bindingsCache.end(),
-        [](UsdShadeMaterialBindingAPI::BindingsCache::value_type &entry) {
-            entry.second.reset();
-        });
-    WorkParallelForEach(_collQueryCache.begin(), _collQueryCache.end(),
-        [](UsdShadeMaterialBindingAPI::CollectionQueryCache::value_type 
-                &entry) {
-            entry.second.reset();
-        });
+    tbb::parallel_for(_bindingsCache.range(), 
+        []( decltype(_bindingsCache)::range_type &range) {
+            for (auto entryIt = range.begin(); entryIt != range.end(); 
+                    ++entryIt) {
+                entryIt->second.release();
+            }
+        }
+    );
+
+    tbb::parallel_for(_collQueryCache.range(), 
+        []( decltype(_collQueryCache)::range_type &range) {
+            for (auto entryIt = range.begin(); entryIt != range.end(); 
+                    ++entryIt) {
+                entryIt->second.release();
+            }
+        }
+    );
+
     _bindingsCache.clear();
     _collQueryCache.clear();
 }
