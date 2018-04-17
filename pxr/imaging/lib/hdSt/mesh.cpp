@@ -504,23 +504,23 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         renderIndex.GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primVarNames = GetPrimvarVertexNames(sceneDelegate);
+    TfTokenVector primvarNames = GetPrimvarVertexNames(sceneDelegate);
 
     // Track the last vertex index to distinguish between vertex and varying
     // while processing.
-    int vertexPartitionIndex = int(primVarNames.size()-1);
+    int vertexPartitionIndex = int(primvarNames.size()-1);
 
     // Add varying primvars.
     TfTokenVector const& varyingNames = GetPrimvarVaryingNames(sceneDelegate);
-    primVarNames.reserve(primVarNames.size() + varyingNames.size());
-    primVarNames.insert(primVarNames.end(),
+    primvarNames.reserve(primvarNames.size() + varyingNames.size());
+    primvarNames.insert(primvarNames.end(),
                         varyingNames.begin(), varyingNames.end());
 
     HdBufferSourceVector sources;
     HdBufferSourceVector reserveOnlySources;
     HdBufferSourceVector separateComputationSources;
     HdComputationVector computations;
-    sources.reserve(primVarNames.size());
+    sources.reserve(primvarNames.size());
 
     int numPoints = _topology ? _topology->GetNumPoints() : 0;
     int refineLevel = _topology ? _topology->GetRefineLevel() : 0;
@@ -588,7 +588,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
     // Track index to identify varying primvars.
     int i = 0;
-    TF_FOR_ALL(nameIt, primVarNames) {
+    TF_FOR_ALL(nameIt, primvarNames) {
         // If the index is greater than the last vertex index, isVarying=true.
         bool isVarying = i++ > vertexPartitionIndex;
 
@@ -846,7 +846,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         } else {
             range = resourceRegistry->AllocateNonUniformBufferArrayRange(
-                                              HdTokens->primVar, bufferSpecs);
+                                              HdTokens->primvar, bufferSpecs);
         }
 
         _sharedData.barContainer.Set(
@@ -889,12 +889,12 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 // is immutable, migrate to a mutable buffer array
                 _vertexPrimvarId = 0;
                 range = resourceRegistry->MergeNonUniformBufferArrayRange(
-                            HdTokens->primVar, bufferSpecs, bar);
+                            HdTokens->primvar, bufferSpecs, bar);
             }
         } else if (isNew) {
             // the range was created by other repr. check compatibility.
             range = resourceRegistry->MergeNonUniformBufferArrayRange(
-                                           HdTokens->primVar, bufferSpecs, bar);
+                                           HdTokens->primvar, bufferSpecs, bar);
         }
 
         if (range != bar) {
@@ -1020,7 +1020,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetFaceVaryingPrimvarIndex(), range);
     }
@@ -1084,7 +1084,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     }
@@ -1160,11 +1160,11 @@ HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
         if (existing) {
             range = resourceRegistry->
                 MergeNonUniformImmutableBufferArrayRange(
-                    HdTokens->primVar, bufferSpecs, existing);
+                    HdTokens->primvar, bufferSpecs, existing);
         } else {
             range = resourceRegistry->
                 AllocateNonUniformImmutableBufferArrayRange(
-                    HdTokens->primVar, bufferSpecs);
+                    HdTokens->primvar, bufferSpecs);
         }
         barInstance.SetValue(range);
     } else {

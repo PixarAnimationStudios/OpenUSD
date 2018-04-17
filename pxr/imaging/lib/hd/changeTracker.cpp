@@ -581,7 +581,7 @@ HdChangeTracker::IsAnyPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const &id)
                                  DirtyNormals|
                                  DirtyWidths|
                                  DirtyPrimvar)) != 0;
-    _LogCacheAccess(HdTokens->primVar, id, !isDirty);
+    _LogCacheAccess(HdTokens->primvar, id, !isDirty);
     return isDirty;
 }
 

@@ -182,7 +182,7 @@ HdStInstancer::GetInstancePrimVars()
 
                     _instancePrimVarRange =
                         resourceRegistry->AllocateNonUniformBufferArrayRange(
-                            HdTokens->primVar, bufferSpecs);
+                            HdTokens->primvar, bufferSpecs);
                 }
                 TF_VERIFY(_instancePrimVarRange->IsValid());
 

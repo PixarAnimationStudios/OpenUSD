@@ -77,7 +77,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         HdBufferSpec::AddBufferSpecs(&bufferSpecs, inputs);
 
         _inputRange = resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
 
         resourceRegistry->AddSources(_inputRange, inputs);
     }

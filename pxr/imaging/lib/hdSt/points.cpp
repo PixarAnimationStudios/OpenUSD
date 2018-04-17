@@ -172,16 +172,16 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primVarNames = GetPrimvarVertexNames(sceneDelegate);
+    TfTokenVector primvarNames = GetPrimvarVertexNames(sceneDelegate);
     TfTokenVector const& vars = GetPrimvarVaryingNames(sceneDelegate);
-    primVarNames.insert(primVarNames.end(), vars.begin(), vars.end());
+    primvarNames.insert(primvarNames.end(), vars.begin(), vars.end());
 
     HdBufferSourceVector sources;
-    sources.reserve(primVarNames.size());
+    sources.reserve(primvarNames.size());
 
     int pointsIndexInSourceArray = -1;
 
-    TF_FOR_ALL(nameIt, primVarNames) {
+    TF_FOR_ALL(nameIt, primvarNames) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
@@ -220,7 +220,7 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
 

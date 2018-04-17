@@ -93,7 +93,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (points)                                    \
     (pointsIndices)                             \
     (power)                                     \
-    (primVar)                                   \
+    (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
     (proxy)                                     \

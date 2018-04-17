@@ -521,7 +521,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primVarNames = GetPrimvarVertexNames(sceneDelegate);
+    TfTokenVector primvarNames = GetPrimvarVertexNames(sceneDelegate);
     TfTokenVector const& vars = GetPrimvarVaryingNames(sceneDelegate);
     // XXX: It's sort of a waste to do basis width interpolation by default, 
     // but in testImagingComputation there seems to be a way to initialize this
@@ -538,13 +538,13 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     // can do a better pass on curve normals.)
     _basisNormalInterpolation =  std::find(vars.begin(), 
             vars.end(), HdTokens->normals) == vars.end();
-    primVarNames.insert(primVarNames.end(), vars.begin(), vars.end());
+    primvarNames.insert(primvarNames.end(), vars.begin(), vars.end());
 
     HdBufferSourceVector sources;
     HdBufferSourceVector reserveOnlySources;
     HdBufferSourceVector separateComputationSources;
     HdComputationVector computations;
-    sources.reserve(primVarNames.size());
+    sources.reserve(primvarNames.size());
 
     HdSt_GetExtComputationPrimvarsComputations(
         id,
@@ -556,7 +556,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         &separateComputationSources,
         &computations);
 
-    TF_FOR_ALL(nameIt, primVarNames) {
+    TF_FOR_ALL(nameIt, primvarNames) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
@@ -619,7 +619,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
     }
@@ -655,12 +655,12 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    TfTokenVector primVarNames = GetPrimvarUniformNames(sceneDelegate);
+    TfTokenVector primvarNames = GetPrimvarUniformNames(sceneDelegate);
 
     HdBufferSourceVector sources;
-    sources.reserve(primVarNames.size());
+    sources.reserve(primvarNames.size());
 
-    TF_FOR_ALL(nameIt, primVarNames) {
+    TF_FOR_ALL(nameIt, primvarNames) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
@@ -684,7 +684,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
         }
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         _sharedData.barContainer.Set(
             drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     }

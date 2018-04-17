@@ -371,9 +371,9 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
     }
 
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        TfTokenVector primVarNames = delegate->GetPrimvarConstantNames(id);
-        sources.reserve(sources.size()+primVarNames.size());
-        for (const TfToken& name: primVarNames) {
+        TfTokenVector primvarNames = delegate->GetPrimvarConstantNames(id);
+        sources.reserve(sources.size()+primvarNames.size());
+        for (const TfToken& name: primvarNames) {
             if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, name)) {
                 VtValue value = delegate->Get(id, name);
 
@@ -415,7 +415,7 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         TF_VERIFY(range->IsValid());
 
         _sharedData.barContainer.Set(
