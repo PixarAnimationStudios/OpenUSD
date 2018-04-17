@@ -264,7 +264,7 @@ public:
     PrimStagePair
     GetPrimWithVariants(const UT_StringRef& path,
                         const UT_StringRef& primPath,
-                        const UT_StringRef& varaints,
+                        const UT_StringRef& variants,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
                         UT_ErrorSeverity sev=UT_ERROR_ABORT);
     /// @}
