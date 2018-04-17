@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import UsdUtils, Usd, Sdf, UsdGeom, Gf
+from pxr import UsdUtils, Usd, Sdf, UsdGeom, Gf, Tf
 
 import unittest
 
@@ -280,6 +280,12 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
         # which is 1.0.
         self.assertTrue(radius.HasAuthoredValueOpinion())
 
+        self.assertEqual(radius.Get(), 2.0)
+        # Calling SetAttribute again with time-Default will update the default
+        # value.
+        valueWriter.SetAttribute(radius, 5.0, Usd.TimeCode.Default());
+        self.assertEqual(radius.Get(), 5.0)
+
         valueWriter.SetAttribute(radius, 10.0, 1.0);
         valueWriter.SetAttribute(radius, 20.0, 2.0);
         valueWriter.SetAttribute(radius, 20.0, 3.0);
@@ -305,30 +311,16 @@ class TestUsdUtilsSparseAuthoring(unittest.TestCase):
         # No default value was specified. So no authored value yet.
         self.assertFalse(attr1.HasAuthoredValueOpinion())
 
-        from pxr import Tf
+        attrValueWriter.SetTimeSample(10.0, time=10.0)
+        # Authoring an earlier time-sample than the previous one results in 
+        # a coding error also.
+
         # Calling SetTimeSample with time=default raises a coding error.
         with self.assertRaises(Tf.ErrorException):
             attrValueWriter.SetTimeSample(10.0, Usd.TimeCode.Default())
 
-        attrValueWriter.SetTimeSample(10.0, time=10.0)
-        # Authoring an earlier time-sample than the previous one results in 
-        # a coding error also.
         with self.assertRaises(Tf.ErrorException):
             attrValueWriter.SetTimeSample(20.0, time=5.0)
-
-        valueWriter = UsdUtils.SparseValueWriter()
-        attr2 = scope.GetPrim().CreateAttribute("attr2", 
-                Sdf.ValueTypeNames.Float)
-        valueWriter.SetAttribute(attr2, value=10.0, time=Usd.TimeCode.Default())
-        self.assertEqual(attr2.Get(), 10.0)
-
-        # Calling SetAttribute for the same attribute again with time=default 
-        # results in a coding error. No value is set.
-        with self.assertRaises(Tf.ErrorException):
-            valueWriter.SetAttribute(attr2, value=20.0, 
-                                     time=Usd.TimeCode.Default())
-        
-        self.assertEqual(attr2.Get(), 10.0)
 
 if __name__=="__main__":
     unittest.main()

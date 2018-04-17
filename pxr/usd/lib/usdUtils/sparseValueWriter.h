@@ -168,8 +168,8 @@ private:
 /// time-samples. 
 /// 
 /// \note If the attribute has a default value, SetAttribute() must be 
-/// called exactly once with time=Default first, followed by calls to author 
-/// time-samples in sequentially increasing time order.
+/// called with time=Default first (multiple times, if necessary), followed by 
+/// calls to author time-samples in sequentially increasing time order.
 /// 
 /// \note This class is not threadsafe.
 /// In general, authoring to a single USD layer from multiple threads isn't

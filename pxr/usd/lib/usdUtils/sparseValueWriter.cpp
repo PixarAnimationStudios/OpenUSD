@@ -246,12 +246,15 @@ UsdUtilsSparseAttrValueWriter::_InitializeSparseAuthoring(
 bool
 UsdUtilsSparseAttrValueWriter::SetTimeSample(
     const VtValue &value, 
-    const UsdTimeCode time) 
+    const UsdTimeCode time)
 {
     if (time.IsDefault()) {
-        TF_CODING_ERROR("UsdUtilsSparseAttrValueWriter::SetTimeSample should "
-            "not be called with time=Default.");
-        return false;
+        if (!_prevTime.IsDefault()) {
+            TF_CODING_ERROR("UsdUtilsSparseAttrValueWriter::SetTimeSample was "
+                "called with time=Default on attr <%s> with existing "
+                "time-samples.", _attr.GetPath().GetText());
+            return false;
+        }
     }
 
     if (_prevTime > time) {
@@ -292,9 +295,12 @@ UsdUtilsSparseAttrValueWriter::SetTimeSample(
     const UsdTimeCode time) 
 {
     if (time.IsDefault()) {
-        TF_CODING_ERROR("UsdUtilsSparseAttrValueWriter::SetTimeSample should "
-            "not be called with time=Default.");
-        return false;
+        if (!_prevTime.IsDefault()) {
+            TF_CODING_ERROR("UsdUtilsSparseAttrValueWriter::SetTimeSample was "
+                "called with time=Default on attr <%s> with existing "
+                "time-samples.", _attr.GetPath().GetText());
+            return false;
+        }
     }
 
     if (_prevTime > time) {
