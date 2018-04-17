@@ -1741,7 +1741,7 @@ class StageView(QtOpenGL.QGLWidget):
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
             toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
             toPrint["GPU mem  "] = gpuMemTotal
-            toPrint[" primvar "] = allocInfo["primVar"] if "primVar" in allocInfo else "N/A"
+            toPrint[" primvar "] = allocInfo["primvar"] if "primvar" in allocInfo else "N/A"
             toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
             toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
             toPrint[" texture "] = texMem
