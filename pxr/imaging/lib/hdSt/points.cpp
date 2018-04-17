@@ -119,9 +119,9 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits);
     }
 
-    // VertexPrimVar may be null, if there are no points in the prim.
+    // VertexPrimvar may be null, if there are no points in the prim.
 
-    TF_VERIFY(drawItem->GetConstantPrimVarRange());
+    TF_VERIFY(drawItem->GetConstantPrimvarRange());
 }
 
 void
@@ -210,8 +210,8 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     if (sources.empty())
         return;
 
-    if (!drawItem->GetVertexPrimVarRange() ||
-        !drawItem->GetVertexPrimVarRange()->IsValid()) {
+    if (!drawItem->GetVertexPrimvarRange() ||
+        !drawItem->GetVertexPrimvarRange()->IsValid()) {
         // initialize buffer array
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(it, sources) {
@@ -222,11 +222,11 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primVar, bufferSpecs);
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
 
     } else if (pointsIndexInSourceArray >=0) {
 
-        int previousRange = drawItem->GetVertexPrimVarRange()->GetNumElements();
+        int previousRange = drawItem->GetVertexPrimvarRange()->GetNumElements();
         int newRange = sources[pointsIndexInSourceArray]->GetNumElements();
 
         // Check if the range is different and if so force a garbage collection
@@ -237,7 +237,7 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     }
 
     // add sources to update queue
-    resourceRegistry->AddSources(drawItem->GetVertexPrimVarRange(),
+    resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
                                  sources);
 }
 

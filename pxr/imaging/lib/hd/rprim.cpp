@@ -406,7 +406,7 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
         return;
 
     // Allocate a new uniform buffer if not exists.
-    if (!drawItem->GetConstantPrimVarRange()) {
+    if (!drawItem->GetConstantPrimvarRange()) {
         // establish a buffer range
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(srcIt, sources) {
@@ -419,12 +419,12 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
         TF_VERIFY(range->IsValid());
 
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetConstantPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetConstantPrimvarIndex(), range);
     }
-    TF_VERIFY(drawItem->GetConstantPrimVarRange()->IsValid());
+    TF_VERIFY(drawItem->GetConstantPrimvarRange()->IsValid());
 
     resourceRegistry->AddSources(
-        drawItem->GetConstantPrimVarRange(), sources);
+        drawItem->GetConstantPrimvarRange(), sources);
 }
 
 VtMatrix4dArray

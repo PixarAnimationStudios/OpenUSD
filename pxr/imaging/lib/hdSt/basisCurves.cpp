@@ -140,7 +140,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     // Topology and VertexPrimVar may be null, if the curve has zero line
     // segments.
-    TF_VERIFY(drawItem->GetConstantPrimVarRange());
+    TF_VERIFY(drawItem->GetConstantPrimvarRange());
 }
 
 static const char* HdSt_PrimTypeToString(HdSt_GeometricShader::PrimitiveType type){
@@ -608,8 +608,8 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    if (!drawItem->GetVertexPrimVarRange() ||
-        !drawItem->GetVertexPrimVarRange()->IsValid()) {
+    if (!drawItem->GetVertexPrimvarRange() ||
+        !drawItem->GetVertexPrimvarRange()->IsValid()) {
 
         // new buffer specs
         HdBufferSpecVector bufferSpecs;
@@ -621,17 +621,17 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primVar, bufferSpecs);
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
     }
 
     // add sources to update queue
     if (!sources.empty()) {
-        resourceRegistry->AddSources(drawItem->GetVertexPrimVarRange(),
+        resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
                                      sources);
     }
     if (!computations.empty()) {
         TF_FOR_ALL(it, computations) {
-            resourceRegistry->AddComputation(drawItem->GetVertexPrimVarRange(),
+            resourceRegistry->AddComputation(drawItem->GetVertexPrimvarRange(),
                                              *it);
         }
     }
@@ -676,8 +676,8 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
         return;
 
     // element primvars exist.
-    if (!drawItem->GetElementPrimVarRange() ||
-        !drawItem->GetElementPrimVarRange()->IsValid()) {
+    if (!drawItem->GetElementPrimvarRange() ||
+        !drawItem->GetElementPrimvarRange()->IsValid()) {
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(it, sources) {
             (*it)->AddBufferSpecs(&bufferSpecs);
@@ -686,10 +686,10 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primVar, bufferSpecs);
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetElementPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     }
 
-    resourceRegistry->AddSources(drawItem->GetElementPrimVarRange(),
+    resourceRegistry->AddSources(drawItem->GetElementPrimvarRange(),
                                  sources);
 }
 
@@ -701,25 +701,25 @@ HdSt_HasResource(HdStDrawItem* drawItem, const TfToken& resourceToken){
     bool hasAuthoredResouce = false;
 
     typedef HdBufferArrayRangeSharedPtr HdBarPtr;
-    if (HdBarPtr const& bar = drawItem->GetConstantPrimVarRange()){
+    if (HdBarPtr const& bar = drawItem->GetConstantPrimvarRange()){
         HdStBufferArrayRangeGLSharedPtr bar_ =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
-    if (HdBarPtr const& bar = drawItem->GetVertexPrimVarRange()) {
+    if (HdBarPtr const& bar = drawItem->GetVertexPrimvarRange()) {
         HdStBufferArrayRangeGLSharedPtr bar_ =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
-    if (HdBarPtr const& bar = drawItem->GetElementPrimVarRange()){
+    if (HdBarPtr const& bar = drawItem->GetElementPrimvarRange()){
         HdStBufferArrayRangeGLSharedPtr bar_ =
             boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 
         hasAuthoredResouce |= bool(bar_->GetResource(resourceToken));
     }
-    int instanceNumLevels = drawItem->GetInstancePrimVarNumLevels();
+    int instanceNumLevels = drawItem->GetInstancePrimvarNumLevels();
     for (int i = 0; i < instanceNumLevels; ++i) {
-        if (HdBarPtr const& bar = drawItem->GetInstancePrimVarRange(i)) {
+        if (HdBarPtr const& bar = drawItem->GetInstancePrimvarRange(i)) {
             HdStBufferArrayRangeGLSharedPtr bar_ =
                 boost::static_pointer_cast<HdStBufferArrayRangeGL> (bar);
 

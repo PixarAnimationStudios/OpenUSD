@@ -60,10 +60,10 @@ HdStInstancer::PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedD
     HdStInstancer *currentInstancer = this;
     while (currentInstancer) {
         // allocate instance primvar slot in the drawing coordinate.
-        drawingCoord->SetInstancePrimVarIndex(level,
+        drawingCoord->SetInstancePrimvarIndex(level,
                                               instancePrimVarSlot + level);
         sharedData->barContainer.Set(
-            drawingCoord->GetInstancePrimVarIndex(level),
+            drawingCoord->GetInstancePrimvarIndex(level),
             currentInstancer->GetInstancePrimVars());
 
         // next

@@ -621,7 +621,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                     // the whole prim.  Drop the Bar, to invalidate the prim and
                     // stop further processing.
                     _sharedData.barContainer.Set(
-                           drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(),
+                           drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
                            HdBufferArrayRangeSharedPtr());
 
                     HF_VALIDATION_WARN(id, 
@@ -747,7 +747,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
                 pointsDataType = points->GetTupleType().type;
             } else {
                 if (HdBufferArrayRangeSharedPtr const &bar =
-                    drawItem->GetVertexPrimVarRange()) {
+                    drawItem->GetVertexPrimvarRange()) {
                     if (bar->IsValid()) {
                         HdStBufferArrayRangeGLSharedPtr bar_ =
                             boost::static_pointer_cast<HdStBufferArrayRangeGL>
@@ -819,7 +819,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     HdBufferSpec::AddBufferSpecs(&bufferSpecs, reserveOnlySources);
     HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
 
-    HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimVarRange();
+    HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimvarRange();
     if ((!bar) || (!bar->IsValid())) {
         // allocate new range
         HdBufferArrayRangeSharedPtr range;
@@ -850,7 +850,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         }
 
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
 
     } else {
         // already have a valid range, but the new repr may have
@@ -899,7 +899,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
 
         if (range != bar) {
             _sharedData.barContainer.Set(
-                drawItem->GetDrawingCoord()->GetVertexPrimVarIndex(), range);
+                drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(), range);
 
             // If buffer migration actually happens, the old buffer will no
             // longer be needed, and GC is required to reclaim their memory.
@@ -926,14 +926,14 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     // schedule buffer sources
     if (!sources.empty()) {
         // add sources to update queue
-        resourceRegistry->AddSources(drawItem->GetVertexPrimVarRange(),
+        resourceRegistry->AddSources(drawItem->GetVertexPrimvarRange(),
                                      sources);
     }
     if (!computations.empty()) {
         // add gpu computations to queue.
         TF_FOR_ALL(it, computations) {
             resourceRegistry->AddComputation(
-                drawItem->GetVertexPrimVarRange(), *it);
+                drawItem->GetVertexPrimvarRange(), *it);
         }
     }
     if (!separateComputationSources.empty()) {
@@ -1014,7 +1014,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
     // face varying primvars exist.
     // allocate new bar if not exists
-    if (!drawItem->GetFaceVaryingPrimVarRange()) {
+    if (!drawItem->GetFaceVaryingPrimvarRange()) {
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
@@ -1022,13 +1022,13 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primVar, bufferSpecs);
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetFaceVaryingPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetFaceVaryingPrimvarIndex(), range);
     }
 
-    TF_VERIFY(drawItem->GetFaceVaryingPrimVarRange()->IsValid());
+    TF_VERIFY(drawItem->GetFaceVaryingPrimvarRange()->IsValid());
 
     resourceRegistry->AddSources(
-        drawItem->GetFaceVaryingPrimVarRange(), sources);
+        drawItem->GetFaceVaryingPrimvarRange(), sources);
 }
 
 void
@@ -1078,7 +1078,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
 
     // element primvars exist.
     // allocate new bar if not exists
-    if (!drawItem->GetElementPrimVarRange()) {
+    if (!drawItem->GetElementPrimvarRange()) {
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
 
@@ -1086,13 +1086,13 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primVar, bufferSpecs);
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetElementPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetElementPrimvarIndex(), range);
     }
 
-    TF_VERIFY(drawItem->GetElementPrimVarRange()->IsValid());
+    TF_VERIFY(drawItem->GetElementPrimvarRange()->IsValid());
 
     resourceRegistry->AddSources(
-        drawItem->GetElementPrimVarRange(), sources);
+        drawItem->GetElementPrimvarRange(), sources);
 }
 
 bool
@@ -1269,7 +1269,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // work with delegates that don't keep information around once extracted.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 
-    TF_VERIFY(drawItem->GetConstantPrimVarRange());
+    TF_VERIFY(drawItem->GetConstantPrimvarRange());
     // Topology and VertexPrimVar may be null, if the mesh has zero faces.
     // Element primvar, Facevarying primvar and Instance primvar are optional
 }
@@ -1282,7 +1282,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
     bool hasFaceVaryingPrimVars =
-        (bool)drawItem->GetFaceVaryingPrimVarRange();
+        (bool)drawItem->GetFaceVaryingPrimvarRange();
 
     int refineLevel = _GetRefineLevelForDesc(desc);
 

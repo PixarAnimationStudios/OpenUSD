@@ -188,7 +188,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // per-face buffer data (fetched through ElementID in primitiveParam)
         //
         HdBufferArrayRangeSharedPtr const & elementBar_ =
-            drawItem->GetElementPrimVarRange();
+            drawItem->GetElementPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr elementBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
@@ -203,7 +203,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // vertex attrib buffer data
         //
         HdBufferArrayRangeSharedPtr const & vertexBar_ =
-            drawItem->GetVertexPrimVarRange();
+            drawItem->GetVertexPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr vertexBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
@@ -218,7 +218,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // constant (uniform) buffer data
         //
         HdBufferArrayRangeSharedPtr const & constantBar_ =
-            drawItem->GetConstantPrimVarRange();
+            drawItem->GetConstantPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr constantBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
@@ -233,7 +233,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // facevarying buffer data
         //
         HdBufferArrayRangeSharedPtr const & fvarBar_ =
-            drawItem->GetFaceVaryingPrimVarRange();
+            drawItem->GetFaceVaryingPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr fvarBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
@@ -247,11 +247,11 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         // instance buffer data
         //
-        int instancerNumLevels = drawItem->GetInstancePrimVarNumLevels();
+        int instancerNumLevels = drawItem->GetInstancePrimvarNumLevels();
         int instanceIndexWidth = instancerNumLevels + 1;
         for (int i = 0; i < instancerNumLevels; ++i) {
             HdBufferArrayRangeSharedPtr const & instanceBar_ =
-                drawItem->GetInstancePrimVarRange(i);
+                drawItem->GetInstancePrimvarRange(i);
 
             HdStBufferArrayRangeGLSharedPtr instanceBar =
                 boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceBar_);

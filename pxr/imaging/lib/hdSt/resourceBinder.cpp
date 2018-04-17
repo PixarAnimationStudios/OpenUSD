@@ -189,12 +189,12 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap.clear();
 
     // constant primvar (per-object)
-    HdBinding constantPrimVarBinding =
+    HdBinding constantPrimvarBinding =
                 locator.GetBinding(structBufferBindingType,
                                    _tokens->constantPrimvars);
 
     if (HdBufferArrayRangeSharedPtr constantBar_ =
-        drawItem->GetConstantPrimVarRange()) {
+        drawItem->GetConstantPrimvarRange()) {
 
         HdStBufferArrayRangeGLSharedPtr constantBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
@@ -216,32 +216,32 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         std::sort(sblock.entries.begin(), sblock.entries.end());
 
         metaDataOut->constantData.insert(
-            std::make_pair(constantPrimVarBinding, sblock));
+            std::make_pair(constantPrimvarBinding, sblock));
     }
 
      // constant primvars are interleaved into single struct.
-    _bindingMap[_tokens->constantPrimvars] = constantPrimVarBinding;
+    _bindingMap[_tokens->constantPrimvars] = constantPrimvarBinding;
 
     // instance primvar (per-instance)
-    int instancerNumLevels = drawItem->GetInstancePrimVarNumLevels();
+    int instancerNumLevels = drawItem->GetInstancePrimvarNumLevels();
     metaDataOut->instancerNumLevels = instancerNumLevels;
     for (int i = 0; i < instancerNumLevels; ++i) {
         if (HdBufferArrayRangeSharedPtr instanceBar_ =
-            drawItem->GetInstancePrimVarRange(i)) {
+            drawItem->GetInstancePrimvarRange(i)) {
 
             HdStBufferArrayRangeGLSharedPtr instanceBar =
                 boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceBar_);
 
             TF_FOR_ALL (it, instanceBar->GetResources()) {
                 // non-interleaved, always create new binding.
-                HdBinding instancePrimVarBinding =
+                HdBinding instancePrimvarBinding =
                     locator.GetBinding(arrayBufferBindingType, it->first);
-                _bindingMap[NameAndLevel(it->first, i)] = instancePrimVarBinding;
+                _bindingMap[NameAndLevel(it->first, i)] = instancePrimvarBinding;
 
                 HdTupleType valueType = it->second->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
-                metaDataOut->instanceData[instancePrimVarBinding] =
+                metaDataOut->instanceData[instancePrimvarBinding] =
                     MetaData::NestedPrimVar(
                         /*name=*/it->first,
                         /*type=*/glType,
@@ -253,19 +253,19 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // vertex primvar (per-vertex)
     // always assigned to VertexAttribute.
     if (HdBufferArrayRangeSharedPtr vertexBar_ =
-        drawItem->GetVertexPrimVarRange()) {
+        drawItem->GetVertexPrimvarRange()) {
 
         HdStBufferArrayRangeGLSharedPtr vertexBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
 
         TF_FOR_ALL (it, vertexBar->GetResources()) {
-            HdBinding vertexPrimVarBinding =
+            HdBinding vertexPrimvarBinding =
                 locator.GetBinding(HdBinding::VERTEX_ATTR, it->first);
-            _bindingMap[it->first] = vertexPrimVarBinding;
+            _bindingMap[it->first] = vertexPrimvarBinding;
 
             HdTupleType valueType = it->second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
-            metaDataOut->vertexData[vertexPrimVarBinding] =
+            metaDataOut->vertexData[vertexPrimvarBinding] =
                 MetaData::PrimVar(/*name=*/it->first,
                                   /*type=*/glType);
         }
@@ -316,19 +316,19 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
     // element primvar (per-face, per-line)
     if (HdBufferArrayRangeSharedPtr elementBar_ =
-        drawItem->GetElementPrimVarRange()) {
+        drawItem->GetElementPrimvarRange()) {
 
         HdStBufferArrayRangeGLSharedPtr elementBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
 
         TF_FOR_ALL (it, elementBar->GetResources()) {
-            HdBinding elementPrimVarBinding =
+            HdBinding elementPrimvarBinding =
                 locator.GetBinding(arrayBufferBindingType, it->first);
-            _bindingMap[it->first] = elementPrimVarBinding;
+            _bindingMap[it->first] = elementPrimvarBinding;
             HdTupleType valueType = it->second->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
-            metaDataOut->elementData[elementPrimVarBinding] =
+            metaDataOut->elementData[elementPrimvarBinding] =
                 MetaData::PrimVar(/*name=*/it->first,
                                   /*type=*/glType);
         }
@@ -336,19 +336,19 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
     // facevarying primvar (per-face-vertex)
     if (HdBufferArrayRangeSharedPtr fvarBar_ =
-        drawItem->GetFaceVaryingPrimVarRange()) {
+        drawItem->GetFaceVaryingPrimvarRange()) {
 
         HdStBufferArrayRangeGLSharedPtr fvarBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
 
         TF_FOR_ALL (it, fvarBar->GetResources()) {
-            HdBinding fvarPrimVarBinding =
+            HdBinding fvarPrimvarBinding =
                 locator.GetBinding(arrayBufferBindingType, it->first);
-            _bindingMap[it->first] = fvarPrimVarBinding;
+            _bindingMap[it->first] = fvarPrimvarBinding;
             HdTupleType valueType = it->second->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
-            metaDataOut->fvarData[fvarPrimVarBinding] =
+            metaDataOut->fvarData[fvarPrimvarBinding] =
                 MetaData::PrimVar(/*name=*/it->first,
                                   /*type=*/glType);
         }
