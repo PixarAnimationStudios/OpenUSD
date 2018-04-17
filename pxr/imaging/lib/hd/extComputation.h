@@ -39,7 +39,7 @@ class HdSceneDelegate;
 ///
 /// Hydra Representation of a Client defined computation.
 ///
-/// A computation provides a way to procedurally generate a primVar.
+/// A computation provides a way to procedurally generate a primvar.
 ///
 /// In represents a basic Input -> Processing -> Output model.
 ///

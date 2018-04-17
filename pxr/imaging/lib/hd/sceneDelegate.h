@@ -70,12 +70,12 @@ struct HdSyncRequestVector {
 ///
 /// Describes a Primvar that is sourced from an ExtComputation.
 /// The scene delegate is expected to fill in this structure for
-/// a given primVar name on a specific prim.
+/// a given primvar name on a specific prim.
 ///
 /// The structure contains the path to the ExtComputation in the render index,
-/// and which output on that computation to bind the primVar to.
+/// and which output on that computation to bind the primvar to.
 ///
-/// The defaultValue provides expected type information about the primVar
+/// The defaultValue provides expected type information about the primvar
 /// and may be used in case of error.
 struct HdExtComputationPrimvarDesc {
     SdfPath         computationId;
@@ -417,7 +417,7 @@ public:
     HD_API
     virtual TfTokenVector GetExtComputationOutputNames(SdfPath const& id);
 
-    /// Returns a list of primVar names that should be bound to
+    /// Returns a list of primvar names that should be bound to
     /// a generated output from  an ExtComputation for the given prim id and
     /// interpolation mode.  Binding information is obtained through
     /// GetExtComputationPrimvarDesc()
@@ -426,7 +426,7 @@ public:
                                              SdfPath const& id,
                                              HdInterpolation interpolationMode);
 
-    /// Returns a structure describing source information for a primVar
+    /// Returns a structure describing source information for a primvar
     /// that is bound to an ExtComputation.  See HdExtComputationPrimvarDesc
     /// for the expected information to be returned.
     HD_API

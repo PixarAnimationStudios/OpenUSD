@@ -271,7 +271,7 @@ enum HdFormat
 ///
 /// \enum HdInterpolation
 ///
-/// Enumerates Hydra's primVar interpolation modes.
+/// Enumerates Hydra's primvar interpolation modes.
 ///
 /// Constant:    One value remains constant over the entire surface primitive.
 ///

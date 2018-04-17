@@ -43,11 +43,11 @@ typedef boost::shared_ptr<HdExtCompCpuComputation>
 class HdExtCompPrimvarBufferSource final : public HdBufferSource {
 public:
 
-    /// Constructs a new primVar buffer source called primvarName and
+    /// Constructs a new primvar buffer source called primvarName and
     /// binds it to the output called sourceOutputName from the
     /// computation identified by source.
     ///
-    /// Default value provides type information for the primVar and may
+    /// Default value provides type information for the primvar and may
     /// be used in the event of an error.
     HD_API
     HdExtCompPrimvarBufferSource(const TfToken &primvarName,
@@ -58,7 +58,7 @@ public:
     HD_API
     virtual ~HdExtCompPrimvarBufferSource() = default;
 
-    /// Returns the name of the primVar.
+    /// Returns the name of the primvar.
     HD_API
     virtual TfToken const &GetName() const override;
 
@@ -70,15 +70,15 @@ public:
     HD_API
     virtual size_t ComputeHash() const { return 0; }
 
-    /// Extracts the primVar from the source computation.
+    /// Extracts the primvar from the source computation.
     HD_API
     virtual bool Resolve() override;
 
-    /// Returns a raw pointer to the primVar data.
+    /// Returns a raw pointer to the primvar data.
     HD_API
     virtual void const *GetData() const override;
 
-    /// Returns the tuple data format of the primVar data.
+    /// Returns the tuple data format of the primvar data.
     HD_API
     virtual HdTupleType GetTupleType() const override;
 
