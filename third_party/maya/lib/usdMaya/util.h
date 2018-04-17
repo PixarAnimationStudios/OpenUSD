@@ -176,6 +176,12 @@ MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 PXRUSDMAYA_API
 MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 
+/// Gets the Maya MPlug for the given \p attrPath.
+/// The attribute path should be specified as "nodeName.attrName" (the format
+/// used by MEL).
+PXRUSDMAYA_API
+MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
+
 /// Get the MPlug for the output time attribute of Maya's global time object
 ///
 /// The Maya API does not appear to provide any facilities for getting a handle

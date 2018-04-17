@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,20 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeUtil.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/pyConversions.h"
 
-TF_WRAP_MODULE {
-    TF_WRAP(Assembly);
-    TF_WRAP(EditUtil);
-    TF_WRAP(MeshUtil);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
+#include <maya/MObject.h>
+
+#include <boost/python.hpp>
+
+using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE;
+
+static
+VtValue _GetVtValue(
+    const std::string& attrPath,
+    const SdfValueTypeName& typeName)
+{
+    VtValue val;
+
+    MPlug plug;
+    MStatus status = PxrUsdMayaUtil::GetPlugByName(attrPath, plug);
+    CHECK_MSTATUS_AND_RETURN(status, val);
+
+    val = PxrUsdMayaWriteUtil::GetVtValue(plug, typeName);
+    return val;
+}
+
+void wrapWriteUtil()
+{
+    typedef PxrUsdMayaWriteUtil This;
+    class_<This>("WriteUtil", no_init)
+        .def("GetVtValue", _GetVtValue)
+        .staticmethod("GetVtValue")
+    ;
 }

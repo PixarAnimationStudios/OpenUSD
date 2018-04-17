@@ -96,6 +96,36 @@ PxrUsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
     return status;
 }
 
+MStatus
+PxrUsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
+{
+    std::vector<std::string> comps = TfStringSplit(attrPath, ".");
+    if (comps.size() != 2) {
+        TF_RUNTIME_ERROR("'%s' is not a valid Maya attribute path",
+                attrPath.c_str());
+        return MStatus::kFailure;
+    }
+
+    MObject object;
+    MStatus status = GetMObjectByName(comps[0], object);
+    if (!status) {
+        return status;
+    }
+
+    MFnDependencyNode depNode(object, &status);
+    if (!status) {
+        return status;
+    }
+
+    MPlug tmpPlug = depNode.findPlug(comps[1].c_str(), true, &status);
+    if (!status) {
+        return status;
+    }
+
+    plug = tmpPlug;
+    return status;
+}
+
 MPlug
 PxrUsdMayaUtil::GetMayaTimePlug()
 {
