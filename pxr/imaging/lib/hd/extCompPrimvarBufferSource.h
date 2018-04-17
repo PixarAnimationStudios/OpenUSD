@@ -38,7 +38,7 @@ class HdExtCompCpuComputation;
 typedef boost::shared_ptr<HdExtCompCpuComputation>
                                                HdExtCompCpuComputationSharedPtr;
 
-/// Hd Buffer Source that binds a PrimVar to a Ext Computation output.
+/// Hd Buffer Source that binds a primvar to a Ext Computation output.
 /// This buffer source is compatible with being bound to a Bar.
 class HdExtCompPrimvarBufferSource final : public HdBufferSource {
 public:

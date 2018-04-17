@@ -546,7 +546,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     HdComputationVector computations;
     sources.reserve(primVarNames.size());
 
-    HdSt_GetExtComputationPrimVarsComputations(
+    HdSt_GetExtComputationPrimvarsComputations(
         id,
         sceneDelegate,
         HdInterpolationVertex,

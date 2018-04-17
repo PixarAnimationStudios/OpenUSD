@@ -557,7 +557,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     // and optimize if necessary.
     //
 
-    HdSt_GetExtComputationPrimVarsComputations(
+    HdSt_GetExtComputationPrimvarsComputations(
         id,
         sceneDelegate,
         HdInterpolationVertex,

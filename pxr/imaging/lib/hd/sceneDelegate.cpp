@@ -422,7 +422,7 @@ HdSceneDelegate::GetPrimvarInstanceNames(SdfPath const& id)
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetExtComputationPrimVarNames(
+HdSceneDelegate::GetExtComputationPrimvarNames(
                                               SdfPath const& id,
                                               HdInterpolation interpolationMode)
 {
@@ -430,11 +430,11 @@ HdSceneDelegate::GetExtComputationPrimVarNames(
 }
 
 /*virtual*/
-HdExtComputationPrimVarDesc
-HdSceneDelegate::GetExtComputationPrimVarDesc(SdfPath const& id,
+HdExtComputationPrimvarDesc
+HdSceneDelegate::GetExtComputationPrimvarDesc(SdfPath const& id,
                                               TfToken const& varName)
 {
-    return HdExtComputationPrimVarDesc();
+    return HdExtComputationPrimvarDesc();
 }
 
 /*virtual*/

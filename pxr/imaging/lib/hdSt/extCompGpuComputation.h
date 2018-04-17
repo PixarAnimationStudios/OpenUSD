@@ -201,7 +201,7 @@ private:
 /// The caller is expected to add them to the resource registry if the
 /// computation is needed.
 HDST_API
-void HdSt_GetExtComputationPrimVarsComputations(
+void HdSt_GetExtComputationPrimvarsComputations(
     const SdfPath &id,
     HdSceneDelegate *sceneDelegate,
     HdInterpolation interpolationMode,

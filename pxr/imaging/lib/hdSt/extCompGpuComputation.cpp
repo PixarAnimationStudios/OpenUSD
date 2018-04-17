@@ -310,7 +310,7 @@ HdStExtCompGpuComputation::CreateGpuComputation(
 }
 
 void
-HdSt_GetExtComputationPrimVarsComputations(
+HdSt_GetExtComputationPrimvarsComputations(
     SdfPath const &id,
     HdSceneDelegate *sceneDelegate,
     HdInterpolation interpolationMode,
@@ -326,15 +326,15 @@ HdSt_GetExtComputationPrimVarsComputations(
     TF_VERIFY(computations);
 
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-    TfTokenVector compPrimVars =
-        sceneDelegate->GetExtComputationPrimVarNames(id, interpolationMode);
+    TfTokenVector compPrimvars =
+        sceneDelegate->GetExtComputationPrimvarNames(id, interpolationMode);
 
-    for (TfToken const & compPrimVarName: compPrimVars) {
+    for (TfToken const & compPrimvarName: compPrimvars) {
 
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, compPrimVarName)) {
-            HdExtComputationPrimVarDesc primVarDesc =
-                sceneDelegate->GetExtComputationPrimVarDesc(id,
-                                                            compPrimVarName);
+        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, compPrimvarName)) {
+            HdExtComputationPrimvarDesc primVarDesc =
+                sceneDelegate->GetExtComputationPrimvarDesc(id,
+                                                            compPrimvarName);
 
             HdExtComputation const * sourceComp =
                 static_cast<HdExtComputation const *>(
@@ -348,7 +348,7 @@ HdSt_GetExtComputationPrimVarsComputations(
 
                     HdBufferSourceSharedPtr primVarBufferSource(
                             new HdStExtCompGpuPrimvarBufferSource(
-                                compPrimVarName,
+                                compPrimvarName,
                                 primVarDesc.defaultValue,
                                 sourceComp->GetElementCount()));
 
@@ -378,7 +378,7 @@ HdSt_GetExtComputationPrimVarsComputations(
 
                     HdBufferSourceSharedPtr primVarBufferSource(
                             new HdExtCompPrimvarBufferSource(
-                                compPrimVarName,
+                                compPrimvarName,
                                 cpuComputation,
                                 primVarDesc.computationOutputName,
                                 primVarDesc.defaultValue));
