@@ -332,39 +332,39 @@ HdSt_GetExtComputationPrimvarsComputations(
     for (TfToken const & compPrimvarName: compPrimvars) {
 
         if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, compPrimvarName)) {
-            HdExtComputationPrimvarDesc primVarDesc =
+            HdExtComputationPrimvarDesc primvarDesc =
                 sceneDelegate->GetExtComputationPrimvarDesc(id,
                                                             compPrimvarName);
 
             HdExtComputation const * sourceComp =
                 static_cast<HdExtComputation const *>(
                     renderIndex.GetSprim(HdPrimTypeTokens->extComputation,
-                                         primVarDesc.computationId));
+                                         primvarDesc.computationId));
 
             if (sourceComp && sourceComp->GetElementCount() > 0) {
                 
                 if (HdStGLUtils::IsGpuComputeEnabled() &&
                     !sourceComp->GetGpuKernelSource().empty()) {
 
-                    HdBufferSourceSharedPtr primVarBufferSource(
+                    HdBufferSourceSharedPtr primvarBufferSource(
                             new HdStExtCompGpuPrimvarBufferSource(
                                 compPrimvarName,
-                                primVarDesc.defaultValue,
+                                primvarDesc.defaultValue,
                                 sourceComp->GetElementCount()));
 
                     HdStExtCompGpuComputationSharedPtr gpuComputation = 
                         HdStExtCompGpuComputation::CreateGpuComputation(
                             sceneDelegate,
                             sourceComp,
-                            primVarDesc.computationOutputName,
-                            primVarBufferSource);
+                            primvarDesc.computationOutputName,
+                            primvarBufferSource);
 
                     HdBufferSourceSharedPtr gpuComputationSource(
                             new HdStExtCompGpuComputationBufferSource(
                                 HdBufferSourceVector(),
                                 gpuComputation->GetResource()));
 
-                    reserveOnlySources->push_back(primVarBufferSource);
+                    reserveOnlySources->push_back(primvarBufferSource);
                     separateComputationSources->push_back(gpuComputationSource);
                     computations->push_back(gpuComputation);
 
@@ -376,14 +376,14 @@ HdSt_GetExtComputationPrimvarsComputations(
                             *sourceComp,
                             separateComputationSources);
 
-                    HdBufferSourceSharedPtr primVarBufferSource(
+                    HdBufferSourceSharedPtr primvarBufferSource(
                             new HdExtCompPrimvarBufferSource(
                                 compPrimvarName,
                                 cpuComputation,
-                                primVarDesc.computationOutputName,
-                                primVarDesc.defaultValue));
+                                primvarDesc.computationOutputName,
+                                primvarDesc.defaultValue));
 
-                    sources->push_back(primVarBufferSource);
+                    sources->push_back(primvarBufferSource);
 
                 }
             }

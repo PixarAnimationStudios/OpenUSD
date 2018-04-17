@@ -176,14 +176,14 @@ private:
 };
 
 
-/// For a given interpolation mode, obtains a set of ExtComputation primVar
+/// For a given interpolation mode, obtains a set of ExtComputation primvar
 /// source computations needed for this Rprim.
 ///
-/// The list of primVars that are obtained through an ExtComputation
+/// The list of primvars that are obtained through an ExtComputation
 /// for the given interpolationMode is obtained from the scene delegate.
 ///
 /// The scene delegate also provides information about which output on
-/// which computation is providing the source of the primVar.
+/// which computation is providing the source of the primvar.
 ///
 /// Based on the information, the function creates the necessary
 /// computations and appends them on to the sources list (the sources vector
