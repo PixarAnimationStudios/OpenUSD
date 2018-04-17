@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Sdf, Usd, UsdRi, UsdShade
+from pxr import Tf, Sdf, Usd, UsdRi, UsdShade
 import unittest
 
 class TestUsdRiSchemata(unittest.TestCase):
@@ -144,30 +144,34 @@ class TestUsdRiSchemata(unittest.TestCase):
         # this is so convoluted
         attr = riStatements.GetPrim().GetAttribute(props[0].GetName())
         assert attr
-        self.assertEqual(attr.GetName(), 'ri:attributes:user:ModelName')
+        prefix = ('primvars:'
+            if Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING')
+            else '')
+        self.assertEqual(attr.GetName(),
+            prefix+'ri:attributes:user:ModelName')
         self.assertEqual(attr.Get(), 'someModelName')
         self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeName(attr), 'ModelName')
         self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeNameSpace(attr), 'user')
         assert UsdRi.StatementsAPI.IsRiAttribute(attr)
 
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('myattr'),
-                    'ri:attributes:user:myattr')
+                    prefix+'ri:attributes:user:myattr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:myattr'),
-                    'ri:attributes:dice:myattr')
+                    prefix+'ri:attributes:dice:myattr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.myattr'),
-                    'ri:attributes:dice:myattr')
+                    prefix+'ri:attributes:dice:myattr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_myattr'),
-                    'ri:attributes:dice:myattr')
+                    prefix+'ri:attributes:dice:myattr')
         # period is stronger separator than underscore, when both are present
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my.attr'),
-                    'ri:attributes:dice_my:attr')
+                    prefix+'ri:attributes:dice_my:attr')
         # multiple tokens concatted with underscores
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:my1:long:attr'),
-                    'ri:attributes:dice:my1_long_attr')
+                    prefix+'ri:attributes:dice:my1_long_attr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.my2.long.attr'),
-                    'ri:attributes:dice:my2_long_attr')
+                    prefix+'ri:attributes:dice:my2_long_attr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my3_long_attr'),
-                    'ri:attributes:dice:my3_long_attr')
+                    prefix+'ri:attributes:dice:my3_long_attr')
 
         self.assertEqual(riStatements.GetCoordinateSystem(), '')
         self.assertEqual(UsdRi.StatementsAPI(model).GetModelCoordinateSystems(), [])

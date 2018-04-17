@@ -32,6 +32,9 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -51,7 +54,19 @@ class SdfAssetPath;
 
 /// \class UsdRiStatementsAPI
 ///
-/// Container namespace schema for all renderman statements
+/// Container namespace schema for all renderman statements.
+/// 
+/// \note The longer term goal is for clients to go directly to primvar
+/// or render-attribute API's, instead of using UsdRi StatementsAPI
+/// for inherited attributes.  Anticpating this, StatementsAPI
+/// can smooth the way via a few environment variables:
+/// 
+/// * USDRI_STATEMENTS_WRITE_NEW_ENCODING: Causes StatementsAPI to write
+/// attributes to primvars in the "ri:" namespace.
+/// * USDRI_STATEMENTS_READ_OLD_ENCODING: Causes StatementsAPI to read
+/// old-style attributes instead of primvars in the "ri:"
+/// namespace.
+/// 
 ///
 class UsdRiStatementsAPI : public UsdAPISchemaBase
 {
@@ -184,6 +199,16 @@ public:
     CreateRiAttribute(
         const TfToken &name, 
         const TfType &tfType,
+        const std::string &nameSpace = "user");
+
+    /// Return a UsdAttribute representing the Ri attribute with the
+    /// name \a name, in the namespace \a nameSpace.  The attribute
+    /// returned may or may not \b actually exist so it must be
+    /// checked for validity.
+    USDRI_API
+    UsdAttribute
+    GetRiAttribute(
+        const TfToken &name, 
         const std::string &nameSpace = "user");
 
     // --------------------------------------------------------------------- //

@@ -148,6 +148,9 @@ WRAP_CUSTOM {
                  const TfToken &, const std::string &, const std::string &))
              &UsdRiStatementsAPI::CreateRiAttribute,
              (arg("name"), arg("riType"), arg("nameSpace")="user"))
+        .def("GetRiAttribute",
+             &UsdRiStatementsAPI::GetRiAttribute,
+             (arg("name"), arg("nameSpace")="user"))
         .def("GetRiAttributes", &UsdRiStatementsAPI::GetRiAttributes,
              (arg("nameSpace")=""),
              return_value_policy<TfPySequenceToList>())
