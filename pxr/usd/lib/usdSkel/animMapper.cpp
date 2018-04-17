@@ -26,6 +26,8 @@
 #include "pxr/base/tf/type.h"
 
 #include <algorithm>
+#include <unordered_map>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -96,7 +98,7 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
     // Settle for an unordered, indexed mapping.
 
     // Need a map of path->targetIndex.
-    std::map<TfToken,int> targetMap;
+    std::unordered_map<TfToken,int,TfToken::HashFunctor> targetMap;
     for(size_t i = 0; i < targetOrder.size(); ++i) {
         targetMap[targetOrder[i]] = static_cast<int>(i);
     }
