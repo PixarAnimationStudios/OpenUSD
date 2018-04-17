@@ -592,7 +592,7 @@ HdStMesh::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         // If the index is greater than the last vertex index, isVarying=true.
         bool isVarying = i++ > vertexPartitionIndex;
 
-        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt)) {
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt)) {
             continue;
         }
 
@@ -968,7 +968,7 @@ HdStMesh::_PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
 
     TF_FOR_ALL(nameIt, primVarNames) {
         // note: facevarying primvars don't have to be refined.
-        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id,*nameIt)) {
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,*nameIt)) {
             continue;
         }
 
@@ -1052,7 +1052,7 @@ HdStMesh::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
     int numFaces = _topology ? _topology->GetNumFaces() : 0;
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         VtValue value = GetPrimvar(sceneDelegate, *nameIt);
@@ -1242,19 +1242,19 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* FACEVARYING PRIMVARS */
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         _PopulateFaceVaryingPrimVars(sceneDelegate, drawItem, dirtyBits, desc);
     }
 
     /* VERTEX PRIMVARS */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
-        (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id))) {
+        (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id))) {
         _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits,
                                 requireSmoothNormals);
     }
 
     /* ELEMENT PRIMVARS */
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         TfTokenVector uniformPrimVarNames =
                                          GetPrimvarUniformNames(sceneDelegate);
         if (!uniformPrimVarNames.empty()) {
@@ -1388,7 +1388,7 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     if (bits & HdChangeTracker::DirtySubdivTags) {
         bits |= (HdChangeTracker::DirtyPoints   |
                 HdChangeTracker::DirtyNormals  |
-                HdChangeTracker::DirtyPrimVar  |
+                HdChangeTracker::DirtyPrimvar  |
                 HdChangeTracker::DirtyTopology |
                 HdChangeTracker::DirtyRefineLevel);
     } else if (bits & HdChangeTracker::DirtyTopology) {
@@ -1403,7 +1403,7 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     if (bits & HdChangeTracker::DirtyMaterialId) {
         bits |= (HdChangeTracker::DirtyPoints   |
                 HdChangeTracker::DirtyNormals  |
-                HdChangeTracker::DirtyPrimVar  |
+                HdChangeTracker::DirtyPrimvar  |
                 HdChangeTracker::DirtyTopology);
     }
 
@@ -1624,7 +1624,7 @@ HdStMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
-        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyMaterialId

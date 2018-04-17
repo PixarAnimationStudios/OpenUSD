@@ -115,7 +115,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry));
 
     /* PRIMVAR */
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         _PopulateVertexPrimVars(sceneDelegate, drawItem, dirtyBits);
     }
 
@@ -182,7 +182,7 @@ HdStPoints::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
     int pointsIndexInSourceArray = -1;
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         // TODO: We don't need to pull primvar metadata every time a value
@@ -250,7 +250,7 @@ HdStPoints::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyInstanceIndex
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
-        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTransform

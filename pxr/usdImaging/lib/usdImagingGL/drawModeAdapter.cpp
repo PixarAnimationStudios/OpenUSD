@@ -422,7 +422,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         _MergePrimvar(primvar, &primvars);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+    if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         VtVec4fArray color = VtVec4fArray(1);
         // Default color to 18% gray.
         GfVec3f schemaColor= GfVec3f(0.18f, 0.18f, 0.18f);
@@ -443,7 +443,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     // aren't easily separable.
     HdDirtyBits geometryBits = HdChangeTracker::DirtyTopology |
                                HdChangeTracker::DirtyPoints |
-                               HdChangeTracker::DirtyPrimVar |
+                               HdChangeTracker::DirtyPrimvar |
                                HdChangeTracker::DirtyExtent;
 
     if (requestedBits & geometryBits) {
@@ -551,7 +551,7 @@ UsdImagingGLDrawModeAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                                  TfToken const& propertyName)
 {
     if (propertyName == UsdGeomTokens->modelDrawModeColor)
-        return HdChangeTracker::DirtyPrimVar;
+        return HdChangeTracker::DirtyPrimvar;
     else if (propertyName == UsdGeomTokens->modelCardGeometry)
         return (HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPoints);
     else if (propertyName == UsdGeomTokens->extent)

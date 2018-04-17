@@ -395,7 +395,7 @@ HdUnitTestDelegate::UpdateRprims(float time)
     float delta = 0.01f;
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     TF_FOR_ALL (it, _meshes) {
-        tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimVar);
+        tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimvar);
         if (it->second.colorInterpolation == CONSTANT) {
             GfVec4f color = it->second.color.Get<GfVec4f>();
             color[0] = fmod(color[0] + delta, 1.0f);
@@ -412,7 +412,7 @@ HdUnitTestDelegate::UpdateCurvePrimVarsInterpMode(float time)
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     TF_FOR_ALL (it, _curves) {        
         if (it->second.colorInterpolation != UNIFORM) {
-            tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimVar);            
+            tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimvar);            
             // AddCurves adds two basis curve elements
             GfVec4f colors[] = { GfVec4f(1, 0, 0, 1), GfVec4f(0, 0, 1, 1) };
             VtValue color = VtValue(_BuildArray(&colors[0], 
@@ -439,7 +439,7 @@ HdUnitTestDelegate::UpdateInstancerPrimVars(float time)
 
         GetRenderIndex().GetChangeTracker().MarkInstancerDirty(
             it->first,
-            HdChangeTracker::DirtyPrimVar);
+            HdChangeTracker::DirtyPrimvar);
 
         // propagate dirtiness to all prototypes
         TF_FOR_ALL (protoIt, it->second.prototypes) {

@@ -195,7 +195,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
         bits |= (HdChangeTracker::DirtyPoints  |
                  HdChangeTracker::DirtyNormals |
                  HdChangeTracker::DirtyWidths  |
-                 HdChangeTracker::DirtyPrimVar);
+                 HdChangeTracker::DirtyPrimvar);
     }
 
     // propagate point dirtiness to normal
@@ -212,7 +212,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= (HdChangeTracker::DirtyPoints  |
                  HdChangeTracker::DirtyNormals |
-                 HdChangeTracker::DirtyPrimVar);
+                 HdChangeTracker::DirtyPrimvar);
     }
 
     // Let subclasses propagate bits
@@ -370,11 +370,11 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
         sources.push_back(source);
     }
 
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         TfTokenVector primVarNames = delegate->GetPrimvarConstantNames(id);
         sources.reserve(sources.size()+primVarNames.size());
         for (const TfToken& name: primVarNames) {
-            if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, name)) {
+            if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, name)) {
                 VtValue value = delegate->Get(id, name);
 
                 // XXX Hydra doesn't support string primvar yet

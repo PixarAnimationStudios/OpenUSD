@@ -128,7 +128,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     /* PRIMVAR */
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         // XXX: curves don't use refined vertex primvars, however,
         // the refined renderpass masks the dirtiness of non-refined vertex
         // primvars, so we need to see refined dirty for updating coarse
@@ -557,7 +557,7 @@ HdStBasisCurves::_PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
         &computations);
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         // TODO: We don't need to pull primvar metadata every time a value
@@ -661,7 +661,7 @@ HdStBasisCurves::_PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
     sources.reserve(primVarNames.size());
 
     TF_FOR_ALL(nameIt, primVarNames) {
-        if (!HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, *nameIt))
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
             continue;
 
         VtValue value = GetPrimvar(sceneDelegate, *nameIt);
@@ -759,7 +759,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
-        | HdChangeTracker::DirtyPrimVar
+        | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyRefineLevel
         | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyMaterialId

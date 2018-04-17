@@ -600,7 +600,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
             anyVarying = _IsVarying(prim,
                                     UsdGeomTokens->positions,
-                                    HdChangeTracker::DirtyPrimVar,
+                                    HdChangeTracker::DirtyPrimvar,
                                     _tokens->instancer,
                                     timeVaryingBits,
                                     false);
@@ -634,7 +634,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             anyVarying = anyVarying ||
                 _IsVarying(prim,
                            UsdGeomTokens->orientations,
-                           HdChangeTracker::DirtyPrimVar,
+                           HdChangeTracker::DirtyPrimvar,
                            _tokens->instancer,
                            timeVaryingBits,
                            false);
@@ -653,7 +653,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             anyVarying = anyVarying ||
                 _IsVarying(prim,
                            UsdGeomTokens->scales,
-                           HdChangeTracker::DirtyPrimVar,
+                           HdChangeTracker::DirtyPrimvar,
                            _tokens->instancer,
                            timeVaryingBits,
                            false);
@@ -863,7 +863,7 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     requestedBits |= HdChangeTracker::DirtyInstanceIndex;
                 }
                 requestedBits |= HdChangeTracker::DirtyTransform;
-                requestedBits |= HdChangeTracker::DirtyPrimVar;
+                requestedBits |= HdChangeTracker::DirtyPrimvar;
                 
                 inst->second.initialized = true;
             }
@@ -892,9 +892,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
         }
 
         // For the instancer itself, we only send translate, rotate and scale
-        // back as primvars, which all fall into the DirtyPrimVar bucket
+        // back as primvars, which all fall into the DirtyPrimvar bucket
         // currently.
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+        if (requestedBits & HdChangeTracker::DirtyPrimvar) {
             UsdGeomPointInstancer instancer(prim);
 
             // PERFORMANCE: It would be nice to track variability of individual

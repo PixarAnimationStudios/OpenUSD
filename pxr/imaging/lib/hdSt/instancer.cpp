@@ -95,7 +95,7 @@ HdStInstancer::GetInstancePrimVars()
     // Two RPrim's might be trying to update the same instancer at once.
     // do a quick unguarded check to see if it is dirty.
     int dirtyBits = changeTracker.GetInstancerDirtyBits(instancerId);
-    if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
+    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
         std::lock_guard<std::mutex> lock(_instanceLock);
   
         // Now we have the lock, we need to check again, as another thread might
@@ -104,7 +104,7 @@ HdStInstancer::GetInstancePrimVars()
 
         // check the dirtyBits of this instancer so that the instance primvar will
         // be updated just once even if there're multiple prototypes.
-        if (HdChangeTracker::IsAnyPrimVarDirty(dirtyBits, instancerId)) {
+        if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
             HdStResourceRegistrySharedPtr const& resourceRegistry = 
                 boost::static_pointer_cast<HdStResourceRegistry>(
                 GetDelegate()->GetRenderIndex().GetResourceRegistry());
@@ -123,7 +123,7 @@ HdStInstancer::GetInstancePrimVars()
             _numInstancePrimVars = 0;
 
             TF_FOR_ALL(nameIt, primVarNames) {
-                if (HdChangeTracker::IsPrimVarDirty(dirtyBits, instancerId, 
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, 
                                                     *nameIt)) {
                     VtValue value = GetDelegate()->Get(instancerId, *nameIt);
                     if (!value.IsEmpty()) {

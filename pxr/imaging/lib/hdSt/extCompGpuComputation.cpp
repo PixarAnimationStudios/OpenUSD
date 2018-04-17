@@ -331,7 +331,7 @@ HdSt_GetExtComputationPrimVarsComputations(
 
     for (TfToken const & compPrimVarName: compPrimVars) {
 
-        if (HdChangeTracker::IsPrimVarDirty(dirtyBits, id, compPrimVarName)) {
+        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, compPrimVarName)) {
             HdExtComputationPrimVarDesc primVarDesc =
                 sceneDelegate->GetExtComputationPrimVarDesc(id,
                                                             compPrimVarName);

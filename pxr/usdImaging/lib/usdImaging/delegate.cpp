@@ -2656,7 +2656,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
             }
         } else if (key == HdTokens->color) {
             // XXX: Getting all primvars here when we only want color is wrong.
-            _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPrimVar);
+            _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPrimvar);
             if (!TF_VERIFY(_valueCache.ExtractColor(usdPath, &value))){
                 VtVec4fArray vec(1);
                 vec.push_back(GfVec4f(.5,.5,.5,1.0));

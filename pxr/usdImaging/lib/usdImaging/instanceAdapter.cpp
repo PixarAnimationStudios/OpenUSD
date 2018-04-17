@@ -293,7 +293,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Ensure that the instance transforms are computed on the first
             // call to UpdateForTime.
             index->MarkInstancerDirty(instancerPath,
-                HdChangeTracker::DirtyPrimVar);
+                HdChangeTracker::DirtyPrimvar);
         } else if (nestedInstances.empty()) {
             // if this instance path ends up to have no prims in subtree
             // and not an instance itself , we don't need to track this path
@@ -500,10 +500,10 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
 
         // If any of the instance transforms vary over time, the
         // instancer will have the DirtyInstancer bit set. Translate
-        // that to DirtyPrimVar so that Hd will note that the
+        // that to DirtyPrimvar so that Hd will note that the
         // instance transform primvar is varying over time.
         if (instancerBits & HdChangeTracker::DirtyInstancer) {
-            *timeVaryingBits |= HdChangeTracker::DirtyPrimVar;
+            *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
         }
     }
 }
@@ -885,9 +885,9 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
 
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         // For the instancer itself, we only send the instance transforms
-        // back as primvars, which falls into the DirtyPrimVar bucket
+        // back as primvars, which falls into the DirtyPrimvar bucket
         // currently.
-        if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+        if (requestedBits & HdChangeTracker::DirtyPrimvar) {
             VtMatrix4dArray instanceXforms;
             if (_ComputeInstanceTransforms(prim, &instanceXforms, time)) {
                 valueCache->GetPrimvar(
@@ -1088,9 +1088,9 @@ UsdImagingInstanceAdapter::MarkTransformDirty(UsdPrim const& prim,
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         // For the instancer itself, the instance transforms are sent back
         // as primvars, so we need to augment the DirtyTransform bit with
-        // DirtyPrimVar.
+        // DirtyPrimvar.
         static const HdDirtyBits transformDirty =
-                                                HdChangeTracker::DirtyPrimVar  |
+                                                HdChangeTracker::DirtyPrimvar  |
                                                 HdChangeTracker::DirtyTransform;
 
         index->MarkInstancerDirty(cachePath, transformDirty);

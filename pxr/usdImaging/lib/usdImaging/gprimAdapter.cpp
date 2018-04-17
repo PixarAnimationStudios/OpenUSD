@@ -141,7 +141,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
 
     if (!_IsVarying(prim,
                UsdGeomTokens->primvarsDisplayColor,
-               HdChangeTracker::DirtyPrimVar,
+               HdChangeTracker::DirtyPrimvar,
                UsdImagingTokens->usdVaryingPrimVar,
                timeVaryingBits,
                false)) {
@@ -149,7 +149,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
         // to be varying.
         _IsVarying(prim,
                UsdGeomTokens->primvarsDisplayOpacity,
-               HdChangeTracker::DirtyPrimVar,
+               HdChangeTracker::DirtyPrimvar,
                UsdImagingTokens->usdVaryingPrimVar,
                timeVaryingBits,
                false);
@@ -230,7 +230,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingValueCache* valueCache = _GetValueCache();
 
     SdfPath usdMaterialPath;
-    if (requestedBits & (HdChangeTracker::DirtyPrimVar |
+    if (requestedBits & (HdChangeTracker::DirtyPrimvar |
                          HdChangeTracker::DirtyMaterialId)) {
         usdMaterialPath = GetMaterialId(prim);
 
@@ -242,7 +242,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         }
     }
 
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+    if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         // XXX: need to validate gprim schema
         UsdGeomGprim gprim(prim);
         UsdImagingValueCache::PrimvarInfo primvar;

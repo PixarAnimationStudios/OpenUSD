@@ -219,7 +219,7 @@ UsdSkelImagingSkelRootAdapter::UpdateForTime(
         valueCache->GetPoints(cachePath) = instance->ComputePoints(time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+    if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         // Expose points as a primvar.
         UsdImagingValueCache::PrimvarInfo primvar;
         primvar.name = HdTokens->points;
