@@ -122,7 +122,7 @@ public:
 
     /// @}
 
-    /// Returns the root node of the call graph.
+    /// Returns the root node of the aggregated call graph.
     TRACE_API TraceEventNodePtr GetTreeRoot();
 
     /// Returns the root node of the timeline call graph.

@@ -5,6 +5,14 @@
 \publicLib
 \endif
 
+\section trace_contents Contents
+
+\li \ref trace_overview
+\li \ref trace_instrumentation
+\li \ref trace_recording_reporting
+\li \ref trace_performance
+\li \ref trace_details
+
 \section trace_overview Overview
 
 Defines utility classes for counting, timing, measuring, and recording events.
@@ -12,13 +20,12 @@ The TraceCollector class records TraceEvent objects. The TraceReporter class
 contains functions to generate reports on events gathered by the TraceCollector
 object.
 
-Defines an interface for RAII-based performance tracking.
-
+\section trace_instrumentation Instrumentation
 Instrumentation is done by adding TRACE macros to code.
 
 For example:
 
-\code
+\code{.cpp}
 #include "pxr/base/trace/trace.h"
 
 // Typical usage.
@@ -34,12 +41,23 @@ void Foo()
 }
 \endcode
 
-Adding Trace macros does have a small overhead. Sometimes a performance 
+Python tracing is also supported:
+\code{.py}
+from pxr import Trace
+
+@Trace.TraceFunction
+def foo():
+    ...
+    with Trace.TraceScope("Inner Scope"):
+        ...
+\endcode
+
+Adding Trace macros does have a small \link trace_performance overhead \endlink even when tracing is disabled. Sometimes a performance 
 sensitive function may have a slow path that is taken infrequently, but timing 
 information is needed. In cases like this, it is possible to reduce the overhead
 of the instrumentation to specific scopes.
 
-\code
+\code{.cpp}
 // This is an example of a performance sensitive function that has a slow path.
 void PerformanceSensitiveFunction(bool slowPath)
 {
@@ -54,5 +72,86 @@ void PerformanceSensitiveFunction(bool slowPath)
 }
 \endcode
 
+\section trace_recording_reporting Recording and Reporting
+Recording is done through the TraceCollector class. Enabling the collector will 
+cause TRACE macros to record events.
+Reports are generated with the TraceReporter class.
+\code{.cpp}
+int main(int argc, char* argv[])
+{
+    // Start recording events.
+    TraceCollector::GetInstance().SetEnabled(true);
+    Foo();
+    ...
+    // Stop recording events.
+    TraceCollector::GetInstance().SetEnabled(false);
+    // Print the report.
+    ofstream reportFile("trace.txt");
+    TraceReporter::GetGlobalReporter().Report(reportFile);
+}
+\endcode
+
+The default report is an aggregated call graph showing the include time,
+exclusive time, and call count of each scope.
+
+Example Report:
+\code{.unparsed}
+Tree view  ==============
+   inclusive    exclusive        
+   13.000 ms                    1 samples    MainThread
+   13.000 ms     4.000 ms       1 samples    | OuterScope
+    9.000 ms     8.000 ms       1 samples    |   InnerScope
+    1.000 ms     1.000 ms       2 samples    |   | Inner Scope 2
+   13.000 ms                    1 samples    Thread 1
+   13.000 ms     4.000 ms       1 samples    | OuterScope
+    9.000 ms     8.000 ms       1 samples    |   InnerScope
+    1.000 ms     1.000 ms       2 samples    |   | Inner Scope 2
+\endcode
+
+The Chrome tracing format is also supported using the TraceReporter::ReportChromeTracing method.
+
+A report can also be generated from a program instrumented with libtrace using the PXR_ENABLE_GLOBAL_TRACE environment variable.  If this variable is set, the TraceCollector singleton will start recording on initialization, and a report will be written to stdout at program exit.
+\code{.unparsed}
+>env PXR_ENABLE_GLOBAL_TRACE=1 usdview HelloWorld.usda --quitAfterStartup
+
+Tree view  ==============
+   inclusive    exclusive        
+  358.500 ms                    1 samples    Main Thread
+    0.701 ms     0.701 ms       8 samples    | SdfPath::_InitWithString
+    0.003 ms     0.003 ms       2 samples    | {anonymous}::VtDictionaryToPython::convert
+  275.580 ms   275.580 ms       3 samples    | PlugPlugin::_Load
+    0.014 ms     0.014 ms       3 samples    | UcGetCurrentUnit
+    1.470 ms     0.002 ms       1 samples    | UcIsKnownUnit
+    1.467 ms     0.026 ms       1 samples    |   Uc::_InitUnitData [initialization]
+    1.442 ms     1.442 ms       1 samples    |   | Uc_Engine::GetValue
+    0.750 ms     0.000 ms       1 samples    | UcGetValue
+    0.750 ms     0.750 ms       1 samples    |   Uc_Engine::GetValue
+    9.141 ms     0.053 ms       1 samples    | PrCreatePathResolverForUnit
+    0.002 ms     0.002 ms       6 samples    |   UcIsKnownUnit
+    ...
+\endcode
+
+The aggregated call graph can be accessed through TraceReporter::GetTreeRoot.
+The non-aggregated call graph can be access through TraceReporter::GetSingleEventGraph.
+
+\section trace_performance Performance Overhead
+Adding trace instrumentation macros has the following overhead:
+<ul>
+    <li>
+    When tracing is disabled, TRACE_FUNCTION(), TRACE_FUNCTION_SCOPE(), and TRACE_SCOPE() initialize 16 bytes of stack memory, read an atomic int, and have 2 branches.
+    </li>
+    <li>
+    When tracing is enabled, overhead of TRACE_FUNCTION(), TRACE_FUNCTION_SCOPE(), and TRACE_SCOPE() is about 100 times larger than the disabled case. (.33ns  vs 33ns in microbenchmarks on our workstations).
+    </li>
+    <li>
+    The dynamic versions of the macros TRACE_FUNCTION_DYNAMIC(), TRACE_SCOPE_DYNAMIC() have a much higher overhead than the static versions. The reason for this is that for the static versions, the names of the scopes are compiled as constexpr data, but the dynamic versions construct strings at runtime. This overhead of dynamic macros is true whether tracing is enabled or not. Because of this, the static versions should be preferred whenever possible.
+    </li>
+</ul>
+It is possible to disable TRACE macros from generating code by defining TRACE_DISABLE in the preprocessor.
+
+The TraceCollector class and TRACE macros are thread-safe.
+
+\section trace_details Details
+For more detailed information see \subpage trace_page_detail
 
 */

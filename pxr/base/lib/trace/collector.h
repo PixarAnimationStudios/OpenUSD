@@ -87,10 +87,10 @@ public:
     
     TRACE_API ~TraceCollector();
 
-    ///  Enables or disables collection of events.
+    ///  Enables or disables collection of events for DefaultCategory.
     TRACE_API void SetEnabled(bool isEnabled);
 
-    ///  Returns whether collection of events is enabled.
+    ///  Returns whether collection of events is enabled for DefaultCategory.
     static bool IsEnabled() {
         return (_isEnabled.load(std::memory_order_acquire) == 1);
     }
@@ -98,7 +98,9 @@ public:
     /// Default Trace category which corresponds to events stored for TRACE_
     /// macros.
     struct DefaultCategory {
+        /// Returns TraceCategory::Default.
         static constexpr TraceCategoryId GetId() { return TraceCategory::Default;}
+        /// Returns the result of TraceCollector::IsEnabled.
         static bool IsEnabled() { return TraceCollector::IsEnabled(); }
     };
 
