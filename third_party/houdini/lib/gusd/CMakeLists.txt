@@ -115,12 +115,3 @@ install(
     DESTINATION
         ${PXR_INSTALL_SUBDIR}/config/Icons
 )
-
-install( 
-    FILES
-        __init__.py
-        treeview.py
-        treemodel.py       
-    DESTINATION
-        ${PXR_INSTALL_SUBDIR}/scripts/python/gusd
-)

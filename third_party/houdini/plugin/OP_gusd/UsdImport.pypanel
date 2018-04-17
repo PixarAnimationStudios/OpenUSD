@@ -9,7 +9,7 @@
     <script><![CDATA[
 import hou
 import sys
-from gusd import TreeView
+from pxr.Gusd.treeview import TreeView
 
 def createInterface():
 
