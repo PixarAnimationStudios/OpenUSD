@@ -34,8 +34,8 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/usd/usdShade/connectableAPI.h"
-
+#include "pxr/usd/usdHydra/tokens.h"
+#include "pxr/usd/usdShade/connectableAPI.h"    
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,14 +43,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (surfaceShader)
     (displacementShader)
-    ((filename, "info:filename"))
-    (HwPtexTexture_1)
-    (HwUvTexture_1)
-    (HwPrimvar_1)
-    ((varname, "info:varname"))
-    (uv)
-    (faceIndexPrimvar)
-    (faceOffsetPrimvar)
 );
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -174,29 +166,29 @@ _IsLegacyTextureOrPrimvarInput(const UsdShadeInput &shaderInput)
 static TfToken 
 GetFilenameInput(TfToken const& id)
 {
-    return _tokens->filename;
+    return UsdHydraTokens->infoFilename;
 }
 
 // XXX : This should use the shader node registry
 static bool
 IsPtexTexture(TfToken const& id)
 {
-    return (id == _tokens->HwPtexTexture_1);
+    return (id == UsdHydraTokens->HwPtexTexture_1);
 }
 
 // XXX : This should use the shader node registry
 static bool
 IsTextureFamilyNode(TfToken const& id)
 {
-    return (id == _tokens->HwUvTexture_1 || 
-            id == _tokens->HwPtexTexture_1);
+    return (id == UsdHydraTokens->HwUvTexture_1 || 
+            id == UsdHydraTokens->HwPtexTexture_1);
 }
 
 // XXX : This should use the shader node registry
 static bool
 IsPrimvarFamilyNode(TfToken const& id)
 {
-    return (id == _tokens->HwPrimvar_1);
+    return (id == UsdHydraTokens->HwPrimvar_1);
 }
 
 // XXX : This should use the shader node registry
@@ -204,13 +196,13 @@ static TfTokenVector
 GetPrimvars(TfToken const& id)
 {
     TfTokenVector t;
-    if (id == _tokens->HwPrimvar_1){
-        t.push_back(_tokens->varname);
-    } else if(id == _tokens->HwUvTexture_1) {
-        t.push_back(_tokens->uv);
-    } else if(id == _tokens->HwPtexTexture_1) {
-        t.push_back(_tokens->faceIndexPrimvar);
-        t.push_back(_tokens->faceOffsetPrimvar);
+    if (id == UsdHydraTokens->HwPrimvar_1){
+        t.push_back(UsdHydraTokens->infoVarname);
+    } else if(id == UsdHydraTokens->HwUvTexture_1) {
+        t.push_back(UsdHydraTokens->uv);
+    } else if(id == UsdHydraTokens->HwPtexTexture_1) {
+        t.push_back(UsdImagingTokens->faceIndexPrimvar);
+        t.push_back(UsdImagingTokens->faceOffsetPrimvar);
     }
     return t;
 }

@@ -18,6 +18,7 @@ pxr_library(usdImagingGL
         sdf
         usd
         usdGeom
+        usdHydra
         usdShade
         usdImaging
         ar

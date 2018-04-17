@@ -203,9 +203,6 @@ modules that layer on top of the core.  In low-to-high order, the modules are:
   shading schemas to be built on top of it, and a Look can host the network
   "terminals" for any number of renderer schemas.
 
-- \ref usdHydra_page_front module provides a set of schemas for authoring
-  Hydra-targetted shading in the USD shading model.
-
 - \ref usdRi_page_front module for data targeted at Pixar's
   RenderMan specification.  Includes shading schemas for both RSL and RIS
   shading systems, as well as a "catch all" \c RiStatements schema for

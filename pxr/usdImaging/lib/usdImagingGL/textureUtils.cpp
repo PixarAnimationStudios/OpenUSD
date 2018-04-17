@@ -38,25 +38,10 @@
 
 #include "pxr/base/tf/fileUtils.h"
 
+#include "pxr/usd/usdHydra/tokens.h"
 #include "pxr/usd/usdShade/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (wrapS)
-    (wrapT)
-    (minFilter)
-    (magFilter)
-    (textureMemory)
-    (clamp)
-    (repeat)
-    (nearest)
-    (nearestMipmapNearest)
-    (nearestMipmapLinear)
-    (linearMipmapNearest)
-    (linearMipmapLinear)
-);
 
 HdTextureResource::ID
 UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
@@ -140,20 +125,20 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     // Extract metadata abot the texture node
     UsdShadeShader shader(usdPrim);
     if (shader) {
-        UsdAttribute attr = shader.GetInput(_tokens->textureMemory);
+        UsdAttribute attr = shader.GetInput(UsdHydraTokens->textureMemory);
         if (attr) attr.Get(&outMemoryLimit);
 
         if (!isPtex) {
-            attr = shader.GetInput(_tokens->wrapS);
+            attr = shader.GetInput(UsdHydraTokens->wrapS);
             if (attr) attr.Get(&outWrapS);
 
-            attr = shader.GetInput(_tokens->wrapT);
+            attr = shader.GetInput(UsdHydraTokens->wrapT);
             if (attr) attr.Get(&outWrapT);
 
-            attr = shader.GetInput(_tokens->minFilter);
+            attr = shader.GetInput(UsdHydraTokens->minFilter);
             if (attr) attr.Get(&outMinFilter);
 
-            attr = shader.GetInput(_tokens->magFilter);
+            attr = shader.GetInput(UsdHydraTokens->magFilter);
             if (attr) attr.Get(&outMagFilter);
         }
     }
@@ -178,24 +163,24 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
         GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
     texture->AddMemoryRequest(outMemoryLimit);
 
-    HdWrap wrapShd = (outWrapS == _tokens->clamp) ? HdWrapClamp
-                 : (outWrapS == _tokens->repeat) ? HdWrapRepeat
+    HdWrap wrapShd = (outWrapS == UsdHydraTokens->clamp) ? HdWrapClamp
+                 : (outWrapS == UsdHydraTokens->repeat) ? HdWrapRepeat
                  : HdWrapBlack; 
-    HdWrap wrapThd = (outWrapT == _tokens->clamp) ? HdWrapClamp
-                 : (outWrapT == _tokens->repeat) ? HdWrapRepeat
+    HdWrap wrapThd = (outWrapT == UsdHydraTokens->clamp) ? HdWrapClamp
+                 : (outWrapT == UsdHydraTokens->repeat) ? HdWrapRepeat
                  : HdWrapBlack; 
     HdMagFilter magFilterHd = 
-                 (outMagFilter == _tokens->nearest) ? HdMagFilterNearest
+                 (outMagFilter == UsdHydraTokens->nearest) ? HdMagFilterNearest
                  : HdMagFilterLinear; 
     HdMinFilter minFilterHd = 
-                 (outMinFilter == _tokens->nearest) ? HdMinFilterNearest
-                 : (outMinFilter == _tokens->nearestMipmapNearest) 
+                 (outMinFilter == UsdHydraTokens->nearest) ? HdMinFilterNearest
+                 : (outMinFilter == UsdHydraTokens->nearestMipmapNearest) 
                                 ? HdMinFilterNearestMipmapNearest
-                 : (outMinFilter == _tokens->nearestMipmapLinear) 
+                 : (outMinFilter == UsdHydraTokens->nearestMipmapLinear) 
                                 ? HdMinFilterNearestMipmapLinear
-                 : (outMinFilter == _tokens->linearMipmapNearest) 
+                 : (outMinFilter == UsdHydraTokens->linearMipmapNearest) 
                                 ? HdMinFilterLinearMipmapNearest
-                 : (outMinFilter == _tokens->linearMipmapLinear) 
+                 : (outMinFilter == UsdHydraTokens->linearMipmapLinear) 
                                 ? HdMinFilterLinearMipmapLinear
                  : HdMinFilterLinear; 
 
