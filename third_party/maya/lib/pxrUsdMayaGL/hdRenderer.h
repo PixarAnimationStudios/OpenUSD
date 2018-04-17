@@ -51,10 +51,24 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \brief This is an helper object that shapes can hold to get consistent usd
-/// drawing in maya.
+/// Simple implementation of a Hydra renderer for a Maya shape.
 ///
-/// Typical usage is as follows:
+/// This class is mainly intended as a "reference" implementation of how
+/// an individual Maya shape type could be imaged by Hydra. The derived classes
+/// of MPxSurfaceShapeUI (legacy viewport) and/or MPxDrawOverride (Viewport 2.0)
+/// for the Maya shape would own an instance of this class and use it to
+/// populate Hydra with scene data during Maya's draw prep phase, use Hydra to
+/// draw in response to a draw callback, and handle selection requests in the
+/// viewport.
+///
+/// Note that for production use, it is highly recommended that Maya shapes use
+/// a derived class of PxrMayaHdShapeAdapter in combination with the
+/// UsdMayaGLBatchRenderer instead. That combination should perform considerably
+/// better than this renderer, since Hydra will be able to better take advantage
+/// of batching larger numbers of shapes and preserving state between
+/// draws/selections.
+///
+/// Typical usage of this class is as follows:
 ///
 /// \code
 /// getDrawRequests(...) {
