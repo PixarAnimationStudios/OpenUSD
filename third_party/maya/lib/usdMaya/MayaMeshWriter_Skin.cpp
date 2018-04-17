@@ -412,11 +412,14 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 
     // Write everything to USD once we know that we have OK data.
     const UsdSkelBindingAPI bindingAPI(primSchema);
-    bindingAPI.CreateJointIndicesPrimvar(false, maxInfluenceCount)
-            .Set(jointIndices);
-    bindingAPI.CreateJointWeightsPrimvar(false, maxInfluenceCount)
-            .Set(jointWeights);
-    bindingAPI.CreateGeomBindTransformAttr().Set(geomBindTransform);
+    _SetAttribute(
+            bindingAPI.CreateJointIndicesPrimvar(false, maxInfluenceCount),
+            &jointIndices);
+    _SetAttribute(
+            bindingAPI.CreateJointWeightsPrimvar(false, maxInfluenceCount),
+            &jointWeights);
+    _SetAttribute(bindingAPI.CreateGeomBindTransformAttr(), 
+            &geomBindTransform);
 
     bool madeSkelRoot;
     const SdfPath skelRootPath = _VerifyOrMakeSkelRoot(

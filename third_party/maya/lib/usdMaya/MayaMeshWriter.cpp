@@ -138,12 +138,13 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
                       mayaRawPoints[floatIndex+1],
                       mayaRawPoints[floatIndex+2]);
     }
-    primSchema.GetPointsAttr().Set(points, usdTime); // ANIMATED
 
-    // Compute the extent using the raw points
     VtArray<GfVec3f> extent(2);
+    // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
-    primSchema.CreateExtentAttr().Set(extent, usdTime);
+
+    _SetAttribute(primSchema.GetPointsAttr(), &points, usdTime);
+    _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
 
     // Get faceVertexIndices
     unsigned int numFaceVertices = geomMesh.numFaceVertices(&status);
@@ -159,12 +160,13 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
             curFaceVertexIndex++;
         }
     }
-    primSchema.GetFaceVertexCountsAttr().Set(faceVertexCounts);   // not animatable
-    primSchema.GetFaceVertexIndicesAttr().Set(faceVertexIndices); // not animatable
+    _SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts);
+    _SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices);
 
     // Read usdSdScheme attribute. If not set, we default to defaultMeshScheme
     // flag that can be user defined and initialized to catmullClark
-    TfToken sdScheme = PxrUsdMayaMeshUtil::getSubdivScheme(finalMesh, getArgs().defaultMeshScheme);
+    TfToken sdScheme = PxrUsdMayaMeshUtil::getSubdivScheme(finalMesh,
+            getArgs().defaultMeshScheme);
     primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
 
     if (sdScheme == UsdGeomTokens->none) {
@@ -176,7 +178,8 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
             if (PxrUsdMayaMeshUtil::GetMeshNormals(geomMesh,
                                                    &meshNormals,
                                                    &normalInterp)) {
-                primSchema.GetNormalsAttr().Set(meshNormals, usdTime);
+                _SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, 
+                              usdTime);
                 primSchema.SetNormalsInterpolation(normalInterp);
             }
         }
@@ -184,14 +187,15 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
         TfToken sdInterpBound = PxrUsdMayaMeshUtil::getSubdivInterpBoundary(
             finalMesh, UsdGeomTokens->edgeAndCorner);
 
-        primSchema.CreateInterpolateBoundaryAttr(VtValue(sdInterpBound), true);
+        _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(VtValue(), true), 
+                      sdInterpBound);
         
         TfToken sdFVLinearInterpolation =
             PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(finalMesh);
 
         if (!sdFVLinearInterpolation.IsEmpty()) {
-            primSchema.CreateFaceVaryingLinearInterpolationAttr(
-                VtValue(sdFVLinearInterpolation), true);
+            _SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(),
+                          sdFVLinearInterpolation);
         }
 
         assignSubDivTagsToUSDPrim(finalMesh, primSchema);
@@ -205,7 +209,7 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
             subdHoles[i] = mayaHoles[i];
         }
         // not animatable in Maya, so we'll set default only
-        primSchema.GetHoleIndicesAttr().Set(subdHoles);
+        _SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles);
     }
 
     // == Write UVSets as Vec2f Primvars

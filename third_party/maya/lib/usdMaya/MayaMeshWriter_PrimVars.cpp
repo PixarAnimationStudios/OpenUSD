@@ -376,8 +376,7 @@ bool MayaMeshWriter::_createAlphaPrimVar(
         primSchema.CreatePrimvar(name,
                                  SdfValueTypeNames->FloatArray,
                                  interp);
-
-    primVar.Set(data);
+    _SetAttribute(primVar.GetAttr(), data);
 
     if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
@@ -416,8 +415,7 @@ bool MayaMeshWriter::_createRGBPrimVar(
         primSchema.CreatePrimvar(name,
                                  SdfValueTypeNames->Color3fArray,
                                  interp);
-
-    primVar.Set(data);
+    _SetAttribute(primVar.GetAttr(), data);
 
     if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
@@ -463,8 +461,7 @@ bool MayaMeshWriter::_createRGBAPrimVar(
         rgbaData[i] = GfVec4f(rgbData[i][0], rgbData[i][1], rgbData[i][2],
                               alphaData[i]);
     }
-
-    primVar.Set(rgbaData);
+    _SetAttribute(primVar.GetAttr(), rgbaData);
 
     if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
@@ -502,8 +499,7 @@ bool MayaMeshWriter::_createUVPrimVar(
         primSchema.CreatePrimvar(name,
                                  SdfValueTypeNames->Float2Array,
                                  interp);
-
-    primVar.Set(data);
+    _SetAttribute(primVar.GetAttr(), data);
 
     if (!assignmentIndices.empty()) {
         primVar.SetIndices(assignmentIndices);
@@ -533,7 +529,8 @@ bool MayaMeshWriter::_addDisplayPrimvars(
         if (interpolation != displayColor.GetInterpolation()) {
             displayColor.SetInterpolation(interpolation);
         }
-        displayColor.Set(RGBData);
+        _SetAttribute(displayColor.GetAttr(), RGBData);
+
         if (!assignmentIndices.empty()) {
             displayColor.SetIndices(assignmentIndices);
             if (unassignedValueIndex != displayColor.GetUnauthoredValuesIndex()) {
@@ -564,7 +561,8 @@ bool MayaMeshWriter::_addDisplayPrimvars(
             if (interpolation != displayOpacity.GetInterpolation()) {
                 displayOpacity.SetInterpolation(interpolation);
             }
-            displayOpacity.Set(AlphaData);
+            _SetAttribute(displayOpacity.GetAttr(), AlphaData);
+
             if (!assignmentIndices.empty()) {
                 displayOpacity.SetIndices(assignmentIndices);
                 if (unassignedValueIndex != displayOpacity.GetUnauthoredValuesIndex()) {

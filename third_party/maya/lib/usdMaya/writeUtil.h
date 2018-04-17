@@ -51,7 +51,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class UsdUtilsSparseValueWriter;
 
 struct PxrUsdMayaWriteUtil
 {
@@ -130,7 +130,8 @@ struct PxrUsdMayaWriteUtil
             const UsdAttribute& usdAttr,
             const UsdTimeCode& usdTime,
             const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision(),
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// Given a Maya node at \p dagPath, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time
@@ -139,7 +140,8 @@ struct PxrUsdMayaWriteUtil
     static bool WriteUserExportedAttributes(
             const MDagPath& dagPath,
             const UsdPrim& usdPrim,
-            const UsdTimeCode& usdTime);
+            const UsdTimeCode& usdTime,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// Authors class inherits on \p usdPrim.  \p inheritClassNames are
     /// specified as names (not paths).  For example, they should be
@@ -158,7 +160,8 @@ struct PxrUsdMayaWriteUtil
             MFnArrayAttrsData& inputPointsData,
             const UsdGeomPointInstancer& instancer,
             const size_t numPrototypes,
-            const UsdTimeCode& usdTime);
+            const UsdTimeCode& usdTime,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// \}
 

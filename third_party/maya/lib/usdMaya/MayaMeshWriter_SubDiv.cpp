@@ -75,8 +75,12 @@ void MayaMeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &pr
             subdCornerIndices[i] = mayaCreaseVertIds[i];
             subdCornerSharpnesses[i] = mayaCreaseVertValues[i];
         }
-        primSchema.GetCornerIndicesAttr().Set(subdCornerIndices); // not animatable
-        primSchema.GetCornerSharpnessesAttr().Set(subdCornerSharpnesses); // not animatable
+        // not animatable
+        _SetAttribute(primSchema.GetCornerIndicesAttr(), &subdCornerIndices); 
+
+        // not animatable
+        _SetAttribute(primSchema.GetCornerSharpnessesAttr(), 
+                      &subdCornerSharpnesses); 
     }
 
     // Edge Creasing
@@ -104,18 +108,19 @@ void MayaMeshWriter::assignSubDivTagsToUSDPrim( MFnMesh &meshFn, UsdGeomMesh &pr
         if (!creases.empty()) {
             VtIntArray creaseIndicesVt(creases.size());
             std::copy(creases.begin(), creases.end(), creaseIndicesVt.begin());
-            primSchema.GetCreaseIndicesAttr().Set(creaseIndicesVt);
+            _SetAttribute(primSchema.GetCreaseIndicesAttr(), &creaseIndicesVt);
         }
         if (!numCreases.empty()) {
             VtIntArray creaseLengthsVt(numCreases.size());
             std::copy(numCreases.begin(), numCreases.end(), creaseLengthsVt.begin());
-            primSchema.GetCreaseLengthsAttr().Set(creaseLengthsVt);
+            _SetAttribute(primSchema.GetCreaseLengthsAttr(), &creaseLengthsVt);
         } 
         if (!creaseSharpnesses.empty()) {
             VtFloatArray creaseSharpnessesVt(creaseSharpnesses.size());
             std::copy(creaseSharpnesses.begin(), creaseSharpnesses.end(),
                       creaseSharpnessesVt.begin());
-            primSchema.GetCreaseSharpnessesAttr().Set(creaseSharpnessesVt);
+            _SetAttribute(primSchema.GetCreaseSharpnessesAttr(), 
+                          &creaseSharpnessesVt);
         }
     }
 }

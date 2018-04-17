@@ -139,7 +139,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 if (interpolation != dispColor.GetInterpolation()) {
                     dispColor.SetInterpolation(interpolation);
                 }
-                dispColor.Set(RGBData);
+                _SetAttribute(dispColor.GetAttr(), RGBData);
                 if (!assignmentIndices.empty()) {
                     dispColor.SetIndices(assignmentIndices);
                 }
@@ -150,7 +150,7 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 if (interpolation != dispOpacity.GetInterpolation()) {
                     dispOpacity.SetInterpolation(interpolation);
                 }
-                dispOpacity.Set(AlphaData);
+                _SetAttribute(dispOpacity, AlphaData);
                 if (!assignmentIndices.empty()) {
                     dispOpacity.SetIndices(assignmentIndices);
                 }
@@ -272,20 +272,20 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // Compute the extent using the CVs.
     VtArray<GfVec3f> extent(2);
     UsdGeomPointBased::ComputeExtent(sampPos, &extent);
-    primSchema.CreateExtentAttr().Set(extent, usdTimeCode);
+    _SetAttribute(primSchema.CreateExtentAttr(), extent, usdTimeCode);
 
     // Set NurbsPatch attributes
-    primSchema.GetUVertexCountAttr().Set(numCVsInU);
-    primSchema.GetVVertexCountAttr().Set(numCVsInV);
-    primSchema.GetUOrderAttr().Set(nurbs.degreeU() + 1);
-    primSchema.GetVOrderAttr().Set(nurbs.degreeV() + 1);
-    primSchema.GetUKnotsAttr().Set(sampKnotsInU);
-    primSchema.GetVKnotsAttr().Set(sampKnotsInV);
-    primSchema.GetURangeAttr().Set(uRange);
-    primSchema.GetVRangeAttr().Set(vRange);
-    primSchema.GetPointsAttr().Set(sampPos, usdTimeCode);
+    _SetAttribute(primSchema.GetUVertexCountAttr(), numCVsInU);
+    _SetAttribute(primSchema.GetVVertexCountAttr(), numCVsInV);
+    _SetAttribute(primSchema.GetUOrderAttr(), nurbs.degreeU() + 1);
+    _SetAttribute(primSchema.GetVOrderAttr(), nurbs.degreeV() + 1);
+    _SetAttribute(primSchema.GetUKnotsAttr(), sampKnotsInU);
+    _SetAttribute(primSchema.GetVKnotsAttr(), sampKnotsInV);
+    _SetAttribute(primSchema.GetURangeAttr(), uRange);
+    _SetAttribute(primSchema.GetVRangeAttr(), vRange);
+    _SetAttribute(primSchema.GetPointsAttr(), sampPos, usdTimeCode);
     if (setWeights) {
-        primSchema.GetPointWeightsAttr().Set(sampPosWeights);
+        _SetAttribute(primSchema.GetPointWeightsAttr(), sampPosWeights);
     }
 
     // If stValues vector has vertex data, create and assign st
@@ -294,29 +294,29 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),
             SdfValueTypeNames->Float2Array, 
             UsdGeomTokens->vertex);                                                                      
-        uvSet.Set( stValues );
+        _SetAttribute(uvSet.GetAttr(), &stValues);
     }
 
     // Set Form
     switch (nurbs.formInU()) {
         case MFnNurbsSurface::kClosed:
-            primSchema.GetUFormAttr().Set(UsdGeomTokens->closed);
+            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->closed);
         break;
         case MFnNurbsSurface::kPeriodic:
-            primSchema.GetUFormAttr().Set(UsdGeomTokens->periodic);
+            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->periodic);
         break;
         default:
-            primSchema.GetUFormAttr().Set(UsdGeomTokens->open);        
+            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->open);        
     }
     switch (nurbs.formInV()) {
         case MFnNurbsSurface::kClosed:
-            primSchema.GetVFormAttr().Set(UsdGeomTokens->closed);
+            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->closed);
         break;
         case MFnNurbsSurface::kPeriodic:
-            primSchema.GetVFormAttr().Set(UsdGeomTokens->periodic);
+            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->periodic);
         break;
         default:
-            primSchema.GetVFormAttr().Set(UsdGeomTokens->open);        
+            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->open);        
     }
 
     // If not trimmed surface, you are done
@@ -432,12 +432,12 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         } // for j
     } // for i
 
-    primSchema.GetTrimCurveCountsAttr().Set(trimNumCurves);    
-    primSchema.GetTrimCurveOrdersAttr().Set(trimOrder);    
-    primSchema.GetTrimCurveVertexCountsAttr().Set(trimNumPos);    
-    primSchema.GetTrimCurveKnotsAttr().Set(trimKnot);    
-    primSchema.GetTrimCurveRangesAttr().Set(trimRange);    
-    primSchema.GetTrimCurvePointsAttr().Set(trimPoint);    
+    _SetAttribute(primSchema.GetTrimCurveCountsAttr(), &trimNumCurves);    
+    _SetAttribute(primSchema.GetTrimCurveOrdersAttr(), &trimOrder);    
+    _SetAttribute(primSchema.GetTrimCurveVertexCountsAttr(), &trimNumPos);    
+    _SetAttribute(primSchema.GetTrimCurveKnotsAttr(), &trimKnot);    
+    _SetAttribute(primSchema.GetTrimCurveRangesAttr(), &trimRange);    
+    _SetAttribute(primSchema.GetTrimCurvePointsAttr(), &trimPoint);    
 
     // NO NON TRIM CODE HERE SINCE WE RETURN EARLIER IF NOT TRIMMED
     return true;

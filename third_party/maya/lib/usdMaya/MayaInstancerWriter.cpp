@@ -294,7 +294,7 @@ MayaInstancerWriter::writeInstancerAttrs(
             GfVec3d origin;
             if (_GetTransformedOriginInLocalSpace(opData.mayaPath, &origin)) {
                 UsdGeomXformOp translateOp = opData.op;
-                translateOp.Set(-origin, usdTime);
+                _SetAttribute(translateOp.GetAttr(), -origin, usdTime);
             }
         }
     }
@@ -325,7 +325,8 @@ MayaInstancerWriter::writeInstancerAttrs(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     if (!PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
-            inputPointsData, instancer, _numPrototypes, usdTime)) {
+            inputPointsData, instancer, _numPrototypes, usdTime,
+            _GetSparseValueWriter())) {
         return false;
     }
 
@@ -333,7 +334,7 @@ MayaInstancerWriter::writeInstancerAttrs(
     instancer.GetPrim().GetStage()->Load(instancer.GetPath());
     VtArray<GfVec3f> extent(2);
     if (instancer.ComputeExtentAtTime(&extent, usdTime, usdTime)) {
-        instancer.CreateExtentAttr().Set(extent, usdTime);
+        _SetAttribute(instancer.CreateExtentAttr(), &extent, usdTime);
     }
 
     return true;

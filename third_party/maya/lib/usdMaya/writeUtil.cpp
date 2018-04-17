@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/writeUtil.h"
+#include "usdMaya/translatorUtil.h"
 #include "usdMaya/UserTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -40,6 +41,7 @@
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdRi/statementsAPI.h"
+#include "pxr/usd/usdUtils/sparseValueWriter.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDoubleArray.h>
@@ -70,8 +72,6 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 static
 bool
@@ -403,9 +403,6 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     UsdRiStatementsAPI riStatements(usdPrim);
-    if (!riStatements) {
-        return usdAttr;
-    }
 
     // See if a UsdRi attribute with this name already exists. If so, return it.
     // XXX: There isn't currently API for looking for a specific UsdRi attribute
@@ -423,6 +420,8 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
         PxrUsdMayaWriteUtil::GetUsdTypeName(attrPlug,
                                             translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
+        riStatements = PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                UsdRiStatementsAPI>(usdPrim);
         usdAttr = riStatements.CreateRiAttribute(riAttrNameToken,
                                                  typeName.GetType(),
                                                  nameSpace);
@@ -432,15 +431,29 @@ UsdAttribute PxrUsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
 }
 
 template <typename T>
+static bool
+_SetAttribute(const UsdAttribute& usdAttr, 
+              const T &value, 
+              const UsdTimeCode &usdTime, 
+              UsdUtilsSparseValueWriter *valueWriter)
+{
+    return valueWriter ?
+           valueWriter->SetAttribute(usdAttr, VtValue(value), usdTime) :
+           usdAttr.Set(value, usdTime);
+}
+
+template <typename T>
 bool
-_SetVec(
-        const UsdAttribute& attr,
+_SetVec(const UsdAttribute& attr,
         const T& val,
-        const UsdTimeCode& time) {
-    return attr.Set((attr.GetRoleName() == SdfValueRoleNames->Color)
-                        ? GfConvertDisplayToLinear(val)
-                        : val,
-                    time);
+        const UsdTimeCode& usdTime,
+        UsdUtilsSparseValueWriter *valueWriter) 
+{
+    return _SetAttribute(attr, 
+            attr.GetRoleName() == SdfValueRoleNames->Color ?
+                GfConvertDisplayToLinear(val) : val,
+            usdTime, 
+            valueWriter);
 }
 
 bool
@@ -448,7 +461,8 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
         const MPlug& attrPlug,
         const UsdAttribute& usdAttr,
         const UsdTimeCode& usdTime,
-        const bool translateMayaDoubleToUsdSinglePrecision)
+        const bool translateMayaDoubleToUsdSinglePrecision,
+        UsdUtilsSparseValueWriter *valueWriter)
 {
     if (!usdAttr || attrPlug.isNull()) {
         return false;
@@ -466,7 +480,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
     MObject attrObj(attrPlug.attribute());
 
     if (attrObj.hasFn(MFn::kEnumAttribute)) {
-        return usdAttr.Set(attrPlug.asInt(), usdTime);
+        return _SetAttribute(usdAttr, attrPlug.asInt(), usdTime, valueWriter);
     }
 
     MFnNumericData::Type numericDataType;
@@ -486,14 +500,12 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
         case MFnData::kString: {
             MFnStringData stringDataFn(attrPlug.asMObject());
             const std::string usdVal(stringDataFn.string().asChar());
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnData::kMatrix: {
             MFnMatrixData matrixDataFn(attrPlug.asMObject());
             const GfMatrix4d usdVal(matrixDataFn.matrix().matrix);
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnData::kStringArray: {
             MFnStringArrayData stringArrayDataFn(attrPlug.asMObject());
@@ -501,8 +513,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
             for (unsigned int i = 0; i < stringArrayDataFn.length(); ++i) {
                 usdVal[i] = std::string(stringArrayDataFn[i].asChar());
             }
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnData::kDoubleArray: {
             MFnDoubleArrayData doubleArrayDataFn(attrPlug.asMObject());
@@ -511,15 +522,14 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                 for (unsigned int i = 0; i < doubleArrayDataFn.length(); ++i) {
                     usdVal[i] = (float)doubleArrayDataFn[i];
                 }
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             } else {
                 VtDoubleArray usdVal(doubleArrayDataFn.length());
                 for (unsigned int i = 0; i < doubleArrayDataFn.length(); ++i) {
                     usdVal[i] = doubleArrayDataFn[i];
                 }
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             }
-            break;
         }
         case MFnData::kFloatArray: {
             MFnFloatArrayData floatArrayDataFn(attrPlug.asMObject());
@@ -527,8 +537,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
             for (unsigned int i = 0; i < floatArrayDataFn.length(); ++i) {
                 usdVal[i] = floatArrayDataFn[i];
             }
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnData::kIntArray: {
             MFnIntArrayData intArrayDataFn(attrPlug.asMObject());
@@ -536,8 +545,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
             for (unsigned int i = 0; i < intArrayDataFn.length(); ++i) {
                 usdVal[i] = intArrayDataFn[i];
             }
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnData::kPointArray: {
             MFnPointArrayData pointArrayDataFn(attrPlug.asMObject());
@@ -552,7 +560,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                                         (float)tmpMayaVal[1],
                                         (float)tmpMayaVal[2]);
                 }
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             } else {
                 VtVec3dArray usdVal(pointArrayDataFn.length());
                 for (unsigned int i = 0; i < pointArrayDataFn.length(); ++i) {
@@ -564,9 +572,8 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                                         tmpMayaVal[1],
                                         tmpMayaVal[2]);
                 }
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             }
-            break;
         }
         case MFnData::kVectorArray: {
             MFnVectorArrayData vectorArrayDataFn(attrPlug.asMObject());
@@ -578,7 +585,7 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                                         (float)tmpMayaVal[1],
                                         (float)tmpMayaVal[2]);
                 }
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             } else {
                 VtVec3dArray usdVal(vectorArrayDataFn.length());
                 for (unsigned int i = 0; i < vectorArrayDataFn.length(); ++i) {
@@ -587,9 +594,8 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                                         tmpMayaVal[1],
                                         tmpMayaVal[2]);
                 }
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             }
-            break;
         }
         default:
             break;
@@ -598,78 +604,74 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
     switch (numericDataType) {
         case MFnNumericData::kBoolean: {
             const bool usdVal(attrPlug.asBool());
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnNumericData::kByte:
         case MFnNumericData::kChar: {
             const int usdVal(attrPlug.asChar());
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnNumericData::kShort: {
             const int usdVal(attrPlug.asShort());
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnNumericData::kInt: {
             const int usdVal(attrPlug.asInt());
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnNumericData::k2Short: {
             short tmp1, tmp2;
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2);
-            return usdAttr.Set(GfVec2i(tmp1, tmp2), usdTime);
-            break;
+            return _SetAttribute(usdAttr, GfVec2i(tmp1, tmp2), usdTime,
+                                 valueWriter);
         }
         case MFnNumericData::k2Int: {
             int tmp1, tmp2;
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2);
-            return usdAttr.Set(GfVec2i(tmp1, tmp2), usdTime);
-            break;
+            return _SetAttribute(usdAttr, GfVec2i(tmp1, tmp2), usdTime,
+                                 valueWriter);
         }
         case MFnNumericData::k3Short: {
             short tmp1, tmp2, tmp3;
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3);
-            return usdAttr.Set(GfVec3i(tmp1, tmp2, tmp3), usdTime);
-            break;
+            return _SetAttribute(usdAttr, GfVec3i(tmp1, tmp2, tmp3), usdTime,
+                                 valueWriter);
         }
         case MFnNumericData::k3Int: {
             int tmp1, tmp2, tmp3;
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3);
-            return usdAttr.Set(GfVec3i(tmp1, tmp2, tmp3), usdTime);
-            break;
+            return _SetAttribute(usdAttr, GfVec3i(tmp1, tmp2, tmp3), usdTime,
+                                 valueWriter);
         }
         case MFnNumericData::kFloat: {
             const float usdVal(attrPlug.asFloat());
-            return usdAttr.Set(usdVal, usdTime);
-            break;
+            return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
         }
         case MFnNumericData::k2Float: {
             float tmp1, tmp2;
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2);
-            return usdAttr.Set(GfVec2f(tmp1, tmp2), usdTime);
-            break;
+            return _SetAttribute(usdAttr, GfVec2f(tmp1, tmp2), usdTime,
+                                 valueWriter);
         }
         case MFnNumericData::k3Float: {
             float tmp1, tmp2, tmp3;
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3);
-            return _SetVec(usdAttr, GfVec3f(tmp1, tmp2, tmp3), usdTime);
-            break;
+            return _SetVec(usdAttr, GfVec3f(tmp1, tmp2, tmp3), usdTime,
+                           valueWriter);
         }
         case MFnNumericData::kDouble: {
             const double usdVal(attrPlug.asDouble());
             if (translateMayaDoubleToUsdSinglePrecision) {
-                return usdAttr.Set((float)usdVal, usdTime);
+                return _SetAttribute(usdAttr, (float)usdVal, usdTime,
+                                     valueWriter);
             } else {
-                return usdAttr.Set(usdVal, usdTime);
+                return _SetAttribute(usdAttr, usdVal, usdTime, valueWriter);
             }
             break;
         }
@@ -678,9 +680,11 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2);
             if (translateMayaDoubleToUsdSinglePrecision) {
-                return usdAttr.Set(GfVec2f((float)tmp1, (float)tmp2), usdTime);
+                return _SetAttribute(usdAttr, GfVec2f((float)tmp1, (float)tmp2),
+                                     usdTime, valueWriter);
             } else {
-                return usdAttr.Set(GfVec2d(tmp1, tmp2), usdTime);
+                return _SetAttribute(usdAttr, GfVec2d(tmp1, tmp2),
+                                     usdTime, valueWriter);
             }
             break;
         }
@@ -693,9 +697,11 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                                GfVec3f((float)tmp1,
                                        (float)tmp2,
                                        (float)tmp3),
-                               usdTime);
+                               usdTime, 
+                               valueWriter);
             } else {
-                return _SetVec(usdAttr, GfVec3d(tmp1, tmp2, tmp3), usdTime);
+                return _SetVec(usdAttr, GfVec3d(tmp1, tmp2, tmp3), usdTime,
+                               valueWriter);
             }
             break;
         }
@@ -709,11 +715,13 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
                                        (float)tmp2,
                                        (float)tmp3,
                                        (float)tmp4),
-                               usdTime);
+                               usdTime,
+                               valueWriter);
             } else {
                 return _SetVec(usdAttr,
                                GfVec4d(tmp1, tmp2, tmp3, tmp4),
-                               usdTime);
+                               usdTime,
+                               valueWriter);
             }
             break;
         }
@@ -725,11 +733,11 @@ PxrUsdMayaWriteUtil::SetUsdAttr(
         case MFnUnitAttribute::kAngle:
         case MFnUnitAttribute::kDistance:
             if (translateMayaDoubleToUsdSinglePrecision) {
-                const float usdVal(attrPlug.asFloat());
-                return usdAttr.Set(usdVal, usdTime);
+                float usdVal(attrPlug.asFloat());
+                return valueWriter->SetAttribute(usdAttr, usdVal, usdTime);
             } else {
-                const double usdVal(attrPlug.asDouble());
-                return usdAttr.Set(usdVal, usdTime);
+                double usdVal(attrPlug.asDouble());
+                return valueWriter->SetAttribute(usdAttr, usdVal, usdTime);
             }
             break;
         default:
@@ -778,7 +786,8 @@ bool
 PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
         const MDagPath& dagPath,
         const UsdPrim& usdPrim,
-        const UsdTimeCode& usdTime)
+        const UsdTimeCode& usdTime,
+        UsdUtilsSparseValueWriter *valueWriter)
 {
     std::vector<PxrUsdMayaUserTaggedAttribute> exportedAttributes =
         PxrUsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(dagPath);
@@ -831,7 +840,8 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
             if (!PxrUsdMayaWriteUtil::SetUsdAttr(attrPlug,
                                                     usdAttr,
                                                     usdTime,
-                                                    translateMayaDoubleToUsdSinglePrecision)) {
+                                                    translateMayaDoubleToUsdSinglePrecision,
+                                                    valueWriter)) {
                 MGlobal::displayError(
                     TfStringPrintf("Could not set value for attribute: '%s'",
                                    usdAttr.GetPath().GetText()).c_str());
@@ -896,7 +906,8 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     MFnArrayAttrsData& inputPointsData,
     const UsdGeomPointInstancer& instancer,
     const size_t numPrototypes,
-    const UsdTimeCode& usdTime)
+    const UsdTimeCode& usdTime,
+    UsdUtilsSparseValueWriter *valueWriter)
 {
     MStatus status;
 
@@ -916,7 +927,7 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](double x) {
                 return (int64_t) x;
             });
-        instancer.CreateIdsAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateIdsAttr(), vtArray, usdTime, valueWriter);
         numInstances = vtArray.size();
     }
     else {
@@ -944,12 +955,14 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                     return (int) numPrototypes - 1;
                 }
             });
-        instancer.CreateProtoIndicesAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray, 
+                      usdTime, valueWriter);
     }
     else {
         VtArray<int> vtArray;
         vtArray.assign(numInstances, 0);
-        instancer.CreateProtoIndicesAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateProtoIndicesAttr(), 
+                      vtArray, usdTime, valueWriter);
     }
 
     if (inputPointsData.checkArrayExist("position", type) &&
@@ -964,12 +977,14 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        instancer.CreatePositionsAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime,
+                      valueWriter);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(0.0f));
-        instancer.CreatePositionsAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreatePositionsAttr(),
+                      vtArray, usdTime, valueWriter);
     }
 
     if (inputPointsData.checkArrayExist("rotation", type) &&
@@ -987,12 +1002,14 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                         * GfRotation(GfVec3d::ZAxis(), v.z);
                 return GfQuath(rot.GetQuat());
             });
-        instancer.CreateOrientationsAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateOrientationsAttr(),
+                      vtArray, usdTime, valueWriter);
     }
     else {
         VtQuathArray vtArray;
         vtArray.assign(numInstances, GfQuath(0.0f));
-        instancer.CreateOrientationsAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateOrientationsAttr(), 
+                      vtArray, usdTime, valueWriter);
     }
 
     if (inputPointsData.checkArrayExist("scale", type) &&
@@ -1007,12 +1024,14 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        instancer.CreateScalesAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
+                      valueWriter);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(1.0));
-        instancer.CreateScalesAttr().Set(vtArray, usdTime);
+        _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
+                      valueWriter);
     }
 
     return true;

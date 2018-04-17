@@ -43,20 +43,21 @@ template <typename GfVec3_T>
 static void
 _setXformOp(const UsdGeomXformOp &op, 
         const GfVec3_T& value, 
-        const UsdTimeCode &usdTime)
+        const UsdTimeCode &usdTime,
+        UsdUtilsSparseValueWriter *valueWriter)
 {
     switch(op.GetOpType()) {
         case UsdGeomXformOp::TypeRotateX:
-            op.Set(value[0], usdTime);
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[0]), usdTime);
         break;
         case UsdGeomXformOp::TypeRotateY:
-            op.Set(value[1], usdTime);
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[1]), usdTime);
         break;
         case UsdGeomXformOp::TypeRotateZ:
-            op.Set(value[2], usdTime);
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[2]), usdTime);
         break;
         default:
-            op.Set(value, usdTime);
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value), usdTime);
     }
 }
 
@@ -64,23 +65,24 @@ _setXformOp(const UsdGeomXformOp &op,
 static void 
 setXformOp(const UsdGeomXformOp& op,
         const GfVec3d& value,
-        const UsdTimeCode& usdTime)
+        const UsdTimeCode& usdTime,
+        UsdUtilsSparseValueWriter *valueWriter)
 {
     if (op.GetOpType() == UsdGeomXformOp::TypeTransform) {
         GfMatrix4d shearXForm(1.0);
         shearXForm[1][0] = value[0]; //xyVal
         shearXForm[2][0] = value[1]; //xzVal
         shearXForm[2][1] = value[2]; //yzVal            
-        op.Set(shearXForm, usdTime);
+        valueWriter->SetAttribute(op.GetAttr(), shearXForm, usdTime);
         return;
     }
 
     if (UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName()) 
             == UsdGeomXformOp::PrecisionDouble) {
-        _setXformOp<GfVec3d>(op, value, usdTime);
+        _setXformOp<GfVec3d>(op, value, usdTime, valueWriter);
     }
     else { // float precision
-        _setXformOp<GfVec3f>(op, GfVec3f(value), usdTime);
+        _setXformOp<GfVec3f>(op, GfVec3f(value), usdTime, valueWriter);
     }
 }
 
@@ -90,7 +92,8 @@ static void
 computeXFormOps(
         const UsdGeomXformable& usdXformable, 
         const std::vector<AnimChannel>& animChanList, 
-        const UsdTimeCode &usdTime)
+        const UsdTimeCode &usdTime,
+        UsdUtilsSparseValueWriter *valueWriter)
 {
     // Iterate over each AnimChannel, retrieve the default value and pull the
     // Maya data if needed. Then store it on the USD Ops
@@ -128,7 +131,7 @@ computeXFormOps(
         // animating ones are actually animating
         if ((usdTime == UsdTimeCode::Default() && hasStatic && !hasAnimated) ||
             (usdTime != UsdTimeCode::Default() && hasAnimated)) {
-            setXformOp(animChannel.op, value, usdTime);
+            setXformOp(animChannel.op, value, usdTime, valueWriter);
         }
     }
 }
@@ -557,7 +560,8 @@ bool MayaTransformWriter::writeTransformAttrs(
     writePrimAttrs(mXformDagPath, usdTime, xformSchema); // for the shape
 
     // can this use xformSchema instead?  do we even need _usdXform?
-    computeXFormOps(xformSchema, mAnimChanList, usdTime);
+    computeXFormOps(xformSchema, mAnimChanList, usdTime,
+                    _GetSparseValueWriter());
     return true;
 }
 

@@ -319,8 +319,8 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
         VtMatrix4dArray restTransforms = _GetRestTransforms(jointDags);
 
         UsdSkelSkeleton primSchema(mUsdPrim);
-        primSchema.CreateJointsAttr().Set(jointNames);
-        primSchema.CreateRestTransformsAttr().Set(restTransforms);
+        _SetAttribute(primSchema.CreateJointsAttr(), jointNames);
+        _SetAttribute(primSchema.CreateRestTransformsAttr(), &restTransforms);
 
         VtTokenArray animJointNames;
         _GetAnimatedJoints(
@@ -331,7 +331,7 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
             UsdSkelPackedJointAnimation anim =
                     UsdSkelPackedJointAnimation::Define(
                         getUsdStage(), animPath);
-            anim.CreateJointsAttr().Set(animJointNames);
+            _SetAttribute(anim.CreateJointsAttr(), animJointNames);
         }
     }
 
@@ -360,9 +360,9 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
         VtVec3hArray scales;
         _GetAnimationData(
                 _animatedJoints, &translations, &rotations, &scales);
-        skelAnim.CreateTranslationsAttr().Set(translations, usdTime);
-        skelAnim.CreateRotationsAttr().Set(rotations, usdTime);
-        skelAnim.CreateScalesAttr().Set(scales, usdTime);
+        _SetAttribute(skelAnim.CreateTranslationsAttr(), &translations, usdTime);
+        _SetAttribute(skelAnim.CreateRotationsAttr(), &rotations, usdTime);
+        _SetAttribute(skelAnim.CreateScalesAttr(), &scales, usdTime);
     }
 }
 
