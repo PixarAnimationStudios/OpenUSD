@@ -2733,7 +2733,7 @@ UsdImagingDelegate::GetReprName(SdfPath const &id)
 }
 
 // -------------------------------------------------------------------------- //
-// PrimVar Support Methods
+// Primvar Support Methods
 // -------------------------------------------------------------------------- //
 
 TfTokenVector
