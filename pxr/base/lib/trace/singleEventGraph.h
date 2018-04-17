@@ -39,7 +39,8 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/js/types.h"
 
-#include <map>
+#include <vector>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,8 +55,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(TraceSingleEventGraph);
 ///
 class TraceSingleEventGraph : public TfRefBase, public TfWeakBase {
 public:
-    using CounterValues = std::map<TraceEvent::TimeStamp, double>;
-    using CounterMap = std::map<TfToken, CounterValues>;
+    using CounterValues = std::vector<std::pair<TraceEvent::TimeStamp, double>>;
+    using CounterValuesMap =
+        std::unordered_map<TfToken, CounterValues, TfToken::HashFunctor>;
+    using CounterMap =
+        std::unordered_map<TfToken, double, TfToken::HashFunctor>;
 
     static TraceSingleEventGraphRefPtr New() {
         return TfCreateRefPtr( 
@@ -64,7 +68,7 @@ public:
 
     static TraceSingleEventGraphRefPtr New(
             TraceSingleEventNodeRefPtr root, 
-            CounterMap counters) {
+            CounterValuesMap counters) {
         return TfCreateRefPtr( 
             new TraceSingleEventGraph(root, std::move(counters)));
     }
@@ -73,7 +77,10 @@ public:
     const TraceSingleEventNodeRefPtr& GetRoot() const { return _root; }
 
     /// Returns the map of counter values.
-    const CounterMap& GetCounters() const { return _counters; }
+    const CounterValuesMap& GetCounters() const { return _counters; }
+
+    /// Return the final value of the counters in the report.
+    CounterMap GetFinalCounterValues() const;
 
     /// Returns a JSON object representing the data in the call graph that 
     /// conforms to the Chrome Trace format.
@@ -87,14 +94,14 @@ private:
         : _root(root) {}
 
     TraceSingleEventGraph(  TraceSingleEventNodeRefPtr root, 
-                            CounterMap counters)
+                            CounterValuesMap counters)
         : _root(root)
         , _counters(std::move(counters)) {}
 
     // Root of the call graph.
     TraceSingleEventNodeRefPtr _root;
     // Counter data of the trace.
-    CounterMap _counters;
+    CounterValuesMap _counters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

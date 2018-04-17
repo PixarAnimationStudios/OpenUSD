@@ -60,8 +60,9 @@ static void TestTimelineCounterValues(
     TraceSingleEventGraphRefPtr timeline = reporter->GetSingleEventGraph();
     TF_AXIOM(timeline);
 
-    const TraceSingleEventGraph::CounterMap& counters = timeline->GetCounters();
-    TraceSingleEventGraph::CounterMap::const_iterator it =
+    const TraceSingleEventGraph::CounterValuesMap& counters =
+        timeline->GetCounters();
+    TraceSingleEventGraph::CounterValuesMap::const_iterator it =
         counters.find(counterName);
     TF_AXIOM(it != counters.end());
 
@@ -106,6 +107,23 @@ int main(int argc, char* argv[]) {
     TestTimelineCounterValues(TfToken("Counter B"), {1.0,2.0,3.0});
     TestTimelineCounterValues(TfToken("Counter C"), {5.0,4.0,2.0});
     TestTimelineCounterValues(TfToken("Counter D"), {1.0,3.0,-5.0});
+
+    collector->SetEnabled(true);
+    TestCounters();
+    collector->SetEnabled(false);
+    reporter->ReportChromeTracing(std::cout);
+
+    // Test that the aggregate reporter works correctly.
+    TestAggregateCounterValue(TfToken("Counter A"), 12.0);
+    TestAggregateCounterValue(TfToken("Counter B"), 3.0);
+    TestAggregateCounterValue(TfToken("Counter C"), 2.0);
+    TestAggregateCounterValue(TfToken("Counter D"), -5.0);
+
+    // Test that the timeline reporter works correctly
+    TestTimelineCounterValues(TfToken("Counter A"), {1.0,3.0,6.0,7.0,9.0,12.0});
+    TestTimelineCounterValues(TfToken("Counter B"), {1.0,2.0,3.0,1.0,2.0,3.0});
+    TestTimelineCounterValues(TfToken("Counter C"), {5.0,4.0,2.0,5.0,4.0,2.0});
+    TestTimelineCounterValues(TfToken("Counter D"), {1.0,3.0,-5.0,-4.0,-2.0,-5.0});
 
     return 0;
 }

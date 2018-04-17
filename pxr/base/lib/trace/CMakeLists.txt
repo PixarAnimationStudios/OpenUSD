@@ -18,6 +18,7 @@ pxr_library(trace
         collection
         collectionNotice
         collector
+        counterAccumulator
         dataBuffer
         dynamicKey
         event
@@ -27,6 +28,7 @@ pxr_library(trace
         eventNode
         key
         reporter
+        reporterBase
         serialization
         singleEventGraph
         singleEventNode

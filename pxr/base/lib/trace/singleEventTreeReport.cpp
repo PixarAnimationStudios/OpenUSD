@@ -43,22 +43,6 @@ void
 TraceSingleEventTreeReport::OnEndCollection()
 {
     _threadStacks.clear();
-    // Convert the counter deltas and values to absolute values;
-    TraceSingleEventGraph::CounterMap counterValues;
-    for (const _CounterMap::value_type& c : _counterDeltas) {
-
-        double curValue = 0;
-        for (const _CounterValues::value_type& v : c.second) {
-            if (v.second.isDelta) {
-                curValue += v.second.value;
-            } else {
-                curValue = v.second.value;
-            }
-            counterValues[c.first].insert(std::make_pair(v.first, curValue));
-        }
-    }
-    _counterDeltas.clear();
-    _graph = TraceSingleEventGraph::New(_root, std::move(counterValues));
 }
 
 bool
@@ -115,10 +99,8 @@ TraceSingleEventTreeReport::OnEvent(
             _OnEnd(threadIndex, key, e);
             break;
         case TraceEvent::EventType::CounterDelta:
-            _OnCounterDelta(threadIndex, key, e);
-            break;
         case TraceEvent::EventType::CounterValue:
-            _OnCounterValue(threadIndex, key, e);
+            // Handled by the counter accumulator
             break;
         case TraceEvent::EventType::Timespan:
             _OnTimespan(threadIndex, key, e);
@@ -220,25 +202,6 @@ TraceSingleEventTreeReport::_OnTimespan(
     currentChildren.push_back(node);
 }
 
-
-void
-TraceSingleEventTreeReport::_OnCounterValue(
-    const TraceThreadId&, const TfToken& key, const TraceEvent& e)
-{
-    _counterDeltas[key].insert(
-        std::make_pair(e.GetTimeStamp(),
-            _CounterValue{e.GetCounterValue(), false}));
-}
-
-void
-TraceSingleEventTreeReport::_OnCounterDelta(
-    const TraceThreadId&, const TfToken& key, const TraceEvent& e)
-{
-    _counterDeltas[key].insert(
-        std::make_pair(e.GetTimeStamp(),
-            _CounterValue{e.GetCounterValue(), true}));
-}
-
 void
 TraceSingleEventTreeReport::_OnData(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
@@ -272,6 +235,21 @@ TraceSingleEventTreeReport::_PendingSingleEventNode::Close(
         node->AddAttribute(TfToken(it.key), std::move(it.data));
     }
     return node;
+}
+
+void
+TraceSingleEventTreeReport::CreateGraph(const TraceCollection& collection)
+{
+    collection.Iterate(*this);
+    _counterAccum.Update(collection);
+    _graph = TraceSingleEventGraph::New(_root, _counterAccum.GetCounters());
+}
+
+bool
+TraceSingleEventTreeReport::_CounterAccumulator::_AcceptsCategory(
+    TraceCategoryId)
+{
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

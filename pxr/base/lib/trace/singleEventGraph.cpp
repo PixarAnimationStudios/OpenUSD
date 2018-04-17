@@ -40,14 +40,20 @@ TraceSingleEventGraph::Merge(const TraceSingleEventGraphRefPtr& graph) {
     }
 
     // Add the counter data.
-    for (CounterMap::value_type& p : graph->_counters) {
-        CounterMap::iterator it = _counters.find(p.first);
+    for (CounterValuesMap::value_type& p : graph->_counters) {
+        CounterValuesMap::iterator it = _counters.find(p.first);
         if (it == _counters.end()) {
             // Add new counter values;
             _counters.insert(p);
         } else {
             // Merge new counter values to existing counter values.
-            it->second.insert(p.second.begin(), p.second.end());
+            const size_t originalSize = it->second.size();
+            it->second.insert(
+                it->second.end(), p.second.begin(), p.second.end());
+            std::inplace_merge(
+                it->second.begin(), 
+                it->second.begin() + originalSize,
+                it->second.end());
         }
     }
 }
@@ -146,10 +152,10 @@ void TraceSingleEventGraph_AddToJsonArray(
 static
 void TraceSingleEventGraph_AddCounters(
     const int pid,
-    const TraceSingleEventGraph::CounterMap& counters,
+    const TraceSingleEventGraph::CounterValuesMap& counters,
     JsArray& events)
 {
-    for (const TraceSingleEventGraph::CounterMap::value_type& c : counters) {
+    for (const TraceSingleEventGraph::CounterValuesMap::value_type& c : counters) {
         for (const TraceSingleEventGraph::CounterValues::value_type& v 
             : c.second) {
 
@@ -195,6 +201,20 @@ TraceSingleEventGraph::CreateChromeTraceObject() const
     traceObj["traceEvents"] = eventArray;
     
     return traceObj;
+}
+
+TraceSingleEventGraph::CounterMap
+TraceSingleEventGraph::GetFinalCounterValues() const {
+    CounterMap finalValues;
+    
+    for (const CounterValuesMap::value_type& p : _counters) {
+        const CounterValues& counterValues = p.second;
+        if (!counterValues.empty()) {
+            finalValues[p.first] = counterValues.rbegin()->second;
+        }
+    }
+
+    return finalValues;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

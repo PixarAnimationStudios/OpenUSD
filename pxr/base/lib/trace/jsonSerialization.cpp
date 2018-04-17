@@ -381,7 +381,7 @@ Trace_JSONSerialization::CollectionToJSON(const TraceCollection& collection)
     }
 
     TraceSingleEventTreeReport report;
-    collection.Iterate(report);
+    report.CreateGraph(collection);
     JsObject traceObj = report.GetGraph()->CreateChromeTraceObject();
 
     // Add the extra lib trace data to the Chrome trace object.

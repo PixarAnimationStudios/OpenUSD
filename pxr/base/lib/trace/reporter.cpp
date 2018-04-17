@@ -35,6 +35,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/symbols.h"
@@ -68,12 +69,12 @@ TraceReporter::TraceReporter(const string& label,
     _collector(collector),
     _label(label),
     _groupByFunction(true),
-    _foldRecursiveCalls(false)
+    _foldRecursiveCalls(false),
+    _buildSingleEventGraph(false)
 {
     _rootNode = TraceEventNode::New();
     _singleEventGraph = TraceSingleEventGraph::New();
     _eventTimes = _EventTimes();
-    TfNotice::Register(ThisPtr(this), &This::_OnTraceCollection);
 }
 
 TraceReporter::~TraceReporter()
@@ -609,8 +610,10 @@ void
 TraceReporter::_UpdateTree(bool buildSingleEventGraph)
 {
     // Get the latest from the collector and process the events.
-    _collector->CreateCollection();
-    _ProcessCollections(buildSingleEventGraph);
+    {
+        TfScopedVar<bool> scope(_buildSingleEventGraph, buildSingleEventGraph);
+        _Update();
+    }
 
     // If MallocTags were enabled for the capture of this trace, add a dummy
     // warning node as an indicator that the trace may have been slowed down
@@ -653,7 +656,7 @@ TraceReporter::ClearTree()
     _counterIndexMap.clear();
     ///XXX: This should really not be clearing the global collector here.
     _collector->Clear();
-    _collections.clear();
+    _Clear();
 }
 
 TraceEventNodePtr
@@ -777,27 +780,27 @@ TraceReporter::_PendingEventNode::Close(TimeStamp end)
     return Child{start, node};
 }
 
-void 
-TraceReporter::_OnTraceCollection(const TraceCollectionAvailable& notice) 
+bool 
+TraceReporter::_IsAcceptingCollections()
 {
-    _collections.push(notice.GetCollection());
+    return true;
 }
 
-void TraceReporter::_ProcessCollections(bool buildSingleEventGraph) 
+void
+TraceReporter::_ProcessCollection(
+    const TraceReporterBase::CollectionPtr& collection)
 {
     // Create a temporary reporter for the singleEvent graph if its requested.
     TraceSingleEventTreeReport singleGraphReport;
-
-    std::shared_ptr<TraceCollection> collection;
-    while (_collections.try_pop(collection)) {
-        if (collection) {
-            collection->Iterate(*this);
-            if (buildSingleEventGraph) {
-                collection->Iterate(singleGraphReport);
-            }
+    if (collection) {
+        collection->Iterate(*this);
+        if (_buildSingleEventGraph) {
+            singleGraphReport.SetCounterValues(
+                _singleEventGraph->GetFinalCounterValues());
+            singleGraphReport.CreateGraph(*collection);
         }
     }
-    if (buildSingleEventGraph) {
+    if (_buildSingleEventGraph) {
         _singleEventGraph->Merge(singleGraphReport.GetGraph());
     }
 }
