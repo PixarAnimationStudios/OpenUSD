@@ -185,6 +185,14 @@ public:
     friend std::ostream &operator <<(std::ostream &out, 
                                      const HdDrawItem& self);
 
+protected:
+
+    /// Returns the shared data
+    HD_API
+    HdRprimSharedData const *_GetSharedData() const {
+        return _sharedData;
+    }
+
 private:
     // configuration of how to bundle the drawing coordinate for this draw item
     // out of BARs in sharedData
