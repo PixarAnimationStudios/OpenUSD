@@ -57,6 +57,13 @@ HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
 void
 HdxShadowTask::_Execute(HdTaskContext* ctx)
 {
+    static const TfTokenVector SHADOW_RENDER_TAGS =
+    {
+        HdTokens->geometry,
+        HdxRenderTagsTokens->interactiveOnlyGeom
+    };
+
+
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
     GLF_GROUP_FUNCTION();
@@ -90,7 +97,7 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
         shadows->BeginCapture(shadowId, true);
 
         // Render the actual geometry in the collection
-        _passes[shadowId]->Execute(_renderPassStates[shadowId], HdTokens->geometry);
+        _passes[shadowId]->Execute(_renderPassStates[shadowId], SHADOW_RENDER_TAGS);
 
         // Unbind the buffer and move on to the next shadow map
         shadows->EndCapture(shadowId);
