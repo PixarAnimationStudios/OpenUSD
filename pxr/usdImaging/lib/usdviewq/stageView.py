@@ -656,16 +656,14 @@ class StageView(QtOpenGL.QGLWidget):
 
     # First arg is primPath, (which could be empty Path)
     # Second arg is instanceIndex (or UsdImagingGL.GL.ALL_INSTANCES for all instances)
-    # Third and Fourth args represent state at time of the pick
-    signalPrimSelected = QtCore.Signal(Sdf.Path, int, QtCore.Qt.MouseButton,
-                                       QtCore.Qt.KeyboardModifiers)
-
-    signalPointSelected = QtCore.Signal(Gf.Vec3d, QtCore.Qt.MouseButton,
+    # Third arg is selectedPoint
+    # Fourth and Fifth args represent state at time of the pick
+    signalPrimSelected = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.MouseButton,
                                        QtCore.Qt.KeyboardModifiers)
 
     # Only raised when StageView has been told to do so, setting
     # rolloverPicking to True
-    signalPrimRollover = QtCore.Signal(Sdf.Path, int, QtCore.Qt.KeyboardModifiers)
+    signalPrimRollover = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.KeyboardModifiers)
     signalMouseDrag = QtCore.Signal()
     signalErrorMessage = QtCore.Signal(str)
 
@@ -816,8 +814,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.signalStageReplaced.connect(self._stageReplaced)
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
-        self._dataModel.selection.signalPointSelectionChanged.connect(
-            self._pointSelectionChanged)
 
         self._dataModel.viewSettings.freeCamera = FreeCamera(True)
         self._lastComputedGfCamera = None
@@ -2019,13 +2015,10 @@ class StageView(QtOpenGL.QGLWidget):
 
         if button:
             self.signalPrimSelected.emit(
-                selectedPrimPath, selectedInstanceIndex, button, modifiers)
-            self.signalPointSelected.emit(selectedPoint, button, modifiers)
+                selectedPrimPath, selectedInstanceIndex, selectedPoint, button, modifiers)
         else:
             self.signalPrimRollover.emit(
-                selectedPrimPath, selectedInstanceIndex, modifiers)
-            self.signalPointSelected.emit(
-                selectedPoint, button, modifiers)
+                selectedPrimPath, selectedInstanceIndex, selectedPoint, modifiers)
 
     def glDraw(self):
         # override glDraw so we can time it.
@@ -2111,7 +2104,3 @@ class StageView(QtOpenGL.QGLWidget):
         # set highlighted paths to renderer
         self.updateSelection()
         self.update()
-
-    def _pointSelectionChanged(self):
-        self.update()
-

@@ -192,7 +192,7 @@ class UsdviewApi(object):
 
         return self.__appController._settings
 
-    def ClearSelection(self):
+    def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
 
     def AddPrimToSelection(self, prim):
