@@ -193,8 +193,8 @@ public:
         static_assert( sizeof...(Args) %2 == 0, 
             "Data arguments must come in pairs");
 
-        // Explcicitly cast to TraceCategoryId so overload resolution choose the
-        // version with a category arguement.
+        // Explicitly cast to TraceCategoryId so overload resolution choose the
+        // version with a category argument.
         BeginScope(key, 
             static_cast<TraceCategoryId>(TraceCategory::Default),
             std::forward<Args>(args)...);

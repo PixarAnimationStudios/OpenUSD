@@ -1689,7 +1689,7 @@ HdSt_CodeGen::_GenerateElementPrimVar()
       // --------- primitive param declaration ----------
       struct PrimitiveData { int elementID; }
       layout (std430, binding=?) buffer PrimitiveBuffer {
-          PrimtiveData primitiveData[];
+          PrimitiveData primitiveData[];
       };
 
       // --------- indirection accessors ---------

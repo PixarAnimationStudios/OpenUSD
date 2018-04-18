@@ -161,7 +161,7 @@ Converter::GetOptions() const {
         } else if (creaseMethod==PxOsdOpenSubdivTokens->chaikin) {
             options.SetCreasingMethod(Options::CREASE_CHAIKIN);
         } else {
-            TF_WARN("Unkown creasing method (%s) (%s)",
+            TF_WARN("Unknown creasing method (%s) (%s)",
                 creaseMethod.GetText(), name.GetText());
         }
     }

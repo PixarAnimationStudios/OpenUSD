@@ -28,9 +28,9 @@ def SkelRoot "Character" {
 In UsdSkel's object model, we say that each _skel:skeleton_ binding relationship
 defines a new \ref UsdSkel_Term_SkeletonInstance "Skeleton Instance".
 So for the example case above, we would say that there is a skeleton instance
-bound to `</Charactor>`, that affects the child primitives beneath it.
+bound to `</Character>`, that affects the child primitives beneath it.
 
-The _skeleton instance_ identified at `</Character>` describes an instantation
+The _skeleton instance_ identified at `</Character>` describes an instantiation
 of the skeleton at `</Skel>`, animated using the animation defined at `</Anim>`.
 
 Since `</Character/Mesh>` has fully specified
@@ -46,11 +46,11 @@ the above concepts as follows:
 
   At each primitive that defines a _skeleton instance_,
   a \ref UsdSkel_OM_SkeletonQuery "skeleton query" is produced,
-  which can be used to query properites of the instance.
+  which can be used to query properties of the instance.
 
 - **Skinnable Prims**:
   
-  At each primitve that has fully defined _joint influences_, a
+  At each primitive that has fully defined _joint influences_, a
   \ref UsdSkel_OM_SkinningQuery "skinning query" is produced, which can be used
   to query those influences, and other properties that affect skinning.
 

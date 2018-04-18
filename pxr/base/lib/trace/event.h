@@ -61,7 +61,7 @@ public:
 
     /// Valid event types
     enum class EventType : uint8_t {
-        Unknown, ///< The event is an unkown type.
+        Unknown, ///< The event is an unknown type.
         Begin, ///< The event represents the beginning timestamp of a scope.
         End, ///< The event represents the ending timestamp of a scope.
         Timespan, ///< The event represents begin and end timestamp of a scope.
@@ -147,7 +147,7 @@ public:
         _time(ts) {
     }
 
-    /// Constructor for Timespan events that takes the a TimeStamp \a starttime 
+    /// Constructor for Timespan events that takes a TimeStamp \a starttime
     /// and automatically sets the end timestamp from the current time.
     TraceEvent(
         TimespanTag, const Key& key, TimeStamp startTime, TraceCategoryId cat) :

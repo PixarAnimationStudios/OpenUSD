@@ -69,8 +69,8 @@ These data orderings are referred to as a primitive's **joint order**, and
 are defined using token arrays.
 
 The tokens in a joint array are given as Sdf-style paths, where parent-child
-relationships in the ggiven paths establish a
-\ref UsdSkel_jointHierarch "joint hierarchy." Note that these paths do not
+relationships in the given paths establish a
+\ref UsdSkel_JointHierarchy "joint hierarchy." Note that these paths do not
 need to refer to actual primitives in the scene. They are used as a way to
 name and order joints in vectorized data. For example:
 
@@ -114,7 +114,7 @@ UsdSkelAnimMapper, and is done so by matching joint names.
 \section UsdSkel_SkelRoot Skeleton Root Schema
 
 The UsdSkelRoot schema is used to **encapsulate** primitives with
-skelelal skinning behaviors, and is required when authoring skeletal data.
+skeletal skinning behaviors, and is required when authoring skeletal data.
 
 A SkelRoot is a boundable primitive, and provides a place to encode the
 extents of all skinned primitives beneath it. It is neither expected nor
@@ -214,7 +214,7 @@ a root transformation for the entire animation.
 
 This is separate from the root transformation of the 
 \ref UsdSkel_Term_SkeletonInstance "Skeleton Instance", and provides a way of
-making a distintion between the component of a character's _clip_ motion, and
+making a distinction between the component of a character's _clip_ motion, and
 the model's own local-to-world transform.
 
 \section UsdSkel_BindingAPI Binding API Schema

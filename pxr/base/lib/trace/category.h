@@ -65,7 +65,7 @@ public:
     enum : TraceCategoryId { Default = 0 };
 
     /// Associates the \p id with \p name. These associates are not necessarily 
-    /// uinique.
+    /// unique.
     TRACE_API void RegisterCategory(TraceCategoryId id, const std::string& name);
 
     /// Returns all names associated with the \p id.
