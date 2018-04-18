@@ -1606,7 +1606,7 @@ UsdImagingPointInstancerAdapter::_ComputeProtoVisibility(
     }
 
     // if it's in invised list, set vis to false
-    if (_delegate->IsInInvisedPaths(protoGprim.GetPath())) {
+    if (_IsInInvisedPaths(protoGprim.GetPath())) {
         *vis = false;
         return;
     }
@@ -1810,8 +1810,8 @@ UsdImagingPointInstancerAdapter::SampleInstancerTransform(
     } else {
         // if not nested, simply put the transform of the instancer.
         for (size_t i=0; i < numSamples; ++i) {
-            UsdTimeCode sceneTime =
-                _delegate->GetTimeWithOffset(configuredSampleTimes[i]);
+            UsdTimeCode sceneTime = 
+                _GetTimeWithOffset(configuredSampleTimes[i]);
             times[i] = configuredSampleTimes[i];
             samples[i] = GetRelativeInstancerTransform(
                 parentInstancerPath, instancerPath, sceneTime);
@@ -1860,9 +1860,8 @@ UsdImagingPointInstancerAdapter::PopulateSelection(
     VtIntArray const &instanceIndices,
     HdxSelectionSharedPtr const &result)
 {
-    SdfPath indexPath = _delegate->GetPathForIndex(path);
-    SdfPathVector const& ids =
-        _delegate->GetRenderIndex().GetRprimSubtree(indexPath);
+    SdfPath indexPath = _GetPathForIndex(path);
+    SdfPathVector const& ids = _GetRprimSubtree(indexPath);
 
     bool added = false;
     TF_FOR_ALL (it, ids){

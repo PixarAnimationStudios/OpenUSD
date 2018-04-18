@@ -425,6 +425,31 @@ UsdImagingPrimAdapter::_GetTimeWithOffset(float offset) const
     return _delegate->GetTimeWithOffset(offset);
 }
 
+SdfPath 
+UsdImagingPrimAdapter::_GetPathForIndex(const SdfPath &usdPath) const
+{
+    return _delegate->GetPathForIndex(usdPath);
+}
+
+SdfPathVector
+UsdImagingPrimAdapter::_GetRprimSubtree(SdfPath const& indexPath) const
+{
+    return _delegate->GetRenderIndex().GetRprimSubtree(indexPath);
+}
+
+bool 
+UsdImagingPrimAdapter::_CanComputeMaterialNetworks() const
+{
+    return _delegate->GetRenderIndex().GetRenderDelegate()->
+        CanComputeMaterialNetworks();
+}
+
+bool 
+UsdImagingPrimAdapter::_IsInInvisedPaths(SdfPath const& usdPath) const
+{
+    return _delegate->IsInInvisedPaths(usdPath);
+}
+
 void 
 UsdImagingPrimAdapter::_MergePrimvar(
                     UsdImagingValueCache::PrimvarInfo const& primvar, 
@@ -465,6 +490,12 @@ UsdImagingPrimAdapter::_IsVarying(UsdPrim prim,
     } while (isInherited && prim.GetPath() != SdfPath::AbsoluteRootPath());
 
     return false;
+}
+
+bool 
+UsdImagingPrimAdapter::_IsRefined(SdfPath const& cachePath) const
+{
+    return _delegate->IsRefined(cachePath);
 }
 
 bool 

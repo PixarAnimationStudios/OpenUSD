@@ -1700,14 +1700,14 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
         TF_FOR_ALL (it, instancerData->primMap) {
             SdfPath protoRprim = it->first;
             // convert to indexPath (add prefix)
-            SdfPath indexPath = adapter->_delegate->GetPathForIndex(it->first);
+            SdfPath indexPath = adapter->_GetPathForIndex(it->first);
 
             // highlight all subtree with instanceIndices.
             // XXX: this seems redundant, but needed for point instancer 
-            // highlighting for now. Ideally we should communicate back to point 
+            // highlighting for now. Ideally we should communicate back to point
             // instancer adapter to not use renderIndex
-            SdfPathVector const &ids
-                = adapter->_delegate->GetRenderIndex().GetRprimSubtree(indexPath);
+            SdfPathVector const &ids = adapter->_GetRprimSubtree(indexPath);
+
             TF_FOR_ALL (protoIt, ids) {
                 result->AddInstance(highlightMode, *protoIt, niInstanceIndices);
 

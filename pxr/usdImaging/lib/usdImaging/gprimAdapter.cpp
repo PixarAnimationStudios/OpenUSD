@@ -257,8 +257,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             // correct results, so in the meantime let's just ask USD
             // for the list of primvars.
             UsdGeomPrimvarsAPI primvars(gprim);
-            if (_delegate->GetRenderIndex().
-                GetRenderDelegate()->CanComputeMaterialNetworks()) {
+            if (_CanComputeMaterialNetworks()) {
                 // Local (non-inherited) primvars
                 for (auto const &pv: primvars.GetPrimvars()) {
                     _ComputeAndMergePrimvar(

@@ -222,7 +222,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
 
     // Subdiv tags are only needed if the mesh is refined.  So
     // there's no need to fetch the data if the prim isn't refined.
-    if (_delegate->IsRefined(cachePath)) {
+    if (_IsRefined(cachePath)) {
         if (requestedBits & HdChangeTracker::DirtySubdivTags) {
             SubdivTags& tags = valueCache->GetSubdivTags(cachePath);
             _GetSubdivTags(prim, &tags, time);
