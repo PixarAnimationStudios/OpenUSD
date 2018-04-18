@@ -141,24 +141,6 @@ public:
     /// Get the current time from which this cache is reading values.
     UsdTimeCode GetTime() { return _time; }
 
-    /// Specify the path to be used when computing transformations to
-    /// world space.
-    ///
-    /// The default is to accumulate parent transformations until
-    /// the absolute root (pseudo root) is reached. Setting this
-    /// to some other path will cause accumulation of parent transforms
-    /// to terminate instead when the specified path is reached.
-    ///
-    /// This can be used to restrict accumulation of transformations to
-    /// a subtree of the scene.
-    USDGEOM_API
-    void SetWorldPath(const SdfPath& worldPath);
-
-    /// Returns the path used when computing transformations
-    /// to world space. The default is for this to be
-    /// the absolute root path.
-    const SdfPath & GetWorldPath() const { return _worldPath; }
-
     /// Swap the contents of this XformCache with \p other.
     USDGEOM_API
     void Swap(UsdGeomXformCache& other);
@@ -192,8 +174,6 @@ private:
     
     // The time at which this stack is querying and caching attribute values.
     UsdTimeCode _time;
-
-    SdfPath _worldPath;
 };
 
 #define USDGEOM_XFORM_CACHE_API_VERSION 1
