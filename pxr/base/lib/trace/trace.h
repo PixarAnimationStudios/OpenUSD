@@ -120,35 +120,6 @@
 #define TRACE_SCOPE_DYNAMIC(name) \
         _TRACE_SCOPE_DYNAMIC_INSTANCE(__LINE__, name)
 
-//
-// Static variables in templated or inlined functions/methods can end up
-// with "vague" linkage:  the compiler will emit multiple copies and the
-// linker should choose one.  Due to a bug in gcc 4.4 the linker may
-// initialize exactly one of these copies but attempt to use more than
-// one, leading to crashes.
-//
-// This macro implements an unpalatable solution to a problem that shouldn't
-// ever had needed to be solved: putting all this stuff in headers due to
-// templating constraints and/or a perceived need to inline everything.
-//
-// The macro works around that bug by preventing the linker from being
-// responsible for the initialization.  The arguments are the type of the
-// variable, the name of the variable, and the arguments to pass to the
-// type's constructor.  The variable is declared as a pointer to the type
-// so it must be accessed as a pointer.  Initialization is not delayed
-// until the first access;  initialization occurs when the macro is reached.
-//
-//
-// If the type uses commas to separate template arguments you need to enclose
-// the type in parentheses as shown in the last example.
-//
-// Note that this macro may only be used at function scope (not namespace
-// scope).
-
-#define _TRACE_VAGUE_STATIC_DATA(Type, Name, ...)                            \
-    static TF_PP_EAT_PARENS(Type)* Name =                                   \
-        new TF_PP_EAT_PARENS(Type)(__VA_ARGS__);
-
 
 /// These pair a uniquely named TraceScopeHolder with a TraceScopeAuto.
 /// Together these will register a TraceScope only the first time the
@@ -177,18 +148,18 @@ PXR_NS::TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, instance)(\
 #define _TRACE_COUNTER_INSTANCE(instance, name, value, isDelta) \
 constexpr static PXR_NS::TraceStaticKeyData \
     BOOST_PP_CAT(TraceKeyData_, instance)(name); \
-_TRACE_VAGUE_STATIC_DATA(PXR_NS::TraceCounterHolder, \
-    BOOST_PP_CAT(TraceCounterHolder, instance), \
-    BOOST_PP_CAT(TraceKeyData_, instance)) \
-BOOST_PP_CAT(TraceCounterHolder, instance)->Record(value, isDelta);
+static PXR_NS::TraceCounterHolder \
+    BOOST_PP_CAT(TraceCounterHolder_, instance) \
+    (BOOST_PP_CAT(TraceKeyData_, instance)); \
+BOOST_PP_CAT(TraceCounterHolder_, instance).Record(value, isDelta);
 
 #define _TRACE_COUNTER_CODE_INSTANCE(instance, name, code, isDelta) \
-_TRACE_VAGUE_STATIC_DATA(PXR_NS::TraceCounterHolder, \
-    BOOST_PP_CAT(TraceCounterHolder, instance), name) \
-if (BOOST_PP_CAT(TraceCounterHolder, instance)->IsEnabled()) { \
+static PXR_NS::TraceCounterHolder \
+    BOOST_PP_CAT(TraceCounterHolder_, instance)(name); \
+if (BOOST_PP_CAT(TraceCounterHolder_, instance).IsEnabled()) { \
     double value = 0.0; \
     code \
-    BOOST_PP_CAT(TraceCounterHolder, instance)->RecordDelta(value, isDelta); \
+    BOOST_PP_CAT(TraceCounterHolder_, instance).RecordDelta(value, isDelta); \
 }
 
 #define _TRACE_FUNCTION_DYNAMIC_INSTANCE(instance, fnName, fnPrettyName, name) \
