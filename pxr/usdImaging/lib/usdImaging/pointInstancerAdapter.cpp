@@ -1259,17 +1259,25 @@ UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
                                             UsdImagingIndexProxy* index)
 {
     _InstancerDataMap::iterator instIt = _instancerData.find(instancerPath);
+
+    // Calling the adapter below can invalidate the iterator, so we need to
+    // deference now.
+    const _ProtoRPrimMap &protoPrimMap = instIt->second.protoRprimMap;
+
     // First, we need to make sure all proto rprims are removed.
-    TF_FOR_ALL(protoRprimIt, instIt->second.protoRprimMap) {
-        SdfPath const& cachePath = protoRprimIt->first;
-        index->RemoveRprim(cachePath);
-        index->RemovePrimInfo(cachePath);
+    TF_FOR_ALL(protoRprimIt, protoPrimMap) {
+        SdfPath     const& cachePath = protoRprimIt->first;
+        _ProtoRprim const& proto     = protoRprimIt->second;
+
+        proto.adapter->ProcessPrimRemoval(cachePath, index);
     }
 
     // Blow away the instancer and the associated local data.
     index->RemoveInstancer(instancerPath);
     index->RemovePrimInfo(instancerPath);
-    _instancerData.erase(instIt);
+
+    // Don't use instIt as it may be invalid!
+    _instancerData.erase(instancerPath);
 }
 
 // -------------------------------------------------------------------------- //
