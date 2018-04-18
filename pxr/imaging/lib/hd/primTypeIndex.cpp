@@ -447,6 +447,8 @@ void
 Hd_PrimTypeIndex<HdSprim>::_RenderDelegateDestroyPrim(HdRenderDelegate *renderDelegate,
                                                       HdSprim *prim)
 {
+  if (prim != nullptr)
+    prim->Finalize(renderDelegate->GetRenderParam());
   renderDelegate->DestroySprim(prim);
 }
 
@@ -519,6 +521,8 @@ void
 Hd_PrimTypeIndex<HdBprim>::_RenderDelegateDestroyPrim(HdRenderDelegate *renderDelegate,
                                                       HdBprim *prim)
 {
+  if (prim != nullptr)
+    prim->Finalize(renderDelegate->GetRenderParam());
   renderDelegate->DestroyBprim(prim);
 }
 
