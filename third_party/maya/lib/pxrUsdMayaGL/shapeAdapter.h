@@ -127,7 +127,7 @@ class PxrMayaHdShapeAdapter
         /// PxrMayaHdUserData), otherwise returns oldData after having
         /// re-populated it.
         PXRUSDMAYAGL_API
-        PxrMayaHdUserData* GetMayaUserData(
+        virtual PxrMayaHdUserData* GetMayaUserData(
                 MUserData* oldData,
                 const MBoundingBox* boundingBox = nullptr);
 
