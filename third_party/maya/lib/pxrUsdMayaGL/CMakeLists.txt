@@ -37,6 +37,7 @@ pxr_shared_library(${PXR_PACKAGE}
         shapeAdapter
         softSelectHelper
         usdProxyShapeAdapter
+        userData
 
     CPPFILES
         proxyShapeDelegate

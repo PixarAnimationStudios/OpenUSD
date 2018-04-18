@@ -29,19 +29,25 @@
 #include "pxrUsdMayaGL/debugCodes.h"
 #include "pxrUsdMayaGL/renderParams.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
+#include "pxrUsdMayaGL/userData.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
+#include <maya/MDrawData.h>
+#include <maya/MDrawRequest.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
-#include <maya/MPxSurfaceShape.h>
+#include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MUserData.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -173,6 +179,69 @@ bool
 PxrMayaHdShapeAdapter::UpdateVisibility()
 {
     return false;
+}
+
+/* virtual */
+void
+PxrMayaHdShapeAdapter::GetMayaUserData(
+        MPxSurfaceShapeUI* shapeUI,
+        MDrawRequest& drawRequest,
+        const MBoundingBox* boundingBox)
+{
+    // Legacy viewport implementation.
+
+    // If we're in this method, we must be prepping for a legacy viewport
+    // render, so mark a legacy render as pending.
+    UsdMayaGLBatchRenderer::GetInstance()._UpdateLegacyRenderPending(true);
+
+    // The legacy viewport never has an old MUserData we can reuse.
+    MUserData* userData = GetMayaUserData(nullptr, boundingBox);
+
+    // Note that the legacy viewport does not manage the data allocated in the
+    // MDrawData object, so the batch renderer deletes the MUserData object at
+    // the end of a legacy viewport Draw() call.
+    MDrawData drawData;
+    shapeUI->getDrawData(userData, drawData);
+
+    drawRequest.setDrawData(drawData);
+}
+
+/* virtual */
+PxrMayaHdUserData*
+PxrMayaHdShapeAdapter::GetMayaUserData(
+        MUserData* oldData,
+        const MBoundingBox* boundingBox)
+{
+    // Viewport 2.0 implementation (also called by legacy viewport
+    // implementation).
+    //
+    // Our PxrMayaHdUserData can be used to signify whether we are requesting a
+    // shape to be rendered, a bounding box, both, or neither.
+    //
+    // In the Viewport 2.0 prepareForDraw() usage, any MUserData object passed
+    // into the function will be deleted by Maya. In the legacy viewport usage,
+    // the object gets deleted at the end of a legacy viewport Draw() call.
+
+    if (!_drawShape && !boundingBox) {
+        return nullptr;
+    }
+
+    PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
+    if (!newData) {
+        newData = new PxrMayaHdUserData();
+    }
+
+    newData->drawShape = _drawShape;
+
+    if (boundingBox) {
+        newData->boundingBox.reset(new MBoundingBox(*boundingBox));
+        newData->wireframeColor.reset(new GfVec4f(_renderParams.wireframeColor));
+    } else {
+        newData->boundingBox.reset();
+        newData->wireframeColor.reset();
+    }
+
+    return newData;
 }
 
 /* virtual */

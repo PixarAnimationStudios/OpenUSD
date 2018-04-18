@@ -30,6 +30,7 @@
 
 #include "pxrUsdMayaGL/api.h"
 #include "pxrUsdMayaGL/renderParams.h"
+#include "pxrUsdMayaGL/userData.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -42,10 +43,13 @@
 #include "pxr/usd/sdf/types.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
+#include <maya/MDrawRequest.h>
 #include <maya/MHWGeometryUtilities.h>
-#include <maya/MPxSurfaceShape.h>
+#include <maya/MPxSurfaceShapeUI.h>
+#include <maya/MUserData.h>
 
 #include <memory>
 
@@ -88,6 +92,44 @@ class PxrMayaHdShapeAdapter
         /// otherwise.
         PXRUSDMAYAGL_API
         virtual bool UpdateVisibility();
+
+        /// Get the Maya user data object for drawing in the legacy viewport.
+        ///
+        /// This Maya user data is attached to the given \p drawRequest. Its
+        /// lifetime is *not* managed by Maya, so the batch renderer deletes it
+        /// manually at the end of a legacy viewport Draw().
+        ///
+        /// \p boundingBox may be set to nullptr if no box is desired to be
+        /// drawn.
+        ///
+        PXRUSDMAYAGL_API
+        virtual void GetMayaUserData(
+                MPxSurfaceShapeUI* shapeUI,
+                MDrawRequest& drawRequest,
+                const MBoundingBox* boundingBox = nullptr);
+
+        /// Get the Maya user data object for drawing in Viewport 2.0.
+        ///
+        /// \p oldData should be the same \p oldData parameter that Maya passed
+        /// into the calling prepareForDraw() method. The return value from
+        /// this method should then be returned back to Maya in the calling
+        /// prepareForDraw().
+        ///
+        /// Note that this version of GetMayaUserData() is also invoked by the
+        /// legacy viewport version, in which case we expect oldData to be
+        /// nullptr.
+        ///
+        /// \p boundingBox may be set to nullptr if no box is desired to be
+        /// drawn.
+        ///
+        /// Returns a pointer to a new PxrMayaHdUserData object populated with
+        /// the given parameters if oldData is nullptr (or not an instance of
+        /// PxrMayaHdUserData), otherwise returns oldData after having
+        /// re-populated it.
+        PXRUSDMAYAGL_API
+        PxrMayaHdUserData* GetMayaUserData(
+                MUserData* oldData,
+                const MBoundingBox* boundingBox = nullptr);
 
         /// Get a set of render params from the shape adapter's current state.
         ///

@@ -86,28 +86,22 @@ UsdMayaProxyShapeUI::getDrawRequests(
 
     bool drawShape;
     bool drawBoundingBox;
-    PxrMayaHdRenderParams params =
-        _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
+    _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
 
     if (!drawBoundingBox && !drawShape) {
         // We weren't asked to do anything.
         return;
     }
 
-    MBoundingBox bounds;
-    MBoundingBox* boundsPtr = nullptr;
+    MBoundingBox boundingBox;
+    MBoundingBox* boundingBoxPtr = nullptr;
     if (drawBoundingBox) {
         // Only query for the bounding box if we're drawing it.
-        bounds = shape->boundingBox();
-        boundsPtr = &bounds;
+        boundingBox = shape->boundingBox();
+        boundingBoxPtr = &boundingBox;
     }
 
-    UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
-        this,
-        request,
-        params,
-        drawShape,
-        boundsPtr);
+    _shapeAdapter.GetMayaUserData(this, request, boundingBoxPtr);
 
     // Add the request to the queue.
     requests.add(request);

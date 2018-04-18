@@ -32,6 +32,7 @@
 #include "pxrUsdMayaGL/sceneDelegate.h"
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
+#include "pxrUsdMayaGL/userData.h"
 
 #include "px_vp20/utils.h"
 #include "px_vp20/utils_legacy.h"
@@ -62,7 +63,6 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <maya/M3dView.h>
-#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MDrawData.h>
@@ -70,7 +70,6 @@
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
-#include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MStatus.h>
@@ -79,7 +78,6 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <memory>
 #include <utility>
 
 
@@ -103,29 +101,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((Viewport2, "Viewport2"))
     ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
 );
-
-
-/// Struct to hold all the information needed for a draw request in the legacy
-/// viewport or Viewport 2.0, without requiring shape querying at draw time.
-///
-/// Note that we set deleteAfterUse=false when calling the MUserData
-/// constructor. This ensures that the draw data survives across multiple draw
-/// passes in Viewport 2.0 (e.g. a shadow pass and a color pass).
-class _BatchDrawUserData : public MUserData
-{
-    public:
-
-        bool drawShape;
-        std::unique_ptr<MBoundingBox> bounds;
-        std::unique_ptr<GfVec4f> wireframeColor;
-
-        _BatchDrawUserData() :
-            MUserData(/* deleteAfterUse = */ false),
-            drawShape(true) {}
-
-        // Make sure everything gets freed!
-        virtual ~_BatchDrawUserData() override {}
-};
 
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGLBatchRenderer);
@@ -331,74 +306,6 @@ UsdMayaGLBatchRenderer::RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
     handleMap.erase(MObject(shapeAdapter->GetDagPath().node()));
 
     return (numErased > 0u);
-}
-
-void
-UsdMayaGLBatchRenderer::CreateBatchDrawData(
-        MPxSurfaceShapeUI* shapeUI,
-        MDrawRequest& drawRequest,
-        const PxrMayaHdRenderParams& params,
-        const bool drawShape,
-        const MBoundingBox* boxToDraw)
-{
-    // Legacy viewport implementation.
-
-    // If we're in this method, we must be prepping for a legacy viewport
-    // render, so mark a legacy render as pending.
-    _UpdateLegacyRenderPending(true);
-
-    // The legacy viewport never has an old MUserData we can reuse.
-    MUserData* userData = CreateBatchDrawData(nullptr,
-                                              params,
-                                              drawShape,
-                                              boxToDraw);
-
-    // Note that the legacy viewport does not manage the data allocated in the
-    // MDrawData object, so we must remember to delete the MUserData object at
-    // the end of our Draw() call.
-    MDrawData drawData;
-    shapeUI->getDrawData(userData, drawData);
-
-    drawRequest.setDrawData(drawData);
-}
-
-MUserData*
-UsdMayaGLBatchRenderer::CreateBatchDrawData(
-        MUserData* oldData,
-        const PxrMayaHdRenderParams& params,
-        const bool drawShape,
-        const MBoundingBox* boxToDraw)
-{
-    // Viewport 2.0 implementation (also called by legacy viewport
-    // implementation).
-    //
-    // Our internal _BatchDrawUserData can be used to signify whether we are
-    // requesting a shape to be rendered, a bounding box, both, or neither.
-    //
-    // In the Viewport 2.0 prepareForDraw() usage, any MUserData object passed
-    // into the function will be deleted by Maya. In the legacy viewport usage,
-    // the object gets deleted in UsdMayaGLBatchRenderer::Draw().
-
-    if (!drawShape && !boxToDraw) {
-        return nullptr;
-    }
-
-    _BatchDrawUserData* newData = static_cast<_BatchDrawUserData*>(oldData);
-    if (!newData) {
-        newData = new _BatchDrawUserData();
-    }
-
-    newData->drawShape = drawShape;
-
-    if (boxToDraw) {
-        newData->bounds.reset(new MBoundingBox(*boxToDraw));
-        newData->wireframeColor.reset(new GfVec4f(params.wireframeColor));
-    } else {
-        newData->bounds.reset();
-        newData->wireframeColor.reset();
-    }
-
-    return newData;
 }
 
 /* static */
@@ -646,9 +553,9 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 
     MDrawData drawData = request.drawData();
 
-    const _BatchDrawUserData* batchData =
-        static_cast<const _BatchDrawUserData*>(drawData.geometry());
-    if (!batchData) {
+    const PxrMayaHdUserData* hdUserData =
+        static_cast<const PxrMayaHdUserData*>(drawData.geometry());
+    if (!hdUserData) {
         return;
     }
 
@@ -656,17 +563,17 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
     view.projectionMatrix(projectionMat);
     const GfMatrix4d projectionMatrix(projectionMat.matrix);
 
-    if (batchData->bounds) {
+    if (hdUserData->boundingBox) {
         MMatrix modelViewMat;
         view.modelViewMatrix(modelViewMat);
 
-        px_vp20Utils::RenderBoundingBox(*(batchData->bounds),
-                                        *(batchData->wireframeColor),
+        px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
+                                        *(hdUserData->wireframeColor),
                                         modelViewMat,
                                         projectionMat);
     }
 
-    if (batchData->drawShape && _UpdateLegacyRenderPending(false)) {
+    if (hdUserData->drawShape && _UpdateLegacyRenderPending(false)) {
         GfMatrix4d worldToViewMatrix;
         _GetWorldToViewMatrix(view, &worldToViewMatrix);
 
@@ -676,8 +583,8 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
         _RenderBatches(nullptr, worldToViewMatrix, projectionMatrix, viewport);
     }
 
-    // Clean up the _BatchDrawUserData!
-    delete batchData;
+    // Clean up the user data.
+    delete hdUserData;
 }
 
 void
@@ -693,9 +600,9 @@ UsdMayaGLBatchRenderer::Draw(
         return;
     }
 
-    const _BatchDrawUserData* batchData =
-        static_cast<const _BatchDrawUserData*>(userData);
-    if (!batchData) {
+    const PxrMayaHdUserData* hdUserData =
+        dynamic_cast<const PxrMayaHdUserData*>(userData);
+    if (!hdUserData) {
         return;
     }
 
@@ -705,12 +612,12 @@ UsdMayaGLBatchRenderer::Draw(
         context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
     const GfMatrix4d projectionMatrix(projectionMat.matrix);
 
-    if (batchData->bounds) {
+    if (hdUserData->boundingBox) {
         const MMatrix worldViewMat =
             context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
 
-        px_vp20Utils::RenderBoundingBox(*(batchData->bounds),
-                                        *(batchData->wireframeColor),
+        px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
+                                        *(hdUserData->wireframeColor),
                                         worldViewMat,
                                         projectionMat);
     }
@@ -727,7 +634,7 @@ UsdMayaGLBatchRenderer::Draw(
 
     const MUint64 frameStamp = context.getFrameStamp();
 
-    if (batchData->drawShape && _UpdateRenderFrameStamp(frameStamp)) {
+    if (hdUserData->drawShape && _UpdateRenderFrameStamp(frameStamp)) {
         GfMatrix4d worldToViewMatrix;
         _GetWorldToViewMatrix(context, &worldToViewMatrix);
 

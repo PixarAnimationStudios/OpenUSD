@@ -157,27 +157,22 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
     bool drawShape;
     bool drawBoundingBox;
-    PxrMayaHdRenderParams params =
-        _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
+    _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
 
     if (!drawBoundingBox && !drawShape) {
         // We weren't asked to do anything.
         return nullptr;
     }
 
-    MBoundingBox bounds;
-    MBoundingBox* boundsPtr = nullptr;
+    MBoundingBox boundingBox;
+    MBoundingBox* boundingBoxPtr = nullptr;
     if (drawBoundingBox) {
         // Only query for the bounding box if we're drawing it.
-        bounds = shape->boundingBox();
-        boundsPtr = &bounds;
+        boundingBox = shape->boundingBox();
+        boundingBoxPtr = &boundingBox;
     }
 
-    return UsdMayaGLBatchRenderer::GetInstance().CreateBatchDrawData(
-        oldData,
-        params,
-        drawShape,
-        boundsPtr);
+    return _shapeAdapter.GetMayaUserData(oldData, boundingBoxPtr);
 }
 
 #if MAYA_API_VERSION >= 201800
