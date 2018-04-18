@@ -738,6 +738,15 @@ SdfLayer::OpenAsAnonymous(
         return TfNullPtr;
     }
 
+    // XXX: Is this really a coding error? SdfLayer avoids issuing errors if
+    //      given a non-existent file, for instance. Should we be following the
+    //      same policy here?
+    if (!layerInfo.fileFormat) {
+        TF_CODING_ERROR("Cannot determine file format for @%s@", 
+                        layerInfo.identifier.c_str());
+        return TfNullPtr;
+    }
+
     // Create a new anonymous layer.
     SdfLayerRefPtr layer;
     {
