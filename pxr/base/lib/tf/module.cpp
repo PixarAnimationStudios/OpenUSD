@@ -56,7 +56,6 @@ TF_WRAP_MODULE {
     TF_WRAP( Stopwatch );
     TF_WRAP( StringUtils );
     TF_WRAP( TemplateString );
-    TF_WRAP( TimeStamp );
     TF_WRAP( Token );
     TF_WRAP( Type );
     TF_WRAP( Tf_TestPyAnnotatedBoolResult );
