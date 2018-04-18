@@ -373,7 +373,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap[HdTokens->drawingCoord1] = drawingCoord1Binding;
     metaDataOut->drawingCoord1Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord1,
-                                     /*type=*/_tokens->ivec3,
+                                     /*type=*/_tokens->ivec4,
                                      /*binding=*/drawingCoord1Binding);
 
     if (instancerNumLevels > 0) {

@@ -426,6 +426,9 @@ HdSt_CodeGen::Compile()
     if (caps.bindlessTextureEnabled) {
         _genCommon << "#extension GL_ARB_bindless_texture : require\n";
     }
+    if (caps.glslVersion < 460 && caps.shaderDrawParametersEnabled) {
+        _genCommon << "#extension GL_ARB_shader_draw_parameters : require\n";
+    }
     if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
         _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
     }
@@ -1255,6 +1258,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
        struct hd_drawingCoord {
            int modelCoord;          // (reserved) model parameters
            int constantCoord;       // constant primvars (per object)
+           int vertexCoord;         // vertex primvars   (per vertex)
            int elementCoord;        // element primvars  (per face/curve)
            int primitiveCoord;      // primitive ids     (per tri/quad/line)
            int fvarCoord;           // fvar primvars     (per face-vertex)
@@ -1348,6 +1352,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
     _genCommon << "struct hd_drawingCoord {                       \n"
                << "  int modelCoord;                              \n"
                << "  int constantCoord;                           \n"
+               << "  int vertexCoord;                             \n"
                << "  int elementCoord;                            \n"
                << "  int primitiveCoord;                          \n"
                << "  int fvarCoord;                               \n"
@@ -1362,11 +1367,11 @@ HdSt_CodeGen::_GenerateDrawingCoord()
 
     // [immediate]
     //   layout (location=x) uniform ivec4 drawingCoord0;
-    //   layout (location=y) uniform ivec3 drawingCoord1;
+    //   layout (location=y) uniform ivec4 drawingCoord1;
     //   layout (location=z) uniform int   drawingCoordI[N];
     // [indirect]
     //   layout (location=x) in ivec4 drawingCoord0
-    //   layout (location=y) in ivec3 drawingCoord1
+    //   layout (location=y) in ivec4 drawingCoord1
     //   layout (location=z) in int   drawingCoordI[N]
     _EmitDeclaration(_genVS, _metaData.drawingCoord0Binding);
     _EmitDeclaration(_genVS, _metaData.drawingCoord1Binding);
@@ -1441,6 +1446,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
            << "  dc.primitiveCoord = drawingCoord0.w; \n"
            << "  dc.fvarCoord      = drawingCoord1.x; \n"
            << "  dc.shaderCoord    = drawingCoord1.z; \n"
+           << "  dc.vertexCoord    = drawingCoord1.w; \n"
            << "  dc.instanceIndex  = GetInstanceIndex().indices;\n";
 
     if (_metaData.drawingCoordIBinding.binding.IsValid()) {
@@ -2288,6 +2294,23 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
     _genFS << "vec4 GetPatchCoord() { return GetPatchCoord(0); }\n";
 
     _genGS << "vec4 GetPatchCoord(int localIndex);\n";
+
+    // VS specific accessor for the "vertex drawing coordinate"
+    // Even though we currently always plumb vertexCoord as part of the drawing
+    // coordinate, we expect clients to use this accessor when querying the base
+    // vertex offset for a draw call.
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+    _genVS << "int GetBaseVertexOffset() {\n";
+    if (caps.shaderDrawParametersEnabled) {
+        if (caps.glslVersion < 460) { // use ARB extension
+            _genVS << "return gl_BaseVertexARB;\n";
+        } else {
+            _genVS << "return gl_BaseVertex;\n";
+        }
+    } else {
+        _genVS << "return GetDrawingCoord().vertexCoord;\n";
+    }
+    _genVS << "}\n";
 }
 
 void

@@ -202,7 +202,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
     // drawcommand is configured as one of followings:
     //
-    // DrawArrays + XFB culling  : 12 integers (+ numInstanceLevels)
+    // DrawArrays + XFB culling  : 13 integers (+ numInstanceLevels)
     struct _DrawArraysCommand {
         GLuint count;
         GLuint instanceCount;
@@ -221,9 +221,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint fvarDC;
         GLuint instanceIndexDC;
         GLuint shaderDC;
+        GLuint vertexDC;
     };
 
-    // DrawArrays + Instance culling : 15 integers (+ numInstanceLevels)
+    // DrawArrays + Instance culling : 16 integers (+ numInstanceLevels)
     struct _DrawArraysInstanceCullCommand {
         GLuint count;
         GLuint instanceCount;
@@ -240,9 +241,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint fvarDC;
         GLuint instanceIndexDC;
         GLuint shaderDC;
+        GLuint vertexDC;
     };
 
-    // DrawElements + XFB culling : 12 integers (+ numInstanceLevels)
+    // DrawElements + XFB culling : 13 integers (+ numInstanceLevels)
     struct _DrawElementsCommand {
         GLuint count;
         GLuint instanceCount;
@@ -256,9 +258,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint fvarDC;
         GLuint instanceIndexDC;
         GLuint shaderDC;
+        GLuint vertexDC;
     };
 
-    // DrawElements + Instance culling : 16 integers (+ numInstanceLevels)
+    // DrawElements + Instance culling : 17 integers (+ numInstanceLevels)
     struct _DrawElementsInstanceCullCommand {
         GLuint count;
         GLuint instanceCount;
@@ -276,6 +279,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         GLuint fvarDC;
         GLuint instanceIndexDC;
         GLuint shaderDC;
+        GLuint vertexDC;
     };
 
     // Count the number of visible items. We may actually draw fewer
@@ -414,6 +418,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // drawing coordinates.
         GLuint modelDC         = 0; // reserved for future extension
         GLuint constantDC      = constantBar ? constantBar->GetIndex() : 0;
+        GLuint vertexDC        = vertexOffset;
         GLuint elementDC       = elementBar ? elementBar->GetOffset() : 0;
         GLuint primitiveDC     = indexBar ? indexBar->GetOffset() : 0;
         GLuint fvarDC          = fvarBar ? fvarBar->GetOffset() : 0;
@@ -448,6 +453,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = fvarDC;
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
+                *cmdIt++ = vertexDC;
             } else {
                 *cmdIt++ = vertexCount;
                 *cmdIt++ = instanceCount;
@@ -461,6 +467,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = fvarDC;
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
+                *cmdIt++ = vertexDC;
             }
         } else {
             if (_useGpuInstanceCulling) {
@@ -480,6 +487,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = fvarDC;
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
+                *cmdIt++ = vertexDC;
             } else {
                 *cmdIt++ = indicesCount;
                 *cmdIt++ = instanceCount;
@@ -493,6 +501,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = fvarDC;
                 *cmdIt++ = instanceIndexDC;
                 *cmdIt++ = shaderDC;
+                *cmdIt++ = vertexDC;
             }
         }
         for (size_t i = 0; i < instancerNumLevels; ++i) {
@@ -540,7 +549,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 offsetof(_DrawArraysInstanceCullCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
+                HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawArraysInstanceCullCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
@@ -560,7 +569,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 offsetof(_DrawArraysCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
+                HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawArraysCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
@@ -582,7 +591,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 offsetof(_DrawElementsInstanceCullCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
+                HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawElementsInstanceCullCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
@@ -602,7 +611,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 offsetof(_DrawElementsCommand, modelDC));
             // drawing coords 1
             _dispatchBuffer->AddBufferResourceView(
-                HdTokens->drawingCoord1, {HdTypeInt32Vec3, 1},
+                HdTokens->drawingCoord1, {HdTypeInt32Vec4, 1},
                 offsetof(_DrawElementsCommand, fvarDC));
             // instance drawing coords
             if (instancerNumLevels > 0) {
@@ -634,12 +643,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // READ THIS CAREFULLY whenever you try to add/remove/shuffle
         // the drawing coordinate struct.
         //
-        // We use (GL_INT, 2) as a type of drawingCoord1 for GPU culling.
-        // Because drawingCoord1 is defined as 3 integers struct,
-        //
+        // We use (GL_INT, 3) as a type of drawingCoord1 for GPU culling.
+        // Because drawingCoord1 is defined as 4 integers struct,
         //   GLuint fvarDC;
         //   GLuint instanceIndexDC;
         //   GLuint shaderDC;
+        //   GLuint vertexDC;
         //
         // And CodeGen generates GetInstanceIndexCoord() as
         //
@@ -650,9 +659,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // We prefer smaller number of attributes to be processed in
         // the vertex input assembler, which in general gives a better
         // performance especially in older hardware. In this case we can't
-        // skip fvarDC without changing CodeGen logic, but we can skip
-        // shaderDC for culling.
+        // skip fvarDC without changing CodeGen logic, but we can
+        // skip shaderDC and vertexDC for culling.
         //
+        // XXX: Reorder members of drawingCoord0 and drawingCoord1 in CodeGen,
+        // so we can minimize the vertex attributes fetched during culling.
+        // 
         if (_useDrawArrays) {
             if (_useGpuInstanceCulling) {
                 // cull indirect command
@@ -1622,14 +1634,14 @@ HdSt_IndirectDrawBatch::_CullingProgram::_Link(
             "gl_SkipComponents4",  // firstIndex - modelDC
                                    // (includes __reserved_0 to match drawElementsOutput)
             "gl_SkipComponents4",  // constantDC - fvarDC
-            "gl_SkipComponents2",  // instanceIndexDC - shaderDC
+            "gl_SkipComponents3",  // instanceIndexDC - vertexDC
         };
         const char *drawElementsOutputs[] = {
             "gl_SkipComponents1",  // count
             "resultInstanceCount", // instanceCount
             "gl_SkipComponents4",  // firstIndex - modelDC
             "gl_SkipComponents4",  // constantDC - fvarDC
-            "gl_SkipComponents2",  // instanceIndexDC - shaderDC
+            "gl_SkipComponents3",  // instanceIndexDC - vertexDC
         };
         const char **outputs = _useDrawArrays
             ? drawArraysOutputs

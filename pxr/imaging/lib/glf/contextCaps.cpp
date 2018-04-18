@@ -59,19 +59,24 @@ TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
 GlfContextCaps::GlfContextCaps()
     : glVersion(0)
     , coreProfile(false)
+
     , maxUniformBlockSize(0)
     , maxShaderStorageBlockSize(0)
     , maxTextureBufferSize(0)
     , uniformBufferOffsetAlignment(0)
-    , multiDrawIndirectEnabled(false)
-    , directStateAccessEnabled(false)
-    , bufferStorageEnabled(false)
+
     , shaderStorageBufferEnabled(false)
+    , bufferStorageEnabled(false)
+    , directStateAccessEnabled(false)
+    , multiDrawIndirectEnabled(false)
     , bindlessTextureEnabled(false)
     , bindlessBufferEnabled(false)
+
     , glslVersion(400)
     , explicitUniformLocation(false)
     , shadingLanguage420pack(false)
+    , shaderDrawParametersEnabled(false)
+
     , copyBufferEnabled(true)
 {
 }
@@ -104,13 +109,14 @@ GlfContextCaps::_LoadCaps()
     // note that this function is called without GL context, in some unit tests.
 
     shaderStorageBufferEnabled   = false;
+    bufferStorageEnabled         = false;
+    directStateAccessEnabled     = false;
+    multiDrawIndirectEnabled     = false;
     bindlessTextureEnabled       = false;
     bindlessBufferEnabled        = false;
-    multiDrawIndirectEnabled     = false;
-    directStateAccessEnabled     = false;
-    bufferStorageEnabled         = false;
-    shadingLanguage420pack       = false;
     explicitUniformLocation      = false;
+    shadingLanguage420pack       = false;
+    shaderDrawParametersEnabled  = false;
     maxUniformBlockSize          = 16*1024;      // GL spec minimum
     maxShaderStorageBlockSize    = 16*1024*1024; // GL spec minimum
     maxTextureBufferSize         = 64*1024;      // GL spec minimum
@@ -179,6 +185,9 @@ GlfContextCaps::_LoadCaps()
         multiDrawIndirectEnabled = true;
         directStateAccessEnabled = true;
     }
+    if (glVersion >= 460) {
+        shaderDrawParametersEnabled = true;
+    }
 
     // initialize by individual extension.
     if (GLEW_ARB_bindless_texture && glMakeTextureHandleResidentNV) {
@@ -199,6 +208,9 @@ GlfContextCaps::_LoadCaps()
 #if defined(GLEW_VERSION_4_5)  // glew 1.11 or newer (usd requirement is 1.10)
     if (GLEW_ARB_direct_state_access) {
         directStateAccessEnabled = true;
+    }
+    if (GLEW_ARB_shader_draw_parameters) {
+        shaderDrawParametersEnabled = true;
     }
 #endif
     if (GLEW_EXT_direct_state_access) {
@@ -228,12 +240,12 @@ GlfContextCaps::_LoadCaps()
         glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
 
         // downgrade to the overridden GLSL version
-        explicitUniformLocation    &= (glslVersion >= 430);
-        bindlessTextureEnabled     &= (glslVersion >= 430);
-        bindlessBufferEnabled      &= (glslVersion >= 430);
-        shaderStorageBufferEnabled &= (glslVersion >= 430);
-
-        shadingLanguage420pack     &= (glslVersion >= 420);
+        shadingLanguage420pack      &= (glslVersion >= 420);
+        explicitUniformLocation     &= (glslVersion >= 430);
+        bindlessTextureEnabled      &= (glslVersion >= 430);
+        bindlessBufferEnabled       &= (glslVersion >= 430);
+        shaderStorageBufferEnabled  &= (glslVersion >= 430);
+        shaderDrawParametersEnabled &= (glslVersion >= 460);
     }
 
     // For driver issues workaround
@@ -257,15 +269,17 @@ GlfContextCaps::_LoadCaps()
             <<    maxTextureBufferSize << "\n"
             << "  GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = "
             <<    uniformBufferOffsetAlignment << "\n"
-
+            // order alphabetically
             << "  ARB_bindless_texture               = "
             <<    bindlessTextureEnabled << "\n"
+            << "  ARB_direct_state_access            = "
+            <<    directStateAccessEnabled << "\n"
             << "  ARB_explicit_uniform_location      = "
             <<    explicitUniformLocation << "\n"
             << "  ARB_multi_draw_indirect            = "
             <<    multiDrawIndirectEnabled << "\n"
-            << "  ARB_direct_state_access            = "
-            <<    directStateAccessEnabled << "\n"
+            << "  ARB_shader_draw_parameters   = "
+            <<    shaderDrawParametersEnabled << "\n"
             << "  ARB_shader_storage_buffer_object   = "
             <<    shaderStorageBufferEnabled << "\n"
             << "  ARB_shading_language_420pack       = "
