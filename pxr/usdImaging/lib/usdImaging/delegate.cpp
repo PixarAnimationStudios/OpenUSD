@@ -1516,16 +1516,6 @@ UsdImagingDelegate::GetExtent(SdfPath const& id)
 }
 
 /*virtual*/ 
-GfVec4f 
-UsdImagingDelegate::GetColorAndOpacity(SdfPath const& id)
-{
-    // XXX: Left for backward compatibility 
-    SdfPath usdPath = GetPathForUsd(id);
-    VtValue value = Get(id, HdTokens->color);
-    return value.UncheckedGet<VtVec4fArray>()[0];
-}
-
-/*virtual*/ 
 bool 
 UsdImagingDelegate::GetDoubleSided(SdfPath const& id)
 {
@@ -1566,13 +1556,6 @@ UsdImagingDelegate::GetRefineLevel(SdfPath const& id) {
     if (TfMapLookup(_refineLevelMap, usdPath, &level))
         return level;
     return GetRefineLevelFallback();
-}
-
-/*virtual*/
-VtVec2iArray
-UsdImagingDelegate::GetInstances(SdfPath const& id)
-{
-    return VtVec2iArray();
 }
 
 void

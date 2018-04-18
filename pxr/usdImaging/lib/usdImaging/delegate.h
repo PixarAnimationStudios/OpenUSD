@@ -395,13 +395,6 @@ public:
                                             SdfPathVector *instanceContext=NULL) override;
 
 public:
-    USDIMAGING_API
-    GfVec4f GetColorAndOpacity(SdfPath const & id);
-
-    /// Returns the ranges of instances.
-    USDIMAGING_API
-    VtVec2iArray GetInstances(SdfPath const& id);
-
     // Converts a UsdStage path to a path in the render index.
     USDIMAGING_API
     SdfPath GetPathForIndex(SdfPath const& usdPath) {
