@@ -2779,13 +2779,11 @@ class AppController(QtCore.QObject):
         """
         for path in added:
             item = self._getItemAtPath(path, ensureExpanded=True)
-            if item != None:
-                item.setSelected(True)
-                self._ui.primView.scrollToItem(item)
+            item.setSelected(True)
+            self._ui.primView.scrollToItem(item)
         for path in removed:
             item = self._getItemAtPath(path)
-            if item != None:
-                item.setSelected(False)
+            item.setSelected(False)
 
     def _primsFromSelectionRanges(self, ranges):
         """Iterate over all prims in a QItemSelection from primView."""
