@@ -103,7 +103,10 @@ TF_DECLARE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
     (userProperties) \
     /* end */
 #define USD_ABC_POINTBASED_NAMES \
-    ((uv, "primvars:uv"))
+    ((uv, "primvars:uv")) \
+    ((uvIndices, "primvars:uv:indices")) \
+    ((st, "primvars:st")) \
+    ((stIndices, "primvars:st:indices")) \
     /* end */
 #define USD_ABC_PROPERTY_NAMES \
     USD_ABC_GPRIM_NAMES \

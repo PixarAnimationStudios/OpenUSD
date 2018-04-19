@@ -62,11 +62,12 @@ pxr_plugin(usdAbc
 )
 
 pxr_test_scripts(
-    testenv/testUsdAbcAlembicData.py       
-    testenv/testUsdAbcBugs.py              
-    testenv/testUsdAbcCamera.py  
-    testenv/testUsdAbcConversionSubdiv.py 
-    testenv/testUsdAbcInstancing.py 
+    testenv/testUsdAbcAlembicData.py
+    testenv/testUsdAbcBugs.py
+    testenv/testUsdAbcCamera.py
+    testenv/testUsdAbcConversionSubdiv.py
+    testenv/testUsdAbcInstancing.py
+    testenv/testUsdAbcUvWrite.py
 )
 
 pxr_install_test_dir(
@@ -107,6 +108,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcInstancingPinst
     DEST testUsdAbcInstancingPinst
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcUvWrite
+    DEST testUsdAbcUvWrite
 )
 
 pxr_register_test(testUsdAbcAlembicData
@@ -172,4 +178,10 @@ pxr_register_test(testUsdAbcInstancingNinst
     ENV
         USD_ABC_TESTSUFFIX=ninst
         USD_ABC_DISABLE_INSTANCING=1
+)
+
+pxr_register_test(testUsdAbcUvWrite
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcUvWrite"
+    EXPECTED_RETURN_CODE 0
 )
