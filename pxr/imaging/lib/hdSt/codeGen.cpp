@@ -2105,11 +2105,9 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
     */
 
     std::stringstream vertexInputs;
-    std::stringstream interstageStruct;
+    std::stringstream interstageVertexData;
     std::stringstream accessorsVS, accessorsTCS, accessorsTES,
         accessorsGS, accessorsFS;
-
-    interstageStruct << "Primvars {\n";
 
     // vertex varying
     TF_FOR_ALL (it, _metaData.vertexData) {
@@ -2123,7 +2121,7 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
         // in interleaved buffer.
         _EmitDeclaration(vertexInputs, name, dataType, binding);
 
-        interstageStruct << "  " << dataType << " " << name << ";\n";
+        interstageVertexData << "  " << dataType << " " << name << ";\n";
 
         // primvar accessors
         _EmitAccessor(accessorsVS, name, dataType, binding);
@@ -2188,6 +2186,7 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
 
     // face varying
     std::stringstream fvarDeclarations;
+    std::stringstream interstageFVarData;
 
     TF_FOR_ALL (it, _metaData.fvarData) {
         HdBinding binding = it->first;
@@ -2196,34 +2195,21 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
 
         _EmitDeclaration(fvarDeclarations, name, dataType, binding);
 
-        interstageStruct << "  " << dataType << " " << name << ";\n";
+        interstageFVarData << "  " << dataType << " " << name << ";\n";
 
         // primvar accessors (only in GS and FS)
         _EmitAccessor(accessorsGS, name, dataType, binding, "GetFVarIndex(localIndex)");
         _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
                             /*arraySize=*/1, NULL);
 
-        // interstage plumbing
-        _procVS << "  outPrimvars." << name
-                << " = " << dataType << "(0);\n";
-        _procTCS << "  outPrimvars[gl_InvocationID]." << name
-                 << " = inPrimvars[gl_InvocationID]." << name << ";\n";
-        // TODO: facevarying tessellation
-        _procTES << "  outPrimvars." << name
-                 << " = mix(mix(inPrimvars[i3]." << name
-                 << "         , inPrimvars[i2]." << name << ", u),"
-                 << "       mix(inPrimvars[i1]." << name
-                 << "         , inPrimvars[i0]." << name << ", u), v);\n";
-
-
         switch(_geometricShader->GetPrimitiveType())
         {
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:            
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
             {
                 // linear interpolation within a quad.
-                _procGS << "   outPrimvars." << name
+                _procGS << "  outPrimvars." << name
                     << "  = mix("
                     << "mix(" << "HdGet_" << name << "(0),"
                     <<           "HdGet_" << name << "(1), localST.x),"
@@ -2236,10 +2222,10 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
             {
                 // barycentric interpolation within a triangle.
-                _procGS << "   outPrimvars." << name
+                _procGS << "  outPrimvars." << name
                     << "  = HdGet_" << name << "(0) * (1-localST.x-localST.y) "
                     << "  + HdGet_" << name << "(1) * localST.x "
-                    << "  + HdGet_" << name << "(2) * localST.y;\n";                
+                    << "  + HdGet_" << name << "(2) * localST.y;\n";
                 break;  
             }
 
@@ -2259,35 +2245,43 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
         }
     }
 
-    interstageStruct << "}";
+    _genVS  << vertexInputs.str()
+            << "out Primvars {\n"
+            << interstageVertexData.str()
+            << "} outPrimvars;\n"
+            << accessorsVS.str();
 
-    _genVS << vertexInputs.str()
-           << "out " << interstageStruct.str()
-           << " outPrimvars;\n"
-           << accessorsVS.str();
-
-    _genTCS << "in " << interstageStruct.str()
-            << " inPrimvars[gl_MaxPatchVertices];\n"
-            << "out " << interstageStruct.str()
-            << " outPrimvars[HD_NUM_PATCH_VERTS];\n"
+    _genTCS << "in Primvars {\n"
+            << interstageVertexData.str()
+            << "} inPrimvars[gl_MaxPatchVertices];\n"
+            << "out Primvars {\n"
+            << interstageVertexData.str()
+            << "} outPrimvars[HD_NUM_PATCH_VERTS];\n"
             << accessorsTCS.str();
 
-    _genTES << "in " << interstageStruct.str()
-            << " inPrimvars[gl_MaxPatchVertices];\n"
-            << "out " << interstageStruct.str()
-            << " outPrimvars;\n"
+    _genTES << "in Primvars {\n"
+            << interstageVertexData.str()
+            << "} inPrimvars[gl_MaxPatchVertices];\n"
+            << "out Primvars {\n"
+            << interstageVertexData.str()
+            << "} outPrimvars;\n"
             << accessorsTES.str();
 
-    _genGS << fvarDeclarations.str()
-           << "in " << interstageStruct.str()
-           << " inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
-           << "out " << interstageStruct.str()
-           << " outPrimvars;\n"
-           << accessorsGS.str();
+    _genGS  << fvarDeclarations.str()
+            << "in Primvars {\n"
+            << interstageVertexData.str()
+            << "} inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
+            << "out Primvars {\n"
+            << interstageVertexData.str()
+            << interstageFVarData.str()
+            << "} outPrimvars;\n"
+            << accessorsGS.str();
 
-    _genFS << "in " << interstageStruct.str()
-           << " inPrimvars;\n"
-           << accessorsFS.str();
+    _genFS  << "in Primvars {\n"
+            << interstageVertexData.str()
+            << interstageFVarData.str()
+            << "} inPrimvars;\n"
+            << accessorsFS.str();
 
     // ---------
     _genFS << "vec4 GetPatchCoord(int index);\n";
@@ -2303,12 +2297,12 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
     _genVS << "int GetBaseVertexOffset() {\n";
     if (caps.shaderDrawParametersEnabled) {
         if (caps.glslVersion < 460) { // use ARB extension
-            _genVS << "return gl_BaseVertexARB;\n";
+            _genVS << "  return gl_BaseVertexARB;\n";
         } else {
-            _genVS << "return gl_BaseVertex;\n";
+            _genVS << "  return gl_BaseVertex;\n";
         }
     } else {
-        _genVS << "return GetDrawingCoord().vertexCoord;\n";
+        _genVS << "  return GetDrawingCoord().vertexCoord;\n";
     }
     _genVS << "}\n";
 }
