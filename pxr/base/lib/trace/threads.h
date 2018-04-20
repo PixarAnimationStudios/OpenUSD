@@ -35,11 +35,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ////////////////////////////////////////////////////////////////////////////////
 /// \class ThraceThreadId
 ///
-/// This class reperesents an identifier for a thread.
+/// This class represents an identifier for a thread.
 ///
 class TraceThreadId {
 public:
-    /// Contructor which creates an identifier based on std::thread_id. .
+    /// Constructor which creates an identifier based on std::thread_id. .
     /// It is either"Main Thread" if this id is marked as the main thread or
     ///  "Thread XXX" where XXX is the string representation of the thread id.
     TRACE_API TraceThreadId();

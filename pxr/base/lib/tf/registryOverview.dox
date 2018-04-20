@@ -139,7 +139,7 @@ Now let us see how the ImageTransformerRegistry facility uses TfRegistryManager.
 
 (Note that the class TfRegistryManager is a singleton and TfRegistryManager::GetInstance() returns a reference to this singleton.)
 
-When SubscribeTo<T>() is called it causes all TF_REGISTRY_FUNCTION() functions whose first key is T to be run.  Additionally, any subsequently loaded code will immmediately run all of its TF_REGISTRY_FUNCTION() functions whose first key is T.  It is safe to multiply describe to the same service, as subsequent subscriptions to the same service are ignored.
+When SubscribeTo<T>() is called it causes all TF_REGISTRY_FUNCTION() functions whose first key is T to be run.  Additionally, any subsequently loaded code will immediately run all of its TF_REGISTRY_FUNCTION() functions whose first key is T.  It is safe to multiply describe to the same service, as subsequent subscriptions to the same service are ignored.
 
 \section RegistryManagerSingletons Registry Singletons
 

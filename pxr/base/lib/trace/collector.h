@@ -166,7 +166,7 @@ public:
         return _EndEvent(key, Category::GetId());
     }
 
-    /// Record an end event with \a key at a specified time iif \p Category is
+    /// Record an end event with \a key at a specified time if \p Category is
     /// enabled.
     /// This version of the method allows the passing of a specific number of
     /// elapsed milliseconds, \a ms, to use for this event.
@@ -220,7 +220,7 @@ public:
         static_assert( sizeof...(Args) %2 == 0, 
             "Data arguments must come in pairs");
 
-        // Explcicitly cast to TraceCategoryId so overload resolution choose the
+        // Explicitly cast to TraceCategoryId so overload resolution choose the
         // version with a category arguement.
         BeginScope<DefaultCategory>(key, 
             std::forward<Args>(args)...);

@@ -188,7 +188,7 @@ public:
 
     /// Creates a valid TraceEventNode::Id object.
     /// This should be used by very few clients for certain special cases.
-    /// For most cases, the TraceEventNode::Id object should be created and popluated
+    /// For most cases, the TraceEventNode::Id object should be created and populated
     /// internally within the Reporter object itself.
     TRACE_API static TraceEventNode::Id CreateValidEventId();
 

@@ -129,7 +129,7 @@ public:
     /// the start and end (inclusive) indexes into the paths
     /// vector of that subtree range.
     ///
-    /// If the rootPath wasn't found or an error occured, that
+    /// If the rootPath wasn't found or an error occurred, that
     /// otherwise produces an invalid range. The method returns false.
     HD_API
     bool SubtreeAsRange(const SdfPathVector &paths,

@@ -290,7 +290,7 @@ over "GLOBAL" (
 }
 
 # Example of a non-concrete IsA schema
-# Note that non-concreate IsA schemas cannot specify a typeName in the class
+# Note that non-concrete IsA schemas cannot specify a typeName in the class
 # declaration, but they are allowed to provide fallback values for attributes.
 class "MyBaseCustomPrim" (
     doc = """Defines a non-instantiable (non-concrete) typed schema that derives

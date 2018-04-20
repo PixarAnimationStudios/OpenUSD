@@ -49,7 +49,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 /// ApplyInstanceTransform in instancing.glslfx.
 ///
 /// If this instancer is nested, instance indices will be computed
-/// recursively by ascending the heirarchy. HdStInstancer computes a flattened
+/// recursively by ascending the hierarchy. HdStInstancer computes a flattened
 /// index structure for each prototype by taking the cartesian product of the
 /// instance indices at each level.
 ///

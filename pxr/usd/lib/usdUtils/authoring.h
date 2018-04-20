@@ -127,7 +127,7 @@ bool UsdUtilsComputeCollectionIncludesAndExcludes(
     const UsdUtilsPathHashSet &pathsToIgnore=UsdUtilsPathHashSet());
 
 /// Authors a collection named \p collectionName on the given prim, 
-/// \p usdPrim with the given set of included paths (\p athsToInclude) 
+/// \p usdPrim with the given set of included paths (\p pathsToInclude)
 /// and excluded paths (\p pathsToExclude).
 /// 
 /// If a collection with the specified name already exists on \p usdPrim, 
@@ -140,7 +140,7 @@ UsdCollectionAPI UsdUtilsAuthorCollection(
     const SdfPathVector &pathsToInclude,
     const SdfPathVector &pathsToExclude=SdfPathVector());
 
-/// Given a vector of (collection-name, path-set) pairs, \p assignements, 
+/// Given a vector of (collection-name, path-set) pairs, \p assignments,
 /// creates and returns a vector of collections that include subtrees of prims 
 /// rooted at the included paths. The collections are created on the given prim, 
 /// \p usdPrim. 
@@ -151,7 +151,7 @@ UsdCollectionAPI UsdUtilsAuthorCollection(
 /// same set of parameters as that function: \p minInclusionRatio, 
 /// \p maxNumExcludesBelowInclude and \p minIncludeExcludeCollectionSize. 
 /// 
-/// \note It is valid for the paths or subtrees specified in \p assignements 
+/// \note It is valid for the paths or subtrees specified in \p assignments
 /// to have overlapping subtrees. In this case the overlapping bits will belong 
 /// to multiple collections. 
 /// 

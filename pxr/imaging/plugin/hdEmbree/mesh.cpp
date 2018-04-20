@@ -86,7 +86,7 @@ HdEmbreeMesh::_GetInitialDirtyBits() const
 {
     // The initial dirty bits control what data is available on the first
     // run through _PopulateRtMesh(), so it should list every data item
-    // that _PopluateRtMesh requests.
+    // that _PopulateRtMesh requests.
     int mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr
         | HdChangeTracker::DirtyPoints

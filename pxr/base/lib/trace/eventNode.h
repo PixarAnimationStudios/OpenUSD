@@ -50,7 +50,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
 /// \class TraceEventNode
 ///
 /// A representation of a call tree. Each node represents one or more calls that
-/// occured in the trace. Multiple calls to a child node are aggregated into one
+/// occurred in the trace. Multiple calls to a child node are aggregated into one
 /// node.
 ///
 
@@ -153,7 +153,7 @@ public:
     /// @}
 
 
-    /// Sets whether or not this noded is expanded in a gui.
+    /// Sets whether or not this node is expanded in a gui.
     void SetExpanded(bool expanded) {
         _expanded = expanded;
     }

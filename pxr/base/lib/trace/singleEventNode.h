@@ -119,7 +119,7 @@ public:
 
     /// @}
 
-    /// Return the data associated whith this node.
+    /// Return the data associated with this node.
     const AttributeMap& GetAttributes() const { return _attributes; }
 
     /// Add data to this node.

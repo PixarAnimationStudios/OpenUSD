@@ -60,7 +60,7 @@ public:
     /// Move constructor.
     TraceCollection(TraceCollection&&) = default;
 
-    /// Move assignement operator.
+    /// Move assignment operator.
     TraceCollection& operator=(TraceCollection&&) = default;
 
     // Collections should not be copied because TraceEvents contain 
@@ -84,10 +84,10 @@ public:
         /// Destructor
         TRACE_API virtual ~Visitor();
 
-        /// Called at the beginning of the an iteration.
+        /// Called at the beginning of an iteration.
         virtual void OnBeginCollection() = 0;
 
-        /// Called at the end of the an iteration.
+        /// Called at the end of an iteration.
         virtual void OnEndCollection() = 0;
 
         /// Called before the first event of from the thread with 

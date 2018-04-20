@@ -54,7 +54,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////
     /// \class iterator
     ///
-    /// This class provied forward iterator support to iterate over all the 
+    /// This class provides forward iterator support to iterate over all the
     /// items.
     ///
     class iterator {
