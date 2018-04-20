@@ -176,13 +176,6 @@ void
 UsdImagingGLHdEngine::_PostSetTime(const UsdPrim& root, const RenderParams& params)
 {
     HD_TRACE_FUNCTION();
-    if (_isPopulated)
-        return;
-
-    // The delegate may have been populated from somewhere other than
-    // where we are drawing. This applies a compensating transformation that
-    // cancels out any accumulated transformation from the population root.
-    _delegate->SetRootCompensation(root.GetPath());
 }
 
 /*virtual*/

@@ -569,8 +569,7 @@ UsdImagingPrimAdapter::GetVisible(UsdPrim const& prim, UsdTimeCode time) const
         return visCache.GetValue(prim)
                     == UsdGeomTokens->inherited;
     } else {
-        return UsdImaging_VisStrategy::ComputeVisibility(
-                            prim, visCache.GetRootPath(), time) 
+        return UsdImaging_VisStrategy::ComputeVisibility(prim, time)
                     == UsdGeomTokens->inherited;
     }
 }

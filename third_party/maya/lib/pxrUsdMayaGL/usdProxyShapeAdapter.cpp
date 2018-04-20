@@ -223,8 +223,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Will only react if time actually changes.
     _delegate->SetTime(timeCode);
 
-    _delegate->SetRootCompensation(_rootPrim.GetPath());
-
     _drawShape = true;
     _drawBoundingBox =
         (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);

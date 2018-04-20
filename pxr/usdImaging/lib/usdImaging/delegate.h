@@ -214,14 +214,6 @@ public:
     /// Returns the root transform for the entire delegate.
     const GfMatrix4d &GetRootTransform() const { return _rootXf; }
 
-    /// Sets a compensating root transformation for the entire delegate
-    /// which cancels out the effects of any transformation accumulated
-    /// from the root from which the delegate was populated to the descendent
-    /// at /a usdPath.
-    USDIMAGING_API
-    void SetRootCompensation(SdfPath const &usdPath);
-    const SdfPath & GetRootCompensation() const { return _compensationPath; }
-
     /// Sets the root visibility for the entire delegate, which is applied to
     /// all render prims generated. Settting this value will immediately
     /// invalidate existing rprim visibility.
@@ -531,10 +523,6 @@ private:
     // Execute all variability update tasks that have been added to the given
     // worker.
     static void _ExecuteWorkForVariabilityUpdate(_Worker* worker);
-
-    bool _ComputeRootCompensation(SdfPath const & usdPath);
-    void _UpdateRootTransform();
-    GfMatrix4d _GetTransform(UsdPrim prim) const;
 
     /// Returns true if the given prim is visible, taking into account inherited
     /// visibility values. Inherited values are strongest, Usd has no notion of

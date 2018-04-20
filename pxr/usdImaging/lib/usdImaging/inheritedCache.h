@@ -76,24 +76,20 @@ public:
     typedef TfHashMap<UsdPrim, value_type, boost::hash<UsdPrim> > 
         ValueOverridesMap;
 
-    /// Construct a new for the specified \p time and \p rootPath, at which
-    /// all traversals will terminate. Note that values authored on the 
-    /// \p rootPath itself are not inherited.
+    /// Construct a new for the specified \p time.
     explicit UsdImaging_InheritedCache(
-        const UsdTimeCode time, 
-        const SdfPath& rootPath,
+        const UsdTimeCode time,
         ImplData *implData=nullptr,
         const ValueOverridesMap valueOverrides=ValueOverridesMap())
         : _time(time)
-        , _rootPath(rootPath)
+        , _rootPath(SdfPath::AbsoluteRootPath())
         , _cacheVersion(_GetInitialCacheVersion())
         , _valueOverrides(valueOverrides)
         , _implData(implData)
     {
     }
 
-    /// Construct a new cache for UsdTimeCode::Default() and the absolute root
-    /// path.
+    /// Construct a new cache for UsdTimeCode::Default().
     UsdImaging_InheritedCache()
         : _time(UsdTimeCode::Default())
         , _rootPath(SdfPath::AbsoluteRootPath())
@@ -153,6 +149,12 @@ public:
 
     /// Set the root ancestor path at which to stop inheritance.
     /// Note that values on the root are not inherited.
+    ///
+    /// In general, you shouldn't use this function; USD inherited attribute
+    /// resolution will traverse to the pseudo-root, and not doing that in the
+    /// cache can introduce subtle bugs. This exists mainly for the benefit of
+    /// the transform cache, since UsdImagingDelegate transform resolution
+    /// semantics are complicated and special-cased.
     void SetRootPath(const SdfPath& rootPath) {
         if (!rootPath.IsAbsolutePath()) {
             TF_CODING_ERROR("Invalid root path: %s", 
@@ -168,7 +170,7 @@ public:
     }
 
     /// Return the root ancestor path at which to stop inheritance.
-    /// Note that values on the root are not inherited.
+    /// See notes on SetRootPath.
     const SdfPath & GetRootPath() const { return _rootPath; }
 
     /// Helper function used to append, update or remove overrides from the 
@@ -537,7 +539,7 @@ struct UsdImaging_VisStrategy {
 
     static
     value_type
-    ComputeVisibility(UsdPrim const& prim, SdfPath const& rootPath, UsdTimeCode time)
+    ComputeVisibility(UsdPrim const& prim, UsdTimeCode time)
     {
         return UsdGeomImageable(prim).ComputeVisibility(time);
     }

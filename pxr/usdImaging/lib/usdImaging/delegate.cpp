@@ -103,21 +103,19 @@ UsdImagingDelegate::UsdImagingDelegate(
         SdfPath const& delegateID)
     : HdSceneDelegate(parentIndex, delegateID)
     , _valueCache()
-    , _compensationPath(SdfPath::AbsoluteRootPath())
     , _rootXf(1.0)
     , _rootIsVisible(true)
     , _time(std::numeric_limits<double>::infinity())
     , _refineLevelFallback(0)
     , _reprFallback()
     , _cullStyleFallback(HdCullStyleDontCare)
-    , _xformCache(GetTime(), GetRootCompensation())
+    , _xformCache(GetTime())
     , _materialBindingImplData(parentIndex->GetRenderDelegate()->
             CanComputeMaterialNetworks() ? UsdShadeTokens->full 
                                          : UsdShadeTokens->preview)
-    , _materialBindingCache(GetTime(), GetRootCompensation(), 
-                            &_materialBindingImplData)
-    , _visCache(GetTime(), GetRootCompensation())
-    , _drawModeCache(UsdTimeCode::EarliestTime(), GetRootCompensation())
+    , _materialBindingCache(GetTime(), &_materialBindingImplData)
+    , _visCache(GetTime())
+    , _drawModeCache(GetTime())
     , _displayGuides(true)
     , _enableUsdDrawModes(true)
     , _hasDrawModeAdapter( UsdImagingAdapterRegistry::GetInstance()
@@ -577,8 +575,16 @@ UsdImagingDelegate::_SetStateForPopulation(
     _excludedPrimPaths = excludedPrimPaths;
     _invisedPrimPaths = invisedPrimPaths;
 
-    // Init compensation to root prim path.
-    _ComputeRootCompensation(rootPrim.GetPath());
+    // Set the root path of the inherited transform cache.
+    // XXX: Ideally, we'd like to deprecate the inherited cache's SetRootPath(),
+    // but the root prim is defined as having identity transform over all time,
+    // even when its transform within the full stage is animated; and transform
+    // overrides are defined as relative to the root prim.  This means resolving
+    // transforms without involving the inherited cache is impossible.
+    //
+    // If the transform override mechanism is deprecated in favor of a USD
+    // session layer, we could do something nicer here.
+    _xformCache.SetRootPath(_rootPrimPath);
 
     // Start listening for change notices from this stage.
     UsdImagingDelegatePtr self = TfCreateWeakPtr(this);
@@ -1706,41 +1712,13 @@ UsdImagingDelegate::SetCullStyleFallback(HdCullStyle cullStyle)
 void
 UsdImagingDelegate::SetRootTransform(GfMatrix4d const& xf)
 {
+    HD_TRACE_FUNCTION();
+
     // TODO: do IsClose check.
     if (xf == _rootXf)
         return;
 
     _rootXf = xf;
-    _UpdateRootTransform();
-}
-
-bool
-UsdImagingDelegate::_ComputeRootCompensation(SdfPath const & usdPath)
-{
-    if (_compensationPath == usdPath)
-        return false;
-
-    _compensationPath = usdPath;
-    _xformCache.SetRootPath(usdPath);
-    _materialBindingCache.SetRootPath(usdPath);
-    _visCache.SetRootPath(usdPath);
-    _drawModeCache.SetRootPath(usdPath);
-
-    return true;
-}
-
-void
-UsdImagingDelegate::SetRootCompensation(SdfPath const & usdPath)
-{
-    if (_ComputeRootCompensation(usdPath)) {
-        _UpdateRootTransform();
-    }
-}
-
-void
-UsdImagingDelegate::_UpdateRootTransform()
-{
-    HD_TRACE_FUNCTION();
 
     UsdImagingIndexProxy indexProxy(this, nullptr);
 
@@ -1759,11 +1737,11 @@ UsdImagingDelegate::_UpdateRootTransform()
 void 
 UsdImagingDelegate::SetInvisedPrimPaths(SdfPathVector const &invisedPaths)
 {
+    HD_TRACE_FUNCTION();
+
     if (_invisedPrimPaths == invisedPaths) {
         return;
     }
-
-    TRACE_FUNCTION();
 
     SdfPathSet sortedNewInvisedPaths(invisedPaths.begin(), invisedPaths.end());
     SdfPathSet sortedExistingInvisedPaths(_invisedPrimPaths.begin(), 
@@ -1848,11 +1826,11 @@ void
 UsdImagingDelegate::SetRigidXformOverrides(
     RigidXformOverridesMap const &rigidXformOverrides)
 {
+    HD_TRACE_FUNCTION();
+
     if (_rigidXformOverrides == rigidXformOverrides) {
         return;
     }
-
-    TRACE_FUNCTION();
 
     TfHashMap<UsdPrim, GfMatrix4d, boost::hash<UsdPrim> > overridesToUpdate;
 
@@ -2178,6 +2156,7 @@ GfMatrix4d
 UsdImagingDelegate::GetTransform(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
+
     SdfPath usdPath = GetPathForUsd(id);
     GfMatrix4d ctm(1.0);
     if (_valueCache.ExtractTransform(usdPath, &ctm)) {
@@ -2192,63 +2171,26 @@ UsdImagingDelegate::GetTransform(SdfPath const& id)
     return ctm;
 }
 
-GfMatrix4d 
-UsdImagingDelegate::_GetTransform(UsdPrim prim) const
-{
-    HD_TRACE_FUNCTION();
-    GfMatrix4d ctm(1.0);
-
-    if (!TF_VERIFY(prim)) {
-        return ctm;
-    }
-
-    // XXX could probably use an xformCache here in case this has
-    // a long way to traverse.
-    SdfPath rootPath = _compensationPath;
-    while (prim.GetPath() != rootPath) {
-        if (UsdGeomXformable xfPrim = UsdGeomXformable(prim)) {
-            GfMatrix4d xf;
-            bool resetsXformStack = false;
-            if (xfPrim.GetLocalTransformation(&xf, &resetsXformStack, _time)) {
-                if (resetsXformStack)
-                    ctm = xf;
-                else
-                    ctm = ctm * xf;
-
-            }
-        }
-        prim = prim.GetParent();
-    }
-    
-    return ctm;
-}
-
 size_t
 UsdImagingDelegate::SampleTransform(SdfPath const & id, size_t maxNumSamples,
                                     float *times, GfMatrix4d *samples)
 {
     SdfPath usdPath = GetPathForUsd(id);
     UsdPrim prim = _stage->GetPrimAtPath(usdPath);
-    UsdPrim root = _stage->GetPrimAtPath(_compensationPath);
 
     // Provide the number of time samples configured in _timeSampleOffsets,
     // but limited to the caller's declared capacity.
     size_t numSamples = std::min(maxNumSamples, _timeSampleOffsets.size());
 
-    // XXX: Although UsdGeomXformCache is the way to compute
-    // local-to-world CTM's in UsdGeom, it seems perhaps less than
-    // ideal here.  For one thing, this cache is transient.  We
-    // could re-use the cache, but given that we adjust its time
-    // parameter in the inner loop, it seems likely to just be
-    // invalidated frequently.  Worth revisiting if this shows
-    // up in profiling real usage.
+    // XXX: We should add caching to the transform computation if this shows
+    // up in profiling, but all of our current caches are cleared on time change
+    // so we'd need to write a new structure.
     UsdGeomXformCache xformCache(0.0);
     for (size_t i=0; i < numSamples; ++i) {
-        xformCache.SetTime(GetTimeWithOffset(_timeSampleOffsets[i]));
-        bool resetXformStack;
+        UsdTimeCode offsetTime = GetTimeWithOffset(_timeSampleOffsets[i]);
         times[i] = _timeSampleOffsets[i];
-        samples[i] = xformCache
-            .ComputeRelativeTransform(prim, root, &resetXformStack);
+        samples[i] = UsdImaging_XfStrategy::ComputeTransform(
+            prim, _rootPrimPath, offsetTime, _rigidXformOverrides) * _rootXf;
     }
 
     // Some backends benefit if they can avoid time sample animation
