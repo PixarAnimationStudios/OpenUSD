@@ -72,49 +72,114 @@ ArResolver::~ArResolver()
 
 // ------------------------------------------------------------
 
-static std::string 
-_GetTypeNames(const std::set<TfType>& types)
+namespace
+{
+std::string 
+_GetTypeNames(const std::vector<TfType>& types)
 {
     std::vector<std::string> typeNames;
     typeNames.reserve(types.size());
     for (const auto& type : types) {
         typeNames.push_back(type.GetTypeName());
     }
-    return TfStringJoin(typeNames);
+    return TfStringJoin(typeNames, ", ");
 }
 
-static bool
-_CompareTypeNames(const TfType& x, const TfType& y)
+std::vector<TfType> 
+_GetAvailableResolvers()
 {
-    return x.GetTypeName() < y.GetTypeName();
+    const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
+
+    std::vector<TfType> sortedResolverTypes;
+
+    if (!TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_RESOLVER)) {
+        std::set<TfType> resolverTypes;
+        PlugRegistry::GetAllDerivedTypes(
+            TfType::Find<ArResolver>(), &resolverTypes);
+
+        // Remove the default resolver so that we only process plugin types.
+        // We'll add the default resolver back later.
+        resolverTypes.erase(defaultResolverType);
+
+        // We typically expect to find only one plugin asset resolver,
+        // but if there's more than one we want to ensure this list is in a 
+        // consistent order to ensure stable behavior. TfType's operator< 
+        // is not stable across runs, so we sort based on typename instead.
+        sortedResolverTypes.insert(
+            sortedResolverTypes.end(), 
+            resolverTypes.begin(), resolverTypes.end());
+        std::sort(
+            sortedResolverTypes.begin(), sortedResolverTypes.end(),
+            [](const TfType& x, const TfType& y) {
+                return x.GetTypeName() < y.GetTypeName();
+            });
+    }
+
+    // The default resolver is always the last resolver to be considered.
+    sortedResolverTypes.push_back(defaultResolverType);
+    return sortedResolverTypes;
 }
 
-namespace
+ArResolver* 
+_CreateResolver(const TfType& resolverType, std::string* debugMsg)
 {
+    const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
+    if (resolverType == defaultResolverType) {
+        if (debugMsg) {
+            *debugMsg = TfStringPrintf("Using default asset resolver %s",
+                defaultResolverType.GetTypeName().c_str());
+        }
+        return new ArDefaultResolver;
+    }
+
+    PlugPluginPtr plugin = PlugRegistry::GetInstance()
+        .GetPluginForType(resolverType);
+    if (!TF_VERIFY(
+            plugin, "Failed to find plugin for %s", 
+            resolverType.GetTypeName().c_str())
+        || !TF_VERIFY(
+            plugin->Load(), "Failed to load plugin %s for %s",
+            plugin->GetName().c_str(),
+            resolverType.GetTypeName().c_str())) {
+        return nullptr;
+    }
+
+    ArResolverFactoryBase* factory =
+        resolverType.GetFactory<ArResolverFactoryBase>();
+    if (!factory) {
+        TF_CODING_ERROR("Cannot manufacture plugin asset resolver");
+        return nullptr;
+    }
+
+    ArResolver* tmpResolver = factory->New();
+    if (!tmpResolver) {
+        TF_CODING_ERROR("Failed to manufacture plugin asset resolver");
+        return nullptr;
+    }
+
+    if (debugMsg) {
+        *debugMsg = TfStringPrintf(
+            "Using asset resolver %s from plugin %s",
+            resolverType.GetTypeName().c_str(),
+            plugin->GetPath().c_str());
+    }
+
+    return tmpResolver;
+}
+
 struct _ResolverHolder
 {
     _ResolverHolder()
     {
         const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
 
-        std::set<TfType> resolverTypes;
+        std::vector<TfType> resolverTypes;
         if (TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_RESOLVER)) {
             TF_DEBUG(AR_RESOLVER_INIT).Msg(
                 "ArGetResolver(): Plugin asset resolver disabled via "
-                "PXR_AR_DISABLE_PLUGIN_RESOLVER. Using default resolver.\n");
+                "PXR_AR_DISABLE_PLUGIN_RESOLVER.\n");
         }
-        else if (_preferredResolver->empty()) {
-            PlugRegistry::GetAllDerivedTypes(
-                TfType::Find<ArResolver>(), &resolverTypes);
-
-            if (resolverTypes.size() == 1 &&
-                *resolverTypes.begin() == defaultResolverType) {
-                TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                    "ArGetResolver(): No plugin asset resolver found. "
-                    "Using default resolver.\n");
-            }
-        }
-        else {
+        else if (!_preferredResolver->empty()) {
             const TfType resolverType = 
                 PlugRegistry::FindTypeByName(*_preferredResolver);
             if (!resolverType) {
@@ -122,87 +187,54 @@ struct _ResolverHolder
                     "ArGetResolver(): Preferred resolver %s not found. "
                     "Using default resolver.",
                     _preferredResolver->c_str());
+                resolverTypes.push_back(defaultResolverType);
             }
             else if (!resolverType.IsA<ArResolver>()) {
-                TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                TF_WARN(
                     "ArGetResolver(): Preferred resolver %s does not derive "
                     "from ArResolver. Using default resolver.\n",
                     _preferredResolver->c_str());
+                resolverTypes.push_back(defaultResolverType);
             }
             else {
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
                     "ArGetResolver(): Using preferred resolver %s\n",
                     _preferredResolver->c_str());
-                resolverTypes.insert(resolverType);
+                resolverTypes.push_back(resolverType);
             }
         }
 
-        // Remove the default resolver type to skip the plugin-based code below.
-        resolverTypes.erase(defaultResolverType);
+        if (resolverTypes.empty()) {
+            resolverTypes = _GetAvailableResolvers();
 
-        // We expect to find only one plugin asset resolver implementation;
-        // if we find more than one, we'll issue a warning and just pick one.
-        // We want to make sure we always pick the same one to ensure 
-        // stable behavior, but TfType's operator< is not stable across runs.
-        // So, we pick the "minimum" element based on type name.
-        if (!resolverTypes.empty()) {
-            const std::set<TfType>::const_iterator typeIt = std::min_element(
-                resolverTypes.begin(), resolverTypes.end(), 
-                _CompareTypeNames);
-            const TfType& resolverType = *typeIt;
+            TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                "ArGetResolver(): Found asset resolver types: [%s]\n",
+                _GetTypeNames(resolverTypes).c_str());
+        }
 
-            if (resolverTypes.size() > 1) {
-                TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                    "ArGetResolver(): Found asset resolver types: [%s]\n",
-                    _GetTypeNames(resolverTypes).c_str());
+        std::string debugMsg;
 
+        // resolverTypes should never be empty -- _GetAvailableResolvers
+        // should always return at least the default resolver. Because of this,
+        // if there's more than 2 elements in resolverTypes, there must have 
+        // been more than one resolver from an external plugin.
+        if (TF_VERIFY(!resolverTypes.empty())) {
+            const TfType& resolverType = resolverTypes.front();
+            if (resolverTypes.size() > 2) {
                 TF_WARN(
                     "ArGetResolver(): Found multiple plugin asset "
                     "resolvers, using %s", 
                     resolverType.GetTypeName().c_str());
             }
-
-            resolver.reset(_CreatePluginResolver(resolverType));
+            resolver.reset(_CreateResolver(resolverType, &debugMsg));
         }
 
         if (!resolver) {
-            resolver.reset(new ArDefaultResolver);
-        }
-    }
-
-    ArResolver* _CreatePluginResolver(const TfType& resolverType)
-    {
-        PlugPluginPtr plugin = PlugRegistry::GetInstance()
-            .GetPluginForType(resolverType);
-        if (!TF_VERIFY(
-                plugin, "Failed to find plugin for %s", 
-                resolverType.GetTypeName().c_str())
-            || !TF_VERIFY(
-                plugin->Load(), "Failed to load plugin %s for %s",
-                plugin->GetName().c_str(),
-                resolverType.GetTypeName().c_str())) {
-            return nullptr;
-        }
-
-        ArResolverFactoryBase* factory =
-            resolverType.GetFactory<ArResolverFactoryBase>();
-        if (!factory) {
-            TF_CODING_ERROR("Cannot manufacture plugin asset resolver");
-            return nullptr;
-        }
-
-        ArResolver* tmpResolver = factory->New();
-        if (!tmpResolver) {
-            TF_CODING_ERROR("Failed to manufacture plugin asset resolver");
-            return nullptr;
+            resolver.reset(_CreateResolver(defaultResolverType, &debugMsg));
         }
 
         TF_DEBUG(AR_RESOLVER_INIT).Msg(
-            "ArGetResolver(): Using asset resolver %s from plugin %s\n",
-            resolverType.GetTypeName().c_str(),
-            plugin->GetPath().c_str());
-
-        return tmpResolver;
+            "ArGetResolver(): %s\n", debugMsg.c_str());
     }
 
     std::shared_ptr<ArResolver> resolver;
