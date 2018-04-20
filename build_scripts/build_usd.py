@@ -106,26 +106,31 @@ def GetCPUCount():
     except NotImplementedError:
         return 1
 
-def Run(cmd):
+def Run(cmd, logCommandOutput = True):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
     with open("log.txt", "a") as logfile:
-        # Let exceptions escape from subprocess.check_output -- higher level
-        # code will handle them.
-        p = subprocess.Popen(shlex.split(cmd),
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
         logfile.write("\n")
         logfile.write(cmd)
         logfile.write("\n")
-        while True:
-            l = p.stdout.readline()
-            if l != "":
-                logfile.write(l)
-                PrintCommandOutput(l)
-            elif p.poll() is not None:
-                break
+
+        # Let exceptions escape from subprocess calls -- higher level
+        # code will handle them.
+        if logCommandOutput:
+            p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, 
+                                 stderr=subprocess.STDOUT)
+            while True:
+                l = p.stdout.readline()
+                if l != "":
+                    logfile.write(l)
+                    PrintCommandOutput(l)
+                elif p.poll() is not None:
+                    break
+        else:
+            p = subprocess.Popen(shlex.split(cmd))
+            p.wait()
 
     if p.returncode != 0:
         # If verbosity >= 3, we'll have already been printing out command output
@@ -241,7 +246,7 @@ def DownloadURL(url, context, force, dontExtract = None):
     dontExtract may be a sequence of path prefixes that will
     be excluded when extracting the archive.
 
-    Returns the absolute  path to the directory where files have 
+    Returns the absolute path to the directory where files have 
     been extracted."""
     with CurrentWorkingDirectory(context.srcDir):
         # Extract filename from URL and see if file already exists. 
@@ -271,17 +276,37 @@ def DownloadURL(url, context, force, dontExtract = None):
 
             for i in xrange(maxRetries):
                 try:
-                    r = urllib2.urlopen(url)
-                    with open(tmpFilename, "wb") as outfile:
-                        outfile.write(r.read())
+                    if context.useCurl:
+                        # Don't log command output so that curl's progress
+                        # meter doesn't get written to the log file.
+                        Run("curl {progress} -L -o {filename} {url}".format(
+                            progress="-#" if verbosity >= 2 else "-s",
+                            filename=tmpFilename, url=url), 
+                            logCommandOutput=False)
+                    else:
+                        r = urllib2.urlopen(url)
+                        with open(tmpFilename, "wb") as outfile:
+                            outfile.write(r.read())
+
                     break
                 except Exception as e:
                     PrintCommandOutput("Retrying download due to error: {err}\n"
                                        .format(err=e))
                     lastError = e
             else:
+                errorMsg = str(lastError)
+                if "SSL: TLSV1_ALERT_PROTOCOL_VERSION" in errorMsg:
+                    errorMsg += ("\n\n"
+                                 "Your OS or version of Python may not support "
+                                 "TLS v1.2+, which is required for downloading "
+                                 "files from certain websites. This support "
+                                 "was added in Python 2.7.9."
+                                 "\n\n"
+                                 "You can use curl to download dependencies "
+                                 "by installing it in your PATH and re-running "
+                                 "this script.")
                 raise RuntimeError("Failed to download {url}: {err}"
-                                   .format(url=url, err=lastError))
+                                   .format(url=url, err=errorMsg))
 
             shutil.move(tmpFilename, filename)
 
@@ -921,6 +946,9 @@ programDescription = """\
 Installation Script for USD
 
 Builds and installs USD and 3rd-party dependencies to specified location.
+
+If curl is installed and located in PATH, it will be used to download
+dependencies. Otherwise, a built-in downloader will be used.
 """
 
 parser = argparse.ArgumentParser(
@@ -1090,6 +1118,11 @@ class InstallContext:
         # Directory where USD and dependencies will be built
         self.buildDir = (os.path.abspath(args.build) if args.build
                          else os.path.join(self.usdInstDir, "build"))
+
+        # Whether to use curl or urllib for downloading dependencies
+        # Use curl by default if it's available, otherwise fall back
+        # to built-in methods.
+        self.useCurl = find_executable("curl")
 
         # CMake generator
         self.cmakeGenerator = args.generator
@@ -1289,6 +1322,7 @@ Building with settings:
   3rd-party install directory   {instDir}
   Build directory               {buildDir}
   CMake generator               {cmakeGenerator}
+  Downloader                    {downloader}
 
   Building                      {buildType}
     Imaging                     {buildImaging}
@@ -1312,6 +1346,7 @@ Building with settings:
     instDir=context.instDir,
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator),
+    downloader=("curl" if context.useCurl else "built-in"),
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
     buildType=("Shared libraries" if context.buildShared
