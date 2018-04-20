@@ -1533,6 +1533,7 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     const TfToken& vector = SdfValueRoleNames->Vector;
     const TfToken& normal = SdfValueRoleNames->Normal;
     const TfToken& color  = SdfValueRoleNames->Color;
+    const TfToken& texCoord = SdfValueRoleNames->TextureCoordinate;
 
     // Make sure TfTypes are registered.
     TfRegistryManager::GetInstance().SubscribeTo<TfType>();
@@ -1603,6 +1604,12 @@ SdfSchema::_RegisterTypes(_ValueTypeRegistrar r)
     r.AddType(T("matrix4d", GfMatrix4d(1.0)).Dimensions({4, 4}));
     r.AddType(T("frame4d",  GfMatrix4d(1.0)).Role(SdfValueRoleNames->Frame)
                                             .Dimensions({4, 4}));
+    r.AddType(T("texCoord2f", GfVec2f(0.0)).Role(texCoord).Dimensions(2));
+    r.AddType(T("texCoord2d", GfVec2d(0.0)).Role(texCoord).Dimensions(2));
+    r.AddType(T("texCoord2h", GfVec2h(0.0)).Role(texCoord).Dimensions(2));
+    r.AddType(T("texCoord3f", GfVec3f(0.0)).Role(texCoord).Dimensions(3));
+    r.AddType(T("texCoord3d", GfVec3d(0.0)).Role(texCoord).Dimensions(3));
+    r.AddType(T("texCoord3h", GfVec3h(0.0)).Role(texCoord).Dimensions(3));
 
     // XXX: Legacy types.  We can remove these when assets are
     //      updated.  parserHelpers.cpp adds support for reading
@@ -1708,6 +1715,12 @@ SdfSchema::_NewValueTypeNames() const
     n->Matrix3d      = FindType("matrix3d");
     n->Matrix4d      = FindType("matrix4d");
     n->Frame4d       = FindType("frame4d");
+    n->TexCoord2f    = FindType("texCoord2f");
+    n->TexCoord2d    = FindType("texCoord2d");
+    n->TexCoord2h    = FindType("texCoord2h");
+    n->TexCoord3f    = FindType("texCoord3f");
+    n->TexCoord3d    = FindType("texCoord3d");
+    n->TexCoord3h    = FindType("texCoord3h");
 
     n->BoolArray     = FindType("bool[]");
     n->UCharArray    = FindType("uchar[]");
@@ -1755,6 +1768,12 @@ SdfSchema::_NewValueTypeNames() const
     n->Matrix3dArray = FindType("matrix3d[]");
     n->Matrix4dArray = FindType("matrix4d[]");
     n->Frame4dArray  = FindType("frame4d[]");
+    n->TexCoord2fArray = FindType("texCoord2f[]");
+    n->TexCoord2dArray = FindType("texCoord2d[]");
+    n->TexCoord2hArray = FindType("texCoord2h[]");
+    n->TexCoord3fArray = FindType("texCoord3f[]");
+    n->TexCoord3dArray = FindType("texCoord3d[]");
+    n->TexCoord3hArray = FindType("texCoord3h[]");
 
     return n;
 }

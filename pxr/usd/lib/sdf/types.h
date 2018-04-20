@@ -469,7 +469,8 @@ struct SdfValueTypeTraits<char[N]>
     (PointIndex)                                \
     (EdgeIndex)                                 \
     (FaceIndex)                                 \
-    (Schema)
+    (TextureCoordinate)                         \
+    (Schema)                                   
 
 TF_DECLARE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_API, SDF_VALUE_ROLE_NAME_TOKENS);
 
@@ -620,6 +621,8 @@ public:
     SdfValueTypeName Quath,    Quatf,    Quatd;
     SdfValueTypeName Matrix2d, Matrix3d, Matrix4d;
     SdfValueTypeName Frame4d;
+    SdfValueTypeName TexCoord2h, TexCoord2f, TexCoord2d;
+    SdfValueTypeName TexCoord3h, TexCoord3f, TexCoord3d;
 
     SdfValueTypeName BoolArray;
     SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;
@@ -637,6 +640,8 @@ public:
     SdfValueTypeName QuathArray,    QuatfArray,    QuatdArray;
     SdfValueTypeName Matrix2dArray, Matrix3dArray, Matrix4dArray;
     SdfValueTypeName Frame4dArray;
+    SdfValueTypeName TexCoord2hArray, TexCoord2fArray, TexCoord2dArray;
+    SdfValueTypeName TexCoord3hArray, TexCoord3fArray, TexCoord3dArray;
 
     SDF_API ~Sdf_ValueTypeNamesType();
     struct _Init {
