@@ -169,10 +169,6 @@ public:
     /// -------------------------------------------------------
     /// Progressive Image Generation
     
-    /// Reset the image render to reflect a changed scene.
-    HDX_API
-    void ResetImage();
-
     /// Return whether the image has converged.
     HDX_API
     bool IsConverged() const;

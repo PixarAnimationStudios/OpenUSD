@@ -53,7 +53,7 @@ void
 HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
 {
     RTCScene scene = static_cast<HdEmbreeRenderParam*>(renderParam)
-        ->GetEmbreeScene();
+        ->AcquireSceneForEdit();
     // Delete any instances of this mesh in the top-level embree scene.
     for (size_t i = 0; i < _rtcInstanceIds.size(); ++i) {
         // Delete the instance context first...
@@ -162,10 +162,10 @@ HdEmbreeMesh::Sync(HdSceneDelegate* sceneDelegate,
     const HdMeshReprDesc &desc = descs[0];
 
     // Pull top-level embree state out of the render param.
-    RTCScene scene = static_cast<HdEmbreeRenderParam*>(renderParam)
-		->GetEmbreeScene();
-    RTCDevice device = static_cast<HdEmbreeRenderParam*>(renderParam)
-        ->GetEmbreeDevice();
+    HdEmbreeRenderParam *embreeRenderParam =
+        static_cast<HdEmbreeRenderParam*>(renderParam);
+    RTCScene scene = embreeRenderParam->AcquireSceneForEdit();
+    RTCDevice device = embreeRenderParam->GetEmbreeDevice();
 
     // Create embree geometry objects.
     _PopulateRtMesh(sceneDelegate, scene, device, dirtyBits, desc);
@@ -633,6 +633,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
         if (doRefine) {
             TfToken const vertexRule =
                 _topology.GetSubdivTags().GetVertexInterpolationRule();
+
             if (vertexRule == PxOsdOpenSubdivTokens->none) {
                 rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
                     RTC_BOUNDARY_NONE);
@@ -643,8 +644,10 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
                 rtcSetBoundaryMode(_rtcMeshScene, _rtcMeshId,
                     RTC_BOUNDARY_EDGE_AND_CORNER);
             } else {
-                TF_WARN("Unknown vertex interpolation rule: %s",
-                    vertexRule.GetText());
+                if (!vertexRule.IsEmpty()) {
+                    TF_WARN("Unknown vertex interpolation rule: %s",
+                            vertexRule.GetText());
+                }
             }
         }
     }

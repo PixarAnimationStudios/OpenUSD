@@ -190,8 +190,8 @@ HdRenderPassSharedPtr
 HdEmbreeRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                             HdRprimCollection const& collection)
 {
-    return HdRenderPassSharedPtr(
-        new HdEmbreeRenderPass(index, collection, _rtcScene));
+    return HdRenderPassSharedPtr(new HdEmbreeRenderPass(
+        index, collection, _rtcScene, _renderParam.get()));
 }
 
 HdInstancer *

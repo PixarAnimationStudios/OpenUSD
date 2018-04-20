@@ -42,27 +42,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbreeRenderPass::HdEmbreeRenderPass(HdRenderIndex *index,
                                        HdRprimCollection const &collection,
-                                       RTCScene scene)
+                                       RTCScene scene,
+                                       HdEmbreeRenderParam *renderParam)
     : HdRenderPass(index, collection)
-    , _pendingResetImage(false)
     , _width(0)
     , _height(0)
     , _scene(scene)
     , _inverseViewMatrix(1.0f) // == identity
     , _inverseProjMatrix(1.0f) // == identity
     , _clearColor(0.0707f, 0.0707f, 0.0707f)
+    , _renderParam(renderParam)
+    , _sceneVersion(0)
 {
 }
 
 HdEmbreeRenderPass::~HdEmbreeRenderPass()
 {
-}
-
-void
-HdEmbreeRenderPass::ResetImage()
-{
-    // Set a flag to clear the sample buffer the next time Execute() is called.
-    _pendingResetImage = true;
 }
 
 bool
@@ -77,36 +72,42 @@ HdEmbreeRenderPass::IsConverged() const
 }
 
 void
-HdEmbreeRenderPass::_MarkCollectionDirty()
-{
-    // If the drawable collection changes, we should reset the sample buffer.
-    _pendingResetImage = true;
-}
-
-void
 HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                              TfTokenVector const &renderTags)
 {
     // XXX: Add collection and renderTags support.
     // XXX: Add clip planes support.
 
-    _inverseViewMatrix = renderPassState->GetWorldToViewMatrix().GetInverse();
-    _inverseProjMatrix = renderPassState->GetProjectionMatrix().GetInverse();
+    // Track whether the sample buffer is still valid.
+    bool resetImage = false;
+    int sceneVersion = _renderParam->GetSceneVersion();
+    if (_sceneVersion != sceneVersion) {
+        _sceneVersion = sceneVersion;
+        resetImage = true;
+    }
 
-    // If the viewport has changed, resize the sample buffer.
+    // If the camera has changed, reset the sample buffer.
+    GfMatrix4d invView = renderPassState->GetWorldToViewMatrix().GetInverse();
+    GfMatrix4d invProj = renderPassState->GetProjectionMatrix().GetInverse();
+    if (_inverseViewMatrix != invView || _inverseProjMatrix != invProj) {
+        _inverseViewMatrix = invView;
+        _inverseProjMatrix = invProj;
+        resetImage = true;
+    }
+
+    // If the viewport has changed, resize and reset the sample buffer.
     GfVec4f vp = renderPassState->GetViewport();
     if (_width != vp[2] || _height != vp[3]) {
         _width = vp[2];
         _height = vp[3];
         _sampleBuffer.resize(_width*_height*4);
         _colorBuffer.resize(_width*_height*4);
-        _pendingResetImage = true;
+        resetImage = true;
     }
 
     // Reset the sample buffer if it's been requested.
-    if (_pendingResetImage) {
+    if (resetImage) {
         memset(&_sampleBuffer[0], 0, _width*_height*4*sizeof(float));
-        _pendingResetImage = false;
     }
     
     // Render the image. Each call to _Render() adds a sample per pixel (with

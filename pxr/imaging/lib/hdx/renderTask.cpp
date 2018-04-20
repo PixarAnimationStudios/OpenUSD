@@ -47,14 +47,6 @@ HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-void
-HdxRenderTask::ResetImage()
-{
-    TF_FOR_ALL(pass, _passes) {
-        (*pass)->ResetImage();
-    }
-}
-
 bool
 HdxRenderTask::IsConverged() const
 {

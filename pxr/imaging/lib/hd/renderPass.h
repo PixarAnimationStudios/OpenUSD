@@ -125,7 +125,6 @@ public:
     /// \name Optional API hooks for progressive rendering
     // ---------------------------------------------------------------------- //
 
-    virtual void ResetImage() {}
     virtual bool IsConverged() const { return true; }
 
 protected:

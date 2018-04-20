@@ -233,13 +233,6 @@ private:
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
 
-    // Last set view matrix, to track when camera changes for progressive
-    // rendering.
-    GfMatrix4d _lastViewMatrix;
-    GfVec4d _lastViewport;
-    // Last set refine level, tracked to invalidate progressive rendering.
-    int _lastRefineLevel;
-
     // Data we want to live across render plugin switches:
     GfVec4f _selectionColor;
 

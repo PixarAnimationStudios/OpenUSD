@@ -526,15 +526,6 @@ HdxTaskController::SetCameraClipPlanes(
     }
 }
 
-void
-HdxTaskController::ResetImage()
-{
-    // Pass this call through to HdxRenderTask's ResetImage().
-    static_cast<HdxRenderTask*>(
-            GetRenderIndex()->GetTask(_renderTaskId).get())
-        ->ResetImage();
-}
-
 bool
 HdxTaskController::IsConverged() const
 {
