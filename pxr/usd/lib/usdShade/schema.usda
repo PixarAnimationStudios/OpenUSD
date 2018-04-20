@@ -270,7 +270,7 @@ class Material "Material" (
     }
 ) 
 {
-    uniform token outputs:surface (
+    token outputs:surface (
         doc = """Represents the universal "surface" output terminal of a
         material."""
         displayGroup = "Outputs"
@@ -278,7 +278,7 @@ class Material "Material" (
             string apiName = "surface"
         }
     )
-    uniform token outputs:displacement (
+    token outputs:displacement (
         doc = """Represents the universal "displacement" output terminal of a 
         material."""
         displayGroup = "Outputs"
@@ -286,7 +286,7 @@ class Material "Material" (
             string apiName = "displacement"
         }
     )
-    uniform token outputs:volume (
+    token outputs:volume (
         doc = """Represents the universal "volume" output terminal of a
         material."""
         displayGroup = "Outputs"

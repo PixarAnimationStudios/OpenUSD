@@ -74,17 +74,17 @@ class Material "Material" (
     """
 )
 {
-    uniform token outputs:displacement (
+    token outputs:displacement (
         displayGroup = "Outputs"
         doc = '''Represents the universal "displacement" output terminal of a 
         material.'''
     )
-    uniform token outputs:surface (
+    token outputs:surface (
         displayGroup = "Outputs"
         doc = '''Represents the universal "surface" output terminal of a
         material.'''
     )
-    uniform token outputs:volume (
+    token outputs:volume (
         displayGroup = "Outputs"
         doc = '''Represents the universal "volume" output terminal of a
         material.'''

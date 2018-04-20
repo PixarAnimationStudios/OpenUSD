@@ -16,7 +16,7 @@ def "ModelShading"
 
             def Shader "Shader_2"
             {
-                uniform float outputs:floatOutput
+                float outputs:floatOutput
             }
         }
 

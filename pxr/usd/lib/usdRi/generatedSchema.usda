@@ -114,13 +114,13 @@ class "RiMaterialAPI" (
     shaders and RIS objects."""
 )
 {
-    uniform token outputs:ri:displacement (
+    token outputs:ri:displacement (
         displayGroup = "Outputs"
     )
-    uniform token outputs:ri:surface (
+    token outputs:ri:surface (
         displayGroup = "Outputs"
     )
-    uniform token outputs:ri:volume (
+    token outputs:ri:volume (
         displayGroup = "Outputs"
     )
 }

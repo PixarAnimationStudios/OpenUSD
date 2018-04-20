@@ -152,19 +152,19 @@ class "RiMaterialAPI" (
 """
     }
 ) {
-    uniform token outputs:ri:surface (
+    token outputs:ri:surface (
         displayGroup = "Outputs"
         customData = {
             string apiName = "surface"
         }
     )
-    uniform token outputs:ri:displacement (
+    token outputs:ri:displacement (
         displayGroup = "Outputs"
         customData = {
             string apiName = "displacement"
         }
     )
-    uniform token outputs:ri:volume (
+    token outputs:ri:volume (
         displayGroup = "Outputs"
         customData = {
             string apiName = "volume"

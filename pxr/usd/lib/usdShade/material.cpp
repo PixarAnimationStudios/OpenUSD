@@ -109,7 +109,7 @@ UsdShadeMaterial::CreateSurfaceAttr(VtValue const &defaultValue, bool writeSpars
     return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsSurface,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }
@@ -126,7 +126,7 @@ UsdShadeMaterial::CreateDisplacementAttr(VtValue const &defaultValue, bool write
     return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsDisplacement,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }
@@ -143,7 +143,7 @@ UsdShadeMaterial::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparse
     return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsVolume,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }

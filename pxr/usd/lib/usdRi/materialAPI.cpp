@@ -104,7 +104,7 @@ UsdRiMaterialAPI::CreateSurfaceAttr(VtValue const &defaultValue, bool writeSpars
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->outputsRiSurface,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }
@@ -121,7 +121,7 @@ UsdRiMaterialAPI::CreateDisplacementAttr(VtValue const &defaultValue, bool write
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->outputsRiDisplacement,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }
@@ -138,7 +138,7 @@ UsdRiMaterialAPI::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparse
     return UsdSchemaBase::_CreateAttr(UsdRiTokens->outputsRiVolume,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }

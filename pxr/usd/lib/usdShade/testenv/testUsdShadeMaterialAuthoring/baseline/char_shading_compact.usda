@@ -76,92 +76,92 @@ def "ShadingDefs"
     {
         def Shader "HairWetSurface"
         {
-            uniform color3f outputs:out
+            color3f outputs:out
         }
 
         def Shader "HairWetDisp"
         {
-            uniform vector3f outputs:out
+            vector3f outputs:out
         }
 
         def Shader "HairWetPattern"
         {
-            uniform float[] outputs:out
+            float[] outputs:out
         }
 
         def Shader "HairDrySurface"
         {
-            uniform color3f outputs:out
+            color3f outputs:out
         }
 
         def Shader "HairDryDisp"
         {
-            uniform vector3f outputs:out
+            vector3f outputs:out
         }
 
         def Shader "HairDryPattern"
         {
-            uniform float[] outputs:out
+            float[] outputs:out
         }
 
         def Shader "SkinWetSurface"
         {
-            uniform color3f outputs:out
+            color3f outputs:out
         }
 
         def Shader "SkinWetDisp"
         {
-            uniform vector3f outputs:out
+            vector3f outputs:out
         }
 
         def Shader "SkinWetPattern"
         {
-            uniform float[] outputs:out
+            float[] outputs:out
         }
 
         def Shader "SkinDrySurface"
         {
-            uniform color3f outputs:out
+            color3f outputs:out
         }
 
         def Shader "SkinDryDisp"
         {
-            uniform vector3f outputs:out
+            vector3f outputs:out
         }
 
         def Shader "SkinDryPattern"
         {
-            uniform float[] outputs:out
+            float[] outputs:out
         }
 
         def Shader "NailsWetSurface"
         {
-            uniform color3f outputs:out
+            color3f outputs:out
         }
 
         def Shader "NailsWetDisp"
         {
-            uniform vector3f outputs:out
+            vector3f outputs:out
         }
 
         def Shader "NailsWetPattern"
         {
-            uniform float[] outputs:out
+            float[] outputs:out
         }
 
         def Shader "NailsDrySurface"
         {
-            uniform color3f outputs:out
+            color3f outputs:out
         }
 
         def Shader "NailsDryDisp"
         {
-            uniform vector3f outputs:out
+            vector3f outputs:out
         }
 
         def Shader "NailsDryPattern"
         {
-            uniform float[] outputs:out
+            float[] outputs:out
         }
     }
 
@@ -176,15 +176,15 @@ def "ShadingDefs"
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    uniform vector3f outputs:disp.connect = </ShadingDefs/Shaders/HairDryDisp.outputs:out>
-                    uniform float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairDryPattern.outputs:out>
-                    uniform color3f outputs:surf.connect = </ShadingDefs/Shaders/HairDrySurface.outputs:out>
+                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/HairDryDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairDryPattern.outputs:out>
+                    color3f outputs:surf.connect = </ShadingDefs/Shaders/HairDrySurface.outputs:out>
 
                 }
                 "Wet" {
-                    uniform vector3f outputs:disp.connect = </ShadingDefs/Shaders/HairWetDisp.outputs:out>
-                    uniform float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairWetPattern.outputs:out>
-                    uniform color3f outputs:surf.connect = </ShadingDefs/Shaders/HairWetSurface.outputs:out>
+                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/HairWetDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/HairWetPattern.outputs:out>
+                    color3f outputs:surf.connect = </ShadingDefs/Shaders/HairWetSurface.outputs:out>
 
                 }
             }
@@ -199,15 +199,15 @@ def "ShadingDefs"
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    uniform vector3f outputs:disp.connect = </ShadingDefs/Shaders/SkinDryDisp.outputs:out>
-                    uniform float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinDryPattern.outputs:out>
-                    uniform color3f outputs:surf.connect = </ShadingDefs/Shaders/SkinDrySurface.outputs:out>
+                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/SkinDryDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinDryPattern.outputs:out>
+                    color3f outputs:surf.connect = </ShadingDefs/Shaders/SkinDrySurface.outputs:out>
 
                 }
                 "Wet" {
-                    uniform vector3f outputs:disp.connect = </ShadingDefs/Shaders/SkinWetDisp.outputs:out>
-                    uniform float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinWetPattern.outputs:out>
-                    uniform color3f outputs:surf.connect = </ShadingDefs/Shaders/SkinWetSurface.outputs:out>
+                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/SkinWetDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/SkinWetPattern.outputs:out>
+                    color3f outputs:surf.connect = </ShadingDefs/Shaders/SkinWetSurface.outputs:out>
 
                 }
             }
@@ -222,15 +222,15 @@ def "ShadingDefs"
         {
             variantSet "materialVariant" = {
                 "Dry" {
-                    uniform vector3f outputs:disp.connect = </ShadingDefs/Shaders/NailsDryDisp.outputs:out>
-                    uniform float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsDryPattern.outputs:out>
-                    uniform color3f outputs:surf.connect = </ShadingDefs/Shaders/NailsDrySurface.outputs:out>
+                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/NailsDryDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsDryPattern.outputs:out>
+                    color3f outputs:surf.connect = </ShadingDefs/Shaders/NailsDrySurface.outputs:out>
 
                 }
                 "Wet" {
-                    uniform vector3f outputs:disp.connect = </ShadingDefs/Shaders/NailsWetDisp.outputs:out>
-                    uniform float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsWetPattern.outputs:out>
-                    uniform color3f outputs:surf.connect = </ShadingDefs/Shaders/NailsWetSurface.outputs:out>
+                    vector3f outputs:disp.connect = </ShadingDefs/Shaders/NailsWetDisp.outputs:out>
+                    float[] outputs:pattern.connect = </ShadingDefs/Shaders/NailsWetPattern.outputs:out>
+                    color3f outputs:surf.connect = </ShadingDefs/Shaders/NailsWetSurface.outputs:out>
 
                 }
             }
