@@ -1078,6 +1078,40 @@ static void _EmitStructAccessor(std::stringstream &str,
     }
 }
 
+static std::string _GetSwizzleString(TfToken const& type)
+{
+    std::string swizzle = "";
+    if (type == _tokens->vec4 || type == _tokens->ivec4) {
+        // nothing
+    } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
+        swizzle = ".xyz";
+    } else if (type == _tokens->vec2 || type == _tokens->ivec2) {
+        swizzle = ".xy";
+    } else if (type == _tokens->_float || type == _tokens->_int) {
+        swizzle = ".x";
+    }
+
+    return swizzle;
+}
+
+static int _GetNumComponents(TfToken const& type)
+{
+    int numComponents = 1;
+    if (type == _tokens->vec2 || type == _tokens->ivec2) {
+        numComponents = 2;
+    } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
+        numComponents = 3;
+    } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
+        numComponents = 4;
+    } else if (type == _tokens->mat3 || type == _tokens->dmat3) {
+        numComponents = 9;
+    } else if (type == _tokens->mat4 || type == _tokens->dmat4) {
+        numComponents = 16;
+    }
+
+    return numComponents;
+}
+
 static void _EmitComputeAccessor(
                     std::stringstream &str,
                     TfToken const &name,
@@ -1090,33 +1124,12 @@ static void _EmitComputeAccessor(
             << " HdGet_" << name << "(int localIndex) {\n";
         if (binding.GetType() == HdBinding::TBO) {
             str << "  int index = " << index << ";\n";
-            std::string swizzle = "";
-            if (type == _tokens->vec4 || type == _tokens->ivec4) {
-                // nothing
-            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
-                swizzle = ".xyz";
-            } else if (type == _tokens->vec2 || type == _tokens->ivec2) {
-                swizzle = ".xy";
-            } else if (type == _tokens->_float || type == _tokens->_int) {
-                swizzle = ".x";
-            }
             str << "  return texelFetch("
-                << name << ", index)" << swizzle << ";\n}\n";
+                << name << ", index)" << _GetSwizzleString(type) << ";\n}\n";
         } else if (binding.GetType() == HdBinding::SSBO) {
             str << "  int index = " << index << ";\n";
             str << "  return " << type << "(";
-            int numComponents = 1;
-            if (type == _tokens->vec2 || type == _tokens->ivec2) {
-                numComponents = 2;
-            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
-                numComponents = 3;
-            } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
-                numComponents = 4;
-            } else if (type == _tokens->mat3 || type == _tokens->dmat3) {
-                numComponents = 9;
-            } else if (type == _tokens->mat4 || type == _tokens->dmat4) {
-                numComponents = 16;
-            }
+            int numComponents = _GetNumComponents(type);
             for (int c = 0; c < numComponents; ++c) {
                 if (c > 0) {
                     str << ",\n              ";
@@ -1160,18 +1173,7 @@ static void _EmitComputeMutator(
             << type << " value) {\n";
         if (binding.GetType() == HdBinding::SSBO) {
             str << "  int index = " << index << ";\n";
-            int numComponents = 1;
-            if (type == _tokens->vec2 || type == _tokens->ivec2) {
-                numComponents = 2;
-            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
-                numComponents = 3;
-            } else if (type == _tokens->vec4 || type == _tokens->ivec4) {
-                numComponents = 4;
-            } else if (type == _tokens->mat3 || type == _tokens->dmat3) {
-                numComponents = 9;
-            } else if (type == _tokens->mat4 || type == _tokens->dmat4) {
-                numComponents = 16;
-            }
+            int numComponents = _GetNumComponents(type);
             if (numComponents == 1) {
                 str << "  "
                     << name << "[index] = value;\n";
@@ -1212,19 +1214,8 @@ static void _EmitAccessor(std::stringstream &str,
             << " HdGet_" << name << "(int localIndex) {\n"
             << "  int index = " << index << ";\n";
         if (binding.GetType() == HdBinding::TBO) {
-
-            std::string swizzle = "";
-            if (type == _tokens->vec4 || type == _tokens->ivec4) {
-                // nothing
-            } else if (type == _tokens->vec3 || type == _tokens->ivec3) {
-                swizzle = ".xyz";
-            } else if (type == _tokens->vec2 || type == _tokens->ivec2) {
-                swizzle = ".xy";
-            } else if (type == _tokens->_float || type == _tokens->_int) {
-                swizzle = ".x";
-            }
             str << "  return texelFetch("
-                << name << ", index)" << swizzle << ";\n}\n";
+                << name << ", index)" << _GetSwizzleString(type) << ";\n}\n";
         } else {
             str << "  return " << _GetPackedTypeAccessor(type) << "("
                 << name << "[index]);\n}\n";
@@ -1243,6 +1234,91 @@ static void _EmitAccessor(std::stringstream &str,
     str << type << " HdGet_" << name << "()"
         << " { return HdGet_" << name << "(0); }\n";
     
+}
+
+
+// Accessing face varying primvar data of a vertex in the GS requires special
+// case handling for refinement while providing a branchless solution.
+// When dealing with vertices on a refined face, we use the patch coord to get
+// its parametrization on the sanitized (coarse) "ptex" face, and interpolate
+// based on the face primitive type (bilinear for quad faces, barycentric for
+// tri faces)
+static void _EmitFVarGSAccessor(
+                std::stringstream &str,
+                TfToken const &name,
+                TfToken const &type,
+                HdBinding const &binding,
+                HdSt_GeometricShader::PrimitiveType const& primType)
+{
+    // emit an internal getter for accessing the coarse fvar data (corresponding
+    // to the refined face, in the case of refinement)
+    str << type
+        << " HdGet_" << name << "_Coarse(int localIndex) {\n"
+        << "  int fvarIndex = GetFVarIndex(localIndex);\n";
+
+        if (binding.GetType() == HdBinding::TBO) {
+            str << "  return texelFetch("
+                << name << ", fvarIndex)" << _GetSwizzleString(type) << ";\n}\n";
+        } else {
+            str << "  return " << _GetPackedTypeAccessor(type) << "("
+                << name << "[fvarIndex]);\n}\n";
+        }
+
+    // emit the (public) accessor for the fvar data, accounting for refinement
+    // interpolation
+    str << "vec4 GetPatchCoord(int index);\n"; // forward decl
+    str << type
+        << " HdGet_" << name << "(int localIndex) {\n"
+        << "  vec2 localST = GetPatchCoord(localIndex).xy;\n";
+
+    switch(primType)
+    {
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
+        {
+            // linear interpolation within a quad.
+            str << "  return mix("
+                << "mix(" << "HdGet_" << name << "_Coarse(0),"
+                <<           "HdGet_" << name << "_Coarse(1), localST.x),"
+                << "mix(" << "HdGet_" << name << "_Coarse(3),"
+                <<           "HdGet_" << name << "_Coarse(2), localST.x), localST.y);\n}\n";
+            break;
+        }
+
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        {
+            // barycentric interpolation within a triangle.
+            str << "  return ("
+                << "HdGet_" << name << "_Coarse(0) * (1-localST.x-localST.y)"
+                << " + HdGet_" << name << "_Coarse(1) * localST.x"
+                << " + HdGet_" << name << "_Coarse(2) * localST.y);\n}\n";
+            break;
+        }
+
+        case HdSt_GeometricShader::PrimitiveType::PRIM_POINTS:
+        {
+            str << "  return HdGet_" << name << "_Coarse(localIndex);\n}\n";
+            break;
+        }
+
+        default:
+        {
+            // emit a default version for compilation sake
+            str << "  return HdGet_" << name << "_Coarse(localIndex);\n}\n";
+
+            TF_CODING_ERROR("Face varing bindings for unexpected for" 
+                            " HdSt_GeometricShader::PrimitiveType %d", 
+                            primType);
+        }
+    }
+
+    // XXX: We shouldn't emit the default (argument free) accessor version,
+    // since that doesn't make sense within a GS. Once we fix the XXX in
+    // _GenerateShaderParameters, we should remove this.
+    str << type << " HdGet_" << name << "()"
+        << " { return HdGet_" << name << "(0); }\n";
 }
 
 void
@@ -2153,29 +2229,42 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
 
     /*
       // --------- facevarying data declaration ----------------
-      // we use separate structs to avoid std430 padding problem of vec3 array.
-      struct FaceVaryingData0 {
-          vec2 map1;
-      };
-      struct FaceVaryingData1 {
-          float map2_u;
-      };
       layout (std430, binding=?) buffer buffer0 {
-          FaceVaryingData0 faceVaryingData0[];
+          vec2 map1[];
       };
       layout (std430, binding=?) buffer buffer1 {
-          FaceVaryingData1 faceVaryingData1[];
+          float map2_u[];
       };
 
       // --------- geometry stage plumbing -------
+      out Primvars {
+          ...
+          vec2 map1;
+          float map2_u;
+      } outPrimvars;
+
       void ProcessPrimvars(int index) {
-          outPrimvars = inPrimvars[index];
+          outPrimvars.map1 = HdGet_map1(index);
+          outPrimvars.map2_u = HdGet_map2_u(index);
       }
 
+      // --------- fragment stage plumbing -------
+      in Primvars {
+          ...
+          vec2 map1;
+          float map2_u;
+      } inPrimvars;
+
       // --------- facevarying data accessors ----------
-      // in geometry shader
+      // in geometry shader (internal accessor)
+      vec2 HdGet_map1_Coarse(int localIndex) {
+          int fvarIndex = GetFVarIndex(localIndex);
+          return vec2(map1[fvarIndex]);
+      }
+      // in geometry shader (public accessor)
       vec2 HdGet_map1(int localIndex) {
-          return faceVaryingData0[GetFaceVaryingIndex(localIndex)].map1;
+          int fvarIndex = GetFVarIndex(localIndex);
+          return (HdGet_map1_Coarse(0) * ...);
       }
       // in fragment shader
       vec2 HdGet_map1() {
@@ -2198,51 +2287,13 @@ HdSt_CodeGen::_GenerateVertexPrimvar()
         interstageFVarData << "  " << dataType << " " << name << ";\n";
 
         // primvar accessors (only in GS and FS)
-        _EmitAccessor(accessorsGS, name, dataType, binding, "GetFVarIndex(localIndex)");
+        _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
+                            _geometricShader->GetPrimitiveType());
         _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
                             /*arraySize=*/1, NULL);
 
-        switch(_geometricShader->GetPrimitiveType())
-        {
-            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
-            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_PATCHES:
-            {
-                // linear interpolation within a quad.
-                _procGS << "  outPrimvars." << name
-                    << "  = mix("
-                    << "mix(" << "HdGet_" << name << "(0),"
-                    <<           "HdGet_" << name << "(1), localST.x),"
-                    << "mix(" << "HdGet_" << name << "(3),"
-                    <<           "HdGet_" << name << "(2), localST.x), localST.y);\n";
-                break;
-            }
-
-            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
-            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-            {
-                // barycentric interpolation within a triangle.
-                _procGS << "  outPrimvars." << name
-                    << "  = HdGet_" << name << "(0) * (1-localST.x-localST.y) "
-                    << "  + HdGet_" << name << "(1) * localST.x "
-                    << "  + HdGet_" << name << "(2) * localST.y;\n";
-                break;  
-            }
-
-            case HdSt_GeometricShader::PrimitiveType::PRIM_POINTS:
-            {
-                // do nothing. 
-                // e.g. if a prim's geomstyle is points and it has valid
-                // fvarData, we don't generate any of the 
-                // accessor methods.
-                break;
-            }
-
-            default:
-                TF_CODING_ERROR("Face varing bindings for unexpected for" 
-                                " HdSt_GeometricShader::PrimitiveType %d", 
-                                _geometricShader->GetPrimitiveType());
-        }
+        _procGS << "  outPrimvars." << name 
+                                    <<" = HdGet_" << name << "(index);\n";
     }
 
     _genVS  << vertexInputs.str()
@@ -2421,16 +2472,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
 
         // adjust datatype
-        std::string swizzle = "";
-        if (it->second.dataType == _tokens->vec4) {
-            // nothing
-        } else if (it->second.dataType == _tokens->vec3) {
-            swizzle = ".xyz";
-        } else if (it->second.dataType == _tokens->vec2) {
-            swizzle = ".xy";
-        } else if (it->second.dataType == _tokens->_float) {
-            swizzle = ".x";
-        }
+        std::string swizzle = _GetSwizzleString(it->second.dataType);
 
         HdBinding::Type bindingType = it->first.GetType();
         if (bindingType == HdBinding::FALLBACK) {
