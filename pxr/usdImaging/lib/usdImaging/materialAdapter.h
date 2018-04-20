@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMaterialNetworkMap;
+struct HdMaterialNetworkMap;
 
 
 /// \class UsdImagingMaterialAdapter
