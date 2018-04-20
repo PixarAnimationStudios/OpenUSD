@@ -171,7 +171,7 @@ PRM_Template*   _CreateTemplates()
     static PRM_ChoiceList purposeMenu(PRM_CHOICELIST_TOGGLE, purposeChoices );
 
     static PRM_Name    missingFrameName("missingframe", "Missing Frame");
-    static PRM_Default missingFrameDefault(0, "error");
+    static PRM_Default missingFrameDefault(1, "warning");
 
     static PRM_Name errorChoices[] = {
         PRM_Name("error", "Report Error"),
