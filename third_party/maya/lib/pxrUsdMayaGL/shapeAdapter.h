@@ -188,7 +188,17 @@ class PxrMayaHdShapeAdapter
         /// selection, for which the batch renderer manages a helper. This
         /// class is made a friend of the batch renderer class so that it can
         /// access the soft selection info.
+        ///
+        /// Returns true if the wireframe color should be used, that is if the
+        /// object and/or its component(s) are involved in a selection, or if
+        /// the displayStyle indicates that a wireframe style is being drawn
+        /// (either kWireFrame or kBoundingBox). Otherwise returns false.
+        ///
+        /// The wireframe color will always be returned in \p mayaWireColor (if
+        /// it is not nullptr) in case the caller wants to use other criteria
+        /// for determining whether to use it.
         static bool _GetWireframeColor(
+                const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus,
                 const MDagPath& shapeDagPath,
                 MColor* mayaWireColor);

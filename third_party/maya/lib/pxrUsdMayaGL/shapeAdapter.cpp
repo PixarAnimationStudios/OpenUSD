@@ -306,25 +306,42 @@ PxrMayaHdShapeAdapter::IsViewport2() const
 /* static */
 bool
 PxrMayaHdShapeAdapter::_GetWireframeColor(
+        const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus,
         const MDagPath& shapeDagPath,
         MColor* mayaWireColor)
 {
+    bool useWireframeColor = false;
+
     // Dormant objects may be included in a soft selection.
     if (displayStatus == MHWRender::kDormant) {
         const UsdMayaGLSoftSelectHelper& softSelectHelper =
             UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
-        return softSelectHelper.GetFalloffColor(shapeDagPath, mayaWireColor);
-    }
-    else if ((displayStatus == MHWRender::kActive) ||
-             (displayStatus == MHWRender::kLead) ||
-             (displayStatus == MHWRender::kHilite)) {
-        *mayaWireColor =
-            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
-        return true;
+        useWireframeColor = softSelectHelper.GetFalloffColor(shapeDagPath,
+                                                             mayaWireColor);
     }
 
-    return false;
+    // If the object isn't included in a soft selection, just ask Maya for the
+    // wireframe color.
+    if (!useWireframeColor && mayaWireColor != nullptr) {
+        *mayaWireColor =
+            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
+    }
+
+    constexpr unsigned int wireframeDisplayStyles = (
+        MHWRender::MFrameContext::DisplayStyle::kWireFrame |
+        MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
+
+    if (displayStyle & wireframeDisplayStyles) {
+        useWireframeColor = true;
+    } else if ((displayStatus == MHWRender::kActive) ||
+               (displayStatus == MHWRender::kLead) ||
+               (displayStatus == MHWRender::kHilite) ||
+               (displayStatus == MHWRender::kActiveComponent)) {
+        useWireframeColor = true;
+    }
+
+    return useWireframeColor;
 }
 
 PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()

@@ -567,10 +567,17 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
         MMatrix modelViewMat;
         view.modelViewMatrix(modelViewMat);
 
+        // For the legacy viewport, apply a framebuffer gamma correction when
+        // drawing bounding boxes, just like we do when drawing geometry via
+        // Hydra.
+        glEnable(GL_FRAMEBUFFER_SRGB_EXT);
+
         px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
                                         *(hdUserData->wireframeColor),
                                         modelViewMat,
                                         projectionMat);
+
+        glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     }
 
     if (hdUserData->drawShape && _UpdateLegacyRenderPending(false)) {

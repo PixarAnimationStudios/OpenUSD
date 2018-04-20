@@ -230,7 +230,8 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
     MColor mayaWireframeColor;
-    const bool needsWire = _GetWireframeColor(displayStatus,
+    const bool needsWire = _GetWireframeColor(displayStyle,
+                                              displayStatus,
                                               _shapeDagPath,
                                               &mayaWireframeColor);
     if (needsWire) {
