@@ -36,6 +36,7 @@
 #include <UT/UT_Thread.h>
 #include <UT/UT_WorkBuffer.h>
 
+#include "gusd/debugCodes.h"
 #include "gusd/error.h"
 #include "gusd/USD_DataCache.h"
 
@@ -103,6 +104,11 @@ public:
         // This should only occur on the main event queue, as happens
         // with stage reloads on the GusdStageCache.
         if(UT_Thread::isMainThread()) {
+
+            TF_DEBUG(GUSD_STAGECACHE).Msg(
+                "[GusdStageCache] Propagating dirty state for stage %s\n",
+                _identifier.c_str());
+
             OP_Node* node = OPgetDirector();
             node->propagateDirtyMicroNode(*this, OP_INPUT_CHANGED,
                                           /*data*/ nullptr, 
@@ -120,6 +126,10 @@ private:
     void
     _HandleStageDidChange(const UsdNotice::StageContentsChanged& n)
     {
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache] StageContentsChanged notice for stage "
+            "%s: dirtying state.\n", _identifier.c_str());
+
         SetDirty();
     }
 
@@ -637,11 +647,16 @@ GusdStageCache::_Impl::FindOrOpenLayer(const UT_StringRef& path,
     // Catch Tf errors.
     GusdTfErrorScope errorScope(sev);
      
-    if(SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path.toStdString()))
-        return layer;
+    SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path.toStdString());
 
-    GUSD_GENERIC_ERR(sev).Msg("Failed opening layer @%s@", path.c_str());
-    return TfNullPtr;
+    TF_DEBUG(GUSD_STAGECACHE).Msg(
+        "[GusdStageCache::FindOrOpenLayer] Returning layer %s for @%s@\n",
+        (layer ? layer->GetIdentifier().c_str() : "(null)"), path.c_str());
+
+    if(!layer)
+        GUSD_GENERIC_ERR(sev).Msg("Failed opening layer @%s@", path.c_str());
+
+    return layer;
 }
 
 
@@ -666,12 +681,28 @@ GusdStageCache::_Impl::FindOrOpenStage(const UT_StringRef& path,
                                        const GusdStageEditPtr& edit,
                                        UT_ErrorSeverity sev)
 {
-    if(UsdStageRefPtr stage = FindStage(path, opts, edit))
+    if(UsdStageRefPtr stage = FindStage(path, opts, edit)) {
+
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache::FindOrOpenStage] Returning %s for @%s@\n",
+            UsdDescribe(stage).c_str(), path.c_str());
+
         return stage;
+    }
+
+    TF_DEBUG(GUSD_STAGECACHE).Msg(
+        "[GusdStageCache::FindOrOpenStage] Cache miss for @%s@\n",
+        path.c_str());
 
     _StageMap::accessor a;
     if(_stageMap.insert(a, _StageKey(path, opts, edit))) {
+
         a->second = OpenNewStage(path, opts, edit, /*mask*/ nullptr, sev);
+
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache::FindOrOpenStage] Returning %s for @%s@\n",
+            UsdDescribe(a->second).c_str(), path.c_str());
+
         if(!a->second) {
             _stageMap.erase(a);
             return TfNullPtr;
@@ -696,6 +727,9 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     if(primPath == SdfPath::AbsoluteRootPath() ||
        !TfGetEnvSetting(GUSD_STAGEMASK_ENABLE)) {
 
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache] Load a complete stage for @%s@\n", path.c_str());
+
         // Access full stages.
         return FindOrOpenStage(path, opts, edit, sev);
     }
@@ -713,6 +747,11 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
         if(_maskedCacheMap.find(
                a, _StageKey(UTmakeUnsafeRef(path), opts, edit))) {
             UT_ASSERT_P(a->second);
+
+            TF_DEBUG(GUSD_STAGECACHE).Msg(
+                "[GusdStageCache] Found existing masked stage cache "
+                "for @%s@<%s>\n", path.c_str(), primPath.GetText());
+
             return a->second->FindOrOpenStage(primPath, sev);
         }
     }
@@ -721,8 +760,14 @@ GusdStageCache::_Impl::FindOrOpenMaskedStage(const UT_StringRef& path,
     // for this stage configuration.
     _MaskedStageCacheMap::accessor a;
     _StageKey newKey(path, opts, edit);
-    if(_maskedCacheMap.insert(a, newKey))
+    if(_maskedCacheMap.insert(a, newKey)) {
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache] No existing masked stage cache "
+            "for @%s@<%s>. Creating a new subcache.\n", 
+            path.c_str(), primPath.GetText());
+
         a->second = new GusdStageCache::_MaskedStageCache(*this, newKey);
+    }
     UT_ASSERT_P(a->second);
     return a->second->FindOrOpenStage(primPath, sev);
 }
@@ -1208,8 +1253,18 @@ UsdStageRefPtr
 GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
                                                    UT_ErrorSeverity sev)
 {
-    if(UsdStageRefPtr stage = FindStage(primPath))
+    if(UsdStageRefPtr stage = FindStage(primPath)) {
+
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache::_MaskedStageCache::FindOrOpenStage] Returning "
+            "%s for <%s>\n", UsdDescribe(stage).c_str(), primPath.GetText());
+
         return stage;
+    }
+
+    TF_DEBUG(GUSD_STAGECACHE).Msg(
+        "[GusdStageCache::_MaskedStageCache::FindOrOpenStage] "
+        "Cache miss for <%s>\n", primPath.GetText());
 
     _StageMap::accessor a;
     if(_map.insert(a, primPath)) {
@@ -1217,6 +1272,12 @@ GusdStageCache::_MaskedStageCache::FindOrOpenStage(const SdfPath& primPath,
         UsdStagePopulationMask mask(std::vector<SdfPath>({primPath}));
 
         a->second = _OpenStage(mask, primPath, sev);
+
+        TF_DEBUG(GUSD_STAGECACHE).Msg(
+            "[GusdStageCache::_MaskedStageCache::FindOrOpenStage] "
+            "Returning %s for <%s>\n", UsdDescribe(a->second).c_str(),
+            primPath.GetText());
+
         if(!a->second) {
             _map.erase(a);
             return TfNullPtr;
@@ -1235,6 +1296,10 @@ GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask
         _stageCache.OpenNewStage(_stageKey.GetPath(), _stageKey.GetOpts(),
                                  _stageKey.GetEdit(), &mask, sev);
 
+    TF_DEBUG(GUSD_STAGECACHE).Msg(
+        "[GusdStageCache::_MaskedStageCache::_OpenStage] "
+        "%p -- Opened stage %s\n", this, UsdDescribe(stage).c_str());
+
     if(stage) {
         // Make sure that all paths included in the mask are
         // mapped on the cache.
@@ -1252,6 +1317,12 @@ GusdStageCache::_MaskedStageCache::_OpenStage(const UsdStagePopulationMask& mask
             if(maskedPath != invokingPrimPath) {
                 _StageMap::accessor other;
                 if(_map.insert(other, maskedPath)) {
+
+                    TF_DEBUG(GUSD_STAGECACHE).Msg(
+                        "[GusdStageCache::_MaskedStageCache::_OpenStage] "
+                        "%p -- Mapping prim <%s> to stage %s",  
+                        this, maskedPath.GetText(), UsdDescribe(stage).c_str());
+
                     other->second = stage;
                 }
             }

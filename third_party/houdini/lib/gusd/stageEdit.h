@@ -84,6 +84,13 @@ using GusdStageBasicEditPtr = UT_IntrusivePtr<class GusdStageBasicEdit>;
 /// This class provides a single point for describing all of the common
 /// types of edits so that, at least in the typical cases, code pulling
 /// data from the stage cache are using a common type of edit.
+///
+/// Note that when applying variant edits, variant selection paths should be
+/// stripped of any trailing path components following the variant selection.
+/// For example, rather than creating an edit applying variant selection
+/// `/foo{a=b}bar`, it is better to use path `/foo{a=b}` as the variant
+/// selection path. The GetPrimPathAndEditFromVariantsPath helper automatically
+/// strips all such trailing path components.
 class GUSD_API GusdStageBasicEdit : public GusdStageEdit
 {
 public:

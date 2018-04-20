@@ -848,23 +848,15 @@ GusdGU_PackedUSD::getUsdPrim(UT_ErrorSeverity sev) const
 
     m_masterPathCacheValid = false;
 
+    SdfPath primPathWithoutVariants;
+    GusdStageBasicEditPtr edit;
+    GusdStageBasicEdit::GetPrimPathAndEditFromVariantsPath(
+        m_primPath, primPathWithoutVariants, edit);
+
     GusdStageCacheReader cache;
-    m_usdPrim =
-        cache.GetPrim(m_fileName, m_primPath.StripAllVariantSelections(),
-                      getStageEdit(), GusdStageOpts::LoadAll(), sev).first;
+    m_usdPrim = cache.GetPrim(m_fileName, primPathWithoutVariants, edit,
+                              GusdStageOpts::LoadAll(), sev).first;
     return m_usdPrim;
-}
-
-
-GusdStageEditPtr
-GusdGU_PackedUSD::getStageEdit() const
-{
-    if(!m_primPath.ContainsPrimVariantSelection())
-        return GusdStageEditPtr();
-
-    auto* edit = new GusdStageBasicEdit;
-    edit->GetVariants().append(m_primPath);
-    return GusdStageEditPtr(edit);
 }
 
 

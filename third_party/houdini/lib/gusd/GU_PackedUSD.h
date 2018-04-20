@@ -250,10 +250,6 @@ public:
     /// of \p sev.
     UsdPrim getUsdPrim(UT_ErrorSeverity sev=UT_ERROR_ABORT) const;
 
-    /// Get a stage edit on this prim describing all edits that must
-    /// be made on a stage to provide this prim.
-    GusdStageEditPtr getStageEdit() const;
-
     bool unpackGeometry( GU_Detail &destgdp,
                          const char* primvarPattern ) const;
 

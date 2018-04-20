@@ -30,6 +30,7 @@ pxr_shared_library(${PXR_PACKAGE}
         ${HOUDINI_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        debugCodes
         error
         GT_Utils
         GU_PackedUSD
