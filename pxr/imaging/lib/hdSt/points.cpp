@@ -172,36 +172,41 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primvarNames = GetPrimvarVertexNames(sceneDelegate);
-    TfTokenVector const& vars = GetPrimvarVaryingNames(sceneDelegate);
-    primvarNames.insert(primvarNames.end(), vars.begin(), vars.end());
+    HdPrimvarDescriptorVector primvars =
+        GetPrimvarDescriptors(sceneDelegate, HdInterpolationVertex);
+
+    // Add varying primvars so we can process them together, below.
+    HdPrimvarDescriptorVector varyingPvs =
+        GetPrimvarDescriptors(sceneDelegate, HdInterpolationVarying);
+    primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
 
     HdBufferSourceVector sources;
-    sources.reserve(primvarNames.size());
+    sources.reserve(primvars.size());
 
     int pointsIndexInSourceArray = -1;
 
-    TF_FOR_ALL(nameIt, primvarNames) {
-        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
+    for (HdPrimvarDescriptor const& primvar: primvars) {
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
             continue;
 
         // TODO: We don't need to pull primvar metadata every time a value
         // changes, but we need support from the delegate.
 
         //assert name not in range.bufferArray.GetResources()
-        VtValue value = GetPrimvar(sceneDelegate, *nameIt);
+        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
         if (!value.IsEmpty()) {
             // Store where the points will be stored in the source array
             // we need this later to figure out if the number of points is changing
             // and we need to force a garbage collection to resize the buffer
-            if (*nameIt == HdTokens->points) {
+            if (primvar.name == HdTokens->points) {
                 pointsIndexInSourceArray = sources.size();
             }
 
             // XXX: do we need special treatment for width as basicCurves?
 
-            HdBufferSourceSharedPtr source(new HdVtBufferSource(*nameIt, value));
+            HdBufferSourceSharedPtr source(
+                new HdVtBufferSource(primvar.name, value));
             sources.push_back(source);
         }
     }

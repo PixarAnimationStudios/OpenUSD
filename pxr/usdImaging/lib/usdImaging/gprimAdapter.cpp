@@ -31,6 +31,7 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
@@ -49,6 +50,41 @@ TF_REGISTRY_FUNCTION(TfType)
     typedef UsdImagingGprimAdapter Adapter;
     TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     // No factory here, GprimAdapter is abstract.
+}
+
+static HdInterpolation
+_UsdToHdInterpolation(TfToken const& usdInterp)
+{
+    if (usdInterp == UsdGeomTokens->uniform) {
+        return HdInterpolationUniform;
+    } else if (usdInterp == UsdGeomTokens->vertex) {
+        return HdInterpolationVertex;
+    } else if (usdInterp == UsdGeomTokens->varying) {
+        return HdInterpolationVarying;
+    } else if (usdInterp == UsdGeomTokens->faceVarying) {
+        return HdInterpolationFaceVarying;
+    } else if (usdInterp == UsdGeomTokens->constant) {
+        return HdInterpolationConstant;
+    }
+    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
+                    usdInterp.GetText());
+    return HdInterpolationConstant;
+}
+
+static TfToken
+_UsdToHdRole(TfToken const& usdRole)
+{
+    if (usdRole == SdfValueRoleNames->Point) {
+        return HdPrimvarRoleTokens->point;
+    } else if (usdRole == SdfValueRoleNames->Normal) {
+        return HdPrimvarRoleTokens->normal;
+    } else if (usdRole == SdfValueRoleNames->Vector) {
+        return HdPrimvarRoleTokens->vector;
+    } else if (usdRole == SdfValueRoleNames->Color) {
+        return HdPrimvarRoleTokens->color;
+    }
+    // Empty token means no role specified
+    return TfToken();
 }
 
 UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
@@ -203,21 +239,19 @@ UsdImagingGprimAdapter::_ComputeAndMergePrimvar(
     UsdImagingValueCache* valueCache) const
 {
     VtValue v;
+    TfToken primvarName = primvar.GetPrimvarName();
     if (primvar.ComputeFlattened(&v, time)) {
-
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("Found primvar %s\n",
-            primvar.GetPrimvarName().GetText());
-
-        UsdImagingValueCache::PrimvarInfo pvInfo;
-        pvInfo.name = primvar.GetPrimvarName();
-        pvInfo.interpolation = primvar.GetInterpolation();
-        valueCache->GetPrimvar(cachePath, pvInfo.name) = v;
-        _MergePrimvar(pvInfo, &valueCache->GetPrimvars(cachePath));
-
+        TF_DEBUG(USDIMAGING_SHADERS)
+            .Msg("Found primvar %s\n", primvarName.GetText());
+        valueCache->GetPrimvar(cachePath, primvarName) = v;
+        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                      primvarName, 
+                      _UsdToHdInterpolation(primvar.GetInterpolation()),
+                      _UsdToHdRole(primvar.GetAttr().GetRoleName()));
     } else {
-
-        TF_DEBUG(USDIMAGING_SHADERS).Msg( "\t\t No primvar on <%s> named %s\n",
-            gprim.GetPath().GetText(), primvar.GetPrimvarName().GetText());
+        TF_DEBUG(USDIMAGING_SHADERS)
+            .Msg( "\t\t No primvar on <%s> named %s\n",
+                  gprim.GetPath().GetText(), primvarName.GetText());
     }
 }
 
@@ -247,10 +281,14 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         // XXX: need to validate gprim schema
         UsdGeomGprim gprim(prim);
-        UsdImagingValueCache::PrimvarInfo primvar;
+        TfToken interpToken;
         valueCache->GetColor(cachePath) =
-                        GetColorAndOpacity(prim, &primvar, time);
-        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+            GetColorAndOpacity(prim, time, &interpToken);
+        _MergePrimvar(
+            &valueCache->GetPrimvars(cachePath),
+            HdTokens->color,
+            _UsdToHdInterpolation(interpToken),
+            HdPrimvarRoleTokens->color);
 
         if (!usdMaterialPath.IsEmpty()) {
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
@@ -418,8 +456,8 @@ UsdImagingGprimAdapter::_GetExtent(UsdPrim const& prim, UsdTimeCode time) const
 /* static */
 VtValue
 UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
-                        UsdImagingValueCache::PrimvarInfo* primvarInfo,
-                        UsdTimeCode time)
+                                           UsdTimeCode time,
+                                           TfToken* interpolation)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -674,10 +712,8 @@ UsdImagingGprimAdapter::GetColorAndOpacity(UsdPrim const& prim,
     if (colorInterp == UsdGeomTokens->constant && result.size() > 1) {
         result.resize(1);
     }
-
-    if (primvarInfo) {
-        primvarInfo->name = HdTokens->color;
-        primvarInfo->interpolation = colorInterp;
+    if (interpolation) {
+        *interpolation = colorInterp;
     }
     return VtValue(result);
 }

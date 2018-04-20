@@ -380,7 +380,6 @@ public:
     }
 
 protected:
-    typedef std::vector<UsdImagingValueCache::PrimvarInfo> PrimvarInfoVector;
     typedef UsdImagingValueCache::Key Keys;
 
     template <typename T>
@@ -455,9 +454,14 @@ protected:
                              TfToken const& perfToken,
                              HdDirtyBits* dirtyFlags) const;
 
+    // Convenience method for adding or updating a primvar descriptor.
+    // Role defaults to empty token (none).
     USDIMAGING_API
-    void _MergePrimvar(UsdImagingValueCache::PrimvarInfo const& primvar, 
-                       PrimvarInfoVector* vec) const;
+    void _MergePrimvar(
+        HdPrimvarDescriptorVector* vec,
+        TfToken const& name,
+        HdInterpolation interp,
+        TfToken const& role = TfToken()) const;
 
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;

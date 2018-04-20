@@ -2359,84 +2359,28 @@ UsdImagingDelegate::GetReprName(SdfPath const &id)
 // Primvar Support Methods
 // -------------------------------------------------------------------------- //
 
-TfTokenVector
-UsdImagingDelegate::_GetPrimvarNames(SdfPath const& usdPath,
-                                     TfToken const& interpolation)
+HdPrimvarDescriptorVector
+UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
+                                          HdInterpolation interpolation)
 {
     HD_TRACE_FUNCTION();
-
-    TfTokenVector names;
-    typedef UsdImagingValueCache::PrimvarInfoVector PrimvarInfoVector;
-    PrimvarInfoVector primvars;
-
-    if (!TF_VERIFY(_valueCache.FindPrimvars(usdPath, &primvars), 
-                "<%s> interpolation: %s",
-                usdPath.GetText(),
-            interpolation.GetText()))
-        return names;
-
-    TF_VERIFY(!primvars.empty(), "No primvars found for <%s>\n", usdPath.GetText());
-
-    TF_FOR_ALL(pvIt, primvars) {
-        if (interpolation.IsEmpty() || pvIt->interpolation == interpolation)
-            names.push_back(pvIt->name);
+    SdfPath usdPath = GetPathForUsd(id);
+    // Filter the stored primvars to just ones of the requested type.
+    HdPrimvarDescriptorVector primvars;
+    HdPrimvarDescriptorVector allPrimvars;
+    if (!TF_VERIFY(_valueCache.FindPrimvars(usdPath, &allPrimvars), 
+                   "<%s> interpolation: %s", usdPath.GetText(),
+                   TfEnum::GetName(interpolation).c_str())) {
+        return primvars;
     }
-
-    return names;
-}
-
-/* virtual */
-TfTokenVector
-UsdImagingDelegate::GetPrimvarVertexNames(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    SdfPath usdPath = GetPathForUsd(id);
-    return _GetPrimvarNames(usdPath, UsdGeomTokens->vertex);
-}
-
-/* virtual */
-TfTokenVector
-UsdImagingDelegate::GetPrimvarVaryingNames(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    SdfPath usdPath = GetPathForUsd(id);
-    return _GetPrimvarNames(usdPath, UsdGeomTokens->varying);
-}
-
-/* virtual */
-TfTokenVector
-UsdImagingDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    SdfPath usdPath = GetPathForUsd(id);
-    return _GetPrimvarNames(usdPath, UsdGeomTokens->faceVarying);
-}
-
-/* virtual */
-TfTokenVector
-UsdImagingDelegate::GetPrimvarUniformNames(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    SdfPath usdPath = GetPathForUsd(id);
-    return _GetPrimvarNames(usdPath, UsdGeomTokens->uniform);
-}
-
-/* virtual */
-TfTokenVector
-UsdImagingDelegate::GetPrimvarConstantNames(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    SdfPath usdPath = GetPathForUsd(id);
-    return _GetPrimvarNames(usdPath, UsdGeomTokens->constant);
-}
-
-/* virtual */
-TfTokenVector
-UsdImagingDelegate::GetPrimvarInstanceNames(SdfPath const& id)
-{
-    HD_TRACE_FUNCTION();
-    SdfPath usdPath = GetPathForUsd(id);
-    return _GetPrimvarNames(usdPath, _tokens->instance);
+    TF_VERIFY(!allPrimvars.empty(),
+              "No primvars found for <%s>\n", usdPath.GetText());
+    for (HdPrimvarDescriptor const& pv: allPrimvars) {
+        if (pv.interpolation == interpolation) {
+            primvars.push_back(pv);
+        }
+    }
+    return primvars;
 }
 
 /*virtual*/

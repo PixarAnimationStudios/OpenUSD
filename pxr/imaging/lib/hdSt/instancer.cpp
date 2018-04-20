@@ -88,8 +88,10 @@ HdStInstancer::GetInstancePrimvars()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    HdSceneDelegate *delegate = GetDelegate();
+
     HdChangeTracker &changeTracker = 
-        GetDelegate()->GetRenderIndex().GetChangeTracker();
+        delegate->GetRenderIndex().GetChangeTracker();
     SdfPath const& instancerId = GetId();
 
     // Two RPrim's might be trying to update the same instancer at once.
@@ -107,14 +109,15 @@ HdStInstancer::GetInstancePrimvars()
         if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, instancerId)) {
             HdStResourceRegistrySharedPtr const& resourceRegistry = 
                 boost::static_pointer_cast<HdStResourceRegistry>(
-                GetDelegate()->GetRenderIndex().GetResourceRegistry());
+                delegate->GetRenderIndex().GetResourceRegistry());
 
-            TfTokenVector primvarNames;
-            primvarNames = GetDelegate()->GetPrimvarInstanceNames(instancerId);
+            HdPrimvarDescriptorVector primvars =
+                delegate->GetPrimvarDescriptors(instancerId,
+                                                HdInterpolationInstance);
 
             // for all instance primvars
             HdBufferSourceVector sources;
-            sources.reserve(primvarNames.size());
+            sources.reserve(primvars.size());
 
             // Always reset numInstancePrimvars, for the case the number of
             // instances are varying.
@@ -122,22 +125,24 @@ HdStInstancer::GetInstancePrimvars()
             // instance primvars are varying.
             _numInstancePrimvars = 0;
 
-            TF_FOR_ALL(nameIt, primvarNames) {
+            for (HdPrimvarDescriptor const& primvar: primvars) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, 
-                                                    *nameIt)) {
-                    VtValue value = GetDelegate()->Get(instancerId, *nameIt);
+                                                    primvar.name)) {
+                    VtValue value = delegate->Get(instancerId, primvar.name);
                     if (!value.IsEmpty()) {
                         HdBufferSourceSharedPtr source;
-                        if (*nameIt == HdTokens->instanceTransform &&
+                        if (primvar.name == HdTokens->instanceTransform &&
                             TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
                             // Explicitly invoke the c'tor taking a
                             // VtArray<GfMatrix4d> to ensure we properly convert to
                             // the appropriate floating-point matrix type.
-                            source.reset(new HdVtBufferSource(*nameIt,
-                                                              value.UncheckedGet<VtArray<GfMatrix4d> >()));
+                            source.reset(new HdVtBufferSource(
+                                primvar.name,
+                                value.UncheckedGet<VtArray<GfMatrix4d> >()));
                         }
                         else {
-                            source.reset(new HdVtBufferSource(*nameIt, value));
+                            source.reset(new HdVtBufferSource(
+                                primvar.name, value));
                         }
 
                         // This is a defensive check, but ideally we would not be sent
@@ -161,7 +166,7 @@ HdStInstancer::GetInstancePrimvars()
                             // errors.
                             TF_WARN("Inconsistent number of '%s' values "
                                     "(%d vs %d) for <%s>.",
-                                    nameIt->GetText(),
+                                    primvar.name.GetText(),
                                     source->GetNumElements(),
                                     _numInstancePrimvars,
                                     instancerId.GetText());

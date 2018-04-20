@@ -30,6 +30,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/materialParam.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
@@ -57,16 +58,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImagingValueCache : boost::noncopyable {
 public:
     typedef PxOsdSubdivTags SubdivTags;
-
-    struct PrimvarInfo {
-        TfToken name;
-        TfToken interpolation;
-        bool operator==(PrimvarInfo const& rhs) {
-            return rhs.name == name &&
-                   rhs.interpolation == interpolation;
-        }
-    };
-    typedef std::vector<PrimvarInfo> PrimvarInfoVector;
 
     class Key {
         friend class UsdImagingValueCache;
@@ -320,12 +311,12 @@ public:
 
         // PERFORMANCE: We're copying the primvar vector here, but we could
         // access the map directly, if we need to for performance reasons.
-        PrimvarInfoVector vars;
+        HdPrimvarDescriptorVector vars;
         if (FindPrimvars(path, &vars)) {
             TF_FOR_ALL(pvIt, vars) {
                 _Erase<VtValue>(Key(path, pvIt->name));
             }
-            _Erase<PrimvarInfoVector>(Key::Primvars(path));
+            _Erase<HdPrimvarDescriptorVector>(Key::Primvars(path));
         }
 
         // XXX: Shader API will be deprecated soon.
@@ -364,8 +355,8 @@ public:
     TfToken& GetPurpose(SdfPath const& path) const {
         return _Get<TfToken>(Key::Purpose(path));
     }
-    PrimvarInfoVector& GetPrimvars(SdfPath const& path) const {
-        return _Get<PrimvarInfoVector>(Key::Primvars(path));
+    HdPrimvarDescriptorVector& GetPrimvars(SdfPath const& path) const {
+        return _Get<HdPrimvarDescriptorVector>(Key::Primvars(path));
     }
     SubdivTags& GetSubdivTags(SdfPath const& path) const {
         return _Get<SubdivTags>(Key::SubdivTags(path));
@@ -438,7 +429,7 @@ public:
     bool FindPurpose(SdfPath const& path, TfToken* value) const {
         return _Find(Key::Purpose(path), value);
     }
-    bool FindPrimvars(SdfPath const& path, PrimvarInfoVector* value) const {
+    bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
     }
     bool FindSubdivTags(SdfPath const& path, SubdivTags* value) const {
@@ -506,7 +497,7 @@ public:
     bool ExtractPurpose(SdfPath const& path, TfToken* value) {
         return _Extract(Key::Purpose(path), value);
     }
-    bool ExtractPrimvars(SdfPath const& path, PrimvarInfoVector* value) {
+    bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
         return _Extract(Key::Primvars(path), value);
     }
     bool ExtractSubdivTags(SdfPath const& path, SubdivTags* value) {
@@ -606,7 +597,7 @@ private:
     typedef _TypedCache<VtValue> _ValueCache;
     mutable _ValueCache _valueCache;
 
-    typedef _TypedCache<PrimvarInfoVector> _PviCache;
+    typedef _TypedCache<HdPrimvarDescriptorVector> _PviCache;
     mutable _PviCache _pviCache;
 
     typedef _TypedCache<SubdivTags> _SubdivTagsCache;

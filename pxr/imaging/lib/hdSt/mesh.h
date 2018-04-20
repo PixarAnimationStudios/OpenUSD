@@ -125,8 +125,7 @@ protected:
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
-                                  HdDirtyBits *dirtyBits,
-                                  TfTokenVector const &primvarNames);
+                                  HdDirtyBits *dirtyBits);
 
     int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
 

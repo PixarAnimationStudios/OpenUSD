@@ -472,7 +472,8 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, PxOsdSubdivTags(),
                         /*color=*/VtValue(GfVec4f(1, 1, 0, 1)),
-                        /*colorInterpolation=*/CONSTANT, guide, doubleSided);
+                        /*colorInterpolation=*/HdInterpolationConstant,
+                        guide, doubleSided);
     if (!instancerId.IsEmpty()) {
         _instancers[instancerId].prototypes.push_back(id);
     }
@@ -486,7 +487,7 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                              VtIntArray const &verts,
                              PxOsdSubdivTags const &subdivTags,
                              VtValue const &color,
-                             Interpolation colorInterpolation,
+                             HdInterpolation colorInterpolation,
                              bool guide,
                              SdfPath const &instancerId,
                              TfToken const &scheme,
@@ -508,7 +509,7 @@ void
 Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform, 
                               bool guide, SdfPath const &instancerId, 
                               TfToken const &scheme, VtValue const &color,
-                              Interpolation colorInterpolation)
+                              HdInterpolation colorInterpolation)
 {
     GfVec3f points[] = {
         GfVec3f( 1.0f, 1.0f, 1.0f ),
@@ -583,7 +584,7 @@ Hdx_UnitTestDelegate::AddGrid(SdfPath const &id,
             _BuildArray(&verts[0], verts.size()),
             PxOsdSubdivTags(),
             /*color=*/VtValue(GfVec4f(1,1,0,1)),
-            /*colorInterpolation=*/CONSTANT,
+            /*colorInterpolation=*/HdInterpolationConstant,
             false,
             instancerId);
 }
@@ -636,7 +637,7 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
             _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
             PxOsdSubdivTags(),
             /*color=*/VtValue(GfVec4f(1,1,1,1)),
-            /*colorInterpolation=*/CONSTANT,
+            /*colorInterpolation=*/HdInterpolationConstant,
             guide,
             instancerId,
             scheme);
@@ -800,65 +801,28 @@ Hdx_UnitTestDelegate::GetRefineLevel(SdfPath const& id)
     return _refineLevel;
 }
 
-TfTokenVector
-Hdx_UnitTestDelegate::GetPrimvarVertexNames(SdfPath const& id)
-{
-    TfTokenVector names;
-    names.push_back(HdTokens->points);
+HdPrimvarDescriptorVector
+Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id, 
+                                            HdInterpolation interpolation)
+{       
+    HdPrimvarDescriptorVector primvars;
+    if (interpolation == HdInterpolationVertex) {
+        primvars.emplace_back(HdTokens->points, interpolation,
+                              HdPrimvarRoleTokens->point);
+    }                       
     if(_meshes.find(id) != _meshes.end()) {
-        if (_meshes[id].colorInterpolation == VERTEX) {
-            names.push_back(HdTokens->color);
-        }
-    } 
-    return names;
-}
-
-TfTokenVector
-Hdx_UnitTestDelegate::GetPrimvarConstantNames(SdfPath const& id)
-{
-    TfTokenVector names;
-    if(_meshes.find(id) != _meshes.end()) {
-        if (_meshes[id].colorInterpolation == CONSTANT) {
-            names.push_back(HdTokens->color);
+        if (_meshes[id].colorInterpolation == interpolation) {
+            primvars.emplace_back(HdTokens->color, interpolation,
+                                  HdPrimvarRoleTokens->color);
         }
     }
-    return names;
-}
-
-TfTokenVector
-Hdx_UnitTestDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
-{
-    TfTokenVector names;
-    if (_meshes.find(id) != _meshes.end()) {
-        if (_meshes[id].colorInterpolation == FACEVARYING) {
-            names.push_back(HdTokens->color);
-        }
+    if (interpolation == HdInterpolationInstance &&
+        _instancers.find(id) != _instancers.end()) {
+        primvars.emplace_back(_tokens->scale, interpolation);
+        primvars.emplace_back(_tokens->rotate, interpolation);
+        primvars.emplace_back(_tokens->translate, interpolation);
     }
-    return names;
-}
-
-TfTokenVector
-Hdx_UnitTestDelegate::GetPrimvarUniformNames(SdfPath const& id)
-{
-    TfTokenVector names;
-    if(_meshes.find(id) != _meshes.end()) {
-        if (_meshes[id].colorInterpolation == UNIFORM) {
-            names.push_back(HdTokens->color);
-        }
-    }
-    return names;
-}
-
-TfTokenVector
-Hdx_UnitTestDelegate::GetPrimvarInstanceNames(SdfPath const &id)
-{
-    TfTokenVector names;
-    if (_instancers.find(id) != _instancers.end()) {
-        names.push_back(_tokens->scale);
-        names.push_back(_tokens->rotate);
-        names.push_back(_tokens->translate);
-    }
-    return names;
+    return primvars;
 }
 
 void

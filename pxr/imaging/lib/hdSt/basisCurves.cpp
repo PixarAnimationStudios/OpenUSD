@@ -521,30 +521,44 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     // The "points" attribute is expected to be in this list.
-    TfTokenVector primvarNames = GetPrimvarVertexNames(sceneDelegate);
-    TfTokenVector const& vars = GetPrimvarVaryingNames(sceneDelegate);
-    // XXX: It's sort of a waste to do basis width interpolation by default, 
-    // but in testImagingComputation there seems to be a way to initialize this
-    // shader with cubic widths where widths doesn't appear in the vertex 
-    // primvar list. To avoid a regression, I'm setting the behavior to
-    // default to basis/cubic width interpolation until we understand the 
-    // test case a little better.
-    _basisWidthInterpolation =  std::find(vars.begin(), 
-            vars.end(), HdTokens->widths) == vars.end();
-    // If we don't find varying normals, then we are assuming implicit normals
-    // or prescribed basis normals. 
-    // (For implicit normals, varying might be the right fallback behavior, but 
-    // leaving as basis for now to preserve the current behavior until we get
-    // can do a better pass on curve normals.)
-    _basisNormalInterpolation =  std::find(vars.begin(), 
-            vars.end(), HdTokens->normals) == vars.end();
-    primvarNames.insert(primvarNames.end(), vars.begin(), vars.end());
+    HdPrimvarDescriptorVector primvars =
+        GetPrimvarDescriptors(sceneDelegate, HdInterpolationVertex);
+
+    // Analyze and append varying primvars.
+    {
+        HdPrimvarDescriptorVector varyingPvs =
+            GetPrimvarDescriptors(sceneDelegate, HdInterpolationVarying);
+
+        // XXX: It's sort of a waste to do basis width interpolation
+        // by default, but in testImagingComputation there seems
+        // to be a way to initialize this shader with cubic widths
+        // where widths doesn't appear in the vertex primvar list. To
+        // avoid a regression, I'm setting the behavior to default to
+        // basis/cubic width interpolation until we understand the test
+        // case a little better.
+        _basisWidthInterpolation = true;
+        // If we don't find varying normals, then we are assuming
+        // implicit normals or prescribed basis normals. (For implicit
+        // normals, varying might be the right fallback behavior, but
+        // leaving as basis for now to preserve the current behavior
+        // until we get can do a better pass on curve normals.)
+        _basisNormalInterpolation = true;
+        for (HdPrimvarDescriptor const& primvar: varyingPvs) {
+            if (primvar.name == HdTokens->widths) {
+                _basisWidthInterpolation = false;
+            } else if (primvar.name == HdTokens->normals) {
+                _basisNormalInterpolation = false;
+            }
+        }
+
+        primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
+    }
 
     HdBufferSourceVector sources;
     HdBufferSourceVector reserveOnlySources;
     HdBufferSourceVector separateComputationSources;
     HdComputationVector computations;
-    sources.reserve(primvarNames.size());
+    sources.reserve(primvars.size());
 
     HdSt_GetExtComputationPrimvarsComputations(
         id,
@@ -556,17 +570,17 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &separateComputationSources,
         &computations);
 
-    TF_FOR_ALL(nameIt, primvarNames) {
-        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
+    for (HdPrimvarDescriptor const& primvar: primvars) {
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
             continue;
 
         // TODO: We don't need to pull primvar metadata every time a value
         // changes, but we need support from the delegate.
 
         //assert name not in range.bufferArray.GetResources()
-        VtValue value = GetPrimvar(sceneDelegate, *nameIt);
+        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            if (*nameIt == HdTokens->points) {
+            if (primvar.name == HdTokens->points) {
                 // We want to validate the topology by making sure the number of
                 // verts is equal or greater than the number of verts the topology
                 // references
@@ -583,17 +597,17 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
 
             // XXX: this really needs to happen for all primvars.
-            if (*nameIt == HdTokens->widths) {
+            if (primvar.name == HdTokens->widths) {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdSt_BasisCurvesWidthsInterpolaterComputation(
                                       _topology.get(), value.Get<VtFloatArray>())));
-            } else if (*nameIt == HdTokens->normals) {
+            } else if (primvar.name == HdTokens->normals) {
                 sources.push_back(HdBufferSourceSharedPtr(
                         new HdSt_BasisCurvesNormalsInterpolaterComputation(
                                       _topology.get(), value.Get<VtVec3fArray>())));
             } else {
                 sources.push_back(HdBufferSourceSharedPtr(
-                        new HdVtBufferSource(*nameIt, value)));
+                        new HdVtBufferSource(primvar.name, value)));
             }
         }
     }
@@ -655,19 +669,20 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    TfTokenVector primvarNames = GetPrimvarUniformNames(sceneDelegate);
+    HdPrimvarDescriptorVector uniformPrimvars =
+        GetPrimvarDescriptors(sceneDelegate, HdInterpolationUniform);
 
     HdBufferSourceVector sources;
-    sources.reserve(primvarNames.size());
+    sources.reserve(uniformPrimvars.size());
 
-    TF_FOR_ALL(nameIt, primvarNames) {
-        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, *nameIt))
+    for (HdPrimvarDescriptor const& primvar: uniformPrimvars) {
+        if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
             continue;
 
-        VtValue value = GetPrimvar(sceneDelegate, *nameIt);
+        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
             sources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(*nameIt, value)));
+                              new HdVtBufferSource(primvar.name, value)));
         }
     }
 

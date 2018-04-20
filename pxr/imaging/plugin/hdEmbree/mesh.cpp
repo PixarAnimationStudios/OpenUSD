@@ -367,54 +367,18 @@ HdEmbreeMesh::_UpdatePrimvarSources(HdSceneDelegate* sceneDelegate,
     // Currently, hydra doesn't have a good way of communicating changes in
     // the set of primvars, so we only ever add and update to the primvar set.
 
-    TfTokenVector names = GetPrimvarVertexNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimvar(sceneDelegate, *nameIt),
-                HdInterpolationVertex
-            };
-        }
-    }
-    names = GetPrimvarVaryingNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimvar(sceneDelegate, *nameIt),
-                HdInterpolationVarying
-            };
-        }
-    }
-    names = GetPrimvarFacevaryingNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimvar(sceneDelegate, *nameIt),
-                HdInterpolationFaceVarying
-            };
-        }
-    }
-    names = GetPrimvarUniformNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimvar(sceneDelegate, *nameIt),
-                HdInterpolationUniform
-            };
-        }
-    }
-    names = GetPrimvarConstantNames(sceneDelegate);
-    TF_FOR_ALL(nameIt, names) {
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt) &&
-            *nameIt != HdTokens->points) {
-            _primvarSourceMap[*nameIt] = {
-                GetPrimvar(sceneDelegate, *nameIt),
-                HdInterpolationConstant
-            };
+    HdPrimvarDescriptorVector primvars;
+    for (size_t i=0; i < HdInterpolationCount; ++i) {
+        HdInterpolation interp = static_cast<HdInterpolation>(i);
+        primvars = GetPrimvarDescriptors(sceneDelegate, interp);
+        for (HdPrimvarDescriptor const& pv: primvars) {
+            if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name) &&
+                pv.name != HdTokens->points) {
+                _primvarSourceMap[pv.name] = {
+                    GetPrimvar(sceneDelegate, pv.name),
+                    interp
+                };
+            }
         }
     }
 }

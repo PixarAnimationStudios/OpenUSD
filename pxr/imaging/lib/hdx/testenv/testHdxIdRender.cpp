@@ -147,18 +147,18 @@ My_TestGLDrawing::InitTest()
                        /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmark,
                        /*color=*/faceColor,
-                       /*colorInterpolation=*/Hdx_UnitTestDelegate::UNIFORM);
+                       /*colorInterpolation=*/HdInterpolationUniform);
     _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5),
                        /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmark,
                        /*color=*/faceColor,
-                       /*colorInterpolation=*/Hdx_UnitTestDelegate::UNIFORM);
+                       /*colorInterpolation=*/HdInterpolationUniform);
     _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
     _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5),
                         /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmark,
                        /*color=*/vertColor,
-                       /*colorInterpolation=*/Hdx_UnitTestDelegate::VERTEX);
+                       /*colorInterpolation=*/HdInterpolationVertex);
 
     {
         _delegate->AddInstancer(SdfPath("/instancerTop"));

@@ -371,11 +371,12 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
     }
 
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        TfTokenVector primvarNames = delegate->GetPrimvarConstantNames(id);
-        sources.reserve(sources.size()+primvarNames.size());
-        for (const TfToken& name: primvarNames) {
-            if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, name)) {
-                VtValue value = delegate->Get(id, name);
+        HdPrimvarDescriptorVector constantPrimvars =
+            delegate->GetPrimvarDescriptors(id, HdInterpolationConstant);
+        sources.reserve(sources.size()+constantPrimvars.size());
+        for (const HdPrimvarDescriptor& pv: constantPrimvars) {
+            if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {
+                VtValue value = delegate->Get(id, pv.name);
 
                 // XXX Hydra doesn't support string primvar yet
                 if (value.IsHolding<std::string>()) continue;
@@ -384,13 +385,13 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                     // A value holding an empty array does not count as an
                     // empty value. Catch that case here.
                     TF_WARN("Empty array value for constant primvar %s "
-                            "on Rprim %s", name.GetText(), id.GetText());
+                            "on Rprim %s", pv.name.GetText(), id.GetText());
                 } else if (!value.IsEmpty()) {
                     // Given that this is a constant primvar, if it is
                     // holding VtArray then use that as a single array
                     // value rather than as one value per element.
                     HdBufferSourceSharedPtr source(
-                        new HdVtBufferSource(name, value,
+                        new HdVtBufferSource(pv.name, value,
                             value.IsArrayValued() ? value.GetArraySize() : 1));
 
                     TF_VERIFY(source->GetTupleType().type != HdTypeInvalid);

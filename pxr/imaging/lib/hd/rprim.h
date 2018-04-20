@@ -181,11 +181,9 @@ public:
     ///
     /// Primvar Query
     ///
-    inline TfTokenVector GetPrimvarVertexNames(HdSceneDelegate* delegate)      const;
-    inline TfTokenVector GetPrimvarVaryingNames(HdSceneDelegate* delegate)     const;
-    inline TfTokenVector GetPrimvarFacevaryingNames(HdSceneDelegate* delegate) const;
-    inline TfTokenVector GetPrimvarUniformNames(HdSceneDelegate* delegate)     const;
-    inline TfTokenVector GetPrimvarConstantNames(HdSceneDelegate* delegate)    const;
+    inline HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(HdSceneDelegate* delegate,
+                          HdInterpolation interpolation) const;
 
     inline VtValue GetPrimvar(HdSceneDelegate* delegate, const TfToken &name)  const;
 
@@ -309,34 +307,11 @@ HdRprim::GetExtent(HdSceneDelegate* delegate) const
     return delegate->GetExtent(GetId());
 }
 
-inline TfTokenVector
-HdRprim::GetPrimvarVertexNames(HdSceneDelegate* delegate) const
+inline HdPrimvarDescriptorVector
+HdRprim::GetPrimvarDescriptors(HdSceneDelegate* delegate,
+                               HdInterpolation interpolation) const
 {
-    return delegate->GetPrimvarVertexNames(GetId());
-}
-
-inline TfTokenVector
-HdRprim::GetPrimvarVaryingNames(HdSceneDelegate* delegate) const
-{
-    return delegate->GetPrimvarVaryingNames(GetId());
-}
-
-inline TfTokenVector
-HdRprim::GetPrimvarFacevaryingNames(HdSceneDelegate* delegate) const
-{
-    return delegate->GetPrimvarFacevaryingNames(GetId());
-}
-
-inline TfTokenVector
-HdRprim::GetPrimvarUniformNames(HdSceneDelegate* delegate) const
-{
-    return delegate->GetPrimvarUniformNames(GetId());
-}
-
-inline TfTokenVector
-HdRprim::GetPrimvarConstantNames(HdSceneDelegate* delegate) const
-{
-    return delegate->GetPrimvarConstantNames(GetId());
+    return delegate->GetPrimvarDescriptors(GetId(), interpolation);
 }
 
 inline VtValue

@@ -893,10 +893,10 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
             if (_ComputeInstanceTransforms(prim, &instanceXforms, time)) {
                 valueCache->GetPrimvar(
                     cachePath, HdTokens->instanceTransform) = instanceXforms;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = HdTokens->instanceTransform;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    HdTokens->instanceTransform,
+                    HdInterpolationInstance);
             }
         }
 

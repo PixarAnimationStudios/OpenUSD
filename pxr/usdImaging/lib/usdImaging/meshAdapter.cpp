@@ -204,7 +204,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
         prim, cachePath, time, requestedBits, instancerContext);
 
     UsdImagingValueCache* valueCache = _GetValueCache();
-    PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
+    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyTopology) {
         VtValue& topology = valueCache->GetTopology(cachePath);
@@ -214,10 +214,11 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
     if (requestedBits & HdChangeTracker::DirtyPoints) {
         VtValue& points = valueCache->GetPoints(cachePath);
         _GetPoints(prim, &points, time);
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        _MergePrimvar(primvar, &primvars);
+        _MergePrimvar(
+            &primvars,
+            HdTokens->points,
+            HdInterpolationVertex,
+            HdPrimvarRoleTokens->point);
     }
 
     // Subdiv tags are only needed if the mesh is refined.  So

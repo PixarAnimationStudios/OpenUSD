@@ -86,17 +86,18 @@ HdEmbreeInstancer::_SyncPrimvars()
             // primvar names and then cache each one.
 
             TfTokenVector primvarNames;
-            primvarNames = GetDelegate()->GetPrimvarInstanceNames(id);
+            HdPrimvarDescriptorVector primvars = GetDelegate()
+                ->GetPrimvarDescriptors(id, HdInterpolationInstance);
 
-            TF_FOR_ALL(nameIt, primvarNames) {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, *nameIt)) {
-                    VtValue value = GetDelegate()->Get(id, *nameIt);
+            for (HdPrimvarDescriptor const& pv: primvars) {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
+                    VtValue value = GetDelegate()->Get(id, pv.name);
                     if (!value.IsEmpty()) {
-                        if (_primvarMap.count(*nameIt) > 0) {
-                            delete _primvarMap[*nameIt];
+                        if (_primvarMap.count(pv.name) > 0) {
+                            delete _primvarMap[pv.name];
                         }
-                        _primvarMap[*nameIt] =
-                            new HdVtBufferSource(*nameIt, value);
+                        _primvarMap[pv.name] =
+                            new HdVtBufferSource(pv.name, value);
                     }
                 }
             }

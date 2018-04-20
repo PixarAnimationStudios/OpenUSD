@@ -378,47 +378,12 @@ HdSceneDelegate::GetExtComputationOutputNames(SdfPath const& id)
 // -----------------------------------------------------------------------//
 
 /*virtual*/
-TfTokenVector
-HdSceneDelegate::GetPrimvarVertexNames(SdfPath const& id)
+HdPrimvarDescriptorVector
+HdSceneDelegate::GetPrimvarDescriptors(SdfPath const& id,
+                                       HdInterpolation interpolation)
 {
-    return TfTokenVector();
+    return HdPrimvarDescriptorVector();
 }
-
-/*virtual*/
-TfTokenVector
-HdSceneDelegate::GetPrimvarVaryingNames(SdfPath const& id)
-{
-    return TfTokenVector();
-}
-
-/*virtual*/
-TfTokenVector
-HdSceneDelegate::GetPrimvarFacevaryingNames(SdfPath const& id)
-{
-    return TfTokenVector();
-}
-
-/*virtual*/
-TfTokenVector
-HdSceneDelegate::GetPrimvarUniformNames(SdfPath const& id)
-{
-    return TfTokenVector();
-}
-
-/*virtual*/
-TfTokenVector
-HdSceneDelegate::GetPrimvarConstantNames(SdfPath const& id)
-{
-    return TfTokenVector();
-}
-
-/*virtual*/
-TfTokenVector
-HdSceneDelegate::GetPrimvarInstanceNames(SdfPath const& id)
-{
-    return TfTokenVector();
-}
-
 
 /*virtual*/
 TfTokenVector

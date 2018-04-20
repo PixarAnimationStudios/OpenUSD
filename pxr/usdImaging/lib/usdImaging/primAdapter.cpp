@@ -452,11 +452,14 @@ UsdImagingPrimAdapter::_IsInInvisedPaths(SdfPath const& usdPath) const
 
 void 
 UsdImagingPrimAdapter::_MergePrimvar(
-                    UsdImagingValueCache::PrimvarInfo const& primvar, 
-                    PrimvarInfoVector* vec) const
+    HdPrimvarDescriptorVector* vec,
+    TfToken const& name,
+    HdInterpolation interp,
+    TfToken const& role) const
 {
-    PrimvarInfoVector::iterator it = std::find(vec->begin(), vec->end(), 
-                                                primvar);
+    HdPrimvarDescriptor primvar(name, interp, role);
+    HdPrimvarDescriptorVector::iterator it =
+        std::find(vec->begin(), vec->end(), primvar);
     if (it == vec->end())
         vec->push_back(primvar);
     else

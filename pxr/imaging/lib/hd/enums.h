@@ -290,6 +290,8 @@ enum HdFormat
 ///              interpolated over each face of the mesh. Bilinear interpolation
 ///              is used for interpolation between the four values.
 ///
+/// Instance:    One value remains constant across each instance.
+///
 enum HdInterpolation
 {
     HdInterpolationConstant = 0,
@@ -297,6 +299,7 @@ enum HdInterpolation
     HdInterpolationVarying,
     HdInterpolationVertex,
     HdInterpolationFaceVarying,
+    HdInterpolationInstance,
 
     HdInterpolationCount
 };

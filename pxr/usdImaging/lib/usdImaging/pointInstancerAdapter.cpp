@@ -593,10 +593,11 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             if (!positions.empty()) {
                 valueCache->GetPrimvar(cachePath, _tokens->translate) =
                     positions;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = _tokens->translate;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    _tokens->translate,
+                    HdInterpolationInstance,
+                    HdPrimvarRoleTokens->vector);
             }
 
             anyVarying = _IsVarying(prim,
@@ -626,10 +627,11 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
 
                 valueCache->GetPrimvar(cachePath, _tokens->rotate) =
                     rotations;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = _tokens->rotate;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    _tokens->rotate,
+                    HdInterpolationInstance);
             }
 
             anyVarying = anyVarying ||
@@ -645,10 +647,10 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         if (instancer.GetScalesAttr().Get(&scales, time)) {
             if (!scales.empty()) {
                 valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = _tokens->scale;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    _tokens->scale,
+                    HdInterpolationInstance);
             }
 
             anyVarying = anyVarying ||
@@ -905,10 +907,11 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 valueCache->GetPrimvar(cachePath, _tokens->translate) = 
                                                                     positions;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = _tokens->translate;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    _tokens->translate,
+                    HdInterpolationInstance,
+                    HdPrimvarRoleTokens->vector);
             }
 
             VtQuathArray orientations;
@@ -928,20 +931,19 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 }
 
                 valueCache->GetPrimvar(cachePath, _tokens->rotate) = rotations;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = _tokens->rotate;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    _tokens->rotate,
+                    HdInterpolationInstance);
             }
-
 
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {
                 valueCache->GetPrimvar(cachePath, _tokens->scale) = scales;
-                UsdImagingValueCache::PrimvarInfo primvar;
-                primvar.name = _tokens->scale;
-                primvar.interpolation = _tokens->instance;
-                _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+                _MergePrimvar(
+                    &valueCache->GetPrimvars(cachePath),
+                    _tokens->scale,
+                    HdInterpolationInstance);
             }
         }
 

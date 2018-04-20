@@ -222,12 +222,10 @@ UsdSkelImagingSkelRootAdapter::UpdateForTime(
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         // Expose points as a primvar.
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-
-        PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
-        _MergePrimvar(primvar, &primvars);
+        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                      HdTokens->points,
+                      HdInterpolationVertex,
+                      HdPrimvarRoleTokens->point);
     }
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {

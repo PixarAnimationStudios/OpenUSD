@@ -388,7 +388,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     }
 
     // Geometry aspect
-    PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
+    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
         valueCache->GetTransform(cachePath) = GetTransform(prim, time);
@@ -416,11 +416,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         VtFloatArray widths = VtFloatArray(1);
         widths[0] = 1.0f;
         valueCache->GetWidths(cachePath) = VtValue(widths);
-
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = UsdGeomTokens->widths;
-        primvar.interpolation = UsdGeomTokens->constant;
-        _MergePrimvar(primvar, &primvars);
+        _MergePrimvar(&primvars, UsdGeomTokens->widths,
+                      HdInterpolationConstant);
     }
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
@@ -434,10 +431,8 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         color[0] = GfVec4f(schemaColor[0], schemaColor[1], schemaColor[2], 1);
         valueCache->GetColor(cachePath) = color;
 
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->color;
-        primvar.interpolation = UsdGeomTokens->constant;
-        _MergePrimvar(primvar, &primvars);
+        _MergePrimvar(&primvars, HdTokens->color,
+                      HdInterpolationConstant, HdPrimvarRoleTokens->color);
     }
 
     // We compute all of the below items together, since their derivations
@@ -518,31 +513,25 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
             }
 
             // Merge "cardsUv" and "cardsTexAssign" primvars
-            UsdImagingValueCache::PrimvarInfo primvar;
-            primvar.name = _tokens->cardsUv;
-            primvar.interpolation = UsdGeomTokens->faceVarying;
-            _MergePrimvar(primvar, &primvars);
-
-            primvar.name = _tokens->cardsTexAssign;
-            primvar.interpolation = UsdGeomTokens->uniform;
-            _MergePrimvar(primvar, &primvars);
+            _MergePrimvar(&primvars, _tokens->cardsUv,
+                          HdInterpolationFaceVarying);
+            _MergePrimvar(&primvars, _tokens->cardsTexAssign,
+                          HdInterpolationUniform);
 
             // XXX: backdoor into the material system.
             valueCache->GetPrimvar(cachePath, _tokens->displayRoughness) =
                 VtValue(1.0f);
-            primvar.name = _tokens->displayRoughness;
-            primvar.interpolation = UsdGeomTokens->constant;
-            _MergePrimvar(primvar, &primvars);
+            _MergePrimvar(&primvars, _tokens->displayRoughness,
+                          HdInterpolationConstant);
         } else {
             TF_CODING_ERROR("<%s> Unexpected draw mode %s",
                 cachePath.GetText(), drawMode.GetText());
         }
 
         // Merge "points" primvar
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        _MergePrimvar(primvar, &primvars);
+        _MergePrimvar(&primvars, HdTokens->points,
+                      HdInterpolationVertex,
+                      HdPrimvarRoleTokens->point);
     }
 }
 
