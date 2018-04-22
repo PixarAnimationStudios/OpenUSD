@@ -61,6 +61,19 @@ class TestSdfLayer(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             l = Sdf.Layer.OpenAsAnonymous('foo.invalid')
 
+    def test_AnonymousIdentifiersDisplayName(self):
+        # Ensure anonymous identifiers work as expected
+
+        ident = 'anonIdent.sdf'
+        l = Sdf.Layer.CreateAnonymous(ident)
+        self.assertEqual(l.GetDisplayName(), ident)
+
+        identWithColons = 'anonIdent:afterColon.sdf'
+        l = Sdf.Layer.CreateAnonymous(identWithColons)
+        self.assertEqual(l.GetDisplayName(), identWithColons)
+
+        l = Sdf.Layer.CreateAnonymous()
+        self.assertEqual(l.GetDisplayName(), '')
 
 if __name__ == "__main__":
     unittest.main()
