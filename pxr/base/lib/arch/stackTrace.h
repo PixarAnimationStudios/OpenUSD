@@ -314,7 +314,7 @@ ARCH_API
 void ArchTestCrash(bool spawnthread);
 
 #if defined(ARCH_OS_DARWIN)
-// Mac OS X has no ETIME. ECANCELED seems to have about the closest meaning to
+// macOS has no ETIME. ECANCELED seems to have about the closest meaning to
 // the actual error here. The operation is timing out, not being explicitly
 // canceled, but it is canceled.
 #ifndef ETIME
