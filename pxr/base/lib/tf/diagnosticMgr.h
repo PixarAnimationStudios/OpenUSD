@@ -177,7 +177,7 @@ public:
     ErrorIterator GetErrorEnd() { return _errorList.local().end(); }
 
     /// Remove error specified by iterator \p i.
-    /// \deprecated Use TfErrorMark insetad.
+    /// \deprecated Use TfErrorMark instead.
     TF_API
     ErrorIterator EraseError(ErrorIterator i);
 
@@ -246,8 +246,8 @@ public:
     void PostFatal(TfCallContext const &context, TfEnum statusCode,
                    std::string const &msg) const;
 
-    /// Return true if an instance of TfErrorMark exists in the curren thread
-    /// of exection, false otherwise.
+    /// Return true if an instance of TfErrorMark exists in the current thread
+    /// of execution, false otherwise.
     bool HasActiveErrorMark() { return _errorMarkCounts.local() > 0; }
 
 #if !defined(doxygen)

@@ -110,7 +110,7 @@ private:
     void _Remove(const SdfPath &path, Sdf_Identity *id);
 
     /// The layer that owns this registry, and on behalf of which
-    /// this registry tracks identites.
+    /// this registry tracks identities.
     const SdfLayerHandle _layer;
     
     /// The identities being managed by this registry

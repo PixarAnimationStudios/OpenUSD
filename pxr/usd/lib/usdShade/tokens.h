@@ -64,7 +64,7 @@ struct UsdShadeTokensType {
     USDSHADE_API UsdShadeTokensType();
     /// \brief ""
     /// 
-    /// Possible value for the 'materialPurpose' paramter in the various methods available in UsdShadeMaterialBindingAPI. Its value is empty and its purpose is to represent a general  purpose material-binding that applies in the absence of a  specific-purpose binding. 
+    /// Possible value for the 'materialPurpose' parameter in the various methods available in UsdShadeMaterialBindingAPI. Its value is empty and its purpose is to represent a general  purpose material-binding that applies in the absence of a  specific-purpose binding.
     const TfToken allPurpose;
     /// \brief "bindMaterialAs"
     /// 
@@ -156,7 +156,7 @@ struct UsdShadeTokensType {
     const TfToken surface;
     /// \brief ""
     /// 
-    /// Possible value for the "renderContext" parameter ef UsdShadeMaterial_Outputs API. Represents the universal renderContext. An output with a univesal renderContext is  applicable to all possible rendering contexts. 
+    /// Possible value for the "renderContext" parameter ef UsdShadeMaterial_Outputs API. Represents the universal renderContext. An output with a universal renderContext is  applicable to all possible rendering contexts. 
     const TfToken universalRenderContext;
     /// \brief "volume"
     /// 

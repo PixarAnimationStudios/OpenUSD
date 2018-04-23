@@ -88,7 +88,7 @@ public:
     /// unloaded.
     ///
     /// Calling \c AddFunctionForUnload() requests that the given function be
-    /// run if the code from which the funtion is called is unloaded.
+    /// run if the code from which the function is called is unloaded.
     /// However, this is detectable only if this call is made from within the
     /// call chain of some \c TF_REGISTRY_FUNCTION() function.  In this case,
     /// \c AddFunctionForUnload() returns true.  Otherwise, false is returned

@@ -72,7 +72,7 @@ public:
         /// A map of layers to the changes that occurred to them.
         const SdfLayerChangeListMap &GetChangeListMap() const { return *_map; }
 
-        /// The the serial number for this round of change processing.
+        /// The serial number for this round of change processing.
         size_t GetSerialNumber() const { return _serialNumber; }
 
     private:

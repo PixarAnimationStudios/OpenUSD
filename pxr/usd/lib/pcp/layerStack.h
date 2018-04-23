@@ -246,7 +246,7 @@ private:
     std::vector<PcpMapFunction> _mapFunctions;
 
     /// The tree structure of the layer stack.
-    /// Stored separately because this is needed only ocassionally.
+    /// Stored separately because this is needed only occasionally.
     SdfLayerTreeHandle _layerTree;
 
     /// Tracks information used to compute sublayer asset paths.

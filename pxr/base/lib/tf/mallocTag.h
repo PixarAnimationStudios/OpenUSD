@@ -80,7 +80,7 @@ public:
         /// node (\c siteName) corresponds to the tag name of the final tag in
         /// the path.
         struct PathNode {
-            size_t nBytes,          ///< Allocated bytes by this or descendent nodes.
+            size_t nBytes,          ///< Allocated bytes by this or descendant nodes.
                    nBytesDirect;    ///< Allocated bytes (only for this node).
             size_t nAllocations;    ///< The number of allocations for this node.
             std::string siteName;   ///< Tag name.

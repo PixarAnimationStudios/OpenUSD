@@ -166,8 +166,8 @@ class Plug_RegistrationMetadata;
 ///
 /// \section plug_Advertising Advertising a Plug-in's Contents
 ///
-/// Once the the plug-ins are registered, the plug-in facility must also be 
-/// able to tell what they contain.  Specifically, it must be able to find 
+/// Once the plug-ins are registered, the plug-in facility must also be
+/// able to tell what they contain.  Specifically, it must be able to find
 /// out what subclasses of what plug-in base classes each plug-in contains.
 /// Plug-ins must advertise this information through their plugInfo.json file
 /// in the "Info" key.  In the "Info" object there should be a key "Types"
@@ -181,7 +181,7 @@ class Plug_RegistrationMetadata;
 /// called "bases" whose value should be an array of base class type names.
 ///
 /// For example, a bundle that contains a subclass of ImageFilter might have
-/// a plugInfo.json that looks like the the following example.
+/// a plugInfo.json that looks like the following example.
 ///
 /// \code
 /// {

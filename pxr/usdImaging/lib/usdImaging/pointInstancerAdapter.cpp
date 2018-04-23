@@ -672,7 +672,7 @@ UsdImagingPointInstancerAdapter::UpdateForTimePrep(UsdPrim const& prim,
                                    UsdImagingInstancerContext const*
                                        instancerContext)
 {
-    // XXX: There is some prim/adapter dependancy here when the instancer
+    // XXX: There is some prim/adapter dependency here when the instancer
     // is a nested instancer.
     //
     // _UpdateInstanceMap() updates the instance indexes an instancer.
@@ -1131,7 +1131,7 @@ void
 UsdImagingPointInstancerAdapter::ProcessPrimResync(SdfPath const& usdPath,
                                              UsdImagingIndexProxy* index)
 {
-    // _ProcesPrimRemoval does the heavy lifting, returing a set of instancers
+    // _ProcesPrimRemoval does the heavy lifting, returning a set of instancers
     // to repopulate. Note that the child/prototype prims need not be in the
     // "toReload" list, as they will be discovered in the process of reloading
     // the root instancer prim.
@@ -1390,7 +1390,7 @@ UsdImagingPointInstancerAdapter::_UpdateInstanceMap(
     // grabbing the lock, but it's not thread safe.
     std::lock_guard<std::mutex> lock(instrData.mutex);
 
-    // Grab the instancer visiblity, if it varies over time.
+    // Grab the instancer visibility, if it varies over time.
     if (instrData.dirtyBits & HdChangeTracker::DirtyVisibility) {
         instrData.visible = _GetInstancerVisible(instancerPath, time);
     }

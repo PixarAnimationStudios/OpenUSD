@@ -74,7 +74,7 @@ protected:
     /// TraceCollectionAvailable notices are received.
     virtual bool _IsAcceptingCollections() = 0;
 
-    /// Called once per collection fron _Update()
+    /// Called once per collection from _Update()
     virtual void _ProcessCollection(const CollectionPtr&) = 0;
 
 private:

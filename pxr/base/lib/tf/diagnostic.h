@@ -75,7 +75,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// This macro is a convenience.  It produces a TF_ERROR() with an error code
 /// indicating a coding error.  It takes a printf-like format specification or a
-/// std::string.  Generally, an error handilng delegate will take action to turn
+/// std::string.  Generally, an error handling delegate will take action to turn
 /// this error into a python exception, and if it remains unhandled at the end of
 /// an application iteration will roll-back the undo stack to a last-known-good
 /// state.
@@ -92,7 +92,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// indicating a generic runtime error.  It is preferred over TF_ERROR(0),
 /// but using a specific error code is preferred over this.  It takes a
 /// printf-like format specification or a std::string.  Generally, an error
-/// handilng delegate will take action to turn this error into a python
+/// handling delegate will take action to turn this error into a python
 /// exception, and if it remains unhandled at the end of an application iteration
 /// will roll-back the undo stack to a last-known-good state.
 ///

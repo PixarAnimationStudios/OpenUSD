@@ -105,7 +105,7 @@ public:
     /// which has expired.
     TF_API bool IsInvalid() const;
 
-    /// Return the unique identifier of the WeakPtr this AnyWeakPtr conrtains
+    /// Return the unique identifier of the WeakPtr this AnyWeakPtr contains
     TF_API void const *GetUniqueIdentifier() const;
 
     /// Return the TfWeakBase object of the WeakPtr we are holding

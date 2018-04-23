@@ -294,7 +294,7 @@ BOOST_PP_SEQ_FOR_EACH(MAKE_STREAM_FUNC, ~, _OPTIMIZED_STREAM_INTEGRAL_TYPES)
 #undef _OPTIMIZED_STREAM_INTEGRAL_TYPES
 
 // Explicitly convert half to float here instead of relying on implicit
-// convesion to float to work around the fact that libc++ only provides 
+// conversion to float to work around the fact that libc++ only provides
 // implementations of std::isfinite for types where std::is_arithmetic 
 // is true.
 template <typename T>

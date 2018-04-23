@@ -53,7 +53,7 @@ typedef std::vector<UsdImagingGLSharedPtr> UsdImagingGLSharedPtrVector;
 ///
 /// The first time a UsdImagingGL is created in a process, we decide whether
 /// it and all subsequently created objects will use Hd if:
-/// \li the machine's hardware and insalled openGl are sufficient
+/// \li the machine's hardware and installed openGl are sufficient
 /// \li the environment variable HD_ENABLED is unset, or set to "1"
 /// \li any hydra renderer plugin can be found
 /// 
@@ -100,7 +100,7 @@ public:
     USDIMAGINGGL_API
     virtual void PrepareBatch(const UsdPrim& root, RenderParams params);
 
-    /// Draws all sub-indices indentified by \p paths.  Presumes that each
+    /// Draws all sub-indices identified by \p paths.  Presumes that each
     /// sub-index has already been prepared for drawing by calling
     /// PrepareBatch()
     USDIMAGINGGL_API

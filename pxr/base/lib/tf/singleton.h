@@ -124,7 +124,7 @@ public:
     /// Return a reference to an object of type \c T, creating it if
     /// necessary.
     ///
-    /// When \c GetInstance() is called for the first time, it creates an an
+    /// When \c GetInstance() is called for the first time, it creates an
     /// object of type \c T, and returns a reference to it.  The type in
     /// question must have a default constructor (i.e. a constructor taking no
     /// arguments).

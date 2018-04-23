@@ -210,7 +210,7 @@ private:
     }
 
     static Stack &_GetStack() {
-        // Technically unsafe double-checked lock to intitialize the stack.
+        // Technically unsafe double-checked lock to initialize the stack.
         if (ARCH_UNLIKELY(Storage::value.load() == nullptr)) {
             // Make a new stack and try to set it.
             _StorageType *old = nullptr;

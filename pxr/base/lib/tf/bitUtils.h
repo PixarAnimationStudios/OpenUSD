@@ -69,7 +69,7 @@ struct Tf_NumBits<N, SUM, 0>
 ///
 /// \note This is intended to be used when storing enum values in a bitfield
 /// without casting the enum type to an unsigned integer.  (At least GCC
-/// consideres enums to be signed and hence wastes one bit when all enumerants
+/// considers enums to be signed and hence wastes one bit when all enumerants
 /// are non-negative).
 ///
 /// \ingroup group_tf_BasicMath

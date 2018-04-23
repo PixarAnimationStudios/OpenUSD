@@ -196,7 +196,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     int drawCount = _drawItemInstances.size();
     if (_drawItemInstances.empty()) return;
 
-    // note that when chaging struct definition of XFB culling,
+    // note that when changing struct definition of XFB culling,
     // HdSt_IndirectDrawBatch::_CullingProgram::_CustomLink should also be
     // changed accordingly.
 
@@ -912,7 +912,7 @@ HdSt_IndirectDrawBatch::PrepareDraw(
         if (batchItem->GetInstanceIndexRange()) gpuCulling = false;
     }
 
-    // Do we have to update our dispach buffer because drawitem instance
+    // Do we have to update our dispatch buffer because drawitem instance
     // data has changed?
     // On the first time through, after batches have just been compiled,
     // the flag will be false because the resource registry will have already
@@ -1097,7 +1097,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     int instancerNumLevels = batchItem->GetInstancePrimvarNumLevels();
     std::vector<HdStBufferArrayRangeGLSharedPtr> instanceBars(instancerNumLevels);
 
-    // intance index indirection
+    // instance index indirection
     HdBufferArrayRangeSharedPtr instanceIndexBar_ = batchItem->GetInstanceIndexRange();
     HdStBufferArrayRangeGLSharedPtr instanceIndexBar =
         boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceIndexBar_);
@@ -1441,7 +1441,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumCullingXFB(
 void
 HdSt_IndirectDrawBatch::DrawItemInstanceChanged(HdStDrawItemInstance const* instance)
 {
-    // We need to check the visiblity and update if needed
+    // We need to check the visibility and update if needed
     if (_dispatchBuffer) {
         size_t batchIndex = instance->GetBatchIndex();
         int commandNumUints = _dispatchBuffer->GetCommandNumUints();

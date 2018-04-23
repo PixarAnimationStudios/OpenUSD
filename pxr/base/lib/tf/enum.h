@@ -156,7 +156,7 @@ public:
     /// Initializes value to integral value \p value with enum type \c ti.
     ///
     /// \warning This is only for use in extreme circumstances; there is no
-    /// way for an implemenation to guarantee that \p ti is really an enum
+    /// way for an implementation to guarantee that \p ti is really an enum
     /// type, and/or that \p value is a valid value for that enum type.
     TfEnum(const std::type_info& ti, int value)
         : _typeInfo(&ti), _value(value)

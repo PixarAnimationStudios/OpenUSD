@@ -239,7 +239,7 @@ public:
     PCP_API
     SdfVariantSelectionMap ComposeAuthoredVariantSelections() const;
 
-    /// Return the variant selecion applied for the named variant set.
+    /// Return the variant selection applied for the named variant set.
     /// If none was applied, this returns an empty string.
     /// This can be different from the authored variant selection;
     /// for example, if the authored selection is invalid.

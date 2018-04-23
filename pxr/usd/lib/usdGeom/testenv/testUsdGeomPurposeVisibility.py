@@ -25,7 +25,7 @@
 import sys, os, unittest
 from pxr import Sdf, Usd, UsdGeom
 
-class TestUsdGeomPurposeVisiblity(unittest.TestCase):
+class TestUsdGeomPurposeVisibility(unittest.TestCase):
     def test_Compute(self):
         stage = Usd.Stage.CreateInMemory()
 

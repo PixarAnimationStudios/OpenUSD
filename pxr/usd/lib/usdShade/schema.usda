@@ -66,13 +66,13 @@ over "GLOBAL" (
                 string value = ""
                 string doc = """Possible value for the "renderContext" parameter
                 \ref UsdShadeMaterial_Outputs API. Represents the universal
-                renderContext. An output with a univesal renderContext is 
+                renderContext. An output with a universal renderContext is
                 applicable to all possible rendering contexts.
                 """
             }
             dictionary allPurpose = {
                 string value = ""
-                string doc = """Possible value for the 'materialPurpose' paramter
+                string doc = """Possible value for the 'materialPurpose' parameter
                 in the various methods available in UsdShadeMaterialBindingAPI.
                 Its value is empty and its purpose is to represent a general 
                 purpose material-binding that applies in the absence of a 

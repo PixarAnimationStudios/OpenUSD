@@ -64,7 +64,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
         _InsertNewBufferArray(entry, HdBufferArraySharedPtr(), strategy, role, bufferSpecs);
     } else {
 
-        // There's a protential multi-thread race condition where
+        // There's a potential multi-thread race condition where
         // another thread has created the entry and is still in the process of adding
         // the first buffer to it, therefore the list could be empty, so wait for it
         _EntryIsNotEmpty pred(entry);
@@ -80,7 +80,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
     // garbage collection may create empty slots in entries.
     // So we have to go through the list to find slots.
     // Tough as this is Multi-thread, entries maybe added to the list.
-    // This doesn't invalidate the interator, but need to be careful
+    // This doesn't invalidate the iterator, but need to be careful
     // on check end condition.
 
     _HdBufferArraySharedPtrList::iterator it   = entry.bufferArrays.begin();
