@@ -61,7 +61,23 @@ pxr_library(ar
 )
 
 pxr_test_scripts(
+    testenv/testArAdvancedAPI.py
     testenv/testArDefaultResolver.py
+)
+
+pxr_build_test_shared_lib(TestArAdvancedAPI
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX ArPlugins
+    LIBRARIES
+        tf
+        ar
+    CPPFILES
+        testenv/TestArAdvancedAPI_plugin.cpp
+) 
+
+pxr_register_test(testArAdvancedAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArAdvancedAPI"
 )
 
 pxr_register_test(testArDefaultResolver
