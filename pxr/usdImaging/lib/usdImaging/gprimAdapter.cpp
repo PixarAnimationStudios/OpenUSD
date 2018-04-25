@@ -290,23 +290,26 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
             _UsdToHdInterpolation(interpToken),
             HdPrimvarRoleTokens->color);
 
-        if (!usdMaterialPath.IsEmpty()) {
+        if (_CanComputeMaterialNetworks()) {
             // XXX:HACK: Currently GetMaterialPrimvars() does not return
             // correct results, so in the meantime let's just ask USD
             // for the list of primvars.
             UsdGeomPrimvarsAPI primvars(gprim);
-            if (_CanComputeMaterialNetworks()) {
-                // Local (non-inherited) primvars
-                for (auto const &pv: primvars.GetPrimvars()) {
-                    _ComputeAndMergePrimvar(
-                        gprim, cachePath, pv, time, valueCache);
-                }
-                // Inherited primvars
-                for (auto const &pv: primvars.FindInheritedPrimvars()) {
-                    _ComputeAndMergePrimvar(
-                        gprim, cachePath, pv, time, valueCache);
-                }
-            } else {
+
+            // Local (non-inherited) primvars
+            for (auto const &pv: primvars.GetPrimvars()) {
+                _ComputeAndMergePrimvar(
+                    gprim, cachePath, pv, time, valueCache);
+            }
+            // Inherited primvars
+            for (auto const &pv: primvars.FindInheritedPrimvars()) {
+                _ComputeAndMergePrimvar(
+                    gprim, cachePath, pv, time, valueCache);
+            }
+
+        } else {
+
+            if (!usdMaterialPath.IsEmpty()) {
                 // Obtain the primvars used in the material bound to this prim
                 // and check if they are in this prim, if so, add them to the 
                 // primvars descriptions.
@@ -320,6 +323,7 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                     }
                 }
 
+                UsdGeomPrimvarsAPI primvars(gprim);
                 for (auto const &pvName : matPrimvarNames) {
                     UsdGeomPrimvar pv = primvars.GetPrimvar(pvName);
                     if (!pv) {
