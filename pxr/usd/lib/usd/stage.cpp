@@ -309,7 +309,7 @@ _CreatePathResolverContext(
 }
 
 static std::string
-_ResolveAssetPathRelativeToLayer(
+_AnchorAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
     const std::string& assetPath)
 {
@@ -318,8 +318,16 @@ _ResolveAssetPathRelativeToLayer(
         return assetPath;
     }
 
+    return SdfComputeAssetPathRelativeToLayer(anchor, assetPath);
+}
+
+static std::string
+_ResolveAssetPathRelativeToLayer(
+    const SdfLayerHandle& anchor,
+    const std::string& assetPath)
+{
     const std::string computedAssetPath = 
-        SdfComputeAssetPathRelativeToLayer(anchor, assetPath);
+        _AnchorAssetPathRelativeToLayer(anchor, assetPath);
     if (computedAssetPath.empty()) {
         return computedAssetPath;
     }
@@ -327,18 +335,29 @@ _ResolveAssetPathRelativeToLayer(
     return ArGetResolver().Resolve(computedAssetPath);
 }
 
+// If anchorAssetPathsOnly is true, this function will only
+// update the authored assetPaths by anchoring them to the
+// anchor layer; it will not fill in the resolved path field.
 static void
 _MakeResolvedAssetPathsImpl(const SdfLayerRefPtr &anchor,
                             const ArResolverContext &context,
                             SdfAssetPath *assetPaths,
-                            size_t numAssetPaths)
+                            size_t numAssetPaths,
+                            bool anchorAssetPathsOnly)
 {
     ArResolverContextBinder binder(context);
     for (size_t i = 0; i != numAssetPaths; ++i) {
-        assetPaths[i] = SdfAssetPath(
-            assetPaths[i].GetAssetPath(),
-            _ResolveAssetPathRelativeToLayer(
-                anchor, assetPaths[i].GetAssetPath()));
+        if (anchorAssetPathsOnly) {
+            assetPaths[i] = SdfAssetPath(
+                _AnchorAssetPathRelativeToLayer(
+                    anchor, assetPaths[i].GetAssetPath()));
+        }
+        else {
+            assetPaths[i] = SdfAssetPath(
+                assetPaths[i].GetAssetPath(),
+                _ResolveAssetPathRelativeToLayer(
+                    anchor, assetPaths[i].GetAssetPath()));
+        }
     }
 }
 
@@ -346,34 +365,39 @@ void
 UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
                                   SdfAssetPath *assetPaths,
-                                  size_t numAssetPaths) const
+                                  size_t numAssetPaths,
+                                  bool anchorAssetPathsOnly) const
 {
     // Get the layer providing the strongest value and use that to anchor the
     // resolve.
     auto anchor = _GetLayerWithStrongestValue(time, attr);
     if (anchor) {
         _MakeResolvedAssetPathsImpl(
-            anchor, GetPathResolverContext(), assetPaths, numAssetPaths);
+            anchor, GetPathResolverContext(), assetPaths, numAssetPaths,
+            anchorAssetPathsOnly);
     }
 }
 
 void
 UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
-                                  VtValue* value) const
+                                  VtValue* value,
+                                  bool anchorAssetPathsOnly) const
 {
     if (value->IsHolding<SdfAssetPath>()) {
         SdfAssetPath assetPath;
         value->UncheckedSwap(assetPath);
-        _MakeResolvedAssetPaths(time, attr, &assetPath, 1);
+        _MakeResolvedAssetPaths(
+            time, attr, &assetPath, 1, anchorAssetPathsOnly);
         value->UncheckedSwap(assetPath);
             
     }
     else if (value->IsHolding<VtArray<SdfAssetPath>>()) {
         VtArray<SdfAssetPath> assetPaths;
         value->UncheckedSwap(assetPaths);
-        _MakeResolvedAssetPaths(time, attr, assetPaths.data(), 
-                                assetPaths.size());
+        _MakeResolvedAssetPaths(
+            time, attr, assetPaths.data(), assetPaths.size(), 
+            anchorAssetPathsOnly);
         value->UncheckedSwap(assetPaths);
     }
 }
@@ -4295,13 +4319,34 @@ UsdStage::_GetDefiningSpecType(const UsdPrim& prim,
 // Flatten & Export Utilities
 // ------------------------------------------------------------------------- //
 
+class Usd_FlattenAccess
+{
+public:
+    static void GetAllMetadata(
+        const UsdObject &obj, bool useFallbacks,
+        UsdMetadataValueMap* resultMap, bool anchorAssetPathsOnly)
+    {
+        obj.GetStage()->_GetAllMetadata(
+            obj, useFallbacks, resultMap, anchorAssetPathsOnly);
+    }
+
+    static void MakeResolvedAssetPaths(
+        UsdTimeCode time, const UsdAttribute& attr,
+        VtValue* value, bool anchorAssetPathsOnly)
+    {
+        attr.GetStage()->_MakeResolvedAssetPaths(
+            time, attr, value, anchorAssetPathsOnly);
+    }
+};
+
 namespace {
 
 // Populates the time sample map with the resolved values for the given 
 // attribute and returns true if time samples exist, false otherwise.
 bool 
 _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
-                  const SdfLayerOffset& offset = SdfLayerOffset())
+                  const SdfLayerOffset& offset = SdfLayerOffset(),
+                  bool anchorAssetPathsOnly = false)
 {
     UsdAttributeQuery attrQuery(attr);
 
@@ -4310,6 +4355,8 @@ _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
         for (const auto& timeSample : timeSamples) {
             VtValue value;
             if (attrQuery.Get(&value, timeSample)) {
+                Usd_FlattenAccess::MakeResolvedAssetPaths(
+                    timeSample, attr, &value, anchorAssetPathsOnly);
                 (*out)[offset * timeSample].Swap(value);
             }
             else {
@@ -4433,7 +4480,12 @@ _CopyAuthoredMetadata(const UsdObject &source, const SdfSpecHandle& dest)
 {
     // GetAllMetadata returns all non-private metadata fields (it excludes
     // composition arcs and values), which is exactly what we want here.
-    _CopyMetadata(dest, source.GetAllAuthoredMetadata());
+    UsdMetadataValueMap metadata;
+    Usd_FlattenAccess::GetAllMetadata(
+        source, /* useFallbacks = */ false, &metadata,
+        /* anchorAssetPathsOnly = */ true);
+
+    _CopyMetadata(dest, metadata);
 }
 
 void
@@ -4469,13 +4521,19 @@ _CopyProperty(const UsdProperty &prop,
         if (attr.GetBracketingTimeSamples(
             0.0, &lower, &upper, &hasSamples) && hasSamples) {
             SdfTimeSampleMap ts;
-            if (_GetTimeSampleMap(attr, &ts, timeOffset)) {
+            if (_GetTimeSampleMap(attr, &ts, timeOffset, 
+                                  /* anchorAssetPathsOnly = */ true)) {
                 sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
             }
         }
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
             VtValue defaultValue;
-            if (!attr.Get(&defaultValue)) {
+            if (attr.Get(&defaultValue)) {
+                Usd_FlattenAccess::MakeResolvedAssetPaths(
+                    UsdTimeCode::Default(), attr, &defaultValue, 
+                    /* anchorAssetPathsOnly = */ true);
+            }
+            else {
                 defaultValue = SdfValueBlock();
             }
             sdfAttr->SetInfo(SdfFieldKeys->Default, defaultValue);
@@ -4882,21 +4940,22 @@ static void _ApplyLayerOffset(Storage storage,
 template <class Storage>
 static void _MakeResolvedAssetPaths(Storage storage,
                                     const PcpNodeRef &node,
-                                    const SdfLayerRefPtr &layer)
+                                    const SdfLayerRefPtr &layer,
+                                    bool anchorAssetPathsOnly)
 {
     if (_IsHolding<SdfAssetPath>(storage)) {
         SdfAssetPath assetPath;
         _UncheckedSwap(storage, assetPath);
         _MakeResolvedAssetPathsImpl(
             layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
-            &assetPath, 1);
+            &assetPath, 1,  anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPath);
     } else if (_IsHolding<VtArray<SdfAssetPath>>(storage)) {
         VtArray<SdfAssetPath> assetPaths;
         _UncheckedSwap(storage, assetPaths);
         _MakeResolvedAssetPathsImpl(
             layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
-            assetPaths.data(), assetPaths.size());
+            assetPaths.data(), assetPaths.size(), anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPaths);
     }
 }
@@ -4907,18 +4966,20 @@ static void _MakeResolvedAssetPaths(Storage storage,
 static void
 _ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
                                const PcpNodeRef &node,
-                               VtDictionary *dict)
+                               VtDictionary *dict,
+                               bool anchorAssetPathsOnly)
 {
     for (auto& entry : *dict) {
         VtValue& v = entry.second;
         if (v.IsHolding<VtDictionary>()) {
             VtDictionary resolvedDict;
             v.UncheckedSwap(resolvedDict);
-            _ResolveAssetPathsInDictionary(anchor, node, &resolvedDict);
+            _ResolveAssetPathsInDictionary(
+                anchor, node, &resolvedDict, anchorAssetPathsOnly);
             v.UncheckedSwap(resolvedDict);
         }
         else {
-            _MakeResolvedAssetPaths(&v, node, anchor);
+            _MakeResolvedAssetPaths(&v, node, anchor, anchorAssetPathsOnly);
         }
     }
 }
@@ -4930,7 +4991,11 @@ struct StrongestValueComposer
 {
     static const bool ProducesValue = true;
 
-    explicit StrongestValueComposer(Storage s) : _value(s), _done(false) {}
+    explicit StrongestValueComposer(Storage s, 
+                                    bool anchorAssetPathsOnly = false)
+        : _value(s), _done(false), _anchorAssetPathsOnly(anchorAssetPathsOnly) 
+        {}
+
     const std::type_info& GetHeldTypeid() const { return _GetTypeid(_value); }
     bool IsDone() const { return _done; }
     bool ConsumeAuthored(const PcpNodeRef &node,
@@ -4959,7 +5024,8 @@ struct StrongestValueComposer
             if (_IsHolding<VtDictionary>(_value)) {
                 VtDictionary resolvedDict;
                 _UncheckedSwap(_value, resolvedDict);
-                _ResolveAssetPathsInDictionary(layer, node, &resolvedDict);
+                _ResolveAssetPathsInDictionary(
+                    layer, node, &resolvedDict, _anchorAssetPathsOnly);
                 _UncheckedSwap(_value, resolvedDict);                
 
                 // Continue composing if we got a dictionary.
@@ -4974,7 +5040,8 @@ struct StrongestValueComposer
             } else if (_IsHolding<SdfTimeSampleMap>(_value)) {
                 _ApplyLayerOffset(_value, node, layer);
             } else {
-                _MakeResolvedAssetPaths(_value, node, layer);
+                _MakeResolvedAssetPaths(
+                    _value, node, layer, _anchorAssetPathsOnly);
             }
         }
         return _done;
@@ -5016,6 +5083,7 @@ struct StrongestValueComposer
 protected:
     Storage _value;
     bool _done;
+    bool _anchorAssetPathsOnly;
 };
 
 
@@ -5773,7 +5841,8 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
 void
 UsdStage::_GetAllMetadata(const UsdObject &obj,
                           bool useFallbacks,
-                          UsdMetadataValueMap* resultMap) const
+                          UsdMetadataValueMap* resultMap,
+                          bool anchorAssetPathsOnly) const
 {
     TRACE_FUNCTION();
 
@@ -5782,7 +5851,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        StrongestValueComposer<VtValue *> composer(&val);
+        StrongestValueComposer<VtValue *> composer(&val, anchorAssetPathsOnly);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
     }

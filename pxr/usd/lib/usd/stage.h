@@ -1793,10 +1793,12 @@ private:
     // Helper functions for resolving asset paths during value resolution.
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
                                  SdfAssetPath *assetPaths,
-                                 size_t numAssetPaths) const;
+                                 size_t numAssetPaths,
+                                 bool anchorAssetPathsOnly = false) const;
 
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
-                                 VtValue *value) const;
+                                 VtValue *value,
+                                 bool anchorAssetPathsOnly = false) const;
 
     // --------------------------------------------------------------------- //
     // Metadata Resolution
@@ -1888,7 +1890,8 @@ private:
 
     void _GetAllMetadata(const UsdObject &obj,
                          bool useFallbacks,
-                         UsdMetadataValueMap* result) const;
+                         UsdMetadataValueMap* result,
+                         bool anchorAssetPathsOnly = false) const;
 
     template <class Composer>
     bool
@@ -2070,6 +2073,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_FlattenAccess;
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
