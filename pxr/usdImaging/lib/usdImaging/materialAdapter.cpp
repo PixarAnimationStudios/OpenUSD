@@ -178,9 +178,22 @@ static
 void walkGraph(UsdShadeShader const & shadeNode, 
                HdMaterialNetwork *materialNetwork)
 {
-    const std::vector<UsdShadeInput> shadeNodeInputs = shadeNode.GetInputs();
+    // Store the path of the node
+    HdMaterialNode node;
+    node.path = shadeNode.GetPath();
+    if (!TF_VERIFY(node.path != SdfPath::EmptyPath())) {
+        return;
+    }
+    // If this node has already been found via another path, we do
+    // not need to add it again.
+    for (HdMaterialNode const& existingNode: materialNetwork->nodes) {
+        if (existingNode.path == node.path) {
+            return;
+        }
+    }
 
     // Visit the inputs of this node to ensure they are emitted first.
+    const std::vector<UsdShadeInput> shadeNodeInputs = shadeNode.GetInputs();
     for (UsdShadeInput const& input: shadeNodeInputs) {
         // Check if this input is a connection and if so follow the path
         UsdShadeConnectableAPI source;
@@ -194,9 +207,6 @@ void walkGraph(UsdShadeShader const & shadeNode,
         }
     }
 
-    // Store the path of the node
-    HdMaterialNode node;
-    node.path = shadeNode.GetPath();
     // Extract the type of the node
     VtValue value;
     shadeNode.GetIdAttr().Get(&value);
@@ -211,14 +221,6 @@ void walkGraph(UsdShadeShader const & shadeNode,
     } else {
         TF_WARN("UsdShade Shader without an id: %s.", node.path.GetText());
         node.type = TfToken("PbsNetworkMaterialStandIn_2");
-    }
-
-    // If this node has already been found via another path, we do
-    // not need to add it again.
-    if (std::find(std::begin(materialNetwork->nodes), 
-                  std::end(materialNetwork->nodes), node)
-        != std::end(materialNetwork->nodes)) {
-        return;
     }
 
     // Add the parameters and the relationships of this node
