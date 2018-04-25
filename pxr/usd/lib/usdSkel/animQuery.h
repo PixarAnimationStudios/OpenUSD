@@ -101,6 +101,17 @@ public:
     bool ComputeJointLocalTransforms(
              VtMatrix4dArray* xforms,
              UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    /// Compute translation,rotation,scale components of the joint transforms
+    /// in joint-local space. This is provided to facilitate direct streaming
+    /// of animation data in a form that can efficiently be processed for
+    /// animation blending.
+    USDSKEL_API
+    bool ComputeJointLocalTransformComponents(
+             VtVec3fArray* translations,    
+             VtQuatfArray* rotations,
+             VtVec3hArray* scales,
+             UsdTimeCode time=UsdTimeCode::Default()) const;
     
     /// Get the time samples at which values contributing to joint transforms
     /// are set. This only computes the time samples for sampling transforms in

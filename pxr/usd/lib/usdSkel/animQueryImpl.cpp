@@ -55,6 +55,12 @@ public:
     virtual bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                              UsdTimeCode time) const override;
 
+    virtual bool ComputeJointLocalTransformComponents(
+                     VtVec3fArray* translations,
+                     VtQuatfArray* rotations,
+                     VtVec3hArray* scales,
+                     UsdTimeCode time) const override;
+
     virtual bool
     GetJointTransformTimeSamples(const GfInterval& interval,
                                  std::vector<double>* times) const override;
@@ -103,9 +109,8 @@ UsdSkel_PackedJointAnimationQueryImpl::ComputeJointLocalTransforms(
     VtQuatfArray rotations;
     VtVec3hArray scales;
 
-    if(_translations.Get(&translations, time) &&
-       _rotations.Get(&rotations, time) &&
-       _scales.Get(&scales, time)) {
+    if(ComputeJointLocalTransformComponents(&translations, &rotations,
+                                            &scales, time)) {
 
         if(UsdSkelMakeTransforms(translations, rotations, scales, xforms)) {
             if(xforms->size() == _jointOrder.size()) {
@@ -129,6 +134,21 @@ UsdSkel_PackedJointAnimationQueryImpl::ComputeJointLocalTransforms(
         }
     }
     return false;
+}
+
+
+bool
+UsdSkel_PackedJointAnimationQueryImpl::ComputeJointLocalTransformComponents(
+    VtVec3fArray* translations,
+    VtQuatfArray* rotations,
+    VtVec3hArray* scales,
+    UsdTimeCode time) const
+{
+    TRACE_FUNCTION();
+
+    return _translations.Get(translations, time) &&
+           _rotations.Get(rotations, time) &&
+           _scales.Get(scales, time);
 }
 
 
