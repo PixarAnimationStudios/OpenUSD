@@ -49,6 +49,11 @@ struct PxrUsdMayaReadUtil
     /// \name Helpers for reading USD
     /// \{
 
+    /// Returns whether the environment setting for reading Float2 types as UV 
+    /// sets is set to true
+    PXRUSDMAYA_API
+    static bool ReadFloat2AsUV();
+
     /// Given the \p typeName and \p variability, try to create a Maya attribute
     /// on \p depNode with the name \p attrName.
     /// If the \p typeName isn't supported by this function, raises a coding

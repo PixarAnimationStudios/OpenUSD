@@ -31,6 +31,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/inherits.h"
@@ -73,6 +74,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+        PIXMAYA_WRITE_TEXCOORD_TYPE, false,
+        "Set to false to write uv sets as Float2Array types "
+        " and set to true to write Texture Coordinate value types "
+        "(TexCoord2h, TexCoord2f, TexCoord2d, TexCoord3h, "
+        " TexCoord3f, TexCoord3d and their associated Array types)");
+
 static
 bool
 _GetMayaAttributeNumericTypedAndUnitDataTypes(
@@ -111,6 +119,14 @@ _GetMayaAttributeNumericTypedAndUnitDataTypes(
     }
 
     return true;
+}
+
+bool
+PxrUsdMayaWriteUtil::WriteTexCoordType()
+{
+    static const bool writeTexCoordType = 
+        TfGetEnvSetting(PIXMAYA_WRITE_TEXCOORD_TYPE);
+    return writeTexCoordType;
 }
 
 SdfValueTypeName

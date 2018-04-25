@@ -30,8 +30,11 @@ from maya import cmds
 from maya.api import OpenMaya as OM
 from maya import standalone
 
-from pxr import Gf
-
+from pxr import Gf, Tf
+try:
+    from pxr import UsdMaya
+except ImportError:
+    from pixar import UsdMaya
 
 class testUsdImportUVSets(unittest.TestCase):
 
@@ -76,7 +79,11 @@ class testUsdImportUVSets(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-        usdFile = os.path.abspath('UsdImportUVSetsTest.usda')
+        usdFile = ""
+        if UsdMaya.ReadUtil.ReadFloat2AsUV(): 
+            usdFile = os.path.abspath('UsdImportUVSetsTest_Float.usda')
+        else:
+            usdFile = os.path.abspath('UsdImportUVSetsTest.usda')
         cmds.usdImport(file=usdFile, shadingMode='none')
 
     def _GetMayaMesh(self, meshName):
@@ -296,7 +303,11 @@ class testUsdImportUVSets(unittest.TestCase):
 
         # We need to load this mesh from a separate USD file because importing
         # it caused a crash (that this test verifies should no longer happen).
-        usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases.usda')
+        usdFile = ""
+        if UsdMaya.ReadUtil.ReadFloat2AsUV():
+            usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases_Float.usda')
+        else:
+            usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases.usda')
 
         # We also need to load it using the Maya file import command because
         # going through the usdImport command works fine but using the file

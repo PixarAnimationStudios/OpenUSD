@@ -99,6 +99,8 @@ void wrapReadUtil()
 {
     typedef PxrUsdMayaReadUtil This;
     class_<This>("ReadUtil", no_init)
+        .def("ReadFloat2AsUV", This::ReadFloat2AsUV)
+        .staticmethod("ReadFloat2AsUV")
         .def("FindOrCreateMayaAttr", _FindOrCreateMayaAttr,
             (arg("typeName"), arg("variability"), arg("nodeName"),
              arg("attrName"), arg("attrNiceName")=std::string()))

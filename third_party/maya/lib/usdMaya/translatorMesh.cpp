@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/translatorMesh.h"
+#include "usdMaya/readUtil.h"
 
 #include "usdMaya/meshUtil.h"
 #include "usdMaya/roundTripUtil.h"
@@ -262,8 +263,13 @@ PxrUsdMayaTranslatorMesh::Create(
         // which store floats, so we currently only import primvars holding
         // float-typed arrays. Should we still consider other precisions
         // (double, half, ...) and/or numeric types (int)?
-        if (typeName == SdfValueTypeNames->Float2Array) {
-            // We assume that Float2Array primvars are UV sets.
+        if(typeName == SdfValueTypeNames->TexCoord2fArray ||
+                (PxrUsdMayaReadUtil::ReadFloat2AsUV() && 
+                 typeName == SdfValueTypeNames->Float2Array)) { 
+            // Looks for TexCoord2fArray types for UV sets first
+            // Otherwise, if env variable for reading Float2 
+            // as uv sets is turned on, we assume that Float2Array primvars 
+            // are UV sets.
             if (!_AssignUVSetPrimvarToMesh(primvar, meshFn)) {
                 MGlobal::displayWarning(
                     TfStringPrintf("Unable to retrieve and assign data for UV set <%s> on mesh <%s>", 

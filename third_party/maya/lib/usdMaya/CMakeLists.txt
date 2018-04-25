@@ -519,6 +519,22 @@ pxr_register_test(testUsdExportUVSets
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportUVSets"
     TESTENV testUsdExportUVSets
     ENV
+        PIXMAYA_WRITE_TEXCOORD_TYPE=1
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportFloatUVSetsTest
+    DEST testUsdExportFloatUVSets
+)
+pxr_register_test(testUsdExportFloatUVSets
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportUVSets"
+    TESTENV testUsdExportFloatUVSets
+    ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
@@ -685,6 +701,22 @@ pxr_register_test(testUsdImportUVSets
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImportUVSets"
     TESTENV testUsdImportUVSets
+    ENV
+        PIXMAYA_READ_FLOAT2_AS_UV=0
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportFloatUVSetsTest
+    DEST testUsdImportFloatUVSets
+)
+pxr_register_test(testUsdImportFloatUVSets
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImportUVSets"
+    TESTENV testUsdImportFloatUVSets
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources

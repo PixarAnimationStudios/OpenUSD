@@ -26,6 +26,7 @@
 
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
+#include "usdMaya/writeUtil.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/math.h"
@@ -495,10 +496,11 @@ bool MayaMeshWriter::_createUVPrimVar(
         interp = TfToken();
     }
 
-    UsdGeomPrimvar primVar =
-        primSchema.CreatePrimvar(name,
-                                 SdfValueTypeNames->Float2Array,
-                                 interp);
+    SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteTexCoordType())?
+        (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
+    UsdGeomPrimvar primVar = 
+        primSchema.CreatePrimvar(name, uvValueType, interp);
+    
     _SetAttribute(primVar.GetAttr(), data);
 
     if (!assignmentIndices.empty()) {

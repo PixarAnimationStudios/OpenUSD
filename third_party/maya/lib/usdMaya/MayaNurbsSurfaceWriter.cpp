@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/MayaNurbsSurfaceWriter.h"
-
+#include "usdMaya/writeUtil.h"
 #include "pxr/usd/usdGeom/nurbsPatch.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 #include "pxr/usd/usdGeom/pointBased.h"
@@ -290,10 +290,12 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
     // If stValues vector has vertex data, create and assign st
     if (stValues.size() == static_cast<size_t>(numCVsInU * numCVsInV)) {
+        SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteTexCoordType())?  
+            (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
         UsdGeomPrimvar uvSet = 
             primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),
-            SdfValueTypeNames->Float2Array, 
-            UsdGeomTokens->vertex);                                                                      
+                                     uvValueType, 
+                                     UsdGeomTokens->vertex);
         _SetAttribute(uvSet.GetAttr(), &stValues);
     }
 
