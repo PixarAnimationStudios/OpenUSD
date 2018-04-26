@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/writeUtil.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/UserTaggedAttribute.h"
@@ -465,7 +466,7 @@ _ConvertVec(
         const SdfValueTypeName& typeName,
         const T& val) {
     return VtValue(typeName.GetRole() == SdfValueRoleNames->Color
-            ? GfConvertDisplayToLinear(val)
+            ? PxrUsdMayaColorSpace::ConvertMayaToLinear(val)
             : val);
 }
 

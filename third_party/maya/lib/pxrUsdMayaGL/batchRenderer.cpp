@@ -676,8 +676,7 @@ void UsdMayaGLBatchRenderer::DrawCustomCollection(
         {paramsCopy, HdRprimCollectionVector({collection})}
     };
 
-    // Currently, we're just using the existing lighting settings and not
-    // enabling gamma correction here.
+    // Currently, we're just using the existing lighting settings.
     _Render(viewMatrix, projectionMatrix, viewport, items);
 }
 
@@ -1087,8 +1086,7 @@ UsdMayaGLBatchRenderer::_Render(
         const GfMatrix4d& worldToViewMatrix,
         const GfMatrix4d& projectionMatrix,
         const GfVec4d& viewport,
-        const std::vector<_RenderItem>& items,
-        const bool gammaCorrect)
+        const std::vector<_RenderItem>& items)
 {
     _taskDelegate->SetCameraState(worldToViewMatrix,
                                   projectionMatrix,
@@ -1112,9 +1110,14 @@ UsdMayaGLBatchRenderer::_Render(
     glDisable(GL_BLEND);
     glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-    if (gammaCorrect) {
-        glEnable(GL_FRAMEBUFFER_SRGB_EXT);
-    }
+    // In all cases, we can should enable gamma correction:
+    // - in viewport 1.0, we're expected to do it
+    // - in viewport 2.0 without color correction, we're expected to do it
+    // - in viewport 2.0 with color correction, the render target ignores this
+    //   bit meaning we properly are blending linear colors in the render
+    //   target.  The color management pipeline is responsible for the final
+    //   correction.
+    glEnable(GL_FRAMEBUFFER_SRGB_EXT);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -1143,9 +1146,7 @@ UsdMayaGLBatchRenderer::_Render(
 
     _hdEngine.Execute(*_renderIndex, tasks);
 
-    if (gammaCorrect) {
-        glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-    }
+    glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT |
                    // GL_DEPTH_BUFFER_BIT | GL_VIEWPORT_BIT
@@ -1222,16 +1223,10 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         glPopAttrib(); // GL_LIGHTING_BIT
     }
 
-    // The legacy viewport does not support color management,
-    // so we roll our own gamma correction by GL means (only in
-    // non-highlight mode)
-    const bool gammaCorrect = !vp2Context;
-
     _Render(worldToViewMatrix,
             projectionMatrix,
             viewport,
-            items,
-            gammaCorrect);
+            items);
 
     // Viewport 2 may be rendering in multiple passes, and we want to make sure
     // we draw once (and only once) for each of those passes, so we delay

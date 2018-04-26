@@ -23,6 +23,8 @@
 //
 
 #include "usdMaya/readUtil.h"
+#include "usdMaya/colorSpace.h"
+#include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -349,9 +351,12 @@ T
 _ConvertVec(
         const MPlug& plug,
         const T& val) {
-    return MFnAttribute(plug.attribute()).isUsedAsColor()
-            ? GfConvertLinearToDisplay(val)
-            : val;
+    if (MFnAttribute(plug.attribute()).isUsedAsColor()) {
+        return PxrUsdMayaColorSpace::ConvertLinearToMaya(val);
+    }
+    else {
+        return val;
+    }
 }
 
 bool PxrUsdMayaReadUtil::SetMayaAttr(

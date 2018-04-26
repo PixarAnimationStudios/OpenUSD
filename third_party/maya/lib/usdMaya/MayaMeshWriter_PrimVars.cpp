@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
 #include "usdMaya/writeUtil.h"
@@ -180,7 +181,7 @@ _LinearColorFromColorSet(
     // need to convert it to linear.
     GfVec3f c(mayaColor[0], mayaColor[1], mayaColor[2]);
     if (shouldConvertToLinear) {
-        return GfConvertDisplayToLinear(c);
+        return PxrUsdMayaColorSpace::ConvertMayaToLinear(c);
     }
     return c;
 }

@@ -22,20 +22,32 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "usdMaya/colorSpace.h"
+
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4d.h"
+
+#include <boost/python/def.hpp>
+#include <boost/python.hpp>
+
+#include "pxr/base/tf/pyResultConversions.h"
+
+using namespace std;
+using namespace boost::python;
+using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE {
-    TF_WRAP(Assembly);
-    TF_WRAP(ColorSpace);
-    TF_WRAP(EditUtil);
-    TF_WRAP(MeshUtil);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
+void wrapColorSpace()
+{
+    def("ConvertLinearToMaya", PxrUsdMayaColorSpace::ConvertLinearToMaya<GfVec3f>);
+    def("ConvertLinearToMaya", PxrUsdMayaColorSpace::ConvertLinearToMaya<GfVec3d>);
+    def("ConvertLinearToMaya", PxrUsdMayaColorSpace::ConvertLinearToMaya<GfVec4f>);
+    def("ConvertLinearToMaya", PxrUsdMayaColorSpace::ConvertLinearToMaya<GfVec4d>);
+    def("ConvertMayaToLinear", PxrUsdMayaColorSpace::ConvertMayaToLinear<GfVec3f>);
+    def("ConvertMayaToLinear", PxrUsdMayaColorSpace::ConvertMayaToLinear<GfVec3d>);
+    def("ConvertMayaToLinear", PxrUsdMayaColorSpace::ConvertMayaToLinear<GfVec4f>);
+    def("ConvertMayaToLinear", PxrUsdMayaColorSpace::ConvertMayaToLinear<GfVec4d>);
 }

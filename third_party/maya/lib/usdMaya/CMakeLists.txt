@@ -32,6 +32,7 @@ pxr_shared_library(${PXR_PACKAGE}
         api.h
 
     PUBLIC_CLASSES
+        colorSpace
         editUtil
         stageCache
         stageData
@@ -135,6 +136,7 @@ pxr_shared_library(${PXR_PACKAGE}
     PYMODULE_CPPFILES
         module.cpp
         wrapAssembly.cpp
+        wrapColorSpace.cpp
         wrapEditUtil.cpp
         wrapMeshUtil.cpp
         wrapQuery.cpp

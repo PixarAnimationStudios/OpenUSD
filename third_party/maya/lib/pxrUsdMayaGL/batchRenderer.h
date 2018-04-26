@@ -247,8 +247,7 @@ private:
             const GfMatrix4d& worldToViewMatrix,
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport,
-            const std::vector<_RenderItem>& items,
-            const bool gammaCorrect = false);
+            const std::vector<_RenderItem>& items);
 
     /// Call to render all queued batches. May be called safely without
     /// performance hit when no batches are queued.
