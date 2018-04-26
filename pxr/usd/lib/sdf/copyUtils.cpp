@@ -616,11 +616,8 @@ SdfCopySpec(
 
 // ------------------------------------------------------------
 
-namespace
-{
-
 bool
-_ShouldCopyValue(
+SdfShouldCopyValue(
     const SdfPath& srcRootPath, const SdfPath& dstRootPath,
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
@@ -700,7 +697,7 @@ _ShouldCopyValue(
 }
 
 bool
-_ShouldCopyChildren(
+SdfShouldCopyChildren(
     const SdfPath& srcRootPath, const SdfPath& dstRootPath,
     const TfToken& childrenField,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
@@ -734,8 +731,6 @@ _ShouldCopyChildren(
     return true;
 }
 
-}
-
 bool
 SdfCopySpec(
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
@@ -746,12 +741,12 @@ SdfCopySpec(
     return SdfCopySpec(
         srcLayer, srcPath, dstLayer, dstPath,
         /* shouldCopyValueFn = */ std::bind(
-            _ShouldCopyValue,
+            SdfShouldCopyValue,
             std::cref(srcPath), std::cref(dstPath),
             ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
             ph::_9),
         /* shouldCopyChildrenFn = */ std::bind(
-            _ShouldCopyChildren,
+            SdfShouldCopyChildren,
             std::cref(srcPath), std::cref(dstPath),
             ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, 
             ph::_9)

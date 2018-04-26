@@ -151,6 +151,41 @@ using SdfShouldCopyChildrenFn = std::function<
          boost::optional<VtValue>* srcChildren, 
          boost::optional<VtValue>* dstChildren)>;
 
+/// SdfShouldCopyValueFn used by the simple version of SdfCopySpec.
+///
+/// Copies all values from the source, transforming path-valued fields prefixed
+/// with \p srcRootPath to have the prefix \p dstRootPath.
+///
+/// Existing values in the destination will be overwritten by values in the
+/// source.  Any fields in the deistination that aren't in the source will be
+/// cleared.
+SDF_API
+bool
+SdfShouldCopyValue(
+    const SdfPath& srcRootPath, const SdfPath& dstRootPath,
+    SdfSpecType specType, const TfToken& field,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
+    boost::optional<VtValue>* valueToCopy);
+
+/// SdfShouldCopyChildrenFn used by the simple version of SdfCopySpec.
+///
+/// Copies all child values from the source, transforming path-valued fields
+/// prefixed with \p srcRootPath to have the prefix \p dstRootPath.
+///
+/// Existing values in the destination will be overwritten by values in the
+/// source.  Any fields in the deistination that aren't in the source will be
+/// cleared.
+SDF_API
+bool
+SdfShouldCopyChildren(
+    const SdfPath& srcRootPath, const SdfPath& dstRootPath,
+    const TfToken& childrenField,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
+    boost::optional<VtValue>* srcChildren, 
+    boost::optional<VtValue>* dstChildren);
+
 /// Utility function for copying spec data at \p srcPath in \p srcLayer to
 /// \p destPath in \p destLayer. Various behaviors (such as which parts of the
 /// spec to copy) are controlled by the supplied \p shouldCopyValueFn and
