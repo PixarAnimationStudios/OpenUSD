@@ -398,6 +398,8 @@ GlfDrawTarget::Bind()
     if (++_bindDepth != 1) {
         return;
     }
+    
+    GLF_GROUP_FUNCTION();
 
     _SaveBindingState();
 
@@ -432,6 +434,7 @@ GlfDrawTarget::Unbind()
     if (--_bindDepth != 0) {
         return;
     }
+    GLF_GROUP_FUNCTION();
 
     _RestoreBindingState();
 
@@ -457,6 +460,8 @@ GlfDrawTarget::_Resolve()
 void
 GlfDrawTarget::Resolve()
 {
+    GLF_GROUP_FUNCTION();
+    
     if (HasMSAA()) {
         _SaveBindingState();
         _Resolve();
@@ -468,6 +473,8 @@ GlfDrawTarget::Resolve()
 void
 GlfDrawTarget::Resolve(const std::vector<GlfDrawTarget*>& drawTargets)
 {
+    GLF_GROUP_FUNCTION();
+    
     bool anyResolved = false;
 
     for(GlfDrawTarget* dt : drawTargets) {
