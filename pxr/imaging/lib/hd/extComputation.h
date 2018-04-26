@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
@@ -33,8 +34,6 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class HdSceneDelegate;
 
 ///
 /// Hydra Representation of a Client defined computation.
@@ -93,15 +92,6 @@ public:
                                 |DirtyDispatchCount)
     };
 
-    ///
-    /// Source computation description
-    ///
-    struct SourceComputationDesc {
-        SdfPath computationId;
-        TfToken computationOutput;
-    };
-    typedef std::vector<SourceComputationDesc> SourceComputationDescVector;
-
     HD_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
@@ -110,7 +100,8 @@ public:
     HD_API
     virtual VtValue Get(TfToken const &token) const override;
 
-    HD_API virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    HD_API
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     HD_API
     size_t GetDispatchCount() const;
@@ -119,20 +110,24 @@ public:
     size_t GetElementCount() const { return _elementCount; }
 
     HD_API
-    const TfTokenVector& GetSceneInputs() const { return _sceneInputs; }
+    TfTokenVector const & GetSceneInputNames() const {
+        return _sceneInputNames;
+    }
 
     HD_API
-    const TfTokenVector& GetComputationInputs() const {
+    TfTokenVector GetOutputNames() const;
+
+    HD_API
+    HdExtComputationInputDescriptorVector const &
+    GetComputationInputs() const {
         return _computationInputs;
     }
 
     HD_API
-    const SourceComputationDescVector& GetComputationSourceDescs() const {
-        return _computationSourceDescs;
+    HdExtComputationOutputDescriptorVector const &
+    GetComputationOutputs() const {
+        return _computationOutputs;
     }
-
-    HD_API
-    const TfTokenVector& GetOutputs() const { return _outputs; }
 
     HD_API
     const std::string& GetGpuKernelSource() const { return _gpuKernelSource; }
@@ -147,13 +142,12 @@ protected:
           HdRenderParam   *renderParam,
           HdDirtyBits     *dirtyBits);
 private:
-    size_t                      _dispatchCount;
-    size_t                      _elementCount;
-    TfTokenVector               _sceneInputs;
-    TfTokenVector               _computationInputs;
-    SourceComputationDescVector _computationSourceDescs;
-    TfTokenVector               _outputs;
-    std::string                 _gpuKernelSource;
+    size_t                                 _dispatchCount;
+    size_t                                 _elementCount;
+    TfTokenVector                          _sceneInputNames;
+    HdExtComputationInputDescriptorVector  _computationInputs;
+    HdExtComputationOutputDescriptorVector _computationOutputs;
+    std::string                            _gpuKernelSource;
 
     // No default construction or copying
     HdExtComputation() = delete;

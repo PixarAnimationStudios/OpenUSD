@@ -30,7 +30,6 @@
 #include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,7 +42,7 @@ typedef boost::shared_ptr<class HdStExtCompGpuPrimvarBufferSource>
 class HdStExtCompGpuPrimvarBufferSource final : public HdNullBufferSource {
 public:
     HdStExtCompGpuPrimvarBufferSource(TfToken const & name,
-                                      VtValue const & value,
+                                      HdTupleType const & valueType,
                                       int numElements);
 
     HDST_API

@@ -25,17 +25,16 @@
 
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtCompGpuPrimvarBufferSource::HdStExtCompGpuPrimvarBufferSource(
         TfToken const &name,
-        VtValue const &value,
+        HdTupleType const &valueType,
         int numElements)
  : HdNullBufferSource()
  , _name(name)
- , _tupleType(HdVtBufferSource(name, value).GetTupleType())
+ , _tupleType(valueType)
  , _numElements(numElements)
 {
 }

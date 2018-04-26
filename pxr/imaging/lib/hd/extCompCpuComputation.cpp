@@ -65,7 +65,7 @@ HdExtCompCpuComputation::CreateComputation(
     const SdfPath &id = computation.GetID();
 
     Hd_ExtCompInputSourceSharedPtrVector inputs;
-    for (const TfToken &inputName: computation.GetSceneInputs()) {
+    for (const TfToken &inputName: computation.GetSceneInputNames()) {
         VtValue inputValue = sceneDelegate->Get(id, inputName);
         Hd_ExtCompInputSourceSharedPtr inputSource(
                          new Hd_SceneExtCompInputSource(inputName, inputValue));
@@ -73,20 +73,13 @@ HdExtCompCpuComputation::CreateComputation(
         inputs.push_back(inputSource);
     }
 
-    const TfTokenVector compInputs = computation.GetComputationInputs();
-    const HdExtComputation::SourceComputationDescVector& sourceDescs =
-        computation.GetComputationSourceDescs();
-
-    const size_t numCompInputs = compInputs.size();
-    for (size_t inputNum = 0; inputNum < numCompInputs; ++inputNum) {
-        const TfToken &inputName = compInputs[inputNum];
-        const HdExtComputation::SourceComputationDesc &sourceDesc =
-            sourceDescs[inputNum];
+    for (const HdExtComputationInputDescriptor & compInput:
+                computation.GetComputationInputs()) {
 
         HdExtComputation const * sourceComp =
             static_cast<HdExtComputation const *>(
                 renderIndex.GetSprim(HdPrimTypeTokens->extComputation,
-                                     sourceDesc.computationId));
+                                     compInput.sourceComputationId));
 
         if (sourceComp != nullptr) {
 
@@ -95,24 +88,26 @@ HdExtCompCpuComputation::CreateComputation(
             // to create.
             if (sourceComp->IsInputAggregation()) {
                 VtValue inputValue =
-                    sceneDelegate->Get(sourceDesc.computationId, inputName);
+                    sceneDelegate->Get(compInput.sourceComputationId,
+                                       compInput.name);
                 Hd_ExtCompInputSourceSharedPtr inputSource(
-                        new Hd_SceneExtCompInputSource(inputName, inputValue));
+                        new Hd_SceneExtCompInputSource(compInput.name,
+                                                       inputValue));
                 computationSources->push_back(inputSource);
                 inputs.push_back(inputSource);
                 continue;
             }
 
-            HdExtCompCpuComputationSharedPtr sourceCpuComputation =
+            HdExtCompCpuComputationSharedPtr sourceComputation =
                 CreateComputation(sceneDelegate,
                                   *sourceComp,
                                   computationSources);
 
             Hd_ExtCompInputSourceSharedPtr inputSource(
-                                            new Hd_CompExtCompInputSource(
-                                                 inputName,
-                                                 sourceCpuComputation,
-                                                 sourceDesc.computationOutput));
+                new Hd_CompExtCompInputSource(
+                        compInput.name,
+                        sourceComputation,
+                        compInput.sourceComputationOutputName));
 
             computationSources->push_back(inputSource);
             inputs.push_back(inputSource);
@@ -122,7 +117,7 @@ HdExtCompCpuComputation::CreateComputation(
     HdExtCompCpuComputationSharedPtr result(
             new HdExtCompCpuComputation(id,
                                         inputs,
-                                        computation.GetOutputs(),
+                                        computation.GetOutputNames(),
                                         computation.GetElementCount(),
                                         sceneDelegate));
 

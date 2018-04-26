@@ -62,7 +62,7 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
                               renderIndex.GetResourceRegistry());
 
     HdBufferSourceVector inputs;
-    for (TfToken const & inputName: GetSceneInputs()) {
+    for (TfToken const & inputName: GetSceneInputNames()) {
         VtValue inputValue = sceneDelegate->Get(GetID(), inputName);
         size_t arraySize =
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;

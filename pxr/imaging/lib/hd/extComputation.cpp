@@ -35,10 +35,10 @@ HdExtComputation::HdExtComputation(SdfPath const &id)
  : HdSprim(id)
  , _dispatchCount(0)
  , _elementCount(0)
- , _sceneInputs()
+ , _sceneInputNames()
  , _computationInputs()
- , _computationSourceDescs()
- , _outputs()
+ , _computationOutputs()
+ , _gpuKernelSource()
 {
 }
 
@@ -68,32 +68,15 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
     if (bits & DirtyInputDesc) {
         TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    dirty inputs\n");
         
-        _sceneInputs       = sceneDelegate->GetExtComputationInputNames(GetID(),
-                                                HdExtComputationInputTypeScene);
-        _computationInputs = sceneDelegate->GetExtComputationInputNames(GetID(),
-                                          HdExtComputationInputTypeComputation);
-
-
-        size_t numComputationInputs = _computationInputs.size();
-        _computationSourceDescs.reserve(numComputationInputs);
-        for (size_t inputNum = 0; inputNum < numComputationInputs; ++inputNum) {
-            HdExtComputationInputParams params =
-                    sceneDelegate->GetExtComputationInputParams(GetID(),
-                                                  _computationInputs[inputNum]);
-
-            if ((!params.sourceComputationId.IsEmpty()) &&
-                (!params.computationOutputName.IsEmpty())) {
-                _computationSourceDescs.emplace_back();
-                SourceComputationDesc &source = _computationSourceDescs.back();
-                source.computationId     = params.sourceComputationId;
-                source.computationOutput = params.computationOutputName;
-            }
-        }
-
+        _sceneInputNames =
+                sceneDelegate->GetExtComputationSceneInputNames(GetID());
+        _computationInputs =
+                sceneDelegate->GetExtComputationInputDescriptors(GetID());
     }
 
     if (bits & DirtyOutputDesc) {
-        _outputs = sceneDelegate->GetExtComputationOutputNames(GetID());
+        _computationOutputs =
+                sceneDelegate->GetExtComputationOutputDescriptors(GetID());
     }
 
     if (bits & DirtyDispatchCount) {
@@ -147,13 +130,25 @@ HdExtComputation::GetDispatchCount() const
     return (_dispatchCount > 0 ? _dispatchCount : _elementCount);
 }
 
+TfTokenVector
+HdExtComputation::GetOutputNames() const
+{
+    TfTokenVector result;
+    result.reserve(GetComputationOutputs().size());
+    for (const HdExtComputationOutputDescriptor & outputDesc:
+                GetComputationOutputs()) {
+        result.push_back(outputDesc.name);
+    }
+    return result;
+}
+
 bool
 HdExtComputation::IsInputAggregation() const
 {
     // Computations with no outputs act as input aggregators, i.e.
     // schedule inputs for resolution, but don't directly schedule
     // execution of a computation.
-    return GetOutputs().empty();
+    return GetComputationOutputs().empty();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

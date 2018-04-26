@@ -304,23 +304,6 @@ enum HdInterpolation
     HdInterpolationCount
 };
 
-///
-/// \enum HdExtComputationInputType
-///
-/// Identifies the type of the source of an input to an ExtComputation.
-///
-/// Scene:       The input should be sourced from the Scene Delegate
-///
-/// Computation: The input should be sourced from another ExtComputation.
-///
-enum HdExtComputationInputType
-{
-    HdExtComputationInputTypeScene   = 0,
-    HdExtComputationInputTypeComputation,
-
-    HdExtComputationInputTypeCount
-};
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // HD_ENUMS_H

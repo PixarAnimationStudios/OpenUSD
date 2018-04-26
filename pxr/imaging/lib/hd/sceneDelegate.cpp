@@ -350,27 +350,26 @@ HdSceneDelegate::InvokeExtComputation(SdfPath const& computationId,
 
 /*virtual*/
 TfTokenVector
-HdSceneDelegate::GetExtComputationInputNames(SdfPath const& id,
-                                             HdExtComputationInputType type)
+HdSceneDelegate::GetExtComputationSceneInputNames(SdfPath const& computationid)
 {
     return TfTokenVector();
 }
 
 /*virtual*/
-HdExtComputationInputParams
-HdSceneDelegate::GetExtComputationInputParams(SdfPath const& id,
-                                              TfToken const &inputName)
+HdExtComputationInputDescriptorVector
+HdSceneDelegate::GetExtComputationInputDescriptors(
+                                        SdfPath const& computationid)
 {
-    return HdExtComputationInputParams();
+    return HdExtComputationInputDescriptorVector();
 }
 
 /*virtual*/
-TfTokenVector
-HdSceneDelegate::GetExtComputationOutputNames(SdfPath const& id)
+HdExtComputationOutputDescriptorVector
+HdSceneDelegate::GetExtComputationOutputDescriptors(
+                                        SdfPath const& computationid)
 {
-    return TfTokenVector();
+    return HdExtComputationOutputDescriptorVector();
 }
-
 
 
 // -----------------------------------------------------------------------//
@@ -386,21 +385,14 @@ HdSceneDelegate::GetPrimvarDescriptors(SdfPath const& id,
 }
 
 /*virtual*/
-TfTokenVector
-HdSceneDelegate::GetExtComputationPrimvarNames(
-                                              SdfPath const& id,
-                                              HdInterpolation interpolationMode)
+HdExtComputationPrimvarDescriptorVector
+HdSceneDelegate::GetExtComputationPrimvarDescriptors(
+                                        SdfPath const& rprimId,
+                                        HdInterpolation interpolationMode)
 {
-    return TfTokenVector();
+    return HdExtComputationPrimvarDescriptorVector();
 }
 
-/*virtual*/
-HdExtComputationPrimvarDesc
-HdSceneDelegate::GetExtComputationPrimvarDesc(SdfPath const& id,
-                                              TfToken const& varName)
-{
-    return HdExtComputationPrimvarDesc();
-}
 
 /*virtual*/
 std::string

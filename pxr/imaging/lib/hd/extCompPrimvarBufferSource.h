@@ -29,7 +29,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,7 +52,7 @@ public:
     HdExtCompPrimvarBufferSource(const TfToken &primvarName,
                                  const HdExtCompCpuComputationSharedPtr &source,
                                  const TfToken &sourceOutputName,
-                                 const VtValue &defaultValue);
+                                 const HdTupleType &valueType);
 
     HD_API
     virtual ~HdExtCompPrimvarBufferSource() = default;
