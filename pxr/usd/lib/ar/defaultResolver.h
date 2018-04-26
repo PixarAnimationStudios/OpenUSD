@@ -63,7 +63,10 @@ class ArDefaultResolver
     : public ArResolver
 {
 public:
+    AR_API 
     ArDefaultResolver();
+
+    AR_API 
     virtual ~ArDefaultResolver();
 
     /// Set the default search path that will be used during asset
@@ -74,75 +77,102 @@ public:
         const std::vector<std::string>& searchPath);
 
     // ArResolver overrides
+    AR_API
     virtual void ConfigureResolverForAsset(const std::string& path) override;
 
+    AR_API
     virtual std::string AnchorRelativePath(
         const std::string& anchorPath, 
         const std::string& path) override; 
 
+    AR_API
     virtual bool IsRelativePath(const std::string& path) override;
+
+    AR_API
     virtual bool IsRepositoryPath(const std::string& path) override;
+
+    AR_API
     virtual bool IsSearchPath(const std::string& path) override;
 
+    AR_API
     virtual std::string GetExtension(const std::string& path) override;
 
+    AR_API
     virtual std::string ComputeNormalizedPath(const std::string& path) override;
 
+    AR_API
     virtual std::string ComputeRepositoryPath(const std::string& path) override;
 
+    AR_API
     virtual std::string ComputeLocalPath(const std::string& path) override;
 
+    AR_API
     virtual std::string Resolve(const std::string& path) override;
 
+    AR_API
     virtual std::string ResolveWithAssetInfo(
         const std::string& path, 
         ArAssetInfo* assetInfo) override;
 
+    AR_API
     virtual void UpdateAssetInfo(
        const std::string& identifier,
        const std::string& filePath,
        const std::string& fileVersion,
        ArAssetInfo* assetInfo) override;
 
+    AR_API
     virtual VtValue GetModificationTimestamp(
         const std::string& path,
         const std::string& resolvedPath) override;
 
+    AR_API
     virtual bool FetchToLocalResolvedPath(
         const std::string& path,
         const std::string& resolvedPath) override;
 
+    AR_API
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override;
 
+    AR_API
     virtual bool CanCreateNewLayerWithIdentifier(
         const std::string& identifier, 
         std::string* whyNot) override;
 
+    AR_API
     virtual ArResolverContext CreateDefaultContext() override;
 
+    AR_API
     virtual ArResolverContext CreateDefaultContextForAsset(
         const std::string& filePath) override;
 
+    AR_API
     virtual ArResolverContext CreateDefaultContextForDirectory(
         const std::string& fileDirectory) override;
 
+    AR_API
     virtual void RefreshContext(const ArResolverContext& context) override;
 
+    AR_API
     virtual ArResolverContext GetCurrentContext() override;
 
 protected:
+    AR_API
     virtual void _BeginCacheScope(
         VtValue* cacheScopeData) override;
 
+    AR_API
     virtual void _EndCacheScope(
         VtValue* cacheScopeData) override;
 
+    AR_API
     virtual void _BindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override;
 
+    AR_API
     virtual void _UnbindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override;
