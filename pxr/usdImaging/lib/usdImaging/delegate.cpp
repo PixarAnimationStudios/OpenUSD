@@ -1263,7 +1263,7 @@ UsdImagingDelegate::_RefreshObject(SdfPath const& usdPath,
         // repopulate the whole subtree starting at the owning prim.
         if (attrName == UsdGeomTokens->modelDrawMode ||
             attrName == UsdGeomTokens->modelApplyDrawMode) {
-            _ResyncPrim(usdPath, proxy, true);
+            _ResyncPrim(usdPath.GetPrimPath(), proxy, true);
             return;
         }
 
