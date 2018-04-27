@@ -54,7 +54,7 @@ class testUsdExportUVSets(unittest.TestCase):
         if expectedUnauthoredValuesIndex is None:
             expectedUnauthoredValuesIndex = -1
 
-        if UsdMaya.WriteUtil.WriteTexCoordType():
+        if not UsdMaya.WriteUtil.WriteUVAsFloat2():
             self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.TexCoord2fArray)
         else: 
             self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.Float2Array)
@@ -76,7 +76,7 @@ class testUsdExportUVSets(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-        if UsdMaya.WriteUtil.WriteTexCoordType():
+        if not UsdMaya.WriteUtil.WriteUVAsFloat2():
             cmds.file(os.path.abspath('UsdExportUVSetsTest.ma'), open=True,
                        force=True)
         else:

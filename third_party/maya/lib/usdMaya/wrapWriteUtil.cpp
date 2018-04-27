@@ -57,8 +57,8 @@ void wrapWriteUtil()
 {
     typedef PxrUsdMayaWriteUtil This;
     class_<This>("WriteUtil", no_init)
-        .def("WriteTexCoordType", This::WriteTexCoordType)
-        .staticmethod("WriteTexCoordType")
+        .def("WriteUVAsFloat2", This::WriteUVAsFloat2)
+        .staticmethod("WriteUVAsFloat2")
         .def("GetVtValue", _GetVtValue)
         .staticmethod("GetVtValue")
     ;

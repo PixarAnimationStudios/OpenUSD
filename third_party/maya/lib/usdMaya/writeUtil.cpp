@@ -76,9 +76,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-        PIXMAYA_WRITE_TEXCOORD_TYPE, false,
-        "Set to false to write uv sets as Float2Array types "
-        " and set to true to write Texture Coordinate value types "
+        PIXMAYA_WRITE_UV_AS_FLOAT2, true,
+        "Set to true to write uv sets as Float2Array types "
+        " and set to false to write Texture Coordinate value types "
         "(TexCoord2h, TexCoord2f, TexCoord2d, TexCoord3h, "
         " TexCoord3f, TexCoord3d and their associated Array types)");
 
@@ -123,11 +123,11 @@ _GetMayaAttributeNumericTypedAndUnitDataTypes(
 }
 
 bool
-PxrUsdMayaWriteUtil::WriteTexCoordType()
+PxrUsdMayaWriteUtil::WriteUVAsFloat2()
 {
-    static const bool writeTexCoordType = 
-        TfGetEnvSetting(PIXMAYA_WRITE_TEXCOORD_TYPE);
-    return writeTexCoordType;
+    static const bool writeUVAsFloat2 = 
+        TfGetEnvSetting(PIXMAYA_WRITE_UV_AS_FLOAT2);
+    return writeUVAsFloat2;
 }
 
 SdfValueTypeName

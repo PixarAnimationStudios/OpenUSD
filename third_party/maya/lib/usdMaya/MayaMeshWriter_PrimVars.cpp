@@ -497,8 +497,8 @@ bool MayaMeshWriter::_createUVPrimVar(
         interp = TfToken();
     }
 
-    SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteTexCoordType())?
-        (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
+    SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteUVAsFloat2())?
+        (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray); 
     UsdGeomPrimvar primVar = 
         primSchema.CreatePrimvar(name, uvValueType, interp);
     

@@ -62,7 +62,7 @@ struct PxrUsdMayaWriteUtil
     /// Returns whether the environment setting for writing the TexCoord 
     /// types is set to true
     PXRUSDMAYA_API
-    static bool WriteTexCoordType();
+    static bool WriteUVAsFloat2();
     
     /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
     /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that

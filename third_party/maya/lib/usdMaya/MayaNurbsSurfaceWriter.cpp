@@ -290,8 +290,8 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
     // If stValues vector has vertex data, create and assign st
     if (stValues.size() == static_cast<size_t>(numCVsInU * numCVsInV)) {
-        SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteTexCoordType())?  
-            (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
+        SdfValueTypeName uvValueType = (PxrUsdMayaWriteUtil::WriteUVAsFloat2())?  
+            (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray);
         UsdGeomPrimvar uvSet = 
             primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),
                                      uvValueType, 
