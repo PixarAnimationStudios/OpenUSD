@@ -614,6 +614,9 @@ nb.setParametersTemplateAttr(FnAttribute.GroupBuilder()
     .set('attrName', 'attr')
     .set('type', 'float')
     
+    .set('asMetadata', 0)
+    .set('listOpType', 'explicit')
+    
     .set('numberValue', 1.0)
     .set('stringValue', '')
     .build(),
@@ -629,7 +632,25 @@ nb.setHintsForParameter('locations', {
 
 nb.setHintsForParameter('type', {
     'widget' : 'popup',
-    'options' : ['int', 'float', 'double', 'string'],
+    'options' : ['int', 'float', 'double', 'string', 'listOp',],
+})
+
+nb.setHintsForParameter('asMetadata', {
+    'widget' : 'boolean',
+})
+
+nb.setHintsForParameter('listOpType', {
+    'widget' : 'popup',
+    'options' : [
+        'explicit',
+        'added',
+        'deleted',
+        'ordered',
+        'prepended',
+        'appended'],
+    'conditionalVisOp' : 'equalTo',
+    'conditionalVisPath' : '../type',
+    'conditionalVisValue' : 'listOp',
 })
 
 nb.setHintsForParameter('numberValue', {
@@ -650,6 +671,7 @@ __numberAttrTypes = {
     'int' : FnAttribute.IntAttribute,
     'float' : FnAttribute.FloatAttribute,
     'double': FnAttribute.DoubleAttribute,
+    'listOp': FnAttribute.IntAttribute,
 }
 
 def buildOpChain(self, interface):
@@ -677,15 +699,41 @@ def buildOpChain(self, interface):
                                 FnAttribute.FloatAttribute))
         
         
-        entryGroup = (FnAttribute.GroupBuilder()
-            .set('value', valueAttr)
-            .build())
         
+        
+        if typeValue == 'listOp':
+            entryGb = FnAttribute.GroupBuilder()
+            entryGb.set('type', 'SdfInt64ListOp')
+            entryGb.set('listOp.%s' % self.getParameter(
+                    'listOpType').getValue(frameTime), valueAttr)
+            
+            entryGroup = entryGb.build()
+        else:
+            entryGroup = (FnAttribute.GroupBuilder()
+                .set('value', valueAttr)
+                .build())
+            
         gb = FnAttribute.GroupBuilder()
 
+        asMetadata = (typeValue == 'listOp'
+                or self.getParameter('asMetadata').getValue(frameTime) != 0)
+
         for loc in locations:
-            gb.set("attrs.%s.%s" % (
-                    FnAttribute.DelimiterEncode(loc), attrName,), entryGroup)
+            
+            if asMetadata:
+                
+                if typeValue == 'listOp':
+                    gb.set("metadata.%s.prim.%s" % (
+                        FnAttribute.DelimiterEncode(loc), attrName,),
+                        entryGroup)
+
+                    
+                # TODO, only listOps are supported at the moment.
+                
+            else:
+                gb.set("attrs.%s.%s" % (
+                        FnAttribute.DelimiterEncode(loc), attrName,),
+                        entryGroup)
 
         existingValue = (
                 interface.getGraphState().getDynamicEntry("var:pxrUsdInSession"))
