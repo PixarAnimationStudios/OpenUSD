@@ -126,6 +126,15 @@ Usd_Resolver::NextLayer() {
     return false;
 }
 
+Usd_Resolver::Position 
+Usd_Resolver::GetPosition() const
+{
+    if (!IsValid()) {
+        return Position();
+    }
+
+    return Position(_curNode, _curLayer);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
