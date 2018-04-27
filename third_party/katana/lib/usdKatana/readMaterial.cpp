@@ -88,7 +88,8 @@ PxrUsdKatanaReadMaterial(
         bool flatten,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs,
-        const std::string& looksGroupLocation)
+        const std::string& looksGroupLocation,
+        const std::string& materialDestinationLocation)
 {
     UsdPrim prim = material.GetPrim();
     UsdStageRefPtr stage = prim.GetStage();
@@ -103,10 +104,13 @@ PxrUsdKatanaReadMaterial(
     const std::string& parentPrefix = (looksGroupLocation.empty()) ?
         data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
     
-    std::string fullKatanaPath = 
-        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-            primPath, data);
-    if (!fullKatanaPath.empty()) {
+    std::string fullKatanaPath = !materialDestinationLocation.empty()
+            ? materialDestinationLocation
+            : PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+                    primPath, data);
+
+    if (!fullKatanaPath.empty() &&
+            pystring::startswith(fullKatanaPath, parentPrefix)) {
         katanaPath = fullKatanaPath.substr(parentPrefix.size()+1);
 
         // these paths are relative in katana
@@ -114,6 +118,7 @@ PxrUsdKatanaReadMaterial(
             katanaPath = katanaPath.substr(1);
         }
     }
+
 
     attrs.set("material.katanaPath", FnKat::StringAttribute(katanaPath));
     attrs.set("material.usdPrimName", FnKat::StringAttribute(prim.GetName()));

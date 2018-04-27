@@ -68,6 +68,11 @@ private:
 
     Foundry::Katana::GroupBuilder _groupBuilder;
 
+    // Cache the last call to _groupBuilder.build() so that instances can be
+    // reused (as GroupBuilder clears itself by default)
+    Foundry::Katana::GroupAttribute _lastBuilt;
+
+
     // Timecode to use when reading USD samples
     UsdTimeCode _usdTimeCode;
 
