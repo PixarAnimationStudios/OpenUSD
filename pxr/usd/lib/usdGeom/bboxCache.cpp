@@ -40,7 +40,6 @@
 #include "pxr/base/tf/token.h"
 
 #include <tbb/enumerable_thread_specific.h>
-#include <tbb/task.h>
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -53,12 +52,13 @@ typedef tbb::enumerable_thread_specific<UsdGeomXformCache> _ThreadXformCache;
 // -------------------------------------------------------------------------- //
 // _BBoxTask
 // -------------------------------------------------------------------------- //
-class UsdGeomBBoxCache::_BBoxTask: public tbb::task {
+class UsdGeomBBoxCache::_BBoxTask {
     UsdPrim _prim;
     GfMatrix4d _inverseComponentCtm;
     UsdGeomBBoxCache* _owner;
     _ThreadXformCache* _xfCaches;
 public:
+    _BBoxTask() : _owner(nullptr), _xfCaches(nullptr) {}
     _BBoxTask(const UsdPrim& prim, const GfMatrix4d &inverseComponentCtm,
               UsdGeomBBoxCache* owner, _ThreadXformCache* xfCaches)
         : _prim(prim)
@@ -67,10 +67,12 @@ public:
         , _xfCaches(xfCaches)
     {
     }
-    task* execute() {
+    explicit operator bool() const {
+        return _owner;
+    }
+    void operator()() {
         // Do not save state here; all state should be accumulated externally.
         _owner->_ResolvePrim(this, _prim, _inverseComponentCtm);
-        return NULL;
     }
     _ThreadXformCache* GetXformCaches() { return _xfCaches; }
 };
@@ -126,14 +128,14 @@ public:
         // that won't be traversed when resolving other bounding boxes.
         _ThreadXformCache xfCache;
 
-        WorkDispatcher dispatcher;
         for (const auto& t : masterTasks) {
             if (t.second.numDependencies == 0) {
-                dispatcher.Run(
+                _owner->_dispatcher.Run(
                     &_MasterBBoxResolver::_ExecuteTaskForMaster,
-                    this, t.first, &masterTasks, &xfCache, &dispatcher);
+                    this, t.first, &masterTasks, &xfCache, &_owner->_dispatcher);
             }
         }
+        _owner->_dispatcher.Wait();
     }
 
 private:
@@ -167,15 +169,11 @@ private:
     void _ExecuteTaskForMaster(const UsdPrim& master,
                                _MasterTaskMap* masterTasks,
                                _ThreadXformCache* xfCaches,
-                               WorkDispatcher* dispatcher)
+                               WorkArenaDispatcher* dispatcher)
     {
-        tbb::task_group_context context;
-        UsdGeomBBoxCache::_BBoxTask& rootTask =
-            *new(tbb::task::allocate_root(context))
-                UsdGeomBBoxCache::_BBoxTask(master, GfMatrix4d(1.0),
-                                            _owner, xfCaches);
-        tbb::task::spawn_root_and_wait(rootTask);
-
+        UsdGeomBBoxCache::_BBoxTask(
+            master, GfMatrix4d(1.0), _owner, xfCaches)();
+        
         // Update all of the master prims that depended on the completed master
         // and dispatch new tasks for those whose dependencies have been
         // resolved.  We're guaranteed that all the entries were populated by
@@ -257,6 +255,30 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(
     , _ctmCache(time)
     , _useExtentsHint(useExtentsHint)
 {
+}
+
+UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
+    : _time(other._time)
+    , _baseTime(other._baseTime)
+    , _includedPurposes(other._includedPurposes)
+    , _ctmCache(other._ctmCache)
+    , _bboxCache(other._bboxCache)
+    , _useExtentsHint(other._useExtentsHint)
+{
+}
+
+UsdGeomBBoxCache &
+UsdGeomBBoxCache::operator=(UsdGeomBBoxCache const &other)
+{
+    if (this == &other)
+        return *this;
+    _time = other._time;
+    _baseTime = other._baseTime;
+    _includedPurposes = other._includedPurposes;
+    _ctmCache = other._ctmCache;
+    _bboxCache = other._bboxCache;
+    _useExtentsHint = other._useExtentsHint;
+    return *this;
 }
 
 GfBBox3d
@@ -942,10 +964,8 @@ UsdGeomBBoxCache::_Resolve(
     GfMatrix4d inverseComponentCtm = _ctmCache.GetLocalToWorldTransform(
         modelPrim).GetInverse();
 
-    _BBoxTask& rootTask = *new(tbb::task::allocate_root())
-                               _BBoxTask(prim, inverseComponentCtm,
-                                         this, &xfCaches);
-    tbb::task::spawn_root_and_wait(rootTask);
+    _dispatcher.Run(_BBoxTask(prim, inverseComponentCtm, this, &xfCaches));
+    _dispatcher.Wait();
 
     // We save the result of one of the caches, but it might be interesting to
     // merge them all here at some point.
@@ -1197,7 +1217,6 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
     //  2) Spawn new child tasks and wait for them to complete.
     //  3) Accumulate the results into this cache entry.
     //
-    int refCount = 1;
 
     // Filter childen and queue children.
     if (!pruneChildren) {
@@ -1208,7 +1227,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 xfCache.GetLocalToWorldTransform(prim).GetInverse() :
                 inverseComponentCtm;
 
-        std::vector<std::pair<UsdPrim, _BBoxTask*> > included;
+        std::vector<std::pair<UsdPrim, _BBoxTask> > included;
         // See comment in _Resolve about unloaded prims
         UsdPrimSiblingRange children;
 
@@ -1262,16 +1281,13 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 // child prims will come from its master prim. The bboxes
                 // for these prims should already have been computed in
                 // _Resolve, so we don't need to schedule an additional task.
-                included.push_back(std::make_pair(*childIt, (_BBoxTask*)0));
+                included.push_back(std::make_pair(*childIt, _BBoxTask()));
             }
             else {
-                included.push_back(std::make_pair(*childIt,
-                    new(task->allocate_child())
-                        _BBoxTask(*childIt,
-                                  inverseEnclosingComponentCtm,
-                                  this,
-                                  task->GetXformCaches())));
-                ++refCount;
+                included.emplace_back(*childIt,
+                                      _BBoxTask(*childIt,
+                                                inverseEnclosingComponentCtm,
+                                                this, task->GetXformCaches()));
             }
         }
 
@@ -1283,13 +1299,13 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
         // All the child bboxTasks will be NULL if the prim is an instance.
         //
         if (!primIsInstance) {
-            task->set_ref_count(refCount);
+            WorkArenaDispatcher wd;
             TF_FOR_ALL(childIt, included) {
                 if (childIt->second) {
-                    task->spawn(*childIt->second);
+                    wd.Run(childIt->second);
                 }
             }
-            task->wait_for_all();
+            wd.Wait();
 
             // We may have switched threads, grab the thread-local xfCache
             // again.
