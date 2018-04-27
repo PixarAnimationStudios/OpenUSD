@@ -60,6 +60,12 @@ UsdRiMaterialAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiMaterialAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdRiMaterialAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdRiMaterialAPI

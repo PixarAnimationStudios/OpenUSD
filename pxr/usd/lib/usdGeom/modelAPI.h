@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/api.h"
-#include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -135,7 +135,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
 /// as the value.
 ///
-class UsdGeomModelAPI : public UsdModelAPI
+class UsdGeomModelAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -149,6 +149,12 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents an 
+    /// applied API schema, i.e. an API schema that has to be applied to a prim
+    /// with a call to auto-generated Apply() method before any schema 
+    /// properties are authored.
+    static const bool IsApplied = true;
+    
     /// Compile-time constant indicating whether or not this class represents a 
     /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
     /// to the same prim multiple times with different instance names. 
@@ -159,7 +165,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdGeomModelAPI(const UsdPrim& prim=UsdPrim())
-        : UsdModelAPI(prim)
+        : UsdAPISchemaBase(prim)
     {
     }
 
@@ -167,7 +173,7 @@ public:
     /// Should be preferred over UsdGeomModelAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdGeomModelAPI(const UsdSchemaBase& schemaObj)
-        : UsdModelAPI(schemaObj)
+        : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -223,6 +229,11 @@ private:
     // override SchemaBase virtuals.
     USDGEOM_API
     virtual const TfType &_GetTfType() const;
+
+    // This override returns true since UsdGeomModelAPI is an 
+    // applied API schema.
+    USDGEOM_API
+    virtual bool _IsAppliedAPISchema() const override;
 
 public:
     // --------------------------------------------------------------------- //

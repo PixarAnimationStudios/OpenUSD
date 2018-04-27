@@ -62,14 +62,6 @@ UsdModelAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* static */
-UsdModelAPI
-UsdModelAPI::Apply(const UsdPrim &prim)
-{
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdModelAPI>(
-            prim, _schemaTokens->ModelAPI);
-}
-
-/* static */
 const TfType &
 UsdModelAPI::_GetStaticTfType()
 {

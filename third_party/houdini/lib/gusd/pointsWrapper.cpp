@@ -258,7 +258,7 @@ doSoftCopy() const
 
 bool GusdPointsWrapper::isValid() const
 {
-    return m_usdPoints;
+    return static_cast<bool>(m_usdPoints);
 }
 
 bool GusdPointsWrapper::

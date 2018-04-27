@@ -90,7 +90,7 @@ UsdviewqUtils::GetPrimInfo(UsdPrim prim, UsdTimeCode time)
                                prim.HasVariantSets());
     info.isActive = prim.IsActive();
     UsdGeomImageable img(prim);
-    info.isImageable = img;
+    info.isImageable = static_cast<bool>(img);
     info.isDefined = prim.IsDefined();
     info.isAbstract = prim.IsAbstract();
     // isInMaster is meant to guide UI to consider the prim's "source",

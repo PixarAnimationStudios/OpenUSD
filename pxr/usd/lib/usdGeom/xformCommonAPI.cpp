@@ -99,14 +99,11 @@ UsdGeomXformCommonAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* virtual */
 bool 
-UsdGeomXformCommonAPI::_IsCompatible(const UsdPrim &prim) const
-{
-    return _IsCompatible();
-}
-
-bool
 UsdGeomXformCommonAPI::_IsCompatible() const
 {
+    if (!UsdSchemaBase::_IsCompatible())
+        return false;
+
     if (!_xformable)
         return false;
 

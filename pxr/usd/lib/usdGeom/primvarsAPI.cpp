@@ -62,14 +62,6 @@ UsdGeomPrimvarsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* static */
-UsdGeomPrimvarsAPI
-UsdGeomPrimvarsAPI::Apply(const UsdPrim &prim)
-{
-    return UsdAPISchemaBase::_ApplyAPISchema<UsdGeomPrimvarsAPI>(
-            prim, _schemaTokens->PrimvarsAPI);
-}
-
-/* static */
 const TfType &
 UsdGeomPrimvarsAPI::_GetStaticTfType()
 {

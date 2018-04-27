@@ -60,6 +60,12 @@ UsdUINodeGraphNodeAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdUINodeGraphNodeAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdUINodeGraphNodeAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdUINodeGraphNodeAPI

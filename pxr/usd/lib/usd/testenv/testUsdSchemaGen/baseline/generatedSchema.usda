@@ -1,7 +1,23 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["SingleApplyAPI", "MultipleApplyAPI"]
+        string[] multipleApplyAPISchemas = ["MultipleApplyAPI"]
+    }
 )
+
+class "NonAppliedAPI"
+{
+}
+
+class "SingleApplyAPI"
+{
+}
+
+class "MultipleApplyAPI"
+{
+}
 
 class "Base" (
     doc = 'This doc should only exist on the "Base" class.'

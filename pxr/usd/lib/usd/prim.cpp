@@ -131,6 +131,12 @@ UsdPrim::_HasAPI(
             return false;
         }
 
+        if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
+                "applied API schema type.", schemaType.GetTypeName().c_str());
+            return false;
+        }
+
         if (!schemaType.IsA(apiSchemaBaseType) || 
             schemaType == apiSchemaBaseType) {
             TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "

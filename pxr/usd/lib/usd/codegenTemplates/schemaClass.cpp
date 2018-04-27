@@ -89,7 +89,13 @@ TF_DEFINE_PRIVATE_TOKENS(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 {% endif %}
-{% if cls.isApi %}
+{% if cls.isAppliedAPISchema %}
+/*virtual*/
+bool 
+{{ cls.cppClassName }}::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 {{ cls.cppClassName }}

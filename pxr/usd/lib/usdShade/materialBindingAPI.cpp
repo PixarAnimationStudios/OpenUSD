@@ -60,6 +60,12 @@ UsdShadeMaterialBindingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdShadeMaterialBindingAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdShadeMaterialBindingAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdShadeMaterialBindingAPI

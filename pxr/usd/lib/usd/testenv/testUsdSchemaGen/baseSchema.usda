@@ -28,3 +28,7 @@ class "Model" ()
     #      hand currently.
     #uniform string kind (doc="The 'kind' metadata of this model, as a token.")
 }
+
+class "APISchemaBase"
+{
+}

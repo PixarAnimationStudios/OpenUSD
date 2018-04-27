@@ -255,9 +255,6 @@ public:
     UsdAttribute
     GetKbdAttribute(const std::string &katanaFullName);
 
-    bool 
-    _IsCompatible(const UsdPrim &prim) const;
-
     // --------------------------------------------------------------------- //
     // GetKbdAttributeNameSpace
     // --------------------------------------------------------------------- //

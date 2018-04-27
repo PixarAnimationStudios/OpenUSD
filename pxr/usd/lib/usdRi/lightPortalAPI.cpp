@@ -60,6 +60,12 @@ UsdRiLightPortalAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiLightPortalAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdRiLightPortalAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdRiLightPortalAPI

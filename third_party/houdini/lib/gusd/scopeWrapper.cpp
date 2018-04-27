@@ -186,7 +186,7 @@ doSoftCopy() const
 bool GusdScopeWrapper::
 isValid() const
 {
-    return m_usdScope;
+    return static_cast<bool>(m_usdScope);
 }
 
 bool GusdScopeWrapper::

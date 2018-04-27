@@ -365,6 +365,7 @@ class "ConnectableAPI"
     UsdShadeInput and UsdShadeOutput.
     """ 
     customData = {
+        token apiSchemaType = "nonApplied"
         string extraIncludes = """
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/nodeGraph.h"

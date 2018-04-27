@@ -60,6 +60,12 @@ UsdRiSplineAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiSplineAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdRiSplineAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdRiSplineAPI

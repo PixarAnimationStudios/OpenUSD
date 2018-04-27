@@ -312,13 +312,6 @@ UsdKatanaBlindDataObject::GetKbdAttribute(
 }
 
 bool
-UsdKatanaBlindDataObject::_IsCompatible(const UsdPrim &prim) const
-{
-    // HasA schemas compatible with all types for now.
-    return true;
-}
-
-bool
 UsdKatanaBlindDataObject::IsKbdAttribute(const UsdProperty &attr)
 {
     return TfStringStartsWith(attr.GetName(), _tokens->kbdNamespace);

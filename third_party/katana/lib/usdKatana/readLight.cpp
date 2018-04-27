@@ -101,35 +101,36 @@ PxrUsdKatanaReadLight(
         .Set("temperature", light.GetColorTemperatureAttr())
         ;
 
-    if (UsdLuxShapingAPI l = UsdLuxShapingAPI(lightPrim)) {
+    if (lightPrim) {
+        UsdLuxShapingAPI shapingAPI(lightPrim);
         lightBuilder
-            .Set("emissionFocus", l.GetShapingFocusAttr())
-            .Set("emissionFocusTint", l.GetShapingFocusTintAttr())
-            .Set("coneAngle", l.GetShapingConeAngleAttr())
-            .Set("coneSoftness", l.GetShapingConeSoftnessAttr())
-            .Set("iesProfile", l.GetShapingIesFileAttr())
-            .Set("iesProfileScale", l.GetShapingIesAngleScaleAttr())
+            .Set("emissionFocus", shapingAPI.GetShapingFocusAttr())
+            .Set("emissionFocusTint", shapingAPI.GetShapingFocusTintAttr())
+            .Set("coneAngle", shapingAPI.GetShapingConeAngleAttr())
+            .Set("coneSoftness", shapingAPI.GetShapingConeSoftnessAttr())
+            .Set("iesProfile", shapingAPI.GetShapingIesFileAttr())
+            .Set("iesProfileScale", shapingAPI.GetShapingIesAngleScaleAttr())
             ;
-    }
-    if (UsdLuxShadowAPI l = UsdLuxShadowAPI(lightPrim)) {
+
+        UsdLuxShadowAPI shadowAPI(lightPrim);
         lightBuilder
-            .Set("enableShadows", l.GetShadowEnableAttr())
-            .Set("shadowColor", l.GetShadowColorAttr())
-            .Set("shadowDistance", l.GetShadowDistanceAttr())
-            .Set("shadowFalloff", l.GetShadowFalloffAttr())
-            .Set("shadowFalloffGamma", l.GetShadowFalloffGammaAttr())
+            .Set("enableShadows", shadowAPI.GetShadowEnableAttr())
+            .Set("shadowColor", shadowAPI.GetShadowColorAttr())
+            .Set("shadowDistance", shadowAPI.GetShadowDistanceAttr())
+            .Set("shadowFalloff", shadowAPI.GetShadowFalloffAttr())
+            .Set("shadowFalloffGamma", shadowAPI.GetShadowFalloffGammaAttr())
             ;
-    }
-    if (UsdRiLightAPI l = UsdRiLightAPI(lightPrim)) {
+
+        UsdRiLightAPI riLightAPI(lightPrim);
         lightBuilder
-            .Set("intensityNearDist", l.GetRiIntensityNearDistAttr())
-            .Set("traceLightPaths", l.GetRiTraceLightPathsAttr())
-            .Set("thinShadow", l.GetRiShadowThinShadowAttr())
+            .Set("intensityNearDist", riLightAPI.GetRiIntensityNearDistAttr())
+            .Set("traceLightPaths", riLightAPI.GetRiTraceLightPathsAttr())
+            .Set("thinShadow", riLightAPI.GetRiShadowThinShadowAttr())
             .Set("fixedSampleCount",
-                           l.GetRiSamplingFixedSampleCountAttr())
+                        riLightAPI.GetRiSamplingFixedSampleCountAttr())
             .Set("importanceMultiplier",
-                           l.GetRiSamplingImportanceMultiplierAttr())
-            .Set("lightGroup", l.GetRiLightGroupAttr())
+                        riLightAPI.GetRiSamplingImportanceMultiplierAttr())
+            .Set("lightGroup", riLightAPI.GetRiLightGroupAttr())
             ;
     }
 
@@ -158,12 +159,11 @@ PxrUsdKatanaReadLight(
         materialBuilder.set("prmanLightShader",
                             FnKat::StringAttribute("PxrRectLight"));
         lightBuilder.Set("lightColorMap", l.GetTextureFileAttr());
-        if (UsdRiTextureAPI t = UsdRiTextureAPI(lightPrim)) {
-            lightBuilder
-                .Set("colorMapGamma", t.GetRiTextureGammaAttr())
-                .Set("colorMapSaturation", t.GetRiTextureSaturationAttr())
-                ;
-        }
+        UsdRiTextureAPI textureAPI(lightPrim);
+        lightBuilder
+            .Set("colorMapGamma", textureAPI.GetRiTextureGammaAttr())
+            .Set("colorMapSaturation", textureAPI.GetRiTextureSaturationAttr())
+            ;
     }
     if (UsdLuxDistantLight l = UsdLuxDistantLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",
@@ -192,12 +192,11 @@ PxrUsdKatanaReadLight(
         lightBuilder.Set("lightColorMap", l.GetTextureFileAttr());
         // Note: The prman backend ignores texture:format since that is
         // specified inside the renderman texture file format.
-        if (UsdRiTextureAPI t = UsdRiTextureAPI(lightPrim)) {
-            lightBuilder
-                .Set("colorMapGamma", t.GetRiTextureGammaAttr())
-                .Set("colorMapSaturation", t.GetRiTextureSaturationAttr())
-                ;
-        }
+        UsdRiTextureAPI textureAPI(lightPrim);
+        lightBuilder
+            .Set("colorMapGamma", textureAPI.GetRiTextureGammaAttr())
+            .Set("colorMapSaturation", textureAPI.GetRiTextureSaturationAttr())
+            ;
     }
     if (UsdRiPxrEnvDayLight l = UsdRiPxrEnvDayLight(lightPrim)) {
         materialBuilder.set("prmanLightShader",

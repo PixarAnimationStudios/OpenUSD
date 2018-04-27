@@ -62,7 +62,9 @@ public:
     /// Returns an empty pointer if \p skel or its structure is invalid.
     static UsdSkel_SkelDefinitionRefPtr New(const UsdSkelSkeleton& skel);
 
-    explicit operator bool() const { return _skel; }
+    explicit operator bool() const { 
+        return static_cast<bool>(_skel); 
+    }
 
     const UsdSkelSkeleton& GetSkeleton() const { return _skel; }
 

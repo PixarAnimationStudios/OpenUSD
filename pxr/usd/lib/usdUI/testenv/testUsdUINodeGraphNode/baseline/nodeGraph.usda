@@ -1,6 +1,8 @@
 #usda 1.0
 
-def "ANode"
+def "ANode" (
+    prepend apiSchemas = ["NodeGraphNodeAPI"]
+)
 {
     uniform color3f ui:nodegraph:node:displayColor = (1, 0, 0)
     uniform float2 ui:nodegraph:node:pos = (3, 2)

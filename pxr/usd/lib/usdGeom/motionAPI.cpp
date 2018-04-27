@@ -60,6 +60,12 @@ UsdGeomMotionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdGeomMotionAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdGeomMotionAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdGeomMotionAPI

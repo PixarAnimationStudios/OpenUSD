@@ -60,6 +60,12 @@ UsdRiStatementsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiStatementsAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdRiStatementsAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdRiStatementsAPI
@@ -247,14 +253,6 @@ UsdRiStatementsAPI::GetRiAttributes(
     }
 
     return validProps;
-}
-
-
-bool
-UsdRiStatementsAPI::_IsCompatible(const UsdPrim &prim) const
-{
-    // HasA schemas compatible with all types for now.
-    return true;
 }
 
 TfToken UsdRiStatementsAPI::GetRiAttributeNameSpace(const UsdProperty &prop)

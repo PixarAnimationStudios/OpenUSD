@@ -132,9 +132,10 @@ public:
     static UsdGeomXformCommonAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-private:
+protected:
+    /// Returns whether the underlying xformable is compatible with the API.
     USDGEOM_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    virtual bool _IsCompatible() const override;
 
 public:
 
@@ -249,9 +250,6 @@ public:
     /// @}
 
 private:
-
-    // Returns whether the underlying xformable is compatible with the API.
-    bool _IsCompatible() const;
 
     // Computes and stores op indices in the data members.
     bool _ComputeOpIndices();

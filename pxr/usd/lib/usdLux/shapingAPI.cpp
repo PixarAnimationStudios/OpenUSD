@@ -60,6 +60,12 @@ UsdLuxShapingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdLuxShapingAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdLuxShapingAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdLuxShapingAPI

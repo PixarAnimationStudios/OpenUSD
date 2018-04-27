@@ -60,6 +60,12 @@ UsdCollectionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdCollectionAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdCollectionAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdCollectionAPI
@@ -129,9 +135,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (excludes)
 );
 
-UsdCollectionAPI::operator bool() const
+
+/* virtual */
+bool 
+UsdCollectionAPI::_IsCompatible() const
 {
-    return !_name.IsEmpty() && _GetExpansionRuleAttr();
+    return UsdAPISchemaBase::_IsCompatible() && 
+           !GetName().IsEmpty() && 
+           _GetExpansionRuleAttr();
 }
 
 /* static */
@@ -214,7 +225,7 @@ UsdCollectionAPI::_GetCollectionPropertyName(
     const TfToken &baseName /* =TfToken() */) const
 {
     return TfToken(UsdTokens->collection.GetString() + ":" + 
-                   _name.GetString() + 
+                   GetName().GetString() + 
                    (baseName.IsEmpty() ? "" : (":" + baseName.GetString())));
 }
 
@@ -486,7 +497,7 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
                 TF_WARN("Could not get prim at path <%s>, therefore cannot "
                     "include its collection '%s' in collection '%s'.",
                     includedPrimPath.GetText(), collectionName.GetText(),
-                    _name.GetText());
+                    GetName().GetText());
                 continue;
             }
 

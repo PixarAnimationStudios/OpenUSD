@@ -45,8 +45,8 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 
+#include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/primRange.h"
-
 #include "pxr/usd/kind/registry.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
@@ -167,14 +167,17 @@ UsdImagingDelegate::_IsDrawModeApplied(UsdPrim const& prim)
 
     // Draw mode is only applied on models that are components, or which have
     // applyDrawMode = true.
-    UsdGeomModelAPI model(prim);
+    UsdModelAPI model(prim);
     bool applyDrawMode = false;
     TfToken kind;
     UsdAttribute attr;
     if (model.GetKind(&kind) && KindRegistry::IsA(kind, KindTokens->component))
         applyDrawMode = true;
-    else if ((attr = model.GetModelApplyDrawModeAttr()))
-        attr.Get(&applyDrawMode);
+    else {
+        UsdGeomModelAPI geomModel(prim);
+        if ((attr = geomModel.GetModelApplyDrawModeAttr()))
+            attr.Get(&applyDrawMode);
+    }
 
     return applyDrawMode;
 }

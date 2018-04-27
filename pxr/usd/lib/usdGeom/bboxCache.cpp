@@ -32,6 +32,7 @@
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/xform.h"
 
+#include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/base/trace/trace.h"
 

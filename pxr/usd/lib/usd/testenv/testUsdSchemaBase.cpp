@@ -128,36 +128,18 @@ TestPrimQueries()
     auto prim = stage->DefinePrim(path);
     
     printf("--------Ensuring no schemas are applied -------\n");
-    assert(!prim.HasAPI<UsdClipsAPI>());
-    assert(!prim.HasAPI<UsdModelAPI>());
-    
-    printf("--------Applying UsdModelAPI -------\n");
-    UsdModelAPI::Apply(prim);
-    assert(!prim.HasAPI<UsdClipsAPI>());
-    assert(prim.HasAPI<UsdModelAPI>());
+    assert(!prim.HasAPI<UsdCollectionAPI>());
 
-    printf("--------Applying UsdClipsAPI -------\n");
-    UsdClipsAPI::Apply(prim);
-    assert(prim.HasAPI<UsdClipsAPI>());
-    assert(prim.HasAPI<UsdModelAPI>());
+    printf("--------Applying UsdCollectionAPI -------\n");
 
     UsdCollectionAPI coll = UsdCollectionAPI::ApplyCollection(prim, 
             TfToken("testColl"));
     assert(prim.HasAPI<UsdCollectionAPI>());
 
-    assert(prim.HasAPI<UsdCollectionAPI>(
-            /*instanceName*/ TfToken("testColl")));
+    assert(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
 
     assert(!prim.HasAPI<UsdCollectionAPI>(
             /*instanceName*/ TfToken("nonExistentColl")));
-
-    std::cerr << "--- BEGIN EXPECTED ERROR --" << std::endl;
-    TfErrorMark mark;
-    // Passing in a non-empty instance name with a single-apply API schema like
-    // ModelAPI results in a coding error
-    assert(!prim.HasAPI<UsdModelAPI>(/*instanceName*/ TfToken("instance")));
-    TF_VERIFY(!mark.IsClean());
-    std::cerr << "--- END EXPECTED ERROR --" << std::endl;
 }
 
 int main(int argc, char** argv)

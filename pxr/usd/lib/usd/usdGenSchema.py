@@ -345,9 +345,26 @@ class ClassInfo(object):
 
         self.isConcrete = bool(self.typeName)
         self.isTyped = _IsTyped(usdPrim)
-        self.isApi = not self.isTyped and not self.isConcrete
-        self.isMultipleApply = self.customData.get('isMultipleApply', False)
-        self.isPrivateApply = self.customData.get('isPrivateApply', False)
+        self.isAPISchemaBase = self.cppClassName == 'UsdAPISchemaBase'
+
+        self.isApi = not self.isTyped and not self.isConcrete and \
+                not self.isAPISchemaBase
+        self.apiSchemaType = self.customData.get(Usd.Tokens.apiSchemaType, 
+                Usd.Tokens.singleApply if self.isApi else None)
+
+        if self.isApi and \
+           self.apiSchemaType not in [Usd.Tokens.nonApplied, 
+                                      Usd.Tokens.singleApply,
+                                      Usd.Tokens.multipleApply]:
+            raise Exception(errorMsg("CustomData 'apiSchemaType' is %s. It must"
+                " be one of {'nonApplied', 'singleApply', 'multipleApply'} "
+                "for an API schema."))
+
+        self.isAppliedAPISchema = self.apiSchemaType in [Usd.Tokens.singleApply, 
+                                                      Usd.Tokens.multipleApply]
+        self.isMultipleApply = self.apiSchemaType == Usd.Tokens.multipleApply
+        self.isPrivateApply = self.customData.get(Usd.Tokens.isPrivateApply, 
+                False)
 
         if self.isConcrete and not self.isTyped:
             raise Exception(errorMsg('Schema classes must either inherit '
@@ -358,20 +375,26 @@ class ClassInfo(object):
             not sdfPrim.path.name.endswith('API'):
             raise Exception(errorMsg('API schemas must be named with an API suffix.'))
         
+
+        if self.isApi and not self.isAppliedAPISchema and self.isPrivateApply:
+            raise Exception(errorMsg("Non-applied API schema cannot be tagged "
+                "as private-apply"))
+
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             (not self.parentCppClassName):
             raise Exception(errorMsg("API schemas must explicitly inherit from "
                     "UsdAPISchemaBase."))
 
-        if not self.isApi and self.isMultipleApply:
-            raise Exception(errorMsg('Non API schemas cannot be marked with '
-                                     'isMultipleApply, only API schemas have an '
-                                     'Apply() method generated. '))
+        if not self.isApi and self.isAppliedAPISchema:
+            raise Exception(errorMsg('Non API schemas cannot have non-empty '
+                                     'apiSchemaType value.'))
 
-        if not self.isApi and self.isPrivateApply:
-            raise Exception(errorMsg('Non API schemas cannot be marked with '
-                                     'isPrivateApply, only API schemas have an '
-                                     'Apply() method generated. '))
+        if (not self.isApi or not self.isAppliedAPISchema) and \
+                self.isPrivateApply:
+            raise Exception(errorMsg('Non API schemas or non-applied API '
+                                     'schemas cannot be marked with '
+                                     'isPrivateApply, only applied API schemas '
+                                     'have an Apply() method generated. '))
          
     def GetHeaderFile(self):
         return self.baseFileName + '.h'
@@ -413,6 +436,12 @@ def _ValidateFields(spec):
             print ("ERROR: Fallback values for '%s' on <%s> cannot be "
                    "specified in a schema." % (key, spec.path))
     return False
+
+def GetClassInfo(classes, cppClassName):
+    for c in classes:
+        if c.cppClassName == cppClassName:
+            return c
+    return None
 
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
@@ -486,6 +515,45 @@ def ParseUsd(usdFilePath):
                     classInfo.rels[relInfo.name] = relInfo
                     classInfo.relOrder.append(relInfo.name)
 
+    
+    for classInfo in classes:
+        # If this is an applied API schema that does not inherit from 
+        # UsdAPISchemaBase directly, ensure that the parent class is also 
+        # an applied API Schema.
+        if classInfo.isApi and classInfo.parentCppClassName!='UsdAPISchemaBase':
+            parentClassInfo = GetClassInfo(classes, classInfo.parentCppClassName)
+            if parentClassInfo:
+                if parentClassInfo.isAppliedAPISchema != \
+                        classInfo.isAppliedAPISchema:
+                    raise Exception("API schema '%s' inherits from incompatible "
+                        "base API schema '%s'. Both must be either applied API "
+                        "schemas or non-applied API schemas." %
+                        (classInfo.cppClassName, parentClassInfo.cppClassName))
+                if parentClassInfo.isMultipleApply != \
+                        classInfo.isMultipleApply:
+                    raise Exception("API schema '%s' inherits from incompatible "
+                        "base API schema '%s'. Both must be either single-apply "
+                        "or multiple-apply." % (classInfo.cppClassName,
+                        parentClassInfo.cppClassName))
+            else:
+                parentClassTfType = Tf.Type.FindByName(
+                        classInfo.parentCppClassName)
+                if parentClassTfType and parentClassTfType != Tf.Type.Unknown:
+                    if classInfo.isAppliedAPISchema != \
+                        Usd.SchemaRegistry.IsAppliedAPISchema(parentClassTfType):
+                        raise Exception("API schema '%s' inherits from "
+                            "incompatible base API schema '%s'. Both must be "
+                            "either applied API schemas or non-applied API "
+                            " schemas." % (classInfo.cppClassName,
+                            parentClassInfo.cppClassName))
+                    if classInfo.isMultipleApply != \
+                        Usd.SchemaRegistry.IsMultipleApplyAPISchema(
+                                parentClassTfType):
+                        raise Exception("API schema '%s' inherits from "
+                        "incompatible base API schema '%s'. Both must be either" 
+                        " single-apply or multiple-apply." % 
+                        (classInfo.cppClassName,  parentClassInfo.cppClassName))
+        
     if hasInvalidFields:
         raise Exception('Invalid fields specified in schema.')
 
@@ -833,11 +901,19 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     primsToKeep = set(cls.usdPrimTypeName for cls in classes)
     if not flatStage.RemovePrim('/GLOBAL'):
         print "WARNING: Could not remove GLOBAL prim."
+    allAppliedAPISchemas = []
     allMultipleApplyAPISchemas = []
     for p in flatStage.GetPseudoRoot().GetAllChildren():
-        if p.GetName() in primsToKeep and \
-           p.GetCustomDataByKey('isMultipleApply' ) == True:
-            allMultipleApplyAPISchemas.append(p.GetName())
+        # If this is an API schema, check if it's applied and record necessary
+        # information.
+        if p.GetName() in primsToKeep and p.GetName().endswith('API'):
+            apiSchemaType = p.GetCustomDataByKey(Usd.Tokens.apiSchemaType)
+            if apiSchemaType == Usd.Tokens.multipleApply:
+                allMultipleApplyAPISchemas.append(p.GetName())
+                allAppliedAPISchemas.append(p.GetName())
+            elif apiSchemaType in [None, Usd.Tokens.singleApply]:
+                allAppliedAPISchemas.append(p.GetName())
+
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():
             myproperty.ClearCustomData()
@@ -849,10 +925,14 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     # Set layer's comment to indicate that the file is generated.
     flatLayer.comment = 'WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.'
 
-    # Add the list of all multiple-apply API schemas.
-    if len(allMultipleApplyAPISchemas) > 0:
-        flatLayer.customLayerData = {'multipleApplyAPISchemas' : 
-                                     Vt.StringArray(allMultipleApplyAPISchemas)}
+    # Add the list of all applied and multiple-apply API schemas.
+    if len(allAppliedAPISchemas) > 0 or len(allMultipleApplyAPISchemas) > 0:
+        flatLayer.customLayerData = {
+                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas), 
+                'multipleApplyAPISchemas' : Vt.StringArray(
+                                        allMultipleApplyAPISchemas)
+        }
+
     #
     # Generate Schematics
     #

@@ -148,10 +148,10 @@ public:
     USDGEOM_API
     virtual ~UsdGeomCollectionAPI();
 
-private:
-    // Returns true if the collection includes at least one target object.
+protected:
+    /// Returns true if the relationship representing the collection is valid.
     USDGEOM_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    virtual bool _IsCompatible() const override;
 
 public:
 

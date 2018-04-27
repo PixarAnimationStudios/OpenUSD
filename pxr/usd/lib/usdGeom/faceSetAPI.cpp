@@ -51,9 +51,9 @@ UsdGeomFaceSetAPI::~UsdGeomFaceSetAPI()
 
 /* virtual */
 bool
-UsdGeomFaceSetAPI::_IsCompatible(const UsdPrim &prim) const
+UsdGeomFaceSetAPI::_IsCompatible() const
 {
-    return GetPrim() && _GetIsPartitionAttr();
+    return UsdSchemaBase::_IsCompatible() && _GetIsPartitionAttr();
 }
 
 /* static */

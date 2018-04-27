@@ -197,7 +197,7 @@ doSoftCopy() const
 bool GusdXformWrapper::
 isValid() const
 {
-    return m_usdXform;
+    return static_cast<bool>(m_usdXform);
 }
 
 bool GusdXformWrapper::

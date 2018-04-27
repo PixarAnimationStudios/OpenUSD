@@ -83,12 +83,12 @@ void wrap{{ cls.cppClassName }}()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 {% endif %}
-{% if cls.isApi and not cls.isMultipleApply and not cls.isPrivateApply %}
+{% if cls.isAppliedAPISchema and not cls.isMultipleApply and not cls.isPrivateApply %}
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
 {% endif %}
-{% if cls.isApi and cls.isMultipleApply and not cls.isPrivateApply %}
+{% if cls.isAppliedAPISchema and cls.isMultipleApply and not cls.isPrivateApply %}
 
         .def("Apply", &This::Apply, (arg("prim"), arg("name")))
         .staticmethod("Apply")
@@ -103,6 +103,12 @@ void wrap{{ cls.cppClassName }}()
         .staticmethod("IsTyped")
 
 {% if cls.isApi %}
+        .def("IsApplied", 
+            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
+        .staticmethod("IsApplied")
+
+{% endif %}
+{% if cls.isAppliedAPISchema %}
         .def("IsMultipleApply", 
             static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
         .staticmethod("IsMultipleApply")

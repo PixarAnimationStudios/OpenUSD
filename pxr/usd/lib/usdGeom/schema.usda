@@ -199,6 +199,7 @@ class "PrimvarsAPI" (
     as UsdGeomPrimvar, which interpolate across a primitive's topology,
     can override shader inputs, and inherit down namespace.""" 
     customData = {
+        token apiSchemaType = "nonApplied"
         string extraIncludes = """
 #include "pxr/usd/usdGeom/primvar.h" """
     }
@@ -1737,6 +1738,7 @@ class Camera "Camera" (
 
 class "GeomModelAPI"
 (
+    inherits = </APISchemaBase>
     customData = {
          string className = "ModelAPI"
          string extraIncludes = """
@@ -1817,7 +1819,6 @@ class "GeomModelAPI"
     All card faces are drawn and textured as single-sided.
 
     \\todo CreatePayload() """
-    inherits = </ModelAPI>
 )
 {
     uniform token model:drawMode (

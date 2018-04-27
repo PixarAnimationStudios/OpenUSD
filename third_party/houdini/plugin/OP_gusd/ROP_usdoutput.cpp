@@ -1760,16 +1760,13 @@ renderFrame(fpreal time,
                 SdfPath path = SdfPath(it->first).GetParentPath();
 
                 while (path != rootPath && path != SdfPath::EmptyPath()) {
-                    if (UsdGeomModelAPI model =
-                        UsdGeomModelAPI(m_usdStage->GetPrimAtPath(path))) {
+                    UsdGeomModelAPI model(m_usdStage->GetPrimAtPath(path));
 
-                        if (model.GetExtentsHintAttr() &&
-                            visitedPaths.find(path) == visitedPaths.end()) {
-
-                            const VtVec3fArray extentsHint =
-                                model.ComputeExtentsHint(cache);
-                            model.SetExtentsHint(extentsHint, ctxt.time);
-                        }
+                    if (model.GetExtentsHintAttr() &&
+                        visitedPaths.find(path) == visitedPaths.end()) {
+                        const VtVec3fArray extentsHint =
+                            model.ComputeExtentsHint(cache);
+                        model.SetExtentsHint(extentsHint, ctxt.time);
                     }
                     visitedPaths.insert(path);
                     path = path.GetParentPath();

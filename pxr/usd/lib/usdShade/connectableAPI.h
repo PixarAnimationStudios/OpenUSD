@@ -90,6 +90,12 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents an 
+    /// applied API schema, i.e. an API schema that has to be applied to a prim
+    /// with a call to auto-generated Apply() method before any schema 
+    /// properties are authored.
+    static const bool IsApplied = false;
+    
     /// Compile-time constant indicating whether or not this class represents a 
     /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
     /// to the same prim multiple times with different instance names. 
@@ -137,22 +143,6 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
-    /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "ConnectableAPI" to the 
-    /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdShadeConnectableAPI object is returned upon success. 
-    /// An invalid (or empty) UsdShadeConnectableAPI object is returned upon 
-    /// failure. See \ref UsdAPISchemaBase::_ApplyAPISchema() for conditions 
-    /// resulting in failure. 
-    /// 
-    /// \sa UsdPrim::GetAppliedSchemas()
-    /// \sa UsdPrim::HasAPI()
-    ///
-    USDSHADE_API
-    static UsdShadeConnectableAPI 
-    Apply(const UsdPrim &prim);
-
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -177,11 +167,11 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
     
-private:
-    // Returns true if the given prim is compatible with this API schema,
-    // i.e. if it is a shader or a node-graph.
+protected:
+    /// Returns true if the given prim is compatible with this API schema,
+    /// i.e. if it is a valid shader or a node-graph.
     USDSHADE_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    virtual bool _IsCompatible() const override;
     
 public:
 
