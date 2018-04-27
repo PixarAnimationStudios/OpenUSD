@@ -125,6 +125,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -927,6 +929,34 @@ UsdCollectionAPI::MembershipQuery::_MergeMembershipQuery(
         _pathExpansionRuleMap[pathAndExpansionRule.first] = 
             pathAndExpansionRule.second;
     }
+}
+
+size_t
+UsdCollectionAPI::MembershipQuery::Hash::operator()( MembershipQuery const& q)
+    const
+{
+    TRACE_FUNCTION();
+
+    // Hashing unordered maps is costly because two maps holding the
+    // same (key,value) pairs may store them in a different layout,
+    // due to population history.  We must use a history-independent
+    // order to compute a consistent hash value.
+    //
+    // If the runtime cost becomes problematic, we should consider
+    // computing the hash once and storing it in the MembershipQuery,
+    // as a finalization step in _ComputeMembershipQueryImpl().
+    typedef std::pair<SdfPath, TfToken> _Entry;
+    std::vector<_Entry> entries(q._pathExpansionRuleMap.begin(),
+                                q._pathExpansionRuleMap.end());
+    std::sort(entries.begin(), entries.end());
+    size_t h = 0;
+    for (_Entry const& entry: entries) {
+        boost::hash_combine(h, entry.first);
+        boost::hash_combine(h, entry.second);
+    }
+    // Don't hash _hasExcludes because it is derived from
+    // the contents of _pathExpansionRuleMap.
+    return h;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

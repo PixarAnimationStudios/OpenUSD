@@ -347,6 +347,29 @@ public:
         bool HasExcludes() const {
             return _hasExcludes;
         }
+
+        /// Equality operator
+        bool operator==(MembershipQuery const& rhs) const {
+            return _hasExcludes == rhs._hasExcludes &&
+                _pathExpansionRuleMap == rhs._pathExpansionRuleMap;
+        }
+
+        /// Inequality operator
+        bool operator!=(MembershipQuery const& rhs) const {
+            return !(*this == rhs);
+        }
+
+        /// Hash functor
+        struct Hash {
+            USD_API
+            size_t operator()(MembershipQuery const& query) const;
+        };
+
+        /// Hash function
+        inline size_t GetHash() const {
+            return Hash()(*this);
+        }
+
     private:
         // Holds an unordered map describing membership of paths in this 
         // collection and the associated expansionRule for how the paths are to 

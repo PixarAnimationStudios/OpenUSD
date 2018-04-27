@@ -161,6 +161,9 @@ WRAP_CUSTOM {
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
              (arg("path"), arg("parentExpansionRule")))
         .def("HasExcludes", &MQuery::HasExcludes)
+        .def("__hash__", &MQuery::GetHash)
+        .def(self == self)
+        .def(self != self)
         ;
 
     using This = UsdCollectionAPI;
