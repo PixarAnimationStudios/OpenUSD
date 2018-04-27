@@ -143,6 +143,15 @@ PxrUsdMayaTranslatorMesh::Create(
         return false; // invalid mesh, so exit
     }
 
+    std::string reason;
+    if (!UsdGeomMesh::ValidateTopology(faceVertexIndices, faceVertexCounts,
+                                       points.size(), &reason)) {
+        MGlobal::displayError(
+            TfStringPrintf("Skipping Mesh <%s> with invalid topology: %s",
+                           prim.GetPath().GetText(), reason.c_str()).c_str());
+        return false;
+    }
+
 
     // == Convert data
     size_t mayaNumVertices = points.size();
