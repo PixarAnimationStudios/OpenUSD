@@ -248,7 +248,7 @@ HdSceneDelegate::GetPathForInstanceIndex(const SdfPath &protoPrimPath,
 
 
 // -----------------------------------------------------------------------//
-/// \name SurfaceShader Aspects
+/// \name Material Aspects
 // -----------------------------------------------------------------------//
 
 /*virtual*/
@@ -280,6 +280,21 @@ HdSceneDelegate::GetMaterialParams(SdfPath const &materialId)
     return HdMaterialParamVector();
 }
 
+/*virtual*/
+VtValue 
+HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
+{
+    return VtValue();
+}
+
+/*virtual*/
+TfTokenVector 
+HdSceneDelegate::GetMaterialPrimvars(SdfPath const &materialId)
+{
+    return TfTokenVector();
+}
+
+
 // -----------------------------------------------------------------------//
 /// \name Texture Aspects
 // -----------------------------------------------------------------------//
@@ -308,22 +323,6 @@ HdSceneDelegate::GetLightParamValue(SdfPath const &id,
                                     TfToken const &paramName) 
 {
     return VtValue();
-}
-
-// -----------------------------------------------------------------------//
-/// \name Material Aspects
-// -----------------------------------------------------------------------//
-
-VtValue 
-HdSceneDelegate::GetMaterialResource(SdfPath const &materialId)
-{
-    return VtValue();
-}
-
-TfTokenVector 
-HdSceneDelegate::GetMaterialPrimvars(SdfPath const &materialId)
-{
-    return TfTokenVector();
 }
 
 // -----------------------------------------------------------------------//

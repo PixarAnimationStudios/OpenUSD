@@ -416,8 +416,19 @@ public:
     virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
                                           TfToken const &paramName);
 
+    /// Returns the material params for the given material ID.
     HD_API
     virtual HdMaterialParamVector GetMaterialParams(SdfPath const& materialId);
+
+    // Returns a material resource which contains the information 
+    // needed to create a material.
+    HD_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+
+    // Returns a list of primvars used by the material id passed 
+    // to this function.
+    HD_API 
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects
@@ -439,20 +450,6 @@ public:
     HD_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 
                                        TfToken const &paramName);
-
-    // -----------------------------------------------------------------------//
-    /// \name Material Aspects
-    // -----------------------------------------------------------------------//
-
-    // Returns a material resource which contains the information 
-    // needed to create a material.
-    HD_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId);
-
-    // Returns a list of primvars used by the material id passed 
-    // to this function.
-    HD_API 
-    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Camera Aspects
