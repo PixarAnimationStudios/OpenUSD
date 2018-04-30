@@ -52,10 +52,7 @@ PxrUsdKatanaAttrMap::Set(
     if (attr.IsValid() && attr.HasAuthoredValueOpinion()
         && attr.Get(&val, _usdTimeCode)) {
         FnKat::Attribute kat_attr =
-            PxrUsdKatanaUtils::ConvertVtValueToKatAttr( val,
-                                    /* asShaderParam */ true,
-                                    /* pathAsModel */ false,
-                                    /* resolvePath */ false);
+            PxrUsdKatanaUtils::ConvertVtValueToKatAttr(val);
         _groupBuilder.set(path, kat_attr);
     }
     return *this;

@@ -61,12 +61,8 @@ struct PxrUsdKatanaUtils {
 
     /// Convert a VtValue to a Katana attribute.
     /// If asShaderParam is false, convert arrays to type + array pairs
-    /// pathsAsModel is not used
-    /// resolvePaths is whether you get asset id or resolved path as strings for assets
     static FnKat::Attribute ConvertVtValueToKatAttr( const VtValue & val,
-                                                     bool asShaderParam = true,
-                                                     bool pathsAsModel = false,
-                                                     bool resolvePaths = true);
+                                                     bool asShaderParam = true);
 
     /// Extract the targets of a relationship to a Katana attribute.
     /// If asShaderParam is false, convert arrays to type + array pairs

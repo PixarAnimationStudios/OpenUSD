@@ -201,7 +201,7 @@ _ConvertArrayToVector(const VtVec4dArray &a, std::vector<double> *r)
 FnKat::Attribute
 PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         const VtValue & val, 
-        bool asShaderParam, bool pathsAsModel, bool resolvePaths)
+        bool asShaderParam)
 {
     if (val.IsHolding<bool>()) {
         return FnKat::IntAttribute(int(val.UncheckedGet<bool>()));
@@ -225,9 +225,7 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
     }
     if (val.IsHolding<SdfAssetPath>()) {
         const SdfAssetPath& assetPath(val.UncheckedGet<SdfAssetPath>());
-        return FnKat::StringAttribute(
-            resolvePaths ?  _ResolveAssetPath(assetPath)
-            : assetPath.GetAssetPath());
+        return FnKat::StringAttribute(_ResolveAssetPath(assetPath));
     }
     if (val.IsHolding<TfToken>()) {
         const TfToken &myVal = val.UncheckedGet<TfToken>();
@@ -487,14 +485,10 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // VtArray<SdfAssetPath>
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
-        FnKat::StringBuilder stringBuilder;
-        const VtArray<SdfAssetPath> &assetArray = 
-            val.UncheckedGet<VtArray<SdfAssetPath> >();
-        TF_FOR_ALL(strItr, assetArray) {
-            stringBuilder.push_back(
-                resolvePaths ?
-                _ResolveAssetPath(*strItr)
-                : strItr->GetAssetPath());
+        const VtArray<SdfAssetPath> &rawVal = val.UncheckedGet<VtArray<SdfAssetPath> >();
+        FnKat::StringBuilder builder;
+        TF_FOR_ALL(strItr, rawVal) {
+            builder.push_back(_ResolveAssetPath(*strItr));
         }
         FnKat::GroupBuilder attrBuilder;
         attrBuilder.set("type",
