@@ -197,35 +197,29 @@ _GatherRibAttributes(
             attrName = nameSpace +
                 riStatements.GetRiAttributeName(prop).GetString();
 
+            // XXX asShaderParam really means:
+            // "For arrays, as a single attr vs a type/value pair group"
+            // The type/value pair group is meaningful for attrs who don't
+            // have a formal type definition -- like a "user" RiAttribute.
+            //
+            // However, other array values (such as two-element shadingrate)
+            // are not expecting the type/value pair form and will not
+            // generate rib correctly. As such, we'll handle the "user"
+            // attribute as a special case.
+            const bool asShaderParam = (nameSpace != "user.");
+
             VtValue vtValue;
             UsdAttribute usdAttr = prim.GetAttribute(prop.GetName());
             if (usdAttr) {
                 if (!usdAttr.Get(&vtValue, currentTime)) 
                     continue;
-
-                // XXX asShaderParam really means:
-                // "For arrays, as a single attr vs a type/value pair group"
-                // The type/value pair group is meaningful for attrs who don't
-                // have a formal type definition -- like a "user" RiAttribute.
-                // 
-                // However, other array values (such as two-element shadingrate)
-                // are not expecting the type/value pair form and will not
-                // generate rib correctly. As such, we'll handle the "user"
-                // attribute as a special case.
-                bool asShaderParam = true;
-                
-                if (nameSpace == "user.")
-                {
-                    asShaderParam = false;
-                }
-
                 attrsBuilder.set(attrName, PxrUsdKatanaUtils::ConvertVtValueToKatAttr(vtValue,
                     asShaderParam) );
             }
             else {
                 UsdRelationship usdRel = prim.GetRelationship(prop.GetName());
                 attrsBuilder.set(attrName, PxrUsdKatanaUtils::ConvertRelTargetsToKatAttr(usdRel,
-                    /* asShaderParam */ false) );
+                    asShaderParam) );
             }
             hasAttrs = true;
         }

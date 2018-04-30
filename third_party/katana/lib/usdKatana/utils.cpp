@@ -267,8 +267,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         std::vector<int> vec(rawVal.begin(), rawVal.end());
         FnKat::IntBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("int [%zu]",
-                                                         rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("int [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
 
@@ -277,8 +277,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         std::vector<float> vec(rawVal.begin(), rawVal.end());
         FnKat::FloatBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("float [%zu]",
-                                                         rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("float [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
     else if (val.IsHolding<VtArray<double> >()) {
@@ -286,8 +286,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         std::vector<double> vec(rawVal.begin(), rawVal.end());
         FnKat::DoubleBuilder builder(/* tupleSize = */ 1);
         builder.set(vec);
-        typeAttr = FnKat::StringAttribute(TfStringPrintf("double [%zu]",
-                                                         rawVal.size()));
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("double [%zu]", rawVal.size()));
         valueAttr = builder.build();
     }
 
@@ -308,8 +308,8 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
          FnKat::FloatBuilder builder(/* tupleSize = */ 16);
          builder.set(vec);
          valueAttr = builder.build();
-         typeAttr = FnKat::StringAttribute(TfStringPrintf("matrix [%zu]",
-                                                         rawVal.size()));
+         typeAttr = FnKat::StringAttribute(
+             TfStringPrintf("matrix [%zu]", rawVal.size()));
     }
 
     // GfVec2f
@@ -485,18 +485,16 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
 
     // VtArray<SdfAssetPath>
     else if (val.IsHolding<VtArray<SdfAssetPath> >()) {
+        // This will replicate the previous behavior:
+        // if (asShaderParam) return valueAttr; asShaderParam = false;
         const VtArray<SdfAssetPath> &rawVal = val.UncheckedGet<VtArray<SdfAssetPath> >();
         FnKat::StringBuilder builder;
         TF_FOR_ALL(strItr, rawVal) {
             builder.push_back(_ResolveAssetPath(*strItr));
         }
-        FnKat::GroupBuilder attrBuilder;
-        attrBuilder.set("type",
-                        FnKat::StringAttribute(
-                            TfStringPrintf("string [%zu]",assetArray.size())));
-        attrBuilder.set("value", stringBuilder.build());
-        // NOTE: needs typeAttr set?
-        valueAttr = attrBuilder.build();
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("string [%zu]", rawVal.size()));
+        valueAttr = builder.build();
     }
      
     // If being used as a shader param, the type will be provided elsewhere,
