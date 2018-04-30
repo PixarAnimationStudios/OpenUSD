@@ -37,7 +37,7 @@ class TestUsdUISceneGraphPrim(unittest.TestCase):
        
         # Test Node
         sceneGraphPrim = UsdUI.SceneGraphPrimAPI(rootPrim)
-        assert(sceneGraphPrim)
+        assert sceneGraphPrim
        
         # Test displayName
         displayNameAttr = sceneGraphPrim.GetDisplayNameAttr()

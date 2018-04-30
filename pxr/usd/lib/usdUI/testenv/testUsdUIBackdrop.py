@@ -39,7 +39,7 @@ class TestUsdUIBackdrop(unittest.TestCase):
         backdrop = UsdUI.Backdrop.Define(
             stage, parentMaterialPath.AppendChild("Backdrop_1"))
 
-        assert(backdrop)
+        assert backdrop
 
         # Test Description
         descAttr = backdrop.GetDescriptionAttr()

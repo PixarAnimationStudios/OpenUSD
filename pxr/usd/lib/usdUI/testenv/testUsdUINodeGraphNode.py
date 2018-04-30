@@ -37,7 +37,7 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        
        # Test Node
        nodeGraphNode = UsdUI.NodeGraphNodeAPI(rootPrim)
-       assert(nodeGraphNode)
+       assert nodeGraphNode
        
        # Test Position
        posAttr = nodeGraphNode.GetPosAttr()

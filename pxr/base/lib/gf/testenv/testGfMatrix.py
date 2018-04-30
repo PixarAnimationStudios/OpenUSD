@@ -204,7 +204,7 @@ class TestGfMatrix(unittest.TestCase):
             for i in range(m.dimension[0]):
                 j0 = i * m.dimension[1]
                 self.assertEqual(m.GetRow(i), makeValue(Vec, tuple(range(j0,j0+m.dimension[1]))))
-                if (Matrix == Gf.Matrix4d):
+                if Matrix == Gf.Matrix4d:
                     self.assertEqual(m.GetRow3(i), Gf.Vec3d(j0, j0+1, j0+2))
 
             for j in range(m.dimension[1]):
@@ -221,7 +221,7 @@ class TestGfMatrix(unittest.TestCase):
                 self.assertEqual(v, m.GetRow(i))
 
             m = Matrix(1)
-            if (Matrix == Gf.Matrix4d):
+            if Matrix == Gf.Matrix4d:
                 for i in range(m.dimension[0]):
                     j0 = i * m.dimension[1]
                     v = Gf.Vec3d(j0, j0+1, j0+2)
@@ -414,7 +414,7 @@ class TestGfMatrix(unittest.TestCase):
                              -2.07635686422463e-06, 2.19131379884019e-07, 1 )
             r = mx.ExtractRotation()
             # math.isnan won't be available until python 2.6
-            if (sys.version_info[0] >=2 and sys.version_info[1] >= 6):
+            if sys.version_info[0] >=2 and sys.version_info[1] >= 6:
                 self.assertFalse(math.isnan(r.angle))
             else:
                 # If this fails, then r.angle is Nan. Works on linux, may not be portable.

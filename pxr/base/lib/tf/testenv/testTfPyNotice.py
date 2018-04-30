@@ -50,9 +50,9 @@ def testListening(regNoticeType, sendNotice, sender = None):
             self.received += 1
     cb = cbClass(regNoticeType, sendNotice, sender)
     l = Tf.Notice.RegisterGlobally(regNoticeType, cb.callback)
-    if (sender):
+    if sender:
         l = Tf.Notice.Register(regNoticeType, cb.callback, sender)
-    if (sender):
+    if sender:
         sendNotice.Send(sender)
     else:
         sendNotice.SendGlobally()

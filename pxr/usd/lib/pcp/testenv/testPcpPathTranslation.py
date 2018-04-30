@@ -28,7 +28,7 @@ import unittest, sys
 class TestPcpPathTranslation(unittest.TestCase):
     def _GetPcpCacheForLayer(self, rootLayerPath):
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerPath)
-        self.assertTrue(rootLayer, "Cannot open layer %s" % (rootLayerPath))
+        self.assertTrue(rootLayer, "Cannot open layer %s" % rootLayerPath)
 
         return Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
 

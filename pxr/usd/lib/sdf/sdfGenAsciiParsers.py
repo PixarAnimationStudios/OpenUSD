@@ -49,7 +49,7 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
         installedNames = set(map(basename, installedFiles))
         generatedNames = set(map(basename, generatedFiles))
 
-        if (generatedNames - installedNames):
+        if generatedNames - installedNames:
             exit('*** Unknown files generated, please add them to the list of '
                  'base files names in sdfGenAsciiParsers.py')
 

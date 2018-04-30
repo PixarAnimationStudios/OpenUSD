@@ -81,7 +81,7 @@ def ToString(v, typeName=None):
             result = ("Endpts of box diagonal:\n"
                       "%s\n%s\n\nTransform matrix:\n%s\n"
                       % (v.box.GetCorner(0), v.box.GetCorner(7), prettyMatrix))
-            if (v.hasZeroAreaPrimitives):
+            if v.hasZeroAreaPrimitives:
                 result += "\nHas zero-area primitives\n"
             else:
                 result += "\nDoes not have zero-area primitives\n"
