@@ -141,6 +141,10 @@ protected:
     _Sync(HdSceneDelegate *sceneDelegate,
           HdRenderParam   *renderParam,
           HdDirtyBits     *dirtyBits);
+
+    HD_API
+    static bool _IsEnabledSharedExtComputationData();
+
 private:
     size_t                                 _dispatchCount;
     size_t                                 _elementCount;

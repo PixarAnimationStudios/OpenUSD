@@ -38,6 +38,45 @@ HdStExtComputation::HdStExtComputation(SdfPath const &id)
 {
 }
 
+//
+// De-duplicating and sharing of ExtComputation data.
+//
+// This is similar to sharing of primvar data. We identify
+// data by computing a hash of the sources of the data. For
+// now, buffer data allocated here is read-only and is never
+// mutated. If that changes, then we will have to deal with
+// migrating shared data to a non-shared buffer so that it
+// can be modified safely.
+// 
+static uint64_t
+_ComputeSharedComputationInputId(uint64_t baseId,
+                                 HdBufferSourceVector const &sources)
+{
+    size_t inputId = baseId;
+    for (HdBufferSourceSharedPtr const &bufferSource : sources) {
+        size_t sourceId = bufferSource->ComputeHash();
+        inputId = ArchHash64((const char*)&sourceId,
+                               sizeof(sourceId), inputId);
+    }
+    return inputId;
+}
+
+static HdBufferArrayRangeSharedPtr
+_AllocateComputationDataRange(
+        HdBufferSourceVector & inputs,
+        HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    HdBufferSpecVector bufferSpecs;
+    HdBufferSpec::AddBufferSpecs(&bufferSpecs, inputs);
+
+    HdBufferArrayRangeSharedPtr inputRange =
+        resourceRegistry->AllocateShaderStorageBufferArrayRange(
+                                HdPrimTypeTokens->extComputation, bufferSpecs);
+    resourceRegistry->AddSources(inputRange, inputs);
+
+    return inputRange;
+}
+
 void
 HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
                          HdRenderParam   *renderParam,
@@ -73,13 +112,37 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
     _inputRange.reset();
     if (!inputs.empty()) {
-        HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, inputs);
+        if (_IsEnabledSharedExtComputationData() && IsInputAggregation()) {
+            uint64_t inputId = _ComputeSharedComputationInputId(0, inputs);
 
-        _inputRange = resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primvar, bufferSpecs);
+            HdInstance<uint64_t, HdBufferArrayRangeSharedPtr> barInstance;
+            std::unique_lock<std::mutex> regLog =
+                resourceRegistry->RegisterExtComputationDataRange(inputId,
+                                                                  &barInstance);
 
-        resourceRegistry->AddSources(_inputRange, inputs);
+            if (barInstance.IsFirstInstance()) {
+                // Allocate the first buffer range for this input key
+                _inputRange = _AllocateComputationDataRange(inputs,
+                                                            resourceRegistry);
+                barInstance.SetValue(_inputRange);
+
+                TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
+                    "Allocated shared ExtComputation buffer range: %s: %p\n",
+                    GetID().GetText(), (void *)_inputRange.get());
+            } else {
+                // Share the existing buffer range for this input key
+                _inputRange = barInstance.GetValue();
+
+                TF_DEBUG(HD_SHARED_EXT_COMPUTATION_DATA).Msg(
+                    "Reused shared ExtComputation buffer range: %s: %p\n",
+                    GetID().GetText(), (void *)_inputRange.get());
+            }
+
+        } else {
+            // We're not sharing, so go ahead and allocate new buffer range.
+            _inputRange = _AllocateComputationDataRange(inputs,
+                                                        resourceRegistry);
+        }
     }
 }
 

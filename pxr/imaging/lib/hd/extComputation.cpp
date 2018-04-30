@@ -29,7 +29,23 @@
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+#include "pxr/base/tf/envSetting.h"
+
+#include "pxr/base/arch/hash.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_EXT_COMPUTATION_DATA, 0,
+                      "Enable sharing of ext computation data buffers");
+
+/* static */
+bool
+HdExtComputation::_IsEnabledSharedExtComputationData()
+{
+    static bool enabled =
+        (TfGetEnvSetting(HD_ENABLE_SHARED_EXT_COMPUTATION_DATA) == 1);
+    return enabled;
+}
 
 HdExtComputation::HdExtComputation(SdfPath const &id)
  : HdSprim(id)

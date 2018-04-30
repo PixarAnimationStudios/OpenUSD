@@ -143,6 +143,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (gpuMemoryUsed)                             \
     (instBasisCurvesTopology)                   \
     (instBasisCurvesTopologyRange)              \
+    (instExtComputationDataRange)               \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
     (instPrimvarRange)                          \
