@@ -763,11 +763,11 @@ TraceReporter::_PendingEventNode::Close(TimeStamp end)
     // The new node should have a time that is at least as long as the time of 
     // its children.
     TimeStamp childTime = std::accumulate(
-        children.begin(), children.end(), 0, 
+        children.begin(), children.end(), TimeStamp(0), 
         [](TimeStamp ts, const Child& b) -> TimeStamp {
             return ts + b.node->GetInclusiveTime();
         });
-    
+
     TraceEventNodeRefPtr node = 
         TraceEventNode::New(id, key, std::max(end-start, childTime));
     for (Child& child : children) {
