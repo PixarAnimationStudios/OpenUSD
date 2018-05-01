@@ -222,6 +222,10 @@ class Launcher(object):
         # Find the resource directory
         resourceDir = os.path.dirname(os.path.realpath(__file__)) + "/"
 
+        # This is a work around for a bug in Qt 5.6 where sometimes mouse move
+        # events are not compressed on linux resulting in a laggy viewport.
+        os.environ['QT_XCB_NO_XI2_MOUSE']='1'
+
         # Create the Qt application
         app = QtWidgets.QApplication(sys.argv)
 
