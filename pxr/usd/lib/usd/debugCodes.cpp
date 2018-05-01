@@ -41,6 +41,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PATH_RESOLUTION, "Usd path resolution diagnostics");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PAYLOADS, "Usd payload load/unload messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PRIM_LIFETIMES, "Usd prim ctor/dtor messages");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_SCHEMA_REGISTRATION, "Usd schema registration details.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_CACHE, "Usd stage cache details");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_LIFETIMES, "Usd stage ctor/dtor messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_OPEN, "Usd stage opening details");
