@@ -2059,7 +2059,7 @@ UsdStage::_LoadAndUnload(const SdfPathSet &loadSet,
         tbb::concurrent_vector<SdfPath> unloadIndexPaths;
         _WalkPrimsWithMasters(
             path,
-            [this, &unloadIndexPaths] (UsdPrim const &prim) {
+            [&unloadIndexPaths] (UsdPrim const &prim) {
                 if (prim.IsInMaster() && prim.HasPayload()) {
                     unloadIndexPaths.push_back(
                         prim._GetSourcePrimIndex().GetPath());
