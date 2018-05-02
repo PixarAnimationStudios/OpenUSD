@@ -336,7 +336,17 @@ public:
 
     /// Store up to \a maxSampleCount primvar samples in \a *samples.
     /// Returns the number of samples returned.
+    ///
+    /// Sample values that are array-valued will have a size described
+    /// by the HdPrimvarDescriptor as applied to the toplogy.
+    ///
+    /// For example, this means that a mesh that is fracturing over time
+    /// will return samples with the same number of points; the number
+    /// of points will change as the scene delegate is resynchronzied
+    /// to represent the scene at a time with different topology.
+    ///
     /// Sample times are relative to the scene delegate's current time.
+    ///
     /// \see Get()
     HD_API
     virtual size_t
