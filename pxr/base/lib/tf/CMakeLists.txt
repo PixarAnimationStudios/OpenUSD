@@ -14,7 +14,6 @@ pxr_library(tf
         ${WINLIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
-        ${Boost_DATE_TIME_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
@@ -194,7 +193,6 @@ pxr_library(tf
         wrapNotice.cpp
         wrapPathUtils.cpp
         wrapPyContainerConversions.cpp
-        wrapPyDateTime.cpp
         wrapPyModuleNotice.cpp
         wrapPyObjWrapper.cpp
         wrapPyOptional.cpp
@@ -209,7 +207,6 @@ pxr_library(tf
         wrapTemplateString.cpp
         wrapTestPyAnnotatedBoolResult.cpp
         wrapTestPyContainerConversions.cpp
-        wrapTestPyDateTime.cpp
         wrapTestPyStaticTokens.cpp
         wrapTestTfPython.cpp
         wrapTestTfPyOptional.cpp
@@ -342,7 +339,6 @@ pxr_test_scripts(
     testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
-    testenv/testTfPyDateTime.py
     testenv/testTfPyNotice.py
     testenv/testTfPyOptional.py
     testenv/testTfPyScopeDescription.py
@@ -663,10 +659,6 @@ pxr_register_test(testTf_PyContainerConversions
 pxr_register_test(testTf_PyOptional
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyOptional"
-)
-pxr_register_test(testTf_PyDateTime
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyDateTime"
 )
 pxr_register_test(testTf_PyStaticTokens
     PYTHON

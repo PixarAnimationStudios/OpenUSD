@@ -43,7 +43,6 @@ TF_WRAP_MODULE {
     TF_WRAP( Notice );
     TF_WRAP( PathUtils );
     TF_WRAP( PyContainerConversions );
-    TF_WRAP( PyDateTime );
     TF_WRAP( PyModuleNotice );
     TF_WRAP( PyObjWrapper );
     TF_WRAP( PyOptional );
@@ -60,7 +59,6 @@ TF_WRAP_MODULE {
     TF_WRAP( Type );
     TF_WRAP( Tf_TestPyAnnotatedBoolResult );
     TF_WRAP( Tf_TestPyContainerConversions );
-    TF_WRAP( Tf_TestPyDateTime );
     TF_WRAP( Tf_TestPyStaticTokens );
     TF_WRAP( Tf_TestTfPython );
     TF_WRAP( Tf_TestTfPyOptional );
