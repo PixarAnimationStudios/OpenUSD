@@ -117,15 +117,6 @@ install(
         ${PXR_INSTALL_SUBDIR}/config/Icons
 )
 
-install( 
-    FILES
-        __init__.py
-        treeview.py
-        treemodel.py       
-    DESTINATION
-        ${PXR_INSTALL_SUBDIR}/scripts/python/gusd
-)
-
 # Disabling temporarily: need to resolve tbb link errors.
 #pxr_build_test(testGusdErrors
 #    LIBRARIES

@@ -22,7 +22,14 @@
 # language governing permissions and limitations under the Apache License.
 #
 
+# We need to import Usd here to ensure certain Python wrappings that the
+# Gusd module depends on are present. In particular, the c'tor for 
+# GusdStageOpts uses UsdStage::LoadAll as a default value, so we need to
+# ensure this is present before import.
+from pxr import Usd
 import _gusd
+del Usd
+
 from pxr import Tf
 Tf.PrepareModule(_gusd, locals())
 del Tf

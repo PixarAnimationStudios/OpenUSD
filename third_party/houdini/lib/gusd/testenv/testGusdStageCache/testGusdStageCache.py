@@ -21,7 +21,13 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import gusd
+# XXX: The try-except block here is a workaround for
+# Pixar-internal build system issues.
+try:
+    from pxr import Gusd
+except ImportError:
+    import Gusd
+
 from pxr import Sdf, Tf
 import unittest
 
@@ -67,7 +73,7 @@ class TestGusdStageCache(unittest.TestCase):
         Tests basic Find() and FindOrOpen() queries.
         """
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         assert not cache.Find(path)
 
@@ -76,15 +82,15 @@ class TestGusdStageCache(unittest.TestCase):
         # Stages use LoadAll by default.
         # Querying with LoadNone should give a different stage.
 
-        assert not cache.Find(path, opts=gusd.StageOpts.LoadNone())
+        assert not cache.Find(path, opts=Gusd.StageOpts.LoadNone())
 
-        stage2 = FindOrOpen(cache, path, opts=gusd.StageOpts.LoadNone())
+        stage2 = FindOrOpen(cache, path, opts=Gusd.StageOpts.LoadNone())
         assert stage2
         assert stage2 != stage
 
         # Likewise, stage edits also form a unique part of the
         # cache key, and should return different stages.
-        edit = gusd.StageBasicEdit.New()
+        edit = Gusd.StageBasicEdit.New()
         edit.SetVariants([Sdf.Path("/foo{a=b}")])
 
         assert not cache.Find(path, edit=edit)
@@ -101,7 +107,7 @@ class TestGusdStageCache(unittest.TestCase):
             return
 
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         prim,stage = GetPrim(cache, path, "/Root/Component/A")
 
@@ -127,7 +133,7 @@ class TestGusdStageCache(unittest.TestCase):
             return
 
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         prim,stage = GetPrim(cache, path, "/Root/Component/B")
 
@@ -151,7 +157,7 @@ class TestGusdStageCache(unittest.TestCase):
             return
 
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         prim,stage = GetPrim(cache, path, "/Root")
 
@@ -174,7 +180,7 @@ class TestGusdStageCache(unittest.TestCase):
             return
 
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         prim,stage = GetPrim(cache, path, "/Root/ComponentlessHierarchy")
 
@@ -197,7 +203,7 @@ class TestGusdStageCache(unittest.TestCase):
             return
 
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         # Pre-populate a complete stage on the cache.
         stage = FindOrOpen(cache, path)
@@ -214,7 +220,7 @@ class TestGusdStageCache(unittest.TestCase):
         Tests basic stage mask queries.
         """
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         prim,stage = GetPrim(cache, path, "/Root")
 
@@ -232,7 +238,7 @@ class TestGusdStageCache(unittest.TestCase):
         across different stages, with different edits.
         """
 
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
         
         # Input spec has arbitrary ordering, and a mix of complete and
         # incomplete specs (null file or prim paths)
@@ -271,7 +277,7 @@ class TestGusdStageCache(unittest.TestCase):
         the use of masked stage queries, using the GetPrims() method.
         """
 
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         stage = cache.FindOrOpen("test2.usda")
 
@@ -288,7 +294,7 @@ class TestGusdStageCache(unittest.TestCase):
         Tests queries of prims with variant selections.
         """
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         primPath = Sdf.Path("/Root/ModelWithVariants")
         variantNames = ("A", "B", "C")
@@ -313,7 +319,7 @@ class TestGusdStageCache(unittest.TestCase):
         Tests cache clearing.
         """
         path = "test.usda"
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         stage = FindOrOpen(cache, path)
         assert stage
@@ -378,7 +384,7 @@ class TestGusdStageCache(unittest.TestCase):
 
         path = "test.usda"
         
-        cache = gusd.StageCache()
+        cache = Gusd.StageCache()
 
         # Empty path.
         self._TestLoadWithInvalidPrimPath(cache, path, Sdf.Path())
