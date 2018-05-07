@@ -32,7 +32,6 @@
 #include "pxr/base/trace/api.h"
 #include "pxr/base/trace/collector.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/preprocessor/cat.hpp>
 
 #include <atomic>
@@ -236,7 +235,7 @@ private:
 /// The TRACE_FUNCTION() macro may be even more convenient in some
 /// circumstances.
 ///
-struct TraceAuto : public boost::noncopyable {
+struct TraceAuto {
     /// Constructor taking function name, pretty function name and a scope name.
     ///
     TraceAuto(const char *funcName, const char *prettyFuncName,
@@ -247,6 +246,10 @@ struct TraceAuto : public boost::noncopyable {
         _collector->BeginEvent(_key);
         std::atomic_thread_fence(std::memory_order_seq_cst);
     }
+
+    // TraceAuto cannot be copied.
+    TraceAuto(const TraceAuto&) = delete;
+    TraceAuto& operator=(const TraceAuto&) = delete;
 
     /// Constructor taking a TfToken key.
     ///
