@@ -313,7 +313,7 @@ class TestUsdMetadata(unittest.TestCase):
                 self.assertEqual(prop.GetMetadata("displayGroup"), None)
 
     def test_BasicCustomData(self):
-        '''Test basic CustomData API, including by-key-path API'''
+        """Test basic CustomData API, including by-key-path API"""
 
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestBasicCustomData.'+fmt)
@@ -375,9 +375,9 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertEqual(p.GetCustomData(), { 'newKey':'value' })
 
     def test_ComposedNestedDictionaries(self):
-        '''Test to ensure dictionaries are properly merged.
+        """Test to ensure dictionaries are properly merged.
            They will be recursively merged, with the typical strength
-           preferences in place.'''
+           preferences in place."""
 
         print "Verify composed nested dictionary behavior..."
         for fmt in allFormats:
@@ -397,7 +397,7 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertEqual(b.GetCustomData(), expectedCustomData)
 
     def test_ComposedCustomData(self):
-        '''Test customData composition (dictionary-wise)'''
+        """Test customData composition (dictionary-wise)"""
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestComposedCustomData.'+fmt)
 
@@ -439,7 +439,7 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertEqual(stronger.GetCustomData(), {'foo':'stronger', 'bar':'weaker'})
 
     def test_BasicCustomDataViaMetadataAPI(self):
-        '''Test basic metadata API, including by-key-path API'''
+        """Test basic metadata API, including by-key-path API"""
 
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestBasicCustomDataViaMetadataAPI.'+fmt)
@@ -501,7 +501,7 @@ class TestUsdMetadata(unittest.TestCase):
             self.assertEqual(p.GetMetadata('customData'), { 'newKey':'value'})
 
     def test_ComposedCustomDataViaMetadataAPI(self):
-        '''Test customData composition (dictionary-wise)'''
+        """Test customData composition (dictionary-wise)"""
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory(
                 'TestComposedCustomDataViaMetadataAPI.'+fmt)
@@ -573,7 +573,7 @@ class TestUsdMetadata(unittest.TestCase):
                                              (key, metadata))
 
     def test_BasicListOpMetadata(self):
-        '''Tests basic metadata API with supported list op types'''
+        """Tests basic metadata API with supported list op types"""
         def _TestBasic(fieldName, listOp, expectedListOp):
             for fmt in allFormats:
                 s = Usd.Stage.CreateNew("TestBasicListOpMetadata."+fmt)
@@ -659,7 +659,7 @@ class TestUsdMetadata(unittest.TestCase):
         _TestBasic('tokenListOpTest', listOp, expectedListOp)
 
     def test_ComposedListOpMetadata(self):
-        '''Tests composition of list op-valued metadata fields'''
+        """Tests composition of list op-valued metadata fields"""
         def _TestComposition(fieldName, weakListOp, strongListOp,
                              expectedListOp):
             for fmt in allFormats:
@@ -856,7 +856,7 @@ class TestUsdMetadata(unittest.TestCase):
             assert a == b
 
     def test_AssetPathMetadata(self):
-        '''Test path resolution for asset path-valued metadata'''
+        """Test path resolution for asset path-valued metadata"""
         s = Usd.Stage.Open("assetPaths/root.usda")
         prim = s.GetPrimAtPath("/AssetPathTest")
         attr = prim.GetAttribute("assetPath")
@@ -896,7 +896,7 @@ class TestUsdMetadata(unittest.TestCase):
             [os.path.abspath("assetPaths/asset.usda")])
 
     def test_TimeSamplesMetadata(self):
-        '''Test timeSamples composition, with layer offsets'''
+        """Test timeSamples composition, with layer offsets"""
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory(
                 'TestTimeSamplesMetadata.'+fmt)

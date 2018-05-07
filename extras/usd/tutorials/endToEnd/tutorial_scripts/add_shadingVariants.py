@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-'''
+"""
 This script adds shading to the models at:
 
     models/
@@ -33,7 +33,7 @@ This script will change the texture path to point to different textures (though
 we only ship textures for '1', '9', '8', '4').  We also set the displayColor in
 the shadingVariants.
 
-'''
+"""
 import os
 ASSET_BASE = os.path.join(os.getcwd(), 'models')
 
@@ -109,10 +109,10 @@ def _AddShadingToBall(stage):
     shadingVariant.SetVariantSelection('Cue')
 
 def _SetParameters(shadingNode, params):
-    '''
+    """
     shadingNode is a RisObject
     params are (paramName, paramType, value) tuples
-    '''
+    """
 
     for paramName, paramType, value in params:
         shadingNode.CreateInput(paramName, paramType).Set(value)

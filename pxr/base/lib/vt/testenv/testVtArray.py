@@ -98,8 +98,8 @@ class TestVtArray(unittest.TestCase):
         d3[...] = 0
 
     def test_VtArraySlicingVsPythonSlicing(self):
-        '''Validate VtArray slicing against python list slicing for all
-           particular index combinations of one dimensional length 4 arrays.'''
+        """Validate VtArray slicing against python list slicing for all
+           particular index combinations of one dimensional length 4 arrays."""
         a = Vt.IntArray(4)
         a[...] = range(4)
         l = range(4)
@@ -170,7 +170,7 @@ class TestVtArray(unittest.TestCase):
         self.assertEqual(-m0 + m1, m0)
 
     def test_Numpy(self):
-        '''Converting VtArrays to numpy arrays and back.'''
+        """Converting VtArrays to numpy arrays and back."""
 
         try:
             import numpy

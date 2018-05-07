@@ -28,7 +28,7 @@ import unittest
 class TestGfGamma(unittest.TestCase):
 
     def test_DifferentVecs(self):
-        '''Test gamma converting vecs of different types and sizes'''
+        """Test gamma converting vecs of different types and sizes"""
         self.assertEqual(Gf.ApplyGamma(Gf.Vec3f(1,2,3),2.0), Gf.Vec3f(1,4,9))
         self.assertEqual(Gf.ApplyGamma(Gf.Vec3d(1,2,3),2.0), Gf.Vec3d(1,4,9))
         self.assertEqual(Gf.ApplyGamma(Gf.Vec4f(1,2,3,4),2.0), Gf.Vec4f(1,4,9,4))

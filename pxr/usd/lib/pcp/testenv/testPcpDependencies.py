@@ -22,13 +22,13 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-'''
+"""
 This test exercises the Pcp dependency API in specific scenarios
 that represent interesting cases that it needs to handle.
 
 It cherry picks particular examples from the Pcp museum
 to exercise.
-'''
+"""
 
 from pxr import Sdf, Pcp, Tf
 import os, unittest

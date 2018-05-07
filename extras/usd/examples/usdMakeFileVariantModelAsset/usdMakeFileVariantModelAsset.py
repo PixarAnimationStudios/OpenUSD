@@ -23,19 +23,19 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-'''
+"""
 Creates a top-level, referenceable asset USD file from one or more
 'variant' files, each of which can contain arbitrary scene description.
-When supplying multiple files, one must also provide the name for a 
+When supplying multiple files, one must also provide the name for a
 variantSet that will be constructed to switch between the files.
 
 The asset file will place the variant files behind a "payload", which will
 enable consumers to defer loading and processing of the data when composed
-onto a UsdStage. 
+onto a UsdStage.
 
 The names of the created variations will be taken directly from the basename
 of their corresponding input file.
-'''
+"""
 
 from pxr import Tf, Kind, Sdf, Usd
 

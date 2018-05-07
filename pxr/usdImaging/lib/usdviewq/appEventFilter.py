@@ -25,20 +25,20 @@
 from qt import QtCore, QtGui, QtWidgets
 
 class AppEventFilter(QtCore.QObject):
-    '''This class's primary responsibility is delivering key events to
+    """This class's primary responsibility is delivering key events to
     "the right place".  Given usdview's simplistic approach to shortcuts
-    (i.e. just uses the native Qt mechanism that does not allow for 
+    (i.e. just uses the native Qt mechanism that does not allow for
     context-sensitive keypress dispatching), we take a simplistic approach
-    to routing: use Qt's preferred mechanism of processing keyPresses 
+    to routing: use Qt's preferred mechanism of processing keyPresses
     only in widgets that have focus; therefore, the primary behavior of this
     filter is to track mouse-position in order to set widget focus, so that
     widgets with keyboard navigation behaviors operate when the mouse is over
     them.
-    
+
     We add one special behaviors on top of that, which is to turn unaccepted
     left/right events into up/down events for TreeView widgets, because we
     do not have a specialized class on which to provide this nice navigation
-    behavior.'''
+    behavior."""
 
     # in future it would be a hotkey dispatcher instead of appController
     # that we'd dispatch to, but we don't have one yet

@@ -21,9 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-'''
+"""
 Module that provides the StageView class.
-'''
+"""
 
 from math import tan, floor, ceil, radians as rad
 import os, sys
@@ -622,12 +622,12 @@ class HUD():
         GL.glUseProgram(0)
 
 class StageView(QtOpenGL.QGLWidget):
-    '''
+    """
     QGLWidget that displays a USD Stage.  A StageView requires a dataModel
     object from which it will query state it needs to properly image its
     given UsdStage.  See the nested DefaultDataModel class for the expected
     API.
-    '''
+    """
 
     # TODO: most, if not all of the state StageView requires (except possibly
     # the stage?), should be migrated to come from the dataModel, and redrawing
@@ -898,7 +898,7 @@ class StageView(QtOpenGL.QGLWidget):
         return self._renderer
 
     def closeRenderer(self):
-        '''Close the current renderer.'''
+        """Close the current renderer."""
         with Timer() as t:
             self._renderer = None
         if self._printTiming:
@@ -928,8 +928,8 @@ class StageView(QtOpenGL.QGLWidget):
         return True
 
     def _stageReplaced(self):
-        '''Set the USD Stage this widget will be displaying. To decommission
-        (even temporarily) this widget, supply None as 'stage'.'''
+        """Set the USD Stage this widget will be displaying. To decommission
+        (even temporarily) this widget, supply None as 'stage'."""
 
         self.allSceneCameras = None
 
@@ -1171,11 +1171,11 @@ class StageView(QtOpenGL.QGLWidget):
             self.computeAndSetClosestDistance()
 
     def updateView(self, resetCam=False, forceComputeBBox=False, frameFit=1.1):
-        '''Updates bounding boxes and camera. resetCam = True causes the camera to reframe
+        """Updates bounding boxes and camera. resetCam = True causes the camera to reframe
         the specified prims. frameFit sets the ratio of the camera's frustum's
         relevant dimension to the object's bounding box. 1.1, the default,
         fits the prim's bounding box in the frame with a roughly 10% margin.
-        '''
+        """
 
         # Only compute BBox if forced, if needed for drawing,
         # or if this is the first time running.
@@ -1871,9 +1871,9 @@ class StageView(QtOpenGL.QGLWidget):
             self.computeAndSetClosestDistance()
 
     def computeAndSetClosestDistance(self):
-        '''Using the current FreeCamera's frustum, determine the world-space
+        """Using the current FreeCamera's frustum, determine the world-space
         closest rendered point to the camera.  Use that point
-        to set our FreeCamera's closest visible distance.'''
+        to set our FreeCamera's closest visible distance."""
         # pick() operates at very low screen resolution, but that's OK for
         # our purposes.  Ironically, the same limited Z-buffer resolution for
         # which we are trying to compensate may cause us to completely lose
@@ -1904,12 +1904,12 @@ class StageView(QtOpenGL.QGLWidget):
             self.updateView()
 
     def pick(self, pickFrustum):
-        '''
+        """
         Find closest point in scene rendered through 'pickFrustum'.
         Returns a quintuple:
           selectedPoint, selectedPrimPath, selectedInstancerPath,
           selectedInstanceIndex, selectedElementIndex
-        '''
+        """
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
             # error has already been issued
@@ -1977,11 +1977,11 @@ class StageView(QtOpenGL.QGLWidget):
         return (inImageBounds, cameraFrustum.ComputeNarrowedFrustum(point, size))
 
     def pickObject(self, x, y, button, modifiers):
-        '''
+        """
         Render stage into fbo with each piece as a different color.
         Emits a signalPrimSelected or signalRollover depending on
         whether 'button' is None.
-        '''
+        """
         if not self._dataModel.stage:
             return
         renderer = self._getRenderer()
@@ -2043,11 +2043,11 @@ class StageView(QtOpenGL.QGLWidget):
 
     def ExportFreeCameraToStage(self, stage, defcamName='usdviewCam',
                                 imgWidth=None, imgHeight=None):
-        '''
+        """
         Export the free camera to the specified USD stage, if it is
         currently defined. If it is not active (i.e. we are viewing through
         a stage camera), raise a ValueError.
-        '''
+        """
         if not self._dataModel.viewSettings.freeCamera:
             raise ValueError("StageView's Free Camera is not defined, so cannot"
                              " be exported")
@@ -2071,11 +2071,11 @@ class StageView(QtOpenGL.QGLWidget):
 
     def ExportSession(self, stagePath, defcamName='usdviewCam',
                       imgWidth=None, imgHeight=None):
-        '''
+        """
         Export the free camera (if currently active) and session layer to a
         USD file at the specified stagePath that references the current-viewed
         stage.
-        '''
+        """
 
         tmpStage = Usd.Stage.CreateNew(stagePath)
         if self._dataModel.stage:

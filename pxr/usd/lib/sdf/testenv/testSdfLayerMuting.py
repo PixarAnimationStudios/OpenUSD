@@ -28,8 +28,8 @@ import unittest
 class TestSdfLayerMuting(unittest.TestCase):
     
     def test_UnmuteMutedLayer(self):
-        '''Unmuting an initially muted layer should unmute the 
-           layer and load the file.'''
+        """Unmuting an initially muted layer should unmute the
+           layer and load the file."""
 
         pathA = 'testSdfLayerMuting.testenv/a.sdf'
         layerA = Sdf.Layer.FindOrOpen(pathA)

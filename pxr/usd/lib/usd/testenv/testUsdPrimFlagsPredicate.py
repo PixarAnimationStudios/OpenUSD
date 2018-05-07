@@ -32,16 +32,16 @@ class TestPrimFlagsPredicate(unittest.TestCase):
         self.stage.OverridePrim("/Parent/Child")
     
     def testNullPrim(self):
-        '''
+        """
         Invalid prims raise an exception.
-        '''
+        """
         with self.assertRaises(Tf.ErrorException):
             Usd.PrimDefaultPredicate(Usd.Prim())
     
     def testSimpleParentChild(self):
-        '''
+        """
         Test absent child of a defined parent
-        '''
+        """
         self.assertFalse(Usd.PrimDefaultPredicate(self.stage.GetPrimAtPath('/Parent/Child')))
         self.assertTrue(Usd.PrimDefaultPredicate(self.stage.GetPrimAtPath('/Parent')))
 

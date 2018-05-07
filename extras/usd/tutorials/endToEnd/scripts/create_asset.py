@@ -23,10 +23,10 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-'''
+"""
 Creates an asset file that consists of a top level layer and sublayers for
 shading and geometry.
-'''
+"""
 
 import os
 from pxr import Kind, Sdf, Usd, UsdGeom

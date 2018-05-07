@@ -153,7 +153,7 @@ def coalesceFiles(
     outLayer.Save()
                          
 def walkPrim( p, primsWithAttributes ):
-    '''Walk the prim hierarchy looking for prims with attributes'''
+    """Walk the prim hierarchy looking for prims with attributes"""
 
     if p.attributes:
         primsWithAttributes.add( str(p.path) )
@@ -162,7 +162,7 @@ def walkPrim( p, primsWithAttributes ):
         walkPrim( child, primsWithAttributes )
 
 def getCommonPrefix( paths ):
-    '''Find the common prefix of a list of paths'''
+    """Find the common prefix of a list of paths"""
 
     if not paths:
         return ''

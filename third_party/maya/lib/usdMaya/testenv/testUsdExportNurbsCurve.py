@@ -52,9 +52,9 @@ class testUsdExportNurbsCurve(unittest.TestCase):
         standalone.uninitialize()
 
     def testExport(self):
-        '''
+        """
         Export the Maya file and validate a handful of properties.
-        '''
+        """
         usdFile = os.path.abspath('UsdExportNurbsCurveTest.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none')
