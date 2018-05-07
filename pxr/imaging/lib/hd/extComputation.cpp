@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_EXT_COMPUTATION_DATA, 0,
+TF_DEFINE_ENV_SETTING(HD_ENABLE_SHARED_EXT_COMPUTATION_DATA, 1,
                       "Enable sharing of ext computation data buffers");
 
 /* static */
