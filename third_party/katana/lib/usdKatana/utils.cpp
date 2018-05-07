@@ -272,6 +272,30 @@ PxrUsdKatanaUtils::ConvertVtValueToKatAttr(
         valueAttr = builder.build();
     }
 
+    else if (val.IsHolding<VtArray<unsigned> >()) {
+        // Lossy translation of array<unsigned> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<unsigned> rawVal = val.Get<VtArray<unsigned> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("unsigned [%zu]", rawVal.size()));
+        valueAttr = builder.build();
+    }
+
+    else if (val.IsHolding<VtArray<long> >()) {
+        // Lossy translation of array<long> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<long> rawVal = val.Get<VtArray<long> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        typeAttr = FnKat::StringAttribute(
+            TfStringPrintf("long [%zu]", rawVal.size()));
+        valueAttr = builder.build();
+    }
+
     else if (val.IsHolding<VtArray<float> >()) {
         const VtArray<float> rawVal = val.UncheckedGet<VtArray<float> >();
         std::vector<float> vec(rawVal.begin(), rawVal.end());
@@ -998,6 +1022,34 @@ PxrUsdKatanaUtils::ConvertVtValueToKatCustomGeomAttr(
         builder.set(vec);
         *valueAttr = builder.build();
         *inputTypeAttr = FnKat::StringAttribute("int");
+        if (elementSize > 1) {
+            *elementSizeAttr = FnKat::IntAttribute(elementSize);
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<unsigned> >()) {
+        // Lossy translation of array<unsigned> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<unsigned> rawVal = val.Get<VtArray<unsigned> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        *valueAttr = builder.build();
+        *inputTypeAttr = FnKat::StringAttribute("unsigned");
+        if (elementSize > 1) {
+            *elementSizeAttr = FnKat::IntAttribute(elementSize);
+        }
+        return;
+    }
+    if (val.IsHolding<VtArray<long> >()) {
+        // Lossy translation of array<long> to array<int>
+        // No warning is printed as they obscure more important warnings
+        const VtArray<long> rawVal = val.Get<VtArray<long> >();
+        std::vector<int> vec(rawVal.begin(), rawVal.end());
+        FnKat::IntBuilder builder(/* tupleSize = */ 1);
+        builder.set(vec);
+        *valueAttr = builder.build();
+        *inputTypeAttr = FnKat::StringAttribute("long");
         if (elementSize > 1) {
             *elementSizeAttr = FnKat::IntAttribute(elementSize);
         }
