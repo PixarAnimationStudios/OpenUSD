@@ -29,8 +29,6 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/noncopyable.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpPayloadContext;
@@ -61,9 +59,16 @@ TF_DECLARE_REF_PTRS(PcpPayloadDecorator);
 /// are stronger than the payload.
 ///
 class PcpPayloadDecorator :
-    public TfRefBase, public TfWeakBase, boost::noncopyable
+    public TfRefBase, public TfWeakBase
 {
 public:
+    // PcpPayloadDecorator needs to be noncopyable
+    PCP_API
+    PcpPayloadDecorator(const PcpPayloadDecorator&) = delete;
+
+    PCP_API
+    PcpPayloadDecorator& operator=(const PcpPayloadDecorator&) = delete;
+
     /// Decorate the SdfLayer arguments \p args with additional arguments
     /// that will be used when opening the layer specified in the payload 
     /// \p payload when composing the index at \p primIndexPath.
