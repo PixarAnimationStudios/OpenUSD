@@ -34,6 +34,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_vector.h>
 
 #include <ostream>
 
@@ -56,12 +57,17 @@ public:
     using ThisRefPtr = TraceReporterBaseRefPtr;
     using CollectionPtr = std::shared_ptr<TraceCollection>;
 
-    /// Constructor
-    TRACE_API TraceReporterBase();
+    /// Constructor taking an optional /p collection. This adds /p collection to
+    /// the reporter and the reporter will not receive any other collections.
+    /// This is useful if you want to generate reports from serialized
+    /// TraceCollections.
+    TRACE_API TraceReporterBase(CollectionPtr collection = nullptr);
 
     /// Destructor.
     TRACE_API virtual ~TraceReporterBase();
 
+    /// Write all collections that were processed by this reporter to \p ostr.
+    TRACE_API bool SerializeProcessedCollections(std::ostream& ostr) const;
 protected:
     /// Removes all references to TraceCollections.
     TRACE_API void _Clear();
@@ -82,6 +88,7 @@ private:
     void _OnTraceCollection(const TraceCollectionAvailable&);
 
     tbb::concurrent_queue<CollectionPtr> _pendingCollections;
+    tbb::concurrent_vector<CollectionPtr> _processedCollections;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

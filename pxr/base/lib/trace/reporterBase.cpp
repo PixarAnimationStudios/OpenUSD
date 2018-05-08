@@ -30,9 +30,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceReporterBase::TraceReporterBase()
+TraceReporterBase::TraceReporterBase(CollectionPtr collection)
 {
-    TfNotice::Register(ThisPtr(this), &This::_OnTraceCollection);
+    if (collection) {
+        _pendingCollections.push(collection);
+    } else {
+        TfNotice::Register(ThisPtr(this), &This::_OnTraceCollection);
+    }
+}
+
+bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
+{
+    std::vector<CollectionPtr> collections;
+    for (const CollectionPtr& col : _processedCollections) {
+        collections.push_back(col);
+    }
+    return TraceSerialization::Write(ostr, collections);
 }
 
 TraceReporterBase::~TraceReporterBase()
@@ -43,6 +56,7 @@ void
 TraceReporterBase::_Clear()
 {
     _pendingCollections.clear();
+    _processedCollections.clear();
 }
 
 void
@@ -52,6 +66,7 @@ TraceReporterBase::_Update()
     std::shared_ptr<TraceCollection> collection;
     while (_pendingCollections.try_pop(collection)) {
         _ProcessCollection(collection);
+        _processedCollections.push_back(collection);
     }
 }
 

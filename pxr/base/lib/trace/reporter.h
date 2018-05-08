@@ -85,7 +85,14 @@ public:
     /// Create a new reporter with \a label and \a collector.
     static ThisRefPtr New(const std::string& label,
                           const TraceCollectorPtr& collector) {
-        return TfCreateRefPtr(new This(label, collector));
+        return TfCreateRefPtr(new This(label, collector, nullptr));
+    }
+
+    /// Create a new reporter with \a label and \a collection. the reporter will
+    /// not receive new TraceCollection instances.
+    static ThisRefPtr New(const std::string& label,
+                          CollectionPtr collection) {
+        return TfCreateRefPtr(new This(label, nullptr, collection));
     }
 
     /// Returns the global reporter.
@@ -207,7 +214,8 @@ public:
 protected:
 
     TRACE_API TraceReporter(const std::string& label,
-                   const TraceCollectorPtr& collector);
+                   const TraceCollectorPtr& collector,
+                   TraceReporterBase::CollectionPtr);
 
 private:
     // Internal methods to traverse the collector's event log.

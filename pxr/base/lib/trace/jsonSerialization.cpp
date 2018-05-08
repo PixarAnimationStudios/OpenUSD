@@ -316,25 +316,15 @@ namespace {
 // addition to the Chrome Format JSON to fully reconstruct a TraceCollection.
 class _CollectionEventsToJson : public TraceCollection::Visitor {
 public:
-    const JsArray& GetThreads() const { return _threads;}
-
-
-    virtual void OnBeginCollection() override {}
-    virtual void OnEndCollection() override {}
-
-    
-    virtual void OnBeginThread(const TraceThreadId& threadId) override {
-        _events.clear();
-    }
-
-    virtual void OnEndThread(const TraceThreadId& threadId) override {
-        if (!_events.empty()) {
+    const JsArray CreateThreadsObject() const {
+        JsArray threads;
+        for (const auto& p : _eventsPerThread) {
             JsObject thread;
-            thread["thread"] = JsValue(threadId.ToString());
-            thread["events"] = _events;
-            _events.clear();
-            _threads.emplace_back(std::move(thread));
+            thread["thread"] = JsValue(p.first);
+            thread["events"] = p.second;
+            threads.emplace_back(std::move(thread));
         }
+        return threads;
     }
 
     virtual bool AcceptsCategory(TraceCategoryId categoryId) override {
@@ -352,7 +342,8 @@ public:
             case TraceEvent::EventType::ScopeData:
             case TraceEvent::EventType::CounterDelta:
             case TraceEvent::EventType::CounterValue:
-                _events.emplace_back(_TraceEventToJSON(key, event));
+                _eventsPerThread[threadId.ToString()].emplace_back(
+                    _TraceEventToJSON(key, event));
                 break;
             case TraceEvent::EventType::Begin:
             case TraceEvent::EventType::End:
@@ -361,28 +352,46 @@ public:
                 break;
         }
     }
+
+    virtual void OnBeginCollection() override {}
+    virtual void OnEndCollection() override {}    
+    virtual void OnBeginThread(const TraceThreadId& threadId) override {}
+    virtual void OnEndThread(const TraceThreadId& threadId) override {}
+
 private:
-    JsArray _threads;
-    JsArray _events;
+    std::map<std::string, JsArray> _eventsPerThread;
 };
 
 }
 
-JsValue 
-Trace_JSONSerialization::CollectionToJSON(const TraceCollection& collection)
+JsValue
+Trace_JSONSerialization::CollectionsToJSON(
+    const std::vector<std::shared_ptr<TraceCollection>>& collections)
 {
+    using CollectionPtr = std::shared_ptr<TraceCollection>;
     JsObject libtraceData;
     JsArray extraTraceEvents;
     // Convert Counter and Data events to JSON.
     {
         _CollectionEventsToJson eventsToJson;
-        collection.Iterate(eventsToJson);
-        libtraceData["threadEvents"] = eventsToJson.GetThreads();
+        for (const CollectionPtr& collection : collections) {
+            if (collection) {
+                collection->Iterate(eventsToJson);
+            }
+        }
+        libtraceData["threadEvents"] = eventsToJson.CreateThreadsObject();
     }
 
-    TraceSingleEventTreeReport report;
-    report.CreateGraph(collection);
-    JsObject traceObj = report.GetGraph()->CreateChromeTraceObject();
+    TraceSingleEventGraphRefPtr graph = TraceSingleEventGraph::New();
+    for (const CollectionPtr& collection : collections) {
+        if (collection) {
+            TraceSingleEventTreeReport report;
+            report.SetCounterValues(graph->GetFinalCounterValues());
+            report.CreateGraph(*collection);
+            graph->Merge(report.GetGraph());
+        }
+    }
+    JsObject traceObj = graph->CreateChromeTraceObject();
 
     // Add the extra lib trace data to the Chrome trace object.
     traceObj["libTraceData"] = libtraceData;
@@ -396,11 +405,35 @@ void
 _ImportChromeEvents(
     const JsArray& traceEvents, ChromeConstructionMap& output)
 {
+    std::map<uint64_t, std::string> tidToNames;
     for (const JsValue& event : traceEvents) {
         if (const JsObject* eventObj = _JsGet<JsObject>(event)) {
-            const ChromeThreadId* tid = 
-                _JsGetValue<ChromeThreadId>(*eventObj, "tid");
+            const std::string* tid = 
+                _JsGetValue<std::string>(*eventObj, "tid");
+            // tid field might be an integer
+            if (!tid) {
+                boost::optional<uint64_t> utid = 
+                    _JsGetValue<uint64_t>(*eventObj, "tid");
+                if (utid) {
+                    auto it = tidToNames.find(*utid);
+                    if (it == tidToNames.end()) {
+                        it = tidToNames.insert(
+                            std::make_pair(
+                                *utid, TfStringPrintf("%lu", *utid))).first;
+                    }
+                    tid = &it->second;
+                }
+            }
+    
             boost::optional<double> ts = _JsGetValue<double>(*eventObj, "ts");
+            // ts field might be an integer
+            if (!ts) {
+                boost::optional<uint64_t> uts =
+                    _JsGetValue<uint64_t>(*eventObj, "ts");
+                if (uts) {
+                    ts = *uts;
+                }
+            }
             const std::string* name = 
                 _JsGetValue<std::string>(*eventObj, "name");
             const std::string* ph = _JsGetValue<std::string>(*eventObj, "ph");
@@ -408,26 +441,46 @@ _ImportChromeEvents(
                 _JsGetValue<uint64_t>(*eventObj, "libTraceCatId");
 
             if (tid && ts && name && ph) {
-                TraceKey key = output[*tid].eventList.CacheKey(*name);
                 if (!catId) {
                     catId = 0;
                 }
                 if (*ph == "B") {
+                    TraceKey key = output[*tid].eventList.CacheKey(*name);
                     output[*tid].unorderedEvents.emplace_back(
                         TraceEvent::Begin,
                         key,
                         _MicrosecondsToTicks(*ts),
                         *catId);
                 } else if (*ph == "E") {
+                    TraceKey key = output[*tid].eventList.CacheKey(*name);
                     output[*tid].unorderedEvents.emplace_back(
                         TraceEvent::End,
                         key,
                         _MicrosecondsToTicks(*ts),
                         *catId);
                 } else if (*ph == "X") {
+                    // dur field might be a double or an int.
                     boost::optional<double> dur = 
                         _JsGetValue<double>(*eventObj, "dur");
+                    if (!dur) {
+                        boost::optional<uint64_t> udur = 
+                            _JsGetValue<uint64_t>(*eventObj, "dur");
+                        if (udur) {
+                            dur = *udur;
+                        }
+                    }
+                    // if dur field was not found check for the tdur field.
+                    if (!dur) {
+                        // tdur field might be a double or an int.
+                        dur = _JsGetValue<double>(*eventObj, "tdur");
+                        boost::optional<uint64_t> utdur = 
+                            _JsGetValue<uint64_t>(*eventObj, "tdur");
+                        if (utdur) {
+                            dur = *utdur;
+                        }
+                    }
                     if (dur) {
+                        TraceKey key = output[*tid].eventList.CacheKey(*name);
                         output[*tid].unorderedEvents.emplace_back(
                             TraceEvent::Timespan, key, 
                             _MicrosecondsToTicks(*ts),

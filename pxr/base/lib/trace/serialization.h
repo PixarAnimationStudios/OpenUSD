@@ -32,6 +32,7 @@
 #include <istream>
 #include <ostream>
 #include <memory>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,7 +45,14 @@ class TraceSerialization {
 public:
     /// Writes \p col to \p ostr.
     /// Returns true if the write was successful, false otherwise.
-    TRACE_API static bool Write(std::ostream& ostr, const TraceCollection& col);
+    TRACE_API static bool Write(std::ostream& ostr,
+        const std::shared_ptr<TraceCollection>& col);
+
+    /// Writes \p collections to \p ostr.
+    /// Returns true if the write was successful, false otherwise.
+    TRACE_API static bool Write(
+        std::ostream& ostr,
+        const std::vector<std::shared_ptr<TraceCollection>>& collections);
 
     /// Tries to create a TraceCollection from the contexts of \p istr.
     /// Returns a pointer to the created collection if it was successful.

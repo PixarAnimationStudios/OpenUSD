@@ -35,8 +35,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 void
 TraceSingleEventGraph::Merge(const TraceSingleEventGraphRefPtr& graph) {
     // Add the node to the tree.
-    for(TraceSingleEventNodeRefPtr child : graph->GetRoot()->GetChildrenRef()) {
-        _root->Append(child);
+    for(TraceSingleEventNodeRefPtr newThreadNode 
+            : graph->GetRoot()->GetChildrenRef()) {
+
+        const TraceSingleEventNodeRefPtrVector& threadNodes =
+            _root->GetChildrenRef();
+
+        // Find if the graph already has a node for child thread.
+        auto it = std::find_if(
+                threadNodes.begin(), 
+                threadNodes.end(), 
+                [&](const TraceSingleEventNodeRefPtr& node) {
+                    return node->GetKey() == newThreadNode->GetKey();
+                });
+
+        if (it != threadNodes.end()) {
+            // Add the nodes thread children from child into the current graph.
+            for(TraceSingleEventNodeRefPtr threadChild 
+                    : newThreadNode->GetChildrenRef()) {
+                (*it)->Append(threadChild);
+            }
+            // Update the thread times from the newly added children.
+            (*it)->SetBeginAndEndTimesFromChildren();
+        } else {
+            // Add the thread if it wasn't already in the graph.
+            _root->Append(newThreadNode);
+        }
     }
 
     // Add the counter data.

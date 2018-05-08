@@ -65,7 +65,9 @@ TF_DEFINE_PUBLIC_TOKENS(TraceReporterTokens, TRACE_REPORTER_TOKENS);
 //
 
 TraceReporter::TraceReporter(const string& label,
-                             const TraceCollectorPtr& collector) :
+                             const TraceCollectorPtr& collector,
+                             CollectionPtr collection) :
+    TraceReporterBase(collection),
     _collector(collector),
     _label(label),
     _groupByFunction(true),
@@ -655,7 +657,9 @@ TraceReporter::ClearTree()
     _counters.clear();
     _counterIndexMap.clear();
     ///XXX: This should really not be clearing the global collector here.
-    _collector->Clear();
+    if (_collector) {
+        _collector->Clear();
+    }
     _Clear();
 }
 
