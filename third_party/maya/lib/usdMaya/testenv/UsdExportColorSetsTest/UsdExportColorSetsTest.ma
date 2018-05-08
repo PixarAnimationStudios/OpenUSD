@@ -777,6 +777,7 @@ createNode groupId -n "groupId5";
 	setAttr ".ihi" 0;
 createNode lambert -n "Yellow";
 	rename -uid "109AE860-0000-148A-5708-408900000273";
+	setAttr ".dc" 1;
 	setAttr ".c" -type "float3" 1 1 0 ;
 	setAttr ".it" -type "float3" 0.60000002 0.60000002 0.60000002 ;
 createNode shadingEngine -n "lambert5SG";
