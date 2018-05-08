@@ -156,7 +156,7 @@ HdNullBufferSource::GetNumElements() const
 }
 
 void
-HdNullBufferSource::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdNullBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }

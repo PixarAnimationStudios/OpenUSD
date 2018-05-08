@@ -69,7 +69,7 @@ public:
 
     /// Add the buffer spec for this buffer source into given bufferspec vector.
     /// note: buffer specs has to be determined before the source resolution.
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const = 0;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const = 0;
 
     /// Computes and returns a hash value for the underlying data.
     HD_API
@@ -207,7 +207,7 @@ private:
 /// transfer to the GPU.
 ///
 /// concrete class needs to implement
-///   virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+///   virtual void GetBufferSpecs(HdBufferSpecVector *specs) const;
 ///   virtual void Resolve();
 /// and set the result via _SetResult().
 ///
@@ -249,7 +249,7 @@ public:
     HD_API
     virtual HdTupleType GetTupleType() const override;
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 };
 
 

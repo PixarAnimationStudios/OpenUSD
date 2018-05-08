@@ -57,15 +57,15 @@ public:
 
     /// overrides
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     HD_API
     virtual bool Resolve() override;
     HD_API
-    virtual TfToken const &GetName() const;
+    virtual TfToken const &GetName() const override;
 
 protected:
     HD_API
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     Hd_VertexAdjacency const *_adjacency;

@@ -67,7 +67,7 @@ _AllocateComputationDataRange(
         HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
     HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, inputs);
+    HdBufferSpec::GetBufferSpecs(inputs, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr inputRange =
         resourceRegistry->AllocateShaderStorageBufferArrayRange(

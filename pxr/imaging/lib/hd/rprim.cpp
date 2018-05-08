@@ -402,9 +402,7 @@ HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
     if (!drawItem->GetConstantPrimvarRange()) {
         // establish a buffer range
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(srcIt, sources) {
-            (*srcIt)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
@@ -512,7 +510,7 @@ HdRprim::_ComputeSharedPrimvarId(uint64_t baseId,
     }
 
     HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
     for (HdBufferSpec const &bufferSpec : bufferSpecs) {
         boost::hash_combine(primvarId, bufferSpec.name);
         boost::hash_combine(primvarId, bufferSpec.tupleType.type);

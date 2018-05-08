@@ -44,13 +44,13 @@ public:
 
     HDST_API
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry);
+                         HdResourceRegistry *resourceRegistry) override;
 
     HDST_API
-    virtual int GetNumOutputElements() const;
+    virtual int GetNumOutputElements() const override;
 
     HDST_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
 private:
     HdBufferArrayRangeSharedPtr _src;

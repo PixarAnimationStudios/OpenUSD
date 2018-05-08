@@ -56,7 +56,7 @@ public:
                                  HdType dstDataType);
 
     HDST_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     HDST_API
     virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;

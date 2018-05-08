@@ -216,7 +216,7 @@ HdStExtCompGpuComputation::Execute(
 }
 
 void
-HdStExtCompGpuComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdStExtCompGpuComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // nothing
 }

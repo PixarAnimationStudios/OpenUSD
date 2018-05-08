@@ -143,7 +143,7 @@ public:
             out << "Hd_NullStrategy::_BufferArray\n";
         }
 
-        virtual void AddBufferSpecs(HdBufferSpecVector *bufferSpecs) const {
+        virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const {
         }
 
         virtual const void *_GetAggregation() const {

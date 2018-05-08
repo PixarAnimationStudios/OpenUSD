@@ -189,11 +189,11 @@ public:
     Hd_AdjacencyBuilderComputation(Hd_VertexAdjacency *adjacency,
                                    HdMeshTopology const *topology);
     HD_API
-    virtual bool Resolve();
+    virtual bool Resolve() override;
 
 protected:
     HD_API
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     Hd_VertexAdjacency *_adjacency;
@@ -216,13 +216,13 @@ public:
 
     // overrides
     HD_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     HD_API
-    virtual bool Resolve();
+    virtual bool Resolve() override;
 
 protected:
     HD_API
-    virtual bool _CheckValid() const;
+    virtual bool _CheckValid() const override;
 
 private:
     Hd_VertexAdjacency const *_adjacency;

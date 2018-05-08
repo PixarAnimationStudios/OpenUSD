@@ -51,7 +51,7 @@ HdExtCompPrimvarBufferSource::GetName() const
 }
 
 void
-HdExtCompPrimvarBufferSource::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdExtCompPrimvarBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(_primvarName, _tupleType);
 }

@@ -326,7 +326,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             //   * indices
             //   * primitiveParam
             HdBufferSpecVector bufferSpecs;
-            HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+            HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
             // allocate new range
             HdBufferArrayRangeSharedPtr range =
@@ -382,7 +382,7 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
                 adjacency->GetAdjacencyBuilderForGPUComputation();
 
             HdBufferSpecVector bufferSpecs;
-            adjacencyForGpuComputation->AddBufferSpecs(&bufferSpecs);
+            adjacencyForGpuComputation->GetBufferSpecs(&bufferSpecs);
 
             HdBufferArrayRangeSharedPtr adjRange =
                 resourceRegistry->AllocateNonUniformBufferArrayRange(
@@ -825,9 +825,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // new buffer specs
     HdBufferSpecVector bufferSpecs;
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, reserveOnlySources);
-    HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr const &bar = drawItem->GetVertexPrimvarRange();
     if ((!bar) || (!bar->IsValid())) {
@@ -1026,7 +1026,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // allocate new bar if not exists
     if (!drawItem->GetFaceVaryingPrimvarRange()) {
         HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
@@ -1090,7 +1090,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     // allocate new bar if not exists
     if (!drawItem->GetElementPrimvarRange()) {
         HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(

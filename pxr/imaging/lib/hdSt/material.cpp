@@ -79,7 +79,7 @@ public:
     virtual short GetNumComponents() const {
         return 1;
     }
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const {
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const {
         specs->emplace_back(_name, GetTupleType());
     }
     virtual bool Resolve() {

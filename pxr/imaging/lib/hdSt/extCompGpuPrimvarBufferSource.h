@@ -61,7 +61,7 @@ public:
     virtual HdTupleType GetTupleType() const override;
 
     HDST_API
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override;
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
     virtual bool _CheckValid() const override;

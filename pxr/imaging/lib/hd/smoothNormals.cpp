@@ -51,7 +51,7 @@ Hd_SmoothNormalsComputation::Hd_SmoothNormalsComputation(
 }
 
 void
-Hd_SmoothNormalsComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+Hd_SmoothNormalsComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // The datatype of normals is the same as that of points,
     // unless the packed format was requested.

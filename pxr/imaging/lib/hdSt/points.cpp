@@ -219,9 +219,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         !drawItem->GetVertexPrimvarRange()->IsValid()) {
         // initialize buffer array
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(it, sources) {
-            (*it)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(

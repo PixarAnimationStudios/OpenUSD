@@ -487,9 +487,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             sources.push_back(_topology->GetIndexBuilderComputation(
                 !_SupportsRefinement(_refineLevel)));
 
-            TF_FOR_ALL(it, sources) {
-                (*it)->AddBufferSpecs(&bufferSpecs);
-            }
+            HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
             // allocate new range
             HdBufferArrayRangeSharedPtr range
@@ -627,9 +625,9 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         // new buffer specs
         HdBufferSpecVector bufferSpecs;
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, reserveOnlySources);
-        HdBufferSpec::AddBufferSpecs(&bufferSpecs, computations);
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+        HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
+        HdBufferSpec::GetBufferSpecs(computations, &bufferSpecs);
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
@@ -694,9 +692,8 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     if (!drawItem->GetElementPrimvarRange() ||
         !drawItem->GetElementPrimvarRange()->IsValid()) {
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(it, sources) {
-            (*it)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->primvar, bufferSpecs);

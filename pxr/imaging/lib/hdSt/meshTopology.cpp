@@ -128,7 +128,7 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
 
         // allocate quadrangulation table on GPU
         HdBufferSpecVector bufferSpecs;
-        quadrangulateTable->AddBufferSpecs(&bufferSpecs);
+        quadrangulateTable->GetBufferSpecs(&bufferSpecs);
 
         _quadrangulateTableRange =
             resourceRegistry->AllocateNonUniformBufferArrayRange(

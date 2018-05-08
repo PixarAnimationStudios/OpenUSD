@@ -36,7 +36,7 @@ HdStBufferArrayRangeGL::~HdStBufferArrayRangeGL()
 }
 
 void
-HdStBufferArrayRangeGL::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdStBufferArrayRangeGL::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     HD_TRACE_FUNCTION();
 

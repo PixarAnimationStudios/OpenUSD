@@ -183,7 +183,7 @@ HdStInstancer::GetInstancePrimvars()
                 // if the instance BAR has not been allocated, create new one
                 if (!_instancePrimvarRange) {
                     HdBufferSpecVector bufferSpecs;
-                    HdBufferSpec::AddBufferSpecs(&bufferSpecs, sources);
+                    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
                     _instancePrimvarRange =
                         resourceRegistry->AllocateNonUniformBufferArrayRange(

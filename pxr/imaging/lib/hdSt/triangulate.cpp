@@ -44,7 +44,7 @@ HdSt_TriangleIndexBuilderComputation::HdSt_TriangleIndexBuilderComputation(
 }
 
 void
-HdSt_TriangleIndexBuilderComputation::AddBufferSpecs(
+HdSt_TriangleIndexBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     specs->emplace_back(HdTokens->indices, HdTupleType{HdTypeInt32Vec3, 1});
@@ -149,10 +149,10 @@ HdSt_TriangulateFaceVaryingComputation::Resolve()
 }
 
 void
-HdSt_TriangulateFaceVaryingComputation::AddBufferSpecs(HdBufferSpecVector *specs) const
+HdSt_TriangulateFaceVaryingComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     // produces same spec buffer as source
-    _source->AddBufferSpecs(specs);
+    _source->GetBufferSpecs(specs);
 }
 
 bool

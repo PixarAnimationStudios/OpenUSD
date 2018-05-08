@@ -106,7 +106,7 @@ public:
     virtual int GetNumElements() const override;
 
     /// Add the buffer spec for this buffer source into given bufferspec vector.
-    virtual void AddBufferSpecs(HdBufferSpecVector *specs) const override {
+    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override {
         specs->push_back(HdBufferSpec(_name, _tupleType));
     }
 

@@ -228,9 +228,7 @@ HdStSurfaceShader::SetBufferSources(HdBufferSourceVector &bufferSources,
     } else {
         // Build the buffer Spec to see if its changed.
         HdBufferSpecVector bufferSpecs;
-        TF_FOR_ALL(srcIt, bufferSources) {
-            (*srcIt)->AddBufferSpecs(&bufferSpecs);
-        }
+        HdBufferSpec::GetBufferSpecs(bufferSources, &bufferSpecs);
 
         if (!_paramArray || _paramSpec != bufferSpecs) {
             _paramSpec = bufferSpecs;
