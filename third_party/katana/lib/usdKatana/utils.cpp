@@ -639,7 +639,8 @@ _KTypeAndSizeFromUsdVec2(TfToken const &roleName,
         *inputTypeAttr = FnKat::StringAttribute("vector2");
     } else if (roleName == SdfValueRoleNames->Normal) {
         *inputTypeAttr = FnKat::StringAttribute("normal2");
-    } else if (roleName.IsEmpty()) {
+    } else if (roleName == SdfValueRoleNames->TextureCoordinate ||
+               roleName.IsEmpty()) {
         *inputTypeAttr = FnKat::StringAttribute(typeStr);
         *elementSizeAttr = FnKat::IntAttribute(2);
     } else {
