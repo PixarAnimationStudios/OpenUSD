@@ -108,7 +108,7 @@ public:
     /// Topological accessors via the scene delegate
     ///
     inline HdMeshTopology  GetMeshTopology(HdSceneDelegate* delegate) const;
-    inline int             GetRefineLevel(HdSceneDelegate* delegate)  const;
+    inline HdDisplayStyle  GetDisplayStyle(HdSceneDelegate* delegate)  const;
     inline PxOsdSubdivTags GetSubdivTags(HdSceneDelegate* delegate)   const;
 
     /// Topology getter
@@ -175,10 +175,10 @@ HdMesh::GetMeshTopology(HdSceneDelegate* delegate) const
     return delegate->GetMeshTopology(GetId());
 }
 
-inline int
-HdMesh::GetRefineLevel(HdSceneDelegate* delegate) const
+inline HdDisplayStyle
+HdMesh::GetDisplayStyle(HdSceneDelegate* delegate) const
 {
-    return delegate->GetRefineLevel(GetId());
+    return delegate->GetDisplayStyle(GetId());
 }
 
 inline PxOsdSubdivTags

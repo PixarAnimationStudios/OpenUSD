@@ -157,6 +157,8 @@ private:
     HdDirtyBits _customDirtyBitsInUse;
     bool _doubleSided;
     bool _packedNormals;
+    bool _smoothNormalsEnabled;
+    bool _displacementEnabled;
     HdCullStyle _cullStyle;
 };
 

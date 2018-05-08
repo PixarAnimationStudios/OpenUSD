@@ -121,7 +121,7 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // XXX: _PopulateTopology should be split into two phase
     //      for scene dirtybits and for repr dirtybits.
     if (*dirtyBits & (HdChangeTracker::DirtyTopology
-                    | HdChangeTracker::DirtyRefineLevel
+                    | HdChangeTracker::DirtyDisplayStyle
                     | DirtyIndices
                     | DirtyHullIndices)) {
         _PopulateTopology(sceneDelegate, drawItem, dirtyBits, desc);
@@ -332,7 +332,7 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     }
 
     bool needsSetGeometricShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel |
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle |
                       HdChangeTracker::DirtyMaterialId |
                       HdChangeTracker::NewRepr)) {
         needsSetGeometricShader = true;
@@ -409,13 +409,13 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         boost::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    if (*dirtyBits & HdChangeTracker::DirtyRefineLevel) {
-        _refineLevel = GetRefineLevel(sceneDelegate);
+    if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
+        _refineLevel = GetDisplayStyle(sceneDelegate).refineLevel;
     }
 
     // XXX: is it safe to get topology even if it's not dirty?
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id) ||
-        HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
+        HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
 
 
         const HdBasisCurvesTopology &srcTopology =
@@ -775,7 +775,7 @@ HdStBasisCurves::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimvar
-        | HdChangeTracker::DirtyRefineLevel
+        | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTopology

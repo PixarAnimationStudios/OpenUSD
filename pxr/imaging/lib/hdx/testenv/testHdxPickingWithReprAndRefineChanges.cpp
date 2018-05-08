@@ -266,7 +266,7 @@ My_TestGLDrawing::OffscreenTest()
         std::cout << "Changing refine level of cube1" << std::endl;
         _delegate->SetRefineLevel(SdfPath("/cube1"), 2);
         // The repr corresponding to picking (refined) would be the one that
-        // handles the DirtyRefineLevel bit, since we don't call DrawScene()
+        // handles the DirtyDisplayStyle bit, since we don't call DrawScene()
         // before Pick(). We don't explicitly mark the collections dirty in this
         // case, since refine level changes trigger change tracker garbage 
         // collection and the render delegate marks all collections dirty.

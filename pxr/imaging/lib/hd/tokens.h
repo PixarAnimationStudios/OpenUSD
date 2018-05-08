@@ -51,6 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (doubleSided)                               \
     (dispatchBuffer)                            \
     (dispatchCount)                             \
+    (displayStyle)                              \
     (drawDispatch)                              \
     (drawCommandIndex)                          \
     (drawIndirect)                              \
@@ -98,7 +99,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primitiveParam)                            \
     (proxy)                                     \
     (quadInfo)                                  \
-    (refineLevel)                               \
     (refined)                                   \
     (refinedWire)                               \
     (refinedWireOnSurf)                         \

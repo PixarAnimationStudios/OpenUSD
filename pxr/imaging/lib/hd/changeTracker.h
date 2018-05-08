@@ -64,7 +64,7 @@ public:
         AllDirty                    = ~Varying,
         DirtyPrimID                 = 1 << 2,
         DirtyExtent                 = 1 << 3,
-        DirtyRefineLevel            = 1 << 4,
+        DirtyDisplayStyle           = 1 << 4,
         DirtyPoints                 = 1 << 5,
         DirtyPrimvar                = 1 << 6,
         DirtyMaterialId             = 1 << 7,
@@ -167,9 +167,9 @@ public:
     HD_API
     bool IsExtentDirty(SdfPath const& id);
 
-    /// Returns true if the rprim identified by \p id has a dirty refine level.
+    /// Returns true if the rprim identified by \p id has a dirty display style.
     HD_API
-    bool IsRefineLevelDirty(SdfPath const& id);
+    bool IsDisplayStyleDirty(SdfPath const& id);
 
     /// Returns true if the rprim identified by \p id with primvar \p name is
     /// dirty.
@@ -222,9 +222,9 @@ public:
     HD_API
     static bool IsExtentDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
-    /// Returns true if the dirtyBits has a dirty refine level. id is for perflog.
+    /// Returns true if the dirtyBits has a dirty display style. id is for perflog.
     HD_API
-    static bool IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id);
+    static bool IsDisplayStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id);
 
     /// Returns true if the dirtyBits has a dirty subdiv tags. id is for perflog.
     HD_API

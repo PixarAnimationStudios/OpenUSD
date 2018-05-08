@@ -437,9 +437,9 @@ HdChangeTracker::IsCullStyleDirty(SdfPath const& id)
 }
 
 bool 
-HdChangeTracker::IsRefineLevelDirty(SdfPath const& id)
+HdChangeTracker::IsDisplayStyleDirty(SdfPath const& id)
 {
-    return IsRefineLevelDirty(GetRprimDirtyBits(id), id);
+    return IsDisplayStyleDirty(GetRprimDirtyBits(id), id);
 }
 
 bool 
@@ -513,10 +513,10 @@ HdChangeTracker::IsCullStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool 
-HdChangeTracker::IsRefineLevelDirty(HdDirtyBits dirtyBits, SdfPath const& id)
+HdChangeTracker::IsDisplayStyleDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 {
-    bool isDirty = (dirtyBits & DirtyRefineLevel) != 0;
-    _LogCacheAccess(HdTokens->refineLevel, id, !isDirty);
+    bool isDirty = (dirtyBits & DirtyDisplayStyle) != 0;
+    _LogCacheAccess(HdTokens->displayStyle, id, !isDirty);
     return isDirty;
 }
 
@@ -822,8 +822,8 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & DirtyExtent) {
         ss << "Extent ";
     }
-    if (dirtyBits & DirtyRefineLevel) {
-        ss << "RefineLevel ";
+    if (dirtyBits & DirtyDisplayStyle) {
+        ss << "DisplayStyle ";
     }
     if (dirtyBits & DirtyPoints) {
         ss << "Points ";

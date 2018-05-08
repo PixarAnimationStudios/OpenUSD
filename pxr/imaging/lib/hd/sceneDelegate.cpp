@@ -163,10 +163,10 @@ HdSceneDelegate::GetShadingStyle(SdfPath const &id)
 }
 
 /*virtual*/
-int
-HdSceneDelegate::GetRefineLevel(SdfPath const& id)
+HdDisplayStyle
+HdSceneDelegate::GetDisplayStyle(SdfPath const& id)
 {
-    return 0;
+    return HdDisplayStyle();
 }
 
 /*virtual*/

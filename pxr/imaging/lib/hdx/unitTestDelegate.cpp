@@ -170,7 +170,7 @@ Hdx_UnitTestDelegate::SetRefineLevel(int level)
     _refineLevel = level;
     TF_FOR_ALL (it, _meshes) {
         GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-            it->first, HdChangeTracker::DirtyRefineLevel);
+            it->first, HdChangeTracker::DirtyDisplayStyle);
     }
     TF_FOR_ALL (it, _refineLevels) {
         it->second = level;
@@ -648,7 +648,7 @@ Hdx_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int level)
 {
     _refineLevels[id] = level;
     GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-        id, HdChangeTracker::DirtyRefineLevel);
+        id, HdChangeTracker::DirtyDisplayStyle);
 }
 
 TfToken
@@ -787,13 +787,14 @@ Hdx_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId,
     return GfMatrix4d(1);
 }
 
-int
-Hdx_UnitTestDelegate::GetRefineLevel(SdfPath const& id)
+/*virtual*/
+HdDisplayStyle
+Hdx_UnitTestDelegate::GetDisplayStyle(SdfPath const& id)
 {
     if (_refineLevels.find(id) != _refineLevels.end()) {
-        return _refineLevels[id];
+        return HdDisplayStyle(_refineLevels[id]);
     }
-    return _refineLevel;
+    return HdDisplayStyle(_refineLevel);
 }
 
 HdPrimvarDescriptorVector

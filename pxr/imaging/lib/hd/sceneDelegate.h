@@ -66,6 +66,62 @@ struct HdSyncRequestVector {
     std::vector<HdDirtyBits> dirtyBits;
 };
 
+/// \struct HdDisplayStyle
+///
+/// Describes how the geometry of a prim should be displayed.
+///
+struct HdDisplayStyle {
+    /// The prim refine level, in the range [0, 8].
+    int refineLevel;
+    
+    /// Is the prim flat shaded.
+    bool flatShadingEnabled;
+    
+    /// Is the prim displacement shaded.
+    bool displacementEnabled;
+    
+    /// Creates a default DisplayStyle.
+    /// - refineLevel is 0.
+    /// - flatShading is disabled.
+    /// - displacement is enabled.
+    HdDisplayStyle()
+        : refineLevel(0)
+        , flatShadingEnabled(false)
+        , displacementEnabled(true)
+    { }
+    
+    /// Creates a DisplayStyle.
+    /// \param refineLevel_ the refine level to display.
+    ///        Valid range is [0, 8].
+    /// \param flatShading enables flat shading, defaults to false.
+    /// \param displacement enables displacement shading, defaults to false.
+    HdDisplayStyle(int refineLevel_,
+                   bool flatShading = false,
+                   bool displacement = true)
+        : refineLevel(std::max(0, refineLevel_))
+        , flatShadingEnabled(flatShading)
+        , displacementEnabled(displacement)
+    {
+        if (refineLevel_ < 0) {
+            TF_CODING_ERROR("negative refine level is not supported");
+        } else if (refineLevel_ > 8) {
+            TF_CODING_ERROR("refine level > 8 is not supported");
+        }
+    }
+    
+    HdDisplayStyle(HdDisplayStyle const& rhs) = default;
+    ~HdDisplayStyle() = default;
+    
+    bool operator==(HdDisplayStyle const& rhs) const {
+        return refineLevel == rhs.refineLevel
+            && flatShadingEnabled == rhs.flatShadingEnabled
+            && displacementEnabled == rhs.displacementEnabled;
+    }
+    bool operator!=(HdDisplayStyle const& rhs) const {
+        return !(*this == rhs);
+    }
+};
+
 /// \struct HdPrimvarDescriptor
 ///
 /// Describes a primvar.
@@ -277,8 +333,8 @@ public:
     /// The refinement level indicates how many iterations to apply when
     /// subdividing subdivision surfaces or other refinable primitives.
     HD_API
-    virtual int GetRefineLevel(SdfPath const& id);
-
+    virtual HdDisplayStyle GetDisplayStyle(SdfPath const& id);
+    
     /// Returns a named value.
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);

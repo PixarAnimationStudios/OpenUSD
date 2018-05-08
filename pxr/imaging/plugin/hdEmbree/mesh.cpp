@@ -95,7 +95,7 @@ HdEmbreeMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyVisibility
         | HdChangeTracker::DirtyCullStyle
         | HdChangeTracker::DirtyDoubleSided
-        | HdChangeTracker::DirtyRefineLevel
+        | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtySubdivTags
         | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyNormals
@@ -488,9 +488,10 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     if (HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
         _topology.SetSubdivTags(sceneDelegate->GetSubdivTags(id));
     }
-    if (HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
+    if (HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
+        HdDisplayStyle const displayStyle = sceneDelegate->GetDisplayStyle(id);
         _topology = HdMeshTopology(_topology,
-            sceneDelegate->GetRefineLevel(id));
+            displayStyle.refineLevel);
     }
 
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
@@ -608,7 +609,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
 
     // If the refine level changed or the mesh was recreated, we need to pass
     // the refine level into the embree subdiv object.
-    if (newMesh || HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id)) {
+    if (newMesh || HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id)) {
         if (doRefine) {
             // Pass the target number of uniform refinements to Embree.
             // Embree refinement is specified as the number of quads to generate

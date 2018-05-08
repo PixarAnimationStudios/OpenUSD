@@ -401,7 +401,7 @@ UsdImagingGprimAdapter::MarkRefineLevelDirty(UsdPrim const& prim,
                                              SdfPath const& cachePath,
                                              UsdImagingIndexProxy* index)
 {
-    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyRefineLevel);
+    index->MarkRprimDirty(cachePath, HdChangeTracker::DirtyDisplayStyle);
 }
 
 void

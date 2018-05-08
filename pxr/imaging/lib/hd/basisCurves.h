@@ -55,7 +55,7 @@ public:
     /// Topology
     ///
     inline HdBasisCurvesTopology  GetBasisCurvesTopology(HdSceneDelegate* delegate) const;
-    inline int                    GetRefineLevel(HdSceneDelegate* delegate)         const;
+    inline HdDisplayStyle         GetDisplayStyle(HdSceneDelegate* delegate)        const;
 
     /// Configure geometric style of drawItems for \p reprName
     HD_API
@@ -92,10 +92,10 @@ HdBasisCurves::GetBasisCurvesTopology(HdSceneDelegate* delegate) const
     return delegate->GetBasisCurvesTopology(GetId());
 }
 
-inline int
-HdBasisCurves::GetRefineLevel(HdSceneDelegate* delegate) const
+inline HdDisplayStyle
+HdBasisCurves::GetDisplayStyle(HdSceneDelegate* delegate) const
 {
-    return delegate->GetRefineLevel(GetId());
+    return delegate->GetDisplayStyle(GetId());
 }
 
 

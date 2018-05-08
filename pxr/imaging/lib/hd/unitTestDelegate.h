@@ -312,7 +312,7 @@ public:
     HD_API
     virtual bool GetDoubleSided(SdfPath const & id);
     HD_API
-    virtual int GetRefineLevel(SdfPath const & id);
+    virtual HdDisplayStyle GetDisplayStyle(SdfPath const & id) override;
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
     HD_API

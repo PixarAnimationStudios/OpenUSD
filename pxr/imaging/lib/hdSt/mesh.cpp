@@ -79,6 +79,8 @@ HdStMesh::HdStMesh(SdfPath const& id,
     , _customDirtyBitsInUse(0)
     , _doubleSided(false)
     , _packedNormals(IsEnabledPackedNormals())
+    , _smoothNormalsEnabled(true)
+    , _displacementEnabled(true)
     , _cullStyle(HdCullStyleDontCare)
 {
     /*NOTHING*/
@@ -174,19 +176,27 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     // immutable.
 
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)    ||
-        HdChangeTracker::IsRefineLevelDirty(*dirtyBits, id) ||
+        HdChangeTracker::IsDisplayStyleDirty(*dirtyBits, id) ||
         HdChangeTracker::IsSubdivTagsDirty(*dirtyBits, id)) {
         // make a shallow copy and the same time expand the topology to a
         // stream extended representation
         // note: if we add topologyId computation in delegate,
         // we can move this copy into topologyInstance.IsFirstInstance() block
-        int refineLevel = GetRefineLevel(sceneDelegate);
+        HdDisplayStyle const displayStyle = GetDisplayStyle(sceneDelegate);
+        int refineLevel = displayStyle.refineLevel;
+        _smoothNormalsEnabled = !displayStyle.flatShadingEnabled;
+        _displacementEnabled = displayStyle.displacementEnabled;
+              
         HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
 
         // If the topology requires none subdivision scheme then force
         // refinement level to be 0 since we do not want subdivision.
+        // Disable smoothNormals for bilinear and none schemes.
         if (meshTopology.GetScheme() == PxOsdOpenSubdivTokens->none) {
             refineLevel = 0;
+            _smoothNormalsEnabled = false;
+        } else if (meshTopology.GetScheme() == PxOsdOpenSubdivTokens->bilinear) {
+            _smoothNormalsEnabled = false;
         }
 
         HdSt_MeshTopologySharedPtr topology =
@@ -1213,7 +1223,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     // XXX: _PopulateTopology should be split into two phase
     //      for scene dirtybits and for repr dirtybits.
     if (*dirtyBits & (HdChangeTracker::DirtyTopology
-                    | HdChangeTracker::DirtyRefineLevel
+                    | HdChangeTracker::DirtyDisplayStyle
                     | HdChangeTracker::DirtySubdivTags
                                      | DirtyIndices
                                      | DirtyHullIndices
@@ -1228,11 +1238,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _cullStyle = GetCullStyle(sceneDelegate);
     }
 
-    // disable smoothNormals for bilinear and none scheme mesh.
     // normal dirtiness will be cleared without computing/populating normals.
-    TfToken scheme = _topology->GetScheme();
-    if (scheme == PxOsdOpenSubdivTokens->bilinear ||
-        scheme == PxOsdOpenSubdivTokens->none) {
+    if (!_smoothNormalsEnabled) {
         requireSmoothNormals = false;
         *dirtyBits &= ~DirtySmoothNormals;
     }
@@ -1310,9 +1317,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     // We need to use smoothNormals flag per repr (and not requireSmoothNormals)
     // here since the geometric shader needs to know if we are actually
     // using normals or not.
-    bool smoothNormals = desc.smoothNormals &&
-        _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear &&
-        _topology->GetScheme() != PxOsdOpenSubdivTokens->none;
+    bool smoothNormals = desc.smoothNormals && _smoothNormalsEnabled;
 
     // if the repr doesn't have an opinion about cullstyle, use the
     // prim's default (it could also be DontCare, then renderPass's
@@ -1327,17 +1332,19 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     bool blendWireframeColor = desc.blendWireframeColor;
 
-    // check if the shader bound to this mesh has a custom displacement shader, 
-    // if so, we want to make sure the geometric shader does not optimize the
-    // geometry shader out of the code.
     bool hasCustomDisplacementTerminal = false;
-    const HdStMaterial *material = static_cast<const HdStMaterial *>(
-        renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
-    if (material) {
-        HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
-        if (shaderCode) {
-            hasCustomDisplacementTerminal =
-                !(shaderCode->GetSource(HdShaderTokens->geometryShader).empty());
+    if (_displacementEnabled) {
+        // check if the shader bound to this mesh has a custom displacement shader, 
+        // if so, we want to make sure the geometric shader does not optimize the
+        // geometry shader out of the code.
+        const HdStMaterial *material = static_cast<const HdStMaterial *>(
+            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
+        if (material) {
+            HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
+            if (shaderCode) {
+                hasCustomDisplacementTerminal =
+                    !(shaderCode->GetSource(HdShaderTokens->geometryShader).empty());
+            }
         }
     }
 
@@ -1385,12 +1392,12 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
                 HdChangeTracker::DirtyNormals  |
                 HdChangeTracker::DirtyPrimvar  |
                 HdChangeTracker::DirtyTopology |
-                HdChangeTracker::DirtyRefineLevel);
+                HdChangeTracker::DirtyDisplayStyle);
     } else if (bits & HdChangeTracker::DirtyTopology) {
         // Unlike basis curves, we always request refineLevel when topology is
         // dirty
         bits |= HdChangeTracker::DirtySubdivTags |
-                HdChangeTracker::DirtyRefineLevel;
+                HdChangeTracker::DirtyDisplayStyle;
     }
 
     // A change of material means that the Quadrangulate state may have
@@ -1520,7 +1527,7 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
     }
 
     bool needsSetGeometricShader = false;
-    if (*dirtyBits & (HdChangeTracker::DirtyRefineLevel|
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
                       HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtyMaterialId|
@@ -1620,7 +1627,7 @@ HdStMesh::_GetInitialDirtyBits() const
         | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimvar
-        | HdChangeTracker::DirtyRefineLevel
+        | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtyRepr
         | HdChangeTracker::DirtyMaterialId
         | HdChangeTracker::DirtyTopology

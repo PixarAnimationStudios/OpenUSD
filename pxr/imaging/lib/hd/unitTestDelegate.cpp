@@ -68,11 +68,11 @@ HdUnitTestDelegate::SetRefineLevel(int level)
     _refineLevel = level;
     TF_FOR_ALL (it, _meshes) {
         GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-            it->first, HdChangeTracker::DirtyRefineLevel);
+            it->first, HdChangeTracker::DirtyDisplayStyle);
     }
     TF_FOR_ALL (it, _curves) {
         GetRenderIndex().GetChangeTracker().MarkRprimDirty(
-            it->first, HdChangeTracker::DirtyRefineLevel);
+            it->first, HdChangeTracker::DirtyDisplayStyle);
     }
     TF_FOR_ALL (it, _refineLevels) {
         it->second = level;
@@ -350,7 +350,7 @@ HdUnitTestDelegate::SetRefineLevel(SdfPath const &id, int refineLevel)
 {
     _refineLevels[id] = refineLevel;
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
-    tracker.MarkRprimDirty(id, HdChangeTracker::DirtyRefineLevel);
+    tracker.MarkRprimDirty(id, HdChangeTracker::DirtyDisplayStyle);
 }
 
 void
@@ -614,14 +614,14 @@ HdUnitTestDelegate::GetDoubleSided(SdfPath const& id)
 }
 
 /*virtual*/
-int 
-HdUnitTestDelegate::GetRefineLevel(SdfPath const& id)
+HdDisplayStyle 
+HdUnitTestDelegate::GetDisplayStyle(SdfPath const& id)
 {
     if (_refineLevels.find(id) != _refineLevels.end()) {
-        return _refineLevels[id];
+        return HdDisplayStyle(_refineLevels[id]);
     }
     // returns fallback refinelevel
-    return _refineLevel;
+    return HdDisplayStyle(_refineLevel);
 }
 
 /*virtual*/
