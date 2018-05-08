@@ -42,8 +42,7 @@ def Xform "RedCube" (
             color3f inputs:displayColor = (1, 0, 0)
             float inputs:displayOpacity
             color3f inputs:transparency
-            uniform token outputs:ri:bxdf.connect = </RedCube/Looks/RedLambertSG/RedLambertSG_lambert.outputs:out>
-            token outputs:surface.connect = </RedCube/Looks/RedLambertSG/RedLambertSG_lambert.outputs:out>
+            token outputs:ri:surface.connect = </RedCube/Looks/RedLambertSG/RedLambertSG_lambert.outputs:out>
 
             def Shader "RedLambertSG_lambert"
             {
