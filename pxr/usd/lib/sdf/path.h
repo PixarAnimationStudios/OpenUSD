@@ -697,6 +697,8 @@ private:
     // via nodes and then want to return a new path with a resulting node.
     // The node is expected to already be Retain'ed for the resulting path.
     explicit SdfPath(const Sdf_PathNodeConstRefPtr &pathNode);
+    // Accept rvalues too.
+    explicit SdfPath(const Sdf_PathNodeConstRefPtr &&pathNode);
 
     friend class Sdf_PathNode;
     friend class Sdfext_PathAccess;
