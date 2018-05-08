@@ -348,6 +348,7 @@ void
 Validate(SdfLayerHandle const &layer, ReportParams const &p,
          vector<string> &report)
 {
+    TfErrorMark m;
     TF_DESCRIBE_SCOPE("Collecting paths in @%s@",
                       layer->GetIdentifier().c_str());
     vector<SdfPath> paths;
@@ -391,7 +392,7 @@ Validate(SdfLayerHandle const &layer, ReportParams const &p,
             }
         }
     }
-    report.back() += " - OK";
+    report.back() += m.IsClean() ? " - OK" : " - ERROR";
 }
 
 void Report(SdfLayerHandle layer, ReportParams const &p)
