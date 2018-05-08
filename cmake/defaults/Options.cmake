@@ -90,16 +90,6 @@ set(PXR_LIB_PREFIX "lib"
     STRING
     "Prefix for build library name"
 )
-if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
-    message(STATUS
-        "PXR_BUILD_IMAGING=OFF implies PXR_BUILD_USD_IMAGING=OFF"
-    )
-endif()
-if (${PXR_BUILD_EMBREE_PLUGIN} AND NOT ${PXR_BUILD_IMAGING})
-    message(STATUS
-        "PXR_BUILD_IMAGING=OFF implies PXR_BUILD_EMBREE_PLUGIN=OFF"
-    )
-endif()
 
 option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
@@ -109,3 +99,53 @@ set(PXR_MONOLITHIC_IMPORT ""
     "Path to cmake file that imports a usd_ms target"
 )
 
+# Resolve options that depend on one another so that subsequent .cmake scripts
+# all have the final value for these options.
+if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
+    message(STATUS
+        "Setting PXR_BUILD_USD_IMAGING=OFF because PXR_BUILD_IMAGING=OFF")
+    set(PXR_BUILD_USD_IMAGING "OFF" CACHE BOOL "" FORCE)
+endif()
+
+if (${PXR_BUILD_EMBREE_PLUGIN} AND NOT ${PXR_BUILD_IMAGING})
+    message(STATUS
+        "Setting PXR_BUILD_EMBREE_PLUGIN=OFF because PXR_BUILD_IMAGING=OFF")
+    set(PXR_BUILD_EMBREE_PLUGIN "OFF" CACHE BOOL "" FORCE)
+endif()
+
+if (${PXR_BUILD_KATANA_PLUGIN})
+    if (NOT ${PXR_ENABLE_PYTHON_SUPPORT})
+        message(STATUS 
+            "Setting PXR_BUILD_KATANA_PLUGIN=OFF because "
+            "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_KATANA_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_BUILD_USD_IMAGING})
+        message(STATUS 
+            "Setting PXR_BUILD_KATANA_PLUGIN=OFF because "
+            "PXR_BUILD_USD_IMAGING=OFF")
+        set(PXR_BUILD_KATANA_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    endif()
+endif()
+
+if (${PXR_BUILD_MAYA_PLUGIN})
+    if (NOT ${PXR_ENABLE_PYTHON_SUPPORT})
+        message(STATUS 
+            "Setting PXR_BUILD_MAYA_PLUGIN=OFF because "
+            "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_MAYA_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_BUILD_USD_IMAGING})
+        message(STATUS 
+            "Setting PXR_BUILD_MAYA_PLUGIN=OFF because "
+            "PXR_BUILD_USD_IMAGING=OFF")
+        set(PXR_BUILD_MAYA_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    endif()
+endif()
+
+if (${PXR_BUILD_HOUDINI_PLUGIN})
+    if (NOT ${PXR_ENABLE_PYTHON_SUPPORT})
+        message(STATUS 
+            "Setting PXR_BUILD_HOUDINI_PLUGIN=OFF because "
+            "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_HOUDINI_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    endif()
+endif()
