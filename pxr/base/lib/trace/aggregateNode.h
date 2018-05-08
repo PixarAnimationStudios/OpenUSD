@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef TRACE_EVENT_NODE_H
-#define TRACE_EVENT_NODE_H
+#ifndef TRACE_AGGREGATE_NODE_H
+#define TRACE_AGGREGATE_NODE_H
 
 #include "pxr/pxr.h"
 
@@ -44,22 +44,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
+TF_DECLARE_WEAK_AND_REF_PTRS(TraceAggregateNode);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// \class TraceEventNode
+/// \class TraceAggregateNode
 ///
 /// A representation of a call tree. Each node represents one or more calls that
 /// occurred in the trace. Multiple calls to a child node are aggregated into one
 /// node.
 ///
 
-class TraceEventNode : public TfRefBase, public TfWeakBase {
+class TraceAggregateNode : public TfRefBase, public TfWeakBase {
 public:
 
-    using This = TraceEventNode;
-    using ThisPtr = TraceEventNodePtr;
-    using ThisRefPtr = TraceEventNodeRefPtr;
+    using This = TraceAggregateNode;
+    using ThisPtr = TraceAggregateNodePtr;
+    using ThisRefPtr = TraceAggregateNodeRefPtr;
 
     using TimeStamp = TraceEvent::TimeStamp;
 
@@ -87,11 +87,11 @@ public:
         return TfCreateRefPtr(new This(id, key, ts, count, exclusiveCount));
     }
 
-    TRACE_API TraceEventNodeRefPtr 
+    TRACE_API TraceAggregateNodeRefPtr 
     Append(Id id, const TfToken &key, TimeStamp ts,
            int c = 1, int xc = 1);
 
-    TRACE_API void Append(TraceEventNodeRefPtr child);
+    TRACE_API void Append(TraceAggregateNodeRefPtr child);
 
     /// Returns the node's key.
     TfToken GetKey() { return _key;}
@@ -136,17 +136,17 @@ public:
 
     /// \name Children Accessors
     /// @{
-    const TraceEventNodePtrVector GetChildren() {
+    const TraceAggregateNodePtrVector GetChildren() {
         // convert to a vector of weak ptrs
-        return TraceEventNodePtrVector( _children.begin(),_children.end() );
+        return TraceAggregateNodePtrVector( _children.begin(),_children.end() );
     }
 
-    const TraceEventNodeRefPtrVector &GetChildrenRef() {
+    const TraceAggregateNodeRefPtrVector &GetChildrenRef() {
         return _children;
     }
 
-    TRACE_API TraceEventNodeRefPtr GetChild(const TfToken &key);
-    TraceEventNodeRefPtr GetChild(const std::string &key) {
+    TRACE_API TraceAggregateNodeRefPtr GetChild(const TfToken &key);
+    TraceAggregateNodeRefPtr GetChild(const std::string &key) {
         return GetChild(TfToken(key));
     }
 
@@ -192,7 +192,7 @@ public:
 
 private:
 
-    TraceEventNode(const Id &id, const TfToken &key, TimeStamp ts,
+    TraceAggregateNode(const Id &id, const TfToken &key, TimeStamp ts,
               int count, int exclusiveCount) :
         _id(id), _key(key), _ts(ts), _exclusiveTs(ts),
         _count(count), _exclusiveCount(exclusiveCount),
@@ -202,9 +202,9 @@ private:
 
     using _ChildDictionary = std::map<TfToken, size_t>;
 
-    void _MergeRecursive(const TraceEventNodeRefPtr &node);
+    void _MergeRecursive(const TraceAggregateNodeRefPtr &node);
 
-    void _SetAsRecursionMarker(TraceEventNodePtr parent);
+    void _SetAsRecursionMarker(TraceAggregateNodePtr parent);
 
     Id _id;
     TfToken _key;
@@ -217,10 +217,10 @@ private:
     // We keep the recursive counts separate so that we don't mess with 
     // the collected data.
     int _recursiveCount;
-    TraceEventNodePtr _recursionParent;
+    TraceAggregateNodePtr _recursionParent;
     TimeStamp _recursiveExclusiveTs;
 
-    TraceEventNodeRefPtrVector _children;
+    TraceAggregateNodeRefPtrVector _children;
     _ChildDictionary _childrenByKey;
 
     // A structure that holds on to the inclusive and exclusive counter
@@ -263,4 +263,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // TRACE_EVENT_NODE_H
+#endif // TRACE_AGGREGATE_NODE_H

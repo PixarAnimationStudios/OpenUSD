@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/trace/eventNode.h"
+#include "pxr/base/trace/aggregateNode.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -42,28 +42,28 @@ using namespace boost::python;
 
 
 static double
-GetInclusiveTime(TraceEventNodePtr &self) {
+GetInclusiveTime(TraceAggregateNodePtr &self) {
     return ArchTicksToSeconds( 
             uint64_t(self->GetInclusiveTime() * 1e3) );
 }
 
 static double
-GetExclusiveTime(TraceEventNodePtr &self) {
+GetExclusiveTime(TraceAggregateNodePtr &self) {
     return ArchTicksToSeconds( 
             uint64_t(self->GetExclusiveTime(false /* recursive */) * 1e3) );
 }
 
 static int
-GetCount(TraceEventNodePtr &self) {
+GetCount(TraceAggregateNodePtr &self) {
     return self->GetCount(false /* recursive */);
 }
 
 void wrapEventNode()
 {
-    using This = TraceEventNode;
-    using ThisPtr = TraceEventNodePtr;
+    using This = TraceAggregateNode;
+    using ThisPtr = TraceAggregateNodePtr;
 
-    class_<This, ThisPtr>("EventNode", no_init)
+    class_<This, ThisPtr>("AggregateNode", no_init)
         .def(TfPyWeakPtr())
         .add_property("key", &This::GetKey )
         .add_property("id", 

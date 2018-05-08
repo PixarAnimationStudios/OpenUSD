@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/eventNode.h"
+#include "pxr/base/trace/aggregateNode.h"
 
 #include "pxr/pxr.h"
 
@@ -30,11 +30,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceEventNodeRefPtr
-TraceEventNode::Append(Id id, const TfToken &key,
+TraceAggregateNodeRefPtr
+TraceAggregateNode::Append(Id id, const TfToken &key,
                   TimeStamp ts, int c, int xc)
 {
-    TraceEventNodeRefPtr n = GetChild(key);
+    TraceAggregateNodeRefPtr n = GetChild(key);
     if (n) {
         n->_id = id;
         n->_ts += ts;
@@ -45,7 +45,7 @@ TraceEventNode::Append(Id id, const TfToken &key,
         n->_recursiveExclusiveTs += ts;
     }
     else {
-        n = TraceEventNode::New(id,key,ts,c,xc);
+        n = TraceAggregateNode::New(id,key,ts,c,xc);
         _children.push_back(n);
         _childrenByKey[key] = _children.size() - 1;
     }
@@ -59,8 +59,8 @@ TraceEventNode::Append(Id id, const TfToken &key,
 }
 
 void 
-TraceEventNode::Append(TraceEventNodeRefPtr child) {
-    TraceEventNodeRefPtr n = GetChild(child->GetKey());
+TraceAggregateNode::Append(TraceAggregateNodeRefPtr child) {
+    TraceAggregateNodeRefPtr n = GetChild(child->GetKey());
     if (n) {
         n->_id = child->_id;
         n->_ts += child->_ts;
@@ -70,7 +70,7 @@ TraceEventNode::Append(TraceEventNodeRefPtr child) {
         n->_exclusiveTs += child->_ts;
         n->_recursiveExclusiveTs += child->_ts;
 
-        for (TraceEventNodeRefPtr& c : child->_children) {
+        for (TraceAggregateNodeRefPtr& c : child->_children) {
             n->Append(c);
         }
     }
@@ -85,66 +85,66 @@ TraceEventNode::Append(TraceEventNodeRefPtr child) {
         ? _recursiveExclusiveTs - child->_ts : 0;
 }
 
-TraceEventNode::TimeStamp 
-TraceEventNode::GetExclusiveTime(bool recursive)
+TraceAggregateNode::TimeStamp 
+TraceAggregateNode::GetExclusiveTime(bool recursive)
 { 
     return recursive ? _recursiveExclusiveTs : _exclusiveTs;
 }
 
 void
-TraceEventNode::AppendInclusiveCounterValue(int index, double value)
+TraceAggregateNode::AppendInclusiveCounterValue(int index, double value)
 {
     _counterValues[index].inclusive += value;
 }
 
 double
-TraceEventNode::GetInclusiveCounterValue(int index) const
+TraceAggregateNode::GetInclusiveCounterValue(int index) const
 {
     _CounterValues::const_iterator it = _counterValues.find(index);
     return it != _counterValues.end() ? it->second.inclusive : 0.0;
 }
 
 void
-TraceEventNode::AppendExclusiveCounterValue(int index, double value)
+TraceAggregateNode::AppendExclusiveCounterValue(int index, double value)
 {
     _counterValues[index].exclusive += value;
 }
 
 double
-TraceEventNode::GetExclusiveCounterValue(int index) const
+TraceAggregateNode::GetExclusiveCounterValue(int index) const
 {
     _CounterValues::const_iterator it = _counterValues.find(index);
     return it != _counterValues.end() ? it->second.exclusive : 0.0;
 }
 
-TraceEventNodeRefPtr
-TraceEventNode::GetChild(const TfToken &key)
+TraceAggregateNodeRefPtr
+TraceAggregateNode::GetChild(const TfToken &key)
 {
     _ChildDictionary::const_iterator i = _childrenByKey.find(key);
     if (i != _childrenByKey.end()) {
         return _children[i->second];
     }
     else {
-        return TraceEventNodeRefPtr(0);
+        return TraceAggregateNodeRefPtr(0);
     }
 }
 
 // This stack node is a convenient container for the data we need to keep
 // track of during an iterative post-order traversal of our tree.
 struct _StackNode {
-    _StackNode(TraceEventNodePtr node, int parentIdx) : eventNode(node), 
+    _StackNode(TraceAggregateNodePtr node, int parentIdx) : eventNode(node), 
                                                    parentIdx(parentIdx)
     {
         remainingChildren = node->GetChildrenRef().size();
     }
 
-    TraceEventNodePtr   eventNode;
+    TraceAggregateNodePtr   eventNode;
     int            parentIdx;
     int            remainingChildren;
 };
 
 void 
-TraceEventNode::MarkRecursiveChildren()
+TraceAggregateNode::MarkRecursiveChildren()
 {
     // Trivial case, if we are already marked, there is nothing left to do.
     if (IsRecursionHead())
@@ -160,11 +160,11 @@ TraceEventNode::MarkRecursiveChildren()
     std::vector<_StackNode>  stack;
 
     // Push root node on the stack
-    stack.push_back(_StackNode(TraceEventNodePtr(this), -1));
+    stack.push_back(_StackNode(TraceAggregateNodePtr(this), -1));
 
     while (stack.size())
     {
-        TraceEventNodePtr    curNode   = stack.back().eventNode;
+        TraceAggregateNodePtr    curNode   = stack.back().eventNode;
         int             numKids   = stack.back().remainingChildren;
         int             parentIdx = stack.back().parentIdx;
 
@@ -189,7 +189,7 @@ TraceEventNode::MarkRecursiveChildren()
                     // CODE_COVERAGE_ON
                 }
 
-                TraceEventNodePtr parentNode = stack[p].eventNode;
+                TraceAggregateNodePtr parentNode = stack[p].eventNode;
 
                 if (!parentNode)
                 {
@@ -237,7 +237,7 @@ TraceEventNode::MarkRecursiveChildren()
 }
 
 void 
-TraceEventNode::_MergeRecursive(const TraceEventNodeRefPtr &node)
+TraceAggregateNode::_MergeRecursive(const TraceAggregateNodeRefPtr &node)
 {
     // Merge our times with this node's times.  Note that here we only
     // use the recursion data in order to keep the original state intact.
@@ -269,7 +269,7 @@ TraceEventNode::_MergeRecursive(const TraceEventNodeRefPtr &node)
     size_t size = node->_children.size();
     for (size_t i = 0; i < size; ++i)
     {
-        const TraceEventNodeRefPtr child = node->_children[i];
+        const TraceAggregateNodeRefPtr child = node->_children[i];
 
         if (!child)
         {
@@ -282,12 +282,12 @@ TraceEventNode::_MergeRecursive(const TraceEventNodeRefPtr &node)
         }
 
         TfToken key = child->GetKey();
-        TraceEventNodeRefPtr n = GetChild(key);
+        TraceAggregateNodeRefPtr n = GetChild(key);
 
         if (!n)
         {
             // Create an empty node to merge with.
-            n = TraceEventNode::New( child->GetId(), child->GetKey(), 
+            n = TraceAggregateNode::New( child->GetId(), child->GetKey(), 
                                 child->GetInclusiveTime(), 
                                 0, child->GetExclusiveCount() );
 
@@ -345,7 +345,7 @@ TraceEventNode::_MergeRecursive(const TraceEventNodeRefPtr &node)
 }
 
 void
-TraceEventNode::_SetAsRecursionMarker(TraceEventNodePtr parent)
+TraceAggregateNode::_SetAsRecursionMarker(TraceAggregateNodePtr parent)
 {
     _isRecursionMarker = true;
     _recursionParent = parent;
