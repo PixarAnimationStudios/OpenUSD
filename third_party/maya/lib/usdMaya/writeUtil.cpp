@@ -982,12 +982,12 @@ PxrUsdMayaWriteUtil::WriteMetadataToPrim(
     const MObject& mayaObject,
     const UsdPrim& prim)
 {
-    PxrUsdMayaAdaptor proxy(mayaObject);
-    if (!proxy) {
+    PxrUsdMayaAdaptor adaptor(mayaObject);
+    if (!adaptor) {
         return false;
     }
 
-    for (const auto& keyValue : proxy.GetAllAuthoredMetadata()) {
+    for (const auto& keyValue : adaptor.GetAllAuthoredMetadata()) {
         prim.SetMetadata(keyValue.first, keyValue.second);
     }
     return true;
@@ -1000,22 +1000,22 @@ PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     const UsdPrim& prim,
     UsdUtilsSparseValueWriter *valueWriter)    
 {
-    PxrUsdMayaAdaptor proxy(mayaObject);
-    if (!proxy) {
+    PxrUsdMayaAdaptor adaptor(mayaObject);
+    if (!adaptor) {
         return false;
     }
 
-    for (const TfToken& schemaName : proxy.GetAppliedSchemas()) {
-        if (const PxrUsdMayaAdaptor::SchemaAdaptor SchemaAdaptor =
-                proxy.GetSchemaByName(schemaName)) {
+    for (const TfToken& schemaName : adaptor.GetAppliedSchemas()) {
+        if (const PxrUsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
+                adaptor.GetSchemaByName(schemaName)) {
             for (const TfToken& attrName :
-                    SchemaAdaptor.GetAuthoredAttributeNames()) {
-                if (const PxrUsdMayaAdaptor::AttributeAdaptor attrProxy =
-                        SchemaAdaptor.GetAttribute(attrName)) {
+                    schemaAdaptor.GetAuthoredAttributeNames()) {
+                if (const PxrUsdMayaAdaptor::AttributeAdaptor attrAdaptor =
+                        schemaAdaptor.GetAttribute(attrName)) {
                     VtValue value;
-                    if (attrProxy.Get(&value)) {
+                    if (attrAdaptor.Get(&value)) {
                         const SdfAttributeSpecHandle attrDef =
-                                attrProxy.GetAttributeDefinition();
+                                attrAdaptor.GetAttributeDefinition();
                         UsdAttribute attr = prim.CreateAttribute(
                                     attrDef->GetNameToken(),
                                     attrDef->GetTypeName(),

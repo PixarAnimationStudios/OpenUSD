@@ -37,7 +37,7 @@ try:
 except ImportError:
     from pixar import UsdMaya
 
-class testUsdMetadataAttributeConverters(unittest.TestCase):
+class testUsdMayaAdaptorMetadata(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
@@ -50,7 +50,7 @@ class testUsdMetadataAttributeConverters(unittest.TestCase):
 
     def testImport_HiddenInstanceableKind(self):
         """
-        Tests that the built-in metadata attribute converters can import
+        Tests that the adaptor mechanism can import
         hidden, instanceable, and kind metadata properly.
         """
         cmds.file(new=True, force=True)
@@ -159,7 +159,7 @@ class testUsdMetadataAttributeConverters(unittest.TestCase):
 
     def testExport(self):
         """
-        Tests that the built-in metadata attribute converters can export
+        Tests that the adaptor mechanism can export
         USD_hidden, USD_instanceable, and USD_kind attributes by setting
         the correct metadata in the output USD file.
         """

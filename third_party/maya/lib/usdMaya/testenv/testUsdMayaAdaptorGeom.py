@@ -31,7 +31,7 @@ import unittest
 from pxr import Usd, UsdGeom
 
 
-class testUsdGeomAttributeConverters(unittest.TestCase):
+class testUsdMayaAdaptorGeom(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
@@ -45,10 +45,9 @@ class testUsdGeomAttributeConverters(unittest.TestCase):
         usdFile = os.path.abspath('UsdAttrs.usda')
         cmds.usdImport(file=usdFile, shadingMode='none')
 
-    def testImport(self):
+    def testImportImageable(self):
         """
-        Tests that the built-in geom attribute converter can import
-        the purpose attribute properly.
+        Tests that UsdGeomImageable.purpose is properly imported.
         """
         # Testing for the different purpose attributes
         self.assertEqual(cmds.getAttr('pCube1.USD_purpose'), 'default')
@@ -58,10 +57,9 @@ class testUsdGeomAttributeConverters(unittest.TestCase):
         # pCube4 does not have a purpose attribute
         self.assertFalse(cmds.objExists('pCube4.USD_purpose'))
     
-    def testExport(self):
+    def testExportImageable(self):
         """
-        Test that the built-in geom attribute converter can export
-        the purpose attribute properly.
+        Test that UsdGeomImageable.purpose is properly exported.
         """
         newUsdFilePath = os.path.abspath('UsdAttrsNew.usda')
         cmds.usdExport(file=newUsdFilePath, shadingMode='none')

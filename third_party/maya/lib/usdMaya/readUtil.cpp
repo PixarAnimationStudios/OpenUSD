@@ -759,8 +759,8 @@ PxrUsdMayaReadUtil::ReadMetadataFromPrim(
     const UsdPrim& prim,
     const MObject& mayaObject)
 {
-    PxrUsdMayaAdaptor proxy(mayaObject);
-    if (!proxy) {
+    PxrUsdMayaAdaptor adaptor(mayaObject);
+    if (!adaptor) {
         return false;
     }
 
@@ -776,7 +776,7 @@ PxrUsdMayaReadUtil::ReadMetadataFromPrim(
         }
         VtValue value;
         prim.GetMetadata(key, &value);
-        proxy.SetMetadata(key, value);
+        adaptor.SetMetadata(key, value);
     }
     return true;
 }
@@ -787,8 +787,8 @@ PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
     const UsdPrim& prim,
     const MObject& mayaObject)
 {
-    PxrUsdMayaAdaptor proxy(mayaObject);
-    if (!proxy) {
+    PxrUsdMayaAdaptor adaptor(mayaObject);
+    if (!adaptor) {
         return false;
     }
 
@@ -797,7 +797,7 @@ PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
             continue;
         }
         if (PxrUsdMayaAdaptor::SchemaAdaptor SchemaAdaptor =
-                proxy.ApplySchemaByName(schemaName)) {
+                adaptor.ApplySchemaByName(schemaName)) {
             for (const TfToken& attrName : SchemaAdaptor.GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                     VtValue value;

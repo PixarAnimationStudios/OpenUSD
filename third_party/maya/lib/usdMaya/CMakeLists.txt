@@ -194,6 +194,8 @@ pxr_test_scripts(
         testenv/testUsdImportUVSets.py
         testenv/testUsdImportXforms.py
         testenv/testUsdMayaAdaptor.py
+        testenv/testUsdMayaAdaptorMetadata.py
+        testenv/testUsdMayaAdaptorGeom.py
         testenv/testUsdMayaAppDir.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindWriter.py
@@ -202,8 +204,6 @@ pxr_test_scripts(
         testenv/testUsdMayaReferenceAssemblyEdits.py
         testenv/testUsdMayaUserExportedAttributes.py
         testenv/testUsdMayaXformStack.py
-        testenv/testUsdGeomAttributeConverters.py
-        testenv/testUsdMetadataAttributeConverters.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
         testenv/testUsdReferenceAssemblySelection.py
 )
@@ -832,13 +832,13 @@ pxr_register_test(testUsdMayaUserExportedAttributes
 )
 
 pxr_install_test_dir(
-    SRC testenv/UsdGeomAttributeConvertersTest
-    DEST testUsdGeomAttributeConverters
+    SRC testenv/UsdMayaAdaptorGeomTest
+    DEST testUsdMayaAdaptorGeom
 )
-pxr_register_test(testUsdGeomAttributeConverters
+pxr_register_test(testUsdMayaAdaptorGeom
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomAttributeConverters"
-    TESTENV testUsdGeomAttributeConverters
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptorGeom"
+    TESTENV testUsdMayaAdaptorGeom
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
@@ -847,13 +847,13 @@ pxr_register_test(testUsdGeomAttributeConverters
 )
 
 pxr_install_test_dir(
-    SRC testenv/UsdMetadataAttributeConvertersTest
-    DEST testUsdMetadataAttributeConverters
+    SRC testenv/UsdMayaAdaptorMetadataTest
+    DEST testUsdMayaAdaptorMetadata
 )
-pxr_register_test(testUsdMetadataAttributeConverters
+pxr_register_test(testUsdMayaAdaptorMetadata
     CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadataAttributeConverters"
-    TESTENV testUsdMetadataAttributeConverters
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMayaAdaptorMetadata"
+    TESTENV testUsdMayaAdaptorMetadata
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
