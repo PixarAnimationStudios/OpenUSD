@@ -36,6 +36,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(SdfTokens, SDF_API, SDF_TOKENS);
 
+#define SDF_PATH_NS_DELIMITER_CHAR ':'
+#define SDF_PATH_NS_DELIMITER_STR ":"
+
 #define SDF_PATH_TOKENS                                 \
     ((menvaStart, "<"))                                 \
     ((menvaEnd, ">"))                                   \
@@ -49,7 +52,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdfTokens, SDF_API, SDF_TOKENS);
     ((mapperIndicator, "mapper"))                       \
     ((expressionIndicator, "expression"))               \
     ((mapperArgDelimiter, "."))                         \
-    ((namespaceDelimiter, ":"))                         \
+    ((namespaceDelimiter, SDF_PATH_NS_DELIMITER_STR))   \
     ((empty, ""))
 
 TF_DECLARE_PUBLIC_TOKENS(SdfPathTokens, SDF_API, SDF_PATH_TOKENS);
