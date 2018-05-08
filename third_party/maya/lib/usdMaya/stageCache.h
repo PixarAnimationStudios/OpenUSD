@@ -24,7 +24,7 @@
 #ifndef PXRUSDMAYA_STAGECACHE_H
 #define PXRUSDMAYA_STAGECACHE_H
 
-/// \file stageCache.h
+/// \file usdMaya/stageCache.h
 
 #include "pxr/pxr.h"
 
