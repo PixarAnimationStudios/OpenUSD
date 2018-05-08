@@ -230,42 +230,131 @@ class VtValue
 
     // Type information base class.
     struct _TypeInfo {
-    protected:
-        ~_TypeInfo() = default;
+    private:
+        using _CopyInitFunc = void (*)(_Storage const &, _Storage &);
+        using _DestroyFunc = void (*)(_Storage &);
+        using _MoveFunc = void (*)(_Storage &, _Storage &);
+        using _HashFunc = size_t (*)(_Storage const &);
+        using _EqualFunc = bool (*)(_Storage const &, _Storage const &);
+        using _MakeMutableFunc = void (*)(_Storage &);
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+        using _GetPyObjFunc = TfPyObjWrapper (*)(_Storage const &);
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+        using _StreamOutFunc = std::ostream & (*)(_Storage const &, std::ostream &);
+        using _GetShapeDataFunc = const Vt_ShapeData* (*)(_Storage const &);
+        using _GetNumElementsFunc = size_t (*)(_Storage const &);
+        using _ProxyHoldsTypeFunc = bool (*)(_Storage const &, std::type_info const &);
+        using _GetProxiedTypeFunc = TfType (*)(_Storage const &);
+        using _GetProxiedValueFunc = VtValue const *(*)(_Storage const &);
 
-    public:
+    protected:
         constexpr _TypeInfo(const std::type_info &ti,
                             const std::type_info &elementTi,
                             bool isArray,
-                            bool isHashable)
+                            bool isHashable,
+                            _CopyInitFunc copyInit,
+                            _DestroyFunc destroy,
+                            _MoveFunc move,
+                            _HashFunc hash,
+                            _EqualFunc equal,
+                            _MakeMutableFunc makeMutable,
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+                            _GetPyObjFunc getPyObj,
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+                            _StreamOutFunc streamOut,
+                            _GetShapeDataFunc getShapeData,
+                            _GetNumElementsFunc getNumElements,
+                            _ProxyHoldsTypeFunc proxyHoldsType,
+                            _GetProxiedTypeFunc getProxiedType,
+                            _GetProxiedValueFunc getProxiedValue)
             : typeInfo(ti)
             , elementTypeInfo(elementTi)
             , isArray(isArray)
             , isHashable(isHashable)
-            {}
-
-        virtual void CopyInit(_Storage const &, _Storage &) const = 0;
-        virtual void Destroy(_Storage &) const = 0;
-        virtual void Move(_Storage &, _Storage &) const = 0;
-        virtual size_t Hash(_Storage const &) const = 0;
-        virtual bool Equal(_Storage const &, _Storage const &) const = 0;
-        virtual void MakeMutable(_Storage &) const = 0;
+            // Function table
+            , _copyInit(copyInit)
+            , _destroy(destroy)
+            , _move(move)
+            , _hash(hash)
+            , _equal(equal)
+            , _makeMutable(makeMutable)
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-        virtual TfPyObjWrapper GetPyObj(_Storage const &) const = 0;
+            , _getPyObj(getPyObj)
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-        virtual std::ostream & StreamOut(_Storage const &,
-                                         std::ostream &) const = 0;
-        virtual const Vt_ShapeData* GetShapeData(_Storage const &) const = 0;
-        virtual size_t GetNumElements(_Storage const &) const = 0;
-        virtual bool ProxyHoldsType(_Storage const &,
-                                    std::type_info const &) const = 0;
-        virtual TfType GetProxiedType(_Storage const &) const = 0;
-        virtual VtValue const *GetProxiedValue(_Storage const &) const = 0;
+            , _streamOut(streamOut)
+            , _getShapeData(getShapeData)
+            , _getNumElements(getNumElements)
+            , _proxyHoldsType(proxyHoldsType)
+            , _getProxiedType(getProxiedType)
+            , _getProxiedValue(getProxiedValue)
+        {}
+
+    public:
+        void CopyInit(_Storage const &src, _Storage &dst) const {
+            _copyInit(src, dst);
+        }
+        void Destroy(_Storage &storage) const {
+            _destroy(storage);
+        }
+        void Move(_Storage &src, _Storage &dst) const {
+            _move(src, dst);
+        }
+        size_t Hash(_Storage const &storage) const {
+            return _hash(storage);
+        }
+        bool Equal(_Storage const &lhs, _Storage const &rhs) const {
+            return _equal(lhs, rhs);
+        }
+        void MakeMutable(_Storage &storage) const {
+            _makeMutable(storage);
+        }
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+        TfPyObjWrapper GetPyObj(_Storage const &storage) const {
+            return _getPyObj(storage);
+        }
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+        std::ostream & StreamOut(_Storage const &storage,
+                                 std::ostream &out) const {
+            return _streamOut(storage, out);
+        }
+        const Vt_ShapeData* GetShapeData(_Storage const &storage) const {
+            return _getShapeData(storage);
+        }
+        size_t GetNumElements(_Storage const &storage) const {
+            return _getNumElements(storage);
+        }
+        bool ProxyHoldsType(_Storage const &storage,
+                            std::type_info const &t) const {
+            return _proxyHoldsType(storage, t);
+        }
+        TfType GetProxiedType(_Storage const &storage) const {
+            return _getProxiedType(storage);
+        }
+        VtValue const *GetProxiedValue(_Storage const &storage) const {
+            return _getProxiedValue(storage);
+        }
 
         const std::type_info &typeInfo;
         const std::type_info &elementTypeInfo;
         bool isArray;
         bool isHashable;
+
+    private:
+        _CopyInitFunc _copyInit;
+        _DestroyFunc _destroy;
+        _MoveFunc _move;
+        _HashFunc _hash;
+        _EqualFunc _equal;
+        _MakeMutableFunc _makeMutable;
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+        _GetPyObjFunc _getPyObj;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+        _StreamOutFunc _streamOut;
+        _GetShapeDataFunc _getShapeData;
+        _GetNumElementsFunc _getNumElements;
+        _ProxyHoldsTypeFunc _proxyHoldsType;
+        _GetProxiedTypeFunc _getProxiedType;
+        _GetProxiedValueFunc _getProxiedValue;
     };
 
     // Type-dispatching overloads.
@@ -301,11 +390,29 @@ class VtValue
         static const bool HasTrivialCopy = _IsTriviallyCopyable<T>::value;
         static const bool IsProxy = VtIsValueProxy<T>::value;
 
+        using This = _TypeInfoImpl;
+
         constexpr _TypeInfoImpl()
             : _TypeInfo(typeid(T),
                         _ArrayHelper<T>::GetElementTypeid(),
                         VtIsArray<T>::value,
-                        VtIsHashable<T>()) {}
+                        VtIsHashable<T>(),
+                        &This::_CopyInit,
+                        &This::_Destroy,
+                        &This::_Move,
+                        &This::_Hash,
+                        &This::_Equal,
+                        &This::_MakeMutable,
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+                        &This::_GetPyObj,
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+                        &This::_StreamOut,
+                        &This::_GetShapeData,
+                        &This::_GetNumElements,
+                        &This::_ProxyHoldsType,
+                        &This::_GetProxiedType,
+                        &This::_GetProxiedValue)
+        {}
 
         ////////////////////////////////////////////////////////////////////
         // Typed API for client use.
@@ -326,67 +433,67 @@ class VtValue
                       "Container size cannot exceed storage size.");
 
         ////////////////////////////////////////////////////////////////////
-        // Virtual function implementations.
-        virtual void CopyInit(_Storage const &src, _Storage &dst) const {
+        // _TypeInfo interface function implementations.
+        static void _CopyInit(_Storage const &src, _Storage &dst) {
             new (&dst) Container(_Container(src));
         }
 
-        virtual void Destroy(_Storage &storage) const {
+        static void _Destroy(_Storage &storage) {
             _Container(storage).~Container();
         }
 
-        virtual size_t Hash(_Storage const &storage) const {
+        static size_t _Hash(_Storage const &storage) {
             return VtHashValue(GetObj(storage));
         }
 
-        virtual bool Equal(_Storage const &lhs, _Storage const &rhs) const {
+        static bool _Equal(_Storage const &lhs, _Storage const &rhs) {
             // Equal is only ever invoked with an object of this specific type.
             // That is, we only ever ask a proxy to compare to a proxy; we never
             // ask a proxy to compare to the proxied object.
             return GetObj(lhs) == GetObj(rhs);
         }
 
-        virtual void Move(_Storage &src, _Storage &dst) const {
+        static void _Move(_Storage &src, _Storage &dst) {
             TfMoveTo(&_Container(dst), _Container(src));
-            Destroy(src);
+            _Destroy(src);
         }
 
-        virtual void MakeMutable(_Storage &storage) const {
+        static void _MakeMutable(_Storage &storage) {
             GetMutableObj(storage);
         }
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-        virtual TfPyObjWrapper GetPyObj(_Storage const &storage) const {
+        static TfPyObjWrapper _GetPyObj(_Storage const &storage) {
             TfPyLock lock;
-            return boost::python::api::object(this->GetObj(storage));
+            return boost::python::api::object(GetObj(storage));
         }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-        virtual std::ostream &StreamOut(
-            _Storage const &storage, std::ostream &out) const {
+        static std::ostream &_StreamOut(
+            _Storage const &storage, std::ostream &out) {
             return VtStreamOut(GetObj(storage), out);
         }
 
-        virtual const Vt_ShapeData* GetShapeData(_Storage const &storage) const {
+        static const Vt_ShapeData* _GetShapeData(_Storage const &storage) {
             return _ArrayHelper<T>::GetShapeData(GetObj(storage));
         }
 
-        virtual size_t GetNumElements(_Storage const &storage) const {
+        static size_t _GetNumElements(_Storage const &storage) {
             return _ArrayHelper<T>::GetNumElements(GetObj(storage));
         }
 
-        virtual bool
-        ProxyHoldsType(_Storage const &storage, std::type_info const &t) const {
+        static bool
+        _ProxyHoldsType(_Storage const &storage, std::type_info const &t) {
             return VtProxyHoldsType(GetObj(storage), t);
         }
 
-        virtual TfType
-        GetProxiedType(_Storage const &storage) const {
+        static TfType
+        _GetProxiedType(_Storage const &storage) {
             return VtGetProxiedType(GetObj(storage));
         }
 
-        virtual VtValue const *
-        GetProxiedValue(_Storage const &storage) const {
+        static VtValue const *
+        _GetProxiedValue(_Storage const &storage) {
             return VtGetProxiedValue(GetObj(storage));
         }
 
@@ -472,14 +579,14 @@ class VtValue
     // Runtime function to return a _TypeInfo base pointer to a specific
     // _TypeInfo subclass for type T.
     template <class T>
-    TfPointerAndBits<const _TypeInfo> GetTypeInfo() {
+    static TfPointerAndBits<const _TypeInfo> GetTypeInfo() {
         typedef typename _TypeInfoFor<T>::Type TI;
         static const TI ti;
-        static const TfPointerAndBits<const _TypeInfo>
-            ptrAndBits(&ti, (TI::IsLocal ? _LocalFlag : 0) |
+        static constexpr unsigned int flags =
+                       (TI::IsLocal ? _LocalFlag : 0) |
                        (TI::HasTrivialCopy ? _TrivialCopyFlag : 0) |
-                       (TI::IsProxy ? _ProxyFlag : 0));
-        return ptrAndBits;
+                       (TI::IsProxy ? _ProxyFlag : 0);
+        return TfPointerAndBits<const _TypeInfo>(&ti, flags);
     }
 
     // A helper that moves a held value to temporary storage, but keeps it alive
