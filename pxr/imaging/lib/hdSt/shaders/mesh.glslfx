@@ -217,7 +217,6 @@ void emit(int index, vec4 Peye, vec3 Neye,
     outData.Peye = Peye;
     outData.Neye = Neye;
     gsPatchCoord = GetPatchCoord(index);
-    gsPatchCoord.w = GetElementID() + 0.5;
     gsTessCoord = vec2(0);
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
