@@ -24,10 +24,9 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorPrim.h"
 
+#include "usdMaya/readUtil.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/util.h"
-#include "usdMaya/AttributeConverter.h"
-#include "usdMaya/AttributeConverterRegistry.h"
 
 #include "pxr/usd/usdGeom/imageable.h"
 
@@ -75,6 +74,14 @@ PxrUsdMayaTranslatorPrim::Read(
                            visibilityTok != UsdGeomTokens->invisible);
     }
 
+    // Read purpose.
+    // It's uniform, so we don't have to worry about animation.
+    TfToken purpose;
+    const UsdAttribute purposeAttr = primSchema.GetPurposeAttr();
+    if (purposeAttr.HasAuthoredValueOpinion() && purposeAttr.Get(&purpose)) {
+        PxrUsdMayaUtil::SetPurpose(depFn, purpose);
+    }
+
     // == Animation ==
     if (visNumTimeSamples > 0) {
         size_t numTimeSamples = visNumTimeSamples;
@@ -110,13 +117,11 @@ PxrUsdMayaTranslatorPrim::Read(
         }
     }
     
-    // Set "USD_" attributes to store USD-specific info on the Maya node.
-    // XXX: Handle animation properly in attribute converters.
-    std::vector<const AttributeConverter*> converters =
-            AttributeConverterRegistry::GetAllConverters();
-    for (const AttributeConverter* converter : converters) {
-        converter->UsdToMaya(prim, depFn, UsdTimeCode::EarliestTime());
-    }
+    // Process API schema attributes and strongly-typed metadata.
+    PxrUsdMayaReadUtil::ReadMetadataFromPrim(
+            args.GetIncludeMetadataKeys(), prim, mayaNode);
+    PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+            args.GetIncludeAPINames(), prim, mayaNode);
 
     // XXX What about all the "user attributes" that PrimWriter exports???
 }

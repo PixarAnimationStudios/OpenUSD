@@ -73,7 +73,11 @@ MSyntax usdImport::createSyntax()
     syntax.addFlag("-var" , "-variant"          , MSyntax::kString, MSyntax::kString);
     syntax.addFlag("-ar" , "-assemblyRep"       , MSyntax::kString);
     syntax.addFlag("-fr" , "-frameRange"        , MSyntax::kDouble, MSyntax::kDouble);
+    syntax.addFlag("-md" , "-metadata"          , MSyntax::kString);
+    syntax.addFlag("-api" , "-apiSchema"        , MSyntax::kString);
     syntax.makeFlagMultiUse("variant");
+    syntax.makeFlagMultiUse("metadata");
+    syntax.makeFlagMultiUse("apiSchema");
 
     syntax.enableQuery(false);
     syntax.enableEdit(false);
@@ -190,6 +194,36 @@ MStatus usdImport::doIt(const MArgList & args)
         jobArgs.useCustomFrameRange = true;
         argData.getFlagArgument("frameRange", 0, jobArgs.startTime);
         argData.getFlagArgument("frameRange", 1, jobArgs.endTime);
+    }
+
+    // Add metadata keys. Multi-use.
+    TfToken::Set includeMetadataKeys;
+    for (unsigned int i = 0; i < argData.numberOfFlagUses("metadata"); ++i)
+    {
+        // Get the i'th usage.
+        MArgList tmpArgList;
+        status = argData.getFlagArgumentList("metadata", i, tmpArgList);
+        // Get the value.
+        MString tmpKey = tmpArgList.asString(0, &status);
+        includeMetadataKeys.insert(TfToken(tmpKey.asChar()));
+    }
+    if (!includeMetadataKeys.empty()) {
+        jobArgs.includeMetadataKeys = includeMetadataKeys;
+    }
+
+    // Add API schema names.  Multi-use.
+    TfToken::Set includeAPINames;
+    for (unsigned int i = 0; i < argData.numberOfFlagUses("apiSchema"); ++i)
+    {
+        // Get the i'th usage.
+        MArgList tmpArgList;
+        status = argData.getFlagArgumentList("apiSchema", i, tmpArgList);
+        // Get the value.
+        MString tmpAPIName = tmpArgList.asString(0, &status);
+        includeAPINames.insert(TfToken(tmpAPIName.asChar()));
+    }
+    if (!includeAPINames.empty()) {
+        jobArgs.includeAPINames = includeAPINames;
     }
 
     // Create the command

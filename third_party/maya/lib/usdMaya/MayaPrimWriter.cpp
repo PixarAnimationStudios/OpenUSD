@@ -24,13 +24,11 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaPrimWriter.h"
 
-#include "usdMaya/util.h"
-#include "usdMaya/writeUtil.h"
-#include "usdMaya/translatorGprim.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
-#include "usdMaya/AttributeConverter.h"
-#include "usdMaya/AttributeConverterRegistry.h"
+#include "usdMaya/translatorGprim.h"
+#include "usdMaya/util.h"
+#include "usdMaya/writeUtil.h"
 
 #include "pxr/base/gf/gamma.h"
 
@@ -121,6 +119,21 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
         }
     }
 
+    // Export purpose at default time.
+    if (usdTime.IsDefault()) {
+        TfToken purpose = PxrUsdMayaUtil::GetPurpose(depFn);
+        if (purpose.IsEmpty() && dagT.isValid()) {
+            // Fall back to the transform only if the shape doesn't have purpose.
+            purpose = PxrUsdMayaUtil::GetPurpose(depFnT);
+        }
+        if (!purpose.IsEmpty()) {
+            _SetAttribute(
+                    primSchema.CreatePurposeAttr(VtValue(), true),
+                    purpose,
+                    usdTime);
+        }
+    }
+
     UsdPrim usdPrim = primSchema.GetPrim();
 
     // There is no Gprim abstraction in this module, so process the few
@@ -143,24 +156,27 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
             &classNames)) {
         PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
     }
-
-    // Process special "USD_" attributes.
-    std::vector<const AttributeConverter*> converters =
-            AttributeConverterRegistry::GetAllConverters();
-    for (const AttributeConverter* converter : converters) {
-        // We want the node for the xform (depFnT).
-        converter->MayaToUsd(depFnT, usdPrim, usdTime);
-    }
     
-    // Write user-tagged export attributes. Write attributes on the transform
-    // first, and then attributes on the shape node. This means that attribute
-    // name collisions will always be handled by taking the shape node's value
-    // if we're merging transforms and shapes.
+    // Write API schema attributes, strongly-typed metadata, and user-tagged
+    // export attributes.
+    // Write attributes on the transform first, and then attributes on the shape
+    // node. This means that attribute name collisions will always be handled by
+    // taking the shape node's value if we're merging transforms and shapes.
     if (dagT.isValid() && !(dagT == getDagPath())) {
+        if (usdTime.IsDefault()) {
+            PxrUsdMayaWriteUtil::WriteMetadataToPrim(dagT.node(), usdPrim);
+            PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
+                    dagT.node(), usdPrim, _GetSparseValueWriter());
+        }
         PxrUsdMayaWriteUtil::WriteUserExportedAttributes(dagT, usdPrim, usdTime,
                 _GetSparseValueWriter());
     }
 
+    if (usdTime.IsDefault()) {
+        PxrUsdMayaWriteUtil::WriteMetadataToPrim(getDagPath().node(), usdPrim);
+        PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
+                getDagPath().node(), usdPrim, _GetSparseValueWriter());
+    }
     PxrUsdMayaWriteUtil::WriteUserExportedAttributes(getDagPath(), usdPrim, 
             usdTime, _GetSparseValueWriter());
 

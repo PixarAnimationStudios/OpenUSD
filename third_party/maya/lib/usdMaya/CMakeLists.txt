@@ -32,6 +32,7 @@ pxr_shared_library(${PXR_PACKAGE}
         api.h
 
     PUBLIC_CLASSES
+        adaptor
         colorSpace
         editUtil
         stageCache
@@ -92,9 +93,6 @@ pxr_shared_library(${PXR_PACKAGE}
         Chaser
         ChaserRegistry
 
-        AttributeConverter
-        AttributeConverterRegistry
-
         UserTaggedAttribute
 
     PRIVATE_CLASSES
@@ -130,8 +128,6 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorMesh_SubDiv.cpp
         translatorXformable_decompose.cpp
         usdReadJob_ImportWithProxies.cpp
-        UsdMetadataAttributeConverters.cpp
-        UsdGeomAttributeConverters.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -143,6 +139,7 @@ pxr_shared_library(${PXR_PACKAGE}
         wrapReadUtil.cpp
         wrapRoundTripUtil.cpp
         wrapStageCache.cpp
+        wrapAdaptor.cpp
         wrapUserTaggedAttribute.cpp
         wrapWriteUtil.cpp
         wrapXformStack.cpp
@@ -196,6 +193,7 @@ pxr_test_scripts(
         testenv/testUsdImportSkeleton.py
         testenv/testUsdImportUVSets.py
         testenv/testUsdImportXforms.py
+        testenv/testUsdMayaAdaptor.py
         testenv/testUsdMayaAppDir.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindWriter.py

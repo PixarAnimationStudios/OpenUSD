@@ -24,6 +24,7 @@
 
 #include "usdMaya/readUtil.h"
 #include "usdMaya/colorSpace.h"
+#include "usdMaya/adaptor.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -31,6 +32,8 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
@@ -204,6 +207,26 @@ PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
         const std::string& attrNiceName,
         MDGModifier& modifier)
 {
+    return FindOrCreateMayaAttr(
+            typeName.GetType(),
+            typeName.GetRole(),
+            variability,
+            depNode,
+            attrName,
+            attrNiceName,
+            modifier);
+}
+
+MObject
+PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
+        const TfType& type,
+        const TfToken& role,
+        const SdfVariability variability,
+        MFnDependencyNode& depNode,
+        const std::string& attrName,
+        const std::string& attrNiceName,
+        MDGModifier& modifier)
+{
     MString mayaName = attrName.c_str();
     MString niceName =  attrNiceName.empty() ?
             attrName.c_str() : attrNiceName.c_str();
@@ -211,9 +234,8 @@ PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
     // For the majority of things, we don't care about the role, just about
     // the type, e.g. we export point3f/vector3f/float3 the same.
     // (Though for stuff like colors, we'll disambiguate by role.)
-    const TfType type = typeName.GetType();
     const bool keyable = variability == SdfVariabilityVarying;
-    const bool usedAsColor = typeName.GetRole() == SdfValueRoleNames->Color;
+    const bool usedAsColor = role == SdfValueRoleNames->Color;
 
     MObject attrObj;
     if (type.IsA<TfToken>()) {
@@ -234,6 +256,16 @@ PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
     else if (type.IsA<GfMatrix4d>()) {
         return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
                 MFnData::kMatrix, keyable, usedAsColor,
+                /*usedAsFilename*/ false, depNode, modifier);
+    }
+    else if (type.IsA<SdfTokenListOp>()) {
+        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
+                MFnData::kStringArray, keyable, usedAsColor,
+                /*usedAsFilename*/ false, depNode, modifier);
+    }
+    else if (type.IsA<SdfStringListOp>()) {
+        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
+                MFnData::kStringArray, keyable, usedAsColor,
                 /*usedAsFilename*/ false, depNode, modifier);
     }
     else if (type.IsA<VtTokenArray>()) {
@@ -263,7 +295,7 @@ PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
     }
     else if (type.IsA<VtVec3dArray>() ||
             type.IsA<VtVec3fArray>()) {
-        if (typeName.GetRole() == SdfValueRoleNames->Point) {
+        if (role == SdfValueRoleNames->Point) {
             return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
                     MFnData::kPointArray, keyable, usedAsColor,
                     /*usedAsFilename*/ false, depNode, modifier);
@@ -340,8 +372,7 @@ PxrUsdMayaReadUtil::FindOrCreateMayaAttr(
                 depNode, modifier);
     }
 
-    TF_CODING_ERROR("Type '%s' isn't supported",
-            typeName.GetAsToken().GetText());
+    TF_RUNTIME_ERROR("Type '%s' isn't supported", type.GetTypeName().c_str());
     return MObject();
 }
 
@@ -422,6 +453,36 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
             MFnMatrixData data;
             MObject dataObj = data.create();
             data.set(mayaMat);
+            modifier.newPlugValue(attrPlug, dataObj);
+            ok = true;
+        }
+    }
+    else if (newValue.IsHolding<SdfTokenListOp>()) {
+        if (_HasAttrType(attrPlug, MFnData::kStringArray)) {
+            TfTokenVector result;
+            newValue.Get<SdfTokenListOp>().ApplyOperations(&result);
+            MStringArray mayaArr;
+            for (const TfToken& tok : result) {
+                mayaArr.append(tok.GetText());
+            }
+            MFnStringArrayData data;
+            MObject dataObj = data.create();
+            data.set(mayaArr);
+            modifier.newPlugValue(attrPlug, dataObj);
+            ok = true;
+        }
+    }
+    else if (newValue.IsHolding<SdfStringListOp>()) {
+        if (_HasAttrType(attrPlug, MFnData::kStringArray)) {
+            std::vector<std::string> result;
+            newValue.Get<SdfStringListOp>().ApplyOperations(&result);
+            MStringArray mayaArr;
+            for (const std::string& str : result) {
+                mayaArr.append(str.c_str());
+            }
+            MFnStringArrayData data;
+            MObject dataObj = data.create();
+            data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
@@ -662,6 +723,11 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
 
     if (ok) {
         modifier.doIt();
+    } else {
+        TF_RUNTIME_ERROR(
+                "Cannot set value of type '%s' on plug '%s'",
+                newValue.GetTypeName().c_str(),
+                attrPlug.name().asChar());
     }
     return ok;
 }
@@ -685,6 +751,65 @@ PxrUsdMayaReadUtil::SetMayaAttrKeyableState(
             variability == SdfVariabilityVarying ? 1 : 0,
             attrPlug.name().asChar()).c_str());
     modifier.doIt();
+}
+
+bool
+PxrUsdMayaReadUtil::ReadMetadataFromPrim(
+    const TfToken::Set& includeMetadataKeys,
+    const UsdPrim& prim,
+    const MObject& mayaObject)
+{
+    PxrUsdMayaAdaptor proxy(mayaObject);
+    if (!proxy) {
+        return false;
+    }
+
+    for (const TfToken& key : includeMetadataKeys) {
+        if (key == UsdTokens->apiSchemas) {
+            // Never import apiSchemas from metadata. It has a meaning in the
+            // PxrUsdMayaAdaptor system, so it should only be added to the
+            // Maya node by PxrUsdMayaAdaptor::ApplySchema().
+            continue;
+        }
+        if (!prim.HasAuthoredMetadata(key)) {
+            continue;
+        }
+        VtValue value;
+        prim.GetMetadata(key, &value);
+        proxy.SetMetadata(key, value);
+    }
+    return true;
+}
+
+bool
+PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+    const TfToken::Set& includeAPINames,
+    const UsdPrim& prim,
+    const MObject& mayaObject)
+{
+    PxrUsdMayaAdaptor proxy(mayaObject);
+    if (!proxy) {
+        return false;
+    }
+
+    for (const TfToken& schemaName : prim.GetAppliedSchemas()) {
+        if (includeAPINames.count(schemaName) == 0) {
+            continue;
+        }
+        if (PxrUsdMayaAdaptor::SchemaAdaptor SchemaAdaptor =
+                proxy.ApplySchemaByName(schemaName)) {
+            for (const TfToken& attrName : SchemaAdaptor.GetAttributeNames()) {
+                if (UsdAttribute attr = prim.GetAttribute(attrName)) {
+                    VtValue value;
+                    constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
+                    if (attr.HasAuthoredValueOpinion() && attr.Get(&value, t)) {
+                        SchemaAdaptor.CreateAttribute(attrName).Set(value);
+                    }
+                }
+            }
+        }
+    }
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

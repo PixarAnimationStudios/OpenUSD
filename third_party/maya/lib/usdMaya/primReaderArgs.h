@@ -49,7 +49,9 @@ public:
             const bool readAnimData,
             const bool useCustomFrameRange,
             const double startTime,
-            const double endTime);
+            const double endTime,
+            const TfToken::Set& includeMetadataKeys,
+            const TfToken::Set& includeAPINames);
 
     /// \brief return the usd prim that should be read.
     PXRUSDMAYA_API
@@ -70,7 +72,12 @@ public:
     double GetStartTime() const;
     PXRUSDMAYA_API
     double GetEndTime() const;
-    
+
+    PXRUSDMAYA_API
+    const TfToken::Set& GetIncludeMetadataKeys() const;
+    PXRUSDMAYA_API
+    const TfToken::Set& GetIncludeAPINames() const;
+
     bool ShouldImportUnboundShaders() const {
         // currently this is disabled.
         return false;
@@ -84,6 +91,8 @@ private:
     const bool _useCustomFrameRange;
     const double _startTime;
     const double _endTime;
+    const TfToken::Set& _includeMetadataKeys;
+    const TfToken::Set& _includeAPINames;
 };
 
 

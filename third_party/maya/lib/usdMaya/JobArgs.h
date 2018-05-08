@@ -146,6 +146,8 @@ struct JobImportArgs
     double startTime;
     double endTime;
     bool importWithProxyShapes;
+    TfToken::Set includeMetadataKeys;
+    TfToken::Set includeAPINames;
 };
 
 PXRUSDMAYA_API

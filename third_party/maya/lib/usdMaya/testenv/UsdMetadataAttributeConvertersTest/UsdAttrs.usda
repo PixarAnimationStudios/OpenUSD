@@ -7,9 +7,19 @@
 )
 
 def Xform "World" (
+    prepend apiSchemas = ["MotionAPI", "GeomModelAPI"]
     kind = "component"
 )
 {
+    uniform token model:cardGeometry = "fromTexture"
+    asset model:cardTextureXNeg = @left.png@
+    asset model:cardTextureXPos = @right.png@
+    asset model:cardTextureYNeg = @front.png@
+    asset model:cardTextureYPos = @back.png@
+    asset model:cardTextureZNeg = @bottom.png@
+    asset model:cardTextureZPos = @top.png@
+    float motion:velocityScale = 4.2
+
     def Mesh "pCube1" (
         kind = "potato"
     )

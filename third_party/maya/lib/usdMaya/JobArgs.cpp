@@ -45,6 +45,12 @@ TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
 TF_DEFINE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, 
         PXRUSDMAYA_JOBARGS_TOKENS);
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _defaultIncludeMetadataKeys, 
+    (hidden)
+    (instanceable)
+    (kind)
+);
 
 JobExportArgs::JobExportArgs()
     :
@@ -160,7 +166,11 @@ JobImportArgs::JobImportArgs()
         useCustomFrameRange(false),
         startTime(1.0),
         endTime(1.0),
-        importWithProxyShapes(false)
+        importWithProxyShapes(false),
+        includeMetadataKeys(
+                _defaultIncludeMetadataKeys->allTokens.begin(),
+                _defaultIncludeMetadataKeys->allTokens.end()),
+        includeAPINames(/*empty*/)
 {
 }
 

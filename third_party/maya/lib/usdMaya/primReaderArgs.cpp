@@ -34,7 +34,9 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const bool readAnimData,
         const bool useCustomFrameRange,
         const double startTime,
-        const double endTime)
+        const double endTime,
+        const TfToken::Set& includeMetadataKeys,
+        const TfToken::Set& includeAPINames)
     : 
         _prim(prim),
         _shadingMode(shadingMode),
@@ -42,7 +44,9 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         _readAnimData(readAnimData),
         _useCustomFrameRange(useCustomFrameRange),
         _startTime(startTime),
-        _endTime(endTime)
+        _endTime(endTime),
+        _includeMetadataKeys(includeMetadataKeys),
+        _includeAPINames(includeAPINames)
 {
 }
 const UsdPrim&
@@ -79,6 +83,18 @@ double
 PxrUsdMayaPrimReaderArgs::GetEndTime() const
 {
     return _endTime;
+}
+
+const TfToken::Set&
+PxrUsdMayaPrimReaderArgs::GetIncludeMetadataKeys() const
+{
+    return _includeMetadataKeys;
+}
+
+const TfToken::Set&
+PxrUsdMayaPrimReaderArgs::GetIncludeAPINames() const
+{
+    return _includeAPINames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

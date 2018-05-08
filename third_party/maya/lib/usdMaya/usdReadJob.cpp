@@ -269,7 +269,9 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                                               mArgs.readAnimData,
                                               mArgs.useCustomFrameRange,
                                               mArgs.startTime,
-                                              mArgs.endTime);
+                                              mArgs.endTime,
+                                              mArgs.includeMetadataKeys,
+                                              mArgs.includeAPINames);
                 PxrUsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
                 // If we are NOT importing on behalf of an assembly, then we'll

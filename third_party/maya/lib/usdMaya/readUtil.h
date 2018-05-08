@@ -56,7 +56,7 @@ struct PxrUsdMayaReadUtil
 
     /// Given the \p typeName and \p variability, try to create a Maya attribute
     /// on \p depNode with the name \p attrName.
-    /// If the \p typeName isn't supported by this function, raises a coding
+    /// If the \p typeName isn't supported by this function, raises a runtime
     /// error (this function supports the majority of, but not all, type names).
     /// If the attribute already exists and its type information matches, then
     /// its object is returned. If the attribute already exists but its type
@@ -77,6 +77,16 @@ struct PxrUsdMayaReadUtil
     PXRUSDMAYA_API
     static MObject FindOrCreateMayaAttr(
             const SdfValueTypeName& typeName,
+            const SdfVariability variability,
+            MFnDependencyNode& depNode,
+            const std::string& attrName,
+            const std::string& attrNiceName,
+            MDGModifier& modifier);
+
+    PXRUSDMAYA_API
+    static MObject FindOrCreateMayaAttr(
+            const TfType& type,
+            const TfToken& role,
             const SdfVariability variability,
             MFnDependencyNode& depNode,
             const std::string& attrName,
@@ -126,8 +136,32 @@ struct PxrUsdMayaReadUtil
             MDGModifier& modifier);
 
     /// \}
-};
 
+    /// \name Auto-importing API schemas and metadata
+    /// \{
+
+    /// Reads the metadata specified in \p includeMetadataKeys from \p prim, and
+    /// uses adaptors to write them onto attributes of \p mayaObject.
+    /// Returns true if successful (even if there was nothing to import).
+    PXRUSDMAYA_API
+    static bool ReadMetadataFromPrim(
+            const TfToken::Set& includeMetadataKeys,
+            const UsdPrim& prim,
+            const MObject& mayaObject);
+
+    /// Reads the attributes from the non-excluded schemas applied to \p prim,
+    /// and uses adaptors to write them onto attributes of \p mayaObject.
+    /// Returns true if successful (even if there was nothing to import).
+    /// Note that if the schema wasn't applied using the schema class's Apply()
+    /// function, then this function won't recognize it.
+    PXRUSDMAYA_API
+    static bool ReadAPISchemaAttributesFromPrim(
+            const TfToken::Set& includeAPINames,
+            const UsdPrim& prim,
+            const MObject& mayaObject);
+
+    /// \}
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

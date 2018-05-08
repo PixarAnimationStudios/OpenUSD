@@ -22,9 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/colorSpace.h"
 #include "usdMaya/writeUtil.h"
+
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/translatorUtil.h"
+#include "usdMaya/adaptor.h"
 #include "usdMaya/UserTaggedAttribute.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -463,9 +465,9 @@ _SetAttribute(const UsdAttribute& usdAttr,
 template <typename T>
 static VtValue
 _ConvertVec(
-        const SdfValueTypeName& typeName,
+        const TfToken& role,
         const T& val) {
-    return VtValue(typeName.GetRole() == SdfValueRoleNames->Color
+    return VtValue(role == SdfValueRoleNames->Color
             ? PxrUsdMayaColorSpace::ConvertMayaToLinear(val)
             : val);
 }
@@ -474,6 +476,16 @@ VtValue
 PxrUsdMayaWriteUtil::GetVtValue(
         const MPlug& attrPlug,
         const SdfValueTypeName& typeName)
+{
+    const TfType type = typeName.GetType();
+    const TfToken role = typeName.GetRole();;
+    return GetVtValue(attrPlug, type, role);
+}
+VtValue
+PxrUsdMayaWriteUtil::GetVtValue(
+        const MPlug& attrPlug,
+        const TfType& type,
+        const TfToken& role)
 {
     // We perform a similar set of type-infererence acrobatics here as we do up
     // above in GetUsdTypeName(). See the comments there for more detail on a
@@ -502,8 +514,6 @@ PxrUsdMayaWriteUtil::GetVtValue(
     // the type, e.g. we import normal3f/vector3f/float3 the same.
     // We do care about colors and points because those can be specially-marked
     // in Maya.
-    const TfType type = typeName.GetType();
-
     switch (typedDataType) {
         case MFnData::kString: {
             MFnStringData stringDataFn(attrPlug.asMObject());
@@ -543,6 +553,26 @@ PxrUsdMayaWriteUtil::GetVtValue(
                     usdVal[i] = TfToken(stringArrayDataFn[i].asChar());
                 }
                 return VtValue(usdVal);
+            }
+            else if (type.IsA<SdfStringListOp>()) {
+                MFnStringArrayData stringArrayDataFn(attrPlug.asMObject());
+                std::vector<std::string> prepended(stringArrayDataFn.length());
+                for (unsigned int i = 0; i < stringArrayDataFn.length(); ++i) {
+                    prepended[i] = std::string(stringArrayDataFn[i].asChar());
+                }
+                SdfStringListOp listOp;
+                listOp.SetPrependedItems(prepended);
+                return VtValue(listOp);
+            }
+            else if (type.IsA<SdfTokenListOp>()) {
+                MFnStringArrayData stringArrayDataFn(attrPlug.asMObject());
+                TfTokenVector prepended(stringArrayDataFn.length());
+                for (unsigned int i = 0; i < stringArrayDataFn.length(); ++i) {
+                    prepended[i] = TfToken(stringArrayDataFn[i].asChar());
+                }
+                SdfTokenListOp listOp;
+                listOp.SetPrependedItems(prepended);
+                return VtValue(listOp);
             }
             break;
         }
@@ -728,8 +758,7 @@ PxrUsdMayaWriteUtil::GetVtValue(
                 float tmp1, tmp2, tmp3;
                 MFnNumericData numericDataFn(attrPlug.asMObject());
                 numericDataFn.getData(tmp1, tmp2, tmp3);
-                return _ConvertVec(typeName,
-                        GfVec3f(tmp1, tmp2, tmp3));
+                return _ConvertVec(role, GfVec3f(tmp1, tmp2, tmp3));
             }
             break;
         }
@@ -758,11 +787,10 @@ PxrUsdMayaWriteUtil::GetVtValue(
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3);
             if (type.IsA<GfVec3f>()) {
-                return _ConvertVec(typeName,
+                return _ConvertVec(role,
                         GfVec3f((float)tmp1, (float)tmp2, (float)tmp3));
             } else if (type.IsA<GfVec3d>()) {
-                return _ConvertVec(typeName,
-                        GfVec3d(tmp1, tmp2, tmp3));
+                return _ConvertVec(role, GfVec3d(tmp1, tmp2, tmp3));
             }
             break;
         }
@@ -771,14 +799,13 @@ PxrUsdMayaWriteUtil::GetVtValue(
             MFnNumericData numericDataFn(attrPlug.asMObject());
             numericDataFn.getData(tmp1, tmp2, tmp3, tmp4);
             if (type.IsA<GfVec4f>()) {
-                return _ConvertVec(typeName,
+                return _ConvertVec(role,
                         GfVec4f((float)tmp1,
                                 (float)tmp2,
                                 (float)tmp3,
                                 (float)tmp4));
             } else if (type.IsA<GfVec4d>()) {
-                return _ConvertVec(typeName,
-                        GfVec4d(tmp1, tmp2, tmp3, tmp4));
+                return _ConvertVec(role, GfVec4d(tmp1, tmp2, tmp3, tmp4));
             } else if (type.IsA<GfQuatf>()) {
                 float re = tmp1;
                 GfVec3f im(tmp2, tmp3, tmp4);
@@ -946,6 +973,61 @@ PxrUsdMayaWriteUtil::WriteUserExportedAttributes(
         }
     }
 
+    return true;
+}
+
+/* static */
+bool
+PxrUsdMayaWriteUtil::WriteMetadataToPrim(
+    const MObject& mayaObject,
+    const UsdPrim& prim)
+{
+    PxrUsdMayaAdaptor proxy(mayaObject);
+    if (!proxy) {
+        return false;
+    }
+
+    for (const auto& keyValue : proxy.GetAllAuthoredMetadata()) {
+        prim.SetMetadata(keyValue.first, keyValue.second);
+    }
+    return true;
+}
+
+/* static */
+bool
+PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
+    const MObject& mayaObject,
+    const UsdPrim& prim,
+    UsdUtilsSparseValueWriter *valueWriter)    
+{
+    PxrUsdMayaAdaptor proxy(mayaObject);
+    if (!proxy) {
+        return false;
+    }
+
+    for (const TfToken& schemaName : proxy.GetAppliedSchemas()) {
+        if (const PxrUsdMayaAdaptor::SchemaAdaptor SchemaAdaptor =
+                proxy.GetSchemaByName(schemaName)) {
+            for (const TfToken& attrName :
+                    SchemaAdaptor.GetAuthoredAttributeNames()) {
+                if (const PxrUsdMayaAdaptor::AttributeAdaptor attrProxy =
+                        SchemaAdaptor.GetAttribute(attrName)) {
+                    VtValue value;
+                    if (attrProxy.Get(&value)) {
+                        const SdfAttributeSpecHandle attrDef =
+                                attrProxy.GetAttributeDefinition();
+                        UsdAttribute attr = prim.CreateAttribute(
+                                    attrDef->GetNameToken(),
+                                    attrDef->GetTypeName(),
+                                    /*custom*/ false,
+                                    attrDef->GetVariability());
+                        const UsdTimeCode usdTime = UsdTimeCode::Default();
+                        _SetAttribute(attr, value, usdTime, valueWriter);
+                    }
+                }
+            }
+        }
+    }
     return true;
 }
 

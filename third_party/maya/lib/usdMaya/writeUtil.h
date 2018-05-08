@@ -132,6 +132,12 @@ struct PxrUsdMayaWriteUtil
             const MPlug& attrPlug,
             const SdfValueTypeName& typeName);
 
+    PXRUSDMAYA_API
+    static VtValue GetVtValue(
+            const MPlug& attrPlug,
+            const TfType& type,
+            const TfToken& role);
+
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.
     ///
@@ -153,6 +159,24 @@ struct PxrUsdMayaWriteUtil
             const MDagPath& dagPath,
             const UsdPrim& usdPrim,
             const UsdTimeCode& usdTime,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+
+    /// Writes all of the adaptor metadata from \p mayaObject onto the \p prim.
+    /// Returns true if successful (even if there was nothing to export).
+    PXRUSDMAYA_API
+    static bool WriteMetadataToPrim(
+            const MObject& mayaObject,
+            const UsdPrim& prim);
+
+    /// Writes all of the adaptor API schema attributes from \p mayaObject onto
+    /// the \p prim. Only attributes on applied schemas will be written to
+    /// \p prim.
+    /// Returns true if successful (even if there was nothing to export).
+    /// \sa PxrUsdMayaAdaptor::GetAppliedSchemas
+    PXRUSDMAYA_API
+    static bool WriteAPISchemaAttributesToPrim(
+            const MObject& mayaObject,
+            const UsdPrim& prim,
             UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// Authors class inherits on \p usdPrim.  \p inheritClassNames are

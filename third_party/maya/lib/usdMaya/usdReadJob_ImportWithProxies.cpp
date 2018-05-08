@@ -192,7 +192,9 @@ usdReadJob::_ProcessProxyPrims(
                                       mArgs.readAnimData,
                                       mArgs.useCustomFrameRange,
                                       mArgs.startTime,
-                                      mArgs.endTime);
+                                      mArgs.endTime,
+                                      mArgs.includeMetadataKeys,
+                                      mArgs.includeAPINames);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (!_CreateParentTransformNodes(proxyPrim, args, &ctx)) {
@@ -251,7 +253,9 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
                                       mArgs.readAnimData,
                                       mArgs.useCustomFrameRange,
                                       mArgs.startTime,
-                                      mArgs.endTime);
+                                      mArgs.endTime,
+                                      mArgs.includeMetadataKeys,
+                                      mArgs.includeAPINames);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // We use the file path of the file currently being imported and
@@ -291,7 +295,9 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
                                       mArgs.readAnimData,
                                       mArgs.useCustomFrameRange,
                                       mArgs.startTime,
-                                      mArgs.endTime);
+                                      mArgs.endTime,
+                                      mArgs.includeMetadataKeys,
+                                      mArgs.includeAPINames);
         PxrUsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (!_CreateParentTransformNodes(cameraPrim, args, &ctx)) {
