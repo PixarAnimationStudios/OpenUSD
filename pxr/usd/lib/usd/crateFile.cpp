@@ -2182,7 +2182,7 @@ CrateFile::~CrateFile()
         printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
                "page map for %s\n"
-               "%zd pages, %zd used (%.1f%%), %zd in mem (%.1f%%)\n"
+               "%lld pages, %lld used (%.1f%%), %lld in mem (%.1f%%)\n"
                "used %.1f%% of pages in mem\n"
                "legend: '+': in mem & used,     '-': in mem & unused\n"
                "        '!': not in mem & used, ' ': not in mem & unused\n"
