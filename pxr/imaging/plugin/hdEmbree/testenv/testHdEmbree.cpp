@@ -258,15 +258,27 @@ void HdEmbree_TestGLDrawing::DrawTest()
     glViewport(0, 0, GetWidth(), GetHeight());
 
     // Ask hydra to execute our render task (producing an image).
-    HdTaskSharedPtrVector tasks;
-    tasks.push_back(_renderIndex->GetTask(SdfPath("/renderTask")));
+    HdTaskSharedPtr renderTask = _renderIndex->GetTask(SdfPath("/renderTask"));
+    HdTaskSharedPtrVector tasks = { renderTask };
     _engine.Execute(*_renderIndex, tasks);
 }
 
 void HdEmbree_TestGLDrawing::OffscreenTest()
 {
     // Render and write out to a file.
-    DrawTest();
+    glViewport(0, 0, GetWidth(), GetHeight());
+
+    // Ask hydra to execute our render task (producing an image).
+    boost::shared_ptr<HdxRenderTask> renderTask =
+        boost::static_pointer_cast<HdxRenderTask>(
+            _renderIndex->GetTask(SdfPath("/renderTask")));
+
+    // For offline rendering, make sure we render to convergence.
+    HdTaskSharedPtrVector tasks = { renderTask };
+    do {
+        _engine.Execute(*_renderIndex, tasks);
+    } while (!renderTask->IsConverged());
+
     WriteToFile("color", _outputName.c_str());
 }
 

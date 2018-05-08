@@ -27,13 +27,16 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hdEmbree/renderParam.h"
+#include "pxr/imaging/hd/renderThread.h"
+#include "pxr/imaging/hdEmbree/renderer.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
-#include <embree2/rtcore.h>
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+typedef boost::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 
 /// \class HdEmbreeRenderPass
 ///
@@ -41,18 +44,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// scene (the HdRprimCollection) for a specific viewer (the camera/viewport
 /// parameters in HdRenderPassState) to the current draw target.
 ///
-/// This class does so by raycasting into the embree scene.
+/// This class does so by raycasting into the embree scene via HdEmbreeRenderer.
 ///
 class HdEmbreeRenderPass final : public HdRenderPass {
 public:
     /// Renderpass constructor.
     ///   \param index The render index containing scene data to render.
     ///   \param collection The initial rprim collection for this renderpass.
-    ///   \param scene The embree scene to raycast into.
+    ///   \param renderThread A handle to the global render thread.
+    ///   \param renderer A handle to the global renderer.
     HdEmbreeRenderPass(HdRenderIndex *index,
                        HdRprimCollection const &collection,
-                       RTCScene scene,
-                       HdEmbreeRenderParam *renderParam);
+                       HdRenderThread *renderThread,
+                       HdEmbreeRenderer *renderer,
+                       std::atomic<int> *sceneVersion);
 
     /// Renderpass destructor.
     virtual ~HdEmbreeRenderPass();
@@ -80,67 +85,46 @@ protected:
     virtual void _MarkCollectionDirty() override {}
 
 private:
+    // Create GL resources needed for blitting.
+    void _CreateBlitResources();
 
-    // -----------------------------------------------------------------------
-    // Internal API
+    // Destroy GL resources needed for blitting.
+    void _DestroyBlitResources();
 
-    // Specify a new viewport size for the sample buffer.
-    void _ResizeSampleBuffer(unsigned int width, unsigned int height);
+    // Blit to the current OpenGL framebuffer.
+    void _Blit(unsigned int width, unsigned int height, const uint8_t *data);
 
-    // Rendering entrypoint: add one sample per pixel to the sample
-    // buffer. This is decomposed into parallel calls to _RenderTiles.
-    void _Render();
+    // A handle to the render thread.
+    HdRenderThread *_renderThread;
 
-    // Render square tiles of pixels. This function is one unit of threadpool
-    // work. For each tile, iterate over pixels in the tile, generating camera
-    // rays, and following them/calculating color with _TraceRay. This function
-    // renders all tiles between tileStart and tileEnd.
-    void _RenderTiles(size_t tileStart, size_t tileEnd);
+    // A handle to the global renderer.
+    HdEmbreeRenderer *_renderer;
 
-    // Cast a ray into the scene and if it hits an object, return the
-    // computed color; otherwise return _clearColor.
-    GfVec3f _TraceRay(GfVec3f const& origin, GfVec3f const& dir);
+    // A reference to the global scene version.
+    std::atomic<int> *_sceneVersion;
 
-    // Compute the ambient occlusion term at a given point by firing rays
-    // from "position" in the hemisphere centered on "normal"; the occlusion
-    // factor is the fraction of those rays that are occluded.
-    //
-    // Modulating surface color by (1 - occlusionFactor) is similar to taking
-    // the light contribution of an infinitely far, pure white dome light.
-    float _ComputeAmbientOcclusion(GfVec3f const& position,
-                                   GfVec3f const& normal);
-
-    // The output buffer for the raytracing algorithm. If pixel is
-    // &_sampleBuffer[y*_width+x], then pixel[0-2] represent accumulated R,G,B
-    // values, over a number of render passes stored in pixel[3]; the average
-    // color value is then pixel[0-2] / pixel[3].
-    std::vector<float> _sampleBuffer;
-
-    // The resolved output buffer, in GL_RGBA. This is an intermediate between
-    // _sampleBuffer and the GL framebuffer.
-    std::vector<uint8_t> _colorBuffer;
+    // The last scene version we rendered with.
+    int _lastRenderedVersion;
 
     // The width of the viewport we're rendering into.
     unsigned int _width;
     // The height of the viewport we're rendering into.
     unsigned int _height;
 
-    // Our handle to the embree scene.
-    RTCScene _scene;
+    // The view matrix: world space to camera space
+    GfMatrix4d _viewMatrix;
+    // The projection matrix: camera space to NDC space
+    GfMatrix4d _projMatrix;
 
-    // The inverse view matrix: camera space to world space.
-    GfMatrix4d _inverseViewMatrix;
-    // The inverse projection matrix: NDC space to camera space.
-    GfMatrix4d _inverseProjMatrix;
+    // Whether the current render has converged.
+    bool _converged;
 
-    // The color of a ray miss.
-    GfVec3f _clearColor;
-
-    // A handle to the render param.
-    HdEmbreeRenderParam *_renderParam;
-
-    // The version of the scene that _sampleBuffer was rendered with.
-    int _sceneVersion;
+    // For rendering the final result, a GL texture handle...
+    GLuint _texture;
+    // ... and a GL framebuffer handle.
+    GLuint _framebuffer;
+    // For correctness, keep track of the context the FBO was allocated on.
+    GlfGLContextSharedPtr _owningContext;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

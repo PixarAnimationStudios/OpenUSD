@@ -28,6 +28,7 @@ pxr_plugin(hdEmbree
         instancer
         mesh
         meshSamplers
+        renderer
         rendererPlugin
         renderDelegate
         renderPass

@@ -26,8 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderThread.h"
 
-#include <atomic>
 #include <embree2/rtcore.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,31 +41,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// 
 class HdEmbreeRenderParam final : public HdRenderParam {
 public:
-    HdEmbreeRenderParam(RTCDevice device, RTCScene scene)
-        : _scene(scene), _device(device), _sceneVersion(0)
+    HdEmbreeRenderParam(RTCDevice device, RTCScene scene,
+                        HdRenderThread *renderThread,
+                        std::atomic<int> *sceneVersion)
+        : _scene(scene), _device(device)
+        , _renderThread(renderThread), _sceneVersion(sceneVersion)
         {}
     virtual ~HdEmbreeRenderParam() = default;
 
     /// Accessor for the top-level embree scene.
     RTCScene AcquireSceneForEdit() {
-        _sceneVersion++;
+        _renderThread->StopRender();
+        (*_sceneVersion)++;
         return _scene;
     }
     /// Accessor for the top-level embree device (library handle).
     RTCDevice GetEmbreeDevice() { return _device; }
-
-    /// Return the scene "version", a counter indicating how many edits have
-    /// been made to the scene.  Render passes can use this to determine whether
-    /// they have stale sample data.
-    int GetSceneVersion() { return _sceneVersion; }
 
 private:
     /// A handle to the top-level embree scene.
     RTCScene _scene;
     /// A handle to the top-level embree device (library handle).
     RTCDevice _device;
-    /// A numerical "version" of the scene: how many edits have been made.
-    std::atomic<int> _sceneVersion;
+    /// A handle to the global render thread.
+    HdRenderThread *_renderThread;
+    /// A version counter for edits to _scene.
+    std::atomic<int> *_sceneVersion;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

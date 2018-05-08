@@ -32,6 +32,8 @@
 
 #include <embree2/rtcore.h>
 
+class HdRprim;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdEmbreePrototypeContext

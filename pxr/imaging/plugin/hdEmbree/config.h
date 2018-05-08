@@ -47,11 +47,6 @@ public:
     /// \brief Return the configuration singleton.
     static const HdEmbreeConfig &GetInstance();
 
-    /// How many samples does each pixel get per frame?
-    ///
-    /// Override with *HDEMBREE_SAMPLES_PER_FRAME*.
-    unsigned int samplesPerFrame;
-
     /// How many samples do we need before a pixel is considered
     /// converged?
     ///
