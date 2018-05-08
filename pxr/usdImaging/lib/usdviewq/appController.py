@@ -1209,7 +1209,13 @@ class AppController(QtCore.QObject):
     # Render plugin support
     def _rendererPluginChanged(self, plugin):
         if self._stageView:
-            self._stageView.SetRendererPlugin(plugin)
+            if not self._stageView.SetRendererPlugin(plugin):
+                # If SetRendererPlugin failed, we need to reset the check mark
+                # to whatever the currently loaded renderer is.
+                for action in self._ui.rendererPluginActionGroup.actions():
+                    if action.text() == self._stageView.rendererPluginName:
+                        action.setChecked(True)
+                        break
 
     def _configureRendererPlugins(self):
         if self._stageView:
