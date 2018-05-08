@@ -99,15 +99,7 @@ HdRprim::_Sync(HdSceneDelegate* delegate,
     // if so, we will request the binding from the delegate and set it up in
     // this rprim.
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        VtValue materialId = 
-            delegate->Get(GetId(), HdShaderTokens->material);
-
-        if (materialId.IsHolding<SdfPath>()){
-            _SetMaterialId(changeTracker, materialId.Get<SdfPath>());
-        } else {
-            _SetMaterialId(changeTracker, SdfPath());
-        }
-
+        _SetMaterialId(changeTracker, delegate->GetMaterialId(GetId()));
         *dirtyBits &= ~HdChangeTracker::DirtyMaterialId;
     }
 }

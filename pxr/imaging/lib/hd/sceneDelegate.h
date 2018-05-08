@@ -412,6 +412,10 @@ public:
     // -----------------------------------------------------------------------//
     /// \name Material Aspects
     // -----------------------------------------------------------------------//
+    
+    /// Returns the material ID bound to the rprim \p rprimId.
+    HD_API
+    virtual SdfPath GetMaterialId(SdfPath const &rprimId);
 
     /// Returns the surface shader source code for the given material ID.
     HD_API

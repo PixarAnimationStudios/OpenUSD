@@ -331,6 +331,8 @@ public:
                                              SdfPath const& prototypeId);
 
     HD_API
+    virtual SdfPath GetMaterialId(SdfPath const& rprimId);
+    HD_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &materialId);
     HD_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &materialId);    

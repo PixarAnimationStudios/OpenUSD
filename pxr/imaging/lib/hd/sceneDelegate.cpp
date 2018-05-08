@@ -252,6 +252,13 @@ HdSceneDelegate::GetPathForInstanceIndex(const SdfPath &protoPrimPath,
 // -----------------------------------------------------------------------//
 
 /*virtual*/
+SdfPath 
+HdSceneDelegate::GetMaterialId(SdfPath const &rprimId)
+{
+    return SdfPath();
+}
+
+/*virtual*/
 std::string
 HdSceneDelegate::GetSurfaceShaderSource(SdfPath const &materialId)
 {

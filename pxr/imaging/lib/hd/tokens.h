@@ -177,7 +177,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (fragmentShader)                            \
     (geometryShader)                            \
     (lightingBlendAmount)                       \
-    (material)                                  \
     (overrideColor)                             \
     (projectionMatrix)                          \
     (tessControlShader)                         \

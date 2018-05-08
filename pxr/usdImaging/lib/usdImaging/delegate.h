@@ -320,6 +320,8 @@ public:
 
     // Material Support
     USDIMAGING_API
+    virtual SdfPath GetMaterialId(SdfPath const &rprimId) override;
+    USDIMAGING_API
     virtual std::string GetSurfaceShaderSource(SdfPath const &id) override;
     USDIMAGING_API
     virtual std::string GetDisplacementShaderSource(SdfPath const &id) override;

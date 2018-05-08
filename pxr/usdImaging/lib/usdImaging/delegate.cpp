@@ -2264,16 +2264,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     SdfPath usdPath = GetPathForUsd(id);
     VtValue value;
 
-    if (key == HdShaderTokens->material) {
-        SdfPath pathValue;
-        if (!_valueCache.ExtractMaterialId(usdPath, &pathValue)) {
-            _UpdateSingleValue(usdPath, HdChangeTracker::DirtyMaterialId);
-            TF_VERIFY(_valueCache.ExtractMaterialId(usdPath, &pathValue));
-        }
-        value = VtValue(GetPathForIndex(pathValue));
-    }
-
-    else if (!_valueCache.ExtractPrimvar(usdPath, key, &value)) {
+    if (!_valueCache.ExtractPrimvar(usdPath, key, &value)) {
         if (key == HdTokens->points) {
             _UpdateSingleValue(usdPath,HdChangeTracker::DirtyPoints);
             if (!TF_VERIFY(_valueCache.ExtractPoints(usdPath, &value))) {
@@ -2477,6 +2468,19 @@ UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
                                        maxSampleCount, times, samples);
     }
     return 0;
+}
+
+/*virtual*/ 
+SdfPath 
+UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
+{
+    SdfPath usdPath = GetPathForUsd(rprimId);
+    SdfPath pathValue;
+    if (!_valueCache.ExtractMaterialId(usdPath, &pathValue)) {
+        _UpdateSingleValue(usdPath, HdChangeTracker::DirtyMaterialId);
+        TF_VERIFY(_valueCache.ExtractMaterialId(usdPath, &pathValue));
+    }
+    return GetPathForIndex(pathValue);
 }
 
 /*virtual*/

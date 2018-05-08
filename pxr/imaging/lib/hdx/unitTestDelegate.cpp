@@ -743,11 +743,6 @@ Hdx_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].translate);
         }
-    } else if (key == HdShaderTokens->material) {
-        SdfPath materialId;
-        TfMapLookup(_materialBindings, id, &materialId);
-
-        return VtValue(materialId);
     }
     return VtValue();
 }
@@ -841,6 +836,15 @@ Hdx_UnitTestDelegate::BindMaterial(SdfPath const &rprimId,
                                  SdfPath const &materialId)
 {
     _materialBindings[rprimId] = materialId;
+}
+
+/*virtual*/ 
+SdfPath 
+Hdx_UnitTestDelegate::GetMaterialId(SdfPath const &rprimId)
+{
+    SdfPath materialId;
+    TfMapLookup(_materialBindings, rprimId, &materialId);
+    return materialId;
 }
 
 /*virtual*/

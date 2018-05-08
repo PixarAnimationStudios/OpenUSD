@@ -161,6 +161,7 @@ public:
     virtual TfToken GetReprName(SdfPath const &id);
 
 
+    virtual SdfPath GetMaterialId(SdfPath const &rprimId);
     virtual std::string GetSurfaceShaderSource(SdfPath const &shaderId);
     virtual std::string GetDisplacementShaderSource(SdfPath const &shaderId);
     virtual HdMaterialParamVector GetMaterialParams(SdfPath const &shaderId);
