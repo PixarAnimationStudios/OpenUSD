@@ -2617,11 +2617,17 @@ UsdImagingDelegate::GetTextureResourceID(SdfPath const &textureId)
 {
     SdfPath usdPath = GetPathForUsd(textureId);
     _PrimInfo *primInfo = GetPrimInfo(usdPath);
-    if (TF_VERIFY(primInfo)) {
+    if (primInfo) {
         return primInfo->adapter
             ->GetTextureResourceID(primInfo->usdPrim, usdPath, _time,
                                    (size_t) &GetRenderIndex() );
-    }
+    } 
+
+    // A bad asset can cause GetPrimInfo() to fail. Hence, issue a warning and 
+    // return an invalid resource ID.
+    TF_WARN("Could not get prim tracking data for path <%s>. Unable to get "
+            "associated texture resource ID.", textureId.GetText());
+
     return HdTextureResource::ID(-1);
 }
 
