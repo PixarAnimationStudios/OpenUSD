@@ -263,6 +263,49 @@ Test_TfRefPtr()
         TF_AXIOM(b == n1);
     }
 
+    // Test move constructor and assignment operators
+    {
+        NodeRefPtr n1 = Node::New();
+        Node* n1Ptr = get_pointer(n1);
+        TF_AXIOM(n1);
+
+        NodeRefPtr n2(std::move(n1));
+        TF_AXIOM(n2);
+        TF_AXIOM(get_pointer(n2) == n1Ptr);
+        TF_AXIOM(!n1);
+
+        n1 = Node::New();
+        n1Ptr = get_pointer(n1);
+        TF_AXIOM(n1);
+
+        n2 = std::move(n1);
+        TF_AXIOM(n2);
+        TF_AXIOM(get_pointer(n2) == n1Ptr);
+        TF_AXIOM(!n1);
+    }
+
+    // Test move constructor and assignment operators on
+    // convertible pointer types.
+    {
+        SuperNodeRefPtr subNode = SuperNode::New();
+        SuperNode* subNodePtr = get_pointer(subNode);
+        TF_AXIOM(subNode);
+
+        NodeRefPtr baseNode(std::move(subNode));
+        TF_AXIOM(baseNode);
+        TF_AXIOM(get_pointer(baseNode) == subNodePtr);
+        TF_AXIOM(!subNode);
+
+        subNode = SuperNode::New();
+        subNodePtr = get_pointer(subNode);
+        TF_AXIOM(subNode);
+
+        baseNode = std::move(subNode);
+        TF_AXIOM(baseNode);
+        TF_AXIOM(get_pointer(baseNode) == subNodePtr);
+        TF_AXIOM(!subNode);
+    }
+
     return true;
 }
 

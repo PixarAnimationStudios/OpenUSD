@@ -610,6 +610,19 @@ public:
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
 
+    /// Moves the pointer managed by \p p to \c *this.
+    ///
+    /// After construction, \c *this will point to the object \p p had
+    /// been pointing at and \p p will be pointing at the NULL object. 
+    /// The reference count of the object being pointed at does not
+    /// change.
+    TfRefPtr(TfRefPtr<T>&& p) : _refBase(p._refBase) {
+        p._refBase = nullptr;
+        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+    }
+
     /// Initializes \c *this to point at \p p's object.
     ///
     /// Increments \p p's object's reference count.
@@ -712,7 +725,7 @@ public:
     /// however that this has an important side effect, since it
     /// decrements the reference count of the object previously pointed
     /// to by \c ptr, possibly triggering destruction of that object.
-    TfRefPtr<T>& operator= (const TfRefPtr<T>& p) {
+    TfRefPtr<T>& operator=(const TfRefPtr<T>& p) {
         //
         // It is quite possible for
         //   ptr = TfNullPtr;
@@ -731,6 +744,27 @@ public:
 
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
+        return *this;
+    }
+
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object.
+    /// 
+    /// The object (if any) pointed at before the assignment has its
+    /// reference count decremented, while the reference count of the
+    /// object newly pointed at is not changed.
+    TfRefPtr<T>& operator=(TfRefPtr<T>&& p) {
+        // See comment in assignment operator.
+        Tf_RefPtrTracker_Assign(this, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, nullptr,
+                                p._GetObjectForTracking());
+
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._refBase;
+        p._refBase = nullptr;
+        
+        _RemoveRef(tmp);
         return *this;
     }
 
@@ -782,6 +816,31 @@ public:
         Tf_RefPtrTracker_New(this, _GetObjectForTracking());
     }
 
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object. The reference count of the object
+    /// being pointed to is not changed.
+    ///
+    /// This initialization is legal only if
+    /// \code
+    ///     U* uPtr;
+    ///     T* tPtr = uPtr;
+    /// \endcode
+    /// is legal.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    TfRefPtr(TfRefPtr<U>&& p) : _refBase(p._refBase) {
+        if (!boost::is_same<T,U>::value) {
+            if (false)
+                _CheckTypeAssignability<U>();
+        }
+
+        p._refBase = nullptr;
+        Tf_RefPtrTracker_New(this, _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p, p._GetObjectForTracking(),
+                                _GetObjectForTracking());
+    }
+
     /// Assigns pointer to point at \c p's object, and increments reference
     /// count.
     ///
@@ -795,7 +854,7 @@ public:
 #if !defined(doxygen)
     template <class U>
 #endif
-    TfRefPtr<T>& operator= (const TfRefPtr<U>& p) {
+    TfRefPtr<T>& operator=(const TfRefPtr<U>& p) {
         if (!boost::is_same<T,U>::value) {
             if (false)
                 _CheckTypeAssignability<U>();
@@ -808,6 +867,39 @@ public:
         _refBase = p._GetData();
         p._AddRef();            // first!
         _RemoveRef(tmp);        // second!
+        return *this;
+    }
+
+    /// Moves the pointer managed by \p p to \c *this and leaves \p p
+    /// pointing at the NULL object. The reference count of the object
+    /// being pointed to is not changed.
+    /// 
+    /// This assignment is legal only if
+    /// \code
+    ///     U* uPtr;
+    ///     T* tPtr;
+    ///     tPtr = uPtr;
+    /// \endcode
+    /// is legal.
+#if !defined(doxygen)
+    template <class U>
+#endif
+    TfRefPtr<T>& operator=(TfRefPtr<U>&& p) {
+        if (!boost::is_same<T,U>::value) {
+            if (false)
+                _CheckTypeAssignability<U>();
+        }
+
+        Tf_RefPtrTracker_Assign(this,
+                                reinterpret_cast<T*>(p._GetObjectForTracking()),
+                                _GetObjectForTracking());
+        Tf_RefPtrTracker_Assign(&p,
+                                nullptr,
+                                reinterpret_cast<T*>(p._GetObjectForTracking()));
+        const TfRefBase* tmp = _refBase;
+        _refBase = p._GetData();
+        p._refBase = nullptr;
+        _RemoveRef(tmp);
         return *this;
     }
 
