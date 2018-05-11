@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/plug/api.h"
 
+#include <atomic>
 #include <type_traits>
 #include <typeinfo>
 
@@ -50,11 +51,12 @@ public:
 #endif
 
 protected:
+    PLUG_API
     void _LoadAndInstantiate(const std::type_info& type) const;
 
 protected:
     // POD types only!
-    mutable bool _initialized;
+    mutable std::atomic<bool> _initialized;
     mutable void* _ptr;
 };
 
@@ -203,7 +205,6 @@ public:
 private:
     Interface* _GetPtr() const
     {
-        // XXX: Broken double-checked locking.
         if (!_initialized) {
             _LoadAndInstantiate(typeid(Interface));
         }
