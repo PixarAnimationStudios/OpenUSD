@@ -124,7 +124,7 @@ SdfPath::SdfPath(const std::string &path) {
 SdfPath::SdfPath(const Sdf_PathNodeConstRefPtr &pathNode)
     : _pathNode(pathNode) {}
 
-SdfPath::SdfPath(const Sdf_PathNodeConstRefPtr &&pathNode)
+SdfPath::SdfPath(Sdf_PathNodeConstRefPtr &&pathNode)
     : _pathNode(std::move(pathNode)) {}
 
 TF_MAKE_STATIC_DATA(SdfPath, _emptyPath) {
