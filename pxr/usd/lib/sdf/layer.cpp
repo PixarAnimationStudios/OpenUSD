@@ -707,8 +707,13 @@ SdfLayer::FindOrOpen(const string &identifier,
     if (SdfLayerRefPtr layer =
         _TryToFindLayer(layerInfo.identifier, layerInfo.resolvedLayerPath,
                         lock, /*retryAsWriter=*/true)) {
-        return layer->_WaitForInitializationAndCheckIfSuccessful() ?
-            layer : TfNullPtr;
+        // This could be written as a ternary, but we rely on return values 
+        // being implicitly moved to avoid making an unnecessary copy of 
+        // layer and the associated ref-count bump.
+        if (layer->_WaitForInitializationAndCheckIfSuccessful()) {
+            return layer;
+        }
+        return TfNullPtr;
     }
     // At this point _TryToFindLayer has upgraded lock to a writer.
 
