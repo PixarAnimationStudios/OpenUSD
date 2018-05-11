@@ -29,6 +29,7 @@
 #include "pxr/base/trace/collectionNotice.h"
 #include "pxr/base/trace/eventNode.h"
 #include "pxr/base/trace/eventTreeBuilder.h"
+#include "pxr/base/trace/reporterDataSourceCollector.h"
 #include "pxr/base/trace/threads.h"
 #include "pxr/base/trace/trace.h"
 
@@ -65,10 +66,8 @@ TF_DEFINE_PUBLIC_TOKENS(TraceReporterTokens, TRACE_REPORTER_TOKENS);
 //
 
 TraceReporter::TraceReporter(const string& label,
-                             const TraceCollectorPtr& collector,
-                             CollectionPtr collection) :
-    TraceReporterBase(collection),
-    _collector(collector),
+                             DataSourcePtr dataSource) :
+    TraceReporterBase(std::move(dataSource)),
     _label(label),
     _groupByFunction(true),
     _foldRecursiveCalls(false),
@@ -656,10 +655,6 @@ TraceReporter::ClearTree()
     _eventTimes.clear();
     _counters.clear();
     _counterIndexMap.clear();
-    ///XXX: This should really not be clearing the global collector here.
-    if (_collector) {
-        _collector->Clear();
-    }
     _Clear();
 }
 
@@ -784,12 +779,6 @@ TraceReporter::_PendingEventNode::Close(TimeStamp end)
     return Child{start, node};
 }
 
-bool 
-TraceReporter::_IsAcceptingCollections()
-{
-    return true;
-}
-
 void
 TraceReporter::_ProcessCollection(
     const TraceReporterBase::CollectionPtr& collection)
@@ -812,8 +801,8 @@ public:
 
     _GlobalReporterHolder() {
         _globalReporter =
-            TraceReporter::New("Trace global reporter", 
-                TraceCollectorPtr(&TraceCollector::GetInstance()));
+            TraceReporter::New("Trace global reporter",
+                TraceReporterDataSourceCollector::New());
 
     }
 

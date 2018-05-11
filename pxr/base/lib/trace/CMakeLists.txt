@@ -31,6 +31,9 @@ pxr_library(trace
         key
         reporter
         reporterBase
+        reporterDataSourceBase
+        reporterDataSourceCollection
+        reporterDataSourceCollector
         serialization
         staticKeyData
         threads

@@ -86,11 +86,6 @@ public:
     }
 
 protected:
-    // All TraceCollections will be accepted.
-    bool _IsAcceptingCollections() override {
-        return true;
-    }
-
     // This will be called by the TraceReporterBase::_Update() for each
     // TraceCollection received.
     void _ProcessCollection(const CollectionPtr& collection) override {
@@ -147,7 +142,9 @@ private:
 class CustomTraceEventProcessor : 
     public TraceReporterBase, TraceCollection::Visitor {
 public:
-    CustomTraceEventProcessor() = default;
+    CustomTraceEventProcessor(TraceReporterDataSourceBaseRefPtr dataSource)
+        : TraceReporterBase(dataSource)
+        {}
 
     void Update() {
         //Call base class update to get the latest data from TraceCollector.
@@ -175,11 +172,6 @@ public:
     virtual void OnEndThread(const TraceThreadId&) override {}
 
 protected:
-    // All TraceCollections will be accepted.
-    bool _IsAcceptingCollections() override {
-        return true;
-    }
-
     // This will be called by the TraceReporterBase::_Update() for each
     // TraceCollection received.
     void _ProcessCollection(const CollectionPtr& collection) override {
@@ -205,7 +197,8 @@ int main(int argc, char *argv[])
         CustomPerfCounterCategory::GetId(), "CustomPerfCounter");
 
     // Make sure an instance of the processor is available to receive notices.
-    CustomTraceEventProcessor eventProcessor;
+    CustomTraceEventProcessor eventProcessor(
+        TraceReporterDataSourceCollector::New());
 
     // Enable the recording of events for the category.
     CustomPerfCounterCategory::Enable();

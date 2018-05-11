@@ -22,50 +22,54 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/reporterBase.h"
+#include "pxr/base/trace/reporterDataSourceCollector.h"
 
 #include "pxr/pxr.h"
 #include "pxr/base/trace/collector.h"
-#include "pxr/base/trace/serialization.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceReporterBase::TraceReporterBase(DataSourcePtr dataSource)
-    : _dataSource(std::move(dataSource))
+static
+bool _AlwaysAccept()
 {
+    return true;
 }
 
-bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
+TraceReporterDataSourceCollector::TraceReporterDataSourceCollector()
+    : TraceReporterDataSourceCollector(_AlwaysAccept)
+{}
+
+TraceReporterDataSourceCollector::TraceReporterDataSourceCollector(
+    std::function<bool()> accept)
+    : _accept(std::move(accept))
 {
+    TfNotice::Register(ThisPtr(this), &This::_OnTraceCollection);
+}
+
+std::vector<TraceReporterDataSourceBase::CollectionPtr>
+TraceReporterDataSourceCollector::ConsumeData()
+{
+    TraceCollector::GetInstance().CreateCollection();
     std::vector<CollectionPtr> collections;
-    for (const CollectionPtr& col : _processedCollections) {
-        collections.push_back(col);
+    std::shared_ptr<TraceCollection> collection;
+    while (_pendingCollections.try_pop(collection)) {
+        collections.emplace_back(std::move(collection));
     }
-    return TraceSerialization::Write(ostr, collections);
-}
-
-TraceReporterBase::~TraceReporterBase()
-{
+    return collections;
 }
 
 void
-TraceReporterBase::_Clear()
+TraceReporterDataSourceCollector::Clear()
 {
-    _processedCollections.clear();
-    if (_dataSource) {
-        _dataSource->Clear();
-    }
+    _pendingCollections.clear();
 }
 
 void
-TraceReporterBase::_Update()
+TraceReporterDataSourceCollector::_OnTraceCollection(
+    const TraceCollectionAvailable& notice)
 {
-    if (!_dataSource) return;
-
-    std::vector<CollectionPtr> data = _dataSource->ConsumeData();
-    for (const CollectionPtr& collection : data) {
-        _ProcessCollection(collection);
-        _processedCollections.push_back(collection);
+    if (_accept()) {
+        _pendingCollections.push(notice.GetCollection());
     }
 }
 

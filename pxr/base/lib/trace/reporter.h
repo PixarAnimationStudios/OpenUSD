@@ -82,17 +82,15 @@ public:
     using TimeStamp = TraceEvent::TimeStamp;
     using CounterMap = TfHashMap<TfToken, double, TfToken::HashFunctor>;
 
-    /// Create a new reporter with \a label and \a collector.
+    /// Create a new reporter with \a label and \a dataSource.
     static ThisRefPtr New(const std::string& label,
-                          const TraceCollectorPtr& collector) {
-        return TfCreateRefPtr(new This(label, collector, nullptr));
+                          DataSourcePtr dataSource) {
+        return TfCreateRefPtr(new This(label, std::move(dataSource)));
     }
 
-    /// Create a new reporter with \a label and \a collection. the reporter will
-    /// not receive new TraceCollection instances.
-    static ThisRefPtr New(const std::string& label,
-                          CollectionPtr collection) {
-        return TfCreateRefPtr(new This(label, nullptr, collection));
+    /// Create a new reporter with \a label and no data source.
+    static ThisRefPtr New(const std::string& label) {
+        return TfCreateRefPtr(new This(label, nullptr));
     }
 
     /// Returns the global reporter.
@@ -100,11 +98,6 @@ public:
    
     /// Destructor.
     TRACE_API virtual ~TraceReporter();
-
-    /// Return the collector from which events are gathered.
-    TraceCollectorPtr GetCollector() const {
-        return _collector;
-    }
 
     /// Return the label associated with this reporter.
     const std::string& GetLabel() {
@@ -214,14 +207,12 @@ public:
 protected:
 
     TRACE_API TraceReporter(const std::string& label,
-                   const TraceCollectorPtr& collector,
-                   TraceReporterBase::CollectionPtr);
+                   DataSourcePtr dataSource);
 
 private:
     // Internal methods to traverse the collector's event log.
     using _EventTimes = std::map<TfToken, TimeStamp>;
 
-    bool _IsAcceptingCollections() override;
     void _ProcessCollection(const TraceReporterBase::CollectionPtr&) override;
     void _ComputeInclusiveCounterValues();
     void _UpdateTree(bool buildEventTree);
@@ -246,8 +237,6 @@ private:
         const TraceThreadId&, const TfToken&, const TraceEvent&);
 
     std::string _GetKeyName(const TfToken&) const;
-
-    TraceCollectorPtr _collector;
 
     std::string _label;
 

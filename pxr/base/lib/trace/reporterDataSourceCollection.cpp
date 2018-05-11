@@ -22,51 +22,37 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/reporterBase.h"
+#include "pxr/base/trace/reporterDataSourceCollection.h"
 
 #include "pxr/pxr.h"
-#include "pxr/base/trace/collector.h"
-#include "pxr/base/trace/serialization.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceReporterBase::TraceReporterBase(DataSourcePtr dataSource)
-    : _dataSource(std::move(dataSource))
-{
-}
+TraceReporterDataSourceCollection::TraceReporterDataSourceCollection(
+    CollectionPtr collection)
+    : _data({collection})
+{}
 
-bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
-{
-    std::vector<CollectionPtr> collections;
-    for (const CollectionPtr& col : _processedCollections) {
-        collections.push_back(col);
-    }
-    return TraceSerialization::Write(ostr, collections);
-}
-
-TraceReporterBase::~TraceReporterBase()
-{
-}
+TraceReporterDataSourceCollection::TraceReporterDataSourceCollection(
+    std::vector<CollectionPtr> collections)
+    : _data(std::move(collections))
+{}
 
 void
-TraceReporterBase::_Clear()
+TraceReporterDataSourceCollection::Clear()
 {
-    _processedCollections.clear();
-    if (_dataSource) {
-        _dataSource->Clear();
-    }
+    using std::swap;
+    std::vector<CollectionPtr> newData;
+    swap(_data,newData);
 }
 
-void
-TraceReporterBase::_Update()
+std::vector<TraceReporterDataSourceBase::CollectionPtr>
+TraceReporterDataSourceCollection::ConsumeData()
 {
-    if (!_dataSource) return;
-
-    std::vector<CollectionPtr> data = _dataSource->ConsumeData();
-    for (const CollectionPtr& collection : data) {
-        _ProcessCollection(collection);
-        _processedCollections.push_back(collection);
-    }
+    using std::swap;
+    std::vector<CollectionPtr> result;
+    swap(_data,result);
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -22,51 +22,39 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/reporterBase.h"
+#ifndef TRACE_REPORTER_DATA_SOURCE_BASE_H
+#define TRACE_REPORTER_DATA_SOURCE_BASE_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/trace/collector.h"
-#include "pxr/base/trace/serialization.h"
+
+#include "pxr/base/trace/api.h"
+#include "pxr/base/trace/collection.h"
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceReporterBase::TraceReporterBase(DataSourcePtr dataSource)
-    : _dataSource(std::move(dataSource))
-{
-}
+////////////////////////////////////////////////////////////////////////////////
+/// \class TraceReporterDataSourceBase
+///
+/// This class is a base class for TraceReporterBase data sources. 
+/// TraceReporterBase uses an instance of a TraceReporterDataSourceBase derived 
+/// class to access TraceCollections.
+///
+class TraceReporterDataSourceBase {
+public:
+    using CollectionPtr = std::shared_ptr<TraceCollection>;
 
-bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
-{
-    std::vector<CollectionPtr> collections;
-    for (const CollectionPtr& col : _processedCollections) {
-        collections.push_back(col);
-    }
-    return TraceSerialization::Write(ostr, collections);
-}
+    /// Destructor
+    TRACE_API virtual ~TraceReporterDataSourceBase();
 
-TraceReporterBase::~TraceReporterBase()
-{
-}
+    /// Removes all references to TraceCollections.
+    virtual void Clear() = 0;
 
-void
-TraceReporterBase::_Clear()
-{
-    _processedCollections.clear();
-    if (_dataSource) {
-        _dataSource->Clear();
-    }
-}
-
-void
-TraceReporterBase::_Update()
-{
-    if (!_dataSource) return;
-
-    std::vector<CollectionPtr> data = _dataSource->ConsumeData();
-    for (const CollectionPtr& collection : data) {
-        _ProcessCollection(collection);
-        _processedCollections.push_back(collection);
-    }
-}
+    /// Returns the next TraceCollections which need to be processed.
+    virtual std::vector<CollectionPtr> ConsumeData() = 0;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // TRACE_REPORTER_DATA_SOURCE_BASE_H

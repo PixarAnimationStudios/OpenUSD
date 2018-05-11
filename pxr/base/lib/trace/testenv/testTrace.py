@@ -48,7 +48,6 @@ class TestTrace(unittest.TestCase):
         self.assertIsInstance(gc, Trace.Collector)
 
         self.assertEqual(gc, Trace.Collector())
-        self.assertEqual(gc, Trace.Reporter.globalReporter.GetCollector())
 
         gr = Trace.Reporter.globalReporter
         self.assertIsInstance(gr, Trace.Reporter)
@@ -124,8 +123,6 @@ class TestTrace(unittest.TestCase):
         testFunc()
 
 
-        self.assertEqual(gr.GetCollector() , gc)
-
         gr.ClearTree()
         Trace.TestAuto()
         gr.UpdateAggregateTree()
@@ -193,8 +190,7 @@ class TestTrace(unittest.TestCase):
         gc.enabled = True
 
         # Also try a local reporter and scope
-        lr = Trace.Reporter('local reporter', gc)
-        self.assertEqual(lr.GetCollector() , gc)
+        lr = Trace.Reporter('local reporter')
         self.assertEqual(lr.GetLabel() , 'local reporter')
 
         gc.BeginEvent("LocalScope")
