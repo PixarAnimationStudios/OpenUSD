@@ -152,9 +152,8 @@ def _GetClassMembers(cls):
 
 
 class Interpreter(InteractiveInterpreter):
-    def __init__(self, widget, locals = None):
+    def __init__(self, locals = None):
         InteractiveInterpreter.__init__(self,locals)
-        self._widget = widget
         self._outputBrush = None
 
     # overridden
@@ -223,7 +222,7 @@ class Controller(QtCore.QObject):
 
         super(Controller, self).__init__()
 
-        self.interpreter = Interpreter(textEdit, locals)
+        self.interpreter = Interpreter(locals)
         self.interpreter.locals['help'] = _Helper(self, self)
 
         self.completer = _Completer(self.interpreter.locals)
@@ -390,12 +389,13 @@ class Controller(QtCore.QObject):
     def write(self, text):
         'Simulate stdin, stdout, and stderr.'
 
+
         # Move the cursor to the end of the document
         self.textEdit.moveCursor(QtGui.QTextCursor.End)
 
         # Clear any existing text format.  We will explicitly set the format
         # later to something else if need be.
-        self.textEdit.setCurrentCharFormat(QtGui.QTextCharFormat())
+        self.textEdit.ResetCharFormat()
 
         # Copy the textEdit's current cursor.
         cursor = self.textEdit.textCursor()
@@ -415,13 +415,16 @@ class Controller(QtCore.QObject):
             self.textEdit.moveCursor(QtGui.QTextCursor.End)
 
     # get the length of a string in pixels bases on our current font
-    def _GetStringLengthInPixels(self, string):
-        font = self.textEdit.font()
+    @staticmethod
+    def _GetStringLengthInPixels(cf, string):
+        font = cf.font()
         fm = QtGui.QFontMetrics(font)
         strlen = fm.width(string)
         return strlen
 
     def _CompleteSlot(self):
+
+        cf = self.textEdit.currentCharFormat()
 
         line = self._GetInputLine()
         cursor = self.textEdit.textCursor()
@@ -454,9 +457,9 @@ class Controller(QtCore.QObject):
 
             maxLength = 0
             for i in completions:
-                maxLength = max(maxLength, self._GetStringLengthInPixels(i))
+                maxLength = max(maxLength, self._GetStringLengthInPixels(cf, i))
             # pad it a bit
-            maxLength = maxLength + self._GetStringLengthInPixels('  ')
+            maxLength = maxLength + self._GetStringLengthInPixels(cf, '  ')
 
             # how many columns can we fit on screen?
             numCols = max(1,width / maxLength)
@@ -490,7 +493,7 @@ class Controller(QtCore.QObject):
                         continue
                     tableCell = textTable.cellAt(row,col)
                     cellCursor = tableCell.firstCursorPosition()
-                    cellCursor.insertText(completions[index])
+                    cellCursor.insertText(completions[index], cf)
                     index +=1
 
             cursor.endEditBlock()
@@ -645,12 +648,18 @@ class View(QtWidgets.QTextEdit):
         self.tripleClickTimer = QtCore.QBasicTimer()
         self.tripleClickPoint = QtCore.QPoint()
         self._ignoreKeyPresses = True
+        self.ResetCharFormat()
 
     def SetStartOfInput(self, position):
         self.__startOfInput = position
 
     def StartOfInput(self):
         return self.__startOfInput
+
+    def ResetCharFormat(self):
+        charFormat = QtGui.QTextCharFormat()
+        charFormat.setFontFamily('monospace')
+        self.setCurrentCharFormat(charFormat)
 
     def _PositionInInputArea(self, position):
         return position - self.__startOfInput
@@ -757,12 +766,11 @@ class View(QtWidgets.QTextEdit):
             e.ignore()
             return
 
-        text = e.text()
         key = e.key()
 
         ctrl = e.modifiers() & QtCore.Qt.ControlModifier
-        shift = e.modifiers() & QtCore.Qt.ShiftModifier
         alt = e.modifiers() & QtCore.Qt.AltModifier
+        shift = e.modifiers() & QtCore.Qt.ShiftModifier
 
         cursorInInput = self._CursorIsInInputArea()
         selectionInInput = self._SelectionIsInInputArea()
@@ -800,28 +808,28 @@ class View(QtWidgets.QTextEdit):
                 # navigation along with arrows
                 or (ctrl and (key == QtCore.Qt.Key_P
                               or key == QtCore.Qt.Key_N))
-                # support Ctrl+E and Ctrl+A for terminal
+                # support Ctrl+E/End and Ctrl+A/Home for terminal
                 # style nav. to the ends of the line
                 or (ctrl and (key == QtCore.Qt.Key_A
-                              or key == QtCore.Qt.Key_E))):
+                              or key == QtCore.Qt.Key_E))
+                or (key == QtCore.Qt.Key_Home
+                    or key == QtCore.Qt.Key_End)):
             if cursorInInput:
                 if (key == QtCore.Qt.Key_Up or key == QtCore.Qt.Key_P):
                     self.requestPrev.emit()
                 if (key == QtCore.Qt.Key_Down or key == QtCore.Qt.Key_N):
                     self.requestNext.emit()
-                if (key == QtCore.Qt.Key_A):
-                    self._MoveCursorToStartOfInput(False)
-                if (key == QtCore.Qt.Key_E):
-                    self._MoveCursorToEndOfInput(False)
+                if (key == QtCore.Qt.Key_A or key == QtCore.Qt.Key_Home):
+                    self._MoveCursorToStartOfInput(select=shift)
+                if (key == QtCore.Qt.Key_E or key == QtCore.Qt.Key_End):
+                    self._MoveCursorToEndOfInput(select=shift)
                 e.ignore()
             else:
                 super(View, self).keyPressEvent(e)
         elif key == QtCore.Qt.Key_Tab:
             self.AutoComplete()
             e.accept()
-        elif (ctrl or alt or
-              key == QtCore.Qt.Key_Home or
-              key == QtCore.Qt.Key_End):
+        elif (ctrl or alt):
             # Ignore built-in QTextEdit hotkeys so we can handle them with
             # our App-level hotkey system.
             e.ignore()
@@ -897,7 +905,7 @@ Frequently used properties:
 class Myconsole(View):
 
     def __init__(self, parent, usdviewApi):
-        View.__init__(self, parent)
+        super(Myconsole, self).__init__(parent)
         self.setObjectName("Myconsole")
 
         # Inject the UsdviewApi into the interpreter variables.
