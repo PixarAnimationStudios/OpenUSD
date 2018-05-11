@@ -22,35 +22,35 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/singleEventNode.h"
+#include "pxr/base/trace/eventNode.h"
 
 #include "pxr/pxr.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceSingleEventNodeRefPtr
-TraceSingleEventNode::Append(
+TraceEventNodeRefPtr
+TraceEventNode::Append(
     const TfToken &key, 
     TraceCategoryId category, 
     TimeStamp beginTime, 
     TimeStamp endTime,
     bool separateEvents)
 {
-    TraceSingleEventNodeRefPtr n = 
-        TraceSingleEventNode::New(
+    TraceEventNodeRefPtr n = 
+        TraceEventNode::New(
             key, category, beginTime, endTime, separateEvents);
     _children.push_back(n);
     return n;
 }
 
 void
-TraceSingleEventNode::Append(TraceSingleEventNodeRefPtr node)
+TraceEventNode::Append(TraceEventNodeRefPtr node)
 {
     _children.push_back(node);
 }
 
 void 
-TraceSingleEventNode::SetBeginAndEndTimesFromChildren()
+TraceEventNode::SetBeginAndEndTimesFromChildren()
 {
     if (_children.empty()) {
         _beginTime = 0;
@@ -61,7 +61,7 @@ TraceSingleEventNode::SetBeginAndEndTimesFromChildren()
     _beginTime = std::numeric_limits<TimeStamp>::max();
     _endTime   = std::numeric_limits<TimeStamp>::min();
 
-    for (const TraceSingleEventNodeRefPtr& c : _children) {
+    for (const TraceEventNodeRefPtr& c : _children) {
         _beginTime = std::min(_beginTime, c->GetBeginTime());
         _endTime   = std::max(_endTime, c->GetEndTime());
     }
@@ -69,7 +69,7 @@ TraceSingleEventNode::SetBeginAndEndTimesFromChildren()
 }
 
 void
-TraceSingleEventNode::AddAttribute(
+TraceEventNode::AddAttribute(
     const TfToken& key, const AttributeData& attr)
 {
     _attributes.emplace(key, attr);

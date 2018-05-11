@@ -24,7 +24,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/trace/reporter.h"
-#include "pxr/base/trace/singleEventNode.h"
+#include "pxr/base/trace/eventNode.h"
 
 #include <iostream>
 
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     reporter->ReportChromeTracing(std::cout);
 
     TraceAggregateNodeRefPtr threadNode =
-        reporter->GetTreeRoot()->GetChild("Main Thread");
+        reporter->GetAggregateTreeRoot()->GetChild("Main Thread");
     TF_AXIOM(threadNode);
 
     TraceAggregateNodeRefPtr funcNode = threadNode->GetChild("TestMacros");

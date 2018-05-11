@@ -40,7 +40,7 @@ def GetNodesByKey(reporter, key):
         for child in node.children:
             result.extend(getNodesRecur(child, key))
         return result
-    return getNodesRecur(reporter.treeRoot, key)
+    return getNodesRecur(reporter.aggregateTreeRoot, key)
 
 class TestTrace(unittest.TestCase):
     def test_Trace(self):
@@ -78,7 +78,7 @@ class TestTrace(unittest.TestCase):
         gc.EndEvent('Begin')
 
         gc.enabled = True
-        gr.UpdateTree()
+        gr.UpdateAggregateTree()
 
         beginNodes = GetNodesByKey(gr, 'Begin')
         print len(beginNodes)
@@ -128,7 +128,7 @@ class TestTrace(unittest.TestCase):
 
         gr.ClearTree()
         Trace.TestAuto()
-        gr.UpdateTree()
+        gr.UpdateAggregateTree()
 
         # Should have generated a top-level event
         autoNodes = GetNodesByKey(gr, 'TestAuto')
@@ -152,8 +152,8 @@ class TestTrace(unittest.TestCase):
 
 
         Trace.TestNesting()
-        gr.UpdateTree()
-        rootNode = gr.treeRoot
+        gr.UpdateAggregateTree()
+        rootNode = gr.aggregateTreeRoot
         # code cover and check some of the exposed parts of EventNode
         for child in rootNode.children :
             print "inc: ", "%.3f" % child.inclusiveTime 
@@ -171,7 +171,7 @@ class TestTrace(unittest.TestCase):
         gc.BeginEvent(pythonEvent)
         gc.EndEvent(pythonEvent)
 
-        gr.UpdateTree()
+        gr.UpdateAggregateTree()
         self.assertEqual(len(GetNodesByKey(gr, Trace.GetTestEventName())), 1)
 
         gr.ReportTimes()

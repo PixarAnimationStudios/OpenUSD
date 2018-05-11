@@ -24,7 +24,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/trace/reporter.h"
-#include "pxr/base/trace/singleEventGraph.h"
+#include "pxr/base/trace/eventTree.h"
 
 #include <iostream>
 
@@ -57,17 +57,17 @@ static void TestTimelineCounterValues(
     const TfToken& counterName, const std::vector<double> desiredValues)
 {
     TraceReporterPtr reporter = TraceReporter::GetGlobalReporter();
-    TraceSingleEventGraphRefPtr timeline = reporter->GetSingleEventGraph();
+    TraceEventTreeRefPtr timeline = reporter->GetEventTree();
     TF_AXIOM(timeline);
 
-    const TraceSingleEventGraph::CounterValuesMap& counters =
+    const TraceEventTree::CounterValuesMap& counters =
         timeline->GetCounters();
-    TraceSingleEventGraph::CounterValuesMap::const_iterator it =
+    TraceEventTree::CounterValuesMap::const_iterator it =
         counters.find(counterName);
     TF_AXIOM(it != counters.end());
 
     // The number and order of values should match.
-    const TraceSingleEventGraph::CounterValues& values = it->second;
+    const TraceEventTree::CounterValues& values = it->second;
     TF_AXIOM(desiredValues.size() == values.size());
 
     std::vector<double>::const_iterator desiredIt = desiredValues.begin();

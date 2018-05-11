@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef SINGLE_EVENT_GRAPH_H
-#define SINGLE_EVENT_GRAPH_H
+#ifndef TRACE_EVENT_TREE_H
+#define TRACE_EVENT_TREE_H
 
 #include "pxr/pxr.h"
 
 #include "pxr/base/trace/api.h"
 #include "pxr/base/trace/event.h"
-#include "pxr/base/trace/singleEventNode.h"
+#include "pxr/base/trace/eventNode.h"
 #include "pxr/base/trace/threads.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/refPtr.h"
@@ -44,16 +44,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(TraceSingleEventGraph);
+class TraceCollection;
+TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventTree);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// \class TraceSingleEventGraph
+/// \class TraceEventTree
 ///
-/// This class contains a timeline call graph and a map of counters to their 
+/// This class contains a timeline call tree and a map of counters to their 
 /// values over time.
 ///
 ///
-class TraceSingleEventGraph : public TfRefBase, public TfWeakBase {
+class TraceEventTree : public TfRefBase, public TfWeakBase {
 public:
     using CounterValues = std::vector<std::pair<TraceEvent::TimeStamp, double>>;
     using CounterValuesMap =
@@ -61,20 +62,26 @@ public:
     using CounterMap =
         std::unordered_map<TfToken, double, TfToken::HashFunctor>;
 
-    static TraceSingleEventGraphRefPtr New() {
+    /// Creates a new TraceEventTree instance from the data in \p collection 
+    /// and \p initialCounterValues.
+    TRACE_API static TraceEventTreeRefPtr New(
+        const TraceCollection& collection,
+        const CounterMap* initialCounterValues = nullptr);
+
+    static TraceEventTreeRefPtr New() {
         return TfCreateRefPtr( 
-            new TraceSingleEventGraph(TraceSingleEventNode::New()));
+            new TraceEventTree(TraceEventNode::New()));
     }
 
-    static TraceSingleEventGraphRefPtr New(
-            TraceSingleEventNodeRefPtr root, 
+    static TraceEventTreeRefPtr New(
+            TraceEventNodeRefPtr root, 
             CounterValuesMap counters) {
         return TfCreateRefPtr( 
-            new TraceSingleEventGraph(root, std::move(counters)));
+            new TraceEventTree(root, std::move(counters)));
     }
 
-    /// Returns the root node of the graph.
-    const TraceSingleEventNodeRefPtr& GetRoot() const { return _root; }
+    /// Returns the root node of the tree.
+    const TraceEventNodeRefPtr& GetRoot() const { return _root; }
 
     /// Returns the map of counter values.
     const CounterValuesMap& GetCounters() const { return _counters; }
@@ -82,28 +89,31 @@ public:
     /// Return the final value of the counters in the report.
     CounterMap GetFinalCounterValues() const;
 
-    /// Returns a JSON object representing the data in the call graph that 
+    /// Returns a JSON object representing the data in the call tree that 
     /// conforms to the Chrome Trace format.
     TRACE_API JsObject CreateChromeTraceObject() const;
 
-    /// Adds the contexts of \p graph to this graph.
-    TRACE_API void Merge(const TraceSingleEventGraphRefPtr& graph);
+    /// Adds the contexts of \p tree to this tree.
+    TRACE_API void Merge(const TraceEventTreeRefPtr& tree);
+
+    /// Adds the data from \p collection to this tree.
+    TRACE_API void Add(const TraceCollection& collection);
 
 private:
-    TraceSingleEventGraph(TraceSingleEventNodeRefPtr root)
+    TraceEventTree(TraceEventNodeRefPtr root)
         : _root(root) {}
 
-    TraceSingleEventGraph(  TraceSingleEventNodeRefPtr root, 
+    TraceEventTree(  TraceEventNodeRefPtr root, 
                             CounterValuesMap counters)
         : _root(root)
         , _counters(std::move(counters)) {}
 
-    // Root of the call graph.
-    TraceSingleEventNodeRefPtr _root;
+    // Root of the call tree.
+    TraceEventNodeRefPtr _root;
     // Counter data of the trace.
     CounterValuesMap _counters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // SINGLE_EVENT_GRAPH_H
+#endif // TRACE_EVENT_TREE_H

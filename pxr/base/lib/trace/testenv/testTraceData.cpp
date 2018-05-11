@@ -24,7 +24,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/trace/reporter.h"
-#include "pxr/base/trace/singleEventNode.h"
+#include "pxr/base/trace/eventNode.h"
 #include "pxr/base/js/json.h"
 #include <iostream>
 
@@ -116,19 +116,19 @@ void TestFunc(short a, float b, bool c) {
     );
 }
 
-TraceSingleEventNodeRefPtr FindNode(
-    TraceSingleEventNodeRefPtr root,
+TraceEventNodeRefPtr FindNode(
+    TraceEventNodeRefPtr root,
     const std::string& name) {
     if (root->GetKey() == name) {
         return root;
     }
-    for (TraceSingleEventNodeRefPtr child : root->GetChildrenRef()) {
-        TraceSingleEventNodeRefPtr result = FindNode(child, name);
+    for (TraceEventNodeRefPtr child : root->GetChildrenRef()) {
+        TraceEventNodeRefPtr result = FindNode(child, name);
         if (result) {
             return result;
         }
     }
-    return TraceSingleEventNodeRefPtr();
+    return TraceEventNodeRefPtr();
 }
 
 int
@@ -143,10 +143,10 @@ main(int argc, char *argv[])
 
     // Validate the data that was stored in the trace
     {
-        TraceSingleEventNodeConstRefPtr funcNode = 
-            FindNode(reporter->GetSingleEventRoot(), "TestFunc");
+        TraceEventNodeConstRefPtr funcNode = 
+            FindNode(reporter->GetEventRoot(), "TestFunc");
         TF_AXIOM(funcNode);
-        const TraceSingleEventNode::AttributeMap& attrs = 
+        const TraceEventNode::AttributeMap& attrs = 
             funcNode->GetAttributes();
         TF_AXIOM(attrs.size() == 3);
         TF_AXIOM(attrs.count(TfToken("a")) == 1);
@@ -158,10 +158,10 @@ main(int argc, char *argv[])
     }
 
     {
-        TraceSingleEventNodeConstRefPtr funcNode = 
-            FindNode(reporter->GetSingleEventRoot(), "Inner Scope");
+        TraceEventNodeConstRefPtr funcNode = 
+            FindNode(reporter->GetEventRoot(), "Inner Scope");
         TF_AXIOM(funcNode);
-        const TraceSingleEventNode::AttributeMap& attrs = 
+        const TraceEventNode::AttributeMap& attrs = 
             funcNode->GetAttributes();
         TF_AXIOM(attrs.size() == 4);
         TF_AXIOM(attrs.count(TfToken("str")) == 1);
@@ -185,10 +185,10 @@ main(int argc, char *argv[])
 
     // Validate the data that was stored in the trace
     {
-        TraceSingleEventNodeConstRefPtr funcNode = 
-            FindNode(reporter->GetSingleEventRoot(), "TestFunc");
+        TraceEventNodeConstRefPtr funcNode = 
+            FindNode(reporter->GetEventRoot(), "TestFunc");
         TF_AXIOM(funcNode);
-        const TraceSingleEventNode::AttributeMap& attrs = 
+        const TraceEventNode::AttributeMap& attrs = 
             funcNode->GetAttributes();
         TF_AXIOM(attrs.size() == 3);
         TF_AXIOM(attrs.count(TfToken("a")) == 1);
@@ -200,10 +200,10 @@ main(int argc, char *argv[])
     }
 
     {
-        TraceSingleEventNodeConstRefPtr funcNode = 
-            FindNode(reporter->GetSingleEventRoot(), "Inner Scope");
+        TraceEventNodeConstRefPtr funcNode = 
+            FindNode(reporter->GetEventRoot(), "Inner Scope");
         TF_AXIOM(funcNode);
-        const TraceSingleEventNode::AttributeMap& attrs = 
+        const TraceEventNode::AttributeMap& attrs = 
             funcNode->GetAttributes();
         TF_AXIOM(attrs.size() == 4);
         TF_AXIOM(attrs.count(TfToken("str")) == 1);

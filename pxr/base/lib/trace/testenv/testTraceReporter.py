@@ -37,7 +37,7 @@ def GetNodesByKey(reporter, key):
         for child in node.children:
             result.extend(getNodesRecur(child, key))
         return result
-    return getNodesRecur(reporter.treeRoot, key)
+    return getNodesRecur(reporter.aggregateTreeRoot, key)
 
 class TestTraceReporter(unittest.TestCase):
     def test_Reporter(self):

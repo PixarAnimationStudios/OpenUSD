@@ -118,9 +118,9 @@ void wrapReporter()
         .def("ReportChromeTracing", &::_ReportChromeTracing)
         .def("ReportChromeTracingToFile", &::_ReportChromeTracingToFile)
 
-        .add_property("treeRoot", &This::GetTreeRoot)
+        .add_property("aggregateTreeRoot", &This::GetAggregateTreeRoot)
 
-        .def("UpdateTree", &This::UpdateTree)
+        .def("UpdateAggregateTree", &This::UpdateAggregateTree)
 
         .def("ClearTree", &This::ClearTree)
 

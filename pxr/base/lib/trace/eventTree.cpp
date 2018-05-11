@@ -22,49 +22,73 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/singleEventGraph.h"
+#include "pxr/base/trace/eventTree.h"
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/trace/eventTreeBuilder.h"
+
 #include "pxr/base/js/value.h"
 
 #include <boost/optional.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TraceEventTreeRefPtr
+TraceEventTree::New(
+        const TraceCollection& collection,
+        const CounterMap* initialCounterValues)
+{
+    Trace_EventTreeBuilder graphBuilder;
+    if (initialCounterValues) {
+        graphBuilder.SetCounterValues(*initialCounterValues);
+    }
+    graphBuilder.CreateTree(collection);
+    return graphBuilder.GetTree();
+}
 
 void
-TraceSingleEventGraph::Merge(const TraceSingleEventGraphRefPtr& graph) {
-    // Add the node to the tree.
-    for(TraceSingleEventNodeRefPtr newThreadNode 
-            : graph->GetRoot()->GetChildrenRef()) {
+TraceEventTree::Add(const TraceCollection& collection)
+{
+    CounterMap currentCounters = GetFinalCounterValues();
+    TraceEventTreeRefPtr newGraph = New(collection, &currentCounters);
+    Merge(newGraph);
+}
 
-        const TraceSingleEventNodeRefPtrVector& threadNodes =
+void
+TraceEventTree::Merge(const TraceEventTreeRefPtr& tree)
+{
+    // Add the node to the tree.
+    for(TraceEventNodeRefPtr newThreadNode 
+            : tree->GetRoot()->GetChildrenRef()) {
+
+        const TraceEventNodeRefPtrVector& threadNodes =
             _root->GetChildrenRef();
 
-        // Find if the graph already has a node for child thread.
+        // Find if the tree already has a node for child thread.
         auto it = std::find_if(
                 threadNodes.begin(), 
                 threadNodes.end(), 
-                [&](const TraceSingleEventNodeRefPtr& node) {
+                [&](const TraceEventNodeRefPtr& node) {
                     return node->GetKey() == newThreadNode->GetKey();
                 });
 
         if (it != threadNodes.end()) {
-            // Add the nodes thread children from child into the current graph.
-            for(TraceSingleEventNodeRefPtr threadChild 
+            // Add the nodes thread children from child into the current tree.
+            for(TraceEventNodeRefPtr threadChild 
                     : newThreadNode->GetChildrenRef()) {
                 (*it)->Append(threadChild);
             }
             // Update the thread times from the newly added children.
             (*it)->SetBeginAndEndTimesFromChildren();
         } else {
-            // Add the thread if it wasn't already in the graph.
+            // Add the thread if it wasn't already in the tree.
             _root->Append(newThreadNode);
         }
     }
 
     // Add the counter data.
-    for (CounterValuesMap::value_type& p : graph->_counters) {
+    for (CounterValuesMap::value_type& p : tree->_counters) {
         CounterValuesMap::iterator it = _counters.find(p.first);
         if (it == _counters.end()) {
             // Add new counter values;
@@ -91,10 +115,10 @@ _TimeStampToChromeTraceValue(TraceEvent::TimeStamp t)
 }
 
 
-// Recursively adds JSON objects representing call graph nodes to the array.
+// Recursively adds JSON objects representing call tree nodes to the array.
 static 
-void TraceSingleEventGraph_AddToJsonArray(
-    const TraceSingleEventNodeRefPtr &node,
+void TraceEventTree_AddToJsonArray(
+    const TraceEventNodeRefPtr &node,
     const int pid,
     const TraceThreadId& threadId,
     JsArray *array)
@@ -122,7 +146,7 @@ void TraceSingleEventGraph_AddToJsonArray(
 
     if (!node->GetAttributes().empty()) {
         JsObject attrs;
-        using AttributeMap = TraceSingleEventNode::AttributeMap;
+        using AttributeMap = TraceEventNode::AttributeMap;
         for (const AttributeMap::value_type& it : node->GetAttributes()) {
             if (attrs.find(it.first.GetString()) == attrs.end()) {
                 using AttrItr = AttributeMap::const_iterator;
@@ -167,20 +191,20 @@ void TraceSingleEventGraph_AddToJsonArray(
     }
 
     // Recurse on the children
-    for (const TraceSingleEventNodeRefPtr& c : node->GetChildrenRef()) {
-        TraceSingleEventGraph_AddToJsonArray(c, pid, threadId, array);
+    for (const TraceEventNodeRefPtr& c : node->GetChildrenRef()) {
+        TraceEventTree_AddToJsonArray(c, pid, threadId, array);
     }
 }
 
 // Adds Chrome counter events to the events array.
 static
-void TraceSingleEventGraph_AddCounters(
+void TraceEventTree_AddCounters(
     const int pid,
-    const TraceSingleEventGraph::CounterValuesMap& counters,
+    const TraceEventTree::CounterValuesMap& counters,
     JsArray& events)
 {
-    for (const TraceSingleEventGraph::CounterValuesMap::value_type& c : counters) {
-        for (const TraceSingleEventGraph::CounterValues::value_type& v 
+    for (const TraceEventTree::CounterValuesMap::value_type& c : counters) {
+        for (const TraceEventTree::CounterValues::value_type& v 
             : c.second) {
 
             JsObject dict;
@@ -201,25 +225,25 @@ void TraceSingleEventGraph_AddCounters(
 }
 
 JsObject 
-TraceSingleEventGraph::CreateChromeTraceObject() const
+TraceEventTree::CreateChromeTraceObject() const
 {
     JsArray eventArray;
     // Chrome Trace format has a pid for each event.  We use a dummy pid.
     const int pid = 0;
 
-    for (const TraceSingleEventNodeRefPtr& c : _root->GetChildrenRef()) {
+    for (const TraceEventNodeRefPtr& c : _root->GetChildrenRef()) {
         // The children of the root represent threads
         TraceThreadId threadId(c->GetKey().GetString());
 
-        for (const TraceSingleEventNodeRefPtr& gc :c->GetChildrenRef()) {
-            TraceSingleEventGraph_AddToJsonArray(
+        for (const TraceEventNodeRefPtr& gc :c->GetChildrenRef()) {
+            TraceEventTree_AddToJsonArray(
                 gc,
                 pid,
                 threadId,
                 &eventArray);
         }
     }
-    TraceSingleEventGraph_AddCounters(pid, _counters, eventArray);
+    TraceEventTree_AddCounters(pid, _counters, eventArray);
     JsObject traceObj;
 
     traceObj["traceEvents"] = eventArray;
@@ -227,8 +251,8 @@ TraceSingleEventGraph::CreateChromeTraceObject() const
     return traceObj;
 }
 
-TraceSingleEventGraph::CounterMap
-TraceSingleEventGraph::GetFinalCounterValues() const {
+TraceEventTree::CounterMap
+TraceEventTree::GetFinalCounterValues() const {
     CounterMap finalValues;
     
     for (const CounterValuesMap::value_type& p : _counters) {

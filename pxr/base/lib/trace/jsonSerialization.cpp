@@ -29,7 +29,7 @@
 #include "pxr/base/js/utils.h"
 
 #include "pxr/base/trace/eventData.h"
-#include "pxr/base/trace/singleEventTreeReport.h"
+#include "pxr/base/trace/eventTreeBuilder.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -382,13 +382,10 @@ Trace_JSONSerialization::CollectionsToJSON(
         libtraceData["threadEvents"] = eventsToJson.CreateThreadsObject();
     }
 
-    TraceSingleEventGraphRefPtr graph = TraceSingleEventGraph::New();
+    TraceEventTreeRefPtr graph = TraceEventTree::New();
     for (const CollectionPtr& collection : collections) {
         if (collection) {
-            TraceSingleEventTreeReport report;
-            report.SetCounterValues(graph->GetFinalCounterValues());
-            report.CreateGraph(*collection);
-            graph->Merge(report.GetGraph());
+            graph->Add(*collection);
         }
     }
     JsObject traceObj = graph->CreateChromeTraceObject();

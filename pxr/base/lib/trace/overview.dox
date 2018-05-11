@@ -131,8 +131,8 @@ Tree view  ==============
     ...
 \endcode
 
-The aggregated call graph can be accessed through TraceReporter::GetTreeRoot.
-The non-aggregated call graph can be access through TraceReporter::GetSingleEventGraph.
+The aggregated call graph can be accessed through TraceReporter::GetAggregateTreeRoot.
+The non-aggregated call graph can be access through TraceReporter::GetEventTree.
 
 \section trace_performance Performance Overhead
 Adding trace instrumentation macros has the following overhead:

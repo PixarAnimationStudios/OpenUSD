@@ -22,37 +22,37 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/base/trace/singleEventTreeReport.h"
+#include "pxr/base/trace/eventTreeBuilder.h"
 
 #include "pxr/pxr.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TraceSingleEventTreeReport::TraceSingleEventTreeReport() 
-    : _root(TraceSingleEventNode::New())
+Trace_EventTreeBuilder::Trace_EventTreeBuilder() 
+    : _root(TraceEventNode::New())
 {}
 
 // Visitor interface
 void
-TraceSingleEventTreeReport::OnBeginCollection()
+Trace_EventTreeBuilder::OnBeginCollection()
 {
 
 }
 
 void
-TraceSingleEventTreeReport::OnEndCollection()
+Trace_EventTreeBuilder::OnEndCollection()
 {
     _threadStacks.clear();
 }
 
 bool
-TraceSingleEventTreeReport::AcceptsCategory(TraceCategoryId id)
+Trace_EventTreeBuilder::AcceptsCategory(TraceCategoryId id)
 {
     return true;
 }
 
 void
-TraceSingleEventTreeReport::OnBeginThread(const TraceThreadId& threadId)
+Trace_EventTreeBuilder::OnBeginThread(const TraceThreadId& threadId)
 {
     // Note, that TraceGetThreadId() returns the id of the current thread,
     // i.e. the reporting thread. Since we always report from the main
@@ -65,13 +65,13 @@ TraceSingleEventTreeReport::OnBeginThread(const TraceThreadId& threadId)
 }
 
 void
-TraceSingleEventTreeReport::OnEndThread(const TraceThreadId& threadId)
+Trace_EventTreeBuilder::OnEndThread(const TraceThreadId& threadId)
 {
     _ThreadStackMap::iterator it = _threadStacks.find(threadId);
     if (it != _threadStacks.end()) {
         _PendingNodeStack& stack = it->second;
         // Close any incomplete nodes.
-        TraceSingleEventNodeRefPtr threadRoot;
+        TraceEventNodeRefPtr threadRoot;
         while (!stack.empty()) {
             // TODO: Incomplete events are treated as zero duration.
             stack.back().start = 0;
@@ -88,7 +88,7 @@ TraceSingleEventTreeReport::OnEndThread(const TraceThreadId& threadId)
 }
 
 void
-TraceSingleEventTreeReport::OnEvent(
+Trace_EventTreeBuilder::OnEvent(
     const TraceThreadId& threadIndex, const TfToken& key, const TraceEvent& e) 
 {
     switch(e.GetType()) {
@@ -114,7 +114,7 @@ TraceSingleEventTreeReport::OnEvent(
 }
 
 void
-TraceSingleEventTreeReport::_OnBegin(
+Trace_EventTreeBuilder::_OnBegin(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
     // For begin events, push a partial node
@@ -123,13 +123,13 @@ TraceSingleEventTreeReport::_OnBegin(
 }
 
 void
-TraceSingleEventTreeReport::_OnEnd(
+Trace_EventTreeBuilder::_OnEnd(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
     // For an end event, create the node and pop the stack
     _PendingNodeStack& stack = _threadStacks[threadId];
     if (stack.back().key == key) {
-        TraceSingleEventNodeRefPtr node = 
+        TraceEventNodeRefPtr node = 
             stack.back().Close(e.GetTimeStamp(), /* separateEvents = */ true);
         stack.pop_back();
         if (!stack.empty()) {
@@ -142,17 +142,17 @@ TraceSingleEventTreeReport::_OnEnd(
         // top of the stack and parent them under this new node.
         
         // TODO: Incomplete events are treated as zero duration.
-        _PendingSingleEventNode pending(key, e.GetCategory(), 0);
+        _PendingEventNode pending(key, e.GetCategory(), 0);
         swap(pending.children, stack.back().children);
         swap(pending.attributes, stack.back().attributes);
-        TraceSingleEventNodeRefPtr node =
+        TraceEventNodeRefPtr node =
             pending.Close(0, /* separateEvents = */ true);
         stack.back().children.push_back(node);
     }
 }
 
 void 
-TraceSingleEventTreeReport::_OnTimespan(
+Trace_EventTreeBuilder::_OnTimespan(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
     // If we encounter a timespan, we need to insert a new node and take any
@@ -165,17 +165,17 @@ TraceSingleEventTreeReport::_OnTimespan(
     const TraceEvent::TimeStamp end = e.GetEndTimeStamp();
     const bool incompleteEvent = start == 0;
 
-    _PendingSingleEventNode pending(key, e.GetCategory(), start);
+    _PendingEventNode pending(key, e.GetCategory(), start);
 
     // Move the children that fall in the timespan to the new node
-    using ChildList = std::vector<TraceSingleEventNodeRefPtr>;
+    using ChildList = std::vector<TraceEventNodeRefPtr>;
     ChildList& newChildren = pending.children;
     ChildList& currentChildren = stack.back().children;
     ChildList::iterator childStart = std::lower_bound(
         currentChildren.begin(),
         currentChildren.end(),
         start, 
-        [] (const TraceSingleEventNodeRefPtr& lhs,
+        [] (const TraceEventNodeRefPtr& lhs,
             const TraceEvent::TimeStamp& rhs) -> bool {
             return lhs->GetBeginTime() <= rhs;
         });
@@ -183,38 +183,38 @@ TraceSingleEventTreeReport::_OnTimespan(
     currentChildren.erase(childStart, currentChildren.end());
 
     // Move the attributes that fall in the timespan to the new node
-    using AttributeList = std::vector<_PendingSingleEventNode::AttributeData>;
+    using AttributeList = std::vector<_PendingEventNode::AttributeData>;
     AttributeList& newAttrs = pending.attributes;
     AttributeList& currentAttrs = stack.back().attributes;
     AttributeList::iterator attrStart = std::lower_bound(
         currentAttrs.begin(),
         currentAttrs.end(),
         start,
-        [] (const _PendingSingleEventNode::AttributeData& lhs,
+        [] (const _PendingEventNode::AttributeData& lhs,
             const TraceEvent::TimeStamp& rhs ) -> bool {
                 return lhs.time <= rhs;
         });
     newAttrs.insert(newAttrs.end(), attrStart, currentAttrs.end());
     currentAttrs.erase(attrStart, currentAttrs.end());
 
-    TraceSingleEventNodeRefPtr node = 
+    TraceEventNodeRefPtr node = 
         pending.Close(incompleteEvent ? 0 : end, /* separateEvents = */ false);
     currentChildren.push_back(node);
 }
 
 void
-TraceSingleEventTreeReport::_OnData(
+Trace_EventTreeBuilder::_OnData(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
     _PendingNodeStack& stack = _threadStacks[threadId];
     if (!stack.empty()) {
         _threadStacks[threadId].back().attributes.push_back(
-            _PendingSingleEventNode::AttributeData{
+            _PendingEventNode::AttributeData{
             e.GetTimeStamp(), key, e.GetData()});
     }
 }
 
-TraceSingleEventTreeReport::_PendingSingleEventNode::_PendingSingleEventNode(
+Trace_EventTreeBuilder::_PendingEventNode::_PendingEventNode(
     const TfToken& key, TraceCategoryId category, TimeStamp start)
     : key(key)
     , category(category)
@@ -222,13 +222,13 @@ TraceSingleEventTreeReport::_PendingSingleEventNode::_PendingSingleEventNode(
 {
 }
 
-TraceSingleEventNodeRefPtr 
-TraceSingleEventTreeReport::_PendingSingleEventNode::Close(
+TraceEventNodeRefPtr 
+Trace_EventTreeBuilder::_PendingEventNode::Close(
     TimeStamp end, bool separateEvents) 
 {
-    TraceSingleEventNodeRefPtr node = 
-        TraceSingleEventNode::New(key, category, start, end, separateEvents);
-    for (TraceSingleEventNodeRefPtr& child : children) {
+    TraceEventNodeRefPtr node = 
+        TraceEventNode::New(key, category, start, end, separateEvents);
+    for (TraceEventNodeRefPtr& child : children) {
         node->Append(child);
     }
     for (AttributeData& it : attributes) {
@@ -238,15 +238,15 @@ TraceSingleEventTreeReport::_PendingSingleEventNode::Close(
 }
 
 void
-TraceSingleEventTreeReport::CreateGraph(const TraceCollection& collection)
+Trace_EventTreeBuilder::CreateTree(const TraceCollection& collection)
 {
     collection.Iterate(*this);
     _counterAccum.Update(collection);
-    _graph = TraceSingleEventGraph::New(_root, _counterAccum.GetCounters());
+    _tree = TraceEventTree::New(_root, _counterAccum.GetCounters());
 }
 
 bool
-TraceSingleEventTreeReport::_CounterAccumulator::_AcceptsCategory(
+Trace_EventTreeBuilder::_CounterAccumulator::_AcceptsCategory(
     TraceCategoryId)
 {
     return true;

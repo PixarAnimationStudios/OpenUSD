@@ -26,17 +26,17 @@ pxr_library(trace
         eventContainer
         eventData
         eventList
+        eventNode
+        eventTree
         key
         reporter
         reporterBase
         serialization
-        singleEventGraph
-        singleEventNode
-        singleEventTreeReport
         staticKeyData
         threads
 
     PRIVATE_CLASSES
+        eventTreeBuilder
         jsonSerialization
 
     PUBLIC_HEADERS

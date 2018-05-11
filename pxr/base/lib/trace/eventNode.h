@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef SINGLE_EVENT_NODE_H
-#define SINGLE_EVENT_NODE_H
+#ifndef TRACE_EVENT_NODE_H
+#define TRACE_EVENT_NODE_H
 
 #include "pxr/pxr.h"
 
@@ -42,17 +42,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(TraceSingleEventNode);
+TF_DECLARE_WEAK_AND_REF_PTRS(TraceEventNode);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// \class TraceSingleEventNode
+/// \class TraceEventNode
 ///
-/// TraceSingleEventNode is used to represents call tree of a trace. Each node 
+/// TraceEventNode is used to represents call tree of a trace. Each node 
 /// represents a Begin-End trace event pair, or a single Timespan event. This is
 /// useful for timeline views of a trace.
 ///
 
-class TraceSingleEventNode : public TfRefBase, public TfWeakBase {
+class TraceEventNode : public TfRefBase, public TfWeakBase {
 public:
 
     using TimeStamp = TraceEvent::TimeStamp;
@@ -61,32 +61,32 @@ public:
 
     /// Creates a new root node.
     ///
-    static TraceSingleEventNodeRefPtr New() {
-        return TraceSingleEventNode::New(
+    static TraceEventNodeRefPtr New() {
+        return TraceEventNode::New(
             TfToken("root"), TraceCategory::Default, 0.0, 0.0, false);
     }
 
     /// Creates a new node with \p key, \p category, \p beginTime and 
     /// \p endTime.
-    static TraceSingleEventNodeRefPtr New(const TfToken &key,
+    static TraceEventNodeRefPtr New(const TfToken &key,
                           const TraceCategoryId category,
                           const TimeStamp beginTime,
                           const TimeStamp endTime,
                           const bool separateEvents) {
         return TfCreateRefPtr(
-            new TraceSingleEventNode(key, category, beginTime, endTime, separateEvents));
+            new TraceEventNode(key, category, beginTime, endTime, separateEvents));
     }
 
     /// Appends a new child node with \p key, \p category, \p beginTime and 
     /// \p endTime.
-    TraceSingleEventNodeRefPtr Append(const TfToken &key, 
+    TraceEventNodeRefPtr Append(const TfToken &key, 
                                       TraceCategoryId category,
                                       TimeStamp beginTime,
                                       TimeStamp endTime,
                                       bool separateEvents);
 
     /// Appends \p node as a child node.
-    void Append(TraceSingleEventNodeRefPtr node);
+    void Append(TraceEventNodeRefPtr node);
 
     /// Returns the name of this node.
     TfToken GetKey() { return _key;}
@@ -113,7 +113,7 @@ public:
     /// @{
 
     /// Returns weak references to the children of this node.
-    const TraceSingleEventNodeRefPtrVector &GetChildrenRef() {
+    const TraceEventNodeRefPtrVector &GetChildrenRef() {
         return _children;
     }
 
@@ -133,7 +133,7 @@ public:
 
 private:
 
-    TraceSingleEventNode(
+    TraceEventNode(
         const TfToken &key,
         TraceCategoryId category,
         TimeStamp beginTime, 
@@ -152,7 +152,7 @@ private:
     TraceCategoryId _category;
     TimeStamp _beginTime;
     TimeStamp _endTime;
-    TraceSingleEventNodeRefPtrVector _children;
+    TraceEventNodeRefPtrVector _children;
     bool _fromSeparateEvents;
 
     AttributeMap _attributes;
@@ -160,4 +160,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // SINGLE_EVENT_NODE_H
+#endif // TRACE_EVENT_NODE_H

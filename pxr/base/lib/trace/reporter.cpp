@@ -27,8 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/trace/collection.h"
 #include "pxr/base/trace/collectionNotice.h"
-#include "pxr/base/trace/singleEventNode.h"
-#include "pxr/base/trace/singleEventTreeReport.h"
+#include "pxr/base/trace/eventNode.h"
+#include "pxr/base/trace/eventTreeBuilder.h"
 #include "pxr/base/trace/threads.h"
 #include "pxr/base/trace/trace.h"
 
@@ -72,10 +72,10 @@ TraceReporter::TraceReporter(const string& label,
     _label(label),
     _groupByFunction(true),
     _foldRecursiveCalls(false),
-    _buildSingleEventGraph(false)
+    _buildEventTree(false)
 {
-    _rootNode = TraceAggregateNode::New();
-    _singleEventGraph = TraceSingleEventGraph::New();
+    _rootAggregateNode = TraceAggregateNode::New();
+    _eventTree = TraceEventTree::New();
     _eventTimes = _EventTimes();
 }
 
@@ -97,7 +97,7 @@ TraceReporter::_ComputeInclusiveCounterValues()
     // recently built event graph.
 
     TfHashSet< TraceAggregateNodeRefPtr, TfHash > pushed;
-    std::vector< TraceAggregateNodeRefPtr > stack(1, _rootNode);
+    std::vector< TraceAggregateNodeRefPtr > stack(1, _rootAggregateNode);
     while (!stack.empty()) {
         TraceAggregateNodeRefPtr &top = stack.back();
 
@@ -180,7 +180,7 @@ TraceReporter::OnEndThread(const TraceThreadId& threadIndex)
                 stack.back().children.push_back(child);
             }
         }
-        _rootNode->Append(threadRoot);
+        _rootAggregateNode->Append(threadRoot);
     }
 }
 
@@ -566,11 +566,11 @@ TraceReporter::Report(
         iterationCount = 1;
     }
 
-    UpdateTree();
+    UpdateAggregateTree();
 
     // Fold recursive calls if we need to.
     if (GetFoldRecursiveCalls()) {
-        _rootNode->MarkRecursiveChildren();
+        _rootAggregateNode->MarkRecursiveChildren();
     }
 
     if (iterationCount > 1)
@@ -583,7 +583,7 @@ TraceReporter::Report(
         s << "  incl./iter   excl./iter       samples/iter\n";
     }
 
-    _PrintNodeTimes(s, _rootNode, 0, iterationCount);
+    _PrintNodeTimes(s, _rootAggregateNode, 0, iterationCount);
 
     s << "\n";
 }
@@ -591,7 +591,7 @@ TraceReporter::Report(
 void
 TraceReporter::ReportTimes(std::ostream &s)
 {
-    UpdateTree();
+    UpdateAggregateTree();
 
     s << "\nTotal time for each key ==============\n";
     _PrintTimes(s);
@@ -601,19 +601,19 @@ TraceReporter::ReportTimes(std::ostream &s)
 void 
 TraceReporter::ReportChromeTracing(std::ostream &s)
 {
-    UpdateSingleEventTree();
+    UpdateEventTree();
 
-    JsWriteToStream(JsValue(_singleEventGraph->CreateChromeTraceObject()), s);
+    JsWriteToStream(JsValue(_eventTree->CreateChromeTraceObject()), s);
 
 }
 
 
 void 
-TraceReporter::_UpdateTree(bool buildSingleEventGraph)
+TraceReporter::_UpdateTree(bool buildEventTree)
 {
     // Get the latest from the collector and process the events.
     {
-        TfScopedVar<bool> scope(_buildSingleEventGraph, buildSingleEventGraph);
+        TfScopedVar<bool> scope(_buildEventTree, buildEventTree);
         _Update();
     }
 
@@ -621,9 +621,9 @@ TraceReporter::_UpdateTree(bool buildSingleEventGraph)
     // warning node as an indicator that the trace may have been slowed down
     // by the memory tagging, unless there was nothing reported anyway.
     // XXX: add "WARNING" token that Spy can use.
-    if (_rootNode && !_rootNode->GetChildrenRef().empty() && 
+    if (_rootAggregateNode && !_rootAggregateNode->GetChildrenRef().empty() && 
         TfMallocTag::IsInitialized()) {
-        _rootNode->Append(TraceAggregateNode::Id(), 
+        _rootAggregateNode->Append(TraceAggregateNode::Id(), 
                           TfToken(
                               TraceReporterTokens->warningString.GetString() +
                               " MallocTags enabled"),
@@ -634,25 +634,25 @@ TraceReporter::_UpdateTree(bool buildSingleEventGraph)
 }
 
 void
-TraceReporter::UpdateTree()
+TraceReporter::UpdateAggregateTree()
 {
-    static const bool buildSingleEventGraph = true;
-    _UpdateTree(!buildSingleEventGraph);
+    static const bool buildEventTree = true;
+    _UpdateTree(!buildEventTree);
 }
 
 void
-TraceReporter::UpdateSingleEventTree()
+TraceReporter::UpdateEventTree()
 {
-    static const bool buildSingleEventGraph = true;
-    _UpdateTree(buildSingleEventGraph);
+    static const bool buildEventTree = true;
+    _UpdateTree(buildEventTree);
 }
 
 
 void 
 TraceReporter::ClearTree() 
 { 
-    _rootNode = TraceAggregateNode::New();
-    _singleEventGraph = TraceSingleEventGraph::New();
+    _rootAggregateNode = TraceAggregateNode::New();
+    _eventTree = TraceEventTree::New();
     _eventTimes.clear();
     _counters.clear();
     _counterIndexMap.clear();
@@ -664,21 +664,21 @@ TraceReporter::ClearTree()
 }
 
 TraceAggregateNodePtr
-TraceReporter::GetTreeRoot()
+TraceReporter::GetAggregateTreeRoot()
 {
-    return _rootNode;
+    return _rootAggregateNode;
 }
 
-TraceSingleEventNodeRefPtr
-TraceReporter::GetSingleEventRoot()
+TraceEventNodeRefPtr
+TraceReporter::GetEventRoot()
 {
-    return _singleEventGraph->GetRoot();
+    return _eventTree->GetRoot();
 }
 
-TraceSingleEventGraphRefPtr
-TraceReporter::GetSingleEventGraph()
+TraceEventTreeRefPtr
+TraceReporter::GetEventTree()
 {
-    return _singleEventGraph;
+    return _eventTree;
 }
 
 
@@ -794,18 +794,11 @@ void
 TraceReporter::_ProcessCollection(
     const TraceReporterBase::CollectionPtr& collection)
 {
-    // Create a temporary reporter for the singleEvent graph if its requested.
-    TraceSingleEventTreeReport singleGraphReport;
     if (collection) {
         collection->Iterate(*this);
-        if (_buildSingleEventGraph) {
-            singleGraphReport.SetCounterValues(
-                _singleEventGraph->GetFinalCounterValues());
-            singleGraphReport.CreateGraph(*collection);
+        if (_buildEventTree) {
+            _eventTree->Add(*collection);
         }
-    }
-    if (_buildSingleEventGraph) {
-        _singleEventGraph->Merge(singleGraphReport.GetGraph());
     }
 }
 

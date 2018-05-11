@@ -22,40 +22,40 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef TRACE_SINGLE_EVENT_REPORT_H
-#define TRACE_SINGLE_EVENT_REPORT_H
+#ifndef TRACE_EVENT_TREE_BUILDER_H
+#define TRACE_EVENT_TREE_BUILDER_H
 
 #include "pxr/pxr.h"
 
 #include "pxr/base/trace/collection.h"
 #include "pxr/base/trace/counterAccumulator.h"
-#include "pxr/base/trace/singleEventNode.h"
-#include "pxr/base/trace/singleEventGraph.h"
+#include "pxr/base/trace/eventNode.h"
+#include "pxr/base/trace/eventTree.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// \class TraceSingleEventTreeReport
+/// \class Trace_EventTreeBuilder
 ///
-/// This class creates a tree of TraceSingleEventGraph instances from
+/// This class creates a tree of TraceEventTree instances from
 /// TraceCollection instances.
 ///
-class TraceSingleEventTreeReport
+class Trace_EventTreeBuilder
     : protected TraceCollection::Visitor {
 public:
     /// Constructor.
-    TraceSingleEventTreeReport();
+    Trace_EventTreeBuilder();
 
-    /// Returns the root of the tree.
-    TraceSingleEventGraphRefPtr GetGraph() { return _graph; }
+    /// Returns the created tree.
+    TraceEventTreeRefPtr GetTree() { return _tree; }
 
-    /// Creates a SingleEventGraph from the data in /p collection.
-    TRACE_API void CreateGraph(const TraceCollection& collection);
+    /// Creates a TraceEventTree from the data in /p collection.
+    TRACE_API void CreateTree(const TraceCollection& collection);
 
     /// Set the value of the counters.
     void SetCounterValues(
-        const TraceSingleEventGraph::CounterMap& counterValues) {
+        const TraceEventTree::CounterMap& counterValues) {
         _counterAccum.SetCurrentValues(counterValues);
     }
 
@@ -74,24 +74,24 @@ protected:
 private:
 
     // Helper class for event graph creation.
-    struct _PendingSingleEventNode {
+    struct _PendingEventNode {
         using TimeStamp = TraceEvent::TimeStamp;
 
         struct AttributeData {
             TimeStamp time;
             TfToken key;
-            TraceSingleEventNode::AttributeData data;
+            TraceEventNode::AttributeData data;
         };
 
-        _PendingSingleEventNode( const TfToken& key, 
+        _PendingEventNode( const TfToken& key, 
                                  TraceCategoryId category,
                                  TimeStamp start);
-        TraceSingleEventNodeRefPtr Close(TimeStamp end, bool separateEvents);
+        TraceEventNodeRefPtr Close(TimeStamp end, bool separateEvents);
 
         TfToken key;
         TraceCategoryId category;
         TimeStamp start;
-        std::vector<TraceSingleEventNodeRefPtr> children;
+        std::vector<TraceEventNodeRefPtr> children;
         std::vector<AttributeData> attributes;
     };
 
@@ -100,12 +100,12 @@ private:
     void _OnData(const TraceThreadId&, const TfToken&, const TraceEvent&);
     void _OnTimespan(const TraceThreadId&, const TfToken&, const TraceEvent&);
 
-    using _PendingNodeStack = std::vector<_PendingSingleEventNode>;
+    using _PendingNodeStack = std::vector<_PendingEventNode>;
     using _ThreadStackMap = std::map<TraceThreadId, _PendingNodeStack>;
 
-    TraceSingleEventNodeRefPtr _root;
+    TraceEventNodeRefPtr _root;
     _ThreadStackMap _threadStacks;
-    TraceSingleEventGraphRefPtr _graph;
+    TraceEventTreeRefPtr _tree;
 
     class _CounterAccumulator : public TraceCounterAccumulator {
     protected:
@@ -116,4 +116,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // TRACE_SINGLE_EVENT_REPORT_H
+#endif // TRACE_EVENT_TREE_BUILDER_H
