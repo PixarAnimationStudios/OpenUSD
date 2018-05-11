@@ -53,6 +53,15 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((Default, "default"))
+    ((DisplayGroup,"displayGroup"))
+    ((Type,"type"))
+    ((AppliesTo,"appliesTo"))
+);
+
 //
 // SdfSchemaBase::FieldDefinition
 //
@@ -80,6 +89,11 @@ const VtValue&
 SdfSchemaBase::FieldDefinition::GetFallbackValue() const
 {
     return _fallbackValue;
+}
+
+const SdfSchemaBase::FieldDefinition::InfoVec&
+SdfSchemaBase::FieldDefinition::GetInfo() const {
+    return _info;
 }
 
 bool
@@ -126,6 +140,12 @@ SdfSchemaBase::FieldDefinition::Children()
 {
     _holdsChildren = true;
     _isReadOnly = true;
+    return *this;
+}
+
+SdfSchemaBase::FieldDefinition& 
+SdfSchemaBase::FieldDefinition::AddInfo(const TfToken& tok, const JsValue& val) {
+    _info.push_back(std::make_pair(tok, val));
     return *this;
 }
 
@@ -1245,6 +1265,20 @@ _GetKey(const JsObject &dict, const std::string &key, T *value)
     return false;
 }
 
+// Helper function to read and extract from dictionaries
+template <typename T>
+static bool
+_ExtractKey(JsObject &dict, const std::string &key, T *value)
+{
+    JsObject::const_iterator i = dict.find(key);
+    if (i != dict.end() && i->second.Is<T>()) {
+        *value = i->second.Get<T>();
+        dict.erase(i);
+        return true;
+    }
+    return false;
+}
+
 static VtValue
 _GetDefaultValueForListOp(const std::string& valueTypeName)
 {
@@ -1327,7 +1361,7 @@ _GetDefaultMetadataValue(const std::string& valueTypeName,
 }
 
 // Reads and registers new fields from plugInfo.json files
-void
+const std::vector<const SdfSchemaBase::FieldDefinition *>
 SdfSchemaBase::_UpdateMetadataFromPlugins(
     const PlugPluginPtrVector& plugins,
     const std::string& tag,
@@ -1335,19 +1369,20 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
 {
     static const std::string sdfMetadataTag = "SdfMetadata";
     const std::string& metadataTag = (tag.empty() ? sdfMetadataTag : tag);
+    std::vector<const SdfSchemaBase::FieldDefinition *> metadataFieldsParsed;
 
     // Update the schema with new metadata fields from each plugin, if they 
     // contain any
-    TF_FOR_ALL(plug, plugins) {
+    for (const PlugPluginPtr & plug : plugins) {
         // Get the top-level dictionary key specified by the metadata tag.
         JsObject fields;
-        const JsObject &metadata = (*plug)->GetMetadata();
+        const JsObject &metadata = plug->GetMetadata();
         if (!_GetKey(metadata, metadataTag, &fields))
             continue;
         
         // Register new fields
-        TF_FOR_ALL(field, fields) {
-            const TfToken fieldName(field->first);
+        for (const std::pair<std::string, JsValue>& field : fields) {
+            const TfToken fieldName(field.first);
 
             // Validate field
             JsObject fieldInfo;
@@ -1355,15 +1390,16 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 TF_CODING_ERROR("Value must be a dictionary (at \"%s\" in "
                                 "plugin \"%s\")", 
                                 fieldName.GetText(),
-                                (*plug)->GetPath().c_str());
+                                plug->GetPath().c_str());
                 continue;
             }
 
             std::string valueTypeName;
-            if (!_GetKey(fieldInfo, "type", &valueTypeName)) {
+            if (!_ExtractKey(
+                fieldInfo, _tokens->Type.GetString(), &valueTypeName)) {
                 TF_CODING_ERROR("Could not read a string for \"type\" "
                                 "(at \"%s\" in plugin \"%s\")",
-                                fieldName.GetText(), (*plug)->GetPath().c_str());
+                                fieldName.GetText(), plug->GetPath().c_str());
                 continue;
             }
 
@@ -1371,7 +1407,7 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 TF_CODING_ERROR("\"%s\" is already a registered field "
                                 "(in plugin \"%s\")",
                                 fieldName.GetText(), 
-                                (*plug)->GetPath().c_str());
+                                plug->GetPath().c_str());
                 continue;
             }
 
@@ -1379,7 +1415,8 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             VtValue defaultValue;
             {
                 const JsValue pluginDefault = 
-                    TfMapLookupByValue(fieldInfo, "default", JsValue());
+                    TfMapLookupByValue(fieldInfo,
+                    _tokens->Default.GetString(), JsValue());
 
                 TfErrorMark m;
 
@@ -1401,13 +1438,13 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                         TF_CODING_ERROR("No default value for metadata "
                                         "(at \"%s\" in plugin \"%s\")",
                                         fieldName.GetText(), 
-                                        (*plug)->GetPath().c_str());
+                                        plug->GetPath().c_str());
                     }
                     else {
                         TF_CODING_ERROR("Error parsing default value for "
                                         "metadata (at \"%s\" in plugin \"%s\")",
                                         fieldName.GetText(), 
-                                        (*plug)->GetPath().c_str());
+                                        plug->GetPath().c_str());
                     }
                     continue;
                 }
@@ -1424,9 +1461,13 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             TfToken displayGroup;
             {
                 std::string displayGroupString;
-                if (_GetKey(fieldInfo, "displayGroup", &displayGroupString))
+                if (_ExtractKey(fieldInfo,
+                    _tokens->DisplayGroup.GetString(), &displayGroupString))
                     displayGroup = TfToken(displayGroupString);
             }
+
+            FieldDefinition& fieldDef = 
+                _RegisterField(fieldName, defaultValue, /* plugin = */ true);
 
             // Look for 'appliesTo', either a single string or a list of strings
             // specifying which spec types this metadatum should be registered
@@ -1434,19 +1475,18 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
             set<string> appliesTo;
             {
                 const JsValue val = 
-                    TfMapLookupByValue(fieldInfo, "appliesTo", JsValue());
+                    TfMapLookupByValue(fieldInfo,
+                    _tokens->AppliesTo.GetString(), JsValue());
                 if (val.IsArrayOf<string>()) {
                     const vector<string> vec = val.GetArrayOf<string>();
                     appliesTo.insert(vec.begin(), vec.end());
                 } else if (val.Is<string>()) {
                     appliesTo.insert(val.Get<string>());
                 }
+
+                // this is so appliesTo does not show up in fieldDef's info
+                fieldInfo.erase(_tokens->AppliesTo.GetString());
             }
-
-            // Register the field on all spec definitions that support generic
-            // metadata
-            _RegisterField(fieldName, defaultValue, /* plugin = */ true);
-
             if (appliesTo.empty() || appliesTo.count("layers")) {
                 _ExtendSpecDefinition(SdfSpecTypePseudoRoot)
                     .MetadataField(fieldName, displayGroup);
@@ -1477,8 +1517,21 @@ SdfSchemaBase::_UpdateMetadataFromPlugins(
                 _ExtendSpecDefinition(SdfSpecTypeVariant)
                     .MetadataField(fieldName, displayGroup);
             }
+
+            // All remaining values in the fieldInfo will are unknown to sdf,
+            // so store them off in our field definitions for other libraries
+            // to use.
+            for (const std::pair<const std::string, JsValue>& it : fieldInfo) {
+                const std::string& metadataInfoName = it.first;
+                const JsValue& metadataInfoValue = it.second;
+
+                TfToken metadataInfo (metadataInfoName);
+                fieldDef.AddInfo(metadataInfo, metadataInfoValue);
+            }
+            metadataFieldsParsed.push_back(&fieldDef);
         }
     }
+    return metadataFieldsParsed;
 }
 
 void
