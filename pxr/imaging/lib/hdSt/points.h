@@ -65,7 +65,7 @@ protected:
                              TfToken const &reprName,
                              HdDirtyBits *dirtyBitsState) override;
 
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBitsState);
 
@@ -79,7 +79,7 @@ private:
     HdReprSharedPtr _smoothHullRepr;
 
     enum DrawingCoord {
-        InstancePrimVar = HdDrawingCoord::CustomSlotsBegin
+        InstancePrimvar = HdDrawingCoord::CustomSlotsBegin
     };
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,

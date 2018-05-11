@@ -227,10 +227,10 @@ _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& startPath)
     UsdPrim currentPrim = stage->GetPrimAtPath(startPath.GetParentPath());
     UsdPrim rootmost;
     while (currentPrim) {
-        if (UsdGeomXform b = UsdGeomXform(currentPrim)) {
+        if (currentPrim.IsA<UsdGeomXform>()) {
             rootmost = currentPrim;
         }
-        else if (UsdSkelRoot r = UsdSkelRoot(currentPrim)) {
+        else if (currentPrim.IsA<UsdSkelRoot>()) {
             rootmost = currentPrim;
         }
         currentPrim = currentPrim.GetParent();
@@ -241,15 +241,19 @@ _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& startPath)
 
 /// Changes an ancestor prim's typename to SkelRoot if necessary and allowed
 /// by the autoSkelRoots configuration.
+/// \p outMadeSkelRoot must be non-null; it will be set to indicate whether any
+/// auto-renaming actually occured (true) or whether there was already a
+/// SkelRoot, so no renaming was necessary (false).
 /// Coding error if the prim has no SkelRoot ancestor and no prim can be turned
 /// into a SkelRoot (these prims should have been skipped for export).
 /// Maya error if the existing SkelRoot ancestor is nested inside another
 /// SkelRoot.
-static void
-_VerifyOrMake(
+static SdfPath
+_VerifyOrMakeSkelRoot(
     const UsdStagePtr& stage,
     const SdfPath& meshPath,
-    bool autoSkelRoots)
+    bool autoSkelRoots,
+    bool* outMadeSkelRoot)
 {
     // Only try to auto-rename to SkelRoot if we're not already a
     // descendant of one. Otherwise, verify that the user tagged it in a sane
@@ -264,20 +268,36 @@ _VerifyOrMake(
                     "behavior. ",
                     root.GetPath().GetText(),
                     root2.GetPath().GetText()).c_str());
+            *outMadeSkelRoot = false;
+            return SdfPath();
+        }
+        else {
+            *outMadeSkelRoot = false;
+            return root.GetPath();
         }
     } else {
         // If auto-generating the SkelRoot, find the rootmost
         // UsdGeomXform and turn it into a SkelRoot.
+        // XXX: It might be good to also consider model hierarchy here, and not
+        // go past our ancestor component when trying to generate the SkelRoot.
+        // (Example: in a scene with /World, /World/Char_1, /World/Char_2, we
+        // might want SkelRoots to stop at Char_1 and Char_2.) Unfortunately,
+        // the current structure precludes us from accessing model hierarchy
+        // here.
         if (autoSkelRoots) {
             if (UsdPrim root =
                     _FindRootmostXformOrSkelRoot(stage, meshPath)) {
                 UsdSkelRoot::Define(stage, root.GetPath());
+                *outMadeSkelRoot = true;
+                return root.GetPath();
             }
             else {
                 TF_CODING_ERROR(
                         "No UsdGeomXform ancestor of <%s>; it should have "
                         "been skipped for skel data export",
                         meshPath.GetText());
+                *outMadeSkelRoot = false;
+                return SdfPath();
             }
         }
         else {
@@ -286,6 +306,8 @@ _VerifyOrMake(
                     "SkelRoot ancestor for <%s>; it should have been skipped "
                     "for skel data export",
                     meshPath.GetText());
+            *outMadeSkelRoot = false;
+            return SdfPath();
         }
     }
 }
@@ -390,41 +412,23 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 
     // Write everything to USD once we know that we have OK data.
     const UsdSkelBindingAPI bindingAPI(primSchema);
-    bindingAPI.CreateJointIndicesPrimvar(false, maxInfluenceCount)
-            .Set(jointIndices);
-    bindingAPI.CreateJointWeightsPrimvar(false, maxInfluenceCount)
-            .Set(jointWeights);
-    bindingAPI.CreateGeomBindTransformAttr().Set(geomBindTransform);
+    _SetAttribute(
+            bindingAPI.CreateJointIndicesPrimvar(false, maxInfluenceCount),
+            &jointIndices);
+    _SetAttribute(
+            bindingAPI.CreateJointWeightsPrimvar(false, maxInfluenceCount),
+            &jointWeights);
+    _SetAttribute(bindingAPI.CreateGeomBindTransformAttr(), 
+            &geomBindTransform);
 
-    _VerifyOrMake(
+    bool madeSkelRoot;
+    const SdfPath skelRootPath = _VerifyOrMakeSkelRoot(
             getUsdStage(), getUsdPath(),
-            mWriteJobCtx.getArgs().autoSkelRoots);
-
-    _skelInputMesh = inMeshObj;
-    _skelRootJoint = rootJoint;
+            mWriteJobCtx.getArgs().autoSkelRoots, &madeSkelRoot);
+    mWriteJobCtx.getSkelBindingsWriter().MarkBinding(
+            getUsdPath(), skelRootPath, rootJoint, madeSkelRoot);
     return inMeshObj;
 }
 
-void
-MayaMeshWriter::writeSkinningRels(UsdGeomMesh& primSchema)
-{
-    // Write these relationships last because we don't know if the
-    // Skeleton or PackedJointAnimation prims will exist when we first get
-    // exported:
-    // 1. The Skeleton could be outside of the export selection.
-    // 2. The PackedJointAnimation might not exist if there's no animation.
-    if (!_skelRootJoint.isValid()) {
-        return;
-    }
-    const UsdSkelBindingAPI bindingAPI(primSchema);
-    SdfPath skeletonPath = MayaSkeletonWriter::GetSkeletonPath(_skelRootJoint);
-    if (getUsdStage()->GetPrimAtPath(skeletonPath)) {
-        bindingAPI.CreateSkeletonRel().AddTarget(skeletonPath);
-    }
-    SdfPath animPath = MayaSkeletonWriter::GetAnimationPath(_skelRootJoint);
-    if (getUsdStage()->GetPrimAtPath(animPath)) {
-        bindingAPI.CreateAnimationSourceRel().AddTarget(animPath);
-    }
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

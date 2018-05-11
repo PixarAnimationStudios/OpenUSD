@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 
@@ -108,6 +109,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     HdStBufferArrayRangeGLSharedPtr indexBarCurrent;
     HdStBufferArrayRangeGLSharedPtr elementBarCurrent;
@@ -186,7 +188,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // per-face buffer data (fetched through ElementID in primitiveParam)
         //
         HdBufferArrayRangeSharedPtr const & elementBar_ =
-            drawItem->GetElementPrimVarRange();
+            drawItem->GetElementPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr elementBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(elementBar_);
@@ -201,7 +203,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // vertex attrib buffer data
         //
         HdBufferArrayRangeSharedPtr const & vertexBar_ =
-            drawItem->GetVertexPrimVarRange();
+            drawItem->GetVertexPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr vertexBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(vertexBar_);
@@ -216,7 +218,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // constant (uniform) buffer data
         //
         HdBufferArrayRangeSharedPtr const & constantBar_ =
-            drawItem->GetConstantPrimVarRange();
+            drawItem->GetConstantPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr constantBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(constantBar_);
@@ -231,7 +233,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // facevarying buffer data
         //
         HdBufferArrayRangeSharedPtr const & fvarBar_ =
-            drawItem->GetFaceVaryingPrimVarRange();
+            drawItem->GetFaceVaryingPrimvarRange();
 
         HdStBufferArrayRangeGLSharedPtr fvarBar =
             boost::static_pointer_cast<HdStBufferArrayRangeGL>(fvarBar_);
@@ -245,11 +247,11 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         // instance buffer data
         //
-        int instancerNumLevels = drawItem->GetInstancePrimVarNumLevels();
+        int instancerNumLevels = drawItem->GetInstancePrimvarNumLevels();
         int instanceIndexWidth = instancerNumLevels + 1;
         for (int i = 0; i < instancerNumLevels; ++i) {
             HdBufferArrayRangeSharedPtr const & instanceBar_ =
-                drawItem->GetInstancePrimVarRange(i);
+                drawItem->GetInstancePrimvarRange(i);
 
             HdStBufferArrayRangeGLSharedPtr instanceBar =
                 boost::static_pointer_cast<HdStBufferArrayRangeGL>(instanceBar_);
@@ -324,26 +326,28 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
           ----------------------------------------------------------------------
           | 0 | ModelDC       |  (reserved)  |    uniform     |    constant    |
           | 1 | ConstantDC    |  constantBar |    uniform     |    constant    |
-          | 2 | ElementDC     |  elementBar  |       (*)      |    uniform     |
-          | 3 | PrimitiveDC   |  indexBar    | gl_PrimitiveID |       (*)      |
-          | 4 | FVarDC        |  fvarBar     | gl_PrimitiveID |    facevarying |
-          | 5 | InstanceIndex |  inst-idxBar | (gl_InstanceID)|      n/a       |
+          | 2 | VertexDC      |  vertexBar   |gl_BaseVertex(^)| vertex/varying |
+          | 3 | ElementDC     |  elementBar  |       (*)      |    uniform     |
+          | 4 | PrimitiveDC   |  indexBar    | gl_PrimitiveID |       (*)      |
+          | 5 | FVarDC        |  fvarBar     | gl_PrimitiveID |    facevarying |
+          | 6 | InstanceIndex |  inst-idxBar | (gl_InstanceID)|      n/a       |
           | 7 | ShaderDC      |  shaderBar   |    uniform     |                |
           | 8 | InstanceDC[0] |  instanceBar | (gl_InstanceID)|    constant    |
           | 9 | InstanceDC[1] |  instanceBar | (gl_InstanceID)|    constant    |
           |...| ...           |  instanceBar | (gl_InstanceID)|    constant    |
           ----------------------------------------------------------------------
-          | - | VertexBase    |  vertexBar   |  gl_VertexID   | vertex/varying |
 
           We put these offsets into 3 variables,
-           - ivec4 drawingCoord0  (ModelDC - PrimitiveDC)
-           - ivec3 drawingCoord1  (FVarDC - ShaderDC)
+           - ivec4 drawingCoord0  {ModelDC, ConstantDC, ElementDC, PrimitiveDC}
+           - ivec4 drawingCoord1  {FVarDC, InstanceIndex, ShaderDC, VertexDC}
            - int[] drawingCoordI  (InstanceDC)
           so that the shaders can access any of these aggregated data.
 
+          (^) gl_BaseVertex requires GLSL 4.60 or the ARB_shader_draw_parameters
+              extension. We simply plumb the baseVertex(Offset) as a generic 
+              solution.
           (*) primitiveParam buffer can be used to reinterpret GL-primitive
               ID back to element ID.
-
          */
 
         int vertexOffset = 0;
@@ -376,13 +380,14 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
             elementBar  ? elementBar->GetOffset()  : 0,
             indexBar    ? indexBar->GetOffset()    : 0
         };
-        int drawingCoord1[3] = {
+        int drawingCoord1[4] = {
             fvarBar          ? fvarBar->GetOffset()          : 0,
             instanceIndexBar ? instanceIndexBar->GetOffset() : 0,
-            shaderBar        ? shaderBar->GetIndex()         : 0
+            shaderBar        ? shaderBar->GetIndex()         : 0,
+            baseVertex
         };
         binder.BindUniformi(HdTokens->drawingCoord0, 4, drawingCoord0);
-        binder.BindUniformi(HdTokens->drawingCoord1, 3, drawingCoord1);
+        binder.BindUniformi(HdTokens->drawingCoord1, 4, drawingCoord1);
 
         // instance coordinates
         std::vector<int> instanceDrawingCoords(instancerNumLevels);

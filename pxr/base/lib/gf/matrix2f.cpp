@@ -251,4 +251,18 @@ GfMatrix2f::operator*=(const GfMatrix2f &m)
     return *this;
 }
 
+
+bool
+GfIsClose(GfMatrix2f const &m1, GfMatrix2f const &m2, double tolerance)
+{
+    for(size_t row = 0; row < 2; ++row) {
+        for(size_t col = 0; col < 2; ++col) {
+            if(!GfIsClose(m1[row][col], m2[row][col], tolerance))
+                return false;
+        }
+    }
+    return true;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -41,7 +41,9 @@ PxrUsdKatanaReadMaterial(
         bool flatten,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs,
-        const std::string& looksGroupLocation = "");
+        const std::string& looksGroupLocation = "",
+        const std::string& materialDestinationLocation = ""
+        );
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

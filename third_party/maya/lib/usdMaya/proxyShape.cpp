@@ -29,6 +29,7 @@
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -99,6 +100,9 @@ TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaProxyShapeTokens,
 //
 TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
                       "Enable bounding box rendering (slows refresh rate)");
+
+UsdMayaProxyShape::ClosestPointDelegate
+UsdMayaProxyShape::_sharedClosestPointDelegate = nullptr;
 
 bool
 UsdMayaIsBoundingBoxModeEnabled()
@@ -362,18 +366,19 @@ UsdMayaProxyShape::initialize(PluginStaticData* psData)
     //
     // add attribute dependencies
     //
-    retValue = attributeAffects(psData->inStageData, psData->inStageDataCached);
-    retValue = attributeAffects(psData->inStageData, psData->outStageData);
-
     retValue = attributeAffects(psData->filePath, psData->inStageDataCached);
     retValue = attributeAffects(psData->filePath, psData->outStageData);
+
+    retValue = attributeAffects(psData->primPath, psData->inStageDataCached);
+    retValue = attributeAffects(psData->primPath, psData->outStageData);
 
     retValue = attributeAffects(psData->variantKey, psData->inStageDataCached);
     retValue = attributeAffects(psData->variantKey, psData->outStageData);
 
-    retValue = attributeAffects(psData->inStageDataCached, psData->outStageData);
+    retValue = attributeAffects(psData->inStageData, psData->inStageDataCached);
+    retValue = attributeAffects(psData->inStageData, psData->outStageData);
 
-    retValue = attributeAffects(psData->primPath, psData->outStageData);
+    retValue = attributeAffects(psData->inStageDataCached, psData->outStageData);
 
     return retValue;
 }
@@ -407,6 +412,13 @@ UsdMayaProxyShape::GetShapeAtDagPath(const MDagPath& dagPath)
     return pShape;
 }
 
+/* static */
+void
+UsdMayaProxyShape::SetClosestPointDelegate(ClosestPointDelegate delegate)
+{
+    _sharedClosestPointDelegate = delegate;
+}
+
 /* virtual */
 void
 UsdMayaProxyShape::postConstructor()
@@ -421,27 +433,32 @@ UsdMayaProxyShape::postConstructor()
 MStatus
 UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-    MStatus retValue = MS::kUnknownParameter;
-
-    //
-    // make sure the state of the model is normal
-    //
-
-    if(plug == _psData.inStageDataCached)
-    {
-        retValue = computeInStageDataCached(dataBlock);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    }
-    else if(plug == _psData.outStageData)
-    {
-        retValue = computeOutStageData(dataBlock);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    }
-    else {
+    if (plug == _psData.excludePrimPaths ||
+            plug == _psData.time ||
+            plug == _psData.complexity ||
+            plug == _psData.tint ||
+            plug == _psData.tintColor ||
+            plug == _psData.displayGuides ||
+            plug == _psData.displayRenderGuides) {
+        // If the attribute that needs to be computed is one of these, then it
+        // does not affect the ouput stage data, but it *does* affect imaging
+        // the shape. In that case, we notify Maya that the shape needs to be
+        // redrawn and let it take care of computing the attribute. This covers
+        // the case where an attribute on the proxy shape may have an incoming
+        // connection from another node (e.g. "time1.outTime" being connected
+        // to the proxy shape's "time" attribute). In that case,
+        // setDependentsDirty() might not get called and only compute() might.
+        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
         return MS::kUnknownParameter;
     }
+    else if (plug == _psData.inStageDataCached) {
+        return computeInStageDataCached(dataBlock);
+    }
+    else if (plug == _psData.outStageData) {
+        return computeOutStageData(dataBlock);
+    }
 
-    return MS::kSuccess;
+    return MS::kUnknownParameter;
 }
 
 MStatus
@@ -978,9 +995,7 @@ UsdMayaProxyShape::UsdMayaProxyShape(const PluginStaticData& psData) :
         _psData(psData),
         _useFastPlayback(false)
 {
-    //
-    // empty
-    //
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaProxyShape>();
 }
 
 /* virtual */
@@ -1015,6 +1030,37 @@ UsdMayaProxyShape::_CanBeSoftSelected() const
     }
     return softSelHandle.asBool();
 
+}
+
+bool
+UsdMayaProxyShape::closestPoint(
+    const MPoint& raySource,
+    const MVector& rayDirection,
+    MPoint& theClosestPoint,
+    MVector& theClosestNormal,
+    bool findClosestOnMiss,
+    double tolerance)
+{
+    if (_sharedClosestPointDelegate) {
+        GfRay ray(
+            GfVec3d(raySource.x, raySource.y, raySource.z),
+            GfVec3d(rayDirection.x, rayDirection.y, rayDirection.z));
+        GfVec3d hitPoint;
+        if (_sharedClosestPointDelegate(*this, ray, &hitPoint)) {
+            theClosestPoint = MPoint(hitPoint[0], hitPoint[1], hitPoint[2]);
+            // XXX: Need support in Hydra for sidecar information like surface
+            // normals in order to implement this. Right now, we're just
+            // returning a sane default of the up-axis.
+            theClosestNormal = MGlobal::upAxis();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool UsdMayaProxyShape::canMakeLive() const {
+    return (bool) _sharedClosestPointDelegate;
 }
 
 

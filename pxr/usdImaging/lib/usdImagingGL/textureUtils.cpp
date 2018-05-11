@@ -38,10 +38,8 @@
 
 #include "pxr/base/tf/fileUtils.h"
 
-#include "pxr/usd/usdHydra/shader.h"
-#include "pxr/usd/usdHydra/uvTexture.h"
-#include "pxr/usd/usdHydra/primvar.h"
 #include "pxr/usd/usdHydra/tokens.h"
+#include "pxr/usd/usdShade/shader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,33 +107,39 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     }
 
     TfToken filePath = TfToken(asset.GetResolvedPath());
+
     // Fallback to the literal path if it couldn't be resolved.
-    if (filePath.IsEmpty())
+    if (filePath.IsEmpty()) {
         filePath = TfToken(asset.GetAssetPath());
+    }
 
     const bool isPtex = GlfIsSupportedPtexTexture(filePath);
 
-    TfToken wrapS = UsdHydraTokens->repeat;
-    TfToken wrapT = UsdHydraTokens->repeat;
-    TfToken minFilter = UsdHydraTokens->linear;
-    TfToken magFilter = UsdHydraTokens->linear;
-    float memoryLimit = 0.0f;
+    // XXX: This default values should come from the registry
+    TfToken outWrapS("repeat");
+    TfToken outWrapT("repeat");
+    TfToken outMinFilter("linear");
+    TfToken outMagFilter("linear");
+    float outMemoryLimit = 0.0f;
 
-    // Mode overrides for UsdHydraTexture
+    // Extract metadata abot the texture node
     UsdShadeShader shader(usdPrim);
     if (shader) {
-        UsdAttribute attr = UsdHydraTexture(shader).GetTextureMemoryAttr();
-        if (attr) attr.Get(&memoryLimit);
+        UsdAttribute attr = shader.GetInput(UsdHydraTokens->textureMemory);
+        if (attr) attr.Get(&outMemoryLimit);
+
         if (!isPtex) {
-            UsdHydraUvTexture uvt(shader);
-            attr = uvt.GetWrapSAttr();
-            if (attr) attr.Get(&wrapS);
-            attr = uvt.GetWrapTAttr();
-            if (attr) attr.Get(&wrapT);
-            attr = uvt.GetMinFilterAttr();
-            if (attr) attr.Get(&minFilter);
-            attr = uvt.GetMagFilterAttr();
-            if (attr) attr.Get(&magFilter);
+            attr = shader.GetInput(UsdHydraTokens->wrapS);
+            if (attr) attr.Get(&outWrapS);
+
+            attr = shader.GetInput(UsdHydraTokens->wrapT);
+            if (attr) attr.Get(&outWrapT);
+
+            attr = shader.GetInput(UsdHydraTokens->minFilter);
+            if (attr) attr.Get(&outMinFilter);
+
+            attr = shader.GetInput(UsdHydraTokens->magFilter);
+            if (attr) attr.Get(&outMagFilter);
         }
     }
 
@@ -153,30 +157,30 @@ UsdImagingGL_GetTextureResource(UsdPrim const& usdPrim,
     }
 
     HdTextureResourceSharedPtr texResource;
-
     TfStopwatch timer;
     timer.Start();
     GlfTextureHandleRefPtr texture =
         GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
-    texture->AddMemoryRequest(memoryLimit);
-    HdWrap wrapShd = (wrapS == UsdHydraTokens->clamp) ? HdWrapClamp
-                 : (wrapS == UsdHydraTokens->repeat) ? HdWrapRepeat
+    texture->AddMemoryRequest(outMemoryLimit);
+
+    HdWrap wrapShd = (outWrapS == UsdHydraTokens->clamp) ? HdWrapClamp
+                 : (outWrapS == UsdHydraTokens->repeat) ? HdWrapRepeat
                  : HdWrapBlack; 
-    HdWrap wrapThd = (wrapT == UsdHydraTokens->clamp) ? HdWrapClamp
-                 : (wrapT == UsdHydraTokens->repeat) ? HdWrapRepeat
+    HdWrap wrapThd = (outWrapT == UsdHydraTokens->clamp) ? HdWrapClamp
+                 : (outWrapT == UsdHydraTokens->repeat) ? HdWrapRepeat
                  : HdWrapBlack; 
     HdMagFilter magFilterHd = 
-                 (magFilter == UsdHydraTokens->nearest) ? HdMagFilterNearest
+                 (outMagFilter == UsdHydraTokens->nearest) ? HdMagFilterNearest
                  : HdMagFilterLinear; 
     HdMinFilter minFilterHd = 
-                 (minFilter == UsdHydraTokens->nearest) ? HdMinFilterNearest
-                 : (minFilter == UsdHydraTokens->nearestMipmapNearest) 
+                 (outMinFilter == UsdHydraTokens->nearest) ? HdMinFilterNearest
+                 : (outMinFilter == UsdHydraTokens->nearestMipmapNearest) 
                                 ? HdMinFilterNearestMipmapNearest
-                 : (minFilter == UsdHydraTokens->nearestMipmapLinear) 
+                 : (outMinFilter == UsdHydraTokens->nearestMipmapLinear) 
                                 ? HdMinFilterNearestMipmapLinear
-                 : (minFilter == UsdHydraTokens->linearMipmapNearest) 
+                 : (outMinFilter == UsdHydraTokens->linearMipmapNearest) 
                                 ? HdMinFilterLinearMipmapNearest
-                 : (minFilter == UsdHydraTokens->linearMipmapLinear) 
+                 : (outMinFilter == UsdHydraTokens->linearMipmapLinear) 
                                 ? HdMinFilterLinearMipmapLinear
                  : HdMinFilterLinear; 
 

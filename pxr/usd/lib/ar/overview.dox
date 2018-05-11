@@ -44,7 +44,9 @@ this behavior.
 
 To implement a custom asset resolver, users must create a plugin containing a
 subclass of ArResolver.  This subclass must be registered with the plugin
-system so that it can be discovered and instantiated at runtime:
+system so that it can be discovered and instantiated at runtime. Keep in mind
+that the subclass may be constructed at any time; at a minimum, the subclass
+will be constructed during the first call to \ref ArGetResolver.
 
 - Implement an ArResolver subclass
 \code{.cpp}

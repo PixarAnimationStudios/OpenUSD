@@ -284,8 +284,29 @@ void wrapUsdGeomMesh()
 
 namespace {
 
+
+tuple
+_ValidateTopology(const VtIntArray& faceVertexIndices,
+                  const VtIntArray& faceVertexCounts,
+                  size_t numPoints)
+{
+    std::string reason;
+    bool valid = UsdGeomMesh::ValidateTopology(faceVertexIndices,
+                                               faceVertexCounts,
+                                               numPoints, &reason);
+    return boost::python::make_tuple(valid, reason);
+}
+
+
 WRAP_CUSTOM {
     typedef UsdGeomMesh This;
+
+    _class
+        .def("ValidateTopology", &_ValidateTopology,
+             (arg("faceVertexIndices"),
+              arg("faceVertexCounts"),
+              arg("numPoints")))
+        .staticmethod("ValidateTopology");
 
     _class.attr("SHARPNESS_INFINITE") = UsdGeomMesh::SHARPNESS_INFINITE;
     ;

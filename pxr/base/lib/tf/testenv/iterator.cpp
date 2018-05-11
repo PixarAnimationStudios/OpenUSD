@@ -136,7 +136,6 @@ static bool TestRefsAndTempsForAll() {
 //     TF_FOR_ALL(i, GetTemporary())
 //         TF_AXIOM(*i == count++);
 
-       // Bug 41702: the following compiles, but should not.
 //     count = 1;
 //     TF_FOR_ALL(i, GetConstTemporary())
 //         TF_AXIOM(*i == count++);

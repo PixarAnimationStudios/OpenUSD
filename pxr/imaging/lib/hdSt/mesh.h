@@ -113,20 +113,19 @@ protected:
 
     void _PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _PopulateVertexPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  bool requireSmoothNormals);
 
-    void _PopulateFaceVaryingPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                       HdStDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
                                       HdMeshReprDesc desc);
 
-    void _PopulateElementPrimVars(HdSceneDelegate *sceneDelegate,
+    void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
-                                  HdDirtyBits *dirtyBits,
-                                  TfTokenVector const &primVarNames);
+                                  HdDirtyBits *dirtyBits);
 
     int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
 
@@ -140,7 +139,7 @@ private:
     enum DrawingCoord {
         HullTopology = HdDrawingCoord::CustomSlotsBegin,
         PointsTopology,
-        InstancePrimVar // has to be at the very end
+        InstancePrimvar // has to be at the very end
     };
 
     enum DirtyBits : HdDirtyBits {

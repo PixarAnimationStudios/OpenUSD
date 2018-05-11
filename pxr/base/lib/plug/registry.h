@@ -37,9 +37,6 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/scoped_ptr.hpp>
-
 #include <mutex>
 #include <string>
 #include <vector>
@@ -47,7 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
-struct Plug_RegistrationMetadata;
+class Plug_RegistrationMetadata;
 
 /// \class PlugRegistry
 ///
@@ -336,7 +333,9 @@ struct Plug_RegistrationMetadata;
 /// \endcode
 ///
 
-class PlugRegistry : public TfWeakBase, boost::noncopyable {
+class PlugRegistry : public TfWeakBase {
+    PlugRegistry(PlugRegistry const &) = delete;
+    PlugRegistry &operator=(PlugRegistry const &) = delete;
 public:
     typedef PlugRegistry This;
     typedef std::vector<TfType> TypeVector;
@@ -458,8 +457,6 @@ private:
 
 private:
     TfHashSet<std::string, TfHash> _registeredPluginPaths;
-
-    boost::scoped_ptr<class Plug_TaskArena> _dispatcher;
 
     std::mutex _mutex;
 };

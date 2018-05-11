@@ -53,37 +53,6 @@ typedef std::vector<HdRenderPassSharedPtr> HdRenderPassSharedPtrVector;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 
-/// \class HdxShadowTask
-///
-/// A task for generating shadow maps.
-///
-class HdxShadowTask : public HdSceneTask {
-public:
-    HDX_API
-    HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
-
-protected:
-    /// Execute render pass task
-    HDX_API
-    virtual void _Execute(HdTaskContext* ctx);
-
-    /// Sync the render pass resources
-    HDX_API
-    virtual void _Sync(HdTaskContext* ctx);
-
-private:
-    HdRenderPassSharedPtrVector _passes;
-    HdRenderPassStateSharedPtrVector _renderPassStates;
-    int _collectionVersion;
-
-    /// Polygon Offset State
-    bool _depthBiasEnable;
-    float _depthBiasConstantFactor;
-    float _depthBiasSlopeFactor;
-
-    HdCompareFunction _depthFunc;
-};
-
 struct HdxShadowTaskParams : public HdTaskParams {
     HdxShadowTaskParams()
         : overrideColor(0.0)
@@ -124,9 +93,34 @@ struct HdxShadowTaskParams : public HdTaskParams {
     SdfPath camera;
     GfVec4d viewport;
 
-    // Lights/Shadows specific paramenters
+    // Lights/Shadows specific parameters
     SdfPathVector lightIncludePaths;
     SdfPathVector lightExcludePaths;
+};
+
+/// \class HdxShadowTask
+///
+/// A task for generating shadow maps.
+///
+class HdxShadowTask : public HdSceneTask {
+public:
+    HDX_API
+    HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
+
+protected:
+    /// Execute render pass task
+    HDX_API
+    virtual void _Execute(HdTaskContext* ctx);
+
+    /// Sync the render pass resources
+    HDX_API
+    virtual void _Sync(HdTaskContext* ctx);
+
+private:
+    HdRenderPassSharedPtrVector _passes;
+    HdRenderPassStateSharedPtrVector _renderPassStates;
+
+    HdxShadowTaskParams _params;
 };
 
 // VtValue requirements

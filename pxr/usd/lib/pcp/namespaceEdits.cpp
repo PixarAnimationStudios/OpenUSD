@@ -27,7 +27,7 @@
 #include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/layerStack.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/iterator/transform_iterator.hpp>
 

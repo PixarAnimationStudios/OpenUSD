@@ -27,6 +27,15 @@
 import os
 import unittest
 
+# XXX: The try/except here is temporary until we change the Pixar-internal
+# package name to match the external package name.
+try:
+    from pxr import UsdMaya
+except ImportError:
+    from pixar import UsdMaya
+
+from pxr import UsdGeom
+
 from maya import cmds
 from maya import standalone
 
@@ -115,6 +124,17 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
                 destAttr = '%s.%s' % (proxyNode, 'inStageData')
             self.assertEqual(connections[0], destAttr)
 
+    def _ValidateCards(self, nodeName):
+        """
+        Checks that the root prim on the stage has its drawmode properly set.
+        """
+        drawModeAttr = cmds.getAttr('%s.drawMode' % nodeName)
+        self.assertEqual(drawModeAttr, 'cards')
+
+        prim = UsdMaya.GetPrim(nodeName)
+        primModelAPI = UsdGeom.ModelAPI(prim)
+        self.assertEqual(primModelAPI.ComputeModelDrawMode(), 'cards')
+
     def _ValidateModelExpanded(self, nodeName):
         """
         Test that the model assembly hierarchy is correct in Expanded.
@@ -165,6 +185,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.assembly(nodeName, edit=True, active='Collapsed')
         self._ValidateCollapsed(nodeName)
 
+        # Change representations to 'Cards' and validate.
+        cmds.assembly(nodeName, edit=True, active='Cards')
+        self._ValidateCards(nodeName)
+
         # Change representations to 'Expanded' and validate.
         cmds.assembly(nodeName, edit=True, active='Expanded')
         self._ValidateModelExpanded(nodeName)
@@ -177,6 +201,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.undo()
         self._ValidateModelExpanded(nodeName)
 
+        # Undo and the node should be back to Cards.
+        cmds.undo()
+        self._ValidateCards(nodeName)
+
         # Undo and the node should be back to Collapsed.
         cmds.undo()
         self._ValidateCollapsed(nodeName)
@@ -188,6 +216,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Redo and it's back to Collapsed.
         cmds.redo()
         self._ValidateCollapsed(nodeName)
+
+        # Redo and it's back to Cards.
+        cmds.redo()
+        self._ValidateCards(nodeName)
 
         # Redo again and it's back to Expanded.
         cmds.redo()
@@ -357,6 +389,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Change representations to 'Collapsed' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._ValidateCollapsed(assemblyNode)
+
+        # Change representations to 'Cards' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Cards')
+        self._ValidateCards(assemblyNode)
 
         # Change representations to 'Expanded' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Expanded')
@@ -528,6 +564,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._ValidateCollapsed(assemblyNode)
 
+        # Change representations to 'Cards' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Cards')
+        self._ValidateCards(assemblyNode)
+
         # Change representations to 'Expanded' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Expanded')
         self._ValidateComplexSetExpandedTopLevel(assemblyNode)
@@ -540,6 +580,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.undo()
         self._ValidateComplexSetExpandedTopLevel(assemblyNode)
 
+        # Undo and the node should be back to Cards.
+        cmds.undo()
+        self._ValidateCards(assemblyNode)
+
         # Undo and the node should be back to Collapsed.
         cmds.undo()
         self._ValidateCollapsed(assemblyNode)
@@ -551,6 +595,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Redo and it's back to Collapsed.
         cmds.redo()
         self._ValidateCollapsed(assemblyNode)
+
+        # Redo and it's back to Cards.
+        cmds.redo()
+        self._ValidateCards(assemblyNode)
 
         # Redo again and it's back to Expanded.
         cmds.redo()
@@ -595,6 +643,10 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._AssertTimeIsNotConnected(assemblyNode)
 
+        # Change representations to "Cards' and validate.
+        cmds.assembly(assemblyNode, edit=True, active='Cards')
+        self._AssertTimeIsNotConnected(assemblyNode)
+
         # Change representations to 'Expanded' and validate.
         cmds.assembly(assemblyNode, edit=True, active='Expanded')
         self._AssertTimeIsNotConnected(assemblyNode)
@@ -610,6 +662,45 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # Change representations to 'Collapsed' once more and validate.
         cmds.assembly(assemblyNode, edit=True, active='Collapsed')
         self._AssertTimeIsNotConnected(assemblyNode)
+
+    def testDisjointAssembliesVariantSetsChange(self):
+        """
+        Tests that changing a variant set in a nested assembly |A1|B does not
+        affect the variant sets on a different nested assembly |A2|B where
+        A1 and A2 reference the same model.
+        """
+        cmds.file(new=True, force=True)
+
+        usdFile = os.path.abspath("OneCube_set.usda")
+        primPath = "/set"
+
+        assemblyNodes = []
+        for name in ["assembly1", "assembly2"]:
+            assemblyNode = cmds.assembly(
+                    name=name, type=self.ASSEMBLY_TYPE_NAME)
+            cmds.setAttr("%s.filePath" % assemblyNode, usdFile, type='string')
+            cmds.setAttr("%s.primPath" % assemblyNode, primPath, type='string')
+            cmds.assembly(assemblyNode, edit=True, active='Expanded')
+            assemblyNodes.append(assemblyNode)
+
+        cube1 = 'NS_%s:Cube_1' % assemblyNodes[0]
+        self.assertTrue(cmds.objExists(cube1))
+
+        cube2 = 'NS_%s:Cube_1' % assemblyNodes[1]
+        self.assertTrue(cmds.objExists(cube2))
+
+        cmds.setAttr('%s.usdVariantSet_shadingVariant' % cube1,
+                'Blue', type='string')
+
+        prim1 = UsdMaya.GetPrim(cube1)
+        self.assertEqual(
+                prim1.GetVariantSet('shadingVariant').GetVariantSelection(),
+                'Blue')
+
+        prim2 = UsdMaya.GetPrim(cube2)
+        self.assertEqual(
+                prim2.GetVariantSet('shadingVariant').GetVariantSelection(),
+                'Default')
 
 
 if __name__ == '__main__':

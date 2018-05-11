@@ -39,6 +39,7 @@ class TestGfBBox3d(unittest.TestCase):
         self.assertIsInstance(Gf.Plane(Gf.Vec3d(1,1,1), Gf.Vec3d(1,1,1)), Gf.Plane, err( "constructor" ))
         self.assertIsInstance(Gf.Plane(Gf.Vec3d(0,0,1), Gf.Vec3d(0,1,0), Gf.Vec3d(1,0,0)), Gf.Plane,
             err( "constructor" ))
+        self.assertIsInstance(Gf.Plane(Gf.Vec4d(3,4,0,5)), Gf.Plane, err("constructor" ))
 
     def test_Properties(self):
         p = Gf.Plane()
@@ -53,6 +54,22 @@ class TestGfBBox3d(unittest.TestCase):
 
         p = Gf.Plane(Gf.Vec3d(1,1,1), 10)
         self.assertEqual(p.distanceFromOrigin, 10, err("distanceFromOrigin"))
+
+    def test_vec4d(self):
+        p = Gf.Plane(Gf.Vec4d(3,4,0,5))
+        self.assertEqual(p.normal, Gf.Vec3d(3, 4, 0) / 5, err("normal"))
+        self.assertEqual(p.distanceFromOrigin, -1, err("distanceFromOrigin"))
+        
+        pt0 = Gf.Vec3d(2,3,1)
+        pt1 = Gf.Vec3d(5,1,2)
+        pt2 = Gf.Vec3d(6,0,7)
+
+        p = Gf.Plane(pt0, pt1, pt2)
+        eqn = p.GetEquation()
+        
+        for pt in [pt0, pt1, pt2]:
+            v = eqn[0] * pt[0] + eqn[1] * pt[1] + eqn[2] * pt[2] + eqn[3]
+            self.assertTrue(Gf.IsClose(v, 0, 1e-12))
 
     def test_Operators(self):
         p1 = Gf.Plane(Gf.Vec3d(1,1,1), 10)

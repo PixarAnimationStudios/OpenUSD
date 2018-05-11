@@ -25,6 +25,7 @@
 #define _GUSD_STAGECACHE_H_
 
 #include <UT/UT_Array.h>
+#include <UT/UT_Error.h>
 #include <UT/UT_Set.h>
 
 #include "gusd/defaultArray.h"
@@ -57,6 +58,10 @@ public:
 
     ~GusdStageCache();
 
+    GusdStageCache(const GusdStageCache&) = delete;
+
+    GusdStageCache& operator=(const GusdStageCache&) = delete;
+
     static GusdStageCache&  GetInstance();
 
     /// Add/remove auxiliary data caches.
@@ -70,19 +75,30 @@ public:
 
     /// \section GusdStageCache_Reloading Reloading
     ///
-    /// Reloading stages and layers may potentially cause non-threadsafe
-    /// mutations to stages held by the cache, which may cause crashes
-    /// in other threads that are making use of those caches.
-    /// To avoid the need for intrusive and expensive locking around all
-    /// code that accesses a stage, reload operations are placed on Houdini's
-    /// single-threaded event queue, where it is expected that only a single
-    /// thread is accessing the stages while reload operations occur.
+    /// Stages and layers may be reloaded during an active sessions, but it's
+    /// important to understand the full implications of doing so.
+    /// When a layer is reloaded, change notifications are sent to any stages
+    /// referncing that layer, causing those stages to recompose, if necessary.
+    /// This operation is not thread-safe, and may result in a crash if another
+    /// thread is attempting to read from an affected stage at the same time.
+    /// Further, it must be noted that simply loading stages within separate
+    /// GusdStageCache instances also does not mean that that change
+    /// propopagation will be isolated only to stages of the stage cache
+    /// instance: Although it is possible to isolate the effect of changes
+    /// on the root layers of stages to some extent, secondary layers -- such
+    /// as sublayers and reference arcs -- are shared on a global cache.
+    /// The effect of reloading layers is _global_ and _immediate_.
     ///
-    /// This is the only safe way to reload stages and layers in Houdini.
-    /// Users should never directly call UsdStage::Reload() on stages returned
-    /// from the cache. Users also must not call SdfLayer::Reload() on any
-    /// layers returned by SdfLayer::FindOrOpen(), since stages internally
-    /// use such shared layers, and may be affected.
+    /// Rather than attempting to solve this problem with intrusive and
+    /// expensive locking -- which would only solve the problem for stages
+    /// held internally in a GusdStageCache, not for stages referenced from
+    /// other caches -- we prefer to address the problem by requiring that
+    /// reloading only be performed at certain points of Houdini's main event
+    /// loop, where it known to be safe.
+    /// An example of a 'safe' way to exec stage reloads is via a callback
+    /// triggered by a button in a node's GUI.
+    /// Users should never attempt to reload stages or layers during node
+    /// cook methods.
 
     /// Mark a set of stages for reload on the event queue.
     static void ReloadStages(const UT_Set<UsdStagePtr>& stages);
@@ -91,7 +107,9 @@ public:
     static void ReloadLayers(const UT_Set<SdfLayerHandle>& layers);
 
 
-public://TEMP
+private:
+    class _MaskedStageCache;
+
     class _Impl;
     _Impl* const    _impl;
 
@@ -129,21 +147,28 @@ public:
     GusdStageCacheReader(GusdStageCache& cache=GusdStageCache::GetInstance())
         : GusdStageCacheReader(cache, false) {}
 
+    GusdStageCacheReader(const GusdStageCacheReader&) = delete;
+
+    GusdStageCacheReader& operator=(const GusdStageCacheReader&) = delete;
+
     ~GusdStageCacheReader();
 
     /// Find an existing stage on the cache.
     UsdStageRefPtr
     Find(const UT_StringRef& path,
          const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-         const GusdStageEditPtr& edit=nullptr);
+         const GusdStageEditPtr& edit=nullptr) const;
     
     /// Return a stage from the cache, if one exists.
     /// If not, attempt to open the stage and add it to the cache.
+    /// If \p path is a non-empty path and stage opening fails, errors
+    /// are reporting to the currently scoped error manager at a severity
+    /// of \p sev.
     UsdStageRefPtr
-    FindOrOpen(const UT_StringRef& assetPath,
+    FindOrOpen(const UT_StringRef& path,
                const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
                const GusdStageEditPtr& edit=nullptr,
-               GusdUT_ErrorContext* err=nullptr);
+               UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Get a micro node for a stage.
     /// Micro nodes are created on demand, and are dirtied both for
@@ -163,37 +188,53 @@ public:
     /// edits has already been loaded on the cache, the prim will fetched from
     /// that stage instead.
     ///
+    /// This use of masking may be disabled by way of the GUSD_STAGEMASK_ENABLE
+    /// environment variable, but beware that doing so may significantly degrade
+    /// performance for certain access patterns, such as if many separate prims
+    /// are being queried from the cache with different stage edits.
+    ///
+    /// \subection Primitive Encapsulation
+    ///
     /// Because primitives are masked to include a subset of a stage,
-    /// there is an expectation that the caller follows encapsulation rules:
-    /// Ancestor prims are guanteed to be loaded, and all descendant prims
-    /// of the returned prims will also be loaded. There is no guarantee,
-    /// through, that either siblings or prims elsewhere in the scene
-    /// graph will be composed on the returned stage.
-    /// Any dependencies on unrelated prims (not descendants or ancestors)
-    /// must be defined by the presence of a relationships or attribute
-    /// connections (not supported yet).
-    /// Any attempt to reach implicit dependencies -- for example, a schema
-    /// that accesses other non-descendant prims using naming conventions --
+    /// there is an expectation that the caller follows _encapsulation_ rules.
+    /// When we read in a prim, we consider that prim to be encapsulated,
+    /// which means that if any other primitives from the stage are required
+    /// to process an encapsulated primitive, they are expected to either
+    /// be descendants or ancestors of the encapsulated prim, or the dependency
+    /// to that external prim must be discoverable using either relationships
+    /// or attribute connections.
+    /// Following those encapsulation rules, neither _siblings_ of the prim
+    /// being requested, or other prims in separate branches of the stage
+    /// are guaranteed to be loaded. Any attempt to reach other prims that
+    /// can't be discovered using the above rules for discovering dependencies
     /// may either fail or introduce non-deterministic behavior.
 
-    /// Get a prim from the cache, on a maksed stage.
+    /// Get a prim from the cache, on a masked stage.
+    /// If \p path and \p primPath are both valid, and either a stage load
+    /// error occurs or no prim can be found, errors are reported on the
+    /// currently scoped error manager at a severity of \p sev.
     PrimStagePair
     GetPrim(const UT_StringRef& path,
             const SdfPath& primPath,
             const GusdStageEditPtr& stageEdit=GusdStageEditPtr(),
             const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-            GusdUT_ErrorContext* err=nullptr);
+            UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Get multiple prims from the cache (in parallel).
     /// If the configured error severity is less than UT_ERROR_ABORT,
     /// prim loading will continue even after load errors have occurred.
+    /// If any stage load errors occur, or if any prims cannot be found, errors
+    /// are reported on the currently scoped error manager with a severity of
+    /// \p sev. If \p sev is less than UT_ERROR_ABORT, prim loading will
+    /// continue even when errors occur for some prims. Otherwise, loading
+    /// aborts upon the first error.
     bool
     GetPrims(const GusdDefaultArray<UT_StringHolder>& filePaths,
              const UT_Array<SdfPath>& primPaths,
              const GusdDefaultArray<GusdStageEditPtr>& edits,
              UsdPrim* prims,
-             const GusdStageOpts opts=GusdStageOpts::LoadAll(),
-             GusdUT_ErrorContext* err=nullptr);
+             const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
+             UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Get a prim from the cache, given a prim path that may contain
     /// variant selections. This is a convenience for the common case
@@ -204,13 +245,13 @@ public:
     GetPrimWithVariants(const UT_StringRef& path,
                         const SdfPath& primPath,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     PrimStagePair
     GetPrimWithVariants(const UT_StringRef& path,
                         const UT_StringRef& primPath,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     /// Different variations of the above the variants are stored separately.
     PrimStagePair
@@ -218,18 +259,18 @@ public:
                         const SdfPath& primPath,
                         const SdfPath& variants,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
 
     PrimStagePair
     GetPrimWithVariants(const UT_StringRef& path,
                         const UT_StringRef& primPath,
-                        const UT_StringRef& varaints,
+                        const UT_StringRef& variants,
                         const GusdStageOpts& opts=GusdStageOpts::LoadAll(),
-                        GusdUT_ErrorContext* err=nullptr);
+                        UT_ErrorSeverity sev=UT_ERROR_ABORT);
     /// @}
 
 protected:
-    GusdStageCacheReader(GusdStageCache& cache, bool writer=false);
+    GusdStageCacheReader(GusdStageCache& cache, bool writer);
 
 protected:
     GusdStageCache& _cache;
@@ -247,25 +288,46 @@ class GUSD_API GusdStageCacheWriter : public GusdStageCacheReader
 public:
     GusdStageCacheWriter(GusdStageCache& cache=GusdStageCache::GetInstance());
 
-    /// Clear out all cached items.
-    /// If micro nodes have been instantiated for any stages, they will
-    /// be dirtied when the main event queue execs.
-    void    Clear();
+    GusdStageCacheWriter(const GusdStageCacheWriter&) = delete;
 
-    /// Clear out all caches corresponding to a set of stage paths.
-    /// Note that layers are owned by a different cache, and may stay
-    /// active beyond this point.
-    void    Clear(const UT_StringSet& paths);
+    GusdStageCacheWriter& operator=(const GusdStageCacheWriter&) = delete;
 
     /// Find all stages on the cache matching the given paths.
     /// Multiple stages may be found for each path.
     void    FindStages(const UT_StringSet& paths,
                        UT_Set<UsdStageRefPtr>& stages);
 
+    /// \section GusdStageCacheWriter_ReloadAndClear Reloading And Clearing
+    ///
+    /// During active sessions, the contents of a cache may be refreshed
+    /// by either reloading a subset of the stages that it contains, or by
+    /// removing stage entries from the cache.
+    /// In either case, if a stage is reloaded or evicted from the cache,
+    /// and if that stage has a micro node
+    /// (see: \ref GusdStageCacheReader::GetMicroNode), then that micro
+    /// node, and any OP_Node instances that reference it, are dirtied.
+    /// This means that any nodes whose cook is based on data from a cached
+    /// stage will properly update in response to Clear/Reload actions.
+    ///
+    /// \warn Dirty state propagation is not thread safe, and should only be
+    /// called at a safe point on the main thread, such as through a callback
+    /// triggered by a UI button. Also note that there may be side effects
+    /// from reloading stages that affect stages from *other caches*. See
+    /// \ref GusdStageCache_Reloading for more information on the caveats of
+    /// reloading.
+    
+    /// Clear out all cached items.
+    /// Note that layers are owned by a different cache, and may stay
+    /// active beyond this point.
+    void    Clear();
+
+    /// Variant of Clear() that causes any stages whose root layer has
+    /// an asset path in the \p paths set to be removed from the cache.
+    void    Clear(const UT_StringSet& paths);
+
     /// Reload all stages matching the given paths.
-    /// Actual reloading operations are deferred to the main event
-    /// queue (\see GusdStageCache_Reloading).
     void    ReloadStages(const UT_StringSet& paths);
+
 };
 
 

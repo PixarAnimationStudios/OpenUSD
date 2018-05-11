@@ -672,7 +672,7 @@ INPUT                  = src/modules/usd/doxygen/externalOverview.dox \
                          src/modules/js \
                          src/modules/plug \
                          src/modules/tf \
-                         src/modules/tracelite \
+                         src/modules/trace \
                          src/modules/vt \
                          src/modules/work \
                                                                       \

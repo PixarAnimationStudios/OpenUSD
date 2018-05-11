@@ -382,15 +382,16 @@ private:
     // that include the sublayer.
     void _DidChangeSublayerAndLayerStacks(PcpCache* cache,
                                           const PcpLayerStackPtrVector& stacks,
+                                          const std::string& sublayerPath,
                                           const SdfLayerHandle& sublayer,
                                           _SublayerChangeType sublayerChange,
                                           std::string* debugSummary);
 
     // Propagates changes to \p sublayer specified by \p sublayerChange to 
     // the dependents of that sublayer.
-    // Returns true if the sublayer being changed is valid, false otherwise.
-    bool _DidChangeSublayer(PcpCache* cache,
+    void _DidChangeSublayer(PcpCache* cache,
                             const PcpLayerStackPtrVector& layerStacks,
+                            const std::string& sublayerPath,
                             const SdfLayerHandle& sublayer,
                             _SublayerChangeType sublayerChange,
                             std::string* debugSummary,

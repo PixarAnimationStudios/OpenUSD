@@ -36,7 +36,7 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        rootPrim = stage.DefinePrim("/ANode")
        
        # Test Node
-       nodeGraphNode = UsdUI.NodeGraphNodeAPI(rootPrim)
+       nodeGraphNode = UsdUI.NodeGraphNodeAPI.Apply(rootPrim)
        assert(nodeGraphNode)
        
        # Test Position

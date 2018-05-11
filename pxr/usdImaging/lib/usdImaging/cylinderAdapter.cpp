@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/cylinderAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
@@ -74,7 +75,7 @@ UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
                                           UsdImagingInstancerContext const* 
-                                              instancerContext)
+                                              instancerContext) const
 {
     BaseAdapter::TrackVariability(
         prim, cachePath, timeVaryingBits, instancerContext);
@@ -85,13 +86,13 @@ UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
     if (!_IsVarying(prim,
                        UsdGeomTokens->radius,
                        HdChangeTracker::DirtyPoints,
-                       UsdImagingTokens->usdVaryingPrimVar,
+                       UsdImagingTokens->usdVaryingPrimvar,
                        timeVaryingBits,
                        /*isInherited*/false)) {
         _IsVarying(prim,
                    UsdGeomTokens->height,
                    HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimVar,
+                   UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits,
                    /*isInherited*/false);
     }
@@ -106,7 +107,7 @@ UsdImagingCylinderAdapter::UpdateForTime(UsdPrim const& prim,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext)
+                                   instancerContext) const
 {
     BaseAdapter::UpdateForTime(
         prim, cachePath, time, requestedBits, instancerContext);
@@ -118,10 +119,10 @@ UsdImagingCylinderAdapter::UpdateForTime(UsdPrim const& prim,
         valueCache->GetPoints(cachePath) = GetMeshPoints(prim, time);
 
         // Expose points as a primvar.
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-        _MergePrimvar(primvar, &valueCache->GetPrimvars(cachePath));
+        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                      HdTokens->points,
+                      HdInterpolationVertex,
+                      HdPrimvarRoleTokens->point);
     }
 }
 

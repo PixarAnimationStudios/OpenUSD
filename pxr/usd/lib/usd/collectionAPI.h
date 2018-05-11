@@ -138,6 +138,12 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents an 
+    /// applied API schema, i.e. an API schema that has to be applied to a prim
+    /// with a call to auto-generated Apply() method before any schema 
+    /// properties are authored.
+    static const bool IsApplied = true;
+    
     /// Compile-time constant indicating whether or not this class represents a 
     /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
     /// to the same prim multiple times with different instance names. 
@@ -217,6 +223,11 @@ private:
     USD_API
     virtual const TfType &_GetTfType() const;
 
+    // This override returns true since UsdCollectionAPI is an 
+    // applied API schema.
+    USD_API
+    virtual bool _IsAppliedAPISchema() const override;
+
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
@@ -229,6 +240,15 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
+protected:
+    // This virtual override customizes the validity checking for a 
+    // UsdCollectionAPI object. It is invoked when the schema object is 
+    // converted to a bool. 
+    // A collection is said to be valid if it has a non-empty instance name and 
+    // has a valid "expansionRule" attribute.
+    USD_API
+    virtual bool _IsCompatible() const override;
+
 public:
     /// Constructor to initialize a UsdCollectionAPI object for a collection 
     /// named \p name on the prim, \p prim.
@@ -237,8 +257,7 @@ public:
     /// modified. Use ApplyCollection() to create a collection on a prim.
     UsdCollectionAPI(const UsdPrim& prim, 
                      const TfToken &name) :
-        UsdAPISchemaBase(prim),
-        _name(name)
+        UsdAPISchemaBase(prim, /*instanceName*/ name)
     { }
 
     /// Adds a new collection named \p name on the given prim, \p prim with the 
@@ -267,12 +286,6 @@ public:
     /// Returns all the named collections on the given USD prim. 
     USD_API
     static std::vector<UsdCollectionAPI> GetAllCollections(const UsdPrim &prim);
-
-    /// Returns whether the collection is valid. A collection is said to be 
-    /// valid if it has a non-empty name and has a valid "expansionRule" 
-    /// attribute.
-    USD_API
-    explicit operator bool() const;
 
     /// Represents a flattened view of a collection. An object of this class 
     /// is computed by calling UsdCollectionAPI::ComputeMembershipQuery() on a 
@@ -334,6 +347,29 @@ public:
         bool HasExcludes() const {
             return _hasExcludes;
         }
+
+        /// Equality operator
+        bool operator==(MembershipQuery const& rhs) const {
+            return _hasExcludes == rhs._hasExcludes &&
+                _pathExpansionRuleMap == rhs._pathExpansionRuleMap;
+        }
+
+        /// Inequality operator
+        bool operator!=(MembershipQuery const& rhs) const {
+            return !(*this == rhs);
+        }
+
+        /// Hash functor
+        struct Hash {
+            USD_API
+            size_t operator()(MembershipQuery const& query) const;
+        };
+
+        /// Hash function
+        inline size_t GetHash() const {
+            return Hash()(*this);
+        }
+
     private:
         // Holds an unordered map describing membership of paths in this 
         // collection and the associated expansionRule for how the paths are to 
@@ -378,7 +414,7 @@ public:
     /// Returns the name of the collection.
     USD_API
     TfToken GetName() const {
-        return _name;
+        return _GetInstanceName();
     }
 
     /// Returns the canonical path that represents this collection. 
@@ -588,9 +624,6 @@ private:
         const Usd_PrimFlagsPredicate &pred,
         std::set<UsdObject> *includedObjects,
         SdfPathSet *includedPaths);
-
-    // The name of the collection.
-    TfToken _name;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

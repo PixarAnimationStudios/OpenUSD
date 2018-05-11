@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/gamma.h"
@@ -93,6 +94,36 @@ PxrUsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
 
     status = selectionList.getDagPath(0, dagPath);
 
+    return status;
+}
+
+MStatus
+PxrUsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
+{
+    std::vector<std::string> comps = TfStringSplit(attrPath, ".");
+    if (comps.size() != 2) {
+        TF_RUNTIME_ERROR("'%s' is not a valid Maya attribute path",
+                attrPath.c_str());
+        return MStatus::kFailure;
+    }
+
+    MObject object;
+    MStatus status = GetMObjectByName(comps[0], object);
+    if (!status) {
+        return status;
+    }
+
+    MFnDependencyNode depNode(object, &status);
+    if (!status) {
+        return status;
+    }
+
+    MPlug tmpPlug = depNode.findPlug(comps[1].c_str(), true, &status);
+    if (!status) {
+        return status;
+    }
+
+    plug = tmpPlug;
     return status;
 }
 
@@ -633,7 +664,7 @@ _GetColorAndTransparencyFromLambert(
             for (int j=0;j<3;j++) {
                 displayColor[j] = color[j];
             }
-            *rgb = GfConvertDisplayToLinear(displayColor);
+            *rgb = PxrUsdMayaColorSpace::ConvertMayaToLinear(displayColor);
         }
         if (alpha) {
             MColor trn = lambertFn.transparency();
@@ -669,7 +700,7 @@ _GetColorAndTransparencyFromDepNode(
         for (int j=0; j<3; j++) {
             colorPlug.child(j).getValue(displayColor[j]);
         }
-        *rgb = GfConvertDisplayToLinear(displayColor);
+        *rgb = PxrUsdMayaColorSpace::ConvertMayaToLinear(displayColor);
     }
 
     if (alpha) {
@@ -752,21 +783,21 @@ _GetLinearShaderColor(
         VtArray<int> *assignmentIndices)
 {
     MObjectArray shaderObjs;
-    if (_getAttachedMayaShaderObjects(node, numComponents, &shaderObjs, assignmentIndices)) {
-        if (assignmentIndices && interpolation) {
-            if (assignmentIndices->empty()) {
-                *interpolation = UsdGeomTokens->constant;
-            } else {
-                *interpolation = UsdGeomTokens->uniform;
-            }
-        }
-
+    bool hasAttachedShader = _getAttachedMayaShaderObjects(
+            node, numComponents, &shaderObjs, assignmentIndices);
+    if (hasAttachedShader) {
         _getMayaShadersColor(shaderObjs, RGBData, AlphaData);
-
-        return true;
     }
 
-    return false;
+    if (assignmentIndices && interpolation) {
+        if (assignmentIndices->empty()) {
+            *interpolation = UsdGeomTokens->constant;
+        } else {
+            *interpolation = UsdGeomTokens->uniform;
+        }
+    }
+
+    return hasAttachedShader;
 }
 
 bool
@@ -1133,6 +1164,31 @@ PxrUsdMayaUtil::Connect(
     dgMod.doIt();
 }
 
+MPlug
+PxrUsdMayaUtil::FindChildPlugByName(const MPlug& plug, const MString& name)
+{
+    unsigned int numChildren = plug.numChildren();
+    for(unsigned int i = 0; i < numChildren; ++i) {
+        MPlug child = plug.child(i);
+
+        // We can't get at the name of just the *component*
+        // plug.name() gives us node.plug[index].compound, etc.
+        // partialName() also has no form that just gives us the name.
+        MString childName = child.name();
+        if(childName.length() > name.length()) {
+            int index = childName.rindex('.');
+            if(index >= 0) {
+                MString childSuffix = 
+                    childName.substring(index+1, childName.length());
+                if(childSuffix == name) {
+                    return child;
+                }
+            }
+        }
+    }
+    return MPlug();
+}
+
 // XXX: see logic in MayaTransformWriter.  It's unfortunate that this
 // logic is in 2 places.  we should merge.
 static bool
@@ -1194,10 +1250,18 @@ _GetVec(
 {
     T ret = val.UncheckedGet<T>();
     if (attr.GetRoleName() == SdfValueRoleNames->Color)  {
-        return GfConvertLinearToDisplay(ret);
+        return PxrUsdMayaColorSpace::ConvertMayaToLinear(ret);
     }   
     return ret;
 
+}
+
+MMatrix
+PxrUsdMayaUtil::GfMatrixToMMatrix(const GfMatrix4d& mx)
+{
+    MMatrix mayaMx;
+    std::copy(mx.GetArray(), mx.GetArray()+16, mayaMx[0]);
+    return mayaMx;
 }
 
 bool
@@ -1223,6 +1287,28 @@ PxrUsdMayaUtil::getPlugMatrix(
     }
 
     *outVal = plugMatrixData.matrix();
+    return true;
+}
+
+bool
+PxrUsdMayaUtil::setPlugMatrix(const MFnDependencyNode& depNode,
+                              const MString& attr,
+                              const GfMatrix4d& mx)
+{
+    MStatus status;
+    MPlug plug = depNode.findPlug(attr, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    return setPlugMatrix(mx, plug);
+}
+
+bool
+PxrUsdMayaUtil::setPlugMatrix(const GfMatrix4d& mx, MPlug& plug)
+{
+    MStatus status;
+    MObject mxObj = MFnMatrixData().create(GfMatrixToMMatrix(mx), &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = plug.setValue(mxObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
     return true;
 }
 

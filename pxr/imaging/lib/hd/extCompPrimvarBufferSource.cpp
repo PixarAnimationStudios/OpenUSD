@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
 
 #include "pxr/imaging/hd/extCompCpuComputation.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include <limits>
 PXR_NAMESPACE_OPEN_SCOPE
@@ -32,22 +33,15 @@ HdExtCompPrimvarBufferSource::HdExtCompPrimvarBufferSource(
                                  const TfToken &primvarName,
                                  const HdExtCompCpuComputationSharedPtr &source,
                                  const TfToken &sourceOutputName,
-                                 const VtValue &defaultValue)
+                                 const HdTupleType &valueType)
  : HdBufferSource()
  , _primvarName(primvarName)
  , _source(source)
  , _sourceOutputIdx(HdExtCompCpuComputation::INVALID_OUTPUT_INDEX)
- , _tupleType(HdGetValueTupleType(defaultValue))
+ , _tupleType(valueType)
  , _rawDataPtr(nullptr)
 {
     _sourceOutputIdx = source->GetOutputIndex(sourceOutputName);
-
-    // For the common case of a default value that is an empty
-    // VtArray<T>, treat it as representing one T per element,
-    // rather than a zero-sized tuple.
-    if (_tupleType.count == 0) {
-        _tupleType.count = 1;
-    }
 }
 
 TfToken const &
@@ -79,23 +73,22 @@ HdExtCompPrimvarBufferSource::Resolve()
         return true;
     }
 
-    VtValue output = _source->GetOutputByIndex(_sourceOutputIdx);
+    HdVtBufferSource output(_primvarName,
+                            _source->GetOutputByIndex(_sourceOutputIdx));
 
     // Validate output type and count matches what is expected.
-    {
-        HdTupleType outputTupleType = HdGetValueTupleType(output);
-        if (_source->GetNumElements() > 0) {
-            // Adjust tuple size to account for distribution over elements.
-            outputTupleType.count /= _source->GetNumElements();
-        }
-        if (outputTupleType != _tupleType) {
-            TF_WARN("Output type mismatch on %s. ", _primvarName.GetText());
-            _SetResolveError();
-            return true;
-        }
+    if (output.GetTupleType() != _tupleType) {
+        TF_WARN("Output type mismatch on %s. ", _primvarName.GetText());
+        _SetResolveError();
+        return true;
+    }
+    if (output.GetNumElements() != _source->GetNumElements()) {
+        TF_WARN("Output elements mismatch on %s. ", _primvarName.GetText());
+        _SetResolveError();
+        return true;
     }
 
-    _rawDataPtr = HdGetValueData(output);
+    _rawDataPtr = output.GetData();
 
     _SetResolved();
     return true;

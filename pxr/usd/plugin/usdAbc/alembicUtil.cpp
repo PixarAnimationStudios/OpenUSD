@@ -43,19 +43,6 @@ using namespace ::Alembic::Abc;
 // Usd property value types.
 //
 
-// Supported Usd data types in conversions.  We simply take every Sdf
-// value type and create tokens for the scalar and shaped (i.e. array)
-// versions.  For example, we get the tokens named Bool with value "bool"
-// and BoolArray with value "bool[]" for the bool type.
-#define USD_MAKE_USD_TYPE(r, unused, elem) \
-    ((SDF_VALUE_TAG(elem), SDF_VALUE_TRAITS_TYPE(elem)::Name())) \
-    ((BOOST_PP_CAT(SDF_VALUE_TAG(elem), Array), SDF_VALUE_TRAITS_TYPE(elem)::ShapedName()))
-TF_DEFINE_PUBLIC_TOKENS(UsdAbc_UsdDataTypes,
-    BOOST_PP_SEQ_FOR_EACH(USD_MAKE_USD_TYPE, ~, SDF_VALUE_TYPES)
-    _SDF_VALUE_TYPE_NAME_TOKENS
-);
-#undef USD_MAKE_USD_TYPE
-
 TF_DEFINE_PUBLIC_TOKENS(UsdAbcPrimTypeNames, USD_ABC_PRIM_TYPE_NAMES);
 TF_DEFINE_PUBLIC_TOKENS(UsdAbcPropertyNames, USD_ABC_PROPERTY_NAMES);
 TF_DEFINE_PUBLIC_TOKENS(UsdAbcCustomMetadata, USD_ABC_CUSTOM_METADATA);

@@ -561,7 +561,7 @@ doSoftCopy() const
 
 bool GusdInstancerWrapper::isValid() const
 {
-    return m_usdPointInstancer;
+    return static_cast<bool>(m_usdPointInstancer);
 }
 
 void GusdInstancerWrapper::

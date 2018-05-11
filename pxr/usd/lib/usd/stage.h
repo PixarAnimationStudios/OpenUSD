@@ -146,6 +146,16 @@ public:
     /// \name Lifetime Management
     /// @{
     // --------------------------------------------------------------------- //
+    
+    /// \enum InitialLoadSet
+    ///
+    /// Specifies the initial set of prims to load when opening a UsdStage.
+    ///
+    enum InitialLoadSet
+    {
+        LoadAll, ///< Load all loadable prims
+        LoadNone ///< Load no loadable prims
+    };
 
     /// Create a new stage with root layer \p identifier, destroying
     /// potentially existing files with that identifier; it is considered an
@@ -157,6 +167,9 @@ public:
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
+    //
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
     /// Note that the \p pathResolverContext passed here will apply to all path
     /// resolutions for this stage, regardless of what other context may be
@@ -166,23 +179,27 @@ public:
     /// path.
     USD_API
     static UsdStageRefPtr
-    CreateNew(const std::string& identifier);
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateNew(const std::string& identifier,
-              const SdfLayerHandle& sessionLayer);
+    CreateNew(const std::string& identifier, 
+              InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
               const SdfLayerHandle& sessionLayer,
-              const ArResolverContext& pathResolverContext);
+              InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateNew(const std::string& identifier,
-              const ArResolverContext& pathResolverContext);
+              const SdfLayerHandle& sessionLayer,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateNew(const std::string& identifier,
+              const ArResolverContext& pathResolverContext,
+              InitialLoadSet load = LoadAll);
 
     /// Creates a new stage only in memory, analogous to creating an
     /// anonymous SdfLayer.
@@ -192,43 +209,41 @@ public:
     /// bound at resolve time. If no context is passed in here, Usd will create
     /// one by calling \sa ArResolver::CreateDefaultContext.
     ///
+    /// The initial set of prims to load on the stage can be specified
+    /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
+    ///
     /// Invoking an overload that does not take a \p sessionLayer argument will
     /// create a stage with an anonymous in-memory session layer.  To create a
     /// stage without a session layer, pass TfNullPtr (or None in python) as the
     /// \p sessionLayer argument.
     USD_API
     static UsdStageRefPtr
-    CreateInMemory();
-    /// \overload
-    USD_API
-    static UsdStageRefPtr
-    CreateInMemory(const std::string& identifier);
+    CreateInMemory(InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
-                   const ArResolverContext& pathResolverContext);
+                   InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
-                   const SdfLayerHandle &sessionLayer);
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
     /// \overload
     USD_API
     static UsdStageRefPtr
     CreateInMemory(const std::string& identifier,
                    const SdfLayerHandle &sessionLayer,
-                   const ArResolverContext& pathResolverContext);
+                   InitialLoadSet load = LoadAll);
+    /// \overload
+    USD_API
+    static UsdStageRefPtr
+    CreateInMemory(const std::string& identifier,
+                   const SdfLayerHandle &sessionLayer,
+                   const ArResolverContext& pathResolverContext,
+                   InitialLoadSet load = LoadAll);
 
-    /// \enum InitialLoadSet
-    ///
-    /// Specifies the initial set of prims to load when opening a UsdStage.
-    ///
-    enum InitialLoadSet
-    {
-        LoadAll, ///< Load all loadable prims
-        LoadNone ///< Load no loadable prims
-    };
 
     /// Attempt to find a matching existing stage in a cache if
     /// UsdStageCacheContext objects exist on the stack. Failing that, create a
@@ -393,6 +408,16 @@ public:
     /// Note that reloading anonymous layers clears their content, so
     /// invoking Reload() on a stage constructed via CreateInMemory()
     /// will clear its root layer.
+    ///
+    /// \note This method is considered a mutation, which has potentially
+    /// global effect!  Unlike the various Load() methods whose actions
+    /// affect only **this stage**, Reload() may cause layers to change their
+    /// contents, and because layers are global resources shared by
+    /// potentially many Stages, calling Reload() on one stage may result in
+    /// a mutation to any number of stages.  In general, unless you are
+    /// highly confident your stage is the only consumer of its layers, you
+    /// should only call Reload() when you are assured no other threads may
+    /// be reading from any Stages.
     USD_API
     void Reload();
 
@@ -612,17 +637,20 @@ public:
     void SetPopulationMask(UsdStagePopulationMask const &mask);
 
     /// Expand this stage's population mask to include the targets of all
-    /// relationships that pass \p pred, recursively.  If \p pred is null,
-    /// include all relationship targets.
+    /// relationships that pass \p relPred and connections to all attributes
+    /// that pass \p attrPred recursively.  If \p relPred is null, include all
+    /// relationship targets; if \p attrPred is null, include all connections.
     ///
     /// This function can be used, for example, to expand a population mask for
     /// a given prim to include bound materials, if those bound materials are
-    /// expressed as relationships.
+    /// expressed as relationships or attribute connections.
     ///
-    /// See also UsdPrim::FindAllRelationshipTargetPaths().
+    /// See also UsdPrim::FindAllRelationshipTargetPaths() and
+    /// UsdPrim::FindAllAttributeConnectionPaths().
     USD_API
     void ExpandPopulationMask(
-        std::function<bool (UsdRelationship const &)> const &pred = nullptr);
+        std::function<bool (UsdRelationship const &)> const &relPred = nullptr,
+        std::function<bool (UsdAttribute const &)> const &attrPred = nullptr);
     
     /// @}
 
@@ -1765,10 +1793,12 @@ private:
     // Helper functions for resolving asset paths during value resolution.
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
                                  SdfAssetPath *assetPaths,
-                                 size_t numAssetPaths) const;
+                                 size_t numAssetPaths,
+                                 bool anchorAssetPathsOnly = false) const;
 
     void _MakeResolvedAssetPaths(UsdTimeCode time, const UsdAttribute &attr,
-                                 VtValue *value) const;
+                                 VtValue *value,
+                                 bool anchorAssetPathsOnly = false) const;
 
     // --------------------------------------------------------------------- //
     // Metadata Resolution
@@ -1860,7 +1890,8 @@ private:
 
     void _GetAllMetadata(const UsdObject &obj,
                          bool useFallbacks,
-                         UsdMetadataValueMap* result) const;
+                         UsdMetadataValueMap* result,
+                         bool anchorAssetPathsOnly = false) const;
 
     template <class Composer>
     bool
@@ -2042,6 +2073,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_FlattenAccess;
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;

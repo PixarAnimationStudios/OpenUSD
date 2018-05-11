@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -102,6 +102,7 @@ private:
 HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
  , _surfaceShader(new HdStSurfaceShader)
+ , _hasPtex(false)
 {
 }
 
@@ -148,6 +149,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         const HdMaterialParamVector &params = GetMaterialParams(sceneDelegate);
         _surfaceShader->SetParams(params);
 
+        bool hasPtex = false;
         TF_FOR_ALL(paramIt, params) {
             if (paramIt->IsPrimvar()) {
                 // skip -- maybe not necessary, but more memory efficient
@@ -160,7 +162,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
                 sources.push_back(source);
             } else if (paramIt->IsTexture()) {
-                bool bindless = HdStRenderContextCaps::GetInstance()
+                bool bindless = GlfContextCaps::GetInstance()
                                                         .bindlessTextureEnabled;
                 // register bindless handle
 
@@ -177,9 +179,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                     std::unique_lock<std::mutex> regLock =
                         resourceRegistry->FindTextureResource
                         (texID, &texInstance, &textureResourceFound);
-                    if (!TF_VERIFY(textureResourceFound,
-                            "No texture resource found with path %s",
-                            paramIt->GetConnection().GetText())) {
+                    // A bad asset can cause the texture resource to not 
+                    // be found. Hence, issue a warning and continue onto the 
+                    // next param.
+                    if (!textureResourceFound) {
+                        TF_WARN("No texture resource found with path %s",
+                            paramIt->GetConnection().GetText());
                         continue;
                     }
 
@@ -197,6 +202,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 tex.name = paramIt->GetName();
 
                 if (texResource->IsPtex()) {
+                    hasPtex = true;
                     tex.type =
                             HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
                     tex.handle =
@@ -255,11 +261,16 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _surfaceShader->SetTextureDescriptors(textures);
         _surfaceShader->SetBufferSources(sources, resourceRegistry);
 
-        // XXX Forcing rprims to have a dirty material id to re-evaluate their
-        // material state as we don't know whuch rprims are bound to this one.
-        HdChangeTracker& changeTracker =
+        if (_hasPtex != hasPtex) {
+            _hasPtex = hasPtex;
+
+            // XXX Forcing rprims to have a dirty material id to re-evaluate
+            // their material state as we don't know which rprims are bound to
+            // this one.
+            HdChangeTracker& changeTracker =
                              sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
+            changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
+        }
     }
 
     *dirtyBits = Clean;

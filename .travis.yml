@@ -49,9 +49,9 @@ install:
   - sudo apt-get install libboost-system1.55.0 libboost-system1.55-dev
   - sudo apt-get install libboost-program-options1.55.0 libboost-program-options1.55-dev
 
-  ### Intel TBB v4.3 update 1
-  - if [ ! -d "$HOME/tbb43_20141023oss/lib" ]; then
-      wget https://www.threadingbuildingblocks.org/sites/default/files/software_releases/linux/tbb43_20141023oss_lin.tgz -O /tmp/tbb.tgz;
+  ### Intel TBB v4.4 update 6
+  - if [ ! -d "$HOME/tbb44_20160803oss/lib" ]; then
+      wget https://github.com/01org/tbb/releases/download/4.4.6/tbb44_20160803oss_lin.tgz -O /tmp/tbb.tgz;
       tar -xvzf /tmp/tbb.tgz -C $HOME;
     else
       echo 'Using cached TBB';
@@ -140,7 +140,7 @@ cache:
 
 script:
   - mkdir build && cd build
-  - cmake -DTBB_ROOT_DIR=$HOME/tbb43_20141023oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF -DPXR_BUILD_TESTS=ON ..
+  - cmake -DTBB_ROOT_DIR=$HOME/tbb44_20160803oss -DOPENEXR_LOCATION=$HOME/openexr -DOIIO_LOCATION=$HOME/oiio -DOPENSUBDIV_ROOT_DIR=$HOME/osd -DPTEX_LOCATION=$HOME/ptex -DPXR_VALIDATE_GENERATED_CODE=OFF -DPXR_BUILD_TESTS=ON ..
   - echo 'Building with -j4'
   - make -j4
   # Default install location is /usr/local; we need sudo access to write there.

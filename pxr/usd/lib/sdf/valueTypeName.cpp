@@ -95,6 +95,12 @@ SdfValueTypeName::GetType() const
     return _impl->type->type;
 }
 
+const std::string& 
+SdfValueTypeName::GetCPPTypeName() const
+{
+    return _impl->type->cppTypeName;
+}
+
 const TfToken&
 SdfValueTypeName::GetRole() const
 {

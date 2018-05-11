@@ -767,46 +767,73 @@ class TestUsdPrim(unittest.TestCase):
                 s._GetPcpCache().FindPrimIndex('/Root/Group/Child'))
 
     def test_AppliedSchemas(self):
+        self.assertTrue(Usd.ModelAPI.IsAPISchema())
+        self.assertTrue(Usd.ClipsAPI.IsAPISchema())
+        self.assertTrue(Usd.CollectionAPI.IsAPISchema())
+
+        self.assertFalse(Usd.ModelAPI.IsApplied())
+        self.assertFalse(Usd.ClipsAPI.IsApplied())
+        self.assertTrue(Usd.CollectionAPI.IsApplied())
+
+        self.assertTrue(Usd.CollectionAPI.IsMultipleApply())
+
         for fmt in allFormats:
             sessionLayer = Sdf.Layer.CreateNew("SessionLayer.%s" % fmt)
             s = Usd.Stage.CreateInMemory('AppliedSchemas.%s' % fmt, sessionLayer)
 
             s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
 
-            root = s.OverridePrim('/hello')
-            self.assertEqual([], root.GetAppliedSchemas())
+            world= s.OverridePrim('/world')
+            self.assertEqual([], world.GetAppliedSchemas())
 
-            rootModelAPI = Usd.ModelAPI.Apply(root)
-            self.assertTrue(rootModelAPI)
+            rootCollAPI = Usd.CollectionAPI.ApplyCollection(world, "root")
+            self.assertTrue(rootCollAPI)
 
-            root = rootModelAPI.GetPrim()
-            self.assertTrue(root)
+            world = rootCollAPI.GetPrim()
+            self.assertTrue(world)
 
-            self.assertTrue(root.HasAPI(Usd.ModelAPI))
+            self.assertTrue(world.HasAPI(Usd.CollectionAPI))
 
-            self.assertEqual(['ModelAPI'], root.GetAppliedSchemas())
+            # The schemaType that's passed into HasAPI must derive from 
+            # UsdAPISchemaBase and must not be UsdAPISchemaBase.
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Usd.Typed)
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Usd.APISchemaBase)
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Usd.ModelAPI)
+
+            # Try calling HasAPI a random TfType that isn't a derivative of 
+            # SchemaBase.
+            with self.assertRaises(RuntimeError):
+                world.HasAPI(Sdf.ListOpType)
+
+            self.assertEqual(['CollectionAPI:root'], world.GetAppliedSchemas())
 
             # Switch the edit target to the session layer and test bug 156929
             s.SetEditTarget(Usd.EditTarget(s.GetSessionLayer()))
-            sessionClipsAPI = Usd.ClipsAPI.Apply(root)
-            self.assertTrue(sessionClipsAPI)
-            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+            sessionCollAPI = Usd.CollectionAPI.ApplyCollection(world, "session")
+            self.assertTrue(sessionCollAPI)
+            self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
+                             world.GetAppliedSchemas())
 
-            self.assertTrue(root.HasAPI(Usd.ClipsAPI))
+            self.assertTrue(world.HasAPI(Usd.CollectionAPI))
 
             # Ensure duplicates aren't picked up
-            anotherSessionClipsAPI = Usd.ClipsAPI.Apply(root)
-            self.assertTrue(anotherSessionClipsAPI)
-            self.assertEqual(['ClipsAPI', 'ModelAPI'], root.GetAppliedSchemas())
+            anotherSessionCollAPI = Usd.CollectionAPI.ApplyCollection(world, 
+                                                                       "session")
+            self.assertTrue(anotherSessionCollAPI)
+            self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
+                             world.GetAppliedSchemas())
 
             # Add a duplicate in the root layer and ensure that there are no 
             # duplicates in the composed result.
             s.SetEditTarget(Usd.EditTarget(s.GetRootLayer()))
-            rootClipsAPI = Usd.ClipsAPI.Apply(root)
-            self.assertTrue(rootClipsAPI)
-            self.assertEqual(['ClipsAPI', 'ModelAPI'], 
-                             root.GetAppliedSchemas())
-
+            rootLayerSessionCollAPI = Usd.CollectionAPI.ApplyCollection(world,
+                    "session")
+            self.assertTrue(rootLayerSessionCollAPI)
+            self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
+                             world.GetAppliedSchemas())
 
 if __name__ == "__main__":
     unittest.main()

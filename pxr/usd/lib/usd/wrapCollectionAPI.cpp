@@ -74,6 +74,10 @@ void wrapUsdCollectionAPI()
             static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
         .staticmethod("IsTyped")
 
+        .def("IsApplied", 
+            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
+        .staticmethod("IsApplied")
+
         .def("IsMultipleApply", 
             static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))
         .staticmethod("IsMultipleApply")
@@ -157,6 +161,9 @@ WRAP_CUSTOM {
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
              (arg("path"), arg("parentExpansionRule")))
         .def("HasExcludes", &MQuery::HasExcludes)
+        .def("__hash__", &MQuery::GetHash)
+        .def(self == self)
+        .def(self != self)
         ;
 
     using This = UsdCollectionAPI;

@@ -697,7 +697,7 @@ public:
 
     /// Return the number of elements in the held value if IsArrayValued(),
     /// return 0 otherwise.
-    VT_API size_t GetArraySize() const { return _GetNumElements(); }
+    size_t GetArraySize() const { return _GetNumElements(); }
 
     /// Returns the typeid of the type held by this value.
     VT_API std::type_info const &GetTypeid() const;
@@ -919,8 +919,8 @@ public:
     operator << (std::ostream &out, const VtValue &self);
 
 private:
-    const Vt_ShapeData* _GetShapeData() const;
-    size_t _GetNumElements() const;
+    VT_API const Vt_ShapeData* _GetShapeData() const;
+    VT_API size_t _GetNumElements() const;
     friend struct Vt_ValueShapeDataAccess;
 
     static void _Copy(VtValue const &src, VtValue &dst) {

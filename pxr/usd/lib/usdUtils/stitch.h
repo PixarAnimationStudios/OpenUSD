@@ -36,82 +36,101 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/spec.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfLayer);
 
-/// The function will recurse down the root prims of each layer,
-/// either making clean copies if no path match is found or recursing to
-/// any subelements such as properties and metadata.
+/// Merge all scene description in \p weakLayer into \p strongLayer.
 ///
-/// When stitching occurs, the prims are at the same level of a hierarchy
-/// For example, if the trees look like this
+/// Prims and properties in \p weakLayer that do not exist in \p strongLayer
+/// will be copied into \p strongLayer. Prims and properties that do
+/// exist in \p strongLayer will be merged with the existing scene
+/// description.
 ///
-/// (pseudoroot)          (pseudoroot)
-/// |                     |
-/// |                     |
-/// |___(def "foo")       |___(def "foo")
-///     |                     |
-///     |_(timeSamples)       |_(timeSamples)
-///        |_ {101: (.....)}    |_ {102: (.....)}
+/// Merging prims and properties is done on a field-by-field basis.
+/// In general, if a field has a value in \p strongLayer, the value from
+/// \p weakLayer will be ignored. However, certain fields have special
+/// rules for merging values together:
 ///
-/// We would see the def "foo" in our \p weakLayer
-/// already exists in our \p strongLayer ,
-/// pictured on the left, so we would recurse into the "foo" prims
-/// and see if there were any subelements we could copy over, this 
-/// would involve examining their timeSample maps(just as one example,
-/// all items with an infoKey are examined). A map-join is done on 
-/// the timeSample maps with the strong keys taking precedence, so we get
-/// this
+/// - For map and dictionary-valued fields (including time samples),
+///   a dictionary merge is performed; values in the weaker dictionary
+///   are copied into the stronger dictionary only if the key does not
+///   already exist.
 ///
-/// (pseudoroot)
-/// |
-/// |
-/// |___(def "foo")
-///     |
-///     |_(timeSamples)
-///       |_ {101: (....), 102: (....)
+/// - For listOp-valued fields, the listOps will be combined into a 
+///   single listOp. The historical "add" and "reorder" list op operations
+///   cannot be combined in this way; "add" will be converted to "append", 
+///   and "reorder" will be discarded.
 ///
-/// Note that for non map types, if the key is already populated in the
-/// corresponding strong prim, we do nothing, and if it isn't we copy over
-/// the corresponding value in the weak prim.
-///
-/// Stitching also involves examining layer-level properties, such as
-/// frames-per-second. This is done in the same way
-/// as it is with prims, with the strong layer taking precedence
-/// and the weak layers element being copied over if none exists in the strong.
-//
-/// The exception is start frame and end frame. These are calculated
-/// by taking the minimum frame seen across the layers as the start frame
-/// and the maximum frame across the layers as the end frame.
-///
-/// For list edited data, like references, inherits and relationships,
-/// the stronger layer will win in conflict, no merging is done.
-///
-/// Also note that for time samples, the values are directly examined with
-/// no fuzzying of the numbers, so, if strongLayer contains a timeSample
-/// 101.000001 and weakLayer contains one at 101.000002, both will be in
-/// strongLayer after the operation.
-///
-/// Verification is done post stitching to warn the user if time samples 
-/// outside of the range were provided or if a begin frame is missing to 
-/// corresponding end frame or vise-versa.
+/// - The minimum startTimeCode value and maximum endTimeCode value will
+///   be used.
 USDUTILS_API
-void UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer, 
-                          const SdfLayerHandle& weakLayer,
-                          bool ignoreTimeSamples = false);
+void UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer, 
+    const SdfLayerHandle& weakLayer);
 
-/// This function will stitch all data collectable with ListInfoKeys()
-/// from the SdfLayer API. In the case of dictionaries, it will do 
-/// a dictionary style composition. In the case of flat data, 
-/// we will follow our traditional rule: If \p strongObj has the key 
-/// already, nothing changes, if it does not and \p weakObj does, 
-/// we will copy \p weakObj's info over.
+/// Merge the scene description for \p weakObj into \p strongObj.
+///
+/// See documentation on UsdUtilsStitchLayers for a description of
+/// the merging behavior.
 USDUTILS_API
-void UsdUtilsStitchInfo(const SdfSpecHandle& strongObj, 
-                        const SdfSpecHandle& weakObj,
-                        bool ignoreTimeSamples = false);
+void UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj, 
+    const SdfSpecHandle& weakObj);
 
+/// \name Advanced Stitching API
+/// @{
+
+/// Status enum returned by UsdUtilsStitchValueFn describing the
+/// desired value stitching behavior.
+enum class UsdUtilsStitchValueStatus
+{
+    NoStitchedValue, ///< Don't stitch values for this field.
+    UseDefaultValue, ///< Use the default stitching behavior for this field.
+    UseSuppliedValue ///< Use the value supplied in stitchedValue.
+};
+
+/// Callback for customizing how values are stitched together. 
+/// 
+/// This callback will be invoked for each field being stitched from the 
+/// source spec at \p path in \p weakLayer to the destination spec at 
+/// \p path in \p strongLayer. \p fieldInStrongLayer and \p fieldInWeakLayer 
+/// indicates whether the field has values in either layer.
+///
+/// The callback should return a UsdUtilsStitchValueStatus to indicate the
+/// desired behavior. Note that if the callback returns UseSuppliedValue and
+/// supplies an empty VtValue in \p stitchedValue, the field will be removed
+/// from the destination spec.
+using UsdUtilsStitchValueFn = std::function<
+    UsdUtilsStitchValueStatus(
+        const TfToken& field, const SdfPath& path,
+        const SdfLayerHandle& strongLayer, bool fieldInStrongLayer,
+        const SdfLayerHandle& weakLayer, bool fieldInWeakLayer,
+        VtValue* stitchedValue)>;
+
+/// Advanced version of UsdUtilsStitchLayers that accepts a \p stitchValueFn
+/// callback to customize how fields in \p strongLayer and \p weakLayer are
+/// stitched together. See documentation on UsdUtilsStitchValueFn for more
+/// details.
+USDUTILS_API
+void UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer, 
+    const SdfLayerHandle& weakLayer,
+    const UsdUtilsStitchValueFn& stitchValueFn);
+
+/// Advanced version of UsdUtilsStitchInfo that accepts a \p stitchValueFn
+/// callback to customize how fields in \p strongObj and \p weakObj are
+/// stitched together. See documentation on UsdUtilsStitchValueFn for more
+/// details.
+USDUTILS_API
+void UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj, 
+    const SdfSpecHandle& weakObj,
+    const UsdUtilsStitchValueFn& stitchValueFn);
+
+/// @}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

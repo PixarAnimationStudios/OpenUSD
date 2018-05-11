@@ -125,7 +125,7 @@ void wrapUsdGeomModelAPI()
 {
     typedef UsdGeomModelAPI This;
 
-    class_<This, bases<UsdModelAPI> >
+    class_<This, bases<UsdAPISchemaBase> >
         cls("ModelAPI");
 
     cls
@@ -146,6 +146,10 @@ void wrapUsdGeomModelAPI()
         .def("IsTyped",
             static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
         .staticmethod("IsTyped")
+
+        .def("IsApplied", 
+            static_cast<bool (*)(void)>( [](){ return This::IsApplied; } ))
+        .staticmethod("IsApplied")
 
         .def("IsMultipleApply", 
             static_cast<bool (*)(void)>( [](){ return This::IsMultipleApply; } ))

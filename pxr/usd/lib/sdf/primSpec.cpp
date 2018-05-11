@@ -43,7 +43,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <ostream>
 #include <utility>
@@ -817,7 +817,7 @@ _FindOrCreateVariantSpec(const SdfPrimSpecHandle &primSpec,
 
     // Create a new variant set spec and add it to the variant set list.
     if (!varSetSpec) {
-        if (varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first))
+        if ((varSetSpec = SdfVariantSetSpec::New(primSpec, varSel.first)))
             primSpec->GetVariantSetNameList().Add(varSel.first);
     }
 

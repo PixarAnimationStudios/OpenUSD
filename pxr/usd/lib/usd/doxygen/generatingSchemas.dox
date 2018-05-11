@@ -25,21 +25,52 @@ See pxr/usd/lib/usdGeom/schema.usda for an example.
 
 Schema classes can be classified into the following two types:
 
- - <b>API schema</b> - An API schema provides an interface to a prim's
-    qualities, but does not specify a typeName for the underlying prim. The
-    prim's qualities include its inheritance structure, attributes,
-    relationships etc. Since it cannot provide a typeName, an API schema is
-    considered to be non-concrete. We are in-process as of 5/15 on
-    establishing a convention that the C++/python class name for API schemas
-    ends in "API".  In core USD, UsdModelAPI is an example
-    of an API schema; UsdRiMaterialAPI is an example from our RenderMan schema
-    module, which adds/extracts RenderMan-specific shading information from a
-    generic UsdShadeMaterial-typed prim.  Also by convention (with which
-    usdGenSchema can help), the properties that "belong" to an API schema are
-    typically namespaced under a common namespace.  For example,
-    UsdRiMaterialAPI::CreateBxdfAttr() will create an attribute named
-    "outputs:ri:bxdf" and UsdRiMaterialAPI::CreateSurfaceAttr() will create an 
-    attribute named "outputs:ri:surface".
+ - <b>API schema</b> - API schema - An API schema provides an interface to a 
+   prim's qualities, but does not specify a typeName for the underlying prim. 
+   The prim's qualities include its inheritance structure, attributes, 
+   relationships etc. Since it cannot provide a typeName, an API schema is 
+   considered to be non-concrete. As a convention, the C++/python class name for 
+   an API schema must end with "API".  In core USD, UsdModelAPI is an example of 
+   an API schema; UsdRiMaterialAPI is an example from our RenderMan schema 
+   module, which adds/extracts RenderMan-specific shading information from a 
+   generic UsdShadeMaterial-typed prim.  Also by convention (with which 
+   usdGenSchema can help), the properties that "belong" to an API schema are 
+   typically namespaced with the base-name of the schema, camelCased. For 
+   example, UsdRiMaterialAPI::CreateSurfaceAttr() will create an attribute named 
+   outputs:ri:surface. 
+   API schemas are classified into the following two sub-types: 
+        - <b>Non-applied API schemas</b> - If an API schema only provides an 
+        interface to certain core bits of metadata (like UsdModelAPI, which sets 
+        model kind and UsdClipsAPI, which sets value-clips related metadata) or 
+        if there is no use of recording the application of the API schema on a 
+        prim (for the purpose of interchange), we make it a non-applied API 
+        schema. Examples of non-applied API schemas include UsdModelAPI, 
+        UsdClipsAPI, UsdShadeConnectableAPI and UsdGeomPrimvarsAPI. Typically, 
+        non-applied API schemas can apply to any prim-type (eg, UsdClipsAPI) or 
+        to a known fixed set of prim types, like in the case of 
+        UsdShadeConnectableAPI which is only applicable to Shaders and 
+        NodeGraphs.
+        - <b>Applied API Schemas</b> - If there is a need to record and discover 
+        whether an API schema has been applied to a prim, we make it an applied 
+        API schema. In general, API schemas that add one or more properties to a 
+        prim should be tagged as applied API schemas. A public Apply() (or 
+        private _Apply()) method is auto-generated for applied API schemas. Once 
+        an API schema has been applied to a prim, prim.HasAPI<APISchemaType>() 
+        will return true. An applied API schema must be applied to a prim via a 
+        call to the Apply() method, for the schema object to evaluate to true 
+        when converted to a bool using the explicit bool conversion operator. 
+        An applied API schema can only inherit from another applied API schema 
+        or from UsdAPISchemaBase directly. Examples of applied API schemas 
+        include UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI.  
+        Applied API schemas are futher classified into the following two 
+        categories:
+            - <b>Single-Apply API Schemas</b> - Applied API schemas that can 
+            only be applied once to a prim. Examples include UsdGeomModelAPI and 
+            UsdGeomMotionAPI. 
+            - <b>Multiple-Apply API Schemas</b> - Applied API schemas that can 
+            be applied multiple times on the same prim with different instance 
+            names. For example, UsdCollectionAPI, which has to be applied once 
+            per collection owned by a prim. 
 
  - <b>IsA schema</b> - An IsA schema can impart a typeName to a prim in
     addition to providing an interface to a prim's qualities. Every IsA
@@ -68,6 +99,14 @@ that the property will possess, even when none has been authored. Because the
 definition registry is keyed by prim typeName, a prim can "be" (IsA) at most
 a single type, whereas a prim can host data for any number of API schemas,
 which cannot provide fallback values.
+
+The author of an API schema has to decide on the type of API schema at the time 
+of its creation by setting token-valued customData entry 'apiSchemaType' in the 
+schema definition. It can be set to one of 'nonApplied', 'singleApply' or 
+'multipleApply'. When unspecified, the fallback apiSchemaType for an API schema 
+is 'singleApply'. An API schema can only inherit from another compatible API 
+schema with matching customData["apiSchemaType"] or from "/APISchemaBase" 
+directly. This is enforced by the schema code generation script 'usdGenSchema'. 
 
 API schemas and non-concrete typed schemas must not provide a typeName in their 
 class declaration in a schema.usda file. 
@@ -234,6 +273,15 @@ Here's a short description of each datum in the per-class customData dictionary:
     plugInfo.json file. The values in this dictionary must be numeric types,
     strings, booleans, or dictionaries containing these types.
 
+  - \b apiSchemaType - must only be specified for an API schema. Defaults to 
+    the token 'singleApply', to indicate a single-apply API schema. 
+    Can be set to 'nonApplied', to create a non-applied API schema or to 
+    "multipleApply" to create a multiple-apply API schema.
+
+  - \b isPrivateApply - boolean value indicating whether the Apply method that
+    is auto-generated for an applied API schema must be private or public. 
+    This defaults to False and must only be specified for API schemas.
+
 \section Usd_CustomizingPerProperty Customizing Per-Property 
 
 \code
@@ -253,7 +301,13 @@ dictionary:
     attribute accessor.
     Note: The actual name of the property as defined on the prim is still
     primvars:displayColor.
-
+  - \b apiGetImplementation - Optionally control schema gen behavior for a property's 
+    'Get' implementation. Valid values:
+    - \e generated - Generate default header and implementation (Fallback value if unspecified).
+    - \e custom - Generate default header ONLY. User must supply the implementation
+    Custom should be used sparingly, primarily as a tool for API migration
+    Given the performance expectations of Get, it is NOT appropriate to 
+    add complicated validation logic in this method.
 
 \section Usd_ExampleSchema Example Schema Classes
 
@@ -284,7 +338,7 @@ over "GLOBAL" (
 }
 
 # Example of a non-concrete IsA schema
-# Note that non-concreate IsA schemas cannot specify a typeName in the class
+# Note that non-concrete IsA schemas cannot specify a typeName in the class
 # declaration, but they are allowed to provide fallback values for attributes.
 class "MyBaseCustomPrim" (
     doc = """Defines a non-instantiable (non-concrete) typed schema that derives
@@ -376,7 +430,13 @@ class MyCustomPrim "MyCustomPrim" (
 # their own properties.  In this capacity, the convention is to namespace
 # each property with the API's name (camelCased), for easy identification.  
 # For example...
-class "MyParamsAPI" {
+class "MyParamsAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        apiSchemaType = "singleApply"
+    }
+)
+{
     double myParams:size (
         customData = {
             string apiName = "size"

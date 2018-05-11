@@ -114,6 +114,21 @@ public:
     PXRUSDMAYA_API
     bool GetPruneChildren() const;
 
+    /// Gets the value provided by SetAuthoredPaths().
+    /// The default value is a vector containing GetAuthorPath()
+    /// if SetAuthoredPaths() was never called.
+    PXRUSDMAYA_API
+    const SdfPathVector& GetAuthoredPaths() const;
+
+    /// Sets the vector of prim paths that the prim writer declares
+    /// it has written.
+    PXRUSDMAYA_API
+    void SetAuthoredPaths(const SdfPathVector& authoredPaths);
+
+    /// Overload of SetAuthoredPaths() that moves the input vector.
+    PXRUSDMAYA_API
+    void SetAuthoredPaths(SdfPathVector&& authoredPaths);
+
 private:
     const UsdTimeCode& _timeCode;
     const SdfPath& _authorPath;
@@ -121,6 +136,7 @@ private:
     bool _exportsGprims;
     bool _exportsReferences;
     bool _pruneChildren;
+    SdfPathVector _authoredPaths;
 };
 
 

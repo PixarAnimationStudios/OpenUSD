@@ -656,7 +656,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
         UsdGeom.ModelAPI.Apply(root)
         self.assertEqual(['MotionAPI', 'GeomModelAPI'], root.GetAppliedSchemas())
 
-    def test_IsA(self):
+    def test_IsATypeless(self):
         from pxr import Usd, Tf
         s = Usd.Stage.CreateInMemory()
         spherePrim = s.DefinePrim('/sphere', typeName='Sphere')
@@ -682,8 +682,7 @@ class TestUsdGeomSchemata(unittest.TestCase):
         prim = s.DefinePrim('/prim')
 
         types = [Tf.Type.FindByName('UsdGeomMotionAPI'),
-                 Tf.Type.FindByName('UsdGeomModelAPI'),
-                 Tf.Type.FindByName('UsdModelAPI')]
+                 Tf.Type.FindByName('UsdGeomModelAPI')]
 
         # Check that no APIs have yet been applied
         for t in types:
@@ -692,9 +691,6 @@ class TestUsdGeomSchemata(unittest.TestCase):
         # Apply our schemas to this prim
         UsdGeom.ModelAPI.Apply(prim)
         UsdGeom.MotionAPI.Apply(prim)
-
-        # Note that were applying an ancestor type of UsdGeomModelAPI
-        Usd.ModelAPI.Apply(prim)
 
         # Check that all our applied schemas show up
         for t in types:
@@ -709,6 +705,10 @@ class TestUsdGeomSchemata(unittest.TestCase):
 
         with self.assertRaises(Tf.ErrorException):
             prim.HasAPI(Tf.Type.FindByName('UsdGeomImageable'))
+
+        with self.assertRaises(Tf.ErrorException):
+            # Test with a non-applied API schema.
+            prim.HasAPI(Tf.Type.FindByName('UsdModelAPI'))
 
 if __name__ == "__main__":
     unittest.main()

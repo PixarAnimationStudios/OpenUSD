@@ -39,7 +39,7 @@
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/ostreamMethods.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

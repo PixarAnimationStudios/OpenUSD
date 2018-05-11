@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/translatorMesh.h"
 
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/meshUtil.h"
 #include "usdMaya/roundTripUtil.h"
 #include "usdMaya/util.h"
@@ -256,7 +257,7 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
 
     // We'll need to convert colors from linear to display if this color set is
     // for display colors.
-    const bool convertToDisplay =
+    const bool isDisplayColor =
         (colorSetName == PxrUsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText());
 
     // Get the raw data before applying any indexing. We'll only populate one
@@ -373,8 +374,8 @@ PxrUsdMayaTranslatorMesh::_AssignColorSetPrimvarToMesh(
                 break;
         }
 
-        if (convertToDisplay) {
-            colorValue = GfConvertLinearToDisplay(colorValue);
+        if (isDisplayColor) {
+            colorValue = PxrUsdMayaColorSpace::ConvertLinearToMaya(colorValue);
         }
 
         MColor mColor(colorValue[0], colorValue[1], colorValue[2], colorValue[3]);

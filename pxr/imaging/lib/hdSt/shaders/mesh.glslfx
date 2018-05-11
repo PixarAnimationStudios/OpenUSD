@@ -50,7 +50,7 @@ out vec2 gsTessCoord;
 
 void main(void)
 {
-    ProcessPrimVars();
+    ProcessPrimvars();
 
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
@@ -131,7 +131,7 @@ void main(void)
         gl_TessLevelInner[1] = tessLevelInner[1];
     }
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 }
 
 --- --------------------------------------------------------------------------
@@ -178,7 +178,7 @@ void main(void)
     tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
     tesTessCoord = UV;
 
-    ProcessPrimVars(UV.x, UV.y, 10, 9, 6, 5);
+    ProcessPrimvars(UV.x, UV.y, 10, 9, 6, 5);
 }
 
 --- --------------------------------------------------------------------------
@@ -234,7 +234,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 
-    ProcessPrimVars(index);
+    ProcessPrimvars(index);
 
     EmitVertex();
 }
@@ -340,7 +340,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 
-    ProcessPrimVars(index);
+    ProcessPrimvars(index);
 
     EmitVertex();
 }
@@ -425,7 +425,7 @@ void emit(int triCounter, int index, vec4 Peye, vec3 Neye,
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 
-    ProcessPrimVars(index);
+    ProcessPrimvars(index);
 
     EmitVertex();
 }

@@ -122,7 +122,6 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/function.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
@@ -254,6 +253,5 @@
 #include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <Python.h>
-#include <datetime.h>
 #include <frameobject.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED

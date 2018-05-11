@@ -128,7 +128,7 @@ struct UsdGeomTokensType {
     const TfToken closed;
     /// \brief "collection"
     /// 
-    /// This is the namespace prefix used by  UsdGeomCollectionAPI for authoring collections.
+    /// This is the namespace prefix used by  the deprecated UsdGeomCollectionAPI for authoring collections. Use UsdTokens->collection instead, which is used by the new collection schema UsdCollectionAPI.
     const TfToken collection;
     /// \brief "constant"
     /// 
@@ -220,7 +220,7 @@ struct UsdGeomTokensType {
     const TfToken faceSet;
     /// \brief "faceVarying"
     /// 
-    /// Possible value for UsdGeomPrimVar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
+    /// Possible value for UsdGeomPrimvar::SetInterpolation. For polygons and subdivision surfaces, four values are interpolated over each face of the mesh. Bilinear interpolation  is used for interpolation between the four values.
     const TfToken faceVarying;
     /// \brief "faceVaryingLinearInterpolation"
     /// 

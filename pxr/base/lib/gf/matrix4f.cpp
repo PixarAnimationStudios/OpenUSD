@@ -36,6 +36,7 @@
 
 #include "pxr/base/gf/homogeneous.h"
 #include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/rotation.h"
 #include <float.h>
 #include <iostream>
@@ -717,28 +718,53 @@ GfMatrix4f::SetScale(float s)
     return *this;
 }
 
-GfMatrix4f &
-GfMatrix4f::SetRotate(const GfRotation &rot)
+void
+GfMatrix4f::_SetRotateFromQuat(float r, const GfVec3f& i)
 {
-    GfQuaternion quat = rot.GetQuaternion();
-
-    double  r = quat.GetReal();
-    GfVec3d i = quat.GetImaginary();
-
-
     _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
     _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
     _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
-    _mtx[0][3] = 0.0;
 
     _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
     _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
     _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
-    _mtx[1][3] = 0.0;
 
     _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
     _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
     _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotate(const GfQuatf &rot)
+{
+    SetRotateOnly(rot);
+
+    _mtx[0][3] = 0.0;
+    _mtx[1][3] = 0.0;
+    _mtx[2][3] = 0.0;
+
+    _mtx[3][0] = 0.0;
+    _mtx[3][1] = 0.0;
+    _mtx[3][2] = 0.0;
+    _mtx[3][3] = 1.0;
+
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotateOnly(const GfQuatf &rot)
+{
+    _SetRotateFromQuat(rot.GetReal(), rot.GetImaginary());
+    return *this;
+}
+
+GfMatrix4f &
+GfMatrix4f::SetRotate(const GfRotation &rot)
+{
+    SetRotateOnly(rot);
+
+    _mtx[0][3] = 0.0;
+    _mtx[1][3] = 0.0;
     _mtx[2][3] = 0.0;
 
     _mtx[3][0] = 0.0;
@@ -753,23 +779,7 @@ GfMatrix4f &
 GfMatrix4f::SetRotateOnly(const GfRotation &rot)
 {
     GfQuaternion quat = rot.GetQuaternion();
-
-    double  r = quat.GetReal();
-    GfVec3d i = quat.GetImaginary();
-
-
-    _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
-    _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
-    _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
-
-    _mtx[1][0] =       2.0 * (i[0] * i[1] - i[2] *    r);
-    _mtx[1][1] = 1.0 - 2.0 * (i[2] * i[2] + i[0] * i[0]);
-    _mtx[1][2] =       2.0 * (i[1] * i[2] + i[0] *    r);
-
-    _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
-    _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
-    _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
-
+    _SetRotateFromQuat(quat.GetReal(), GfVec3f(quat.GetImaginary()));
     return *this;
 }
 
@@ -1145,5 +1155,19 @@ GfMatrix4f::ExtractRotationMatrix() const
 	_mtx[2][1],
 	_mtx[2][2]);
 }
+
+
+bool
+GfIsClose(GfMatrix4f const &m1, GfMatrix4f const &m2, double tolerance)
+{
+    for(size_t row = 0; row < 4; ++row) {
+        for(size_t col = 0; col < 4; ++col) {
+            if(!GfIsClose(m1[row][col], m2[row][col], tolerance))
+                return false;
+        }
+    }
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

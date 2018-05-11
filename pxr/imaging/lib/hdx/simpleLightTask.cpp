@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdx/simpleLightingShader.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -58,7 +58,6 @@ HdxSimpleLightTask::HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const&
     , _lightExcludePaths()
     , _numLights(0)
     , _lightingShader(new HdxSimpleLightingShader())
-    , _collectionVersion(0)
     , _enableShadows(false)
     , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
     , _material()
@@ -115,19 +114,10 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     _TaskDirtyState dirtyState;
     _GetTaskDirtyState(HdTokens->geometry, &dirtyState);
 
-    // Check if the collection version has changed, if so, it means
-    // that we should extract the lights again from the render index.
-    const bool collectionChanged = 
-        (_collectionVersion != dirtyState.collectionVersion);
-
     HdSceneDelegate* delegate = GetDelegate();
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
-    if ((dirtyState.bits & HdChangeTracker::DirtyParams) ||
-        collectionChanged) {
-
-        _collectionVersion = dirtyState.collectionVersion;
-
+    if (dirtyState.bits & HdChangeTracker::DirtyParams) {
         HdxSimpleLightTaskParams params;
         if (!_GetSceneDelegateValue(HdTokens->params, &params)) {
             return;
@@ -144,7 +134,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
         _sceneAmbient = params.sceneAmbient;
     }
 
-    const HdStCamera *camera = static_cast<const HdStCamera *>(
+    const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex.GetSprim(HdPrimTypeTokens->camera, _cameraId));
     if (!TF_VERIFY(camera)) {
         return;
@@ -175,7 +165,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
     // Extract the camera window policy to adjust the frustum correctly for
     // lights that have shadows.
     CameraUtilConformWindowPolicy windowPolicy = CameraUtilFit;
-    const VtValue vtWindowPolicy = camera->Get(HdStCameraTokens->windowPolicy);
+    const VtValue vtWindowPolicy = camera->Get(HdCameraTokens->windowPolicy);
     const bool cameraHasWindowPolicy =
         vtWindowPolicy.IsHolding<CameraUtilConformWindowPolicy>();
     if (cameraHasWindowPolicy) {
@@ -232,19 +222,18 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
             glfl.SetID(light->GetID());
 
             // If the light is in camera space we need to transform
-            // the position and spot direction to the right space.
+            // the position and spot direction to world space for
+            // HdxSimpleLightingShader.
             if (glfl.IsCameraSpaceLight()) {
-                VtValue vtXform = light->Get(HdLightTokens->transform);
-                const GfMatrix4d &lightXform =
-                    vtXform.IsHolding<GfMatrix4d>() ? vtXform.Get<GfMatrix4d>()
-                                                    : GfMatrix4d(1);
-
-                GfVec4f lightPos(lightXform.GetRow(2));
-                lightPos[3] = 0.0f;
-                GfVec3d lightDir(-lightPos[2]);
+                GfVec4f lightPos = glfl.GetPosition();
                 glfl.SetPosition(lightPos * invCamXform);
-                    glfl.SetSpotDirection(
-                        GfVec3f(invCamXform.TransformDir(lightDir)));
+                GfVec3f lightDir = glfl.GetSpotDirection();
+                glfl.SetSpotDirection(invCamXform.TransformDir(lightDir));
+
+                // Since the light position has been transformed to world space,
+                // record that it's no longer a camera-space light for any
+                // downstream consumers of the lighting context.
+                glfl.SetIsCameraSpaceLight(false);
             }
 
             VtValue vLightShadowParams = 

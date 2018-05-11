@@ -68,6 +68,12 @@ public:
     virtual bool ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
                                              UsdTimeCode time) const = 0;
 
+    virtual bool ComputeJointLocalTransformComponents(
+                     VtVec3fArray* translations,
+                     VtQuatfArray* rotations,
+                     VtVec3hArray* scales,
+                     UsdTimeCode time) const = 0;
+
     virtual bool
     GetJointTransformTimeSamples(const GfInterval& interval,
                                  std::vector<double>* times) const = 0;

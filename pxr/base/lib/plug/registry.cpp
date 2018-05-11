@@ -60,7 +60,6 @@ PlugRegistry::GetInstance()
 }
 
 PlugRegistry::PlugRegistry()
-    : _dispatcher(new Plug_TaskArena)
 {
     TfSingleton< This >::SetInstanceConstructed(*this);
 }
@@ -130,6 +129,7 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo)
     typedef tbb::concurrent_vector<PlugPluginPtr> NewPluginsVec;
     NewPluginsVec newPlugins;
     {
+        Plug_TaskArena taskArena;
         // XXX -- Is this mutex really needed?
         std::lock_guard<std::mutex> lock(_mutex);
         Plug_ReadPlugInfo(pathsToPlugInfo,
@@ -139,7 +139,7 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo)
                           std::bind(
                               &PlugRegistry::_RegisterPlugin<NewPluginsVec>,
                               this, std::placeholders::_1, &newPlugins),
-                          _dispatcher.get());
+                          &taskArena);
     }
 
     if (!newPlugins.empty()) {

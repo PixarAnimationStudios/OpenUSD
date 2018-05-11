@@ -86,54 +86,54 @@ public:
 
     HdDrawingCoord() :
         // default slots:
-        _constantPrimVar(0),
-        _vertexPrimVar(1),
+        _constantPrimvar(0),
+        _vertexPrimvar(1),
         _topology(2),
-        _elementPrimVar(3),
+        _elementPrimvar(3),
         _instanceIndex(4),
-        _faceVaryingPrimVar(5),
-        _instancePrimVarNumLevels(0),
-        _instancePrimVar(Unassigned) {
+        _faceVaryingPrimvar(5),
+        _instancePrimvarNumLevels(0),
+        _instancePrimvar(Unassigned) {
     }
 
-    int GetConstantPrimVarIndex() const    { return _constantPrimVar; }
-    void SetConstantPrimVarIndex(int slot) { _constantPrimVar = slot; }
-    int GetVertexPrimVarIndex() const      { return _vertexPrimVar; }
-    void SetVertexPrimVarIndex(int slot)   { _vertexPrimVar = slot; }
+    int GetConstantPrimvarIndex() const    { return _constantPrimvar; }
+    void SetConstantPrimvarIndex(int slot) { _constantPrimvar = slot; }
+    int GetVertexPrimvarIndex() const      { return _vertexPrimvar; }
+    void SetVertexPrimvarIndex(int slot)   { _vertexPrimvar = slot; }
     int GetTopologyIndex() const           { return _topology; }
     void SetTopologyIndex(int slot)        { _topology = slot; }
-    int GetElementPrimVarIndex() const     { return _elementPrimVar; }
-    void SetElementPrimVarIndex(int slot)  { _elementPrimVar = slot; }
+    int GetElementPrimvarIndex() const     { return _elementPrimvar; }
+    void SetElementPrimvarIndex(int slot)  { _elementPrimvar = slot; }
     int GetInstanceIndexIndex() const      { return _instanceIndex; }
     void SetInstanceIndexIndex(int slot)   { _instanceIndex = slot; }
-    int GetFaceVaryingPrimVarIndex() const    { return _faceVaryingPrimVar; }
-    void SetFaceVaryingPrimVarIndex(int slot) { _faceVaryingPrimVar = slot; }
+    int GetFaceVaryingPrimvarIndex() const    { return _faceVaryingPrimvar; }
+    void SetFaceVaryingPrimvarIndex(int slot) { _faceVaryingPrimvar = slot; }
 
     // instance primvars
-    int GetInstancePrimVarIndex(int level) const {
-        return _instancePrimVar + level;
+    int GetInstancePrimvarIndex(int level) const {
+        return _instancePrimvar + level;
     }
-    void SetInstancePrimVarIndex(int level, int slot) {
-        if (_instancePrimVar == Unassigned) {
-            _instancePrimVar = slot - level;
+    void SetInstancePrimvarIndex(int level, int slot) {
+        if (_instancePrimvar == Unassigned) {
+            _instancePrimvar = slot - level;
         } else {
-            TF_VERIFY(_instancePrimVar == (slot - level));
+            TF_VERIFY(_instancePrimvar == (slot - level));
         }
         // update num levels
-        _instancePrimVarNumLevels
-            = std::max(int8_t(level+1), _instancePrimVarNumLevels);
+        _instancePrimvarNumLevels
+            = std::max(int8_t(level+1), _instancePrimvarNumLevels);
     }
-    int GetInstancePrimVarNumLevels() const { return _instancePrimVarNumLevels; }
+    int GetInstancePrimvarNumLevels() const { return _instancePrimvarNumLevels; }
 
 private:
-    int8_t _constantPrimVar;
-    int8_t _vertexPrimVar;
+    int8_t _constantPrimvar;
+    int8_t _vertexPrimvar;
     int8_t _topology;
-    int8_t _elementPrimVar;
+    int8_t _elementPrimvar;
     int8_t _instanceIndex;
-    int8_t _faceVaryingPrimVar;
-    int8_t _instancePrimVarNumLevels;
-    int8_t _instancePrimVar;
+    int8_t _faceVaryingPrimvar;
+    int8_t _instancePrimvarNumLevels;
+    int8_t _instancePrimvar;
 };
 
 

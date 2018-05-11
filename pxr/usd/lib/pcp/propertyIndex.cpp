@@ -40,7 +40,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -152,7 +152,8 @@ private:
     SdfPropertySpecHandle _GetPrimProperty(
         const SdfLayerRefPtr &layer,
         const SdfPath &owningPrimPath,
-        const TfToken &name)
+        const TfToken &name,
+        bool usd)
     {
         if (!layer->HasSpec(SdfAbstractDataSpecId(&owningPrimPath)))
             return TfNullPtr;
@@ -191,7 +192,9 @@ private:
         }
 
         // For an attribute, check that its type and variability are consistent.
-        if (propType == SdfSpecTypeAttribute &&
+        // We don't care about these mismatches in USD mode.
+        if (!usd && 
+            propType == SdfSpecTypeAttribute &&
             !_IsConsistentAttribute(propSpec)) {
             return TfNullPtr;
         }
@@ -357,7 +360,7 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
 
             const Pcp_SdSiteRef primSite = i.base()._GetSiteRef();
             if (SdfPropertySpecHandle propSpec = 
-                _GetPrimProperty(primSite.layer, primSite.path, name)) {
+                _GetPrimProperty(primSite.layer, primSite.path, name, usd)) {
                 _AddPropertySpecIfPermitted(
                     propSpec, curNode, &permissions, &propertyInfo);
             }
@@ -375,7 +378,7 @@ Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
             const SdfPath& nodePath = curNode.GetPath();
             TF_REVERSE_FOR_ALL(j, nodeLayerStack->GetLayers()) {
                 if (SdfPropertySpecHandle propSpec = 
-                    _GetPrimProperty(*j, nodePath, name)) {
+                    _GetPrimProperty(*j, nodePath, name, usd)) {
                     propertyInfo.push_back(
                         Pcp_PropertyInfo(propSpec, curNode));
                 }

@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 
+#include "usdMaya/colorSpace.h"
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeRegistry.h"
@@ -108,9 +109,9 @@ private:
         const UsdStageRefPtr& stage = context.GetUsdStage();
         const MColor mayaColor = lambertFn.color();
         const MColor mayaTransparency = lambertFn.transparency();
-        const GfVec3f color = GfConvertDisplayToLinear(
+        const GfVec3f color = PxrUsdMayaColorSpace::ConvertMayaToLinear(
             GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
-        const GfVec3f transparency = GfConvertDisplayToLinear(
+        const GfVec3f transparency = PxrUsdMayaColorSpace::ConvertMayaToLinear(
             GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
 
         VtArray<GfVec3f> displayColorAry;
@@ -226,21 +227,9 @@ private:
                 return;
             }
 
-            UsdShadeOutput materialSurfaceOutput =
-                material.CreateOutput(UsdShadeTokens->surface,
-                                      shaderDefaultOutput.GetTypeName());
-            if (!materialSurfaceOutput) {
-                return;
-            }
-
-            materialSurfaceOutput.ConnectToSource(shaderDefaultOutput);
-
-            // XXX: For backwards compatibility, we continue to author the
-            // UsdRi Bxdf source until consumers (e.g. PxrUsdIn) are updated to
-            // look at the outputs:surface terminal.
-            UsdRiMaterialAPI(materialPrim).SetBxdfSource(
-                shaderDefaultOutput.GetAttr().GetPath());
-
+            UsdRiMaterialAPI riMaterialAPI(materialPrim);
+            riMaterialAPI.SetSurfaceSource(
+                    shaderDefaultOutput.GetAttr().GetPath());
         }
     }
 };
@@ -311,8 +300,8 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
         gotDisplayColorAndOpacity = true;
     }
 
-    GfVec3f displayColor = GfConvertLinearToDisplay(linearDisplayColor);
-    GfVec3f transparencyColor = GfConvertLinearToDisplay(linearTransparency);
+    GfVec3f displayColor = PxrUsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
+    GfVec3f transparencyColor = PxrUsdMayaColorSpace::ConvertLinearToMaya(linearTransparency);
     if (gotDisplayColorAndOpacity) {
 
         std::string shaderName(_tokens->MayaShaderName.GetText());

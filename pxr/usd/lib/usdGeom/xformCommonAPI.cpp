@@ -25,7 +25,7 @@
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 #include "pxr/base/gf/rotation.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/assign/list_of.hpp>
 #include <map>
@@ -99,14 +99,11 @@ UsdGeomXformCommonAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* virtual */
 bool 
-UsdGeomXformCommonAPI::_IsCompatible(const UsdPrim &prim) const
-{
-    return _IsCompatible();
-}
-
-bool
 UsdGeomXformCommonAPI::_IsCompatible() const
 {
+    if (!UsdSchemaBase::_IsCompatible())
+        return false;
+
     if (!_xformable)
         return false;
 

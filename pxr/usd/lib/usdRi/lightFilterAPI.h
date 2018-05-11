@@ -73,6 +73,12 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents an 
+    /// applied API schema, i.e. an API schema that has to be applied to a prim
+    /// with a call to auto-generated Apply() method before any schema 
+    /// properties are authored.
+    static const bool IsApplied = true;
+    
     /// Compile-time constant indicating whether or not this class represents a 
     /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
     /// to the same prim multiple times with different instance names. 
@@ -147,6 +153,11 @@ private:
     // override SchemaBase virtuals.
     USDRI_API
     virtual const TfType &_GetTfType() const;
+
+    // This override returns true since UsdRiLightFilterAPI is an 
+    // applied API schema.
+    USDRI_API
+    virtual bool _IsAppliedAPISchema() const override;
 
 public:
     // --------------------------------------------------------------------- //

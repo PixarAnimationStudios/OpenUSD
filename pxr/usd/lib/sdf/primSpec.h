@@ -50,7 +50,12 @@ template <class TypePolicy> class Sdf_ListEditor;
 /// Represents a prim description in an SdfLayer object.
 ///
 /// Every SdfPrimSpec object is defined in a layer.  It is identified by its
-/// path (SdfPath class) in the namespace hierarchy of its layer.
+/// path (SdfPath class) in the namespace hierarchy of its layer.  SdfPrimSpecs
+/// can be created using the New() method as children of either the containing
+/// SdfLayer itself (for "root level" prims), or as children of other 
+/// SdfPrimSpec objects to extend a hierarchy.  The helper function 
+/// SdfCreatePrimInLayer() can be used to quickly create a hierarchy of
+/// primSpecs.
 ///
 /// SdfPrimSpec objects have properties of two general types: attributes
 /// (containing values) and relationships (different types of connections to
@@ -63,8 +68,6 @@ template <class TypePolicy> class Sdf_ListEditor;
 /// reference and inherit prim paths.  Permission restrictions control which
 /// other layers may refer to, or express opinions about a prim. See the
 /// SdfPermission class for more information.
-///
-/// Compared with Menv2x, prims are most closely analogous to hooks and cues.
 ///
 /// \todo
 /// \li Insert doc about references and inherits here.
@@ -98,6 +101,9 @@ public:
     ///
     /// Creates a prim spec with a \p name, \p specifier and \p typeName as
     /// a namespace child of the given prim.
+    ///
+    /// \sa SdfCreatePrimInLayer() to create a PrimSpec with all required
+    /// ancestor specs as SdfSpecifierOver.
     SDF_API
     static SdfPrimSpecHandle
     New(const SdfPrimSpecHandle& parentPrim,

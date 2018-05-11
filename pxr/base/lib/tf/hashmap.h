@@ -419,7 +419,7 @@ public:
     using _Base::find;
     using _Base::get_allocator;
     using _Base::hash_function;
-    iterator insert(const value_type& v) {
+    std::pair<iterator, bool> insert(const value_type& v) {
         return _Base::insert(v);
     }
     iterator insert(const_iterator hint, const value_type& v) {

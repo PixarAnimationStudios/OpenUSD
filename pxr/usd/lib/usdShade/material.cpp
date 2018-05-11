@@ -97,13 +97,82 @@ UsdShadeMaterial::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdShadeMaterial::GetSurfaceAttr() const
+{
+    return GetPrim().GetAttribute(UsdShadeTokens->outputsSurface);
+}
+
+UsdAttribute
+UsdShadeMaterial::CreateSurfaceAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsSurface,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdShadeMaterial::GetDisplacementAttr() const
+{
+    return GetPrim().GetAttribute(UsdShadeTokens->outputsDisplacement);
+}
+
+UsdAttribute
+UsdShadeMaterial::CreateDisplacementAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsDisplacement,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdShadeMaterial::GetVolumeAttr() const
+{
+    return GetPrim().GetAttribute(UsdShadeTokens->outputsVolume);
+}
+
+UsdAttribute
+UsdShadeMaterial::CreateVolumeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdShadeTokens->outputsVolume,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdShadeMaterial::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdShadeTokens->outputsSurface,
+        UsdShadeTokens->outputsDisplacement,
+        UsdShadeTokens->outputsVolume,
+    };
     static TfTokenVector allNames =
-        UsdShadeNodeGraph::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdShadeNodeGraph::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;
@@ -474,6 +543,146 @@ UsdShadeMaterial::HasBaseMaterial() const
 {
     return !GetBaseMaterialPath().IsEmpty();
 }
+
+// --------------------------------------------------------------------- //
+static 
+TfToken 
+_GetOutputName(const TfToken &baseName, const TfToken &renderContext)
+{
+    return TfToken(SdfPath::JoinIdentifier(renderContext, baseName));
+}
+
+bool
+UsdShadeMaterial::_ComputeNamedOutputSource(
+    const TfToken &baseName, 
+    const TfToken &renderContext,
+    UsdShadeConnectableAPI *source,
+    TfToken *sourceName,
+    UsdShadeAttributeType *sourceType) const
+{
+    const TfToken outputName = _GetOutputName(baseName, renderContext);
+    UsdShadeOutput output = GetOutput(outputName);
+    if (output) {
+        if (renderContext == UsdShadeTokens->universalRenderContext && 
+            !output.GetAttr().IsAuthored()) {
+            return false;
+        } else if (output.GetConnectedSource(source, sourceName, sourceType)) {
+            return true;
+        }
+    }
+
+    if (renderContext != UsdShadeTokens->universalRenderContext) {
+        const TfToken universalOutputName = _GetOutputName(
+                baseName, UsdShadeTokens->universalRenderContext);
+        UsdShadeOutput universalOutput = GetOutput(universalOutputName);
+        if (TF_VERIFY(universalOutput)) {
+            if (renderContext == UsdShadeTokens->universalRenderContext && 
+                !universalOutput.GetAttr().IsAuthored()) {
+                return false;
+            } else if (universalOutput.GetConnectedSource(source, sourceName, 
+                    sourceType)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+UsdShadeShader 
+UsdShadeMaterial::_ComputeNamedOutputShader(
+    const TfToken &baseName,
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    UsdShadeConnectableAPI source;
+    TfToken srcName; 
+    UsdShadeAttributeType srcType;
+    if (_ComputeNamedOutputSource(baseName, renderContext, 
+                                  &source, &srcName, &srcType)) {
+        if (source.IsNodeGraph()) {
+            source = UsdShadeNodeGraph(source.GetPrim()).ComputeOutputSource(
+                srcName, &srcName, &srcType);
+        }
+        if (sourceName)
+            *sourceName = srcName;
+        if (sourceType)
+            *sourceType = srcType;
+    }
+    return source;
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::CreateSurfaceOutput(const TfToken &renderContext) const
+{
+    return CreateOutput(_GetOutputName(UsdShadeTokens->surface, renderContext),
+                        SdfValueTypeNames->Token);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::GetSurfaceOutput(const TfToken &renderContext) const
+{
+    return GetOutput(_GetOutputName(UsdShadeTokens->surface, renderContext));
+}
+
+UsdShadeShader 
+UsdShadeMaterial::ComputeSurfaceSource(
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    return _ComputeNamedOutputShader(UsdShadeTokens->surface, 
+            renderContext, sourceName, sourceType);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::CreateDisplacementOutput(const TfToken &renderContext) const
+{
+    return CreateOutput(_GetOutputName(UsdShadeTokens->displacement, renderContext),
+                        SdfValueTypeNames->Token);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::GetDisplacementOutput(const TfToken &renderContext) const
+{
+    return GetOutput(_GetOutputName(UsdShadeTokens->displacement, renderContext));
+}
+
+UsdShadeShader 
+UsdShadeMaterial::ComputeDisplacementSource(
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    return _ComputeNamedOutputShader(UsdShadeTokens->displacement, 
+            renderContext, sourceName, sourceType);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::CreateVolumeOutput(const TfToken &renderContext) const
+{
+    return CreateOutput(_GetOutputName(UsdShadeTokens->volume, renderContext),
+                        SdfValueTypeNames->Token);
+}
+
+UsdShadeOutput 
+UsdShadeMaterial::GetVolumeOutput(const TfToken &renderContext) const
+{
+    return GetOutput(_GetOutputName(UsdShadeTokens->volume, renderContext));
+}
+
+UsdShadeShader 
+UsdShadeMaterial::ComputeVolumeSource(
+    const TfToken &renderContext,
+    TfToken *sourceName, 
+    UsdShadeAttributeType *sourceType) const
+{
+    return _ComputeNamedOutputShader(UsdShadeTokens->volume, renderContext, 
+            sourceName, sourceType);
+}
+
+// --------------------------------------------------------------------- //
 
 /* static */
 UsdGeomSubset 

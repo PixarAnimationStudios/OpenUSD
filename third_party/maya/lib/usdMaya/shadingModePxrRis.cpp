@@ -273,20 +273,8 @@ private:
             return;
         }
 
-        UsdShadeOutput materialSurfaceOutput =
-            material.CreateOutput(UsdShadeTokens->surface,
-                                  shaderDefaultOutput.GetTypeName());
-        if (!materialSurfaceOutput) {
-            return;
-        }
-
-        materialSurfaceOutput.ConnectToSource(shaderDefaultOutput);
-
-        // XXX: For backwards compatibility, we continue to author the UsdRi
-        // Bxdf source until consumers (e.g. PxrUsdIn) are updated to look at
-        // the outputs:surface terminal.
-        UsdRiMaterialAPI(materialPrim).SetBxdfSource(
-            shaderDefaultOutput.GetAttr().GetPath());
+        UsdRiMaterialAPI riMaterialAPI(materialPrim);
+        riMaterialAPI.SetSurfaceSource(shaderDefaultOutput.GetAttr().GetPath());
     }
 };
 }
@@ -449,27 +437,13 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
     // How do we ensure that it is?
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
 
-    UsdShadeShader surfaceShader;
-
     // First try the "surface" output of the material.
-    UsdShadeOutput surfaceShaderOuptut =
-        shadeMaterial.GetOutput(UsdShadeTokens->surface);
-    if (surfaceShaderOuptut) {
-        UsdShadeConnectableAPI source;
-        TfToken sourceOutputName;
-        UsdShadeAttributeType sourceType;
+    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(
+        UsdShadeTokens->surface);
 
-        if (UsdShadeConnectableAPI::GetConnectedSource(surfaceShaderOuptut,
-                                                       &source,
-                                                       &sourceOutputName,
-                                                       &sourceType)) {
-            surfaceShader = source;
-        }
-    }
-
-    // Otherwise fall back to trying the Bxdf of the UsdRi schema.
+    // Otherwise fall back to trying the "surface" output  of the UsdRi schema.
     if (!surfaceShader) {
-        surfaceShader = UsdRiMaterialAPI(shadeMaterial).GetBxdf();
+        surfaceShader = UsdRiMaterialAPI(shadeMaterial).GetSurface();
         if (!surfaceShader) {
             return MPlug();
         }

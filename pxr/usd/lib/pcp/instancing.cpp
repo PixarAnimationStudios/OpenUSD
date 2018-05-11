@@ -25,7 +25,7 @@
 #include "pxr/usd/pcp/instancing.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

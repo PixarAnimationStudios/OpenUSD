@@ -53,6 +53,8 @@
 
 #include <FnAttributeFunction/plugin/FnAttributeFunctionPlugin.h>
 
+#include <FnAPI/FnAPI.h>
+
 FnLogSetup("PxrUsdIn")
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -271,24 +273,6 @@ public:
                         .del("masterMapping")
                         .build();
                 }
-            }
-
-            //
-            // Pass along the prim's velocityScale; if it isn't authored, let the
-            // inherited value flow through.
-            //
-
-            float velocityScale = FnKat::FloatAttribute(
-                opArgs.getChildByName("velocityScale")).getValue(1.0f, false);
-            auto motionAPI = UsdGeomMotionAPI(prim);
-            UsdAttribute velocityScaleAttr = motionAPI.GetVelocityScaleAttr();
-            if (velocityScaleAttr and velocityScaleAttr.HasAuthoredValueOpinion() and
-                velocityScaleAttr.Get(&velocityScale, privateData->GetCurrentTime()))
-            {
-                opArgs = FnKat::GroupBuilder()
-                    .update(opArgs)
-                    .set("velocityScale", FnKat::FloatAttribute(velocityScale))
-                    .build();
             }
 
             //
@@ -520,6 +504,14 @@ public:
             {
                 FnGeolibServices::StaticSceneCreateOpArgsBuilder sscb(false);
                 
+                struct usdPrimInfo
+                {
+                    std::vector<std::string> usdPrimPathValues;
+                    std::vector<std::string> usdPrimNameValues;
+                };
+                
+                std::map<std::string, usdPrimInfo> primInfoPerLocation;
+                
                 for (size_t i = 0, e = masterMapping.getNumberOfChildren();
                         i != e; ++i)
                 {
@@ -542,10 +534,21 @@ public:
                     std::string locationParent =
                             FnGeolibUtil::Path::GetLocationParent(katanaPath);
                     
+                    auto & entry = primInfoPerLocation[locationParent];
+                    
+                    entry.usdPrimPathValues.push_back(masterName);
+                    entry.usdPrimNameValues.push_back(leafName);
+                }
+                
+                for (const auto & I : primInfoPerLocation)
+                {
+                    const auto & locationParent = I.first;
+                    const auto & entry = I.second;
+                    
                     sscb.setAttrAtLocation(locationParent, "usdPrimPath",
-                            FnKat::StringAttribute(masterName));
+                            FnKat::StringAttribute(entry.usdPrimPathValues));
                     sscb.setAttrAtLocation(locationParent, "usdPrimName",
-                            FnKat::StringAttribute(leafName));
+                            FnKat::StringAttribute(entry.usdPrimNameValues));
                 }
                 
                 FnKat::GroupAttribute childAttrs =
@@ -1078,6 +1081,55 @@ public:
         PxrUsdKatanaUsdInPrivateData* privateData =
             static_cast<PxrUsdKatanaUsdInPrivateData*>(
                 interface.getPrivateData());
+        
+// If we are exec'ed from katana 2.x from an op which doesn't have
+// PxrUsdKatanaUsdInPrivateData, we need to build some. We normally avoid
+// this case by using the execDirect -- but some ops need to call
+// PxrUsdInBuildIntermediateOp via execOp. In 3.x, they can (and are
+// required to) provide the private data.
+#if KATANA_VERSION_MAJOR < 3
+        
+        // We may be constructing the private data locally -- in which case
+        // it will not be destroyed by the Geolib runtime.
+        // This won't be used directly but rather just filled if the private
+        // needs to be locally built.
+        std::unique_ptr<PxrUsdKatanaUsdInPrivateData> localPrivateData;
+        
+        
+        if (!privateData)
+        {
+            
+            FnKat::GroupAttribute additionalOpArgs;
+            auto usdInArgs = PxrUsdInOp::InitUsdInArgs(
+                    interface.getOpArg(), additionalOpArgs,
+                            interface.getRootLocationPath());
+            auto opArgs = FnKat::GroupBuilder()
+                .update(interface.getOpArg())
+                .deepUpdate(additionalOpArgs)
+                .build();
+            
+            // Construct local private data if none was provided by the parent.
+            // This is a legitmate case for the root of the scene -- most
+            // relevant with the isolatePath pointing at a deeper scope which
+            // may have meaningful type/kind ops.
+            
+            if (usdInArgs->GetStage())
+            {
+                localPrivateData.reset(new PxrUsdKatanaUsdInPrivateData(
+                                   usdInArgs->GetRootPrim(),
+                                   usdInArgs, privateData));
+                privateData = localPrivateData.get();
+            }
+            else
+            {
+                //TODO, warning
+                return;
+            }
+            
+        }
+        
+#endif 
+        
         PxrUsdKatanaUsdInArgsRefPtr usdInArgs = privateData->GetUsdInArgs();
 
         FnKat::GroupAttribute staticScene =
@@ -1090,6 +1142,9 @@ public:
         FnKat::StringAttribute primNameAttr =
                 attrsGroup.getChildByName("usdPrimName");
 
+        
+        std::set<std::string> createdChildren;
+        
         // If prim attrs are present, use them to build out the usd prim.
         // Otherwise, build out a katana group.
         //
@@ -1101,9 +1156,19 @@ public:
                 .del("usdPrimName")
                 .build();
 
-            std::string primPath = primPathAttr.getValue("", false);
-            if (!primPath.empty())
+            
+            auto usdPrimPathValues = primPathAttr.getNearestSample(0);
+            
+            
+            
+            for (size_t i = 0; i < usdPrimPathValues.size(); ++i)
             {
+                std::string primPath(usdPrimPathValues[i]);
+                if (usdPrimPathValues.empty())
+                {
+                    continue;
+                }
+                
                 // Get the usd prim at the given source path.
                 //
                 UsdPrim prim = usdInArgs->GetStage()->GetPrimAtPath(
@@ -1113,9 +1178,11 @@ public:
                 // ask the prim directly.
                 //
                 std::string nameToUse = prim.GetName();
-                if (primNameAttr.isValid())
+                if (primNameAttr.getNumberOfValues() > static_cast<int64_t>(i))
                 {
-                    std::string primName = primNameAttr.getValue("", false);
+                    auto primNameAttrValues = primNameAttr.getNearestSample(0);
+                    
+                    std::string primName = primNameAttrValues[i];
                     if (!primName.empty())
                     {
                         nameToUse = primName;
@@ -1133,6 +1200,14 @@ public:
                         interface.getOutputLocationPath() + "/" + nameToUse;
                 ab.isolatePath = primPath;
 
+                // If the child we are making has intermediate children,
+                // send those along so they have the option of executing
+                // us again. This currently happens only with the children
+                // of Looks groups.
+                FnKat::GroupAttribute childrenGroup =
+                        staticScene.getChildByName("c." + nameToUse);
+
+                createdChildren.insert(nameToUse);
                 // Build the prim using PxrUsdIn.
                 //
                 interface.createChild(
@@ -1141,6 +1216,7 @@ public:
                         FnKat::GroupBuilder()
                             .update(interface.getOpArg())
                             .set("childOfIntermediate", FnKat::IntAttribute(1))
+                            .set("staticScene", childrenGroup)
                             .build(),
                         FnKat::GeolibCookInterface::ResetRootFalse,
                         new PxrUsdKatanaUsdInPrivateData(prim, ab.build(),
@@ -1148,37 +1224,43 @@ public:
                         PxrUsdKatanaUsdInPrivateData::Delete);
             }
         }
-        else
+        
+        FnKat::GroupAttribute childrenGroup =
+            staticScene.getChildByName("c");
+        for (size_t i = 0, e = childrenGroup.getNumberOfChildren(); i != e;
+                 ++i)
         {
-            FnKat::GroupAttribute childrenGroup =
-                staticScene.getChildByName("c");
-            for (size_t i = 0, e = childrenGroup.getNumberOfChildren(); i != e;
-                     ++i)
+            FnKat::GroupAttribute childGroup =
+                    childrenGroup.getChildByIndex(i);
+
+            if (!childGroup.isValid())
             {
-                FnKat::GroupAttribute childGroup =
-                        childrenGroup.getChildByIndex(i);
-
-                if (!childGroup.isValid())
-                {
-                    continue;
-                }
-
-                // Build the intermediate group using the same op.
-                //
-                interface.createChild(
-                        childrenGroup.getChildName(i),
-                        "",
-                        FnKat::GroupBuilder()
-                            .update(interface.getOpArg())
-                            .set("staticScene", childGroup)
-                            .build(),
-                        FnKat::GeolibCookInterface::ResetRootFalse,
-                        new PxrUsdKatanaUsdInPrivateData(
-                                usdInArgs->GetRootPrim(), usdInArgs,
-                                privateData),
-                        PxrUsdKatanaUsdInPrivateData::Delete);
+                continue;
             }
+
+            std::string childName = childrenGroup.getChildName(i);
+            
+            if (createdChildren.find(childName) != createdChildren.end())
+            {
+                continue;
+            }
+            
+            // Build the intermediate group using the same op.
+            //
+            interface.createChild(
+                    childrenGroup.getChildName(i),
+                    "",
+                    FnKat::GroupBuilder()
+                        .update(interface.getOpArg())
+                        .set("staticScene", childGroup)
+                        .build(),
+                    FnKat::GeolibCookInterface::ResetRootFalse,
+                    new PxrUsdKatanaUsdInPrivateData(
+                            usdInArgs->GetRootPrim(), usdInArgs,
+                            privateData),
+                    PxrUsdKatanaUsdInPrivateData::Delete);
         }
+        
 
         // Apply local attrs.
         //

@@ -501,6 +501,72 @@ def MfScope "Frame_tests"
     custom frame4d[] m2 = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )]
 }
 
+def MfScope "texCoord2d_tests"
+{
+    custom texCoord2d blocked = None
+    custom texCoord2d t0 = (0, 1)
+    custom texCoord2d t1 = (-3.12345678910111, 3.12345678910111)
+    custom texCoord2d[] t3 = [(-0.707, 0.707), (1.23, 3.45)]
+    custom texCoord2d[] t4 = [(-0.707, 0.707), (1.23, 3.45), (0.707, -0.707), (-1.23, 3.45)]
+    custom texCoord2d[] t5 = []
+    custom texCoord2d t6 = (inf, -inf)
+}
+
+def MfScope "texCoord2f_tests"
+{
+    custom texCoord2f blocked = None
+    custom texCoord2f t0 = (1, 2)
+    custom texCoord2f t1 = (-4.12345, 4.12345)
+    custom texCoord2f[] t3 = [(-1.707, 1.707), (2.23, 4.45)]
+    custom texCoord2f[] t4 = [(-1.707, 1.707), (2.23, 4.45), (1.707, -1.707), (-2.23, 4.45)]
+    custom texCoord2f[] t5 = []
+    custom texCoord2f t6 = (inf, -inf)
+}
+
+def MfScope "texCoord2h_tests"
+{
+    custom texCoord2h blocked = None
+    custom texCoord2h t0 = (1, 2)
+    custom texCoord2h t1 = (-4.12345, 4.12345)
+    custom texCoord2h[] t3 = [(-1.707, 1.707), (2.23, 4.45)]
+    custom texCoord2h[] t4 = [(-1.707, 1.707), (2.23, 4.45), (1.707, -1.707), (-2.23, 4.45)]
+    custom texCoord2h[] t5 = []
+    custom texCoord2h t6 = (inf, -inf)
+}
+
+def MfScope "texCoord3d_tests"
+{
+    custom texCoord3d blocked = None
+    custom texCoord3d t0 = (0, 1, 2)
+    custom texCoord3d t1 = (-3.12345678910111, 0.707, 0.123)
+    custom texCoord3d[] t3 = [(-0.707, 0.707, 9.303), (1.23, 3.45, 9.303)]
+    custom texCoord3d[] t4 = [(-0.707, 0.707, 9.303), (1.23, 3.45, 9.303), (0.707, -0.707, 9.303), (-1.23, 3.45, 9.303)]
+    custom texCoord3d[] t5 = []
+    custom texCoord3d t6 = (inf, -inf, inf)
+}
+
+def MfScope "texCoord3f_tests"
+{
+    custom texCoord3f blocked = None
+    custom texCoord3f t0 = (1, 2, 3)
+    custom texCoord3f t1 = (-4.12345, 1.707, 2.123)
+    custom texCoord3f[] t3 = [(-1.707, 1.707, 10.303), (2.23, 4.45, 10.303)]
+    custom texCoord3f[] t4 = [(-1.707, 1.707, 10.303), (2.23, 4.45, 10.303), (1.707, -1.707, 10.303), (-2.23, 3.45, 10.303)]
+    custom texCoord3f[] t5 = []
+    custom texCoord3f t6 = (inf, -inf, inf)
+}
+
+def MfScope "texCoord3h_tests"
+{
+    custom texCoord3h blocked = None
+    custom texCoord3h t0 = (1, 2, 3)
+    custom texCoord3h t1 = (-4.12345, 1.707, 2.123)
+    custom texCoord3h[] t3 = [(-1.707, 1.707, 10.303), (2.23, 4.45, 10.303)]
+    custom texCoord3h[] t4 = [(-1.707, 1.707, 10.303), (2.23, 4.45, 10.303), (1.707, -1.707, 10.303), (-2.23, 3.45, 10.303)]
+    custom texCoord3h[] t5 = []
+    custom texCoord3h t6 = (inf, -inf, inf)
+}
+
 def MfScope "string_tests"
 {
     custom string blocked = None

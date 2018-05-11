@@ -33,7 +33,7 @@
 
 #include "pxr/imaging/hdEmbree/mesh.h"
 //XXX: Add other Rprim types later
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 //XXX: Add other Sprim types later
 #include "pxr/imaging/hd/bprim.h"
 //XXX: Add bprim types
@@ -190,8 +190,8 @@ HdRenderPassSharedPtr
 HdEmbreeRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                             HdRprimCollection const& collection)
 {
-    return HdRenderPassSharedPtr(
-        new HdEmbreeRenderPass(index, collection, _rtcScene));
+    return HdRenderPassSharedPtr(new HdEmbreeRenderPass(
+        index, collection, _rtcScene, _renderParam.get()));
 }
 
 HdInstancer *
@@ -233,7 +233,7 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdStCamera(sprimId);
+        return new HdCamera(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -247,7 +247,7 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
     // For fallback sprims, create objects with an empty scene path.
     // They'll use default values and won't be updated by a scene delegate.
     if (typeId == HdPrimTypeTokens->camera) {
-        return new HdStCamera(SdfPath::EmptyPath());
+        return new HdCamera(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

@@ -21,7 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/hdSt/glUtils.h"
+
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
@@ -37,13 +39,57 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// To enable GPU compute features, OpenSubdiv must be configured to support
+// GLSL compute kernel.
+//
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+// default to GPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, true,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#else
+// default to CPU
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COMPUTE, false,
+                      "Enable GPU smooth, quadrangulation and refinement");
+#endif
+
+
+static void
+_InitializeGPUComputeEnabled(bool *gpuComputeEnabled)
+{
+    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    
+    // GPU Compute
+    if (TfGetEnvSetting(HD_ENABLE_GPU_COMPUTE)) {
+#if OPENSUBDIV_HAS_GLSL_COMPUTE
+        if (caps.glslVersion >= 430 && caps.shaderStorageBufferEnabled) {
+            *gpuComputeEnabled = true;
+        } else {
+            TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                    "(OpenGL 4.3 required).\n");
+        }
+#else
+        TF_WARN("HD_ENABLE_GPU_COMPUTE can't be enabled "
+                "(OpenSubdiv hasn't been configured with GLSL compute).\n");
+#endif
+    }
+}
+
+bool 
+HdStGLUtils::IsGpuComputeEnabled()
+{
+    static bool gpuComputeEnabled = false;
+    static std::once_flag gpuComputeEnabledFlag;
+    std::call_once(gpuComputeEnabledFlag, [](){
+        _InitializeGPUComputeEnabled(&gpuComputeEnabled); 
+    });
+    return gpuComputeEnabled;
+}
 
 template <typename T>
 VtValue
@@ -104,7 +150,7 @@ HdStGLUtils::ReadBuffer(GLint vbo,
     //
     const GLsizeiptr vboSize = stride * (numElems-1) + bytesPerElement;
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     // Read data from GL
     std::vector<unsigned char> tmp(vboSize);
@@ -218,7 +264,7 @@ HdStGLBufferRelocator::AddRange(GLintptr readOffset,
 void
 HdStGLBufferRelocator::Commit()
 {
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.copyBufferEnabled) {
         // glCopyBuffer

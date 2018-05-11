@@ -32,13 +32,11 @@
 #include "pxr/usd/usd/stage.h"
 
 #include <UT/UT_Array.h>
+#include <UT/UT_Error.h>
 #include <UT/UT_IntrusivePtr.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-class GusdUT_ErrorContext;
 
 
 using GusdStageEditPtr = UT_IntrusivePtr<class GusdStageEdit>;
@@ -59,12 +57,12 @@ public:
 
     /// Apply an edit on the session layer, prior to stage loading.
     virtual bool    Apply(const SdfLayerHandle& layer,
-                          GusdUT_ErrorContext* err=nullptr) const
+                          UT_ErrorSeverity sev=UT_ERROR_ABORT) const
                     { return true; }
     
     /// Apply an edit on the loaded stage.
     virtual bool    Apply(const UsdStagePtr& stage,
-                          GusdUT_ErrorContext* err=nullptr) const
+                          UT_ErrorSeverity sev=UT_ERROR_ABORT) const
                     { return true; }
     
     virtual size_t  GetHash() const = 0;
@@ -86,6 +84,13 @@ using GusdStageBasicEditPtr = UT_IntrusivePtr<class GusdStageBasicEdit>;
 /// This class provides a single point for describing all of the common
 /// types of edits so that, at least in the typical cases, code pulling
 /// data from the stage cache are using a common type of edit.
+///
+/// Note that when applying variant edits, variant selection paths should be
+/// stripped of any trailing path components following the variant selection.
+/// For example, rather than creating an edit applying variant selection
+/// `/foo{a=b}bar`, it is better to use path `/foo{a=b}` as the variant
+/// selection path. The GetPrimPathAndEditFromVariantsPath helper automatically
+/// strips all such trailing path components.
 class GUSD_API GusdStageBasicEdit : public GusdStageEdit
 {
 public:
@@ -101,10 +106,10 @@ public:
                                        GusdStageBasicEditPtr& edit);
 
     virtual bool    Apply(const SdfLayerHandle& layer,
-                          GusdUT_ErrorContext* err=nullptr) const override;
+                          UT_ErrorSeverity sev=UT_ERROR_ABORT) const override;
 
     virtual bool    Apply(const UsdStagePtr& stage,
-                          GusdUT_ErrorContext* err=nullptr) const override;
+                          UT_ErrorSeverity sev=UT_ERROR_ABORT) const override;
 
     virtual size_t  GetHash() const override;
 

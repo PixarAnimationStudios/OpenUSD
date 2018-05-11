@@ -67,9 +67,9 @@ UsdSchemaBase::GetSchemaClassPrimDefinition() const
 }
 
 bool
-UsdSchemaBase::_IsCompatible(const UsdPrim &prim) const
+UsdSchemaBase::_IsCompatible() const
 {
-    // By default, schema objects are compatible.
+    // By default, schema objects are compatible with any valid prim.
     return true;
 }
 

@@ -31,6 +31,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/hashset.h"
+
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/api.h"
@@ -61,6 +63,8 @@ bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
                                const SdfLayerHandle &destination,
                                bool skipSublayers = false,
                                bool bakeUnauthoredFallbacks = false);
+
+using UsdUtilsPathHashSet = TfHashSet<SdfPath, SdfPath::Hash>;
 
 /// \anchor UsdUtilsAuthoring_Collections
 /// \name API for computing and authoring collections
@@ -100,6 +104,10 @@ bool UsdUtilsCopyLayerMetadata(const SdfLayerHandle &source,
 /// above which the algorithm chooses to make a collection with both included 
 /// and excluded paths, instead of creating a collection with only includes
 /// (containing the specified set of paths). \ref UsdCollectionAPI
+/// \p pathsToIgnore is the list of paths to be ignored by the algorithm used 
+/// to determine the included and excluded paths for each collection. If 
+/// non-empty, the paths in the hash set don't contribute towards the counts and 
+/// ratios computed by the algorithm.
 /// 
 /// Returns false if paths in \p includedRootPaths (or their common ancestor)
 /// can't be found on the given \p usdStage.
@@ -115,10 +123,11 @@ bool UsdUtilsComputeCollectionIncludesAndExcludes(
     SdfPathVector *pathsToExclude,
     double minInclusionRatio=0.75,
     const unsigned int maxNumExcludesBelowInclude=5u,
-    const unsigned int minIncludeExcludeCollectionSize=3u);
+    const unsigned int minIncludeExcludeCollectionSize=3u,
+    const UsdUtilsPathHashSet &pathsToIgnore=UsdUtilsPathHashSet());
 
 /// Authors a collection named \p collectionName on the given prim, 
-/// \p usdPrim with the given set of included paths (\p athsToInclude) 
+/// \p usdPrim with the given set of included paths (\p pathsToInclude)
 /// and excluded paths (\p pathsToExclude).
 /// 
 /// If a collection with the specified name already exists on \p usdPrim, 
@@ -131,7 +140,7 @@ UsdCollectionAPI UsdUtilsAuthorCollection(
     const SdfPathVector &pathsToInclude,
     const SdfPathVector &pathsToExclude=SdfPathVector());
 
-/// Given a vector of (collection-name, path-set) pairs, \p assignements, 
+/// Given a vector of (collection-name, path-set) pairs, \p assignments,
 /// creates and returns a vector of collections that include subtrees of prims 
 /// rooted at the included paths. The collections are created on the given prim, 
 /// \p usdPrim. 
@@ -142,7 +151,7 @@ UsdCollectionAPI UsdUtilsAuthorCollection(
 /// same set of parameters as that function: \p minInclusionRatio, 
 /// \p maxNumExcludesBelowInclude and \p minIncludeExcludeCollectionSize. 
 /// 
-/// \note It is valid for the paths or subtrees specified in \p assignements 
+/// \note It is valid for the paths or subtrees specified in \p assignments
 /// to have overlapping subtrees. In this case the overlapping bits will belong 
 /// to multiple collections. 
 /// 

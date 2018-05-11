@@ -1147,16 +1147,22 @@ GusdPrimWrapper::computeTransform(
     // not anything that we have modified.
 
     UT_Matrix4D primXform;
-    auto it = xformCache.find( prim.GetPath() );
-    if( it != xformCache.end() ) {
-        primXform = it->second;
+    if( !prim.GetPath().IsPrimPath() ) {
+        // We can get a invalid prim path if we are computing a transform relative to the parent of the root node.
+        primXform.identity();
     }
-    else if( !GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
+    else {
+        auto it = xformCache.find( prim.GetPath() );
+        if( it != xformCache.end() ) {
+            primXform = it->second;
+        }
+        else if( !GusdUSD_XformCache::GetInstance().GetLocalToWorldTransform( 
                         prim,
                         time,
                         primXform )) {
-        TF_WARN( "Failed to get transform for %s.", prim.GetPath().GetText() );
-        primXform.identity();
+            TF_WARN( "Failed to get transform for %s.", prim.GetPath().GetText() );
+            primXform.identity();
+        }
     }
     return GusdUT_Gf::Cast( houXform ) / GusdUT_Gf::Cast( primXform );
 }

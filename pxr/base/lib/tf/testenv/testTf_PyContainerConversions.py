@@ -32,7 +32,7 @@ class TestPyContainerConversions(unittest.TestCase):
         vecTimesTwo = Tf.Tf_TestPyContainerConversions.GetVectorTimesTwo(vec)
         self.assertEqual(vecTimesTwo, [2.0, 4.0, 6.0])
 
-    def test_VectorConversions(self):
+    def test_PairConversions(self):
         pair = (1, 2)
         pairTimesTwo = Tf.Tf_TestPyContainerConversions.GetPairTimesTwo(pair)
         self.assertEqual(pairTimesTwo, (2.0, 4.0))

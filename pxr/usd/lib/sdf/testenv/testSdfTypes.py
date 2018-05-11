@@ -145,7 +145,21 @@ class TestSdfTypes(unittest.TestCase):
             (Vt.Vec3hArray(), 'vector3h[]', 'half3[]'), 
        
             # Frame type
-            (Gf.Matrix4d(3), 'frame4d', 'matrix4d')
+            (Gf.Matrix4d(3), 'frame4d', 'matrix4d'),
+
+            #Texture Coordinate type
+            (Gf.Vec2d(1,2), 'texCoord2d', 'double2'),
+            (Gf.Vec2f(1,2), 'texCoord2f', 'float2'),
+            (Gf.Vec2h(1,2), 'texCoord2h', 'half2'),
+            (Gf.Vec3d(1,2,3), 'texCoord3d', 'double3'),
+            (Gf.Vec3f(1,2,3), 'texCoord3f', 'float3'),
+            (Gf.Vec3h(1,2,3), 'texCoord3h', 'half3'),
+            (Vt.Vec2dArray(), 'texCoord2d[]', 'double2[]'),
+            (Vt.Vec2fArray(), 'texCoord2f[]', 'float2[]'),
+            (Vt.Vec2hArray(), 'texCoord2h[]', 'half2[]'),
+            (Vt.Vec3dArray(), 'texCoord3d[]', 'double3[]'),
+            (Vt.Vec3fArray(), 'texCoord3f[]', 'float3[]'),
+            (Vt.Vec3hArray(), 'texCoord3h[]', 'half3[]')
         ]
     
         for value, typeName, baseTypeName in validAliasValues:

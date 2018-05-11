@@ -24,8 +24,8 @@
 #include "usdMaya/MayaInstancerWriter.h"
 
 #include "usdMaya/util.h"
+#include "usdMaya/writeUtil.h"
 
-#include "pxr/base/gf/rotation.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
@@ -60,6 +60,7 @@ MayaInstancerWriter::MayaInstancerWriter(const MDagPath & iDag,
     TF_AXIOM(primSchema);
     mUsdPrim = primSchema.GetPrim();
     TF_AXIOM(mUsdPrim);
+    UsdModelAPI(mUsdPrim).SetKind(KindTokens->assembly);
 }
 
 /* virtual */
@@ -69,19 +70,6 @@ MayaInstancerWriter::write(const UsdTimeCode &usdTime)
     UsdGeomPointInstancer primSchema(mUsdPrim);
     writeTransformAttrs(usdTime, primSchema);
     writeInstancerAttrs(usdTime, primSchema);
-}
-
-template <typename MArrayType, typename M, typename V>
-static VtArray<V>
-_MapMayaToVtArray(
-    const MArrayType& mayaArray,
-    const std::function<V (const M)> mapper)
-{
-    VtArray<V> vtArray(mayaArray.length());
-    for (unsigned int i = 0; i < mayaArray.length(); ++i) {
-        vtArray[i] = mapper(mayaArray[i]);
-    }
-    return vtArray;
 }
 
 /// Gets the transformed position of (0, 0, 0) using the transform's
@@ -217,6 +205,7 @@ MayaInstancerWriter::writeInstancerAttrs(
 
         const UsdPrim prototypesGroupPrim = getUsdStage()->DefinePrim(
                 instancer.GetPrim().GetPath().AppendChild(_tokens->Prototypes));
+        UsdModelAPI(prototypesGroupPrim).SetKind(KindTokens->group);
         UsdRelationship prototypesRel = instancer.CreatePrototypesRel();
 
         const unsigned int numElements = inputHierarchy.numElements();
@@ -240,9 +229,6 @@ MayaInstancerWriter::writeInstancerAttrs(
                     .AppendChild(prototypeName);
             UsdPrim prototypePrim = getUsdStage()->DefinePrim(
                     prototypeUsdPath);
-
-            // Set kind for prototypes to subcomponent.
-            UsdModelAPI(prototypePrim).SetKind(KindTokens->subcomponent);
 
             // Try to be conservative and only create an intermediary xformOp
             // with the instancerTranslate if we can ensure that we don't need
@@ -279,9 +265,23 @@ MayaInstancerWriter::writeInstancerAttrs(
         return false;
     }
 
-    // Actual write (@ both default time and animated time).
+    // Actual write of prototypes (@ both default time and animated time).
     for (MayaPrimWriterPtr& writer : _prototypeWriters) {
         writer->write(usdTime);
+
+        if (usdTime.IsDefault()) {
+            // Prototypes should have kind component or derived (don't stomp
+            // over existing component-derived kinds).
+            // (Note that ModelKindWriter's fix-up stage might change this.)
+            if (const UsdPrim writerPrim = writer->getPrim()) {
+                UsdModelAPI primModelAPI(writerPrim);
+                TfToken kind;
+                primModelAPI.GetKind(&kind);
+                if (!KindRegistry::IsA(kind, KindTokens->component)) {
+                    primModelAPI.SetKind(KindTokens->component);
+                }
+            }
+        }
     }
 
     // Write the instancerTranslate xformOp for all prims that need it.
@@ -294,7 +294,7 @@ MayaInstancerWriter::writeInstancerAttrs(
             GfVec3d origin;
             if (_GetTransformedOriginInLocalSpace(opData.mayaPath, &origin)) {
                 UsdGeomXformOp translateOp = opData.op;
-                translateOp.Set(-origin, usdTime);
+                _SetAttribute(translateOp.GetAttr(), -origin, usdTime);
             }
         }
     }
@@ -324,134 +324,32 @@ MayaInstancerWriter::writeInstancerAttrs(
             &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    // All Maya instancers should provide id's (though this isn't
-    // required by UsdGeomPointInstancer). We need to know the id's attr
-    // in order to figure out how many instances there are.
-    size_t numInstances = 0;
-    MFnArrayAttrsData::Type type;
-    if (inputPointsData.checkArrayExist("id", type) &&
-            type == MFnArrayAttrsData::kDoubleArray) {
-        const MDoubleArray id = inputPointsData.doubleArray("id", &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        VtArray<int64_t> vtArray = _MapMayaToVtArray<
-            MDoubleArray, double, int64_t>(
-            id,
-            [](double x) {
-                return (int64_t) x;
-            });
-        instancer.CreateIdsAttr().Set(vtArray, usdTime);
-        numInstances = vtArray.size();
-    }
-    else {
-        TF_WARN("Missing 'id' array attribute on instancer '%s'",
-                getDagPath().fullPathName().asChar());
+    if (!PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
+            inputPointsData, instancer, _numPrototypes, usdTime,
+            _GetSparseValueWriter())) {
         return false;
-    }
-
-    // Export the rest of the per-instance array attrs.
-    // Some attributes might be missing elements; pad the array according to
-    // Maya's fallback behavior up to the numInstances.
-    if (inputPointsData.checkArrayExist("objectIndex", type) &&
-            type == MFnArrayAttrsData::kDoubleArray) {
-        const MDoubleArray objectIndex = inputPointsData.doubleArray(
-                "objectIndex", &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        VtArray<int> vtArray = _MapMayaToVtArray<MDoubleArray, double, int>(
-            objectIndex,
-            [this](double x) {
-                if (x < _numPrototypes) {
-                    return (int) x;
-                }
-                else {
-                    // Return the *last* prototype if out of bounds.
-                    return (int) _numPrototypes - 1;
-                }
-            });
-        instancer.CreateProtoIndicesAttr().Set(vtArray, usdTime);
-    }
-    else {
-        VtArray<int> vtArray;
-        vtArray.assign(numInstances, 0);
-        instancer.CreateProtoIndicesAttr().Set(vtArray, usdTime);
-    }
-
-    if (inputPointsData.checkArrayExist("position", type) &&
-            type == MFnArrayAttrsData::kVectorArray) {
-        const MVectorArray position = inputPointsData.vectorArray("position",
-                &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        VtVec3fArray vtArray = _MapMayaToVtArray<
-            MVectorArray, const MVector&, GfVec3f>(
-            position,
-            [](const MVector& v) {
-                return GfVec3f(v.x, v.y, v.z);
-            });
-        instancer.CreatePositionsAttr().Set(vtArray, usdTime);
-    }
-    else {
-        VtVec3fArray vtArray;
-        vtArray.assign(numInstances, GfVec3f(0.0f));
-        instancer.CreatePositionsAttr().Set(vtArray, usdTime);
-    }
-
-    if (inputPointsData.checkArrayExist("rotation", type) &&
-            type == MFnArrayAttrsData::kVectorArray) {
-        const MVectorArray rotation = inputPointsData.vectorArray("rotation", 
-                &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        VtQuathArray vtArray = _MapMayaToVtArray<
-            MVectorArray, const MVector&, GfQuath>(
-            rotation,
-            [](const MVector& v) {
-                GfRotation rot = GfRotation(GfVec3d::XAxis(), v.x)
-                        * GfRotation(GfVec3d::YAxis(), v.y)
-                        * GfRotation(GfVec3d::ZAxis(), v.z);
-                return GfQuath(rot.GetQuat());
-            });
-        instancer.CreateOrientationsAttr().Set(vtArray, usdTime);
-    }
-    else {
-        VtQuathArray vtArray;
-        vtArray.assign(numInstances, GfQuath(0.0f));
-        instancer.CreateOrientationsAttr().Set(vtArray, usdTime);
-    }
-
-    if (inputPointsData.checkArrayExist("scale", type) &&
-            type == MFnArrayAttrsData::kVectorArray) {
-        const MVectorArray scale = inputPointsData.vectorArray("scale",
-                &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        VtVec3fArray vtArray = _MapMayaToVtArray<
-            MVectorArray, const MVector&, GfVec3f>(
-            scale,
-            [](const MVector& v) {
-                return GfVec3f(v.x, v.y, v.z);
-            });
-        instancer.CreateScalesAttr().Set(vtArray, usdTime);
-    }
-    else {
-        VtVec3fArray vtArray;
-        vtArray.assign(numInstances, GfVec3f(1.0));
-        instancer.CreateScalesAttr().Set(vtArray, usdTime);
     }
 
     // Load the completed point instancer to compute and set its extent.
     instancer.GetPrim().GetStage()->Load(instancer.GetPath());
     VtArray<GfVec3f> extent(2);
     if (instancer.ComputeExtentAtTime(&extent, usdTime, usdTime)) {
-        instancer.CreateExtentAttr().Set(extent, usdTime);
+        _SetAttribute(instancer.CreateExtentAttr(), &extent, usdTime);
     }
 
     return true;
 }
 
+void
+MayaInstancerWriter::postExport()
+{
+    for (MayaPrimWriterPtr& writer : _prototypeWriters) {
+        writer->postExport();
+    }
+}
+
 bool
-MayaInstancerWriter::exportsGprims() const
+MayaInstancerWriter::exportsReferences() const
 {
     return true;
 }
@@ -460,6 +358,23 @@ bool
 MayaInstancerWriter::shouldPruneChildren() const
 {
     return true;
+}
+
+bool
+MayaInstancerWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+{
+    bool hasPrims = MayaPrimWriter::getAllAuthoredUsdPaths(outPaths);
+    SdfPath protosPath = getUsdPath().AppendChild(_tokens->Prototypes);
+    if (getUsdStage()->GetPrimAtPath(protosPath)) {
+        outPaths->push_back(protosPath);
+        hasPrims = true;
+    }
+    for (const MayaPrimWriterPtr primWriter : _prototypeWriters) {
+        if (primWriter->getAllAuthoredUsdPaths(outPaths)) {
+            hasPrims = true;
+        }
+    }
+    return hasPrims;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

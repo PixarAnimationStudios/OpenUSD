@@ -759,7 +759,7 @@ doSoftCopy() const
 
 bool GusdMeshWrapper::isValid() const
 {
-    return m_usdMesh;
+    return static_cast<bool>(m_usdMesh);
 }
 
 bool GusdMeshWrapper::

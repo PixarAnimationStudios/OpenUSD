@@ -230,13 +230,53 @@ class testUsdExportMesh(unittest.TestCase):
         self.assertEqual(skelRoot.GetTypeName(), 'SkelRoot')
 
         m = UsdSkel.BindingAPI.Get(
-                stage, '/ExplicitSkelRoot/mesh')
+                stage, '/ExplicitSkelRoot')
         self.assertEqual(
                 m.GetSkeletonRel().GetTargets(),
                 [Sdf.Path('/ExplicitSkelRoot/skeleton_joint4')])
 
         m = UsdSkel.BindingAPI.Get(stage, '/ImplicitSkelRoot/animatedCube')
         self.assertFalse(m.GetSkeletonRel())
+
+    def testSkelBindingSites(self):
+        """
+        Tests that skel:skeleton rels are authored as high up the hierarchy
+        as possible.
+        """
+        usdFile = os.path.abspath('UsdExportMesh_bindingSites.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none', exportSkin='auto')
+        stage = Usd.Stage.Open(usdFile)
+
+        p = UsdSkel.BindingAPI.Get(stage, '/CrazySkelRoot')
+        self.assertFalse(p.GetSkeletonRel())
+
+        p = UsdSkel.BindingAPI.Get(stage, '/CrazySkelRoot/meshA')
+        self.assertEqual(
+                p.GetSkeletonRel().GetTargets(),
+                [Sdf.Path('/CrazySkelRoot/skeleton_joint10')])
+
+        p = UsdSkel.BindingAPI.Get(stage, '/CrazySkelRoot/groupBCD')
+        self.assertFalse(p.GetSkeletonRel())
+
+        p = UsdSkel.BindingAPI.Get(stage, '/CrazySkelRoot/groupBCD/meshB')
+        self.assertEqual(
+                p.GetSkeletonRel().GetTargets(),
+                [Sdf.Path('/CrazySkelRoot/skeleton_joint10')])
+
+        p = UsdSkel.BindingAPI.Get(stage, '/CrazySkelRoot/groupBCD/groupCD')
+        self.assertEqual(
+                p.GetSkeletonRel().GetTargets(),
+                [Sdf.Path('/CrazySkelRoot/skeleton_joint8')])
+
+        p = UsdSkel.BindingAPI.Get(stage,
+                '/CrazySkelRoot/groupBCD/groupCD/meshC')
+        self.assertFalse(p.GetSkeletonRel())
+
+        p = UsdSkel.BindingAPI.Get(stage,
+                '/CrazySkelRoot/groupBCD/groupCD/meshD')
+        self.assertFalse(p.GetSkeletonRel())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -45,12 +45,12 @@
 #=============================================================================
 
 set(LIBRARY_PATHS
+    ${ALEMBIC_DIR}/lib/
+    ${ALEMBIC_DIR}/lib/static
     /usr/lib
     /usr/local/lib
     /sw/lib
-    /opt/local/lib
-    ${ALEMBIC_DIR}/lib/
-    ${ALEMBIC_DIR}/lib/static)
+    /opt/local/lib)
 
 # Find Alembic libs
 
@@ -58,7 +58,7 @@ set(LIBRARY_PATHS
 # as shipped in versions >= 1.6.0
 find_library(ALEMBIC_LIBRARY
     NAMES Alembic
-    PATHS ${LIBRARY_PATHS}
+    HINTS ${LIBRARY_PATHS}
   )
 
 # If single library is not found, look for legacy Alembic libraries.
@@ -132,7 +132,7 @@ endif()
 
 # Find Alembic include dir
 find_path (ALEMBIC_INCLUDE_DIR Alembic/Abc/All.h
-           ${ALEMBIC_DIR}/include
+           HINTS ${ALEMBIC_DIR}/include
 )
 
 include(FindPackageHandleStandardArgs)

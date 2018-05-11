@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/hdEmbree/renderParam.h"
 
 #include "pxr/base/gf/matrix4d.h"
 
@@ -50,16 +51,14 @@ public:
     ///   \param scene The embree scene to raycast into.
     HdEmbreeRenderPass(HdRenderIndex *index,
                        HdRprimCollection const &collection,
-                       RTCScene scene);
+                       RTCScene scene,
+                       HdEmbreeRenderParam *renderParam);
 
     /// Renderpass destructor.
     virtual ~HdEmbreeRenderPass();
 
     // -----------------------------------------------------------------------
     // HdRenderPass API
-
-    /// Clear the sample buffer (when scene or camera changes).
-    virtual void ResetImage() override;
 
     /// Determine whether the sample buffer has enough samples.
     ///   \return True if the image has enough samples to be considered final.
@@ -78,15 +77,14 @@ protected:
                           TfTokenVector const &renderTags) override;
 
     /// Update internal tracking to reflect a dirty collection.
-    virtual void _MarkCollectionDirty() override;
+    virtual void _MarkCollectionDirty() override {}
 
 private:
 
     // -----------------------------------------------------------------------
     // Internal API
 
-    // Specify a new viewport size for the sample buffer. Note: the caller
-    // should also call ResetImage().
+    // Specify a new viewport size for the sample buffer.
     void _ResizeSampleBuffer(unsigned int width, unsigned int height);
 
     // Rendering entrypoint: add one sample per pixel to the sample
@@ -111,10 +109,6 @@ private:
     // the light contribution of an infinitely far, pure white dome light.
     float _ComputeAmbientOcclusion(GfVec3f const& position,
                                    GfVec3f const& normal);
-
-    // The sample buffer is cleared in Execute(), so this flag records whether
-    // ResetImage() has been called since the last Execute().
-    bool _pendingResetImage;
 
     // The output buffer for the raytracing algorithm. If pixel is
     // &_sampleBuffer[y*_width+x], then pixel[0-2] represent accumulated R,G,B
@@ -141,6 +135,12 @@ private:
 
     // The color of a ray miss.
     GfVec3f _clearColor;
+
+    // A handle to the render param.
+    HdEmbreeRenderParam *_renderParam;
+
+    // The version of the scene that _sampleBuffer was rendered with.
+    int _sceneVersion;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

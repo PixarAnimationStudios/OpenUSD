@@ -33,7 +33,7 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/utils.h"

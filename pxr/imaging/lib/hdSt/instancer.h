@@ -49,7 +49,7 @@ typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;
 /// ApplyInstanceTransform in instancing.glslfx.
 ///
 /// If this instancer is nested, instance indices will be computed
-/// recursively by ascending the heirarchy. HdStInstancer computes a flattened
+/// recursively by ascending the hierarchy. HdStInstancer computes a flattened
 /// index structure for each prototype by taking the cartesian product of the
 /// instance indices at each level.
 ///
@@ -75,7 +75,7 @@ public:
 
     /// Populates instance primvars and returns the buffer range.
     HDST_API
-    HdBufferArrayRangeSharedPtr GetInstancePrimVars();
+    HdBufferArrayRangeSharedPtr GetInstancePrimvars();
 
     /// Populates the instance index indirection buffer for \p prototypeId and
     /// returns the buffer range.
@@ -86,7 +86,7 @@ public:
     /// buffer range data.
     HDST_API
     void PopulateDrawItem(HdDrawItem *drawItem, HdRprimSharedData *sharedData,
-                          HdDirtyBits *dirtyBits, int instancePrimVarSlot);
+                          HdDirtyBits *dirtyBits, int instancePrimvarSlot);
 
 protected:
     HDST_API
@@ -95,9 +95,9 @@ protected:
 
 private:
     std::mutex _instanceLock;
-    int _numInstancePrimVars;
+    int _numInstancePrimvars;
 
-    HdBufferArrayRangeSharedPtr _instancePrimVarRange;
+    HdBufferArrayRangeSharedPtr _instancePrimvarRange;
     TfHashMap<SdfPath,
               HdBufferArrayRangeSharedPtr,
               SdfPath::Hash> _instanceIndexRangeMap;

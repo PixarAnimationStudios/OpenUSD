@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Usd, Vt, Sdf
+from pxr import Usd, Vt, Sdf, Tf
 import unittest
 
 stage = Usd.Stage.Open("./Test.usda")
@@ -47,6 +47,11 @@ def _DebugCollection(collection):
     for obj in incObjects: print ".. ", obj.GetPath() 
 
 class TestUsdCollectionAPI(unittest.TestCase):
+    def tearDown(self):
+        # Discard any edits made to layers
+        stage.Reload()
+        pass
+
     def test_AuthorCollections(self):
         # ----------------------------------------------------------
         # Test an explicitOnly collection.
@@ -270,7 +275,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         (valid, reason) = allGeomProperties.Validate()
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
-                allGeomPropertiesMquery, stage)), 27)
+                allGeomPropertiesMquery, stage)), 24)
 
         hasRels = Usd.CollectionAPI(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
@@ -388,6 +393,42 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         mqueryC = collectionC.ComputeMembershipQuery()
         self.assertEqual(len(ComputeIncObjs(mqueryC, stage)), 9)
+
+    def test_InvalidApplyCollection(self):
+        # ----------------------------------------------------------
+        # Test ApplyCollection when passed a string that doesn't tokenize to
+        # make sure we don't crash in that case, but issue a coding error.
+        with self.assertRaises(Tf.ErrorException):
+            Usd.CollectionAPI.ApplyCollection(testPrim, "", 
+                    Usd.Tokens.explicitOnly)
+
+    def test_CollectionEquivalence(self):
+        # ----------------------------------------------------------
+        # Test the ability to compare two collections whose MembershipQuery
+        # ends up equivalent.
+
+        # Get all collections on the root test prim
+        collections = Usd.CollectionAPI.GetAllCollections(testPrim)
+        self.assertTrue(len(collections) > 1)
+
+        # Each of their membership queries should be equal to itself,
+        # and unequal to the others.  Same for their hashes -- although
+        # note that the hashes are not, in general, guaranteed to be
+        # distinct due to the pigeonhole principle.
+        mqueries = [c.ComputeMembershipQuery() for c in collections]
+        for i in range(len(mqueries)):
+            for j in range(i, len(mqueries)):
+                if i == j:
+                    self.assertEqual(mqueries[i], mqueries[j])
+                    self.assertEqual(hash(mqueries[i]), hash(mqueries[j]))
+                else:
+                    self.assertNotEqual(mqueries[i], mqueries[j])
+
+        # Confirm that the hash operator lets us use python dicts
+        mqueryToPath = {}
+        for (coll,mquery) in zip(collections, mqueries):
+            mqueryToPath[mquery] = coll.GetCollectionPath()
+        self.assertEqual(len(mqueryToPath.keys()), len(mqueries))
 
 if __name__ == "__main__":
     unittest.main()

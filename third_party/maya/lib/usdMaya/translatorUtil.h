@@ -70,6 +70,19 @@ struct PxrUsdMayaTranslatorUtil
             MStatus* status,
             MObject* mayaNodeObj);
 
+    /// \brief Helper to create a node for \p usdPath of type \p
+    /// nodeTypeName under \p parentNode. If \p context is non-NULL,
+    /// the new Maya node will be registered to the path of \p usdPrim.
+    PXRUSDMAYA_API
+    static bool
+    CreateNode(
+            const SdfPath& usdPath,
+            const MString& nodeTypeName,
+            MObject& parentNode,
+            PxrUsdMayaPrimReaderContext* context,
+            MStatus* status,
+            MObject* mayaNodeObj);
+
     /// \brief Helper to create a node named \p nodeName of type \p
     /// nodeTypeName under \p parentNode. Note that this version does
     /// NOT take a context and cannot register the newly created Maya node

@@ -43,6 +43,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
     ignore("ignore", TfToken::Immortal),
     intensity("intensity", TfToken::Immortal),
     latlong("latlong", TfToken::Immortal),
+    length("length", TfToken::Immortal),
     lightList("lightList", TfToken::Immortal),
     lightListCacheBehavior("lightList:cacheBehavior", TfToken::Immortal),
     mirroredBall("mirroredBall", TfToken::Immortal),
@@ -65,6 +66,8 @@ UsdLuxTokensType::UsdLuxTokensType() :
     specular("specular", TfToken::Immortal),
     textureFile("texture:file", TfToken::Immortal),
     textureFormat("texture:format", TfToken::Immortal),
+    treatAsLine("treatAsLine", TfToken::Immortal),
+    treatAsPoint("treatAsPoint", TfToken::Immortal),
     width("width", TfToken::Immortal),
     allTokens({
         angle,
@@ -84,6 +87,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
         ignore,
         intensity,
         latlong,
+        length,
         lightList,
         lightListCacheBehavior,
         mirroredBall,
@@ -106,6 +110,8 @@ UsdLuxTokensType::UsdLuxTokensType() :
         specular,
         textureFile,
         textureFormat,
+        treatAsLine,
+        treatAsPoint,
         width
     })
 {

@@ -29,7 +29,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/tf.h"
-#include "pxr/base/tf/timeStamp.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/arch/hash.h"
 
@@ -60,7 +59,6 @@ class TfWeakPtrFacade;
 ///   \li TfRefPtr
 ///   \li TfWeakPtr
 ///   \li TfEnum
-///   \li TfTimeStamp
 ///   \li const void*
 ///   \li size_t
 ///
@@ -81,7 +79,6 @@ class TfWeakPtrFacade;
 ///     TfHashMap<TfRefPtr<S>, T, TfHash> m1;
 ///     TfHashMap<TfWeakPtr<S>, T, TfHash> m2;
 ///     TfHashMap<TfEnum, T, TfHash> m3;
-///     TfHashMap<TfTimeStamp, T, TfHash> m4;
 ///     TfHashMap<const void*, T, TfHash> m5;
 ///     TfHashMap<size_t, T, TfHash> m6;
 /// \endcode
@@ -124,10 +121,6 @@ public:
     TF_API size_t operator()(const TfEnum& e) const;
 
     TF_API size_t operator()(const TfType& t) const;
-
-    size_t operator()(TfTimeStamp stamp) const {
-        return _Mix(size_t(stamp.Get()));
-    }
 
     // We refuse to hash const char*.  You're almost certainly trying to
     // hash the pointed-to string and this will not do that (it will hash

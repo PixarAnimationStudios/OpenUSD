@@ -60,6 +60,12 @@ UsdShadeMaterialBindingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdShadeMaterialBindingAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdShadeMaterialBindingAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdShadeMaterialBindingAPI
@@ -117,6 +123,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -129,6 +136,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((materialBindingCollectionFull, "material:binding:collection:full"))
     ((materialBindingCollectionPreview, "material:binding:collection:preview"))
 );
+
+TF_DEFINE_ENV_SETTING(USD_SHADE_WARN_ON_LOOK_BINDING, true, 
+    "When set to true, it causes a warning to be issued if we find an a prim "
+    "with the deprecated\"look:binding\" relationship when computing resolved "
+    "material bindings. Although a warning is issued, these relationships are "
+    "no longer considered in the binding resolution. The warning exists solely "
+    "for the purpose of assisting clients in identifying deprecated assets and "
+    "debugging missing bindings.");
 
 static 
 TfToken
@@ -567,6 +582,19 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
                 return TfStringStartsWith(name.GetString(), 
                     UsdShadeTokens->materialBinding);
             });
+
+    static const bool warnOnLookBinding = TfGetEnvSetting(
+            USD_SHADE_WARN_ON_LOOK_BINDING);
+    if (warnOnLookBinding) {
+        static const TfToken lookBinding("look:binding");
+        if (UsdRelationship lookBindingRel = prim.GetRelationship(lookBinding)) 
+        {
+            TF_WARN("Found prim <%s> with deprecated 'look:binding' "
+                "relationship targeting path <%s>.", prim.GetPath().GetText(),
+                UsdShadeMaterialBindingAPI::DirectBinding(lookBindingRel)
+                    .GetMaterialPath().GetText());
+        }
+    }
    
     if (matBindingPropNames.empty())
         return;
@@ -660,17 +688,15 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                 TRACE_SCOPE("UsdShadeMaterialBindingAPI::ComputeBoundMaterial "
                         "(BindingsCache)");
 
-                // XXX: How do we prevent other threads from populating the same 
-                // BindingsAtPrim?
                 std::unique_ptr<BindingsAtPrim> bindingsAtP(
                     new BindingsAtPrim(p, materialPurpose));
-
-                // XXX emplace does not work here due to a tbb bug.
-                // See https://software.intel.com/en-us/forums/
+                    
+                // XXX: emplace does not work here due to a tbb bug.
+                // see https://software.intel.com/en-us/forums/
                 // intel-threading-building-blocks/topic/671548
-                // Luckily the copy should be cheap here.
-                bindingsIt = bindingsCache->insert(std::make_pair(
-                    p.GetPath(), std::move(bindingsAtP))).first;
+                
+                bindingsIt = bindingsCache->insert(std::make_pair(p.GetPath(), 
+                    std::move(bindingsAtP))).first;
             }
 
             const BindingsAtPrim &bindingsAtP = *bindingsIt->second;
@@ -713,12 +739,11 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                         mQuery(new UsdCollectionAPI::MembershipQuery);
                     collection.ComputeMembershipQuery(mQuery.get());
 
-                    // XXX emplace does not work here due to a tbb bug.
-                    // See https://software.intel.com/en-us/forums/
+                    // XXX: emplace does not work here due to a tbb bug.
+                    // see https://software.intel.com/en-us/forums/
                     // intel-threading-building-blocks/topic/671548
-                    // Luckily the copy should be cheap here.
                     collIt = collectionQueryCache->insert(std::make_pair(
-                            collectionPath, std::move(mQuery))).first;
+                        collectionPath, std::move(mQuery))).first; 
                 }
                 
                 bool isPrimIncludedInCollection = 

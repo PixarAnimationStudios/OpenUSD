@@ -28,7 +28,6 @@
 #include "gusd/USD_Traverse.h"
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
-#include "gusd/UT_Error.h"
 #include "gusd/UT_StaticInit.h"
 
 #include <pxr/base/tf/pathUtils.h>
@@ -311,11 +310,6 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         return UT_ERROR_NONE;
     }
 
-    // Set up error context.
-    auto lockedMgr = getLockedErrorManager();
-    GusdUT_ErrorManager errMgr(*lockedMgr);
-    GusdUT_ErrorContext err(errMgr, UT_ERROR_ABORT);
-
     GA_AttributeOwner owner = packedPrims ?
         GA_ATTRIB_PRIMITIVE : GA_ATTRIB_POINT;
 
@@ -330,8 +324,8 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
     {
         GusdStageCacheReader cache;
         if(!GusdGU_USD::BindPrims(cache, rootPrims, *gdp, rng,
-                                  &variants, &purposes, &times, &err)) {
-            return err();
+                                  &variants, &purposes, &times)) {
+            return error();
         }
     }
 
@@ -349,8 +343,8 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         // should be false so the results won't be empty.
         bool skipRoot = (traversal != _GPRIMTRAVERSE_NAME);
         if (!_Traverse(traversal, t, rootPrims, times, purposes,
-                       skipRoot, traversedPrims, err)) {
-            return err();
+                       skipRoot, traversedPrims)) {
+            return error();
         }
     } else if (unpackToPolygons) {
         // There is no traversal specified, but unpackToPolygons is true.
@@ -401,8 +395,8 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
         bool skipRoot = false;
         if (!_Traverse(_GPRIMTRAVERSE_NAME, t, prims,
                        traversedTimes, traversedPurposes,
-                       skipRoot, traversedPrims, err)) {
-            return err();
+                       skipRoot, traversedPrims)) {
+            return error();
         }
 
         // Each index in the traversedPrims pairs needs
@@ -425,7 +419,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
     if (!packedPrims) {
         GusdGU_USD::AppendExpandedRefPoints(
             *gdp, *gdp, rng, traversedPrims, filter,
-            GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR, &err);
+            GUSD_PATH_ATTR, GUSD_PRIMPATH_ATTR);
 
     } else {
         // The variants array needs to be expanded to
@@ -446,7 +440,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
 
         GusdGU_USD::AppendExpandedPackedPrims(
             *gdp, *gdp, rng, traversedPrims, expandedVariants, traversedTimes,
-            filter, unpackToPolygons, importPrimvars, &err);
+            filter, unpackToPolygons, importPrimvars);
     }
 
     if(evalInt("unpack_delold", 0, t)) {
@@ -469,7 +463,7 @@ GusdSOP_usdunpack::_Cook(OP_Context& ctx)
             gdp->destroyPoints(delRng); // , GA_DESTROY_DEGENERATE);
     }
 
-    return err();
+    return error();
 }
 
 bool
@@ -479,16 +473,13 @@ GusdSOP_usdunpack::_Traverse(const UT_String& traversal,
                              const GusdDefaultArray<UsdTimeCode>& times,
                              const GusdDefaultArray<GusdPurposeSet>& purposes,
                              bool skipRoot,
-                             UT_Array<GusdUSD_Traverse::PrimIndexPair>& traversed,
-                             GusdUT_ErrorContext& err)
+                             UT_Array<GusdUSD_Traverse::PrimIndexPair>& traversed)
 {
     const auto& table = GusdUSD_TraverseTable::GetInstance();
     
     const GusdUSD_Traverse* traverse = table.FindTraversal(traversal);
     if (!traverse) {
-        UT_WorkBuffer buf;
-        buf.sprintf("Failed locating traversal '%s'", traversal.c_str());
-        err.AddError(buf.buffer());
+        GUSD_ERR().Msg("Failed locating traversal '%s'", traversal.c_str());
         return false;
     }
 

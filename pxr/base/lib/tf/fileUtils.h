@@ -183,7 +183,7 @@ void TfWalkDirs(std::string const& top,
 
 /// Recursively delete a directory tree rooted at \p path.
 ///
-/// Tf runtime errors are raised if any errors are encountered while chmod'ing
+/// Tf runtime errors are raised if any errors are encountered while deleting
 /// the specified \p path.  Pass in TfWalkIgnoreErrorHandler() to ignore errors.
 /// Alternately, sending in a custom TfWalkErrorHandler will
 /// call this handler when errors occur.  This handler receives the path which

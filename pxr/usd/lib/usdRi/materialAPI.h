@@ -36,8 +36,6 @@
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdRi/rslShader.h"
-#include "pxr/usd/usdRi/risBxdf.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -81,6 +79,12 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents an 
+    /// applied API schema, i.e. an API schema that has to be applied to a prim
+    /// with a call to auto-generated Apply() method before any schema 
+    /// properties are authored.
+    static const bool IsApplied = true;
+    
     /// Compile-time constant indicating whether or not this class represents a 
     /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
     /// to the same prim multiple times with different instance names. 
@@ -156,6 +160,11 @@ private:
     USDRI_API
     virtual const TfType &_GetTfType() const;
 
+    // This override returns true since UsdRiMaterialAPI is an 
+    // applied API schema.
+    USDRI_API
+    virtual bool _IsAppliedAPISchema() const override;
+
 public:
     // --------------------------------------------------------------------- //
     // SURFACE 
@@ -164,7 +173,7 @@ public:
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
     USDRI_API
     UsdAttribute GetSurfaceAttr() const;
@@ -185,7 +194,7 @@ public:
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
     USDRI_API
     UsdAttribute GetDisplacementAttr() const;
@@ -206,7 +215,7 @@ public:
     ///
     /// \n  C++ Type: TfToken
     /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
     USDRI_API
     UsdAttribute GetVolumeAttr() const;
@@ -218,27 +227,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRI_API
     UsdAttribute CreateVolumeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // BXDF 
-    // --------------------------------------------------------------------- //
-    /// 
-    ///
-    /// \n  C++ Type: TfToken
-    /// \n  Usd Type: SdfValueTypeNames->Token
-    /// \n  Variability: SdfVariabilityUniform
-    /// \n  Fallback Value: No Fallback
-    USDRI_API
-    UsdAttribute GetBxdfAttr() const;
-
-    /// See GetBxdfAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRI_API
-    UsdAttribute CreateBxdfAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
@@ -275,10 +263,6 @@ public:
     USDRI_API
     UsdShadeOutput GetVolumeOutput() const;
 
-    /// Returns the "bxdf" output associated with the material.
-    USDRI_API
-    UsdShadeOutput GetBxdfOutput() const;
-
     /// @}
 
     // --------------------------------------------------------------------- //
@@ -295,9 +279,6 @@ public:
     USDRI_API
     bool SetVolumeSource(const SdfPath &volumePath) const;
 
-    USDRI_API
-    bool SetBxdfSource(const SdfPath &bxdfPath) const;
-
     /// @}
 
     // --------------------------------------------------------------------- //
@@ -305,42 +286,32 @@ public:
     // --------------------------------------------------------------------- //
     /// @{
         
-    /// Returns a valid RSL shader object if the "surface" output on the 
+    /// Returns a valid shader object if the "surface" output on the 
     /// material is connected to one.
     /// 
     /// If \p ignoreBaseMaterial is true and if the "surface" shader source 
     /// is specified in the base-material of this material, then this 
     /// returns an invalid shader object.
     USDRI_API
-    UsdRiRslShader GetSurface(bool ignoreBaseMaterial=false) const;
+    UsdShadeShader GetSurface(bool ignoreBaseMaterial=false) const;
 
-    /// Returns a valid RSL shader object if the "displacement" output on the 
+    /// Returns a valid shader object if the "displacement" output on the 
     /// material is connected to one.
     /// 
     /// If \p ignoreBaseMaterial is true and if the "displacement" shader source 
     /// is specified in the base-material of this material, then this 
     /// returns an invalid shader object.
     USDRI_API
-    UsdRiRslShader GetDisplacement(bool ignoreBaseMaterial=false) const;
+    UsdShadeShader GetDisplacement(bool ignoreBaseMaterial=false) const;
 
-    /// Returns a valid RSL shader object if the "volume" output on the 
+    /// Returns a valid shader object if the "volume" output on the 
     /// material is connected to one.
     /// 
     /// If \p ignoreBaseMaterial is true and if the "volume" shader source 
     /// is specified in the base-material of this material, then this 
     /// returns an invalid shader object.    
     USDRI_API
-    UsdRiRslShader GetVolume(bool ignoreBaseMaterial=false) const;
-
-    /// Returns a valid UsdRiRisBxdf object if the "bxdf" output on the 
-    /// material is connected to one. Returns an invalid UsdRiRisBxdf object 
-    /// otherwise.
-    /// 
-    /// If \p ignoreBaseMaterial is true and if the "bxdf" shader source 
-    /// is specified in the base-material of this material, then this 
-    /// returns an invalid shader object.
-    USDRI_API
-    UsdRiRisBxdf GetBxdf(bool ignoreBaseMaterial=false) const;
+    UsdShadeShader GetVolume(bool ignoreBaseMaterial=false) const;
 
     /// @}
 
@@ -377,14 +348,11 @@ public:
     /// @}
 
 private:
-    template <typename ShaderType>
-    ShaderType _GetSourceShaderObject(const UsdShadeOutput &output,
-                                      bool ignoreBaseMaterial) const;
+    UsdShadeShader _GetSourceShaderObject(const UsdShadeOutput &output,
+                                          bool ignoreBaseMaterial) const;
 
-    UsdShadeOutput _GetShadeOutput(
-        const UsdAttribute &outputAttr, 
-        const TfToken &oldEncodingRelName) const;
-
+    // Helper method to get the deprecated 'bxdf' output.
+    UsdShadeOutput _GetBxdfOutput(const UsdPrim &materialPrim) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

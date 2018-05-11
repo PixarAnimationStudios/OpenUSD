@@ -23,8 +23,8 @@
 //
 #include "pxr/usd/usdSkel/utils.h"
 
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3f.h"
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
@@ -397,29 +397,23 @@ UsdSkelDecomposeTransforms(const VtMatrix4dArray& xforms,
 
 GfMatrix4d
 UsdSkelMakeTransform(const GfVec3f& translate,
-                     const GfRotation& rotate,
+                     const GfMatrix3f& rotate,
                      const GfVec3h& scale)
 {
-    // XXX: This is a simplified form of GfTransform::GetMatrix().
+    // Order is scale*rotate*translate
+    return GfMatrix4d(rotate[0][0]*scale[0],
+                      rotate[0][1]*scale[0],
+                      rotate[0][2]*scale[0], 0,
 
-    GfMatrix4d xform;
+                      rotate[1][0]*scale[1],
+                      rotate[1][1]*scale[1],
+                      rotate[1][2]*scale[1], 0,
 
-    bool doScale = scale != GfVec3h(0,0,0);
-    if(doScale)
-        xform.SetScale(scale);
+                      rotate[2][0]*scale[2],
+                      rotate[2][1]*scale[2],
+                      rotate[2][2]*scale[2], 0,
 
-    if(rotate.GetAngle() != 0.0) {
-        if(doScale) {
-            GfMatrix4d rotMx;
-            rotMx.SetRotate(rotate);
-            xform *= rotMx;
-        } else {
-            xform.SetRotate(rotate);
-        }
-    }
-
-    xform.SetTranslateOnly(translate);
-    return xform;
+                      translate[0], translate[1], translate[2], 1);
 }
 
 
@@ -428,7 +422,7 @@ UsdSkelMakeTransform(const GfVec3f& translate,
                      const GfQuatf& rotate,
                      const GfVec3h& scale)
 {
-    return UsdSkelMakeTransform(translate, GfRotation(rotate), scale);
+    return UsdSkelMakeTransform(translate, GfMatrix3f(rotate), scale);
 }
 
 
@@ -516,22 +510,23 @@ UsdSkelComputeJointsExtent(const GfMatrix4d* xforms,
         return false;
     }
 
-    GfRange3d bbox;
+    GfRange3f range;
     if(count > 0) {
-        for(size_t i = 0;i < count; ++i) {
-            GfVec3d pivot = xforms[i].ExtractTranslation();
-            bbox.UnionWith(rootXform ? rootXform->Transform(pivot) : pivot);
+        for(size_t i = 0; i < count; ++i) {
+            GfVec3f pivot(xforms[i].ExtractTranslation());
+            range.UnionWith(rootXform ?
+                            rootXform->TransformAffine(pivot) : pivot);
         }
 
         const GfVec3f padVec(pad);
-        bbox.SetMin(bbox.GetMin()-padVec);
-        bbox.SetMax(bbox.GetMax()+padVec);
+        range.SetMin(range.GetMin()-padVec);
+        range.SetMax(range.GetMax()+padVec);
     }
 
 
     extent->resize(2);
-    (*extent)[0] = GfVec3f(bbox.GetMin());
-    (*extent)[1] = GfVec3f(bbox.GetMax());
+    (*extent)[0] = range.GetMin();
+    (*extent)[1] = range.GetMax();
     return true;
 }
 

@@ -60,6 +60,12 @@ UsdRiStatementsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdRiStatementsAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdRiStatementsAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdRiStatementsAPI
@@ -92,46 +98,13 @@ UsdRiStatementsAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
-UsdAttribute
-UsdRiStatementsAPI::GetFocusRegionAttr() const
-{
-    return GetPrim().GetAttribute(UsdRiTokens->riFocusRegion);
-}
-
-UsdAttribute
-UsdRiStatementsAPI::CreateFocusRegionAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdRiTokens->riFocusRegion,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-namespace {
-static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
-{
-    TfTokenVector result;
-    result.reserve(left.size() + right.size());
-    result.insert(result.end(), left.begin(), left.end());
-    result.insert(result.end(), right.begin(), right.end());
-    return result;
-}
-}
-
 /*static*/
 const TfTokenVector&
 UsdRiStatementsAPI::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames = {
-        UsdRiTokens->riFocusRegion,
-    };
+    static TfTokenVector localNames;
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdAPISchemaBase::GetSchemaAttributeNames(true),
-            localNames);
+        UsdAPISchemaBase::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
@@ -152,15 +125,27 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "typeUtils.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/envSetting.h"
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING, false,
+    "If off, UsdRiStatementsAPI will write old-style attributes.  "
+    "Otherwise, primvars in the ri: namespace will be written instead.");
+
+TF_DEFINE_ENV_SETTING(
+    USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING, true,
+    "If on, UsdRiStatementsAPI will read old-style attributes.  "
+    "Otherwise, primvars in the ri: namespace will be read instead.");
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((fullAttributeNamespace, "ri:attributes:"))
+    ((primvarAttrNamespace, "primvars:ri:attributes:"))
     ((rootNamespace, "ri"))
     ((attributeNamespace, "attributes"))
     ((coordsys, "ri:coordinateSystem"))
@@ -184,12 +169,17 @@ UsdRiStatementsAPI::CreateRiAttribute(
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = UsdRi_GetUsdType(riType);
-    UsdAttribute attr = GetPrim().CreateAttribute(fullName, usdType, 
-                                                  /* custom = */ false);
-    if (!TF_VERIFY(attr)) {
-        return UsdAttribute();
+    if (TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING)) {
+        return UsdGeomPrimvarsAPI(GetPrim())
+            .CreatePrimvar(fullName, usdType).GetAttr();
+    } else {
+        UsdAttribute attr = GetPrim().CreateAttribute(fullName, usdType, 
+                                                      /* custom = */ false);
+        if (!TF_VERIFY(attr)) {
+            return UsdAttribute();
+        }
+        return attr;
     }
-    return attr;
 }
 
 UsdAttribute
@@ -200,88 +190,146 @@ UsdRiStatementsAPI::CreateRiAttribute(
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
     SdfValueTypeName usdType = SdfSchema::GetInstance().FindType(tfType);
-    UsdAttribute attr = GetPrim().CreateAttribute(fullName, usdType,
-                                                  /* custom = */ false);
-    if (!TF_VERIFY(attr)) {
-        return UsdAttribute();
+    if (TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING)) {
+        return UsdGeomPrimvarsAPI(GetPrim())
+            .CreatePrimvar(fullName, usdType).GetAttr();
+    } else {
+        UsdAttribute attr = GetPrim().CreateAttribute(fullName, usdType,
+                                                      /* custom = */ false);
+        if (!TF_VERIFY(attr)) {
+            return UsdAttribute();
+        }
+        return attr;
     }
-    return attr;
 }
 
-UsdRelationship
-UsdRiStatementsAPI::CreateRiAttributeAsRel(
-    const TfToken& name,
-    const string &nameSpace)
+UsdAttribute
+UsdRiStatementsAPI::GetRiAttribute(
+    const TfToken &name, 
+    const std::string &nameSpace)
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
-    return GetPrim().CreateRelationship(fullName, /* custom = */ false);
+    if (UsdGeomPrimvar p = UsdGeomPrimvarsAPI(GetPrim()).GetPrimvar(fullName)) {
+        return p;
+    }
+    if (TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
+        return GetPrim().GetAttribute(fullName);
+    }
+    return UsdAttribute();
 }
 
 std::vector<UsdProperty>
 UsdRiStatementsAPI::GetRiAttributes(
     const string &nameSpace) const
 {
-    std::vector<UsdProperty> props = 
-        GetPrim().GetPropertiesInNamespace(_tokens->fullAttributeNamespace);
-    
     std::vector<UsdProperty> validProps;
-    std::vector<string> names;
-    bool requestedNameSpace = (nameSpace != "");
-    TF_FOR_ALL(propItr, props){
-        UsdProperty prop = *propItr;
-        names = prop.SplitName();
-        if (requestedNameSpace && names[2] != nameSpace) {
-            // wrong namespace
-            continue;
+
+    // Read as primvars.
+    std::string const& ns = _tokens->fullAttributeNamespace.GetString();
+    for (UsdGeomPrimvar const& pv:
+         UsdGeomPrimvarsAPI(GetPrim()).GetPrimvars()) {
+        if (TfStringStartsWith(pv.GetPrimvarName().GetString(), ns)) {
+            validProps.push_back(pv.GetAttr());
         }
-        validProps.push_back(prop);
     }
+
+    // If none found yet, try to read as old-style regular attributes.
+    // We do not support a mix of old- and new-style.
+    if (validProps.empty() &&
+        TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
+        std::vector<UsdProperty> props = 
+            GetPrim().GetPropertiesInNamespace(_tokens->fullAttributeNamespace);
+        std::vector<string> names;
+        bool requestedNameSpace = (nameSpace != "");
+        TF_FOR_ALL(propItr, props){
+            UsdProperty prop = *propItr;
+            names = prop.SplitName();
+            if (requestedNameSpace && names[2] != nameSpace) {
+                // wrong namespace
+                continue;
+            }
+            validProps.push_back(prop);
+        }
+    }
+
     return validProps;
-}
-
-
-bool
-UsdRiStatementsAPI::_IsCompatible(const UsdPrim &prim) const
-{
-    // HasA schemas compatible with all types for now.
-    return true;
 }
 
 TfToken UsdRiStatementsAPI::GetRiAttributeNameSpace(const UsdProperty &prop)
 {
-    std::vector<string> names = prop.SplitName();
-    if (names.size()<4) {
-        return TfToken("");
+    const std::vector<string> names = prop.SplitName();
+    // Parse primvar encoding.
+    if (TfStringStartsWith(prop.GetName(), _tokens->primvarAttrNamespace)) {
+        if (names.size() >= 5) {
+            // Primvar with N custom namespaces:
+            // "primvars:ri:attributes:$(NS_1):...:$(NS_N):$(NAME)"
+            return TfToken(TfStringJoin(names.begin() + 3, names.end()-1, ":"));
+        }
+        return TfToken();
     }
-
-    return TfToken(TfStringJoin(names.begin() + 2, names.end()-1, ":"));
+    // Optionally parse old-style attribute encoding.
+    if (TfStringStartsWith(prop.GetName(), _tokens->fullAttributeNamespace) &&
+        TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
+        if (names.size() >= 4) {
+            // Old-style attribute with N custom namespaces:
+            // "ri:attributes:$(NS_1):...:$(NS_N):$(NAME)"
+            return TfToken(TfStringJoin(names.begin() + 2, names.end()-1, ":"));
+        }
+    }
+    return TfToken();
 }
 
 bool
 UsdRiStatementsAPI::IsRiAttribute(const UsdProperty &attr)
 {
-    return TfStringStartsWith(attr.GetName(), _tokens->fullAttributeNamespace);
+    // Accept primvar encoding.
+    if (TfStringStartsWith(attr.GetName(), _tokens->primvarAttrNamespace)) {
+        return true;
+    }
+    // Optionally accept old-style attribute encoding.
+    if (TfStringStartsWith(attr.GetName(), _tokens->fullAttributeNamespace) &&
+        TfGetEnvSetting(USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING)) {
+        return true;
+    }
+    return false;
 }
 
 std::string
 UsdRiStatementsAPI::MakeRiAttributePropertyName(const std::string &attrName)
 {
     std::vector<string> names = TfStringTokenize(attrName, ":");
-    if (names.size() == 4 && TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
+
+    // If this is an already-encoded name, return it unchanged.
+    if (TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING)) {
+        if (names.size() == 5 &&
+            TfStringStartsWith(attrName, _tokens->primvarAttrNamespace)) {
+            return attrName;
+        }
+    }
+    if (names.size() == 4 &&
+        TfStringStartsWith(attrName, _tokens->fullAttributeNamespace)) {
         return attrName;
     }
+
+    // Attempt to parse namespaces in different forms.
     if (names.size() == 1) {
         names = TfStringTokenize(attrName, ".");
     }
     if (names.size() == 1) {
         names = TfStringTokenize(attrName, "_");
     }
-    
+
+    // Fallback to user namespace if no other exists.
     if (names.size() == 1) {
         names.insert(names.begin(), "user");
     }
 
-    string fullName = _tokens->fullAttributeNamespace.GetString() + 
+    TfToken prefix =
+        TfGetEnvSetting(USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING) ?
+        _tokens->primvarAttrNamespace :
+        _tokens->fullAttributeNamespace;
+
+    string fullName = prefix.GetString() + 
         names[0] + ":" + ( names.size() > 2 ?
                            TfStringJoin(names.begin() + 1, names.end(), "_")
                            : names[1]);

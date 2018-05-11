@@ -284,5 +284,50 @@ class TestUsdFlatten(unittest.TestCase):
         self.assertEqual(
             resultLayer.QueryTimeSample(resultAttrSpec.path, 1.0), 101.0)
 
+    def test_FlattenAssetPaths(self):
+        testFile = "assetPaths/root.usda"
+
+        stage = Usd.Stage.Open(testFile)
+        resultLayer = stage.Flatten()
+
+        # All asset paths in the flattened result should be anchored,
+        # even though the asset being referred to does not exist.
+        attr = resultLayer.GetAttributeAtPath("/AssetPathTest.assetPath")
+        
+        timeSamples = attr.GetInfo("timeSamples")
+        self.assertEqual(os.path.normpath(timeSamples[0].path),
+                         os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(os.path.normpath(timeSamples[1].path),
+                         os.path.abspath("assetPaths/asset.usda"))
+        
+        self.assertEqual(
+            os.path.normpath(attr.GetInfo("default").path), 
+            os.path.abspath("assetPaths/asset.usda"))
+        
+        attr = resultLayer.GetAttributeAtPath("/AssetPathTest.assetPathArray")
+        self.assertEqual(
+            list([os.path.normpath(p.path) for p in attr.GetInfo("default")]),
+            [os.path.abspath("assetPaths/asset.usda")])
+
+        prim = resultLayer.GetPrimAtPath("/AssetPathTest")
+        metadataDict = prim.GetInfo("customData")
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].path),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.path) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+            
+        metadataDict = metadataDict["subDict"]
+        self.assertEqual(
+            os.path.normpath(metadataDict["assetPath"].path),
+            os.path.abspath("assetPaths/asset.usda"))
+        self.assertEqual(
+            list([os.path.normpath(p.path) 
+                  for p in metadataDict["assetPathArray"]]),
+            [os.path.abspath("assetPaths/asset.usda")])
+
+
 if __name__ == "__main__":
     unittest.main()

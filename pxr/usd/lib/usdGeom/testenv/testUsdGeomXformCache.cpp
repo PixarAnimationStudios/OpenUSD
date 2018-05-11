@@ -290,50 +290,6 @@ void VerifyTransforms(UsdStageRefPtr const& stage,
     TF_VERIFY(ctm == (xform),
               "ComputeRelativeTransform value for (%s,%s) is incorrect.",
               bar.GetPath().GetText(), root.GetPath().GetText());
-
-    // --------------------------------------------------------------------- //
-    // Test Nested Root
-    // --------------------------------------------------------------------- //
-
-    TF_VERIFY(xfCache.GetWorldPath() == SdfPath::AbsoluteRootPath());
-
-    xfCache.SetWorldPath(fooPath);
-    TF_VERIFY(xfCache.GetWorldPath() == fooPath);
-
-    // Should return xform * xform
-    ctm = xfCache.GetLocalToWorldTransform(fooBarBaz);
-    TF_VERIFY(ctm == (xform * xform),
-              "LocalToWorldTransform value for %s is incorrect.",
-              fooBarBaz.GetPath().GetText());
-
-    // Should return xform
-    ctm = xfCache.GetParentToWorldTransform(fooBarBaz);
-    TF_VERIFY(ctm == xform,
-              "ParentToWorldTransform value for %s is incorrect.",
-              fooBarBaz.GetPath().GetText());
-
-    TfErrorMark outsideWorldPathLocalErrorMark;
-    ctm = xfCache.GetLocalToWorldTransform(bar);
-    TF_VERIFY(!outsideWorldPathLocalErrorMark.IsClean());
-    TF_VERIFY(ctm == GfMatrix4d(1),
-              "LocalToWorldTransform error value for %s is incorrect.",
-              bar.GetPath().GetText());
-
-    TfErrorMark outsideWorldPathParentErrorMark;
-    ctm = xfCache.GetParentToWorldTransform(bar);
-    TF_VERIFY(!outsideWorldPathParentErrorMark.IsClean());
-    TF_VERIFY(ctm == GfMatrix4d(1),
-              "ParentToWorldTransform error value for %s is incorrect.",
-              bar.GetPath().GetText());
-
-    TfErrorMark badWorldPathErrorMark;
-    std::cerr << "==== Expected error output ====\n";
-    xfCache.SetWorldPath(SdfPath("../Scope"));
-    TF_VERIFY(!badWorldPathErrorMark.IsClean());
-    std::cerr << "==== End expected errors ====\n";
-    TF_VERIFY(xfCache.GetWorldPath() == fooPath);
-
-    xfCache.SetWorldPath(SdfPath::AbsoluteRootPath());
 }
 
 void XformCacheTest(UsdStageRefPtr const& stage)

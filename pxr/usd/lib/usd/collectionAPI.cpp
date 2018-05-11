@@ -60,6 +60,12 @@ UsdCollectionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdCollectionAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdCollectionAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdCollectionAPI
@@ -119,6 +125,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -129,9 +137,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (excludes)
 );
 
-UsdCollectionAPI::operator bool() const
+
+/* virtual */
+bool 
+UsdCollectionAPI::_IsCompatible() const
 {
-    return !_name.IsEmpty() && _GetExpansionRuleAttr();
+    return UsdAPISchemaBase::_IsCompatible() && 
+           !GetName().IsEmpty() && 
+           _GetExpansionRuleAttr();
 }
 
 /* static */
@@ -143,6 +156,11 @@ UsdCollectionAPI::ApplyCollection(
 {
     // Ensure that the collection name is valid.
     TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
+
+    if (tokens.empty()) {
+        TF_CODING_ERROR("Invalid collection name '%s'.", name.GetText());
+        return UsdCollectionAPI();
+    }
 
     TfToken baseName = *tokens.rbegin();
     if (IsSchemaPropertyBaseName(baseName)) {
@@ -209,7 +227,7 @@ UsdCollectionAPI::_GetCollectionPropertyName(
     const TfToken &baseName /* =TfToken() */) const
 {
     return TfToken(UsdTokens->collection.GetString() + ":" + 
-                   _name.GetString() + 
+                   GetName().GetString() + 
                    (baseName.IsEmpty() ? "" : (":" + baseName.GetString())));
 }
 
@@ -481,7 +499,7 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
                 TF_WARN("Could not get prim at path <%s>, therefore cannot "
                     "include its collection '%s' in collection '%s'.",
                     includedPrimPath.GetText(), collectionName.GetText(),
-                    _name.GetText());
+                    GetName().GetText());
                 continue;
             }
 
@@ -911,6 +929,34 @@ UsdCollectionAPI::MembershipQuery::_MergeMembershipQuery(
         _pathExpansionRuleMap[pathAndExpansionRule.first] = 
             pathAndExpansionRule.second;
     }
+}
+
+size_t
+UsdCollectionAPI::MembershipQuery::Hash::operator()( MembershipQuery const& q)
+    const
+{
+    TRACE_FUNCTION();
+
+    // Hashing unordered maps is costly because two maps holding the
+    // same (key,value) pairs may store them in a different layout,
+    // due to population history.  We must use a history-independent
+    // order to compute a consistent hash value.
+    //
+    // If the runtime cost becomes problematic, we should consider
+    // computing the hash once and storing it in the MembershipQuery,
+    // as a finalization step in _ComputeMembershipQueryImpl().
+    typedef std::pair<SdfPath, TfToken> _Entry;
+    std::vector<_Entry> entries(q._pathExpansionRuleMap.begin(),
+                                q._pathExpansionRuleMap.end());
+    std::sort(entries.begin(), entries.end());
+    size_t h = 0;
+    for (_Entry const& entry: entries) {
+        boost::hash_combine(h, entry.first);
+        boost::hash_combine(h, entry.second);
+    }
+    // Don't hash _hasExcludes because it is derived from
+    // the contents of _pathExpansionRuleMap.
+    return h;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

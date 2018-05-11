@@ -37,7 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class GusdUSD_Traverse;
-class GusdUT_ErrorContext;
+
 
 class GusdSOP_usdunpack : public SOP_Node
 {
@@ -65,8 +65,7 @@ protected:
                    const GusdDefaultArray<UsdTimeCode>& times,
                    const GusdDefaultArray<GusdPurposeSet>& purposes,
                    bool skipRoot,
-                   UT_Array<GusdUSD_Traverse::PrimIndexPair>& traversed,
-                   GusdUT_ErrorContext& err);
+                   UT_Array<GusdUSD_Traverse::PrimIndexPair>& traversed);
 
 
     /** Add micro nodes of all traversal parms as dependencies

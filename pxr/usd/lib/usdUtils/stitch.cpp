@@ -24,503 +24,402 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/stitch.h"
 
-#include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/copyUtils.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/propertySpec.h"
-#include "pxr/usd/sdf/relationshipSpec.h"
 
+#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/warning.h"
 #include "pxr/base/tf/token.h"
 
-#include <set>
-#include <string>
 #include <algorithm>
+#include <functional>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
- 
-
-// utility functions, not to be exposed as public facing API
 namespace {
-    ////////////////////////////////////////////////////////////////////////////
-    // XXX(Frame->Time): backwards compatibility
-    // Temporary helper functions to support backwards compatibility.
-    // -------------------------------------------------------------------------
 
-    static
-    bool
-    _HasStartFrame(const SdfLayerConstHandle &layer)
-    {
-        return layer->GetPseudoRoot()->HasInfo(SdfFieldKeys->StartFrame);
-    }
+VtValue
+_Reduce(
+    SdfVariantSelectionMap& stronger,
+    const SdfVariantSelectionMap& weaker
+)
+{
+    stronger.insert(weaker.begin(), weaker.end());
+    return VtValue::Take(stronger);
+}
 
-    static
-    bool
-    _HasEndFrame(const SdfLayerConstHandle &layer)
-    {
-        return layer->GetPseudoRoot()->HasInfo(SdfFieldKeys->EndFrame);
-    }
+VtValue
+_Reduce(const VtDictionary &stronger, const VtDictionary &weaker)
+{
+    // Dictionaries compose keys recursively.
+    return VtValue(VtDictionaryOverRecursive(stronger, weaker));
+}
 
-    static
-    double
-    _GetStartFrame(const SdfLayerConstHandle &layer)
-    {
-        VtValue startFrame = layer->GetPseudoRoot()->GetInfo(SdfFieldKeys->StartFrame);
-        if (startFrame.IsHolding<double>())
-            return startFrame.UncheckedGet<double>();
-        return 0.0;
-    }
-
-    static
-    double
-    _GetEndFrame(const SdfLayerConstHandle &layer)
-    {
-        VtValue endFrame = layer->GetPseudoRoot()->GetInfo(SdfFieldKeys->EndFrame);
-        if (endFrame.IsHolding<double>())
-            return endFrame.UncheckedGet<double>();
-        return 0.0;
-    }
-
-    // Backwards compatible helper function for getting the startTime of a 
-    // layer. 
-    static 
-    double
-    _GetStartTimeCode(const SdfLayerConstHandle &layer) 
-    {
-        return layer->HasStartTimeCode() ? 
-            layer->GetStartTimeCode() : 
-            (_HasStartFrame(layer) ? _GetStartFrame(layer) : 0.0);
-    }
-
-    // Backwards compatible helper function for getting the endTime of a 
-    // layer. 
-    static 
-    double
-    _GetEndTimeCode(const SdfLayerConstHandle &layer) 
-    {
-        return layer->HasEndTimeCode() ? 
-            layer->GetEndTimeCode() : 
-            (_HasEndFrame(layer) ? _GetEndFrame(layer) : 0.0);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    // functions for combining ancilliary data in objects or layers
-    // ------------------------------------------------------------------------
-    void _StitchFrameRanges(const SdfLayerHandle&, const SdfLayerHandle&);
-    void _StitchFramesPerSecond(const SdfLayerHandle&, const SdfLayerHandle&);
-    void _StitchFramePrecision(const SdfLayerHandle&, const SdfLayerHandle&);
-    void _StitchFrameInfo(const SdfLayerHandle&, const SdfLayerHandle&);
-
-    // functions for merging two objects
-    // ------------------------------------------------------------------------
-    void _StitchPrims(const SdfPrimSpecHandle&, const SdfPrimSpecHandle&,
-                      bool);
-    void _StitchAttributes(const SdfPrimSpecHandle&, const SdfPrimSpecHandle&,
-                           bool);
-    void _StitchRelationships(const SdfPrimSpecHandle&, 
-                              const SdfPrimSpecHandle&, bool);
-    std::vector<TfToken> _ObtainRelevantKeysToStitch(const SdfSpecHandle&);
-
-    // copy functions
-    // ------------------------------------------------------------------------
-    void _MakePrimCopy(const SdfPrimSpecHandle&, const SdfPrimSpecHandle&,
-                       bool);
-    void _MakeRelationshipCopy(const SdfPrimSpecHandle&, 
-                               const SdfRelationshipSpecHandle&, bool);
-    void _MakeAttributeCopy(const SdfPrimSpecHandle&, 
-                            const SdfAttributeSpecHandle&, bool); 
-
-    // generate warnings based on inconsistencies in the generated layer
-    // ------------------------------------------------------------------------
-    void _VerifyLayerIntegrity(const SdfLayerHandle&);
-
-    // stitching functions
-    // ------------------------------------------------------------------------
-    void 
-    _StitchFrameRanges(const SdfLayerHandle& strongLayer,
-                       const SdfLayerHandle& weakLayer) 
-    {
-        if (weakLayer->HasStartTimeCode() || _HasStartFrame(weakLayer)) {
-            double startTimeCode = std::min(_GetStartTimeCode(weakLayer), 
-                                            _GetStartTimeCode(strongLayer));
-            strongLayer->SetStartTimeCode(startTimeCode);
-        }
-        
-        if (weakLayer->HasEndTimeCode() || _HasEndFrame(weakLayer)) {
-            double endTimeCode = std::max(_GetEndTimeCode(weakLayer),
-                                          _GetEndTimeCode(strongLayer));
-            strongLayer->SetEndTimeCode(endTimeCode);
+// "Fix" a list op to only use composable features.
+template <typename T>
+SdfListOp<T>
+_FixListOp(SdfListOp<T> op)
+{
+    std::vector<T> items;
+    items = op.GetAppendedItems();
+    for (const T& item: op.GetAddedItems()) {
+        if (std::find(items.begin(), items.end(), item) == items.end()) {
+            items.push_back(item);
         }
     }
+    op.SetAppendedItems(items);
+    op.SetAddedItems(std::vector<T>());
+    op.SetOrderedItems(std::vector<T>());
+    return op;
+}
 
-    void 
-    _StitchFramesPerSecond(const SdfLayerHandle& strongLayer, 
-                           const SdfLayerHandle& weakLayer) 
-    {
-        if (weakLayer->HasFramesPerSecond()) {
-            if (strongLayer->HasFramesPerSecond()) {
-               if (strongLayer->GetFramesPerSecond() !=
-                   weakLayer->GetFramesPerSecond()) {
-                    TF_WARN("Mismatched fps's in usd files ");
-               }
+template <typename T>
+VtValue
+_Reduce(const SdfListOp<T> &stronger, const SdfListOp<T> &weaker)
+{
+    boost::optional<SdfListOp<T>> r = stronger.ApplyOperations(weaker);
+    if (r) {
+        return VtValue(*r);
+    }
+    // List ops that use added or reordered items cannot, in general, be
+    // composed into another listop. In those cases, we fall back to a
+    // best-effort approximation by discarding reorders and converting
+    // adds to appends.
+    r = _FixListOp(stronger).ApplyOperations(_FixListOp(weaker));
+    if (r) {
+        return VtValue(*r);
+    }
+    // The approximation used should always be composable,
+    // so error if that didn't work.
+    TF_CODING_ERROR("Could not reduce listOp %s over %s",
+                    TfStringify(stronger).c_str(), TfStringify(weaker).c_str());
+    return VtValue();
+}
 
-            } else {
-                strongLayer
-                    ->SetFramesPerSecond(weakLayer->GetFramesPerSecond());
-            }   
-        }
+template <class T>
+static bool
+_MergeValue(
+    const TfToken& field, const VtValue& fallback,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath,
+    boost::optional<VtValue>* valueToCopy)
+{
+    if (!fallback.IsHolding<T>()) {
+        return false;
     }
 
-    void 
-    _StitchFramePrecision(const SdfLayerHandle& strongLayer, 
-                          const SdfLayerHandle& weakLayer) 
-    {
-        if (weakLayer->HasFramePrecision()) {
-            if (strongLayer->HasFramePrecision()) {
-                if (strongLayer->GetFramePrecision() != 
-                    weakLayer->GetFramePrecision()) {
-                    TF_WARN("Mismatched frame precisions in usd files"); 
-                }
-            } else {
-                strongLayer->SetFramePrecision(weakLayer->GetFramePrecision());
+    T srcValue, dstValue;
+    if (!TF_VERIFY(srcLayer->HasField(srcPath, field, &srcValue))
+        || !TF_VERIFY(dstLayer->HasField(dstPath, field, &dstValue))) {
+        return false;
+    }
+
+    VtValue mergedValue = _Reduce(srcValue, dstValue);
+    if (!mergedValue.IsEmpty()) {
+        (*valueToCopy) = VtValue();
+        (*valueToCopy)->Swap(mergedValue);
+        return true;
+    }
+
+    return false;
+}
+
+static bool
+_MergeValueFn(
+    SdfSpecType specType, const TfToken& field,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
+    boost::optional<VtValue>* valueToCopy,
+    const UsdUtilsStitchValueFn& stitchFn)
+{
+    TF_VERIFY(srcPath == dstPath);
+
+    if (stitchFn) {
+        VtValue value;
+
+        // Note that the source layer corresponds to the weaker layer and
+        // the destination layer corresponds to the stronger layer in the
+        // callback signature.
+        using Status = UsdUtilsStitchValueStatus;
+        const Status status = stitchFn(
+            field, srcPath, dstLayer, fieldInDst, srcLayer, fieldInSrc, &value);
+
+        if (status == Status::NoStitchedValue) {
+            return false;
+        }
+        else if (status == Status::UseSuppliedValue) {
+            (*valueToCopy) = VtValue();
+            (*valueToCopy)->Swap(value);
+            return true;
+        }
+        // Fall through to default stitching behavior.
+    }
+
+    // Field does not exist in source; don't copy this over, since that will
+    // clear the value in the destination.
+    if (!fieldInSrc) {
+        return false;
+    }
+
+    // Field does not exist in destination; just copy whatever's in the
+    // source over.
+    if (!fieldInDst) {
+        return true;
+    }
+
+    // Merge specific fields together.
+    if (field == SdfFieldKeys->TimeSamples) {
+        SdfTimeSampleMap edits;
+        for (const double time : srcLayer->ListTimeSamplesForPath(srcPath)) {
+            if (!dstLayer->QueryTimeSample(dstPath, time)) {
+                VtValue srcSample;
+                srcLayer->QueryTimeSample(srcPath, time, &srcSample);
+                edits[time].Swap(srcSample);
             }
         }
-    }
 
-    void
-    _StitchPrims(const SdfPrimSpecHandle& strongPrim,
-                 const SdfPrimSpecHandle& weakPrim,
-                 bool ignoreTimeSamples)
-    {
-        for (const auto& weakPrimIter : weakPrim->GetNameChildren()) {
-            // lookup prim in strong layer
-            SdfPrimSpecHandle strongPrimHandle 
-                = strongPrim->GetPrimAtPath(weakPrimIter->GetPath()); 
-
-            // if we don't have a matching prim in the strong layer
-            // we can simply insert a copy of the weak's prim
-            if (!strongPrimHandle) {
-                _MakePrimCopy(strongPrim, weakPrimIter, ignoreTimeSamples); 
-            } else {
-                // Passing corresponding prims through
-                //
-                // i.e.
-                //
-                // ( root)             (root)
-                // |                   |
-                // |___(prim "foo")    |___(prim "foo")
-                //
-                // The prims should correspond to one another
-                // in terms of path /root/primfoo /root/primfoo
-                _StitchAttributes(strongPrimHandle, weakPrimIter,
-                                  ignoreTimeSamples);
-                _StitchRelationships(strongPrimHandle, weakPrimIter,
-                                     ignoreTimeSamples);
-                UsdUtilsStitchInfo(strongPrimHandle, weakPrimIter, 
-                                   ignoreTimeSamples);
-                _StitchPrims(strongPrimHandle, weakPrimIter, ignoreTimeSamples);
-            }
-        }
-    }
-    
-    void 
-    _StitchAttributes(const SdfPrimSpecHandle& strongPrim,
-                      const SdfPrimSpecHandle& weakPrim,
-                      bool ignoreTimeSamples) 
-    {
-        for (const auto& childAttribute : weakPrim->GetAttributes()) {
-            SdfPath pathToChildAttr = childAttribute->GetPath();
-            SdfAttributeSpecHandle strongAttrHandle
-                = strongPrim->GetAttributeAtPath(pathToChildAttr);
-
-            if (!strongAttrHandle) {
-                _MakeAttributeCopy(strongPrim, childAttribute, 
-                                   ignoreTimeSamples);
-            } else {
-                UsdUtilsStitchInfo(strongAttrHandle, childAttribute,
-                                   ignoreTimeSamples);
-
-                if (ignoreTimeSamples) {
-                    continue;
-                }
-
-                SdfLayerHandle weakParent = weakPrim->GetLayer();
-                SdfLayerHandle strongParent = strongPrim->GetLayer();
-                SdfPath currAttrPath = strongAttrHandle->GetPath();
-
-                // time samples needs special attention, we can't simply
-                // call UsdUtilsStitchInfo(), because both attributes will
-                // have the key 'timeSamples', and we must do an inner compare
-                for (const double timeSamplePoint 
-                        : weakParent->ListTimeSamplesForPath(currAttrPath)) {
-                    // if the parent doesn't contain the time
-                    // sample point key in its dict
-                    if (!strongParent->QueryTimeSample(pathToChildAttr,
-                                                          timeSamplePoint)) {
-                        VtValue timeSampleValue; 
-                        weakParent->QueryTimeSample(pathToChildAttr,
-                                                    timeSamplePoint,
-                                                    &timeSampleValue);
-
-                        strongParent->SetTimeSample(pathToChildAttr,
-                                                    timeSamplePoint,
-                                                    timeSampleValue);
+        if (!edits.empty()) {
+            *valueToCopy = VtValue(SdfCopySpecsValueEdit(
+                [edits](const SdfLayerHandle& layer, const SdfPath& path) {
+                    for (const auto& entry : edits) {
+                        layer->SetTimeSample(path, entry.first, entry.second);
                     }
-                }
-            }
+                }));
+            return true;
+        }
+        return false;
+    }
+    else if (field == SdfFieldKeys->StartTimeCode) {
+        double srcStartCode, dstStartCode;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcStartCode));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstStartCode));
+        *valueToCopy = VtValue(std::min(srcStartCode, dstStartCode));
+        return true;
+    }
+    else if (field == SdfFieldKeys->EndTimeCode) {
+        double srcEndCode, dstEndCode;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcEndCode));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstEndCode));
+        *valueToCopy = VtValue(std::max(srcEndCode, dstEndCode));
+        return true;
+    }
+
+    // Validate that certain fields match between both layers,
+    // but leave the stronger value in place.
+    if (field == SdfFieldKeys->FramesPerSecond) {
+        double srcFPS, dstFPS;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcFPS));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstFPS));
+        if (srcFPS != dstFPS) {
+            TF_WARN(
+                "Mismatched framesPerSecond values in @%s@ and @%s@",
+                srcLayer->GetIdentifier().c_str(),
+                dstLayer->GetIdentifier().c_str());
+        }
+        return false;
+    }
+    else if (field == SdfFieldKeys->TimeCodesPerSecond) {
+        double srcTPS, dstTPS;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcTPS));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstTPS));
+        if (srcTPS != dstTPS) {
+            TF_WARN(
+                "Mismatched timeCodesPerSecond values in @%s@ and @%s@",
+                srcLayer->GetIdentifier().c_str(),
+                dstLayer->GetIdentifier().c_str());
+        }
+        return false;
+    }
+    else if (field == SdfFieldKeys->FramePrecision) {
+        double srcPrecision, dstPrecision;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcPrecision));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstPrecision));
+        if (srcPrecision != dstPrecision) {
+            TF_WARN(
+                "Mismatched framePrecision values in @%s@ and @%s@",
+                srcLayer->GetIdentifier().c_str(),
+                dstLayer->GetIdentifier().c_str());
+        }
+        return false;
+    }
+
+    // Merge fields based on type. If the field is not one of these types,
+    // return false to indicate that the stronger value should not be
+    // copied over.
+    const VtValue fallback = srcLayer->GetSchema().GetFallback(field); 
+    return _MergeValue<VtDictionary>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfVariantSelectionMap>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfIntListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfUIntListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfUInt64ListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfTokenListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfStringListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfPathListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfReferenceListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfUnregisteredValueListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        ;
+}
+
+static bool
+_DontCopyChildrenFn(
+    const TfToken& childrenField,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool childrenInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
+    boost::optional<VtValue>* srcChildren, 
+    boost::optional<VtValue>* dstChildren)
+{
+    return false;
+}
+
+template <class T>
+static bool
+_MergeChildren(
+    const TfToken& field, const VtValue& fallback,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath,
+    boost::optional<VtValue>* finalSrcValue, 
+    boost::optional<VtValue>* finalDstValue)
+{
+    if (!fallback.IsHolding<T>()) {
+        return false;
+    }
+
+    T srcChildren, dstChildren;
+    if (!TF_VERIFY(srcLayer->HasField(srcPath, field, &srcChildren))
+        || !TF_VERIFY(dstLayer->HasField(dstPath, field, &dstChildren))) {
+        return false;
+    }
+
+    T finalSrcChildren(dstChildren.size());
+    T finalDstChildren(dstChildren);
+
+    for (const auto& srcChild : srcChildren) {
+        auto dstChildIt = std::find(
+            finalDstChildren.begin(), finalDstChildren.end(), srcChild);
+        if (dstChildIt == finalDstChildren.end()) {
+            finalSrcChildren.push_back(srcChild);
+            finalDstChildren.push_back(srcChild);
+        }
+        else {
+            const size_t idx = 
+                std::distance(finalDstChildren.begin(), dstChildIt);
+            finalSrcChildren[idx] = srcChild;
         }
     }
 
-    void
-    _StitchRelationships(const SdfPrimSpecHandle& strongPrim,
-                         const SdfPrimSpecHandle& weakPrim,
-                         bool ignoreTimeSamples) 
-    {
-        for (const auto& childRelationship : weakPrim->GetRelationships()) {
-            SdfPath pathToChildRel = childRelationship->GetPath();
-            SdfRelationshipSpecHandle strongRelHandle
-                = strongPrim->GetRelationshipAtPath(pathToChildRel);
+    *finalSrcValue = VtValue::Take(finalSrcChildren);
+    *finalDstValue = VtValue::Take(finalDstChildren);
+    return true;
+}
 
-            if (!strongRelHandle) {
-                _MakeRelationshipCopy(strongPrim, childRelationship,
-                                      ignoreTimeSamples);
-            } else {
-                UsdUtilsStitchInfo(strongRelHandle, childRelationship,
-                                   ignoreTimeSamples);
-            }
-        }
+static bool
+_MergeChildrenFn(
+    const TfToken& childrenField,
+    const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool childrenInSrc,
+    const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
+    boost::optional<VtValue>* finalSrcChildren, 
+    boost::optional<VtValue>* finalDstChildren)
+{
+    if (!childrenInSrc) {
+        // Children on the destination spec are never cleared if the
+        // source spec does not have any children of the same type.
+        return false;
     }
 
-    void
-    _StitchFrameInfo(const SdfLayerHandle& strongLayer,
-                            const SdfLayerHandle& weakLayer)
-    {
-        _StitchFrameRanges(strongLayer, weakLayer);
-        _StitchFramePrecision(strongLayer, weakLayer);
-        _StitchFramesPerSecond(strongLayer, weakLayer);
+    if (!childrenInDst) {
+        // No children of the given type exist in the destination.
+        // Copy all of the children from the source over.
+        return true;
     }
 
-    // functions for creating a copy of some object type under a root
-    // -----------------------------------------------------------------------
-    void
-    _MakePrimCopy(const SdfPrimSpecHandle& strongPrim,
-                  const SdfPrimSpecHandle& primToCopy,
-                  bool ignoreTimeSamples) 
-    {
-        SdfPrimSpecHandle newPrim = SdfPrimSpec::New(strongPrim, 
-                                                     primToCopy->GetName(),
-                                                     primToCopy->GetSpecifier(),
-                                                     primToCopy->GetTypeName());
-       
-        // Stitch will make copies in this case because none of the infoKeys 
-        // will be in the fresh copy 'newPrim'
-        UsdUtilsStitchInfo(newPrim, primToCopy, ignoreTimeSamples);
-
-        // copy child prims
-        for (const auto& childPrim : primToCopy->GetNameChildren()) {
-            _MakePrimCopy(newPrim, childPrim, ignoreTimeSamples); 
-        }
-
-        // copy child attributes
-        for (const auto& childAttribute : primToCopy->GetAttributes()) {
-            _MakeAttributeCopy(newPrim, childAttribute, ignoreTimeSamples);
-        }
-
-        // copy child relationships
-        for (const auto& childRelationship : primToCopy->GetRelationships()) {
-            _MakeRelationshipCopy(newPrim, childRelationship,ignoreTimeSamples);
-        }
+    // There are children under both the source and destination spec.
+    // We need to merge the two lists. 
+    const VtValue fallback = srcLayer->GetSchema().GetFallback(childrenField); 
+    if (_MergeChildren<std::vector<TfToken>>(
+            childrenField, fallback, srcLayer, srcPath, dstLayer, dstPath, 
+            finalSrcChildren, finalDstChildren)
+        || _MergeChildren<std::vector<SdfPath>>(
+            childrenField, fallback, srcLayer, srcPath, dstLayer, dstPath, 
+            finalSrcChildren, finalDstChildren)) {
+        return true;
     }
 
-    void
-    _MakeRelationshipCopy(const SdfPrimSpecHandle& strongPrim,
-                          const SdfRelationshipSpecHandle& relToCopy,
-                          bool ignoreTimeSamples) 
-    {
-        SdfRelationshipSpecHandle newRel 
-            = SdfRelationshipSpec::New(strongPrim,
-                                       relToCopy->GetName(),
-                                       relToCopy->IsCustom(),
-                                       relToCopy->GetVariability());
-     
-        UsdUtilsStitchInfo(newRel, relToCopy, ignoreTimeSamples);
-    }
+    TF_CODING_ERROR(
+        "Children field '%s' holding unexpected type '%s'", 
+        childrenField.GetText(), fallback.GetTypeName().c_str());
 
-    void
-    _MakeAttributeCopy(const SdfPrimSpecHandle& strongPrim,
-                       const SdfAttributeSpecHandle& attrToCopy,
-                       bool ignoreTimeSamples) 
-    {
-        // XXX: note that USD doesn't currently support expressions nor mappers.
-        SdfAttributeSpecHandle newAttr 
-            = SdfAttributeSpec::New(strongPrim, 
-                                    attrToCopy->GetName(),
-                                    attrToCopy->GetTypeName(),
-                                    attrToCopy->GetVariability(),
-                                    attrToCopy->IsCustom());
+    return false;
+}
 
-        UsdUtilsStitchInfo(newAttr, attrToCopy, ignoreTimeSamples);
-    }
-
-    // misc helper functions
-    // ------------------------------------------------------------------------
-    void
-    _VerifyLayerIntegrity(const SdfLayerHandle& strongLayer)
-    {
-        // verify that if one frame-info is self consistent 
-        std::string strongFileName = strongLayer->GetDisplayName();
-        bool hasStartTimeCode = strongLayer->HasStartTimeCode();
-        bool hasEndTimeCode = strongLayer->HasEndTimeCode();
-        std::set<double> timeSamples = strongLayer->ListAllTimeSamples();
-
-        if (hasStartTimeCode && !hasEndTimeCode) {
-            TF_WARN("Missing endTimeCode in %s", strongFileName.c_str());
-        } else if (!hasStartTimeCode && hasEndTimeCode) {
-            TF_WARN("Missing startTimeCode in %s", strongFileName.c_str());
-        } else if (!timeSamples.empty() 
-                   && (hasStartTimeCode && hasEndTimeCode)) {
-            if (*timeSamples.begin() < strongLayer->GetStartTimeCode()) {
-                TF_WARN("Result has time sample point before startTimeCode");
-            }
-            if (*timeSamples.rbegin() > strongLayer->GetEndTimeCode()) {
-                TF_WARN("Result has time sample point after endTimeCode");
-            }
-        }
-    }
-
-    // These keys represent data we wish to filter out of our token search
-    // when stitching data in a SdfSpec.
-    TF_MAKE_STATIC_DATA(std::vector<TfToken>, _SortedChildrenTokens) {
-        *_SortedChildrenTokens = SdfChildrenKeys->allTokens;
-        std::sort(_SortedChildrenTokens->begin(), _SortedChildrenTokens->end());
-    } 
-
-    // This function returns the keys we will want to stitch for a 
-    // particular spec. It filters out various book-keeping data that
-    // are stored in the set of fields but need not be copied.
-    std::vector<TfToken> 
-    _ObtainRelevantKeysToStitch(const SdfSpecHandle& spec) {
-        
-        std::vector<TfToken> specFields = spec->ListFields();
-        std::sort(specFields.begin(), specFields.end());
-
-        std::vector<TfToken> relevantKeys;
-        relevantKeys.reserve(specFields.size());
-        std::set_difference(specFields.begin(), 
-                            specFields.end(),
-                            _SortedChildrenTokens->begin(), 
-                            _SortedChildrenTokens->end(),
-                            std::back_inserter(relevantKeys));
-        return relevantKeys;
-    }
 } // end anon namespace
 
 // public facing API
 // ----------------------------------------------------------------------------
 
 void
-UsdUtilsStitchInfo(const SdfSpecHandle& strongObj,
-                   const SdfSpecHandle& weakObj,
-                   bool ignoreTimeSamples)
+UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj,
+    const SdfSpecHandle& weakObj)
 {
-    for (const auto& key : _ObtainRelevantKeysToStitch(weakObj)) {
-        const VtValue strongValue = strongObj->GetSchema().GetFallback(key); 
-            
-        // if we have a dictionary type, we need to do a merge
-        // on the contained dicts recursively with VtDictionaryOver
-        if (strongValue.IsHolding<VtDictionary>()) {
-            // construct VtDicts and merge them 
-            VtDictionary strongDict 
-                = strongObj->GetInfo(key).Get<VtDictionary>();
-            VtDictionary weakDict 
-                = weakObj->GetInfo(key).Get<VtDictionary>();
-            // note that VtDictionaryOver() implicitly gives 
-            // opinion strength to its leftmost 'strong' argument
-            // which preserves our opinion strength convention
-            VtValue mergedDict 
-                = VtValue(VtDictionaryOver(strongDict,weakDict));
-            strongObj->SetInfo(key, mergedDict);
+    UsdUtilsStitchInfo(strongObj, weakObj, UsdUtilsStitchValueFn());
+}
 
-        // XXX used by stitchmodelclips for ignoring time samples
-        } else if(ignoreTimeSamples && key == SdfFieldKeys->TimeSamples) {
-           continue; 
+void
+UsdUtilsStitchInfo(
+    const SdfSpecHandle& strongObj,
+    const SdfSpecHandle& weakObj,
+    const UsdUtilsStitchValueFn& stitchValueFn)
+{
+    namespace ph = std::placeholders;
 
-        // if the info is a target path, we need to copy via the 
-        // targetpath API as set-info would cause a read-only failure
-        // by simply using SetInfo as we do below
-        } else if (key == SdfFieldKeys->TargetPaths) { 
-            if (!strongObj->HasInfo(key)) {
-                // we can safely create relationship handles here as we 
-                // know target paths will only pop up on relationships
-                SdfRelationshipSpecHandle strongRelHandle 
-                    = TfDynamic_cast<SdfRelationshipSpecHandle>(strongObj);
-                SdfRelationshipSpecHandle weakRelHandle 
-                    = TfDynamic_cast<SdfRelationshipSpecHandle>(weakObj);
-
-                // ensure proper prim handles were obtained
-                if (!TF_VERIFY(strongRelHandle && weakRelHandle)) {
-                    // if they weren't skip this iteration
-                    continue;
-                }
-
-                // we need to use copyitems to get a fresh copy of the contents
-                // of weakRelHandles target path list
-                strongRelHandle->GetTargetPathList().CopyItems( 
-                        weakRelHandle->GetTargetPathList());
-            }
-        // Connection lists need the same treatment as TargetPaths, but needs
-        // to maintain a connection instead of a relationship.  See comments
-        // about TargetPaths above as to why this is necessary.
-        } else if (key == SdfFieldKeys->ConnectionPaths) {
-            if (!strongObj->HasInfo(key)) {
-                SdfAttributeSpecHandle strongAttrHandle
-                    = TfDynamic_cast<SdfAttributeSpecHandle>(strongObj);
-                SdfAttributeSpecHandle weakAttrHandle
-                    = TfDynamic_cast<SdfAttributeSpecHandle>(weakObj);
-
-                if (!TF_VERIFY(strongAttrHandle && weakAttrHandle)) {
-                    continue;
-                }
-
-                strongAttrHandle->GetConnectionPathList().CopyItems(
-                        weakAttrHandle->GetConnectionPathList());
-            }
-        } else {
-            // if its not a dictionary type, insert as normal
-            // so long as it isn't contained in the strong object 
-            if (!strongObj->HasInfo(key)) {
-                strongObj->SetInfo(key, weakObj->GetInfo(key));
-            }
-        }
-    }
+    SdfCopySpec(
+        weakObj->GetLayer(), weakObj->GetPath(),
+        strongObj->GetLayer(), strongObj->GetPath(),
+        /* shouldCopyValueFn = */ std::bind(
+            _MergeValueFn, 
+            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, 
+            ph::_8, ph::_9, std::cref(stitchValueFn)),
+        /* shouldCopyChildrenFn = */ _DontCopyChildrenFn);
 }
 
 void 
-UsdUtilsStitchLayers(const SdfLayerHandle& strongLayer,
-                     const SdfLayerHandle& weakLayer,
-                     bool ignoreTimeSamples)
+UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer,
+    const SdfLayerHandle& weakLayer)
 {
-    // Get a prim-based handle to simplify subroutines
-    SdfPrimSpecHandle weakPseudoRoot = weakLayer->GetPseudoRoot();
-    SdfPrimSpecHandle strongPseudoRoot = strongLayer->GetPseudoRoot();
-    
-    // Stitching layers starting with root prims
-    UsdUtilsStitchInfo(strongPseudoRoot, weakPseudoRoot, ignoreTimeSamples);
-    _StitchPrims(strongPseudoRoot, weakPseudoRoot, ignoreTimeSamples);
+    UsdUtilsStitchLayers(strongLayer, weakLayer, UsdUtilsStitchValueFn());
+}
 
-    // Stitch initial layer elements. 
-    // Note: This needs to happen after we call UsdUtilsStitchInfo on the 
-    // pseudoRoot. If not, start/endTimeCode metadate could get overwritten 
-    // with wrong values.
-    _StitchFrameInfo(strongLayer, weakLayer);
-    
-    // Send warnings if erroneous generation occurs
-    _VerifyLayerIntegrity(strongLayer);
+void 
+UsdUtilsStitchLayers(
+    const SdfLayerHandle& strongLayer,
+    const SdfLayerHandle& weakLayer,
+    const UsdUtilsStitchValueFn& stitchValueFn)
+{
+    namespace ph = std::placeholders;
+  
+    SdfCopySpec(
+        weakLayer, SdfPath::AbsoluteRootPath(),
+        strongLayer, SdfPath::AbsoluteRootPath(),
+        /* shouldCopyValueFn = */ std::bind(
+            _MergeValueFn, 
+            ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, 
+            ph::_8, ph::_9, std::cref(stitchValueFn)),
+        /* shouldCopyChildrenFn = */ _MergeChildrenFn);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

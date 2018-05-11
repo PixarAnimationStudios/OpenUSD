@@ -24,6 +24,35 @@ over "GLOBAL" (
 {
 }
 
+class "NonAppliedAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "nonApplied"
+    }
+)
+{
+}
+
+class "SingleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        bool isPrivateApply = false
+    }
+)
+{
+}
+
+class "MultipleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        bool isPrivateApply = true
+    }
+)
+{
+}
+
 class "Base" (
     inherits = </Typed>
     doc = "This doc should only exist on the \"Base\" class."
@@ -40,20 +69,130 @@ class "Base" (
     # even in Typed schemas!
     custom double myDouble
 
-    float myFloat = 1.0
+    # Validate all scene description types
+    bool bool = true
 
-    color3f myColorFloat = (1.0, 1.0, 1.0)
+    uchar uchar = 0
+    int int = 0
+    uint uint = 0
+    int64 int64 = 0
+    uint64 uint64 = 0
 
-    normal3f[] myNormals
+    half half = 0.0
+    float float = 0.0
+    double double = 0.0
+    
+    string string = "string"
+    token token = "token"
+    asset asset = @asset@
 
-    point3f[] myPoints
+    int2 int2 = (0, 0)
+    int3 int3 = (0, 0, 0)
+    int4 int4 = (0, 0, 0, 0)
 
-    vector3f[] myVelocities
+    half2 half2 = (0, 0)
+    half3 half3 = (0, 0, 0)
+    half4 half4 = (0, 0, 0, 0)
+    
+    float2 float2 = (0, 0)
+    float3 float3 = (0, 0, 0)
+    float4 float4 = (0, 0, 0, 0)
 
-    uint unsignedInt
-    uchar unsignedChar
-    uint64[] unsignedInt64Array
+    double2 double2 = (0, 0)
+    double3 double3 = (0, 0, 0)
+    double4 double4 = (0, 0, 0, 0)
 
+    point3h point3h = (0.0, 0.0, 0.0)
+    point3f point3f = (0.0, 0.0, 0.0)
+    point3d point3d = (0.0, 0.0, 0.0)
+
+    vector3d vector3d = (0, 0, 0)
+    vector3f vector3f = (0, 0, 0)
+    vector3h vector3h = (0, 0, 0)
+
+    normal3d normal3d = (0, 0, 0)
+    normal3f normal3f = (0, 0, 0)
+    normal3h normal3h = (0, 0, 0)
+
+    color3d color3d = (0, 0, 0)
+    color3f color3f = (0, 0, 0)
+    color3h color3h = (0, 0, 0)
+
+    color4d color4d = (0, 0, 0, 0)
+    color4f color4f = (0, 0, 0, 0)
+    color4h color4h = (0, 0, 0, 0)
+
+    quatd quatd = (1, 0, 0, 0)
+    quatf quatf = (1, 0, 0, 0)
+    quath quath = (1, 0, 0, 0)
+
+    matrix2d matrix2d = ( (1, 0), (0, 1) )
+    matrix3d matrix3d = ( (1, 0, 0), (0, 1, 0), (0, 0, 1) )
+    matrix4d matrix4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+
+    frame4d frame4d = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+
+    bool[] boolArray
+
+    uchar[] ucharArray
+    int[] intArray
+    uint[] uintArray
+    int64[] int64Array
+    uint64[] uint64Array
+
+    half[] halfArray
+    float[] floatArray
+    double[] doubleArray
+
+    string[] stringArray
+    token[] tokenArray
+    asset[] assetArray
+
+    int2[] int2Array
+    int3[] int3Array
+    int4[] int4Array
+
+    half2[] half2Array
+    half3[] half3Array
+    half4[] half4Array
+
+    float2[] float2Array
+    float3[] float3Array
+    float4[] float4Array
+
+    double2[] double2Array
+    double3[] double3Array
+    double4[] double4Array
+
+    point3h[] point3hArray
+    point3f[] point3fArray
+    point3d[] point3dArray
+
+    vector3h[] vector3hArray
+    vector3f[] vector3fArray
+    vector3d[] vector3dArray
+
+    normal3h[] normal3hArray
+    normal3f[] normal3fArray
+    normal3d[] normal3dArray
+
+    color3h[] color3hArray
+    color3f[] color3fArray
+    color3d[] color3dArray
+
+    color4h[] color4hArray
+    color4f[] color4fArray
+    color4d[] color4dArray
+
+    quath[] quathArray
+    quatf[] quatfArray
+    quatd[] quatdArray
+
+    matrix2d[] matrix2dArray
+    matrix3d[] matrix3dArray
+    matrix4d[] matrix4dArray
+
+    frame4d[] frame4dArray
 }
 
 class Derived "Derived" (

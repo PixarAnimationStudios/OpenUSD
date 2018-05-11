@@ -28,7 +28,7 @@
 #include "pxr/usd/pcp/primIndex.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <utility>
 

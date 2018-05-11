@@ -199,7 +199,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
     std::vector<GfVec2i> indices;
     std::vector<int> primIndices;
-    VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
+    const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
     int vertexIndex = 0;
     int curveIndex = 0;
@@ -303,7 +303,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
     std::vector<GfVec4i> indices;
     std::vector<int> primIndices;
 
-    VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
+    const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
     bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
     int vStep;
     TfToken basis = _topology->GetCurveBasis();

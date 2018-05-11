@@ -67,14 +67,15 @@
 #include <VOP/VOP_Node.h>
 
 #include "gusd/gusd.h"
+#include "gusd/error.h"
 #include "gusd/primWrapper.h"
 #include "gusd/refiner.h"
 #include "gusd/stageCache.h"
 #include "gusd/shaderWrapper.h"
-#include "gusd/UT_Error.h"
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_Version.h"
 #include "gusd/context.h"
+#include "gusd/xformWrapper.h"
 
 #include "boost/foreach.hpp"
 
@@ -840,17 +841,14 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         // later be saved to disk (writing out all overlay edits)
         // and once saved, will then be cleared back out.
 
-        std::string err;
         {
-            GusdUT_StrErrorScope scope(&err);
-            GusdUT_ErrorContext errCtx(scope);
-
+            UT_ErrorManager::Scope scope;
             GusdStageCacheReader cache;
             m_usdStage = cache.FindOrOpen(refFile, GusdStageOpts::LoadAll(),
-                                          GusdStageEditPtr(), &errCtx);
-        }
-        if (!m_usdStage) {
-            return abort(err);
+                                          GusdStageEditPtr());
+            if (!m_usdStage) {
+                return abort(GusdGetErrors());
+            }
         }
 
         // BUG: Mutating stages returned from the cache is not safe!
@@ -1101,7 +1099,7 @@ closeStage(fpreal tend)
             }
 
             // Reload any stages on the cache matching this path.
-            // Note that this is deferred til the main event queue
+            // Note that this is not thread-safe.
             GusdStageCacheWriter cache;
             UT_StringSet paths;
             paths.insert(targetPath);
@@ -1440,8 +1438,65 @@ renderFrame(fpreal time,
             { return a.path < b.path; } );
 
     UT_Set<SdfPath> gprimsProcessedThisFrame;
-    GusdSimpleXformCache xformCache;
     bool needToUpdateModelExtents = false;
+
+    GusdSimpleXformCache xformCache;
+
+    // If we are not writing an overlay, assume we are writing an asset rooted 
+    // at the prim named m_pathPrefix. Write the obj space transform at this 
+    // prim on all frames. This is needed to make sure that transform motion 
+    // blur is right when the object space is animated.
+    if( !overlayGeo && !m_pathPrefix.empty() ) {
+
+        SdfPath assetPrimPath( m_pathPrefix );
+
+        // Chec to make sure the asset prim isn't going to be written anyway.
+        bool assetPrimFound = false;
+        for( auto& gtPrim : gPrims ) {
+
+            if( gtPrim.path == assetPrimPath ) {
+                assetPrimFound = true;
+                break;
+            }
+        }
+
+        if( !assetPrimFound ) {
+
+            GT_PrimitiveHandle assetPrim;
+
+            GprimMap::iterator gpit = m_gprimMap.find(assetPrimPath);
+            if( gpit == m_gprimMap.end() ) {
+                GT_PrimitiveHandle assetXformWrapper = new GusdXformWrapper( m_usdStage, assetPrimPath );
+                m_gprimMap[assetPrimPath] = assetXformWrapper; 
+                assetPrim = assetXformWrapper;
+            } 
+            else {
+                assetPrim = gpit->second;
+
+                // If a USD version of this prim doesn't exist on the current edit
+                // target's layer, create a new USD prim. This happens when we are
+                // writing per frame files.
+                SdfPrimSpecHandle ph = m_usdStage->GetEditTarget().GetPrimSpecForScenePath( assetPrimPath );
+                if( !ph ) {
+                    dynamic_cast<GusdPrimWrapper*>(assetPrim.get())->
+                        redefine( m_usdStage, assetPrimPath, ctxt, NULL);
+                }
+            }
+
+            if(assetPrim) {
+
+                GusdPrimWrapper* primPtr
+                        = UTverify_cast<GusdPrimWrapper*>(assetPrim.get());
+
+                // Copy attributes from gt prim to USD prim.
+                primPtr->updateFromGTPrim( NULL, 
+                                           localToWorldMatrix,
+                                           ctxt,
+                                           xformCache );
+                gprimsProcessedThisFrame.insert(assetPrimPath);
+            }
+        }
+    }
 
     // Iterate over the refined prims and write
     for( auto& gtPrim : gPrims ) {
@@ -1705,16 +1760,13 @@ renderFrame(fpreal time,
                 SdfPath path = SdfPath(it->first).GetParentPath();
 
                 while (path != rootPath && path != SdfPath::EmptyPath()) {
-                    if (UsdGeomModelAPI model =
-                        UsdGeomModelAPI(m_usdStage->GetPrimAtPath(path))) {
+                    UsdGeomModelAPI model(m_usdStage->GetPrimAtPath(path));
 
-                        if (model.GetExtentsHintAttr() &&
-                            visitedPaths.find(path) == visitedPaths.end()) {
-
-                            const VtVec3fArray extentsHint =
-                                model.ComputeExtentsHint(cache);
-                            model.SetExtentsHint(extentsHint, ctxt.time);
-                        }
+                    if (model.GetExtentsHintAttr() &&
+                        visitedPaths.find(path) == visitedPaths.end()) {
+                        const VtVec3fArray extentsHint =
+                            model.ComputeExtentsHint(cache);
+                        model.SetExtentsHint(extentsHint, ctxt.time);
                     }
                     visitedPaths.insert(path);
                     path = path.GetParentPath();

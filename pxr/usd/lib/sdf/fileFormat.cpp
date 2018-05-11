@@ -32,7 +32,7 @@
 #include "pxr/usd/sdf/fileFormatRegistry.h"
 
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -302,29 +302,9 @@ SdfFileFormat::_IssueNewLayerFailError(SdfLayerBaseRefPtr const &l,
 }
 
 void
-SdfFileFormat::_SwapLayerData(
-    const SdfLayerHandle& layer,
-    SdfAbstractDataRefPtr& data)
-{
-    layer->_SwapData(data);
-}
-
-void
 SdfFileFormat::_SetLayerData(
     const SdfLayerHandle& layer,
-    const SdfAbstractDataPtr& data)
-{
-    layer->_SetData(data);
-}
-
-SdfAbstractDataConstPtr
-SdfFileFormat::_GetLayerData(const SdfLayerHandle& layer)
-{
-    return layer->_GetData();
-}
-
-bool
-SdfFileFormat::_LayerIsLoadingAsNew(const SdfLayerHandle& layer)
+    SdfAbstractDataRefPtr& data)
 {
     // If layer initialization has not completed, then this
     // is being loaded as a new layer; otherwise we are loading
@@ -333,7 +313,19 @@ SdfFileFormat::_LayerIsLoadingAsNew(const SdfLayerHandle& layer)
     // Note that this is an optional::bool and we are checking if it has
     // been set, not what its held value is.
     //
-    return !layer->_initializationWasSuccessful;
+    const bool layerIsLoadingAsNew = !layer->_initializationWasSuccessful;
+    if (layerIsLoadingAsNew) {
+        layer->_SwapData(data);
+    }
+    else {
+        layer->_SetData(data);
+    }
+}
+
+SdfAbstractDataConstPtr
+SdfFileFormat::_GetLayerData(const SdfLayerHandle& layer)
+{
+    return layer->_GetData();
 }
 
 /* virtual */

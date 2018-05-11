@@ -64,6 +64,7 @@
 #include <boost/python/overloads.hpp>
 
 #include <algorithm>
+#include <numeric>
 #include <ostream>
 #include <string>
 #include <memory>
@@ -318,19 +319,47 @@ BOOST_PP_SEQ_FOR_EACH(
     MAKE_STREAM_FUNC, ~, VT_FLOATING_POINT_BUILTIN_VALUE_TYPES)
 #undef MAKE_STREAM_FUNC
 
+static unsigned int
+Vt_ComputeEffectiveRankAndLastDimSize(
+    Vt_ShapeData const *sd, size_t *lastDimSize)
+{
+    unsigned int rank = sd->GetRank();
+    if (rank == 1)
+        return rank;
+
+    size_t divisor = std::accumulate(
+        sd->otherDims, sd->otherDims + rank-1,
+        1, [](size_t x, size_t y) { return x * y; });
+
+    size_t remainder = divisor ? sd->totalSize % divisor : 0;
+    *lastDimSize = divisor ? sd->totalSize / divisor : 0;
+    
+    if (remainder)
+        rank = 1;
+
+    return rank;
+}
+
 template <typename T>
-string __repr__(VtArray<T> const &self, const std::vector<int>* shape)
+string __repr__(VtArray<T> const &self)
 {
     if (self.empty())
         return TF_PY_REPR_PREFIX +
             TfStringPrintf("%s()", GetVtArrayName<VtArray<T> >().c_str());
 
+    Vt_ShapeData const *shapeData = self._GetShapeData();
+    
     string shapeStr;
-    if (shape) {
+    size_t lastDimSize = 0;
+    unsigned int rank =
+        Vt_ComputeEffectiveRankAndLastDimSize(shapeData, &lastDimSize);
+    if (rank > 1) {
         shapeStr = "(";
-        for (size_t i = 0; i < shape->size(); ++i)
-            shapeStr += TfStringPrintf(i ? ", %d" : "%d", (*shape)[i]);
-        shapeStr += shape->size() == 1 ? ",), " : "), ";
+        for (size_t i = 0; i != rank-1; ++i) {
+            shapeStr += TfStringPrintf(
+                i ? ", %d" : "%d", shapeData->otherDims[i]);
+        }
+        shapeStr += TfStringPrintf(", %zu), ", lastDimSize);
     }
     else {
         shapeStr = TfStringPrintf("%zd, ", self.size());
@@ -349,18 +378,6 @@ string __repr__(VtArray<T> const &self, const std::vector<int>* shape)
         TfStringPrintf("%s(%s%s)",
                        GetVtArrayName<VtArray<T> >().c_str(),
                        shapeStr.c_str(), stream.str().c_str());
-}
-
-template <typename T>
-string __repr1__(VtArray<T> const &self)
-{
-    return __repr__(self, NULL);
-}
-
-template <typename T>
-string __repr2__(VtArray<T> const &self, const std::vector<int>& shape)
-{
-    return __repr__(self, &shape);
 }
 
 template <typename T>
@@ -450,8 +467,7 @@ void VtWrapArray()
         .def("__len__", &This::size)
         .def("__iter__", iterator<This>())
 
-        .def("__repr__", __repr1__<Type>)
-        .def("__repr2__", __repr2__<Type>)
+        .def("__repr__", __repr__<Type>)
 
 //        .def(str(self))
         .def("__str__", _VtStr<T>)

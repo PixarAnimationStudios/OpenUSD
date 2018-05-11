@@ -55,7 +55,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -707,15 +707,13 @@ UsdImagingGLRefEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     gprimSchema->GetDoubleSidedAttr().Get(doubleSided);
 
     // Get interpolation and color using UsdShadeMaterial
-    UsdImagingValueCache::PrimvarInfo primvar;
     VtValue colorAsVt = UsdImagingGprimAdapter::GetColorAndOpacity(prim, 
-                                                &primvar, _params.frame);
+                                                _params.frame, interpolation);
     VtVec4fArray temp = colorAsVt.Get<VtVec4fArray>();
     GfVec4f rgba = temp[0];
     GfVec3f rgb = GfVec3f(rgba[0], rgba[1], rgba[2]);
 
     color->push_back(rgb);
-    *interpolation = primvar.interpolation;
 }
 
 void 

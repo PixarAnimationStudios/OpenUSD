@@ -86,7 +86,8 @@ public:
     /// Opens \a filename for reading from the given \a subimage.
     GLF_API
     static GlfImageSharedPtr OpenForReading(std::string const & filename,
-                                            int subimage = 0);
+                                            int subimage = 0,
+                                            bool suppressErrors = false);
 
     /// Reads the image file into \a storage.
     virtual bool Read(StorageSpec const & storage) = 0;
@@ -153,7 +154,8 @@ public:
 
 protected:
     virtual bool _OpenForReading(std::string const & filename,
-                                 int subimage) = 0;
+                                 int subimage,
+                                 bool suppressErrors) = 0;
 
     virtual bool _OpenForWriting(std::string const & filename) = 0;
 };

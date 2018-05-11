@@ -32,7 +32,7 @@
 
 #include "pxr/imaging/hdx/renderTask.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 
 #include "pxr/imaging/hdEmbree/rendererPlugin.h"
 #include "pxr/imaging/hdEmbree/renderDelegate.h"
@@ -245,10 +245,10 @@ void HdEmbree_TestGLDrawing::InitTest()
     frustum.SetRotation(GfRotation(GfVec3d(1, 0, 0), 45));
 
     _sceneDelegate->UpdateCamera(camera,
-        HdStCameraTokens->worldToViewMatrix,
+        HdCameraTokens->worldToViewMatrix,
         VtValue(frustum.ComputeViewMatrix()));
     _sceneDelegate->UpdateCamera(camera,
-        HdStCameraTokens->projectionMatrix,
+        HdCameraTokens->projectionMatrix,
         VtValue(frustum.ComputeProjectionMatrix()));
 };
 

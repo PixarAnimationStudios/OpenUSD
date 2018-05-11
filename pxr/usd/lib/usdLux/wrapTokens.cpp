@@ -81,6 +81,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "ignore", UsdLuxTokens->ignore);
     _AddToken(cls, "intensity", UsdLuxTokens->intensity);
     _AddToken(cls, "latlong", UsdLuxTokens->latlong);
+    _AddToken(cls, "length", UsdLuxTokens->length);
     _AddToken(cls, "lightList", UsdLuxTokens->lightList);
     _AddToken(cls, "lightListCacheBehavior", UsdLuxTokens->lightListCacheBehavior);
     _AddToken(cls, "mirroredBall", UsdLuxTokens->mirroredBall);
@@ -103,5 +104,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "specular", UsdLuxTokens->specular);
     _AddToken(cls, "textureFile", UsdLuxTokens->textureFile);
     _AddToken(cls, "textureFormat", UsdLuxTokens->textureFormat);
+    _AddToken(cls, "treatAsLine", UsdLuxTokens->treatAsLine);
+    _AddToken(cls, "treatAsPoint", UsdLuxTokens->treatAsPoint);
     _AddToken(cls, "width", UsdLuxTokens->width);
 }

@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Sdf, Usd, UsdRi, UsdShade
+from pxr import Tf, Sdf, Usd, UsdRi, UsdShade
 import unittest
 
 class TestUsdRiSchemata(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestUsdRiSchemata(unittest.TestCase):
     def _TestOutput(self, schema, getOutputFn, setOutputSrcFn, getFn, 
                     validTargetObjectPath):
         output = getOutputFn(schema)
-        assert not output.GetProperty()
+        assert 'ri:' not in output.GetBaseName()
 
         assert setOutputSrcFn(schema, validTargetObjectPath)
 
@@ -79,7 +79,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         shader.GetSloPathAttr().Set('foo')
 
         print ("Test RiMaterialAPI")
-        riMaterial = UsdRi.MaterialAPI(material)
+        riMaterial = UsdRi.MaterialAPI.Apply(material.GetPrim())
         assert riMaterial
         assert riMaterial.GetPrim()
 
@@ -131,17 +131,9 @@ class TestUsdRiSchemata(unittest.TestCase):
         risMaterial = UsdRi.MaterialAPI(material.GetPrim())
         assert risMaterial 
         assert risMaterial.GetPrim()
-        assert not risMaterial.GetBxdf()
-
-        # Test the bxdf output
-        self._TestOutput(risMaterial,
-            UsdRi.MaterialAPI.GetBxdfOutput,
-            UsdRi.MaterialAPI.SetBxdfSource,
-            UsdRi.MaterialAPI.GetBxdf,
-            bxdf.GetPath())
 
         print ("Test riStatements")
-        riStatements = UsdRi.StatementsAPI(shader.GetPrim())
+        riStatements = UsdRi.StatementsAPI.Apply(shader.GetPrim())
         assert riStatements
         assert riStatements.GetPrim()
         attr = riStatements.CreateRiAttribute("ModelName", "string").\
@@ -152,30 +144,34 @@ class TestUsdRiSchemata(unittest.TestCase):
         # this is so convoluted
         attr = riStatements.GetPrim().GetAttribute(props[0].GetName())
         assert attr
-        self.assertEqual(attr.GetName(), 'ri:attributes:user:ModelName')
+        prefix = ('primvars:'
+            if Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING')
+            else '')
+        self.assertEqual(attr.GetName(),
+            prefix+'ri:attributes:user:ModelName')
         self.assertEqual(attr.Get(), 'someModelName')
         self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeName(attr), 'ModelName')
         self.assertEqual(UsdRi.StatementsAPI.GetRiAttributeNameSpace(attr), 'user')
         assert UsdRi.StatementsAPI.IsRiAttribute(attr)
 
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('myattr'),
-                    'ri:attributes:user:myattr')
+                    prefix+'ri:attributes:user:myattr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:myattr'),
-                    'ri:attributes:dice:myattr')
+                    prefix+'ri:attributes:dice:myattr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.myattr'),
-                    'ri:attributes:dice:myattr')
+                    prefix+'ri:attributes:dice:myattr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_myattr'),
-                    'ri:attributes:dice:myattr')
+                    prefix+'ri:attributes:dice:myattr')
         # period is stronger separator than underscore, when both are present
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my.attr'),
-                    'ri:attributes:dice_my:attr')
+                    prefix+'ri:attributes:dice_my:attr')
         # multiple tokens concatted with underscores
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice:my1:long:attr'),
-                    'ri:attributes:dice:my1_long_attr')
+                    prefix+'ri:attributes:dice:my1_long_attr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice.my2.long.attr'),
-                    'ri:attributes:dice:my2_long_attr')
+                    prefix+'ri:attributes:dice:my2_long_attr')
         self.assertEqual(UsdRi.StatementsAPI.MakeRiAttributePropertyName('dice_my3_long_attr'),
-                    'ri:attributes:dice:my3_long_attr')
+                    prefix+'ri:attributes:dice:my3_long_attr')
 
         self.assertEqual(riStatements.GetCoordinateSystem(), '')
         self.assertEqual(UsdRi.StatementsAPI(model).GetModelCoordinateSystems(), [])
@@ -192,14 +188,6 @@ class TestUsdRiSchemata(unittest.TestCase):
         self.assertEqual(UsdRi.StatementsAPI(group).GetModelScopedCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelScopedCoordinateSystems(), [])
-
-        self.assertFalse(riStatements.GetFocusRegionAttr().IsValid())
-        assert(riStatements.CreateFocusRegionAttr() is not None)
-        assert(riStatements.GetFocusRegionAttr() is not None)
-        self.assertTrue(riStatements.GetFocusRegionAttr().IsValid())
-        self.assertEqual(riStatements.GetFocusRegionAttr().Get(), None)
-        riStatements.CreateFocusRegionAttr(9.0, True)
-        self.assertEqual(riStatements.GetFocusRegionAttr().Get(), 9.0)
         
     def test_Metadata(self):
         stage = Usd.Stage.CreateInMemory()

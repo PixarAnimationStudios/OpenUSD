@@ -51,6 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// @{
 
 
+class GfMatrix3f;
 class GfMatrix4d;
 class GfRotation;
 class UsdRelationship;
@@ -191,7 +192,7 @@ UsdSkelDecomposeTransforms(const GfMatrix4d* xforms,
 USDSKEL_API
 GfMatrix4d
 UsdSkelMakeTransform(const GfVec3f& translate,
-                     const GfRotation& rotate,
+                     const GfMatrix3f& rotate,
                      const GfVec3h& scale);
 
 /// \overload

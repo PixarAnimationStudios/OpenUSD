@@ -35,7 +35,11 @@ public:
     virtual ~HdStreamRendererPlugin() = default;
 
     virtual HdRenderDelegate *CreateRenderDelegate() override;
-    virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) override;
+
+    virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) 
+        override;
+
+    virtual bool IsSupported() const override;
 
 private:
     HdStreamRendererPlugin(const HdStreamRendererPlugin &)             = delete;

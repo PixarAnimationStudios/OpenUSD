@@ -211,6 +211,12 @@ UsdGeomPrimvar::_GetIndicesAttr(bool create) const
     }
 }
 
+UsdAttribute 
+UsdGeomPrimvar::GetIndicesAttr() const
+{
+    return _GetIndicesAttr(/*create*/ false);
+}
+
 bool 
 UsdGeomPrimvar::SetIndices(const VtIntArray &indices, 
                            UsdTimeCode time) const

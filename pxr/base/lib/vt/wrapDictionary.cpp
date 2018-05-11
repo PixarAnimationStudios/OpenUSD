@@ -34,7 +34,7 @@
 
 #include "pxr/base/tf/iterator.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <boost/python/dict.hpp>
 #include <boost/python/def.hpp>

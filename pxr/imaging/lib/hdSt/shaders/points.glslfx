@@ -47,7 +47,7 @@ void main(void)
 
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
-    ProcessPrimVars();
+    ProcessPrimvars();
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);

@@ -34,6 +34,7 @@
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
 
+#include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/rotation.h"
 #include <float.h>
 #include <iostream>
@@ -97,6 +98,11 @@ GfMatrix3f::GfMatrix3f(const std::vector< std::vector<float> >& v)
 }
 
 GfMatrix3f::GfMatrix3f(const GfRotation &rot)
+{
+    SetRotate(rot);
+}
+
+GfMatrix3f::GfMatrix3f(const GfQuatf &rot)
 {
     SetRotate(rot);
 }
@@ -400,14 +406,23 @@ GfMatrix3f::SetScale(float s)
 }
 
 GfMatrix3f &
+GfMatrix3f::SetRotate(const GfQuatf &rot)
+{
+    _SetRotateFromQuat(rot.GetReal(), rot.GetImaginary());
+    return *this;
+}
+
+GfMatrix3f &
 GfMatrix3f::SetRotate(const GfRotation &rot)
 {
     GfQuaternion quat = rot.GetQuaternion();
+    _SetRotateFromQuat(quat.GetReal(), GfVec3f(quat.GetImaginary()));
+    return *this;
+}
 
-    double  r = quat.GetReal();
-    GfVec3d i = quat.GetImaginary();
-
-
+void
+GfMatrix3f::_SetRotateFromQuat(float r, const GfVec3f& i)
+{
     _mtx[0][0] = 1.0 - 2.0 * (i[1] * i[1] + i[2] * i[2]);
     _mtx[0][1] =       2.0 * (i[0] * i[1] + i[2] *    r);
     _mtx[0][2] =       2.0 * (i[2] * i[0] - i[1] *    r);
@@ -419,9 +434,8 @@ GfMatrix3f::SetRotate(const GfRotation &rot)
     _mtx[2][0] =       2.0 * (i[2] * i[0] + i[1] *    r);
     _mtx[2][1] =       2.0 * (i[1] * i[2] - i[0] *    r);
     _mtx[2][2] = 1.0 - 2.0 * (i[1] * i[1] + i[0] * i[0]);
-
-    return *this;
 }
+                            
 
 GfMatrix3f &
 GfMatrix3f::SetScale(const GfVec3f &s)
@@ -485,5 +499,19 @@ GfMatrix3f::DecomposeRotation(const GfVec3f &axis0,
 {
     return GfVec3f(ExtractRotation().Decompose(axis0, axis1, axis2));
 }
+
+
+bool
+GfIsClose(GfMatrix3f const &m1, GfMatrix3f const &m2, double tolerance)
+{
+    for(size_t row = 0; row < 3; ++row) {
+        for(size_t col = 0; col < 3; ++col) {
+            if(!GfIsClose(m1[row][col], m2[row][col], tolerance))
+                return false;
+        }
+    }
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

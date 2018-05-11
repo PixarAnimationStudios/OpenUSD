@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/textureResource.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/glf/baseTexture.h"
@@ -102,7 +102,7 @@ HdStSimpleTextureResource::HdStSimpleTextureResource(
     }
 
     bool bindlessTexture = 
-        HdStRenderContextCaps::GetInstance().bindlessTextureEnabled;
+        GlfContextCaps::GetInstance().bindlessTextureEnabled;
     if (bindlessTexture) {
         size_t handle = GetTexelsTextureHandle();
         if (handle) {

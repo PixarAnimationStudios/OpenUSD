@@ -80,7 +80,7 @@ struct UsdShadeTokensType {
     const TfToken derivesFrom;
     /// \brief "displacement"
     /// 
-    /// Describes the displacement relationship terminal on a UsdShadeMaterial. Used to find the terminal UsdShadeShader describing the displacement of a UsdShadeMaterial. 
+    /// Describes the <i>displacement</i> output  terminal on a UsdShadeMaterial. It is used to define the  terminal UsdShadeShader describing the displacement of a  UsdShadeMaterial. 
     const TfToken displacement;
     /// \brief "fallbackStrength"
     /// 
@@ -130,6 +130,18 @@ struct UsdShadeTokensType {
     /// 
     /// The prefix on shading attributes denoting an output. 
     const TfToken outputs;
+    /// \brief "outputs:displacement"
+    /// 
+    /// UsdShadeMaterial
+    const TfToken outputsDisplacement;
+    /// \brief "outputs:surface"
+    /// 
+    /// UsdShadeMaterial
+    const TfToken outputsSurface;
+    /// \brief "outputs:volume"
+    /// 
+    /// UsdShadeMaterial
+    const TfToken outputsVolume;
     /// \brief "preview"
     /// 
     /// Possible value for the 'materialPurpose'  parameter in UsdShadeMaterialBindingAPI, to be used when the  render is in service of a goal other than a high fidelity "full" render (such as scene manipulation, modeling, or realtime  playback). Latency and speed are generally of greater concern  for preview renders, therefore preview materials are generally  designed to be "lighterweight" compared to full materials. 
@@ -140,8 +152,16 @@ struct UsdShadeTokensType {
     const TfToken strongerThanDescendants;
     /// \brief "surface"
     /// 
-    /// Describes the surface relationship terminal on a UsdShadeMaterial. Used to find the terminal UsdShadeShader describing the surface of a UsdShadeMaterial. 
+    /// Describes the <i>surface</i> output  terminal on a UsdShadeMaterial. It is used to define the  terminal UsdShadeShader describing the surface of a  UsdShadeMaterial. 
     const TfToken surface;
+    /// \brief ""
+    /// 
+    /// Possible value for the "renderContext" parameter ef UsdShadeMaterial_Outputs API. Represents the universal renderContext. An output with a univesal renderContext is  applicable to all possible rendering contexts. 
+    const TfToken universalRenderContext;
+    /// \brief "volume"
+    /// 
+    /// Describes the <i>volume</i> output  terminal on a UsdShadeMaterial. It is used to define the  terminal UsdShadeShader describing the volume of a  UsdShadeMaterial. 
+    const TfToken volume;
     /// \brief "weakerThanDescendants"
     /// 
     /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is weaker than  any bindings authored on the descendants.

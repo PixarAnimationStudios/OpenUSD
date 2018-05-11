@@ -66,7 +66,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const override;
 
     /// Thread Safe.
     USDIMAGING_API
@@ -75,7 +75,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -84,42 +84,43 @@ public:
     USDIMAGING_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& property);
+                                              TfToken const& property) override;
 
 
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
-                           UsdImagingIndexProxy* index);
+                           UsdImagingIndexProxy* index) override;
 
     virtual void MarkRefineLevelDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      UsdImagingIndexProxy* index);
+                                      UsdImagingIndexProxy* index) override;
 
     virtual void MarkReprDirty(UsdPrim const& prim,
                                SdfPath const& cachePath,
-                               UsdImagingIndexProxy* index);
+                               UsdImagingIndexProxy* index) override;
 
     virtual void MarkCullStyleDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index);
+                                    UsdImagingIndexProxy* index) override;
 
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
-                                     UsdImagingIndexProxy* index);
+                                     UsdImagingIndexProxy* index) override;
 
 
-    /// Returns the color and opacity for a given prim, taking into account
-    /// surface shader colors and explicitly authored color on the prim.
+    /// Returns color, opacity, and Usd interpolation token for a given
+    /// prim, taking into account surface shader colors and explicitly
+    /// authored color on the prim.
     USDIMAGING_API
     static VtValue GetColorAndOpacity(UsdPrim const& prim, 
-                        UsdImagingValueCache::PrimvarInfo* primvarInfo,
-                        UsdTimeCode time);
-   
+                                      UsdTimeCode time,
+                                      TfToken *interpolation);
+
     // Helper function: add a given type of rprim, potentially with instancer
     // name mangling, and add any bound shader.
     USDIMAGING_API
@@ -145,23 +146,20 @@ private:
     // Helper method for the _DiscoverPrimvars methods above.
     void _ComputeAndMergePrimvar(UsdGeomGprim const& gprim,
                            SdfPath const& cachePath,
-                           TfToken const &primvarName,
+                           UsdGeomPrimvar const& primvar,
                            UsdTimeCode time,
-                           UsdImagingValueCache* valueCache);
+                           UsdImagingValueCache* valueCache) const;
 
     /// Reads the extent from the given prim. If the extent is not authored,
     /// an empty GfRange3d is returned, the extent will not be computed.
-    GfRange3d _GetExtent(UsdPrim const& prim, UsdTimeCode time);
+    GfRange3d _GetExtent(UsdPrim const& prim, UsdTimeCode time) const;
 
     /// Returns the doubleSided state for a given prim.
-    bool _GetDoubleSided(UsdPrim const& prim);
+    bool _GetDoubleSided(UsdPrim const& prim) const;
 
     /// Returns the UsdGeomImagable "purpose" for this prim, including any
     /// inherited purpose. Inherited values are strongest.
-    TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time);
-
-    /// Returns the path to the material used by this prim
-    SdfPath _GetMaterialId(UsdPrim const& prim);
+    TfToken _GetPurpose(UsdPrim const & prim, UsdTimeCode time) const;
 };
 
 

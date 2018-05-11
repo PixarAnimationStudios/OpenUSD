@@ -29,7 +29,7 @@
 
 #include "pxr/usd/sdf/layer.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -105,13 +105,7 @@ UsdAbcAlembicFileFormat::Read(
         return false;
     }
 
-    // Just swap out the data - unlike text layers fully populated into memory,
-    // we have no way of tracking change state for undo and inverses.
-
-    // XXX:
-    // Do we need to pre- and/or post-process the existing AlembicData object?
-    _SwapLayerData(layer, data);
-
+    _SetLayerData(layer, data);
     return true;
 }
 

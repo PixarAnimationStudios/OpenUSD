@@ -247,12 +247,14 @@ HdStGLConversions::GetGLAttribType(HdType type)
     case HdTypeFloatVec2:
     case HdTypeFloatVec3:
     case HdTypeFloatVec4:
+    case HdTypeFloatMat3:
     case HdTypeFloatMat4:
         return GL_FLOAT;
     case HdTypeDouble:
     case HdTypeDoubleVec2:
     case HdTypeDoubleVec3:
     case HdTypeDoubleVec4:
+    case HdTypeDoubleMat3:
     case HdTypeDoubleMat4:
         return GL_DOUBLE;
     case HdTypeInt32_2_10_10_10_REV:
@@ -271,12 +273,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vec2)
     (vec3)
     (vec4)
+    (mat3)
     (mat4)
 
     ((_double, "double"))
     (dvec2)
     (dvec3)
     (dvec4)
+    (dmat3)
     (dmat4)
 
     ((_int, "int"))
@@ -328,6 +332,8 @@ HdStGLConversions::GetGLSLTypename(HdType type)
         // Special case: treat as a vec4.
     case HdTypeFloatVec4:
         return _glTypeNames->vec4;
+    case HdTypeFloatMat3:
+        return _glTypeNames->mat3;
     case HdTypeFloatMat4:
         return _glTypeNames->mat4;
 
@@ -339,6 +345,8 @@ HdStGLConversions::GetGLSLTypename(HdType type)
         return _glTypeNames->dvec3;
     case HdTypeDoubleVec4:
         return _glTypeNames->dvec4;
+    case HdTypeDoubleMat3:
+        return _glTypeNames->dmat3;
     case HdTypeDoubleMat4:
         return _glTypeNames->dmat4;
     };

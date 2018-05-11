@@ -40,7 +40,7 @@
 
 #include "pxr/base/tf/atomicOfstreamWrapper.h"
 #include "pxr/base/tf/scopeDescription.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/enum.h"

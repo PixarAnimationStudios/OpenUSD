@@ -62,10 +62,10 @@ HdExtCompCpuComputation::CreateComputation(
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    const SdfPath &id = computation.GetId();
+    const SdfPath &id = computation.GetID();
 
     Hd_ExtCompInputSourceSharedPtrVector inputs;
-    for (const TfToken &inputName: computation.GetSceneInputs()) {
+    for (const TfToken &inputName: computation.GetSceneInputNames()) {
         VtValue inputValue = sceneDelegate->Get(id, inputName);
         Hd_ExtCompInputSourceSharedPtr inputSource(
                          new Hd_SceneExtCompInputSource(inputName, inputValue));
@@ -73,35 +73,41 @@ HdExtCompCpuComputation::CreateComputation(
         inputs.push_back(inputSource);
     }
 
-    const TfTokenVector compInputs = computation.GetComputationInputs();
-    const HdExtComputation::SourceComputationDescVector& sourceDescs =
-        computation.GetComputationSourceDescs();
+    for (const HdExtComputationInputDescriptor & compInput:
+                computation.GetComputationInputs()) {
 
-    const size_t numCompInputs = compInputs.size();
-    for (size_t inputNum = 0; inputNum < numCompInputs; ++inputNum) {
-        const TfToken &inputName = compInputs[inputNum];
-        const HdExtComputation::SourceComputationDesc &sourceDesc =
-            sourceDescs[inputNum];
-
-        HdExtComputation *sourceComp;
-        HdSceneDelegate *sourceCompSceneDelegate;
-
-        renderIndex.GetExtComputationInfo(sourceDesc.computationId,
-                                          &sourceComp,
-                                          &sourceCompSceneDelegate);
+        HdExtComputation const * sourceComp =
+            static_cast<HdExtComputation const *>(
+                renderIndex.GetSprim(HdPrimTypeTokens->extComputation,
+                                     compInput.sourceComputationId));
 
         if (sourceComp != nullptr) {
 
-            HdExtCompCpuComputationSharedPtr sourceCpuComputation =
-                CreateComputation(sourceCompSceneDelegate,
+            // Computations acting as input aggregations should schedule
+            // input values for commit, but will have no Cpu computation
+            // to create.
+            if (sourceComp->IsInputAggregation()) {
+                VtValue inputValue =
+                    sceneDelegate->Get(compInput.sourceComputationId,
+                                       compInput.name);
+                Hd_ExtCompInputSourceSharedPtr inputSource(
+                        new Hd_SceneExtCompInputSource(compInput.name,
+                                                       inputValue));
+                computationSources->push_back(inputSource);
+                inputs.push_back(inputSource);
+                continue;
+            }
+
+            HdExtCompCpuComputationSharedPtr sourceComputation =
+                CreateComputation(sceneDelegate,
                                   *sourceComp,
                                   computationSources);
 
             Hd_ExtCompInputSourceSharedPtr inputSource(
-                                            new Hd_CompExtCompInputSource(
-                                                 inputName,
-                                                 sourceCpuComputation,
-                                                 sourceDesc.computationOutput));
+                new Hd_CompExtCompInputSource(
+                        compInput.name,
+                        sourceComputation,
+                        compInput.sourceComputationOutputName));
 
             computationSources->push_back(inputSource);
             inputs.push_back(inputSource);
@@ -111,7 +117,7 @@ HdExtCompCpuComputation::CreateComputation(
     HdExtCompCpuComputationSharedPtr result(
             new HdExtCompCpuComputation(id,
                                         inputs,
-                                        computation.GetOutputs(),
+                                        computation.GetOutputNames(),
                                         computation.GetElementCount(),
                                         sceneDelegate));
 

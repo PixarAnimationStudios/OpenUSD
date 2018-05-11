@@ -54,7 +54,7 @@ class SdfAssetPath;
 ///
 /// Light emitted from one side of a rectangle.
 /// The rectangle is centered in the XY plane and emits light along the -Z axis.
-/// The rectangle is 1 unit long in local space.
+/// The rectangle is 1 unit in length in the X and Y axis.
 ///
 class UsdLuxRectLight : public UsdLuxLight
 {
@@ -153,7 +153,7 @@ public:
     // --------------------------------------------------------------------- //
     // WIDTH 
     // --------------------------------------------------------------------- //
-    /// Width of the rectangle.
+    /// Width of the rectangle, in the local X axis.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float
@@ -174,7 +174,7 @@ public:
     // --------------------------------------------------------------------- //
     // HEIGHT 
     // --------------------------------------------------------------------- //
-    /// Height of the rectangle.
+    /// Height of the rectangle, in the local Y axis.
     ///
     /// \n  C++ Type: float
     /// \n  Usd Type: SdfValueTypeNames->Float

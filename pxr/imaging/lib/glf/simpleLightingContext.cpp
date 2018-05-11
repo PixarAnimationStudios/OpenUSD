@@ -253,12 +253,14 @@ setMatrix(float *dst, GfMatrix4d const & mat)
 void
 GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
 {
+    GLF_GROUP_FUNCTION();
+    
     if (!_lightingUniformBlock)
-        _lightingUniformBlock = GlfUniformBlock::New();
+        _lightingUniformBlock = GlfUniformBlock::New("_lightingUniformBlock");
     if (!_shadowUniformBlock)
-        _shadowUniformBlock = GlfUniformBlock::New();
+        _shadowUniformBlock = GlfUniformBlock::New("_shadowUniformBlock");
     if (!_materialUniformBlock)
-        _materialUniformBlock = GlfUniformBlock::New();
+        _materialUniformBlock = GlfUniformBlock::New("_materialUniformBlock");
 
     bool shadowExists = false;
     if ((!_lightingUniformBlockValid ||

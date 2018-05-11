@@ -23,8 +23,11 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
+
+#include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/usd/usd/instanceCache.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/resolver.h"
@@ -33,7 +36,6 @@
 #include "pxr/usd/usd/specializes.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/variantSets.h"
 
 #include "pxr/usd/pcp/primIndex.h"
@@ -107,9 +109,15 @@ UsdPrim::_HasAPI(
 {
     TRACE_FUNCTION();
 
+    static const auto apiSchemaBaseType = 
+            TfType::Find<UsdAPISchemaBase>();
+
     const bool isMultipleApplyAPISchema = 
         UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType);
 
+    // Note that this block of code is only hit in python code paths,
+    // C++ clients would hit the static_asserts defined inline in 
+    // UsdPrim::HasAPI().
     if (validateSchemaType) {
         if (schemaType.IsUnknown()) {
             TF_CODING_ERROR("HasAPI: Invalid unknown schema type (%s) ",
@@ -117,13 +125,23 @@ UsdPrim::_HasAPI(
             return false;
         }
 
-        // Note that this is only hit in python code paths,
-        // C++ clients would hit the static_asserts defined in prim.h
-        auto schemaRegistry = UsdSchemaRegistry::GetInstance();
-
-        if (schemaRegistry.IsTyped(schemaType)) {
+        if (UsdSchemaRegistry::GetInstance().IsTyped(schemaType)) {
             TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is typed.",
                             schemaType.GetTypeName().c_str());
+            return false;
+        }
+
+        if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
+                "applied API schema type.", schemaType.GetTypeName().c_str());
+            return false;
+        }
+
+        if (!schemaType.IsA(apiSchemaBaseType) || 
+            schemaType == apiSchemaBaseType) {
+            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "
+                "derive from UsdAPISchemaBase.", 
+                schemaType.GetTypeName().c_str());
             return false;
         }
 
@@ -135,10 +153,7 @@ UsdPrim::_HasAPI(
         }
     }
 
-    // Get our composed set of applied schemas
-    static const auto schemaBaseType = 
-            TfType::FindByName("UsdSchemaBase");
-
+    // Get our composed set of all applied schemas.
     auto appliedSchemas = GetAppliedSchemas();
     if (appliedSchemas.empty()) {
         return false;
@@ -171,6 +186,7 @@ UsdPrim::_HasAPI(
     };
 
     // See if our schema is directly authored
+    static const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
     for (const auto& alias : schemaBaseType.GetAliases(schemaType)) {
         if (foundMatch(alias)) {
             return true; 

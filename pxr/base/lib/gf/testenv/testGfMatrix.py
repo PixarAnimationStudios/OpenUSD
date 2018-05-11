@@ -314,10 +314,10 @@ class TestGfMatrix(unittest.TestCase):
             self.assertTrue(len(str(Matrix())))
 
     def test_Matrix3Transforms(self):
-        Matrices = [(Gf.Matrix3d, Gf.Vec3d),
-                    (Gf.Matrix3f, Gf.Vec3f)]
+        Matrices = [(Gf.Matrix3d, Gf.Vec3d, Gf.Quatd),
+                    (Gf.Matrix3f, Gf.Vec3f, Gf.Quatf)]
 
-        for (Matrix, Vec) in Matrices:
+        for (Matrix, Vec, Quat) in Matrices:
             def _VerifyOrthonormVecs(mat):
                 v0 = Vec(mat[0][0], mat[0][1], mat[0][2])
                 v1 = Vec(mat[1][0], mat[1][1], mat[1][2])
@@ -372,6 +372,16 @@ class TestGfMatrix(unittest.TestCase):
             self.assertTrue(Gf.IsClose(r.axis, r2.axis, 0.0001) and \
                             Gf.IsClose(r.angle, r2.angle, 0.0001))
 
+            # Setting rotation using a quaternion should give the same results
+            # as setting a GfRotation.
+            rot = Gf.Rotation(Gf.Vec3d(1,1,1),120)
+            quat = Quat(rot.GetQuaternion().GetReal(),
+                        Vec(rot.GetQuaternion().GetImaginary()))
+            r = Matrix().SetRotate(rot).ExtractRotation()
+            r2 = Matrix().SetRotate(quat).ExtractRotation()
+            self.assertTrue(Gf.IsClose(r.axis, r2.axis, 0.0001) and \
+                            Gf.IsClose(r.angle, r2.angle, 0.0001))
+
             self.assertEqual(Matrix().SetScale(10), Matrix(10))
             m = Matrix().SetScale(Vec(1,2,3))
             self.assertTrue(m[0,0] == 1 and m[1,1] == 2 and m[2,2] == 3)
@@ -379,6 +389,15 @@ class TestGfMatrix(unittest.TestCase):
             # Initializing with GfRotation should give same results as SetRotate.
             r = Matrix().SetRotate(Gf.Rotation(Gf.Vec3d(1,0,0),30)).ExtractRotation()
             r2 = Matrix(Gf.Rotation(Gf.Vec3d(1,0,0),30)).ExtractRotation()
+            self.assertTrue(Gf.IsClose(r.axis, r2.axis, 0.0001) and \
+                            Gf.IsClose(r.angle, r2.angle, 0.0001))
+
+            # Initializing with a quaternion should give same results as SetRotate.
+            rot = Gf.Rotation(Gf.Vec3d(1,1,1),120)
+            quat = Quat(rot.GetQuaternion().GetReal(),
+                        Vec(rot.GetQuaternion().GetImaginary()))
+            r = Matrix().SetRotate(quat).ExtractRotation()
+            r2 = Matrix(quat).ExtractRotation()
             self.assertTrue(Gf.IsClose(r.axis, r2.axis, 0.0001) and \
                             Gf.IsClose(r.angle, r2.angle, 0.0001))
 
@@ -402,10 +421,10 @@ class TestGfMatrix(unittest.TestCase):
                 self.assertEqual(r.angle, r.angle)
 
     def test_Matrix4Transforms(self):
-        Matrices = [(Gf.Matrix4d, Gf.Vec4d, Gf.Matrix3d, Gf.Vec3d),
-                    (Gf.Matrix4f, Gf.Vec4f, Gf.Matrix3f, Gf.Vec3f)]
+        Matrices = [(Gf.Matrix4d, Gf.Vec4d, Gf.Matrix3d, Gf.Vec3d, Gf.Quatd),
+                    (Gf.Matrix4f, Gf.Vec4f, Gf.Matrix3f, Gf.Vec3f, Gf.Quatf)]
 
-        for (Matrix, Vec, Matrix3, Vec3) in Matrices:
+        for (Matrix, Vec, Matrix3, Vec3, Quat) in Matrices:
             def _VerifyOrthonormVecs(mat):
                 v0 = Vec3(mat[0][0], mat[0][1], mat[0][2])
                 v1 = Vec3(mat[1][0], mat[1][1], mat[1][2])
@@ -453,6 +472,20 @@ class TestGfMatrix(unittest.TestCase):
             v2 = Matrix(3).SetTranslateOnly((1, 2, 3)).TransformAffine(v)
             self.assertEqual(v2, Gf.Vec3d(4,5,6))
             self.assertEqual(type(v2), Gf.Vec3d)
+
+            # Constructor, SetRotate, and SetRotateOnly w/GfQuaternion
+            m = Matrix()            
+            r = Gf.Rotation(Gf.Vec3d(1,0,0), 30)
+            quat = r.GetQuaternion()
+            m.SetRotate(Quat(quat.GetReal(), Vec3(quat.GetImaginary())))
+            m2 = Matrix(r, Vec3(0,0,0))
+            m_o = m.GetOrthonormalized()
+            self.assertEqual(m_o, m2)
+            m.Orthonormalize()
+            self.assertEqual(m, m2)
+            m3 = Matrix(1)
+            m3.SetRotateOnly(Quat(quat.GetReal(), Vec3(quat.GetImaginary())))
+            self.assertEqual(m2, m3)
 
             # Constructor, SetRotate, and SetRotateOnly w/GfRotation
             m = Matrix()
@@ -505,6 +538,19 @@ class TestGfMatrix(unittest.TestCase):
             r = Matrix().SetRotate(Gf.Rotation(Gf.Vec3d(1,0,0),30)).ExtractRotation()
             r2 = Matrix(Gf.Rotation(Gf.Vec3d(1,0,0),30), Vec3(1,2,3)).ExtractRotation()
             r3 = Matrix().SetTransform(Gf.Rotation(Gf.Vec3d(1,0,0),30), Vec3(1,2,3)).ExtractRotation()
+            self.assertTrue(Gf.IsClose(r.axis, r2.axis, 0.0001) and \
+                Gf.IsClose(r.angle, r2.angle, 0.0001))
+            self.assertTrue(Gf.IsClose(r3.axis, r2.axis, 0.0001) and \
+                Gf.IsClose(r3.angle, r2.angle, 0.0001))
+
+            # Initializing with GfRotation should give same results as
+            # SetRotate(quaternion) and SetTransform
+            rot = Gf.Rotation(Gf.Vec3d(1,0,0),30)
+            quat = Quat(rot.GetQuaternion().GetReal(),
+                        Vec3(rot.GetQuaternion().GetImaginary()))
+            r = Matrix().SetRotate(quat).ExtractRotation()
+            r2 = Matrix(rot, Vec3(1,2,3)).ExtractRotation()
+            r3 = Matrix().SetTransform(rot, Vec3(1,2,3)).ExtractRotation()
             self.assertTrue(Gf.IsClose(r.axis, r2.axis, 0.0001) and \
                 Gf.IsClose(r.angle, r2.angle, 0.0001))
             self.assertTrue(Gf.IsClose(r3.axis, r2.axis, 0.0001) and \
@@ -573,6 +619,11 @@ class TestGfMatrix(unittest.TestCase):
                 for j in range(4):
                     maxEltErr = max(maxEltErr, abs(r[i][j] - m[i][j]))
             self.assertTrue(Gf.IsClose(maxEltErr, 0.0, 1e-5))
+
+            # IsClose
+            self.assertFalse(Gf.IsClose(Matrix(1), Matrix(1.0001), 1e-5))
+            self.assertTrue(Gf.IsClose(Matrix(1), Matrix(1.000001), 1e-5))
+
 
     def test_Matrix4Factoring(self):
         Matrices = [(Gf.Matrix4d, Gf.Vec3d),

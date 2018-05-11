@@ -52,6 +52,7 @@ class GfMatrix3d;
 class GfMatrix3f;
 class GfRotation;
 class GfQuaternion;
+class GfQuatd;
 
 /// \class GfMatrix3d
 /// \ingroup group_gf_LinearAlgebra
@@ -145,6 +146,10 @@ public:
     /// Constructor. Initialize matrix from rotation.
     GF_API
     GfMatrix3d(const GfRotation& rot);
+
+    /// Constructor. Initialize matrix from a quaternion.
+    GF_API
+    explicit GfMatrix3d(const GfQuatd& rot);
 
     /// This explicit constructor converts a "float" matrix to a "double" matrix.
     GF_API
@@ -422,6 +427,10 @@ public:
 
     /// Sets the matrix to specify a rotation equivalent to \e rot.
     GF_API
+    GfMatrix3d& SetRotate(const GfQuatd &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot.
+    GF_API
     GfMatrix3d& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a nonuniform scaling in x, y, and z by
@@ -459,12 +468,25 @@ public:
     /// @}
 
 private:
+    /// Set the matrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat(double r, const GfVec3d& i);
+
+
+private:
     /// Matrix storage, in row-major order.
     GfMatrixData<double, 3, 3> _mtx;
 
     // Friend declarations
     friend class GfMatrix3f;
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix3d const &m1, GfMatrix3d const &m2, double tolerance);
 
 /// Output a GfMatrix3d
 /// \ingroup group_gf_DebuggingOutput

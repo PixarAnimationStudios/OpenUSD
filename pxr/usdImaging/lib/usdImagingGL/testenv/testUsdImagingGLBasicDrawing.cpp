@@ -212,7 +212,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     perfLog.ResetCache(HdTokens->topology);
     perfLog.ResetCache(HdTokens->transform);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingExtent, 0);
-    perfLog.SetCounter(UsdImagingTokens->usdVaryingPrimVar, 0);
+    perfLog.SetCounter(UsdImagingTokens->usdVaryingPrimvar, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingTopology, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingVisibility, 0);
     perfLog.SetCounter(UsdImagingTokens->usdVaryingXform, 0);
@@ -284,7 +284,12 @@ My_TestGLDrawing::DrawTest(bool offscreen)
             }
         }
 
-        _engine->Render(_stage->GetPseudoRoot(), params);
+        {
+            TfErrorMark mark;
+            _engine->Render(_stage->GetPseudoRoot(), params);
+            TF_VERIFY(mark.IsClean(), "Errors occurred while rendering!");
+        }
+
         std::cout << "itemsDrawn " << perfLog.GetCounter(HdTokens->itemsDrawn) << std::endl;
         std::cout << "totalItemCount " << perfLog.GetCounter(HdTokens->totalItemCount) << std::endl;
 

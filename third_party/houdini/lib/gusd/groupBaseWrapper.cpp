@@ -226,6 +226,12 @@ GusdGroupBaseWrapper::updateGroupFromGTPrim(
         xformCache[destPrim.GetPrim().GetPath()] = houXform;
     }
 
+    // sourcePrim can be NULL if the ROP wants to write a transform without having
+    // a corresponding GT_Primitive
+    if( !sourcePrim ) {
+        return true;
+    }
+
     if( !ctxt.writeOverlay || ctxt.overlayPrimvars || ctxt.overlayAll )
     {
         GusdGT_AttrFilter filter = ctxt.attributeFilter;

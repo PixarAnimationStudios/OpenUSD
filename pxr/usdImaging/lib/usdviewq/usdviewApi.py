@@ -62,6 +62,12 @@ class UsdviewApi(object):
         return self.__appController._dataModel.selection.getFocusPrim()
 
     @property
+    def selectedPoint(self):
+        """The currently selected world space point."""
+
+        return self.__appController._dataModel.selection.getPoint()
+
+    @property
     def selectedPrims(self):
         """A list of all currently selected prims."""
 
@@ -98,10 +104,7 @@ class UsdviewApi(object):
     def cameraPrim(self):
         """The current camera prim."""
 
-        if self.__appController._stageView is not None:
-            return self.__appController._stageView.getCameraPrim()
-        else:
-            return None
+        return self.__appController._dataModel.viewSettings.cameraPrim
 
     @property
     def currentGfCamera(self):
@@ -175,6 +178,10 @@ class UsdviewApi(object):
 
         return prims
 
+    def UpdateGUI(self):
+        """Updates the main UI views"""
+        self.__appController.updateGUI()
+
     def PrintStatus(self, msg):
         """Prints a status message."""
 
@@ -184,6 +191,12 @@ class UsdviewApi(object):
         """DEPRECATED Returns the old settings object."""
 
         return self.__appController._settings
+
+    def ClearPrimSelection(self):
+        self.__appController._dataModel.selection.clearPrims()
+
+    def AddPrimToSelection(self, prim):
+        self.__appController._dataModel.selection.addPrim(prim)
 
     # Screen capture functionality.
     def GrabWindowShot(self):

@@ -14,7 +14,7 @@ pxr_library(hdStream
     LIBRARIES
         plug
         tf
-        tracelite
+        trace
         vt
         work
         hd

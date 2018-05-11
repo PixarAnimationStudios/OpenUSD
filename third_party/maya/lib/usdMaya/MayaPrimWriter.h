@@ -29,16 +29,18 @@
 #include "usdMaya/usdWriteJobCtx.h"
 
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdUtils/sparseValueWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomImageable;
 class UsdTimeCode;
+class UsdUtilsSparseValueWriter;
 
 // Writes an MFnMesh as a poly mesh OR a subd mesh
 class MayaPrimWriter
 {
-  public:
+public:
     PXRUSDMAYA_API
     MayaPrimWriter(
             const MDagPath& iDag,
@@ -74,6 +76,16 @@ class MayaPrimWriter
     /// Base implementation does nothing.
     PXRUSDMAYA_API
     virtual void postExport();
+
+    /// Gets all of the prim paths that this prim writer has created.
+    /// The base implementation just gets the single generated prim's path.
+    /// Prim writers that generate more than one USD prim from a single Maya
+    /// node should override this function to indicate all the prims they
+    /// create.
+    /// Implementations should add to outPaths instead of replacing. The return
+    /// value should indicate whether any items were added to outPaths.
+    PXRUSDMAYA_API
+    virtual bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const;
     
 public:
     const MDagPath&        getDagPath()    const { return mDagPath; }
@@ -95,9 +107,42 @@ protected:
     UsdPrim mUsdPrim;
     usdWriteJobCtx& mWriteJobCtx;
 
+    /// Sets the value of \p attr to \p value at \p time with value 
+    /// compression. When this method is used to write attribute values, 
+    /// any redundant authoring of the default value or of time-samples 
+    /// are avoided (by using the utility class UsdUtilsSparseValueWriter).
+    template <typename T>
+    bool _SetAttribute(const UsdAttribute &attr, 
+                       const T &value, 
+                       const UsdTimeCode time=UsdTimeCode::Default()) {
+        VtValue val(value);
+        return _valueWriter.SetAttribute(attr, &val, time);
+    }
+
+    /// \overload
+    /// This overload takes the value by pointer and hence avoids a copy 
+    /// of the value.
+    /// However, it swaps out the value held in \p value for efficiency, 
+    /// leaving it in default-constructed state (value-initialized).
+    template <typename T>
+    bool _SetAttribute(const UsdAttribute &attr, 
+                       T *value, 
+                       const UsdTimeCode time=UsdTimeCode::Default()) {
+        return _valueWriter.SetAttribute(attr, VtValue::Take(*value), time);
+    }
+
+    /// Get the attribute value-writer object to be used when writing 
+    /// attributes. Access to this is provided so that attribute authoring 
+    /// happening inside non-member functions can make use of it.
+    UsdUtilsSparseValueWriter *_GetSparseValueWriter() {
+        return &_valueWriter;
+    }
+
 private:
     MDagPath mDagPath;
     SdfPath mUsdPath;
+
+    UsdUtilsSparseValueWriter _valueWriter;
 
     bool mIsValid;
     bool mExportsVisibility;

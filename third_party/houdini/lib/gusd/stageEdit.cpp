@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool
 GusdStageBasicEdit::Apply(const SdfLayerHandle& layer,
-                          GusdUT_ErrorContext* err) const
+                          UT_ErrorSeverity sev) const
 {
     SdfChangeBlock changeBlock;
 
@@ -46,7 +46,7 @@ GusdStageBasicEdit::Apply(const SdfLayerHandle& layer,
 
 bool
 GusdStageBasicEdit::Apply(const UsdStagePtr& stage,
-                          GusdUT_ErrorContext* err) const
+                          UT_ErrorSeverity sev) const
 {
     UT_ASSERT_P(stage);
 

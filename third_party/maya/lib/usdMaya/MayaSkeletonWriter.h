@@ -59,6 +59,7 @@ public:
     bool exportsGprims() const override;
     bool shouldPruneChildren() const override;
     bool isShapeAnimated() const override;
+    bool getAllAuthoredUsdPaths(SdfPathVector* outPaths) const override;
 
     /// Gets the joint name tokens for the given dag paths, assuming a joint
     /// hierarchy with the given root joint.

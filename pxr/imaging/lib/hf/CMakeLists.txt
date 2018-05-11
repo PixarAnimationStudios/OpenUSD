@@ -7,7 +7,7 @@ pxr_library(hf
     LIBRARIES
         plug
         tf
-        tracelite
+        trace
 
     PUBLIC_HEADERS
         api.h

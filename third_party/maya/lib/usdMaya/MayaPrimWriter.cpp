@@ -115,10 +115,9 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
         TfToken const &visibilityTok = (isVisible ? UsdGeomTokens->inherited : 
                                         UsdGeomTokens->invisible);
         if (usdTime.IsDefault() != isAnimated ) {
-            if (usdTime.IsDefault())
-                primSchema.CreateVisibilityAttr(VtValue(visibilityTok), true);
-            else
-                primSchema.CreateVisibilityAttr().Set(visibilityTok, usdTime);
+            _SetAttribute(primSchema.CreateVisibilityAttr(VtValue(), true), 
+                          visibilityTok, 
+                          usdTime);
         }
     }
 
@@ -158,9 +157,12 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
     // name collisions will always be handled by taking the shape node's value
     // if we're merging transforms and shapes.
     if (dagT.isValid() && !(dagT == getDagPath())) {
-        PxrUsdMayaWriteUtil::WriteUserExportedAttributes(dagT, usdPrim, usdTime);
+        PxrUsdMayaWriteUtil::WriteUserExportedAttributes(dagT, usdPrim, usdTime,
+                _GetSparseValueWriter());
     }
-    PxrUsdMayaWriteUtil::WriteUserExportedAttributes(getDagPath(), usdPrim, usdTime);
+
+    PxrUsdMayaWriteUtil::WriteUserExportedAttributes(getDagPath(), usdPrim, 
+            usdTime, _GetSparseValueWriter());
 
     return true;
 }
@@ -194,6 +196,15 @@ MayaPrimWriter::setExportsVisibility(bool exports)
     mExportsVisibility = exports;
 }
 
+bool
+MayaPrimWriter::getAllAuthoredUsdPaths(SdfPathVector* outPaths) const
+{
+    if (!getUsdPath().IsEmpty()) {
+        outPaths->push_back(getUsdPath());
+        return true;
+    }
+    return false;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

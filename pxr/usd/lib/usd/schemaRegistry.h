@@ -176,6 +176,10 @@ public:
     USD_API
     static bool IsConcrete(const TfType& primType);
 
+    /// Returns true if \p apiSchemaType is an applied API schema type.
+    USD_API
+    bool IsAppliedAPISchema(const TfType& apiSchemaType);
+
     /// Returns true if \p apiSchemaType is a multiple-apply API schema type.
     USD_API
     bool IsMultipleApplyAPISchema(const TfType& apiSchemaType);
@@ -232,6 +236,7 @@ private:
         _TokenPairHash> _PrimTypePropNameToSpecIdMap;
     _PrimTypePropNameToSpecIdMap _primTypePropNameToSpecIdMap;
 
+    TfToken::HashSet _appliedAPISchemaNames;
     TfToken::HashSet _multipleApplyAPISchemaNames;
 };
 

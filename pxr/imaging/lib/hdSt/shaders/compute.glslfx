@@ -172,7 +172,7 @@ void main()
 --- --------------------------------------------------------------------------
 -- glsl Compute.QuadrangulateFloat
 
-layout(binding=0) buffer PrimVar { float primVar[]; };
+layout(binding=0) buffer Primvar { float primvar[]; };
 layout(binding=1) buffer QuadInfo { int quadInfo[]; };
 
 #define DATATYPE float
@@ -180,7 +180,7 @@ layout(binding=1) buffer QuadInfo { int quadInfo[]; };
 --- --------------------------------------------------------------------------
 -- glsl Compute.QuadrangulateDouble
 
-layout(binding=0) buffer PrimVar { double primVar[]; };
+layout(binding=0) buffer Primvar { double primvar[]; };
 layout(binding=1) buffer QuadInfo { int quadInfo[]; };
 
 #define DATATYPE double
@@ -193,8 +193,8 @@ layout(std140, binding=0) uniform Uniform {
     int quadInfoStride;
     int quadInfoOffset;
     int maxNumVert;
-    int primVarOffset;     // interleave offset
-    int primVarStride;     // interleave stride
+    int primvarOffset;     // interleave offset
+    int primvarStride;     // interleave stride
     int numComponents;     // interleave datasize
 };
 layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
@@ -222,16 +222,16 @@ void main()
             int i0 = quadInfo[quadInfoIndex + 2 + i];
             int i1 = quadInfo[quadInfoIndex + 2 + (i+1)%numVert];
 
-            DATATYPE v0 =  primVar[(i0 + vertexOffset)*primVarStride + primVarOffset + j];
-            DATATYPE v1 =  primVar[(i1 + vertexOffset)*primVarStride + primVarOffset + j];
+            DATATYPE v0 =  primvar[(i0 + vertexOffset)*primvarStride + primvarOffset + j];
+            DATATYPE v1 =  primvar[(i1 + vertexOffset)*primvarStride + primvarOffset + j];
             DATATYPE edge = (v0 + v1) * 0.5;
             center += v0;
 
             // edge
-            primVar[(dstOffset + i + vertexOffset)*primVarStride + primVarOffset + j] = edge;
+            primvar[(dstOffset + i + vertexOffset)*primvarStride + primvarOffset + j] = edge;
         }
         // center
         center /= numVert;
-        primVar[(dstOffset + numVert + vertexOffset)*primVarStride + primVarOffset + j] = center;
+        primvar[(dstOffset + numVert + vertexOffset)*primvarStride + primvarOffset + j] = center;
     }
 }

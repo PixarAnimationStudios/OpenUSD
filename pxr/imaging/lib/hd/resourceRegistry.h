@@ -150,7 +150,8 @@ public:
     /// Set the aggregation strategy for non uniform immutable parameters
     /// (vertex, varying, facevarying)
     /// Takes ownership of the passed in strategy object.
-    void SetNonUniformImmutableAggregationStrategy(HdAggregationStrategy *strategy) {
+    void SetNonUniformImmutableAggregationStrategy(
+        HdAggregationStrategy *strategy) {
         _nonUniformImmutableAggregationStrategy.reset(strategy);
     }
 
@@ -218,47 +219,62 @@ public:
     /// until the HdInstance object is destroyed.
     HD_API
     std::unique_lock<std::mutex> RegisterMeshTopology(HdTopology::ID id, 
-         HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *pInstance);
+        HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *pInstance);
 
     HD_API
     std::unique_lock<std::mutex> RegisterBasisCurvesTopology(HdTopology::ID id,
-         HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *pInstance);
+        HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *pInstance);
 
     HD_API
     std::unique_lock<std::mutex> RegisterVertexAdjacency(HdTopology::ID id,
-         HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> *pInstance);
+        HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr> *pInstance);
 
     /// Index buffer array range instancing
     /// Returns the HdInstance points to shared HdBufferArrayRange,
     /// distinguished by given ID.
     /// *Refer the comment on RegisterTopology for the same consideration.
     HD_API
-    std::unique_lock<std::mutex> RegisterMeshIndexRange(HdTopology::ID id, TfToken const &name,
-         HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    std::unique_lock<std::mutex> RegisterMeshIndexRange(
+        HdTopology::ID id, TfToken const &name,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
     HD_API
-    std::unique_lock<std::mutex> RegisterBasisCurvesIndexRange(HdTopology::ID id, TfToken const &name,
-         HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    std::unique_lock<std::mutex> RegisterBasisCurvesIndexRange(
+        HdTopology::ID id, TfToken const &name,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
     /// Primvar array range instancing
     /// Returns the HdInstance pointing to shared HdBufferArrayRange,
     /// distinguished by given ID.
     /// *Refer the comment on RegisterTopology for the same consideration.
     HD_API
-    std::unique_lock<std::mutex> RegisterPrimvarRange(HdTopology::ID id,
-         HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+    std::unique_lock<std::mutex> RegisterPrimvarRange(
+        HdTopology::ID id,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
+
+    /// ExtComputation data array range instancing
+    /// Returns the HdInstance pointing to shared HdBufferArrayRange,
+    /// distinguished by given ID.
+    /// *Refer the comment on RegisterTopology for the same consideration.
+    HD_API
+    std::unique_lock<std::mutex> RegisterExtComputationDataRange(
+        HdTopology::ID id,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *pInstance);
 
     /// Register a texture into the texture registry.
     /// XXX garbage collection?
     HD_API
-    std::unique_lock<std::mutex> RegisterTextureResource(HdTextureResource::ID id,
-         HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *pInstance);
+    std::unique_lock<std::mutex> RegisterTextureResource(
+        HdTextureResource::ID id,
+        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+        *pInstance);
 
     /// Find a texture in the texture registry. If found, it returns it.
     HD_API
-    std::unique_lock<std::mutex> FindTextureResource(HdTextureResource::ID id,
-         HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance, 
-         bool *found);
+    std::unique_lock<std::mutex> FindTextureResource(
+        HdTextureResource::ID id,
+        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+        *instance, bool *found);
 
     /// Invalidate any shaders registered with this registry.
     HD_API
@@ -290,7 +306,8 @@ protected:
 
     // current aggregation strategies
     std::unique_ptr<HdAggregationStrategy> _nonUniformAggregationStrategy;
-    std::unique_ptr<HdAggregationStrategy> _nonUniformImmutableAggregationStrategy;
+    std::unique_ptr<HdAggregationStrategy>
+                                _nonUniformImmutableAggregationStrategy;
     std::unique_ptr<HdAggregationStrategy> _uniformUboAggregationStrategy;
     std::unique_ptr<HdAggregationStrategy> _uniformSsboAggregationStrategy;
     std::unique_ptr<HdAggregationStrategy> _singleAggregationStrategy;
@@ -343,7 +360,8 @@ private:
 
     typedef HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr>
         _BasisCurvesTopologyInstance;
-    HdInstanceRegistry<_BasisCurvesTopologyInstance> _basisCurvesTopologyRegistry;
+    HdInstanceRegistry<_BasisCurvesTopologyInstance>
+        _basisCurvesTopologyRegistry;
 
     //   topology to vertex adjacency
     typedef HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr>
@@ -353,7 +371,11 @@ private:
     //   topology to HdBufferArrayRange
     typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
         _TopologyIndexRangeInstance;
-    typedef tbb::concurrent_unordered_map<TfToken, HdInstanceRegistry<_TopologyIndexRangeInstance>, TfToken::HashFunctor >
+    typedef HdInstanceRegistry<_TopologyIndexRangeInstance>
+        _TopologyIndexRangeInstanceRegistry;
+    typedef tbb::concurrent_unordered_map< TfToken,
+                                           _TopologyIndexRangeInstanceRegistry,
+                                           TfToken::HashFunctor >
         _TopologyIndexRangeInstanceRegMap;
 
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
@@ -362,6 +384,11 @@ private:
     typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
         _PrimvarRangeInstance;
     HdInstanceRegistry<_PrimvarRangeInstance> _primvarRangeRegistry;
+
+    typedef HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr>
+        _ExtComputationDataRangeInstance;
+    HdInstanceRegistry<_ExtComputationDataRangeInstance>
+        _extComputationDataRangeRegistry;
 
     // texture resource registry
     typedef HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>

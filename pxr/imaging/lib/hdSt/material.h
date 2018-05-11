@@ -96,6 +96,12 @@ public:
         HdSceneDelegate* sceneDelegate,
         SdfPath const& textureId) const;
 
+    /// Summary flag. Returns true if the material is bound to one or more
+    /// textures and any of those textures is a ptex texture.
+    /// If no textures are bound or all textures are uv textures, then
+    /// the method returns false.
+    inline bool HasPtex() const;
+
     /// Replaces the shader code object with an externally created one
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
@@ -105,6 +111,7 @@ public:
 
 private:
     HdStSurfaceShaderSharedPtr _surfaceShader;
+    bool                       _hasPtex;
 };
 
 inline std::string
@@ -137,6 +144,11 @@ HdStMaterial::GetTextureResourceID(HdSceneDelegate* sceneDelegate,
                                SdfPath const& textureId) const
 {
     return sceneDelegate->GetTextureResourceID(textureId);
+}
+
+inline bool HdStMaterial::HasPtex() const
+{
+    return _hasPtex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

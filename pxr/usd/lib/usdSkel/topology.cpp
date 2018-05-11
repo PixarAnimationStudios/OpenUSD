@@ -23,7 +23,9 @@
 //
 #include "pxr/usd/usdSkel/topology.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
+
+#include <unordered_map>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 
-using _PathIndexMap = std::map<SdfPath,int,SdfPath::FastLessThan>;
+using _PathIndexMap = std::unordered_map<SdfPath,int,SdfPath::Hash>;
 
 
 int

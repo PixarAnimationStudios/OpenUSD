@@ -49,7 +49,7 @@ UsdGeomCollectionAPI::~UsdGeomCollectionAPI()
 
 /* virtual */
 bool
-UsdGeomCollectionAPI::_IsCompatible(const UsdPrim &prim) const
+UsdGeomCollectionAPI::_IsCompatible() const
 {
     return GetPrim() && _GetTargetsRel();
 }

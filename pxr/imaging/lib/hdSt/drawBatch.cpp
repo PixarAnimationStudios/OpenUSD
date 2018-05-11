@@ -128,22 +128,22 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
     }
 
     if (drawItem0->GetGeometricShader() == drawItem1->GetGeometricShader()
-        && drawItem0->GetInstancePrimVarNumLevels() ==
-            drawItem1->GetInstancePrimVarNumLevels()
+        && drawItem0->GetInstancePrimvarNumLevels() ==
+            drawItem1->GetInstancePrimvarNumLevels()
         && isAggregated(drawItem0->GetTopologyRange(),
                          drawItem1->GetTopologyRange())
-        && isAggregated(drawItem0->GetVertexPrimVarRange(),
-                         drawItem1->GetVertexPrimVarRange())
-        && isAggregated(drawItem0->GetElementPrimVarRange(),
-                         drawItem1->GetElementPrimVarRange())
-        && isAggregated(drawItem0->GetConstantPrimVarRange(),
-                         drawItem1->GetConstantPrimVarRange())
+        && isAggregated(drawItem0->GetVertexPrimvarRange(),
+                         drawItem1->GetVertexPrimvarRange())
+        && isAggregated(drawItem0->GetElementPrimvarRange(),
+                         drawItem1->GetElementPrimvarRange())
+        && isAggregated(drawItem0->GetConstantPrimvarRange(),
+                         drawItem1->GetConstantPrimvarRange())
         && isAggregated(drawItem0->GetInstanceIndexRange(),
                          drawItem1->GetInstanceIndexRange())) {
-        int numLevels = drawItem0->GetInstancePrimVarNumLevels();
+        int numLevels = drawItem0->GetInstancePrimvarNumLevels();
         for (int i = 0; i < numLevels; ++i) {
-            if (!isAggregated(drawItem0->GetInstancePrimVarRange(i),
-                                 drawItem1->GetInstancePrimVarRange(i))) {
+            if (!isAggregated(drawItem0->GetInstancePrimvarRange(i),
+                                 drawItem1->GetInstancePrimvarRange(i))) {
                 return false;
             }
         }

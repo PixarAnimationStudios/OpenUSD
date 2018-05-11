@@ -27,6 +27,7 @@
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
@@ -105,7 +106,7 @@ UsdSkelImagingSkelRootAdapter::TrackVariability(
     const UsdPrim& prim,
     const SdfPath& cachePath,
     HdDirtyBits* timeVaryingBits,
-    const UsdImagingInstancerContext* instancerContext)
+    const UsdImagingInstancerContext* instancerContext) const
 {
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
@@ -162,7 +163,7 @@ UsdSkelImagingSkelRootAdapter::TrackVariability(
     if(const UsdSkelAnimQuery& animQuery = instance->skelQuery.GetAnimQuery()) {
         if(animQuery.JointTransformsMightBeTimeVarying()) {
             (*timeVaryingBits) |= HdChangeTracker::DirtyPoints;
-            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimVar);
+            HD_PERF_COUNTER_INCR(UsdImagingTokens->usdVaryingPrimvar);
         }
     }
 }
@@ -174,7 +175,7 @@ UsdSkelImagingSkelRootAdapter::UpdateForTime(
     const SdfPath& cachePath,
     UsdTimeCode time,
     HdDirtyBits requestedBits,
-    const UsdImagingInstancerContext* instancerContext)
+    const UsdImagingInstancerContext* instancerContext) const
 {
     // WARNING: This method is executed from multiple threads, the value cache
     // has been carefully pre-populated to avoid mutating the underlying
@@ -219,14 +220,12 @@ UsdSkelImagingSkelRootAdapter::UpdateForTime(
         valueCache->GetPoints(cachePath) = instance->ComputePoints(time);
     }
 
-    if (requestedBits & HdChangeTracker::DirtyPrimVar) {
+    if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         // Expose points as a primvar.
-        UsdImagingValueCache::PrimvarInfo primvar;
-        primvar.name = HdTokens->points;
-        primvar.interpolation = UsdGeomTokens->vertex;
-
-        PrimvarInfoVector& primvars = valueCache->GetPrimvars(cachePath);
-        _MergePrimvar(primvar, &primvars);
+        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+                      HdTokens->points,
+                      HdInterpolationVertex,
+                      HdPrimvarRoleTokens->point);
     }
 
     if (requestedBits & HdChangeTracker::DirtyTransform) {
@@ -302,7 +301,7 @@ UsdSkelImagingSkelRootAdapter::_GetExtent(
 
 
 UsdSkelImagingSkelRootAdapter::_SkelInstance*
-UsdSkelImagingSkelRootAdapter::_GetSkelInstance(const SdfPath& cachePath)
+UsdSkelImagingSkelRootAdapter::_GetSkelInstance(const SdfPath& cachePath) const
 {
     auto it = _instanceCache.find(cachePath);
     return it != _instanceCache.end() ? it->second.get() : nullptr;

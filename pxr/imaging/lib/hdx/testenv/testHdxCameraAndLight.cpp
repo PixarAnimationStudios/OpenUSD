@@ -27,7 +27,7 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPass.h"
@@ -120,8 +120,8 @@ static void CameraAndLightTest()
 
     // Update camera matrix
     delegate->SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdStCamera::DirtyViewMatrix);
-    tracker.MarkSprimDirty(camera, HdStCamera::DirtyProjMatrix);
+    tracker.MarkSprimDirty(camera, HdCamera::DirtyViewMatrix);
+    tracker.MarkSprimDirty(camera, HdCamera::DirtyProjMatrix);
 
     engine.Execute(*index, tasks);
 

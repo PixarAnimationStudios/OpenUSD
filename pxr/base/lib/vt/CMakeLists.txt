@@ -6,7 +6,7 @@ pxr_library(vt
         arch
         tf
         gf
-        tracelite
+        trace
         ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 

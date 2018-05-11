@@ -43,12 +43,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // FACESET API                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \deprecated 
-/// 
 /// \class UsdGeomFaceSetAPI
 /// 
-/// \note This class has been deprecated in favor of the concrete typed-schema 
-/// "UsdGeomSubset" for representing face-sets. 
+/// \deprecated This class has been deprecated in favor of the concrete 
+/// typed-schema "UsdGeomSubset". 
 /// 
 /// This is a general purpose API schema used to describe many different 
 /// organizations and modifications of a prim's faces' behavior. It's an add-on 
@@ -156,12 +154,13 @@ public:
     USDGEOM_API
     virtual ~UsdGeomFaceSetAPI();
 
-private:
-    // Returns true if the face-set contains the isPartition attribute. Note 
-    // that this does not check the validity of the face-set attribute values. 
-    // To check the validity, invoke \ref Validate().
+protected:
+    /// Returns true if the face-set exists on the prim, i.e., it contains the 
+    /// isPartition attribute. Note that this does not check the validity of the 
+    /// face-set attribute values. To check the validity, invoke 
+    /// \ref Validate().
     USDGEOM_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    virtual bool _IsCompatible() const override;
 
 public:
 

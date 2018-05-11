@@ -30,7 +30,7 @@
 #include "pxr/usd/sdf/layer.h"
 
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 using std::string;
 

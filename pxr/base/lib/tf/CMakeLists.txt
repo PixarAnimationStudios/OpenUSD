@@ -14,7 +14,6 @@ pxr_library(tf
         ${WINLIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
-        ${Boost_DATE_TIME_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
@@ -56,7 +55,6 @@ pxr_library(tf
         pathUtils
         patternMatcher
         pointerAndBits
-        poolAllocator
         pyLock
         refBase
         refCount
@@ -77,7 +75,6 @@ pxr_library(tf
         stringUtils
         templateString
         tf
-        timeStamp
         token
         traits
         type
@@ -196,7 +193,6 @@ pxr_library(tf
         wrapNotice.cpp
         wrapPathUtils.cpp
         wrapPyContainerConversions.cpp
-        wrapPyDateTime.cpp
         wrapPyModuleNotice.cpp
         wrapPyObjWrapper.cpp
         wrapPyOptional.cpp
@@ -211,11 +207,9 @@ pxr_library(tf
         wrapTemplateString.cpp
         wrapTestPyAnnotatedBoolResult.cpp
         wrapTestPyContainerConversions.cpp
-        wrapTestPyDateTime.cpp
         wrapTestPyStaticTokens.cpp
         wrapTestTfPython.cpp
         wrapTestTfPyOptional.cpp
-        wrapTimeStamp.cpp
         wrapToken.cpp
         wrapType.cpp
         wrapWarning.cpp
@@ -332,7 +326,6 @@ pxr_build_test(testTf
         testenv/stringUtils.cpp
         testenv/staticTokens.cpp
         testenv/templateString.cpp
-        testenv/timeStamp.cpp
         testenv/token.cpp
         testenv/type.cpp
         testenv/typeMultipleInheritance.cpp
@@ -346,7 +339,6 @@ pxr_test_scripts(
     testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
-    testenv/testTfPyDateTime.py
     testenv/testTfPyNotice.py
     testenv/testTfPyOptional.py
     testenv/testTfPyScopeDescription.py
@@ -598,9 +590,6 @@ pxr_register_test(testTfTemplateString
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfTemplateString"
 )
-pxr_register_test(TfTimeStamp
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfTimeStamp"
-)
 pxr_register_test(TfToken
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfToken"
 )
@@ -670,10 +659,6 @@ pxr_register_test(testTf_PyContainerConversions
 pxr_register_test(testTf_PyOptional
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyOptional"
-)
-pxr_register_test(testTf_PyDateTime
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyDateTime"
 )
 pxr_register_test(testTf_PyStaticTokens
     PYTHON

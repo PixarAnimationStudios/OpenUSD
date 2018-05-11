@@ -381,8 +381,6 @@ _vopGraphToUsd(const VOP_Node* vopNode,
     const OP_Node* creatorNode = vopNode->getCreator();
     const PRM_ParmList* creatorParams = creatorNode->getParmList();  
 
-    UsdRiMaterialAPI materialAPI(material);
-
     for(int i=0; i<creatorParams->getEntries(); ++i) {
 
         const PRM_Parm* parm = creatorParams->getParmPtr(i);
@@ -450,11 +448,6 @@ buildLook(const VOP_Node* terminalNode)
         return;
     }
 
-    SdfPath bxdfPath = m_usdMaterial.GetPath().AppendChild(TfToken(
-        terminalNode->getName().toStdString()));
-
-    UsdRiMaterialAPI(m_usdMaterial).SetBxdfSource(bxdfPath);
-
     UsdStagePtr stage = m_usdMaterial.GetPrim().GetStage();
     VopSet visitedVops;
     ParmDepMap parmDeps;
@@ -467,6 +460,13 @@ buildLook(const VOP_Node* terminalNode)
                             m_shaderOutDir);
 
     _vopGraphToUsd(terminalNode, m_usdMaterial, parmDeps);
+
+
+    SdfPath bxdfPath = m_usdMaterial.GetPath().AppendChild(TfToken(
+        terminalNode->getName().toStdString()));
+
+    auto riMatAPI = UsdRiMaterialAPI::Apply(m_usdMaterial.GetPrim());
+    riMatAPI.SetSurfaceSource(bxdfPath);
 }
 
 

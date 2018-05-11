@@ -1,6 +1,10 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["ListAPI", "ShapingAPI", "ShadowAPI"]
+        string[] multipleApplyAPISchemas = []
+    }
 )
 
 class "Light" (
@@ -690,7 +694,7 @@ class DiskLight "DiskLight" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the disk."
     )
     float specular = 1 (
@@ -723,7 +727,7 @@ class DiskLight "DiskLight" (
 class RectLight "RectLight" (
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
-    The rectangle is 1 unit long in local space."""
+    The rectangle is 1 unit in length in the X and Y axis."""
 )
 {
     color3f color = (1, 1, 1) (
@@ -757,7 +761,7 @@ class RectLight "RectLight" (
         doc = "Relationship to the light filters that apply to this light."
     )
     float height = 1 (
-        doc = "Height of the rectangle."
+        doc = "Height of the rectangle, in the local Y axis."
     )
     float intensity = 1 (
         doc = "Scales the power of the light linearly."
@@ -847,7 +851,7 @@ class RectLight "RectLight" (
         available for inspection, for positioning, for defining volumes, etc.'''
     )
     float width = 1 (
-        doc = "Width of the rectangle."
+        doc = "Width of the rectangle, in the local X axis."
     )
     uniform token[] xformOpOrder (
         doc = """Encodes the sequence of transformation operations in the
@@ -966,13 +970,19 @@ class SphereLight "SphereLight" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the sphere."
     )
     float specular = 1 (
         displayName = "Specular Multiplier"
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
+    )
+    bool treatAsPoint = 0 (
+        doc = """A hint that this light can be treated as a 'point'
+        light (effectively, a zero-radius sphere) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
@@ -997,7 +1007,10 @@ class SphereLight "SphereLight" (
 }
 
 class CylinderLight "CylinderLight" (
-    doc = "Light emitted outward from a cylinder."
+    doc = """Light emitted outward from a cylinder.
+    The cylinder is centered at the origin and has its major axis on the X axis.
+    The cylinder does not emit light from the flat end-caps.
+    """
 )
 {
     color3f color = (1, 1, 1) (
@@ -1032,6 +1045,9 @@ class CylinderLight "CylinderLight" (
     )
     float intensity = 1 (
         doc = "Scales the power of the light linearly."
+    )
+    float length = 1 (
+        doc = "Width of the rectangle, in the local X axis."
     )
     bool normalize = 0 (
         displayName = "Normalize Power"
@@ -1100,13 +1116,19 @@ class CylinderLight "CylinderLight" (
         well with the needs of multithreaded rendering. Purpose provides us with
         a better tool for dynamic, interactive complexity management.'''
     )
-    float radius = 1 (
+    float radius = 0.5 (
         doc = "Radius of the cylinder."
     )
     float specular = 1 (
         displayName = "Specular Multiplier"
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
+    )
+    bool treatAsLine = 0 (
+        doc = """A hint that this light can be treated as a 'line'
+        light (effectively, a zero-radius cylinder) by renderers that
+        benefit from non-area lighting. Renderers that only support
+        area lights can disregard this."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]

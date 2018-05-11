@@ -207,22 +207,16 @@ public:
     /// Constructs an iterator to traverse each element of the specified
     /// \c STL container object.
     /// \param container  container object
-    TfIterator(T& container) 
-        : _data(container) 
-    {
-    }
+    TfIterator(T &container) : _data(container) {}
 
-    // Single argument constructor that takes a const reference so that it may
-    // accept temporaries.  It is available only when the container type T
-    // should be copied by the TfIterator.  It needs to be a template so
-    // enable_if can work.
-    template <typename X = T, 
-              typename std::enable_if<
-                  Tf_ShouldIterateOverCopy<T>::value 
-                  && std::is_same<X, T>::value>::type* = nullptr>
-    TfIterator(X const &container)
+    /// Allow rvalues only if the container type T should be copied by TfIterator.
+    TfIterator(T &&container)
         : _data(container)
     {
+        static_assert(
+            Tf_ShouldIterateOverCopy<typename std::decay<T>::type>::value,
+            "TfIterator only allows rvalues that it has been told to copy "
+            "via Tf_ShouldIterateOverCopy");
     }
 
     /// Constructs an iterator to traverse a subset of the elements in a

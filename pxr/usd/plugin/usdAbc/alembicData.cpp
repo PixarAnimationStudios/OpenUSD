@@ -29,7 +29,7 @@
 #include "pxr/usd/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdAbc/alembicWriter.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 

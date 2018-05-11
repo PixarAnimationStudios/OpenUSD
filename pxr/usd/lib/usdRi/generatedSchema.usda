@@ -1,20 +1,28 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["StatementsAPI", "RiMaterialAPI", "RiLightAPI", "RiLightFilterAPI", "RiLightPortalAPI", "RiSplineAPI", "RiTextureAPI"]
+        string[] multipleApplyAPISchemas = []
+    }
 )
 
 class "StatementsAPI" (
-    doc = "Container namespace schema for all renderman statements"
+    doc = """Container namespace schema for all renderman statements.
+
+    \\note The longer term goal is for clients to go directly to primvar
+    or render-attribute API's, instead of using UsdRi StatementsAPI
+    for inherited attributes.  Anticpating this, StatementsAPI
+    can smooth the way via a few environment variables:
+
+    * USDRI_STATEMENTS_WRITE_NEW_ENCODING: Causes StatementsAPI to write
+      attributes to primvars in the \"ri:\" namespace.
+    * USDRI_STATEMENTS_READ_OLD_ENCODING: Causes StatementsAPI to read
+      old-style attributes instead of primvars in the \"ri:\"
+      namespace.
+    """
 )
 {
-    float ri:focusRegion (
-        doc = """Represents the value of the 'focusregion' option to RiCamera 
-        in centimeters. Specifies the stretch of space along the camera view 
-        axis surrounding the focus plane that contains everything that will 
-        be rendered in perfect focus.  If unauthored, a value of zero should
-        be assumed. <b>Note:</b> this parameter may not be supportable in
-        RIS renders in RenderMan 19 and above."""
-    )
 }
 
 class RslShader "RslShader"
@@ -110,10 +118,15 @@ class "RiMaterialAPI" (
     shaders and RIS objects."""
 )
 {
-    uniform token outputs:ri:bxdf
-    uniform token outputs:ri:displacement
-    uniform token outputs:ri:surface
-    uniform token outputs:ri:volume
+    token outputs:ri:displacement (
+        displayGroup = "Outputs"
+    )
+    token outputs:ri:surface (
+        displayGroup = "Outputs"
+    )
+    token outputs:ri:volume (
+        displayGroup = "Outputs"
+    )
 }
 
 class "RiLightAPI" (

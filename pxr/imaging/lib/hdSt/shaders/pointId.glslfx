@@ -32,9 +32,12 @@
 
 flat out int vsPointId;
 
+// Forward declare accessor method defined via code gen
+int GetBaseVertexOffset();
+
 void ProcessPointId()
 {
-    vsPointId = gl_VertexID;
+    vsPointId = gl_VertexID - GetBaseVertexOffset();
 }
 
 --- --------------------------------------------------------------------------

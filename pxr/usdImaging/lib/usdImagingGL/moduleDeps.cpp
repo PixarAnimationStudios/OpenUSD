@@ -45,7 +45,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("pxOsd"),
         TfToken("sdf"),
         TfToken("tf"),
-        TfToken("tracelite"),
+        TfToken("trace"),
         TfToken("usd"),
         TfToken("usdGeom"),
         TfToken("usdHydra"),

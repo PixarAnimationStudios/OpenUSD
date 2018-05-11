@@ -484,6 +484,19 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
+    /// Validate the topology of a mesh.
+    /// This validates that the sum of \p faceVertexCounts is equal to the size
+    /// of the \p faceVertexIndices array, and that all face vertex indices in
+    /// the \p faceVertexIndices array are in the range [0, numPoints).
+    /// Returns true if the topology is valid, or false otherwise.
+    /// If the topology is invalid and \p reason is non-null, an error message
+    /// describing the validation error will be set.
+    USDGEOM_API
+    static bool ValidateTopology(const VtIntArray& faceVertexIndices,
+                                 const VtIntArray& faceVertexCounts,
+                                 size_t numPoints,
+                                 std::string* reason=nullptr);
+
 public:
     /// \var const float SHARPNESS_INFINITE
     /// As an element of a 'creaseSharpness' or 'cornerSharpness' array,

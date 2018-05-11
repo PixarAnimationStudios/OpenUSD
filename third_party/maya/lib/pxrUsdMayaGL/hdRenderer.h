@@ -21,35 +21,54 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-///
-/// \file hdRenderer.h
-///
+#ifndef PXRUSDMAYAGL_HD_RENDERER_H
+#define PXRUSDMAYAGL_HD_RENDERER_H
 
-#ifndef PXRUSDMAYAGL_HDRENDERER_H
-#define PXRUSDMAYAGL_HDRENDERER_H
+/// \file pxrUsdMayaGL/hdRenderer.h
 
 #include "pxr/pxr.h"
 #include "pxrUsdMayaGL/api.h"
 
-#include "pxr/usd/usd/stage.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 
 #include <maya/M3dView.h>
+#include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 
 #include <memory>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \brief This is an helper object that shapes can hold to get consistent usd
-/// drawing in maya.
+/// Simple implementation of a Hydra renderer for a Maya shape.
 ///
-/// Typical usage is as follows:
+/// This class is mainly intended as a "reference" implementation of how
+/// an individual Maya shape type could be imaged by Hydra. The derived classes
+/// of MPxSurfaceShapeUI (legacy viewport) and/or MPxDrawOverride (Viewport 2.0)
+/// for the Maya shape would own an instance of this class and use it to
+/// populate Hydra with scene data during Maya's draw prep phase, use Hydra to
+/// draw in response to a draw callback, and handle selection requests in the
+/// viewport.
+///
+/// Note that for production use, it is highly recommended that Maya shapes use
+/// a derived class of PxrMayaHdShapeAdapter in combination with the
+/// UsdMayaGLBatchRenderer instead. That combination should perform considerably
+/// better than this renderer, since Hydra will be able to better take advantage
+/// of batching larger numbers of shapes and preserving state between
+/// draws/selections.
+///
+/// Typical usage of this class is as follows:
 ///
 /// \code
 /// getDrawRequests(...) {
@@ -158,4 +177,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXRUSDMAYAGL_HDRENDERER_H
+#endif // PXRUSDMAYAGL_HD_RENDERER_H

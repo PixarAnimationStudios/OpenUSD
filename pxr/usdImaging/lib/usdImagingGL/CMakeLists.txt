@@ -7,7 +7,7 @@ pxr_library(usdImagingGL
         gf
         tf
         plug
-        tracelite
+        trace
         vt
         work
         garch
@@ -18,8 +18,8 @@ pxr_library(usdImagingGL
         sdf
         usd
         usdGeom
-        usdShade
         usdHydra
+        usdShade
         usdImaging
         ar
         ${Boost_PYTHON_LIBRARY}

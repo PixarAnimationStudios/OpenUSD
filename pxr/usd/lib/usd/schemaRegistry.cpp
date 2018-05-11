@@ -68,6 +68,7 @@ TF_MAKE_STATIC_DATA(TfType, _apiSchemaBaseType) {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (appliedAPISchemas)
     (multipleApplyAPISchemas)
 );
 
@@ -202,6 +203,18 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
             VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
+
+            if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
+                    _tokens->appliedAPISchemas)) {
+                        
+                const VtStringArray &appliedAPISchemas = 
+                        VtDictionaryGet<VtStringArray>(customDataDict, 
+                            _tokens->appliedAPISchemas);
+                for (const auto &apiSchemaName : appliedAPISchemas) {
+                    _appliedAPISchemaNames.insert(TfToken(apiSchemaName));
+                }
+            }
+
             if (VtDictionaryIsHolding<VtStringArray>(customDataDict, 
                     _tokens->multipleApplyAPISchemas)) {
                 const VtStringArray &multipleApplyAPISchemas = 
@@ -397,6 +410,24 @@ UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfType& apiSchemaType)
     for (const auto& alias : _schemaBaseType->GetAliases(apiSchemaType)) {
         if (_multipleApplyAPISchemaNames.find(TfToken(alias)) !=  
                 _multipleApplyAPISchemaNames.end()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool 
+UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
+{
+    // Return false if apiSchemaType is not an API schema.
+    if (!apiSchemaType.IsA(*_apiSchemaBaseType)) {
+        return false;
+    }
+
+    for (const auto& alias : _schemaBaseType->GetAliases(apiSchemaType)) {
+        if (_appliedAPISchemaNames.find(TfToken(alias)) !=  
+                _appliedAPISchemaNames.end()) {
             return true;
         }
     }

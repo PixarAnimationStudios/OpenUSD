@@ -76,9 +76,9 @@ HdResourceRegistry::AllocateNonUniformImmutableBufferArrayRange(
     HdBufferSpecVector const &bufferSpecs)
 {
     return _nonUniformImmutableBufferArrayRegistry.AllocateRange(
-                                    _nonUniformImmutableAggregationStrategy.get(),
-                                    role,
-                                    bufferSpecs);
+                                _nonUniformImmutableAggregationStrategy.get(),
+                                role,
+                                bufferSpecs);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -146,7 +146,8 @@ HdResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
             }
             ++srcNum;
         } else {
-            TF_RUNTIME_ERROR("Source Buffer for %s is invalid", sources[srcNum]->GetName().GetText());
+            TF_RUNTIME_ERROR("Source Buffer for %s is invalid",
+                             sources[srcNum]->GetName().GetText());
             
             // Move the last item in the vector over
             // this one.  If it is the last item
@@ -194,7 +195,8 @@ HdResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
     // Buffer has to be valid
     if (ARCH_UNLIKELY(!source->IsValid()))
     {
-        TF_RUNTIME_ERROR("source buffer for %s is invalid", source->GetName().GetText());
+        TF_RUNTIME_ERROR("source buffer for %s is invalid",
+                          source->GetName().GetText());
         return;
     }
 
@@ -221,7 +223,8 @@ HdResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
     // Buffer has to be valid
     if (ARCH_UNLIKELY(!source->IsValid()))
     {
-        TF_RUNTIME_ERROR("source buffer for %s is invalid", source->GetName().GetText());
+        TF_RUNTIME_ERROR("source buffer for %s is invalid",
+                         source->GetName().GetText());
         return;
     }
 
@@ -284,8 +287,8 @@ HdResourceRegistry::Commit()
         // iterate until all buffer sources have been resolved.
         while (numBufferSourcesResolved < _numBufferSourcesToResolve) {
             // XXX: Parallel for is currently much slower than a single
-            // thread in all tested scenarios, disabling until we can figure out
-            // what's going on here.
+            // thread in all tested scenarios, disabling until we can
+            // figure out what's going on here.
 //#pragma omp parallel for
             for (int i = 0; i < numThreads; ++i) {
                 // iterate over all pending sources
@@ -301,7 +304,7 @@ HdResourceRegistry::Commit()
 
                                 ++numBufferSourcesResolved;
 
-                                // call resize if it's the first source in sources.
+                                // call resize if it's the first in sources.
                                 if (req.range &&
                                     source == *req.sources.begin()) {
                                     req.range->Resize(
@@ -446,12 +449,14 @@ HdResourceRegistry::GarbageCollect()
 
     // cleanup instance registries
     size_t numMeshTopology = _meshTopologyRegistry.GarbageCollect();
-    size_t numBasisCurvesTopology = _basisCurvesTopologyRegistry.GarbageCollect();
+    size_t numBasisCurvesTopology =
+                _basisCurvesTopologyRegistry.GarbageCollect();
     size_t numVertexAdjacency = _vertexAdjacencyRegistry.GarbageCollect();
 
     // reset instance perf counters
     HD_PERF_COUNTER_SET(HdPerfTokens->instMeshTopology, numMeshTopology);
-    HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopology, numBasisCurvesTopology);
+    HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopology,
+                        numBasisCurvesTopology);
     HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, numVertexAdjacency);
 
     // index range registry has to be cleaned BEFORE buffer array,
@@ -469,11 +474,18 @@ HdResourceRegistry::GarbageCollect()
         numIndexRange += it->second.GarbageCollect();
     }
     // reset index range perf counters
-    HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange, numIndexRange);
+    HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange,
+                        numIndexRange);
 
     // reset shared primvar range perf counter
     size_t numSharedPrimvarRanges = _primvarRangeRegistry.GarbageCollect();
     HD_PERF_COUNTER_SET(HdPerfTokens->instPrimvarRange, numSharedPrimvarRanges);
+
+    // reset shared computation data range perf counter
+    size_t numSharedExtComputationDataRanges =
+                _extComputationDataRangeRegistry.GarbageCollect();
+    HD_PERF_COUNTER_SET(HdPerfTokens->instExtComputationDataRange,
+                        numSharedExtComputationDataRanges);
 
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be
@@ -534,7 +546,7 @@ HdResourceRegistry::GetResourceAllocation() const
     size_t hydraTexturesMemory = 0;
 
     TF_FOR_ALL (textureResourceIt, _textureResourceRegistry) {
-        HdTextureResourceSharedPtr textureResource = (textureResourceIt->second);
+        HdTextureResourceSharedPtr textureResource = textureResourceIt->second;
         if (!TF_VERIFY(textureResource)) {
             continue;
         }
@@ -593,7 +605,7 @@ _Register(ID id, HdInstanceRegistry<HdInstance<ID, T> > &registry,
 
 std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterBasisCurvesTopology(HdTopology::ID id,
-                        HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *instance)
+        HdInstance<HdTopology::ID, HdBasisCurvesTopologySharedPtr> *instance)
 {
     return _Register(id, _basisCurvesTopologyRegistry,
                      HdPerfTokens->instBasisCurvesTopology, instance);
@@ -601,7 +613,7 @@ HdResourceRegistry::RegisterBasisCurvesTopology(HdTopology::ID id,
 
 std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterMeshTopology(HdTopology::ID id,
-                        HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *instance)
+        HdInstance<HdTopology::ID, HdMeshTopologySharedPtr> *instance)
 {
     return _Register(id, _meshTopologyRegistry,
                      HdPerfTokens->instMeshTopology, instance);
@@ -609,25 +621,25 @@ HdResourceRegistry::RegisterMeshTopology(HdTopology::ID id,
 
 std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterVertexAdjacency(HdTopology::ID id,
-                        HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr>  *instance)
+        HdInstance<HdTopology::ID, Hd_VertexAdjacencySharedPtr>  *instance)
 {
     return _Register(id, _vertexAdjacencyRegistry,
                      HdPerfTokens->instVertexAdjacency, instance);
 }
 
 std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterMeshIndexRange(HdTopology::ID id,
-                        TfToken const &name,
-                        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+HdResourceRegistry::RegisterMeshIndexRange(
+        HdTopology::ID id, TfToken const &name,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
 {
     return _Register(id, _meshTopologyIndexRangeRegistry[name],
                      HdPerfTokens->instMeshTopologyRange, instance);
 }
 
 std::unique_lock<std::mutex>
-HdResourceRegistry::RegisterBasisCurvesIndexRange(HdTopology::ID id,
-                        TfToken const &name,
-                        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+HdResourceRegistry::RegisterBasisCurvesIndexRange(
+        HdTopology::ID id, TfToken const &name,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
 {
     return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
                      HdPerfTokens->instBasisCurvesTopologyRange, instance);
@@ -635,22 +647,30 @@ HdResourceRegistry::RegisterBasisCurvesIndexRange(HdTopology::ID id,
 
 std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterPrimvarRange(HdTopology::ID id,
-		        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
 {
     return _Register(id, _primvarRangeRegistry,
                      HdPerfTokens->instPrimvarRange, instance);
 }
 
 std::unique_lock<std::mutex>
+HdResourceRegistry::RegisterExtComputationDataRange(HdTopology::ID id,
+        HdInstance<HdTopology::ID, HdBufferArrayRangeSharedPtr> *instance)
+{
+    return _Register(id, _extComputationDataRangeRegistry,
+                     HdPerfTokens->instExtComputationDataRange, instance);
+}
+
+std::unique_lock<std::mutex>
 HdResourceRegistry::RegisterTextureResource(HdTextureResource::ID id,
-                        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance)
+        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance)
 {
     return _textureResourceRegistry.GetInstance(id, instance);
 }
 
 std::unique_lock<std::mutex>
 HdResourceRegistry::FindTextureResource(HdTextureResource::ID id,
-                        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance, 
+        HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> *instance,
                         bool *found)
 {
     return _textureResourceRegistry.FindInstance(id, instance, found);

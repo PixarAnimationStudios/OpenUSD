@@ -60,6 +60,12 @@ UsdKatanaLookAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
     return UsdKatanaLookAPI(stage->GetPrimAtPath(path));
 }
 
+/*virtual*/
+bool 
+UsdKatanaLookAPI::_IsAppliedAPISchema() const 
+{
+    return true;
+}
 
 /* static */
 UsdKatanaLookAPI

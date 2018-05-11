@@ -439,6 +439,12 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.add<GfMatrix3d>(SdfValueTypeNames->Matrix3d);
     builder.add<GfMatrix4d>(SdfValueTypeNames->Matrix4d);
     builder.add<GfMatrix4d>(SdfValueTypeNames->Frame4d);
+    builder.add<GfVec2f>(SdfValueTypeNames->TexCoord2f);
+    builder.add<GfVec2d>(SdfValueTypeNames->TexCoord2d);
+    builder.add<GfVec2h>(SdfValueTypeNames->TexCoord2h);
+    builder.add<GfVec3f>(SdfValueTypeNames->TexCoord3f);
+    builder.add<GfVec3d>(SdfValueTypeNames->TexCoord3d);
+    builder.add<GfVec3h>(SdfValueTypeNames->TexCoord3h);
 
     // XXX: Backwards compatibility.  These should be removed when
     //      all assets are updated.  At the time of this writing

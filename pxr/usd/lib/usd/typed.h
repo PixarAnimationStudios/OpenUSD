@@ -91,9 +91,11 @@ public:
     static UsdTyped
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
-private:
+protected:
     USD_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    virtual bool _IsCompatible() const override;
+
+private:
     USD_API
     virtual const TfType &_GetTfType() const;
 };

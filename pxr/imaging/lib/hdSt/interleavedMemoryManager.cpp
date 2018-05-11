@@ -22,10 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/diagnostic.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 
 #include <boost/make_shared.hpp>
@@ -108,7 +109,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs)
 {
-    HdStRenderContextCaps &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -146,7 +147,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs)
 {
-    HdStRenderContextCaps &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps &caps = GlfContextCaps::GetInstance();
 
     return boost::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -379,6 +380,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+    GLF_GROUP_FUNCTION();
 
     // XXX: make sure glcontext
 
@@ -425,7 +427,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     if (glGenBuffers) {
         glGenBuffers(1, &newId);
 
-        HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         if (caps.directStateAccessEnabled) {
             glNamedBufferDataEXT(newId, totalSize, /*data=*/NULL, GL_STATIC_DRAW);
         } else {
@@ -649,6 +651,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
                         bufferSource->GetName().GetText());
         return;
     }
+    GLF_GROUP_FUNCTION();
 
     // overrun check
     // XXX:Arrays:  Note that we only check tuple type here, not arity.
@@ -668,7 +671,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         return;
     }
 
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     if (glBufferSubData != NULL) {
         int vboStride = VBO->GetStride();
         GLintptr vboOffset = VBO->GetOffset() + vboStride * _index;

@@ -1,0 +1,272 @@
+{
+    "libTraceData": {
+        "threadEvents": [{
+                "events": [{
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 3000.0,
+                        "type": "CounterDelta",
+                        "value": 1.0
+                    }, {
+                        "category": 0,
+                        "data": true,
+                        "key": "Test Data 0",
+                        "ts": 6000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": -2,
+                        "key": "Test Data 1",
+                        "ts": 7000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": 18446744073709551615,
+                        "key": "Test Data 2",
+                        "ts": 8000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": 1.5,
+                        "key": "Test Data 3",
+                        "ts": 9000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": "String Data",
+                        "key": "Test Data 4",
+                        "ts": 10000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 12000.0,
+                        "type": "CounterDelta",
+                        "value": 1.0
+                    }, {
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 13000.0,
+                        "type": "CounterValue",
+                        "value": -1.0
+                    }],
+                "thread": "MainThread"
+            }, {
+                "events": [{
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 4000.0,
+                        "type": "CounterDelta",
+                        "value": 1.0
+                    }, {
+                        "category": 0,
+                        "data": true,
+                        "key": "Test Data 0",
+                        "ts": 7000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": -2,
+                        "key": "Test Data 1",
+                        "ts": 8000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": 18446744073709551615,
+                        "key": "Test Data 2",
+                        "ts": 9000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": 1.5,
+                        "key": "Test Data 3",
+                        "ts": 10000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "data": "String Data",
+                        "key": "Test Data 4",
+                        "ts": 11000.0,
+                        "type": "Data"
+                    }, {
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 13000.0,
+                        "type": "CounterDelta",
+                        "value": 1.0
+                    }, {
+                        "category": 0,
+                        "key": "Test Counter",
+                        "ts": 14000.0,
+                        "type": "CounterValue",
+                        "value": -1.0
+                    }],
+                "thread": "Thread 1"
+            }]
+    },
+    "traceEvents": [{
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "B",
+            "pid": 0,
+            "tid": "MainThread",
+            "ts": 0.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "E",
+            "pid": 0,
+            "tid": "MainThread",
+            "ts": 0.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "B",
+            "pid": 0,
+            "tid": "MainThread",
+            "ts": 0.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "E",
+            "pid": 0,
+            "tid": "MainThread",
+            "ts": 0.0
+        }, {
+            "cat": "Default",
+            "dur": 13000.0,
+            "libTraceCatId": 0,
+            "name": "OuterScope",
+            "ph": "X",
+            "pid": 0,
+            "tid": "MainThread",
+            "ts": 1000.0
+        }, {
+            "args": {
+                "Test Data 0": true,
+                "Test Data 1": -2,
+                "Test Data 2": 18446744073709551615,
+                "Test Data 3": 1.5,
+                "Test Data 4": "String Data"
+            },
+            "cat": "Default",
+            "dur": 9000.0,
+            "libTraceCatId": 0,
+            "name": "InnerScope",
+            "ph": "X",
+            "pid": 0,
+            "tid": "MainThread",
+            "ts": 2000.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "B",
+            "pid": 0,
+            "tid": "Thread 1",
+            "ts": 0.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "E",
+            "pid": 0,
+            "tid": "Thread 1",
+            "ts": 0.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "B",
+            "pid": 0,
+            "tid": "Thread 1",
+            "ts": 0.0
+        }, {
+            "cat": "Test Category",
+            "libTraceCatId": 2673746595,
+            "name": "Inner Scope 2",
+            "ph": "E",
+            "pid": 0,
+            "tid": "Thread 1",
+            "ts": 0.0
+        }, {
+            "cat": "Default",
+            "dur": 13000.0,
+            "libTraceCatId": 0,
+            "name": "OuterScope",
+            "ph": "X",
+            "pid": 0,
+            "tid": "Thread 1",
+            "ts": 2000.0
+        }, {
+            "args": {
+                "Test Data 0": true,
+                "Test Data 1": -2,
+                "Test Data 2": 18446744073709551615,
+                "Test Data 3": 1.5,
+                "Test Data 4": "String Data"
+            },
+            "cat": "Default",
+            "dur": 9000.0,
+            "libTraceCatId": 0,
+            "name": "InnerScope",
+            "ph": "X",
+            "pid": 0,
+            "tid": "Thread 1",
+            "ts": 3000.0
+        }, {
+            "args": {
+                "value": 1.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 3000.0
+        }, {
+            "args": {
+                "value": 2.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 4000.0
+        }, {
+            "args": {
+                "value": 3.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 12000.0
+        }, {
+            "args": {
+                "value": -1.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 13000.0
+        }, {
+            "args": {
+                "value": -1.0
+            },
+            "cat": "",
+            "name": "Test Counter",
+            "ph": "C",
+            "pid": 0,
+            "tid": 0,
+            "ts": 14000.0
+        }]
+}

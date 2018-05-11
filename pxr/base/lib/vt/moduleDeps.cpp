@@ -38,7 +38,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("arch"),
         TfToken("gf"),
         TfToken("tf"),
-        TfToken("tracelite")
+        TfToken("trace")
     };
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("vt"), TfToken("pxr.Vt"), reqs);

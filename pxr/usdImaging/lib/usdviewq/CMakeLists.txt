@@ -70,6 +70,7 @@ pxr_library(usdviewq
         rootDataModel.py
         selectionDataModel.py
         viewSettingsDataModel.py
+        freeCamera.py
         usdviewstyle.qss
 
     PYSIDE_UI_FILES

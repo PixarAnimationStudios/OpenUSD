@@ -29,6 +29,12 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include <maya/MDagPath.h>
+
+#include <ostream>
+#include <string>
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -63,10 +69,87 @@ JobExportArgs::JobExportArgs()
         exportColorSets(true),
         renderLayerMode(PxUsdExportJobArgsTokens->defaultLayer),
         defaultMeshScheme(UsdGeomTokens->catmullClark),
-        exportVisibility(true)
+        exportVisibility(true),
+        parentScope(SdfPath())
 {
 }
 
+static
+std::string
+_StringifyBool(const bool value)
+{
+    if (value) {
+        return "true";
+    }
+
+    return "false";
+}
+
+std::ostream&
+operator <<(std::ostream& out, const JobExportArgs& exportArgs)
+{
+    out << "exportRefsAsInstanceable: " << _StringifyBool(exportArgs.exportRefsAsInstanceable) << std::endl
+        << "exportDisplayColor: " << _StringifyBool(exportArgs.exportDisplayColor) << std::endl
+        << "shadingMode: " << exportArgs.shadingMode << std::endl
+        << "mergeTransformAndShape: " << _StringifyBool(exportArgs.mergeTransformAndShape) << std::endl
+        << "exportInstances: " << _StringifyBool(exportArgs.exportInstances) << std::endl
+        << "exportAnimation: " << _StringifyBool(exportArgs.exportAnimation) << std::endl
+        << "excludeInvisible: " << _StringifyBool(exportArgs.excludeInvisible) << std::endl
+        << "exportDefaultCameras: " << _StringifyBool(exportArgs.exportDefaultCameras) << std::endl
+        << "exportSkin: " << _StringifyBool(exportArgs.exportSkin) << std::endl
+        << "autoSkelRoots: " << _StringifyBool(exportArgs.autoSkelRoots) << std::endl
+        << "exportMeshUVs: " << _StringifyBool(exportArgs.exportMeshUVs) << std::endl
+        << "normalizeMeshUVs: " << _StringifyBool(exportArgs.normalizeMeshUVs) << std::endl
+        << "exportMaterialCollections: " << _StringifyBool(exportArgs.exportMaterialCollections) << std::endl
+        << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
+        << "exportCollectionBasedBindings: " << _StringifyBool(exportArgs.exportCollectionBasedBindings) << std::endl
+        << "normalizeNurbs: " << _StringifyBool(exportArgs.normalizeNurbs) << std::endl
+        << "exportNurbsExplicitUV: " << _StringifyBool(exportArgs.exportNurbsExplicitUV) << std::endl
+        << "nurbsExplicitUVType: " << exportArgs.nurbsExplicitUVType << std::endl
+        << "exportColorSets: " << _StringifyBool(exportArgs.exportColorSets) << std::endl
+        << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
+        << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl
+        << "exportVisibility: " << _StringifyBool(exportArgs.exportVisibility) << std::endl
+        << "parentScope: " << exportArgs.getParentScope() << std::endl;
+
+    out << "melPerFrameCallback: " << exportArgs.melPerFrameCallback << std::endl
+        << "melPostCallback: " << exportArgs.melPostCallback << std::endl
+        << "pythonPerFrameCallback: " << exportArgs.pythonPerFrameCallback << std::endl
+        << "pythonPostCallback: " << exportArgs.pythonPostCallback << std::endl;
+
+    out << "dagPaths (" << exportArgs.dagPaths.size() << ")" << std::endl;
+    for (const MDagPath& dagPath : exportArgs.dagPaths) {
+        out << "    " << dagPath.fullPathName().asChar() << std::endl;
+    }
+
+    out << "chaserNames (" << exportArgs.chaserNames.size() << ")" << std::endl;
+    for (const std::string& chaserName : exportArgs.chaserNames) {
+        out << "    " << chaserName << std::endl;        
+    }
+
+    out << "allChaserArgs (" << exportArgs.allChaserArgs.size() << ")" << std::endl;
+    for (const auto& chaserIter : exportArgs.allChaserArgs) {
+        // Chaser name.
+        out << "    " << chaserIter.first << std::endl;
+
+        for (const auto& argIter : chaserIter.second) {
+            out << "        Arg Name: " << argIter.first
+                << ", Value: " << argIter.second << std::endl;
+        }
+    }
+
+    out << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl
+        << "rootKind: " << exportArgs.rootKind << std::endl;
+
+    return out;
+}
+
+void JobExportArgs::setParentScope(const std::string& ps) {
+    // Otherwise this is a malformed sdfpath.
+    if (!ps.empty()) {
+        parentScope = ps[0] == '/' ? SdfPath(ps) : SdfPath("/" + ps);
+    }
+}
 
 JobImportArgs::JobImportArgs()
     :
@@ -81,5 +164,20 @@ JobImportArgs::JobImportArgs()
 {
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+std::ostream&
+operator <<(std::ostream& out, const JobImportArgs& importArgs)
+{
+    out << "shadingMode: " << importArgs.shadingMode << std::endl
+        << "defaultMeshScheme: " << importArgs.defaultMeshScheme << std::endl
+        << "assemblyRep: " << importArgs.assemblyRep << std::endl
+        << "readAnimData: " << _StringifyBool(importArgs.readAnimData) << std::endl
+        << "useCustomFrameRange: " << _StringifyBool(importArgs.useCustomFrameRange) << std::endl
+        << "startTime: " << importArgs.startTime << std::endl
+        << "endTime: " << importArgs.endTime << std::endl
+        << "importWithProxyShapes: " << _StringifyBool(importArgs.importWithProxyShapes) << std::endl;
 
+    return out;
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

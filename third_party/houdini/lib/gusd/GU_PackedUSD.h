@@ -28,6 +28,7 @@
 
 #include <GU/GU_PackedImpl.h>
 #include <GT/GT_Handles.h>
+#include <UT/UT_Error.h>
 
 #include <pxr/pxr.h>
 #include "pxr/usd/usd/prim.h"
@@ -35,7 +36,6 @@
 #include "gusd/purpose.h"
 #include "gusd/stageEdit.h"
 #include "gusd/USD_Utils.h"
-#include "gusd/UT_Error.h"
 
 class GusdPrimDef;
 class GU_PrimPacked;
@@ -243,11 +243,12 @@ public:
     /// shared memory correctly.
     virtual void countMemory(UT_MemoryCounter &counter, bool inclusive) const override;
 
-    UsdPrim getUsdPrim(GusdUT_ErrorContext* err = nullptr) const;
-
-    /// Get a stage edit on this prim describing all edits that must
-    /// be made on a stage to provide this prim.
-    GusdStageEditPtr getStageEdit() const;
+    /// Get the underlying UsdPrim for this packed prim.
+    /// This may involve on-demand loading of a UsdStage to access the prim.
+    /// Any errors that occur while loading the stage and accessing the prim
+    /// will be reported on the currently scoped error manager with a severity
+    /// of \p sev.
+    UsdPrim getUsdPrim(UT_ErrorSeverity sev=UT_ERROR_ABORT) const;
 
     bool unpackGeometry( GU_Detail &destgdp,
                          const char* primvarPattern ) const;

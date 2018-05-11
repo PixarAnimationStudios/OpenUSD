@@ -71,12 +71,6 @@ class HfPluginRegistry
 
 public:
     ///
-    /// Returns the id of plugin to use as the default
-    ///
-    HF_API
-    TfToken GetDefaultPluginId();
-
-    ///
     /// Returns an ordered list of all registered plugins.
     /// The plugins are ordered by priority then alphabetically
     ///

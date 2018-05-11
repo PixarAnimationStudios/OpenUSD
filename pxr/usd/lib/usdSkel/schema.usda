@@ -103,6 +103,7 @@ class PackedJointAnimation "PackedJointAnimation" (
 
 
 class "BindingAPI" (
+    inherits = </APISchemaBase>
     doc="""Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want
     to be skeletally deformed.

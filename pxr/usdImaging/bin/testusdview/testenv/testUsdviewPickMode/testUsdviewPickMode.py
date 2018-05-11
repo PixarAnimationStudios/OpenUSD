@@ -65,7 +65,8 @@ def _checkInstanceSelection(appController, path, instance):
 # Test picking a prim.
 def _testPickPrims(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Prims)
-    appController.onPrimSelected(INSTANCER_PATH, 0, QtCore.Qt.LeftButton, 0)
+    pt = (0, 0, 0)
+    appController.onPrimSelected(INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkNoInstancesSelected(appController, INSTANCER_PATH)
@@ -73,7 +74,8 @@ def _testPickPrims(appController):
 # Test picking a model.
 def _testPickModels(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Models)
-    appController.onPrimSelected(INSTANCER_PATH, 0, QtCore.Qt.LeftButton, 0)
+    pt = (0, 0, 0)
+    appController.onPrimSelected(INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, FOO_PATH)
     _checkNoInstancesSelected(appController, INSTANCER_PATH)
@@ -81,7 +83,8 @@ def _testPickModels(appController):
 # Test picking an instance.
 def _testPickInstances(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Instances)
-    appController.onPrimSelected(INSTANCER_PATH, 0, QtCore.Qt.LeftButton, 0)
+    pt = (0, 0, 0)
+    appController.onPrimSelected(INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkInstanceSelection(appController, INSTANCER_PATH, 0)

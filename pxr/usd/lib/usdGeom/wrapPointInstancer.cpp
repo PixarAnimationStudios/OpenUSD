@@ -267,6 +267,24 @@ _ComputeInstanceTransformsAtTime(
 }
 
 static
+std::vector<VtMatrix4dArray>
+_ComputeInstanceTransformsAtTimes(
+    const UsdGeomPointInstancer& self,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime,
+    const UsdGeomPointInstancer::ProtoXformInclusion doProtoXforms,
+    const UsdGeomPointInstancer::MaskApplication applyMask)
+{
+    std::vector<VtMatrix4dArray> xforms;
+
+    // On error we'll be returning an empty array.
+    self.ComputeInstanceTransformsAtTimes(&xforms, times, baseTime,
+                                         doProtoXforms, applyMask);
+
+    return xforms;
+}
+
+static
 VtVec3fArray
 _ComputeExtentAtTime(
     const UsdGeomPointInstancer& self,
@@ -279,6 +297,21 @@ _ComputeExtentAtTime(
     self.ComputeExtentAtTime(&extent, time, baseTime);
 
     return extent;
+}
+
+static
+std::vector<VtVec3fArray>
+_ComputeExtentAtTimes(
+    const UsdGeomPointInstancer& self,
+    const std::vector<UsdTimeCode>& times,
+    const UsdTimeCode baseTime)
+{
+    std::vector<VtVec3fArray> extents;
+
+    // On error we'll be returning an empty array.
+    self.ComputeExtentAtTimes(&extents, times, baseTime);
+
+    return extents;
 }
 
 WRAP_CUSTOM {
@@ -332,13 +365,25 @@ WRAP_CUSTOM {
              (arg("time"), arg("baseTime"),
               arg("doProtoXforms")=This::IncludeProtoXform,
               arg("applyMask")=This::ApplyMask))
+        .def("ComputeInstanceTransformsAtTimes",
+             &_ComputeInstanceTransformsAtTimes,
+             (arg("times"), arg("baseTime"),
+              arg("doProtoXforms")=This::IncludeProtoXform,
+              arg("applyMask")=This::ApplyMask))
 
         .def("ComputeExtentAtTime",
              &_ComputeExtentAtTime,
              (arg("time"), arg("baseTime")))
+        .def("ComputeExtentAtTimes",
+             &_ComputeExtentAtTimes,
+             (arg("times"), arg("baseTime")))
 
         ;
-
+    TfPyRegisterStlSequencesFromPython<UsdTimeCode>();
+    to_python_converter<std::vector<VtArray<GfMatrix4d>>,
+        TfPySequenceToPython<std::vector<VtArray<GfMatrix4d>>>>();
+    to_python_converter<std::vector<VtVec3fArray>,
+        TfPySequenceToPython<std::vector<VtVec3fArray>>>();
 }
 
 } // anonymous namespace

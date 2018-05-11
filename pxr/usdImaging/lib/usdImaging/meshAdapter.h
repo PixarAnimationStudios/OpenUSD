@@ -55,10 +55,10 @@ public:
     USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+                     UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     USDIMAGING_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -71,7 +71,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const override;
 
 
     /// Thread Safe.
@@ -81,7 +81,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing
@@ -90,7 +90,7 @@ public:
     USDIMAGING_API
     virtual HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                               SdfPath const& cachePath,
-                                              TfToken const& propertyName);
+                                              TfToken const& propertyName) override;
 
     USDIMAGING_API
     virtual void MarkDirty(UsdPrim const& prim,
@@ -104,9 +104,11 @@ protected:
                              UsdImagingIndexProxy* index) override;
 
 private:
-    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time);
-    void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, UsdTimeCode time);
-    void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, UsdTimeCode time);
+    void _GetPoints(UsdPrim const&, VtValue* value, UsdTimeCode time) const;
+    void _GetMeshTopology(UsdPrim const& prim, VtValue* topoHolder, 
+            UsdTimeCode time) const;
+    void _GetSubdivTags(UsdPrim const& prim, SubdivTags* tags, 
+            UsdTimeCode time) const ;
 };
 
 

@@ -48,7 +48,8 @@ namespace HdxUnitTestUtils
     struct PickParams {
         PickParams() :
              highlightMode(HdxSelectionHighlightModeSelect)
-           , pickMode(HdxIntersector::PickPrimsAndInstances) {}
+           , pickTarget(HdxIntersector::PickPrimsAndInstances)
+           , pickThrough(false) {}
 
     public:
         GfVec2i pickRadius;
@@ -63,7 +64,8 @@ namespace HdxUnitTestUtils
         HdEngine* engine;
         const HdRprimCollection* pickablesCol;
         HdxSelectionHighlightMode highlightMode;
-        HdxIntersector::PickMode pickMode;
+        HdxIntersector::PickTarget pickTarget;
+        bool pickThrough;
     };
 
     class Picker {
@@ -89,8 +91,11 @@ namespace HdxUnitTestUtils
         void SetHighlightMode(HdxSelectionHighlightMode mode) {
             _pParams.highlightMode = mode;
         }
-        void SetPickMode(HdxIntersector::PickMode mode) {
-            _pParams.pickMode = mode;
+        void SetPickTarget(HdxIntersector::PickTarget mode) {
+            _pParams.pickTarget = mode;
+        }
+         void SetPickThrough(bool pickThrough) {
+            _pParams.pickThrough = pickThrough;
         }
 
         void Pick(GfVec2i const& startPos,

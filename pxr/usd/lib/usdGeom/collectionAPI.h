@@ -45,6 +45,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdGeomCollectionAPI
 /// 
+/// \deprecated This API schema has been deprecated in favor of UsdCollectionAPI.
+/// 
 /// This is a general purpose API schema, used to describe a collection of 
 /// heterogeneous objects within the scene. "Objects" here may be prims, 
 /// properties or face-sets belonging to prims. It's an add-on schema that can 
@@ -146,10 +148,10 @@ public:
     USDGEOM_API
     virtual ~UsdGeomCollectionAPI();
 
-private:
-    // Returns true if the collection includes at least one target object.
+protected:
+    /// Returns true if the relationship representing the collection is valid.
     USDGEOM_API
-    virtual bool _IsCompatible(const UsdPrim &prim) const;
+    virtual bool _IsCompatible() const override;
 
 public:
 

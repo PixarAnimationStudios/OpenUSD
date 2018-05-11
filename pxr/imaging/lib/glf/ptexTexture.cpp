@@ -55,7 +55,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <Ptexture.h>
 #include <PtexUtils.h>

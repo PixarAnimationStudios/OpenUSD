@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
+
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -54,7 +55,7 @@ HdStBufferResourceGL::SetAllocation(GLuint id, size_t size)
     _id = id;
     HdResource::SetSize(size);
 
-    HdStRenderContextCaps const & caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const & caps = GlfContextCaps::GetInstance();
 
     // note: gpu address remains valid until the buffer object is deleted,
     // or when the data store is respecified via BufferData/BufferStorage.

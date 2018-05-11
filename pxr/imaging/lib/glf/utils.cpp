@@ -67,6 +67,8 @@ GlfGetElementSize(GLenum type)
             return sizeof(GLfloat);
         case GL_DOUBLE:
             return sizeof(GLdouble);
+        case GL_HALF_FLOAT:
+            return sizeof(GLhalf);
         default:
             TF_CODING_ERROR("Unsupported type");
             return sizeof(GLfloat);

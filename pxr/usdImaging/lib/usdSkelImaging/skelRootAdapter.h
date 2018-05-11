@@ -76,7 +76,7 @@ public:
                                   const SdfPath& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   const UsdImagingInstancerContext* 
-                                      instancerContext = nullptr) override;
+                                     instancerContext = nullptr) const override;
 
     /// Thread Safe.
     USDSKELIMAGING_API
@@ -85,7 +85,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                const UsdImagingInstancerContext* 
-                                   instancerContext = nullptr) override;
+                                   instancerContext = nullptr) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing
@@ -132,7 +132,7 @@ protected:
         VtIntArray      _boneMeshJointIndices;
     };
 
-    _SkelInstance*  _GetSkelInstance(const SdfPath& cachePath);
+    _SkelInstance*  _GetSkelInstance(const SdfPath& cachePath) const;
 
     using _SkelInstanceMap =
         boost::unordered_map<SdfPath,std::shared_ptr<_SkelInstance> >;

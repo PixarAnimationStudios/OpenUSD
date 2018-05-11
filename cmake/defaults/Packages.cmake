@@ -45,7 +45,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # --Boost
     find_package(Boost
         COMPONENTS
-            date_time
             filesystem
             program_options
             python
@@ -62,7 +61,6 @@ else()
     # --Boost
     find_package(Boost
         COMPONENTS
-            date_time
             filesystem
             program_options
             regex

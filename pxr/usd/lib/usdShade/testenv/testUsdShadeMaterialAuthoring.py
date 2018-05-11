@@ -76,16 +76,19 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
             # .. and as we create each surface, bind the associated material's variant to it
             allMaterials = []
             for material in materialBases:
-                materialPrim = UsdShade.Material.Define(stage, MakeMaterialPath(material))
+                materialPrim = UsdShade.Material.Define(stage, 
+                        MakeMaterialPath(material))
                 allMaterials.append(materialPrim.GetPrim())
                 for variant in shadeVariations:
                     surface = UsdShade.Shader.Define(
                         stage, MakeSurfacePath(material, variant))
-                    colorOut = surface.CreateOutput("out", Sdf.ValueTypeNames.Color3f)
+                    colorOut = surface.CreateOutput("out", 
+                            Sdf.ValueTypeNames.Color3f)
 
                     disp = UsdShade.Shader.Define(
                         stage, MakeDisplacementPath(material, variant))
-                    dispOut = disp.CreateOutput('out', Sdf.ValueTypeNames.Vector3f)
+                    dispOut = disp.CreateOutput('out', 
+                            Sdf.ValueTypeNames.Vector3f)
 
                     pattern = UsdShade.Shader.Define(
                         stage, MakePatternPath(material, variant))
@@ -93,31 +96,20 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
                         Sdf.ValueTypeNames.FloatArray)
 
                     with materialPrim.GetEditContextForVariant(variant):
-                        surfaceOutput = materialPrim.CreateOutput("surface",
+                        surfaceOutput = materialPrim.CreateOutput("surf",
                             colorOut.GetTypeName())
                         surfaceOutput.ConnectToSource(
                             UsdShade.ConnectableAPI(colorOut.GetPrim()),
                             colorOut.GetBaseName(), 
                             UsdShade.AttributeType.Output)
 
-                        displacementOutput = materialPrim.CreateOutput("displacement", 
-                            dispOut.GetTypeName())
+                        displacementOutput = materialPrim.CreateOutput(
+                                "disp", dispOut.GetTypeName())
                         displacementOutput.ConnectToSource(dispOut)
 
                         patternOutput = materialPrim.CreateOutput("pattern", 
-                            patternOut.GetTypeName())
+                                patternOut.GetTypeName())
                         patternOutput.ConnectToSource(patternOut)
-                        
-                        # XXX: If we replace these terminals with UsdShadeOutput's, then
-                        ## we can't have these point to prim paths.
-                        #surfacePath = MakeSurfacePath(material, variant, 'out')
-                        #CreateTerminal(materialPrim, "surface", surfacePath)
-
-                        #dispPath = MakeDisplacementPath(material, variant, 'out')
-                        #CreateTerminal(materialPrim, "displacement", dispPath)
-
-                        #CreateTerminal(materialPrim, 'pattern', 
-                                       #MakePatternPath(material, variant, 'out'))
 
             return allMaterials
 
@@ -129,12 +121,12 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
             wetHairDispPath = Sdf.Path('/ModelShading/Shaders/HairWetDisp.out')
             wetHairPatternPath = Sdf.Path('/ModelShading/Shaders/HairWetPattern.out')
 
-            connectedSurface = hairMaterial.GetOutput('surface').GetConnectedSource()
+            connectedSurface = hairMaterial.GetOutput('surf').GetConnectedSource()
             connectedSurfacePath = connectedSurface[0].GetPath().AppendProperty(
                 connectedSurface[1])
             self.assertEqual(connectedSurfacePath, wetHairSurfPath)
 
-            connectedDisplacement = hairMaterial.GetOutput('displacement').GetConnectedSource()
+            connectedDisplacement = hairMaterial.GetOutput('disp').GetConnectedSource()
             connectedDisplacementPath = connectedDisplacement[0].GetPath().AppendProperty(
                 connectedDisplacement[1])
             self.assertEqual(connectedDisplacementPath, wetHairDispPath)
@@ -151,12 +143,12 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
             dryHairDispPath = Sdf.Path('/ModelShading/Shaders/HairDryDisp.out')
             dryHairPatternPath = Sdf.Path('/ModelShading/Shaders/HairDryPattern.out')
 
-            connectedSurface = hairMaterial.GetOutput('surface').GetConnectedSource()
+            connectedSurface = hairMaterial.GetOutput('surf').GetConnectedSource()
             connectedSurfacePath = connectedSurface[0].GetPath().AppendProperty(
                 connectedSurface[1])
             self.assertEqual(connectedSurfacePath, dryHairSurfPath)
 
-            connectedDisplacement = hairMaterial.GetOutput('displacement').GetConnectedSource()
+            connectedDisplacement = hairMaterial.GetOutput('disp').GetConnectedSource()
             connectedDisplacementPath = connectedDisplacement[0].GetPath().AppendProperty(
                 connectedDisplacement[1])
             self.assertEqual(connectedDisplacementPath, dryHairDispPath)

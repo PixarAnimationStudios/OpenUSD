@@ -169,10 +169,26 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include <boost/assign/list_of.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(
+    USD_GEOM_IMAGEABLE_DEPRECATE_PRIMVARS_API, false,
+    "Whether UsdGeomImageable's primvars API should issue deprecation warnings");
+
+inline static void
+_IssueAPIWarningIfDeprecationFlagEnabled()
+{
+    if (TfGetEnvSetting(USD_GEOM_IMAGEABLE_DEPRECATE_PRIMVARS_API)) {
+        TF_WARN("API deprecation warning: UsdGeomImageable's primvars API "
+                "will be removed in the future.  Use UsdGeomPrimvarsAPI "
+                "instead.");
+    }
+}
 
 UsdGeomPrimvar 
 UsdGeomImageable::CreatePrimvar(const TfToken& attrName,
@@ -180,71 +196,60 @@ UsdGeomImageable::CreatePrimvar(const TfToken& attrName,
                                 const TfToken& interpolation,
                                 int elementSize) const
 {
-    const UsdPrim prim = GetPrim();
-
-    UsdGeomPrimvar primvar(prim, attrName, typeName);
-
-    if (primvar){
-        if (!interpolation.IsEmpty())
-            primvar.SetInterpolation(interpolation);
-        if (elementSize > 0)
-            primvar.SetElementSize(elementSize);
-    }
-    // otherwise, errors have already been issued
-    return primvar;
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim())
+        .CreatePrimvar(attrName, typeName, interpolation,
+                       elementSize);
 }
 
 
 UsdGeomPrimvar
 UsdGeomImageable::GetPrimvar(const TfToken &name) const
 {
-    // The getter SHOULD issue an error if 'name' is malformed, which
-    // _MakeNamespaced() will do for us.
-    return UsdGeomPrimvar(GetPrim().GetAttribute
-                           (UsdGeomPrimvar::_MakeNamespaced(name)));
-}
-
-std::vector<UsdGeomPrimvar>
-UsdGeomImageable::_MakePrimvars(std::vector<UsdProperty> const &props) const
-{
-    std::vector<UsdGeomPrimvar> primvars;
-    primvars.reserve(props.size());
-    
-    TF_FOR_ALL(prop, props) {
-        // All prefixed properties except the ones that contain extra
-        // namespaces (eg. the ":indices" attributes belonging to indexed
-        // primvars) will be valid primvars.
-        if (UsdGeomPrimvar primvar = UsdGeomPrimvar(prop->As<UsdAttribute>()))
-            primvars.push_back(primvar);
-    }
-    return primvars;
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).GetPrimvar(name);
 }
 
 std::vector<UsdGeomPrimvar>
 UsdGeomImageable::GetPrimvars() const
 {
-    const UsdPrim &prim = GetPrim();
-    return _MakePrimvars(prim ? prim.GetPropertiesInNamespace(
-                             UsdGeomPrimvar::_GetNamespacePrefix()) :
-                         std::vector<UsdProperty>());
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).GetPrimvars();
 }
 
 std::vector<UsdGeomPrimvar>
 UsdGeomImageable::GetAuthoredPrimvars() const
 {
-    const UsdPrim &prim = GetPrim();
-    return _MakePrimvars(prim 
-                         ? prim.GetAuthoredPropertiesInNamespace(
-                             UsdGeomPrimvar::_GetNamespacePrefix())
-                         : std::vector<UsdProperty>());
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).GetAuthoredPrimvars();
+}
+
+std::vector<UsdGeomPrimvar>
+UsdGeomImageable::FindInheritedPrimvars() const
+{
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).FindInheritedPrimvars();
+}
+
+UsdGeomPrimvar 
+UsdGeomImageable::FindInheritedPrimvar(const TfToken &name) const
+{
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).FindInheritedPrimvar(name);
 }
 
 bool
 UsdGeomImageable::HasPrimvar(const TfToken &name) const
 {
-    TfToken primvarName = UsdGeomPrimvar::_MakeNamespaced(name, /* quiet */true);
-    return primvarName.IsEmpty() ? false : 
-        UsdGeomPrimvar::IsPrimvar(GetPrim().GetAttribute(primvarName));
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).HasPrimvar(name);
+}
+
+bool
+UsdGeomImageable::HasInheritedPrimvar(const TfToken &name) const
+{
+    _IssueAPIWarningIfDeprecationFlagEnabled();
+    return UsdGeomPrimvarsAPI(GetPrim()).HasInheritedPrimvar(name);
 }
 
 /* static */

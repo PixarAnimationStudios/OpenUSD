@@ -25,7 +25,7 @@
 Module that provides the StageView class.
 '''
 
-from math import tan, atan, floor, ceil, radians as rad
+from math import tan, floor, ceil, radians as rad
 import os, sys
 from time import time
 
@@ -39,12 +39,11 @@ from pxr import UsdImagingGL
 from pxr import CameraUtil
 
 from common import (RenderModes, ShadedRenderModes, Timer,
-    GetInstanceIndicesForIds, SelectionHighlightModes)
+    GetInstanceIndicesForIds, SelectionHighlightModes, DEBUG_CLIPPING)
 from rootDataModel import RootDataModel
 from selectionDataModel import ALL_INSTANCES, SelectionDataModel
 from viewSettingsDataModel import ViewSettingsDataModel
-
-DEBUG_CLIPPING = "USDVIEWQ_DEBUG_CLIPPING"
+from freeCamera import FreeCamera
 
 # A viewport rectangle to be used for GL must be integer values.
 # In order to loose the least amount of precision the viewport
@@ -79,457 +78,6 @@ def ViewportMakeCenteredIntegral(viewport):
         left += 1
         width -= 2
     return (left, bottom, width, height)
-
-# FreeCamera inherits from QObject only so that it can send signals...
-# which is really a pretty nice, easy to use notification system.
-class FreeCamera(QtCore.QObject):
-
-    # Allows FreeCamera owner to act when the camera's relationship to
-    # its viewed content changes.  For instance, to compute the value
-    # to supply for setClosestVisibleDistFromPoint()
-    signalFrustumChanged = QtCore.Signal()
-
-    defaultNear = 1
-    defaultFar = 1000000
-    # Experimentally on Nvidia M6000, if Far/Near is greater than this,
-    # then geometry in the back half of the volume will disappear
-    maxSafeZResolution = 1e6
-    # Experimentally on Nvidia M6000, if Far/Near is greater than this,
-    # then we will often see Z-fighting artifacts even for geometry that
-    # is close to camera
-    maxGoodZResolution = 5e4
-
-    def __init__(self, isZUp):
-        """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
-        super(FreeCamera, self).__init__()
-
-        self._camera = Gf.Camera()
-        self._camera.SetPerspectiveFromAspectRatioAndFieldOfView(
-            1.0, 60, Gf.Camera.FOVVertical)
-        self._camera.clippingRange = Gf.Range1f(FreeCamera.defaultNear,
-                                                FreeCamera.defaultFar)
-        self._overrideNear = None
-        self._overrideFar = None
-        self._isZUp = isZUp
-
-        self._cameraTransformDirty = True
-        self._rotTheta = 0
-        self._rotPhi = 0
-        self._rotPsi = 0
-        self._center = Gf.Vec3d(0,0,0)
-        self._dist = 100
-        self._camera.focusDistance = self._dist
-        self._closestVisibleDist = None
-        self._lastFramedDist = None
-        self._lastFramedClosestDist = None
-        self._selSize = 10
-
-        if isZUp:
-            # This is also Gf.Camera.Y_UP_TO_Z_UP_MATRIX
-            self._YZUpMatrix = Gf.Matrix4d().SetRotate(
-                Gf.Rotation(Gf.Vec3d.XAxis(), -90))
-            self._YZUpInvMatrix = self._YZUpMatrix.GetInverse()
-        else:
-            self._YZUpMatrix = Gf.Matrix4d(1.0)
-            self._YZUpInvMatrix = Gf.Matrix4d(1.0)
-
-    # Why a clone() method vs copy.deepcopy()ing the FreeCamera ?
-    # 1) Several of the Gf classes are not python-picklable (requirement of
-    #    deepcopy), nor is GfCamera.  Adding that infrastructure for this
-    #    single client seems weighty.
-    # 2) We could make FreeCamera itself be picklable... that solution would
-    #    require twice as much code as clone().  If we wind up extracting
-    #    FreeCamera to be a more general building block, it may be worth it,
-    #    and clone() would transition to __getstate__().
-    def clone(self):
-        clone = FreeCamera(self._isZUp)
-        clone._camera = Gf.Camera(self._camera)
-        # skipping stereo attrs for now
-
-        clone._rotTheta = self._rotTheta
-        clone._rotPhi = self._rotPhi
-        clone._rotPsi = self._rotPsi
-        clone._center = Gf.Vec3d(self._center)
-        clone._dist = self._dist
-        clone._closestVisibleDist = self._closestVisibleDist
-        clone._lastFramedClosestDist = self._lastFramedClosestDist
-        clone._lastFramedDist = self._lastFramedDist
-        clone._selSize = self._selSize
-        clone._overrideNear = self._overrideNear
-        clone._overrideFar = self._overrideFar
-        clone._YZUpMatrix = Gf.Matrix4d(self._YZUpMatrix)
-        clone._YZUpInvMatrix = Gf.Matrix4d(self._YZUpInvMatrix)
-
-        return clone
-
-
-    def _updateCameraTransform(self):
-        """
-        Updates the camera's transform matrix, that is, the matrix that brings
-        the camera to the origin, with the camera view pointing down:
-           +Y if this is a Zup camera, or
-           -Z if this is a Yup camera .
-        """
-        if not self._cameraTransformDirty:
-            return
-
-        def RotMatrix(vec, angle):
-            return Gf.Matrix4d(1.0).SetRotate(Gf.Rotation(vec, angle))
-
-        # self._YZUpInvMatrix influences the behavior about how the
-        # FreeCamera will tumble. It is the identity or a rotation about the
-        # x-Axis.
-        self._camera.transform = (
-            Gf.Matrix4d().SetTranslate(Gf.Vec3d.ZAxis() * self.dist) *
-            RotMatrix(Gf.Vec3d.ZAxis(), -self._rotPsi) *
-            RotMatrix(Gf.Vec3d.XAxis(), -self._rotPhi) *
-            RotMatrix(Gf.Vec3d.YAxis(), -self._rotTheta) *
-            self._YZUpInvMatrix *
-            Gf.Matrix4d().SetTranslate(self.center))
-        self._camera.focusDistance = self.dist
-
-        self._cameraTransformDirty = False
-
-    def _rangeOfBoxAlongRay(self, camRay, bbox, debugClipping=False):
-        maxDist = -float('inf')
-        minDist = float('inf')
-        boxRange = bbox.GetRange()
-        boxXform = bbox.GetMatrix()
-        for i in range (8):
-            # for each corner of the bounding box, transform to world
-            # space and project
-            point = boxXform.Transform(boxRange.GetCorner(i))
-            pointDist = camRay.FindClosestPoint(point)[1]
-
-            # find the projection of that point of the camera ray
-            # and find the farthest and closest point.
-            if pointDist > maxDist:
-                maxDist = pointDist
-            if pointDist < minDist:
-                minDist = pointDist
-
-        if debugClipping:
-            print "Projected bounds near/far: %f, %f" % (minDist, maxDist)
-
-        # if part of the bbox is behind the ray origin (i.e. camera),
-        # we clamp minDist to be positive.  Otherwise, reduce minDist by a bit
-        # so that geometry at exactly the edge of the bounds won't be clipped -
-        # do the same for maxDist, also!
-        if minDist < FreeCamera.defaultNear:
-            minDist = FreeCamera.defaultNear
-        else:
-            minDist *= 0.99
-        maxDist *= 1.01
-
-        if debugClipping:
-            print "Contracted bounds near/far: %f, %f" % (minDist, maxDist)
-
-        return minDist, maxDist
-
-    def setClippingPlanes(self, stageBBox):
-        '''Computes and sets automatic clipping plane distances using the
-           camera's position and orientation, the bouding box
-           surrounding the stage, and the distance to the closest rendered
-           object in the central view of the camera (closestVisibleDist).
-
-           If either of the "override" clipping attributes are not None,
-           we use those instead'''
-
-        debugClipping = Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING)
-
-        # If the scene bounding box is empty, or we are fully on manual
-        # override, then just initialize to defaults.
-        if stageBBox.GetRange().IsEmpty() or \
-               (self._overrideNear and self._overrideFar) :
-            computedNear, computedFar = FreeCamera.defaultNear, FreeCamera.defaultFar
-        else:
-            # The problem: We want to include in the camera frustum all the
-            # geometry the viewer should be able to see, i.e. everything within
-            # the inifinite frustum starting at distance epsilon from the
-            # camera itself.  However, the further the imageable geometry is
-            # from the near-clipping plane, the less depth precision we will
-            # have to resolve nearly colinear/incident polygons (which we get
-            # especially with any doubleSided geometry).  We can run into such
-            # situations astonishingly easily with large sets when we are
-            # focussing in on just a part of a set that spans 10^5 units or
-            # more.
-            #
-            # Our solution: Begin by projecting the endpoints of the imageable
-            # world's bounds onto the ray piercing the center of the camera
-            # frustum, and take the near/far clipping distances from its
-            # extent, clamping at a positive value for near.  To address the
-            # z-buffer precision issue, we rely on someone having told us how
-            # close the closest imageable geometry actually is to the camera,
-            # by having called setClosestVisibleDistFromPoint(). This gives us
-            # the most liberal near distance we can use and not clip the
-            # geometry we are looking at.  We actually choose some fraction of
-            # that distance instead, because we do not expect the someone to
-            # recompute the closest point with every camera manipulation, as
-            # it can be expensive (we do emit signalFrustumChanged to notify
-            # them, however).  We only use this if the current range of the
-            # bbox-based frustum will have precision issues.
-            frustum = self._camera.frustum
-            camPos = frustum.position
-
-            camRay = Gf.Ray(camPos, frustum.ComputeViewDirection())
-            computedNear, computedFar = self._rangeOfBoxAlongRay(camRay,
-                                                                 stageBBox,
-                                                                 debugClipping)
-
-            precisionNear = computedFar / FreeCamera.maxGoodZResolution
-
-            if debugClipping:
-                print "Proposed near for precision: {}, closestDist: {}"\
-                    .format(precisionNear, self._closestVisibleDist)
-            if self._closestVisibleDist:
-                # Because of our concern about orbit/truck causing
-                # clipping, make sure we don't go closer than half the
-                # distance to the closest visible point
-                halfClose = self._closestVisibleDist / 2.0
-
-                if self._closestVisibleDist < self._lastFramedClosestDist:
-                    # This can happen if we have zoomed in closer since
-                    # the last time setClosestVisibleDistFromPoint() was called.
-                    # Clamp to precisionNear, which gives a balance between
-                    # clipping as we zoom in, vs bad z-fighting as we zoom in.
-                    # See adjustDist() for comment about better solution.
-                    halfClose = max(precisionNear, halfClose, computedNear)
-                    if debugClipping:
-                        print "ADJUSTING: Accounting for zoom-in"
-
-                if halfClose < computedNear:
-                    # If there's stuff very very close to the camera, it
-                    # may have been clipped by computedNear.  Get it back!
-                    computedNear = halfClose
-                    if debugClipping:
-                        print "ADJUSTING: closestDist was closer than bboxNear"
-                elif precisionNear > computedNear:
-                    computedNear = min((precisionNear + halfClose) / 2.0,
-                                       halfClose)
-                    if debugClipping:
-                        print "ADJUSTING: gaining precision by pushing out"
-
-        near = self._overrideNear or computedNear
-        far  = self._overrideFar  or computedFar
-        # Make sure far is greater than near
-        far = max(near+1, far)
-
-        if debugClipping:
-            print "***Final Near/Far: {}, {}".format(near, far)
-
-        self._camera.clippingRange = Gf.Range1f(near, far)
-
-    def computeGfCamera(self, stageBBox):
-        """Makes sure the FreeCamera's computed parameters are up-to-date, and
-        returns the GfCamera object."""
-        self._updateCameraTransform()
-        self.setClippingPlanes(stageBBox)
-        return self._camera
-
-    def frameSelection(self, selBBox, frameFit):
-        # needs to be recomputed
-        self._closestVisibleDist = None
-
-        self.center = selBBox.ComputeCentroid()
-        selRange = selBBox.ComputeAlignedRange()
-        self._selSize = max(*selRange.GetSize())
-        if self.orthographic:
-            self.fov = self._selSize * Gf.Camera.APERTURE_UNIT * frameFit
-            self.dist = self._selSize
-        else:
-            halfFov = self.fov*0.5 or 0.5 # don't divide by zero
-            self.dist = ((self._selSize * frameFit * 0.5)
-                         / atan(rad(halfFov)))
-
-    def setClosestVisibleDistFromPoint(self, point):
-        frustum = self._camera.frustum
-        camPos = frustum.position
-        camRay = Gf.Ray(camPos, frustum.ComputeViewDirection())
-        self._closestVisibleDist = camRay.FindClosestPoint(point)[1]
-        self._lastFramedDist = self.dist
-        self._lastFramedClosestDist = self._closestVisibleDist
-
-        if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
-            print "Resetting closest distance to {}; CameraPos: {}, closestPoint: {}".format(self._closestVisibleDist, camPos, point)
-
-    def adjustDist(self, scaleFactor):
-        # When dist gets very small, you can get stuck and not be able to
-        # zoom back out, if you just keep multiplying.  Switch to addition
-        # in that case, choosing an incr that works for the scale of the
-        # framed geometry.
-        if scaleFactor > 1 and self.dist < 2:
-            selBasedIncr = self._selSize / 25.0
-            scaleFactor -= 1.0
-            self.dist += min(selBasedIncr, scaleFactor)
-        else:
-            self.dist *= scaleFactor
-
-        # Make use of our knowledge that we are changing distance to camera
-        # to also adjust _closestVisibleDist to keep it useful.  Make sure
-        # not to recede farther than the last *computed* closeDist, since that
-        # will generally cause unwanted clipping of close objects.
-        # XXX:  This heuristic does a good job of preventing undesirable
-        # clipping as we zoom in and out, but sacrifices the z-buffer
-        # precision we worked hard to get.  If Hd/UsdImaging could cheaply
-        # provide us with the closest-point from the last-rendered image,
-        # we could use it safely here to update _closestVisibleDist much
-        # more accurately than this calculation.
-        if self._closestVisibleDist:
-            if self.dist > self._lastFramedDist:
-                self._closestVisibleDist = self._lastFramedClosestDist
-            else:
-                self._closestVisibleDist = \
-                    self._lastFramedClosestDist - \
-                    self._lastFramedDist + \
-                    self.dist
-
-    def Truck(self, offX, offY, height):
-        self._updateCameraTransform()
-        frustum = self._camera.frustum
-        cam_up = frustum.ComputeUpVector()
-        cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
-
-        # Figure out distance in world space of a point 'dist' into the
-        # screen from center to top of frame
-        offRatio = frustum.window.GetSize()[1] * self._dist / height
-
-        self.center += - offRatio * offX * cam_right
-        self.center +=   offRatio * offY * cam_up
-
-        self._cameraTransformDirty = True
-        self.signalFrustumChanged.emit()
-
-    @staticmethod
-    def FromGfCamera(cam, isZUp):
-        # Get the data from the camera and its frustum
-        cam_transform = cam.transform
-        dist = cam.focusDistance
-        frustum = cam.frustum
-        cam_pos = frustum.position
-        cam_axis = frustum.ComputeViewDirection()
-
-        # Create a new FreeCamera setting the camera to be the given camera
-        self = FreeCamera(isZUp)
-        self._camera = cam
-
-        # Compute translational parts
-        self._dist = dist
-        self._selSize = dist / 10.0
-        self._center = cam_pos + dist * cam_axis
-
-        # self._YZUpMatrix influences the behavior about how the
-        # FreeCamera will tumble. It is the identity or a rotation about the
-        # x-Axis.
-
-        # Compute rotational part
-        transform = cam_transform * self._YZUpMatrix
-        transform.Orthonormalize()
-        rotation = transform.ExtractRotation()
-
-        # Decompose and set angles
-        self._rotTheta, self._rotPhi, self._rotPsi =-rotation.Decompose(
-            Gf.Vec3d.YAxis(), Gf.Vec3d.XAxis(), Gf.Vec3d.ZAxis())
-
-        self._cameraTransformDirty = True
-
-        return self
-
-    @property
-    def rotTheta(self):
-        return self._rotTheta
-
-    @rotTheta.setter
-    def rotTheta(self, value):
-        self._rotTheta = value
-        self._cameraTransformDirty = True
-        self.signalFrustumChanged.emit()
-
-    @property
-    def rotPhi(self):
-        return self._rotPhi
-
-    @rotPhi.setter
-    def rotPhi(self, value):
-        self._rotPhi = value
-        self._cameraTransformDirty = True
-        self.signalFrustumChanged.emit()
-
-    @property
-    def center(self):
-        return self._center
-
-    @center.setter
-    def center(self, value):
-        self._center = value
-        self._cameraTransformDirty = True
-        self.signalFrustumChanged.emit()
-
-    @property
-    def dist(self):
-        return self._dist
-
-    @dist.setter
-    def dist(self, value):
-        self._dist = value
-        self._cameraTransformDirty = True
-        self.signalFrustumChanged.emit()
-
-    @property
-    def orthographic(self):
-        return self._camera.projection == Gf.Camera.Orthographic
-
-    @orthographic.setter
-    def orthographic(self, orthographic):
-        if orthographic:
-            self._camera.projection = Gf.Camera.Orthographic
-        else:
-            self._camera.projection = Gf.Camera.Perspective
-        self.signalFrustumChanged.emit()
-
-    @property
-    def fov(self):
-        if self._camera.projection == Gf.Camera.Perspective:
-            return self._camera.GetFieldOfView(Gf.Camera.FOVVertical)
-        else:
-            return (self._camera.verticalAperture * Gf.Camera.APERTURE_UNIT)
-
-    @fov.setter
-    def fov(self, value):
-        if self._camera.projection == Gf.Camera.Perspective:
-            self._camera.SetPerspectiveFromAspectRatioAndFieldOfView(
-                self._camera.aspectRatio, value, Gf.Camera.FOVVertical)
-        else:
-            self._camera.SetOrthographicFromAspectRatioAndSize(
-                self._camera.aspectRatio, value, Gf.Camera.FOVVertical)
-        self.signalFrustumChanged.emit()
-
-    @property
-    def near(self):
-        return self._camera.clippingRange.min
-
-
-    @property
-    def far(self):
-        return self._camera.clippingRange.max
-
-    # no setters for near and far - one must set overrideNear/Far instead
-    @property
-    def overrideNear(self):
-        return self._overrideNear
-
-    @overrideNear.setter
-    def overrideNear(self, value):
-        """To remove the override, set to None"""
-        self._overrideNear = value
-
-    @property
-    def overrideFar(self):
-        return self._overrideFar
-
-    @overrideFar.setter
-    def overrideFar(self, value):
-        """To remove the override, set to None"""
-        self._overrideFar = value
 
 class GLSLProgram():
     def __init__(self, VS3, FS3, VS2, FS2, uniformDict):
@@ -1090,7 +638,7 @@ class StageView(QtOpenGL.QGLWidget):
             super(StageView.DefaultDataModel, self).__init__()
 
             self._selectionDataModel = SelectionDataModel(self)
-            self._viewSettingsDataModel = ViewSettingsDataModel(None)
+            self._viewSettingsDataModel = ViewSettingsDataModel(self, None)
 
         @property
         def selection(self):
@@ -1108,13 +656,14 @@ class StageView(QtOpenGL.QGLWidget):
 
     # First arg is primPath, (which could be empty Path)
     # Second arg is instanceIndex (or UsdImagingGL.GL.ALL_INSTANCES for all instances)
-    # Third and Fourth args represent state at time of the pick
-    signalPrimSelected = QtCore.Signal(Sdf.Path, int, QtCore.Qt.MouseButton,
+    # Third arg is selectedPoint
+    # Fourth and Fifth args represent state at time of the pick
+    signalPrimSelected = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.MouseButton,
                                        QtCore.Qt.KeyboardModifiers)
 
     # Only raised when StageView has been told to do so, setting
     # rolloverPicking to True
-    signalPrimRollover = QtCore.Signal(Sdf.Path, int, QtCore.Qt.KeyboardModifiers)
+    signalPrimRollover = QtCore.Signal(Sdf.Path, int, Gf.Vec3f, QtCore.Qt.KeyboardModifiers)
     signalMouseDrag = QtCore.Signal()
     signalErrorMessage = QtCore.Signal(str)
 
@@ -1133,25 +682,25 @@ class StageView(QtOpenGL.QGLWidget):
     @property
     def showReticles(self):
         return ((self._dataModel.viewSettings.showReticles_Inside or self._dataModel.viewSettings.showReticles_Outside)
-                and self._cameraPrim != None)
+                and self._dataModel.viewSettings.cameraPrim != None)
 
     @property
     def _fitCameraInViewport(self):
        return ((self._dataModel.viewSettings.showMask or self._dataModel.viewSettings.showMask_Outline or self.showReticles)
-               and self._cameraPrim != None)
+               and self._dataModel.viewSettings.cameraPrim != None)
 
     @property
     def _cropImageToCameraViewport(self):
        return ((self._dataModel.viewSettings.showMask and self._dataModel.viewSettings.showMask_Opaque)
-               and self._cameraPrim != None)
+               and self._dataModel.viewSettings.cameraPrim != None)
 
     @property
     def cameraPrim(self):
-        return self._cameraPrim
+        return self._dataModel.viewSettings.cameraPrim
 
     @cameraPrim.setter
     def cameraPrim(self, prim):
-        self._cameraPrim = prim
+        self._dataModel.viewSettings.cameraPrim = prim
 
     @property
     def rolloverPicking(self):
@@ -1257,7 +806,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         self._isFirstImage = True
 
-        self._dataModel.viewSettings.signalDefaultMaterialChanged.connect(self.updateGL)
+        # update() whenever a visible view setting (one which affects the view)
+        # is changed.
+        self._dataModel.viewSettings.signalVisibleSettingChanged.connect(
+            self.update)
+
         self._dataModel.signalStageReplaced.connect(self._stageReplaced)
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
@@ -1298,25 +851,15 @@ class StageView(QtOpenGL.QGLWidget):
                               RenderModes.HIDDEN_SURFACE_WIREFRAME:UsdImagingGL.GL.DrawMode.DRAW_WIREFRAME}
 
         self._renderParams = UsdImagingGL.GL.RenderParams()
-        self._defaultFov = 60
-        self._dist = 50
-        self._oldDist = self._dist
+        self._dist = 50 
         self._bbox = Gf.BBox3d()
         self._selectionBBox = Gf.BBox3d()
         self._selectionBrange = Gf.Range3d()
         self._selectionOrientedRange = Gf.Range3d()
         self._bbcenterForBoxDraw = (0, 0, 0)
-        self._bbcenter = (0,0,0)
-        self._rotTheta = 0
-        self._rotPhi = 0
-        self._oldRotTheta = self._rotTheta
-        self._oldRotPhi = self._rotPhi
-        self._oldBbCenter = self._bbcenter
 
         self._overrideNear = None
         self._overrideFar = None
-
-        self._cameraPrim = None
 
         self._forceRefresh = False
         self._renderTime = 0
@@ -1375,8 +918,14 @@ class StageView(QtOpenGL.QGLWidget):
 
     def SetRendererPlugin(self, plugId):
         if self._renderer:
-            self._rendererPluginName = self.GetRendererPluginDisplayName(plugId)
-            self._renderer.SetRendererPlugin(plugId)
+            if self._renderer.SetRendererPlugin(plugId):
+                self._rendererPluginName = \
+                        self.GetRendererPluginDisplayName(plugId)
+                self.updateGL()
+                return True
+            else:
+                return False
+        return True
 
     def _stageReplaced(self):
         '''Set the USD Stage this widget will be displaying. To decommission
@@ -1441,6 +990,8 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 0, ctypes.c_void_p(0))
 
         GL.glUseProgram(glslProgram.program)
+        # i *think* this actually wants the camera dist so that the axis stays
+        # somewhat fixed in screen-space size.
         mvpMatrix = Gf.Matrix4f().SetScale(self._dist/20.0) * viewProjectionMatrix
         matrix = (ctypes.c_float*16).from_buffer_copy(mvpMatrix)
         GL.glUniformMatrix4fv(glslProgram.uniformLocations["mvpMatrix"],
@@ -1461,7 +1012,6 @@ class StageView(QtOpenGL.QGLWidget):
             GL.glBindVertexArray(0)
 
     def DrawBBox(self, viewProjectionMatrix):
-        from OpenGL import GL
         col = self._dataModel.viewSettings.clearColor
         color = Gf.Vec3f(col[0]-.5 if col[0]>0.5 else col[0]+.5,
                          col[1]-.5 if col[1]>0.5 else col[1]+.5,
@@ -1508,7 +1058,7 @@ class StageView(QtOpenGL.QGLWidget):
         data = []
         for camera in self._allSceneCameras:
             # Don't draw guides for the active camera.
-            if camera == self._cameraPrim or not (camera and camera.IsActive()):
+            if camera == self._dataModel.viewSettings.cameraPrim or not (camera and camera.IsActive()):
                 continue
 
             gfCamera = UsdGeom.Camera(camera).GetCamera(
@@ -1691,23 +1241,6 @@ class StageView(QtOpenGL.QGLWidget):
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox
 
-    def getCameraPrim(self):
-        return self._cameraPrim
-
-    def setCameraPrim(self, cameraPrim):
-        if not cameraPrim:
-            self.switchToFreeCamera()
-            return
-
-        if cameraPrim.IsA(UsdGeom.Camera):
-            self._dataModel.viewSettings.freeCamera = None
-            self._cameraPrim = cameraPrim
-        else:
-            from common import PrintWarning
-            PrintWarning("Incorrect Prim Type",
-                         "Attempted to view the scene using the prim '%s', but "
-                         "the prim is not a UsdGeom.Camera." %(cameraPrim.GetName()))
-
     def renderSinglePass(self, renderMode, renderSelHighlights):
         if not self._dataModel.stage:
             return
@@ -1767,8 +1300,9 @@ class StageView(QtOpenGL.QGLWidget):
             super(StageView, self).updateGL()
 
     def computeGfCameraForCurrentCameraPrim(self):
-        if self._cameraPrim and self._cameraPrim.IsActive():
-            gfCamera = UsdGeom.Camera(self._cameraPrim).GetCamera(
+        cameraPrim = self._dataModel.viewSettings.cameraPrim
+        if cameraPrim and cameraPrim.IsActive():
+            gfCamera = UsdGeom.Camera(cameraPrim).GetCamera(
                 self._dataModel.currentFrame)
             return gfCamera
         else:
@@ -1840,7 +1374,7 @@ class StageView(QtOpenGL.QGLWidget):
         with respect to our owner's time.
         """
         viewState = {}
-        viewState["_cameraPrim"] = self._cameraPrim
+        viewState["_cameraPrim"] = self._dataModel.viewSettings.cameraPrim
         viewState["_stageIsZup"] = self._stageIsZup
         viewState["_overrideNear"] = self._overrideNear
         viewState["_overrideFar"] = self._overrideFar
@@ -1851,7 +1385,7 @@ class StageView(QtOpenGL.QGLWidget):
 
     def restoreViewState(self, viewState):
         """Restore view parameters from 'viewState', and redraw"""
-        self._cameraPrim = viewState["_cameraPrim"]
+        self._dataModel.viewSettings.cameraPrim = viewState["_cameraPrim"]
         self._stageIsZup = viewState["_stageIsZup"]
         self._overrideNear = viewState["_overrideNear"]
         self._overrideFar = viewState["_overrideFar"]
@@ -1927,7 +1461,6 @@ class StageView(QtOpenGL.QGLWidget):
             return
 
         from OpenGL import GL
-        from OpenGL import GLU
 
         if self._dataModel.viewSettings.showHUD_GPUstats:
             if self._glPrimitiveGeneratedQuery is None:
@@ -1955,12 +1488,16 @@ class StageView(QtOpenGL.QGLWidget):
         cameraViewport = self.computeCameraViewport(cameraAspect)
 
         viewport = self.computeWindowViewport()
+        windowViewport = viewport
         if self._cropImageToCameraViewport:
             viewport = cameraViewport
 
         cam_pos = frustum.position
         cam_up = frustum.ComputeUpVector()
         cam_right = Gf.Cross(frustum.ComputeViewDirection(), cam_up)
+
+        # not using the actual camera dist ...
+        cam_light_dist = self._dist
 
         renderer.SetCameraState(
             frustum.ComputeViewMatrix(),
@@ -1971,7 +1508,7 @@ class StageView(QtOpenGL.QGLWidget):
                                            * frustum.ComputeProjectionMatrix())
 
 
-        GL.glViewport(*viewport)
+        GL.glViewport(*windowViewport)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
         # ensure viewport is right for the camera framing
@@ -1988,10 +1525,6 @@ class StageView(QtOpenGL.QGLWidget):
             # for renderModes that need lights
             if self._dataModel.viewSettings.renderMode in ShadedRenderModes:
 
-                stagePos = Gf.Vec3d(self._bbcenter[0], self._bbcenter[1],
-                                    self._bbcenter[2])
-                stageDir = (stagePos - cam_pos).GetNormalized()
-
                 # ambient light located at the camera
                 if self._dataModel.viewSettings.ambientLightOnly:
                     l = Glf.SimpleLight()
@@ -2004,7 +1537,7 @@ class StageView(QtOpenGL.QGLWidget):
                         # 45 degree horizontal viewing angle, 20 degree vertical
                         keyHorz = -1 / tan(rad(45)) * cam_right
                         keyVert = 1 / tan(rad(70)) * cam_up
-                        keyPos = cam_pos + (keyVert + keyHorz) * self._dist
+                        keyPos = cam_pos + (keyVert + keyHorz) * cam_light_dist
                         keyColor = (.8, .8, .8, 1.0)
 
                         l = Glf.SimpleLight()
@@ -2018,7 +1551,7 @@ class StageView(QtOpenGL.QGLWidget):
                         # 60 degree horizontal viewing angle, 45 degree vertical
                         fillHorz = 1 / tan(rad(30)) * cam_right
                         fillVert = 1 / tan(rad(45)) * cam_up
-                        fillPos = cam_pos + (fillVert + fillHorz) * self._dist
+                        fillPos = cam_pos + (fillVert + fillHorz) * cam_light_dist
                         fillColor = (.6, .6, .6, 1.0)
 
                         l = Glf.SimpleLight()
@@ -2029,12 +1562,13 @@ class StageView(QtOpenGL.QGLWidget):
                         lights.append(l)
 
                     if self._dataModel.viewSettings.backLightEnabled:
-                        # back light base is camera position refelcted over origin
+                        # back light base is camera position reflected over origin
                         # 30 degree horizontal viewing angle, 30 degree vertical
-                        backPos = cam_pos + (stagePos - cam_pos) * 2
+                        origin = Gf.Vec3d(0.0)
+                        backPos = cam_pos + (origin - cam_pos) * 2
                         backHorz = 1 / tan(rad(60)) * cam_right
                         backVert = -1 / tan(rad(60)) * cam_up
-                        backPos += (backHorz + backVert) * self._dist
+                        backPos += (backHorz + backVert) * cam_light_dist
                         backColor = (.6, .6, .6, 1.0)
 
                         l = Glf.SimpleLight()
@@ -2165,8 +1699,8 @@ class StageView(QtOpenGL.QGLWidget):
         if self._dataModel.viewSettings.showHUD_Complexity:
             # Camera name
             camName = "Free"
-            if self._cameraPrim:
-                camName = self._cameraPrim.GetName()
+            if self._dataModel.viewSettings.cameraPrim:
+                camName = self._dataModel.viewSettings.cameraPrim.GetName()
 
             toPrint = {"Complexity" : self._dataModel.viewSettings.complexity.name,
                        "Camera" : camName}
@@ -2205,7 +1739,7 @@ class StageView(QtOpenGL.QGLWidget):
             toPrint["GL prims "] = self._glPrimitiveGeneratedQuery.GetResult()
             toPrint["GPU time "] = "%.2f ms " % (self._glTimeElapsedQuery.GetResult() / 1000000.0)
             toPrint["GPU mem  "] = gpuMemTotal
-            toPrint[" primvar "] = allocInfo["primVar"] if "primVar" in allocInfo else "N/A"
+            toPrint[" primvar "] = allocInfo["primvar"] if "primvar" in allocInfo else "N/A"
             toPrint[" topology"] = allocInfo["topology"] if "topology" in allocInfo else "N/A"
             toPrint[" shader  "] = allocInfo["drawingShader"] if "drawingShader" in allocInfo else "N/A"
             toPrint[" texture "] = texMem
@@ -2230,19 +1764,21 @@ class StageView(QtOpenGL.QGLWidget):
         If our current camera corresponds to a prim, create a FreeCamera
         that has the same view and use it.
         """
-        if self._cameraPrim != None:
-            # _cameraPrim may no longer be valid, so use the last-computed
+        if self._dataModel.viewSettings.cameraPrim != None:
+            # cameraPrim may no longer be valid, so use the last-computed
             # gf camera
             if self._lastComputedGfCamera:
-                self._dataModel.viewSettings.freeCamera = FreeCamera.FromGfCamera(self._lastComputedGfCamera, self._stageIsZup)
+                self._dataModel.viewSettings.freeCamera = FreeCamera.FromGfCamera(
+                    self._lastComputedGfCamera, self._stageIsZup)
             else:
-                self._dataModel.viewSettings.freeCamera = FreeCamera(self._stageIsZup)
+                self._dataModel.viewSettings.freeCamera = FreeCamera(
+                    self._stageIsZup)
             # override clipping plane state is managed by StageView,
             # so that it can be persistent.  Therefore we must restore it
             # now
             self._dataModel.viewSettings.freeCamera.overrideNear = self._overrideNear
             self._dataModel.viewSettings.freeCamera.overrideFar = self._overrideFar
-            self._cameraPrim = None
+            self._dataModel.viewSettings.cameraPrim = None
             if computeAndSetClosestDistance:
                 self.computeAndSetClosestDistance()
             # let the controller know we've done this!
@@ -2290,17 +1826,22 @@ class StageView(QtOpenGL.QGLWidget):
             dy = event.y() - self._lastY
             if dx == 0 and dy == 0:
                 return
+
+            freeCam = self._dataModel.viewSettings.freeCamera
             if self._cameraMode == "tumble":
-                self._dataModel.viewSettings.freeCamera.rotTheta += 0.25 * dx
-                self._dataModel.viewSettings.freeCamera.rotPhi += 0.25 * dy
+                freeCam.Tumble(0.25 * dx, 0.25*dy)
 
             elif self._cameraMode == "zoom":
                 zoomDelta = -.002 * (dx + dy)
-                self._dataModel.viewSettings.freeCamera.adjustDist(1 + zoomDelta)
+                freeCam.AdjustDistance(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
                 height = float(self.size().height())
-                self._dataModel.viewSettings.freeCamera.Truck(dx, dy, height)
+                pixelsToWorld = freeCam.ComputePixelsToWorldFactor(height)
+
+                self._dataModel.viewSettings.freeCamera.Truck(
+                        -dx * pixelsToWorld, 
+                         dy * pixelsToWorld)
 
             self._lastX = event.x()
             self._lastY = event.y()
@@ -2316,9 +1857,9 @@ class StageView(QtOpenGL.QGLWidget):
             event.ignore()
 
     def wheelEvent(self, event):
-        distBefore = self._dist
         self.switchToFreeCamera()
-        self._dataModel.viewSettings.freeCamera.adjustDist(1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
+        self._dataModel.viewSettings.freeCamera.AdjustDistance(
+                1-max(-0.5,min(0.5,(event.angleDelta().y()/1000.))))
         self.updateGL()
 
     def detachAndReClipFromCurrentCamera(self):
@@ -2351,7 +1892,6 @@ class StageView(QtOpenGL.QGLWidget):
                         self._dataModel.viewSettings.freeCamera._selSize / 10.0)
         cameraFrustum.nearFar = \
             Gf.Range1d(smallNear, smallNear*FreeCamera.maxSafeZResolution)
-        scrSz = self.size()
         pickResults = self.pick(cameraFrustum)
         if pickResults[0] is None or pickResults[1] == Sdf.Path.emptyPath:
             cameraFrustum.nearFar = \
@@ -2362,7 +1902,7 @@ class StageView(QtOpenGL.QGLWidget):
 
         if pickResults[0] is not None and pickResults[1] != Sdf.Path.emptyPath:
             self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
-            self.updateGL()
+            self.updateView()
 
     def pick(self, pickFrustum):
         '''
@@ -2376,6 +1916,8 @@ class StageView(QtOpenGL.QGLWidget):
             # error has already been issued
             return None, Sdf.Path.emptyPath, None, None, None
 
+        # this import is here to make sure the create_first_image stat doesn't
+        # regress..
         from OpenGL import GL
 
         # Need a correct OpenGL Rendering context for FBOs
@@ -2404,6 +1946,8 @@ class StageView(QtOpenGL.QGLWidget):
                 self._dataModel.stage.GetPseudoRoot(), self._renderParams)
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
             print "Pick results = {}".format(results)
+
+        self.doneCurrent()
         return results
 
     def computePickFrustum(self, x, y):
@@ -2471,14 +2015,12 @@ class StageView(QtOpenGL.QGLWidget):
         else:
             selectedInstanceIndex = ALL_INSTANCES
 
-        selectedPrim = self._dataModel.stage.GetPrimAtPath(selectedPrimPath)
-
         if button:
             self.signalPrimSelected.emit(
-                selectedPrimPath, selectedInstanceIndex, button, modifiers)
+                selectedPrimPath, selectedInstanceIndex, selectedPoint, button, modifiers)
         else:
             self.signalPrimRollover.emit(
-                selectedPrimPath, selectedInstanceIndex, modifiers)
+                selectedPrimPath, selectedInstanceIndex, selectedPoint, modifiers)
 
     def glDraw(self):
         # override glDraw so we can time it.

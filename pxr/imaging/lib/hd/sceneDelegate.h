@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/textureResource.h"
+#include "pxr/imaging/hd/timeSampleArray.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
@@ -65,39 +66,123 @@ struct HdSyncRequestVector {
     std::vector<HdDirtyBits> dirtyBits;
 };
 
-/// \struct HdExtComputationPrimVarDesc
+/// \struct HdPrimvarDescriptor
 ///
-/// Describes a PrimVar that is sourced from an ExtComputation.
-/// The scene delegate is expected to fill in this structure for
-/// a given primVar name on a specific prim.
-///
-/// The structure contains the path to the ExtComputation in the render index,
-/// and which output on that computation to bind the primVar to.
-///
-/// The defaultValue provides expected type information about the primVar
-/// and may be used in case of error.
-struct HdExtComputationPrimVarDesc {
-    SdfPath         computationId;
-    TfToken         computationOutputName;
-    VtValue         defaultValue;
+/// Describes a primvar.
+struct HdPrimvarDescriptor {
+    /// Name of the primvar.
+    TfToken name;
+    /// Interpolation (data-sampling rate) of the primvar.
+    HdInterpolation interpolation;
+    /// Optional "role" indicating a desired interpretation --
+    /// for example, to distinguish color/vector/point/normal.
+    /// See HdPrimvarRoleTokens; default is HdPrimvarRoleTokens->none.
+    TfToken role;
+
+    HdPrimvarDescriptor() {}
+    HdPrimvarDescriptor(TfToken const& name_,
+                        HdInterpolation interp_,
+                        TfToken const& role_=HdPrimvarRoleTokens->none)
+        : name(name_), interpolation(interp_), role(role_)
+    { }
+    bool operator==(HdPrimvarDescriptor const& rhs) const {
+        return name == rhs.name && role == rhs.role
+            && interpolation == rhs.interpolation;
+    }
+    bool operator!=(HdPrimvarDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
-/// \struct HdExtComputationInputParams
+typedef std::vector<HdPrimvarDescriptor> HdPrimvarDescriptorVector;
+
+/// \struct HdExtComputationPrimvarDescriptor
 ///
-/// Describes a extended information about an input to a ExtComputation.
+/// Extends HdPrimvarDescriptor to describe a primvar that takes
+/// data from the output of an ExtComputation.
 ///
-/// In particular, inputs that are bound to the outputs of other
-/// ExtComputations.
-///
-/// The scene delegate is expected to fill in this structure for
-/// a given input name on a specific ExtComputation.
-///
-/// The structure contains the path to the source ExtComputation in the
-/// render index, and which output on that computation to bind the input to.
-struct HdExtComputationInputParams {
+/// The structure contains the id of the source ExtComputation in the
+/// render index, the name of an output from that computation from which
+/// the primvar will take data along with a valueType which describes
+/// the type of the expected data.
+struct HdExtComputationPrimvarDescriptor : public HdPrimvarDescriptor {
     SdfPath sourceComputationId;
-    TfToken computationOutputName;
+    TfToken sourceComputationOutputName;
+    HdTupleType valueType;
+
+    HdExtComputationPrimvarDescriptor() {}
+    HdExtComputationPrimvarDescriptor(
+        TfToken const& name_,
+        HdInterpolation interp_,
+        TfToken const & role_,
+        SdfPath const & sourceComputationId_,
+        TfToken const & sourceComputationOutputName_,
+        HdTupleType const & valueType_)
+        : HdPrimvarDescriptor(name_, interp_, role_)
+        , sourceComputationId(sourceComputationId_)
+        , sourceComputationOutputName(sourceComputationOutputName_)
+        , valueType(valueType_)
+    { }
+    bool operator==(HdExtComputationPrimvarDescriptor const& rhs) const {
+        return HdPrimvarDescriptor::operator==(rhs) &&
+            sourceComputationId == rhs.sourceComputationId &&
+            sourceComputationOutputName == rhs.sourceComputationOutputName &&
+            valueType == rhs.valueType;
+    }
+    bool operator!=(HdExtComputationPrimvarDescriptor const& rhs) const {
+        return !(*this == rhs);
+    }
 };
+
+typedef std::vector<HdExtComputationPrimvarDescriptor>
+        HdExtComputationPrimvarDescriptorVector;
+
+/// \struct HdExtComputationInputDescriptor
+///
+/// Describes an input to an ExtComputation that takes data from
+/// the output of another ExtComputation.
+///
+/// The structure contains the name of the input and the id of the
+/// source ExtComputation in the render index, and which output of
+/// that computation to bind the input to.
+struct HdExtComputationInputDescriptor {
+    TfToken name;
+    SdfPath sourceComputationId;
+    TfToken sourceComputationOutputName;
+
+    HdExtComputationInputDescriptor() {}
+    HdExtComputationInputDescriptor(
+        TfToken const & name_,
+        SdfPath const & sourceComputationId_,
+        TfToken const & sourceComputationOutputName_)
+    : name(name_), sourceComputationId(sourceComputationId_)
+    , sourceComputationOutputName(sourceComputationOutputName_)
+    { }
+};
+
+typedef std::vector<HdExtComputationInputDescriptor>
+        HdExtComputationInputDescriptorVector;
+
+/// \struct HdExtComputationOutputDescriptor
+///
+/// Describes an output of an ExtComputation.
+///
+/// The structure contains the name of the output along with a valueType
+/// which describes the type of the computation output data.
+struct HdExtComputationOutputDescriptor {
+    TfToken name;
+    HdTupleType valueType;
+
+    HdExtComputationOutputDescriptor() {}
+    HdExtComputationOutputDescriptor(
+        TfToken const & name_,
+        HdTupleType const & valueType_)
+    : name(name_), valueType(valueType_)
+    { }
+};
+
+typedef std::vector<HdExtComputationOutputDescriptor>
+        HdExtComputationOutputDescriptorVector;
 
 /// \class HdSceneDelegate
 ///
@@ -208,6 +293,74 @@ public:
     virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
 
     // -----------------------------------------------------------------------//
+    /// \name Motion samples
+    // -----------------------------------------------------------------------//
+
+    /// Store up to \a maxSampleCount transform samples in \a *samples.
+    /// Returns the number of samples returned.
+    /// Sample times are relative to the scene delegate's current time.
+    /// \see GetTransform()
+    HD_API
+    virtual size_t
+    SampleTransform(SdfPath const & id, size_t maxSampleCount,
+                    float *times, GfMatrix4d *samples);
+
+    /// Convenience form of SampleTransform() that takes an HdTimeSampleArray.
+    template <unsigned int CAPACITY>
+    void SampleTransform(SdfPath const & id,
+                         HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
+        out->count = SampleTransform(id, CAPACITY, out->times, out->values);
+    }
+
+    /// Store up to \a maxSampleCount transform samples in \a *samples.
+    /// Returns the number of samples returned.
+    /// Sample times are relative to the scene delegate's current time.
+    /// \see GetInstancerTransform()
+    HD_API
+    virtual size_t
+    SampleInstancerTransform(SdfPath const &instancerId,
+                             SdfPath const &prototypeId,
+                             size_t maxSampleCount, float *times,
+                             GfMatrix4d *samples);
+
+    /// Convenience form of SampleInstancerTransform()
+    /// that takes an HdTimeSampleArray.
+    template <unsigned int CAPACITY>
+    void
+    SampleInstancerTransform(SdfPath const &instancerId,
+                             SdfPath const &prototypeId,
+                             HdTimeSampleArray<GfMatrix4d, CAPACITY> *out) {
+        out->count = SampleInstancerTransform(
+            instancerId, prototypeId, CAPACITY, out->times, out->values);
+    }
+
+    /// Store up to \a maxSampleCount primvar samples in \a *samples.
+    /// Returns the number of samples returned.
+    ///
+    /// Sample values that are array-valued will have a size described
+    /// by the HdPrimvarDescriptor as applied to the toplogy.
+    ///
+    /// For example, this means that a mesh that is fracturing over time
+    /// will return samples with the same number of points; the number
+    /// of points will change as the scene delegate is resynchronzied
+    /// to represent the scene at a time with different topology.
+    ///
+    /// Sample times are relative to the scene delegate's current time.
+    ///
+    /// \see Get()
+    HD_API
+    virtual size_t
+    SamplePrimvar(SdfPath const& id, TfToken const& key,
+                  size_t maxSampleCount, float *times, VtValue *samples);
+
+    /// Convenience form of SamplePrimvar() that takes an HdTimeSampleArray.
+    template <unsigned int CAPACITY>
+    void SamplePrimvar(SdfPath const &id, TfToken const& key,
+                       HdTimeSampleArray<VtValue, CAPACITY> *sa) {
+        sa->count = SamplePrimvar(id, key, CAPACITY, sa->times, sa->values);
+    }
+
+    // -----------------------------------------------------------------------//
     /// \name Instancer prototypes
     // -----------------------------------------------------------------------//
 
@@ -273,8 +426,19 @@ public:
     virtual VtValue GetMaterialParamValue(SdfPath const &materialId, 
                                           TfToken const &paramName);
 
+    /// Returns the material params for the given material ID.
     HD_API
     virtual HdMaterialParamVector GetMaterialParams(SdfPath const& materialId);
+
+    // Returns a material resource which contains the information 
+    // needed to create a material.
+    HD_API 
+    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+
+    // Returns a list of primvars used by the material id passed 
+    // to this function.
+    HD_API 
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
 
     // -----------------------------------------------------------------------//
     /// \name Texture Aspects
@@ -298,20 +462,6 @@ public:
                                        TfToken const &paramName);
 
     // -----------------------------------------------------------------------//
-    /// \name Material Aspects
-    // -----------------------------------------------------------------------//
-
-    // Returns a material resource which contains the information 
-    // needed to create a material.
-    HD_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId);
-
-    // Returns a list of primvars used by the material id passed 
-    // to this function.
-    HD_API 
-    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
-
-    // -----------------------------------------------------------------------//
     /// \name Camera Aspects
     // -----------------------------------------------------------------------//
 
@@ -325,61 +475,51 @@ public:
     // -----------------------------------------------------------------------//
 
     ///
-    /// For the given computation id and input type, returns a list of
-    /// name tokens.
+    /// For the given computation id, returns a list of inputs which
+    /// will be requested from the scene delegate using the Get() method.
     ///
-    /// If the input type is scene, the input is requested from the scene
-    /// delegate using the Get() method.
-    ///
-    /// If the input type is computation, the input is bound to another
-    /// ExtComputation.  GetExtComputationInputParams() is used to obtain
-    /// the binding information for the input.
-    ///
+    /// See GetExtComputationInputDescriptors and
+    /// GetExtComputationOutpuDescriptors for descriptions of other
+    /// computation inputs and outputs.
     HD_API
-    virtual TfTokenVector GetExtComputationInputNames(SdfPath const& id,
-                                                HdExtComputationInputType type);
+    virtual TfTokenVector
+    GetExtComputationSceneInputNames(SdfPath const& computationId);
 
-    /// Obtain extended information about an input to an ExtComputation,
-    /// such as binding information.
     ///
-    /// The ExtComputation is identified by id, with the specific input
-    /// identified by input name.
+    /// For the given computation id, returns a list of computation
+    /// input descriptors.
     ///
-    /// See HdExtComputationInputParams for the information the scene delegate
-    /// is expected to provide.
+    /// See HdExtComputationInputDecriptor
     HD_API
-    virtual HdExtComputationInputParams GetExtComputationInputParams(
-                                   SdfPath const& id, TfToken const &inputName);
+    virtual HdExtComputationInputDescriptorVector
+    GetExtComputationInputDescriptors(SdfPath const& computationId);
 
-    /// Gets the names of the outputs of an ExtComputation with the given id.
+    /// For the given computation id, returns a list of computation
+    /// output descriptors.
     ///
-    /// See HdExtComputationInputParams for the information the scene delegate
-    /// is expected to provide.
+    /// See HdExtComputationOutputDescriptor
     HD_API
-    virtual TfTokenVector GetExtComputationOutputNames(SdfPath const& id);
+    virtual HdExtComputationOutputDescriptorVector
+    GetExtComputationOutputDescriptors(SdfPath const& computationId);
 
-    /// Returns a list of primVar names that should be bound to
+
+    /// Returns a list of primvar names that should be bound to
     /// a generated output from  an ExtComputation for the given prim id and
     /// interpolation mode.  Binding information is obtained through
-    /// GetExtComputationPrimVarDesc()
-    HD_API
-    virtual TfTokenVector GetExtComputationPrimVarNames(
-                                             SdfPath const& id,
-                                             HdInterpolation interpolationMode);
-
-    /// Returns a structure describing source information for a primVar
-    /// that is bound to an ExtComputation.  See HdExtComputationPrimVarDesc
+    /// GetExtComputationPrimvarDesc()
+    /// Returns a structure describing source information for a primvar
+    /// that is bound to an ExtComputation.  See HdExtComputationPrimvarDesc
     /// for the expected information to be returned.
     HD_API
-    virtual HdExtComputationPrimVarDesc GetExtComputationPrimVarDesc(
-                                                SdfPath const& id,
-                                                TfToken const& varName);
-    
+    virtual HdExtComputationPrimvarDescriptorVector
+    GetExtComputationPrimvarDescriptors(SdfPath const& id,
+                                        HdInterpolation interpolationMode);
+
     /// Returns the kernel source assigned to the computation at the path id.
     /// If the string is empty the computation has no GPU kernel and the
     /// CPU callback should be used.
     HD_API
-    virtual std::string GetExtComputationKernel(SdfPath const& id);
+    virtual std::string GetExtComputationKernel(SdfPath const& computationId);
 
     /// Requests the scene delegate run the ExtComputation with the given id.
     /// The context contains the input values that delegate requested through
@@ -395,35 +535,14 @@ public:
     virtual void InvokeExtComputation(SdfPath const& computationId,
                                       HdExtComputationContext *context);
 
-
-
     // -----------------------------------------------------------------------//
     /// \name Primitive Variables
     // -----------------------------------------------------------------------//
 
-    /// Returns the vertex-rate primVar names.
+    /// Returns descriptors for all primvars of the given interpolation type.
     HD_API
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
-
-    /// Returns the varying-rate primVar names.
-    HD_API
-    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
-
-    /// Returns the Facevarying-rate primVar names.
-    HD_API
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
-
-    /// Returns the Uniform-rate primVar names.
-    HD_API
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
-
-    /// Returns the Constant-rate primVar names.
-    HD_API
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
-
-    /// Returns the Instance-rate primVar names.
-    HD_API
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
+    virtual HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(SdfPath const& id, HdInterpolation interpolation);
 
 private:
     HdRenderIndex *_index;

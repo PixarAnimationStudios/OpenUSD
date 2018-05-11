@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "usdMaya/api.h"
+#include "usdMaya/skelBindingsWriter.h"
 #include "usdMaya/JobArgs.h"
 
 #include <maya/MDagPath.h>
@@ -56,9 +57,14 @@ protected:
 public:
     const JobExportArgs& getArgs() const { return mArgs; };
     const UsdStageRefPtr& getUsdStage() const { return mStage; };
-    // Querying the master path for instancing. This also creates the shape if it doesn't exists.
+    // Queries the master path for instancing.
+    // This also creates the master shape if it doesn't exist.
     PXRUSDMAYA_API
-    SdfPath getMasterPath(const MDagPath& dg);
+    SdfPath getOrCreateMasterPath(const MDagPath& dg);
+    /// Gets the existing prim writer for the instance master of the given
+    /// DAG path. If it doesn't exist, returns nullptr.
+    PXRUSDMAYA_API
+    const MayaPrimWriterPtr getMasterPrimWriter(const MDagPath& dg) const;
     /// Creates a prim writer that writes the given prim (and descendants) to
     /// the USD namespace hierarchy anchored at the given path.
     /// If the given path is empty, then the USD path will be inferred from the
@@ -69,6 +75,11 @@ public:
             const SdfPath& usdPath = SdfPath());
     PXRUSDMAYA_API
     bool needToTraverse(const MDagPath& curDag);
+    PXRUSDMAYA_API
+    PxrUsdMaya_SkelBindingsWriter& getSkelBindingsWriter()
+    {
+        return mSkelBindingsWriter;
+    }
 protected:
     PXRUSDMAYA_API
     bool openFile(const std::string& filename, bool append);
@@ -89,14 +100,21 @@ private:
             return rhs.hashCode() < lhs.hashCode();
         }
     };
+    // Map Maya object handles to the instance source SdfPath.
     std::map<MObjectHandle, SdfPath, MObjectHandleComp> mMasterToUsdPath;
+    // Map Maya object handles to the instance source prim writer's index
+    // in mMayaPrimWriterList. Avoids having to manage two containers of
+    // shared pointers.
+    std::map<MObjectHandle, size_t, MObjectHandleComp> mMasterToPrimWriter;
     PXRUSDMAYA_API
     MayaPrimWriterPtr _createPrimWriter(
             const MDagPath& curDag,
             const SdfPath& usdPath,
             bool instanceSource);
     UsdPrim mInstancesPrim;
+    SdfPath mParentScopePath;
     bool mNoInstances;
+    PxrUsdMaya_SkelBindingsWriter mSkelBindingsWriter;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

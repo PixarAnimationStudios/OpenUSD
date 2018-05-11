@@ -267,27 +267,19 @@ protected:
 
     //
     // Minimally break layer encapsulation with the following methods.  These
-    // methods are also intended to limit the need for SdLayer friendship with 
-    // SdFileFormat child classes.
+    // methods are also intended to limit the need for SdfLayer friendship with 
+    // SdfFileFormat child classes.
     //
 
-    /// Swap the layers internal _data member with \p data.
+    /// Set the internal data for \p layer to \p data, possibly transferring
+    /// ownership of \p data.
     SDF_API
-    static void _SwapLayerData(const SdfLayerHandle& layer,
-                               SdfAbstractDataRefPtr& data);
+    static void _SetLayerData(
+        const SdfLayerHandle& layer, SdfAbstractDataRefPtr& data);
 
-    /// Set the layers internal _data member to \p data.
-    SDF_API
-    static void _SetLayerData(const SdfLayerHandle& layer,
-                              const SdfAbstractDataPtr& data);
-
-    /// Get the layers internal _data member.
+    /// Get the internal data for \p layer.
     SDF_API
     static SdfAbstractDataConstPtr _GetLayerData(const SdfLayerHandle& layer);
-
-    /// Returns true if the layer is loading as a new layer.
-    SDF_API
-    static bool _LayerIsLoadingAsNew(const SdfLayerHandle& layer);
 
 private:
     SDF_API

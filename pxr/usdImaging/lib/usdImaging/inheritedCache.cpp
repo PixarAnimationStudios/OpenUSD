@@ -23,108 +23,37 @@
 //
 #include "inheritedCache.h"
 
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdHydra/lookAPI.h"
-#include "pxr/usd/usdRi/materialAPI.h"
+#include <pxr/base/work/loops.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// TODO: We should centralize this logic in a UsdImaging ShaderAdapter.
-
-/*static*/
-UsdPrim
-UsdImaging_MaterialStrategy::GetTargetedShader(UsdPrim const& materialPrim,
-                                        UsdRelationship const& materialRel)
+void
+UsdImaging_MaterialBindingImplData::ClearCaches()
 {
-    SdfPathVector targets;
-    if (!materialRel.GetForwardedTargets(&targets))
-        return UsdPrim();
+    TRACE_FUNCTION();
 
-    if (targets.size() != 1) {
-        // XXX: This should really be a validation error once USD gets that
-        // feature.
-        TF_WARN("We expect only one target on relationship %s of prim <%s>, "
-                "but got %zu.",
-                materialRel.GetName().GetText(),
-                materialPrim.GetPath().GetText(),
-                targets.size());
-        return UsdPrim();
-    }
-
-    if (!targets[0].IsPrimPath()) {
-        // XXX: This should really be a validation error once USD gets that
-        // feature.
-        TF_WARN("We expect the target of the relationship %s of prim <%s> "
-                "to be a prim, instead it is <%s>.",
-                materialRel.GetName().GetText(),
-                materialPrim.GetPath().GetText(),
-                targets[0].GetText());
-        return UsdPrim();
-    }
-
-    return materialPrim.GetStage()->GetPrimAtPath(targets[0]);
-}
-
-
-/*static*/
-SdfPath
-UsdImaging_MaterialStrategy::GetBinding(UsdShadeMaterial const& material)
-{
-    TF_DEBUG(USDIMAGING_SHADERS).Msg("\t Look: %s\n", 
-        material.GetPath().GetText());
-
-    // ---------------------------------------------------------------------- //
-    // Hydra-only shader style - displayLook:bxdf
-    // ---------------------------------------------------------------------- //
-    if (UsdRelationship matRel = UsdHydraLookAPI(material).GetBxdfRel()) {
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                    matRel.GetPath().GetText());
-
-        UsdShadeShader shader(
-            UsdImaging_MaterialStrategy::GetTargetedShader(
-                material.GetPrim(), 
-                matRel));
-
-        if (shader) {
-            TF_DEBUG(USDIMAGING_SHADERS).Msg("\t UsdShade binding found: %s\n", 
-                    shader.GetPath().GetText());
-            return shader.GetPath();
-        }
-    }
-
-    // ---------------------------------------------------------------------- //
-    // Deprecated shader style - hydraLook:Surface
-    // ---------------------------------------------------------------------- //
-    TfToken hdSurf("hydraLook:surface");
-    TfToken surfType("HydraPbsSurface");
-
-    if (UsdRelationship matRel = material.GetPrim().GetRelationship(hdSurf)) {
-        TF_DEBUG(USDIMAGING_SHADERS).Msg("\t LookRel: %s\n", 
-                    matRel.GetPath().GetText());
-
-        if (UsdPrim shader = 
-            UsdImaging_MaterialStrategy::GetTargetedShader(
-                material.GetPrim(), 
-                matRel)) {
-
-            if (TF_VERIFY(shader.GetTypeName() == surfType)) {
-                TF_DEBUG(USDIMAGING_SHADERS).Msg(
-                        "\t Deprecated binding found: %s\n", 
-                        shader.GetPath().GetText());
-                return shader.GetPath();
+    // Speed up destuction of the cache by resetting the unique_ptrs held 
+    // within in parallel.
+    tbb::parallel_for(_bindingsCache.range(), 
+        []( decltype(_bindingsCache)::range_type &range) {
+            for (auto entryIt = range.begin(); entryIt != range.end(); 
+                    ++entryIt) {
+                entryIt->second.release();
             }
         }
-    }
+    );
 
-    return SdfPath::EmptyPath();
-}
+    tbb::parallel_for(_collQueryCache.range(), 
+        []( decltype(_collQueryCache)::range_type &range) {
+            for (auto entryIt = range.begin(); entryIt != range.end(); 
+                    ++entryIt) {
+                entryIt->second.release();
+            }
+        }
+    );
 
-/*static*/
-SdfPath
-UsdImaging_MaterialNetworkStrategy::GetBinding(UsdShadeMaterial const& material)
-{
-    return material.GetPath();
+    _bindingsCache.clear();
+    _collQueryCache.clear();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

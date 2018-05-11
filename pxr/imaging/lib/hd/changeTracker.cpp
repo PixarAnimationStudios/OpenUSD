@@ -42,7 +42,6 @@ HdChangeTracker::HdChangeTracker()
     , _taskState()
     , _sprimState()
     , _bprimState()
-    , _extComputationState()
     , _generalState()
     , _collectionState()
     , _needsGarbageCollection(false)
@@ -128,8 +127,18 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     it->second = oldBits | bits;
     ++_changeCount;
 
-    if (bits & DirtyVisibility) 
+    if (bits & DirtyVisibility) {
         ++_visChangeCount;
+    }
+
+    if (bits & DirtyRenderTag) {
+        // Need to treat this like a scene edit
+        //  - DirtyLists will filter out prims that don't match render tag,
+        //  - Batches filter out prim that don't match render tag,
+        // So both need to be rebuilt.
+        // So increment the render index version.
+        ++_indexVersion;
+    }
 }
 
 void
@@ -398,59 +407,6 @@ HdChangeTracker::MarkBprimClean(SdfPath const& id, HdDirtyBits newBits)
     it->second = newBits;
 }
 
-// ---------------------------------------------------------------------- //
-/// \name ExtComputation Object Tracking
-// ---------------------------------------------------------------------- //
-void
-HdChangeTracker::ExtComputationInserted(SdfPath const& id,
-                                        HdDirtyBits initialDirtyState)
-{
-    TF_DEBUG(HD_EXT_COMPUTATION_ADDED).Msg("ExtComputation Added: %s\n",
-                                           id.GetText());
-    _extComputationState[id] = initialDirtyState;
-}
-
-void
-HdChangeTracker::ExtComputationRemoved(SdfPath const& id)
-{
-    TF_DEBUG(HD_EXT_COMPUTATION_REMOVED).Msg("ExtComputation Removed: %s\n",
-                                             id.GetText());
-    _extComputationState.erase(id);
-}
-
-void
-HdChangeTracker::MarkExtComputationDirty(SdfPath const& id, HdDirtyBits bits)
-{
-    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
-        TF_CODING_ERROR("MarkExtComputationDirty called with bits == clean!");
-        return;
-    }
-
-    _IDStateMap::iterator it = _extComputationState.find(id);
-    if (!TF_VERIFY(it != _extComputationState.end()))
-        return;
-    it->second = it->second | bits;
-}
-
-HdDirtyBits
-HdChangeTracker::GetExtComputationDirtyBits(SdfPath const& id) const
-{
-    _IDStateMap::const_iterator it = _extComputationState.find(id);
-    if (!TF_VERIFY(it != _extComputationState.end()))
-        return Clean;
-    return it->second;
-}
-
-void
-HdChangeTracker::MarkExtComputationClean(SdfPath const& id, HdDirtyBits newBits)
-{
-    _IDStateMap::iterator it = _extComputationState.find(id);
-    if (!TF_VERIFY(it != _extComputationState.end()))
-        return;
-
-    it->second =  newBits;
-}
-
 // -------------------------------------------------------------------------- //
 /// \name RPrim Object Tracking
 // -------------------------------------------------------------------------- //
@@ -517,15 +473,15 @@ HdChangeTracker::IsPrimIdDirty(SdfPath const& id)
 }
 
 bool
-HdChangeTracker::IsAnyPrimVarDirty(SdfPath const &id)
+HdChangeTracker::IsAnyPrimvarDirty(SdfPath const &id)
 {
-    return IsAnyPrimVarDirty(GetRprimDirtyBits(id), id);
+    return IsAnyPrimvarDirty(GetRprimDirtyBits(id), id);
 }
 
 bool
-HdChangeTracker::IsPrimVarDirty(SdfPath const& id, TfToken const& name)
+HdChangeTracker::IsPrimvarDirty(SdfPath const& id, TfToken const& name)
 {
-    return IsPrimVarDirty(GetRprimDirtyBits(id), id, name);
+    return IsPrimvarDirty(GetRprimDirtyBits(id), id, name);
 }
 
 /*static*/
@@ -629,19 +585,19 @@ HdChangeTracker::IsInstanceIndexDirty(HdDirtyBits dirtyBits, SdfPath const& id)
 
 /*static*/
 bool
-HdChangeTracker::IsAnyPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const &id)
+HdChangeTracker::IsAnyPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const &id)
 {
     bool isDirty = (dirtyBits & (DirtyPoints|
                                  DirtyNormals|
                                  DirtyWidths|
-                                 DirtyPrimVar)) != 0;
-    _LogCacheAccess(HdTokens->primVar, id, !isDirty);
+                                 DirtyPrimvar)) != 0;
+    _LogCacheAccess(HdTokens->primvar, id, !isDirty);
     return isDirty;
 }
 
 /*static*/
 bool
-HdChangeTracker::IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
+HdChangeTracker::IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
                                 TfToken const& name)
 {
     bool isDirty = false;
@@ -652,7 +608,7 @@ HdChangeTracker::IsPrimVarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
     } else if (name == HdTokens->widths) {
         isDirty = (dirtyBits & DirtyWidths) != 0;
     } else {
-        isDirty = (dirtyBits & DirtyPrimVar) != 0;
+        isDirty = (dirtyBits & DirtyPrimvar) != 0;
     }
     _LogCacheAccess(name, id, !isDirty);
     return isDirty;
@@ -667,10 +623,10 @@ HdChangeTracker::IsReprDirty(HdDirtyBits dirtyBits, SdfPath const &id)
 }
 
 void 
-HdChangeTracker::MarkPrimVarDirty(SdfPath const& id, TfToken const& name)
+HdChangeTracker::MarkPrimvarDirty(SdfPath const& id, TfToken const& name)
 {
     HdDirtyBits flag = Clean;
-    MarkPrimVarDirty(&flag, name);
+    MarkPrimvarDirty(&flag, name);
     MarkRprimDirty(id, flag);
 }
 
@@ -695,7 +651,7 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
 
 /*static*/
 void
-HdChangeTracker::MarkPrimVarDirty(HdDirtyBits *dirtyBits, TfToken const &name)
+HdChangeTracker::MarkPrimvarDirty(HdDirtyBits *dirtyBits, TfToken const &name)
 {
     HdDirtyBits setBits = Clean;
     if (name == HdTokens->points) {
@@ -705,7 +661,7 @@ HdChangeTracker::MarkPrimVarDirty(HdDirtyBits *dirtyBits, TfToken const &name)
     } else if (name == HdTokens->widths) {
         setBits = DirtyWidths;
     } else {
-        setBits = DirtyPrimVar;
+        setBits = DirtyPrimvar;
     }
     *dirtyBits |= setBits;
 }
@@ -872,8 +828,8 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & DirtyPoints) {
         ss << "Points ";
     }
-    if (dirtyBits & DirtyPrimVar) {
-        ss << "PrimVar ";
+    if (dirtyBits & DirtyPrimvar) {
+        ss << "Primvar ";
     }
     if (dirtyBits & DirtyMaterialId) {
         ss << "MaterialId ";

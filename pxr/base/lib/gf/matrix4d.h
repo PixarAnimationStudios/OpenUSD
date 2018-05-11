@@ -54,6 +54,7 @@ struct GfIsGfMatrix<class GfMatrix4d> { static const bool value = true; };
 
 class GfMatrix4d;
 class GfMatrix4f;
+class GfQuatd;
 class GfRotation;
 class GfMatrix3d;
 
@@ -507,6 +508,16 @@ public:
     /// Sets the matrix to specify a rotation equivalent to \e rot,
     /// and clears the translation.
     GF_API
+    GfMatrix4d& SetRotate(const GfQuatd &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// without clearing the translation.
+    GF_API
+    GfMatrix4d& SetRotateOnly(const GfQuatd &rot);
+
+    /// Sets the matrix to specify a rotation equivalent to \e rot,
+    /// and clears the translation.
+    GF_API
     GfMatrix4d& SetRotate(const GfRotation &rot);
 
     /// Sets the matrix to specify a rotation equivalent to \e rot,
@@ -701,6 +712,11 @@ private:
     /// Diagonalizes the upper 3x3 matrix of a matrix known to be symmetric.
     void _Jacobi3(GfVec3d *eigenvalues, GfVec3d eigenvectors[3]) const;
 
+    /// Set the 3x3 submatrix to the rotation given by a quaternion,
+    /// defined by the real component \p r and imaginary components \p i.
+    void _SetRotateFromQuat(double r, const GfVec3d& i);
+
+
 private:
     /// Matrix storage, in row-major order.
     GfMatrixData<double, 4, 4> _mtx;
@@ -708,6 +724,13 @@ private:
     // Friend declarations
     friend class GfMatrix4f;
 };
+
+
+/// Tests for equality within a given tolerance, returning \c true if the
+/// difference between each component of the matrix is less than or equal
+/// to \p tolerance, or false otherwise.
+GF_API 
+bool GfIsClose(GfMatrix4d const &m1, GfMatrix4d const &m2, double tolerance);
 
 /// Output a GfMatrix4d
 /// \ingroup group_gf_DebuggingOutput

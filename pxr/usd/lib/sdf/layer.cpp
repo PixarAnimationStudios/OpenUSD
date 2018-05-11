@@ -53,7 +53,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/errno.h"
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
@@ -407,9 +407,9 @@ SdfLayer::_CreateNew(
         }
 
         // If not explicitly supplied one, try to determine the fileFormat 
-        // based on the identifier suffix,
+        // based on the local path suffix,
         if (!fileFormat) {
-            fileFormat = _GetFileFormatForPath(absIdentifier, args);
+            fileFormat = _GetFileFormatForPath(localPath, args);
             if (!TF_VERIFY(fileFormat))
                 return TfNullPtr;
         }
@@ -557,19 +557,30 @@ struct SdfLayer::_FindOrOpenLayerInfo
     // Canonical file format arguments.
     SdfLayer::FileFormatArguments fileFormatArgs;
 
+    // Whether this layer is anonymous.
+    bool isAnonymous = false;
+
     // Path to the layer.
     string layerPath;
+
+    // Resolved path for the layer. If the layer is an anonymous layer,
+    // this will be the same as layerPath.
+    string resolvedLayerPath;
 
     // Identifier for the layer, combining both the layer path and
     // file format arguments.
     string identifier;
+
+    // Asset info from resolving the layer path.
+    ArAssetInfo assetInfo;
 };
 
 bool
 SdfLayer::_ComputeInfoToFindOrOpenLayer(
     const string& identifier,
     const SdfLayer::FileFormatArguments& args,
-    _FindOrOpenLayerInfo* info)
+    _FindOrOpenLayerInfo* info,
+    bool computeAssetInfo)
 {
     TRACE_FUNCTION();
 
@@ -584,6 +595,14 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
         return false;
     }
 
+    bool isAnonymous = IsAnonymousLayerIdentifier(layerPath);
+
+    // If we're trying to open an anonymous layer, do not try to compute the
+    // real path for it.
+    ArAssetInfo assetInfo;
+    string resolvedLayerPath = isAnonymous ? layerPath :
+        Sdf_ResolvePath(layerPath, computeAssetInfo ? &assetInfo : nullptr);
+
     // Merge explicitly-specified arguments over any arguments
     // embedded in the given identifier.
     if (layerArgs.empty()) {
@@ -595,13 +614,17 @@ SdfLayer::_ComputeInfoToFindOrOpenLayer(
         }
     }
 
-    info->fileFormat = _GetFileFormatForPath(layerPath, layerArgs);
+    info->fileFormat = _GetFileFormatForPath(
+        resolvedLayerPath.empty() ? layerPath : resolvedLayerPath, layerArgs);
     info->fileFormatArgs.swap(_CanonicalizeFileFormatArguments(
         layerPath, info->fileFormat, layerArgs));
 
+    info->isAnonymous = isAnonymous;
     info->layerPath.swap(layerPath);
+    info->resolvedLayerPath.swap(resolvedLayerPath);
     info->identifier = Sdf_CreateIdentifier(
         info->layerPath, info->fileFormatArgs);
+    swap(info->assetInfo, assetInfo);
     return true;
 }
 
@@ -673,24 +696,16 @@ SdfLayer::FindOrOpen(const string &identifier,
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     _FindOrOpenLayerInfo layerInfo;
-    if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo))
+    if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo,
+                                       /* computeAssetInfo = */ true)) {
         return TfNullPtr;
-
-    // Resolve the path before we take the lock, since doing the resolution is
-    // slow.
-    bool isAnonymous = IsAnonymousLayerIdentifier(layerInfo.layerPath);
-
-    // If we're trying to open an anonymous layer, do not try to compute the
-    // real path for it.
-    ArAssetInfo assetInfo;
-    const string resolvedPath = isAnonymous ? layerInfo.layerPath :
-        Sdf_ResolvePath(layerInfo.layerPath, &assetInfo);
+    }
 
     // First see if this layer is already present.
     tbb::queuing_rw_mutex::scoped_lock
         lock(_GetLayerRegistryMutex(), /*write=*/false);
     if (SdfLayerRefPtr layer =
-        _TryToFindLayer(layerInfo.identifier, resolvedPath,
+        _TryToFindLayer(layerInfo.identifier, layerInfo.resolvedLayerPath,
                         lock, /*retryAsWriter=*/true)) {
         return layer->_WaitForInitializationAndCheckIfSuccessful() ?
             layer : TfNullPtr;
@@ -701,14 +716,13 @@ SdfLayer::FindOrOpen(const string &identifier,
     // resolved paths.  They aren't backed by assets on disk.  If we don't find
     // such a layer by identifier in the registry, we're done since we don't
     // have an asset to open.
-    if (resolvedPath.empty()) {
+    if (layerInfo.resolvedLayerPath.empty()) {
         return TfNullPtr;
     }
 
     // Otherwise we create the layer and insert it into the registry.
     return _OpenLayerAndUnlockRegistry(lock, layerInfo,
-                                       /* metadataOnly */ false,
-                                       resolvedPath, assetInfo, isAnonymous);
+                                       /* metadataOnly */ false);
 }
 
 /* static */
@@ -718,18 +732,18 @@ SdfLayer::OpenAsAnonymous(
     bool metadataOnly,
     const std::string &tag)
 {
-    // Find a file format that can handle this extension.
-    const SdfFileFormatConstPtr format = 
-        _GetFileFormatForPath(layerPath, FileFormatArguments());
-    if (!format) {
-        TF_CODING_ERROR("Cannot locate file format plugin for reading @%s@", 
-                        layerPath.c_str());
+    _FindOrOpenLayerInfo layerInfo;
+    if (!_ComputeInfoToFindOrOpenLayer(layerPath, FileFormatArguments(), 
+                                       &layerInfo)) {
         return TfNullPtr;
     }
 
-    // Resolve the file path.
-    const string resolvedPath = Sdf_ResolvePath(layerPath);
-    if (resolvedPath.empty()) {
+    // XXX: Is this really a coding error? SdfLayer avoids issuing errors if
+    //      given a non-existent file, for instance. Should we be following the
+    //      same policy here?
+    if (!layerInfo.fileFormat) {
+        TF_CODING_ERROR("Cannot determine file format for @%s@", 
+                        layerInfo.identifier.c_str());
         return TfNullPtr;
     }
 
@@ -738,7 +752,7 @@ SdfLayer::OpenAsAnonymous(
     {
         tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
         layer = _CreateNewWithFormat(
-                format, Sdf_GetAnonLayerIdentifierTemplate(tag),
+                layerInfo.fileFormat, Sdf_GetAnonLayerIdentifierTemplate(tag),
                 string());
         // From this point, we must call _FinishInitialization() on
         // either success or failure in order to unblock other
@@ -746,7 +760,8 @@ SdfLayer::OpenAsAnonymous(
     }
 
     // Run the file parser to read in the file contents.
-    if (!layer->_Read(layerPath, resolvedPath, metadataOnly)) {
+    if (!layer->_Read(layerInfo.identifier, layerInfo.resolvedLayerPath, 
+                      metadataOnly)) {
         layer->_FinishInitialization(/* success = */ false);
         return TfNullPtr;
     }
@@ -950,23 +965,15 @@ SdfLayer::Find(const string &identifier,
     // there.
 
     _FindOrOpenLayerInfo layerInfo;
-    if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo))
+    if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo)) {
         return TfNullPtr;
-
-    // Resolve the path before we take the lock, since doing the resolution is
-    // slow.
-    bool isAnonymous = IsAnonymousLayerIdentifier(layerInfo.layerPath);
-
-    // If we're trying to open an anonymous layer, do not try to compute the
-    // real path for it.
-    const string resolvedPath = isAnonymous ? layerInfo.layerPath :
-        Sdf_ResolvePath(layerInfo.layerPath);
+    }
 
     // First see if this layer is already present.
     tbb::queuing_rw_mutex::scoped_lock
         lock(_GetLayerRegistryMutex(), /*write=*/false);
     if (SdfLayerRefPtr layer = _TryToFindLayer(
-            layerInfo.identifier, resolvedPath,
+            layerInfo.identifier, layerInfo.resolvedLayerPath,
             lock, /*retryAsWriter=*/false)) {
         return layer->_WaitForInitializationAndCheckIfSuccessful() ?
             layer : TfNullPtr;
@@ -2856,10 +2863,7 @@ SdfLayerRefPtr
 SdfLayer::_OpenLayerAndUnlockRegistry(
     Lock &lock,
     const _FindOrOpenLayerInfo& info,
-    bool metadataOnly,
-    string const &resolvedPath,
-    const ArAssetInfo &assetInfo,
-    bool isAnonymous)
+    bool metadataOnly)
 {
     TfAutoMallocTag2 tag("Sdf", "SdfLayer::_OpenLayerAndUnlockRegistry "
                          + info.identifier);
@@ -2887,8 +2891,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
 
     // Create a new layer of the appropriate format.
     SdfLayerRefPtr layer = _CreateNewWithFormat(
-        info.fileFormat, info.identifier, resolvedPath, assetInfo,
-        info.fileFormatArgs);
+        info.fileFormat, info.identifier, info.resolvedLayerPath, 
+        info.assetInfo, info.fileFormatArgs);
 
     // The layer constructor locks _initializationMutex, which will
     // block any other threads trying to use the layer until we complete
@@ -2906,8 +2910,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // in order to unblock any other threads waiting for initialization
     // to finish.
 
-    if (isAnonymous != layer->IsAnonymous()) {
-        if (isAnonymous) {
+    if (info.isAnonymous != layer->IsAnonymous()) {
+        if (info.isAnonymous) {
             TF_CODING_ERROR("Opened anonymous layer ('%s' with format id '%s') "
                     "but resulting layer is not anonymous.",
                     info.identifier.c_str(),
@@ -2929,7 +2933,7 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // pass the original assetPath to the reader, otherwise, pass the
     // resolved path of the layer.
     const string readFilePath = 
-        isAnonymous ? info.layerPath : resolvedPath;
+        info.isAnonymous ? info.layerPath : info.resolvedLayerPath;
 
     if (!layer->IsMuted()) {
         // Run the file parser to read in the file contents.
@@ -2943,7 +2947,7 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // read. Since a muted layer may become unmuted later, there needs
     // to be a non-empty timestamp so it will not be misidentified as
     // a newly created non-serialized layer.
-    if (!isAnonymous) {
+    if (!info.isAnonymous) {
         // Grab modification timestamp.
         VtValue timestamp = ArGetResolver().GetModificationTimestamp(
             info.identifier, readFilePath);

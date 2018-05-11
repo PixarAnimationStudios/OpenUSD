@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMaterialNetworkMap;
+struct HdMaterialNetworkMap;
 
 
 /// \class UsdImagingMaterialAdapter
@@ -68,7 +68,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = NULL);
+                                      instancerContext = NULL) const;
 
 
     /// Thread Safe.
@@ -78,7 +78,7 @@ public:
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
                                UsdImagingInstancerContext const* 
-                                   instancerContext = NULL);
+                                   instancerContext = NULL) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing 
@@ -104,7 +104,7 @@ protected:
 
 private:
     void _GetMaterialNetworkMap(UsdPrim const &prim, 
-                                HdMaterialNetworkMap *materialNetworkMap);
+                                HdMaterialNetworkMap *materialNetworkMap) const;
 };
 
 

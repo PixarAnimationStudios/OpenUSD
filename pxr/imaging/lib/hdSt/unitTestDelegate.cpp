@@ -43,14 +43,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (rotate)
-    (scale)
-    (translate)
-);
-
 template <typename T>
 static VtArray<T>
 _BuildArray(T values[], int numValues)

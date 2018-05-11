@@ -29,12 +29,15 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include <boost/noncopyable.hpp>
+#include <memory>
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class ArResolverContext;
 class ArAssetInfo;
+class TfType;
 class VtValue;
 
 /// \class ArResolver
@@ -336,15 +339,25 @@ protected:
 
 /// Returns the configured asset resolver.
 ///
-/// When first called, this function will check if any plugins contain a
-/// subclass of ArResolver. If so, that plugin will be loaded and a new
-/// instance of that subclass will be constructed. Otherwise, a new instance
-/// of ArDefaultResolver will be used instead. This instance will be returned
-/// by this and all subsequent calls to this function.
+/// When first called, this function will determine the ArResolver subclass
+/// to use for asset resolution via the following process:
 ///
-/// If ArResolver subclasses are found in multiple plugins, the subclass
-/// whose typename is lexicographically first will be selected and a
-/// warning will be issued.
+/// - If a preferred resolver has been set via \ref ArSetPreferredResolver,
+///   it will be selected.
+///
+/// - Otherwise, a list of available ArResolver subclasses in plugins will
+///   be generated. If multiple ArResolver subclasses are found, the list
+///   will be sorted by typename. ArDefaultResolver will be added as the last
+///   element of this list, and the first resolver in the list will be
+///   selected. 
+///
+/// - The plugin for the selected subclass will be loaded and an instance
+///   of the subclass will be constructed and returned.
+///
+/// - If an error occurs, an ArDefaultResolver will be constructed and returned.
+///
+/// The constructed ArResolver subclass will be cached and returned by all
+/// subsequent calls to this function.
 AR_API
 ArResolver& ArGetResolver();
 
@@ -361,6 +374,58 @@ ArResolver& ArGetResolver();
 /// This must be called before the first call to ArGetResolver.
 AR_API
 void ArSetPreferredResolver(const std::string& resolverTypeName);
+
+/// \name Advanced API
+///
+/// \warning These functions should typically not be used by consumers except
+/// in very specific cases. Consumers who want to retrieve an ArResolver to
+/// perform asset resolution should use \ref ArGetResolver.
+/// 
+/// These special-purpose functions are intended to help with the creation
+/// of ArResolver subclasses that wrap around other ArResolver subclasses.
+/// 
+/// @{
+
+/// Returns list of TfTypes for available ArResolver subclasses.
+///
+/// This function returns the list of ArResolver subclasses used to determine 
+/// the resolver implementation returned by \ref ArGetResolver. See 
+/// documentation on that function for more details.
+///
+/// If this function is called from within a call (or calls) to 
+/// \ref ArCreateResolver, the ArResolver subclass(es) being created will 
+/// be removed from the returned list.
+///
+/// This function is not safe to call concurrently with itself or 
+/// \ref ArCreateResolver.
+///
+/// \warning This functions should typically not be used by consumers except
+/// in very specific cases. Consumers who want to retrieve an ArResolver to
+/// perform asset resolution should use \ref ArGetResolver.
+AR_API
+std::vector<TfType> ArGetAvailableResolvers();
+
+/// Construct an instance of the ArResolver subclass specified by 
+/// \p resolverType.
+///
+/// This function will load the plugin for the given \p resolverType and
+/// construct and return a new instance of the specified ArResolver subclass.
+/// If an error occurs, coding errors will be emitted and this function
+/// will return an ArDefaultResolver instance.
+///
+/// Note that this function *does not* change the resolver returned by 
+/// \ref ArGetResolver to an instance of \p resolverType.
+///
+/// This function is not safe to call concurrently with itself or 
+/// \ref ArGetAvailableResolvers.
+///
+/// \warning This functions should typically not be used by consumers except
+/// in very specific cases. Consumers who want to retrieve an ArResolver to
+/// perform asset resolution should use \ref ArGetResolver.
+AR_API
+std::unique_ptr<ArResolver> ArCreateResolver(const TfType& resolverType);
+
+/// @}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

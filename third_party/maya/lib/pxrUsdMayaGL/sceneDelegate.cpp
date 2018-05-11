@@ -44,7 +44,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
@@ -90,9 +90,9 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
 
         renderIndex->InsertSprim(HdPrimTypeTokens->camera, this, _cameraId);
         _ValueCache& cache = _valueCacheMap[_cameraId];
-        cache[HdStCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdStCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
-        cache[HdStCameraTokens->windowPolicy] = VtValue();  // no window policy.
+        cache[HdCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
+        cache[HdCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
+        cache[HdCameraTokens->windowPolicy] = VtValue();  // no window policy.
     }
 
     // simple lighting task (for Hydra native)
@@ -132,13 +132,13 @@ PxrMayaHdSceneDelegate::SetCameraState(
 {
     // cache the camera matrices
     _ValueCache& cache = _valueCacheMap[_cameraId];
-    cache[HdStCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
-    cache[HdStCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
-    cache[HdStCameraTokens->windowPolicy] = VtValue(); // no window policy.
+    cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
+    cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
+    cache[HdCameraTokens->windowPolicy] = VtValue(); // no window policy.
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId,
-                                                       HdStCamera::AllDirty);
+                                                       HdCamera::AllDirty);
 
     if (_viewport != viewport) {
         _viewport = viewport;
@@ -254,15 +254,24 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
             HdStLight::AllDirty);
     }
 
-    // sadly the material also comes from lighting context right now...
     HdxSimpleLightTaskParams taskParams =
         _GetValue<HdxSimpleLightTaskParams>(_simpleLightTaskId,
                                             HdTokens->params);
-    taskParams.sceneAmbient = _lightingContext->GetSceneAmbient();
-    taskParams.material = _lightingContext->GetMaterial();
+
+    // Sadly the material also comes from the lighting context right now...
+    bool hasSceneAmbientChanged = false;
+    if (taskParams.sceneAmbient != _lightingContext->GetSceneAmbient()) {
+        taskParams.sceneAmbient = _lightingContext->GetSceneAmbient();
+        hasSceneAmbientChanged = true;
+    }
+    bool hasMaterialChanged = false;
+    if (taskParams.material != _lightingContext->GetMaterial()) {
+        taskParams.material = _lightingContext->GetMaterial();
+        hasMaterialChanged = true;
+    }
 
     // invalidate HdxSimpleLightTask too
-    if (hasNumLightsChanged) {
+    if (hasNumLightsChanged || hasSceneAmbientChanged || hasMaterialChanged) {
         _SetValue(_simpleLightTaskId, HdTokens->params, taskParams);
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
@@ -412,7 +421,6 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     renderSetupTaskParams.enableHardwareShading = true;
     renderSetupTaskParams.depthBiasUseDefault = true;
     renderSetupTaskParams.depthFunc = HdCmpFuncLess;
-    renderSetupTaskParams.cullStyle = renderParams.cullStyle;
     renderSetupTaskParams.geomStyle = HdGeomStylePolygons;
 
     // Store the updated render setup task params back in the cache and mark

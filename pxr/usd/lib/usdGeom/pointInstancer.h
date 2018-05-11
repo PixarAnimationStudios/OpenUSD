@@ -130,6 +130,11 @@ class SdfAssetPath;
 /// prim itself (or the UsdGeomImageable::ComputeLocalToWorldTransform() of the 
 /// PointInstancer to put the instance directly into world space)
 /// 
+/// If neither *velocities* nor *angularVelocities* are authored, we fallback to
+/// standard position and orientation computation logic (using linear
+/// interpolation between timeSamples) as described by
+/// \ref UsdGeom_VelocityInterpolation .
+/// 
 /// \anchor UsdGeom_PITimeScaling
 /// <b>Scaling Velocities for Interpolation</b>
 /// 
@@ -138,11 +143,18 @@ class SdfAssetPath;
 /// ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
 /// in units/second, while we are interpolating in UsdTimeCode ordinates.
 /// 
+/// Additionally, if *motion:velocityScale* is authored or inherited (see
+/// UsdGeomMotionAPI::ComputeVelocityScale()), it is used to scale both the
+/// velocity and angular velocity by a constant value during computation. The
+/// *motion:velocityScale* attribute is encoded by UsdGeomMotionAPI.
+/// 
 /// We provide both high and low-level API's for dealing with the
 /// transformation as a matrix, both will compute the instance matrices using
 /// multiple threads; the low-level API allows the client to cache unvarying
 /// inputs so that they need not be read duplicately when computing over
 /// time.
+/// 
+/// See also \ref UsdGeom_VelocityInterpolation .
 /// 
 /// \section UsdGeomPointInstancer_primvars Primvars on PointInstancer
 /// 
@@ -387,7 +399,7 @@ public:
     /// binary state on Id'd instances without adding a separate primvar.
     /// See also \ref UsdGeomPointInstancer_varyingTopo
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
@@ -546,7 +558,7 @@ public:
     /// A list of id's to make invisible at the evaluation time.
     /// See \ref UsdGeomPointInstancer_invisibleIds .
     ///
-    /// \n  C++ Type: VtArray<long>
+    /// \n  C++ Type: VtArray<int64_t>
     /// \n  Usd Type: SdfValueTypeNames->Int64Array
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: []
@@ -768,7 +780,11 @@ public:
     ///
     /// This will return \c false and leave \p xforms untouched if:
     /// - \p xforms is NULL
-    /// - there is no authored \em protoIndices attribute
+    /// - one of \p time and \p baseTime is numeric and the other is
+    ///   UsdTimeCode::Default() (they must either both be numeric or both be
+    ///   default)
+    /// - there is no authored \em protoIndices attribute or \em positions
+    ///   attribute
     /// - the size of any of the per-instance attributes does not match the
     ///   size of \em protoIndices
     /// - \p doProtoXforms is \c IncludeProtoXform but an index value in
@@ -803,6 +819,9 @@ public:
     ///                   same value for \p baseTime that it does for \p time.
     ///                   When \p baseTime is less than or equal to \p time,
     ///                   we will choose the lower bracketing timeSample.
+    ///                   Selecting sample times with respect to baseTime will
+    ///                   be performed independently for positions and
+    ///                   orientations.
     /// \param doProtoXforms - specifies whether to include the root 
     ///                   transformation of each instance's prototype in the
     ///                   instance's transform.  Default is to include it, but
@@ -814,11 +833,201 @@ public:
     USDGEOM_API
     bool
     ComputeInstanceTransformsAtTime(
-                        VtArray<GfMatrix4d>* xforms,
-                        const UsdTimeCode time,
-                        const UsdTimeCode baseTime,
-                        const ProtoXformInclusion doProtoXforms = IncludeProtoXform,
-                        const MaskApplication applyMask = ApplyMask) const;
+        VtArray<GfMatrix4d>* xforms,
+        const UsdTimeCode time,
+        const UsdTimeCode baseTime,
+        const ProtoXformInclusion doProtoXforms = IncludeProtoXform,
+        const MaskApplication applyMask = ApplyMask) const;
+
+    /// Compute the per-instance transforms as in
+    /// ComputeInstanceTransformsAtTime, but using multiple sample times. An
+    /// array of matrix arrays is returned where each matrix array contains the
+    /// instance transforms for the corresponding time in \p times .
+    ///
+    /// \param times - A vector containing the UsdTimeCodes at which we want to
+    ///                sample.
+    USDGEOM_API
+    bool
+    ComputeInstanceTransformsAtTimes(
+        std::vector<VtArray<GfMatrix4d>>* xformsArray,
+        const std::vector<UsdTimeCode>& times,
+        const UsdTimeCode baseTime,
+        const ProtoXformInclusion doProtoXforms = IncludeProtoXform,
+        const MaskApplication applyMask = ApplyMask) const;
+
+    /// \overload
+    /// Perform the per-instance transform computation as described in
+    /// \ref UsdGeomPointInstancer_transform . This does the same computation as
+    /// the non-static ComputeInstanceTransformsAtTime method, but takes all
+    /// data as parameters rather than accessing authored data.
+    ///
+    /// \param xforms - the out parameter for the transformations.  Its size
+    ///                 will depend on the given data and \p applyMask
+    /// \param stage - the UsdStage
+    /// \param time - time at which we want to evaluate the transforms
+    /// \param protoIndices - array containing all instance prototype indices.
+    /// \param positions - array containing all instance positions. This array
+    ///                    must be the same size as \p protoIndices .
+    /// \param velocities - array containing all instance velocities. This array
+    ///                     must be either the same size as \p protoIndices or
+    ///                     empty. If it is empty, transforms are computed as if
+    ///                     all velocities were zero in all dimensions.
+    /// \param velocitiesSampleTime - time at which the samples from
+    ///                               \p velocities were taken.
+    /// \param scales - array containing all instance scales. This array must be
+    ///                 either the same size as \p protoIndices or empty. If it
+    ///                 is empty, transforms are computed with no change in
+    ///                 scale.
+    /// \param orientations - array containing all instance orientations. This
+    ///                       array must be either the same size as
+    ///                       \p protoIndices or empty. If it is empty,
+    ///                       transforms are computed with no change in
+    ///                       orientation
+    /// \param angularVelocities - array containing all instance angular
+    ///                            velocities. This array must be either the
+    ///                            same size as \p protoIndices or empty. If it
+    ///                            is empty, transforms are computed as if all
+    ///                            angular velocities were zero in all
+    ///                            dimensions.
+    /// \param angularVelocitiesSampleTime - time at which the samples from
+    ///                                      \p angularVelocities were taken.
+    /// \param protoPaths - array containing the paths for all instance
+    ///                     prototypes. If this array is not empty, prototype
+    ///                     transforms are applied to the instance transforms.
+    /// \param mask - vector containing a mask to apply to the computed result.
+    ///               This vector must be either the same size as
+    ///               \p protoIndices or empty. If it is empty, no mask is
+    ///               applied.
+    /// \param velocityScale - factor used to artificially increase the effect
+    ///                        of velocity and angular velocity on positions and
+    ///                        orientations respectively.
+    USDGEOM_API
+    static bool
+    ComputeInstanceTransformsAtTime(
+        VtArray<GfMatrix4d>* xforms,
+        UsdStageWeakPtr& stage,
+        UsdTimeCode time,
+        const VtIntArray& protoIndices,
+        const VtVec3fArray& positions,
+        const VtVec3fArray& velocities,
+        UsdTimeCode velocitiesSampleTime,
+        const VtVec3fArray& scales,
+        const VtQuathArray& orientations,
+        const VtVec3fArray& angularVelocities,
+        UsdTimeCode angularVelocitiesSampleTime,
+        const SdfPathVector& protoPaths,
+        const std::vector<bool>& mask,
+        float velocityScale = 1.0);
+
+private:
+
+    // Get the authored prototype indices for instance transform computation.
+    // Fail if prototype indices are not authored.
+    bool _GetProtoIndicesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        VtIntArray* protoIndices) const;
+
+    // Get the authored positions for instance transform computation. Fail if
+    // there are no authored positions or the number of positions doesn't match
+    // the number of instances.
+    bool _GetPositionsForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        UsdTimeCode* positionsSampleTime,
+        bool* positionsHasSamples,
+        VtVec3fArray* positions) const;
+
+    // Get the authored velocities for instance transform computation. Fail if
+    // there are no authored velocities, the number of velocities doesn't match
+    // the number of instances, or the velocity timesample does not align with
+    // the position timesample.
+    bool _GetVelocitiesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        UsdTimeCode positionsSampleTime,
+        UsdTimeCode* velocitiesSampleTime,
+        VtVec3fArray* velocities) const;
+
+    // Get the authored positions and velocities for instance transform
+    // computation. This method fails if the positions can't be fetched (see
+    // _GetPositionsForInstanceTransforms). If velocities can't be fetched (see
+    // _GetVelocitiesForInstanceTransforms) or positions are not time-varying,
+    // then \p velocities is cleared and \p velocitiesSampleTime is not changed.
+    bool _GetPositionsAndVelocitiesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        VtVec3fArray* positions,
+        VtVec3fArray* velocities,
+        UsdTimeCode* velocitiesSampleTime) const;
+
+    // Get the authored scales for instance transform computation. Fail if there
+    // are no authored scales or the number of scales doesn't match the number
+    // of instances.
+    bool _GetScalesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        VtVec3fArray* scales) const;
+
+    // Get the authored orientations for instance transform computation. Fail if
+    // there are no authored orientations or the number of orientations doesn't
+    // match the number of instances.
+    bool _GetOrientationsForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        UsdTimeCode* orientationsSampleTime,
+        bool* orientationsHasSamples,
+        VtQuathArray* orientations) const;
+
+    // Get the authored angular velocities for instance transform computation.
+    // Fail if there are no authored angular velocities, the number of angular
+    // velocities doesn't match the number of instances, or the angular velocity
+    // timesample does not align with the orientation timesample.
+    bool _GetAngularVelocitiesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        UsdTimeCode orientationsSampleTime,
+        UsdTimeCode* angularVelocitiesSampleTime,
+        VtVec3fArray* angularVelocities) const;
+
+    // Get the authored orientations and angular velocities for instance
+    // transform computation. This method fails if the orientations can't be
+    // fetched (see _GetOrientationsForInstanceTransforms). If angular
+    // velocities can't be fetched (see
+    // _GetAngularVelocitiesForInstanceTransforms) or orientations are not time-
+    // varying, then \p angularVelocities is cleared and
+    // \p angularVelocitiesSampleTime is not changed.
+    bool _GetOrientationsAndAngularVelocitiesForInstanceTransforms(
+        UsdTimeCode baseTime,
+        size_t numInstances,
+        VtQuathArray* orientations,
+        VtVec3fArray* angularVelocities,
+        UsdTimeCode* angularVelocitiesSampleTime) const;
+
+    // Get the authored prototype paths. Fail if there are no authored prototype
+    // paths or the prototype indices are out of bounds.
+    bool _GetPrototypePathsForInstanceTransforms(
+        const VtIntArray& protoIndices,
+        SdfPathVector* protoPaths) const;
+
+    // Fetches data from attributes on a UsdGeomPointInstancer required for
+    // instance transform calculations.
+    bool _ComputeInstanceTransformsAtTimePreamble(
+        const UsdTimeCode baseTime,
+        const ProtoXformInclusion doProtoXforms,
+        const MaskApplication applyMask,
+        VtIntArray* protoIndices,
+        VtVec3fArray* positions,
+        VtVec3fArray* velocities,
+        UsdTimeCode* velocitiesSampleTime,
+        VtVec3fArray* scales,
+        VtQuathArray* orientations,
+        VtVec3fArray* angularVelocities,
+        UsdTimeCode* angularVelocitiesSampleTime,
+        SdfPathVector* protoPaths,
+        std::vector<bool>* mask,
+        float* velocityScale) const;
+
+public:
 
     /// Compute the extent of the point instancer based on the per-instance,
     /// "PointInstancer relative" transforms at \p time, as described in
@@ -870,11 +1079,63 @@ public:
                         const UsdTimeCode baseTime,
                         const GfMatrix4d& transform) const;
 
+    /// Compute the extent of the point instancer as in
+    /// \ref ComputeExtentAtTime , but across multiple \p times . This is
+    /// equivalent to, but more efficient than, calling ComputeExtentAtTime
+    /// several times. Each element in \p extents is the computed extent at the
+    /// corresponding time in \p times .
+    ///
+    /// As in \ref ComputeExtentAtTime, if there is no error, we return \c true
+    /// and \p extents will be the tightest bounds we can compute efficiently.
+    /// If an error occurs computing the extent at any time, \c false will be
+    /// returned and \p extents will be left untouched.
+    ///
+    /// \param times - A vector containing the UsdTimeCodes at which we want to
+    ///                sample.
+    USDGEOM_API
+    bool ComputeExtentAtTimes(
+                        std::vector<VtVec3fArray>* extents,
+                        const std::vector<UsdTimeCode>& times,
+                        const UsdTimeCode baseTime) const;
+
+    /// \overload
+    /// Computes the extent as if the matrix \p transform was first applied at
+    /// each time.
+    USDGEOM_API
+    bool ComputeExtentAtTimes(
+                        std::vector<VtVec3fArray>* extents,
+                        const std::vector<UsdTimeCode>& times,
+                        const UsdTimeCode baseTime,
+                        const GfMatrix4d& transform) const;
+
 private:
+
+    bool _ComputeExtentAtTimePreamble(
+        UsdTimeCode baseTime,
+        VtIntArray* protoIndices,
+        std::vector<bool>* mask,
+        UsdRelationship* prototypes,
+        SdfPathVector* protoPaths) const;
+
+    bool _ComputeExtentFromTransforms(
+        VtVec3fArray* extent,
+        const VtIntArray& protoIndices,
+        const std::vector<bool>& mask,
+        const UsdRelationship& prototypes,
+        const SdfPathVector& protoPaths,
+        const VtMatrix4dArray& instanceTransforms,
+        UsdTimeCode time,
+        const GfMatrix4d* transform) const;
 
     bool _ComputeExtentAtTime(
         VtVec3fArray* extent,
         const UsdTimeCode time,
+        const UsdTimeCode baseTime,
+        const GfMatrix4d* transform) const;
+
+    bool _ComputeExtentAtTimes(
+        std::vector<VtVec3fArray>* extent,
+        const std::vector<UsdTimeCode>& times,
         const UsdTimeCode baseTime,
         const GfMatrix4d* transform) const;
 };

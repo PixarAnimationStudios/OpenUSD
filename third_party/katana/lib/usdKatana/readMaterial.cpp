@@ -29,6 +29,7 @@
 #include "usdKatana/baseMaterialHelpers.h"
 
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/imaging/glf/glslfx.h"
 
 #include "pxr/usd/usdGeom/scope.h"
 
@@ -39,6 +40,7 @@
 #include "pxr/usd/usdRi/materialAPI.h"
 #include "pxr/usd/usdRi/risObject.h"
 #include "pxr/usd/usdRi/risOslPattern.h"
+#include "pxr/usd/usdRi/rslShader.h"
 #include "pxr/usd/usdUI/nodeGraphNodeAPI.h"
 
 #include <FnGeolibServices/FnAttributeFunctionUtil.h>
@@ -86,7 +88,8 @@ PxrUsdKatanaReadMaterial(
         bool flatten,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs,
-        const std::string& looksGroupLocation)
+        const std::string& looksGroupLocation,
+        const std::string& materialDestinationLocation)
 {
     UsdPrim prim = material.GetPrim();
     UsdStageRefPtr stage = prim.GetStage();
@@ -101,10 +104,13 @@ PxrUsdKatanaReadMaterial(
     const std::string& parentPrefix = (looksGroupLocation.empty()) ?
         data.GetUsdInArgs()->GetRootLocationPath() : looksGroupLocation;
     
-    std::string fullKatanaPath = 
-        PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
-            primPath, data);
-    if (!fullKatanaPath.empty()) {
+    std::string fullKatanaPath = !materialDestinationLocation.empty()
+            ? materialDestinationLocation
+            : PxrUsdKatanaUtils::ConvertUsdMaterialPathToKatLocation(
+                    primPath, data);
+
+    if (!fullKatanaPath.empty() &&
+            pystring::startswith(fullKatanaPath, parentPrefix)) {
         katanaPath = fullKatanaPath.substr(parentPrefix.size()+1);
 
         // these paths are relative in katana
@@ -112,6 +118,7 @@ PxrUsdKatanaReadMaterial(
             katanaPath = katanaPath.substr(1);
         }
     }
+
 
     attrs.set("material.katanaPath", FnKat::StringAttribute(katanaPath));
     attrs.set("material.usdPrimName", FnKat::StringAttribute(prim.GetName()));
@@ -432,18 +439,28 @@ _GetMaterialAttr(
     /////////////////
 
     // look for surface
-    UsdRiRslShader surfaceShader = riMaterialAPI.GetSurface(
+    UsdShadeShader surfaceShader = riMaterialAPI.GetSurface(
             /*ignoreBaseMaterial*/ not flatten);
     if (surfaceShader.GetPrim()) {
         std::string handle = _CreateShadingNode(
             surfaceShader.GetPrim(), currentTime,
             nodesBuilder, interfaceBuilder, "prman", flatten);
-        terminalsBuilder.set("prmanSurface",
-                             FnKat::StringAttribute(handle));
+    
+        // If the source shader type is an RslShader, then publish it 
+        // as a prmanSurface terminal. If not, fallback to the 
+        // prmanBxdf terminal.
+        UsdRiRslShader rslShader(surfaceShader.GetPrim());
+        if (rslShader) {
+            terminalsBuilder.set("prmanSurface",
+                                 FnKat::StringAttribute(handle));
+        } else {
+            terminalsBuilder.set("prmanBxdf",
+                                 FnKat::StringAttribute(handle));
+        }
     }
 
     // look for displacement
-    UsdRiRslShader displacementShader = riMaterialAPI.GetDisplacement(
+    UsdShadeShader displacementShader = riMaterialAPI.GetDisplacement(
             /*ignoreBaseMaterial*/ not flatten);
     if (displacementShader.GetPrim()) {
         string handle = _CreateShadingNode(
@@ -491,18 +508,6 @@ _GetMaterialAttr(
     // RIS SECTION
     /////////////////
     // this does not exclude the rsl part
-
-    // look for bxdf's
-    UsdRiRisBxdf bxdfShader = riMaterialAPI.GetBxdf(
-            /*ignoreBaseMaterial*/ not flatten);
-    if (bxdfShader.GetPrim()) {
-        string handle = _CreateShadingNode(
-            bxdfShader.GetPrim(), currentTime,
-            nodesBuilder, interfaceBuilder, "prman", flatten);
-
-        terminalsBuilder.set("prmanBxdf",
-                             FnKat::StringAttribute(handle));
-    }
 
     // XXX BEGIN This code is in support of Subgraph workflows
     //           and is currently necessary to match equivalent SGG behavior
@@ -564,40 +569,64 @@ _GetMaterialAttr(
     }
     // XXX END
     
+    bool foundGlslfxTerminal = false;
+    if (UsdShadeOutput glslfxOut = materialSchema.GetSurfaceOutput(
+                GlfGLSLFXTokens->glslfx)) {
+        if (flatten || 
+            !glslfxOut.IsSourceConnectionFromBaseMaterial()) 
+        {
+            UsdShadeConnectableAPI source;
+            TfToken sourceName;
+            UsdShadeAttributeType sourceType;
+            if (glslfxOut.GetConnectedSource(&source, &sourceName, 
+                                                &sourceType)) {
+                foundGlslfxTerminal = true;
+                string handle = _CreateShadingNode(
+                    source.GetPrim(), currentTime,
+                    nodesBuilder, interfaceBuilder, "display", flatten);
 
+                terminalsBuilder.set("displayBxdf",
+                                        FnKat::StringAttribute(handle));
+            }                                    
+        }
+    }
+
+    // XXX: This code is deprecated and should be removed soon, along with all 
+    // other uses of the deprecated usdHydra API.
+    // 
     // XXX, Because of relationship forwarding, there are possible name
     //      clashes with the standard prman shading.
-    if (UsdRelationship bxdfRel =
-        materialPrim.GetRelationship(UsdHydraTokens->displayLookBxdf))
-    {
-        if (flatten ||
-                !PxrUsdKatana_AreRelTargetsFromBaseMaterial(bxdfRel)) {
-            SdfPathVector targetPaths;
-            bxdfRel.GetForwardedTargets(&targetPaths);
-            
-            if (targetPaths.size() > 1) {
-                FnLogWarn("Multiple displayLook bxdf detected on look:" << 
-                    materialPrim.GetPath());
-            }
-            if (targetPaths.size() > 0) {
-                const SdfPath targetPath = targetPaths[0];
-                if (UsdPrim bxdfPrim =
-                    stage->GetPrimAtPath(targetPath)) {
-                    
-                    string handle = _CreateShadingNode(
-                        bxdfPrim, currentTime,
-                        nodesBuilder, interfaceBuilder, "display", flatten);
+    if (!foundGlslfxTerminal) {
+        if (UsdRelationship bxdfRel = materialPrim.GetRelationship(
+                    UsdHydraTokens->displayLookBxdf)) {
+            if (flatten ||
+                    !PxrUsdKatana_AreRelTargetsFromBaseMaterial(bxdfRel)) {
+                SdfPathVector targetPaths;
+                bxdfRel.GetForwardedTargets(&targetPaths);
+                
+                if (targetPaths.size() > 1) {
+                    FnLogWarn("Multiple displayLook bxdf detected on look:" << 
+                        materialPrim.GetPath());
+                }
+                if (targetPaths.size() > 0) {
+                    const SdfPath targetPath = targetPaths[0];
+                    if (UsdPrim bxdfPrim =
+                        stage->GetPrimAtPath(targetPath)) {
+                        
+                        string handle = _CreateShadingNode(
+                            bxdfPrim, currentTime,
+                            nodesBuilder, interfaceBuilder, "display", flatten);
 
-                    terminalsBuilder.set("displayBxdf",
-                                            FnKat::StringAttribute(handle));
-                } else {
-                    FnLogWarn("Bxdf does not exist at "
-                                << targetPath.GetString());
+                        terminalsBuilder.set("displayBxdf",
+                                                FnKat::StringAttribute(handle));
+                    } else {
+                        FnLogWarn("Bxdf does not exist at "
+                                    << targetPath.GetString());
+                    }
                 }
             }
         }
     }
-    
 
 
     // with the current implementation of ris, there are

@@ -43,6 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(GlfGLSLFXTokens, GLF_GLSLFX_TOKENS);
 
 #define CURRENT_VERSION 0.1
 
@@ -57,7 +58,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sectionDelimiter, "--"))
     ((commentDelimiter, "---"))
-    (glslfx)
     (version)
     (configuration)
     (glsl)
@@ -289,7 +289,7 @@ GlfGLSLFX::_ProcessInput(std::istream * input,
                 context.currentLine.c_str());
 
         } else
-        if (context.currentSectionType == _tokens->glslfx && 
+        if (context.currentSectionType == GlfGLSLFXTokens->glslfx && 
                 context.currentLine.find(_tokens->import.GetText()) == 0) {
             if (!_ProcessImport(context)) {
                 return false;
@@ -364,7 +364,7 @@ GlfGLSLFX::_ParseSectionLine(_ParseContext & context)
     context.currentSectionType = tokens[1];
     context.currentSectionId.clear();
 
-    if (context.currentSectionType == _tokens->glslfx.GetText()) {
+    if (context.currentSectionType == GlfGLSLFXTokens->glslfx.GetText()) {
         return _ParseVersionLine(tokens, context);
     }
     if (context.currentSectionType == _tokens->configuration.GetText()) {

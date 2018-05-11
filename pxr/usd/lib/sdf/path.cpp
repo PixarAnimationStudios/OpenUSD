@@ -37,7 +37,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 
 #include <algorithm>
 #include <iostream>

@@ -110,19 +110,17 @@ To create a computation that generates primvar data the following steps need to 
     <li>Ensure your scene delegate implements the 7 methods needed to query for
  ExtComputation data and resolve scene inputs</li>
     <ul>
-        <li>HdSceneDelegate::GetExtComputationInputNames</li>
-        <li>HdSceneDelegate::GetExtComputationInputParams</li>
-        <li>HdSceneDelegate::GetExtComputationOutputNames</li>
-        <li>HdSceneDelegate::GetExtComputationPrimVarNames</li>
-        <li>HdSceneDelegate::GetExtComputationPrimVarDesc</li>
+        <li>HdSceneDelegate::GetExtComputationSceneInputNames</li>
+        <li>HdSceneDelegate::GetExtComputationInputDescriptors</li>
+        <li>HdSceneDelegate::GetExtComputationOutputDescriptors</li>
+        <li>HdSceneDelegate::GetExtComputationPrimvarDescriptors</li>
         <li>HdSceneDelegate::GetExtComputationKernel</li>
         <li>HdSceneDelegate::InvokeExtComputation</li>
     </ul>
     <li>As each Rprim gathers their primvars they ask the scene delegate
  if there are any computation primvars for them by calling
- HdSceneDelegate::GetExtComputationPrimvarNames. If that returns a non-empty
- token vector it will then ask for the descriptions of those primvars
- by calling HdSceneDelegate::GetExtComputationPrimVarDesc. Each primvarDesc
+ HdSceneDelegate::GetExtComputationPrimvarDescriptors.
+ Each computation primvar descriptor
  references an ExtComputation by id that is fetched by id from the 
  render index. The Rprim adds the computations as sources for its primvars.
  The rest of the information flow happens during HdResourceRegistry::Commit</li>

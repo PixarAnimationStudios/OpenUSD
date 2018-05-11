@@ -191,7 +191,8 @@ private:
                               const RenderParams& params);
 
     static void _Populate(const UsdImagingGLHdEngineSharedPtrVector& engines,
-                          const UsdPrimVector& rootPrims);
+                          const UsdPrimVector& rootPrims,
+                          const RenderParams& params);
     static void _SetTimes(const UsdImagingGLHdEngineSharedPtrVector& engines,
                           const UsdPrimVector& rootPrims,
                           const std::vector<UsdTimeCode>& times,
@@ -231,13 +232,6 @@ private:
     HdxTaskController *_taskController;
 
     GlfSimpleLightingContextRefPtr _lightingContextForOpenGLState;
-
-    // Last set view matrix, to track when camera changes for progressive
-    // rendering.
-    GfMatrix4d _lastViewMatrix;
-    GfVec4d _lastViewport;
-    // Last set refine level, tracked to invalidate progressive rendering.
-    int _lastRefineLevel;
 
     // Data we want to live across render plugin switches:
     GfVec4f _selectionColor;

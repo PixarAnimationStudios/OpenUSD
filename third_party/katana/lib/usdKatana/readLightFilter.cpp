@@ -147,7 +147,8 @@ PxrUsdKatanaReadLightFilter(
     GroupBuilder filterBuilder;
     _UsdBuilder usdBuilder = {filterBuilder, currentTime};
     
-    if (UsdRiLightFilterAPI f = UsdRiLightFilterAPI(filterPrim)) {
+    if (filterPrim) {
+        UsdRiLightFilterAPI f(filterPrim);
         usdBuilder
             .Set("density", f.GetRiDensityAttr())
             .Set("intensity", f.GetRiIntensityAttr())

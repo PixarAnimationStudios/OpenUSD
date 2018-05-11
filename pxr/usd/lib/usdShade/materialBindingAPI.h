@@ -162,6 +162,12 @@ public:
     /// UsdPrim.
     static const bool IsTyped = false;
 
+    /// Compile-time constant indicating whether or not this class represents an 
+    /// applied API schema, i.e. an API schema that has to be applied to a prim
+    /// with a call to auto-generated Apply() method before any schema 
+    /// properties are authored.
+    static const bool IsApplied = true;
+    
     /// Compile-time constant indicating whether or not this class represents a 
     /// multiple-apply API schema. Mutiple-apply API schemas can be applied 
     /// to the same prim multiple times with different instance names. 
@@ -236,6 +242,11 @@ private:
     // override SchemaBase virtuals.
     USDSHADE_API
     virtual const TfType &_GetTfType() const;
+
+    // This override returns true since UsdShadeMaterialBindingAPI is an 
+    // applied API schema.
+    USDSHADE_API
+    virtual bool _IsAppliedAPISchema() const override;
 
 public:
     // ===================================================================== //
@@ -637,7 +648,7 @@ public:
     /// binding resolution for a tree of prims.
     using CollectionQueryCache = 
         tbb::concurrent_unordered_map<SdfPath, 
-            std::shared_ptr<UsdCollectionAPI::MembershipQuery>, SdfPath::Hash>;
+            std::unique_ptr<UsdCollectionAPI::MembershipQuery>, SdfPath::Hash>;
 
     /// Alias for a unique_ptr to a DirectBinding object.
     using DirectBindingPtr = std::unique_ptr<DirectBinding>;
@@ -670,7 +681,7 @@ public:
     /// bindings to avoid redundant computations for the shared ancestor 
     /// prims and to re-use the computed results for leaf prims.
     using BindingsCache = tbb::concurrent_unordered_map<SdfPath,
-            std::shared_ptr<BindingsAtPrim>, SdfPath::Hash>;
+            std::unique_ptr<BindingsAtPrim>, SdfPath::Hash>;
 
     /// \overload
     /// Computes the resolved bound material for this prim, for the given 

@@ -92,7 +92,7 @@ public:
     virtual ~UsdImagingDelegate();
 
     USDIMAGING_API
-    virtual void Sync(HdSyncRequestVector* request);
+    virtual void Sync(HdSyncRequestVector* request) override;
 
     // Helper for clients who don't want to drive the sync behavior (unit
     // tests). Note this method is not virtual.
@@ -102,7 +102,7 @@ public:
     /// Opportunity for the delegate to clean itself up after
     /// performing parrellel work during sync phase
     USDIMAGING_API
-    virtual void PostSyncCleanup();
+    virtual void PostSyncCleanup() override;
 
     // TODO: Populate implies that multiple stages can be loaded at once, though
     // this is not currently supported.
@@ -151,6 +151,10 @@ public:
 
     /// Returns the current time.
     UsdTimeCode GetTime() const { return _time; }
+
+    /// Apply a relative offset to the current time.
+    /// This has no effect in the case of the default USD timecode.
+    UsdTimeCode GetTimeWithOffset(float offset) const;
 
     /// Returns the refinement level that is used when prims have no explicit
     /// level set.
@@ -210,14 +214,6 @@ public:
     /// Returns the root transform for the entire delegate.
     const GfMatrix4d &GetRootTransform() const { return _rootXf; }
 
-    /// Sets a compensating root transformation for the entire delegate
-    /// which cancels out the effects of any transformation accumulated
-    /// from the root from which the delegate was populated to the descendent
-    /// at /a usdPath.
-    USDIMAGING_API
-    void SetRootCompensation(SdfPath const &usdPath);
-    const SdfPath & GetRootCompensation() const { return _compensationPath; }
-
     /// Sets the root visibility for the entire delegate, which is applied to
     /// all render prims generated. Settting this value will immediately
     /// invalidate existing rprim visibility.
@@ -252,95 +248,103 @@ public:
     void SetDisplayGuides(bool displayGuides);
     bool GetDisplayGuides() const { return _displayGuides; }
 
+    /// Returns whether draw modes are enabled.
+    USDIMAGING_API
+    void SetUsdDrawModesEnabled(bool enableUsdDrawModes);
+    bool GetUsdDrawModesEnabled() const { return _enableUsdDrawModes; }
+
     // ---------------------------------------------------------------------- //
     // See HdSceneDelegate for documentation of the following virtual methods.
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
+    virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName) override;
     USDIMAGING_API
-    virtual HdMeshTopology GetMeshTopology(SdfPath const& id);
+    virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     USDIMAGING_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) override;
     typedef PxOsdSubdivTags SubdivTags;
 
     // XXX: animated subdiv tags are not currently supported
     // XXX: subdiv tags currently feteched on demand 
     USDIMAGING_API
-    virtual SubdivTags GetSubdivTags(SdfPath const& id);
+    virtual SubdivTags GetSubdivTags(SdfPath const& id) override;
 
     USDIMAGING_API
-    virtual GfRange3d GetExtent(SdfPath const & id);
+    virtual GfRange3d GetExtent(SdfPath const & id) override;
     USDIMAGING_API
-    virtual GfMatrix4d GetTransform(SdfPath const & id);
+    virtual GfMatrix4d GetTransform(SdfPath const & id) override;
     USDIMAGING_API
-    virtual bool GetVisible(SdfPath const & id);
+    virtual bool GetVisible(SdfPath const & id) override;
     USDIMAGING_API
-    virtual GfVec4f GetColorAndOpacity(SdfPath const & id);
+    virtual bool GetDoubleSided(SdfPath const & id) override;
     USDIMAGING_API
-    virtual bool GetDoubleSided(SdfPath const & id);
-    USDIMAGING_API
-    virtual HdCullStyle GetCullStyle(SdfPath const &id);
+    virtual HdCullStyle GetCullStyle(SdfPath const &id) override;
 
     /// Gets the explicit refinement level for the given prim, if no level is
     /// explicitly set, the fallback is returned; also see 
     /// GetRefineLevelFallback().
     USDIMAGING_API
-    virtual int GetRefineLevel(SdfPath const& id);
-
-    /// Returns the ranges of instances.
-    USDIMAGING_API
-    virtual VtVec2iArray GetInstances(SdfPath const& id);
+    virtual int GetRefineLevel(SdfPath const& id) override;
 
     USDIMAGING_API
-    virtual VtValue Get(SdfPath const& id, TfToken const& key);
+    virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
-    virtual TfToken GetReprName(SdfPath const &id);
+    virtual TfToken GetReprName(SdfPath const &id) override;
     USDIMAGING_API
-    virtual TfTokenVector GetPrimVarVertexNames(SdfPath const& id);
-    USDIMAGING_API
-    virtual TfTokenVector GetPrimVarVaryingNames(SdfPath const& id);
-    USDIMAGING_API
-    virtual TfTokenVector GetPrimVarFacevaryingNames(SdfPath const& id);
-    USDIMAGING_API
-    virtual TfTokenVector GetPrimVarUniformNames(SdfPath const& id);
-    USDIMAGING_API
-    virtual TfTokenVector GetPrimVarConstantNames(SdfPath const& id);
-    USDIMAGING_API
-    virtual TfTokenVector GetPrimVarInstanceNames(SdfPath const& id);
+    virtual HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(SdfPath const& id,
+                          HdInterpolation interpolation) override;
     USDIMAGING_API
     virtual VtIntArray GetInstanceIndices(SdfPath const &instancerId,
-                                          SdfPath const &prototypeId);
+                                          SdfPath const &prototypeId) override;
     USDIMAGING_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId,
-                                             SdfPath const &prototypeId);
+                                             SdfPath const &prototypeId) override;
+
+    // Motion samples
+    USDIMAGING_API
+    virtual size_t
+    SampleTransform(SdfPath const & id, size_t maxNumSamples,
+                    float *times, GfMatrix4d *samples) override;
+    USDIMAGING_API
+    virtual size_t
+    SampleInstancerTransform(SdfPath const &instancerId,
+                             SdfPath const &prototypeId,
+                             size_t maxSampleCount, float *times,
+                             GfMatrix4d *samples) override;
+    USDIMAGING_API
+    virtual size_t
+    SamplePrimvar(SdfPath const& id, TfToken const& key,
+                  size_t maxNumSamples, float *times,
+                  VtValue *samples) override;
 
     // Material Support
     USDIMAGING_API
-    virtual std::string GetSurfaceShaderSource(SdfPath const &id);
+    virtual std::string GetSurfaceShaderSource(SdfPath const &id) override;
     USDIMAGING_API
-    virtual std::string GetDisplacementShaderSource(SdfPath const &id);
+    virtual std::string GetDisplacementShaderSource(SdfPath const &id) override;
     USDIMAGING_API
     virtual VtValue GetMaterialParamValue(SdfPath const &id,
-                                          TfToken const &paramName);
+                                          TfToken const &paramName) override;
     USDIMAGING_API
-    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id);
+    virtual HdMaterialParamVector GetMaterialParams(SdfPath const &id) override;
 
     // Texture Support
     USDIMAGING_API
-    HdTextureResource::ID GetTextureResourceID(SdfPath const &id);
+    HdTextureResource::ID GetTextureResourceID(SdfPath const &id) override;
     USDIMAGING_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id);
+    virtual HdTextureResourceSharedPtr GetTextureResource(SdfPath const &id) override;
 
     // Light Support
     USDIMAGING_API
     virtual VtValue GetLightParamValue(SdfPath const &id, 
-                                       TfToken const &paramName);
+                                       TfToken const &paramName) override;
 
     // Material Support
     USDIMAGING_API 
-    virtual VtValue GetMaterialResource(SdfPath const &materialId);
+    virtual VtValue GetMaterialResource(SdfPath const &materialId) override;
     USDIMAGING_API
-    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId);
+    virtual TfTokenVector GetMaterialPrimvars(SdfPath const &materialId) override;
 
     // Instance path resolution
 
@@ -372,10 +376,11 @@ public:
                                             int instanceIndex,
                                             int *absoluteInstanceIndex,
                                             SdfPath *rprimPath=NULL,
-                                            SdfPathVector *instanceContext=NULL);
+                                            SdfPathVector *instanceContext=NULL) override;
 
 public:
     // Converts a UsdStage path to a path in the render index.
+    USDIMAGING_API
     SdfPath GetPathForIndex(SdfPath const& usdPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();
@@ -389,6 +394,12 @@ public:
         return usdPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), delegateID);
     }
 
+    /// Convert the given Hydra ID to a UsdImaging cache path,
+    /// by stripping the scene delegate prefix.
+    ///
+    /// The UsdImaging cache path is the same as a USD prim path,
+    /// except for instanced prims, which get a name-mangled encoding.
+    USDIMAGING_API
     SdfPath GetPathForUsd(SdfPath const& indexPath) {
         // For pure/plain usdImaging, there is no prefix to replace
         SdfPath const &delegateID = GetDelegateID();
@@ -431,6 +442,8 @@ private:
         return true;
     }
 
+    void _AddTask(UsdImagingDelegate::_Worker *worker, SdfPath const& usdPath);
+
     // ---------------------------------------------------------------------- //
     // Draw mode support
     // ---------------------------------------------------------------------- //
@@ -447,7 +460,13 @@ private:
 
     // The lightest-weight update, it does fine-grained invalidation of
     // individual properties at the given path (prim or property).
-    void _RefreshObject(SdfPath const& path, UsdImagingIndexProxy* proxy);
+    //
+    // If \p path is a prim path, changedPrimInfoFields will be populated
+    // with the list of scene description fields that caused this prim to
+    // be refreshed.
+    void _RefreshObject(SdfPath const& path, 
+                        TfTokenVector const& changedPrimInfoFields,
+                        UsdImagingIndexProxy* proxy);
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
@@ -496,10 +515,6 @@ private:
     // Execute all variability update tasks that have been added to the given
     // worker.
     static void _ExecuteWorkForVariabilityUpdate(_Worker* worker);
-
-    bool _ComputeRootCompensation(SdfPath const & usdPath);
-    void _UpdateRootTransform();
-    GfMatrix4d _GetTransform(UsdPrim prim) const;
 
     /// Returns true if the given prim is visible, taking into account inherited
     /// visibility values. Inherited values are strongest, Usd has no notion of
@@ -592,6 +607,9 @@ private:
     /// The current time from which the delegate will read data.
     UsdTimeCode _time;
 
+    /// The requested time offsets for time samples.
+    std::vector<float> _timeSampleOffsets;
+
     int _refineLevelFallback;
     TfToken _reprFallback;
     HdCullStyle _cullStyleFallback;
@@ -599,12 +617,17 @@ private:
     // Change processing
     TfNotice::Key _objectsChangedNoticeKey;
     SdfPathVector _pathsToResync;
-    SdfPathVector _pathsToUpdate;
+
+    // Map from path of Usd object to update to list of changed scene 
+    // description fields for that object. This list of fields is only
+    // populated for prim paths.
+    typedef std::unordered_map<SdfPath, TfTokenVector, SdfPath::Hash> 
+        _PathsToUpdateMap;
+    _PathsToUpdateMap _pathsToUpdate;
 
     UsdImaging_XformCache _xformCache;
-    UsdImaging_MaterialBindingSupplementalCache _matBindingSupplCache;
+    UsdImaging_MaterialBindingImplData _materialBindingImplData;
     UsdImaging_MaterialBindingCache _materialBindingCache;
-    UsdImaging_MaterialNetworkBindingCache _materialNetworkBindingCache;
     UsdImaging_VisCache _visCache;
     UsdImaging_DrawModeCache _drawModeCache;
 
@@ -613,6 +636,7 @@ private:
 
     // Display guides rendering
     bool _displayGuides;
+    bool _enableUsdDrawModes;
 
     const bool _hasDrawModeAdapter;
 
@@ -620,173 +644,6 @@ private:
     UsdImagingDelegate(UsdImagingDelegate const &) = delete;
     UsdImagingDelegate &operator =(UsdImagingDelegate const &) = delete;
 };
-
-/// \class UsdImagingIndexProxy
-///
-/// This proxy class exposes a subset of the private Delegate API to
-/// PrimAdapters.
-///
-class UsdImagingIndexProxy {
-public: 
-    /// Adds a new prim to be tracked to the delegate.
-    /// "cachePath" is the index path minus the delegate prefix (i.e. the result
-    /// of GetPathForUsd()).
-    /// usdPrim reference the prim to track in usd.
-    /// If adapter is null, AddPrimInfo will assign an appropriate adapter based
-    /// off the type of the UsdPrim.  However, this can be overridden
-    /// (for instancing), by specifying a specific adapter.
-    ///
-    /// While the cachePath could be obtain from the usdPrim, in the case of
-    /// instancing these may differ, so their in an option to specify a specific
-    /// cachePath.
-    ///
-    /// Also for instancing, the function allows the same cachePath to be added
-    /// twice without causing an error.  However, the UsdPrim and Adpater have
-    /// to be the same as what is already inserted in the tracking.
-    USDIMAGING_API
-    void AddPrimInfo(SdfPath const& cachePath,
-                     UsdPrim const& usdPrim,
-                     UsdImagingPrimAdapterSharedPtr const& adapter);
-
-    USDIMAGING_API
-    void InsertRprim(TfToken const& primType,
-                     SdfPath const& cachePath,
-                     SdfPath const& parentPath,
-                     UsdPrim const& usdPrim,
-                     UsdImagingPrimAdapterSharedPtr adapter =
-                        UsdImagingPrimAdapterSharedPtr());
-
-    USDIMAGING_API
-    void InsertSprim(TfToken const& primType,
-                     SdfPath const& cachePath,
-                     UsdPrim const& usdPrim,
-                     UsdImagingPrimAdapterSharedPtr adapter =
-                        UsdImagingPrimAdapterSharedPtr());
-
-    USDIMAGING_API
-    void InsertBprim(TfToken const& primType,
-                     SdfPath const& cachePath,
-                     UsdPrim const& usdPrim,
-                     UsdImagingPrimAdapterSharedPtr adapter =
-                        UsdImagingPrimAdapterSharedPtr());
-
-    // Inserts an instancer into the HdRenderIndex and schedules it for updates
-    // from the delegate.
-    USDIMAGING_API
-    void InsertInstancer(SdfPath const& cachePath,
-                         SdfPath const& parentPath,
-                         UsdPrim const& usdPrim,
-                         UsdImagingPrimAdapterSharedPtr adapter =
-                            UsdImagingPrimAdapterSharedPtr());
-
-    // Refresh the prim at the specified render index path.
-    USDIMAGING_API
-    void Refresh(SdfPath const& cachePath);
-
-    // Refresh the HdInstancer at the specified render index path.
-    USDIMAGING_API
-    void RefreshInstancer(SdfPath const& instancerPath);
-
-    //
-    // All removals are deferred to avoid surprises during change processing.
-    //
-    
-    // Designates that the given prim should no longer be tracked and thus
-    // removed from the tracking structure.
-    void RemovePrimInfo(SdfPath const& cachePath) {
-        _primInfoToRemove.push_back(cachePath);
-    }
-
-    // Removes the Rprim at the specified cache path.
-    void RemoveRprim(SdfPath const& cachePath) { 
-        _rprimsToRemove.push_back(cachePath);
-    }
-
-     // Removes the Sprim at the specified cache path.
-     void RemoveSprim(TfToken const& primType, SdfPath const& cachePath) {
-         _TypeAndPath primToRemove = {primType, cachePath};
-         _sprimsToRemove.push_back(primToRemove);
-     }
-
-     // Removes the Bprim at the specified render index path.
-     void RemoveBprim(TfToken const& primType, SdfPath const& cachePath) {
-         _TypeAndPath primToRemove = {primType, cachePath};
-         _bprimsToRemove.push_back(primToRemove);
-     }
-
-
-    // Removes the HdInstancer at the specified render index path.
-    void RemoveInstancer(SdfPath const& instancerPath) { 
-        _instancersToRemove.push_back(instancerPath);
-    }
-
-    USDIMAGING_API
-    bool HasRprim(SdfPath const &cachePath);
-
-    USDIMAGING_API
-    void MarkRprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
-
-    USDIMAGING_API
-    void MarkSprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
-
-    USDIMAGING_API
-    void MarkBprimDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
-
-    USDIMAGING_API
-    void MarkInstancerDirty(SdfPath const& cachePath, HdDirtyBits dirtyBits);
-
-    USDIMAGING_API
-    bool IsRprimTypeSupported(TfToken const& typeId) const;
-
-    USDIMAGING_API
-    bool IsSprimTypeSupported(TfToken const& typeId) const;
-
-    USDIMAGING_API
-    bool IsBprimTypeSupported(TfToken const& typeId) const;
-
-    // Check if the given path has been populated yet.
-    USDIMAGING_API
-    bool IsPopulated(SdfPath const& cachePath) const;
-
-    // Recursively repopulate the specified usdPath into the render index.
-    USDIMAGING_API
-    void Repopulate(SdfPath const& usdPath);
-
-    USDIMAGING_API
-    UsdImagingPrimAdapterSharedPtr GetMaterialAdapter(
-        UsdPrim const& materialPrim);
-
-private:
-    friend class UsdImagingDelegate;
-    UsdImagingIndexProxy(UsdImagingDelegate* delegate,
-                            UsdImagingDelegate::_Worker* worker) 
-        : _delegate(delegate)
-        , _worker(worker)
-    {}
-
-    SdfPathVector const& _GetPathsToRepopulate() { return _pathsToRepopulate; }
-    UsdImagingDelegate::_Worker* _GetWorker() { return _worker; }
-    void _ProcessRemovals();
-
-    void _AddTask(SdfPath const& usdPath);   
-
-    struct _TypeAndPath {
-        TfToken primType;
-        SdfPath cachePath;
-    };
-
-    typedef std::vector<_TypeAndPath> _TypeAndPathVector;
-
-    UsdImagingDelegate* _delegate;
-    UsdImagingDelegate::_Worker* _worker;
-    SdfPathVector _pathsToRepopulate;
-    SdfPathVector _rprimsToRemove;
-    _TypeAndPathVector _sprimsToRemove;
-    _TypeAndPathVector _bprimsToRemove;
-    SdfPathVector _instancersToRemove;
-    SdfPathVector _primInfoToRemove;
-};
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

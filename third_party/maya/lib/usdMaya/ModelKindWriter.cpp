@@ -77,7 +77,7 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
     }
 
     if (primWriter->exportsReferences()) {
-        _pathsThatMayHaveKind.push_back(prim.GetPath());
+        TF_VERIFY(primWriter->getAllAuthoredUsdPaths(&_pathsThatMayHaveKind));
     }
 }
 
@@ -236,7 +236,7 @@ PxrUsdMaya_ModelKindWriter::_FixUpPrimKinds(
                 UsdModelAPI ancestorModel(ancestorPrim);
                 TfToken  kind;
                 
-                if (!usdModel.GetKind(&kind) || 
+                if (!ancestorModel.GetKind(&kind) || 
                     !KindRegistry::IsA(kind, KindTokens->group)) {
                     pathsToBeGroup.insert(ancestorPaths[i]);
                 }

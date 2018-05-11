@@ -23,13 +23,13 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRangeGL.h"
 #include "pxr/imaging/hdSt/bufferResourceGL.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
-#include "pxr/imaging/hdSt/renderContextCaps.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
@@ -450,9 +450,9 @@ HdSt_QuadrangulateComputationGPU::Execute(
         boost::static_pointer_cast<HdStBufferArrayRangeGL> (range);
 
     // buffer resources for GPU computation
-    HdBufferResourceSharedPtr primVar_ = range_->GetResource(_name);
-    HdStBufferResourceGLSharedPtr primVar =
-        boost::static_pointer_cast<HdStBufferResourceGL> (primVar_);
+    HdBufferResourceSharedPtr primvar_ = range_->GetResource(_name);
+    HdStBufferResourceGLSharedPtr primvar =
+        boost::static_pointer_cast<HdStBufferResourceGL> (primvar_);
 
     HdStBufferArrayRangeGLSharedPtr quadrangulateTableRange_ =
         boost::static_pointer_cast<HdStBufferArrayRangeGL> (quadrangulateTableRange);
@@ -468,8 +468,8 @@ HdSt_QuadrangulateComputationGPU::Execute(
         int quadInfoStride;
         int quadInfoOffset;
         int maxNumVert;
-        int primVarOffset;
-        int primVarStride;
+        int primvarOffset;
+        int primvarStride;
         int numComponents;
     } uniform;
 
@@ -487,15 +487,15 @@ HdSt_QuadrangulateComputationGPU::Execute(
     // i.e. it can't handle an interleaved array which interleaves
     // float/double, float/int etc.
     const size_t componentSize =
-        HdDataSizeOfType(HdGetComponentType(primVar->GetTupleType().type));
-    uniform.primVarOffset = primVar->GetOffset() / componentSize;
-    uniform.primVarStride = primVar->GetStride() / componentSize;
+        HdDataSizeOfType(HdGetComponentType(primvar->GetTupleType().type));
+    uniform.primvarOffset = primvar->GetOffset() / componentSize;
+    uniform.primvarStride = primvar->GetStride() / componentSize;
     uniform.numComponents =
-        HdGetComponentCount(primVar->GetTupleType().type);
+        HdGetComponentCount(primvar->GetTupleType().type);
 
     // transfer uniform buffer
     GLuint ubo = computeProgram->GetGlobalUniformBuffer().GetId();
-    HdStRenderContextCaps const &caps = HdStRenderContextCaps::GetInstance();
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     // XXX: workaround for 319.xx driver bug of glNamedBufferDataEXT on UBO
     // XXX: move this workaround to renderContextCaps
     if (false && caps.directStateAccessEnabled) {
@@ -507,7 +507,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
     }
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, primVar->GetId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, primvar->GetId());
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, quadrangulateTable->GetId());
 
     // dispatch compute kernel

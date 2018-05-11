@@ -55,6 +55,13 @@ _CreateRadiusAttr(UsdLuxSphereLight &self,
     return self.CreateRadiusAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateTreatAsPointAttr(UsdLuxSphereLight &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTreatAsPointAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -101,6 +108,13 @@ void wrapUsdLuxSphereLight()
              &This::GetRadiusAttr)
         .def("CreateRadiusAttr",
              &_CreateRadiusAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTreatAsPointAttr",
+             &This::GetTreatAsPointAttr)
+        .def("CreateTreatAsPointAttr",
+             &_CreateTreatAsPointAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

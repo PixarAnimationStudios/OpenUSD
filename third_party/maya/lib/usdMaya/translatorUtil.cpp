@@ -81,7 +81,21 @@ PxrUsdMayaTranslatorUtil::CreateNode(
         MStatus* status,
         MObject* mayaNodeObj)
 {
-    if (!CreateNode(MString(usdPrim.GetName().GetText()),
+    return CreateNode(usdPrim.GetPath(), nodeTypeName, parentNode,
+                      context, status, mayaNodeObj);
+}
+
+/* static */
+bool
+PxrUsdMayaTranslatorUtil::CreateNode(
+        const SdfPath& path,
+        const MString& nodeTypeName,
+        MObject& parentNode,
+        PxrUsdMayaPrimReaderContext* context,
+        MStatus* status,
+        MObject* mayaNodeObj)
+{
+    if (!CreateNode(MString(path.GetName().c_str(), path.GetName().size()),
                        nodeTypeName,
                        parentNode,
                        status,
@@ -90,7 +104,7 @@ PxrUsdMayaTranslatorUtil::CreateNode(
     }
 
     if (context) {
-        context->RegisterNewMayaNode(usdPrim.GetPath().GetString(), *mayaNodeObj);
+        context->RegisterNewMayaNode(path.GetString(), *mayaNodeObj);
     }
 
     return true;

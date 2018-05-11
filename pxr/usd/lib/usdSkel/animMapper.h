@@ -74,7 +74,7 @@ public:
         static_assert(!std::is_pointer<T>::value, "");
         static_assert(SdfValueTypeTraits<T>::IsValueType, "");
         static_assert(!VtIsArray<T>::value, "");
-        return _Remap(source, target, elementSize);
+        return _Remap(source, target, elementSize, defaultValue);
     }
 
     /// Type-erased remapping of data from \p source into \p target.
@@ -113,6 +113,11 @@ public:
     /// No source elements of a null map are mapped to the target.
     USDSKEL_API
     bool IsNull() const;
+
+    /// Get the size of the output array that this mapper expects to
+    /// map data into.
+    USDSKEL_API
+    size_t size() const { return _targetSize; }
 
     bool operator==(const UsdSkelAnimMapper& o) const;
 

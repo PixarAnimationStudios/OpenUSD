@@ -1,6 +1,10 @@
 #usda 1.0
 (
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+    customLayerData = {
+        string[] appliedAPISchemas = ["MaterialBindingAPI"]
+        string[] multipleApplyAPISchemas = []
+    }
 )
 
 class NodeGraph "NodeGraph" (
@@ -74,6 +78,21 @@ class Material "Material" (
     """
 )
 {
+    token outputs:displacement (
+        displayGroup = "Outputs"
+        doc = '''Represents the universal "displacement" output terminal of a 
+        material.'''
+    )
+    token outputs:surface (
+        displayGroup = "Outputs"
+        doc = '''Represents the universal "surface" output terminal of a
+        material.'''
+    )
+    token outputs:volume (
+        displayGroup = "Outputs"
+        doc = '''Represents the universal "volume" output terminal of a
+        material.'''
+    )
 }
 
 class Shader "Shader" (

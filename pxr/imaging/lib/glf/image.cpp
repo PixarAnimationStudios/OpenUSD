@@ -48,12 +48,13 @@ GlfImage::IsSupportedImageFile(std::string const & filename)
 
 /* static */
 GlfImageSharedPtr
-GlfImage::OpenForReading(std::string const & filename, int subimage)
+GlfImage::OpenForReading(std::string const & filename, int subimage,
+                         bool suppressErrors)
 {
     GlfImageRegistry & registry = GlfImageRegistry::GetInstance();
 
     GlfImageSharedPtr image = registry._ConstructImage(filename);
-    if (!image || !image->_OpenForReading(filename, subimage)) {
+    if (!image || !image->_OpenForReading(filename, subimage, suppressErrors)) {
         return GlfImageSharedPtr();
     }
 

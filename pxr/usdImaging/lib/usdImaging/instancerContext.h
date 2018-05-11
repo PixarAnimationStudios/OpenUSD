@@ -55,6 +55,9 @@ public:
     /// being processed.
     SdfPath instanceMaterialId;
 
+    /// The draw mode bound to the instance prim being processed.
+    TfToken instanceDrawMode;
+
     /// The instancer's prim Adapter. Useful when an adapter is needed, but the
     /// default adapter may be overridden for the sake of instancing.
     UsdImagingPrimAdapterSharedPtr instancerAdapter;

@@ -51,6 +51,8 @@
 #include "pxr/usd/usdLux/shadowAPI.h"
 #include "pxr/usd/usdLux/shapingAPI.h"
 #include "pxr/usd/usdLux/sphereLight.h"
+#include "pxr/usd/usdRi/pxrAovLight.h"
+#include "pxr/usd/usdRi/pxrEnvDayLight.h"
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
@@ -70,9 +72,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // RenderMan for Maya light types.
+    ((AovLightMayaTypeName, "PxrAovLight"))
     ((DiskLightMayaTypeName, "PxrDiskLight"))
     ((DistantLightMayaTypeName, "PxrDistantLight"))
     ((DomeLightMayaTypeName, "PxrDomeLight"))
+    ((EnvDayLightMayaTypeName, "PxrEnvDayLight"))
     ((GeometryLightMayaTypeName, "PxrMeshLight"))
     ((RectLightMayaTypeName, "PxrRectLight"))
     ((SphereLightMayaTypeName, "PxrSphereLight"))
@@ -90,6 +94,30 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Type-specific Light plug names.
     ((DistantLightAnglePlugName, "angleExtent"))
     ((TextureFilePlugName, "lightColorMap"))
+
+    // PxrAovLight plug names.
+    ((AovNamePlugName, "aovName"))
+    ((InPrimaryHitPlugName, "inPrimaryHit"))
+    ((InReflectionPlugName, "inReflection"))
+    ((InRefractionPlugName, "inRefraction"))
+    ((InvertPlugName, "invert"))
+    ((OnVolumeBoundariesPlugName, "onVolumeBoundaries"))
+    ((UseColorPlugName, "useColor"))
+    ((UseThroughputPlugName, "useThroughput"))
+
+    // PxrEnvDayLight plug names.
+    ((DayPlugName, "day"))
+    ((HazinessPlugName, "haziness"))
+    ((HourPlugName, "hour"))
+    ((LatitudePlugName, "latitude"))
+    ((LongitudePlugName, "longitude"))
+    ((MonthPlugName, "month"))
+    ((SkyTintPlugName, "skyTint"))
+    ((SunDirectionPlugName, "sunDirection"))
+    ((SunSizePlugName, "sunSize"))
+    ((SunTintPlugName, "sunTint"))
+    ((YearPlugName, "year"))
+    ((ZonePlugName, "zone"))
 
     // ShapingAPI plug names.
     ((FocusPlugName, "emissionFocus"))
@@ -597,13 +625,714 @@ _ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 }
 
 
+// AOV LIGHT
+static
+bool
+_WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+{
+    UsdRiPxrAovLight aovLightSchema(lightSchema);
+    if (!aovLightSchema) {
+        return false;
+    }
+
+    MStatus status;
+
+    // AOV Name.
+    MPlug aovNamePlug =
+        depFn.findPlug(_tokens->AovNamePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(aovNamePlug)) {
+        MString mayaAovName;
+        status = aovNamePlug.getValue(mayaAovName);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateAovNameAttr(VtValue(mayaAovName.asChar()), true);
+    }
+
+    // In Primary Hit.
+    MPlug inPrimaryHitPlug =
+        depFn.findPlug(_tokens->InPrimaryHitPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(inPrimaryHitPlug)) {
+        bool mayaInPrimaryHit = true;
+        status = inPrimaryHitPlug.getValue(mayaInPrimaryHit);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateInPrimaryHitAttr(VtValue(mayaInPrimaryHit), true);
+    }
+
+    // In Reflection.
+    MPlug inReflectionPlug =
+        depFn.findPlug(_tokens->InReflectionPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(inReflectionPlug)) {
+        bool mayaInReflection = true;
+        status = inReflectionPlug.getValue(mayaInReflection);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateInReflectionAttr(VtValue(mayaInReflection), true);
+    }
+
+    // In Refraction.
+    MPlug inRefractionPlug =
+        depFn.findPlug(_tokens->InRefractionPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(inRefractionPlug)) {
+        bool mayaInRefraction = true;
+        status = inRefractionPlug.getValue(mayaInRefraction);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateInRefractionAttr(VtValue(mayaInRefraction), true);
+    }
+
+    // Invert.
+    MPlug invertPlug =
+        depFn.findPlug(_tokens->InvertPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(invertPlug)) {
+        bool mayaInvert = true;
+        status = invertPlug.getValue(mayaInvert);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateInvertAttr(VtValue(mayaInvert), true);
+    }
+
+    // On Volume Boundaries.
+    MPlug onVolumeBoundariesPlug =
+        depFn.findPlug(_tokens->OnVolumeBoundariesPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(onVolumeBoundariesPlug)) {
+        bool mayaOnVolumeBoundaries = true;
+        status = onVolumeBoundariesPlug.getValue(mayaOnVolumeBoundaries);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateOnVolumeBoundariesAttr(
+            VtValue(mayaOnVolumeBoundaries),
+            true);
+    }
+
+    // Use Color.
+    MPlug useColorPlug =
+        depFn.findPlug(_tokens->UseColorPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(useColorPlug)) {
+        bool mayaUseColor = true;
+        status = useColorPlug.getValue(mayaUseColor);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateUseColorAttr(VtValue(mayaUseColor), true);
+    }
+
+    // Use Throughput.
+    MPlug useThroughputPlug =
+        depFn.findPlug(_tokens->UseThroughputPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(useThroughputPlug)) {
+        bool mayaUseThroughput = true;
+        status = useThroughputPlug.getValue(mayaUseThroughput);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        aovLightSchema.CreateUseThroughputAttr(VtValue(mayaUseThroughput),
+                                               true);
+    }
+
+    return true;
+}
+
+static
+bool
+_ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+{
+    const UsdRiPxrAovLight aovLightSchema(lightSchema);
+    if (!aovLightSchema) {
+        return false;
+    }
+
+    MStatus status;
+
+    // AOV Name.
+    MPlug lightAovNamePlug =
+        depFn.findPlug(_tokens->AovNamePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    std::string lightAovName;
+    aovLightSchema.GetAovNameAttr().Get(&lightAovName);
+
+    status = lightAovNamePlug.setValue(MString(lightAovName.c_str()));
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // In Primary Hit.
+    MPlug lightInPrimaryHitPlug =
+        depFn.findPlug(_tokens->InPrimaryHitPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightInPrimaryHit = true;
+    aovLightSchema.GetInPrimaryHitAttr().Get(&lightInPrimaryHit);
+
+    status = lightInPrimaryHitPlug.setValue(lightInPrimaryHit);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // In Reflection.
+    MPlug lightInReflectionPlug =
+        depFn.findPlug(_tokens->InReflectionPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightInReflection = true;
+    aovLightSchema.GetInReflectionAttr().Get(&lightInReflection);
+
+    status = lightInReflectionPlug.setValue(lightInReflection);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // In Refraction.
+    MPlug lightInRefractionPlug =
+        depFn.findPlug(_tokens->InRefractionPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightInRefraction = true;
+    aovLightSchema.GetInRefractionAttr().Get(&lightInRefraction);
+
+    status = lightInRefractionPlug.setValue(lightInRefraction);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Invert.
+    MPlug lightInvertPlug =
+        depFn.findPlug(_tokens->InvertPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightInvert = true;
+    aovLightSchema.GetInvertAttr().Get(&lightInvert);
+
+    status = lightInvertPlug.setValue(lightInvert);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // On Volume Boundaries.
+    MPlug lightOnVolumeBoundariesPlug =
+        depFn.findPlug(_tokens->OnVolumeBoundariesPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightOnVolumeBoundaries = true;
+    aovLightSchema.GetOnVolumeBoundariesAttr().Get(&lightOnVolumeBoundaries);
+
+    status = lightOnVolumeBoundariesPlug.setValue(lightOnVolumeBoundaries);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Use Color.
+    MPlug lightUseColorPlug =
+        depFn.findPlug(_tokens->UseColorPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightUseColor = true;
+    aovLightSchema.GetUseColorAttr().Get(&lightUseColor);
+
+    status = lightUseColorPlug.setValue(lightUseColor);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Use Throughput.
+    MPlug lightUseThroughputPlug =
+        depFn.findPlug(_tokens->UseThroughputPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    bool lightUseThroughput = true;
+    aovLightSchema.GetUseThroughputAttr().Get(&lightUseThroughput);
+
+    status = lightUseThroughputPlug.setValue(lightUseThroughput);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    return true;
+}
+
+
+// ENVDAY LIGHT
+static
+bool
+_WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+{
+    UsdRiPxrEnvDayLight envDayLightSchema(lightSchema);
+    if (!envDayLightSchema) {
+        return false;
+    }
+
+    MStatus status;
+
+    // Day.
+    MPlug dayPlug = depFn.findPlug(_tokens->DayPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(dayPlug)) {
+        int mayaDay;
+        status = dayPlug.getValue(mayaDay);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateDayAttr(VtValue(mayaDay), true);
+    }
+
+    // Haziness.
+    MPlug hazinessPlug =
+        depFn.findPlug(_tokens->HazinessPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(hazinessPlug)) {
+        float mayaHaziness;
+        status = hazinessPlug.getValue(mayaHaziness);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateHazinessAttr(VtValue(mayaHaziness), true);
+    }
+
+    // Hour.
+    MPlug hourPlug = depFn.findPlug(_tokens->HourPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(hourPlug)) {
+        float mayaHour;
+        status = hourPlug.getValue(mayaHour);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateHourAttr(VtValue(mayaHour), true);
+    }
+
+    // Latitude.
+    MPlug latitudePlug =
+        depFn.findPlug(_tokens->LatitudePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(latitudePlug)) {
+        float mayaLatitude;
+        status = latitudePlug.getValue(mayaLatitude);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateLatitudeAttr(VtValue(mayaLatitude), true);
+    }
+
+    // Longitude.
+    MPlug longitudePlug =
+        depFn.findPlug(_tokens->LongitudePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(longitudePlug)) {
+        float mayaLongitude;
+        status = longitudePlug.getValue(mayaLongitude);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateLongitudeAttr(VtValue(mayaLongitude), true);
+    }
+
+    // Month.
+    MPlug monthPlug =
+        depFn.findPlug(_tokens->MonthPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(monthPlug)) {
+        int mayaMonth;
+        status = monthPlug.getValue(mayaMonth);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateMonthAttr(VtValue(mayaMonth), true);
+    }
+
+    // Sky tint.
+    MPlug skyTintPlug =
+        depFn.findPlug(_tokens->SkyTintPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(skyTintPlug)) {
+        const GfVec3f mayaSkyTint(skyTintPlug.child(0).asFloat(),
+                                  skyTintPlug.child(1).asFloat(),
+                                  skyTintPlug.child(2).asFloat());
+
+        envDayLightSchema.CreateSkyTintAttr(VtValue(mayaSkyTint), true);
+    }
+
+    // Sun direction.
+    MPlug sunDirectionPlug =
+        depFn.findPlug(_tokens->SunDirectionPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(sunDirectionPlug)) {
+        const GfVec3f mayaSunDirection(sunDirectionPlug.child(0).asFloat(),
+                                       sunDirectionPlug.child(1).asFloat(),
+                                       sunDirectionPlug.child(2).asFloat());
+
+        envDayLightSchema.CreateSunDirectionAttr(VtValue(mayaSunDirection), true);
+    }
+
+    // Sun size.
+    MPlug sunSizePlug =
+        depFn.findPlug(_tokens->SunSizePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(sunSizePlug)) {
+        float mayaSunSize;
+        status = sunSizePlug.getValue(mayaSunSize);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateSunSizeAttr(VtValue(mayaSunSize), true);
+    }
+
+    // Sun tint.
+    MPlug sunTintPlug =
+        depFn.findPlug(_tokens->SunTintPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(sunTintPlug)) {
+        const GfVec3f mayaSunTint(sunTintPlug.child(0).asFloat(),
+                                  sunTintPlug.child(1).asFloat(),
+                                  sunTintPlug.child(2).asFloat());
+
+        envDayLightSchema.CreateSunTintAttr(VtValue(mayaSunTint), true);
+    }
+
+    // Year.
+    MPlug yearPlug = depFn.findPlug(_tokens->YearPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(yearPlug)) {
+        int mayaYear;
+        status = yearPlug.getValue(mayaYear);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateYearAttr(VtValue(mayaYear), true);
+    }
+
+    // Zone.
+    MPlug zonePlug = depFn.findPlug(_tokens->ZonePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (PxrUsdMayaUtil::IsAuthored(zonePlug)) {
+        float mayaZone;
+        status = zonePlug.getValue(mayaZone);
+        if (status != MS::kSuccess) {
+            return false;
+        }
+
+        envDayLightSchema.CreateZoneAttr(VtValue(mayaZone), true);
+    }
+
+    return true;
+}
+
+static
+bool
+_ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+{
+    const UsdRiPxrEnvDayLight envDayLightSchema(lightSchema);
+    if (!envDayLightSchema) {
+        return false;
+    }
+
+    MStatus status;
+
+    // Day.
+    MPlug lightDayPlug =
+        depFn.findPlug(_tokens->DayPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    int lightDay = 1;
+    envDayLightSchema.GetDayAttr().Get(&lightDay);
+
+    status = lightDayPlug.setValue(lightDay);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Haziness.
+    MPlug lightHazinessPlug =
+        depFn.findPlug(_tokens->HazinessPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    float lightHaziness = 2.0f;
+    envDayLightSchema.GetHazinessAttr().Get(&lightHaziness);
+
+    status = lightHazinessPlug.setValue(lightHaziness);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Hour.
+    MPlug lightHourPlug =
+        depFn.findPlug(_tokens->HourPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    float lightHour = 14.633333f;
+    envDayLightSchema.GetHourAttr().Get(&lightHour);
+
+    status = lightHourPlug.setValue(lightHour);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Latitude.
+    MPlug lightLatitudePlug =
+        depFn.findPlug(_tokens->LatitudePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    float lightLatitude = 47.602f;
+    envDayLightSchema.GetLatitudeAttr().Get(&lightLatitude);
+
+    status = lightLatitudePlug.setValue(lightLatitude);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Longitude.
+    MPlug lightLongitudePlug =
+        depFn.findPlug(_tokens->LongitudePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    float lightLongitude = -122.332f;
+    envDayLightSchema.GetLongitudeAttr().Get(&lightLongitude);
+
+    status = lightLongitudePlug.setValue(lightLongitude);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Month.
+    MPlug lightMonthPlug =
+        depFn.findPlug(_tokens->MonthPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    int lightMonth = 0;
+    envDayLightSchema.GetMonthAttr().Get(&lightMonth);
+
+    status = lightMonthPlug.setValue(lightMonth);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Sky tint.
+    MPlug lightSkyTintPlug =
+        depFn.findPlug(_tokens->SkyTintPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    GfVec3f lightSkyTint(1.0f);
+    envDayLightSchema.GetSkyTintAttr().Get(&lightSkyTint);
+
+    status = lightSkyTintPlug.child(0).setValue(lightSkyTint[0]);
+    status = lightSkyTintPlug.child(1).setValue(lightSkyTint[1]);
+    status = lightSkyTintPlug.child(2).setValue(lightSkyTint[2]);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Sun direction.
+    MPlug lightSunDirectionPlug =
+        depFn.findPlug(_tokens->SunDirectionPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    GfVec3f lightSunDirection(0.0f, 0.0f, 1.0f);
+    envDayLightSchema.GetSunDirectionAttr().Get(&lightSunDirection);
+
+    status = lightSunDirectionPlug.child(0).setValue(lightSunDirection[0]);
+    status = lightSunDirectionPlug.child(1).setValue(lightSunDirection[1]);
+    status = lightSunDirectionPlug.child(2).setValue(lightSunDirection[2]);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Sun size.
+    MPlug lightSunSizePlug =
+        depFn.findPlug(_tokens->SunSizePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    float lightSunSize = 1.0f;
+    envDayLightSchema.GetSunSizeAttr().Get(&lightSunSize);
+
+    status = lightSunSizePlug.setValue(lightSunSize);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Sun tint.
+    MPlug lightSunTintPlug =
+        depFn.findPlug(_tokens->SunTintPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    GfVec3f lightSunTint(1.0f);
+    envDayLightSchema.GetSunTintAttr().Get(&lightSunTint);
+
+    status = lightSunTintPlug.child(0).setValue(lightSunTint[0]);
+    status = lightSunTintPlug.child(1).setValue(lightSunTint[1]);
+    status = lightSunTintPlug.child(2).setValue(lightSunTint[2]);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Year.
+    MPlug lightYearPlug =
+        depFn.findPlug(_tokens->YearPlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    int lightYear = 2015;
+    envDayLightSchema.GetYearAttr().Get(&lightYear);
+
+    status = lightYearPlug.setValue(lightYear);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Zone.
+    MPlug lightZonePlug =
+        depFn.findPlug(_tokens->ZonePlugName.GetText(), &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    float lightZone = -8.0f;
+    envDayLightSchema.GetZoneAttr().Get(&lightZone);
+
+    status = lightZonePlug.setValue(lightZone);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    return true;
+}
+
+
 // SHAPING API
 
 static
 bool
 _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    UsdLuxShapingAPI shapingAPI(lightSchema);
+    UsdLuxShapingAPI shapingAPI =
+        PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(
+            lightSchema.GetPrim());
     if (!shapingAPI) {
         return false;
     }
@@ -835,7 +1564,9 @@ static
 bool
 _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    UsdLuxShadowAPI shadowAPI(lightSchema);
+    UsdLuxShadowAPI shadowAPI =
+        PxrUsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(
+            lightSchema.GetPrim());
     if (!shadowAPI) {
         return false;
     }
@@ -1057,12 +1788,16 @@ _DefineUsdLuxLightForMayaLight(
 
     const TfToken mayaLightTypeToken(mayaLightTypeName.asChar());
 
-    if (mayaLightTypeToken == _tokens->DiskLightMayaTypeName) {
+    if (mayaLightTypeToken == _tokens->AovLightMayaTypeName) {
+        lightSchema = UsdRiPxrAovLight::Define(stage, authorPath);
+    } else if (mayaLightTypeToken == _tokens->DiskLightMayaTypeName) {
         lightSchema = UsdLuxDiskLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->DistantLightMayaTypeName) {
         lightSchema = UsdLuxDistantLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->DomeLightMayaTypeName) {
         lightSchema = UsdLuxDomeLight::Define(stage, authorPath);
+    } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
+        lightSchema = UsdRiPxrEnvDayLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->GeometryLightMayaTypeName) {
         lightSchema = UsdLuxGeometryLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->RectLightMayaTypeName) {
@@ -1113,6 +1848,10 @@ PxrUsdMayaTranslatorRfMLight::Write(
 
     _WriteLightTextureFile(depFn, lightSchema);
 
+    _WriteAovLight(depFn, lightSchema);
+
+    _WriteEnvDayLight(depFn, lightSchema);
+
     _WriteLightShapingAPI(depFn, lightSchema);
 
     _WriteLightShadowAPI(depFn, lightSchema);
@@ -1127,12 +1866,16 @@ _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 {
     const UsdPrim& lightPrim = lightSchema.GetPrim();
 
-    if (lightPrim.IsA<UsdLuxDiskLight>()) {
+    if (lightPrim.IsA<UsdRiPxrAovLight>()) {
+        return _tokens->AovLightMayaTypeName;
+    } else if (lightPrim.IsA<UsdLuxDiskLight>()) {
         return _tokens->DiskLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxDistantLight>()) {
         return _tokens->DistantLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxDomeLight>()) {
         return _tokens->DomeLightMayaTypeName;
+    } else if (lightPrim.IsA<UsdRiPxrEnvDayLight>()) {
+        return _tokens->EnvDayLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxGeometryLight>()) {
         return _tokens->GeometryLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxRectLight>()) {
@@ -1185,12 +1928,6 @@ PxrUsdMayaTranslatorRfMLight::Read(
                             lightSchema.GetPath());
     }
 
-    // Read Xformable attributes onto the transform node.
-    PxrUsdMayaTranslatorXformable::Read(lightSchema,
-                                        mayaNodeTransformObj,
-                                        args,
-                                        context);
-
     const MString nodeName =
         TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
 
@@ -1231,6 +1968,10 @@ PxrUsdMayaTranslatorRfMLight::Read(
 
     _ReadLightTextureFile(lightSchema, depFn);
 
+    _ReadAovLight(lightSchema, depFn);
+
+    _ReadEnvDayLight(lightSchema, depFn);
+
     _ReadLightShapingAPI(lightSchema, depFn);
 
     _ReadLightShadowAPI(lightSchema, depFn);
@@ -1241,6 +1982,18 @@ PxrUsdMayaTranslatorRfMLight::Read(
 
 // Declare/define the Maya type name for RenderMan for Maya light types as a
 // dummy class so that we can register writers for them.
+
+class PxrAovLight {};
+PXRUSDMAYA_DEFINE_WRITER(PxrAovLight, args, context)
+{
+    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+}
+
+PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
+{
+    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+}
+
 
 class PxrDiskLight {};
 PXRUSDMAYA_DEFINE_WRITER(PxrDiskLight, args, context)
@@ -1273,6 +2026,18 @@ PXRUSDMAYA_DEFINE_WRITER(PxrDomeLight, args, context)
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDomeLight, args, context)
+{
+    return PxrUsdMayaTranslatorRfMLight::Read(args, context);
+}
+
+
+class PxrEnvDayLight {};
+PXRUSDMAYA_DEFINE_WRITER(PxrEnvDayLight, args, context)
+{
+    return PxrUsdMayaTranslatorRfMLight::Write(args, context);
+}
+
+PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
 {
     return PxrUsdMayaTranslatorRfMLight::Read(args, context);
 }

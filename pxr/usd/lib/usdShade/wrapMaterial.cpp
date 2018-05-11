@@ -48,6 +48,27 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateSurfaceAttr(UsdShadeMaterial &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateSurfaceAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateDisplacementAttr(UsdShadeMaterial &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateDisplacementAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateVolumeAttr(UsdShadeMaterial &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateVolumeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -89,6 +110,27 @@ void wrapUsdShadeMaterial()
 
         .def(!self)
 
+        
+        .def("GetSurfaceAttr",
+             &This::GetSurfaceAttr)
+        .def("CreateSurfaceAttr",
+             &_CreateSurfaceAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetDisplacementAttr",
+             &This::GetDisplacementAttr)
+        .def("CreateDisplacementAttr",
+             &_CreateDisplacementAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetVolumeAttr",
+             &This::GetVolumeAttr)
+        .def("CreateVolumeAttr",
+             &_CreateVolumeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
     ;
 
@@ -116,6 +158,9 @@ void wrapUsdShadeMaterial()
 
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/pyEditContext.h"
+#include "pxr/usd/usdShade/utils.h"
+
+#include <boost/python/tuple.hpp>
 
 namespace {
 
@@ -125,6 +170,39 @@ _GetEditContextForVariant(const UsdShadeMaterial &self,
                           const SdfLayerHandle layer) {
     return UsdPyEditContext(
         self.GetEditContextForVariant(materialVariantName, layer));
+}
+
+static object
+_WrapComputeSurfaceSource(const UsdShadeMaterial &self, 
+                          const TfToken &renderContext) 
+{
+    UsdShadeShader source; 
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    source = self.ComputeSurfaceSource(renderContext, &sourceName, &sourceType);
+    return boost::python::make_tuple (source, sourceName, sourceType);
+}
+
+static object
+_WrapComputeDisplacementSource(const UsdShadeMaterial &self, 
+                               const TfToken &renderContext) 
+{
+    UsdShadeShader source; 
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    source = self.ComputeDisplacementSource(renderContext, &sourceName, &sourceType);
+    return boost::python::make_tuple (source, sourceName, sourceType);
+}
+
+static object
+_WrapComputeVolumeSource(const UsdShadeMaterial &self, 
+                         const TfToken &renderContext) 
+{
+    UsdShadeShader source; 
+    TfToken sourceName;
+    UsdShadeAttributeType sourceType;
+    source = self.ComputeVolumeSource(renderContext, &sourceName, &sourceType);
+    return boost::python::make_tuple (source, sourceName, sourceType);
 }
 
 WRAP_CUSTOM {
@@ -178,6 +256,29 @@ WRAP_CUSTOM {
              &UsdShadeMaterial::GetMaterialBindSubsetsFamilyType,
              arg("geom"))
              .staticmethod("GetMaterialBindSubsetsFamilyType")
+        
+        .def("CreateSurfaceOutput", &UsdShadeMaterial::CreateSurfaceOutput, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("GetSurfaceOutput", &UsdShadeMaterial::GetSurfaceOutput, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("ComputeSurfaceSource", &_WrapComputeSurfaceSource, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+
+        .def("CreateDisplacementOutput", 
+            &UsdShadeMaterial::CreateDisplacementOutput, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("GetDisplacementOutput", 
+            &UsdShadeMaterial::GetDisplacementOutput, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("ComputeDisplacementSource", &_WrapComputeDisplacementSource, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+
+        .def("CreateVolumeOutput", &UsdShadeMaterial::CreateVolumeOutput, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("GetVolumeOutput", &UsdShadeMaterial::GetVolumeOutput, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+        .def("ComputeVolumeSource", &_WrapComputeVolumeSource, 
+            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
         
         // These are now deprecated.
         .def("CreateMaterialFaceSet", &UsdShadeMaterial::CreateMaterialFaceSet)

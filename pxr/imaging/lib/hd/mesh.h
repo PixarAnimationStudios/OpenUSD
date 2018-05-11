@@ -196,13 +196,13 @@ HdMesh::GetTopology() const
 inline VtValue
 HdMesh::GetPoints(HdSceneDelegate* delegate) const
 {
-    return GetPrimVar(delegate, HdTokens->points);
+    return GetPrimvar(delegate, HdTokens->points);
 }
 
 inline VtValue
 HdMesh::GetNormals(HdSceneDelegate* delegate) const
 {
-    return GetPrimVar(delegate, HdTokens->normals);
+    return GetPrimvar(delegate, HdTokens->normals);
 }
 
 

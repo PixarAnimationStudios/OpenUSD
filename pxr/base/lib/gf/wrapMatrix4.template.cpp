@@ -32,6 +32,7 @@
 
 {% block customIncludes %}
 #include "pxr/base/gf/matrix3{{ SCL[0] }}.h"
+#include "pxr/base/gf/quat{{ SCL[0] }}.h"
 #include "pxr/base/gf/rotation.h"
 {% endblock customIncludes %}
 
@@ -99,6 +100,13 @@ static {{ MAT }} RemoveScaleShearWrapper( const {{ MAT }} &self ) {
 
         .def("SetTranslate", &This::SetTranslate, return_self<>())
         .def("SetTranslateOnly", &This::SetTranslateOnly, return_self<>())
+
+        .def("SetRotate",
+	     (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotate,
+	     return_self<>())
+        .def("SetRotateOnly",
+	     (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotateOnly,
+	     return_self<>())
 
         .def("SetRotate",
 	     (This & (This::*)( const GfRotation & )) &This::SetRotate,

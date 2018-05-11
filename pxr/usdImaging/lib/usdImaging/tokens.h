@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (ptexFaceOffset)        \
     (usdPopulatedPrimCount) \
     (usdVaryingExtent)      \
-    (usdVaryingPrimVar)     \
+    (usdVaryingPrimvar)     \
     (usdVaryingTopology)    \
     (usdVaryingVisibility)  \
     (usdVaryingWidths)      \

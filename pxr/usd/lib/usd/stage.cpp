@@ -62,7 +62,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h" 
 
-#include "pxr/base/tracelite/trace.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
@@ -309,7 +309,7 @@ _CreatePathResolverContext(
 }
 
 static std::string
-_ResolveAssetPathRelativeToLayer(
+_AnchorAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
     const std::string& assetPath)
 {
@@ -318,8 +318,16 @@ _ResolveAssetPathRelativeToLayer(
         return assetPath;
     }
 
+    return SdfComputeAssetPathRelativeToLayer(anchor, assetPath);
+}
+
+static std::string
+_ResolveAssetPathRelativeToLayer(
+    const SdfLayerHandle& anchor,
+    const std::string& assetPath)
+{
     const std::string computedAssetPath = 
-        SdfComputeAssetPathRelativeToLayer(anchor, assetPath);
+        _AnchorAssetPathRelativeToLayer(anchor, assetPath);
     if (computedAssetPath.empty()) {
         return computedAssetPath;
     }
@@ -327,18 +335,29 @@ _ResolveAssetPathRelativeToLayer(
     return ArGetResolver().Resolve(computedAssetPath);
 }
 
+// If anchorAssetPathsOnly is true, this function will only
+// update the authored assetPaths by anchoring them to the
+// anchor layer; it will not fill in the resolved path field.
 static void
 _MakeResolvedAssetPathsImpl(const SdfLayerRefPtr &anchor,
                             const ArResolverContext &context,
                             SdfAssetPath *assetPaths,
-                            size_t numAssetPaths)
+                            size_t numAssetPaths,
+                            bool anchorAssetPathsOnly)
 {
     ArResolverContextBinder binder(context);
     for (size_t i = 0; i != numAssetPaths; ++i) {
-        assetPaths[i] = SdfAssetPath(
-            assetPaths[i].GetAssetPath(),
-            _ResolveAssetPathRelativeToLayer(
-                anchor, assetPaths[i].GetAssetPath()));
+        if (anchorAssetPathsOnly) {
+            assetPaths[i] = SdfAssetPath(
+                _AnchorAssetPathRelativeToLayer(
+                    anchor, assetPaths[i].GetAssetPath()));
+        }
+        else {
+            assetPaths[i] = SdfAssetPath(
+                assetPaths[i].GetAssetPath(),
+                _ResolveAssetPathRelativeToLayer(
+                    anchor, assetPaths[i].GetAssetPath()));
+        }
     }
 }
 
@@ -346,34 +365,39 @@ void
 UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
                                   SdfAssetPath *assetPaths,
-                                  size_t numAssetPaths) const
+                                  size_t numAssetPaths,
+                                  bool anchorAssetPathsOnly) const
 {
     // Get the layer providing the strongest value and use that to anchor the
     // resolve.
     auto anchor = _GetLayerWithStrongestValue(time, attr);
     if (anchor) {
         _MakeResolvedAssetPathsImpl(
-            anchor, GetPathResolverContext(), assetPaths, numAssetPaths);
+            anchor, GetPathResolverContext(), assetPaths, numAssetPaths,
+            anchorAssetPathsOnly);
     }
 }
 
 void
 UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
-                                  VtValue* value) const
+                                  VtValue* value,
+                                  bool anchorAssetPathsOnly) const
 {
     if (value->IsHolding<SdfAssetPath>()) {
         SdfAssetPath assetPath;
         value->UncheckedSwap(assetPath);
-        _MakeResolvedAssetPaths(time, attr, &assetPath, 1);
+        _MakeResolvedAssetPaths(
+            time, attr, &assetPath, 1, anchorAssetPathsOnly);
         value->UncheckedSwap(assetPath);
             
     }
     else if (value->IsHolding<VtArray<SdfAssetPath>>()) {
         VtArray<SdfAssetPath> assetPaths;
         value->UncheckedSwap(assetPaths);
-        _MakeResolvedAssetPaths(time, attr, assetPaths.data(), 
-                                assetPaths.size());
+        _MakeResolvedAssetPaths(
+            time, attr, assetPaths.data(), assetPaths.size(), 
+            anchorAssetPathsOnly);
         value->UncheckedSwap(assetPaths);
     }
 }
@@ -626,36 +650,13 @@ _CreateNewLayer(const std::string &identifier)
 
 /* static */
 UsdStageRefPtr
-UsdStage::CreateNew(const std::string& identifier)
-{
-    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
-
-    if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
-        return Open(layer, _CreateAnonymousSessionLayer(layer));
-    return TfNullPtr;
-}
-
-/* static */
-UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier,
-                    const SdfLayerHandle& sessionLayer)
+                    InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
-        return Open(layer, sessionLayer);
-    return TfNullPtr;
-}
-
-/* static */
-UsdStageRefPtr
-UsdStage::CreateNew(const std::string& identifier,
-                    const ArResolverContext& pathResolverContext)
-{
-    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
-
-    if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
-        return Open(layer, pathResolverContext);
+        return Open(layer, _CreateAnonymousSessionLayer(layer), load);
     return TfNullPtr;
 }
 
@@ -663,70 +664,103 @@ UsdStage::CreateNew(const std::string& identifier,
 UsdStageRefPtr
 UsdStage::CreateNew(const std::string& identifier,
                     const SdfLayerHandle& sessionLayer,
-                    const ArResolverContext& pathResolverContext)
+                    InitialLoadSet load)
 {
     TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
 
     if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
-        return Open(layer, sessionLayer, pathResolverContext);
+        return Open(layer, sessionLayer, load);
     return TfNullPtr;
 }
 
 /* static */
 UsdStageRefPtr
-UsdStage::CreateInMemory()
+UsdStage::CreateNew(const std::string& identifier,
+                    const ArResolverContext& pathResolverContext,
+                    InitialLoadSet load)
+{
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
+
+    if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
+        return Open(layer, pathResolverContext, load);
+    return TfNullPtr;
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::CreateNew(const std::string& identifier,
+                    const SdfLayerHandle& sessionLayer,
+                    const ArResolverContext& pathResolverContext,
+                    InitialLoadSet load)
+{
+    TfAutoMallocTag2 tag("Usd", _StageTag(identifier));
+
+    if (SdfLayerRefPtr layer = _CreateNewLayer(identifier))
+        return Open(layer, sessionLayer, pathResolverContext, load);
+    return TfNullPtr;
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::CreateInMemory(InitialLoadSet load)
 {
     // Use usda file format if an identifier was not provided.
     //
     // In regards to "tmp.usda" below, SdfLayer::CreateAnonymous always
     // prefixes the identifier with the layer's address in memory, so using the
     // same identifier multiple times still produces unique layers.
-    return CreateInMemory("tmp.usda");
-}
-
-/* static */
-UsdStageRefPtr
-UsdStage::CreateInMemory(const std::string& identifier)
-{
-    return Open(SdfLayer::CreateAnonymous(identifier));
+    return CreateInMemory("tmp.usda", load);
 }
 
 /* static */
 UsdStageRefPtr
 UsdStage::CreateInMemory(const std::string& identifier,
-                         const ArResolverContext& pathResolverContext)
+                         InitialLoadSet load)
 {
-    // CreateAnonymous() will transform 'identifier', so don't bother
-    // using it as a tag
-    TfAutoMallocTag tag("Usd");
-    
-    return Open(SdfLayer::CreateAnonymous(identifier), pathResolverContext);
+    return Open(SdfLayer::CreateAnonymous(identifier), load);
 }
 
 /* static */
 UsdStageRefPtr
 UsdStage::CreateInMemory(const std::string& identifier,
-                         const SdfLayerHandle &sessionLayer)
+                         const ArResolverContext& pathResolverContext,
+                         InitialLoadSet load)
 {
     // CreateAnonymous() will transform 'identifier', so don't bother
     // using it as a tag
     TfAutoMallocTag tag("Usd");
     
-    return Open(SdfLayer::CreateAnonymous(identifier), sessionLayer);
+    return Open(SdfLayer::CreateAnonymous(identifier), 
+                pathResolverContext, load);
 }
 
 /* static */
 UsdStageRefPtr
 UsdStage::CreateInMemory(const std::string& identifier,
                          const SdfLayerHandle &sessionLayer,
-                         const ArResolverContext& pathResolverContext)
+                         InitialLoadSet load)
+{
+    // CreateAnonymous() will transform 'identifier', so don't bother
+    // using it as a tag
+    TfAutoMallocTag tag("Usd");
+    
+    return Open(SdfLayer::CreateAnonymous(identifier), 
+                sessionLayer, load);
+}
+
+/* static */
+UsdStageRefPtr
+UsdStage::CreateInMemory(const std::string& identifier,
+                         const SdfLayerHandle &sessionLayer,
+                         const ArResolverContext& pathResolverContext,
+                         InitialLoadSet load)
 {
     // CreateAnonymous() will transform 'identifier', so don't bother
     // using it as a tag
     TfAutoMallocTag tag("Usd");
     
     return Open(SdfLayer::CreateAnonymous(identifier),
-                sessionLayer, pathResolverContext);
+                sessionLayer, pathResolverContext, load);
 }
 
 static
@@ -1293,7 +1327,7 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
         for (Usd_Resolver r(&prim.GetPrimIndex()); r.IsValid(); r.NextLayer()) {
             if (SdfPropertySpecHandle propSpec = r.GetLayer()->
                 GetPropertyAtPath(r.GetLocalPath().AppendProperty(propName))) {
-                if (specToCopy = TfDynamic_cast<TypedSpecHandle>(propSpec))
+                if ((specToCopy = TfDynamic_cast<TypedSpecHandle>(propSpec)))
                     break;
                 // Type mismatch.
                 TF_RUNTIME_ERROR("Spec type mismatch.  Failed to create %s for "
@@ -1637,8 +1671,10 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
         ignoredKeys.insert(SdfFieldKeys->VariantSelection);
         ignoredKeys.insert(SdfFieldKeys->VariantSetNames);
         // Clip keys.
-        ignoredKeys.insert(UsdTokens->allTokens.begin(),
-                           UsdTokens->allTokens.end());
+        {
+            auto clipFields = UsdGetClipRelatedFields();
+            ignoredKeys.insert(clipFields.begin(), clipFields.end());
+        }
         // Value keys.
         ignoredKeys.insert(SdfFieldKeys->Default);
         ignoredKeys.insert(SdfFieldKeys->TimeSamples);
@@ -1776,7 +1812,7 @@ UsdStage::_IsValidForLoad(const SdfPath& path) const
         // Lets see if any ancestor exists, if so it's safe to attempt to load.
         SdfPath parentPath = path;
         while (parentPath != SdfPath::AbsoluteRootPath()) {
-            if (curPrim = GetPrimAtPath(parentPath)) {
+            if ((curPrim = GetPrimAtPath(parentPath))) {
                 break;
             }
             parentPath = parentPath.GetParentPath();
@@ -2177,7 +2213,8 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 
 void
 UsdStage::ExpandPopulationMask(
-    std::function<bool (UsdRelationship const &)> const &pred)
+    std::function<bool (UsdRelationship const &)> const &relPred,
+    std::function<bool (UsdAttribute const &)> const &attrPred)
 {
     if (GetPopulationMask().IncludesSubtree(SdfPath::AbsoluteRootPath()))
         return;
@@ -2186,20 +2223,30 @@ UsdStage::ExpandPopulationMask(
     // include them in the mask.  If the mask changes, call SetPopulationMask()
     // and redo.  Continue until the mask ceases expansion.  
     while (true) {
-        SdfPathVector tgtPaths =
-            GetPseudoRoot().FindAllRelationshipTargetPaths(pred, false);
+        auto root = GetPseudoRoot();
+        SdfPathVector
+            tgtPaths = root.FindAllRelationshipTargetPaths(relPred, false),
+            connPaths = root.FindAllAttributeConnectionPaths(attrPred, false);
         
         tgtPaths.erase(remove_if(tgtPaths.begin(), tgtPaths.end(),
                                  [this](SdfPath const &path) {
                                      return _populationMask.Includes(path);
                                  }),
                        tgtPaths.end());
+        connPaths.erase(remove_if(connPaths.begin(), connPaths.end(),
+                                 [this](SdfPath const &path) {
+                                     return _populationMask.Includes(path);
+                                 }),
+                       connPaths.end());
         
-        if (tgtPaths.empty())
+        if (tgtPaths.empty() && connPaths.empty())
             break;
 
         auto popMask = GetPopulationMask();
         for (auto const &path: tgtPaths) {
+            popMask.Add(path.GetPrimPath());
+        }
+        for (auto const &path: connPaths) {
             popMask.Add(path.GetPrimPath());
         }
         SetPopulationMask(popMask);
@@ -3269,8 +3316,7 @@ UsdStage::Traverse(const Usd_PrimFlagsPredicate &predicate)
 UsdPrimRange
 UsdStage::TraverseAll()
 {
-    return UsdPrimRange::Stage(UsdStagePtr(this),
-                                  Usd_PrimFlagsPredicate::Tautology());
+    return UsdPrimRange::Stage(UsdStagePtr(this), UsdPrimAllPrimsPredicate);
 }
 
 bool
@@ -3598,6 +3644,38 @@ UsdStage::_HandleLayersDidChange(
 
     _Recompose(changes, &recomposeChanges);
 
+    // Filter out all changes to objects beneath instances and remap
+    // them to the corresponding object in the instance's master. Do this
+    // after _Recompose so that the instancing cache is up-to-date.
+    auto remapChangesToMasters = [this](_PathsToChangesMap* changes) {
+        std::vector<_PathsToChangesMap::value_type> masterChanges;
+        for (auto it = changes->begin(); it != changes->end(); ) {
+            if (_IsObjectDescendantOfInstance(it->first)) {
+                const SdfPath primIndexPath = 
+                    it->first.GetAbsoluteRootOrPrimPath();
+                for (const SdfPath& pathInMaster :
+                     _instanceCache->GetPrimsInMastersUsingPrimIndexPath(
+                         primIndexPath)) {
+                    masterChanges.emplace_back(
+                        it->first.ReplacePrefix(primIndexPath, pathInMaster), 
+                        it->second);
+                }
+                it = changes->erase(it);
+                continue;
+            }
+            ++it;
+        }
+
+        for (const auto& entry : masterChanges) {
+            auto& value = (*changes)[entry.first];
+            value.insert(value.end(), entry.second.begin(), entry.second.end());
+        }
+    };
+
+    remapChangesToMasters(&recomposeChanges);
+    remapChangesToMasters(&otherResyncChanges);
+    remapChangesToMasters(&otherInfoChanges);
+
     // Add in all other paths that are marked as resynced.
     if (recomposeChanges.empty()) {
         recomposeChanges.swap(otherResyncChanges);
@@ -3608,14 +3686,6 @@ UsdStage::_HandleLayersDidChange(
         for (auto& entry : otherResyncChanges) {
             recomposeChanges[entry.first] = std::move(entry.second);
         }
-    }
-
-    for (auto it = recomposeChanges.begin(); it != recomposeChanges.end(); ) {
-        if (_IsObjectDescendantOfInstance(it->first)) {
-            it = recomposeChanges.erase(it);
-            continue;
-        }
-        ++it;
     }
 
     // Collect the paths in otherChangedPaths that aren't under paths that
@@ -3632,14 +3702,6 @@ UsdStage::_HandleLayersDidChange(
     // Now we want to remove all elements of otherInfoChanges that are
     // prefixed by elements in recomposeChanges or beneath instances.
     _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
-
-    for (auto it = otherInfoChanges.begin(); it != otherInfoChanges.end(); ) {
-        if (_IsObjectDescendantOfInstance(it->first)) {
-            it = otherInfoChanges.erase(it);
-            continue;
-        }
-        ++it;
-    }
 
     UsdStageWeakPtr self(this);
 
@@ -3689,22 +3751,6 @@ UsdStage::_Recompose(const PcpChanges &changes,
     }
 }
 
-// Inserts entry into changedPaths at dstPath and merges in any values from
-// entry at srcPath.
-template <class ChangedPaths>
-static void 
-_MergeEntry(ChangedPaths* changedPaths, 
-            const SdfPath& dstPath, const SdfPath& srcPath)
-{
-    auto& dstValue = (*changedPaths)[dstPath];
-
-    auto srcIt = changedPaths->find(srcPath);
-    if (srcIt != changedPaths->end()) {
-        const auto& srcValue = srcIt->second;
-        dstValue.insert(dstValue.end(), srcValue.begin(), srcValue.end());
-    }
-}
-
 template <class T>
 void 
 UsdStage::_RecomposePrims(const PcpChanges &changes,
@@ -3712,8 +3758,25 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
 {
     changes.Apply();
 
-    const PcpChanges::CacheChanges &cacheChanges = changes.GetCacheChanges();
+    // Process layer stack changes.
+    //
+    // Pcp recomputes layer stacks immediately upon the call to 
+    // PcpChanges::Apply, which causes composition errors that occur
+    // during this process to not be reported in _ComposePrimIndexesInParallel.
+    // Walk through all modified layer stacks and report their errors here.
+    const PcpChanges::LayerStackChanges &layerStackChanges = 
+        changes.GetLayerStackChanges();
 
+    for (const auto& layerStackChange : layerStackChanges) {
+        const PcpLayerStackPtr& layerStack = layerStackChange.first;
+        const PcpErrorVector& errors = layerStack->GetLocalErrors();
+        if (!errors.empty()) {
+            _ReportPcpErrors(errors, "Recomposing stage");
+        }
+    }
+
+    // Process composed prim changes.
+    const PcpChanges::CacheChanges &cacheChanges = changes.GetCacheChanges();
     if (!cacheChanges.empty()) {
         const PcpCacheChanges &ourChanges = cacheChanges.begin()->second;
 
@@ -3788,7 +3851,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     _ComposePrimIndexesInParallel(
         primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
         "Recomposing stage", &instanceChanges);
-
+    
     // Determine what instance master prims on this stage need to
     // be recomposed due to instance prim index changes.
     typedef TfHashMap<SdfPath, SdfPath, SdfPath::Hash> _MasterToPrimIndexMap;
@@ -3800,24 +3863,20 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         for (const SdfPath& masterPath :
                  _instanceCache->GetPrimsInMastersUsingPrimIndexPath(path)) {
             masterToPrimIndexMap[masterPath] = path;
-            _MergeEntry(pathsToRecompose, masterPath, path);
+            (*pathsToRecompose)[masterPath];
         }
     }
 
     for (size_t i = 0; i != instanceChanges.newMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.newMasterPrims[i]] =
             instanceChanges.newMasterPrimIndexes[i];
-        _MergeEntry(pathsToRecompose, 
-            instanceChanges.newMasterPrims[i], 
-            instanceChanges.newMasterPrimIndexes[i]);
+        (*pathsToRecompose)[instanceChanges.newMasterPrims[i]];
     }
 
     for (size_t i = 0; i != instanceChanges.changedMasterPrims.size(); ++i) {
         masterToPrimIndexMap[instanceChanges.changedMasterPrims[i]] =
             instanceChanges.changedMasterPrimIndexes[i];
-        _MergeEntry(pathsToRecompose, 
-            instanceChanges.changedMasterPrims[i], 
-            instanceChanges.changedMasterPrimIndexes[i]);
+        (*pathsToRecompose)[instanceChanges.changedMasterPrims[i]];
     }
 
     if (pathsToRecompose->size() != origNumPathsToRecompose) {
@@ -4260,13 +4319,34 @@ UsdStage::_GetDefiningSpecType(const UsdPrim& prim,
 // Flatten & Export Utilities
 // ------------------------------------------------------------------------- //
 
+class Usd_FlattenAccess
+{
+public:
+    static void GetAllMetadata(
+        const UsdObject &obj, bool useFallbacks,
+        UsdMetadataValueMap* resultMap, bool anchorAssetPathsOnly)
+    {
+        obj.GetStage()->_GetAllMetadata(
+            obj, useFallbacks, resultMap, anchorAssetPathsOnly);
+    }
+
+    static void MakeResolvedAssetPaths(
+        UsdTimeCode time, const UsdAttribute& attr,
+        VtValue* value, bool anchorAssetPathsOnly)
+    {
+        attr.GetStage()->_MakeResolvedAssetPaths(
+            time, attr, value, anchorAssetPathsOnly);
+    }
+};
+
 namespace {
 
 // Populates the time sample map with the resolved values for the given 
 // attribute and returns true if time samples exist, false otherwise.
 bool 
 _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
-                  const SdfLayerOffset& offset = SdfLayerOffset())
+                  const SdfLayerOffset& offset = SdfLayerOffset(),
+                  bool anchorAssetPathsOnly = false)
 {
     UsdAttributeQuery attrQuery(attr);
 
@@ -4275,6 +4355,8 @@ _GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out,
         for (const auto& timeSample : timeSamples) {
             VtValue value;
             if (attrQuery.Get(&value, timeSample)) {
+                Usd_FlattenAccess::MakeResolvedAssetPaths(
+                    timeSample, attr, &value, anchorAssetPathsOnly);
                 (*out)[offset * timeSample].Swap(value);
             }
             else {
@@ -4398,7 +4480,12 @@ _CopyAuthoredMetadata(const UsdObject &source, const SdfSpecHandle& dest)
 {
     // GetAllMetadata returns all non-private metadata fields (it excludes
     // composition arcs and values), which is exactly what we want here.
-    _CopyMetadata(dest, source.GetAllAuthoredMetadata());
+    UsdMetadataValueMap metadata;
+    Usd_FlattenAccess::GetAllMetadata(
+        source, /* useFallbacks = */ false, &metadata,
+        /* anchorAssetPathsOnly = */ true);
+
+    _CopyMetadata(dest, metadata);
 }
 
 void
@@ -4434,13 +4521,19 @@ _CopyProperty(const UsdProperty &prop,
         if (attr.GetBracketingTimeSamples(
             0.0, &lower, &upper, &hasSamples) && hasSamples) {
             SdfTimeSampleMap ts;
-            if (_GetTimeSampleMap(attr, &ts, timeOffset)) {
+            if (_GetTimeSampleMap(attr, &ts, timeOffset, 
+                                  /* anchorAssetPathsOnly = */ true)) {
                 sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
             }
         }
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
             VtValue defaultValue;
-            if (!attr.Get(&defaultValue)) {
+            if (attr.Get(&defaultValue)) {
+                Usd_FlattenAccess::MakeResolvedAssetPaths(
+                    UsdTimeCode::Default(), attr, &defaultValue, 
+                    /* anchorAssetPathsOnly = */ true);
+            }
+            else {
                 defaultValue = SdfValueBlock();
             }
             sdfAttr->SetInfo(SdfFieldKeys->Default, defaultValue);
@@ -4847,21 +4940,22 @@ static void _ApplyLayerOffset(Storage storage,
 template <class Storage>
 static void _MakeResolvedAssetPaths(Storage storage,
                                     const PcpNodeRef &node,
-                                    const SdfLayerRefPtr &layer)
+                                    const SdfLayerRefPtr &layer,
+                                    bool anchorAssetPathsOnly)
 {
     if (_IsHolding<SdfAssetPath>(storage)) {
         SdfAssetPath assetPath;
         _UncheckedSwap(storage, assetPath);
         _MakeResolvedAssetPathsImpl(
             layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
-            &assetPath, 1);
+            &assetPath, 1,  anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPath);
     } else if (_IsHolding<VtArray<SdfAssetPath>>(storage)) {
         VtArray<SdfAssetPath> assetPaths;
         _UncheckedSwap(storage, assetPaths);
         _MakeResolvedAssetPathsImpl(
             layer, node.GetLayerStack()->GetIdentifier().pathResolverContext,
-            assetPaths.data(), assetPaths.size());
+            assetPaths.data(), assetPaths.size(), anchorAssetPathsOnly);
         _UncheckedSwap(storage, assetPaths);
     }
 }
@@ -4872,18 +4966,20 @@ static void _MakeResolvedAssetPaths(Storage storage,
 static void
 _ResolveAssetPathsInDictionary(const SdfLayerRefPtr &anchor,
                                const PcpNodeRef &node,
-                               VtDictionary *dict)
+                               VtDictionary *dict,
+                               bool anchorAssetPathsOnly)
 {
     for (auto& entry : *dict) {
         VtValue& v = entry.second;
         if (v.IsHolding<VtDictionary>()) {
             VtDictionary resolvedDict;
             v.UncheckedSwap(resolvedDict);
-            _ResolveAssetPathsInDictionary(anchor, node, &resolvedDict);
+            _ResolveAssetPathsInDictionary(
+                anchor, node, &resolvedDict, anchorAssetPathsOnly);
             v.UncheckedSwap(resolvedDict);
         }
         else {
-            _MakeResolvedAssetPaths(&v, node, anchor);
+            _MakeResolvedAssetPaths(&v, node, anchor, anchorAssetPathsOnly);
         }
     }
 }
@@ -4895,7 +4991,11 @@ struct StrongestValueComposer
 {
     static const bool ProducesValue = true;
 
-    explicit StrongestValueComposer(Storage s) : _value(s), _done(false) {}
+    explicit StrongestValueComposer(Storage s, 
+                                    bool anchorAssetPathsOnly = false)
+        : _value(s), _done(false), _anchorAssetPathsOnly(anchorAssetPathsOnly) 
+        {}
+
     const std::type_info& GetHeldTypeid() const { return _GetTypeid(_value); }
     bool IsDone() const { return _done; }
     bool ConsumeAuthored(const PcpNodeRef &node,
@@ -4924,7 +5024,8 @@ struct StrongestValueComposer
             if (_IsHolding<VtDictionary>(_value)) {
                 VtDictionary resolvedDict;
                 _UncheckedSwap(_value, resolvedDict);
-                _ResolveAssetPathsInDictionary(layer, node, &resolvedDict);
+                _ResolveAssetPathsInDictionary(
+                    layer, node, &resolvedDict, _anchorAssetPathsOnly);
                 _UncheckedSwap(_value, resolvedDict);                
 
                 // Continue composing if we got a dictionary.
@@ -4939,7 +5040,8 @@ struct StrongestValueComposer
             } else if (_IsHolding<SdfTimeSampleMap>(_value)) {
                 _ApplyLayerOffset(_value, node, layer);
             } else {
-                _MakeResolvedAssetPaths(_value, node, layer);
+                _MakeResolvedAssetPaths(
+                    _value, node, layer, _anchorAssetPathsOnly);
             }
         }
         return _done;
@@ -4981,6 +5083,7 @@ struct StrongestValueComposer
 protected:
     Storage _value;
     bool _done;
+    bool _anchorAssetPathsOnly;
 };
 
 
@@ -5389,9 +5492,7 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
     // Iterate over all prims, strongest to weakest.
     SdfSpecifier curSpecifier = SdfSpecifierOver;
 
-    SdfPath localPath;
-    SdfLayerRefPtr layer;
-    PcpNodeRef node;
+    Usd_Resolver::Position specPos;
 
     const PcpPrimIndex &primIndex = primData->GetPrimIndex();
     for (Usd_Resolver res(&primIndex); res.IsValid(); res.NextLayer()) {
@@ -5399,9 +5500,8 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
         _SpecifierStrength curStrength = _SpecifierStrengthDefining;
         if (res.GetLayer()->HasField(
                 res.GetLocalPath(), SdfFieldKeys->Specifier, &curSpecifier)) {
-            node = res.GetNode();
-            layer = res.GetLayer();
-            localPath = res.GetLocalPath();
+            specPos = res.GetPosition();
+
             if (SdfIsDefiningSpecifier(curSpecifier)) {
                 // Compute strength.
                 if (curSpecifier == SdfSpecifierClass) {
@@ -5448,11 +5548,12 @@ UsdStage::_GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
 
     // Verify we found *something*.  We should never have PrimData without at
     // least one PrimSpec, and 'specifier' is required, so it must be present.
-    if (TF_VERIFY(layer, "No PrimSpecs for '%s'",
+    if (TF_VERIFY(specPos.GetLayer(), "No PrimSpecs for '%s'",
                   primData->GetPath().GetText())) {
         // Let the composer see the deciding opinion.
         composer->ConsumeAuthored(
-            node, layer, SdfAbstractDataSpecId(&localPath),
+            specPos.GetNode(), specPos.GetLayer(), 
+            SdfAbstractDataSpecId(&specPos.GetLocalPath()),
             SdfFieldKeys->Specifier, TfToken());
     }
     return true;
@@ -5738,7 +5839,8 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
 void
 UsdStage::_GetAllMetadata(const UsdObject &obj,
                           bool useFallbacks,
-                          UsdMetadataValueMap* resultMap) const
+                          UsdMetadataValueMap* resultMap,
+                          bool anchorAssetPathsOnly) const
 {
     TRACE_FUNCTION();
 
@@ -5747,7 +5849,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        StrongestValueComposer<VtValue *> composer(&val);
+        StrongestValueComposer<VtValue *> composer(&val, anchorAssetPathsOnly);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
     }

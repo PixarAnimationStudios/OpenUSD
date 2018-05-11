@@ -61,9 +61,9 @@ class SdfAssetPath;
 /// what geometry should be included for processing by rendering and other
 /// computations.
 /// 
-/// Imageable also introduces the concept (and API) of geometric
-/// "primitive variables", as UsdGeomPrimvar, which interpolate across a 
-/// primitive and can override shader inputs.
+/// <Deprecated> Imageable also provides API for accessing primvars, which
+/// have been moved to the UsdGeomPrimvarsAPI schema.  This API is planned
+/// to be removed, UsdGeomPrimvarsAPI should be used directly instead.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
@@ -336,13 +336,36 @@ public:
     USDGEOM_API
     std::vector<UsdGeomPrimvar> GetAuthoredPrimvars() const;
 
-    /// Is there defined Primvar \p name on this prim?
+    /// Like GetPrimvars(), but searches instead for authored
+    /// primvars inherited from ancestor prims.  Primvars are only
+    /// inherited if they do not exist on the prim itself.  The
+    /// returned primvars will be bound to attributes on the corresponding
+    /// ancestor prims.  Only primvars with authored values are inherited;
+    /// fallback values are not inherited.   The order of the returned
+    /// primvars is undefined.
+    USDGEOM_API
+    std::vector<UsdGeomPrimvar> FindInheritedPrimvars() const;
+
+    /// Like GetPrimvar(), but searches instead for the named primvar
+    /// inherited on ancestor prim.  Primvars are only inherited if
+    /// they do not exist on the prim itself.  The returned primvar will
+    /// be bound to the attribute on the corresponding ancestor prim.
+    USDGEOM_API
+    UsdGeomPrimvar FindInheritedPrimvar(const TfToken &name) const;
+
+    /// Is there a defined Primvar \p name on this prim?
     ///
     /// Name lookup will account for Primvar namespacing.
     ///
     /// \sa GetPrimvar()
     USDGEOM_API
     bool HasPrimvar(const TfToken &name) const;
+
+    /// Is there an inherited Primvar \p name on this prim?
+    /// The name given is the primvar name, not its underlying attribute name.
+    /// \sa FindInheritedPrimvar()
+    USDGEOM_API
+    bool HasInheritedPrimvar(const TfToken &name) const;
 
     /// @}
 

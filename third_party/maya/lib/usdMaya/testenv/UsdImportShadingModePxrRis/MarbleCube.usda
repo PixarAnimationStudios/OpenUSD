@@ -39,8 +39,7 @@ def Xform "MarbleCube" (
     {
         def Material "MarbleCubeSG"
         {
-            uniform token outputs:ri:bxdf.connect = </MarbleCube/Looks/MarbleCubeSG/MarbleShader.outputs:out>
-            token outputs:surface.connect = </MarbleCube/Looks/MarbleCubeSG/MarbleShader.outputs:out>
+            token outputs:ri:surface.connect = </MarbleCube/Looks/MarbleCubeSG/MarbleShader.outputs:out>
 
             def Shader "MarbleShader"
             {

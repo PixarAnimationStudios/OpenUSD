@@ -23,13 +23,12 @@
 //
 #include "pxr/imaging/hdx/taskController.h"
 
-#include "pxr/imaging/hdSt/camera.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdx/intersector.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
-#include "pxr/imaging/hdx/simpleLightBypassTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
@@ -75,7 +74,7 @@ std::vector<GfVec4d>
 HdxTaskController::_Delegate::GetClipPlanes(SdfPath const& cameraId)
 {
     return GetParameter<std::vector<GfVec4d>>(cameraId,
-                HdStCameraTokens->clipPlanes);
+                HdCameraTokens->clipPlanes);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +86,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (renderTask)
     (selectionTask)
     (simpleLightTask)
-    (simpleLightBypassTask)
     (camera)
 );
 
@@ -105,7 +103,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     _CreateCamera();
     _CreateRenderTasks();
     _CreateSelectionTask();
-    _CreateLightingTasks();
+    _CreateLightingTask();
 }
 
 void
@@ -116,13 +114,13 @@ HdxTaskController::_CreateCamera()
     GetRenderIndex()->InsertSprim(HdPrimTypeTokens->camera,
         &_delegate, _cameraId);
 
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->windowPolicy,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->windowPolicy,
         VtValue());
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->worldToViewMatrix,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->projectionMatrix,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_cameraId, HdStCameraTokens->clipPlanes,
+    _delegate.SetParameter(_cameraId, HdCameraTokens->clipPlanes,
         VtValue(std::vector<GfVec4d>()));
 }
 
@@ -179,7 +177,7 @@ HdxTaskController::_CreateSelectionTask()
 }
 
 void
-HdxTaskController::_CreateLightingTasks()
+HdxTaskController::_CreateLightingTask()
 {
     // Simple lighting task uses lighting state from Sprims.
     _simpleLightTaskId = GetControllerId().AppendChild(
@@ -195,22 +193,6 @@ HdxTaskController::_CreateLightingTasks()
         simpleLightParams);
     _delegate.SetParameter(_simpleLightTaskId, HdTokens->children,
         SdfPathVector());
-
-    _simpleLightBypassTaskId = GetControllerId().AppendChild(
-        _tokens->simpleLightBypassTask);
-    
-    // Simple lighting bypass task uses lighting state from a lighting
-    // context.
-    HdxSimpleLightBypassTaskParams simpleLightBypassParams;
-    simpleLightBypassParams.cameraPath = _cameraId;
-
-    GetRenderIndex()->InsertTask<HdxSimpleLightBypassTask>(&_delegate,
-        _simpleLightBypassTaskId);
-
-    _delegate.SetParameter(_simpleLightBypassTaskId, HdTokens->params,
-        simpleLightBypassParams);
-    _delegate.SetParameter(_simpleLightBypassTaskId, HdTokens->children,
-        SdfPathVector());
 }
 
 HdxTaskController::~HdxTaskController()
@@ -221,7 +203,6 @@ HdxTaskController::~HdxTaskController()
         _idRenderTaskId,
         _selectionTaskId,
         _simpleLightTaskId,
-        _simpleLightBypassTaskId,
     };
     for (size_t i = 0; i < sizeof(tasks)/sizeof(tasks[0]); ++i) {
         GetRenderIndex()->RemoveTask(tasks[i]);
@@ -236,9 +217,9 @@ HdxTaskController::GetTasks(TfToken const& taskSet)
 {
     _tasks.clear();
 
-    // Light
-    if (!_activeLightTaskId.IsEmpty()) {
-        _tasks.push_back(GetRenderIndex()->GetTask(_activeLightTaskId));
+    // Light - Only run simpleLightTask if the backend supports simpleLight...
+    if (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
+        _tasks.push_back(GetRenderIndex()->GetTask(_simpleLightTaskId));
     }
 
     // Render
@@ -378,45 +359,30 @@ HdxTaskController::TestIntersection(
 }
 
 void
-HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src,
-                                    bool bypass)
+HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src)
 {
-    // No need to create a light compilation task if we are on renderers
-    // that do not support stream.
+    // If the backend doesn't support simpleLight, no need to set parameters
+    // for simpleLightTask, or create simpleLight prims for lights in the
+    // lighting context.
     if (!GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)){
         return;
     }
 
-    if (bypass) {
-        // If we're using HdxSimpleLightBypassTask, we just pass the context
-        // through to the task.
-        HdxSimpleLightBypassTaskParams params =
-            _delegate.GetParameter<HdxSimpleLightBypassTaskParams>(
-                _simpleLightBypassTaskId, HdTokens->params);
-
-        params.simpleLightingContext = src;
-        _delegate.SetParameter(_simpleLightBypassTaskId, HdTokens->params,
-            params);
-
-        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _simpleLightBypassTaskId, HdChangeTracker::DirtyParams);
-
-        _activeLightTaskId = _simpleLightBypassTaskId;
-        return;
-    }
-
-    // Otherwise, we need to map the context into light Sprims, and update
-    // the lighting task params.
     if (!src) {
         TF_CODING_ERROR("Null lighting context");
         return;
     }
 
     GlfSimpleLightVector const& lights = src->GetLights();
-    bool hasNumLightsChanged = false;
 
-    // Create or remove Sprims so that the render index has the correct
-    // number of lights.
+    // HdxTaskController inserts a set of light prims to represent the lights
+    // passed in through the simple lighting context. These are managed by
+    // the task controller, and not by the scene; they represent transient
+    // application state such as camera lights.
+    //
+    // The light pool can be re-used as lights change, but we need to make sure
+    // we have the right number of light prims. Add them as necessary until
+    // there are enough light prims to represent the light context.
     while (_lightIds.size() < lights.size()) {
         SdfPath lightId = GetControllerId().AppendChild(TfToken(
             TfStringPrintf("light%d", (int)_lightIds.size())));
@@ -425,47 +391,58 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src,
         GetRenderIndex()->InsertSprim(HdPrimTypeTokens->simpleLight, 
             &_delegate,
             lightId);
-        hasNumLightsChanged = true;
+
+        // After inserting a light, initialize its parameters and mark the light
+        // as dirty.
+        _delegate.SetParameter(lightId, HdLightTokens->transform,
+            VtValue());
+        _delegate.SetParameter(lightId, HdLightTokens->shadowParams,
+            HdxShadowParams());
+        _delegate.SetParameter(lightId, HdLightTokens->shadowCollection,
+            VtValue());
+        _delegate.SetParameter(lightId, HdLightTokens->params,
+            GlfSimpleLight());
+
+        // Note: Marking the shadowCollection as dirty (included in AllDirty)
+        // will mark the geometry collection dirty.
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(lightId,
+            HdLight::AllDirty);
     }
+    // If the light pool is too big for the light context, remove the extra
+    // sprims.
     while (_lightIds.size() > lights.size()) {
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->simpleLight,
             _lightIds.back());
 
         _lightIds.pop_back();
-        hasNumLightsChanged = true;
     }
 
-    // Update light Sprims
+    // Update light Sprims to match the lights passed in through the context;
+    // hydra simpleLight prims store a GlfSimpleLight as their "params" field.
     for (size_t i = 0; i < lights.size(); ++i) {
-        _delegate.SetParameter(_lightIds[i], HdLightTokens->params,
-            lights[i]);
-        _delegate.SetParameter(_lightIds[i], HdLightTokens->transform,
-            VtValue());
-        _delegate.SetParameter(_lightIds[i], HdLightTokens->shadowParams,
-            HdxShadowParams());
-        _delegate.SetParameter(_lightIds[i], HdLightTokens->shadowCollection,
-            VtValue());
+        GlfSimpleLight lt = _delegate.GetParameter<GlfSimpleLight>(
+            _lightIds[i], HdLightTokens->params);
 
-        // Only mark the parameters dirty to avoid unnecessary invalidation.
-        // Marking the shadowCollection as dirty will mark the geometry
-        // collection dirty and we don't want that to happen every time.
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-            _lightIds[i], HdLight::DirtyParams);
+        if (lt != lights[i]) {
+            _delegate.SetParameter(_lightIds[i], HdLightTokens->params,
+                lights[i]);
+
+            GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+                _lightIds[i], HdLight::DirtyParams);
+        }
     }
 
-    // Update the material: sadly, this comes from the lighting context
-    // and lives in HdxSimpleLightTaskParams right now.
+    // In addition to lights, the lighting context contains material parameters.
+    // These are passed in through the simple light task's "params" field, so
+    // we need to update that field if the material parameters changed.
     //
-    // HdxSimpleLightTask::Sync() pulls the list of lights on dirty params,
-    // so if we've changed the number of lights we should mark params dirty,
-    // even if params are the same...
+    // It's unfortunate that the lighting context is split this way.
     HdxSimpleLightTaskParams params =
         _delegate.GetParameter<HdxSimpleLightTaskParams>(_simpleLightTaskId,
             HdTokens->params);
 
     if (params.sceneAmbient != src->GetSceneAmbient() ||
-        params.material != src->GetMaterial() ||
-        hasNumLightsChanged) {
+        params.material != src->GetMaterial()) {
 
         params.sceneAmbient = src->GetSceneAmbient();
         params.material = src->GetMaterial();
@@ -474,7 +451,6 @@ HdxTaskController::SetLightingState(GlfSimpleLightingContextPtr const& src,
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId, HdChangeTracker::DirtyParams);
     }
-    _activeLightTaskId = _simpleLightTaskId;
 }
 
 void
@@ -482,27 +458,27 @@ HdxTaskController::SetCameraMatrices(GfMatrix4d const& viewMatrix,
                                      GfMatrix4d const& projMatrix)
 {
     GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_cameraId,
-        HdStCameraTokens->worldToViewMatrix);
+        HdCameraTokens->worldToViewMatrix);
 
     if (viewMatrix != oldView) {
         // Cache the new view matrix
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->worldToViewMatrix,
+        _delegate.SetParameter(_cameraId, HdCameraTokens->worldToViewMatrix,
             viewMatrix);
         // Invalidate the camera
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyViewMatrix);
+            HdCamera::DirtyViewMatrix);
     }
 
     GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_cameraId,
-        HdStCameraTokens->projectionMatrix);
+        HdCameraTokens->projectionMatrix);
 
     if (projMatrix != oldProj) {
         // Cache the new proj matrix
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->projectionMatrix,
+        _delegate.SetParameter(_cameraId, HdCameraTokens->projectionMatrix,
             projMatrix);
         // Invalidate the camera
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyProjMatrix);
+            HdCamera::DirtyProjMatrix);
     }
 }
 
@@ -540,23 +516,14 @@ HdxTaskController::SetCameraClipPlanes(
     // Cache the clip planes
     std::vector<GfVec4d> oldClipPlanes =
         _delegate.GetParameter<std::vector<GfVec4d>>(_cameraId,
-            HdStCameraTokens->clipPlanes);
+            HdCameraTokens->clipPlanes);
 
     if (oldClipPlanes != clipPlanes) {
-        _delegate.SetParameter(_cameraId, HdStCameraTokens->clipPlanes,
+        _delegate.SetParameter(_cameraId, HdCameraTokens->clipPlanes,
             clipPlanes);
         GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_cameraId,
-            HdStCamera::DirtyClipPlanes);
+            HdCamera::DirtyClipPlanes);
     }
-}
-
-void
-HdxTaskController::ResetImage()
-{
-    // Pass this call through to HdxRenderTask's ResetImage().
-    static_cast<HdxRenderTask*>(
-            GetRenderIndex()->GetTask(_renderTaskId).get())
-        ->ResetImage();
 }
 
 bool

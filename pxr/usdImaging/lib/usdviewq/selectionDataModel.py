@@ -24,7 +24,7 @@
 
 from collections import OrderedDict
 
-from pxr import Sdf
+from pxr import Sdf, Gf
 from qt import QtCore
 
 from customAttributes import (ComputedPropertyNames, BoundingBoxAttribute,
@@ -346,8 +346,9 @@ class SelectionDataModel(QtCore.QObject):
         self.batchComputedPropChanges = Blocker(
             exitCallback=self._computedPropSelectionChanged)
 
-        self._primSelection = _PrimSelection()
+        self._pointSelection = Gf.Vec3f(0.0, 0.0, 0.0)
 
+        self._primSelection = _PrimSelection()
         # The path selection should never be empty. If it ever is, we
         # immediately add the root path before returning to user control (see
         # _primSelectionChanged).
@@ -362,7 +363,6 @@ class SelectionDataModel(QtCore.QObject):
         self._computedPropSelection = _PropSelection()
 
     ### Internal Operations ###
-
     def _primSelectionChanged(self):
         """Should be called whenever a change is made to _primSelection. Some
         final work is done then the prim selection changed signal is emitted.
@@ -556,9 +556,18 @@ class SelectionDataModel(QtCore.QObject):
 
     def clear(self):
         """Clear all selections."""
-
+        self.clearPoint()
         self.clearPrims()
         self.clearProps()
+
+    def clearPoint(self):
+        self.setPoint(Gf.Vec3f(0.0, 0.0, 0.0))
+
+    def setPoint(self, point):
+        self._pointSelection = point
+
+    def getPoint(self):
+        return self._pointSelection
 
     ### Prim Path Operations ###
 
@@ -572,7 +581,6 @@ class SelectionDataModel(QtCore.QObject):
         """Add a path to the path selection. If an instance is given, only add
         that instance.
         """
-
         path = self._ensureValidPrimPath(path)
         self._validateInstanceIndexParameter(instance)
 
@@ -606,7 +614,6 @@ class SelectionDataModel(QtCore.QObject):
         """Clear the prim selection then add a single prim path back to the
         selection. If an instance is given, only add that instance.
         """
-
         with self.batchPrimChanges:
             self.clearPrims()
             self.addPrimPath(path, instance)

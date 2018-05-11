@@ -42,19 +42,34 @@ over "GLOBAL" (
                 """
             }
             dictionary surface = {
-                string doc = """Describes the surface relationship terminal on
-                a UsdShadeMaterial. Used to find the terminal UsdShadeShader
-                describing the surface of a UsdShadeMaterial.
-                """
-            }
-            dictionary displacement = {
-                string doc = """Describes the displacement relationship
-                terminal on a UsdShadeMaterial. Used to find the terminal
-                UsdShadeShader describing the displacement of a
+                string doc = """Describes the <i>surface</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the surface of a 
                 UsdShadeMaterial.
                 """
             }
-
+            dictionary displacement = {
+                string doc = """Describes the <i>displacement</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the displacement of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary volume = {
+                string doc = """Describes the <i>volume</i> output 
+                terminal on a UsdShadeMaterial. It is used to define the 
+                terminal UsdShadeShader describing the volume of a 
+                UsdShadeMaterial.
+                """
+            }
+            dictionary universalRenderContext = {
+                string value = ""
+                string doc = """Possible value for the "renderContext" parameter
+                \ref UsdShadeMaterial_Outputs API. Represents the universal
+                renderContext. An output with a univesal renderContext is 
+                applicable to all possible rendering contexts.
+                """
+            }
             dictionary allPurpose = {
                 string value = ""
                 string doc = """Possible value for the 'materialPurpose' paramter
@@ -131,7 +146,7 @@ over "GLOBAL" (
                 """
             }
             dictionary bindMaterialAs = {
-                string doc="""Token valued metadata key authored on a material 
+                string doc = """Token valued metadata key authored on a material 
                 binding relationship to indicate the strength of the binding 
                 relative to bindings authored on descendants.
                 """
@@ -149,7 +164,7 @@ over "GLOBAL" (
                 any bindings authored on the descendants."""
             }
             dictionary fallbackStrength = {
-                string doc="""Sentinal value to be used for 'bindMaterialAs' 
+                string doc = """Sentinal value to be used for 'bindMaterialAs' 
                 metadata's default value. Clients should pass this in for the 
                 'bindingStrength' argument to UsdShadeMaterialBindingAPI::Bind(),
                 if they want to author the default value (weakerThanDescendants)
@@ -188,6 +203,7 @@ class NodeGraph "NodeGraph" (
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/shader.h"
 """
     }
 ) {
@@ -248,9 +264,36 @@ class Material "Material" (
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/faceSetAPI.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/tokens.h"
 """
     }
-) {
+) 
+{
+    token outputs:surface (
+        doc = """Represents the universal "surface" output terminal of a
+        material."""
+        displayGroup = "Outputs"
+        customData = {
+            string apiName = "surface"
+        }
+    )
+    token outputs:displacement (
+        doc = """Represents the universal "displacement" output terminal of a 
+        material."""
+        displayGroup = "Outputs"
+        customData = {
+            string apiName = "displacement"
+        }
+    )
+    token outputs:volume (
+        doc = """Represents the universal "volume" output terminal of a
+        material."""
+        displayGroup = "Outputs"
+        customData = {
+            string apiName = "volume"
+        }
+    )
 }
 
 class Shader "Shader" (
@@ -300,6 +343,7 @@ class Shader "Shader" (
 
 class "ConnectableAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdShadeConnectableAPI is an API schema that provides a common
     interface for creating outputs and making connections between shading 
     parameters and outputs. The interface is common to all UsdShade schemas
@@ -321,6 +365,7 @@ class "ConnectableAPI"
     UsdShadeInput and UsdShadeOutput.
     """ 
     customData = {
+        token apiSchemaType = "nonApplied"
         string extraIncludes = """
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/nodeGraph.h"
@@ -332,6 +377,7 @@ class "ConnectableAPI"
 
 class "MaterialBindingAPI"
 (
+    inherits = </APISchemaBase>
     doc = """UsdShadeMaterialBindingAPI is an API schema that provides an 
     interface for binding materials to prims or collections of prims 
     (represented by UsdCollectionAPI objects). 

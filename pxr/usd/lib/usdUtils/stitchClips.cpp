@@ -183,20 +183,27 @@ namespace {
                                const std::string& referencedRealPath,
                                const std::string& resultRealPath)
     {
+        // Use TfNormPath to ensure consistent formatting across platforms.
         std::string resultingIdentifier;
         if (TfGetPathName(referencedIdentifier).empty()) {
-            resultingIdentifier = "./" + referencedIdentifier;
-        } else {
-            std::string resultDir = TfGetPathName(resultRealPath);
-            if (TfStringStartsWith(referencedRealPath, resultDir)) {
-                resultingIdentifier = std::string(referencedRealPath).replace(0, 
-                    resultDir.length(), "./");
+            resultingIdentifier = "./" + TfNormPath(referencedIdentifier);
+        } else if (!resultRealPath.empty()) {
+            // resultRealPath may be empty if the result layer is an anonymous
+            // layer. In that case, we cannot relativize referencedIdentifier.
+            const std::string normResultRealPath = TfNormPath(resultRealPath);
+            const std::string normReferencedRealPath = 
+                TfNormPath(referencedRealPath);
+
+            std::string resultDir = TfGetPathName(normResultRealPath);
+            if (!resultDir.empty() && 
+                TfStringStartsWith(normReferencedRealPath, resultDir)) {
+                resultingIdentifier = normReferencedRealPath;
+                resultingIdentifier.replace(0, resultDir.length(), "./");
             }
         }
 
-        return resultingIdentifier.empty() ? 
-                referencedIdentifier 
-                : resultingIdentifier;
+        return resultingIdentifier.empty() ?
+            referencedIdentifier : resultingIdentifier;
     }
 
     // During parallel generation, we will generate non-relative paths
@@ -575,7 +582,21 @@ namespace {
         resultLayer->SetStartTimeCode(startTimeCode);
     }
 
+    void _StitchLayersIgnoringTimeSamples(
+        const SdfLayerHandle& strongLayer,
+        const SdfLayerHandle& weakLayer)
+    {
+        namespace ph = std::placeholders;
+        UsdUtilsStitchValueFn ignoreTimeSamples = std::bind(
+            [](const TfToken& field) {
+                if (field == SdfFieldKeys->TimeSamples) {
+                    return UsdUtilsStitchValueStatus::NoStitchedValue;
+                }
+                return UsdUtilsStitchValueStatus::UseDefaultValue;
+            }, ph::_1);
 
+        UsdUtilsStitchLayers(strongLayer, weakLayer, ignoreTimeSamples);
+    }
 
     struct _StitchLayersResult {
         SdfPath clipPath;
@@ -601,8 +622,7 @@ namespace {
                           SdfLayerRefPtrVector::const_iterator>& clipLayers)
         {
             for (const auto& layer : clipLayers) {
-                UsdUtilsStitchLayers(topology, layer,
-                                     /*ignoreTimeSamples=*/ true);
+                _StitchLayersIgnoringTimeSamples(topology, layer);
                 if (clipPath != SdfPath::AbsoluteRootPath()) {
                     _StitchClipMetadata(root, layer, clipPath,  
                                         _GetStartTimeCode(layer),
@@ -612,8 +632,7 @@ namespace {
         }
 
         void join(_StitchLayersResult& rhs) {
-            UsdUtilsStitchLayers(topology, rhs.topology,
-                                 /*ignoreTimeSamples=*/ true);  
+            _StitchLayersIgnoringTimeSamples(topology, rhs.topology);
             if (clipPath != SdfPath::AbsoluteRootPath()) {
                 _MergeRootLayerMetadata(root, rhs.root, clipPath, clipSet);
             }
@@ -653,12 +672,12 @@ namespace {
     {
         auto result = _AggregateDataFromClips(
             topologyLayer, clipLayers, clipPath, clipSet);
-        UsdUtilsStitchLayers(topologyLayer, result.topology, true);
+        _StitchLayersIgnoringTimeSamples(topologyLayer, result.topology);
 
         // if the rootLayer has no clip-metadata authored 
         if (!resultLayer->GetPrimAtPath(clipPath)) {
             // we need to run traditional stitching to add the prim structure
-            UsdUtilsStitchLayers(resultLayer, result.root, true);
+            _StitchLayersIgnoringTimeSamples(resultLayer, result.root);
         } else {
             _MergeRootLayerMetadata(resultLayer, result.root, 
                                     clipPath, clipSet);
@@ -698,7 +717,7 @@ namespace {
         // Note that we don't specify a unique clipPath since we're only
         // interested in aggregating topology. 
         auto result  = _AggregateDataFromClips(topologyLayer, clipLayers);
-        UsdUtilsStitchLayers(topologyLayer, result.topology, true);
+        _StitchLayersIgnoringTimeSamples(topologyLayer, result.topology);
 
         return errorMark.IsClean();
     }

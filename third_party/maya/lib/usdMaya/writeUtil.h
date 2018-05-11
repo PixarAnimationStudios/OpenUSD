@@ -38,9 +38,11 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/primvar.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MFnArrayAttrsData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 #include <maya/MString.h>
@@ -49,13 +51,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class UsdUtilsSparseValueWriter;
 
-
+/// This struct contains helpers for writing USD (thus reading Maya data).
 struct PxrUsdMayaWriteUtil
 {
     /// \name Helpers for writing USD
     /// \{
 
+    /// Returns whether the environment setting for writing the TexCoord 
+    /// types is set to true
+    PXRUSDMAYA_API
+    static bool WriteUVAsFloat2();
+    
     /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
     /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
     /// contain double data will return the appropriate float-based type.
@@ -115,20 +123,27 @@ struct PxrUsdMayaWriteUtil
             const bool translateMayaDoubleToUsdSinglePrecision =
                 PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
+    /// Given an \p attrPlug, reads its value and returns it as a wrapped
+    /// VtValue. The type of the value is determined by consulting the given
+    /// \p typeName; if the value cannot be converted into a \p typeName, then
+    /// returns an empty VtValue.
+    PXRUSDMAYA_API
+    static VtValue GetVtValue(
+            const MPlug& attrPlug,
+            const SdfValueTypeName& typeName);
+
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.
     ///
-    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
-    /// contain double data will be set on \p usdAttr as the appropriate
-    /// float-based type. Otherwise, their data will be set as the appropriate
-    /// double-based type.
+    /// Whether to export Maya attributes as single-precision or
+    /// double-precision floating point is determined by consulting the type
+    /// name of the USD attribute.
     PXRUSDMAYA_API
     static bool SetUsdAttr(
             const MPlug& attrPlug,
             const UsdAttribute& usdAttr,
             const UsdTimeCode& usdTime,
-            const bool translateMayaDoubleToUsdSinglePrecision =
-                PxrUsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// Given a Maya node at \p dagPath, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time
@@ -137,7 +152,8 @@ struct PxrUsdMayaWriteUtil
     static bool WriteUserExportedAttributes(
             const MDagPath& dagPath,
             const UsdPrim& usdPrim,
-            const UsdTimeCode& usdTime);
+            const UsdTimeCode& usdTime,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// Authors class inherits on \p usdPrim.  \p inheritClassNames are
     /// specified as names (not paths).  For example, they should be
@@ -146,6 +162,18 @@ struct PxrUsdMayaWriteUtil
     static bool WriteClassInherits(
             const UsdPrim& usdPrim,
             const std::vector<std::string>& inheritClassNames);
+
+    /// Given \p inputPointsData (native Maya particle data), writes the
+    /// arrays as point-instancer attributes on the given \p instancer
+    /// schema object.
+    /// Returns true if successful.
+    PXRUSDMAYA_API
+    static bool WriteArrayAttrsToInstancer(
+            MFnArrayAttrsData& inputPointsData,
+            const UsdGeomPointInstancer& instancer,
+            const size_t numPrototypes,
+            const UsdTimeCode& usdTime,
+            UsdUtilsSparseValueWriter *valueWriter=nullptr);
 
     /// \}
 

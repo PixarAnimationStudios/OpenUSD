@@ -109,11 +109,11 @@ class testUsdExportCamera(unittest.TestCase):
                 self.assertEqual(value, expectedValue)
 
             # Validate the number of time samples on the attribute.
-            expectedAttrNumTimeSamples = 0.0
+            expectedMaxAttrNumTimeSamples = 0.0
             if isAnimated:
-                expectedAttrNumTimeSamples = self.TIMECODE_STEPS
+                expectedMaxAttrNumTimeSamples = self.TIMECODE_STEPS
             numTimeSamples = usdAttr.GetNumTimeSamples()
-            self.assertTrue(Gf.IsClose(numTimeSamples, expectedAttrNumTimeSamples, 1e-6))
+            self.assertTrue(numTimeSamples <= expectedMaxAttrNumTimeSamples)
 
         # Validate the number of time samples on the camera's xformOp(s).
         expectedTransformNumTimeSamples = 0.0

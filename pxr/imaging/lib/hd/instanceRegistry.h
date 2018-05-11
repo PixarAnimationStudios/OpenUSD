@@ -45,7 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// KEY has to be hashable index type and VALUE is shared_ptr. In most use
 /// cases, the client computes a hash key which represents large bulky data
-/// (like topology, primVars) and registers it into HdInstanceRegistry. If the
+/// (like topology, primvars) and registers it into HdInstanceRegistry. If the
 /// key has already been registered, the registry returns HdInstance and the
 /// client can use GetValue() without setting/computing actual bulky data. If
 /// it doesn't exist, IsFirstInstance() returns true for the first instance

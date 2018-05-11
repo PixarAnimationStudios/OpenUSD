@@ -195,7 +195,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
         bits |= (HdChangeTracker::DirtyPoints  |
                  HdChangeTracker::DirtyNormals |
                  HdChangeTracker::DirtyWidths  |
-                 HdChangeTracker::DirtyPrimVar);
+                 HdChangeTracker::DirtyPrimvar);
     }
 
     // propagate point dirtiness to normal
@@ -212,7 +212,7 @@ HdRprim::PropagateRprimDirtyBits(HdDirtyBits bits)
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= (HdChangeTracker::DirtyPoints  |
                  HdChangeTracker::DirtyNormals |
-                 HdChangeTracker::DirtyPrimVar);
+                 HdChangeTracker::DirtyPrimvar);
     }
 
     // Let subclasses propagate bits
@@ -279,7 +279,7 @@ HdRprim::GetInitialDirtyBitsMask() const
 }
 
 void
-HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
+HdRprim::_PopulateConstantPrimvars(HdSceneDelegate* delegate,
                                    HdDrawItem *drawItem,
                                    HdDirtyBits *dirtyBits)
 {
@@ -370,12 +370,13 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
         sources.push_back(source);
     }
 
-    if (HdChangeTracker::IsAnyPrimVarDirty(*dirtyBits, id)) {
-        TfTokenVector primVarNames = delegate->GetPrimVarConstantNames(id);
-        sources.reserve(sources.size()+primVarNames.size());
-        for (const TfToken& name: primVarNames) {
-            if (HdChangeTracker::IsPrimVarDirty(*dirtyBits, id, name)) {
-                VtValue value = delegate->Get(id, name);
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        HdPrimvarDescriptorVector constantPrimvars =
+            delegate->GetPrimvarDescriptors(id, HdInterpolationConstant);
+        sources.reserve(sources.size()+constantPrimvars.size());
+        for (const HdPrimvarDescriptor& pv: constantPrimvars) {
+            if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {
+                VtValue value = delegate->Get(id, pv.name);
 
                 // XXX Hydra doesn't support string primvar yet
                 if (value.IsHolding<std::string>()) continue;
@@ -384,13 +385,13 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
                     // A value holding an empty array does not count as an
                     // empty value. Catch that case here.
                     TF_WARN("Empty array value for constant primvar %s "
-                            "on Rprim %s", name.GetText(), id.GetText());
+                            "on Rprim %s", pv.name.GetText(), id.GetText());
                 } else if (!value.IsEmpty()) {
                     // Given that this is a constant primvar, if it is
                     // holding VtArray then use that as a single array
                     // value rather than as one value per element.
                     HdBufferSourceSharedPtr source(
-                        new HdVtBufferSource(name, value,
+                        new HdVtBufferSource(pv.name, value,
                             value.IsArrayValued() ? value.GetArraySize() : 1));
 
                     TF_VERIFY(source->GetTupleType().type != HdTypeInvalid);
@@ -406,7 +407,7 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
         return;
 
     // Allocate a new uniform buffer if not exists.
-    if (!drawItem->GetConstantPrimVarRange()) {
+    if (!drawItem->GetConstantPrimvarRange()) {
         // establish a buffer range
         HdBufferSpecVector bufferSpecs;
         TF_FOR_ALL(srcIt, sources) {
@@ -415,16 +416,16 @@ HdRprim::_PopulateConstantPrimVars(HdSceneDelegate* delegate,
 
         HdBufferArrayRangeSharedPtr range =
             resourceRegistry->AllocateShaderStorageBufferArrayRange(
-                HdTokens->primVar, bufferSpecs);
+                HdTokens->primvar, bufferSpecs);
         TF_VERIFY(range->IsValid());
 
         _sharedData.barContainer.Set(
-            drawItem->GetDrawingCoord()->GetConstantPrimVarIndex(), range);
+            drawItem->GetDrawingCoord()->GetConstantPrimvarIndex(), range);
     }
-    TF_VERIFY(drawItem->GetConstantPrimVarRange()->IsValid());
+    TF_VERIFY(drawItem->GetConstantPrimvarRange()->IsValid());
 
     resourceRegistry->AddSources(
-        drawItem->GetConstantPrimVarRange(), sources);
+        drawItem->GetConstantPrimvarRange(), sources);
 }
 
 VtMatrix4dArray

@@ -24,9 +24,11 @@
 #include "gusd/GU_USD.h"
 #include "gusd/GU_PackedUSD.h"
 
+#include "gusd/error.h"
 #include "gusd/USD_Utils.h"
 #include "gusd/UT_Assert.h"
-#include "gusd/UT_Error.h"
+
+#include "pxr/base/arch/hints.h"
 
 #include <GA/GA_AIFSharedStringTuple.h>
 #include <GA/GA_AIFCopyData.h>
@@ -49,40 +51,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 
-void _LogBindError(GusdUT_ErrorContext& err, const char* attr)
+void _LogAttrCreateError(const char* name)
 {
-    UT_WorkBuffer buf;
-    buf.sprintf("Attribute '%s' is missing or the wrong type", attr);
-    err.AddError(buf.buffer());
-}
-
-
-void _LogCreateError(GusdUT_ErrorContext& err, const char* attr)
-{
-    UT_WorkBuffer buf;
-    buf.sprintf("Failed creating '%s' attribute", attr);
-    err.AddError(buf.buffer());
+    GUSD_ERR().Msg("Failed creating attribute '%s'.");
 }
 
 
 template <typename Handle>
-bool _AttrBindSuccess(Handle& handle, const char* name,
-                      GusdUT_ErrorContext* err)
+bool _AttrBindSuccess(Handle& handle, const char* name)
 {
     if(handle.isValid())
         return true;
-    if(err) _LogBindError(*err, name);
+    GUSD_ERR().Msg("Attribute '%s' is missing or the wrong type", name);
     return false;
 }
 
 
 template <typename Handle>
-bool _AttrCreateSuccess(Handle& handle, const char* name,
-                        GusdUT_ErrorContext* err)
+bool _AttrCreateSuccess(Handle& handle, const char* name)
 {
     if(handle.isValid())
         return true;
-    if(err) _LogCreateError(*err, name);
+    _LogAttrCreateError(name);
     return false;
 }
 
@@ -129,29 +119,32 @@ struct _ObjectsFromSharedStringTupleT
                                    const GA_AIFSharedStringTuple& tuple,
                                    const StringToObjFn& stringToObjFn,
                                    UT_Array<T>& vals,
-                                   GusdUT_ErrorContext* err,
+                                   UT_ErrorSeverity sev,
+                                   GusdErrorTransport& errTransport,
                                    std::atomic_bool& workerInterrupt)
         : _attr(attr), _tuple(tuple), _stringToObjFn(stringToObjFn),
-          _vals(vals), _err(err), _workerInterrupt(workerInterrupt) {}
+          _vals(vals), _sev(sev), _errTransport(errTransport),
+          _workerInterrupt(workerInterrupt) {}
 
     void    operator()(const UT_BlockedRange<size_t>& r) const
             {
+                GusdAutoErrorTransport autoErrTransport(_errTransport);
                 auto* boss = UTgetInterrupt();
                 char bcnt = 0;
 
                 for(size_t i = r.begin(); i < r.end(); ++i) {
                     // Exit early either via user interrupt or
                     // by another worker thread.
-                    if(BOOST_UNLIKELY(!++bcnt && (boss->opInterrupt() ||
-                                                  _workerInterrupt)))
+                    if(ARCH_UNLIKELY(!++bcnt && (boss->opInterrupt() ||
+                                                 _workerInterrupt)))
                         return;
 
                     UT_StringRef str(_tuple.getTableString(&_attr, i));
                     if(str.isstring()) {
                         T val;
-                        if(_stringToObjFn(str, val, _err)) {
+                        if(_stringToObjFn(str, val, _sev)) {
                             _vals(i) = val;
-                        } else if(!_err || (*_err)() >= UT_ERROR_ABORT) {
+                        } else if(_sev >= UT_ERROR_ABORT) {
                             // Interrupt the other worker threads.
                             _workerInterrupt = true;
                             return;
@@ -164,7 +157,8 @@ private:
     const GA_AIFSharedStringTuple&  _tuple;
     const StringToObjFn&            _stringToObjFn;
     UT_Array<T>&                    _vals;
-    GusdUT_ErrorContext*            _err;
+    UT_ErrorSeverity                _sev;
+    GusdErrorTransport&             _errTransport;
     std::atomic_bool&               _workerInterrupt;
 };
 
@@ -175,7 +169,7 @@ bool
 _GetObjsFromStringAttrT(const GA_Attribute& attr,
                         const StringToObjFn& stringToObjFn,
                         UT_Array<T>& vals,
-                        GusdUT_ErrorContext* err)
+                        UT_ErrorSeverity sev=UT_ERROR_NONE)
 {
     const GA_AIFSharedStringTuple* tuple = attr.getAIFSharedStringTuple();
     if(!tuple)
@@ -184,19 +178,21 @@ _GetObjsFromStringAttrT(const GA_Attribute& attr,
     GA_Size count = tuple->getTableEntries(&attr);
     vals.setSize(count);
 
+    GusdErrorTransport errTransport;
     std::atomic_bool workerInterrupt(false);
+
     if(stringToObjFn.lightItems) {
         UTparallelForLightItems(
             UT_BlockedRange<size_t>(0, count),
              _ObjectsFromSharedStringTupleT<T,StringToObjFn>(
                  attr, *tuple, stringToObjFn,
-                 vals, err, workerInterrupt));
+                 vals, sev, errTransport, workerInterrupt));
     } else {
         UTparallelFor(
             UT_BlockedRange<size_t>(0, count),
              _ObjectsFromSharedStringTupleT<T,StringToObjFn>(
                  attr, *tuple, stringToObjFn,
-                 vals, err, workerInterrupt));
+                 vals, sev, errTransport, workerInterrupt));
     }
     return (!UTgetInterrupt()->opInterrupt() && !workerInterrupt);
 }
@@ -209,7 +205,7 @@ _GetObjsFromStringAttrT(const GA_Attribute& attr,
                         const GA_Range& rng,
                         const StringToObjFn& stringToObjFn,
                         UT_Array<T>& vals,
-                        GusdUT_ErrorContext* err)
+                        UT_ErrorSeverity sev=UT_ERROR_NONE)
 {
     GA_ROHandleS hnd(&attr);
     if(hnd.isInvalid())
@@ -217,7 +213,7 @@ _GetObjsFromStringAttrT(const GA_Attribute& attr,
 
     UT_Array<T> tableVals;
     if(!_GetObjsFromStringAttrT<T,StringToObjFn>(attr, stringToObjFn,
-                                                 tableVals, err))
+                                                 tableVals, sev))
         return false;
            
     vals.clear();
@@ -228,7 +224,7 @@ _GetObjsFromStringAttrT(const GA_Attribute& attr,
     exint i = 0;
     char bcnt = 0;
     for(GA_Iterator it(rng); !it.atEnd(); ++it, ++i) {
-        if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+        if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
             return false;
         GA_StringIndexType idx = hnd.getIndex(*it);
         if(idx != GA_INVALID_STRING_INDEX)
@@ -243,9 +239,9 @@ struct _StringToPrimPathFn
     static const bool lightItems = true;
 
     bool    operator()(const UT_StringRef& str, SdfPath& path,
-                       GusdUT_ErrorContext* err) const
+                       UT_ErrorSeverity sev) const
             {
-                return GusdUSD_Utils::CreateSdfPath(str, path, err);
+                return GusdUSD_Utils::CreateSdfPath(str, path, sev);
             }
 };
 
@@ -263,7 +259,7 @@ struct _StringToTokenFn
         }
 
     bool    operator()(const UT_StringRef& str, TfToken& token,
-                       GusdUT_ErrorContext* err) const
+                       UT_ErrorSeverity sev) const
             {
                 if(_ns.empty())
                     token = TfToken(str.toStdString());
@@ -283,10 +279,10 @@ private:
 bool
 GusdGU_USD::GetPrimPathsFromStringAttr(const GA_Attribute& attr,
                                        UT_Array<SdfPath>& paths,
-                                       GusdUT_ErrorContext* err)
+                                       UT_ErrorSeverity sev)
 {
     return _GetObjsFromStringAttrT<SdfPath,_StringToPrimPathFn>(
-            attr, _StringToPrimPathFn(), paths, err);
+            attr, _StringToPrimPathFn(), paths, sev);
 }
 
 
@@ -294,21 +290,20 @@ bool
 GusdGU_USD::GetPrimPathsFromStringAttr(const GA_Attribute& attr,
                                        const GA_Range& rng,
                                        UT_Array<SdfPath>& paths,
-                                       GusdUT_ErrorContext* err)
+                                       UT_ErrorSeverity sev)
 {
     return _GetObjsFromStringAttrT<SdfPath,_StringToPrimPathFn>(
-            attr, rng, _StringToPrimPathFn(), paths, err);
+            attr, rng, _StringToPrimPathFn(), paths, sev);
 }
 
 
 bool
 GusdGU_USD::GetTokensFromStringAttr(const GA_Attribute& attr,
                                     UT_Array<TfToken>& tokens,
-                                    const char* nameSpace,
-                                    GusdUT_ErrorContext* err)
+                                    const char* nameSpace)
 {
     return _GetObjsFromStringAttrT<TfToken,_StringToTokenFn>(
-            attr, _StringToTokenFn(nameSpace), tokens, err);
+            attr, _StringToTokenFn(nameSpace), tokens);
 }
 
 
@@ -316,11 +311,10 @@ bool
 GusdGU_USD::GetTokensFromStringAttr(const GA_Attribute& attr,
                                     const GA_Range& rng,
                                     UT_Array<TfToken>& tokens,
-                                    const char* nameSpace,
-                                    GusdUT_ErrorContext* err)
+                                    const char* nameSpace)
 {
     return _GetObjsFromStringAttrT<TfToken,_StringToTokenFn>(
-            attr, rng, _StringToTokenFn(nameSpace), tokens, err);
+            attr, rng, _StringToTokenFn(nameSpace), tokens);
 }
 
 
@@ -332,31 +326,31 @@ GusdGU_USD::BindPrims(GusdStageCacheReader& cache,
                       UT_Array<SdfPath>* variants,
                       GusdDefaultArray<GusdPurposeSet>* purposes,
                       GusdDefaultArray<UsdTimeCode>* times,
-                      GusdUT_ErrorContext* err)
+                      UT_ErrorSeverity sev)
 {
     // Bind prims.
     if(rng.getOwner() == GA_ATTRIB_PRIMITIVE) {
         if(!BindPrimsFromPackedPrims(prims, rng, variants,
                                      purposes ? &purposes->GetArray() : nullptr,
-                                     err))
+                                     sev))
             return false;
 
-        if(times && !GetTimeCodesFromPackedPrims(rng, times->GetArray(), err))
+        if(times && !GetTimeCodesFromPackedPrims(rng, times->GetArray()))
             return false;
     } else {
         auto owner = rng.getOwner();
         // Path and prim path are required.
         GA_ROHandleS path(&gd, owner, GUSD_PATH_ATTR);
-        if(!_AttrBindSuccess(path, GUSD_PATH_ATTR, err))
+        if(!_AttrBindSuccess(path, GUSD_PATH_ATTR))
             return false;
         GA_ROHandleS primPath(&gd, owner, GUSD_PRIMPATH_ATTR);
-        if(!_AttrBindSuccess(primPath, GUSD_PRIMPATH_ATTR, err))
+        if(!_AttrBindSuccess(primPath, GUSD_PRIMPATH_ATTR))
             return false;
 
         if(!BindPrimsFromAttrs(cache, prims, rng, *path.getAttribute(), 
                                *primPath.getAttribute(),
                                gd.findAttribute(owner, GUSD_VARIANTS_ATTR),
-                               variants, err))
+                               variants, sev))
             return false;
 
         if(purposes) {
@@ -368,7 +362,7 @@ GusdGU_USD::BindPrims(GusdStageCacheReader& cache,
             GA_ROHandleF timesHnd(&gd, owner, GUSD_FRAME_ATTR);
             if(timesHnd.isValid()) {
                 if(!GetTimeCodesFromAttr(rng, *timesHnd.getAttribute(),
-                                         times->GetArray(), err))
+                                         times->GetArray()))
                     return false;
             }
         }
@@ -426,12 +420,12 @@ GusdGU_USD::BindPrimsFromAttrs(
     const GA_Attribute& primPathAttr,
     const GA_Attribute* variantsAttr,
     UT_Array<SdfPath>* variants,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     // Handle paths first. This might allow us to skip loading stages.
 
     UT_Array<SdfPath> primPaths;
-    if(!GetPrimPathsFromStringAttr(primPathAttr, rng, primPaths, err))
+    if(!GetPrimPathsFromStringAttr(primPathAttr, rng, primPaths, sev))
         return false;
 
     UT_ASSERT(primPaths.size() == rng.getEntries());
@@ -444,7 +438,7 @@ GusdGU_USD::BindPrimsFromAttrs(
     if(variantsAttr) {
         // Get the unique set of variants on the table.
         UT_Array<SdfPath> uniqueVariants;
-        if(!GetPrimPathsFromStringAttr(*variantsAttr, uniqueVariants, err))
+        if(!GetPrimPathsFromStringAttr(*variantsAttr, uniqueVariants, sev))
             return false;
         
         // Create edits for the variants.
@@ -480,7 +474,7 @@ GusdGU_USD::BindPrimsFromAttrs(
 
     prims.setSize(rng.getEntries());
     return cache.GetPrims(filePaths, primPaths, edits,
-                          prims.data(), GusdStageOpts::LoadAll(), err);
+                          prims.data(), GusdStageOpts::LoadAll(), sev);
 }
 
 
@@ -490,7 +484,7 @@ GusdGU_USD::BindPrimsFromPackedPrims(
     const GA_Range& rng,
     UT_Array<SdfPath>* variants,
     UT_Array<GusdPurposeSet>* purposes,
-    GusdUT_ErrorContext* err)
+    UT_ErrorSeverity sev)
 {
     const exint size = rng.getEntries();
     prims.setSize(size);
@@ -526,7 +520,7 @@ GusdGU_USD::BindPrimsFromPackedPrims(
             continue;
         }
 
-        prims(i) = prim->getUsdPrim(err);
+        prims(i) = prim->getUsdPrim(sev);
 
         SdfPath primPath, variantPath;
         GusdUSD_Utils::ExtractPrimPathAndVariants(prim->primPath(),
@@ -546,8 +540,7 @@ GusdGU_USD::BindPrimsFromPackedPrims(
 bool
 GusdGU_USD::GetTimeCodesFromAttr(const GA_Range& rng,
                                  const GA_Attribute& attr,
-                                 UT_Array<UsdTimeCode>& times,
-                                 GusdUT_ErrorContext* err)
+                                 UT_Array<UsdTimeCode>& times)
 {
     GA_ROHandleF hnd(&attr);
     if(hnd.isInvalid())
@@ -559,7 +552,7 @@ GusdGU_USD::GetTimeCodesFromAttr(const GA_Range& rng,
     char bcnt = 0;
     exint idx = 0;
     for(GA_Iterator it(rng); !it.atEnd(); ++it, ++idx) {
-        if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+        if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
             return false;
         times(idx) = hnd.get(*it);
     }
@@ -569,8 +562,7 @@ GusdGU_USD::GetTimeCodesFromAttr(const GA_Range& rng,
 
 bool
 GusdGU_USD::GetTimeCodesFromPackedPrims(const GA_Range& rng,
-                                        UT_Array<UsdTimeCode>& times,
-                                        GusdUT_ErrorContext* err)
+                                        UT_Array<UsdTimeCode>& times)
 {
     times.setSize(rng.getEntries());
 
@@ -606,14 +598,13 @@ GA_Offset
 GusdGU_USD::AppendRefPoints(GU_Detail& gd,
                             const UT_Array<UsdPrim>& prims,
                             const char* pathAttrName,   
-                            const char* primPathAttrName,
-                            GusdUT_ErrorContext* err)
+                            const char* primPathAttrName)
 {
     auto owner = GA_ATTRIB_POINT;
     GA_RWHandleS path(gd.addStringTuple(owner, pathAttrName, 1));
     GA_RWHandleS primPath(gd.addStringTuple(owner, primPathAttrName, 1));
-    if(!_AttrCreateSuccess(path, pathAttrName, err) ||
-       !_AttrCreateSuccess(primPath, primPathAttrName, err))
+    if(!_AttrCreateSuccess(path, pathAttrName) ||
+       !_AttrCreateSuccess(primPath, primPathAttrName))
         return GA_INVALID_OFFSET;
     
     GA_Offset start = gd.appendPointBlock(prims.size());
@@ -634,7 +625,7 @@ GusdGU_USD::AppendRefPoints(GU_Detail& gd,
     GA_StringIndexType lastStageIdx = GA_INVALID_STRING_INDEX;
 
     for(GA_Offset o = start; o < end; ++o, ++i) {
-        if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+        if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
             return GA_INVALID_OFFSET;
 
         if(const UsdPrim& prim = prims(i)) {
@@ -668,8 +659,7 @@ GusdGU_USD::AppendPackedPrims(
     const UT_Array<SdfPath>& variants,
     const GusdDefaultArray<UsdTimeCode>& times,
     const GusdDefaultArray<UT_StringHolder>& lods,
-    const GusdDefaultArray<GusdPurposeSet>& purposes,
-    GusdUT_ErrorContext* err)
+    const GusdDefaultArray<GusdPurposeSet>& purposes)
 {
     UT_ASSERT(variants.size() == prims.size());
     UT_ASSERT(times.IsConstant() || times.size() == prims.size());
@@ -716,8 +706,7 @@ GusdGU_USD::AppendExpandedRefPoints(
     const UT_Array<PrimIndexPair>& prims,
     const GA_AttributeFilter& filter,
     const char* pathAttrName,
-    const char* primPathAttrName,
-    GusdUT_ErrorContext* err)
+    const char* primPathAttrName)
 {
     // Need an array of just the prims.
     UT_Array<UsdPrim> primArray(prims.size(), prims.size());
@@ -726,7 +715,7 @@ GusdGU_USD::AppendExpandedRefPoints(
 
     // Add the new ref points.
     GA_Offset start = AppendRefPoints(gd, primArray, pathAttrName,
-                                      primPathAttrName, err);
+                                      primPathAttrName);
     if(!GAisValid(start))
         return GA_INVALID_OFFSET;
 
@@ -830,8 +819,7 @@ GusdGU_USD::AppendExpandedPackedPrims(
     const GusdDefaultArray<UsdTimeCode>& times,
     const GA_AttributeFilter& filter,
     bool unpackToPolygons,
-    const UT_String& primvarPattern,
-    GusdUT_ErrorContext* err)
+    const UT_String& primvarPattern)
 {
     UT_AutoInterrupt task("Unpacking packed USD prims");
 
@@ -853,13 +841,13 @@ GusdGU_USD::AppendExpandedPackedPrims(
     // Collect the transform and viewportLOD from each source packed prim.
     UT_Array<UT_Matrix4D> srcXforms(srcSize, srcSize);    
     ComputeTransformsFromPackedPrims(srcGd, indexToOffset,
-                                     srcXforms.array(), err);
+                                     srcXforms.array());
     UT_StringArray srcVpLOD;
     srcVpLOD.setSize(srcSize);
     UT_Array<GusdPurposeSet> srcPurposes;
     srcPurposes.setSize(srcSize);
     GetPackedPrimViewportLODAndPurposes(srcGd, indexToOffset, 
-                                        srcVpLOD, srcPurposes, err);
+                                        srcVpLOD, srcPurposes);
 
     // Now remap these arrays to align with the destination packed prims.
     UT_Array<UT_Matrix4D> dstXforms(dstSize, dstSize);
@@ -883,11 +871,11 @@ GusdGU_USD::AppendExpandedPackedPrims(
     GU_Detail* gdPtr = unpackToPolygons ? new GU_Detail : &gd;
 
     GA_Size start = gdPtr->getNumPrimitives();
-    AppendPackedPrims(*gdPtr, prims, variants, times, dstVpLOD, dstPurposes, err);
+    AppendPackedPrims(*gdPtr, prims, variants, times, dstVpLOD, dstPurposes);
 
     // Now set transforms on those appended packed prims.
     GA_Range primDstRng(gdPtr->getPrimitiveRangeSlice(start));
-    SetPackedPrimTransforms(*gdPtr, primDstRng, dstXforms.array(), err);
+    SetPackedPrimTransforms(*gdPtr, primDstRng, dstXforms.array());
 
     // Need to build a list of source offsets,
     // including repeats for expanded prims. 
@@ -998,8 +986,7 @@ _WriteVariantStrings(GU_Detail& gd,
                      const GA_Range& rng,
                      const UT_Array<UT_StringHolder>& orderedVariants,
                      const UT_Array<exint>& variantIndices,
-                     const char* variantsAttr,
-                     GusdUT_ErrorContext* err)
+                     const char* variantsAttr)
 {
     auto* boss = UTgetInterrupt();
 
@@ -1007,7 +994,7 @@ _WriteVariantStrings(GU_Detail& gd,
 
     auto* attr = gd.addStringTuple(rng.getOwner(), variantsAttr, 1);
     if(!attr) {
-        if(err) _LogCreateError(*err, variantsAttr);
+        _LogAttrCreateError(variantsAttr);
         return false;
     }
 
@@ -1031,7 +1018,7 @@ _WriteVariantStrings(GU_Detail& gd,
     char bcnt = 0;
     exint idx = 0;
     for(GA_Iterator it(rng); !it.atEnd(); ++it, ++idx) {
-        if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+        if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
             return false;
         exint variantIndex = variantIndices(idx);
         if(variantIndex >= 0)
@@ -1051,8 +1038,7 @@ GusdGU_USD::WriteVariantSelectionsToAttr(
     const UT_Array<UsdPrim>& prims,
     const GusdUSD_Utils::VariantSelArray& selections,
     const char* variantsAttr,
-    const UT_Array<SdfPath>* prevVariants,
-    GusdUT_ErrorContext* err)
+    const UT_Array<SdfPath>* prevVariants)
 {
     UT_ASSERT(prims.size() == rng.getEntries());
     UT_ASSERT(!prevVariants || prevVariants->size() == prims.size());
@@ -1064,7 +1050,7 @@ GusdGU_USD::WriteVariantSelectionsToAttr(
            prims, selections, orderedVariants, indices, prevVariants))
         return false;
     return _WriteVariantStrings(gd, rng, orderedVariants,
-                                indices, variantsAttr, err);
+                                indices, variantsAttr);
 }
 
 
@@ -1074,11 +1060,10 @@ GusdGU_USD::WriteVariantSelectionsToPackedPrims(
     const GA_Range& rng,
     const UT_Array<UsdPrim>& prims,
     const GusdUSD_Utils::VariantSelArray& selections,
-    const UT_Array<SdfPath>* prevVariants,
-    GusdUT_ErrorContext* err)
+    const UT_Array<SdfPath>* prevVariants)
 {
-    if(err) err->AddError("GusdGU_USD::WriteVariantSelectionsToPackedPrims() "
-                          "is not yet implemented");
+    GUSD_ERR().Msg("GusdGU_USD::WriteVariantSelectionsToPackedPrims() "
+                   "is not yet implemented");
     return false;
 }
 
@@ -1091,8 +1076,7 @@ GusdGU_USD::AppendRefPointsForExpandedVariants(
     const UT_Array<UT_StringHolder>& orderedVariants,
     const GusdUSD_Utils::IndexPairArray& variantIndices,
     const GA_AttributeFilter& filter,
-    const char* variantsAttr,
-    GusdUT_ErrorContext* err)
+    const char* variantsAttr)
 {
     // Need an array of just the variant indices.
     UT_Array<exint> indices(variantIndices.size(), variantIndices.size());
@@ -1107,7 +1091,7 @@ GusdGU_USD::AppendRefPointsForExpandedVariants(
     // Write the variants attribute.
     GA_Range dstRng(gd.getPointMap(), start, start+indices.size());
     if(!_WriteVariantStrings(gd, dstRng, orderedVariants,
-                             indices, variantsAttr, err))
+                             indices, variantsAttr))
         return GA_INVALID_OFFSET;
 
     // Find attributes to copy.
@@ -1150,11 +1134,10 @@ GusdGU_USD::AppendPackedPrimsForExpandedVariants(
     const GA_Range& srcRng,
     const UT_Array<UT_StringHolder>& orderedVariants,
     const GusdUSD_Utils::IndexPairArray& variantIndices,
-    const GA_AttributeFilter& filter,
-    GusdUT_ErrorContext* err)
+    const GA_AttributeFilter& filter)
 {
-    if(err) err->AddError("GusdGU_USD::AppendPackedPrimsForExpandedVariants() "
-                          "is not yet implemented");
+    GUSD_ERR().Msg("GusdGU_USD::AppendPackedPrimsForExpandedVariants() "
+                              "is not yet implemented");
     return GA_INVALID_OFFSET;
 }
 
@@ -1249,7 +1232,7 @@ struct _ModifyXformsT
                 char bcnt = 0;
 
                 for(size_t i = r.begin(); i < r.end(); ++i) {
-                    if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                    if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                         return;
                     _modifyFn(_xforms[i], _offsets(i));
                 }
@@ -1325,7 +1308,7 @@ struct _XformsFromInstMatrixFn
                 char bcnt = 0;
 
                 for(size_t i = r.begin(); i < r.end(); ++i) {
-                    if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                    if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                         return;
                     GA_Offset o = _offsets(i);
                     _instMx.getMatrix(_xforms[i], _p.get(o), o);
@@ -1346,8 +1329,7 @@ GusdGU_USD::GetPackedPrimViewportLODAndPurposes(
                 const GA_Detail& gd,
                 const GA_OffsetArray& offsets,
                 UT_StringArray& viewportLOD,
-                UT_Array<GusdPurposeSet>& purposes,
-                GusdUT_ErrorContext* err)
+                UT_Array<GusdPurposeSet>& purposes)
 {
     for (exint i = 0; i < offsets.size(); ++i) {
 
@@ -1426,8 +1408,7 @@ GusdGU_USD::ComputeTransformsFromAttrs(const GA_Detail& gd,
 bool
 GusdGU_USD::ComputeTransformsFromPackedPrims(const GA_Detail& gd,
                                              const GA_OffsetArray& offsets,
-                                             UT_Matrix4D* xforms,
-                                             GusdUT_ErrorContext* err)
+                                             UT_Matrix4D* xforms)
 {
     for (exint i = 0; i < offsets.size(); ++i) {
         const GA_Primitive* p = gd.getPrimitive(offsets(i));
@@ -1462,8 +1443,7 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
                               const GA_OffsetArray& indexMap,
                               OrientAttrRepresentation orientRep,
                               ScaleAttrRepresentation scaleRep,
-                              const UT_Matrix4D* xforms,
-                              GusdUT_ErrorContext* err)
+                              const UT_Matrix4D* xforms)
 {
     /* TODO: This currently makes up a large chunk of exec time
              for the USD Transform SOP. Consider threading this.*/
@@ -1475,12 +1455,12 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
 
     // Position.
     GA_RWHandleV3 p(&gd, owner, GEO_STD_ATTRIB_POSITION);
-    if(!_AttrBindSuccess(p, GA_Names::P, err))
+    if(!_AttrBindSuccess(p, GA_Names::P))
        return false;
 
     char bcnt = 0;
     for(GA_Iterator it(r); !it.atEnd(); ++it) {
-        if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+        if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
             return false;
         const UT_Matrix4D& xf = xforms[indexMap(*it)];
         p.set(*it, UT_Vector3D(xf[3]));
@@ -1490,12 +1470,12 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
     if(scaleRep != SCALEATTR_IGNORE) {
         if(scaleRep == SCALEATTR_SCALE) {
             GA_RWHandleV3 scale(gd.addFloatTuple(owner, GA_Names::scale, 3));
-            if(!_AttrCreateSuccess(scale, GA_Names::scale, err))
+            if(!_AttrCreateSuccess(scale, GA_Names::scale))
                 return false;
 
             char bcnt = 0;
             for(GA_Iterator it(r); !it.atEnd(); ++it) {
-                if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                     return false;
 
                 const UT_Matrix4D& xf = xforms[indexMap(*it)];
@@ -1514,12 +1494,12 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
         } else { // SCALEATTR_PSCALE
             GA_RWHandleF pscale(
                 gd.addFloatTuple(owner, GA_Names::pscale, 1));
-            if(!_AttrCreateSuccess(pscale, GA_Names::pscale, err))
+            if(!_AttrCreateSuccess(pscale, GA_Names::pscale))
                 return false;
 
             char bcnt = 0;
             for(GA_Iterator it(r); !it.atEnd(); ++it) {
-                if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                     return false;
 
                 const UT_Matrix4D& xf = xforms[indexMap(*it)];
@@ -1545,13 +1525,13 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
         if(orientRep == ORIENTATTR_ORIENT) {
             GA_RWHandleQ orient(
                 gd.addFloatTuple(owner, GA_Names::orient, 4));
-            if(!_AttrCreateSuccess(orient, GA_Names::orient, err))
+            if(!_AttrCreateSuccess(orient, GA_Names::orient))
                 return false;
             orient.getAttribute()->setTypeInfo(GA_TYPE_QUATERNION);
 
             char bcnt = 0;
             for(GA_Iterator it(r); !it.atEnd(); ++it) {
-                if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                     return false;
 
                 const UT_Matrix4D& xf = xforms[indexMap(*it)];
@@ -1567,7 +1547,7 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
             GA_RWHandleV3 handles[3];
             for(int i = 0; i < 3; ++i) {
                 handles[i].bind(gd.addFloatTuple(owner, names[i], 3));
-                if(!_AttrCreateSuccess(handles[i], names[i], err))
+                if(!_AttrCreateSuccess(handles[i], names[i]))
                     return false;
                 handles[i].getAttribute()->setTypeInfo(GA_TYPE_NORMAL);
             }
@@ -1576,7 +1556,7 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
             for(int i = 0; i < 3; ++i) {
                 char bcnt = 0;
                 for(GA_Iterator it(r); !it.atEnd(); ++it) {
-                    if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                    if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                         return false;
                     const UT_Matrix4D& xf = xforms[indexMap(*it)];
                     UT_Vector3D vec(xf[i]);
@@ -1595,8 +1575,7 @@ GusdGU_USD::SetTransformAttrs(GU_Detail& gd,
 bool
 GusdGU_USD::SetPackedPrimTransforms(GU_Detail& gd,
                                     const GA_Range& r,
-                                    const UT_Matrix4D* xforms,
-                                    GusdUT_ErrorContext* err)
+                                    const UT_Matrix4D* xforms)
 {
     exint i = 0;
     for (GA_Iterator it(r); !it.atEnd(); ++it, ++i) {
@@ -1642,7 +1621,7 @@ struct _XformAttrsFn
                 
                 GA_Offset o, end;
                 for(GA_Iterator it(r); it.blockAdvance(o,end); ) {
-                    if(BOOST_UNLIKELY(!++bcnt && boss->opInterrupt()))
+                    if(ARCH_UNLIKELY(!++bcnt && boss->opInterrupt()))
                         return;
 
                     for( ; o < end; ++o) {
