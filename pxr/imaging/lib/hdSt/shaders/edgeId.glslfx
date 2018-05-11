@@ -37,50 +37,24 @@ void ProcessEdgeId(int index, vec2 faceUV)
 }
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Geometry.Bary
+-- glsl EdgeId.Geometry.EdgeParam
 
-// Barycentric parametrization
-noperspective out vec2 gsBaryCoord;
-
-vec2 GetBaryCoord(int index)
-{
-    vec3 barys[3];
-    barys[0] = vec3(1,0,0);
-    barys[1] = vec3(0,1,0);
-    barys[2] = vec3(0,0,1);
-    return barys[index].yz;
-}
-
-void ProcessTriEdgeId(int index)
-{
-    gsBaryCoord = GetBaryCoord(index);
-}
+// Interpolate linearly since we want to be able to
+// reason about the distance from the edge in fragment space.
+noperspective out vec2 gsEdgeParam;
 
 // called from Mesh.Geometry.*
 void ProcessEdgeId(int index, vec2 faceUV)
 {
-    ProcessTriEdgeId(index);
+    // The local triangular parameterization is a subset of the
+    // local rectangular parameterization, so for both cases
+    // we just record the uv parameterization at the face vertex
+    // and can reconstruct the third coordinate when necessary.
+    gsEdgeParam = faceUV;
 }
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Geometry.Rect
-
-// Rectangular parametrization
-noperspective out vec2 gsRect;
-
-void ProcessQuadEdgeId(vec2 faceUV)
-{
-    gsRect = faceUV;
-}
-
-// called from Mesh.Geometry.*
-void ProcessEdgeId(int index, vec2 faceUV)
-{
-    ProcessQuadEdgeId(faceUV);
-}
-
---- --------------------------------------------------------------------------
--- glsl EdgeId.Fragment.BaryFallback
+-- glsl EdgeId.Fragment.Fallback
 // Mixin version to use when the geometry shader stage is inactive.
 
 int GetPrimitiveEdgeId() {
@@ -92,13 +66,13 @@ bool IsFragmentOnEdge() {
 }
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Fragment.Bary
+-- glsl EdgeId.Fragment.TriangleParam
 
-noperspective in vec2 gsBaryCoord;
+noperspective in vec2 gsEdgeParam;
 
-vec3 ExpandBaryCoord(vec2 bc)
+vec3 ExpandBarycentricCoord(vec2 bc)
 {
-    return vec3(1 - bc.x - bc.y, bc.x, bc.y);
+    return vec3(bc.x, bc.y, 1 - bc.x - bc.y);
 }
 
 // XXX: The constant used below is in parametric space. We should expose this
@@ -109,21 +83,21 @@ const float pickRadius = 0.02;
 // called from hdSt/codeGen.cpp
 int GetPrimitiveEdgeId()
 {
-    vec3 baryCoord = ExpandBaryCoord(gsBaryCoord);
+    vec3 baryCoord = ExpandBarycentricCoord(gsEdgeParam.xy);
 
-    //              2 (0,0,1)
+    //              2 (0,1,0)
     //              ^
     //         e2 /   \ e1
     //           /     \
-    // (1,0,0)  0 ----- 1 (0,1,0) 
+    // (0,0,1)  0 ----- 1 (1,0,0) 
     //              e0
 
     int edgeId = -1;
-    if (baryCoord.z < pickRadius) {
+    if (baryCoord.y < pickRadius) {
         edgeId = 0;
-    } else if (baryCoord.x < pickRadius) {
+    } else if (baryCoord.z < pickRadius) {
         edgeId = 1;
-    } else if (baryCoord.y < pickRadius) {
+    } else if (baryCoord.x < pickRadius) {
         edgeId = 2;
     }
 
@@ -132,14 +106,14 @@ int GetPrimitiveEdgeId()
 
 bool IsFragmentOnEdge()
 {
-    vec3 bc = ExpandBaryCoord(gsBaryCoord);
+    vec3 bc = ExpandBarycentricCoord(gsEdgeParam.xy);
     return any( lessThan(bc, vec3(pickRadius)) );
 }
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Fragment.Rect
+-- glsl EdgeId.Fragment.RectangleParam
 
-noperspective in vec2 gsRect;
+noperspective in vec2 gsEdgeParam;
 
 // XXX: The constant used below is in parametric space. We should expose this
 // in viewport pixel space. We'll need the edge distances to convert the
@@ -159,7 +133,7 @@ int GetPrimitiveEdgeId()
 
     int edgeId = -1;
     const float delLow = pickRadius, delHigh = 1 - delLow;
-    vec2 uv = gsRect;
+    vec2 uv = gsEdgeParam.xy;
 
     if (uv.y < delLow) {
         edgeId = 0;
@@ -176,7 +150,7 @@ int GetPrimitiveEdgeId()
 
 bool IsFragmentOnEdge()
 {
-    vec2 uv = gsRect;
+    vec2 uv = gsEdgeParam.xy;
     bool e0_e3 = any( lessThan(uv, vec2(pickRadius)) );
     bool e1_e2 = any( greaterThan(uv, vec2(1 - pickRadius)) );
     return e0_e3 || e1_e2;

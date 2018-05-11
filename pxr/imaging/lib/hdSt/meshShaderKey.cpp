@@ -58,11 +58,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // edge id mixins (for edge picking & selection)
     ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
-    ((edgeIdBaryGS,            "EdgeId.Geometry.Bary"))
-    ((edgeIdRectGS,            "EdgeId.Geometry.Rect"))
-    ((edgeIdBaryFallbackFS,    "EdgeId.Fragment.BaryFallback"))
-    ((edgeIdBaryFS,            "EdgeId.Fragment.Bary"))
-    ((edgeIdRectFS,            "EdgeId.Fragment.Rect"))
+    ((edgeIdEdgeParamGS,       "EdgeId.Geometry.EdgeParam"))
+    ((edgeIdFallbackFS,        "EdgeId.Fragment.Fallback"))
+    ((edgeIdTriangleParamFS,   "EdgeId.Fragment.TriangleParam"))
+    ((edgeIdRectangleParamFS,  "EdgeId.Fragment.RectangleParam"))
 
     // point id mixins (for point picking & selection)
     ((pointIdVS,               "PointId.Vertex"))
@@ -150,20 +149,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
     bool isPrimTypeQuads = HdSt_GeometricShader::IsPrimTypeQuads(primType);
-    bool isPrimTypeCoarseTris =
-        primType == HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES;
+    bool isPrimTypeTris = HdSt_GeometricShader::IsPrimTypeTriangles(primType);
 
-    TfToken gsEdgeIdMixin = _tokens->edgeIdNoneGS;
-    if (isPrimTypeCoarseTris) {
-        // emit bary coord per vertex when we triangulate to help compute the
-        // edgeId
-        gsEdgeIdMixin = _tokens->edgeIdBaryGS;
-    } else if (!isPrimTypePoints) {
-        // emit face uv per vertex if using patches (adaptive subdiv) or
-        // quads (uniform or quadrangulation) or
-        // loop to help compute the edge id.
-        gsEdgeIdMixin = _tokens->edgeIdRectGS;
-    }
+    // emit edge param per vertex to help compute the edgeId
+    TfToken gsEdgeIdMixin = isPrimTypePoints ? _tokens->edgeIdNoneGS
+                                             : _tokens->edgeIdEdgeParamGS;
     GS[3] = gsEdgeIdMixin;
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
@@ -246,22 +236,21 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // edge id
     uint8_t fsIndex = 6;
     if (!GS[0].IsEmpty()) {
-        if (isPrimTypeCoarseTris) {
-            FS[fsIndex++] = _tokens->edgeIdBaryFS;
-             TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdBaryGS);
+        TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdEdgeParamGS);
+        if (isPrimTypeTris) {
+            // coarse and refined triangles and triangular parametric patches
+            FS[fsIndex++] = _tokens->edgeIdTriangleParamFS;
         } else {
-            // XXX: loop uses this path, and we still call it "rectangular
-            // parametrization". need a better name.
-            FS[fsIndex++] = _tokens->edgeIdRectFS;
-            TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdRectGS);
+            // coarse and refined quads and rectangular parametric patches
+            FS[fsIndex++] = _tokens->edgeIdRectangleParamFS;
         }
     } else {
         // the GS stage is skipped if we're dealing with points or triangles.
         // (see "Optimization" above)
 
         // for triangles, emit the fallback version.
-        if (HdSt_GeometricShader::IsPrimTypeTriangles(primType)) {
-            FS[fsIndex++] = _tokens->edgeIdBaryFallbackFS;
+        if (isPrimTypeTris) {
+            FS[fsIndex++] = _tokens->edgeIdFallbackFS;
         }
 
         // for points, it isn't so simple. we don't know if the 'edgeIndices'
