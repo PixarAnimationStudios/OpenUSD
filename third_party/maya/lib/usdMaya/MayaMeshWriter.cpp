@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(-1.0e30);
+const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(0.f);
 
 const GfVec3f MayaMeshWriter::_ShaderDefaultRGB = GfVec3f(0.5);
 const float MayaMeshWriter::_ShaderDefaultAlpha = 0.0;
