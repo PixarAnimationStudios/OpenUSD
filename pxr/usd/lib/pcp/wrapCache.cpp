@@ -45,14 +45,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static std::auto_ptr<PcpCache>
+static std::shared_ptr<PcpCache>
 _New(const PcpLayerStackIdentifier& identifier,
      const std::string& targetSchema,
      bool usd,
      const PcpPayloadDecoratorRefPtr& payloadDecorator)
 {
-    return std::auto_ptr<PcpCache>(
-        new PcpCache(identifier, targetSchema, usd, payloadDecorator));
+    return std::make_shared<PcpCache>(identifier, targetSchema, 
+                                      usd, payloadDecorator);
 }
 
 static boost::python::tuple
@@ -235,7 +235,7 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, std::auto_ptr<PcpCache>, boost::noncopyable> 
+    class_<PcpCache, std::shared_ptr<PcpCache>, boost::noncopyable> 
         ("Cache", no_init)
 
         .def("__init__", 
