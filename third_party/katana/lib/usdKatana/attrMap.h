@@ -29,6 +29,8 @@
 #include <FnGeolib/op/FnGeolibOp.h>
 #include "pxr/usd/usd/attribute.h"
 
+#include <boost/thread/shared_mutex.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -64,6 +66,17 @@ public:
     /// \brief sets attrs in \p attrs onto the \p interface.
     void toInterface(Foundry::Katana::GeolibCookInterface& interface);
 
+
+    /// \brief returns true if a call to build has been made prior to any
+    ///        subsequent calls to set or del.
+    bool isBuilt();
+    
+
+    typedef boost::upgrade_mutex Mutex;
+    /// \brief while no locking occurs internal to this class, calling code
+    ///        may wish to manage read/write locks per-instance.
+    Mutex & getInstanceMutex() { return m_mutex; }
+
 private:
 
     Foundry::Katana::GroupBuilder _groupBuilder;
@@ -75,7 +88,10 @@ private:
 
     // Timecode to use when reading USD samples
     UsdTimeCode _usdTimeCode;
-
+    
+    // per-instance mutex available for external use.
+    Mutex m_mutex;
+    
 };
 
 

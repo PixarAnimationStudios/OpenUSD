@@ -121,5 +121,10 @@ PxrUsdKatanaAttrMap::toInterface(FnKat::GeolibCookInterface& interface)
     }
 }
 
+bool PxrUsdKatanaAttrMap::isBuilt()
+{
+    return _lastBuilt.isValid();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

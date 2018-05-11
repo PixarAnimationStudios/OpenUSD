@@ -217,35 +217,70 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE_WITH_FLUSH(
     }
     
     
+    bool useCache = !key.empty();
+    
     if (!attrs)
     {
         attrs = ConvertedMaterialCache::PxrUsdKatanaAttrMapRefPtr(
                 new PxrUsdKatanaAttrMap);
         
-        
-        PxrUsdKatanaReadMaterial(
-            materialSchema,
-            flatten,
-            privateData,
-            *attrs,
-            looksGroupLocation,
-            interface.getOutputLocationPath());
-
-        
-        // Read blind data.
-        PxrUsdKatanaReadBlindData(
-            UsdKatanaBlindDataObject(materialSchema), *attrs);
+        typedef boost::upgrade_lock<PxrUsdKatanaAttrMap::Mutex> Lock;
         
         
-        if (!key.empty())
+        // empty read lock for scoping
+        Lock readerLock;
+        
+        if (useCache)
         {
-            g_materialCache.insert(key, attrs);
+            // assign to read lock if we're caching
+            readerLock = Lock(attrs->getInstanceMutex());
+        }
+        
+        if (!attrs->isBuilt())
+        {
+            // empty write lock for scoping
+            
+            typedef boost::upgrade_to_unique_lock<
+                    PxrUsdKatanaAttrMap::Mutex> WriteLock;
+            typedef boost::shared_ptr<WriteLock> WriteLockRefPtr;
+            
+            WriteLockRefPtr writerLock;
+            
+            if (useCache)
+            {
+                // assign to write lock if we're caching
+                writerLock = WriteLockRefPtr(new WriteLock(readerLock));
+            }
+            
+            // only allow the first one through to build
+            if (!attrs->isBuilt())
+            {
+                PxrUsdKatanaReadMaterial(
+                    materialSchema,
+                    flatten,
+                    privateData,
+                    *attrs,
+                    looksGroupLocation,
+                    interface.getOutputLocationPath());
+                
+                
+                // Read blind data.
+                PxrUsdKatanaReadBlindData(
+                        UsdKatanaBlindDataObject(materialSchema), *attrs);
+                
+                attrs->build();
+                
+                if (useCache)
+                {
+                    g_materialCache.insert(key, attrs);
+                }
+            }
         }
         
     }
     
     
-    
+    // NOTE: no lock needed here because the previously locked call to build()
     attrs->toInterface(interface);
 
     
