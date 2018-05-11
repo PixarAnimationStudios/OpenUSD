@@ -350,6 +350,29 @@ PcpPrimIndexInputs::IsEquivalentTo(const PcpPrimIndexInputs& inputs) const
 
 ////////////////////////////////////////////////////////////////////////
 
+PcpNodeRef 
+PcpPrimIndexOutputs::Append(const PcpPrimIndexOutputs& childOutputs, 
+                            const PcpArc& arcToParent)
+{
+    PcpNodeRef parent = arcToParent.parent;
+    PcpNodeRef newNode = parent.InsertChildSubgraph(
+        childOutputs.primIndex.GetGraph(), arcToParent);
+
+    if (childOutputs.primIndex.GetGraph()->HasPayload()) {
+        parent.GetOwningGraph()->SetHasPayload(true);
+    }
+
+    allErrors.insert(
+        allErrors.end(), 
+        childOutputs.allErrors.begin(), childOutputs.allErrors.end());
+
+    includedDiscoveredPayload |= childOutputs.includedDiscoveredPayload;
+
+    return newNode;
+}
+
+////////////////////////////////////////////////////////////////////////
+
 static void
 Pcp_BuildPrimIndex(
     const PcpLayerStackSite & site,
@@ -1451,23 +1474,12 @@ _AddArc(
                             indexer->inputs,
                             &childOutputs );
 
-        // Join the subtree into this graph.
-        newNode = parent.InsertChildSubgraph(
-            childOutputs.primIndex.GetGraph(), newArc);
+        // Combine the child output with our current output.
+        newNode = indexer->outputs->Append(childOutputs, newArc);
         PCP_INDEXING_UPDATE(
             indexer, newNode, 
             "Added subtree for site %s to graph",
             TfStringify(site).c_str());
-
-        if (childOutputs.primIndex.GetGraph()->HasPayload()) {
-            parent.GetOwningGraph()->SetHasPayload(true);
-        }
-
-        // Pass along the other outputs from the nested computation. 
-        indexer->outputs->allErrors.insert(
-            indexer->outputs->allErrors.end(),
-            childOutputs.allErrors.begin(),
-            childOutputs.allErrors.end());
     }
 
     // If culling is enabled, check whether the entire subtree rooted

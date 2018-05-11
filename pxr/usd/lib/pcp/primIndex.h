@@ -294,6 +294,15 @@ public:
         allErrors.swap(r.allErrors);
         std::swap(includedDiscoveredPayload, r.includedDiscoveredPayload);
     }
+
+    /// Appends the outputs from \p childOutputs to this object, using 
+    /// \p arcToParent to connect \p childOutputs' prim index to this object's
+    /// prim index. 
+    /// 
+    /// Returns the node in this object's prim index corresponding to the root
+    /// node of \p childOutputs' prim index.
+    PcpNodeRef Append(const PcpPrimIndexOutputs& childOutputs,
+                      const PcpArc& arcToParent);
 };
 
 /// Free function version for generic code and ADL.
