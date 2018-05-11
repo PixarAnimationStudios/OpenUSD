@@ -139,7 +139,6 @@ struct JobImportArgs
     JobImportArgs();
 
     TfToken shadingMode;
-    TfToken defaultMeshScheme;
     TfToken assemblyRep;
     bool readAnimData;
     bool useCustomFrameRange;

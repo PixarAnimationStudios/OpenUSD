@@ -188,7 +188,6 @@ usdReadJob::_ProcessProxyPrims(
         const UsdPrim proxyPrim = *iter;
         PxrUsdMayaPrimReaderArgs args(proxyPrim,
                                       mArgs.shadingMode,
-                                      mArgs.defaultMeshScheme,
                                       mArgs.readAnimData,
                                       mArgs.useCustomFrameRange,
                                       mArgs.startTime,
@@ -249,7 +248,6 @@ usdReadJob::_ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrim
         const UsdPrim subAssemblyPrim = *iter;
         PxrUsdMayaPrimReaderArgs args(subAssemblyPrim,
                                       mArgs.shadingMode,
-                                      mArgs.defaultMeshScheme,
                                       mArgs.readAnimData,
                                       mArgs.useCustomFrameRange,
                                       mArgs.startTime,
@@ -291,7 +289,6 @@ usdReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
         const UsdPrim cameraPrim = *iter;
         PxrUsdMayaPrimReaderArgs args(cameraPrim,
                                       mArgs.shadingMode,
-                                      mArgs.defaultMeshScheme,
                                       mArgs.readAnimData,
                                       mArgs.useCustomFrameRange,
                                       mArgs.startTime,

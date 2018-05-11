@@ -44,6 +44,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+// "Default" subdivision scheme; attribute won't be authored in Maya for any
+// meshes with this scheme.
+static const TfToken _DEFAULT_SUBD_SCHEME = UsdGeomTokens->catmullClark;
 
 /* static */
 bool 
@@ -220,7 +223,8 @@ PxrUsdMayaTranslatorMesh::Create(
      }
 
     // Determine if PolyMesh or SubdivMesh
-    TfToken subdScheme = PxrUsdMayaMeshUtil::setSubdivScheme(mesh, meshFn, args.GetDefaultMeshScheme());
+    TfToken subdScheme = PxrUsdMayaMeshUtil::setSubdivScheme(mesh, meshFn,
+            _DEFAULT_SUBD_SCHEME);
 
     // If we are dealing with polys, check if there are normals
     // If we are dealing with SubdivMesh, read additional attributes and SubdivMesh properties

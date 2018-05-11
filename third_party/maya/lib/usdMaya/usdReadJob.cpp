@@ -265,7 +265,6 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                 // This is the normal Read step (pre-visit).
                 PxrUsdMayaPrimReaderArgs args(prim,
                                               mArgs.shadingMode,
-                                              mArgs.defaultMeshScheme,
                                               mArgs.readAnimData,
                                               mArgs.useCustomFrameRange,
                                               mArgs.startTime,

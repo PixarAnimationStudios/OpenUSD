@@ -393,7 +393,6 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
     PxrUsdMayaPrimReaderArgs args(
             usdCamera.GetPrim(),
             defaultJobArgs.shadingMode,
-            defaultJobArgs.defaultMeshScheme,
             defaultJobArgs.readAnimData,
             defaultJobArgs.useCustomFrameRange,
             defaultJobArgs.startTime,

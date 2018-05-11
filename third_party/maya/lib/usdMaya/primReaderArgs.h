@@ -45,7 +45,6 @@ public:
     PxrUsdMayaPrimReaderArgs(
             const UsdPrim& prim,
             const TfToken& shadingMode,
-            const TfToken& defaultMeshScheme,
             const bool readAnimData,
             const bool useCustomFrameRange,
             const double startTime,
@@ -59,9 +58,6 @@ public:
 
     PXRUSDMAYA_API
     const TfToken& GetShadingMode() const;
-
-    PXRUSDMAYA_API
-    const TfToken& GetDefaultMeshScheme() const;
 
     PXRUSDMAYA_API
     const bool& GetReadAnimData() const;
@@ -86,7 +82,6 @@ public:
 private:
     const UsdPrim& _prim;
     const TfToken& _shadingMode;
-    const TfToken& _defaultMeshScheme;
     const bool _readAnimData;
     const bool _useCustomFrameRange;
     const double _startTime;

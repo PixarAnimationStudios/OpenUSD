@@ -30,7 +30,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const UsdPrim& prim,
         const TfToken& shadingMode,
-        const TfToken& defaultMeshScheme,
         const bool readAnimData,
         const bool useCustomFrameRange,
         const double startTime,
@@ -40,7 +39,6 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
     : 
         _prim(prim),
         _shadingMode(shadingMode),
-        _defaultMeshScheme(defaultMeshScheme),
         _readAnimData(readAnimData),
         _useCustomFrameRange(useCustomFrameRange),
         _startTime(startTime),
@@ -58,11 +56,6 @@ const TfToken&
 PxrUsdMayaPrimReaderArgs::GetShadingMode() const
 {
     return _shadingMode;
-}
-const TfToken&
-PxrUsdMayaPrimReaderArgs::GetDefaultMeshScheme() const
-{
-    return _defaultMeshScheme;
 }
 const bool&
 PxrUsdMayaPrimReaderArgs::GetReadAnimData() const

@@ -160,7 +160,6 @@ void JobExportArgs::setParentScope(const std::string& ps) {
 JobImportArgs::JobImportArgs()
     :
         shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
-        defaultMeshScheme(UsdGeomTokens->catmullClark),
         assemblyRep(PxrUsdMayaTranslatorTokens->Collapsed),
         readAnimData(true),
         useCustomFrameRange(false),
@@ -178,7 +177,6 @@ std::ostream&
 operator <<(std::ostream& out, const JobImportArgs& importArgs)
 {
     out << "shadingMode: " << importArgs.shadingMode << std::endl
-        << "defaultMeshScheme: " << importArgs.defaultMeshScheme << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "readAnimData: " << _StringifyBool(importArgs.readAnimData) << std::endl
         << "useCustomFrameRange: " << _StringifyBool(importArgs.useCustomFrameRange) << std::endl
