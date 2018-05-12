@@ -24,6 +24,8 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaNurbsCurveWriter.h"
 
+#include "usdMaya/adaptor.h"
+
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 #include "pxr/usd/usd/stage.h"
@@ -36,6 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kNurbsCurve, UsdGeomNurbsCurves);
 
 MayaNurbsCurveWriter::MayaNurbsCurveWriter(const MDagPath & iDag,
                                            const SdfPath& uPath,

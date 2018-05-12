@@ -1031,6 +1031,67 @@ PxrUsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     return true;
 }
 
+/* static */
+size_t
+PxrUsdMayaWriteUtil::WriteSchemaAttributesToPrim(
+    const MObject& shapeObject,
+    const MObject& transformObject,
+    const UsdPrim& prim,
+    const TfType& schemaType,
+    const std::vector<TfToken>& attributeNames,
+    const UsdTimeCode& usdTime,
+    UsdUtilsSparseValueWriter *valueWriter)
+{
+    PxrUsdMayaAdaptor::SchemaAdaptor shapeSchema;
+    if (PxrUsdMayaAdaptor adaptor = PxrUsdMayaAdaptor(shapeObject)) {
+        shapeSchema = adaptor.GetSchemaOrInheritedSchema(schemaType);
+    }
+    PxrUsdMayaAdaptor::SchemaAdaptor transformSchema;
+    if (PxrUsdMayaAdaptor adaptor = PxrUsdMayaAdaptor(transformObject)) {
+        transformSchema = adaptor.GetSchemaOrInheritedSchema(schemaType);
+    }
+    if (!shapeSchema && !transformSchema) {
+        return 0;
+    }
+
+    size_t count = 0;
+    for (const TfToken& attrName : attributeNames) {
+        VtValue value;
+        SdfAttributeSpecHandle attrDef;
+
+        // Prefer value on shape node.
+        if (shapeSchema) {
+            if (PxrUsdMayaAdaptor::AttributeAdaptor attr =
+                    shapeSchema.GetAttribute(attrName)) {
+                attr.Get(&value);
+                attrDef = attr.GetAttributeDefinition();
+            }
+        }
+
+        // If we don't have a value yet, go on to the transform.
+        if (value.IsEmpty() && transformSchema) {
+            if (PxrUsdMayaAdaptor::AttributeAdaptor attr =
+                    transformSchema.GetAttribute(attrName)) {
+                attr.Get(&value);
+                attrDef = attr.GetAttributeDefinition();
+            }
+        }
+
+        if (!value.IsEmpty() && attrDef) {
+            UsdAttribute attr = prim.CreateAttribute(
+                    attrDef->GetNameToken(),
+                    attrDef->GetTypeName(),
+                    /*custom*/ false,
+                    attrDef->GetVariability());
+            if (_SetAttribute(attr, value, usdTime, valueWriter)) {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
 // static
 bool
 PxrUsdMayaWriteUtil::WriteClassInherits(

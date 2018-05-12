@@ -25,6 +25,7 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
+#include "usdMaya/adaptor.h"
 #include "usdMaya/usdWriteJobCtx.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -36,6 +37,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kLocator, UsdGeomXform);
 
 MayaLocatorWriter::MayaLocatorWriter(
         const MDagPath& iDag,

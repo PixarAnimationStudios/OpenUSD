@@ -25,6 +25,7 @@
 #include "usdMaya/MayaCameraWriter.h"
 
 #include "usdMaya/JobArgs.h"
+#include "usdMaya/adaptor.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/gf/vec2f.h"
@@ -38,7 +39,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kCamera, UsdGeomCamera);
 
 MayaCameraWriter::MayaCameraWriter(const MDagPath & iDag, const SdfPath& uPath, usdWriteJobCtx& jobCtx) :
     MayaTransformWriter(iDag, uPath, false, jobCtx) // cameras are not instanced

@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "usdMaya/MayaSkeletonWriter.h"
+
+#include "usdMaya/adaptor.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -37,6 +39,8 @@
 #include <maya/MQuaternion.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kJoint, UsdSkelSkeleton);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens, 

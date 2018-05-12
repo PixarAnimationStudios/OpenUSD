@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaPrimWriter.h"
 
+#include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/translatorGprim.h"
@@ -52,6 +53,10 @@
 #include <maya/MFnSet.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(
+        UsdGeomTokens->purpose, "USD_purpose");
 
 TF_DEFINE_PRIVATE_TOKENS(
         _tokens, 
@@ -119,21 +124,6 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
         }
     }
 
-    // Export purpose at default time.
-    if (usdTime.IsDefault()) {
-        TfToken purpose = PxrUsdMayaUtil::GetPurpose(depFn);
-        if (purpose.IsEmpty() && dagT.isValid()) {
-            // Fall back to the transform only if the shape doesn't have purpose.
-            purpose = PxrUsdMayaUtil::GetPurpose(depFnT);
-        }
-        if (!purpose.IsEmpty()) {
-            _SetAttribute(
-                    primSchema.CreatePurposeAttr(VtValue(), true),
-                    purpose,
-                    usdTime);
-        }
-    }
-
     UsdPrim usdPrim = primSchema.GetPrim();
 
     // There is no Gprim abstraction in this module, so process the few
@@ -156,7 +146,19 @@ MayaPrimWriter::writePrimAttrs(const MDagPath &dagT, const UsdTimeCode &usdTime,
             &classNames)) {
         PxrUsdMayaWriteUtil::WriteClassInherits(usdPrim, classNames);
     }
-    
+
+    // Write UsdGeomImageable typed schema attributes.
+    // Currently only purpose, which is uniform, so only export at default time.
+    if (usdTime.IsDefault()) {
+        PxrUsdMayaWriteUtil::WriteSchemaAttributesToPrim<UsdGeomImageable>(
+                getDagPath().node(),
+                dagT.node(),
+                usdPrim,
+                {UsdGeomTokens->purpose},
+                usdTime,
+                &_valueWriter);
+    }
+
     // Write API schema attributes, strongly-typed metadata, and user-tagged
     // export attributes.
     // Write attributes on the transform first, and then attributes on the shape

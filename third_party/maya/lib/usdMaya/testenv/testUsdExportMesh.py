@@ -61,20 +61,44 @@ class testUsdExportMesh(unittest.TestCase):
 
         stage = Usd.Stage.Open(usdFile)
 
+        # This has subdivision scheme 'none',
+        # face-varying linear interpolation 'all'.
+        # The interpolation attribute doesn't matter since it's not a subdiv,
+        # so we don't write it out even though it's set on the node.
         m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/poly')
         self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.none)
+        self.assertTrue(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertFalse(m.GetInterpolateBoundaryAttr().IsAuthored())
+        self.assertFalse(m.GetFaceVaryingLinearInterpolationAttr().IsAuthored())
         self.assertTrue(len(m.GetNormalsAttr().Get()) > 0)
 
         m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/polyNoNormals')
         self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.none)
+        self.assertTrue(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertFalse(m.GetInterpolateBoundaryAttr().IsAuthored())
+        self.assertFalse(m.GetFaceVaryingLinearInterpolationAttr().IsAuthored())
         self.assertTrue(not m.GetNormalsAttr().Get())
 
+        # We author subdivision scheme sparsely, so if the subd scheme is
+        # catmullClark or unspecified (falls back to
+        # defaultMeshScheme=catmullClark), then it shouldn't be authored.
+        # Note that this code is interesting because both
+        # USD_interpolateBoundary and USD_ATTR_interpolateBoundary are set;
+        # the latter should win when both are present.
         m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/subdiv')
         self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.catmullClark)
+        self.assertFalse(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertEqual(m.GetInterpolateBoundaryAttr().Get(), UsdGeom.Tokens.edgeAndCorner)
+        self.assertTrue(m.GetInterpolateBoundaryAttr().IsAuthored())
+        self.assertEqual(m.GetFaceVaryingLinearInterpolationAttr().Get(), UsdGeom.Tokens.cornersPlus1)
+        self.assertTrue(m.GetFaceVaryingLinearInterpolationAttr().IsAuthored())
         self.assertTrue(not m.GetNormalsAttr().Get())
 
         m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/unspecified')
         self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.catmullClark)
+        self.assertFalse(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertFalse(m.GetInterpolateBoundaryAttr().IsAuthored())
+        self.assertFalse(m.GetFaceVaryingLinearInterpolationAttr().IsAuthored())
         self.assertTrue(not m.GetNormalsAttr().Get())
 
     def testExportAsPoly(self):
@@ -86,7 +110,20 @@ class testUsdExportMesh(unittest.TestCase):
 
         m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/unspecified')
         self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.none)
+        self.assertTrue(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertFalse(m.GetInterpolateBoundaryAttr().IsAuthored())
+        self.assertFalse(m.GetFaceVaryingLinearInterpolationAttr().IsAuthored())
         self.assertTrue(len(m.GetNormalsAttr().Get()) > 0)
+
+        # Explicit catmullClark meshes should still export as catmullClark.
+        m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/subdiv')
+        self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.catmullClark)
+        self.assertFalse(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertEqual(m.GetInterpolateBoundaryAttr().Get(), UsdGeom.Tokens.edgeAndCorner)
+        self.assertTrue(m.GetInterpolateBoundaryAttr().IsAuthored())
+        self.assertEqual(m.GetFaceVaryingLinearInterpolationAttr().Get(), UsdGeom.Tokens.cornersPlus1)
+        self.assertTrue(m.GetFaceVaryingLinearInterpolationAttr().IsAuthored())
+        self.assertTrue(not m.GetNormalsAttr().Get())
 
         # XXX: For some reason, when the mesh export used the getNormal()
         # method on MItMeshFaceVertex, we would sometimes get incorrect normal

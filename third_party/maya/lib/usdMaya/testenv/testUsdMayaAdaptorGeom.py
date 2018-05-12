@@ -50,12 +50,13 @@ class testUsdMayaAdaptorGeom(unittest.TestCase):
         Tests that UsdGeomImageable.purpose is properly imported.
         """
         # Testing for the different purpose attributes
-        self.assertEqual(cmds.getAttr('pCube1.USD_purpose'), 'default')
-        self.assertEqual(cmds.getAttr('pCube2.USD_purpose'), 'render')
-        self.assertEqual(cmds.getAttr('pCube3.USD_purpose'), 'proxy')
+        self.assertEqual(cmds.getAttr('pCube1.USD_ATTR_purpose'), 'default')
+        self.assertEqual(cmds.getAttr('pCube2.USD_ATTR_purpose'), 'render')
+        self.assertEqual(cmds.getAttr('pCube3.USD_ATTR_purpose'), 'proxy')
 
         # pCube4 does not have a purpose attribute
-        self.assertFalse(cmds.objExists('pCube4.USD_purpose'))
+        self.assertFalse(cmds.objExists('pCube4.USD_ATTR_purpose'))
+        self.assertFalse(cmds.objExists('pCube4.USD_purpose')) # alias
     
     def testExportImageable(self):
         """

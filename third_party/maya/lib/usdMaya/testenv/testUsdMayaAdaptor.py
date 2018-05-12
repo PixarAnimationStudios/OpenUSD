@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import Sdf, Tf, UsdGeom
+from pxr import Sdf, Tf, UsdGeom, UsdSkel
 
 # XXX: The try/except here is temporary until we change the Pixar-internal
 # package name to match the external package name.
@@ -83,15 +83,17 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.group(name="group1", empty=True)
 
         proxy = UsdMaya.Adaptor('group1')
-        modelAPI = proxy.GetSchema(UsdGeom.ModelAPI)
-        self.assertTrue(modelAPI)
+        self.assertTrue(proxy.GetSchema(UsdGeom.ModelAPI))
+        self.assertTrue(proxy.GetSchema(UsdGeom.Xform))
 
-        # No support currently for typed schemas.
-        with self.assertRaises(Tf.ErrorException):
-            proxy.GetSchema(UsdGeom.Xformable)
+        # Wrong schemas should be invalid. Currently, exact schema match is
+        # required (i.e. if Xform is compatible, Xformable isn't).
+        self.assertFalse(proxy.GetSchema(UsdGeom.Mesh))
 
-        with self.assertRaises(Tf.ErrorException):
-            proxy.GetSchema(UsdGeom.Mesh)
+        # We can't currently get prim definitions from the schema registry for
+        # typed non-concrete schemas, so we can't expect them to work with
+        # GetSchema/GetSchemaByName.
+        self.assertFalse(proxy.GetSchema(UsdGeom.Xformable))
 
     def testUnapplySchema(self):
         """Tests unapplying schemas and effect on existing proxy objects."""
@@ -124,24 +126,32 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
 
-        proxy = UsdMaya.Adaptor('group1')
-        modelAPI = proxy.ApplySchema(UsdGeom.ModelAPI)
+        modelAPI = UsdMaya.Adaptor('group1').ApplySchema(UsdGeom.ModelAPI)
+        xform = UsdMaya.Adaptor('group1').GetSchema(UsdGeom.Xform)
 
         # Schema attributes list versus authored attributes list.
         self.assertIn(UsdGeom.Tokens.modelCardTextureXPos,
                 modelAPI.GetAttributeNames())
         self.assertNotIn(UsdGeom.Tokens.modelCardTextureXPos,
                 modelAPI.GetAuthoredAttributeNames())
+        self.assertIn(UsdGeom.Tokens.purpose,
+                xform.GetAttributeNames())
+        self.assertNotIn(UsdGeom.Tokens.purpose,
+                xform.GetAuthoredAttributeNames())
 
-        # Unauthored attribute.
+        # Unauthored API attribute.
         self.assertFalse(
                 modelAPI.GetAttribute(UsdGeom.Tokens.modelCardTextureXPos))
+
+        # Unauthored schema attribute.
+        self.assertFalse(
+                xform.GetAttribute(UsdGeom.Tokens.purpose))
 
         # Non-existent attribute.
         with self.assertRaises(Tf.ErrorException):
             modelAPI.GetAttribute("fakeAttr")
 
-        # Create and set an attribute.
+        # Create and set an API attribute.
         attr = modelAPI.CreateAttribute(UsdGeom.Tokens.modelCardTextureXPos)
         self.assertTrue(attr)
         self.assertTrue(attr.Set(Sdf.AssetPath("example.png")))
@@ -159,9 +169,13 @@ class testUsdMayaAdaptor(unittest.TestCase):
         modelAPI.RemoveAttribute(UsdGeom.Tokens.modelCardTextureXPos)
         self.assertFalse(attr)
 
-        # Should error on invalid attr access.
-        with self.assertRaises(Tf.ErrorException):
-            attr.Get()
+        # Should return None on invalid attr access.
+        self.assertIsNone(attr.Get())
+
+        # Create a typed schema attribute. It should be set to the fallback
+        # initially.
+        self.assertEqual(xform.CreateAttribute(UsdGeom.Tokens.purpose).Get(),
+                UsdGeom.Tokens.default_)
 
     def testMetadata(self):
         """Tests setting and clearing metadata."""
@@ -200,6 +214,91 @@ class testUsdMayaAdaptor(unittest.TestCase):
         """Tests the static helpers for querying metadata and schema info."""
         self.assertIn("MotionAPI", UsdMaya.Adaptor.GetRegisteredAPISchemas())
         self.assertIn("hidden", UsdMaya.Adaptor.GetPrimMetadataFields())
+
+    def testAttributeAliases(self):
+        """Tests behavior with the purpose/USD_purpose alias."""
+        cmds.file(new=True, force=True)
+        cmds.group(name="group1", empty=True)
+
+        cmds.addAttr("group1", longName="USD_purpose", dataType="string")
+        cmds.setAttr("group1.USD_purpose", "proxy", type="string")
+        self.assertEqual(
+                UsdMaya.Adaptor("group1")
+                    .GetSchema(UsdGeom.Xform)
+                    .GetAttribute(UsdGeom.Tokens.purpose)
+                    .Get(),
+                UsdGeom.Tokens.proxy)
+
+        cmds.addAttr("group1", longName="USD_ATTR_purpose",
+                dataType="string")
+        cmds.setAttr("group1.USD_ATTR_purpose", "render", type="string")
+        self.assertEqual(
+                UsdMaya.Adaptor("group1")
+                    .GetSchema(UsdGeom.Xform)
+                    .GetAttribute(UsdGeom.Tokens.purpose)
+                    .Get(),
+                UsdGeom.Tokens.render)
+
+        cmds.deleteAttr("group1.USD_purpose")
+        self.assertEqual(
+                UsdMaya.Adaptor("group1")
+                    .GetSchema(UsdGeom.Xform)
+                    .GetAttribute(UsdGeom.Tokens.purpose)
+                    .Get(),
+                UsdGeom.Tokens.render)
+
+        cmds.deleteAttr("group1.USD_ATTR_purpose")
+        self.assertIsNone(
+                UsdMaya.Adaptor("group1")
+                    .GetSchema(UsdGeom.Xform)
+                    .GetAttribute(UsdGeom.Tokens.purpose)
+                    .Get())
+
+        UsdMaya.Adaptor("group1")\
+                    .GetSchema(UsdGeom.Xform)\
+                    .CreateAttribute(UsdGeom.Tokens.purpose)
+        self.assertTrue(cmds.attributeQuery("USD_ATTR_purpose", node="group1",
+                exists=True))
+
+    def testConcreteSchemaRegistrations(self):
+        """Tests some of the PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA macros."""
+        cmds.file(new=True, force=True)
+        cmds.createNode("joint", name="TestJoint")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestJoint").GetSchema(UsdSkel.Skeleton))
+        self.assertFalse(
+                UsdMaya.Adaptor("TestJoint").GetSchema(UsdGeom.Mesh))
+
+        cmds.createNode("camera", name="TestCamera")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestCamera").GetSchema(UsdGeom.Camera))
+
+        cmds.createNode("mesh", name="TestMesh")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestMesh").GetSchema(UsdGeom.Mesh))
+
+        cmds.createNode("instancer", name="TestInstancer")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestInstancer").GetSchema(
+                UsdGeom.PointInstancer))
+
+        cmds.createNode("nurbsSurface", name="TestNurbsSurface")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestNurbsSurface").GetSchema(
+                UsdGeom.NurbsPatch))
+
+        cmds.createNode("nurbsCurve", name="TestNurbsCurve")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestNurbsCurve").GetSchema(
+                UsdGeom.NurbsCurves))
+
+        cmds.createNode("locator", name="TestLocator")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestLocator").GetSchema(UsdGeom.Xform))
+
+        cmds.createNode("nParticle", name="TestParticles")
+        self.assertTrue(
+                UsdMaya.Adaptor("TestParticles").GetSchema(UsdGeom.Points))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

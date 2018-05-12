@@ -796,20 +796,53 @@ PxrUsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
         if (includeAPINames.count(schemaName) == 0) {
             continue;
         }
-        if (PxrUsdMayaAdaptor::SchemaAdaptor SchemaAdaptor =
+        if (PxrUsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
                 adaptor.ApplySchemaByName(schemaName)) {
-            for (const TfToken& attrName : SchemaAdaptor.GetAttributeNames()) {
+            for (const TfToken& attrName : schemaAdaptor.GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                     VtValue value;
                     constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
                     if (attr.HasAuthoredValueOpinion() && attr.Get(&value, t)) {
-                        SchemaAdaptor.CreateAttribute(attrName).Set(value);
+                        schemaAdaptor.CreateAttribute(attrName).Set(value);
                     }
                 }
             }
         }
     }
     return true;
+}
+
+/* static */
+size_t
+PxrUsdMayaReadUtil::ReadSchemaAttributesFromPrim(
+    const UsdPrim& prim,
+    const MObject& mayaObject,
+    const TfType& schemaType,
+    const std::vector<TfToken>& attributeNames,
+    const UsdTimeCode& usdTime)
+{
+    PxrUsdMayaAdaptor adaptor(mayaObject);
+    if (!adaptor) {
+        return 0;
+    }
+
+    size_t count;
+    if (PxrUsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
+            adaptor.GetSchemaOrInheritedSchema(schemaType)) {
+        for (const TfToken& attrName : attributeNames) {
+            if (UsdAttribute attr = prim.GetAttribute(attrName)) {
+                VtValue value;
+                if (attr.HasAuthoredValueOpinion() &&
+                        attr.Get(&value, usdTime)) {
+                    if (schemaAdaptor.CreateAttribute(attrName).Set(value)) {
+                        count++;
+                    }
+                }
+            }
+        }
+    }
+
+    return count;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

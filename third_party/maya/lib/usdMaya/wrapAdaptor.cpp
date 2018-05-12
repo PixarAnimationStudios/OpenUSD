@@ -129,6 +129,8 @@ void wrapAdaptor()
         .def("__init__", make_constructor(_Init))
         .def("__repr__", _Adaptor__repr__)
         .def("GetMayaNodeName", &This::GetMayaNodeName)
+        .def("GetUsdTypeName", &This::GetUsdTypeName)
+        .def("GetUsdType", &This::GetUsdType)
         .def("GetAppliedSchemas", &This::GetAppliedSchemas)
         .def("GetSchema", &This::GetSchema)
         .def("GetSchemaByName",
@@ -156,6 +158,9 @@ void wrapAdaptor()
         .def("GetRegisteredAPISchemas", &This::GetRegisteredAPISchemas,
                 return_value_policy<TfPySequenceToList>())
         .staticmethod("GetRegisteredAPISchemas")
+        .def("GetRegisteredTypedSchemas", &This::GetRegisteredTypedSchemas,
+                return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetRegisteredTypedSchemas")
     ;
 
     class_<This::SchemaAdaptor>("SchemaAdaptor")

@@ -63,11 +63,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (USD_purpose)
-);
-
 // return seconds per frame
 double PxrUsdMayaUtil::spf()
 {
@@ -1455,26 +1450,4 @@ TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
 PxrUsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
 {
     return PxrUsdMayaUtil::MDataHandleHolder::New(plug);
-}
-
-TfToken
-PxrUsdMayaUtil::GetPurpose(const MFnDependencyNode& node)
-{
-    MString purpose;
-    if (PxrUsdMayaUtil::getPlugValue(
-            node, _tokens->USD_purpose.GetText(), &purpose)) {
-        return TfToken(purpose.asChar());
-    }
-    else {
-        return TfToken();
-    }
-}
-
-void
-PxrUsdMayaUtil::SetPurpose(MFnDependencyNode& node, const TfToken& purpose)
-{
-    PxrUsdMayaUtil::createStringAttribute(node, _tokens->USD_purpose.GetText());
-    MString purposeString(purpose.GetText());
-    PxrUsdMayaUtil::setPlugValue(
-            node, _tokens->USD_purpose.GetText(), purposeString);
 }

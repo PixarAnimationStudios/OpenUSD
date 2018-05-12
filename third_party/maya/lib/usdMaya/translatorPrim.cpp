@@ -74,14 +74,6 @@ PxrUsdMayaTranslatorPrim::Read(
                            visibilityTok != UsdGeomTokens->invisible);
     }
 
-    // Read purpose.
-    // It's uniform, so we don't have to worry about animation.
-    TfToken purpose;
-    const UsdAttribute purposeAttr = primSchema.GetPurposeAttr();
-    if (purposeAttr.HasAuthoredValueOpinion() && purposeAttr.Get(&purpose)) {
-        PxrUsdMayaUtil::SetPurpose(depFn, purpose);
-    }
-
     // == Animation ==
     if (visNumTimeSamples > 0) {
         size_t numTimeSamples = visNumTimeSamples;
@@ -116,7 +108,11 @@ PxrUsdMayaTranslatorPrim::Read(
             }
         }
     }
-    
+
+    // Process UsdGeomImageable typed schema (note that purpose is uniform).
+    PxrUsdMayaReadUtil::ReadSchemaAttributesFromPrim<UsdGeomImageable>(
+            prim, mayaNode, {UsdGeomTokens->purpose});
+
     // Process API schema attributes and strongly-typed metadata.
     PxrUsdMayaReadUtil::ReadMetadataFromPrim(
             args.GetIncludeMetadataKeys(), prim, mayaNode);

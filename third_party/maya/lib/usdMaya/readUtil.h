@@ -72,7 +72,7 @@ struct PxrUsdMayaReadUtil
             const std::string& attrNiceName = std::string());
 
     /// An overload of FindOrCreateMayaAttr that takes an MDGModifier.
-    /// Note that this function will call doIt() on the MDGModifier; thus the
+    /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     PXRUSDMAYA_API
     static MObject FindOrCreateMayaAttr(
@@ -111,7 +111,7 @@ struct PxrUsdMayaReadUtil
             const VtValue& newValue);
 
     /// An overload of SetMayaAttr that takes an MDGModifier.
-    /// Note that this function will call doIt() on the MDGModifier; thus the
+    /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     PXRUSDMAYA_API
     static bool SetMayaAttr(
@@ -127,7 +127,7 @@ struct PxrUsdMayaReadUtil
             const SdfVariability variability);
 
     /// An overload of SetMayaAttrKeyableState that takes an MDGModifier.
-    /// Note that this function will call doIt() on the MDGModifier; thus the
+    /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     PXRUSDMAYA_API
     static void SetMayaAttrKeyableState(
@@ -152,13 +152,48 @@ struct PxrUsdMayaReadUtil
     /// Reads the attributes from the non-excluded schemas applied to \p prim,
     /// and uses adaptors to write them onto attributes of \p mayaObject.
     /// Returns true if successful (even if there was nothing to import).
-    /// Note that if the schema wasn't applied using the schema class's Apply()
+    /// \note If the schema wasn't applied using the schema class's Apply()
     /// function, then this function won't recognize it.
     PXRUSDMAYA_API
     static bool ReadAPISchemaAttributesFromPrim(
             const TfToken::Set& includeAPINames,
             const UsdPrim& prim,
             const MObject& mayaObject);
+
+    /// \}
+
+    /// \name Manually importing typed schema data
+    /// \{
+
+    template <typename T>
+    static size_t ReadSchemaAttributesFromPrim(
+            const UsdPrim& prim,
+            const MObject& mayaObject,
+            const std::vector<TfToken>& attributeNames,
+            const UsdTimeCode& usdTime = UsdTimeCode::Default())
+    {
+        return ReadSchemaAttributesFromPrim(
+                prim,
+                mayaObject,
+                TfType::Find<T>(),
+                attributeNames,
+                usdTime);
+    }
+
+    /// Reads schema attributes specified by \attributeNames for the schema
+    /// with type \p schemaType, storing them as adapted attributes on
+    /// \p mayaObject. Attributes that are unauthored in USD (only have their
+    /// fallback value) will be skipped.
+    /// Values are read from the stage at \p usdTime, and are stored on the
+    /// Maya node as unanimated values. If the optional \p valueWriter is
+    /// provided, it will be used to write the values.
+    /// Returns the number of attributes that were read into Maya.
+    static size_t ReadSchemaAttributesFromPrim(
+            const UsdPrim& prim,
+            const MObject& mayaObject,
+            const TfType& schemaType,
+            const std::vector<TfToken>& attributeNames,
+            const UsdTimeCode& usdTime = UsdTimeCode::Default());
 
     /// \}
 };

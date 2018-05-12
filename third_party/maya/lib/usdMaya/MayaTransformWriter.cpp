@@ -23,6 +23,8 @@
 //
 #include "pxr/pxr.h"
 #include "usdMaya/MayaTransformWriter.h"
+
+#include "usdMaya/adaptor.h"
 #include "usdMaya/util.h"
 #include "usdMaya/usdWriteJob.h"
 
@@ -38,6 +40,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kTransform, UsdGeomXform);
 
 template <typename GfVec3_T>
 static void

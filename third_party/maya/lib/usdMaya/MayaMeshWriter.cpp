@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/MayaMeshWriter.h"
 
+#include "usdMaya/adaptor.h"
 #include "usdMaya/meshUtil.h"
 
 #include "pxr/base/gf/vec3f.h"
@@ -35,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(MFn::kMesh, UsdGeomMesh);
 
 const GfVec2f MayaMeshWriter::_DefaultUV = GfVec2f(0.f);
 
@@ -162,15 +163,19 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
     _SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts);
     _SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices);
 
-    // Read usdSdScheme attribute. If not set, we default to defaultMeshScheme
-    // flag that can be user defined and initialized to catmullClark
-    TfToken sdScheme = PxrUsdMayaMeshUtil::getSubdivScheme(finalMesh,
-            getArgs().defaultMeshScheme);
+    // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
+    // flag (this is specified by the job args but defaults to catmullClark).
+    TfToken sdScheme = PxrUsdMayaMeshUtil::GetSubdivScheme(finalMesh);
+    if (sdScheme.IsEmpty()) {
+        sdScheme = getArgs().defaultMeshScheme;
+    }
     primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
 
     if (sdScheme == UsdGeomTokens->none) {
-        // Polygonal Mesh Case
-        if (PxrUsdMayaMeshUtil::getEmitNormals(finalMesh, sdScheme)) {
+        // Polygonal mesh - export normals.
+        bool emitNormals = true; // Default to emitting normals if no tagging.
+        PxrUsdMayaMeshUtil::GetEmitNormalsTag(finalMesh, &emitNormals);
+        if (emitNormals) {
             VtArray<GfVec3f> meshNormals;
             TfToken normalInterp;
 
@@ -183,15 +188,16 @@ bool MayaMeshWriter::writeMeshAttrs(const UsdTimeCode &usdTime, UsdGeomMesh &pri
             }
         }
     } else {
-        TfToken sdInterpBound = PxrUsdMayaMeshUtil::getSubdivInterpBoundary(
-            finalMesh, UsdGeomTokens->edgeAndCorner);
-
-        _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(VtValue(), true), 
-                      sdInterpBound);
+        // Subdivision surface - export subdiv-specific attributes.
+        TfToken sdInterpBound = PxrUsdMayaMeshUtil::GetSubdivInterpBoundary(
+            finalMesh);
+        if (!sdInterpBound.IsEmpty()) {
+            _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), 
+                          sdInterpBound);
+        }
         
         TfToken sdFVLinearInterpolation =
-            PxrUsdMayaMeshUtil::getSubdivFVLinearInterpolation(finalMesh);
-
+            PxrUsdMayaMeshUtil::GetSubdivFVLinearInterpolation(finalMesh);
         if (!sdFVLinearInterpolation.IsEmpty()) {
             _SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(),
                           sdFVLinearInterpolation);

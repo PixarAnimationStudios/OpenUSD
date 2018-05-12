@@ -481,16 +481,6 @@ bool createNumericAttribute(
         const MString& attr,
         MFnNumericData::Type type);
 
-// XXX This is temporary until we have support for typed schemas in
-// PxrUsdMayaAdaptor.
-PXRUSDMAYA_API
-TfToken GetPurpose(const MFnDependencyNode& node);
-
-// XXX This is temporary until we have support for typed schemas in
-// PxrUsdMayaAdaptor.
-PXRUSDMAYA_API
-void SetPurpose(MFnDependencyNode& node, const TfToken& purpose);
-
 } // namespace PxrUsdMayaUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
