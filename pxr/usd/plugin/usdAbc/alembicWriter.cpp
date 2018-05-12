@@ -923,6 +923,16 @@ public:
         return result;
     }
 
+    /// Removes samples for a Usd property.  The property cannot be extracted
+    /// after removal.
+    void RemoveSamples(const TfToken& name)
+    {
+        auto i = std::find(_unextracted.begin(), _unextracted.end(), name);
+        if (i != _unextracted.end()) {
+            _unextracted.erase(i);
+        }
+    }
+
     /// Returns the names of properties that have not been extracted yet
     /// in Usd property order.
     TfTokenVector GetUnextractedNames() const;
@@ -2230,7 +2240,7 @@ _WriteNamespacedPropertyGroup(
     // Strip the namespace name from each name before copying.
     if (anyProperties) {
         OCompoundProperty parent = getParentProperty();
-        if (! parent.valid()) {
+        if (!parent.valid()) {
             // We can't get the parent property.  Just put the properties
             // at the top level.
             parent = context->GetParent().GetProperties();
@@ -2240,8 +2250,13 @@ _WriteNamespacedPropertyGroup(
         _CompoundPropertyTable subgroups(parent);
 
         // Convert each property.
+        // We have to remap primvars:st:indices to primvars:uv:indices.
         for (const auto& name : context->GetUnextractedNames()) {
-            TfTokenVector names = SdfPath::TokenizeIdentifierAsTokens(name);
+            TfTokenVector names = 
+                name == UsdAbcPropertyNames->stIndices ?
+                    SdfPath::TokenizeIdentifierAsTokens(
+                        UsdAbcPropertyNames->uvIndices) :
+                    SdfPath::TokenizeIdentifierAsTokens(name);
             if (names.size() >= 2 && names[0] == namespaceName) {
                 // Remove the namespace prefix.
                 names.erase(names.begin());
@@ -2256,9 +2271,9 @@ _WriteNamespacedPropertyGroup(
                 // Write it.
                 _WriteOutOfSchemaProperty(context, group, name, alembicName);
             }
-            }
         }
     }
+}
 
 static
 void
@@ -2774,8 +2789,16 @@ _WritePolyMesh(_PrimWriterContext* context)
         context->ExtractSamples(UsdGeomTokens->normals,
                                 SdfValueTypeNames->Normal3fArray);
     UsdSamples uv =
-        context->ExtractSamples(UsdAbcPropertyNames->uv,
+        context->ExtractSamples(UsdAbcPropertyNames->st,
                                 SdfValueTypeNames->Float2Array);
+    if (uv.IsEmpty()) {
+        uv = context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->Float2Array);
+        context->RemoveSamples(UsdAbcPropertyNames->stIndices);
+    } else {
+        context->RemoveSamples(UsdAbcPropertyNames->uv);
+        context->RemoveSamples(UsdAbcPropertyNames->uvIndices);
+    }
 
     // Adjust faceVertexIndices for winding order.
     _ReverseWindingOrder(context, &faceVertexIndices, faceVertexCounts);
@@ -2893,8 +2916,16 @@ _WriteSubD(_PrimWriterContext* context)
         context->ExtractSamples(UsdGeomTokens->creaseSharpnesses,
                                 SdfValueTypeNames->FloatArray);
     UsdSamples uv =
-        context->ExtractSamples(UsdAbcPropertyNames->uv,
+        context->ExtractSamples(UsdAbcPropertyNames->st,
                                 SdfValueTypeNames->Float2Array);
+    if (uv.IsEmpty()) {
+        uv = context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->Float2Array);
+        context->RemoveSamples(UsdAbcPropertyNames->stIndices);
+    } else {
+        context->RemoveSamples(UsdAbcPropertyNames->uv);
+        context->RemoveSamples(UsdAbcPropertyNames->uvIndices);
+    }
 
     // Adjust faceVertexIndices for winding order.
     _ReverseWindingOrder(context, &faceVertexIndices, faceVertexCounts);
