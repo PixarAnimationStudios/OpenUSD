@@ -119,8 +119,8 @@ This component provides the USD imaging delegates for Hydra, as well as
 usdview, a standalone native viewer for USD files.
 
 Disable this component by specifying the cmake flag ```PXR_BUILD_USD_IMAGING=FALSE``` when
-invoking cmake. Enabling this component will enable the [Imaging](#imaging)
-component.
+invoking cmake. usdview may also be disabled independently by specifying the cmake flag 
+```PXR_BUILD_USDVIEW=FALSE```.
 
 ## Imaging Plugins
 

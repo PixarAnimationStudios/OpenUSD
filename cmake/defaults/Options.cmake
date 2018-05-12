@@ -28,6 +28,7 @@ option(PXR_BUILD_TESTS "Build tests" ON)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_EMBREE_PLUGIN "Build embree imaging plugin" OFF)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
+option(PXR_BUILD_USDVIEW "Build usdview" ON)
 option(PXR_BUILD_KATANA_PLUGIN "Build usd katana plugin" OFF)
 option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" OFF)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
@@ -105,6 +106,20 @@ if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
     message(STATUS
         "Setting PXR_BUILD_USD_IMAGING=OFF because PXR_BUILD_IMAGING=OFF")
     set(PXR_BUILD_USD_IMAGING "OFF" CACHE BOOL "" FORCE)
+endif()
+
+if (${PXR_BUILD_USDVIEW})
+    if (NOT ${PXR_BUILD_USD_IMAGING})
+        message(STATUS
+            "Setting PXR_BUILD_USDVIEW=OFF because "
+            "PXR_BUILD_USD_IMAGING=OFF")
+        set(PXR_BUILD_USDVIEW "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_ENABLE_PYTHON_SUPPORT})
+        message(STATUS
+            "Setting PXR_BUILD_USDVIEW=OFF because "
+            "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_USDVIEW "OFF" CACHE BOOL "" FORCE)
+    endif()
 endif()
 
 if (${PXR_BUILD_EMBREE_PLUGIN} AND NOT ${PXR_BUILD_IMAGING})

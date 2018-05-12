@@ -21,11 +21,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-# PyOpenGL is a python library, ensure that it is available for use with our
-# specified version of Python.
-#
-
 if (NOT PYTHON_EXECUTABLE)
+    message(FATAL_ERROR "Unable to find Python executable - PyOpenGL not present")
     return()
 endif()
 
@@ -35,7 +32,15 @@ execute_process(
     RESULT_VARIABLE
         pyopenglImportResult 
 )
+
 if (pyopenglImportResult EQUAL 0)
     message(STATUS "Found PyOpenGL")
-    set(PYOPENGL_FOUND True)
+    set(PYOPENGL_AVAILABLE True)
 endif()
+
+include(FindPackageHandleStandardArgs)
+
+find_package_handle_standard_args(PyOpenGL
+    REQUIRED_VARS
+        PYOPENGL_AVAILABLE
+)

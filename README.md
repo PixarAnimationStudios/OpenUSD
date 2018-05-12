@@ -45,9 +45,6 @@ has been done on these platforms.
 Dependencies
 ------------
 
-The Core USD libraries (located in pxr/base and pxr/usd respectively) 
-have the following dependencies.
-
 | Name | Version | Optional |
 | ---- | ------- | :------: |
 | C++ compiler                                                      | GCC 4.8, Clang 3.5, MSVC 14.0(VS 2015) |   |
@@ -57,9 +54,10 @@ have the following dependencies.
 | [Boost](https://boost.org)                                        | 1.55 (Linux), 1.61.0 (OS X/Windows)    |   |
 | [Intel TBB](https://www.threadingbuildingblocks.org/)             | 4.4 Update 6                           |   |
 
-The Imaging and USD Imaging components (located in pxr/imaging and pxr/usdImaging
-respectively) have the following additional dependencies. These components can
-be disabled at build-time, for further details see [Advanced Build Configuration](BUILDING.md).
+Additional dependencies are required for the following components. These components
+may be disabled at build-time, for further details see [Advanced Build Configuration](BUILDING.md).
+
+**Imaging and USD Imaging**
 
 | Name | Version | Optional |
 | ---- | ------- | :------: |
@@ -68,8 +66,13 @@ be disabled at build-time, for further details see [Advanced Build Configuration
 | [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                       |   |
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                      |   |
 | [Ptex](http://ptex.us/)                                           | 2.0.30                                      | x |
-| [PySide](http://wiki.qt.io/PySide) or [PySide2](http://wiki.qt.io/PySide2) (experimental) | 1.2.2, 2.0.0~alpha0 | x |
-| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)           | 3.1.0                                       | x |
+
+**usdview**
+
+| Name | Version |
+| ---- | ------- |
+| [PySide](http://wiki.qt.io/PySide) or [PySide2](http://wiki.qt.io/PySide2) (experimental) | 1.2.2, 2.0.0~alpha0 |
+| [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/3.1.0)                                   | 3.1.0 |
 
 Getting and Building the Code
 -----------------------------
@@ -97,9 +100,8 @@ additional documentation for running cmake directly.
     - CMake
 - Optional (Can be ignored by passing `--no-python` as an argument to `build_usd.py`)
     - Python (required for [bindings and tests](BUILDING.md#python)) 
-    - PyOpenGL (required for some [UsdImaging components](BUILDING.md#python))
-    - PySide or PySide2 (experimental) (required for some [UsdImaging components](BUILDING.md#python))
-
+    - PyOpenGL (required for [usdview](BUILDING.md#usd-imaging))
+    - PySide or PySide2 (experimental) (required for [usdview](BUILDING.md#usd-imaging))
 
 #### 2. Download the USD source code
 

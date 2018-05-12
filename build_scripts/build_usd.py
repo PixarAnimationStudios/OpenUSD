@@ -895,6 +895,11 @@ def InstallUSD(context):
         else:
             extraArgs.append('-DPXR_BUILD_USD_IMAGING=OFF')
 
+        if context.buildUsdview:
+            extraArgs.append('-DPXR_BUILD_USDVIEW=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_USDVIEW=OFF')
+
         if context.buildAlembic:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=ON')
             if context.enableHDF5:
@@ -1041,6 +1046,13 @@ subgroup.add_argument("--ptex", dest="enable_ptex", action="store_true",
 subgroup.add_argument("--no-ptex", dest="enable_ptex", 
                       action="store_false",
                       help="Disable Ptex support in imaging (default)")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--usdview", dest="build_usdview",
+                      action="store_true", default=True,
+                      help="Build usdview (default)")
+subgroup.add_argument("--no-usdview", dest="build_usdview",
+                      action="store_false", 
+                      help="Do not build usdview")
 
 group = parser.add_argument_group(title="Imaging Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -1151,6 +1163,11 @@ class InstallContext:
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
 
+        # - usdview
+        self.buildUsdview = (self.buildUsdImaging and 
+                             self.buildPython and 
+                             args.build_usdview)
+
         # - Imaging plugins
         self.buildEmbree = self.buildImaging and args.build_embree
         self.embreeLocation = (os.path.abspath(args.embree_location)
@@ -1221,8 +1238,8 @@ if context.buildImaging:
     requiredDependencies += [JPEG, TIFF, PNG, OPENEXR, GLEW, 
                              OPENIMAGEIO, OPENSUBDIV]
                              
-    if context.buildUsdImaging and context.buildPython:
-        requiredDependencies += [PYOPENGL, PYSIDE]
+if context.buildUsdview:
+    requiredDependencies += [PYOPENGL, PYSIDE]
 
 # Assume zlib already exists on Linux platforms and don't build
 # our own. This avoids potential issues where a host application
@@ -1231,6 +1248,17 @@ if context.buildImaging:
 if Linux():
     requiredDependencies.remove(ZLIB)
 
+# Error out if user explicitly specified building usdview without required
+# components. Otherwise, usdview will be silently disabled. This lets users
+# specify "--no-python" without explicitly having to specify "--no-usdview",
+# for instance.
+if "--usdview" in sys.argv:
+    if not context.buildUsdImaging:
+        PrintError("Cannot build usdview when usdImaging is disabled.")
+        sys.exit(1)
+    if not context.buildPython:
+        PrintError("Cannot build usdview when Python support is disabled.")
+        sys.exit(1)
 
 # Error out if we try to build any third party plugins with python disabled.
 if not context.buildPython:
@@ -1328,6 +1356,7 @@ Building with settings:
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
     UsdImaging                  {buildUsdImaging}
+      usdview:                  {buildUsdview}
     Python support              {buildPython}
     Documentation               {buildDocs}
     Tests                       {buildTests}
@@ -1355,6 +1384,7 @@ Building with settings:
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
+    buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),

@@ -120,16 +120,17 @@ if (PXR_BUILD_IMAGING)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
     endif()
-    if (PXR_ENABLE_PYTHON_SUPPORT)
-        # --PySide
-        find_package(PySide)
-        # --PyOpenGL
-        find_package(PyOpenGL)
-    endif()
     # --Embree
     if (PXR_BUILD_EMBREE_PLUGIN)
         find_package(Embree REQUIRED)
     endif()
+endif()
+
+if (PXR_BUILD_USDVIEW)
+    # --PySide
+    find_package(PySide REQUIRED)
+    # --PyOpenGL
+    find_package(PyOpenGL REQUIRED)
 endif()
 
 # Third Party Plugin Package Requirements

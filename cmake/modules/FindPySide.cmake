@@ -22,8 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 if (NOT PYTHON_EXECUTABLE)
-    message(STATUS "Unable to find Python executable - PySide not present")
-    set(PYSIDE_FOUND False)
+    message(FATAL_ERROR "Unable to find Python executable - PySide not present")
     return()
 endif()
 
@@ -56,7 +55,7 @@ find_program(PYSIDEUICBINARY NAMES ${pySideUIC} HINTS ${PYSIDE_BIN_DIR})
 if (pySideImportResult)
     if (EXISTS ${PYSIDEUICBINARY})
         message(STATUS "Found ${pySideImportResult}: with ${PYTHON_EXECUTABLE}, will use ${PYSIDEUICBINARY} for pyside-uic binary")
-        set(PYSIDE_FOUND True)
+        set(PYSIDE_AVAILABLE True)
         if (pySideImportResult STREQUAL "PySide2")
             message(STATUS "Building against PySide2 is currently experimental.  "
                            "See https://bugreports.qt.io/browse/PYSIDE-357 if "
@@ -65,7 +64,7 @@ if (pySideImportResult)
         endif()
     else()
         message(STATUS "Found ${pySideImportResult} but NOT pyside-uic binary")
-        set(PYSIDE_FOUND False)
+        set(PYSIDE_AVAILABLE False)
     endif()
 else()
     if (PYSIDE_USE_PYSIDE2)
@@ -73,5 +72,13 @@ else()
     else()
         message(STATUS "Did not find PySide with ${PYTHON_EXECUTABLE}")
     endif()
-    set(PYSIDE_FOUND False)
+    set(PYSIDE_AVAILABLE False)
 endif()
+
+include(FindPackageHandleStandardArgs)
+
+find_package_handle_standard_args(PySide
+    REQUIRED_VARS
+        PYSIDE_AVAILABLE
+        PYSIDEUICBINARY
+)
