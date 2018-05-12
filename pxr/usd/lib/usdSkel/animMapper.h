@@ -58,6 +58,13 @@ public:
     UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
                       const VtTokenArray& targetOrder);
 
+    /// Construct a mapper for mapping data from \p sourceOrder to
+    /// \p targetOrder, each being arrays of size \p sourceOrderSize    
+    /// and \p targetOrderSize, respectively.
+    USDSKEL_API
+    UsdSkelAnimMapper(const TfToken* sourceOrder, size_t sourceOrderSize,
+                      const TfToken* targetOrder, size_t targetOrderSize);
+
     /// Typed remapping of data from \p source into \p target.
     /// The \p source array provides a run of \p elementSize elements for each
     /// path in the \\em sourceOrder. These elements are remapped and copied

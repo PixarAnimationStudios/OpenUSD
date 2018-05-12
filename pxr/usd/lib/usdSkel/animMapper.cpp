@@ -59,9 +59,18 @@ UsdSkelAnimMapper::UsdSkelAnimMapper()
 
 UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
                                      const VtTokenArray& targetOrder)
-    : _targetSize(targetOrder.size()), _offset(0)
+    : UsdSkelAnimMapper(sourceOrder.cdata(), sourceOrder.size(),
+                        targetOrder.cdata(), targetOrder.size())
+{}
+
+
+UsdSkelAnimMapper::UsdSkelAnimMapper(const TfToken* sourceOrder,
+                                     size_t sourceOrderSize,
+                                     const TfToken* targetOrder,
+                                     size_t targetOrderSize)
+    : _targetSize(targetOrderSize), _offset(0)
 {
-    if(sourceOrder.size() == 0 || targetOrder.size() == 0) {
+    if(sourceOrderSize == 0 || targetOrderSize == 0) {
         _flags = _NullMap;
         return;
     } 
@@ -72,22 +81,21 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
         // This includes identity maps.
 
         // Find where the first source element begins on the target.
-        auto it = std::find(targetOrder.begin(), targetOrder.end(),
+        auto it = std::find(targetOrder, targetOrder + targetOrderSize,
                             sourceOrder[0]);
-        if(it != targetOrder.end()) {
-            size_t pos = std::distance(targetOrder.begin(), it);
-            size_t compareCount = std::min(sourceOrder.size(),
-                                           targetOrder.size()-pos);
-            if(std::equal(sourceOrder.data(),
-                          sourceOrder.data()+compareCount, it)) {
+        size_t pos = it - targetOrder;
+        if(pos < targetOrderSize) {
+            size_t compareCount =
+                std::min(sourceOrderSize, targetOrderSize-pos);
+            if(std::equal(sourceOrder, sourceOrder+compareCount, it)) {
                 _offset = pos;
 
                 _flags = _OrderedMap;
 
-                if(pos == 0 && compareCount == targetOrder.size()) {
+                if(pos == 0 && compareCount == targetOrderSize) {
                     _flags |= _SourceOverridesAllTargetValues;
                 }
-                _flags |= compareCount == sourceOrder.size() ?
+                _flags |= compareCount == sourceOrderSize ?
                     _AllSourceValuesMapToTarget : _SomeSourceValuesMapToTarget;
                 return;
             }
@@ -99,15 +107,15 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
 
     // Need a map of path->targetIndex.
     std::unordered_map<TfToken,int,TfToken::HashFunctor> targetMap;
-    for(size_t i = 0; i < targetOrder.size(); ++i) {
+    for(size_t i = 0; i < targetOrderSize; ++i) {
         targetMap[targetOrder[i]] = static_cast<int>(i);
     }
 
-    _indexMap.resize(sourceOrder.size());
+    _indexMap.resize(sourceOrderSize);
     int* indexMap = _indexMap.data();
     size_t mappedCount = 0;
-    std::vector<bool> targetMapped(targetOrder.size());
-    for(size_t i = 0; i < sourceOrder.size(); ++i) {
+    std::vector<bool> targetMapped(targetOrderSize);
+    for(size_t i = 0; i < sourceOrderSize; ++i) {
         auto it = targetMap.find(sourceOrder[i]);
         if(it != targetMap.end()) {
             indexMap[i] = it->second;
@@ -117,7 +125,7 @@ UsdSkelAnimMapper::UsdSkelAnimMapper(const VtTokenArray& sourceOrder,
             indexMap[i] = -1;
         }
     }
-    _flags = mappedCount == sourceOrder.size() ? 
+    _flags = mappedCount == sourceOrderSize ? 
         _AllSourceValuesMapToTarget : _SomeSourceValuesMapToTarget;
 
     if(std::all_of(targetMapped.begin(), targetMapped.end(),

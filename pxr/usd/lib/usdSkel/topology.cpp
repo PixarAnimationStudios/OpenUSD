@@ -61,36 +61,35 @@ _GetParentIndex(const _PathIndexMap& pathMap, const SdfPath& path)
 
 
 VtIntArray
-_ComputeParentIndices(const SdfPathVector& paths)
+_ComputeParentIndicesFromPaths(const SdfPath* paths, size_t size)
 {
     TRACE_FUNCTION();
 
     _PathIndexMap pathMap;
-    for(size_t i = 0; i < paths.size(); ++i) {
+    for(size_t i = 0; i < size; ++i) {
         pathMap[paths[i]] = static_cast<int>(i);
     }
 
     VtIntArray parentIndices;
-    parentIndices.assign(paths.size(), -1);
+    parentIndices.assign(size, -1);
     
     int* parentIndicesData = parentIndices.data();
-    for(size_t i = 0; i < paths.size(); ++i) {
+    for(size_t i = 0; i < size; ++i) {
         parentIndicesData[i] = _GetParentIndex(pathMap, paths[i]);
     }
     return parentIndices;
 }
 
 
-SdfPathVector
-_GetJointPathsFromTokens(const VtTokenArray& tokens)
+VtIntArray
+_ComputeParentIndicesFromTokens(const TfToken* tokens, size_t size)
 {
-    const TfToken* tokensData = tokens.cdata();
-
-    SdfPathVector paths(tokens.size());
-    for(size_t i = 0; i < tokens.size(); ++i) {
-        paths[i] = SdfPath(tokensData[i].GetString());
+    // Convert tokens to paths.
+    SdfPathVector paths(size);
+    for(size_t i = 0; i < size; ++i) {
+        paths[i] = SdfPath(tokens[i].GetString());
     }
-    return paths;
+    return _ComputeParentIndicesFromPaths(paths.data(), size);
 }
 
 
@@ -106,12 +105,22 @@ UsdSkelTopology::UsdSkelTopology()
 /// do we require any common methods to handle the token->path
 /// conversion?
 UsdSkelTopology::UsdSkelTopology(const VtTokenArray& paths)
-    : UsdSkelTopology(_GetJointPathsFromTokens(paths))
+    : UsdSkelTopology(paths.cdata(), paths.size())
+{}
+
+
+UsdSkelTopology::UsdSkelTopology(const TfToken* paths, size_t size)
+    : UsdSkelTopology(_ComputeParentIndicesFromTokens(paths, size))
 {}
 
 
 UsdSkelTopology::UsdSkelTopology(const SdfPathVector& paths)
-    : UsdSkelTopology(_ComputeParentIndices(paths))
+    : UsdSkelTopology(paths.data(), paths.size())
+{}
+
+
+UsdSkelTopology::UsdSkelTopology(const SdfPath* paths, size_t size)
+    : UsdSkelTopology(_ComputeParentIndicesFromPaths(paths, size))
 {}
 
 
