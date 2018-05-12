@@ -358,6 +358,14 @@ class AppController(QtCore.QObject):
             self._filterObj = AppEventFilter(self)
             QtWidgets.QApplication.instance().installEventFilter(self._filterObj)
 
+            # Setup Usdview API and optionally load plugins.  We do this before
+            # loading the stage in case a plugin wants to modify global settings
+            # that affect stage loading.
+            self._plugRegistry = None
+            self._usdviewApi = UsdviewApi(self)
+            if not self._noPlugins:
+                self._configurePlugins()
+
             # read the stage here
             stage = self._openStage(
                 self._parserData.usdFile, self._parserData.populationMask)
@@ -986,12 +994,6 @@ class AppController(QtCore.QObject):
             self._ui.actionDeactivate.triggered.connect(self.deactivateSelectedPrims)
 
             self._setupDebugMenu()
-
-            # Setup Usdview API and optionally load plugins
-            self._plugRegistry = None
-            self._usdviewApi = UsdviewApi(self)
-            if not self._noPlugins:
-                self._configurePlugins()
 
             # timer for slider. when user stops scrubbing for 0.5s, update stuff.
             self._sliderTimer = QtCore.QTimer(self)
