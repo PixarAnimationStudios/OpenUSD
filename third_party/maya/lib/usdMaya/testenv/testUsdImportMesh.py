@@ -30,7 +30,7 @@ import unittest
 from maya import cmds
 from maya import standalone
 
-from pixar import UsdGeom
+from pxr import UsdGeom
 
 # XXX: The try/except here is temporary until we change the Pixar-internal
 # package name to match the external package name.
