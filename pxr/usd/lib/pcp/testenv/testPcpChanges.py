@@ -384,6 +384,46 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(len(err), 0)
         self.assertFalse(pi.IsInstanceable())
         self.assertEqual(pi.ComputePrimChildNames(), (['RefChild', 'DirectChild'], []))
+
+    def test_InertPrimChanges(self):
+        refLayer = Sdf.Layer.CreateAnonymous()
+        refParentSpec = Sdf.PrimSpec(refLayer, 'Parent', Sdf.SpecifierDef)
+        refChildSpec = Sdf.PrimSpec(refParentSpec, 'Child', Sdf.SpecifierDef)
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        parentSpec = Sdf.PrimSpec(rootLayer, 'Parent', Sdf.SpecifierOver)
+        parentSpec.referenceList.Add(
+            Sdf.Reference(refLayer.identifier, '/Parent'))
+
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+
+        # Adding an empty over to a prim that already exists (has specs)
+        # is an insignificant change.
+        (pi, err) = pcp.ComputePrimIndex('/Parent/Child')
+        self.assertEqual(err, [])
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(rootLayer, '/Parent/Child')
+            self.assertEqual(cp.GetSignificantChanges(), [])
+            self.assertEqual(cp.GetSpecChanges(), ['/Parent/Child'])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+        # Adding an empty over as the first spec for a prim is a
+        # a significant change, even if we haven't computed a prim index
+        # for that path yet.
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(rootLayer, '/Parent/NewChild')
+            self.assertEqual(cp.GetSignificantChanges(), ['/Parent/NewChild'])
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
+        (pi, err) = pcp.ComputePrimIndex('/Parent/NewChild2')
+        self.assertEqual(err, [])
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            Sdf.CreatePrimInLayer(rootLayer, '/Parent/NewChild2')
+            self.assertEqual(cp.GetSignificantChanges(), ['/Parent/NewChild2'])
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(), [])
+
     
 if __name__ == "__main__":
     unittest.main()

@@ -116,7 +116,18 @@ PcpPrimIndex::GetPath() const
 bool
 PcpPrimIndex::HasSpecs() const
 {
-    return !_primStack.empty();
+    // Prim stacks are not cached in Usd mode
+    if (!IsUsd()) {
+        return !_primStack.empty();
+    }
+
+    for (const auto& node : GetNodeRange()) {
+        if (node.HasSpecs()) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool

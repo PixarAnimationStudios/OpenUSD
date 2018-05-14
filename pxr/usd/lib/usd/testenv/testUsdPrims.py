@@ -835,5 +835,17 @@ class TestUsdPrim(unittest.TestCase):
             self.assertEqual(['CollectionAPI:session', 'CollectionAPI:root'],
                              world.GetAppliedSchemas())
 
+    def test_Bug160615(self):
+        for fmt in allFormats:
+            s = Usd.Stage.CreateInMemory('Bug160615.%s' % fmt)
+            p = s.OverridePrim('/Foo/Bar')
+            self.assertTrue(p)
+
+            s.RemovePrim(p.GetPath())
+            self.assertFalse(p)
+
+            p = s.OverridePrim('/Foo/Bar')
+            self.assertTrue(p)
+
 if __name__ == "__main__":
     unittest.main()
