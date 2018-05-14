@@ -32,6 +32,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include <Alembic/Abc/OArchive.h>
 #include <Alembic/Abc/OObject.h>
@@ -61,6 +62,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transform)
     ((xformOpTransform, "xformOp:transform"))
 );
+
+TF_DEFINE_ENV_SETTING(USD_ABC_READ_FLOAT2_AS_UV, true,
+        "Turn to false to disable reading float2 arrays as uv sets");
 
 namespace {
 
@@ -897,9 +901,21 @@ public:
     /// to include the sample times from the returned object.
     UsdSamples ExtractSamples(const TfToken& name)
     {
-        UsdSamples result = _ExtractSamples(name);
-        result.AddTimes(&_sampleTimes);
-        return result;
+        return _ExtractSamples(name, {});
+    }
+    
+    /// Returns the samples for a Usd property.  If the property doesn't
+    /// exist or has already been extracted then this returns an empty
+    /// samples object.  The property is extracted from the context so
+    /// it cannot be extracted again.  The sample times union is updated
+    /// to include the sample times from the returned object.  This
+    /// verifies that the property is holding a value of either the given type
+    //  or the alternative type;
+    /// if not it returns an empty samples object.
+    UsdSamples ExtractSamples(const TfToken& name, const SdfValueTypeName& type,
+                              const SdfValueTypeName& alternativeType)
+    {
+        return _ExtractSamples(name, {type, alternativeType});
     }
 
     /// Returns the samples for a Usd property.  If the property doesn't
@@ -911,16 +927,7 @@ public:
     /// if not it returns an empty samples object.
     UsdSamples ExtractSamples(const TfToken& name, const SdfValueTypeName& type)
     {
-        UsdSamples result = _ExtractSamples(name);
-        if (!result.IsEmpty() && type != result.GetTypeName()) {
-            TF_WARN("Expected property '%s' to have type '%s', got '%s'",
-                    GetPath().AppendProperty(name).GetText(),
-                    type.GetAsToken().GetText(),
-                    result.GetTypeName().GetAsToken().GetText());
-            return UsdSamples(GetPath(), name);
-        }
-        result.AddTimes(&_sampleTimes);
-        return result;
+        return _ExtractSamples(name, {type});
     }
 
     /// Removes samples for a Usd property.  The property cannot be extracted
@@ -939,6 +946,25 @@ public:
 
 private:
     UsdSamples _ExtractSamples(const TfToken& name);
+    
+    UsdSamples _ExtractSamples(const TfToken& name, 
+            const std::vector<SdfValueTypeName> &types)
+    {
+        UsdSamples result = _ExtractSamples(name);
+        if (!result.IsEmpty() && !types.empty()) {
+            SdfValueTypeName resultTypeName = result.GetTypeName();
+            if (find(types.begin(), types.end(), resultTypeName) ==
+                types.end())
+            {
+                TF_WARN("Property '%s' did not have expected type (got '%s')",
+                        GetPath().AppendProperty(name).GetText(),
+                        resultTypeName.GetAsToken().GetText());
+                return UsdSamples(GetPath(), name);
+            }
+        }
+        result.AddTimes(&_sampleTimes);
+        return result;
+    }
 
 private:
     typedef std::vector<SdfValueTypeName> SdfValueTypeNameVector;
@@ -2788,14 +2814,28 @@ _WritePolyMesh(_PrimWriterContext* context)
     UsdSamples normals =
         context->ExtractSamples(UsdGeomTokens->normals,
                                 SdfValueTypeNames->Normal3fArray);
-    UsdSamples uv =
-        context->ExtractSamples(UsdAbcPropertyNames->st,
-                                SdfValueTypeNames->Float2Array);
+    
+    // Default to look for primvars:st with type TexCoord2fArray or Float2Array
+    UsdSamples uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray,
+                                    SdfValueTypeNames->Float2Array)) :
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray));
+   
+    // At this point if matching uv set has not been found, 
+    // look for primvars:uv with type TexCoord2fArray or Float2Array
     if (uv.IsEmpty()) {
-        uv = context->ExtractSamples(UsdAbcPropertyNames->uv,
-                                     SdfValueTypeNames->Float2Array);
+        uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray,
+                                     SdfValueTypeNames->Float2Array)) :
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray));
+        
         context->RemoveSamples(UsdAbcPropertyNames->stIndices);
     } else {
+        // We found a primvars:st, so remove samples with name "primvars:uv"
         context->RemoveSamples(UsdAbcPropertyNames->uv);
         context->RemoveSamples(UsdAbcPropertyNames->uvIndices);
     }
@@ -2915,14 +2955,28 @@ _WriteSubD(_PrimWriterContext* context)
     UsdSamples creaseSharpnesses =
         context->ExtractSamples(UsdGeomTokens->creaseSharpnesses,
                                 SdfValueTypeNames->FloatArray);
-    UsdSamples uv =
-        context->ExtractSamples(UsdAbcPropertyNames->st,
-                                SdfValueTypeNames->Float2Array);
+    
+    // Default to look for primvars:st with type TexCoord2fArray or Float2Array
+    UsdSamples uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray,
+                                    SdfValueTypeNames->Float2Array)) :
+                        (context->ExtractSamples(UsdAbcPropertyNames->st,
+                                    SdfValueTypeNames->TexCoord2fArray));
+   
+    // At this point if matching uv set has not been found, 
+    // look for primvars:uv with type TexCoord2fArray or Float2Array
     if (uv.IsEmpty()) {
-        uv = context->ExtractSamples(UsdAbcPropertyNames->uv,
-                                     SdfValueTypeNames->Float2Array);
+        uv = (TfGetEnvSetting(USD_ABC_READ_FLOAT2_AS_UV))?
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray,
+                                     SdfValueTypeNames->Float2Array)) :
+                 (context->ExtractSamples(UsdAbcPropertyNames->uv,
+                                     SdfValueTypeNames->TexCoord2fArray));
+        
         context->RemoveSamples(UsdAbcPropertyNames->stIndices);
     } else {
+        // We found a primvars:st, so remove samples with name "primvars:uv"
         context->RemoveSamples(UsdAbcPropertyNames->uv);
         context->RemoveSamples(UsdAbcPropertyNames->uvIndices);
     }

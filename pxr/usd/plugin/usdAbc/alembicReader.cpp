@@ -85,10 +85,23 @@ TF_DEFINE_ENV_SETTING(
     USD_ABC_NUM_OGAWA_STREAMS, 4,
     "The number of threads available for reading ogawa-backed files via UsdAbc.");
 
+TF_DEFINE_ENV_SETTING(
+    USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY, false,
+    "Switch to true to enable writing Alembic uv sets as primvars:st with type "
+    "texCoord2fArray to USD");
+
 namespace {
 
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
+
+static const TfToken uvUsdAbcPropertyName = 
+    (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY))?
+    (UsdAbcPropertyNames->st) : (UsdAbcPropertyNames->uv);
+
+static const SdfValueTypeName uvTypeName =
+    (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY))?
+    (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
 
 static size_t
 _GetNumOgawaStreams()
@@ -2119,9 +2132,14 @@ _PrimReaderContext::AddOutOfSchemaProperty(
         _context.GetSchema().GetConversions().FindConverter(alembicType);
     if (usdTypeName) {
         _PrimReaderContext::Property &prop = 
-            _AddProperty(TfToken(name), usdTypeName, header->getMetaData(), 
-                     sampleTimes, isOutOfSchema);
-
+            (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY) && 
+             name == UsdAbcPropertyNames->uvIndices)? 
+                (_AddProperty(UsdAbcPropertyNames->stIndices, 
+                             usdTypeName, header->getMetaData(), 
+                             sampleTimes, isOutOfSchema)) :
+                (_AddProperty(TfToken(name), 
+                             usdTypeName, header->getMetaData(), 
+                             sampleTimes, isOutOfSchema)); 
         prop.converter = std::bind(
             _context.GetSchema().GetConversions().GetToUsdConverter(
                 alembicType, prop.typeName),
@@ -3059,8 +3077,8 @@ _ReadPolyMesh(_PrimReaderContext* context)
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
     context->AddProperty(
-        UsdAbcPropertyNames->uv,
-        SdfValueTypeNames->Float2Array,
+        uvUsdAbcPropertyName,
+        uvTypeName,
         _CopyGeneric<IV2fGeomParam, GfVec2f>(
             context->ExtractSchema("uv")));
 
@@ -3156,8 +3174,8 @@ _ReadSubD(_PrimReaderContext* context)
         _CopyGeneric<IFloatArrayProperty, float>(
             context->ExtractSchema(".creaseSharpnesses")));
     context->AddProperty(
-        UsdAbcPropertyNames->uv,
-        SdfValueTypeNames->Float2Array,
+        uvUsdAbcPropertyName,
+        uvTypeName,
         _CopyGeneric<IV2fGeomParam, GfVec2f>(
             context->ExtractSchema("uv")));
 }
