@@ -478,42 +478,44 @@ def ParseUsd(usdFilePath):
                 attrInfo = AttrInfo(sdfProp)
 
                 # Assert unique attribute names
-                if attrInfo.name in classInfo.attrs: 
-                    raise Exception(
-                        'Schema Attribute names must be unique, '
-                        'irrespective of namespacing. '
-                        'Duplicate name encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, attrInfo.name))
-                elif attrInfo.apiName in attrApiNames:
-                    raise Exception(
-                        'Schema Attribute API names must be unique. '
-                        'Duplicate apiName encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, attrInfo.apiName))
-                else:
-                    attrApiNames.append(attrInfo.apiName)
-                    classInfo.attrs[attrInfo.name] = attrInfo
-                    classInfo.attrOrder.append(attrInfo.name)
+                if (attrInfo.apiName != ''):
+                    if attrInfo.name in classInfo.attrs:
+                        raise Exception(
+                            'Schema Attribute names must be unique, '
+                            'irrespective of namespacing. '
+                            'Duplicate name encountered: %s.%s' %
+                            (classInfo.usdPrimTypeName, attrInfo.name))
+                    elif attrInfo.apiName in attrApiNames:
+                        raise Exception(
+                            'Schema Attribute API names must be unique. '
+                            'Duplicate apiName encountered: %s.%s' %
+                            (classInfo.usdPrimTypeName, attrInfo.apiName))
+                    else:
+                        attrApiNames.append(attrInfo.apiName)
+                classInfo.attrs[attrInfo.name] = attrInfo
+                classInfo.attrOrder.append(attrInfo.name)
 
             # Relationship
             else:
                 relInfo = RelInfo(sdfProp)
 
                 # Assert unique relationship names
-                if relInfo.name in classInfo.rels: 
-                    raise Exception(
-                        'Schema Relationship names must be unique, '
-                        'irrespective of namespacing. '
-                        'Duplicate name encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, relInfo.name))
-                elif relInfo.apiName in relApiNames:
-                    raise Exception(
-                        'Schema Relationship API names must be unique. '
-                        'Duplicate apiName encountered: %s.%s' %
-                        (classInfo.usdPrimTypeName, relInfo.apiName))
-                else:
-                    relApiNames.append(relInfo.apiName)
-                    classInfo.rels[relInfo.name] = relInfo
-                    classInfo.relOrder.append(relInfo.name)
+                if (relInfo.apiName != ''):
+                    if relInfo.name in classInfo.rels: 
+                        raise Exception(
+                            'Schema Relationship names must be unique, '
+                            'irrespective of namespacing. '
+                            'Duplicate name encountered: %s.%s' %
+                            (classInfo.usdPrimTypeName, relInfo.name))
+                    elif relInfo.apiName in relApiNames:
+                        raise Exception(
+                            'Schema Relationship API names must be unique. '
+                            'Duplicate apiName encountered: %s.%s' %
+                            (classInfo.usdPrimTypeName, relInfo.apiName))
+                    else:
+                        relApiNames.append(relInfo.apiName)
+                classInfo.rels[relInfo.name] = relInfo
+                classInfo.relOrder.append(relInfo.name)
 
     
     for classInfo in classes:

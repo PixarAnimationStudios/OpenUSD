@@ -272,6 +272,9 @@ class Derived "Derived" (
 
 class TestPxHairman "TestPxHairman"
 {
+    float attrWithoutGeneratedAccessorAPI (
+        doc = "This exercises empty apiName to skip accessor generation."
+    )
     rel relCanShareApiNameWithAttr (
         doc = "This exercises custom API naming."
     )

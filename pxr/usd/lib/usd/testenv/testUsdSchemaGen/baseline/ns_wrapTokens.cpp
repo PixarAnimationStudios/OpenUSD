@@ -66,6 +66,7 @@ void wrapUsdContrivedTokens()
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "asset", UsdContrivedTokens->asset);
     _AddToken(cls, "assetArray", UsdContrivedTokens->assetArray);
+    _AddToken(cls, "attrWithoutGeneratedAccessorAPI", UsdContrivedTokens->attrWithoutGeneratedAccessorAPI);
     _AddToken(cls, "binding", UsdContrivedTokens->binding);
     _AddToken(cls, "bool", UsdContrivedTokens->bool);
     _AddToken(cls, "boolArray", UsdContrivedTokens->boolArray);

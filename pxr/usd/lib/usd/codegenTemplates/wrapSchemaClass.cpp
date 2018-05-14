@@ -51,13 +51,17 @@ namespace {
 WRAP_CUSTOM;
 
 {% for attrName in cls.attrOrder -%}
-{% set attr = cls.attrs[attrName] %}        
+{% set attr = cls.attrs[attrName] %}
+{# Only emit Create/Get API if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+        
 static UsdAttribute
 _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
                                       object defaultVal, bool writeSparsely) {
     return self.Create{{ Proper(attr.apiName) }}Attr(
         UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
 }
+{% endif %}
 {% endfor %}
 {% if useExportAPI %}
 
@@ -127,21 +131,29 @@ void wrap{{ cls.cppClassName }}()
         .def(!self)
 
 {% for attrName in cls.attrOrder -%}
-{% set attr = cls.attrs[attrName] %}        
+{% set attr = cls.attrs[attrName] %}
+{# Only emit Create/Get API if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+        
         .def("Get{{ Proper(attr.apiName) }}Attr",
              &This::Get{{ Proper(attr.apiName) }}Attr)
         .def("Create{{ Proper(attr.apiName) }}Attr",
              &_Create{{ Proper(attr.apiName) }}Attr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+{% endif %}
 {% endfor %}
 
 {% for relName in cls.relOrder -%}
-{% set rel = cls.rels[relName] %}        
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% set rel = cls.rels[relName] %}
+{% if rel.apiName != '' %}
+        
         .def("Get{{ Proper(rel.apiName) }}Rel",
              &This::Get{{ Proper(rel.apiName) }}Rel)
         .def("Create{{ Proper(rel.apiName) }}Rel",
              &This::Create{{ Proper(rel.apiName) }}Rel)
+{% endif %}
 {% endfor %}
     ;
 

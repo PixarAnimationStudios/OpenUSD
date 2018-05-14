@@ -28,6 +28,7 @@ namespace foo {
 UsdContrivedTokensType::UsdContrivedTokensType() :
     asset("asset", TfToken::Immortal),
     assetArray("assetArray", TfToken::Immortal),
+    attrWithoutGeneratedAccessorAPI("attrWithoutGeneratedAccessorAPI", TfToken::Immortal),
     binding("binding", TfToken::Immortal),
     bool("bool", TfToken::Immortal),
     boolArray("boolArray", TfToken::Immortal),
@@ -144,6 +145,7 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
     allTokens({
         asset,
         assetArray,
+        attrWithoutGeneratedAccessorAPI,
         binding,
         bool,
         boolArray,

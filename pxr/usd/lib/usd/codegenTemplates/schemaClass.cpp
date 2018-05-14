@@ -148,6 +148,8 @@ const TfType &
 
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName] %}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if attr.apiName != '' %}
 {% if attr.apiGet != "custom" %}
 UsdAttribute
 {{ cls.cppClassName }}::Get{{ Proper(attr.apiName) }}Attr() const
@@ -167,9 +169,12 @@ UsdAttribute
                        writeSparsely);
 }
 
+{% endif %}
 {% endfor %}
 {% for relName in cls.relOrder %}
 {% set rel = cls.rels[relName] %}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if rel.apiName != '' %}
 {% if rel.apiGet != "custom" %}
 UsdRelationship
 {{ cls.cppClassName }}::Get{{ Proper(rel.apiName) }}Rel() const
@@ -185,6 +190,7 @@ UsdRelationship
                        /* custom = */ {{ "true" if rel.custom else "false" }});
 }
 
+{% endif %}
 {% endfor %}
 {% if cls.attrOrder|length > 0 %}
 namespace {

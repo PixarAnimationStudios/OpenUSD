@@ -260,6 +260,8 @@ private:
 {% endif %}
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName]%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if attr.apiName != '' %}
 public:
     // --------------------------------------------------------------------- //
     // {{ Upper(attr.apiName) }} 
@@ -284,9 +286,12 @@ public:
     {% endif -%}
     UsdAttribute Create{{ Proper(attr.apiName) }}Attr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
+{% endif %}
 {% endfor %}
 {% for relName in cls.relOrder %}
 {% set rel = cls.rels[relName]%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if rel.apiName != '' %}
 public:
     // --------------------------------------------------------------------- //
     // {{ Upper(rel.apiName) }} 
@@ -307,6 +312,7 @@ public:
     {{ Upper(libraryName) }}_API
     {% endif -%}
     UsdRelationship Create{{ Proper(rel.apiName) }}Rel() const;
+{% endif %}
 
 {% endfor %}
 public:

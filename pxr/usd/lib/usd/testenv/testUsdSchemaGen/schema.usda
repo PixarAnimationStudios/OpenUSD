@@ -268,4 +268,11 @@ class TestPxHairman "TestPxHairman" (
             string apiName = "Gofur_GeomOnHairdensity"
         }
     )
+
+    float attrWithoutGeneratedAccessorAPI (
+        doc = """This exercises empty apiName to skip accessor generation."""
+        customData = {
+            string apiName = ""
+        }
+    )
 }

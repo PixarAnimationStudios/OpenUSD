@@ -70,6 +70,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedBase
     const TfToken assetArray;
+    /// \brief "attrWithoutGeneratedAccessorAPI"
+    /// 
+    /// UsdContrivedTestHairman
+    const TfToken attrWithoutGeneratedAccessorAPI;
     /// \brief "binding"
     /// 
     /// UsdContrivedDerived
