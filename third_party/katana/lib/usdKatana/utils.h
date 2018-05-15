@@ -106,7 +106,7 @@ struct PxrUsdKatanaUtils {
 
     /// Convert the given SdfPath in the UsdStage to the corresponding
     /// katana location, given a scenegraph generator configuration.
-    static std::string _ConvertUsdPathToKatLocation(
+    static std::string ConvertUsdPathToKatLocation(
             const SdfPath &path,
             const std::string &isolatePathString,
             const std::string &rootPathString,

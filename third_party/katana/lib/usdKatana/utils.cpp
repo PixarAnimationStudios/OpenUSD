@@ -1190,7 +1190,7 @@ PxrUsdKatanaUtils::FindLightPaths(const UsdStageRefPtr& stage)
 }
 
 std::string
-PxrUsdKatanaUtils::_ConvertUsdPathToKatLocation(
+PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
         const SdfPath &path,
         const std::string &isolatePathString,
         const std::string &rootPathString,
@@ -1247,10 +1247,10 @@ PxrUsdKatanaUtils::ConvertUsdPathToKatLocation(
         const PxrUsdKatanaUsdInArgsRefPtr &usdInArgs,
         bool allowOutsideIsolation)
 {
-    return _ConvertUsdPathToKatLocation(path, usdInArgs->GetIsolatePath(),
-                                        usdInArgs->GetRootLocationPath(),
-                                        usdInArgs->GetSessionLocationPath(),
-                                        allowOutsideIsolation);
+    return ConvertUsdPathToKatLocation(path, usdInArgs->GetIsolatePath(),
+                                       usdInArgs->GetRootLocationPath(),
+                                       usdInArgs->GetSessionLocationPath(),
+                                       allowOutsideIsolation);
 }
 
 std::string
