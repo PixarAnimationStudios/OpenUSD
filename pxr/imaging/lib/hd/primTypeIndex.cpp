@@ -117,10 +117,6 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
     }
 
 
-    HdDirtyBits initialDirtyState = prim->GetInitialDirtyBitsMask();
-
-    _TrackerInsertPrim(tracker, primId, initialDirtyState);
-
     _PrimTypeEntry &typeEntry = _entries[typeIt->second];
 
     const bool emplaced = typeEntry.primMap.emplace(primId,
@@ -129,6 +125,12 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
     if (emplaced) {
         // Only add the primId if this is the first instance in the map.
         typeEntry.primIds.Insert(primId);
+        
+        HdDirtyBits initialDirtyState = prim->GetInitialDirtyBitsMask();
+        _TrackerInsertPrim(tracker, primId, initialDirtyState);
+    } else {
+        // The emplace failed so we should destroy the render prim.
+        _RenderDelegateDestroyPrim(renderDelegate, prim);
     }
 }
 
