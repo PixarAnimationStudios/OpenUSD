@@ -129,10 +129,6 @@ Hd_PrimTypeIndex<PrimType>::InsertPrim(const TfToken    &typeId,
     if (emplaced) {
         // Only add the primId if this is the first instance in the map.
         typeEntry.primIds.Insert(primId);
-    } else {
-        // XXX commented out until Bug 160762 is addressed.
-        //TF_CODING_ERROR("Inserted prim '%s' is already in the index",
-        //        primId.GetText());
     }
 }
 
