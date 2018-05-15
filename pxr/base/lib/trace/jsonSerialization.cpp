@@ -481,7 +481,9 @@ _ImportChromeEvents(
                         output[*tid].unorderedEvents.emplace_back(
                             TraceEvent::Timespan, key, 
                             _MicrosecondsToTicks(*ts),
-                            _MicrosecondsToTicks(*ts+*dur), *catId);
+                            _MicrosecondsToTicks(*ts)
+                                + _MicrosecondsToTicks(*dur),
+                            *catId);
                     }
                 }
             }
