@@ -192,12 +192,16 @@ PxrUsdMayaAdaptor::GetSchemaByName(const TfToken& schemaName) const
         return SchemaAdaptor();
     }
 
+    // Get the schema's TfType; its name should be registered as an alias.
+    const TfType schemaType =
+            TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
+
     // Is this an API schema?
-    if (GetRegisteredAPISchemas().count(schemaName) != 0) {
+    if (schemaType.IsA<UsdAPISchemaBase>()) {
         return SchemaAdaptor(_handle.object(), primDef);
     }
     // Is this a typed schema?
-    else if (GetRegisteredTypedSchemas().count(schemaName) != 0) {
+    else if (schemaType.IsA<UsdSchemaBase>()) {
         // XXX
         // We currently require an exact type match instead of the polymorphic
         // behavior that actual USD schema classes implement. This is because
@@ -279,8 +283,12 @@ PxrUsdMayaAdaptor::ApplySchemaByName(
         return SchemaAdaptor();
     }
 
+    // Get the schema's TfType; its name should be registered as an alias.
+    const TfType schemaType =
+            TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
+
     // Make sure that this is an API schema. Only API schemas can be applied.
-    if (GetRegisteredAPISchemas().count(schemaName) == 0) {
+    if (!schemaType.IsA<UsdAPISchemaBase>()) {
         TF_CODING_ERROR("'%s' is not a registered API schema",
                 schemaName.GetText());
         return SchemaAdaptor();
