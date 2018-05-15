@@ -123,7 +123,31 @@ public:
     // --------------------------------------------------------------------- //
     /// \anchor ArResolver_context
     /// \name Asset Resolver Context Operations
+    ///
     /// @{
+    // --------------------------------------------------------------------- //
+
+    /// Binds the given context to this resolver.
+    ///
+    /// Clients should generally use ArResolverContextBinder instead of calling
+    /// this function directly.
+    ///
+    /// \see ArResolverContextBinder
+    AR_API
+    virtual void BindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData) = 0;
+
+    /// Unbind the given context from this resolver.
+    ///
+    /// Clients should generally use ArResolverContextBinder instead of calling
+    /// this function directly.
+    ///
+    /// \see ArResolverContextBinder
+    AR_API
+    virtual void UnbindContext(
+        const ArResolverContext& context,
+        VtValue* bindingData) = 0;
 
     /// Return a default ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
@@ -158,6 +182,8 @@ public:
     virtual void RefreshContext(const ArResolverContext& context) = 0;
 
     /// Returns the currently-bound asset resolver context.
+    ///
+    /// \see ArResolver::BindContext, ArResolver::UnbindContext
     AR_API
     virtual ArResolverContext GetCurrentContext() = 0;
 
@@ -252,7 +278,6 @@ public:
 
     /// @}
 
-protected:
     // --------------------------------------------------------------------- //
     /// \anchor ArResolver_scopedCache
     /// \name Scoped Resolution Cache
@@ -263,72 +288,53 @@ protected:
     /// that repeated calls to Resolve with the same parameters will
     /// return the same result.
     ///
-    /// Scoped caches are managed by ArResolverScopedCache instances, which
-    /// call ArResolver::_BeginCacheScope on construction and 
-    /// ArResolver::_EndCacheScope on destruction. Note that these instances 
-    /// may be nested. The resolver must cache the results of Resolve until 
-    /// the last instance is destroyed.
+    /// A resolution cache scope is opened by a call to BeginCacheScope and
+    /// must be closed with a matching call to EndCacheScope. The resolver must
+    /// cache the results of Resolve until the scope is closed. Note that these
+    /// calls may be nested.
     ///
-    /// ArResolverScopedCache instances only apply to the thread in
-    /// which they are created. If multiple threads are running and an
-    /// ArResolverScopedCache is created in one of those threads, caching
-    /// should be enabled in that thread only. 
+    /// Cache scopes are thread-specific: if multiple threads are running and
+    /// a cache scope is opened in one of those threads, caching should be
+    /// enabled in that thread only.
     ///
-    /// Resolvers can populate an ArResolverScopedCache with data
-    /// for implementation-specific purposes. An ArResolverScopedCache
-    /// may share this data with other instances, including instances that
-    /// are created in different threads. This allows cache data to be
-    /// shared across threads, which means the resolver must ensure it 
-    /// is safe to access this data concurrently.
+    /// When opening a scope, a resolver may return additional data for
+    /// implementation-specific purposes. This data may be shared across 
+    /// threads, so long as it is safe to access this data concurrently.
+    /// 
+    /// ArResolverScopedCache is an RAII object for managing cache scope 
+    /// lifetimes and data. Clients should generally use that class rather
+    /// than calling the BeginCacheScope and EndCacheScope functions manually.
     ///
     /// \see ArResolverScopedCache
     /// @{
     // --------------------------------------------------------------------- //
 
-    friend class ArResolverScopedCache;
-
-    /// Called by ArResolverScopedCache to mark the start of a resolution
-    /// caching scope. 
+    /// Mark the start of a resolution caching scope. 
     ///
-    /// Resolvers may fill \p cacheScopeData with arbitrary data, which will
-    /// be stored in the ArResolverScopedCache. If an ArResolverScopedCache
-    /// is constructed with data shared from another ArResolverScopedCache
-    /// instance, \p cacheScopeData will contain a copy of that data.
+    /// Clients should generally use ArResolverScopedCache instead of calling
+    /// this function directly.
+    ///
+    /// Resolvers may fill \p cacheScopeData with arbitrary data. Clients may
+    /// also pass in a \p cacheScopeData populated by an earlier call to
+    /// BeginCacheScope to allow the resolver access to that information.
+    ///
+    /// \see ArResolverScopedCache
     AR_API
-    virtual void _BeginCacheScope(
+    virtual void BeginCacheScope(
         VtValue* cacheScopeData) = 0;
 
-    /// Called by ArResolverScopedCache to mark the end of a resolution
-    /// caching scope.
+    /// Mark the end of a resolution caching scope.
     ///
-    /// \p cacheScopeData will contain the data stored in the 
-    /// ArResolverScopedCache from the call to ArResolver::_BeginCacheScope.
+    /// Clients should generally use ArResolverScopedCache instead of calling
+    /// this function directly.
+    ///
+    /// \p cacheScopeData should contain the data that was populated by the
+    /// previous corresponding call to BeginCacheScope.
+    ///
+    /// \see ArResolverScopedCache
     AR_API
-    virtual void _EndCacheScope(
+    virtual void EndCacheScope(
         VtValue* cacheScopeData) = 0;
-
-    /// @}
-
-    // --------------------------------------------------------------------- //
-    /// \anchor ArResolver_contextBinder
-    /// \name Asset Resolver Context Binder
-    ///
-    /// \see ArResolverContext
-    /// \see ArResolverContextBinder
-    /// @{
-    // --------------------------------------------------------------------- //
-
-    friend class ArResolverContextBinder;
-
-    AR_API
-    virtual void _BindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) = 0;
-
-    AR_API
-    virtual void _UnbindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) = 0;
 
     /// @}
 

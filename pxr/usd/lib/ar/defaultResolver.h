@@ -158,22 +158,21 @@ public:
     AR_API
     virtual ArResolverContext GetCurrentContext() override;
 
-protected:
     AR_API
-    virtual void _BeginCacheScope(
+    virtual void BeginCacheScope(
         VtValue* cacheScopeData) override;
 
     AR_API
-    virtual void _EndCacheScope(
+    virtual void EndCacheScope(
         VtValue* cacheScopeData) override;
 
     AR_API
-    virtual void _BindContext(
+    virtual void BindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override;
 
     AR_API
-    virtual void _UnbindContext(
+    virtual void UnbindContext(
         const ArResolverContext& context,
         VtValue* bindingData) override;
 

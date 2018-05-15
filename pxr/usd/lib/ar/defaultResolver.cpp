@@ -329,7 +329,7 @@ ArDefaultResolver::GetCurrentContext()
 }
 
 void 
-ArDefaultResolver::_BeginCacheScope(
+ArDefaultResolver::BeginCacheScope(
     VtValue* cacheScopeData)
 {
     // cacheScopeData is held by ArResolverScopedCache instances
@@ -359,7 +359,7 @@ ArDefaultResolver::_BeginCacheScope(
 }
 
 void 
-ArDefaultResolver::_EndCacheScope(
+ArDefaultResolver::EndCacheScope(
     VtValue* cacheScopeData)
 {
     _CachePtrStack& cacheStack = _threadCacheStack.local();
@@ -376,7 +376,7 @@ ArDefaultResolver::_GetCurrentCache()
 }
 
 void 
-ArDefaultResolver::_BindContext(
+ArDefaultResolver::BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
@@ -394,7 +394,7 @@ ArDefaultResolver::_BindContext(
 }
 
 void 
-ArDefaultResolver::_UnbindContext(
+ArDefaultResolver::UnbindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
