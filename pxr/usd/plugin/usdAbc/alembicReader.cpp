@@ -95,13 +95,23 @@ namespace {
 using namespace ::Alembic::AbcGeom;
 using namespace UsdAbc_AlembicUtil;
 
-static const TfToken uvUsdAbcPropertyName = 
-    (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY))?
-    (UsdAbcPropertyNames->st) : (UsdAbcPropertyNames->uv);
+static const TfToken&
+_GetUVPropertyName()
+{
+    static const TfToken uvUsdAbcPropertyName = 
+        (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY)) ?
+        (UsdAbcPropertyNames->st) : (UsdAbcPropertyNames->uv);
+    return uvUsdAbcPropertyName;
+}
 
-static const SdfValueTypeName uvTypeName =
-    (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY))?
-    (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
+static const SdfValueTypeName&
+_GetUVTypeName()
+{
+    static const SdfValueTypeName uvTypeName = 
+        (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY)) ?
+        (SdfValueTypeNames->TexCoord2fArray) : (SdfValueTypeNames->Float2Array);
+    return uvTypeName;
+}
 
 static size_t
 _GetNumOgawaStreams()
@@ -3077,8 +3087,8 @@ _ReadPolyMesh(_PrimReaderContext* context)
         _CopyGeneric<IInt32ArrayProperty, int>(
             context->ExtractSchema(".faceCounts")));
     context->AddProperty(
-        uvUsdAbcPropertyName,
-        uvTypeName,
+        _GetUVPropertyName(),
+        _GetUVTypeName(),
         _CopyGeneric<IV2fGeomParam, GfVec2f>(
             context->ExtractSchema("uv")));
 
@@ -3174,8 +3184,8 @@ _ReadSubD(_PrimReaderContext* context)
         _CopyGeneric<IFloatArrayProperty, float>(
             context->ExtractSchema(".creaseSharpnesses")));
     context->AddProperty(
-        uvUsdAbcPropertyName,
-        uvTypeName,
+        _GetUVPropertyName(),
+        _GetUVTypeName(),
         _CopyGeneric<IV2fGeomParam, GfVec2f>(
             context->ExtractSchema("uv")));
 }
