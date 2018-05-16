@@ -89,10 +89,16 @@ public:
     ComputeTransform(GfMatrix4d* xform,
                      UsdTimeCode time=UsdTimeCode::Default()) const = 0;
 
+    virtual bool
+    ComputeBlendShapeWeights(VtFloatArray* weights,
+                             UsdTimeCode time=UsdTimeCode::Default()) const = 0;
+
     const VtTokenArray& GetJointOrder() const { return _jointOrder; }
 
+    const VtTokenArray& GetBlendShapeOrder() const { return _blendShapeOrder; }
+
 protected:
-    VtTokenArray _jointOrder;
+    VtTokenArray _jointOrder, _blendShapeOrder;
 };
 
 

@@ -60,8 +60,10 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         anim = UsdSkel.PackedJointAnimation.Define(stage, "/Anim")
 
         joints = Vt.TokenArray(["/A", "/B", "/C"])
+        blendshapes = Vt.TokenArray(["shapeA", "shapeB", "shapeC"])
 
         anim.GetJointsAttr().Set(joints)
+        anim.GetBlendShapesAttr().Set(blendshapes)
 
         xformsPerFrame = [[_RandomXf() for _ in xrange(len(joints))]
                           for _ in xrange(numFrames)]
@@ -77,6 +79,12 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         for frame,xf in enumerate(animRootXforms):
             animRootXfAttr.Set(xf, frame)
 
+        weightsPerFrame = [[random.random() for _ in xrange(len(blendshapes))]
+                           for _ in xrange(numFrames)]
+        
+        for frame,weights in enumerate(weightsPerFrame):
+            anim.GetBlendShapeWeightsAttr().Set(Vt.FloatArray(weights), frame)
+
         # Now try reading that all back via computations...
 
         cache = UsdSkel.Cache()
@@ -85,6 +93,7 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
 
         self.assertEqual(query.GetPrim(), anim.GetPrim())
         self.assertEqual(query.GetJointOrder(), joints)
+        self.assertEqual(query.GetBlendShapeOrder(), blendshapes)
         self.assertTrue(query.TransformMightBeTimeVarying())
         self.assertTrue(query.JointTransformsMightBeTimeVarying())
         self.assertEqual(query.GetJointTransformTimeSamples(),
@@ -95,14 +104,14 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
             computedXforms = query.ComputeJointLocalTransforms(frame)
             self.assertArrayIsClose(computedXforms, xforms)
 
-            t,r,s = query.ComputeJointLocalTransformComponents(frame)
-            computedXformsFromComponents = UsdSkel.MakeTransforms(t,r,s)
-
-            self.assertArrayIsClose(computedXformsFromComponents, xforms)
-
         for frame,xf in enumerate(animRootXforms):
             computedXf = query.ComputeTransform(frame)
             self.assertTrue(Gf.IsClose(computedXf, xf, 1e-5))
+
+        for frame,weights in enumerate(weightsPerFrame):
+            
+            computedWeights = query.ComputeBlendShapeWeights(frame)
+            self.assertArrayIsClose(computedWeights, weights)
 
 
 if __name__ == "__main__":

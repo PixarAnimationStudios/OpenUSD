@@ -166,6 +166,23 @@ UsdSkelBindingAPI::CreateJointWeightsAttr(VtValue const &defaultValue, bool writ
                        writeSparsely);
 }
 
+UsdAttribute
+UsdSkelBindingAPI::GetBlendShapesAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->skelBlendShapes);
+}
+
+UsdAttribute
+UsdSkelBindingAPI::CreateBlendShapesAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->skelBlendShapes,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdSkelBindingAPI::GetAnimationSourceRel() const
 {
@@ -192,6 +209,19 @@ UsdSkelBindingAPI::CreateSkeletonRel() const
                        /* custom = */ false);
 }
 
+UsdRelationship
+UsdSkelBindingAPI::GetBlendShapeTargetsRel() const
+{
+    return GetPrim().GetRelationship(UsdSkelTokens->skelBlendShapeTargets);
+}
+
+UsdRelationship
+UsdSkelBindingAPI::CreateBlendShapeTargetsRel() const
+{
+    return GetPrim().CreateRelationship(UsdSkelTokens->skelBlendShapeTargets,
+                       /* custom = */ false);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -213,6 +243,7 @@ UsdSkelBindingAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdSkelTokens->skelJoints,
         UsdSkelTokens->primvarsSkelJointIndices,
         UsdSkelTokens->primvarsSkelJointWeights,
+        UsdSkelTokens->skelBlendShapes,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -241,6 +272,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/usd/usdSkel/utils.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 

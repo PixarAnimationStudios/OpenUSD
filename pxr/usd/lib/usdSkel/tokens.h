@@ -58,14 +58,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdSkelTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdSkelTokens->joints);
+///     gprim.GetMyTokenValuedAttr().Set(UsdSkelTokens->blendShapes);
 /// \endcode
 struct UsdSkelTokensType {
     USDSKEL_API UsdSkelTokensType();
+    /// \brief "blendShapes"
+    /// 
+    /// UsdSkelPackedJointAnimation
+    const TfToken blendShapes;
+    /// \brief "blendShapeWeights"
+    /// 
+    /// UsdSkelPackedJointAnimation
+    const TfToken blendShapeWeights;
     /// \brief "joints"
     /// 
     /// UsdSkelPackedJointAnimation, UsdSkelSkeleton
     const TfToken joints;
+    /// \brief "offsets"
+    /// 
+    /// UsdSkelBlendShape
+    const TfToken offsets;
+    /// \brief "pointIndices"
+    /// 
+    /// UsdSkelBlendShape
+    const TfToken pointIndices;
     /// \brief "primvars:skel:geomBindTransform"
     /// 
     /// UsdSkelBindingAPI
@@ -94,6 +110,14 @@ struct UsdSkelTokensType {
     /// 
     /// UsdSkelBindingAPI
     const TfToken skelAnimationSource;
+    /// \brief "skel:blendShapes"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken skelBlendShapes;
+    /// \brief "skel:blendShapeTargets"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken skelBlendShapeTargets;
     /// \brief "skel:joints"
     /// 
     /// UsdSkelBindingAPI
@@ -106,6 +130,10 @@ struct UsdSkelTokensType {
     /// 
     /// UsdSkelPackedJointAnimation
     const TfToken translations;
+    /// \brief "weight"
+    /// 
+    /// UsdSkelInbetweenShape - The weight location at which the inbetween shape applies.
+    const TfToken weight;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

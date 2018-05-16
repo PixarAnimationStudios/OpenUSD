@@ -76,6 +76,13 @@ _CreateJointWeightsAttr(UsdSkelBindingAPI &self,
     return self.CreateJointWeightsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateBlendShapesAttr(UsdSkelBindingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateBlendShapesAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+}
 
 } // anonymous namespace
 
@@ -153,6 +160,13 @@ void wrapUsdSkelBindingAPI()
              &_CreateJointWeightsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+        
+        .def("GetBlendShapesAttr",
+             &This::GetBlendShapesAttr)
+        .def("CreateBlendShapesAttr",
+             &_CreateBlendShapesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         
         .def("GetAnimationSourceRel",
@@ -164,6 +178,11 @@ void wrapUsdSkelBindingAPI()
              &This::GetSkeletonRel)
         .def("CreateSkeletonRel",
              &This::CreateSkeletonRel)
+        
+        .def("GetBlendShapeTargetsRel",
+             &This::GetBlendShapeTargetsRel)
+        .def("CreateBlendShapeTargetsRel",
+             &This::CreateBlendShapeTargetsRel)
     ;
 
     _CustomWrapCode(cls);

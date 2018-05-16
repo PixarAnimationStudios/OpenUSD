@@ -23,8 +23,10 @@ pxr_library(usdSkel
         animMapper
         animQuery
         bindingAPI
+        blendShape
         cache
         debugCodes
+        inbetweenShape
         packedJointAnimation
         root
         skeleton
@@ -53,7 +55,9 @@ pxr_library(usdSkel
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
         wrapBindingAPI.cpp
+        wrapBlendShape.cpp
         wrapCache.cpp
+        wrapInbetweenShape.cpp
         wrapPackedJointAnimation.cpp
         wrapRoot.cpp
         wrapSkeleton.cpp

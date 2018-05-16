@@ -11,10 +11,16 @@ over "GLOBAL" (
     customData = {
         string libraryName       = "usdSkel"
         string libraryPath       = "pxr/usd/usdSkel"
+
+        dictionary libraryTokens = {
+            dictionary weight = {
+                string doc = """UsdSkelInbetweenShape - The weight location at
+                which the inbetween shape applies."""                             
+            }
+        }
     }
 ) {
 }
-
 
 
 class SkelRoot "SkelRoot" (
@@ -40,8 +46,9 @@ class SkelRoot "SkelRoot" (
 
 class Skeleton "Skeleton" (
     inherits = </Imageable>
-    doc="""Describes a skeleton. A Skeleton is responsible both for establishing
-    the _topology_ of a skeleton, as well as for identifying a rest pose.
+    doc = """Describes a skeleton. A Skeleton is responsible both for
+    establishing the _topology_ of a skeleton, as well as for identifying a
+    rest pose.
 
     See the extended \\ref UsdSkel_Skeleton "Skeleton Schema" documentation for
     more information.
@@ -70,7 +77,8 @@ class Skeleton "Skeleton" (
 
 class PackedJointAnimation "PackedJointAnimation" (
     inherits = </Xformable>
-    doc="""Describes a vectorized collection of joint animations.
+    doc = """Describes a skel animation, where joint animation is stored in a
+    vectorized form.
 
     See the extended \\ref UsdSkel_PackedJointAnimation "Packed Joint Animation"
     documentation for more information.
@@ -99,12 +107,26 @@ class PackedJointAnimation "PackedJointAnimation" (
         16 bit precision. Array length should match the size of the *joints* 
         attribute."""
     )
+
+    uniform token[] blendShapes ( 
+         doc = """Array of tokens identifying which blend shapes this
+         animation's data applies to. The tokens for blendShapes correspond to
+         the tokens set in the *skel:blendShapes* binding property of the
+         UsdSkelBindingAPI."""
+    )
+
+    float[] blendShapeWeights (
+        doc = """Array of weight values for each blend shape. Each weight value
+        is associated with the corresponding blend shape identified within the
+        *blendShapes* token array, and therefore must have the same length as
+        *blendShapes."""
+    )
 }
 
 
 class "BindingAPI" (
     inherits = </APISchemaBase>
-    doc="""Provides API for authoring and extracting all the skinning-related
+    doc = """Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want
     to be skeletally deformed.
 
@@ -160,7 +182,8 @@ class "BindingAPI" (
         doc = """An (optional) array of tokens defining the list of
         joints to which jointIndices apply. If not defined, jointIndices applies
         to the ordered list of joints defined in the bound Skeleton's *joints*
-        attribute."""  
+        attribute. If undefined on a primitive, the primitive inherits the 
+        value of the nearest ancestor prim, if any."""
     )
 
     int[] primvars:skel:jointIndices (
@@ -187,5 +210,53 @@ class "BindingAPI" (
         apply to each point. The length, interpolation, and elementSize of
         *jointWeights* must match that of *jointIndices*. See UsdGeomPrimvar
         for more information on interpolation and elementSize."""
+    )
+
+    uniform token[] skel:blendShapes (
+        customData = {
+            string apiName = "blendShapes"
+        }
+        doc = """An array of tokens defining the order onto which blend shape
+        weights from an animation source map onto the *skel:blendShapeTargets*
+        rel of a binding site. If authored, the number of elements must be equal
+        to the number of targets in the _blendShapeTargets_ rel. This property
+        is not inherited hierarchically, and is expected to be authored directly
+        on the skinnable primitive to which the blend shapes apply."""
+    )
+    rel skel:blendShapeTargets (
+        customData = {
+            string apiName= "blendShapeTargets"
+        }
+        doc = """Ordered list of all target blend shapes. This property is not
+        inherited hierarchically, and is expected to be authored directly on
+        the skinnable primitive to which the the blend shapes apply."""
+    )
+}
+
+
+class BlendShape "BlendShape" (
+      inherits = </Typed>
+      doc = """Describes a target blend shape, possibly containing inbetween
+      shapes.
+
+      See the extended \\ref UsdSkel_BlendShape "Blend Shape Schema
+      documentation for information.
+      """
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdSkel/inbetweenShape.h" """
+    }
+)
+{
+    uniform vector3f[] offsets (
+        doc = """**Required property**. Position offsets which, when added to the
+        base pose, provides the target shape."""
+    )
+
+    uniform uint[] pointIndices (
+        doc = """**Optional property**>. Indices into the original mesh that
+        correspond to the values in *offsets* and of any inbetween shapes. If
+        authored, the number of elements must be equal to the number of elements
+        in the *offsets* array."""
     )
 }

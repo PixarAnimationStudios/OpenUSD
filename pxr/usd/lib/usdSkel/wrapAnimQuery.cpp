@@ -34,7 +34,6 @@
 #include "pxr/base/gf/interval.h"
 
 #include <boost/python.hpp>
-#include <boost/python/tuple.hpp>
 
 #include <vector>
 
@@ -75,6 +74,15 @@ _ComputeJointLocalTransformComponents(const UsdSkelAnimQuery& self, UsdTimeCode 
     self.ComputeJointLocalTransformComponents(&translations, &rotations,
                                               &scales, time);
     return boost::python::make_tuple(translations, rotations, scales);
+}
+
+
+VtFloatArray
+_ComputeBlendShapeWeights(const UsdSkelAnimQuery& self, UsdTimeCode time)
+{
+    VtFloatArray weights;
+    self.ComputeBlendShapeWeights(&weights, time);
+    return weights;
 }
 
 
@@ -122,6 +130,9 @@ void wrapUsdSkelAnimQuery()
              &_ComputeJointLocalTransformComponents,
              (arg("time")=UsdTimeCode::Default()))
 
+        .def("ComputeBlendShapeWeights", &_ComputeBlendShapeWeights,
+             (arg("time")=UsdTimeCode::Default()))
+
         .def("GetJointTransformTimeSamples", &_GetJointTransformTimeSamples)
 
         .def("GetJointTransformTimeSamplesInInterval",
@@ -134,5 +145,7 @@ void wrapUsdSkelAnimQuery()
         .def("TransformMightBeTimeVarying", &This::TransformMightBeTimeVarying)
 
         .def("GetJointOrder", &This::GetJointOrder)
+
+        .def("GetBlendShapeOrder", &This::GetBlendShapeOrder)
         ;
 }            

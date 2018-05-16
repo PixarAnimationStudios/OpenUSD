@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdSkel/packedJointAnimation.h"
+#include "pxr/usd/usdSkel/blendShape.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -50,55 +50,27 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateJointsAttr(UsdSkelPackedJointAnimation &self,
+_CreateOffsetsAttr(UsdSkelBlendShape &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateJointsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
+    return self.CreateOffsetsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateTranslationsAttr(UsdSkelPackedJointAnimation &self,
+_CreatePointIndicesAttr(UsdSkelBlendShape &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateTranslationsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateRotationsAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateRotationsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateScalesAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateScalesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateBlendShapesAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateBlendShapesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateBlendShapeWeightsAttr(UsdSkelPackedJointAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateBlendShapeWeightsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+    return self.CreatePointIndicesAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UIntArray), writeSparsely);
 }
 
 } // anonymous namespace
 
-void wrapUsdSkelPackedJointAnimation()
+void wrapUsdSkelBlendShape()
 {
-    typedef UsdSkelPackedJointAnimation This;
+    typedef UsdSkelBlendShape This;
 
-    class_<This, bases<UsdGeomXformable> >
-        cls("PackedJointAnimation");
+    class_<This, bases<UsdTyped> >
+        cls("BlendShape");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -132,45 +104,17 @@ void wrapUsdSkelPackedJointAnimation()
         .def(!self)
 
         
-        .def("GetJointsAttr",
-             &This::GetJointsAttr)
-        .def("CreateJointsAttr",
-             &_CreateJointsAttr,
+        .def("GetOffsetsAttr",
+             &This::GetOffsetsAttr)
+        .def("CreateOffsetsAttr",
+             &_CreateOffsetsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetTranslationsAttr",
-             &This::GetTranslationsAttr)
-        .def("CreateTranslationsAttr",
-             &_CreateTranslationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetRotationsAttr",
-             &This::GetRotationsAttr)
-        .def("CreateRotationsAttr",
-             &_CreateRotationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetScalesAttr",
-             &This::GetScalesAttr)
-        .def("CreateScalesAttr",
-             &_CreateScalesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetBlendShapesAttr",
-             &This::GetBlendShapesAttr)
-        .def("CreateBlendShapesAttr",
-             &_CreateBlendShapesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetBlendShapeWeightsAttr",
-             &This::GetBlendShapeWeightsAttr)
-        .def("CreateBlendShapeWeightsAttr",
-             &_CreateBlendShapeWeightsAttr,
+        .def("GetPointIndicesAttr",
+             &This::GetPointIndicesAttr)
+        .def("CreatePointIndicesAttr",
+             &_CreatePointIndicesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
@@ -201,6 +145,17 @@ void wrapUsdSkelPackedJointAnimation()
 namespace {
 
 WRAP_CUSTOM {
+
+    using This = UsdSkelBlendShape;
+
+    _class
+        .def("CreateInbetween", &This::CreateInbetween, arg("name"))
+        .def("GetInbetween", &This::GetInbetween, arg("name"))
+        .def("HasInbetween", &This::HasInbetween, arg("name"))
+        
+        .def("GetInbetweens", &This::GetInbetweens)
+        .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens)
+        ;
 }
 
-} // anonymous namespace 
+}

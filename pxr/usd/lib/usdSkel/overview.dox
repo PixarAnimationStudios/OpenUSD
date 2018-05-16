@@ -32,20 +32,22 @@ an introduction key schemas and API concepts.
   - \ref UsdSkel_Schemas_Overview
   - \ref UsdSkel_JointOrder
   - \ref UsdSkel_SkelRoot
-  - \ref UsdSkel_Joint
   - \ref UsdSkel_Skeleton
     - \ref UsdSkel_JointHierarchy
   - \ref UsdSkel_PackedJointAnimation
+  - \ref UsdSkel_BlendShape
   - \ref UsdSkel_BindingAPI
     - \ref UsdSkel_BindingAPI_Skeletons
     - \ref UsdSkel_BindingAPI_JointInfluences
     - \ref UsdSkel_BindingAPI_RigidDeformations
     - \ref UsdSkel_BindingAPI_StoringInfluences
- - \subpage UsdSkel_CodingExamples
-   - \ref UsdSkel_CE_PopulateCache
-   - \ref UsdSkel_CE_AccessingSkels
-   - \ref UsdSkel_CE_FindSkinnables
-   - \ref UsdSkel_CE_Skinning
- - \subpage UsdSkel_BestPractices
+    - \ref UsdSkel_BindingAPI_BlendShapes
+- \subpage UsdSkel_CodingExamples
+  - \ref UsdSkel_CE_PopulateCache
+  - \ref UsdSkel_CE_AccessingSkels
+  - \ref UsdSkel_CE_FindSkinnables
+  - \ref UsdSkel_CE_Skinning
+  - \ref UsdSkel_CE_BakingSkinning
+- \subpage UsdSkel_BestPractices
 
 */

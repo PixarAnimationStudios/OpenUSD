@@ -165,6 +165,40 @@ UsdSkelPackedJointAnimation::CreateScalesAttr(VtValue const &defaultValue, bool 
                        writeSparsely);
 }
 
+UsdAttribute
+UsdSkelPackedJointAnimation::GetBlendShapesAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->blendShapes);
+}
+
+UsdAttribute
+UsdSkelPackedJointAnimation::CreateBlendShapesAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->blendShapes,
+                       SdfValueTypeNames->TokenArray,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdSkelPackedJointAnimation::GetBlendShapeWeightsAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->blendShapeWeights);
+}
+
+UsdAttribute
+UsdSkelPackedJointAnimation::CreateBlendShapeWeightsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->blendShapeWeights,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -186,6 +220,8 @@ UsdSkelPackedJointAnimation::GetSchemaAttributeNames(bool includeInherited)
         UsdSkelTokens->translations,
         UsdSkelTokens->rotations,
         UsdSkelTokens->scales,
+        UsdSkelTokens->blendShapes,
+        UsdSkelTokens->blendShapeWeights,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

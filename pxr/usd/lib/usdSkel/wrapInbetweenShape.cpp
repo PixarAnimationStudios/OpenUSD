@@ -21,25 +21,44 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/usd/usdSkel/inbetweenShape.h"
+
+#include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/wrapTypeHelpers.h"
+
+#include <boost/python.hpp>
+#include <boost/python/extract.hpp>
+
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+
+void wrapUsdSkelInbetweenShape()
 {
-    TF_WRAP(UsdSkelAnimMapper);
-    TF_WRAP(UsdSkelAnimQuery);
-    TF_WRAP(UsdSkelBindingAPI);
-    TF_WRAP(UsdSkelBlendShape);
-    TF_WRAP(UsdSkelCache);
-    TF_WRAP(UsdSkelInbetweenShape);
-    TF_WRAP(UsdSkelPackedJointAnimation);
-    TF_WRAP(UsdSkelSkeleton);
-    TF_WRAP(UsdSkelSkeletonQuery);
-    TF_WRAP(UsdSkelSkinningQuery);
-    TF_WRAP(UsdSkelRoot);
-    TF_WRAP(UsdSkelTokens);
-    TF_WRAP(UsdSkelTopology);
-    TF_WRAP(UsdSkelUtils);
-}
+    using This = UsdSkelInbetweenShape;
+
+    class_<This>("InbetweenShape")
+
+        .def(init<UsdAttribute>(arg("attr")))
+        .def(!self)
+
+        .def("GetWeight", &This::GetWeight)
+        .def("SetWeight", &This::SetWeight, arg("weight"))
+        .def("HasAuthoredWeight", &This::HasAuthoredWeight)
+
+        .def("GetPoints", &This::GetPoints)
+        .def("SetPoints", &This::SetPoints, arg("points"))
+
+        .def("IsInbetween", &This::IsInbetween, arg("attr"))
+        .staticmethod("IsInbetween")
+
+        .def("GetAttr", &This::GetAttr,
+             return_value_policy<return_by_value>())
+        .def("IsDefined", &This::IsDefined)
+        ;
+}            

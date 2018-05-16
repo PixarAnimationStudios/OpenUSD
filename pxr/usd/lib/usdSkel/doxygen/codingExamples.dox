@@ -31,9 +31,8 @@ cache.Populate(UsdSkel.Root(skelRootPrim))
 
 The UsdSkelCache instance is intended to be **shared** and to **persist** over
 the lifetime of a process that is consuming skeletal data. A cache may
-be populated with any number of skel roots.
-
-\note Cache population is thread-safe, and may be populated in parallel.
+be populated with any number of skel roots. Cache population is also thread-safe,
+and may be populated in parallel.
 
 When populating a cache, the cache is populated with a UsdSkelRoot prim.
 A UsdSkelRoot provides encapsulation of skeletal data in a scene hierarchy,
@@ -114,9 +113,9 @@ Once a skeleton instance and skinnable primitive have been identified --
 as a UsdSkelSkeletonQuery and a UsdSkelSkinningQuery, respectively --
 we can start applying skinning.
 
-It is generally expected that skinning information is transferred into some
-other data structure on the client's end. A client might apply skinning on
-a GPU, or have existing data structures that apply skinning.
+It is generally expected that skinning information will be transferred into some
+other data structure on the client's end. A client might apply skinning on a
+GPU, or have existing data structures that apply skinning.
 
 However, in the interests of clarifying behavior, the following code shows
 how skinned points can be computed for a UsdGeomPointBased primitive
@@ -128,15 +127,16 @@ how skinned points can be computed for a UsdGeomPointBased primitive
 - Python:
 \snippet examples.py ComputeSkinnedPoints
 
-It's important to keep in mind that these examples do _not_ demonstrate
-_efficient_ patterns for applying skinning. For best efficiency, the
-skinning transforms of a skeleton, as computed by
+\warning It's important to keep in mind that these examples do **not**
+demonstrate **efficient** patterns for applying skinning. For best efficiency,
+the skinning transforms of a skeleton, as computed by
 UsdSkelSkeletonQuery::ComputeSkinningTransforms, should be computed once per
 time sample, with the results being shared by all primitives that are skinned
 by that skeleton. Further, it is also a good idea for clients to cache the
 entire _rest_ state of skinned primitives -- including their joint influences
 and binding transforms -- and reuse that rest state while applying posing
-across different time samples. The UsdSkelSkinningQuery::ComputeSkinnedPoints
+across different time samples.<br>
+The UsdSkelSkinningQuery::ComputeSkinnedPoints
 and UsdSkelSkinningQuery::ComputeSkinnedTransform helpers exist primarily
 to apply a convenient facility for computing skinned data for validation and
 debugging purposes, and should not necessarily be used in performance-sensitive
@@ -154,5 +154,32 @@ Code for skinning transforms (in _skeleton space_)
 For a more complete look at how skeletal data is used to apply skinning, see
 the implementation of \ref UsdSkelBakeSkinningLBS, which provides a complete
 reference implementation of skinning, for testing and validation.
+
+\section UsdSkel_CE_BakingSkinning Baking Skinning
+
+The previous section discussed the use of various utility methods to help
+compute skinned points. For the sake of testing and validation, UsdSkel
+provides UsdSkelBakeSkinningLBS, which bakes the result of skinning directly
+into prims on a stage, effectively turning a file that contains prims
+skinned by skeletons into normal primitives with no special skeletal behavior.
+
+Using UsdSkelBakeSkinningLBS, skinning can be baked for an entire stage as
+follows:
+
+- C++:
+\snippet examples.cpp BakeSkinningLBS
+
+- Python:
+\snippet examples.py BakeSkinningLBS
+
+Setting the environment variable `TF_DEBUG=USDSKEL_BAKESKINNING` prior
+to running a process that calls the code above will cause the method
+to output additional debugging information, to help identify any issues
+with malformed data.
+
+\warning UsdSkelBakeSkinningLBS is written to provide a ground-truth for
+skinning, and emphasizes correctness over performance. It is meant for
+testing purposes, and should not generally be deployed for actual
+production work. Use with caution.
 
 */

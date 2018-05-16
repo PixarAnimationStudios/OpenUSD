@@ -58,7 +58,8 @@ the above concepts as follows:
 
   For each valid animation primitive, an \ref UsdSkel_OM_AnimQuery "anim query"
   is produced, which provides a common interface to querying data from that
-  animation.
+  animation. This provides animation of both joint transforms, as well as
+  of blend shape weights.
 
 \section UsdSkel_OM_Cache UsdSkelCache: Persistent Skeleton Cache
 
@@ -128,24 +129,21 @@ primitive is to be skinned. This includes
 \ref UsdSkel_Term_JointInfluences "joint influences" and a
 \ref UsdSkel_Transform_GeomBindTransform "geom bind transform".
 
-\section UsdSkel_OM_AnimMapper UsdSkelAnimMapper: Remapping Data Between Different Joint Orders
+\section UsdSkel_OM_AnimMapper UsdSkelAnimMapper: Remapping Data Between Different Orders
 
-A helper for mapping vectorized joint data from one
-\ref UsdSkel_JointOrder "joint order" to another.
+A helper for mapping vectorized data from one ordering to another.
 
-Vectorized joint data in UsdSkel may be required to adhere to a variety of
-different orderings. An animation source provides data in its own order,
-which may need to be remapped into the order defined for a skeleton.
-The skeleton order itself may need to be remapped into an order declared at a
-binding site via a _skel:joints_ binding relationship -- which may be set either
-at the same primitive that the skeleton is bound to, or at one of its
-descendants. Clients may also want to remap joint animation into their own
-order, defined externally.
+Vectorized data in UsdSkel may be required to adhere to a variety of different
+orderings. For example, an animation source provides joint data in its own order,
+which may need to be remapped into the joint order defined for a skeleton.
+The skeleton order itself may also need to be remapped into an order declared at
+a binding site via a _skel:joints_ binding relationship. Clients may also want
+to remap vectorized animation data into their own, externally-defined order.
 
-A UsdSkelAnimMapper provides remapping of ordered data to simplify these
-tasks. Based on two joint orderings -- as defined by two SdfPathVector
-constructor arguments -- a mapper provides a reusable structure for remapping
-data between different orderings.
+A UsdSkelAnimMapper provides a mapping of vectorized data from one ordering to
+another to simplify these tasks. Based on two token orderings -- as defined by
+two VtTokenArray constructor arguments -- a mapper provides a reusable structure
+for remapping data between different orderings.
 
 For joint orderings defined as part of the core schemas, clients should not
 generally need to manually construct UsdSkelAnimMapper objects. Rather,
@@ -156,8 +154,9 @@ objects may be shared across different query objects, if possible.
 An effort is made in mappers to provide additional information about a remapping
 task, to facilitate optimizations while remapping data. For instance, the result
 of UsdSkelAnimMapper::IsIdentity can be used to decide whether or not any
-remapping work is required. Similarly, UsdSkelAnimMapper::IsNull indicates
-that no source values can be remapped (and so maybe we need not bother computing
-the source data to begin with).
+remapping work is required -- possibly allowing some array copies to be
+bypassed. Similarly, UsdSkelAnimMapper::IsNull indicates that no source values
+can be remapped (and so maybe we need not bother computing the source data to
+begin with).
 
 */

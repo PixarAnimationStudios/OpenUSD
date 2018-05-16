@@ -42,14 +42,16 @@ schema types:
   Defines the \ref UsdSkel_Term_SkeletonTopology "topology" of the skeleton,
   as well as storing a _rest pose_.
 
-- \ref UsdSkel_Joint "Joint":
-  
-  Concrete prim type used when defining the \ref UsdSkel_JointHierarchy
-  "joint hierarchy" of a skeleton.
-
 - \ref UsdSkel_PackedJointAnimation "Packed Joint Animation":
   
   Stores animated joint transforms, which may be applied to any skeleton.
+  Also stores blendshape weight animation, describing how to apply
+  blendshapes on skinnable meshes.
+
+- \ref UsdSkel_BlendShape "Blend Shape":
+  
+  Stores an individual blend shape, and optional in-betweens, for a geometric
+  primitive.
 
 - \ref UsdSkel_BindingAPI "Binding API":
 
@@ -105,11 +107,9 @@ for additional features like sparse authoring of animation data.
 Data can be remapped from one joint ordering to another using a
 UsdSkelAnimMapper, and is done so by matching joint names.
 
-\sa UsdSkelSkeleton::GetJointOrder, UsdSkelSkeleton::SetJointOrder,
-    UsdSkelPackedJointAnimation::GetJointOrder,
-    UsdSkelPackedJointAnimation::SetJointOrder,
-    UsdSkelBindingAPI::GetJointOrder, UsdSkelBindingAPI::SetJointOrder
-
+\sa UsdSkelAnimQuery::GetJointOrder,
+    UsdSkelSkeletonQuery::GetJointOrder,
+    UsdSkelSkinningQuery::GetJointOrder
 
 \section UsdSkel_SkelRoot Skeleton Root Schema
 
@@ -162,6 +162,7 @@ For example:
 def Skeleton "Skel" {
     uniform token[] joints = ["A", "A/B",  "C", "C/D/E"]
 }
+\endcode
 
 In the above example, there are four joints:
 - `A`: A root joint (no parent)
@@ -182,14 +183,21 @@ can most easily be achieved by simply sorting the array.
 It's possible to test whether or not an array of joint paths defines a
 valid topology as follows:
 
+- C++:
 \code{.cpp}
 std::string whyNot;
 bool isValid = UsdSkelTopology(paths).Validate(&whyNot);
 \endcode
 
+- Python:
+\code{.py}
+(isValid,whyNot) = UsdSkel.Topology(paths).Validate()
+\endcode
+
 \section UsdSkel_PackedJointAnimation Packed Joint Animation Schema
 
-Schema describing vectorized joint animation data.
+Schema describing skeletal animation, within which joint animations
+are stored in a vectorized form.
 
 Both as a storage optimization and to allow for value interpolation that
 preserves transform orthogonality, joint transforms are encoded as separate
@@ -213,6 +221,18 @@ as the authored _joints_ array.
 The effect of a packed animation prim may also be nullified by either
 deactivating the primitive, or by blocking the component attributes.
 
+In addition to providing joint animations, a PackedJointAnimation may also
+provide blend shape weight animations. Blend shape weights are specified in
+a vectorized form using the _blendShapeWeights_ attribute. The _blendShapes_
+attribute holds a token array which, for every element authored in
+_blendShapeWeights_, identifies which blend shape each weight value applies to.
+
+The point of this encoding is to decouple the blendshape weight animation from
+the description of how that animation maps to different skinnable shapes.
+Refer to the \ref UsdSkel_BindingAPI_BlendShapes 'BindingAPI: Blend Shapes'
+documentation for information on how these weights are mapped to skinnable
+primitives.
+
 \subsection Animation Root Transform
 
 A PackedJointAnimation is itself a UsdGeomXformable primitive, and may specify
@@ -223,6 +243,116 @@ This is separate from the root transformation of the
 \ref UsdSkel_Term_SkeletonInstance "Skeleton Instance", and provides a way of
 making a distinction between the component of a character's _clip_ motion, and
 the model's own local-to-world transform.
+
+\section UsdSkel_BlendShape Blend Shape Schema
+
+Schema describing a single blend shape.
+
+Blend shapes specify a target shape, in terms of point offsets, for a
+point-based primitive. The offsets
+may hold a direct correspondance with the points of the point-based primitive
+to which they are meant to apply, or the points may specify a shape using
+a sparse subset of points. The mapping in the latter case is described using
+the *pointIndices* attribute. If a blend shape defines any
+\ref UsdSkel_BlendShape_Inbetweens "in-between shapes", the same *pointIndices*
+mapping additionaly applies to all in-between shapes.
+
+When a mesh is skinned in UsdSkel, blend shape application precedes the effect
+of skinning using joint transformations. If no in-between shapes are defined,
+a set of blend shapes is applied against an input point as follows:
+
+\f[
+    P' = P +\sum_i{w_ib_i} \\
+    \text{where:} \\
+    \begin{align*}
+       b_i    &= \text{Position offset of shape } i \\
+       P      &= \text{Initial point being deformed}
+    \end{align*}
+\f]
+
+In other words, the position offsets are multiplied against the corresponding
+weight value, and added against the input positions. Note that the above
+equation only describes application of blend shapes in the absence of
+in-between shapes.
+
+\subsection UsdSkel_BlendShape_Inbetweens Blend Shape: In-betweens
+
+Each blend shape prim may define in-between shapes, which specify explicit
+corrective shape to apply when the blend shape is resolved at different
+weights.
+
+For example, suppose that a blend shape defines a 'smile' shape.
+At a weight of 1, we apply the full effect of the shape. At in-between weight
+values, we linear interpolate the shape back towards a neutral pose to derive
+an in-between shape. Using in-betweens, we can instead specify those in-between
+shapes explicitly. So instead of linearly interpolating to derive a 'half-smile'
+pose, we might provide an explicit shape corresponding to a weight of 0.5.
+
+Scene description for the scenario described above is as follows:
+
+\code
+def BlendShape "Smile" {
+    uniform vector3f[] inbetweens:halfSmile = [...] (weight = 0.5)
+}
+\endcode
+
+While an equivalent animation could be defined without in-betweens by animating
+the weights of two blend shapes separately, using in-betweens provides a more
+convenient encoding that allows us to decouple the specification of in-betweens
+from the primary weight animation.
+
+In-between shapes can be created via UsdSkelBlend::CreateInbetween(), and
+are manipulated and introspected using UsdSkelInbetweenShape objects.
+The in-between shapes themselves are encoded as attributes in the 'inbetweens:'
+namespace, using the 'weight' metadata field to indicate the weight value
+at which they apply.
+
+The in-between shapes corresponding to \f$weight = 0\f$ and \f$weight = 1\f$
+are **implicitly** defined on a blend shape. The former defines the null shape,
+for at which all shape offset are zero, while the latter is the shape given
+by the _offsets_ property of the UsdSkelBlendShape primitive.
+Because the existence of those in-betweens is implied, it is considered an
+authoring error for any in-betweens to specify a weight of 0 or 1 for 
+an in-between shape.
+
+We must also consider the behavior when multiple in-betweens whose weight values
+match. Although it would be possible to adopt an interpretation that allows
+all shapes to have meaning -- such as averaging across all shapes -- this
+introduces some ambiguity for interchange: If the in-betweens are averaged
+together, it's unclear what the _name_ should be given to the resulting shape.
+To avoid this ambiguous interpretation, in addition to a weight value of 0 or 1,
+it is considered an authoring error for any two in-betweens of a blend shape
+to have the same weight value. Typical run-time behavior for these malformed
+in-betweens is to produce and error, but continue to process the blend shape
+while ignoring the malformed in-betweens.
+
+If we consider only the set of valid in-betweens, a set of blend shapes
+containing in-betweens are applied to a point as follows:
+
+\f[
+    P' = P + \sum_i{ [b_l(1 - \frac{w_i-\alpha_l}{\alpha_u-\alpha_l}) +
+                     b_u\frac{w_i-\alpha_l}{\alpha_u-\alpha_l}] } \\
+    \text{where:} \\
+    \begin{align*}
+        P        &= \text{Initial point being deformed}
+        w_i      &= \text{Weight value of blendshape } i \\
+        b_i      &= \text{Position offsets of blendshape } i \\
+        \alpha_i &= \text{Weight location of in-between blendshape } i \\
+        l        &= \text{The index of the nearest weight with weight }
+                          \leq w \text{, or the index of the in-between with
+                          the lowest weight value otherwise} \\
+        u        &= \text{The index of the next in-between with weight }
+                          \geq w_l, l \neq u \\
+    \end{align*}
+ \f]
+
+For example, given in-between weights of \f$[0.25, 0.5]\f$, if a blendshape
+weight is greater than 0.5, we interpolate between the shape at 0.5 and the
+implicit primary shape (\f$weight = 1\f$), adding the result to the base shape.
+If the weight is in the \f$[0.25,0.5]\f$ interval, we interpolate between the
+shapes at 0.25 and 0.5, adding the result to the base shape. Finally, if the
+weight is less than 0, we interpolate between the implicit null shape
+(\f$weight = 0\f$),
 
 \section UsdSkel_BindingAPI Binding API Schema
 
@@ -394,6 +524,75 @@ Additionally, as part of our \ref UsdSkel_BestPractices "best practices",
 we suggest that joint influences be sorted from largest weight value to
 smallest. The \ref UsdSkelSortInfluences utility can be used to do so.
 UsdSkel does not currently *require* sorted joint influences, but may later
-add such restrictions, since they enable some skinning optimizations like 
-\ref UsdSkelResizeInfluences.
+add such restrictions, since they enable some skinning optimizations, such as 
+allowing a skinning kernel to exit from a point-deformation loop early.
+
+\subsection UsdSkel_BindingAPI_BlendShapes BindingAPI: Binding Blend Shapes
+
+UsdSkel decouples the encoding of blend shape animations from the description
+of how those animations map to skinnable primitives. This has numerous
+advantages, such as allowing the set of primitives skinned by a particular
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance" to be swapped out --
+via variants or other composition features -- with a different set of skinnable
+primitives, holding different blend shapes. This decoupling also means that
+an existing blend shape animation is not necessarily invalidated by asset
+changes that alter the set of shapes defined for a character.
+
+Given a skinnable primitive, the _skel:blendShapes_ and
+_skel:blendShapeTargets_ properties of the UsdSkelBindingAPI specify a mapping
+from the animation of the bound
+\ref UsdSkel_Term_SkeletonInstance "Skeleton Instance" to different skinnable
+primitives.
+
+Note that because blend shapes are usually tightly coupled with individual
+geometric primitives, whereas other properties of UsdSkelBindingAPI are
+hierarchically inherited, these blendshape-related properties are *not*
+inherited from ancestor primitives in namespace, and are relevant only when
+specified directly on primitives.
+
+To bind blend shapes, the _skel:blendShapeTargets_ rel should be created, and
+set to target UsdSkelBlendShape primitives, which define each shape.
+Additionally, the _skel:blendShapes_ array should also be defined,
+providing a unique token per bound blend shape. For example:
+
+\code
+def Skeleton "Skel" {}
+
+def PackedJointAnimation "Anim"
+{
+    uniform token[] blendShapes = ["A","B","C","D"]
+    float[] blendShapeWeights = [1,0.75,0,0]
+}
+
+def Mesh "Mesh {
+    def BlendShape "Foo" {}
+    def BlendShape "Bar" {}
+
+    uniform token[] skel:blendShapes = ["B", "A"]
+    rel skel:blendShapeTargets = [<Foo>, <Bar>]
+
+    rel skel:skeleton = </Skel>
+    rel skel:animationSource = </Anim>
+}
+\endcode
+
+In the above example, note that the `</Anim>` primitive specifies more
+blend shapes than are actually used on `</Mesh>`. This is because an animation
+source is providing animation data for a **complete model** (I.e., multiple
+geometric primitives). The _skel:blendShape_ attribute, as defined on `</Mesh>`,
+provides a mapping between the _blendShapeWeights_ animation data on `</Anim`>
+-- which holds weight animation for multiple geometric primitives. The set
+of blend shape targets specified by the _skel:blendShapeTargets_ rel identifies,
+for each mapped blend shape token in _skel:blendShapes_, the target
+UsdSkelBlendShape primitive to which animation data should apply.
+
+From the example above, shape `</Mesh/Foo>` is using shapes `['B', 'A']` (in that
+order). First we map the _blendShapeWeights_ from the ordering specified by
+`</Anim.blendShapes>` to the ordering on `</Mesh.blendShapes>`, which gives
+local weight values of [0.75,1.0]. For each token in `</Mesh.blendShapes>`,
+the `</Mesh.blendShapeTargets>` rel identifies which UsdSkelBlendShape primitive
+that token maps to. So `B = </Mesh/Foo>` and `A = </Mesh/Bar>`. From this,
+we find that we our final blend shapes and weights, as pairs, are
+`[(</Mesh/Foo>, 0.75), (</Mesh/Bar>, 1.0)`.
+
 */

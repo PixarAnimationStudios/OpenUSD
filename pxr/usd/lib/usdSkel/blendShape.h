@@ -21,19 +21,19 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDSKEL_GENERATED_SKELETON_H
-#define USDSKEL_GENERATED_SKELETON_H
+#ifndef USDSKEL_GENERATED_BLENDSHAPE_H
+#define USDSKEL_GENERATED_BLENDSHAPE_H
 
-/// \file usdSkel/skeleton.h
+/// \file usdSkel/blendShape.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdSkel/api.h"
-#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdSkel/tokens.h"
 
-#include "pxr/usd/usdSkel/topology.h" 
+#include "pxr/usd/usdSkel/inbetweenShape.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -49,20 +49,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SKELETON                                                                   //
+// BLENDSHAPE                                                                 //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdSkelSkeleton
+/// \class UsdSkelBlendShape
 ///
-/// Describes a skeleton. A Skeleton is responsible both for
-/// establishing the _topology_ of a skeleton, as well as for identifying a
-/// rest pose.
+/// Describes a target blend shape, possibly containing inbetween
+/// shapes.
 /// 
-/// See the extended \ref UsdSkel_Skeleton "Skeleton Schema" documentation for
-/// more information.
+/// See the extended \ref UsdSkel_BlendShape "Blend Shape Schema
+/// documentation for information.
 /// 
 ///
-class UsdSkelSkeleton : public UsdGeomImageable
+class UsdSkelBlendShape : public UsdTyped
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -76,26 +75,26 @@ public:
     /// UsdPrim.
     static const bool IsTyped = true;
 
-    /// Construct a UsdSkelSkeleton on UsdPrim \p prim .
-    /// Equivalent to UsdSkelSkeleton::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdSkelBlendShape on UsdPrim \p prim .
+    /// Equivalent to UsdSkelBlendShape::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdSkelSkeleton(const UsdPrim& prim=UsdPrim())
-        : UsdGeomImageable(prim)
+    explicit UsdSkelBlendShape(const UsdPrim& prim=UsdPrim())
+        : UsdTyped(prim)
     {
     }
 
-    /// Construct a UsdSkelSkeleton on the prim held by \p schemaObj .
-    /// Should be preferred over UsdSkelSkeleton(schemaObj.GetPrim()),
+    /// Construct a UsdSkelBlendShape on the prim held by \p schemaObj .
+    /// Should be preferred over UsdSkelBlendShape(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdSkelSkeleton(const UsdSchemaBase& schemaObj)
-        : UsdGeomImageable(schemaObj)
+    explicit UsdSkelBlendShape(const UsdSchemaBase& schemaObj)
+        : UsdTyped(schemaObj)
     {
     }
 
     /// Destructor.
     USDSKEL_API
-    virtual ~UsdSkelSkeleton();
+    virtual ~UsdSkelBlendShape();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -104,17 +103,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdSkelSkeleton holding the prim adhering to this
+    /// Return a UsdSkelBlendShape holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdSkelSkeleton(stage->GetPrimAtPath(path));
+    /// UsdSkelBlendShape(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDSKEL_API
-    static UsdSkelSkeleton
+    static UsdSkelBlendShape
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -140,7 +139,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDSKEL_API
-    static UsdSkelSkeleton
+    static UsdSkelBlendShape
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:
@@ -157,52 +156,49 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
-    // JOINTS 
+    // OFFSETS 
     // --------------------------------------------------------------------- //
-    /// An array of path tokens identifying the set of joints that make
-    /// up the skeleton, and their order. Each token in the array must be valid
-    /// when parsed as an SdfPath. The parent-child relationships of the
-    /// corresponding paths determine the parent-child relationships of each
-    /// joint.
+    /// **Required property**. Position offsets which, when added to the
+    /// base pose, provides the target shape.
     ///
-    /// \n  C++ Type: VtArray<TfToken>
-    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  C++ Type: VtArray<GfVec3f>
+    /// \n  Usd Type: SdfValueTypeNames->Vector3fArray
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
     USDSKEL_API
-    UsdAttribute GetJointsAttr() const;
+    UsdAttribute GetOffsetsAttr() const;
 
-    /// See GetJointsAttr(), and also 
+    /// See GetOffsetsAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDSKEL_API
-    UsdAttribute CreateJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateOffsetsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // RESTTRANSFORMS 
+    // POINTINDICES 
     // --------------------------------------------------------------------- //
-    /// Specifies rest transforms of each joint in 
-    /// **joint-local space**, in the ordering imposed by *joints*.
-    /// Joint transforms should all be given as orthogonal, affine
-    /// transformations.
+    /// **Optional property**>. Indices into the original mesh that
+    /// correspond to the values in *offsets* and of any inbetween shapes. If
+    /// authored, the number of elements must be equal to the number of elements
+    /// in the *offsets* array.
     ///
-    /// \n  C++ Type: VtArray<GfMatrix4d>
-    /// \n  Usd Type: SdfValueTypeNames->Matrix4dArray
+    /// \n  C++ Type: VtArray<unsigned int>
+    /// \n  Usd Type: SdfValueTypeNames->UIntArray
     /// \n  Variability: SdfVariabilityUniform
     /// \n  Fallback Value: No Fallback
     USDSKEL_API
-    UsdAttribute GetRestTransformsAttr() const;
+    UsdAttribute GetPointIndicesAttr() const;
 
-    /// See GetRestTransformsAttr(), and also 
+    /// See GetPointIndicesAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDSKEL_API
-    UsdAttribute CreateRestTransformsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreatePointIndicesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
@@ -215,6 +211,67 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Author scene description to create an attribute on this prim that
+    /// will be recognized as an Inbetween (i.e. will present as a valid
+    /// UsdSkelInbetweenShape).
+    ///
+    /// The name of the created attribute or may or may not be the specified
+    /// \p attrName, due to the possible need to apply property namespacing.
+    /// Creation may fail and return an invalid Inbetwen if \p attrName
+    /// contains a reserved keyword.
+    ///
+    /// \return an invalid UsdSkelInbetweenShape if we failed to create a valid
+    /// attribute, a valid UsdSkelInbetweenShape otherwise. It is not an error
+    /// to create over an existing, compatible attribute.
+    ///
+    /// \sa UsdSkelInbetweenShape::IsInbetween()
+    USDSKEL_API
+    UsdSkelInbetweenShape CreateInbetween(const TfToken& name) const;
+
+    /// Return the Inbetween corresponding to the attribute named \p name,
+    /// which will be valid if an Inbetween attribute definition already exists.
+    ///
+    /// Name lookup will account for Inbetween namespacing, which means that
+    /// this method will succeed in some cases where
+    /// `UsdSkelInbetweenShape(prim->GetAttribute(name))` will not, unless
+    /// \p name has the proper namespace prefix.
+    ///
+    /// \sa HasInbetween()
+    USDSKEL_API
+    UsdSkelInbetweenShape GetInbetween(const TfToken& name) const;
+
+    /// Return true if there is a defined Inbetween named \p name on this prim.
+    ///
+    /// Name lookup will account for Inbetween namespacing.
+    ///
+    /// \sa GetInbetween()
+    USDSKEL_API
+    bool HasInbetween(const TfToken& name) const;
+
+    /// Return valid UsdSkelInbetweenShape objects for all defined Inbetweens on
+    /// this prim.
+    USDSKEL_API
+    std::vector<UsdSkelInbetweenShape> GetInbetweens() const;
+
+    /// Like GetInbetweens(), but exclude inbetwens that have no authored scene
+    //// description.
+    USDSKEL_API
+    std::vector<UsdSkelInbetweenShape> GetAuthoredInbetweens() const;
+
+    /// Compute keys for querying inbetween shapes.
+    /// Keys are defined as (weight,time) vectors, where the weight determines
+    /// at what channel weight a shape is to be used, and the time provides
+    /// the time sample at which the *points* attribute should be queried to
+    /// to return the corresponding points fro the inbetween.
+    /// Returns false only on error. If no inbetweens are defined, returns
+    /// true, but *samples* will be empty.
+    USDSKEL_API
+    bool ComputeInbetweenKeys(VtVec2fArray* samples) const;
+
+private:
+    std::vector<UsdSkelInbetweenShape>
+    _MakeInbetweens(const std::vector<UsdProperty>& props) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

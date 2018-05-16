@@ -112,6 +112,11 @@ public:
              VtQuatfArray* rotations,
              VtVec3hArray* scales,
              UsdTimeCode time=UsdTimeCode::Default()) const;
+
+    USDSKEL_API
+    bool ComputeBlendShapeWeights(
+             VtFloatArray* weights,
+             UsdTimeCode time=UsdTimeCode::Default()) const;
     
     /// Get the time samples at which values contributing to joint transforms
     /// are set. This only computes the time samples for sampling transforms in
@@ -156,6 +161,11 @@ public:
     /// \sa UsdSkelSkeleton::GetJointOrder
     USDSKEL_API
     VtTokenArray GetJointOrder() const;
+
+    /// Returns an array of tokens describing the ordering of blend shape
+    /// channels in the animation.
+    USDSKEL_API
+    VtTokenArray GetBlendShapeOrder() const;
 
     USDSKEL_API
     std::string GetDescription() const;

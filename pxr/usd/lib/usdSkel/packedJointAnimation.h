@@ -52,7 +52,8 @@ class SdfAssetPath;
 
 /// \class UsdSkelPackedJointAnimation
 ///
-/// Describes a vectorized collection of joint animations.
+/// Describes a skel animation, where joint animation is stored in a
+/// vectorized form.
 /// 
 /// See the extended \ref UsdSkel_PackedJointAnimation "Packed Joint Animation"
 /// documentation for more information.
@@ -242,6 +243,54 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDSKEL_API
     UsdAttribute CreateScalesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // BLENDSHAPES 
+    // --------------------------------------------------------------------- //
+    /// Array of tokens identifying which blend shapes this
+    /// animation's data applies to. The tokens for blendShapes correspond to
+    /// the tokens set in the *skel:blendShapes* binding property of the
+    /// UsdSkelBindingAPI.
+    ///
+    /// \n  C++ Type: VtArray<TfToken>
+    /// \n  Usd Type: SdfValueTypeNames->TokenArray
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetBlendShapesAttr() const;
+
+    /// See GetBlendShapesAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateBlendShapesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // BLENDSHAPEWEIGHTS 
+    // --------------------------------------------------------------------- //
+    /// Array of weight values for each blend shape. Each weight value
+    /// is associated with the corresponding blend shape identified within the
+    /// *blendShapes* token array, and therefore must have the same length as
+    /// *blendShapes.
+    ///
+    /// \n  C++ Type: VtArray<float>
+    /// \n  Usd Type: SdfValueTypeNames->FloatArray
+    /// \n  Variability: SdfVariabilityVarying
+    /// \n  Fallback Value: No Fallback
+    USDSKEL_API
+    UsdAttribute GetBlendShapeWeightsAttr() const;
+
+    /// See GetBlendShapeWeightsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSKEL_API
+    UsdAttribute CreateBlendShapeWeightsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
