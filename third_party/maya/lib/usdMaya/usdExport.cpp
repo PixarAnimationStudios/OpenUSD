@@ -69,7 +69,6 @@ MSyntax usdExport::createSyntax()
     syntax.addFlag("-cbb" , "-exportCollectionBasedBindings", MSyntax::kBoolean);
     syntax.addFlag("-nuv" , "-normalizeMeshUVs" , MSyntax::kBoolean);
     syntax.addFlag("-nnu" , "-normalizeNurbs" , MSyntax::kBoolean);
-    syntax.addFlag("-euv" , "-nurbsExplicitUVType" , MSyntax::kString);
     syntax.addFlag("-cls" , "-exportColorSets", MSyntax::kBoolean);
     syntax.addFlag("-dms" , "-defaultMeshScheme", MSyntax::kString);
     syntax.addFlag("-vis" , "-exportVisibility", MSyntax::kBoolean);
@@ -201,14 +200,6 @@ try
 
     if (argData.isFlagSet("normalizeNurbs")) {
         argData.getFlagArgument("normalizeNurbs", 0, jobArgs.normalizeNurbs);
-    }
-
-    if (argData.isFlagSet("nurbsExplicitUVType")) {
-        MString stringVal;
-        argData.getFlagArgument("nurbsExplicitUVType", 0, stringVal);
-        if (stringVal=="uniform") {
-            jobArgs.nurbsExplicitUVType = PxUsdExportJobArgsTokens->Uniform;
-        }
     }
 
     if (argData.isFlagSet("exportColorSets")) {

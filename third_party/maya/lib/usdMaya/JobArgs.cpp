@@ -71,7 +71,6 @@ JobExportArgs::JobExportArgs()
         exportCollectionBasedBindings(false),
         normalizeNurbs(false),
         exportNurbsExplicitUV(true),
-        nurbsExplicitUVType(PxUsdExportJobArgsTokens->Uniform),
         exportColorSets(true),
         renderLayerMode(PxUsdExportJobArgsTokens->defaultLayer),
         defaultMeshScheme(UsdGeomTokens->catmullClark),
@@ -111,7 +110,6 @@ operator <<(std::ostream& out, const JobExportArgs& exportArgs)
         << "exportCollectionBasedBindings: " << _StringifyBool(exportArgs.exportCollectionBasedBindings) << std::endl
         << "normalizeNurbs: " << _StringifyBool(exportArgs.normalizeNurbs) << std::endl
         << "exportNurbsExplicitUV: " << _StringifyBool(exportArgs.exportNurbsExplicitUV) << std::endl
-        << "nurbsExplicitUVType: " << exportArgs.nurbsExplicitUVType << std::endl
         << "exportColorSets: " << _StringifyBool(exportArgs.exportColorSets) << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl

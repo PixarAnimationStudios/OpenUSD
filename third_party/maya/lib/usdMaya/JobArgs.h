@@ -56,7 +56,6 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
         PXRUSDMAYA_TRANSLATOR_TOKENS);
 
 #define PXRUSDMAYA_JOBARGS_TOKENS \
-    (Uniform) \
     (defaultLayer) \
     (currentLayer) \
     (modelingVariant)
@@ -91,7 +90,6 @@ struct JobExportArgs
 
     bool normalizeNurbs;
     bool exportNurbsExplicitUV;
-    TfToken nurbsExplicitUVType;
     
     bool exportColorSets;
 

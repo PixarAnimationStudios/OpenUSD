@@ -117,7 +117,6 @@ usdTranslatorExport::writer(const MFileObject &file,
             }
             if (theOption[0] == MString("normalizeUVs")) {
                 jobArgs.normalizeMeshUVs = theOption[1].asInt();
-                jobArgs.nurbsExplicitUVType = PxUsdExportJobArgsTokens->Uniform;
             }
             if (theOption[0] == MString("exportColorSets")) {
                 jobArgs.exportColorSets = theOption[1].asInt();
