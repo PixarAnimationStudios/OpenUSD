@@ -124,11 +124,14 @@ install:
     fi
 
   ######
-  ### DEPENDENCIES FOR USDIMAGING
+  ### DEPENDENCIES FOR USDVIEW
   #####
 
   ### PySide 1.2.2
   - sudo apt-get install python-pyside pyside-tools
+
+  ### PyOpenGL 3.1.0
+  - sudo pip install PyOpenGL
 
 cache:
   directories:
