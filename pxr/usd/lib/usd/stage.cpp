@@ -2538,8 +2538,10 @@ UsdStage::_ComposeChildren(Usd_PrimDataPtr prim,
     if (cur != end && curName == nameEnd) {
         TF_DEBUG(USD_COMPOSITION).Msg("Children removed from end <%s>\n",
                                       prim->GetPath().GetText());
-        for (Usd_PrimDataSiblingIterator it = cur; it != end; ++it) {
-            _DestroyPrim(*it);
+        for (Usd_PrimDataSiblingIterator it = cur; it != end; ) {
+            // Make sure we advance to the next sibling before we destroy
+            // the current child so we don't read from a deleted prim.
+            _DestroyPrim(*it++);
         }
 
         if (cur == begin) {
