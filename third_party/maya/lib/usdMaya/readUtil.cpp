@@ -826,7 +826,7 @@ PxrUsdMayaReadUtil::ReadSchemaAttributesFromPrim(
         return 0;
     }
 
-    size_t count;
+    size_t count = 0;
     if (PxrUsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
             adaptor.GetSchemaOrInheritedSchema(schemaType)) {
         for (const TfToken& attrName : attributeNames) {
