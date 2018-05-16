@@ -11,7 +11,6 @@ pxr_library(sdf
         work
         ar
         ${Boost_PYTHON_LIBRARY}
-        ${Boost_REGEX_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
@@ -67,7 +66,6 @@ pxr_library(sdf
         spec
         specType
         textFileFormat
-        textReferenceParser
         tokens
         types
         valueTypeName
@@ -151,7 +149,6 @@ pxr_library(sdf
         wrapRelationshipSpec.cpp
         wrapReference.cpp
         wrapSpec.cpp
-        wrapTextReferenceParser.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
         wrapVariantSpec.cpp
@@ -202,7 +199,6 @@ pxr_test_scripts(
     testenv/testSdfPayload.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
-    testenv/testSdfTextReferenceParser.py
     testenv/testSdfTypes.py
 )
 
@@ -284,11 +280,6 @@ pxr_install_test_dir(
     DEST testSdfParsing/testSdfParsing.testenv
 )
 
-pxr_install_test_dir(
-    SRC testenv/testSdfTextReferenceParser.testenv
-    DEST testSdfTextReferenceParser
-)
-
 pxr_register_test(testSdfAttributeBlocking
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAttributeBlocking"
@@ -315,13 +306,6 @@ pxr_register_test(testSdfCustomLayerData
 
 pxr_register_test(testSdfHardToReach
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfHardToReach"
-)
-
-pxr_register_test(testSdfTextReferenceParser
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTextReferenceParser"
-    STDOUT_REDIRECT result.txt
-    DIFF_COMPARE result.txt
 )
 
 pxr_register_test(testSdfLayer

@@ -29,17 +29,14 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
-#include "pxr/usd/sdf/textReferenceParser.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/base/trace/trace.h"
 
 #include <stack>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 using std::string;
 using std::vector;
@@ -82,7 +79,7 @@ _AppendAssetValue(
 // should just go into Sdf's _GatherPrimAssetReferences?  if it is important,
 // we could also have another function that takes 3 vectors.
 static void
-_ExtractDependenciesForBinary(
+_ExtractDependencies(
     const std::string& filePath,
     std::vector<std::string>* sublayers,
     std::vector<std::string>* references,
@@ -201,15 +198,6 @@ _ExtractDependenciesForBinary(
 
 }
 
-// XXX:2014-10-23 It would be great if USD provided this for us.
-static bool
-_IsUsdBinary(const std::string& filePath)
-{
-    SdfFileFormatConstPtr textFormat =
-        SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
-    return !(textFormat && textFormat->CanRead(filePath));
-}
-
 void
 UsdUtilsExtractExternalReferences(
     const string& filePath,
@@ -218,16 +206,8 @@ UsdUtilsExtractExternalReferences(
     vector<string>* payloads)
 {
     TRACE_FUNCTION();
-
-    if (_IsUsdBinary(filePath)) {
-        _ExtractDependenciesForBinary(filePath,
-            subLayers, references, payloads);
-    } else {
-        SdfExtractExternalReferences(filePath,
-            subLayers, references, payloads);
-    }
+    _ExtractDependencies(filePath, subLayers, references, payloads);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
