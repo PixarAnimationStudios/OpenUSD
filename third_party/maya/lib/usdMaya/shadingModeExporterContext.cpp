@@ -36,6 +36,7 @@
 #include "pxr/usd/usdShade/shader.h"
 
 #include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MNamespace.h>
@@ -66,9 +67,12 @@ PxrUsdMayaShadingModeExportContext::PxrUsdMayaShadingModeExportContext(
         TF_FOR_ALL(bindableRootIter, exportParams.bindableRoots) {
             const MDagPath& bindableRootDagPath = *bindableRootIter;
 
-
-            SdfPath usdPath = PxrUsdMayaUtil::MDagPathToUsdPath(bindableRootDagPath, 
-                _exportParams.mergeTransformAndShape);
+            auto iter = _dagPathToUsdMap.find(bindableRootDagPath);
+            if (iter == _dagPathToUsdMap.end()) {
+                // Geometry w/ this material bound doesn't seem to exist in USD.
+                continue;
+            }
+            SdfPath usdPath = iter->second;
 
             // If overrideRootPath is not empty, replace the root namespace with it
             if (!_exportParams.overrideRootPath.IsEmpty() ) {
@@ -122,17 +126,48 @@ PxrUsdMayaShadingModeExportContext::GetAssignments() const
     for (unsigned int i = 0; i < dsmPlug.numConnectedElements(); i++) {
         MPlug dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
         MStatus status = MS::kFailure;
-        MFnDagNode dagNode(PxrUsdMayaUtil::GetConnected(dsmElemPlug).node(), &status);
+        MPlug connectedPlug = PxrUsdMayaUtil::GetConnected(dsmElemPlug);
+
+        // Maya connects shader bindings for instances based on element indices
+        // of the instObjGroups[x] or instObjGroups[x].objectGroups[y] plugs.
+        // The instance number is the index of instObjGroups[x]; the face set
+        // (if any) is the index of objectGroups[y].
+        if (connectedPlug.isElement() && connectedPlug.array().isChild()) {
+            // connectedPlug is instObjGroups[x].objectGroups[y] (or its
+            // equivalent), so go up two levels to get to instObjGroups[x].
+            MPlug objectGroups = connectedPlug.array();
+            MPlug instObjGroupsElem = objectGroups.parent();
+            connectedPlug = instObjGroupsElem;
+        }
+        // connectedPlug should be instObjGroups[x] here. Get the index.
+        unsigned int instanceNumber = connectedPlug.logicalIndex();
+
+        // Get the correct DAG path for this instance number.
+        MDagPathArray allDagPaths;
+        MDagPath::getAllPathsTo(connectedPlug.node(), allDagPaths);
+        if (instanceNumber >= allDagPaths.length()) {
+            TF_RUNTIME_ERROR(
+                    "Instance number is %d (from plug '%s') but node only has "
+                    "%d paths",
+                    instanceNumber,
+                    connectedPlug.name().asChar(),
+                    allDagPaths.length());
+            continue;
+        }
+
+        MDagPath dagPath = allDagPaths[instanceNumber];
+        TF_VERIFY(dagPath.instanceNumber() == instanceNumber);
+        MFnDagNode dagNode(dagPath, &status);
         if (!status) {
             continue;
         }
 
-        MDagPath dagPath;
-        if (!dagNode.getPath(dagPath))
+        auto iter = _dagPathToUsdMap.find(dagPath);
+        if (iter == _dagPathToUsdMap.end()) {
+            // Geometry w/ this material bound doesn't seem to exist in USD.
             continue;
-
-        SdfPath usdPath = PxrUsdMayaUtil::MDagPathToUsdPath(dagPath, 
-            _exportParams.mergeTransformAndShape);
+        }
+        SdfPath usdPath = iter->second;
 
         // If _exportParams.overrideRootPath is not empty, replace the root 
         // namespace with it
@@ -151,8 +186,8 @@ PxrUsdMayaShadingModeExportContext::GetAssignments() const
         }
 
         MObjectArray sgObjs, compObjs;
-        // Assuming that instancing is not involved.
-        status = dagNode.getConnectedSetsAndMembers(0, sgObjs, compObjs, true);
+        status = dagNode.getConnectedSetsAndMembers(
+                instanceNumber, sgObjs, compObjs, true);
         if (!status)
             continue;
 
@@ -259,6 +294,15 @@ PxrUsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                 // XXX: don't bother updating boundPrimPaths in this case as 
                 // old style facesets will be deprecated soon.
             } else {
+                if (boundPrim.IsInstanceable()) {
+                    // We're going to create a GeomSubset prim underneath the
+                    // bound prim here, and that won't be possible if it's
+                    // an instance. So make sure it's not instanceable.
+                    boundPrim.SetInstanceable(false);
+                    TF_WARN("<%s> must be de-instanced because it has per-face "
+                            "material assignments",
+                            boundPrim.GetPath().GetText());
+                }
                 UsdGeomSubset faceSubset = UsdShadeMaterialBindingAPI(
                         boundPrim).CreateMaterialBindSubset(
                             /* subsetName */ TfToken(materialName),

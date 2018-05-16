@@ -177,6 +177,7 @@ pxr_test_scripts(
         testenv/testUsdExportRenderLayerMode.py
         testenv/testUsdExportRfMLight.py
         testenv/testUsdExportSelection.py
+        testenv/testUsdExportShadingInstanced.py
         testenv/testUsdExportShadingModeDisplayColor.py
         testenv/testUsdExportShadingModePxrRis.py
         testenv/testUsdExportSkeleton.py
@@ -462,6 +463,22 @@ pxr_register_test(testUsdExportSelection
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportShadingInstancedTest
+    DEST testUsdExportShadingInstanced
+)
+pxr_register_test(testUsdExportShadingInstanced
+    CUSTOM_PYTHON "${MAYA_BASE_DIR}/bin/mayapy"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportShadingInstanced"
+    TESTENV testUsdExportShadingInstanced
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+        USD_RI_WRITE_BXDF_OUTPUT=0
 )
 
 pxr_install_test_dir(
