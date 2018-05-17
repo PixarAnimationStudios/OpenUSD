@@ -736,11 +736,11 @@ class "PointBased" (
 
     # shaping
     normal3f[] normals (
-        doc = """Provide orientation for individual points, which, depending on
-        subclass, may define a surface, curve, or free points.  Note that in
-        general you should not need or want to provide 'normals' for any
-        Mesh that is subdivided, as the subdivision scheme will provide smooth
-        normals.  'normals' is not a generic Primvar,
+        doc = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points.  Note that in general you should not need or want to provide
+        'normals' for any Mesh that is subdivided, as the subdivision scheme 
+        will provide smooth normals.  'normals' is not a generic Primvar,
         but the number of elements in this attribute will be determined by
         its 'interpolation'.  See \\ref SetNormalsInterpolation()"""
     )
