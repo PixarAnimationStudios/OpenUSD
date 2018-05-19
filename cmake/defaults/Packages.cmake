@@ -48,7 +48,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
             filesystem
             program_options
             python
-            regex
             system
         REQUIRED
     )
@@ -63,7 +62,6 @@ else()
         COMPONENTS
             filesystem
             program_options
-            regex
             system
         REQUIRED
     )
