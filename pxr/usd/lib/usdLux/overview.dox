@@ -31,7 +31,7 @@ The UsdLux core includes:
     - \a color: as RGB components and/or color temperature
 - API classes embodying more complex behaviors
     - UsdLuxListAPI: light component enumeration and discovery
-    - UsdLuxLinkingAPI: light-object linking
+    - UsdCollectionAPI: light-object linking
     - UsdLuxShadowAPI: shadow-linking and falloff
     - UsdLuxShapingAPI: focus, cone angle, and IES profiles
 - associated components for adjusting behavior
@@ -114,7 +114,7 @@ store the result in a well-defined place. Pipeline integration of UsdLux
 can use this API to discover and publish lights at an appropriate time
 -- such as export from any system where lights may be created.
 
-- UsdLuxLinkingAPI provides relationships to represent subsets of geometry
+- UsdCollectionAPI provides relationships to represent subsets of geometry
 to consider for illumination. These provide hierarchical inclusion and
 exclusion -- for example, to illuminate a building but not a window
 within. UsdLux supports a concept of fractional illumination, allowing

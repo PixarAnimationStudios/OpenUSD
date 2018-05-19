@@ -31,8 +31,9 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdLux/tokens.h"
 
-#include "pxr/usd/usdLux/linkingAPI.h" 
+#include "pxr/usd/usd/collectionAPI.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -56,6 +57,26 @@ class SdfAssetPath;
 /// A light filter modifies the effect of a light.
 /// Lights refer to filters via relationships so that filters may be
 /// shared.
+/// 
+/// <b>Linking</b>
+/// 
+/// Filters can be linked to geometry.  Linking controls which geometry
+/// a light-filter affects, when considering the light filters attached
+/// to a light illuminating the geometry.
+/// 
+/// Linking is specified as a collection (UsdCollectionAPI) which can
+/// be accessed via GetFilterLinkCollection().
+/// Note however that there are extra semantics in how UsdLuxLightFilter
+/// uses its collection: if a collection is empty, the filter is treated
+/// as linked to <i>all</i> geometry for the respective purpose.
+/// UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+/// of this filter-specific interpretation.
+/// 
+///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
+/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
+/// as the value.
 ///
 class UsdLuxLightFilter : public UsdGeomXformable
 {
@@ -162,11 +183,11 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Return the UsdLuxLinkingAPI interface used for examining and
+    /// Return the UsdCollectionAPI interface used for examining and
     /// modifying the filter-linking of this light filter.  Linking
     /// controls which geometry this light filter affects.
     USDLUX_API
-    UsdLuxLinkingAPI GetFilterLinkingAPI() const;
+    UsdCollectionAPI GetFilterLinkCollectionAPI() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

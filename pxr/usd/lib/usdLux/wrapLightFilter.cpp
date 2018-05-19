@@ -118,7 +118,8 @@ namespace {
 
 WRAP_CUSTOM {
     _class
-        .def("GetFilterLinkingAPI", &UsdLuxLightFilter::GetFilterLinkingAPI)
+        .def("GetFilterLinkCollectionAPI",
+             &UsdLuxLightFilter::GetFilterLinkCollectionAPI)
         ;
 }
 

@@ -33,7 +33,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
 
-#include "pxr/usd/usdLux/linkingAPI.h" 
+#include "pxr/usd/usd/collectionAPI.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -55,6 +55,25 @@ class SdfAssetPath;
 /// \class UsdLuxLight
 ///
 /// Base class for all lights.
+/// 
+/// <b>Linking</b>
+/// 
+/// Lights can be linked to geometry.  Linking controls which geometry
+/// a light illuminates, and which geometry casts shadows from the light.
+/// 
+/// Linking is specified as collections (UsdCollectionAPI) which can
+/// be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
+/// Note however that there are extra semantics in how UsdLuxLight
+/// uses its collections: if a collection is empty, the light is treated
+/// as linked to <i>all</i> geometry for the respective purpose.
+/// UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+/// of this light-specific interpretation.
+/// 
+///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
+/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
+/// as the value.
 ///
 class UsdLuxLight : public UsdGeomXformable
 {
@@ -350,17 +369,17 @@ public:
     USDLUX_API
     GfVec3f ComputeBaseEmission() const;
 
-    /// Return the UsdLuxLinkingAPI interface used for examining and
+    /// Return the UsdCollectionAPI interface used for examining and
     /// modifying the light-linking of this light.  Light-linking
-    /// controls to which geometry this light contributes illumination.
+    /// controls which geometry this light illuminates.
     USDLUX_API
-    UsdLuxLinkingAPI GetLightLinkingAPI() const;
+    UsdCollectionAPI GetLightLinkCollectionAPI() const;
 
-    /// Return the UsdLuxLinkingAPI interface used for examining and
+    /// Return the UsdCollectionAPI interface used for examining and
     /// modifying the shadow-linking of this light.  Shadow-linking
     /// controls which geometry casts shadows from this light.
     USDLUX_API
-    UsdLuxLinkingAPI GetShadowLinkingAPI() const;
+    UsdCollectionAPI GetShadowLinkCollectionAPI() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

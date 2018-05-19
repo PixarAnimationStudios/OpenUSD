@@ -40,7 +40,6 @@
 #include "pxr/usd/usdLux/rectLight.h"
 #include "pxr/usd/usdLux/shapingAPI.h"
 #include "pxr/usd/usdLux/shadowAPI.h"
-#include "pxr/usd/usdLux/linkingAPI.h"
 #include "pxr/usd/usdRi/lightAPI.h"
 #include "pxr/usd/usdRi/textureAPI.h"
 #include "pxr/usd/usdRi/pxrEnvDayLight.h"

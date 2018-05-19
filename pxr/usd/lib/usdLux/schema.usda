@@ -10,6 +10,29 @@ over "GLOBAL" (
     customData = {
         string libraryName      = "usdLux"
         string libraryPath      = "pxr/usd/usdLux"
+        dictionary libraryTokens = {
+            dictionary lightLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent light-linking
+                of a UsdLuxLight prim.
+                """
+            }
+            dictionary shadowLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent shadow-linking
+                of a UsdLuxLight prim.
+                """
+            }
+            dictionary filterLink = {
+                string doc = """
+                This token represents the collection name to use
+                with UsdCollectionAPI to represent filter-linking
+                of a UsdLuxLightFilter prim.
+                """
+            }
+        }
     }
 )
 {
@@ -17,12 +40,47 @@ over "GLOBAL" (
 
 class "Light" (
     inherits = </Xformable>
-    doc = """Base class for all lights."""
+    doc = """Base class for all lights.
+
+    <b>Linking</b>
+
+    Lights can be linked to geometry.  Linking controls which geometry
+    a light illuminates, and which geometry casts shadows from the light.
+
+    Linking is specified as collections (UsdCollectionAPI) which can
+    be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLight
+    uses its collections: if a collection is empty, the light is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this light-specific interpretation.
+    """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdLux/linkingAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" """
     }
+    prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
 ) {
+    uniform bool collection:lightLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
+    uniform token collection:lightLink:expansionRule = "expandPrims" (
+        customData = {
+            token apiName = ""
+        }
+    )
+    uniform bool collection:shadowLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
+    uniform token collection:shadowLink:expansionRule = "expandPrims" (
+        customData = {
+            token apiName = ""
+        }
+    )
     float intensity = 1 (
         doc = """Scales the power of the light linearly."""
     )
@@ -298,12 +356,38 @@ class LightFilter "LightFilter" (
     inherits = </Xformable>
     doc = """A light filter modifies the effect of a light.
     Lights refer to filters via relationships so that filters may be
-    shared."""
+    shared.
+
+    <b>Linking</b>
+
+    Filters can be linked to geometry.  Linking controls which geometry
+    a light-filter affects, when considering the light filters attached
+    to a light illuminating the geometry.
+
+    Linking is specified as a collection (UsdCollectionAPI) which can
+    be accessed via GetFilterLinkCollection().
+    Note however that there are extra semantics in how UsdLuxLightFilter
+    uses its collection: if a collection is empty, the filter is treated
+    as linked to <i>all</i> geometry for the respective purpose.
+    UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
+    of this filter-specific interpretation.
+    """
     customData = {
         string extraIncludes = """
-#include "pxr/usd/usdLux/linkingAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h" """
     }
+    prepend apiSchemas = ["CollectionAPI:filterLink"]
 ) {
+    uniform bool collection:filterLink:includeRoot = 1 (
+        customData = {
+            token apiName = ""
+        }
+    )
+    uniform token collection:filterLink:expansionRule = "expandPrims" (
+        customData = {
+            token apiName = ""
+        }
+    )
 }
 
 class DistantLight "DistantLight" (

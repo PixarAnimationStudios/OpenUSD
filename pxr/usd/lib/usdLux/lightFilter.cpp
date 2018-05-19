@@ -97,13 +97,30 @@ UsdLuxLightFilter::_GetTfType() const
     return _GetStaticTfType();
 }
 
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdLuxLightFilter::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdLuxTokens->collectionFilterLinkIncludeRoot,
+        UsdLuxTokens->collectionFilterLinkExpansionRule,
+    };
     static TfTokenVector allNames =
-        UsdGeomXformable::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdGeomXformable::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;
@@ -124,16 +141,13 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (filterLink)
-);
+#include "pxr/usd/usdLux/tokens.h"
 
 USDLUX_API
-UsdLuxLinkingAPI
-UsdLuxLightFilter::GetFilterLinkingAPI() const
+UsdCollectionAPI
+UsdLuxLightFilter::GetFilterLinkCollectionAPI() const
 {
-    return UsdLuxLinkingAPI(*this, _tokens->filterLink);
+    return UsdCollectionAPI(GetPrim(), UsdLuxTokens->filterLink);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

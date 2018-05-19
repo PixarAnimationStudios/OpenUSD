@@ -18,7 +18,6 @@ pxr_library(usdLux
         geometryLight
         light
         listAPI
-        linkingAPI
         shapingAPI
         shadowAPI
         lightFilter
@@ -43,7 +42,6 @@ pxr_library(usdLux
         wrapGeometryLight.cpp
         wrapLight.cpp
         wrapListAPI.cpp
-        wrapLinkingAPI.cpp
         wrapShapingAPI.cpp
         wrapShadowAPI.cpp
         wrapLightFilter.cpp

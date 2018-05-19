@@ -45,7 +45,7 @@ namespace FnKat = Foundry::Katana;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdLuxLinkingAPI;
+class UsdCollectionAPI;
 
 struct PxrUsdKatanaUtils {
 
@@ -210,9 +210,8 @@ public:
         _Set(name, VtValue(value));
     }
 
-    /// Set linking for the light.  Returns true if linkAPI's map
-    /// links linkAPI's path.
-    bool SetLinks(const UsdLuxLinkingAPI &linkAPI,
+    /// Set linking for the light.
+    bool SetLinks(const UsdCollectionAPI &collectionAPI,
                   const std::string &linkName);
 
     /// Append the string \p value to a custom string list named \p tag.
