@@ -716,8 +716,6 @@ function(pxr_register_test TEST_NAME)
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
-    set(SHARE_INSTALL_PREFIX "share/usd")
-
     # Install a top-level plugInfo.json in the shared area and into the 
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
@@ -727,7 +725,7 @@ function(pxr_setup_plugins)
          "${plugInfoContents}")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
-        DESTINATION "${SHARE_INSTALL_PREFIX}/plugins"
+        DESTINATION lib/usd
         RENAME "plugInfo.json"
     )
 

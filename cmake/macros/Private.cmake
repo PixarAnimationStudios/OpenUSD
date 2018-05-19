@@ -192,7 +192,7 @@ endfunction() #_install_python
 
 function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     # Resource files install into a structure that looks like:
-    # share/
+    # lib/
     #     usd/
     #         ${NAME}/
     #             resources/
@@ -325,17 +325,10 @@ function(_get_resources_dir_name output)
         PARENT_SCOPE)
 endfunction() # _get_resources_dir_name
 
-function(_get_plugin_root pluginsPrefix pluginName output)
-    set(${output} 
-        ${pluginsPrefix}/${pluginName}
-        PARENT_SCOPE)
-endfunction() # _get_plugin_root
-
 function(_get_resources_dir pluginsPrefix pluginName output)
     _get_resources_dir_name(resourcesDir)
-    _get_plugin_root(${pluginsPrefix} ${pluginName} pluginRoot)
     set(${output} 
-        ${pluginRoot}/${resourcesDir} 
+        ${pluginsPrefix}/${pluginName}/${resourcesDir} 
         PARENT_SCOPE)
 endfunction() # _get_resources_dir
 
@@ -1162,7 +1155,7 @@ function(_pxr_library NAME)
             set(libInstallPrefix "${pluginInstallPrefix}")
         endif()
     else()
-        _get_install_dir("share/usd/plugins" pluginInstallPrefix)
+        _get_install_dir("lib/usd" pluginInstallPrefix)
     endif()
     if(args_SUBDIR)
         set(libInstallPrefix "${libInstallPrefix}/${args_SUBDIR}")
@@ -1264,7 +1257,7 @@ function(_pxr_library NAME)
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
-            PXR_BUILD_LOCATION=../share/usd/plugins
+            PXR_BUILD_LOCATION=usd
             PXR_PLUGIN_BUILD_LOCATION=../plugin/usd
             ${pxrInstallLocation}
             ${pythonModulesEnabled}
