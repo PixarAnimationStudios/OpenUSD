@@ -33,9 +33,9 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hdx/selectionTracker.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
 #include "pxr/usd/sdf/path.h"
@@ -419,10 +419,10 @@ public:
     /// XXX: subtree highlighting with native instancing is not working
     /// correctly right now. Path needs to be a leaf prim or instancer.
     USDIMAGING_API
-    bool PopulateSelection(HdxSelectionHighlightMode const& highlightMode,
+    bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
                            const SdfPath &path,
                            int instanceIndex,
-                           HdxSelectionSharedPtr const &result);
+                           HdSelectionSharedPtr const &result);
 
     /// Returns true if \p usdPath is included in invised path list.
     USDIMAGING_API

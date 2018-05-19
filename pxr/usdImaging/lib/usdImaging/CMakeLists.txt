@@ -11,7 +11,7 @@ pxr_library(usdImaging
         vt
         work
         hd
-        hdx
+        hdSt
         pxOsd
         sdf
         usd

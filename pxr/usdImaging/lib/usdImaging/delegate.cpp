@@ -2057,10 +2057,10 @@ UsdImagingDelegate::GetPathForInstanceIndex(SdfPath const& protoPrimPath,
 
 bool
 UsdImagingDelegate::PopulateSelection(
-              HdxSelectionHighlightMode const& highlightMode,
+              HdSelection::HighlightMode const& highlightMode,
               SdfPath const &path,
               int instanceIndex,
-              HdxSelectionSharedPtr const &result)
+              HdSelectionSharedPtr const &result)
 {
     HD_TRACE_FUNCTION();
 

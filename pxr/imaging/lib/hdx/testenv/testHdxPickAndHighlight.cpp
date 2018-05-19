@@ -266,7 +266,7 @@ My_TestGLDrawing::_SetPickParams()
     pParams.viewMatrix     = GetViewMatrix();
     pParams.engine         = &_engine;
     pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdxSelectionHighlightModeSelect;
+    pParams.highlightMode  = HdSelection::HighlightModeSelect;
 
     _picker.SetPickParams(pParams);
 }
@@ -305,13 +305,13 @@ My_TestGLDrawing::OffscreenTest()
 
     // --------------------- (active) selection high ---------------------------
     // select cube2
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
     _picker.SetHighlightMode(mode);
     _picker.Pick(GfVec2i(180, 390), GfVec2i(181, 391));
 
     DrawScene();
     WriteToFile("color", "color2_select.png");
-    HdxSelectionSharedPtr selection = _picker.GetSelection();
+    HdSelectionSharedPtr selection = _picker.GetSelection();
     TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
     TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
 
@@ -341,7 +341,7 @@ My_TestGLDrawing::OffscreenTest()
     }
 
     // --------------------- locate (rollover) selection -----------------------
-    mode = HdxSelectionHighlightModeLocate;
+    mode = HdSelection::HighlightModeLocate;
     _picker.SetHighlightMode(mode);
     // select cube0
     _picker.Pick(GfVec2i(472, 97), GfVec2i(473, 98));
@@ -368,7 +368,7 @@ My_TestGLDrawing::OffscreenTest()
     }
 
     // ------------------------- mask  selection -------------------------------
-    mode = HdxSelectionHighlightModeMask;
+    mode = HdSelection::HighlightModeMask;
     _picker.SetHighlightMode(mode);
 
     // select cube2

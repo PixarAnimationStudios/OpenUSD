@@ -100,8 +100,8 @@ _AggregateHits(HdxIntersector::HitSet const& hits)
 static void
 _ProcessHit(AggregatedHit const& aHit,
             HdxIntersector::PickTarget pickTarget,
-            HdxSelectionHighlightMode highlightMode,
-            /*out*/HdxSelectionSharedPtr selection)
+            HdSelection::HighlightMode highlightMode,
+            /*out*/HdSelectionSharedPtr selection)
 {
     HdxIntersector::Hit const& hit = aHit.hit;
 
@@ -246,7 +246,7 @@ Picker::Pick(GfVec2i const& startPos,
                         &result);
 
     HdxIntersector::HitSet hits;
-    HdxSelectionSharedPtr selection(new HdxSelection);
+    HdSelectionSharedPtr selection(new HdSelection);
     if (result.ResolveUnique(&hits)) {
         AggregatedHits aggrHits = _AggregateHits(hits);
 
@@ -265,7 +265,7 @@ Picker::GetSelectionTracker() const
     return _selectionTracker;
 }
 
-HdxSelectionSharedPtr
+HdSelectionSharedPtr
 Picker::GetSelection() const
 {
     return _selectionTracker->GetSelectionMap();

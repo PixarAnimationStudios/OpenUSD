@@ -191,7 +191,7 @@ My_TestGLDrawing::_SetPickParams()
     pParams.viewMatrix     = GetViewMatrix();
     pParams.engine         = &_engine;
     pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdxSelectionHighlightModeSelect;
+    pParams.highlightMode  = HdSelection::HighlightModeSelect;
 
     _picker.SetPickParams(pParams);
 }
@@ -226,8 +226,8 @@ My_TestGLDrawing::OffscreenTest()
     _picker.Pick(GfVec2i(319,221), GfVec2i(320,222));
     DrawScene();
     WriteToFile("color", "color2_cube0_pickable.png");
-    HdxSelectionSharedPtr selection = _picker.GetSelection();
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
+    HdSelectionSharedPtr selection = _picker.GetSelection();
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
 
     TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
     TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube0"));

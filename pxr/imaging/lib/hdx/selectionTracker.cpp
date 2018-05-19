@@ -35,95 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//------------------------------------------------------------------------------
-//                              HdxSelection
-//------------------------------------------------------------------------------
-void 
-HdxSelection::AddRprim(HdxSelectionHighlightMode const& mode,
-         SdfPath const& path)
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    _selEntities[mode].prims.push_back(path);
-}
-
-void 
-HdxSelection::AddInstance(HdxSelectionHighlightMode const& mode,
-            SdfPath const& path,
-            VtIntArray const &instanceIndex)
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    _selEntities[mode].prims.push_back(path);
-    _selEntities[mode].instances[path].push_back(instanceIndex);
-}
-
-void 
-HdxSelection::AddElements(HdxSelectionHighlightMode const& mode,
-            SdfPath const& path,
-            VtIntArray const &elementIndices)
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    _selEntities[mode].prims.push_back(path);
-    _selEntities[mode].elements[path] = elementIndices;
-}
-
-void 
-HdxSelection::AddEdges(HdxSelectionHighlightMode const& mode,
-            SdfPath const& path,
-            VtIntArray const &edgeIndices)
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    _selEntities[mode].prims.push_back(path);
-    _selEntities[mode].edges[path] = edgeIndices;
-}
-
-void 
-HdxSelection::AddPoints(HdxSelectionHighlightMode const& mode,
-            SdfPath const& path,
-            VtIntArray const &pointIndices)
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    _selEntities[mode].prims.push_back(path);
-    _selEntities[mode].points[path] = pointIndices;
-}
-
-SdfPathVector const&
-HdxSelection::GetSelectedPrims(HdxSelectionHighlightMode const& mode) const
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    return _selEntities[mode].prims;
-}
-
-HdxSelection::InstanceMap const&
-HdxSelection::GetSelectedInstances(HdxSelectionHighlightMode const& mode) const
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    return _selEntities[mode].instances;
-}
-
-HdxSelection::ElementIndicesMap const&
-HdxSelection::GetSelectedElements(HdxSelectionHighlightMode const& mode) const
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    return _selEntities[mode].elements;
-}
-
-HdxSelection::EdgeIndicesMap const&
-HdxSelection::GetSelectedEdges(HdxSelectionHighlightMode const& mode) const
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    return _selEntities[mode].edges;
-}
-
-HdxSelection::PointIndicesMap const&
-HdxSelection::GetSelectedPoints(HdxSelectionHighlightMode const& mode) const
-{
-    TF_VERIFY(mode < HdxSelectionHighlightModeCount);
-    return _selEntities[mode].points;
-}
-
-//------------------------------------------------------------------------------
-//                           HdxSelectionTracker
-//------------------------------------------------------------------------------
 HdxSelectionTracker::HdxSelectionTracker()
     : _version(0)
 {
@@ -249,7 +160,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
 
     bool hasSelection = false;
     const size_t numHighlightModes = 
-        static_cast<size_t>(HdxSelectionHighlightModeCount);
+        static_cast<size_t>(HdSelection::HighlightModeCount);
     const size_t headerSize = numHighlightModes /*per mode offsets*/
                               + 1               /*num modes*/;
 
@@ -263,13 +174,13 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     const int SELECT_NONE = 0;
     size_t copyOffset = headerSize;
 
-    for (int mode = HdxSelectionHighlightModeSelect;
-             mode < HdxSelectionHighlightModeCount;
+    for (int mode = HdSelection::HighlightModeSelect;
+             mode < HdSelection::HighlightModeCount;
              mode++) {
        
         std::vector<int> output;
         bool modeHasSelection = _GetSelectionOffsets(
-                                static_cast<HdxSelectionHighlightMode>(mode), 
+                                static_cast<HdSelection::HighlightMode>(mode), 
                                 index, copyOffset, &output);
         hasSelection = hasSelection || modeHasSelection;
 
@@ -317,7 +228,7 @@ void _EncodeSubprimTypeAndRange(std::vector<int>* output, size_t offset,
 
 /*virtual*/
 bool
-HdxSelectionTracker::_GetSelectionOffsets(HdxSelectionHighlightMode const& mode,
+HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode,
                                           HdRenderIndex const *index,
                                           size_t modeOffset,
                                           std::vector<int> *output) const

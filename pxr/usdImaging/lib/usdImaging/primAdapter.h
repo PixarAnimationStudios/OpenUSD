@@ -34,7 +34,7 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/texture.h"
-#include "pxr/imaging/hdx/selectionTracker.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -303,10 +303,10 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
     USDIMAGING_API
-    virtual bool PopulateSelection(HdxSelectionHighlightMode const& highlightMode,
+    virtual bool PopulateSelection(HdSelection::HighlightMode const& highlightMode,
                                    SdfPath const &usdPath,
                                    VtIntArray const &instanceIndices,
-                                   HdxSelectionSharedPtr const &result);
+                                   HdSelectionSharedPtr const &result);
 
     // ---------------------------------------------------------------------- //
     /// \name Texture resources

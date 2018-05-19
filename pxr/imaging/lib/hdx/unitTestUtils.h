@@ -47,7 +47,7 @@ namespace HdxUnitTestUtils
 {
     struct PickParams {
         PickParams() :
-             highlightMode(HdxSelectionHighlightModeSelect)
+             highlightMode(HdSelection::HighlightModeSelect)
            , pickTarget(HdxIntersector::PickPrimsAndInstances)
            , pickThrough(false) {}
 
@@ -63,7 +63,7 @@ namespace HdxUnitTestUtils
         // hd/hdx
         HdEngine* engine;
         const HdRprimCollection* pickablesCol;
-        HdxSelectionHighlightMode highlightMode;
+        HdSelection::HighlightMode highlightMode;
         HdxIntersector::PickTarget pickTarget;
         bool pickThrough;
     };
@@ -88,7 +88,7 @@ namespace HdxUnitTestUtils
         void SetViewMatrix(GfMatrix4d const& matrix) {
             _pParams.viewMatrix = matrix;
         }
-        void SetHighlightMode(HdxSelectionHighlightMode mode) {
+        void SetHighlightMode(HdSelection::HighlightMode mode) {
             _pParams.highlightMode = mode;
         }
         void SetPickTarget(HdxIntersector::PickTarget mode) {
@@ -101,7 +101,7 @@ namespace HdxUnitTestUtils
         void Pick(GfVec2i const& startPos,
                   GfVec2i const& endPos);
         HdxSelectionTrackerSharedPtr GetSelectionTracker() const;
-        HdxSelectionSharedPtr GetSelection() const;
+        HdSelectionSharedPtr GetSelection() const;
 
     private:
         std::unique_ptr<HdxIntersector> _intersector;

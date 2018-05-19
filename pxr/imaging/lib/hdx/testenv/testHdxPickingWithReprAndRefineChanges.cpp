@@ -197,7 +197,7 @@ My_TestGLDrawing::_SetPickParams()
     pParams.viewMatrix     = GetViewMatrix();
     pParams.engine         = &_engine;
     pParams.pickablesCol   = &_pickablesCol;
-    pParams.highlightMode  = HdxSelectionHighlightModeSelect;
+    pParams.highlightMode  = HdSelection::HighlightModeSelect;
 
     _picker.SetPickParams(pParams);
 }
@@ -256,8 +256,8 @@ My_TestGLDrawing::OffscreenTest()
     // (d) Change refine level on prim B ==> Drawn image should reflect the refineLevel
     //  if its repr supports it (refined, refinedWire, refinedWireOnSurf)
 
-    HdxSelectionHighlightMode mode = HdxSelectionHighlightModeSelect;
-    HdxSelectionSharedPtr selection;
+    HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+    HdSelectionSharedPtr selection;
 
     // (a)
     {

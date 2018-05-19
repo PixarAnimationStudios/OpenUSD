@@ -182,10 +182,10 @@ public:
     /// \name Selection
     // ---------------------------------------------------------------------- //
     virtual bool PopulateSelection(
-                                HdxSelectionHighlightMode const& highlightMode,
+                                HdSelection::HighlightMode const& highlightMode,
                                 SdfPath const &path,
                                 VtIntArray const &instanceIndices,
-                                HdxSelectionSharedPtr const &result) override;
+                                HdSelectionSharedPtr const &result) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 

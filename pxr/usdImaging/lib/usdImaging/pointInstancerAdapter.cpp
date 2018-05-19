@@ -1857,10 +1857,10 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
 /*virtual*/
 bool
 UsdImagingPointInstancerAdapter::PopulateSelection(
-    HdxSelectionHighlightMode const& highlightMode,
+    HdSelection::HighlightMode const& highlightMode,
     SdfPath const &path,
     VtIntArray const &instanceIndices,
-    HdxSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result)
 {
     SdfPath indexPath = _GetPathForIndex(path);
     SdfPathVector const& ids = _GetRprimSubtree(indexPath);

@@ -71,6 +71,7 @@ pxr_library(hd
         rprimSharedData
         sceneDelegate
         sceneExtCompInputSource
+        selection
         smoothNormals
         sortedIds                   
         sprim

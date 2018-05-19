@@ -297,10 +297,10 @@ UsdImagingPrimAdapter::GetPathForInstanceIndex(
 
 /*virtual*/
 bool
-UsdImagingPrimAdapter::PopulateSelection(HdxSelectionHighlightMode const& mode,
+UsdImagingPrimAdapter::PopulateSelection(HdSelection::HighlightMode const& mode,
                                          SdfPath const &usdPath,
                                          VtIntArray const &instanceIndices,
-                                         HdxSelectionSharedPtr const &result)
+                                         HdSelectionSharedPtr const &result)
 {
     const SdfPath indexPath = _delegate->GetPathForIndex(usdPath);
 
