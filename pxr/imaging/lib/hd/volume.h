@@ -37,13 +37,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-#define HD_VOLUME_TOKENS                        \
-    (fields)                                    \
-    (transform)
-
-TF_DECLARE_PUBLIC_TOKENS(HdVolumeTokens, HD_API, HD_VOLUME_TOKENS);
-
 class HdSceneDelegate;
 typedef boost::shared_ptr<class HdVolume> HdVolumeSharedPtr;
 typedef std::vector<class HdVolume const *> HdVolumePtrConstVector;
@@ -59,15 +52,6 @@ public:
              SdfPath const& instancerId = SdfPath());
     HD_API
     virtual ~HdVolume();
-
-    // Change tracking for HdVolume
-    enum DirtyBits : HdDirtyBits {
-        Clean                 = 0,
-        DirtyTransform        = 1 << 0,
-        DirtyFields           = 1 << 1,
-        AllDirty              = (DirtyTransform
-                                 |DirtyFields)
-    };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

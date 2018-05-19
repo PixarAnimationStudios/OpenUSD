@@ -2708,6 +2708,21 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     return VtValue();
 }
 
+HdVolumeFieldDescriptorVector
+UsdImagingDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
+{
+    // PERFORMANCE: We should schedule this to be updated during Sync, rather
+    // than pulling values on demand.
+    SdfPath usdPath = GetPathForUsd(volumeId);
+    _PrimInfo *primInfo = GetPrimInfo(usdPath);
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter
+            ->GetVolumeFieldDescriptors(primInfo->usdPrim, usdPath, _time);
+    }
+
+    return HdVolumeFieldDescriptorVector();
+}
+
 VtValue
 UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
 {
