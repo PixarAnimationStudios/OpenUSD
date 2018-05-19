@@ -1497,7 +1497,7 @@ bool UsdMayaRepresentationHierBase::activate()
         usdAssembly->GetVariantSetSelections();
 
     JobImportArgs importArgs;
-    importArgs.readAnimData = true;
+    importArgs.timeInterval = GfInterval::GetFullInterval();
     if (_ShouldImportWithProxies()) {
         importArgs.importWithProxyShapes = true;
 

@@ -51,14 +51,14 @@ PxrUsdMayaTranslatorPrim::Read(
     }
 
     // Gather visibility
-    // If args.GetReadAnimData() is TRUE,
-    // pick the first avaiable sample or default
+    // If timeInterval is non-empty, pick the first available sample in the
+    // timeInterval or default.
     UsdTimeCode visTimeSample=UsdTimeCode::EarliestTime();
     std::vector<double> visTimeSamples;
     size_t visNumTimeSamples = 0;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(primSchema.GetVisibilityAttr(),
-                args, &visTimeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        primSchema.GetVisibilityAttr().GetTimeSamplesInInterval(
+                args.GetTimeInterval(), &visTimeSamples);
         visNumTimeSamples = visTimeSamples.size();
         if (visNumTimeSamples>0) {
             visTimeSample = visTimeSamples[0];

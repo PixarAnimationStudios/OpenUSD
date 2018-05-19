@@ -78,7 +78,12 @@ struct JobExportArgs
     bool mergeTransformAndShape;
     bool exportInstances;
 
-    bool exportAnimation;
+    /// The interval over which to export animated data.
+    /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
+    /// animated (time-sampled) data should be exported.
+    /// Otherwise, animated data should be exported at times contained in the
+    /// interval.
+    GfInterval timeInterval;
     bool excludeInvisible;
     bool exportDefaultCameras;
     bool exportSkin;
@@ -141,10 +146,14 @@ struct JobImportArgs
 
     TfToken shadingMode;
     TfToken assemblyRep;
-    bool readAnimData;
-    bool useCustomFrameRange;
-    double startTime;
-    double endTime;
+    /// The interval over which to import animated data.
+    /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
+    /// animated (time-sampled) data should be imported.
+    /// A full interval (<tt>timeInterval == GfInterval::GetFullInterval()</tt>)
+    /// means to import all available data, though this does not need to be
+    /// special-cased because USD will accept full intervals like any other
+    /// non-empty interval.
+    GfInterval timeInterval;
     bool importWithProxyShapes;
     TfToken::Set includeMetadataKeys;
     TfToken::Set includeAPINames;

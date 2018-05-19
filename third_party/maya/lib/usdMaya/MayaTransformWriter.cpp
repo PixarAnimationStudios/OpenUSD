@@ -521,7 +521,8 @@ MayaTransformWriter::MayaTransformWriter(
                 MFnTransform transFn(mXformDagPath);
                 // Create a vector of AnimChannels based on the Maya transformation
                 // ordering
-                pushTransformStack(transFn, primSchema, getArgs().exportAnimation);
+                pushTransformStack(transFn, primSchema,
+                        !getArgs().timeInterval.IsEmpty());
             }
 
             if (isInstance) {
@@ -540,7 +541,7 @@ MayaTransformWriter::MayaTransformWriter(
     // dag, not the transform (if mergeTransformAndShape is on)!
     if (!getDagPath().hasFn(MFn::kTransform)) { // if is a shape
         MObject obj = getDagPath().node();
-        if (getArgs().exportAnimation) {
+        if (!getArgs().timeInterval.IsEmpty()) {
             mIsShapeAnimated = PxrUsdMayaUtil::isAnimated(obj);
         }
     }

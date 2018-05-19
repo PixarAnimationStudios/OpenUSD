@@ -289,19 +289,36 @@ try
         return MS::kFailure;
     }
 
-    double startTime=1;
-    double endTime=1;
     double preRoll=0;
     std::set<double> frameSamples;
 
     // If you provide a frame range we consider this an anim
     // export even if start and end are the same
     if (argData.isFlagSet("frameRange")) {
+        double startTime = 1;
+        double endTime = 1;
         argData.getFlagArgument("frameRange", 0, startTime);
         argData.getFlagArgument("frameRange", 1, endTime);
-        jobArgs.exportAnimation=true;
+        GfInterval timeInterval(startTime, endTime);
+        if (timeInterval.IsEmpty()) {
+            // If the user accidentally set start > end, resync to the closed
+            // interval with the single start point.
+            jobArgs.timeInterval = GfInterval(timeInterval.GetMin());
+        }
+        else {
+            // Use the user's interval as-is.
+            jobArgs.timeInterval = timeInterval;
+        }
     } else {
-        jobArgs.exportAnimation=false;
+        // Use the empty interval (1, 1). (This preserves the existing
+        // behavior where startTimeCode = endTimeCode = 1.0 for files without
+        // animation.)
+        // XXX In a follow-up change, we'll set this to GfInterval().
+        // XXX This differs from usdTranslatorExport, which uses the open
+        // interval with the current Maya time.
+        jobArgs.timeInterval = GfInterval(
+                1.0, 1.0,
+                /*minClosed*/ false, /*maxClosed*/ false);
     }
 
     if (argData.isFlagSet("preRoll")) {
@@ -439,10 +456,12 @@ try
     computation.beginComputation();
 
     // Create stage and process static data
-    if (usdWriteJob.beginJob(fileName, append, startTime, endTime)) {
-        if (jobArgs.exportAnimation) {
+    if (usdWriteJob.beginJob(fileName, append)) {
+        if (!jobArgs.timeInterval.IsEmpty()) {
             const MTime oldCurTime = MAnimControl::currentTime();
-            for (double i = startTime; i < (endTime + 1.0); ++i) {
+            for (double i = jobArgs.timeInterval.GetMin();
+                    jobArgs.timeInterval.Contains(i);
+                    i += 1.0) {
                 for (double sampleTime : frameSamples) {
                     const double actualTime = i + sampleTime;
                     if (verbose) {

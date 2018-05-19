@@ -155,11 +155,6 @@ MStatus usdImport::doIt(const MArgList & args)
         }
     }
 
-    if (argData.isFlagSet("readAnimData"))
-    {   
-        argData.getFlagArgument("readAnimData", 0, jobArgs.readAnimData);
-    }
-
     // Specify usd PrimPath.  Default will be "/<useFileBasename>"
     std::string mPrimPath;
     if (argData.isFlagSet("primPath"))
@@ -193,10 +188,26 @@ MStatus usdImport::doIt(const MArgList & args)
         }
     }
 
-    if (argData.isFlagSet("frameRange")) {
-        jobArgs.useCustomFrameRange = true;
-        argData.getFlagArgument("frameRange", 0, jobArgs.startTime);
-        argData.getFlagArgument("frameRange", 1, jobArgs.endTime);
+    bool readAnimData = true;
+    if (argData.isFlagSet("readAnimData"))
+    {   
+        argData.getFlagArgument("readAnimData", 0, readAnimData);
+    }
+
+    if (readAnimData) {
+        if (argData.isFlagSet("frameRange")) {
+            double startTime = 1.0;
+            double endTime = 1.0;
+            argData.getFlagArgument("frameRange", 0, startTime);
+            argData.getFlagArgument("frameRange", 1, endTime);
+            jobArgs.timeInterval = GfInterval(startTime, endTime);
+        }
+        else {
+            jobArgs.timeInterval = GfInterval::GetFullInterval();
+        }
+    }
+    else {
+        jobArgs.timeInterval = GfInterval();
     }
 
     // Add metadata keys. Multi-use.

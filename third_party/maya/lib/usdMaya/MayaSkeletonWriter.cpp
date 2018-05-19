@@ -330,7 +330,7 @@ MayaSkeletonWriter::write(const UsdTimeCode &usdTime)
         _GetAnimatedJoints(
                 jointNames, jointDags,
                 &animJointNames, &_animatedJoints,
-                mWriteJobCtx.getArgs().exportAnimation);
+                !mWriteJobCtx.getArgs().timeInterval.IsEmpty());
         if (animJointNames.size() > 0) {
             UsdSkelPackedJointAnimation anim =
                     UsdSkelPackedJointAnimation::Define(

@@ -112,22 +112,22 @@ PxrUsdMayaTranslatorMesh::Create(
     }
 
     // Gather points and normals
-    // If args.GetReadAnimData() is TRUE,
-    // pick the first avaiable sample or default
+    // If timeInterval is non-empty, pick the first available sample in the
+    // timeInterval or default.
     UsdTimeCode pointsTimeSample=UsdTimeCode::EarliestTime();
     UsdTimeCode normalsTimeSample=UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
     size_t pointsNumTimeSamples = 0;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(mesh.GetPointsAttr(), args,
-                &pointsTimeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        mesh.GetPointsAttr().GetTimeSamplesInInterval(
+                args.GetTimeInterval(), &pointsTimeSamples);
         pointsNumTimeSamples = pointsTimeSamples.size();
         if (pointsNumTimeSamples>0) {
             pointsTimeSample = pointsTimeSamples[0];
         }
     	std::vector<double> normalsTimeSamples;
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(mesh.GetNormalsAttr(), args,
-                &normalsTimeSamples);
+        mesh.GetNormalsAttr().GetTimeSamplesInInterval(
+                args.GetTimeInterval(), &normalsTimeSamples);
         if (normalsTimeSamples.size()) {
             normalsTimeSample = normalsTimeSamples[0];
         }

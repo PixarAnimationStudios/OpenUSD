@@ -212,8 +212,8 @@ static bool _pushUSDXformOpToMayaXform(
     std::vector<double> zValue;
     GfVec3d value;
     std::vector<double> timeSamples;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(xformop, args, &timeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        xformop.GetTimeSamplesInInterval(args.GetTimeInterval(), &timeSamples);
     }
     MTimeArray timeArray;
     if (!timeSamples.empty()) {
@@ -334,7 +334,7 @@ static bool _pushUSDXformToMayaXform(
     GfMatrix4d localXform(1.0);
 
     std::vector<double> tSamples;
-    PxrUsdMayaTranslatorUtil::GetTimeSamples(xformSchema, args, &tSamples);
+    xformSchema.GetTimeSamplesInInterval(args.GetTimeInterval(), &tSamples);
     MTimeArray timeArray;
     if (!tSamples.empty()) {
         timeArray.setLength(tSamples.size());

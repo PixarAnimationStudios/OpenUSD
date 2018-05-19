@@ -122,33 +122,32 @@ bool usdReadJob::doIt(std::vector<MDagPath>* addedDagPaths)
 
     stage->SetEditTarget(stage->GetSessionLayer());
 
-    // If readAnimData is true, we expand the Min/Max time sliders to include
-    // the stage's range if necessary.
-    if (mArgs.readAnimData) {
+    // If the import time interval isn't empty, we expand the Min/Max time
+    // sliders to include the stage's range if necessary.
+    if (!mArgs.timeInterval.IsEmpty()) {
         MTime currentMinTime = MAnimControl::minTime();
         MTime currentMaxTime = MAnimControl::maxTime();
 
-        double startTimeCode, endTimeCode;
-        if (mArgs.useCustomFrameRange) {
-            if (mArgs.startTime > mArgs.endTime) {
+        GfInterval stageInterval;
+        if (mArgs.timeInterval.IsFinite()) {
+            if (mArgs.timeInterval.GetMin() > mArgs.timeInterval.GetMax()) {
                 std::string errorMsg = TfStringPrintf(
                     "Frame range start (%f) was greater than end (%f)",
-                    mArgs.startTime, mArgs.endTime);
+                    mArgs.timeInterval.GetMin(), mArgs.timeInterval.GetMax());
                 MGlobal::displayError(errorMsg.c_str());
                 return false;
             }
-            startTimeCode = mArgs.startTime;
-            endTimeCode = mArgs.endTime;
+            stageInterval = mArgs.timeInterval;
         } else {
-            startTimeCode = stage->GetStartTimeCode();
-            endTimeCode = stage->GetEndTimeCode();
+            stageInterval.SetMin(stage->GetStartTimeCode());
+            stageInterval.SetMax(stage->GetEndTimeCode());
         }
 
-        if (startTimeCode < currentMinTime.value()) {
-            MAnimControl::setMinTime(MTime(startTimeCode));
+        if (stageInterval.GetMin() < currentMinTime.value()) {
+            MAnimControl::setMinTime(MTime(stageInterval.GetMin()));
         }
-        if (endTimeCode > currentMaxTime.value()) {
-            MAnimControl::setMaxTime(MTime(endTimeCode));
+        if (stageInterval.GetMax() > currentMaxTime.value()) {
+            MAnimControl::setMaxTime(MTime(stageInterval.GetMax()));
         }
     }
 
@@ -265,10 +264,7 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                 // This is the normal Read step (pre-visit).
                 PxrUsdMayaPrimReaderArgs args(prim,
                                               mArgs.shadingMode,
-                                              mArgs.readAnimData,
-                                              mArgs.useCustomFrameRange,
-                                              mArgs.startTime,
-                                              mArgs.endTime,
+                                              mArgs.timeInterval,
                                               mArgs.includeMetadataKeys,
                                               mArgs.includeAPINames);
                 PxrUsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);

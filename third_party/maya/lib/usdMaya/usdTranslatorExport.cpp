@@ -62,7 +62,8 @@ usdTranslatorExport::writer(const MFileObject &file,
 
     std::string fileName(file.fullName().asChar());
     JobExportArgs jobArgs;
-    double startTime=1, endTime=1;
+    bool exportAnimation = false;
+    GfInterval timeInterval(1.0, 1.0);
     std::set<double> frameSamples;
     bool append=false;
     
@@ -173,13 +174,13 @@ usdTranslatorExport::writer(const MFileObject &file,
                 }
             }
             if (theOption[0] == MString("animation")) {
-                jobArgs.exportAnimation = theOption[1].asInt();
+                exportAnimation = theOption[1].asInt();
             }
             if (theOption[0] == MString("startTime")) {
-                startTime = theOption[1].asDouble();
+                timeInterval.SetMin(theOption[1].asDouble());
             }
             if (theOption[0] == MString("endTime")) {
-                endTime = theOption[1].asDouble();
+                timeInterval.SetMax(theOption[1].asDouble());
             }
             if (theOption[0] == MString("frameSample")) {
                 frameSamples.insert(theOption[1].asDouble());
@@ -188,13 +189,30 @@ usdTranslatorExport::writer(const MFileObject &file,
                 jobArgs.setParentScope(theOption[1].asChar());
             }            
         }
-        // Now resync start and end frame based on animation mode
-        if (jobArgs.exportAnimation) {
-            if (endTime<startTime) endTime=startTime;
-        } else {
-            startTime=MAnimControl::currentTime().value();
-            endTime=startTime;
+    }
+
+
+    // Now resync start and end frame based on export time interval.
+    if (exportAnimation) {
+        if (timeInterval.IsEmpty()) {
+            // If the user accidentally set start > end, resync to the closed
+            // interval with the single start point.
+            jobArgs.timeInterval = GfInterval(timeInterval.GetMin());
         }
+        else {
+            // Use the user's interval as-is.
+            jobArgs.timeInterval = timeInterval;
+        }
+    }
+    else {
+        // Use the _open_ interval with the single point of the current time.
+        // This preserves the existing behavior of not exporting animation,
+        // but setting the stage start/end frame.
+        // XXX This differs from usdExport, which uses (1, 1) in this case.
+        jobArgs.timeInterval = GfInterval(
+                MAnimControl::currentTime().value(),
+                MAnimControl::currentTime().value(),
+                /*minClosed*/ false, /*maxClosed*/ false);
     }
 
     if (frameSamples.empty()) {
@@ -220,10 +238,12 @@ usdTranslatorExport::writer(const MFileObject &file,
     
     if (jobArgs.dagPaths.size()) {
         usdWriteJob writeJob(jobArgs);
-        if (writeJob.beginJob(fileName, append, startTime, endTime)) {
-            if (jobArgs.exportAnimation) {
+        if (writeJob.beginJob(fileName, append)) {
+            if (!jobArgs.timeInterval.IsEmpty()) {
                 const MTime oldCurTime = MAnimControl::currentTime();
-                for (double i = startTime; i < (endTime + 1.0); ++i) {
+                for (double i = jobArgs.timeInterval.GetMin();
+                        jobArgs.timeInterval.Contains(i);
+                        i += 1.0) {
                     for (double sampleTime : frameSamples) {
                         const double actualTime = i + sampleTime;
                         MGlobal::viewFrame(actualTime);

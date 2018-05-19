@@ -96,29 +96,6 @@ struct PxrUsdMayaTranslatorUtil
             MStatus* status,
             MObject* mayaNodeObj);
 
-    template <typename T>
-    static bool
-    GetTimeSamples(
-            const T& source,
-            const PxrUsdMayaPrimReaderArgs& args,
-            std::vector<double>* outSamples)
-    {
-        if (args.HasCustomFrameRange()) {
-            std::vector<double> tempSamples;
-            source.GetTimeSamples(&tempSamples);
-            bool didPushSample = false;
-            for (double t : tempSamples) {
-                if (t >= args.GetStartTime() && t <= args.GetEndTime()) {
-                    outSamples->push_back(t);
-                    didPushSample = true;
-                }
-            }
-            return didPushSample;
-        } else {
-            return source.GetTimeSamples(outSamples);
-        }
-    }
-
     /// Gets an API schema of the requested type for the given \p usdPrim.
     ///
     /// This ensures that the USD prim has the API schema applied to it if it

@@ -59,7 +59,7 @@ JobExportArgs::JobExportArgs()
         shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
         mergeTransformAndShape(true),
         exportInstances(true),
-        exportAnimation(false),
+        timeInterval(/* empty interval (no animation) */),
         excludeInvisible(false),
         exportDefaultCameras(false),
         exportSkin(false),
@@ -87,7 +87,7 @@ operator <<(std::ostream& out, const JobExportArgs& exportArgs)
         << "shadingMode: " << exportArgs.shadingMode << std::endl
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
         << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
-        << "exportAnimation: " << TfStringify(exportArgs.exportAnimation) << std::endl
+        << "timeInterval: " << exportArgs.timeInterval << std::endl
         << "excludeInvisible: " << TfStringify(exportArgs.excludeInvisible) << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
@@ -148,10 +148,7 @@ JobImportArgs::JobImportArgs()
     :
         shadingMode(PxrUsdMayaShadingModeTokens->displayColor),
         assemblyRep(PxrUsdMayaTranslatorTokens->Collapsed),
-        readAnimData(true),
-        useCustomFrameRange(false),
-        startTime(1.0),
-        endTime(1.0),
+        timeInterval(GfInterval::GetFullInterval()),
         importWithProxyShapes(false),
         includeMetadataKeys(
                 _defaultIncludeMetadataKeys->allTokens.begin(),
@@ -165,10 +162,7 @@ operator <<(std::ostream& out, const JobImportArgs& importArgs)
 {
     out << "shadingMode: " << importArgs.shadingMode << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
-        << "readAnimData: " << TfStringify(importArgs.readAnimData) << std::endl
-        << "useCustomFrameRange: " << TfStringify(importArgs.useCustomFrameRange) << std::endl
-        << "startTime: " << importArgs.startTime << std::endl
-        << "endTime: " << importArgs.endTime << std::endl
+        << "timeInterval: " << importArgs.timeInterval << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;
 
     return out;

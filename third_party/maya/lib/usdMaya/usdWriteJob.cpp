@@ -81,10 +81,7 @@ usdWriteJob::~usdWriteJob()
 {
 }
 
-bool usdWriteJob::beginJob(const std::string &iFileName,
-                         bool append,
-                         double startTime,
-                         double endTime)
+bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
@@ -133,8 +130,11 @@ bool usdWriteJob::beginJob(const std::string &iFileName,
     }
 
     // Set time range for the USD file
-    mJobCtx.mStage->SetStartTimeCode(startTime);
-    mJobCtx.mStage->SetEndTimeCode(endTime);
+    // XXX We shouldn't be setting the time range if the timeInterval is
+    // empty. A future change will fix this so that HasAuthoredTimeCodeRange()
+    // is false if not exporting animation.
+    mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeInterval.GetMin());
+    mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeInterval.GetMax());
 
     mModelKindWriter.Reset();
 

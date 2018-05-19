@@ -103,7 +103,7 @@ MayaInstancerWriter::_GetInstancerTranslateSampleType(
 {
     // XXX: Maybe we could be smarter here and figure out if the animation
     // affects instancerTranslate?
-    bool animated = getArgs().exportAnimation &&
+    bool animated = !getArgs().timeInterval.IsEmpty() &&
             MAnimUtil::isAnimated(prototypeDagPath.node(), false);
     if (animated) {
         return ANIMATED;

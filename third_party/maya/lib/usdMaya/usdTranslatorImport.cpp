@@ -67,8 +67,12 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
     std::string fileName(file.fullName().asChar());
     std::string primPath("/");
     std::map<std::string,std::string> variants;
+
+    bool readAnimData = true;
+    bool useCustomFrameRange = false;
+    GfInterval customFrameRange(1.0, 1.0);
+
     JobImportArgs jobArgs;
-        
     int i;
 
     if ( optionsString.length() > 0 ) {
@@ -95,18 +99,30 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
                         jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
                     }
                 }
-            } else if (theOption[0] == MString("readAnimData")) {
-                jobArgs.readAnimData = theOption[1].asInt();
             } else if (theOption[0] == MString("assemblyRep")) {
                 jobArgs.assemblyRep = TfToken(theOption[1].asChar());
-            } else if (theOption[0] == MString("startTime")) {
-                jobArgs.startTime = theOption[1].asDouble();
-            } else if (theOption[0] == MString("endTime")) {
-                jobArgs.endTime = theOption[1].asDouble();
+            } else if (theOption[0] == MString("readAnimData")) {
+                readAnimData = theOption[1].asInt();
             } else if (theOption[0] == MString("useCustomFrameRange")) {
-                jobArgs.useCustomFrameRange = theOption[1].asInt();
+                useCustomFrameRange = theOption[1].asInt();
+            } else if (theOption[0] == MString("startTime")) {
+                customFrameRange.SetMin(theOption[1].asDouble());
+            } else if (theOption[0] == MString("endTime")) {
+                customFrameRange.SetMax(theOption[1].asDouble());
             }
         }
+    }
+
+    if (readAnimData) {
+        if (useCustomFrameRange) {
+            jobArgs.timeInterval = customFrameRange;
+        }
+        else {
+            jobArgs.timeInterval = GfInterval::GetFullInterval();
+        }
+    }
+    else {
+        jobArgs.timeInterval = GfInterval();
     }
 
     usdReadJob *mUsdReadJob = new usdReadJob(fileName, primPath, variants, jobArgs,

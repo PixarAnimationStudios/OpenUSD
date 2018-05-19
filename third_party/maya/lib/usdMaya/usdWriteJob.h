@@ -54,10 +54,7 @@ class usdWriteJob
 
     // returns true if the stage can be created successfully
     PXRUSDMAYA_API
-    bool beginJob(const std::string &fileName,
-            bool append, 
-            double startTime,
-            double endTime);
+    bool beginJob(const std::string &fileName, bool append);
     PXRUSDMAYA_API
     void evalJob(double iFrame);
     PXRUSDMAYA_API

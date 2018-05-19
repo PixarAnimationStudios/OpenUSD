@@ -30,19 +30,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const UsdPrim& prim,
         const TfToken& shadingMode,
-        const bool readAnimData,
-        const bool useCustomFrameRange,
-        const double startTime,
-        const double endTime,
+        const GfInterval& timeInterval,
         const TfToken::Set& includeMetadataKeys,
         const TfToken::Set& includeAPINames)
     : 
         _prim(prim),
         _shadingMode(shadingMode),
-        _readAnimData(readAnimData),
-        _useCustomFrameRange(useCustomFrameRange),
-        _startTime(startTime),
-        _endTime(endTime),
+        _timeInterval(timeInterval),
         _includeMetadataKeys(includeMetadataKeys),
         _includeAPINames(includeAPINames)
 {
@@ -57,25 +51,11 @@ PxrUsdMayaPrimReaderArgs::GetShadingMode() const
 {
     return _shadingMode;
 }
-const bool&
-PxrUsdMayaPrimReaderArgs::GetReadAnimData() const
+
+GfInterval
+PxrUsdMayaPrimReaderArgs::GetTimeInterval() const
 {
-    return _readAnimData;
-}
-bool 
-PxrUsdMayaPrimReaderArgs::HasCustomFrameRange() const
-{
-    return _useCustomFrameRange;
-}
-double 
-PxrUsdMayaPrimReaderArgs::GetStartTime() const
-{
-    return _startTime;
-}
-double 
-PxrUsdMayaPrimReaderArgs::GetEndTime() const
-{
-    return _endTime;
+    return _timeInterval;
 }
 
 const TfToken::Set&

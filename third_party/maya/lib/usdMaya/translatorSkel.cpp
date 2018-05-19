@@ -292,19 +292,15 @@ _GetJointAnimTimeSamples(const UsdSkelSkeletonQuery& skelQuery,
                          const PxrUsdMayaPrimReaderArgs& args,
                          std::vector<double>* times)
 {
-    if(args.GetReadAnimData()) {
+    if(!args.GetTimeInterval().IsEmpty()) {
         if(UsdSkelAnimQuery animQuery = skelQuery.GetAnimQuery()) {
-            if(args.HasCustomFrameRange()) {
-                // BUG 157462: Querying time samples over an interval may be
-                // incorrect at the boundaries of the interval. It's more
-                // correct to use 'GetBracketingTimeSamples'. But UsdSkel is
-                // waiting on alternate time-querying API before providing
-                // such queries.
-                animQuery.GetJointTransformTimeSamplesInInterval(
-                    GfInterval(args.GetStartTime(), args.GetEndTime()), times);
-            } else {
-                animQuery.GetJointTransformTimeSamples(times);
-            }
+            // BUG 157462: Querying time samples over an interval may be
+            // incorrect at the boundaries of the interval. It's more
+            // correct to use 'GetBracketingTimeSamples'. But UsdSkel is
+            // waiting on alternate time-querying API before providing
+            // such queries.
+            animQuery.GetJointTransformTimeSamplesInInterval(
+                    args.GetTimeInterval(), times);
         }
     }
     if(times->empty()) {

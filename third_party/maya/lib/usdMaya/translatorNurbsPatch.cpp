@@ -105,14 +105,15 @@ PxrUsdMayaTranslatorNurbsPatch::Read(
     usdNurbsPatch.GetVRangeAttr().Get(&rangeInV);
     usdNurbsPatch.GetPointWeightsAttr().Get(&weights);
 
-    // Gather points. If args.GetReadAnimData() is TRUE,
-    // pick the first avaiable sample or default
+    // Gather points.
+    // If timeInterval is non-empty, pick the first available sample in the
+    // timeInterval or default.
     UsdTimeCode pointsTimeSample=UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
     size_t numTimeSamples = 0;
-    if (args.GetReadAnimData()) {
-        PxrUsdMayaTranslatorUtil::GetTimeSamples(usdNurbsPatch.GetPointsAttr(),
-                args, &pointsTimeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        usdNurbsPatch.GetPointsAttr().GetTimeSamplesInInterval(
+                args.GetTimeInterval(), &pointsTimeSamples);
         numTimeSamples = pointsTimeSamples.size();
         if (numTimeSamples>0) {
             pointsTimeSample = pointsTimeSamples[0];
