@@ -65,7 +65,7 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetRenderIndex().GetResourceRegistry();
 
         HdTextureResource::ID texID = sceneDelegate->GetTextureResourceID(id);
-        {
+        if (texID != HdTextureResource::ID(-1)) {
             HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> 
                 texInstance;
 
@@ -81,6 +81,8 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
                 // as this class.
                 _textureResource = texInstance.GetValue();
             }
+        } else {
+            _textureResource.reset();
         }
     }
 

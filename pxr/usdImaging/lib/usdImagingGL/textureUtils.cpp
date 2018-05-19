@@ -157,12 +157,12 @@ UsdImagingGL_GetTextureResourceID(UsdPrim const& usdPrim,
             TF_WARN("Unable to find Texture '%s' with path '%s'. Fallback " 
                     "textures are not supported for ptex", 
                     filePath.GetText(), usdPath.GetText());
-            return HdTextureResource::ComputeFallbackPtexHash(); 
+            return HdTextureResource::ID(-1);
         } else {
             TF_WARN("Unable to find Texture '%s' with path '%s'. A black " 
                     "texture will be substituted in its place.", 
                     filePath.GetText(), usdPath.GetText());
-            return HdTextureResource::ComputeFallbackUVHash();
+            return HdTextureResource::ID(-1);
         }
     }
 

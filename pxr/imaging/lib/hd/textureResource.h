@@ -26,11 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/enums.h"
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <cstdint>
@@ -47,10 +45,6 @@ public:
     /// Returns the hash value of the texture for \a sourceFile
     HD_API
     static ID ComputeHash(TfToken const & sourceFile);
-    HD_API
-    static ID ComputeFallbackPtexHash();
-    HD_API
-    static ID ComputeFallbackUVHash();
 
     HD_API
     virtual ~HdTextureResource();

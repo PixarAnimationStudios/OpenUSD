@@ -547,6 +547,8 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
         TF_DEBUG(USDIMAGING_SHADERS).Msg("\tShader input  found: %s\n",
                 attr.GetPath().GetText());
 
+        HdMaterialParam::ParamType paramType =
+                HdMaterialParam::ParamTypeFallback;
         VtValue fallbackValue;
         SdfPath connection;
         TfTokenVector samplerCoords;
@@ -562,6 +564,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
         if (UsdAttribute texAttr = shaderPrim.GetAttribute(
                                         TfToken(attr.GetPath().GetName() 
                                                 + ":texture"))) {
+            paramType = HdMaterialParam::ParamTypeTexture;
             connection = texAttr.GetPath();
             textureIDs->push_back(connection);
 
@@ -601,6 +604,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
         } else if (UsdAttribute pvAttr = shaderPrim.GetAttribute(
                                         TfToken(attr.GetPath().GetName() 
                                                 + ":primvar"))) {
+            paramType = HdMaterialParam::ParamTypePrimvar;
             connection = SdfPath("primvar."
                                 + pvAttr.GetName().GetString());
             TF_DEBUG(USDIMAGING_SHADERS).Msg(
@@ -617,11 +621,12 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetworkDeprecated(
         }
 
         shaderInput.Get(&fallbackValue);
-        materialParams->push_back(HdMaterialParam(shaderInput.GetBaseName(),
-                                  fallbackValue,
-                                  connection,
-                                  samplerCoords,
-                                  isPtex));
+        materialParams->push_back(HdMaterialParam(paramType,
+                                                  shaderInput.GetBaseName(),
+                                                  fallbackValue,
+                                                  connection,
+                                                  samplerCoords,
+                                                  isPtex));
     }
 }
 
@@ -640,6 +645,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
     // Internal data structure to keep the parameters organize before 
     // we return them in the actual HdMaterialParamVector.
     struct _MaterialParams {
+        HdMaterialParam::ParamType _paramType;
         TfToken _name;
         VtValue _fallbackValue;
         SdfPath _connection;
@@ -699,12 +705,14 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
 
                 // Finally, initialize data for this potential input to the 
                 // material we are loading.
-                _MaterialParams matParam = { shaderInput.GetBaseName(),/*name*/
-                                             fallbackValue,/*fallbackValue*/
-                                             connection,/*_connection*/
-                                             SdfPath(), /*_connectionPrimvar*/
-                                             TfTokenVector(), /*_samplerCoords*/
-                                             false /*_isPtex*/};
+                _MaterialParams matParam = {
+                        HdMaterialParam::ParamTypeFallback,/*paramType*/
+                        shaderInput.GetBaseName(),/*name*/
+                        fallbackValue,/*fallbackValue*/
+                        connection,/*_connection*/
+                        SdfPath(), /*_connectionPrimvar*/
+                        TfTokenVector(), /*_samplerCoords*/
+                        false /*_isPtex*/};
                 params.push_back(matParam);
 
                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
@@ -753,6 +761,7 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
 
                 for(auto &p : params) {
                     if (p._connection == shader.GetPath()){
+                        p._paramType = HdMaterialParam::ParamTypeTexture;
                         p._isPtex = isPtex;
                         p._connectionPrimvar = connectionPrimvar;
                         p._connection = connection;
@@ -777,11 +786,14 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
                                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
                                     "\t\tPrimvar connected: <%s>\n", 
                                     varname.GetText());
+                                // No need to change the paramType here.
                                 p._samplerCoords.push_back(varname);
                             } else if (p._connection == shader.GetPath()){
                                 TF_DEBUG(USDIMAGING_SHADERS).Msg(
                                     "\t\tPrimvar connected: <%s>\n", 
                                     varname.GetText());
+                                p._paramType =
+                                        HdMaterialParam::ParamTypePrimvar;
                                 p._connection = connection;
                                 p._samplerCoords.push_back(varname);
                             }
@@ -850,7 +862,8 @@ UsdImagingGLHydraMaterialAdapter::_WalkShaderNetwork(
     // Fill the material parameters structure with all the information
     // we have compiled after walking the material.
     for(_MaterialParams const & param : params) {
-        materialParams->emplace_back(param._name, param._fallbackValue, 
+        materialParams->emplace_back(param._paramType,
+                param._name, param._fallbackValue,
                 param._connection, param._samplerCoords, param._isPtex);
     }
 }

@@ -2605,6 +2605,7 @@ UsdImagingDelegate::GetMaterialParams(SdfPath const &materialId)
             // Unfortunately, HdMaterialParam is immutable;
             // fortunately, it has relatively lightweight members.
             *paramIt = HdMaterialParam(
+                HdMaterialParam::ParamTypeTexture,
                 paramIt->GetName(),
                 paramIt->GetFallbackValue(),
                 GetPathForIndex(paramIt->GetConnection()),

@@ -377,6 +377,7 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 attr = prim.GetAttribute(textureAttrs[i]);
                 if (attr) {
                     params.push_back(HdMaterialParam(
+                                HdMaterialParam::ParamTypeTexture,
                                 textureNames[i], fallback,
                                 attr.GetPath(), samplerParams, false));
                 }

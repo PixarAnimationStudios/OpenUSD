@@ -35,6 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 typedef boost::shared_ptr<class HdStShaderCode> HdStShaderCodeSharedPtr;
 typedef boost::shared_ptr<class HdStSurfaceShader> HdStSurfaceShaderSharedPtr;
+typedef boost::shared_ptr<class HdStTextureResource> HdStTextureResourceSharedPtr;
+typedef std::vector<HdStTextureResourceSharedPtr>
+                                HdStTextureResourceSharedPtrVector;
 
 class HdStMaterial final: public HdMaterial {
 public:
@@ -108,10 +111,14 @@ public:
     HDST_API
     void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
 
-
 private:
-    HdStSurfaceShaderSharedPtr _surfaceShader;
-    bool                       _hasPtex;
+    HdStTextureResourceSharedPtr
+    _GetTextureResource(HdSceneDelegate *sceneDelegate,
+                        HdMaterialParam const &param);
+
+    HdStSurfaceShaderSharedPtr         _surfaceShader;
+    HdStTextureResourceSharedPtrVector _fallbackTextureResources;
+    bool                               _hasPtex;
 };
 
 inline std::string

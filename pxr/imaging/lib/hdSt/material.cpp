@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -32,6 +31,11 @@
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/textureHandle.h"
+#include "pxr/imaging/glf/textureRegistry.h"
+#include "pxr/imaging/glf/uvTextureStorage.h"
 
 #include <boost/pointer_cast.hpp>
 
@@ -149,62 +153,44 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         const HdMaterialParamVector &params = GetMaterialParams(sceneDelegate);
         _surfaceShader->SetParams(params);
 
+        // Release any fallback texture resources
+        _fallbackTextureResources.clear();
+
         bool hasPtex = false;
-        TF_FOR_ALL(paramIt, params) {
-            if (paramIt->IsPrimvar()) {
+        for (HdMaterialParam const & param: params) {
+            if (param.IsPrimvar()) {
                 // skip -- maybe not necessary, but more memory efficient
                 continue;
-            } else if (paramIt->IsFallback()) {
+            } else if (param.IsFallback()) {
                 VtValue paramVt = GetMaterialParamValue(sceneDelegate,
-                                                        paramIt->GetName());
+                                                        param.GetName());
                 HdBufferSourceSharedPtr source(
-                             new HdVtBufferSource(paramIt->GetName(), paramVt));
+                             new HdVtBufferSource(param.GetName(), paramVt));
 
                 sources.push_back(source);
-            } else if (paramIt->IsTexture()) {
+            } else if (param.IsTexture()) {
+
+                HdStTextureResourceSharedPtr texResource =
+                    _GetTextureResource(sceneDelegate, param);
+
+                if (!texResource) {
+                    // we were unable to get the requested resource or
+                    // fallback resource so skip this param
+                    // (Error already posted).
+                    continue;
+                }
+
                 bool bindless = GlfContextCaps::GetInstance()
                                                         .bindlessTextureEnabled;
                 // register bindless handle
 
-                HdTextureResource::ID texID =
-                                 GetTextureResourceID(sceneDelegate,
-                                                      paramIt->GetConnection());
-
-                HdStTextureResourceSharedPtr texResource;
-                {
-                    HdInstance<HdTextureResource::ID,
-                               HdTextureResourceSharedPtr> texInstance;
-
-                    bool textureResourceFound = false;
-                    std::unique_lock<std::mutex> regLock =
-                        resourceRegistry->FindTextureResource
-                        (texID, &texInstance, &textureResourceFound);
-                    // A bad asset can cause the texture resource to not 
-                    // be found. Hence, issue a warning and continue onto the 
-                    // next param.
-                    if (!textureResourceFound) {
-                        TF_WARN("No texture resource found with path %s",
-                            paramIt->GetConnection().GetText());
-                        continue;
-                    }
-
-                    texResource =
-                        boost::dynamic_pointer_cast<HdStTextureResource>
-                        (texInstance.GetValue());
-                    if (!TF_VERIFY(texResource,
-                            "Incorrect texture resource with path %s",
-                            paramIt->GetConnection().GetText())) {
-                        continue;
-                    }
-                }
-
                 HdStShaderCode::TextureDescriptor tex;
-                tex.name = paramIt->GetName();
+                tex.name = param.GetName();
 
                 if (texResource->IsPtex()) {
                     hasPtex = true;
                     tex.type =
-                            HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
+                        HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_TEXEL;
                     tex.handle =
                                 bindless ? texResource->GetTexelsTextureHandle()
                                          : texResource->GetTexelsTextureId();
@@ -222,9 +208,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                     // layout
 
                     tex.name =
-                            TfToken(paramIt->GetName().GetString() + "_layout");
+                       TfToken(param.GetName().GetString() + "_layout");
                     tex.type =
-                           HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
+                       HdStShaderCode::TextureDescriptor::TEXTURE_PTEX_LAYOUT;
                     tex.handle =
                                 bindless ? texResource->GetLayoutTextureHandle()
                                          : texResource->GetLayoutTextureId();
@@ -274,6 +260,67 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     *dirtyBits = Clean;
+}
+
+HdStTextureResourceSharedPtr
+HdStMaterial::_GetTextureResource(
+        HdSceneDelegate *sceneDelegate,
+        HdMaterialParam const &param)
+{
+    HdResourceRegistrySharedPtr const &resourceRegistry = 
+        sceneDelegate->GetRenderIndex().GetResourceRegistry();
+
+    // Create a fallback texture resource when the texture doesn't
+    // have a valid connection path or if the scene delegate returns
+    // and invalidate ID
+    bool useFallback = param.GetConnection().IsEmpty();
+
+    HdTextureResource::ID texID = HdTextureResource::ID(-1);
+
+    if (!param.GetConnection().IsEmpty()) {
+         texID = GetTextureResourceID(sceneDelegate, param.GetConnection());
+    }
+    useFallback |= (texID == HdTextureResource::ID(-1));
+
+    // XXX todo handle fallback Ptex textures
+    HdStTextureResourceSharedPtr texResource;
+    if (useFallback) {
+        GlfUVTextureStorageRefPtr texPtr = 
+            GlfUVTextureStorage::New(1,1, param.GetFallbackValue());
+        GlfTextureHandleRefPtr texture =
+            GlfTextureRegistry::GetInstance().GetTextureHandle(texPtr);
+        texture->AddMemoryRequest(0); 
+        texResource.reset(
+            new HdStSimpleTextureResource(texture, false));
+        _fallbackTextureResources.push_back(texResource);
+    } else {
+        HdInstance<HdTextureResource::ID,
+                   HdTextureResourceSharedPtr> texInstance;
+
+        bool textureResourceFound = false;
+        std::unique_lock<std::mutex> regLock =
+            resourceRegistry->FindTextureResource
+            (texID, &texInstance, &textureResourceFound);
+        // A bad asset can cause the texture resource to not 
+        // be found. Hence, issue a warning and continue onto the 
+        // next param.
+        if (!textureResourceFound) {
+            TF_WARN("No texture resource found with path %s",
+                param.GetConnection().GetText());
+            return HdStTextureResourceSharedPtr();
+        }
+
+        texResource =
+            boost::dynamic_pointer_cast<HdStTextureResource>
+            (texInstance.GetValue());
+        if (!TF_VERIFY(texResource,
+                "Incorrect texture resource with path %s",
+                param.GetConnection().GetText())) {
+            return HdStTextureResourceSharedPtr();
+        }
+    }
+
+    return texResource;
 }
 
 // virtual

@@ -31,12 +31,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdMaterialParam::HdMaterialParam(TfToken const& name, 
+HdMaterialParam::HdMaterialParam(ParamType paramType,
+                                 TfToken const& name, 
                                  VtValue const& fallbackValue,
                                  SdfPath const& connection,
                                  TfTokenVector const& samplerCoords,
                                  bool isPtex)
-    : _name(name)
+    : _paramType(paramType)
+    , _name(name)
     , _fallbackValue(fallbackValue)
     , _connection(connection)
     , _samplerCoords(samplerCoords)
@@ -56,6 +58,7 @@ HdMaterialParam::ComputeHash(HdMaterialParamVector const &params)
 {
     size_t hash = 0;
     TF_FOR_ALL(paramIt, params) {
+        boost::hash_combine(hash, paramIt->GetParamType());
         boost::hash_combine(hash, paramIt->GetName().Hash());
         boost::hash_combine(hash, paramIt->GetConnection().GetHash());
         TF_FOR_ALL(coordIt, paramIt->GetSamplerCoordinates()) {
