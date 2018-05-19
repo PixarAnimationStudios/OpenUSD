@@ -153,13 +153,13 @@ class testUsdExportPointInstancer(unittest.TestCase):
         self.assertEqual(Usd.ModelAPI(prototypesPrim).GetKind(),
                 Kind.Tokens.subcomponent)
 
-        prototype0 = prototypesPrim.GetChild("prototype_0")
+        prototype0 = prototypesPrim.GetChild("pCube1_0")
         self._AssertPrototype(prototype0, "Xform", 2, True)
 
-        prototype1 = prototypesPrim.GetChild("prototype_1")
+        prototype1 = prototypesPrim.GetChild("prototypeUnderInstancer_1")
         self._AssertPrototype(prototype1, "Mesh", 0, False)
 
-        prototype2 = prototypesPrim.GetChild("prototype_2")
+        prototype2 = prototypesPrim.GetChild("referencePrototype_2")
         self._AssertPrototype(prototype2, "Xform", 1, True)
         self.assertEqual(
                 Usd.ModelAPI(prototype2).GetAssetName(),

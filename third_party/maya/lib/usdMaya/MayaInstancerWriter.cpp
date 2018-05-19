@@ -227,7 +227,10 @@ MayaInstancerWriter::writeInstancerAttrs(
             MDagPath prototypeDagPath;
             sourceNode.getPath(prototypeDagPath);
 
-            const TfToken prototypeName(TfStringPrintf("prototype_%d", i));
+            // Prototype names are guaranteed unique by virtue of having a
+            // unique numerical suffix _# indicating the prototype index.
+            const TfToken prototypeName(
+                    TfStringPrintf("%s_%d", sourceNode.name().asChar(), i));
             const SdfPath prototypeUsdPath = prototypesGroupPrim.GetPath()
                     .AppendChild(prototypeName);
             UsdPrim prototypePrim = getUsdStage()->DefinePrim(
