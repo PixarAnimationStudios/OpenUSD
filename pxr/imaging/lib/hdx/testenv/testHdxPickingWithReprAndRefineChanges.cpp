@@ -282,7 +282,7 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color2_refine_wont_change_cube1.png");
         selection = _picker.GetSelection();
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 0);
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
     }
 
     // (b)
@@ -301,8 +301,8 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color3_repr_change_cube2.png");
         selection = _picker.GetSelection();
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
     // (c)
@@ -321,8 +321,8 @@ My_TestGLDrawing::OffscreenTest()
         DrawScene();
         WriteToFile("color", "color4_repr_and_refine_change_cube1.png");
         selection = _picker.GetSelection();
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube1"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube1"));
     }
 
 
@@ -341,8 +341,8 @@ My_TestGLDrawing::OffscreenTest()
         // makes cube2 disappear because the vertex primvar BAR is not
         // updated correctly. The dumped image and the verify below will
         // fail once it is fixed.
-        TF_VERIFY(selection->GetSelectedPrims(mode).size() == 0);
-        //TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 0);
+        //TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
     }
 
      // deselect    

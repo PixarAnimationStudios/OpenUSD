@@ -65,10 +65,12 @@ void RenderColor(vec4 color)
     colorOut = color;
 }
 
+--- --------------------------------------------------------------------------
 -- glsl HdxRenderPass.RenderColorOutputWithSelection
 
 #if defined(HD_HAS_hdxSelectionBuffer)
 // helper methods to decode hdxSelectionBuffer
+// ------ selection highlight mode specifics -------
 bool HighlightModeHasSelection(int offset)
 {
     return (offset != 0);
@@ -98,131 +100,162 @@ vec4 GetSelectionColor(int mode)
     return s;
 }
 
-// Note: These should match the enum in hdxSelectionTracker.cpp
-#define SUBPRIMITIVE_TYPE_ELEMENT 0
-#define SUBPRIMITIVE_TYPE_EDGE    1
-#define SUBPRIMITIVE_TYPE_POINT   2
-
-void GetSubprimitiveRangeInfo(int rangeStart,
-                              out int type, out int smin, out int smax)
+// ------  selection offset specifics -------
+// Note: This should match the selection offset encoding in
+// hdx/SelectionTracker.cpp
+void DecodeSelOffset(int selOffset, out bool isSelected, out int nextOffset)
 {
-    type = hdxSelectionBuffer[rangeStart];
-    smin = hdxSelectionBuffer[rangeStart + 1];
-    smax = hdxSelectionBuffer[rangeStart + 2];
+    isSelected = bool(selOffset & 0x1); // bit 0
+    nextOffset = selOffset >> 1;        // bits 31:1
 }
 
-struct SubprimSelection {
+// --------- subprim decoding ----------
+// Each subprims offsets' buffer encoding is:
+// [subprim-type][min][max][     selOffsets     ]
+// <----------3 ----------><--- max - min + 1 -->
+struct SubprimHeader {
+    int type;
+    int min;
+    int max;
+};
+SubprimHeader DecodeSubprimHeader(int offset)
+{
+    SubprimHeader header;
+    header.type = hdxSelectionBuffer[offset    ];
+    header.min  = hdxSelectionBuffer[offset + 1];
+    header.max  = hdxSelectionBuffer[offset + 2];
+    return header;
+}
+
+bool IsSubprimSelected(int id, int min, int max, int headerStart,
+                       out int nextSubprimOffset)
+{
+    const int SUBPRIM_SELOFFSETS_HEADER_SIZE  = 3;
+
+    nextSubprimOffset = 0; // initialize
+    bool isSelected = false;
+
+    if (id >= min && id < max) {
+        int netSubprimIndex =
+            headerStart + SUBPRIM_SELOFFSETS_HEADER_SIZE + id - min;
+        int selOffset = hdxSelectionBuffer[netSubprimIndex];
+
+        DecodeSelOffset(selOffset, /*out*/isSelected, /*out*/nextSubprimOffset);
+    } else {
+        // The subprim id does not fall in the selected id range, so the subprim
+        // in question isn't selected. However, we can still have other
+        // subprim(s) selected. To get the offset to jump to, we mimic decoding
+        // the "min" subprim id.
+        int minSubprimIndex = headerStart + SUBPRIM_SELOFFSETS_HEADER_SIZE;
+        DecodeSelOffset(hdxSelectionBuffer[minSubprimIndex],
+                        /*out*/isSelected, /*out*/nextSubprimOffset);
+        isSelected = false;
+    }
+
+    return isSelected;
+}
+
+struct SubprimSelectionResult {
     bool elementSelected;
     bool edgeSelected;
     bool pointSelected;
 };
-
-bool IsAnySubprimSelected(SubprimSelection s)
+bool IsAnySubprimSelected(SubprimSelectionResult s)
 {
     return (s.elementSelected || s.edgeSelected || s.pointSelected);
 }
 
-
-// Need to forward declare this helper function, since it is defined in
-// pointId.glslfx
+// Fwd declare helper fn defined in pointId.glslfx
 int GetPointId();
-
-bool IsPointSelected(int ptMin, int ptMax, int ptRangeStart)
-{
-    int ptId = GetPointId();
-
-    if (ptId >= ptMin && ptId < ptMax) {
-        int v = hdxSelectionBuffer[3+ptRangeStart+ptId-ptMin];
-        if (v == 1) return true; // point is selected
-        if (v == 0) return false; // point isn't selected
-        // we shouldn't hit any other case
-    }
-    return false;
-}
-
-// Need to forward declare this helper function, since it is defined in
-// edgeId.glslfx or generated via codeGen
+// Fwd declare helper fn defined in edgeId.glslfx, or generated via codeGen
 int GetPrimitiveEdgeId();
-
-bool IsEdgeSelected(int edgeMin, int edgeMax, int edgeRangeStart,
-                    out int nextOffset)
+// Note: These should match the SubprimType enum in hdx/SelectionTracker.cpp
+#define SUBPRIM_TYPE_ELEMENT 0
+#define SUBPRIM_TYPE_EDGE    1
+#define SUBPRIM_TYPE_POINT   2
+SubprimSelectionResult GetSubprimSel(int offset)
 {
-    int edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
+    SubprimSelectionResult s = SubprimSelectionResult(false, false, false);
+    int nextSubprimOffset = 0;
+    SubprimHeader header = DecodeSubprimHeader(offset);
 
-    if (edgeId >= edgeMin && edgeId < edgeMax) {
-        int v = hdxSelectionBuffer[3+edgeRangeStart+edgeId-edgeMin];
-        if (v == 0) return false; // edge isn't selected
-        if (v == 1) return true; // edge alone is selected
-
-        // next subprim (point) is selected; update the offset
-        nextOffset = v>>1;
-
-        if (bool(v & 0x1)) return true; // edge is also selected
-
-        return false;
-    }
-    return false;
-}
-
-bool IsElementSelected(int eleMin, int eleMax, int eleRangeStart,
-                       out int nextOffset)
-{
-    int elementId = GetElementID();
-
-    if (elementId >= eleMin && elementId < eleMax) {
-        int v = hdxSelectionBuffer[3+eleRangeStart+elementId-eleMin];
-        if (v == 0) return false; // element isn't selected
-        if (v == 1) return true; // element alone is selected
-
-        // next subprim (edges and/or points) is selected; update the offset
-        nextOffset = v>>1;
-
-        if (bool(v & 0x1)) return true; // element is also selected
-
-        return false;
-    }
-
-    return false;
-}
-
-SubprimSelection GetSubprimSel(int rangeStart)
-{
-    int type, smin, smax;
-    GetSubprimitiveRangeInfo(rangeStart, /*out*/type, /*out*/smin, /*out*/smax);
-
-    SubprimSelection s = SubprimSelection(false, false, false);
-    int nextOffset = 0;
-
-    if (type == SUBPRIMITIVE_TYPE_ELEMENT) {
+    if (header.type == SUBPRIM_TYPE_ELEMENT) {
+        int elementId = GetElementID();
         s.elementSelected =
-            IsElementSelected(smin, smax, rangeStart, /*out*/nextOffset);
+            IsSubprimSelected(elementId, header.min, header.max,
+                              offset, /*out*/nextSubprimOffset);
 
-        if (nextOffset != 0) {
-            // fragment has additional subprim(s) selected. update range state
-            GetSubprimitiveRangeInfo(nextOffset,
-                                    /*out*/type, /*out*/smin, /*out*/smax);
+        if (nextSubprimOffset != 0) {
+            // fragment has additional subprim(s) selected. update header.
+            header = DecodeSubprimHeader(nextSubprimOffset);
+            offset = nextSubprimOffset;
         }
     }
 
-    if (type == SUBPRIMITIVE_TYPE_EDGE) {
+    if (header.type == SUBPRIM_TYPE_EDGE) {
+        int edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
         s.edgeSelected =
-            IsEdgeSelected(smin, smax, rangeStart, /*out*/nextOffset);
+            IsSubprimSelected(edgeId, header.min, header.max,
+                              offset, /*out*/nextSubprimOffset);
 
-        if (nextOffset != 0) {
-            // fragment has points selected. update range state
-            GetSubprimitiveRangeInfo(nextOffset,
-                                    /*out*/type, /*out*/smin, /*out*/smax);
+        if (nextSubprimOffset != 0) {
+            // fragment has points selected. update header.
+            header = DecodeSubprimHeader(nextSubprimOffset);
+            offset = nextSubprimOffset;
         }
     }
 
-    if (type == SUBPRIMITIVE_TYPE_POINT) {
+    if (header.type == SUBPRIM_TYPE_POINT) {
+        int ptId = GetPointId();
         s.pointSelected =
-            IsPointSelected(smin, smax, rangeStart);
+            IsSubprimSelected(ptId, header.min, header.max,
+                              offset, /*unused*/nextSubprimOffset);
     }
 
     return s;
 }
 
+// --------- instance decoding ----------
+bool IsInstanceSelected(int offset, out int nextOffset)
+{
+    // if the prim doesn't have instances, we still want to check if any
+    // subprim is highlighted.
+    // so, initialize the nextOffset to offset (and not 0).
+    nextOffset = offset;
+    bool sel = false;
+
+    #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
+    const int INSTANCE_SELOFFSETS_HEADER_SIZE = 2;
+
+    for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
+        int min = hdxSelectionBuffer[offset  ];
+        int max = hdxSelectionBuffer[offset+1];
+        // allow to highlight in a top-down manner, by flipping level
+        // during iteration.
+        // note: instanceIndex[0] is instanceID.
+        //       instanceIndex for level n is stored at instanceIndex[n+1]
+        int instanceId =
+            GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
+
+        if (instanceId >= min && instanceId < max) {
+            int netIndex = offset + INSTANCE_SELOFFSETS_HEADER_SIZE +
+                           instanceId - min;
+            DecodeSelOffset(hdxSelectionBuffer[netIndex],
+                            /*out*/sel, /*out*/nextOffset);
+            if (sel) break;
+            if (!sel && nextOffset == 0) break;
+
+            // at this point, we need to traverse other levels to figure out
+            // if this instance is selected.
+            offset = nextOffset;
+        } else { // instanceId not in range
+            break;
+        }
+    }
+    #endif
+
+    return sel;
+}
 #endif // HD_HAS_hdxSelectionBuffer
 
 vec4 ApplySelectionColor(vec4 color)
@@ -231,10 +264,14 @@ vec4 ApplySelectionColor(vec4 color)
     const int primId = HdGet_primID();
     const int numSelectionModes = GetNumSelectionHighlightModes();
     // The hdxSelectionBuffer layout is:
-    // [# highlight modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
-    // [-------------  header --------------]
-    // See HdxSelectionTracker::GetSelectionOffsetBuffer for details on the
-    // encoding scheme.
+    // [#modes] [per-mode offset] [data mode0] ... [data modeM]
+    // [---------header---------]
+    // Each mode's data is laid out as:
+    // [ prims | points | edges | elements | instance level-N | ... | level 0 ]
+    //          <-------- subprims ------->  <----------- instances --------->
+    //          <---------------------- per prim ---------------------------->
+    // See hdx/SelectionTracker.cpp for details on the encoding scheme.
+
     for (int mode = 0; mode < numSelectionModes; mode++) {
         int modeOffset = GetIndexOffsetForHighlightMode(mode);
         if (!HighlightModeHasSelection(modeOffset)) {
@@ -242,62 +279,42 @@ vec4 ApplySelectionColor(vec4 color)
             continue;
         }
 
+        const int PRIM_SELOFFSETS_HEADER_SIZE = 2;
         int smin = hdxSelectionBuffer[modeOffset];
         int smax = hdxSelectionBuffer[modeOffset + 1];
         bool sel = false;
-        SubprimSelection subprimSel = SubprimSelection(false, false, false);
+        SubprimSelectionResult subprimSel =
+            SubprimSelectionResult(false, false, false);
 
         if (primId >= smin && primId < smax) {
-            int v = hdxSelectionBuffer[modeOffset + 2 + primId - smin];
-            if (v == 0) {
-                sel = false;
-            } else if (v == 1) {
-                sel = true;
-            } else {
-                // current prim isn't fully selected. check if any of its
-                // instances (or) elements are.
+            int offset = modeOffset + PRIM_SELOFFSETS_HEADER_SIZE + primId - smin;
+            int nextOffset = 0;
+            DecodeSelOffset(hdxSelectionBuffer[offset],
+                            /*out*/sel, /*out*/nextOffset);
 
-                #if defined(HD_INSTANCER_NUM_LEVELS) && HD_INSTANCER_NUM_LEVELS > 0
-                for (int level = 0; level < HD_INSTANCER_NUM_LEVELS; level++) {
-                    smin = hdxSelectionBuffer[v];
-                    smax = hdxSelectionBuffer[v+1];
-                    // allow to highlight in a top-down manner, by flipping level
-                    // during iteration.
-                    // note: instanceIndex[0] is instanceID.
-                    //       instanceIndex for level n is stored at instanceIndex[n+1]
-                    int instanceId = GetDrawingCoord().instanceIndex[HD_INSTANCER_NUM_LEVELS-level];
-                    if (instanceId >= smin && instanceId < smax) {
-                        v = hdxSelectionBuffer[2+v+instanceId-smin];
-                        if (v == 0) {
-                           sel = false; // instance/element/edge isn't selected
-                           break;
-                        } else if (v == 1) {
-                           sel = true; // instance is selected
-                           break;
-                        } else {
-                            // instance isn't selected. check if a subprim is
-                            subprimSel = GetSubprimSel(v);
-                            if (IsAnySubprimSelected(subprimSel)) {
-                                sel = true;
-                                break;
-                            }
-                        }
-                    } else { // instanceId not in range
-                        sel = false;
-                        break;
-                    }
+            // At this point, sel indicates whether the fragment corresponds to
+            // a prim that needs to be fully highlighted, while a non-zero
+            // nextOffset indicates whether additional decoding may be done.
+
+            // We don't currently differentiate between prim, instance and
+            // subprim selection highlighting (i.e., visually, they look the
+            // same), and thus can skip additional decoding if sel is true.
+            // We choose not to, for ease of future customization.
+            if (nextOffset != 0) {
+                // check if instance (or) subprim(s) are selected
+                offset = nextOffset;
+                sel = sel || IsInstanceSelected(offset, /*out*/nextOffset);
+
+                if (nextOffset != 0) {
+                    subprimSel = GetSubprimSel(nextOffset);
                 }
-                #else
-                    // We have no instances, but we may still have subprim(s)
-                    // selected.
-                    subprimSel = GetSubprimSel(v);
-                    if (IsAnySubprimSelected(subprimSel)) {
-                        sel = true;
-                    }
-                #endif
             }
 
-            if (sel) {
+            if (sel || IsAnySubprimSelected(subprimSel)) {
+                // XXX: Since we don't support subprim specific selection color,
+                // we simply use the mode to get the color to use.
+                // Once we plumb subprim selection colors, it makes sense to
+                // apply the "prim" selection color first, and then subprim(s).
                 vec4 s = GetSelectionColor(mode);
 
                 // Note: We blend mask (over) locate (over) select when an
@@ -346,6 +363,7 @@ void RenderColor(vec4 color)
     colorOut = color;
 }
 
+--- --------------------------------------------------------------------------
 -- glsl HdxRenderPass.RenderColorIdOutput
 
 layout (location = 0) out vec4 primIdOut;

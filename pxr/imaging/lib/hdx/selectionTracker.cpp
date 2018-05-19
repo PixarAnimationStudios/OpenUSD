@@ -99,43 +99,14 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     const int minSize = 8;
     offsets->resize(minSize);
 
-    // We expect the collection of selected objects to be created externally and
+    // We expect the collection of selected items to be created externally and
     // set via SetSelection. Exit early if the tracker doesn't have one set.
     if (!_selection) {
         return false;
     }
 
-    // -------------------------------------------------------------------------
-    // Hydra supports selection highlighting of:
-    // (a) a set of prims, wherein each prim is entirely highlighted
-    // (b) a set of instances of (a), wherein each instance is highlighted
-    // (c) a set of subprimitives of (a) or (b), wherein each subprim is
-    //     highlighted.
-    // Subprimitives support is limited to elements (faces or curves), with
-    // support for edges and points coming soon.
-    //
-    // The current selection implementation is, in a sense, global in nature. 
-    // If there are no selected objects, we do not bind any selection-related 
-    // resources, nor does the shader execute any selection-related operations.
-    // 
-    // If there are one or more selected objects, we *don't* choose to have them
-    // in a separate 'selection' collection.
-    // Instead, we stick by AZDO principles and avoid command buffer changes as
-    // a result of selection updates (which would involve removal of draw items
-    // corresponding to the selected objects, and adding them to a separate 
-    // "selection pass")
-    // 
-    // Given a set of selected objects, we encode it into a integer buffer that 
-    // allows us to perform a minimal set of lookups to quickly tell us if a
-    // fragment needs to be highlighted.
-    // 
-    // XXX: We currently update the selection buffer in its *entirety* on 
-    // each update, resulting in poor performance when a large number of 
-    // objects are already selected.
-    // -------------------------------------------------------------------------
-
     // Populate a selection offset buffer that holds offset data per selection
-    // highlight mode. See 'Buffer Layout' for the per-selection mode layout.
+    // highlight mode. See 'Buffer Layout' for the per-mode layout.
     // 
     // The full layout is:
     // [# modes] [per-mode offsets] [seloffsets mode0] ... [seloffsets modeM]
@@ -150,7 +121,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     //  Above:
     //  Index 0 holds the number of selection highlight modes (3)
     //  Indices [1-3] hold the start index for each mode's data.
-    //  If a mode doesn't have any highlighted objects, we use 0 to encode this.
+    //  If a mode doesn't have any selected items, we use 0 to encode this.
     //  
     //  Indices [4-9] hold the selection offsets for mode 0.
     //  Indices [10-x] hold the selection offsets for mode 2.
@@ -210,20 +181,82 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     return true;
 }
 
-// helper methods to fill the selection buffer
-static
-int _EncodeSubprimSel(size_t netSubprimOffset, int flag)
+// Helper methods to fill the selection buffer
+static std::pair<int, int>
+_GetMinMax(std::vector<VtIntArray> const &vecIndices)
 {
-    return int(netSubprimOffset << 1) | flag;
+    int min = std::numeric_limits<int>::max();
+    int max = std::numeric_limits<int>::lowest();
+
+    for (VtIntArray const& indices : vecIndices ) {
+        for (int const& id : indices ) {
+            min = std::min(min, id);
+            max = std::max(max, id);
+        }
+    }
+
+    return std::pair<int, int>(min,max);
 }
 
+// The selection offsets in the buffer encode two pieces of information:
+// (a) isSelected (bit 0)
+//     This tells us if whatever we're encoding (prim/instance/subprim) is
+//     selected.
+// (b) offset (bits 31:1)
+//     This tells us the offset to jump to, which may in turn encode either
+//     instance/subprim selection state, thus allowing us to support selection
+//     of multiple subprims. 
+//     If the offset is 0, it means there is nothing more to decode.
 static
-void _EncodeSubprimTypeAndRange(std::vector<int>* output, size_t offset,
-                                int type, int min, int max)
+int _EncodeSelOffset(size_t offset, bool isSelected)
 {
-    (*output)[offset    ] = type;
-    (*output)[offset + 1] = min;
-    (*output)[offset + 2] = max;
+    return int(offset << 1) | static_cast<int>(isSelected);
+}
+
+// This function takes care of encoding subprim selection offsets.
+// Returns true if output was filled, and false if not.
+static
+bool _FillSubprimOffsets(int type, 
+                         std::vector<VtIntArray> const &vecIndices,
+                         int nextSubprimOffset,
+                         std::vector<int>* output)
+{
+    // Nothing to do if we have no indices arrays.
+    // Also worth noting that the HdxSelection::Add<Subprim> methods ensure
+    // empty indices arrays aren't inserted.
+    if (vecIndices.empty()) return false;
+
+    std::pair<int, int> minmax = _GetMinMax(vecIndices);
+    int const& min = minmax.first;
+    int const& max = minmax.second;
+
+    // Each subprims offsets' buffer encoding is:
+    // [subprim-type][min][max][     selOffsets     ]
+    // <----------3 ----------><--- max - min + 1 -->
+    int const SUBPRIM_SELOFFSETS_HEADER_SIZE = 3;
+    bool const SELECT_ALL = 1;
+    bool const SELECT_NONE = 0;
+    int numOffsetsToInsert = SUBPRIM_SELOFFSETS_HEADER_SIZE + (max - min + 1);
+    size_t startOutputSize = output->size();
+
+    // Grow by the total size and then fill the header (to avoid an additional
+    // insert operation)
+    output->insert(output->end(),numOffsetsToInsert,
+                       _EncodeSelOffset(nextSubprimOffset, SELECT_NONE));
+
+    (*output)[startOutputSize    ] = type;
+    (*output)[startOutputSize + 1] = min;
+    (*output)[startOutputSize + 2] = max+1;
+
+    // For those subprim indices that are selected, set their LSB to 1.
+    size_t selOffsetsStart = startOutputSize + SUBPRIM_SELOFFSETS_HEADER_SIZE;
+    for (VtIntArray const& indices : vecIndices ) {
+        for (int const& id : indices ) {
+            (*output)[selOffsetsStart + (id - min)] |= SELECT_ALL;
+        }
+    }
+
+    return true;
 }
 
 /*virtual*/
@@ -234,7 +267,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                                           std::vector<int> *output) const
 {
 
-    SdfPathVector const& selectedPrims =  _selection->GetSelectedPrims(mode);
+    SdfPathVector selectedPrims =  _selection->GetSelectedPrimPaths(mode);
     size_t numPrims = _selection ? selectedPrims.size() : 0;
     if (numPrims == 0) {
         TF_DEBUG(HDX_SELECTION_SETUP).Msg(
@@ -280,32 +313,43 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     // Buffer Layout
     // ---------------------------------------------------------------------- //
     // In the folowing code, we want to build up a buffer that is capable of
-    // driving selection highlighting. To do this, we leverage the fact that all
-    // shaders have access to the drawing coord, namely the ObjectID,
-    // InstanceID, ElementID, VertexID, etc. The idea is to take one such ID and
-    // compare it against a range of known selected values within a given range.
+    // driving selection highlighting. To do this, we leverage the fact that the
+    // fragment shader has access to the drawing coord, namely the PrimID,
+    // InstanceID, ElementID, EdgeID, VertexID, etc.
+    // The idea is to take one such ID and compare it against a [min, max) range
+    // of selected IDs. Since it is range based, it is possible that only a
+    // subset of values in the range are selected. Following the range is a set
+    // of "selection offset" values that encode whether the ID in question is
+    // selected, and the offset to next ID in the hierarchy.
     //
-    // For example, imagine the ObjectID is 6, then we can know this object is
-    // selected if ID 6 is in the range of selected objects. We then
-    // hierarchically re-apply this scheme for instances and faces. The buffer
-    // layout is as follows:
-    //
-    // Object: [ start index | end index | (offset to next level per object) ]
-    //
-    // So to test if a given object ID is selected, we check if the ID is in the
-    // range [start,end), if so, the object's offset in the buffer is ID-start.
+    // For example, imagine the PrimID is 6, then we can know this prim *may* be
+    // selected only if ID 6 is in the range of selected prims.
     // 
-    // The value for an object is one of three cases:
+    // The buffer layout is as follows:
     //
-    //  0 - indicates the object is not selected
-    //  1 - indicates the object is fully selected
-    //  N - an offset to the next level of the hierarchy
+    // Prim: [ start index | end index | (selection offsets per prim) ]
+    // 
+    // The structure described above for prims is also applied for each level
+    // of instancing, per prim.
+    // 
+    // For subprims of a prim, we add a 'type' field before the range.
+    // 
+    // Subprim: [ type | start index | end index | (selection offsets) ]
     //
-    // The structure described above for objects is also applied for each level
-    // of instancing as well as for faces. All data is aggregated into a single
-    // buffer with the following layout:
+    // To test if a given fragment is selected, we do the following:
+    // (a) check if the PrimID is in the range [start,end), if so, the prim's 
+    //     offset in the buffer is ID-start.
+    // (b) the value at that offset encodes the "selection offset" with bit 0
+    //     indicating if the prim is fully selected, and bits 31:1 holding the 
+    //     offset to the next level in the hierarchy (instances/subprims).
+    // (c) jump to the offset, and hierarchically apply (b), gathering the
+    //     selection state for each level.
     //
-    // [ object | element | instance level-N | ... | level 0 ]
+    // All data is aggregated into a single  buffer with the following layout:
+    //
+    // [ prims | points | edges | elements | instance level-N | ... | level 0 ]
+    //          <-------- subprims ------->  <----------- instances --------->
+    //          <---------------------- per prim ---------------------------->
     //  
     //  Each section above is prefixed with [start,end) ranges and the values of
     //  each range follow the three cases outlined.
@@ -315,8 +359,9 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     // ---------------------------------------------------------------------- //
 
     // Start with individual arrays. Splice arrays once finished.
-    int const SELECT_ALL = 1;
-    int const SELECT_NONE = 0;
+    int const PRIM_SELOFFSETS_HEADER_SIZE = 2;
+    bool const SELECT_ALL = 1;
+    bool const SELECT_NONE = 0;
 
     enum SubPrimType {
         ELEMENT = 0,
@@ -325,173 +370,92 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
     };
 
     _DebugPrintArray("ids", ids);
-
-    output->insert(output->end(), 2+1+max-min, SELECT_NONE);
+    // For initialization, use offset=0 in the seloffset encoding.
+    // This will be updated as need be once we process subprims and instances.
+    output->insert(output->end(), PRIM_SELOFFSETS_HEADER_SIZE + (max - min + 1),
+                   _EncodeSelOffset(/*offset=*/0, SELECT_NONE));
     (*output)[0] = min;
     (*output)[1] = max+1;
 
-    // XXX: currently, _selectedPrims may have duplicated entries
-    // (e.g. to instances and to faces) for an objPath.
-    // this would cause unreferenced offset buffer allocated in the
-    // result buffer.
-
-    _DebugPrintArray("objects", *output);
+    _DebugPrintArray("prims", *output);
 
     for (size_t primIndex = 0; primIndex < ids.size(); primIndex++) {
         // TODO: store ID and path in "ids" vector
-        SdfPath const& objPath = selectedPrims[primIndex];
         int id = ids[primIndex];
         if (id == INVALID) continue;
 
+        SdfPath const& objPath = selectedPrims[primIndex];
         TF_DEBUG(HDX_SELECTION_SETUP).Msg("Processing: %d - %s\n",
                 id, objPath.GetText());
 
+        HdSelection::PrimSelectionState const* primSelState =
+            _selection->GetPrimSelectionState(mode, objPath);
+        if (!primSelState) continue;
+
         bool hasSelectedSubprimitives = false;
+        // netSubprimOffset tracks the "net" offset to the start of each
+        // subprim's range-offsets encoding; it allows us to handle selection of
+        // multiple subprims per prim (XXX: not per instance of a prim) by
+        // backpointing from elements to edges to points.
+        // We process subprims in the reverse order to allow for this.
+
         size_t netSubprimOffset = 0;
          //------------------------------------------------------------------- //
         // Subprimitives: Points
         // ------------------------------------------------------------------ //
         size_t curOffset = output->size();
-        if (VtIntArray const *pointIndices
-            = TfMapLookupPtr(_selection->GetSelectedPoints(mode), objPath)) {
-            if (pointIndices->size()) {
-                int minPt = std::numeric_limits<int>::max();
-                int maxPt = std::numeric_limits<int>::lowest();
 
-                for (int const& ptId : *pointIndices) {
-                    minPt = std::min(minPt, ptId);
-                    maxPt = std::max(maxPt, ptId);
-                }
-
-                // Grow the edge array to hold edges for this object.
-                output->insert(output->end(),maxPt-minPt+1+3,
-                               _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
-
-                _EncodeSubprimTypeAndRange(output, curOffset,
-                                           POINT, minPt, maxPt+1);
-
-                for (int ptId : *pointIndices) {
-                    (*output)[3+curOffset+ (ptId-minPt)] =
-                        _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
-                }
-
-                hasSelectedSubprimitives = true;
-                netSubprimOffset = curOffset + modeOffset;
-
-                _DebugPrintArray("points", *output);
-            } else {
-                // empty point indices buffer. do nothing.
-            }
-        } else {
-            // prim doesn't have any selected points. do nothing.
+        if (_FillSubprimOffsets(POINT,  primSelState->pointIndices,
+                                netSubprimOffset, output)) {
+            hasSelectedSubprimitives = true;
+            netSubprimOffset = curOffset + modeOffset;
+            _DebugPrintArray("points", *output);
         }
 
         //------------------------------------------------------------------- //
         // Subprimitives: Edges
         // ------------------------------------------------------------------ //
         curOffset = output->size();
-        if (VtIntArray const *edgeIndices
-            = TfMapLookupPtr(_selection->GetSelectedEdges(mode), objPath)) {
-            if (edgeIndices->size()) {
-                int minEdge = std::numeric_limits<int>::max();
-                int maxEdge = std::numeric_limits<int>::lowest();
-
-                for (int const& edgeId : *edgeIndices) {
-                    minEdge = std::min(minEdge, edgeId);
-                    maxEdge = std::max(maxEdge, edgeId);
-                }
-
-                // Grow the edge array to hold edges for this object.
-                output->insert(output->end(),maxEdge-minEdge+1+3,
-                               _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
-
-                _EncodeSubprimTypeAndRange(output, curOffset,
-                                           EDGE, minEdge, maxEdge+1);
-
-                for (int edgeId : *edgeIndices) {
-                    (*output)[3+curOffset+ (edgeId-minEdge)] =
-                        _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
-                }
-
-                hasSelectedSubprimitives = true;
-                netSubprimOffset = curOffset + modeOffset;
-
-                _DebugPrintArray("edges", *output);
-            } else {
-                // empty edge indices buffer. do nothing.
-            }
-        } else {
-            // prim doesn't have any selected edges. do nothing.
+        if (_FillSubprimOffsets(EDGE,  primSelState->edgeIndices,
+                                netSubprimOffset, output)) {
+            hasSelectedSubprimitives = true;
+            netSubprimOffset = curOffset + modeOffset;
+            _DebugPrintArray("edges", *output);
         }
 
         // ------------------------------------------------------------------ //
         // Subprimitives: Elements (coarse/authored face(s) for meshes,
-        //                individual curve(s) for basis curves)
+        //                          individual curve(s) for basis curves)
         // ------------------------------------------------------------------ //
-        // Find element sizes, for this object.
         curOffset = output->size();
-        if (VtIntArray const *elementIndices
-            = TfMapLookupPtr(_selection->GetSelectedElements(mode), objPath)) {
-            if (elementIndices->size()) {
-                int minElem = std::numeric_limits<int>::max();
-                int maxElem = std::numeric_limits<int>::lowest();
-
-                for (int const& elemId : *elementIndices) {
-                    minElem = std::min(minElem, elemId);
-                    maxElem = std::max(maxElem, elemId);
-                }
-
-                // Grow the element array to hold elements for this object.
-                // Use the net offset as the splatted value if this prim
-                // has any selected edges. This lets us highlight edges for
-                // fragments that aren't part of highlighted elements.
-                output->insert(output->end(), maxElem-minElem+1+3,
-                           _EncodeSubprimSel(netSubprimOffset, SELECT_NONE));
-
-                _EncodeSubprimTypeAndRange(output, curOffset,
-                                           ELEMENT, minElem, maxElem+1);
-
-                for (int elemId : *elementIndices) {
-                    (*output)[3+curOffset+ (elemId-minElem)] =
-                        _EncodeSubprimSel(netSubprimOffset, SELECT_ALL);
-                }
-
-                hasSelectedSubprimitives = true;
-                netSubprimOffset = curOffset + modeOffset;
-
-                _DebugPrintArray("elements", *output);
-            } else {
-                // prim has an empty selected elements buffer.
-                // we use this to encode "highlight all faces", which overrides
-                // any subprimitives (edges, points) that may be selected
-                hasSelectedSubprimitives = false;
-            }
-        } else {
-            // prim doesn't have selected elements, but may have other
-            // subprimitives selected. do nothing.
+        if (_FillSubprimOffsets(ELEMENT,  primSelState->elementIndices,
+                                netSubprimOffset, output)) {
+            hasSelectedSubprimitives = true;
+            netSubprimOffset = curOffset + modeOffset;
+            _DebugPrintArray("elements", *output);
         }
 
         // ------------------------------------------------------------------ //
         // Instances
         // ------------------------------------------------------------------ //
-        // Override netSubprimOffset to SELECT_ALL (which implies that the
-        // entire prim or instance is selected) if we don't have any
-        // subprim selected. This removes a special case in the code below.
         if (!hasSelectedSubprimitives) {
-            netSubprimOffset = SELECT_ALL;
-        }
+            netSubprimOffset = 0;
+        } 
+        // By initializing the prevLevelOffset to netSubprimOffset, we remove
+        // a special case (i.e., checking for level 0) in the code below.
         int prevLevelOffset = (int)netSubprimOffset;
 
-        if (std::vector<VtIntArray> const * a =
-            TfMapLookupPtr(_selection->GetSelectedInstances(mode), objPath)) {
+        std::vector<VtIntArray> const& instanceIndices =
+            primSelState->instanceIndices;
+        if (instanceIndices.size()) {
             // Different instances can have different number of levels.
             int numLevels = std::numeric_limits<int>::max();
-            size_t numInst= a->size();
+            size_t numInst= instanceIndices.size();
             if (numInst == 0) {
                 numLevels = 0;
             } else {
                 for (size_t instNum = 0; instNum < numInst; ++instNum) {
-                    size_t levelsForInst = a->at(instNum).size();
+                    size_t levelsForInst = instanceIndices.at(instNum).size();
                     numLevels = std::min(numLevels,
                                          static_cast<int>(levelsForInst));
                 }
@@ -499,13 +463,16 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
 
             TF_DEBUG(HDX_SELECTION_SETUP).Msg("NumLevels: %d\n", numLevels);
             if (numLevels == 0) {
-                (*output)[id-min+2] = netSubprimOffset;
+                // Encode the subprim offset and whether the prim is
+                // fully selected.
+                (*output)[id-min+2] = _EncodeSelOffset(netSubprimOffset,
+                                                primSelState->fullySelected);
             }
             for (int level = 0; level < numLevels; ++level) {
                 // Find the required size of the instance vectors.
                 int levelMin = std::numeric_limits<int>::max();
                 int levelMax = std::numeric_limits<int>::lowest();
-                for (VtIntArray const &instVec : *a) {
+                for (VtIntArray const &instVec : instanceIndices) {
                     _DebugPrintArray("\tinstVec", instVec, false);
                     int instId = instVec[level];
                     levelMin = std::min(levelMin, instId);
@@ -518,18 +485,24 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
 
                 int objLevelSize = levelMax - levelMin +2+1;
                 int levelOffset = output->size();
-                output->insert(output->end(), objLevelSize, SELECT_NONE);
+                output->insert(output->end(), objLevelSize,
+                               _EncodeSelOffset(prevLevelOffset, SELECT_NONE));
                 (*output)[levelOffset + 0] = levelMin;
                 (*output)[levelOffset + 1] = levelMax + 1;
-                for (VtIntArray const& instVec : *a) {
+                for (VtIntArray const& instVec : instanceIndices) {
                     int instId = instVec[level] - levelMin+2;
-                    (*output)[levelOffset+instId] = prevLevelOffset;
+                    (*output)[levelOffset+instId] =
+                        _EncodeSelOffset(prevLevelOffset, SELECT_ALL);
                 }
 
                 if (level == numLevels-1) {
-                    // The offset is the net index within the selection buffer, and
-                    // thus, needs to include the mode offset.
-                    (*output)[id-min+2] = levelOffset + modeOffset;
+                    // Encode the instance offset and whether the prim is
+                    // fully selected. If at all any subprims of the prim
+                    // (XXX: it should be instance, ideally) are selected, the
+                    // instance's selOffset would encode that.
+                    (*output)[id-min+2] =
+                        _EncodeSelOffset(levelOffset + modeOffset,
+                                         primSelState->fullySelected);
                 }
 
                 if (ARCH_UNLIKELY(TfDebug::IsEnabled(HDX_SELECTION_SETUP))){
@@ -542,7 +515,10 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                 prevLevelOffset = levelOffset + modeOffset;
             }
         } else {
-            (*output)[id-min+2] = netSubprimOffset;
+            // No instances. Encode the subprim offset and whether the prim is
+            // fully selected.
+            (*output)[id-min+2] = _EncodeSelOffset(netSubprimOffset,
+                                                   primSelState->fullySelected);
         }
     }
 

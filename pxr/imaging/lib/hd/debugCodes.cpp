@@ -116,6 +116,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SAFE_MODE,
         "Enable additional security checks");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SELECTION_UPDATE,
+        "Report when selection is updated");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SHARED_EXT_COMPUTATION_DATA,
         "Report info related to deduplication of ext computation data buffers");
 

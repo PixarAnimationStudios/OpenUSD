@@ -31,6 +31,7 @@
 #include "pxr/base/vt/array.h"
 #include <boost/smart_ptr.hpp>
 #include <vector>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,15 +41,14 @@ typedef boost::shared_ptr<class HdSelection> HdSelectionSharedPtr;
 
 /// \class HdSelection
 ///
-/// HdSelection holds a collection of items which are rprims, instances of
-/// rprim and subprimitives of rprim, such as elements (faces when dealing with 
-/// meshes, individual curves when dealing with basis curves) and edges.
+/// HdSelection holds a collection of selected items per selection mode.
+/// The items may be rprims, instances of an rprim and subprimitives of an
+/// rprim, such as elements (faces for meshes, individual curves for basis
+/// curves), edges & points.
 /// 
-/// HdSelectionTracker takes HdSelection and generates a GPU buffer to be used 
-/// for highlighting.
-///
 class HdSelection {
 public:
+    /// Selection modes allow differentiation in selection highlight behavior.
     enum HighlightMode {
         HighlightModeSelect = 0,
         HighlightModeLocate,
@@ -56,11 +56,6 @@ public:
 
         HighlightModeCount
     };
-
-    typedef TfHashMap<SdfPath, std::vector<VtIntArray>, SdfPath::Hash> InstanceMap;
-    typedef TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> ElementIndicesMap;
-    typedef ElementIndicesMap EdgeIndicesMap;
-    typedef ElementIndicesMap PointIndicesMap;
 
     HdSelection() = default;
 
@@ -88,51 +83,37 @@ public:
                    SdfPath const &path,
                    VtIntArray const &pointIndices);
 
-    HD_API
-    SdfPathVector const&
-    GetSelectedPrims(HighlightMode const& mode) const;
-
-    HD_API
-    InstanceMap const&
-    GetSelectedInstances(HighlightMode const& mode) const;
-
-    HD_API
-    ElementIndicesMap const&
-    GetSelectedElements(HighlightMode const& mode) const;
-
-    HD_API
-    EdgeIndicesMap const&
-    GetSelectedEdges(HighlightMode const& mode) const;
-    
-    HD_API
-    PointIndicesMap const&
-    GetSelectedPoints(HighlightMode const& mode) const;
-
-protected:
-    struct _SelectedEntities {
-        // The SdfPaths are expected to be resolved rprim paths,
-        // root paths will not be expanded.
-        // Duplicated entries are allowed.
-        SdfPathVector prims;
-
-        /// This maps from prototype path to a vector of instance indices which is
-        /// also a vector (because of nested instancing).
-        InstanceMap instances;
-
-        // The selected elements, if any, for the selected objects. This maps
-        // from object path to a vector of element indices.
-        ElementIndicesMap elements;
-
-        // The selected edges, if any, for the selected objects. This maps from 
-        // object path to a vector of (authored) edge indices.
-        EdgeIndicesMap edges;
-
-        // The selected points, if any, for the selected objects. This maps from
-        // object path to a vector of point (vertex) indices.
-        PointIndicesMap points;
+    // XXX: Ideally, this should be per instance, if we want to support
+    // selection of subprims (faces/edges/points) per instance of an rprim.
+    // By making this per rprim, all selected instances of the rprim will share
+    // the same subprim highlighting.
+    struct PrimSelectionState {
+        PrimSelectionState() : fullySelected(false) {}
+        bool fullySelected;
+        // We use a vector of VtIntArray, to avoid any copy of indices data.
+        // This way, we support multiple  Add<Subprim> operations, without 
+        // having to consolidate the indices each time.
+        std::vector<VtIntArray> instanceIndices;
+        std::vector<VtIntArray> elementIndices;
+        std::vector<VtIntArray> edgeIndices;
+        std::vector<VtIntArray> pointIndices;
     };
 
-    _SelectedEntities _selEntities[HighlightModeCount];
+    HD_API
+    PrimSelectionState const*
+    GetPrimSelectionState(HighlightMode const &mode,
+                          SdfPath const &path) const;
+
+    HD_API
+    SdfPathVector
+    GetSelectedPrimPaths(HighlightMode const &mode) const;
+
+protected:
+    
+    typedef std::unordered_map<SdfPath, PrimSelectionState, SdfPath::Hash>
+        _PrimSelectionStateMap;
+    // Keep track of selection per selection mode.
+    _PrimSelectionStateMap _selMap[HighlightModeCount];
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

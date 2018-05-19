@@ -29,12 +29,14 @@
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdx/selectionTask.h"
+#include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
@@ -49,6 +51,7 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
+#include <unordered_map>
 #include <unordered_set>
 #include <memory>
 
@@ -59,6 +62,34 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (pickables)
 );
+
+namespace {
+
+typedef std::unordered_map<SdfPath, std::vector<VtIntArray>, SdfPath::Hash>
+    InstanceMap;
+
+// helper function that returns prims with selected instances in a map.
+static InstanceMap
+_GetSelectedInstances(HdSelectionSharedPtr const& sel,
+                      HdSelection::HighlightMode const &mode)
+{
+    InstanceMap selInstances;
+    SdfPathVector selPrimPaths = sel->GetSelectedPrimPaths(mode);
+
+    for (const auto& path : selPrimPaths) {
+        HdSelection::PrimSelectionState const* primSelState =
+            sel->GetPrimSelectionState(mode, path);
+
+        TF_VERIFY(primSelState);
+        if (!primSelState->instanceIndices.empty()) {
+            selInstances[path] = primSelState->instanceIndices;
+        }
+    }
+
+    return selInstances;
+}
+
+}
 
 class My_TestGLDrawing : public Hdx_UnitTestGLDrawing {
 public:
@@ -303,7 +334,7 @@ My_TestGLDrawing::OffscreenTest()
     DrawScene();
     WriteToFile("color", "color1_unselected.png");
 
-    // --------------------- (active) selection high ---------------------------
+    // --------------------- (active) selection --------------------------------
     // select cube2
     HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
     _picker.SetHighlightMode(mode);
@@ -312,29 +343,29 @@ My_TestGLDrawing::OffscreenTest()
     DrawScene();
     WriteToFile("color", "color2_select.png");
     HdSelectionSharedPtr selection = _picker.GetSelection();
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube2"));
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
 
     // select cube1, /protoTop:1, /protoTop:2, /protoBottom:1, /protoBottom:2
     _picker.Pick(GfVec2i(105,62), GfVec2i(328,288));
     DrawScene();
     WriteToFile("color", "color3_select.png");
     selection = _picker.GetSelection();
-
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 5);
-    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 2);
+    // primPaths expected: {cube1, protoTop, protoBottom}
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 3);
+    // prims with non-empty instance indices {protoTop, protoBottom}
+    InstanceMap selInstances = _GetSelectedInstances(selection, mode);
+    TF_VERIFY(selInstances.size() == 2);
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                             SdfPath("/protoTop"));
+            = selInstances[SdfPath("/protoTop")];
         TF_VERIFY(indices.size() == 2);
         TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
         TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
     }
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                              SdfPath("/protoBottom"));
+            = selInstances[SdfPath("/protoBottom")];
         TF_VERIFY(indices.size() == 2);
         TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
         TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
@@ -348,21 +379,20 @@ My_TestGLDrawing::OffscreenTest()
     DrawScene();
     WriteToFile("color", "color4_locate.png");
     selection = _picker.GetSelection();
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrims(mode)[0] == SdfPath("/cube0"));
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube0"));
 
     // select cube3, /protoBottom:0
     _picker.Pick(GfVec2i(408,246), GfVec2i(546,420));
     DrawScene();
     WriteToFile("color", "color5_locate.png");
     selection = _picker.GetSelection();
-
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 2);
-    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 2);
+    selInstances = _GetSelectedInstances(selection, mode);
+    TF_VERIFY(selInstances.size() == 1);
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                             SdfPath("/protoBottom"));
+            = selInstances[SdfPath("/protoBottom")];
         TF_VERIFY(indices.size() == 1);
         TF_VERIFY(indices[0][0] == 0);
     }
@@ -382,20 +412,29 @@ My_TestGLDrawing::OffscreenTest()
     WriteToFile("color", "color7_mask.png");
     selection = _picker.GetSelection();
 
-    TF_VERIFY(selection->GetSelectedPrims(mode).size() == 2);
-    TF_VERIFY(selection->GetSelectedInstances(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 2);
+    selInstances = _GetSelectedInstances(selection, mode);
+    TF_VERIFY(selInstances.size() == 1);
     {
         std::vector<VtIntArray> const& indices
-            = *TfMapLookupPtr(selection->GetSelectedInstances(mode),
-                             SdfPath("/protoBottom"));
+            = selInstances[SdfPath("/protoBottom")];
         TF_VERIFY(indices.size() == 1);
         TF_VERIFY(indices[0][0] == 0);
     }
 
+    // select all instances of protoTop without picking
+    // This is to test whether HdSelection::AddInstance allows an empty indices
+    // array to encode "all instances".
+    selection->AddInstance(mode, SdfPath("/protoTop"), VtIntArray());
+    _picker.GetSelectionTracker()->SetSelection(selection);
+    DrawScene();
+    // Expect to see earlier selection as well as all instances of protoTop
+    WriteToFile("color", "color8_mask_all_instances.png");
+
     // deselect    
     _picker.Pick(GfVec2i(0,0), GfVec2i(0,0));
     DrawScene();
-    WriteToFile("color", "color8_unselected.png");
+    WriteToFile("color", "color9_unselected.png");
 }
 
 void
