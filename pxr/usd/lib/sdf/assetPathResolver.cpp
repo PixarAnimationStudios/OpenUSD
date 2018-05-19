@@ -209,9 +209,19 @@ string
 Sdf_GetAnonLayerDisplayName(
     const string& identifier)
 {
-    if (std::count(identifier.begin(), identifier.end(), ':') == 2)
-        return identifier.substr(identifier.rfind(':') + 1);
-    return std::string();
+    // We want to find the second occurence of ':', traversing from the left,
+    // in our identifier which is of the form anon:0x4rfs23:displayName
+    auto fst = std::find(identifier.begin(), identifier.end(), ':');
+    if (fst == identifier.end()) {
+        return std::string();
+    }
+
+    auto snd = std::find(fst + 1, identifier.end(), ':');
+    if (snd == identifier.end()) {
+        return std::string();
+    }
+
+    return identifier.substr(std::distance(identifier.begin(), snd) + 1);
 }
 
 string
