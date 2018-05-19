@@ -161,6 +161,9 @@ WRAP_CUSTOM {
         .def("IsPathIncluded", _WrapIsPathIncluded_2, 
              (arg("path"), arg("parentExpansionRule")))
         .def("HasExcludes", &MQuery::HasExcludes)
+        .def("GetAsPathExpansionRuleMap",
+             &MQuery::GetAsPathExpansionRuleMap,
+             return_value_policy<TfPyMapToDictionary>())
         .def("__hash__", &MQuery::GetHash)
         .def(self == self)
         .def(self != self)
@@ -209,6 +212,8 @@ WRAP_CUSTOM {
 
         .def("HasNoIncludedPaths", &This::HasNoIncludedPaths)
         
+        .def("GetIncludeRootAttr", &This::GetIncludeRootAttr)
+        .def("CreateIncludeRootAttr", &This::CreateIncludeRootAttr)
         .def("GetExpansionRuleAttr", &This::GetExpansionRuleAttr)
         .def("CreateExpansionRuleAttr", &This::CreateExpansionRuleAttr)
 

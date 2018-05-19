@@ -298,7 +298,8 @@ dictionary:
   - \b apiName - Schema properties may define an 'apiName' in customData to 
     override the default generated accessor API. For example, the above spec 
     produces GetDisplayColorAttr instead of GetPrimVarsDisplayColorAttr as the 
-    attribute accessor.
+    attribute accessor.  As a special case, if 'apiName' is set to the
+    empty string, then no accessor API will be generated.
     Note: The actual name of the property as defined on the prim is still
     primvars:displayColor.
   - \b apiGetImplementation - Optionally control schema gen behavior for a property's 

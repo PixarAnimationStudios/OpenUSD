@@ -264,6 +264,28 @@ UsdCollectionAPI::_GetExpansionRuleAttr(bool create /* =false */) const
     }
 }
 
+UsdAttribute
+UsdCollectionAPI::GetIncludeRootAttr() const
+{
+    const TfToken &attrName = _GetCollectionPropertyName(
+            UsdTokens->includeRoot);
+    return GetPrim().GetAttribute(attrName);
+}
+
+UsdAttribute
+UsdCollectionAPI::CreateIncludeRootAttr(VtValue const &defaultValue,
+                                        bool writeSparsely) const
+{
+    const TfToken &attrName = _GetCollectionPropertyName(
+            UsdTokens->includeRoot);
+    return UsdSchemaBase::_CreateAttr(attrName,
+                       SdfValueTypeNames->Bool,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdAttribute 
 UsdCollectionAPI::GetExpansionRuleAttr() const
 {
@@ -314,6 +336,11 @@ UsdCollectionAPI::IncludePath(const SdfPath &pathToInclude) const
         return true;
     }
 
+    if (pathToInclude == SdfPath::AbsoluteRootPath()) {
+        CreateIncludeRootAttr(VtValue(true));
+        return true;
+    }
+
     // Check if the prim is directly excluded from the collection.
     SdfPathVector excludes;
     if (UsdRelationship excludesRel = _GetExcludesRel()) {
@@ -343,14 +370,20 @@ UsdCollectionAPI::IncludePath(const SdfPath &pathToInclude) const
 bool 
 UsdCollectionAPI::ExcludePath(const SdfPath &pathToExclude) const
 {
-    // If the prim is already excluded from the collection (or not included),
-    // do nothing.
-    MembershipQuery query  = ComputeMembershipQuery();
-    if (!query.IsPathIncluded(pathToExclude)) {
+    // If the path is already excluded from a non-empty collection
+    // (or simply not included at all), do nothing.
+    MembershipQuery query = ComputeMembershipQuery();
+    if (!query._pathExpansionRuleMap.empty() &&
+        !query.IsPathIncluded(pathToExclude)) {
         return true;
     }
 
-    // Check if the prim is directly included in the collection.
+    if (pathToExclude == SdfPath::AbsoluteRootPath()) {
+        CreateIncludeRootAttr(VtValue(false));
+        return true;
+    }
+
+    // Check if the path is directly included in the collection.
     SdfPathVector includes;
     if (UsdRelationship includesRel = _GetIncludesRel()) {
         includesRel.GetTargets(&includes);
@@ -368,8 +401,9 @@ UsdCollectionAPI::ExcludePath(const SdfPath &pathToExclude) const
     }
 
     // Now that we've removed the explicit include if there was one, 
-    // we can remove the prim if it's not already excluded from the collection. 
-    if (query.IsPathIncluded(pathToExclude)) {
+    // we can add an explicit exclude, if required.
+    if (query._pathExpansionRuleMap.empty() ||
+        query.IsPathIncluded(pathToExclude)) {
         return CreateExcludesRel().AddTarget(pathToExclude);
     }
 
@@ -381,7 +415,9 @@ UsdCollectionAPI::HasNoIncludedPaths() const
 {
     SdfPathVector includes;
     _GetIncludesRel().GetTargets(&includes);
-    return includes.empty();
+    bool includeRoot = false;
+    GetIncludeRootAttr().Get(&includeRoot);
+    return includes.empty() && !includeRoot;
 }
 
 /* static */
@@ -458,9 +494,13 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
     _GetIncludesRel().GetTargets(&includes);
     _GetExcludesRel().GetTargets(&excludes);
 
-    // If a collection has no "includes" targets, it is empty.
-    if (includes.empty()) {
-        return;
+    // Consult includeRoot and include </> if requested.
+    // (The separate attribute is necessary since </> cannot be a
+    // target path in a relationship.)
+    bool includeRoot = false;
+    GetIncludeRootAttr().Get(&includeRoot);
+    if (includeRoot) {
+        includes.push_back(SdfPath::AbsoluteRootPath());
     }
 
     UsdStageWeakPtr stage = GetPrim().GetStage();
@@ -568,7 +608,7 @@ UsdCollectionAPI::_ComputeIncludedImpl(
 
     std::set<UsdObject> result;
 
-    const auto &pathExpRuleMap = query._GetPathExpansionRuleMap();
+    const auto &pathExpRuleMap = query._pathExpansionRuleMap;
     const bool hasExcludes = query.HasExcludes();
 
     // A path is excluded if the path itself or any of its ancestors are 
@@ -599,7 +639,7 @@ UsdCollectionAPI::_ComputeIncludedImpl(
         return UsdProperty();
     };
 
-    // Returns true if a property is excluded in the _PathExpansionRuleMap.
+    // Returns true if a property is excluded in the PathExpansionRuleMap.
     auto IsPropertyExplicitlyExcluded = [hasExcludes,pathExpRuleMap](
             const SdfPath &propPath) {
         if (!hasExcludes) {       
@@ -621,7 +661,7 @@ UsdCollectionAPI::_ComputeIncludedImpl(
         }
     };
 
-    // Iterate through all the entries in the _PathExpansionRuleMap.
+    // Iterate through all the entries in the PathExpansionRuleMap.
     for (const auto &pathAndExpansionRule : pathExpRuleMap) {
         const TfToken &expansionRule = pathAndExpansionRule.second;
 
@@ -712,6 +752,32 @@ UsdCollectionAPI::_ComputeIncludedImpl(
     }
 }
 
+static bool
+_AllRootmostRulesPassFilter(
+    UsdCollectionAPI::MembershipQuery::PathExpansionRuleMap const& ruleMap,
+    std::function<bool(std::pair<SdfPath, TfToken> const&)> const& filter)
+{
+    if (ruleMap.empty()) {
+        return false;
+    }
+    for (const auto &rule: ruleMap) {
+        // Check if this is a rootmost path (in other words, not
+        // contained under another rule).
+        bool isRootmost = true;
+        for (SdfPath p = rule.first.GetParentPath();
+             p != SdfPath::EmptyPath(); p = p.GetParentPath()) {
+            if (ruleMap.find(p) != ruleMap.end()) {
+                isRootmost = false;
+                break;
+            }
+        }
+        if (isRootmost && !filter(rule)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool 
 UsdCollectionAPI::Validate(std::string *reason) const
 {
@@ -730,8 +796,6 @@ UsdCollectionAPI::Validate(std::string *reason) const
         return false;
     }
 
-    bool valid = true;
-
     // Check for circular dependencies.
     bool foundCircularDependency = false; 
     SdfPathSet chainedCollectionPaths{GetCollectionPath()};
@@ -739,35 +803,37 @@ UsdCollectionAPI::Validate(std::string *reason) const
     MembershipQuery query;
     _ComputeMembershipQueryImpl(&query, chainedCollectionPaths,
                                 &foundCircularDependency);
-
     if (foundCircularDependency) {
-        valid = false;
-        *reason += "Found one or more circular dependencies amongst the set of"
-            "included (directly and transitively) collections.";
+        if (reason) {
+            *reason += "Found one or more circular dependencies amongst "
+                "the set of included (directly and transitively) collections.";
+        }
+        return false;
     }
 
+    // Prohibit using both includes and excludes in top-level rules,
+    // since the intent is ambiguous.
     if (query.HasExcludes()) {
-        MembershipQuery::_PathExpansionRuleMap pathExpansionRuleMap = 
-                query._GetPathExpansionRuleMap();
-        for (const auto &pathAndExpansionRule : pathExpansionRuleMap) {
-            if (pathAndExpansionRule.second == UsdTokens->exclude) {
-                const SdfPath &excludedPath = pathAndExpansionRule.first;
-                // If the parent of an excluded path is not included, then 
-                // it must be an orphaned exclude, which makes the collection 
-                // invalid.
-                if (!query.IsPathIncluded(excludedPath.GetParentPath())) {
-                    valid = false;
-                    if (reason) {
-                        *reason += TfStringPrintf("Collection excludes path "
-                            "<%s>, but does not include the parent of the "
-                            "excluded path.", excludedPath.GetText());
-                    }
-                }
+        bool allExcludes = _AllRootmostRulesPassFilter(
+            query._pathExpansionRuleMap,
+            [](std::pair<SdfPath, TfToken> const& rule) -> bool {
+                return rule.second == UsdTokens->exclude;
+            });
+        bool allIncludes = _AllRootmostRulesPassFilter(
+            query._pathExpansionRuleMap,
+            [](std::pair<SdfPath, TfToken> const& rule) -> bool {
+                return rule.second != UsdTokens->exclude;
+            });
+        if (!allExcludes && !allIncludes) {
+            if (reason) {
+                *reason += "Found both includes and excludes among the "
+                    "root-most rules -- interpretation is ambiguous";
             }
+            return false;
         }
     }
 
-    return valid;
+    return true;
 }
 
 bool 
@@ -917,12 +983,9 @@ void
 UsdCollectionAPI::MembershipQuery::_MergeMembershipQuery(
     const UsdCollectionAPI::MembershipQuery &query) 
 {
-    const _PathExpansionRuleMap &pathExpansionRuleMap = 
-        query._GetPathExpansionRuleMap();
-
     // We can't just do an insert here as we need to overwrite existing 
     // entries with new values of expansion rule from 'query'.
-    for (const auto &pathAndExpansionRule : pathExpansionRuleMap) {
+    for (const auto &pathAndExpansionRule : query._pathExpansionRuleMap) {
         if (pathAndExpansionRule.second == UsdTokens->exclude) {
             _hasExcludes = true;
         }

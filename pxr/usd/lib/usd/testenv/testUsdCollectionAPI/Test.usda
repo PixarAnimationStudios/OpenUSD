@@ -89,6 +89,14 @@ def "CollectionTest" (
         </CollectionTest/Geom/Box>
     ]
 
+    token collection:invalidTopLevelRules:expasionRule = "explicitOnly"
+    rel collection:invalidTopLevelRules:includes = [
+        </A>,
+    ]
+    rel collection:invalidTopLevelRules:excludes = [
+        </B>
+    ]
+
 
     def "Geom"
     {

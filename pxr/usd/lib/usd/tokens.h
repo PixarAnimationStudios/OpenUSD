@@ -138,6 +138,10 @@ struct UsdTokensType {
     /// 
     ///  Possible value for the "expansionRule" attribute of a  collection. 
     const TfToken explicitOnly;
+    /// \brief "includeRoot"
+    /// 
+    ///  Name of a boolean collection-scoped attribute that, if true, indicates that the root path </> should be consideded as an included target path. 
+    const TfToken includeRoot;
     /// \brief "isPrivateApply"
     /// 
     ///  Custom-data key authored on an applied API schema class-prim  in the schema definition to indicate whether the auto-generated Apply method should be public or private. 

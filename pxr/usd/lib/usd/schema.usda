@@ -124,6 +124,12 @@ def "GLOBAL" (
                 string doc = """This is the namespace prefix used by 
                 UsdCollectionAPI for authoring collections."""
             }
+            dictionary includeRoot = {
+                string doc = """
+                Name of a boolean collection-scoped attribute that,
+                if true, indicates that the root path </> should be
+                consideded as an included target path. """
+            }
             dictionary expansionRule = {
                 string doc = """Base name of the attribute used to encode 
                 how the paths included in a collection must be expanded."""
@@ -322,12 +328,13 @@ class "CollectionAPI"
     names. 
 
     A collection allows an enumeration of a set of paths to include and a 
-    set of paths to exclude (beneath the included paths). Whether the 
-    descendants of an included path are members of a collection are decided 
-    by it's expansion rule (see below). A collection shall not exclude a 
-    path that's not already included by it. This rule isn't enforced by the 
-    authoring API, but can be validated using the UsdCollectionAPI::Validate()
-    method. 
+    set of paths to exclude.  Whether the descendants of an included
+    path are members of a collection are decided by its expansion rule
+    (see below).  If the collection excludes paths that are not descendents
+    of included paths, the collection implicitly includes the root path
+    &lt;/&gt;.  If such a collection also includes paths that are not
+    descendants of the excluded paths, it is considered invalid, since
+    the intention is ambiguous.
 
     All the properties authored by the schema are namespaced under
     "collection:". The given name of the collection provides additional 
@@ -354,17 +361,27 @@ class "CollectionAPI"
         </li>
         </ul>
     </li>
+    <li><b>rel collection:<i>collectionName</i>:includeRoot</b> - boolean
+    attribute indicating whether the pseudo-root path &lt;/&gt; should
+    be counted as one of the included target paths.  The fallback is false.
+    This separate attribute is required because relationships cannot
+    directly target the root.
     <li><b>rel collection:<i>collectionName</i>:includes</b> - specifies a list 
     of targets that are included in the collection. This can target prims or 
-    properties directly. A collection can include another collection by 
-    making its <i>includes</i> relationship target the <b>collection:{collectionName}</b> 
-    property on the owning prim of the collection to be included.
+    properties directly. A collection can insert the rules of another
+    collection by making its <i>includes</i> relationship target the
+    <b>collection:{collectionName}</b> property on the owning prim of the
+    collection to be included.
     Such a property may not (and typically does not) exist on the UsdStage, but 
-    it is the path that is used to refer to the collection. When a collection 
+    it is the path that is used to refer to the collection.
+    It is important to note that including another collection does not
+    guarantee the contents of that collection will be in the final collection;
+    instead, the rules are merged.  This means, for example, an exclude
+    entry may exclude a portion of the included collection.
     When a collection includes one or more collections, the order in which 
     targets are added to the includes relationship may become significant, if 
     there are conflicting opinions about the same path. Targets that are added 
-    later are considered to be stronger than earlier targets. 
+    later are considered to be stronger than earlier targets for the same path.
     </li>
     <li><b>rel collection:<i>collectionName</i>:excludes</b> - specifies a list 
     of targets that are excluded below the <b>included</b> paths in this 
@@ -378,6 +395,13 @@ class "CollectionAPI"
     or of enumerating the objects belonging to the collection (see 
     UsdCollectionAPI::GetIncludedObjects).
     </li></ul>
+
+    <b>Implicit inclusion</b>
+
+    In some scenarios it is useful to express a collection that includes
+    everything except certain paths.  To support this, a collection
+    that has an exclude that is not a descendent of any include
+    will include the root path &lt;/&gt;.
 
     <b>Creating collections in C++</b>
     

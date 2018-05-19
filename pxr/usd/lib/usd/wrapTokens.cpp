@@ -83,6 +83,7 @@ void wrapUsdTokens()
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
     _AddToken(cls, "expansionRule", UsdTokens->expansionRule);
     _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
+    _AddToken(cls, "includeRoot", UsdTokens->includeRoot);
     _AddToken(cls, "isPrivateApply", UsdTokens->isPrivateApply);
     _AddToken(cls, "multipleApply", UsdTokens->multipleApply);
     _AddToken(cls, "nonApplied", UsdTokens->nonApplied);

@@ -30,6 +30,7 @@ testPrim = stage.GetPrimAtPath("/CollectionTest")
 
 geom = stage.GetPrimAtPath("/CollectionTest/Geom")
 box = stage.GetPrimAtPath("/CollectionTest/Geom/Box")
+materials = stage.GetPrimAtPath("/CollectionTest/Materials")
 
 shapes = stage.GetPrimAtPath("/CollectionTest/Geom/Shapes")
 sphere = stage.GetPrimAtPath("/CollectionTest/Geom/Shapes/Sphere")
@@ -57,6 +58,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # Test an explicitOnly collection.
         explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "test:Explicit:Collection", Usd.Tokens.explicitOnly)
+        # The collection is initially empty.
         self.assertTrue(explicitColl.HasNoIncludedPaths())
         self.assertEqual(['CollectionAPI:test:Explicit:Collection'],
                          testPrim.GetAppliedSchemas())
@@ -80,6 +82,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         explicitCollIncObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 explicitCollMquery, stage)
         self.assertEqual(len(explicitCollIncObjects), 4)
+        self.assertTrue(len(explicitCollMquery.GetAsPathExpansionRuleMap()) > 0)
 
         for obj in explicitCollIncObjects:
             self.assertTrue(explicitCollMquery.IsPathIncluded(obj.GetPath()))
@@ -218,6 +221,27 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(query.IsPathIncluded(cylinder.GetPath()))
         self.assertTrue(query.IsPathIncluded(cube.GetPath()))
 
+        # Test includeRoot.
+        # First create a collection that excludes /CollectionTest/Geom
+        # but includes the root.
+        includeRootTest = Usd.CollectionAPI.ApplyCollection(testPrim,
+            "includeRootTest")
+        includeRootTest.IncludePath('/')
+        includeRootTest.ExcludePath(geom.GetPath())
+        query = includeRootTest.ComputeMembershipQuery()
+        self.assertTrue(query.IsPathIncluded(testPrim.GetPath()))
+        self.assertFalse(query.IsPathIncluded(geom.GetPath()))
+        self.assertFalse(query.IsPathIncluded(box.GetPath()))
+        self.assertTrue(query.IsPathIncluded(materials.GetPath()))
+        # Modify it to include /CollectionTest/Geom/Box,
+        # a path under the excluded Geom scope.
+        includeRootTest.IncludePath(box.GetPath())
+        query = includeRootTest.ComputeMembershipQuery()
+        self.assertTrue(query.IsPathIncluded(testPrim.GetPath()))
+        self.assertFalse(query.IsPathIncluded(geom.GetPath()))
+        self.assertTrue(query.IsPathIncluded(box.GetPath()))
+        self.assertTrue(query.IsPathIncluded(materials.GetPath()))
+
     def test_testReadCollection(self):
         leafGeom = Usd.CollectionAPI(testPrim, "leafGeom")
         (valid, reason) = leafGeom.Validate()
@@ -230,7 +254,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         (valid, reason) = leafGeom.Validate()
         self.assertTrue(valid)
-        
+
         # Test GetName() API.
         self.assertEqual(leafGeom.GetName(), 'leafGeom')
 
@@ -332,7 +356,8 @@ class TestUsdCollectionAPI(unittest.TestCase):
     def test_invalidCollections(self):
         invalidCollectionNames = ["invalidExpansionRule", 
             "invalidExcludesExplicitOnly",
-            "invalidExcludesExpandPrims"]
+            "invalidExcludesExpandPrims",
+            "invalidTopLevelRules"]
 
         for collName in invalidCollectionNames:
             coll = Usd.CollectionAPI(testPrim, collName)
