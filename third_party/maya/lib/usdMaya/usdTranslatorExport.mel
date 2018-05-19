@@ -33,6 +33,19 @@ global proc usdTranslatorExport_SetTextField(string $arg, string $widget) {
     textFieldGrp -e -text $arg $widget;
 }
 
+global proc usdTranslatorExport_SetOptionMenuByAnnotation(
+        string $ann, string $widget) {
+    int $index = 1; // 1-based indexing.
+    for ($i in `optionMenuGrp -q -itemListLong $widget`) {
+        if (`menuItem -q -ann $i` == $ann) {
+            optionMenuGrp -e -select $index $widget;
+            return;
+        }
+
+        $index++;
+    }
+}
+
 global proc string usdTranslatorExport_AppendFromCheckbox(string $currentOptions, string $arg, string $widget) {
     if (`checkBox -q -v $widget` == 1) {
         return $currentOptions + ";" + $arg + "=1";
@@ -42,8 +55,11 @@ global proc string usdTranslatorExport_AppendFromCheckbox(string $currentOptions
 }
 
 global proc string usdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
-    string $value = `optionMenuGrp -q -value $widget`;
-    return $currentOptions + ";" + $arg + "=" + $value;
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    string $allItems[] = `optionMenuGrp -q -itemListLong $widget`;
+    string $item = $allItems[$index];
+    string $annotation = `menuItem -q -ann $item`;
+    return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
 global proc string usdTranslatorExport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
@@ -117,9 +133,17 @@ global proc int usdTranslatorExport (string $parent,
 
         string $exporters[] = `usdListShadingModes -export`;
         optionMenuGrp -l "Shading Mode:" shadingModePopup;
-        for ($each in $exporters) {
-            menuItem -l $each;
+        for ($modeName in $exporters) {
+            string $niceName = $modeName;
+            if ($modeName == "displayColor") {
+                $niceName = "Material Colors";
+            } else if ($modeName == "pxrRis") {
+                $niceName = "RfM Shaders";
+            }
+            menuItem -l $niceName -ann $modeName;
         }
+
+        checkBox -l "Export displayColor primvar" exportDisplayColorCheckBox;
 
         checkBox -l "Make References Instanceable"      exportReferencesAsInstanceableCheckBox;
 
@@ -143,23 +167,23 @@ global proc int usdTranslatorExport (string $parent,
         textFieldGrp -l "Parent Scope:" parentScopeField;
 
         optionMenuGrp -l "Render Layer Mode:" renderLayerModePopup;
-            menuItem -l "Use Default Layer";
-            menuItem -l "Use Current Layer";
-            menuItem -l "Modeling Variant Per Layer";
+            menuItem -l "Use Default layer" -ann "defaultLayer";
+            menuItem -l "Use Current layer" -ann "currentLayer";
+            menuItem -l "Modeling Variant Per Layer" -ann "modelingVariant";
 
         checkBox -l "Merge Transform and Shape Nodes" mergeXFormCheckBox;
         checkBox -l "Export Instances" exportInstancesCheckBox;
 
 	    optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
-	        menuItem -l "Polygonal Mesh";
-	        menuItem -l "Bilinear SubDiv";
-	        menuItem -l "CatmullClark SDiv";
-	        menuItem -l "Loop SDiv";
+	        menuItem -l "Polygonal Mesh" -ann "none";
+	        menuItem -l "Bilinear SubDiv" -ann "bilinear";
+	        menuItem -l "CatmullClark SDiv" -ann "catmullClark";
+	        menuItem -l "Loop SDiv" -ann "loop";
 
         optionMenuGrp -l "Export Skin Clusters:" exportSkinClustersPopup;
-            menuItem -l "None";
-            menuItem -l "All (Automatically Create SkelRoots)";
-            menuItem -l "Only Under SkelRoots";
+            menuItem -l "None" -ann "none";
+            menuItem -l "All (Automatically Create SkelRoots)" -ann "auto";
+            menuItem -l "Only Under SkelRoots" -ann "explicit";
 
         checkBox -l "Export Animation" -cc ("usdTranslatorExport_AnimationCB") animationCheckBox;
 
@@ -178,7 +202,9 @@ global proc int usdTranslatorExport (string $parent,
             for ($index = 0; $index < size($optionList); $index++) {
                 tokenize($optionList[$index], "=", $optionBreakDown);
                 if ($optionBreakDown[0] == "shadingMode") {
-                    optionMenuGrp -e -value $optionBreakDown[1] shadingModePopup;
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
+                } else if ($optionBreakDown[0] == "exportDisplayColor") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
                 } else if ($optionBreakDown[0] == "exportReferencesAsInstanceable") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferencesAsInstanceableCheckBox");
                 } else if ($optionBreakDown[0] == "exportUVs") {
@@ -198,15 +224,15 @@ global proc int usdTranslatorExport (string $parent,
                 } else if ($optionBreakDown[0] == "allCameras") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "allCamerasCheckBox");
                 } else if ($optionBreakDown[0] == "renderLayerMode") {
-                    optionMenuGrp -e -value $optionBreakDown[1] renderLayerModePopup;
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "renderLayerModePopup");
                 } else if ($optionBreakDown[0] == "mergeXForm") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeXFormCheckBox");
                 } else if ($optionBreakDown[0] == "exportInstances") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
-                    optionMenuGrp -e -value $optionBreakDown[1] defaultMeshSchemePopup;
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
                 } else if ($optionBreakDown[0] == "exportSkin") {
-                    optionMenuGrp -e -value $optionBreakDown[1] exportSkinClustersPopup;
+                    usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "exportSkinClustersPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
                 } else if ($optionBreakDown[0] == "animation") {
@@ -240,6 +266,7 @@ global proc int usdTranslatorExport (string $parent,
     } else if ($action == "query") {
     
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferencesAsInstanceable", "exportReferencesAsInstanceableCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");

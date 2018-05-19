@@ -39,19 +39,11 @@ usdListShadingModes::doIt(const MArgList& args) {
         v = PxrUsdMayaShadingModeRegistry::ListImporters();
     }
 
-    // This is remapped in JobArgs.cpp manually
-    appendToResult("None");
+    // Always include the "none" shading mode.
+    appendToResult(PxrUsdMayaShadingModeTokens->none.GetText());
 
     for (const auto& e : v) {
-        // Manual remappings
-        if (e == PxrUsdMayaShadingModeTokens->displayColor) {
-            appendToResult("GPrim Colors");
-            appendToResult("Material Colors");
-        } else if (e == "pxrRis") {
-            appendToResult("RfM Shaders");
-        } else {
-            appendToResult(e.GetString().c_str());
-        }
+        appendToResult(e.GetText());
     }
 
     return MS::kSuccess;

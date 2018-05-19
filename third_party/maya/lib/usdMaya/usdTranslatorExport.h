@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 const char* const usdTranslatorExportDefaults = 
-        "shadingMode=GPrim Colors;"
+        "shadingMode=displayColor;"
         "exportRefsAsInstanceable=0;"
         "exportUVs=1;"
         "exportMaterialCollections=0;"
@@ -51,10 +51,10 @@ const char* const usdTranslatorExportDefaults =
         "exportColorSets=1;"
         "renderableOnly=0;"
         "allCameras=0;"
-        "renderLayerMode=Use Default Layer;"
+        "renderLayerMode=defaultLayer;"
         "mergeXForm=1;"
         "exportInstances=1;"
-        "defaultMeshScheme=CatmullClark SDiv;"
+        "defaultMeshScheme=catmullClark;"
         "exportVisibility=1;"
         "animation=0;"
         "startTime=1;"

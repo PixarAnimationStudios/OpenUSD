@@ -151,22 +151,17 @@ try
         argData.getFlagArgument("shadingMode", 0, stringVal);
         TfToken shadingMode(stringVal.asChar());
 
-        if (shadingMode.IsEmpty()) {
-            jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->displayColor;
-        }
-        else {
-            if (shadingMode == "Material Colors") {
-                shadingMode = TfToken("displayColor");
-            } else if (shadingMode == "RfM Shaders") {
-                shadingMode = TfToken("pxrRis");
-            }
-            if (PxrUsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode)) {
+        if (!shadingMode.IsEmpty()) {
+            if (PxrUsdMayaShadingModeRegistry::GetInstance()
+                    .GetExporter(shadingMode)) {
                 jobArgs.shadingMode = shadingMode;
             }
             else {
                 if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
-                    MGlobal::displayError(TfStringPrintf("No shadingMode '%s' found.  Setting shadingMode='none'", 
-                                shadingMode.GetText()).c_str());
+                    MGlobal::displayError(TfStringPrintf(
+                            "No shadingMode '%s' found. "
+                            "Setting shadingMode='none'", 
+                            shadingMode.GetText()).c_str());
                 }
                 jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
             }
@@ -208,19 +203,20 @@ try
 
     if (argData.isFlagSet("defaultMeshScheme")) {
         MString stringVal;
-
         argData.getFlagArgument("defaultMeshScheme", 0, stringVal);
-        if (stringVal=="none") {
-            jobArgs.defaultMeshScheme = UsdGeomTokens->none;
-        } else if (stringVal=="catmullClark") {
-            jobArgs.defaultMeshScheme = UsdGeomTokens->catmullClark;
-        } else if (stringVal=="loop") {
-            jobArgs.defaultMeshScheme = UsdGeomTokens->loop;
-        } else if (stringVal=="bilinear") {
-            jobArgs.defaultMeshScheme = UsdGeomTokens->bilinear;
-        } else {
-            MGlobal::displayWarning("Incorrect Default Mesh Schema: " + stringVal +
-            " defaulting to: " + MString(jobArgs.defaultMeshScheme.GetText()));
+
+        const TfToken scheme(stringVal.asChar());
+        if (scheme != UsdGeomTokens->none &&
+                scheme != UsdGeomTokens->catmullClark &&
+                scheme != UsdGeomTokens->loop &&
+                scheme != UsdGeomTokens->bilinear) {
+            MGlobal::displayWarning(
+                    "Incorrect Default Mesh Schema: " + stringVal +
+                    " defaulting to: " +
+                    MString(jobArgs.defaultMeshScheme.GetText()));
+        }
+        else {
+            jobArgs.defaultMeshScheme = scheme;
         }
     }
 
@@ -230,16 +226,17 @@ try
 
     if (argData.isFlagSet("exportSkin")) {
         MString stringVal;
-
         argData.getFlagArgument("exportSkin", 0, stringVal);
-        if (stringVal == "none") {
+
+        const TfToken tok(stringVal.asChar());
+        if (tok == PxUsdExportJobArgsTokens->none) {
             jobArgs.exportSkin = false;
         }
-        else if (stringVal == "auto") {
+        else if (tok == PxUsdExportJobArgsTokens->auto_) {
             jobArgs.exportSkin = true;
             jobArgs.autoSkelRoots = true;
         }
-        else if (stringVal == "explicit") {
+        else if (tok == PxUsdExportJobArgsTokens->explicit_) {
             jobArgs.exportSkin = true;
             jobArgs.autoSkelRoots = false;
         }
@@ -328,18 +325,21 @@ try
     if (argData.isFlagSet("renderLayerMode")) {
         MString stringVal;
         argData.getFlagArgument("renderLayerMode", 0, stringVal);
-        TfToken renderLayerMode(stringVal.asChar());
+        const TfToken renderLayerMode(stringVal.asChar());
 
-        if (renderLayerMode.IsEmpty()) {
-            jobArgs.renderLayerMode = PxUsdExportJobArgsTokens->defaultLayer;
-        } else if (renderLayerMode != PxUsdExportJobArgsTokens->defaultLayer &&
+        if (!renderLayerMode.IsEmpty()) {
+            if (renderLayerMode != PxUsdExportJobArgsTokens->defaultLayer &&
                    renderLayerMode != PxUsdExportJobArgsTokens->currentLayer &&
-                   renderLayerMode != PxUsdExportJobArgsTokens->modelingVariant) {
-            MGlobal::displayError(TfStringPrintf("Invalid renderLayerMode '%s'.  Setting renderLayerMode='defaultLayer'", 
-                                renderLayerMode.GetText()).c_str());
-            jobArgs.renderLayerMode = PxUsdExportJobArgsTokens->defaultLayer;
-        } else {
-            jobArgs.renderLayerMode = renderLayerMode;
+                   renderLayerMode != PxUsdExportJobArgsTokens->modelingVariant)
+            {
+                MGlobal::displayError(TfStringPrintf(
+                        "Invalid renderLayerMode '%s'. "
+                        "Defaulting to renderLayerMode='%s'", 
+                        renderLayerMode.GetText(),
+                        jobArgs.renderLayerMode.GetText()).c_str());
+            } else {
+                jobArgs.renderLayerMode = renderLayerMode;
+            }
         }
     }
 

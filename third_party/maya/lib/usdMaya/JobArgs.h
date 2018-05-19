@@ -58,7 +58,10 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
 #define PXRUSDMAYA_JOBARGS_TOKENS \
     (defaultLayer) \
     (currentLayer) \
-    (modelingVariant)
+    (modelingVariant) \
+    (none) \
+    ((auto_, "auto")) \
+    ((explicit_, "explicit"))
 
 TF_DECLARE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, 
         PXRUSDMAYA_JOBARGS_TOKENS);
