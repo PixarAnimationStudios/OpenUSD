@@ -797,9 +797,13 @@ PYOPENGL = PythonDependency("PyOpenGL", GetPyOpenGLInstructions,
 def GetPySideInstructions():
     # For licensing reasons, this script cannot install PySide itself.
     if MacOS():
-        return ('PySide is not installed. If you have MacPorts '
-                'installed, run "port install py27-pyside-tools" '
-                'to install it, then re-run this script.\n'
+        # There are issues with the PySide package available via pip, so
+        # we direct users to installing PySide2 instead.
+        return ('PySide is not installed. If you have pip '
+                'installed, follow the instructions at '
+                'https://wiki.qt.io/Qt_for_Python/GettingStarted '
+                'to install PySide2 from published wheels, '
+                'then re-run this script.\n'
                 'If PySide is already installed, you may need to '
                 'update your PYTHONPATH to indicate where it is '
                 'located.')
