@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.8.5a] - 2018-05-21
+
+### Fixed
+- Fixed broken URL in build_usd.py for downloading libtiff. (Issue #498)
+
 ## [0.8.5] - 2018-05-07
 
 ### Added
