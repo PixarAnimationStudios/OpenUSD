@@ -262,6 +262,15 @@ UsdImagingPrimAdapter::SamplePrimvar(
         }
     }
 
+    // Fallback for adapters that do not read primvars from USD, but
+    // instead synthesize them -- ex: Cube, Cylinder, Capsule.
+    if (maxNumSamples > 0) {
+        times[0] = 0;
+        if (_GetValueCache()->ExtractPrimvar(cachePath, key, &samples[0])) {
+            return samples[0].IsEmpty() ? 0 : 1;
+        }
+    }
+
     return 0;
 }
 
