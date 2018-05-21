@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdStream)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 set(optionalPublicClasses "")
 
 if (OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK)

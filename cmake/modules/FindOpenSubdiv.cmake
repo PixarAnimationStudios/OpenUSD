@@ -28,9 +28,14 @@ IF(NOT OPENSUBDIV_ROOT_DIR AND NOT $ENV{OPENSUBDIV_ROOT_DIR} STREQUAL "")
 ENDIF()
 
 SET(_opensubdiv_FIND_COMPONENTS
-    osdGPU
     osdCPU
 )
+if(OPENSUBDIV_USE_GPU)
+    list(APPEND
+        _opensubdiv_FIND_COMPONENTS
+        osdGPU)
+endif()
+
 
 SET(_opensubdiv_SEARCH_DIRS
     ${OPENSUBDIV_ROOT_DIR}

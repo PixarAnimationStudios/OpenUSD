@@ -34,6 +34,7 @@ option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" OFF)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 option(PXR_BUILD_HOUDINI_PLUGIN "Build the Houdini plugin for USD" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
+option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_ENABLE_MULTIVERSE_SUPPORT "Enable Multiverse backend in the Alembic plugin for USD" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" ON)
@@ -119,13 +120,25 @@ if (${PXR_BUILD_USDVIEW})
             "Setting PXR_BUILD_USDVIEW=OFF because "
             "PXR_ENABLE_PYTHON_SUPPORT=OFF")
         set(PXR_BUILD_USDVIEW "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_ENABLE_GL_SUPPORT})
+        message(STATUS
+            "Setting PXR_BUILD_USDVIEW=OFF because "
+            "PXR_ENABLE_GL_SUPPORT=OFF")
+        set(PXR_BUILD_USDVIEW "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
 
-if (${PXR_BUILD_EMBREE_PLUGIN} AND NOT ${PXR_BUILD_IMAGING})
-    message(STATUS
-        "Setting PXR_BUILD_EMBREE_PLUGIN=OFF because PXR_BUILD_IMAGING=OFF")
-    set(PXR_BUILD_EMBREE_PLUGIN "OFF" CACHE BOOL "" FORCE)
+if (${PXR_BUILD_EMBREE_PLUGIN})
+    if (NOT ${PXR_BUILD_IMAGING})
+        message(STATUS
+            "Setting PXR_BUILD_EMBREE_PLUGIN=OFF because PXR_BUILD_IMAGING=OFF")
+        set(PXR_BUILD_EMBREE_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_ENABLE_GL_SUPPORT})
+        message(STATUS
+            "Setting PXR_BUILD_EMBREE_PLUGIN=OFF because "
+            "PXR_ENABLE_GL_SUPPORT=OFF")
+        set(PXR_BUILD_EMBREE_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    endif()
 endif()
 
 if (${PXR_BUILD_KATANA_PLUGIN})
@@ -133,6 +146,11 @@ if (${PXR_BUILD_KATANA_PLUGIN})
         message(STATUS 
             "Setting PXR_BUILD_KATANA_PLUGIN=OFF because "
             "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_KATANA_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_ENABLE_GL_SUPPORT})
+        message(STATUS 
+            "Setting PXR_BUILD_KATANA_PLUGIN=OFF because "
+            "PXR_ENABLE_GL_SUPPORT=OFF")
         set(PXR_BUILD_KATANA_PLUGIN "OFF" CACHE BOOL "" FORCE)
     elseif (NOT ${PXR_BUILD_USD_IMAGING})
         message(STATUS 
@@ -147,6 +165,11 @@ if (${PXR_BUILD_MAYA_PLUGIN})
         message(STATUS 
             "Setting PXR_BUILD_MAYA_PLUGIN=OFF because "
             "PXR_ENABLE_PYTHON_SUPPORT=OFF")
+        set(PXR_BUILD_MAYA_PLUGIN "OFF" CACHE BOOL "" FORCE)
+    elseif (NOT ${PXR_ENABLE_GL_SUPPORT})
+        message(STATUS 
+            "Setting PXR_BUILD_MAYA_PLUGIN=OFF because "
+            "PXR_ENABLE_GL_SUPPORT=OFF")
         set(PXR_BUILD_MAYA_PLUGIN "OFF" CACHE BOOL "" FORCE)
     elseif (NOT ${PXR_BUILD_USD_IMAGING})
         message(STATUS 

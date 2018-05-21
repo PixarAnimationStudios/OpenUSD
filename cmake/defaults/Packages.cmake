@@ -105,9 +105,12 @@ if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     find_package(OpenImageIO REQUIRED)
     # --OpenGL
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
+    if (PXR_ENABLE_GL_SUPPORT)
+        find_package(OpenGL REQUIRED)
+        find_package(GLEW REQUIRED)
+    endif()
     # --Opensubdiv
+    set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)

@@ -62,7 +62,7 @@ may be disabled at build-time, for further details see [Advanced Build Configura
 | Name | Version | Optional |
 | ---- | ------- | :------: |
 | [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv) | 3.0.5 (Linux/OS X), 3.2.0 (Windows)         |   |
-| [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                      |   |
+| [GLEW](http://glew.sourceforge.net/)                              | 1.10.0                                      | x |
 | [OpenEXR](http://www.openexr.com)                                 | 2.2.0                                       |   |
 | [OpenImageIO](https://sites.google.com/site/openimageio/home)     | 1.5.11                                      |   |
 | [Ptex](http://ptex.us/)                                           | 2.0.30                                      | x |

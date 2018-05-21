@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glf)
 
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+    return()
+endif()
+
 set(optionalPublicClasses "")
 if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
