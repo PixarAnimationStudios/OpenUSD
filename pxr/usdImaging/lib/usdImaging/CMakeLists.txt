@@ -11,7 +11,6 @@ pxr_library(usdImaging
         vt
         work
         hd
-        hdSt
         pxOsd
         sdf
         usd
@@ -37,7 +36,6 @@ pxr_library(usdImaging
         inheritedCache
         instancerContext
         tokens
-        unitTestHelper
         valueCache
         basisCurvesAdapter
         capsuleAdapter
@@ -60,6 +58,7 @@ pxr_library(usdImaging
 
     PUBLIC_HEADERS
         api.h
+        unitTestHelper.h
         version.h
 
     RESOURCE_FILES
