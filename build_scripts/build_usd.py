@@ -239,6 +239,29 @@ def PatchFile(filename, patches):
         shutil.copy(filename, filename + ".old")
         open(filename, 'w').writelines(newLines)
 
+def DownloadFileWithCurl(url, outputFilename):
+    # Don't log command output so that curl's progress
+    # meter doesn't get written to the log file.
+    Run("curl {progress} -L -o {filename} {url}".format(
+        progress="-#" if verbosity >= 2 else "-s",
+        filename=outputFilename, url=url), 
+        logCommandOutput=False)
+
+def DownloadFileWithPowershell(url, outputFilename):
+    # It's important that we specify to use TLS v1.2 at least or some
+    # of the downloads will fail.
+    cmd = "powershell [Net.ServicePointManager]::SecurityProtocol = \
+            [Net.SecurityProtocolType]::Tls12; \"(new-object \
+            System.Net.WebClient).DownloadFile('{url}', '{filename}')\""\
+            .format(filename=outputFilename, url=url)
+
+    Run(cmd,logCommandOutput=False)
+
+def DownloadFileWithUrllib(url, outputFilename):
+    r = urllib2.urlopen(url)
+    with open(outputFilename, "wb") as outfile:
+        outfile.write(r.read())
+
 def DownloadURL(url, context, force, dontExtract = None):
     """Download and extract the archive file at given URL to the
     source directory specified in the context. 
@@ -276,18 +299,7 @@ def DownloadURL(url, context, force, dontExtract = None):
 
             for i in xrange(maxRetries):
                 try:
-                    if context.useCurl:
-                        # Don't log command output so that curl's progress
-                        # meter doesn't get written to the log file.
-                        Run("curl {progress} -L -o {filename} {url}".format(
-                            progress="-#" if verbosity >= 2 else "-s",
-                            filename=tmpFilename, url=url), 
-                            logCommandOutput=False)
-                    else:
-                        r = urllib2.urlopen(url)
-                        with open(tmpFilename, "wb") as outfile:
-                            outfile.write(r.read())
-
+                    context.downloader(url, tmpFilename)
                     break
                 except Exception as e:
                     PrintCommandOutput("Retrying download due to error: {err}\n"
@@ -1131,10 +1143,19 @@ class InstallContext:
         self.buildDir = (os.path.abspath(args.build) if args.build
                          else os.path.join(self.usdInstDir, "build"))
 
-        # Whether to use curl or urllib for downloading dependencies
-        # Use curl by default if it's available, otherwise fall back
-        # to built-in methods.
-        self.useCurl = find_executable("curl")
+        # Determine which downloader to use.  The reason we don't simply
+        # use urllib2 all the time is that some older versions of Python
+        # don't support TLS v1.2, which is required for downloading some
+        # dependencies.
+        if find_executable("curl"):
+            self.downloader = DownloadFileWithCurl
+            self.downloaderName = "curl"
+        elif Windows() and find_executable("powershell"):
+            self.downloader = DownloadFileWithPowershell
+            self.downloaderName = "powershell"
+        else:
+            self.downloader = DownloadFileWithUrllib
+            self.downloaderName = "built-in"
 
         # CMake generator
         self.cmakeGenerator = args.generator
@@ -1375,7 +1396,7 @@ Building with settings:
     instDir=context.instDir,
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator),
-    downloader=("curl" if context.useCurl else "built-in"),
+    downloader=(context.downloaderName),
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
     buildType=("Shared libraries" if context.buildShared
