@@ -27,6 +27,7 @@
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/pragmas.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -34,6 +35,52 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 ARCH_PRAGMA_DEPRECATED_POSIX_NAME
+
+static bool
+TestArchNormPath()
+{
+    ARCH_AXIOM(ArchNormPath("") == ".");
+    ARCH_AXIOM(ArchNormPath(".") == ".");
+    ARCH_AXIOM(ArchNormPath("..") == "..");
+    ARCH_AXIOM(ArchNormPath("foobar/../barbaz") == "barbaz");
+    ARCH_AXIOM(ArchNormPath("/") == "/");
+    ARCH_AXIOM(ArchNormPath("//") == "//");
+    ARCH_AXIOM(ArchNormPath("///") == "/");
+    ARCH_AXIOM(ArchNormPath("///foo/.//bar//") == "/foo/bar");
+    ARCH_AXIOM(ArchNormPath("///foo/.//bar//.//..//.//baz") == "/foo/baz");
+    ARCH_AXIOM(ArchNormPath("///..//./foo/.//bar") == "/foo/bar");
+    ARCH_AXIOM(ArchNormPath(
+            "foo/bar/../../../../../../baz") == "../../../../baz");
+
+    return true;
+}
+
+namespace {
+std::string
+_AbsPathFilter(const std::string& path)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // Strip drive specifier and convert backslashes to forward slashes.
+    std::string result = path.substr(2);
+    std::replace(result.begin(), result.end(), '\\', '/');
+    return result;
+#else
+    // Return path as-is.
+    return path;
+#endif
+}
+}
+
+static bool
+TestArchAbsPath()
+{
+    ARCH_AXIOM(ArchAbsPath("") == "");
+    ARCH_AXIOM(ArchAbsPath("foo") != "foo");
+    ARCH_AXIOM(_AbsPathFilter(ArchAbsPath("/foo/bar")) == "/foo/bar");
+    ARCH_AXIOM(_AbsPathFilter(ArchAbsPath("/foo/bar/../baz")) == "/foo/baz");
+
+    return true;
+}
 
 int main()
 {
@@ -91,5 +138,10 @@ int main()
     retpath = ArchMakeTmpSubdir(ArchGetTmpDir(), "myprefix");
     ARCH_AXIOM (retpath != "");
     ArchRmDir(retpath.c_str());
+
+    // Test other utilities
+    TestArchNormPath();
+    TestArchAbsPath();
+
     return 0;
 }

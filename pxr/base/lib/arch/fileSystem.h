@@ -206,6 +206,19 @@ ARCH_API bool ArchGetModificationTime(const char* pathname, double* time);
 /// available in the stat structure for the current platform.
 ARCH_API double ArchGetModificationTime(const ArchStatType& st);
 
+/// Normalizes the specified path, eliminating double slashes, etc.
+///
+/// This canonicalizes paths, removing any double slashes, and eliminiating
+/// '.', and '..' components of the path.  This emulates the behavior of
+/// os.path.normpath in Python.
+ARCH_API std::string ArchNormPath(const std::string& path);
+
+/// Returns the canonical absolute path of the specified filename.
+///
+/// This makes the specified path absolute, by prepending the current working
+/// directory.  If the path is already absolute, it is returned unmodified.
+ARCH_API std::string ArchAbsPath(const std::string& path);
+
 /// Returns the permissions mode (mode_t) for the given pathname.
 ///
 /// This function stats the given pathname and returns the permissions flags
