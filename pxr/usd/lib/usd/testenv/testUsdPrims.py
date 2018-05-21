@@ -61,6 +61,33 @@ class TestUsdPrim(unittest.TestCase):
             assert a == b
             assert hash(a) == hash(b)
 
+            # check for prims/props that exist
+            p = s.GetObjectAtPath(u'/foo')
+            assert p
+            assert type(p) is Usd.Prim
+
+            a = s.GetObjectAtPath(u'/foo.attr')
+            assert a
+            assert type(a) is Usd.Attribute
+
+            r = s.GetObjectAtPath(u'/foo.relationship')
+            assert r 
+            assert type(r) is Usd.Relationship
+
+            # check for prims/props that dont exist
+            p = s.GetObjectAtPath(u'/nonexistent')
+            assert not p
+            assert type(p) is Usd.Prim
+
+            a = s.GetObjectAtPath(u'/foo.nonexistentattr')
+            assert not a
+            assert type(a) is Usd.Property
+
+            r = s.GetObjectAtPath(u'/foo.nonexistentrelationship')
+            assert not r 
+            assert type(r) is Usd.Property
+
+
     def test_OverrideMetadata(self):
         for fmt in allFormats:
             weak = Sdf.Layer.CreateAnonymous('OverrideMetadataTest.'+fmt)
