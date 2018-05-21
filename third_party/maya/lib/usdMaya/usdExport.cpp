@@ -310,15 +310,8 @@ try
             jobArgs.timeInterval = timeInterval;
         }
     } else {
-        // Use the empty interval (1, 1). (This preserves the existing
-        // behavior where startTimeCode = endTimeCode = 1.0 for files without
-        // animation.)
-        // XXX In a follow-up change, we'll set this to GfInterval().
-        // XXX This differs from usdTranslatorExport, which uses the open
-        // interval with the current Maya time.
-        jobArgs.timeInterval = GfInterval(
-                1.0, 1.0,
-                /*minClosed*/ false, /*maxClosed*/ false);
+        // No animation, so empty interval.
+        jobArgs.timeInterval = GfInterval();
     }
 
     if (argData.isFlagSet("preRoll")) {

@@ -205,14 +205,8 @@ usdTranslatorExport::writer(const MFileObject &file,
         }
     }
     else {
-        // Use the _open_ interval with the single point of the current time.
-        // This preserves the existing behavior of not exporting animation,
-        // but setting the stage start/end frame.
-        // XXX This differs from usdExport, which uses (1, 1) in this case.
-        jobArgs.timeInterval = GfInterval(
-                MAnimControl::currentTime().value(),
-                MAnimControl::currentTime().value(),
-                /*minClosed*/ false, /*maxClosed*/ false);
+        // No animation, so empty interval.
+        jobArgs.timeInterval = GfInterval();
     }
 
     if (frameSamples.empty()) {

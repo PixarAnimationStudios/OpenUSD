@@ -129,12 +129,11 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
         return false;
     }
 
-    // Set time range for the USD file
-    // XXX We shouldn't be setting the time range if the timeInterval is
-    // empty. A future change will fix this so that HasAuthoredTimeCodeRange()
-    // is false if not exporting animation.
-    mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeInterval.GetMin());
-    mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeInterval.GetMax());
+    // Set time range for the USD file if we're exporting animation.
+    if (!mJobCtx.mArgs.timeInterval.IsEmpty()) {
+        mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeInterval.GetMin());
+        mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeInterval.GetMax());
+    }
 
     mModelKindWriter.Reset();
 
