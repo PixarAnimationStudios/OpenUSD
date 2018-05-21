@@ -73,6 +73,11 @@ def main():
         help='Flatten the layer stack with the given root layer, and write '
         'out the result.  Unlike --flatten, this does not flatten composition '
         'arcs (such as references).')
+    parser.add_argument(
+        '--skipSourceFileComment', action='store_true',
+        help='If --flatten is specified, skip adding a comment regarding the '
+        'source of the flattened layer in the documentation field of the '
+        'output layer.')
     parser.add_argument('--mask', action='store',
                         dest='populationMask',
                         metavar='PRIMPATH[,PRIMPATH...]',
@@ -151,7 +156,12 @@ def main():
         # Write to either stdout or the specified output file
         if args.out:
             try:
-                usdData.Export(args.out, args=formatArgsDict)
+                if args.flatten:
+                    usdData.Export(args.out, 
+                            addSourceFileComment=not args.skipSourceFileComment,
+                            args=formatArgsDict)
+                else:
+                    usdData.Export(args.out, args=formatArgsDict)
             except Exception as e:
                 # Let the user know an error occurred.
                 _Err("Error exporting '%s' to '%s' - %s" %

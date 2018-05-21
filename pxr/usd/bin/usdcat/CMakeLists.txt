@@ -60,9 +60,8 @@ pxr_install_test_dir(
 
 pxr_register_test(testUsdCatMask
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask --flatten input.usda -o output.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask --flatten --skipSourceFileComment input.usda -o output.usda"
     DIFF_COMPARE output.usda
-    CLEAN_OUTPUT "(?:[A-Za-z]:)?\\/.*\\/"
     EXPECTED_RETURN_CODE 0
 )
 
