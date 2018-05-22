@@ -717,6 +717,11 @@ def InstallOpenImageIO(context, force):
         if not context.enablePtex:
             extraArgs.append('-DUSE_PTEX=OFF')
 
+		# Use the python executable that started this script
+		# instead of requiring the env var to be set in build environment
+        extraArgs.append('-DPYTHON_EXECUTABLE="{pythonExe}"'
+                         .format(pythonExe=sys.executable))
+
         RunCMake(context, force, extraArgs)
 
 OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
