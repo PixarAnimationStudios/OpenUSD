@@ -605,14 +605,16 @@ class AppController(QtCore.QObject):
             for action in self._selHighlightColorActions:
                 self._ui.highlightColorActionGroup.addAction(action)
 
-            self._ui.interpolationActionGroup = QtWidgets.QActionGroup(self)
-            self._ui.interpolationActionGroup.setExclusive(True)
-            for interpolationType in Usd.InterpolationType.allValues:
-                action = self._ui.menuInterpolation.addAction(interpolationType.displayName)
-                action.setCheckable(True)
-                action.setChecked(
-                    self._dataModel.stage.GetInterpolationType() == interpolationType)
-                self._ui.interpolationActionGroup.addAction(action)
+            # Interpolation type. Currently, USD only has Held and
+            # Linear interpolation behaviors, so we present this as a checkbox
+            if self._dataModel.viewSettings.linearInterpolationOn:
+                self._dataModel.stage.SetInterpolationType(
+                    Usd.InterpolationTypeLinear)
+                self._ui.linearInterpolationOn.setChecked(True)
+            else:
+                self._dataModel.stage.SetInterpolationType(
+                    Usd.InterpolationTypeHeld)
+                self._ui.linearInterpolationOn.setChecked(False)
 
             self._ui.primViewDepthGroup = QtWidgets.QActionGroup(self)
             for i in range(1, 9):
@@ -740,6 +742,8 @@ class AppController(QtCore.QObject):
 
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
+            self._ui.linearInterpolationOn.toggled.connect(self._linearInterpolationOnToggled)
+
             if self._stageView:
                 self._ui.actionRecompute_Clipping_Planes.triggered.connect(
                     self._stageView.detachAndReClipFromCurrentCamera)
@@ -839,9 +843,6 @@ class AppController(QtCore.QObject):
 
             self._ui.highlightColorActionGroup.triggered.connect(
                 self._changeHighlightColor)
-
-            self._ui.interpolationActionGroup.triggered.connect(
-                self._changeInterpolationType)
 
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
@@ -1460,6 +1461,16 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.redrawOnScrub = checked
         self._ui.frameSlider.setTracking(self._dataModel.viewSettings.redrawOnScrub)
 
+    def _linearInterpolationOnToggled(self, checked):
+        if checked:
+            self._dataModel.stage.SetInterpolationType(
+                Usd.InterpolationTypeLinear)
+        else:
+            self._dataModel.stage.SetInterpolationType(
+                Usd.InterpolationTypeHeld)
+        self._dataModel.viewSettings.linearInterpolationOn = checked
+        self._reloadStage()
+
     # Frame-by-frame/Playback functionality ===================================
 
     def _setPlaybackAvailability(self, enabled = True):
@@ -1850,13 +1861,6 @@ class AppController(QtCore.QObject):
 
     def _changeHighlightColor(self, color):
         self._dataModel.viewSettings.highlightColorName = str(color.text())
-
-    def _changeInterpolationType(self, interpolationType):
-        for t in Usd.InterpolationType.allValues:
-            if t.displayName == str(interpolationType.text()):
-                self._dataModel.stage.SetInterpolationType(t)
-                self._resetSettings()
-                break
 
     def _ambientOnlyClicked(self, checked=None):
         if self._stageView and checked is not None:
@@ -4187,6 +4191,7 @@ class AppController(QtCore.QObject):
         self._refreshRolloverPrimInfoMenu()
         self._refreshSelectionHighlightingMenu()
         self._refreshSelectionHighlightColorMenu()
+        self._refreshLinearInterpolation()
 
     def _refreshRenderModeMenu(self):
         for action in self._renderModeActions:
@@ -4298,6 +4303,10 @@ class AppController(QtCore.QObject):
     def _refreshRedrawOnScrub(self):
         self._ui.redrawOnScrub.setChecked(
             self._dataModel.viewSettings.redrawOnScrub)
+
+    def _refreshLinearInterpolation(self):
+        self._ui.linearInterpolationOn.setChecked(
+            self._dataModel.viewSettings.linearInterpolationOn)
 
     def _refreshRolloverPrimInfoMenu(self):
         self._ui.actionRollover_Prim_Info.setChecked(

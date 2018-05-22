@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 10
+)
+
+def "myPrim"
+{
+  float myProp.timeSamples = {
+      1: 1.0,
+      10: 10.0
+  }
+}
+

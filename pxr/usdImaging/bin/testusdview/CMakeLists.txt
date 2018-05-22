@@ -107,6 +107,11 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     )
 
     pxr_install_test_dir(
+        SRC testenv/testUsdviewInterpolationToggle
+        DEST testusdviewInterpolationToggle
+    )
+
+    pxr_install_test_dir(
         SRC testenv/testUsdviewReloadReopen
         DEST testusdviewReloadReopen
     )
@@ -283,6 +288,12 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         RUN_SERIAL
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewNavigationKeys.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+
+    pxr_register_test(testusdviewInterpolationToggle
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInterpolationToggle.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
 

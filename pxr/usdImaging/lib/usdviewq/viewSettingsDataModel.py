@@ -23,7 +23,7 @@
 #
 
 from qt import QtCore
-from pxr import UsdGeom, Sdf
+from pxr import Usd, UsdGeom, Sdf
 
 from common import (RenderModes, PickModes, SelectionHighlightModes,
     CameraMaskModes, Complexities, PrintWarning)
@@ -94,6 +94,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
         self._cameraMaskColor = tuple(self.stateProperty("cameraMaskColor", default=[0.1, 0.1, 0.1, 1.0]))
         self._cameraReticlesColor = tuple(self.stateProperty("cameraReticlesColor", default=[0.0, 0.7, 1.0, 1.0]))
+        self._linearInterpolationOn = self.stateProperty("linearInterpolationOn", default=True)
         self._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=DEFAULT_AMBIENT)
         self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
@@ -151,6 +152,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     def onSaveState(self, state):
         state["cameraMaskColor"] = list(self._cameraMaskColor)
         state["cameraReticlesColor"] = list(self._cameraReticlesColor)
+        state["linearInterpolationOn"] = self._linearInterpolationOn
         state["defaultMaterialAmbient"] = self._defaultMaterialAmbient
         state["defaultMaterialSpecular"] = self._defaultMaterialSpecular
         state["redrawOnScrub"] = self._redrawOnScrub
@@ -201,6 +203,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @property
     def cameraReticlesColor(self):
         return self._cameraReticlesColor
+
+    @property
+    def linearInterpolationOn(self):
+        return self._linearInterpolationOn
+
+    @linearInterpolationOn.setter
+    @visibleViewSetting
+    def linearInterpolationOn(self, v):
+        self._linearInterpolationOn = v
 
     @cameraReticlesColor.setter
     @visibleViewSetting
