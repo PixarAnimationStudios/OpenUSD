@@ -94,19 +94,17 @@ Hd_SortedIds::Remove(const SdfPath &id)
         if (*idToRemove == id) {
             SdfPathVector::iterator lastElement = _ids.end();
             --lastElement;
+            
+            // As we are going to move an element from the end into the middle
+            // the list will now only be sorted up to the place where the element
+            // was removed.
+            _sortedCount = std::min(_sortedCount,
+                                    static_cast<size_t>(
+                                    (idToRemove - _ids.begin())));
 
             std::iter_swap(idToRemove, lastElement);
 
             _ids.pop_back();
-
-            // As we've moved an element from the end into the middle
-            // the list is now only sorted up to the place where the element
-            // was removed.
-
-
-            _sortedCount = std::min(_sortedCount,
-                                    static_cast<size_t>(
-                                              (idToRemove - _ids.begin())));
         }
     }
 }
