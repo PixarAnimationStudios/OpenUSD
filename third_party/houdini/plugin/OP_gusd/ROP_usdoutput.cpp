@@ -75,6 +75,7 @@
 #include "gusd/UT_Gf.h"
 #include "gusd/UT_Version.h"
 #include "gusd/context.h"
+#include "gusd/shadingModeRegistry.h"
 #include "gusd/xformWrapper.h"
 
 #include "boost/foreach.hpp"
@@ -154,6 +155,18 @@ getTemplates()
     
     static PRM_Name shaderHeadingName("shaderheading", "Shaders");
     static PRM_Name enableShadersName("enableshaders", "Output Shaders");
+    static vector<PRM_Name> shadingModes;
+    if (shadingModes.empty()) {
+        const auto exporters = GusdShadingModeRegistry::listExporters();
+        shadingModes.reserve(exporters.size() + 1);
+        for (const auto& exporter: exporters) {
+            shadingModes.emplace_back(std::get<0>(exporter).GetText(), std::get<1>(exporter).GetText());
+        }
+        shadingModes.emplace_back();
+    }
+    static PRM_ChoiceList shadingModeMenu(PRM_CHOICELIST_SINGLE,
+                                          shadingModes.data());
+    static PRM_Name shadingModeName("shadingmode", "Shading Mode");
     static PRM_Name usdShadingFileName("usdshadingfile", "USD Shading File");
     static PRM_Name usdShaderName("usdshader", "USD Shader");
     static PRM_Name shaderOutDirName("shaderoutdir", "Shader Output Dir");
@@ -538,6 +551,13 @@ getTemplates()
             0), // disable rules
 
         PRM_Template(
+            PRM_ORD,
+            1,
+            &shadingModeName,
+            nullptr,
+            &shadingModeMenu),
+
+        PRM_Template(
             PRM_STRING,
             1,
             &shaderOutDirName,
@@ -730,6 +750,7 @@ getVariablePair()
 void GusdROP_usdoutput::
 Register(OP_OperatorTable* table)
 {
+    GusdShadingModeRegistry::loadPlugins(table);
     OP_Operator* usdOutROP = new OP_Operator(
             "pixar::usdoutput",
             "USD Output",
@@ -1427,7 +1448,7 @@ renderFrame(fpreal time,
     //
     // Store maps of per-prim assignments for both shader types.
     UsdRefShaderMap usdRefShaderMap;
-    HouMaterialMap houMaterialMap;
+    GusdShadingModeRegistry::HouMaterialMap houMaterialMap;
 
     // Sort the refined prim array by primitive paths. This ensures parents
     // will be written before their children.
@@ -1841,7 +1862,7 @@ renderFrame(fpreal time,
 
 ROP_RENDER_CODE GusdROP_usdoutput::
 bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
-                    HouMaterialMap& houMaterialMap)
+                    GusdShadingModeRegistry::HouMaterialMap& houMaterialMap)
 {
     //
     // This ROP supports binding shaders from 2 different sources:
@@ -1920,34 +1941,23 @@ bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
         }
     }
 
-    UT_String shaderOutDir;
-    evalString(shaderOutDir, "shaderoutdir", 0, 0);
-
     //
     // Handle all houdini material shaders last.
     //
-    for (auto assignmentIt = houMaterialMap.begin();
-         assignmentIt != houMaterialMap.end(); ++assignmentIt) {
+    UT_String shaderOutDir;
+    evalString(shaderOutDir, "shaderoutdir", 0, 0);
 
-        VOP_Node* materialVop = findVOPNode(assignmentIt->first.c_str());
-        if (materialVop == NULL ||
-            strcmp(materialVop->getRenderMask(),"RIB") != 0) {
-            continue;
-        }
+    UT_String shadingMode;
+    evalString(shadingMode, "shadingmode", 0, 0);
 
-        UT_String vopPath(materialVop->getFullPath());
-        vopPath.forceAlphaNumeric();
-        SdfPath path = looksPath.AppendPath(SdfPath(vopPath.toStdString()));
-
-        GusdShaderWrapper shader(materialVop, m_usdStage, path.GetString(),
-                                 shaderOutDir.toStdString());
-
-        vector<SdfPath>& primPaths = assignmentIt->second;
-        for (auto primPathIt = primPaths.begin();
-             primPathIt != primPaths.end(); ++primPathIt) {
-            UsdPrim prim = m_usdStage->GetPrimAtPath(*primPathIt);
-            shader.bind(prim);
-        }
+    auto shaderExporter = GusdShadingModeRegistry::getExporter(TfToken(shadingMode.toStdString()));
+    if (shaderExporter != nullptr) {
+        shaderExporter(
+            this,
+            m_usdStage,
+            looksPath,
+            houMaterialMap,
+            shaderOutDir.toStdString());
     }
 
     return ROP_CONTINUE_RENDER;

@@ -36,6 +36,7 @@
 #include <UT/UT_Map.h>
 
 #include "gusd/GT_Utils.h"
+#include "gusd/shadingModeRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,7 +46,6 @@ class GusdROP_usdoutput : public ROP_Node
 
     typedef std::pair<std::string, std::string> UsdRefShader;
     typedef UT_Map<UsdRefShader, std::vector<SdfPath> > UsdRefShaderMap;
-    typedef UT_Map<std::string, std::vector<SdfPath> >  HouMaterialMap;
 
     enum Granularity { ONE_FILE, PER_FRAME };
 
@@ -76,7 +76,7 @@ private:
     ROP_RENDER_CODE closeStage(fpreal tend);
 
     ROP_RENDER_CODE bindAndWriteShaders(UsdRefShaderMap& usdRefShaderMap,
-                                        HouMaterialMap& houMaterialMap);
+                                        GusdShadingModeRegistry::HouMaterialMap& houMaterialMap);
     void resetState();
 
     ROP_RENDER_CODE abort(const std::string& errorMessage);
