@@ -31,7 +31,7 @@ else:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-from pxr import Usd, Sdf, UsdGeom
+from pxr import Usd, Sdf, UsdGeom, UsdLux
 
 #
 # Column headers and ID numbers
@@ -141,15 +141,17 @@ class TreeModel(QAbstractItemModel):
     parmNamePrimPaths = '_parmname_primpaths'
     parmUiExpandState = '_parm_uiexpandstate'
 
-    def __init__(self, headers, node=None):
+    def __init__(self, headers, node=None, readOnly=False):
         super(TreeModel, self).__init__(parent=None)
 
-        self._rootItem = TreeItem(headers,\
-                                  parent=None,\
-                                  primPath='/',\
+        self._rootItem = TreeItem(headers,
+                                  parent=None,
+                                  primPath='/',
                                   hasUnloadedPayload=False)
         self._stage = None
         self._primPathToItemMap = {}
+
+        self._readOnly=readOnly
 
         # _importedPrimPaths is the list of prim paths that are switched on
         # in the tree view's import column, and matches the import node's
@@ -212,6 +214,9 @@ class TreeModel(QAbstractItemModel):
         if prim.IsA(UsdGeom.Boundable):
             return True
 
+        if prim.IsA(UsdLux.Light):
+            return True
+
         # If this prim has a payload, consider it boundable.
         if prim.HasPayload():
             return True
@@ -270,11 +275,11 @@ class TreeModel(QAbstractItemModel):
                 variantSets = prim.GetVariantSets()
                 for name in variantSets.GetNames():
                     variantSet = variantSets.GetVariantSet(name)
-                    variants.append(VariantInfo(\
-                        name = name,\
-                        choices = variantSet.GetVariantNames(),\
-                        initialSelection = variantSet.GetVariantSelection(),\
-                        enabled = False))
+                    variants.append(VariantInfo(
+                        name=name,
+                        choices=variantSet.GetVariantNames(),
+                        initialSelection=variantSet.GetVariantSelection(),
+                        enabled=False))
 
                 data = [primName, importState, primTypeName, variants]
                 childItem = TreeItem(data, parentItem, primPath, hasUnloadedPayload)
@@ -367,7 +372,7 @@ class TreeModel(QAbstractItemModel):
         return self.itemFromIndex(parent).childCount()
 
     def setData(self, index, value, role=Qt.EditRole):
-        if role != Qt.EditRole:
+        if role != Qt.EditRole or self._readOnly:
             return False
 
         column = index.column()
@@ -393,6 +398,10 @@ class TreeModel(QAbstractItemModel):
         return item.childCount() > 0 or item.hasUnloadedPayload()
 
     def SetImportState(self, item, state):
+
+        if self._readOnly:
+            return
+
         # If attempting to unimport an item that has an imported parent,
         # set the item's state to PartiallyChecked instead of Unchecked.
         if state == Qt.Unchecked:
@@ -423,10 +432,9 @@ class TreeModel(QAbstractItemModel):
         return self._stage.GetPrimAtPath(item.primPath())
 
     def GetNode(self):
-        if self._sessionId != -1:
-            return hou.nodeBySessionId(self._sessionId)
-        else:
+        if self._sessionId == -1:
             return None
+        return hou.nodeBySessionId(self._sessionId)
 
     def LoadPrimAndBuildTree(self, prim, item):
         if prim:

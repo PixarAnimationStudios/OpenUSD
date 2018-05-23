@@ -37,7 +37,8 @@ from treemodel import *
 #
 # Global variables
 #
-NodeTypeLowerCase = 'usdimport'
+GeomNodeTypeLowerCase = 'usdimport'
+LuxNodeTypeLowerCase = 'usdluximport'
 
 #
 # Return a list of hou.NodeType that are considered the only
@@ -48,7 +49,7 @@ def CompatibleNodeTypes():
 
     for category in [hou.objNodeTypeCategory, hou.sopNodeTypeCategory]:
         for key,value in category().nodeTypes().items():
-            if NodeTypeLowerCase not in key.lower():
+            if GeomNodeTypeLowerCase not in key.lower() and LuxNodeTypeLowerCase not in key.lower():
                 continue
 
             parms = value.parmTemplateGroup()
@@ -322,7 +323,7 @@ class TreeItemEditor(QFrame):
                 self._comboBoxes.append(ComboBoxStyled(self))
 
                 checkBox = self._checkBoxes[-1]
-                checkBox.setCheckState(Qt.Checked if item._enabled\
+                checkBox.setCheckState(Qt.Checked if item._enabled
                                                   else Qt.Unchecked)
                 checkBox.stateChanged.connect(self.DataChanged)
 
@@ -358,9 +359,9 @@ class TreeItemEditor(QFrame):
 
             dstItems = []
             for row, srcItem in enumerate(variants):
-                dstItem = VariantInfo(srcItem._name,\
-                                      srcItem._choices,\
-                                      srcItem._initialSelection,\
+                dstItem = VariantInfo(srcItem._name,
+                                      srcItem._choices,
+                                      srcItem._initialSelection,
                                       bool(self._checkBoxes[row].checkState()))
                 if dstItem._enabled:
                     dstItem._currentSelection =\
@@ -502,6 +503,8 @@ class TreeView(QFrame):
         # Keep a list of prim paths that are expanded in this tree view.
         self.expandedPrimPaths = []
 
+        self._readOnly = False
+
         expandToImported = QPushButton("+", self)
         expandToImported.setMaximumSize(QSize(20,20))
         expandToImported.setToolTip("Expand tree to show all imported prims.")
@@ -596,7 +599,7 @@ class TreeView(QFrame):
         return super(TreeView, self).eventFilter(source, event)
 
     @staticmethod
-    def IsNodeCompatible(node, ignoreNodeType = True):
+    def IsNodeCompatible(node, ignoreNodeType=True):
         if not ignoreNodeType and node.type() not in TreeView.nodeTypes:
             return False
 
@@ -608,9 +611,7 @@ class TreeView(QFrame):
         # import SOP embedded in a usd import OTL. Only one of the two should
         # be used by the plugin, not both. This check allows the OTL to pass,
         # and causes the embedded SOP to fail.
-        if parm.getReferencedParm().path() != parm.path():
-            return False
-        return True
+        return parm.getReferencedParm().path() == parm.path()
 
     def CheckNodeSelection(self):
         selectedNodes = hou.selectedNodes()
@@ -634,6 +635,8 @@ class TreeView(QFrame):
             self.SyncViewWithModel(TreeView.emptyModel)
             return
 
+        self._readOnly = LuxNodeTypeLowerCase in node.type().name()
+
         key = node.sessionId()
         model = hou.session.UsdImportDict.get(key, None)
 
@@ -641,7 +644,7 @@ class TreeView(QFrame):
             if model != self.view.model():
                 self.SyncViewWithModel(model)
         else:
-            model = TreeModel(COL_HEADERS, node)
+            model = TreeModel(COL_HEADERS, node, self._readOnly)
             self.SyncViewWithModel(model)
 
             hou.session.UsdImportDict[key] = model
@@ -816,17 +819,18 @@ class TreeView(QFrame):
                 self.UpdateSizeHints(index.child(row, 0))
 
     def PopupRightClickMenu(self, pos):
-        if self.focusWidget() == self.view:
-            menu = QMenu(self)
-            importAction = menu.addAction("Import")
-            unimportAction = menu.addAction("Unimport")
-            action = menu.exec_(self.view.mapToGlobal(pos))
-            if action is not None:
-                state = Qt.Checked if action == importAction else Qt.Unchecked
-                for index in self.view.selectedIndexes():
-                    # Skip items from every column except the import column.
-                    if index.column() == COL_IMPORT:
-                        self.view.model().setData(index, state, Qt.EditRole)
+        if self.focusWidget() != self.view or self._readOnly:
+            return
+        menu = QMenu(self)
+        importAction = menu.addAction("Import")
+        unimportAction = menu.addAction("Unimport")
+        action = menu.exec_(self.view.mapToGlobal(pos))
+        if action is not None:
+            state = Qt.Checked if action == importAction else Qt.Unchecked
+            for index in self.view.selectedIndexes():
+                # Skip items from every column except the import column.
+                if index.column() == COL_IMPORT:
+                    self.view.model().setData(index, state, Qt.EditRole)
 
     def OnSelectionCopied(self):
         indexes = self.view.selectionModel().selectedRows()

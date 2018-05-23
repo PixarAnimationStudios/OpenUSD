@@ -63,6 +63,8 @@ pxr_shared_library(${PXR_PACKAGE}
         writeCtrlFlags
         curvesWrapper
         NURBSCurvesWrapper
+        lightWrapper
+        lightFactory
 
     PUBLIC_HEADERS
         context.h
@@ -79,6 +81,7 @@ pxr_shared_library(${PXR_PACKAGE}
         UT_Version.h
         UT_Gf.h
         GT_VtArray.h
+        attributeTransfer.h
 
     PRIVATE_HEADERS
         GT_VtStringArray.h

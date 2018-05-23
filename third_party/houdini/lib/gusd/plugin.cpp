@@ -42,6 +42,8 @@
 #include "instancerWrapper.h"
 #include "USD_Traverse.h"
 
+#include "lightFactory.h"
+
 #include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/points.h"
@@ -105,6 +107,22 @@ GusdInit()
             TfToken("PointInstancer"), &GusdInstancerWrapper::defineForRead);
 
     GusdUSD_TraverseTable::GetInstance().SetDefault("std:components");
+
+    bool overrideFunction = false;
+    LightFactory::registerLightImportFunction(TfToken("RectLight"), ReadRectLight(), overrideFunction);
+    LightFactory::registerLightImportFunction(TfToken("SphereLight"), ReadSphereLight(), overrideFunction);
+    LightFactory::registerLightImportFunction(TfToken("DiskLight"), ReadDiskLight(), overrideFunction);
+    LightFactory::registerLightImportFunction(TfToken("DomeLight"), ReadDomeLight(), overrideFunction);
+    LightFactory::registerLightImportFunction(TfToken("DistantLight"), ReadDistantLight(), overrideFunction);
+    LightFactory::registerLightImportFunction(TfToken("Xform"), ReadTransform(), overrideFunction);
+
+    LightFactory::registerLightExportFunction(TfToken("grid"), WriteRectLight(), overrideFunction);
+    LightFactory::registerLightExportFunction(TfToken("sphere"), WriteSphereLight(), overrideFunction);
+    LightFactory::registerLightExportFunction(TfToken("disk"), WriteDiskLight(), overrideFunction);
+    LightFactory::registerLightExportFunction(TfToken("envlight"), WriteDomeLight(), overrideFunction);
+    LightFactory::registerLightExportFunction(TfToken("distant"), WriteDistantLight(), overrideFunction);
+    LightFactory::registerLightExportFunction(TfToken("subnet"), WriteTransform(), overrideFunction);
+
     libInitialized = true;
 }
 

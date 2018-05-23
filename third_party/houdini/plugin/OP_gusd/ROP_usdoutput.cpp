@@ -871,8 +871,8 @@ openStage(fpreal tstart, int startTimeCode, int endTimeCode)
         m_usdStage->SetEditTarget(m_usdStage->GetSessionLayer());
 
         // If given model path and asset name detail attributes, we set up an
-        // edit target to remap the output of the overlay to the specfied
-        // model's scope. For exmaple, uutput would be /model/geom/... instead
+        // edit target to remap the output of the overlay to the specified
+        // model's scope. For example, output would be /model/geom/... instead
         // of /World/sets/model/geom...
 
         // Cook the node to get detail attributes.

@@ -57,6 +57,19 @@ GUSD_API
 double      GetNumericTime(UsdTimeCode time);
 
 
+/// Extract the numeric houdini time from a time code for a stage
+/// If @a time is not numeric, returns the numeric value
+/// from UsdTimeCode::EarliestTime().
+GUSD_API
+double      GetNumericHoudiniTime(UsdTimeCode time, const UsdStagePtr& stage);
+
+/// Extract the numeric houdini time from a time code for a stage
+/// If @a time is not numeric, returns the numeric value
+/// from UsdTimeCode::EarliestTime().
+GUSD_API
+double      GetNumericHoudiniTime(UsdTimeCode time, double fps);
+
+
 /// Parse and construct and SdfPath from a string.
 /// Returns true if there were no parse errors.
 /// Any errors that occur while attempting to construct the path are reported
@@ -266,6 +279,18 @@ GetNumericTime(UsdTimeCode time)
         time.GetValue() : UsdTimeCode::EarliestTime().GetValue();
 }
 
+
+inline double
+GetNumericHoudiniTime(UsdTimeCode time, const UsdStagePtr& stage)
+{
+    return GetNumericHoudiniTime(time, stage->GetFramesPerSecond());
+}
+
+inline double
+GetNumericHoudiniTime(UsdTimeCode time, double fps)
+{
+    return (GetNumericTime(time) - 1.0f) / fps;
+}
 
 inline bool
 ImageablePrimIsVisible(const UsdGeomImageable& prim, UsdTimeCode time)

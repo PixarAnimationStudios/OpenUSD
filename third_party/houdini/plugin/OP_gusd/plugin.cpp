@@ -22,7 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "ROP_usdoutput.h"
+#include "ROP_usdluxoutput.h"
 #include "SOP_usdimport.h"
+#include "SOP_usdluximport.h"
 #include "SOP_usdunpack.h"
 #include "OBJ_usdcamera.h"
 
@@ -41,15 +43,17 @@ newDriverOperator(OP_OperatorTable* operators)
 {
     PXR_NS::GusdInit();
     PXR_NS::GusdROP_usdoutput::Register(operators);
+    PXR_NS::GusdROP_usdluxoutput::Register(operators);
 }
 
 ARCH_EXPORT
 void 
-newSopOperator( OP_OperatorTable* operators) 
+newSopOperator(OP_OperatorTable* operators)
 {
     PXR_NS::GusdInit();
     PXR_NS::GusdSOP_usdimport::Register(operators);
     PXR_NS::GusdSOP_usdunpack::Register(operators);
+    PXR_NS::GusdSOP_usdluximport::Register(operators);
 }
 
 ARCH_EXPORT
@@ -62,15 +66,15 @@ newObjectOperator(OP_OperatorTable *operators)
 
 ARCH_EXPORT
 void
-newGeometryPrim( GA_PrimitiveFactory *f ) 
+newGeometryPrim(GA_PrimitiveFactory *f)
 {
     PXR_NS::GusdInit();
-    PXR_NS::GusdNewGeometryPrim( f );
+    PXR_NS::GusdNewGeometryPrim(f);
 }
 
 ARCH_EXPORT
 void
-newGeometryIO( void * )
+newGeometryIO(void *)
 {
     PXR_NS::GusdInit();
     PXR_NS::GusdNewGeometryIO();

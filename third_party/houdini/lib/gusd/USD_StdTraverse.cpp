@@ -33,6 +33,8 @@
 #include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
+#include "pxr/usd/usdLux/light.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using GusdUSD_ThreadedTraverse::DefaultImageablePrimVisitorT;
@@ -143,6 +145,25 @@ struct _VisitGroups
 
 typedef DefaultImageablePrimVisitorT<_VisitGroups>   _VisitImageableGroups;
 
+struct _VisitLights
+{
+    bool    operator()(const UsdPrim& prim,
+                       UsdTimeCode time,
+                       GusdUSD_TraverseControl& ctl)
+    {
+        UsdLuxLight light(prim);
+        if(BOOST_UNLIKELY((bool)light)) {
+            ctl.PruneChildren();
+            return true;
+        }
+        return false;
+    }
+};
+
+
+
+typedef DefaultImageablePrimVisitorT<_VisitLights>   _VisitImageableLights;
+
 
 struct _VisitComponentsAndBoundables
 {
@@ -242,6 +263,7 @@ _DECLARE_STATIC_TRAVERSAL(GetGroupTraversal,                _VisitImageableGroup
 _DECLARE_STATIC_TRAVERSAL(GetBoundableTraversal,            _VisitImageableBoundables);
 _DECLARE_STATIC_TRAVERSAL(GetGprimTraversal,                _VisitImageableGprims);
 _DECLARE_STATIC_TRAVERSAL(GetMeshTraversal,                 _VisitImageableMeshes);
+_DECLARE_STATIC_TRAVERSAL(GetLightTraversal,                _VisitImageableLights);
 
 _DECLARE_STATIC_TRAVERSAL(GetRecursiveModelTraversal,       _RecursiveVisitImageableModels);
 
@@ -258,6 +280,9 @@ GusdUSD_TraverseType stdTypes[] = {
     GusdUSD_TraverseType(&GetBoundableTraversal(), "std:boundables",
                          "Gprims", NULL,
                          "Return leaf geometry primitives, instances, and procedurals."),
+    GusdUSD_TraverseType(&GetLightTraversal(), "std:lights",
+                         "Lights", NULL,
+                         "Return light primitives."),
 };
 
 
