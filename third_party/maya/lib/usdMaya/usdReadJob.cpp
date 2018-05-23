@@ -266,7 +266,8 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
                                               mArgs.shadingMode,
                                               mArgs.timeInterval,
                                               mArgs.includeMetadataKeys,
-                                              mArgs.includeAPINames);
+                                              mArgs.includeAPINames,
+                                              mArgs.eulerFilterMode);
                 PxrUsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
                 // If we are NOT importing on behalf of an assembly, then we'll

@@ -46,7 +46,8 @@ const char* const usdTranslatorImportDefaults =
         "shadingMode=displayColor;"
         "readAnimData=1;"
         "useCustomFrameRange=0;"
-        "assemblyRep=Collapsed";
+        "assemblyRep=Collapsed;"
+        "eulerFilterMode=Auto";
 
 
 class usdTranslatorImport : public MPxFileTranslator

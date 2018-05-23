@@ -55,7 +55,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
         PXRUSDMAYA_TRANSLATOR_TOKENS);
 
-#define PXRUSDMAYA_JOBARGS_TOKENS \
+#define PXRUSDMAYA_EXPORT_JOBARGS_TOKENS \
+    (Uniform) \
     (defaultLayer) \
     (currentLayer) \
     (modelingVariant) \
@@ -63,8 +64,16 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
     ((auto_, "auto")) \
     ((explicit_, "explicit"))
 
-TF_DECLARE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, 
-        PXRUSDMAYA_JOBARGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
+        PXRUSDMAYA_EXPORT_JOBARGS_TOKENS);
+
+#define PXRUSDMAYA_IMPORT_JOBARGS_TOKENS \
+    (Auto) \
+    (On) \
+    (Off)
+
+TF_DECLARE_PUBLIC_TOKENS(PxrUsdImportJobArgsTokens,
+        PXRUSDMAYA_IMPORT_JOBARGS_TOKENS);
 
 struct JobExportArgs
 {
@@ -157,6 +166,7 @@ struct JobImportArgs
     bool importWithProxyShapes;
     TfToken::Set includeMetadataKeys;
     TfToken::Set includeAPINames;
+    TfToken eulerFilterMode;
 };
 
 PXRUSDMAYA_API

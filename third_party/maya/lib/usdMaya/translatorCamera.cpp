@@ -395,7 +395,8 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
             defaultJobArgs.shadingMode,
             defaultJobArgs.timeInterval,
             defaultJobArgs.includeMetadataKeys,
-            defaultJobArgs.includeAPINames);
+            defaultJobArgs.includeAPINames,
+            defaultJobArgs.eulerFilterMode);
 
     return _ReadToCamera(usdCamera, cameraObject, args, NULL);
 }

@@ -109,6 +109,8 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
                 customFrameRange.SetMin(theOption[1].asDouble());
             } else if (theOption[0] == MString("endTime")) {
                 customFrameRange.SetMax(theOption[1].asDouble());
+            } else if (theOption[0] == MString("eulerFilterMode")) {
+                jobArgs.eulerFilterMode = TfToken(theOption[1].asChar());
             }
         }
     }

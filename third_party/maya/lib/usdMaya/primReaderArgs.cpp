@@ -32,13 +32,15 @@ PxrUsdMayaPrimReaderArgs::PxrUsdMayaPrimReaderArgs(
         const TfToken& shadingMode,
         const GfInterval& timeInterval,
         const TfToken::Set& includeMetadataKeys,
-        const TfToken::Set& includeAPINames)
+        const TfToken::Set& includeAPINames,
+        const TfToken& eulerFilterMode)
     : 
         _prim(prim),
         _shadingMode(shadingMode),
         _timeInterval(timeInterval),
         _includeMetadataKeys(includeMetadataKeys),
-        _includeAPINames(includeAPINames)
+        _includeAPINames(includeAPINames),
+        _eulerFilterMode(eulerFilterMode)
 {
 }
 const UsdPrim&
@@ -56,6 +58,11 @@ GfInterval
 PxrUsdMayaPrimReaderArgs::GetTimeInterval() const
 {
     return _timeInterval;
+}
+const TfToken&
+PxrUsdMayaPrimReaderArgs::GetEulerFilterMode() const
+{
+    return _eulerFilterMode;
 }
 
 const TfToken::Set&

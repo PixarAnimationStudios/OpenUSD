@@ -229,14 +229,14 @@ try
         argData.getFlagArgument("exportSkin", 0, stringVal);
 
         const TfToken tok(stringVal.asChar());
-        if (tok == PxUsdExportJobArgsTokens->none) {
+        if (tok == PxrUsdExportJobArgsTokens->none) {
             jobArgs.exportSkin = false;
         }
-        else if (tok == PxUsdExportJobArgsTokens->auto_) {
+        else if (tok == PxrUsdExportJobArgsTokens->auto_) {
             jobArgs.exportSkin = true;
             jobArgs.autoSkelRoots = true;
         }
-        else if (tok == PxUsdExportJobArgsTokens->explicit_) {
+        else if (tok == PxrUsdExportJobArgsTokens->explicit_) {
             jobArgs.exportSkin = true;
             jobArgs.autoSkelRoots = false;
         }
@@ -338,9 +338,9 @@ try
         const TfToken renderLayerMode(stringVal.asChar());
 
         if (!renderLayerMode.IsEmpty()) {
-            if (renderLayerMode != PxUsdExportJobArgsTokens->defaultLayer &&
-                   renderLayerMode != PxUsdExportJobArgsTokens->currentLayer &&
-                   renderLayerMode != PxUsdExportJobArgsTokens->modelingVariant)
+            if (renderLayerMode != PxrUsdExportJobArgsTokens->defaultLayer &&
+                   renderLayerMode != PxrUsdExportJobArgsTokens->currentLayer &&
+                   renderLayerMode != PxrUsdExportJobArgsTokens->modelingVariant)
             {
                 MGlobal::displayError(TfStringPrintf(
                         "Invalid renderLayerMode '%s'. "

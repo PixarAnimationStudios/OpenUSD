@@ -49,7 +49,8 @@ public:
             const TfToken& shadingMode,
             const GfInterval& timeInterval,
             const TfToken::Set& includeMetadataKeys,
-            const TfToken::Set& includeAPINames);
+            const TfToken::Set& includeAPINames,
+            const TfToken& eulerFilterMode);
 
     /// \brief return the usd prim that should be read.
     PXRUSDMAYA_API
@@ -69,6 +70,9 @@ public:
     PXRUSDMAYA_API
     const TfToken::Set& GetIncludeAPINames() const;
 
+    PXRUSDMAYA_API
+    const TfToken& GetEulerFilterMode() const;
+
     bool ShouldImportUnboundShaders() const {
         // currently this is disabled.
         return false;
@@ -80,6 +84,7 @@ private:
     const GfInterval _timeInterval;
     const TfToken::Set& _includeMetadataKeys;
     const TfToken::Set& _includeAPINames;
+    const TfToken& _eulerFilterMode;
 };
 
 

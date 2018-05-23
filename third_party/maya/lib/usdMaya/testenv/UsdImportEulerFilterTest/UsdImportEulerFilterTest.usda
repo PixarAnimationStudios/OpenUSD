@@ -1,0 +1,102 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 2
+    startTimeCode = 0
+    upAxis = "Y"
+)
+
+def Xform "World" (
+    kind = "component"
+)
+{
+    def Xform "EulerFlips"
+    {
+        float3 xformOp:rotateXYZ.timeSamples = {
+            0: (0, 80, 0),
+            1: (0, 90, 0),
+            2: (0, 100, 0),
+        }
+        float3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (0.0, 0.0, 0.0)
+        float3 xformOp:rotateXYZ:rotateOffset = (0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        float3 xformOp:scale:scaleOffset = (1, 1, 1)
+        matrix4d xformOp:transform:shear = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        double3 xformOp:translate = (0, 0, 0)
+        float3 xformOp:translate:rotatePivot = (0, 0, 0)
+        float3 xformOp:translate:rotatePivotOffset = (0, 0, 0)
+        float3 xformOp:translate:scalePivot = (0, 0, 0)
+        float3 xformOp:translate:scalePivotOffset = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotOffset", "xformOp:translate:rotatePivot", "xformOp:rotateXYZ:rotateOffset", "xformOp:rotateXYZ", "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotOffset", "xformOp:translate:scalePivot", "xformOp:transform:shear", "xformOp:scale:scaleOffset", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
+    }
+
+    def Xform "NoEulerFlips"
+    {
+        float3 xformOp:rotateXYZ.timeSamples = {
+            0: (0, 10, 0),
+            1: (0, 20, 0),
+            2: (0, 30, 0),
+        }
+        float3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (0.0, 0.0, 0.0)
+        float3 xformOp:rotateXYZ:rotateOffset = (0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        float3 xformOp:scale:scaleOffset = (1, 1, 1)
+        matrix4d xformOp:transform:shear = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+        double3 xformOp:translate = (0, 0, 0)
+        float3 xformOp:translate:rotatePivot = (0, 0, 0)
+        float3 xformOp:translate:rotatePivotOffset = (0, 0, 0)
+        float3 xformOp:translate:scalePivot = (0, 0, 0)
+        float3 xformOp:translate:scalePivotOffset = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotOffset", "xformOp:translate:rotatePivot", "xformOp:rotateXYZ:rotateOffset", "xformOp:rotateXYZ", "!invert!xformOp:translate:rotatePivot", "xformOp:translate:scalePivotOffset", "xformOp:translate:scalePivot", "xformOp:transform:shear", "xformOp:scale:scaleOffset", "xformOp:scale", "!invert!xformOp:translate:scalePivot"]
+    }
+
+    def Xform "SimpleXformEulerFlips"
+    {
+        float3 xformOp:rotateXYZ.timeSamples = {
+            0: (0, 80, 0),
+            1: (0, 90, 0),
+            2: (0, 100, 0),
+        }
+        float3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (0.0, 0.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Xform "SimpleZXYXformEulerFlips"
+    {
+        float3 xformOp:rotateZXY.timeSamples = {
+            0: (90, 80, 0),
+            1: (90, 90, 0),
+            2: (90, 100, 0),
+        }
+        float3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (0.0, 0.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZXY", "xformOp:scale"]
+    }
+
+    def Xform "SimpleXformBuiltInEulerFlips"
+    {
+        float3 xformOp:rotateXYZ.timeSamples = {
+            0: (0, 80, 0),
+            1: (0, 90, 0),
+            2: (180.0, 80.0, 180.0),
+        }
+        float3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (0.0, 0.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+        def Xform "SimpleZXYXformBuiltInEulerFlips"
+    {
+        float3 xformOp:rotateZXY.timeSamples = {
+            0: (0, 80, 0),
+            1: (0, 90, 0),
+            2: (180.0, 80.0, 180.0),
+        }
+        float3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (0.0, 0.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZXY", "xformOp:scale"]
+    }
+}

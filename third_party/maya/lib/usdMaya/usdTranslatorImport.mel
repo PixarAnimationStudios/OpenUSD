@@ -102,6 +102,11 @@ global proc int usdTranslatorImport (string $parent,
             menuItem -l $niceName -ann $modeName;
         }
 
+        optionMenuGrp -l "Euler Filter Mode:" eulerFilterModePopup;
+            menuItem -l "Auto";
+            menuItem -l "On";
+            menuItem -l "Off";
+
         checkBox -l "Read Animation Data" -cc ("usdTranslatorImport_AnimationCB") readAnimDataCheckBox;
 
         checkBox -l "Custom Frame Range" -cc ("usdTranslatorImport_AnimationCB") customFrameRangeCheckBox;
@@ -137,6 +142,8 @@ global proc int usdTranslatorImport (string $parent,
                     intFieldGrp -e -v1 $endTime endTimeField;
                 } else if ($optionBreakDown[0] == "useCustomFrameRange") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "customFrameRangeCheckBox");
+                } else if ($optionBreakDown[0] == "eulerFilterMode") {
+                    optionMenuGrp -e -value $optionBreakDown[1] eulerFilterModePopup;
                 }
             }
         }
@@ -151,6 +158,7 @@ global proc int usdTranslatorImport (string $parent,
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useCustomFrameRange", "customFrameRangeCheckBox");
+        $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "eulerFilterMode", "eulerFilterModePopup");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

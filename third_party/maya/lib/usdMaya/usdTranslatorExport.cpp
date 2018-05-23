@@ -126,9 +126,9 @@ usdTranslatorExport::writer(const MFileObject &file,
             }
             if (theOption[0] == MString("renderLayerMode")) {
                 const TfToken mode(theOption[1].asChar());
-                if (mode != PxUsdExportJobArgsTokens->defaultLayer &&
-                        mode != PxUsdExportJobArgsTokens->currentLayer &&
-                        mode != PxUsdExportJobArgsTokens->modelingVariant) {
+                if (mode != PxrUsdExportJobArgsTokens->defaultLayer &&
+                        mode != PxrUsdExportJobArgsTokens->currentLayer &&
+                        mode != PxrUsdExportJobArgsTokens->modelingVariant) {
                     TF_WARN("renderLayerMode '%s' not recognized",
                             mode.GetText());
                 } else {
@@ -158,14 +158,14 @@ usdTranslatorExport::writer(const MFileObject &file,
             }
             if (theOption[0] == MString("exportSkin")) {
                 const TfToken tok(theOption[1].asChar());
-                if (tok == PxUsdExportJobArgsTokens->none) {
+                if (tok == PxrUsdExportJobArgsTokens->none) {
                     jobArgs.exportSkin = false;
                 }
-                else if (tok == PxUsdExportJobArgsTokens->auto_) {
+                else if (tok == PxrUsdExportJobArgsTokens->auto_) {
                     jobArgs.exportSkin = true;
                     jobArgs.autoSkelRoots = true;
                 }
-                else if (tok == PxUsdExportJobArgsTokens->explicit_) {
+                else if (tok == PxrUsdExportJobArgsTokens->explicit_) {
                     jobArgs.exportSkin = true;
                     jobArgs.autoSkelRoots = false;
                 }

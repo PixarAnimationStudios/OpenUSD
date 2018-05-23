@@ -42,8 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
         PXRUSDMAYA_TRANSLATOR_TOKENS);
 
-TF_DEFINE_PUBLIC_TOKENS(PxUsdExportJobArgsTokens, 
-        PXRUSDMAYA_JOBARGS_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
+        PXRUSDMAYA_EXPORT_JOBARGS_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _defaultIncludeMetadataKeys, 
@@ -51,6 +51,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (instanceable)
     (kind)
 );
+
+TF_DEFINE_PUBLIC_TOKENS(PxrUsdImportJobArgsTokens,
+        PXRUSDMAYA_IMPORT_JOBARGS_TOKENS);
 
 JobExportArgs::JobExportArgs()
     :
@@ -72,7 +75,7 @@ JobExportArgs::JobExportArgs()
         normalizeNurbs(false),
         exportNurbsExplicitUV(true),
         exportColorSets(true),
-        renderLayerMode(PxUsdExportJobArgsTokens->defaultLayer),
+        renderLayerMode(PxrUsdExportJobArgsTokens->defaultLayer),
         defaultMeshScheme(UsdGeomTokens->catmullClark),
         exportVisibility(true),
         parentScope(SdfPath())
@@ -153,7 +156,8 @@ JobImportArgs::JobImportArgs()
         includeMetadataKeys(
                 _defaultIncludeMetadataKeys->allTokens.begin(),
                 _defaultIncludeMetadataKeys->allTokens.end()),
-        includeAPINames(/*empty*/)
+        includeAPINames(/*empty*/),
+        eulerFilterMode(PxrUsdImportJobArgsTokens->Auto)
 {
 }
 
@@ -163,7 +167,8 @@ operator <<(std::ostream& out, const JobImportArgs& importArgs)
     out << "shadingMode: " << importArgs.shadingMode << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
-        << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;
+        << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl
+        << "eulerFilterMode: " << importArgs.eulerFilterMode << std::endl;
 
     return out;
 }

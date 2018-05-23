@@ -117,7 +117,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
 
     MGlobal::displayInfo("usdWriteJob::beginJob: Create stage file "+MString(mFileName.c_str()));
 
-    if (mJobCtx.mArgs.renderLayerMode == PxUsdExportJobArgsTokens->modelingVariant) {
+    if (mJobCtx.mArgs.renderLayerMode == PxrUsdExportJobArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
         if (mRenderLayerObjs.length() > 1) {
@@ -154,7 +154,7 @@ bool usdWriteJob::beginJob(const std::string &iFileName, bool append)
 
     // Switch to the default render layer unless the renderLayerMode is
     // 'currentLayer', or the default layer is already the current layer.
-    if (mJobCtx.mArgs.renderLayerMode != PxUsdExportJobArgsTokens->currentLayer &&
+    if (mJobCtx.mArgs.renderLayerMode != PxrUsdExportJobArgsTokens->currentLayer &&
             MFnRenderLayer::currentLayer() != MFnRenderLayer::defaultRenderLayer()) {
         // Set the RenderLayer to the default render layer
         MFnRenderLayer defaultLayer(MFnRenderLayer::defaultRenderLayer());

@@ -75,6 +75,7 @@ MSyntax usdImport::createSyntax()
     syntax.addFlag("-fr" , "-frameRange"        , MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag("-md" , "-metadata"          , MSyntax::kString);
     syntax.addFlag("-api" , "-apiSchema"        , MSyntax::kString);
+    syntax.addFlag("-ef", "-eulerFilterMode"    , MSyntax::kString);
     syntax.makeFlagMultiUse("variant");
     syntax.makeFlagMultiUse("metadata");
     syntax.makeFlagMultiUse("apiSchema");
@@ -238,6 +239,16 @@ MStatus usdImport::doIt(const MArgList & args)
     }
     if (!includeAPINames.empty()) {
         jobArgs.includeAPINames = includeAPINames;
+    }
+    
+    if (argData.isFlagSet("eulerFilterMode"))
+    {
+        MString stringVal;
+        argData.getFlagArgument("eulerFilterMode", 0, stringVal);
+        std::string eulerFilterMode = stringVal.asChar();
+        if (!eulerFilterMode.empty()) {
+            jobArgs.eulerFilterMode = TfToken(eulerFilterMode);
+        }
     }
 
     // Create the command
