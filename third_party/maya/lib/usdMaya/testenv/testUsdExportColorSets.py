@@ -347,7 +347,7 @@ class testUsdExportColorSets(unittest.TestCase):
             elif isRGB:
                 colorSetValue = self._ColorFromVec4f(colorSetValue)
 
-            colorSetValues.append(colorSetValue)
+            colorSetValues.insert(0, colorSetValue)
 
         return colorSetValues
 
@@ -369,11 +369,11 @@ class testUsdExportColorSets(unittest.TestCase):
         if isSparse:
             # Every other component is unassigned.
             if isFaceColor:
-                assignmentIndices = [0, 3, 1, 3, 2, 3]
+                assignmentIndices = [1, 0, 2, 0, 3, 0]
             elif isVertexColor:
-                assignmentIndices = [0, 4, 1, 4, 2, 4, 3, 4]
+                assignmentIndices = [1, 0, 2, 0, 3, 0, 4, 0]
             elif isFaceVertexColor:
-                assignmentIndices = [0, 12, 1, 12, 2, 12, 3, 12, 4, 12, 5, 12, 6, 12, 7, 12, 8, 12, 9, 12, 10, 12, 11, 12]
+                assignmentIndices = [1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8, 0, 9, 0, 10, 0, 11, 0, 12, 0]
         else:
             # Every component has an assignment.
             if isFaceColor:
@@ -394,31 +394,10 @@ class testUsdExportColorSets(unittest.TestCase):
         Given a color set name, return the index that represents unauthored
         values when the color set is exported as a primvar.
         """
-        isSparse = self._IsColorSetSparse(colorSetName)
-
-        unassignedIndex = -1
-
-        if not isSparse:
-            return unassignedIndex
-
-        isFaceColor = colorSetName.startswith('FaceColor_')
-        isVertexColor = colorSetName.startswith('VertexColor_')
-        isFaceVertexColor = colorSetName.startswith('FaceVertexColor_')
-
-        # When we skip components, we'll only be assigning half of them.
-        # In the case of our cube, we have 6 faces, 8 vertices, and 24
-        # faceVertices, so the unassigned indices should be 3, 4, and
-        # 12, respectively.
-        if isFaceColor:
-            unassignedIndex = self._colorSetSourceMesh.numPolygons()
-        elif isVertexColor:
-            unassignedIndex = self._colorSetSourceMesh.numVertices()
-        elif isFaceVertexColor:
-            unassignedIndex = self._colorSetSourceMesh.numFaceVertices()
-
-        unassignedIndex /= 2
-
-        return unassignedIndex
+        if self._IsColorSetSparse(colorSetName):
+            return 0
+        else:
+            return -1
 
     def _GetExpectedColorSetInterpolation(self, colorSetName):
         isFaceColor = colorSetName.startswith('FaceColor_')

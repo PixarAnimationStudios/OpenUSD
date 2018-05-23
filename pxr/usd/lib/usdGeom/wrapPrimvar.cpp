@@ -152,6 +152,7 @@ void wrapUsdGeomPrimvar()
         .def("GetIndices", _GetIndices, 
             (arg("time")=UsdTimeCode::Default()))
         .def("GetIndicesAttr", &Primvar::GetIndicesAttr)
+        .def("CreateIndicesAttr", &Primvar::GetIndicesAttr)
         .def("IsIndexed", &Primvar::IsIndexed)
 
         .def("GetUnauthoredValuesIndex", &Primvar::GetUnauthoredValuesIndex)
