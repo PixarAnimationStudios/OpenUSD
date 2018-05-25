@@ -405,6 +405,8 @@ JobImportArgs::JobImportArgs(
                     PxrUsdImportJobArgsTokens->Import,
                     PxrUsdImportJobArgsTokens->Unloaded
                 })),
+        excludePrimvarNames(
+            _TokenSet(userArgs, PxrUsdImportJobArgsTokens->excludePrimvar)),
         includeAPINames(
             _TokenSet(userArgs, PxrUsdImportJobArgsTokens->apiSchema)),
         includeMetadataKeys(
@@ -441,6 +443,7 @@ const VtDictionary& JobImportArgs::GetDefaultDictionary()
         d[PxrUsdImportJobArgsTokens->assemblyRep] =
                 PxrUsdImportJobArgsTokens->Collapsed.GetString();
         d[PxrUsdImportJobArgsTokens->apiSchema] = std::vector<VtValue>();
+        d[PxrUsdImportJobArgsTokens->excludePrimvar] = std::vector<VtValue>();
         d[PxrUsdImportJobArgsTokens->metadata] =
                 std::vector<VtValue>({
                     VtValue(SdfFieldKeys->Hidden.GetString()),

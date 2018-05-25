@@ -73,11 +73,16 @@ MSyntax usdImport::createSyntax()
     syntax.addFlag("-md",
                    PxrUsdImportJobArgsTokens->metadata.GetText(),
                    MSyntax::kString);
-    syntax.makeFlagMultiUse("metadata");
+    syntax.makeFlagMultiUse(PxrUsdImportJobArgsTokens->metadata.GetText());
     syntax.addFlag("-api",
                    PxrUsdImportJobArgsTokens->apiSchema.GetText(),
                    MSyntax::kString);
-    syntax.makeFlagMultiUse("apiSchema");
+    syntax.makeFlagMultiUse(PxrUsdImportJobArgsTokens->apiSchema.GetText());
+    syntax.addFlag("-epv",
+                   PxrUsdImportJobArgsTokens->excludePrimvar.GetText(),
+                   MSyntax::kString);
+    syntax.makeFlagMultiUse(
+            PxrUsdImportJobArgsTokens->excludePrimvar.GetText());
 
     // These are additional flags under our control.
     syntax.addFlag("-f" , "-file", MSyntax::kString);

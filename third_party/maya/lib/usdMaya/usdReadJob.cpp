@@ -262,11 +262,7 @@ bool usdReadJob::_DoImport(UsdPrimRange& rootRange,
             // step.
             if (!primIt.IsPostVisit()) {
                 // This is the normal Read step (pre-visit).
-                PxrUsdMayaPrimReaderArgs args(prim,
-                                              mArgs.shadingMode,
-                                              mArgs.timeInterval,
-                                              mArgs.includeMetadataKeys,
-                                              mArgs.includeAPINames);
+                PxrUsdMayaPrimReaderArgs args(prim, mArgs);
                 PxrUsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
                 // If we are NOT importing on behalf of an assembly, then we'll

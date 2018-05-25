@@ -95,6 +95,7 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
     /* Dictionary keys */ \
     (apiSchema) \
     (assemblyRep) \
+    (excludePrimvar) \
     (metadata) \
     (shadingMode) \
     /* assemblyRep values */ \
@@ -182,6 +183,7 @@ std::ostream& operator <<(std::ostream& out, const JobExportArgs& exportArgs);
 struct JobImportArgs
 {
     const TfToken assemblyRep;
+    const TfToken::Set excludePrimvarNames;
     const TfToken::Set includeAPINames;
     const TfToken::Set includeMetadataKeys;
     TfToken shadingMode; // XXX can we make this const?

@@ -261,8 +261,16 @@ PxrUsdMayaTranslatorMesh::Create(
     std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
     TF_FOR_ALL(iter, primvars) {
         const UsdGeomPrimvar& primvar = *iter;
-        const TfToken& name = primvar.GetBaseName();
-        const SdfValueTypeName& typeName = primvar.GetTypeName();
+        const TfToken name = primvar.GetBaseName();
+        const TfToken fullName = primvar.GetPrimvarName();
+        const SdfValueTypeName typeName = primvar.GetTypeName();
+
+        // Exclude primvars using the full primvar name without "primvars:".
+        // This applies to all primvars; we don't care if it's a color set, a
+        // UV set, etc.
+        if (args.GetExcludePrimvarNames().count(fullName) != 0) {
+            continue;
+        }
 
         // If the primvar is called either displayColor or displayOpacity check
         // if it was really authored from the user.  It may not have been

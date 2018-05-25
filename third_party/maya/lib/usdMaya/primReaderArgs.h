@@ -27,7 +27,9 @@
 /// \file primReaderArgs.h
 
 #include "pxr/pxr.h"
+
 #include "usdMaya/api.h"
+#include "usdMaya/JobArgs.h"
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/usd/usd/prim.h"
@@ -46,10 +48,7 @@ public:
     PXRUSDMAYA_API
     PxrUsdMayaPrimReaderArgs(
             const UsdPrim& prim,
-            const TfToken& shadingMode,
-            const GfInterval& timeInterval,
-            const TfToken::Set& includeMetadataKeys,
-            const TfToken::Set& includeAPINames);
+            const JobImportArgs& jobArgs);
 
     /// \brief return the usd prim that should be read.
     PXRUSDMAYA_API
@@ -69,6 +68,9 @@ public:
     PXRUSDMAYA_API
     const TfToken::Set& GetIncludeAPINames() const;
 
+    PXRUSDMAYA_API
+    const TfToken::Set& GetExcludePrimvarNames() const;
+
     bool ShouldImportUnboundShaders() const {
         // currently this is disabled.
         return false;
@@ -76,10 +78,7 @@ public:
 
 private:
     const UsdPrim& _prim;
-    const TfToken& _shadingMode;
-    const GfInterval _timeInterval;
-    const TfToken::Set& _includeMetadataKeys;
-    const TfToken::Set& _includeAPINames;
+    const JobImportArgs& _jobArgs;
 };
 
 

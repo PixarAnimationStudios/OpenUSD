@@ -391,13 +391,7 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
 {
     JobImportArgs defaultJobArgs = JobImportArgs::CreateFromDictionary(
             JobImportArgs::GetDefaultDictionary());
-    PxrUsdMayaPrimReaderArgs args(
-            usdCamera.GetPrim(),
-            defaultJobArgs.shadingMode,
-            defaultJobArgs.timeInterval,
-            defaultJobArgs.includeMetadataKeys,
-            defaultJobArgs.includeAPINames);
-
+    PxrUsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
     return _ReadToCamera(usdCamera, cameraObject, args, NULL);
 }
 
