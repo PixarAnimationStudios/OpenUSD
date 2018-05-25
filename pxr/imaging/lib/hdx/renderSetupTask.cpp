@@ -120,6 +120,8 @@ HdxRenderSetupTask::SyncParams(HdxRenderTaskParams const &params)
 {
     _renderPassState->SetOverrideColor(params.overrideColor);
     _renderPassState->SetWireframeColor(params.wireframeColor);
+    _renderPassState->SetMaskColor(params.maskColor);
+    _renderPassState->SetIndicatorColor(params.indicatorColor);
     _renderPassState->SetPointColor(params.pointColor);
     _renderPassState->SetPointSize(params.pointSize);
     _renderPassState->SetPointSelectedSize(params.pointSelectedSize);
@@ -231,6 +233,8 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
     out << "RenderTask Params: (...) " 
         << pv.overrideColor << " " 
         << pv.wireframeColor << " " 
+        << pv.maskColor << " " 
+        << pv.indicatorColor << " " 
         << pv.pointColor << " "
         << pv.pointSize << " "
         << pv.pointSelectedSize << " "
@@ -261,6 +265,8 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
 {
     return lhs.overrideColor           == rhs.overrideColor           &&
            lhs.wireframeColor          == rhs.wireframeColor          &&
+           lhs.maskColor               == rhs.maskColor               &&
+           lhs.indicatorColor          == rhs.indicatorColor          &&
            lhs.pointColor              == rhs.pointColor              &&
            lhs.pointSize               == rhs.pointSize               &&
            lhs.pointSelectedSize       == rhs.pointSelectedSize       &&

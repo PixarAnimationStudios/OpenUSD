@@ -115,6 +115,12 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
             HdShaderTokens->wireframeColor,
             HdTupleType{HdTypeFloatVec4, 1});
         bufferSpecs.emplace_back(
+            HdShaderTokens->maskColor,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->indicatorColor,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
             HdShaderTokens->pointColor,
             HdTupleType{HdTypeFloatVec4, 1});
         bufferSpecs.emplace_back(
@@ -178,6 +184,12 @@ HdStRenderPassState::Sync(HdResourceRegistrySharedPtr const &resourceRegistry)
     sources.push_back(HdBufferSourceSharedPtr(
                           new HdVtBufferSource(HdShaderTokens->wireframeColor,
                                                VtValue(_wireframeColor))));
+    sources.push_back(HdBufferSourceSharedPtr(
+                          new HdVtBufferSource(HdShaderTokens->maskColor,
+                                               VtValue(_maskColor))));
+    sources.push_back(HdBufferSourceSharedPtr(
+                          new HdVtBufferSource(HdShaderTokens->indicatorColor,
+                                               VtValue(_indicatorColor))));
     sources.push_back(HdBufferSourceSharedPtr(
                           new HdVtBufferSource(HdShaderTokens->pointColor,
                                                VtValue(_pointColor))));

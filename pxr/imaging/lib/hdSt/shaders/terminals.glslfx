@@ -55,9 +55,11 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 #if defined(HD_HAS_scalarOverride)
     return color;
 #else
-    return mix(color,
-               _ShadingTerminal(Peye, Neye, color, patchCoord),
-               GetLightingBlendAmount());
+    vec4 litColor = mix(color,
+                        _ShadingTerminal(Peye, Neye, color, patchCoord),
+                        GetLightingBlendAmount());
+
+    return ApplyColorOverridesPostLighting(litColor);
 #endif
 }
 
@@ -81,7 +83,7 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    return surfaceShader(Peye, Neye, color, patchCoord);        
+    return surfaceShader(Peye, Neye, color, patchCoord);
 }
 
 --- --------------------------------------------------------------------------
@@ -104,7 +106,7 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord);
 
 vec4 _ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    return surfaceShader(Peye, Neye, color, patchCoord);        
+    return surfaceShader(Peye, Neye, color, patchCoord);
 }
 
 --- --------------------------------------------------------------------------

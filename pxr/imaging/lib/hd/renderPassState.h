@@ -99,6 +99,14 @@ public:
     void SetWireframeColor(GfVec4f const &color);
     const GfVec4f& GetWireframeColor() const { return _wireframeColor; }
 
+    HD_API
+    void SetMaskColor(GfVec4f const &color);
+    const GfVec4f& GetMaskColor() const { return _maskColor; }
+
+    HD_API
+    void SetIndicatorColor(GfVec4f const &color);
+    const GfVec4f& GetIndicatorColor() const { return _indicatorColor; }
+
     /// Set a point color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
     HD_API
@@ -211,6 +219,12 @@ protected:
 
     GfVec4f _overrideColor;
     GfVec4f _wireframeColor;
+
+    // XXX: This is used for post-shading/lighting overriding via vertex
+    // weights. Ideally, we move this to application state.
+    GfVec4f _maskColor;
+    GfVec4f _indicatorColor;
+
     GfVec4f _pointColor;
     float _pointSize;
     float _pointSelectedSize;

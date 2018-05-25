@@ -41,6 +41,8 @@ HdRenderPassState::HdRenderPassState()
     , _cullMatrix(1)
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
     , _pointSize(3.0)
     , _pointSelectedSize(3.0)
@@ -116,6 +118,18 @@ void
 HdRenderPassState::SetWireframeColor(GfVec4f const &color)
 {
     _wireframeColor = color;
+}
+
+void
+HdRenderPassState::SetMaskColor(GfVec4f const &color)
+{
+    _maskColor = color;
+}
+
+void
+HdRenderPassState::SetIndicatorColor(GfVec4f const &color)
+{
+    _indicatorColor = color;
 }
 
 void

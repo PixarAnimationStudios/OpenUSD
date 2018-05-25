@@ -101,6 +101,20 @@ vec4  GetWireframeColor() {
     return vec4(0,0,0,0);
 #endif
 }
+vec4  GetMaskColor() {
+#if defined(HD_HAS_maskColor)
+    return HdGet_maskColor();
+#else
+    return vec4(0.5,0,0,1);
+#endif
+}
+vec4  GetIndicatorColor() {
+#if defined(HD_HAS_indicatorColor)
+    return HdGet_indicatorColor();
+#else
+    return vec4(0,0.5,0,1);
+#endif
+}
 
 bool IsFlipped(MAT4 m)
 {
@@ -169,6 +183,9 @@ void ApplyClipPlanes(vec4 Peye)
 
 -- glsl RenderPass.RenderColorOutput
 
+// XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
+// color override methods, since they're currently duplicated. This is because
+// we don't have a mixin token for color overrides in a render pass yet.
 vec4 ApplyColorOverrides(vec4 color)
 {
 #if defined(HD_HAS_scalarOverride)
@@ -194,6 +211,27 @@ vec4 ApplyColorOverrides(vec4 color)
     vec4 overrideColor = HdGet_overrideColor();
     color.rgb = mix(color.rgb, overrideColor.rgb, overrideColor.a);
 #endif
+    return color;
+}
+
+vec3 ApplyMaskColor(vec4 color, float weight, vec4 maskColor)
+{
+    float strength = maskColor.a * clamp(weight, 0, 1);
+    return mix(color.rgb, maskColor.rgb, strength);
+}
+
+vec4 ApplyColorOverridesPostLighting(vec4 color)
+{
+    #if defined(HD_HAS_maskWeight)
+        float maskWeight = HdGet_maskWeight();
+        vec4 maskColor = GetMaskColor();
+        color.rgb = ApplyMaskColor(color, maskWeight, maskColor);
+    #endif
+    #if defined(HD_HAS_indicatorWeight)
+        float indicatorWeight = HdGet_indicatorWeight();
+        vec4 indicatorColor = GetIndicatorColor();
+        color.rgb = ApplyMaskColor(color, indicatorWeight, indicatorColor);
+    #endif
     return color;
 }
 

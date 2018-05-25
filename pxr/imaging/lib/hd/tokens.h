@@ -176,18 +176,20 @@ PXR_NAMESPACE_OPEN_SCOPE
     (environmentMap)                            \
     (fragmentShader)                            \
     (geometryShader)                            \
+    (indicatorColor)                            \
     (lightingBlendAmount)                       \
     (overrideColor)                             \
+    (maskColor)                                 \
     (projectionMatrix)                          \
+    (pointColor)                                \
+    (pointSize)                                 \
+    (pointSelectedSize)                         \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (tessLevel)                                 \
     (viewport)                                  \
     (vertexShader)                              \
     (wireframeColor)                            \
-    (pointColor)                                \
-    (pointSize)                                 \
-    (pointSelectedSize)                         \
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)
 
