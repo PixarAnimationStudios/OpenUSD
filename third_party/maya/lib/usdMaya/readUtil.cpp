@@ -607,10 +607,22 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
             ok = true;
         }
     }
-    else if (newValue.IsHolding<int>()) {
+    else if (newValue.IsHolding<int>() ||
+            newValue.IsHolding<float>() ||
+            newValue.IsHolding<double>()) {
         if (_HasNumericType(attrPlug, MFnNumericData::kInt)) {
-            int i = newValue.Get<int>();
+            int i = VtValue::Cast<int>(newValue).Get<int>();
             modifier.newPlugValueInt(attrPlug, i);
+            ok = true;
+        }
+        else if (_HasNumericType(attrPlug, MFnNumericData::kFloat)) {
+            float f = VtValue::Cast<float>(newValue).Get<float>();
+            modifier.newPlugValueFloat(attrPlug, f);
+            ok = true;
+        }
+        else if (_HasNumericType(attrPlug, MFnNumericData::kDouble)) {
+            double d = VtValue::Cast<double>(newValue).Get<double>();
+            modifier.newPlugValueDouble(attrPlug, d);
             ok = true;
         }
     }
@@ -634,13 +646,6 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
             ok = true;
         }
     }
-    else if (newValue.IsHolding<float>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::kFloat)) {
-            float f = newValue.Get<float>();
-            modifier.newPlugValueFloat(attrPlug, f);
-            ok = true;
-        }
-    }
     else if (newValue.IsHolding<GfVec2f>()) {
         if (_HasNumericType(attrPlug, MFnNumericData::k2Float)) {
             GfVec2f v = newValue.Get<GfVec2f>();
@@ -658,13 +663,6 @@ bool PxrUsdMayaReadUtil::SetMayaAttr(
             MObject dataObj = data.create(MFnNumericData::k3Float);
             data.setData3Float(v[0], v[1], v[2]);
             modifier.newPlugValue(attrPlug, dataObj);
-            ok = true;
-        }
-    }
-    else if (newValue.IsHolding<double>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::kDouble)) {
-            double d = newValue.Get<double>();
-            modifier.newPlugValueDouble(attrPlug, d);
             ok = true;
         }
     }
