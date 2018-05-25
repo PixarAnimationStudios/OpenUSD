@@ -72,7 +72,6 @@ TF_DECLARE_PUBLIC_TOKENS(PxrUsdMayaTranslatorTokens,
     (melPerFrameCallback) \
     (melPostCallback) \
     (mergeTransformAndShape) \
-    (normalizeMeshUVs) \
     (normalizeNurbs) \
     (parentScope) \
     (pythonPerFrameCallback) \
@@ -124,7 +123,6 @@ struct JobExportArgs
     const bool exportVisibility;
     const SdfPath materialCollectionsPath;
     const bool mergeTransformAndShape;
-    const bool normalizeMeshUVs;
     const bool normalizeNurbs;
     const SdfPath parentScope;
     const TfToken renderLayerMode;

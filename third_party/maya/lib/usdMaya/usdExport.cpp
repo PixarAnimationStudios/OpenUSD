@@ -86,9 +86,6 @@ MSyntax usdExport::createSyntax()
                    PxrUsdExportJobArgsTokens->exportCollectionBasedBindings
                        .GetText(),
                    MSyntax::kBoolean);
-    syntax.addFlag("-nuv",
-                   PxrUsdExportJobArgsTokens->normalizeMeshUVs.GetText() ,
-                   MSyntax::kBoolean);
     syntax.addFlag("-nnu",
                    PxrUsdExportJobArgsTokens->normalizeNurbs.GetText() ,
                    MSyntax::kBoolean);

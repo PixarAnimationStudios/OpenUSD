@@ -244,8 +244,6 @@ JobExportArgs::JobExportArgs(
         mergeTransformAndShape(
             _Boolean(userArgs,
                 PxrUsdExportJobArgsTokens->mergeTransformAndShape)),
-        normalizeMeshUVs(
-            _Boolean(userArgs, PxrUsdExportJobArgsTokens->normalizeMeshUVs)),
         normalizeNurbs(
             _Boolean(userArgs, PxrUsdExportJobArgsTokens->normalizeNurbs)),
         parentScope(
@@ -299,7 +297,6 @@ operator <<(std::ostream& out, const JobExportArgs& exportArgs)
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
         << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
-        << "normalizeMeshUVs: " << TfStringify(exportArgs.normalizeMeshUVs) << std::endl
         << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections) << std::endl
         << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
         << "exportCollectionBasedBindings: " << TfStringify(exportArgs.exportCollectionBasedBindings) << std::endl
@@ -381,7 +378,6 @@ const VtDictionary& JobExportArgs::GetDefaultDictionary()
         d[PxrUsdExportJobArgsTokens->melPerFrameCallback] = std::string();
         d[PxrUsdExportJobArgsTokens->melPostCallback] = std::string();
         d[PxrUsdExportJobArgsTokens->mergeTransformAndShape] = true;
-        d[PxrUsdExportJobArgsTokens->normalizeMeshUVs] = false;
         d[PxrUsdExportJobArgsTokens->normalizeNurbs] = false;
         d[PxrUsdExportJobArgsTokens->parentScope] = std::string();
         d[PxrUsdExportJobArgsTokens->pythonPerFrameCallback] = std::string();
