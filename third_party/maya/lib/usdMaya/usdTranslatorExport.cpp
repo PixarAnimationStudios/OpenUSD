@@ -61,7 +61,7 @@ usdTranslatorExport::writer(const MFileObject &file,
                  MPxFileTranslator::FileAccessMode mode ) {
 
     std::string fileName(file.fullName().asChar());
-    JobExportArgs jobArgs;
+    VtDictionary userArgs;
     bool exportAnimation = false;
     GfInterval timeInterval(1.0, 1.0);
     std::set<double> frameSamples;
@@ -74,120 +74,29 @@ usdTranslatorExport::writer(const MFileObject &file,
         optionsString.split(';', optionList);
         for(int i=0; i<(int)optionList.length(); ++i) {
             theOption.clear();
-            optionList[i].split('=', theOption);            
-            if (theOption[0] == MString("exportReferencesAsInstanceable")) {
-                jobArgs.exportRefsAsInstanceable = theOption[1].asInt();
+            optionList[i].split('=', theOption);
+            if (theOption.length() != 2) {
+                continue;
             }
-            if (theOption[0] == MString("shadingMode")) {
-                TfToken shadingMode(theOption[1].asChar());
-                if (!shadingMode.IsEmpty()) {
-                    if (PxrUsdMayaShadingModeRegistry::GetInstance()
-                            .GetExporter(shadingMode)) {
-                        jobArgs.shadingMode = shadingMode;
-                    }
-                    else {
-                        if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
-                            MGlobal::displayError(TfStringPrintf(
-                                    "No shadingMode '%s' found. "
-                                    "Setting shadingMode='none'", 
-                                    shadingMode.GetText()).c_str());
-                        }
-                        jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
-                    }
-                }
-            }
-            if (theOption[0] == MString("exportDisplayColor")) {
-                jobArgs.exportDisplayColor = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("exportUVs")) {
-                jobArgs.exportMeshUVs = theOption[1].asInt();
-                jobArgs.exportNurbsExplicitUV = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("exportMaterialCollections")) {
-                jobArgs.exportMaterialCollections = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("materialCollectionsPath")) {
-                jobArgs.materialCollectionsPath = theOption[1].asChar();
-            }
-            if (theOption[0] == MString("exportCollectionBasedBindings")) {
-                jobArgs.exportCollectionBasedBindings= theOption[1].asInt();
-            }
-            if (theOption[0] == MString("normalizeUVs")) {
-                jobArgs.normalizeMeshUVs = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("exportColorSets")) {
-                jobArgs.exportColorSets = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("renderableOnly")) {
-                jobArgs.excludeInvisible = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("allCameras")) {
-                jobArgs.exportDefaultCameras = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("renderLayerMode")) {
-                const TfToken mode(theOption[1].asChar());
-                if (mode != PxUsdExportJobArgsTokens->defaultLayer &&
-                        mode != PxUsdExportJobArgsTokens->currentLayer &&
-                        mode != PxUsdExportJobArgsTokens->modelingVariant) {
-                    TF_WARN("renderLayerMode '%s' not recognized",
-                            mode.GetText());
-                } else {
-                    jobArgs.renderLayerMode = mode;
-                }
-            }
-            if (theOption[0] == MString("mergeXForm")) {
-                jobArgs.mergeTransformAndShape = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("exportInstances")) {
-                jobArgs.exportInstances = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("defaultMeshScheme")) {            
-                const TfToken scheme(theOption[1].asChar());
-                if (scheme != UsdGeomTokens->none &&
-                        scheme != UsdGeomTokens->catmullClark &&
-                        scheme != UsdGeomTokens->loop &&
-                        scheme != UsdGeomTokens->bilinear) {
-                    TF_WARN("defaultMeshScheme '%s' not recognized",
-                            scheme.GetText());
-                } else {
-                    jobArgs.defaultMeshScheme = scheme;
-                }
-            }
-            if (theOption[0] == MString("exportVisibility")) {
-                jobArgs.exportVisibility = theOption[1].asInt();
-            }
-            if (theOption[0] == MString("exportSkin")) {
-                const TfToken tok(theOption[1].asChar());
-                if (tok == PxUsdExportJobArgsTokens->none) {
-                    jobArgs.exportSkin = false;
-                }
-                else if (tok == PxUsdExportJobArgsTokens->auto_) {
-                    jobArgs.exportSkin = true;
-                    jobArgs.autoSkelRoots = true;
-                }
-                else if (tok == PxUsdExportJobArgsTokens->explicit_) {
-                    jobArgs.exportSkin = true;
-                    jobArgs.autoSkelRoots = false;
-                }
-                else {
-                    TF_WARN("exportSkin '%s' not recognized", tok.GetText());
-                }
-            }
-            if (theOption[0] == MString("animation")) {
+
+            std::string argName(theOption[0].asChar());
+            if (argName == "animation") {
                 exportAnimation = theOption[1].asInt();
             }
-            if (theOption[0] == MString("startTime")) {
+            else if (argName == "startTime") {
                 timeInterval.SetMin(theOption[1].asDouble());
             }
-            if (theOption[0] == MString("endTime")) {
+            else if (argName == "endTime") {
                 timeInterval.SetMax(theOption[1].asDouble());
             }
-            if (theOption[0] == MString("frameSample")) {
+            else if (argName == "frameSample") {
                 frameSamples.insert(theOption[1].asDouble());
             }
-            if (theOption[0] == MString("parentScope")) {
-                jobArgs.setParentScope(theOption[1].asChar());
-            }            
+            else {
+                userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
+                    argName, theOption[1].asChar(),
+                    JobExportArgs::GetDefaultDictionary());
+            }
         }
     }
 
@@ -197,16 +106,12 @@ usdTranslatorExport::writer(const MFileObject &file,
         if (timeInterval.IsEmpty()) {
             // If the user accidentally set start > end, resync to the closed
             // interval with the single start point.
-            jobArgs.timeInterval = GfInterval(timeInterval.GetMin());
-        }
-        else {
-            // Use the user's interval as-is.
-            jobArgs.timeInterval = timeInterval;
+            timeInterval = GfInterval(timeInterval.GetMin());
         }
     }
     else {
         // No animation, so empty interval.
-        jobArgs.timeInterval = GfInterval();
+        timeInterval = GfInterval();
     }
 
     if (frameSamples.empty()) {
@@ -223,14 +128,17 @@ usdTranslatorExport::writer(const MFileObject &file,
     }
 
     // Convert selection list to jobArgs dagPaths
+    PxrUsdMayaUtil::ShapeSet dagPaths;
     for (unsigned int i=0; i < objSelList.length(); i++) {
         MDagPath dagPath;
         if (objSelList.getDagPath(i, dagPath) == MS::kSuccess) {
-            jobArgs.dagPaths.insert(dagPath);
+            dagPaths.insert(dagPath);
         }
     }
     
-    if (jobArgs.dagPaths.size()) {
+    if (dagPaths.size()) {
+        JobExportArgs jobArgs = JobExportArgs::CreateFromDictionary(
+                userArgs, dagPaths, timeInterval);
         usdWriteJob writeJob(jobArgs);
         if (writeJob.beginJob(fileName, append)) {
             if (!jobArgs.timeInterval.IsEmpty()) {
@@ -284,6 +192,36 @@ usdTranslatorExport::identifyFile(
     }
 
     return retValue;
+}
+
+/* static */
+const std::string&
+usdTranslatorExport::GetDefaultOptions()
+{
+    static std::string defaultOptions;
+    static std::once_flag once;
+    std::call_once(once, []() {
+        std::vector<std::string> entries;
+        for (const std::pair<std::string, VtValue> keyValue :
+                JobExportArgs::GetDefaultDictionary()) {
+            if (keyValue.second.IsHolding<bool>()) {
+                entries.push_back(TfStringPrintf("%s=%d",
+                        keyValue.first.c_str(),
+                        keyValue.second.Get<bool>()));
+            }
+            else if (keyValue.second.IsHolding<std::string>()) {
+                entries.push_back(TfStringPrintf("%s=%s",
+                        keyValue.first.c_str(),
+                        keyValue.second.Get<std::string>().c_str()));
+            }
+        }
+        entries.push_back("animation=0");
+        entries.push_back("startTime=1");
+        entries.push_back("endTime=1");
+        defaultOptions = TfStringJoin(entries, ";");
+    });
+
+    return defaultOptions;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -39,28 +39,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
-const char* const usdTranslatorExportDefaults = 
-        "shadingMode=displayColor;"
-        "exportRefsAsInstanceable=0;"
-        "exportUVs=1;"
-        "exportMaterialCollections=0;"
-        "materialCollectionsPath=/Collections;"
-        "exportCollectionBasedBindings=0;"
-        "normalizeUVs=0;"
-        "exportColorSets=1;"
-        "renderableOnly=0;"
-        "allCameras=0;"
-        "renderLayerMode=defaultLayer;"
-        "mergeXForm=1;"
-        "exportInstances=1;"
-        "defaultMeshScheme=catmullClark;"
-        "exportVisibility=1;"
-        "animation=0;"
-        "startTime=1;"
-        "endTime=1";
-
-
 class usdTranslatorExport : public MPxFileTranslator
 {
     public:
@@ -92,6 +70,9 @@ class usdTranslatorExport : public MPxFileTranslator
         MString filter() const {
             return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
         }
+
+        PXRUSDMAYA_API
+        static const std::string& GetDefaultOptions();
 
     private:
 

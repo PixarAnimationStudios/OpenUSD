@@ -240,7 +240,7 @@ _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& startPath)
 }
 
 /// Changes an ancestor prim's typename to SkelRoot if necessary and allowed
-/// by the autoSkelRoots configuration.
+/// by the exportSkin job arg.
 /// \p outMadeSkelRoot must be non-null; it will be set to indicate whether any
 /// auto-renaming actually occured (true) or whether there was already a
 /// SkelRoot, so no renaming was necessary (false).
@@ -252,7 +252,7 @@ static SdfPath
 _VerifyOrMakeSkelRoot(
     const UsdStagePtr& stage,
     const SdfPath& meshPath,
-    bool autoSkelRoots,
+    const TfToken& exportSkinConfig,
     bool* outMadeSkelRoot)
 {
     // Only try to auto-rename to SkelRoot if we're not already a
@@ -284,7 +284,7 @@ _VerifyOrMakeSkelRoot(
         // might want SkelRoots to stop at Char_1 and Char_2.) Unfortunately,
         // the current structure precludes us from accessing model hierarchy
         // here.
-        if (autoSkelRoots) {
+        if (exportSkinConfig == PxrUsdExportJobArgsTokens->auto_) {
             if (UsdPrim root =
                     _FindRootmostXformOrSkelRoot(stage, meshPath)) {
                 UsdSkelRoot::Define(stage, root.GetPath());
@@ -315,7 +315,9 @@ _VerifyOrMakeSkelRoot(
 MObject
 MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
 {
-    if (!mWriteJobCtx.getArgs().exportSkin) {
+    const TfToken& exportSkin = mWriteJobCtx.getArgs().exportSkin;
+    if (exportSkin != PxrUsdExportJobArgsTokens->auto_ &&
+            exportSkin != PxrUsdExportJobArgsTokens->explicit_) {
         return MObject();
     }
 
@@ -333,16 +335,17 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     MFnMesh inMesh(inMeshObj);
 
     // At this point, we know we have a skin cluster.
-    // If autoSkelRoots=false and we're not under a SkelRoot, then silently
-    // skip (it's what the user asked for, after all).
-    if (!mWriteJobCtx.getArgs().autoSkelRoots &&
+    // If exportSkin=explicit and we're not under a SkelRoot, then silently skip
+    // (it's what the user asked for, after all).
+    if (exportSkin == PxrUsdExportJobArgsTokens->explicit_ &&
             !UsdSkelRoot::Find(primSchema.GetPrim())) {
         return MObject();
     }
 
-    // If autoSkelRoots=true, we need to make sure there's a UsdGeomXform
+    // If exportSkin=auto, we need to make sure there's a UsdGeomXform
     // ancestor that we can turn into a SkelRoot. Otherwise, *error* and return.
-    if (mWriteJobCtx.getArgs().autoSkelRoots && !_FindRootmostXformOrSkelRoot(
+    if (exportSkin == PxrUsdExportJobArgsTokens->auto_ &&
+            !_FindRootmostXformOrSkelRoot(
                 getUsdStage(), primSchema.GetPath())) {
         MGlobal::displayError(TfStringPrintf(
                 "Cannot automatically make SkelRoot above "
@@ -424,7 +427,7 @@ MayaMeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     bool madeSkelRoot;
     const SdfPath skelRootPath = _VerifyOrMakeSkelRoot(
             getUsdStage(), getUsdPath(),
-            mWriteJobCtx.getArgs().autoSkelRoots, &madeSkelRoot);
+            mWriteJobCtx.getArgs().exportSkin, &madeSkelRoot);
     mWriteJobCtx.getSkelBindingsWriter().MarkBinding(
             getUsdPath(), skelRootPath, rootJoint, madeSkelRoot);
     return inMeshObj;

@@ -237,8 +237,6 @@ bool MayaNurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     bool setWeights = false;
 
     // Create st vec2f vertex primvar
-    // NOTE: We currently support PxUsdExportJobArgsTokens->Uniform
-    // So no need to do a check in its value yet
     VtArray<GfVec2f> stValues;
     if (getArgs().exportNurbsExplicitUV) {
         stValues.resize(numCVsInU*numCVsInV);

@@ -63,21 +63,32 @@ MSyntax usdImport::createSyntax()
 {
     MSyntax syntax;
 
-    syntax.addFlag("-v"  , "-verbose", MSyntax::kNoArg);
-
-    syntax.addFlag("-f" , "-file"               , MSyntax::kString);
-    syntax.addFlag("-p" , "-parent"             , MSyntax::kString);
-    syntax.addFlag("-shd" , "-shadingMode"      , MSyntax::kString);
-    syntax.addFlag("-ani", "-readAnimData"      , MSyntax::kBoolean);
-    syntax.addFlag("-pp", "-primPath"           , MSyntax::kString);
-    syntax.addFlag("-var" , "-variant"          , MSyntax::kString, MSyntax::kString);
-    syntax.addFlag("-ar" , "-assemblyRep"       , MSyntax::kString);
-    syntax.addFlag("-fr" , "-frameRange"        , MSyntax::kDouble, MSyntax::kDouble);
-    syntax.addFlag("-md" , "-metadata"          , MSyntax::kString);
-    syntax.addFlag("-api" , "-apiSchema"        , MSyntax::kString);
-    syntax.makeFlagMultiUse("variant");
+    // These flags correspond to entries in JobImportArgs::GetDefaultDictionary.
+    syntax.addFlag("-shd",
+                   PxrUsdImportJobArgsTokens->shadingMode.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-ar",
+                   PxrUsdImportJobArgsTokens->assemblyRep.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-md",
+                   PxrUsdImportJobArgsTokens->metadata.GetText(),
+                   MSyntax::kString);
     syntax.makeFlagMultiUse("metadata");
+    syntax.addFlag("-api",
+                   PxrUsdImportJobArgsTokens->apiSchema.GetText(),
+                   MSyntax::kString);
     syntax.makeFlagMultiUse("apiSchema");
+
+    // These are additional flags under our control.
+    syntax.addFlag("-f" , "-file", MSyntax::kString);
+    syntax.addFlag("-p" , "-parent", MSyntax::kString);
+    syntax.addFlag("-ani", "-readAnimData", MSyntax::kBoolean);
+    syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);
+    syntax.addFlag("-pp", "-primPath", MSyntax::kString);
+    syntax.addFlag("-var", "-variant", MSyntax::kString, MSyntax::kString);
+    syntax.makeFlagMultiUse("variant");
+
+    syntax.addFlag("-v", "-verbose", MSyntax::kNoArg);
 
     syntax.enableQuery(false);
     syntax.enableEdit(false);
@@ -105,8 +116,9 @@ MStatus usdImport::doIt(const MArgList & args)
         return status;
     }
 
-    JobImportArgs jobArgs;
-    //bool verbose = argData.isFlagSet("verbose");
+    // Get dictionary values.
+    const VtDictionary userArgs = PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
+            argData, JobImportArgs::GetDefaultDictionary());
     
     std::string mFileName;
     if (argData.isFlagSet("file"))
@@ -133,28 +145,6 @@ MStatus usdImport::doIt(const MArgList & args)
         return MS::kFailure;
     }
 
-    if (argData.isFlagSet("shadingMode")) {
-        MString stringVal;
-        argData.getFlagArgument("shadingMode", 0, stringVal);
-        TfToken shadingMode(stringVal.asChar());
-
-        if (!shadingMode.IsEmpty()) {
-            if (PxrUsdMayaShadingModeRegistry::GetInstance()
-                    .GetImporter(shadingMode)) {
-                jobArgs.shadingMode = shadingMode;
-            }
-            else {
-                if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
-                    MGlobal::displayError(TfStringPrintf(
-                            "No shadingMode '%s' found. "
-                            "Setting shadingMode='none'",
-                            shadingMode.GetText()).c_str());
-                }
-                jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
-            }
-        }
-    }
-
     // Specify usd PrimPath.  Default will be "/<useFileBasename>"
     std::string mPrimPath;
     if (argData.isFlagSet("primPath"))
@@ -177,67 +167,27 @@ MStatus usdImport::doIt(const MArgList & args)
         mVariants.insert( std::pair<std::string, std::string>(tmpKey.asChar(), tmpVal.asChar()) );
     }
 
-    if (argData.isFlagSet("assemblyRep"))
-    {
-        // Get the value
-        MString stringVal;
-        argData.getFlagArgument("assemblyRep", 0, stringVal);
-        std::string assemblyRep = stringVal.asChar();
-        if (!assemblyRep.empty()) {
-            jobArgs.assemblyRep = TfToken(assemblyRep);
-        }
-    }
-
     bool readAnimData = true;
     if (argData.isFlagSet("readAnimData"))
     {   
         argData.getFlagArgument("readAnimData", 0, readAnimData);
     }
 
+    GfInterval timeInterval;
     if (readAnimData) {
         if (argData.isFlagSet("frameRange")) {
             double startTime = 1.0;
             double endTime = 1.0;
             argData.getFlagArgument("frameRange", 0, startTime);
             argData.getFlagArgument("frameRange", 1, endTime);
-            jobArgs.timeInterval = GfInterval(startTime, endTime);
+            timeInterval = GfInterval(startTime, endTime);
         }
         else {
-            jobArgs.timeInterval = GfInterval::GetFullInterval();
+            timeInterval = GfInterval::GetFullInterval();
         }
     }
     else {
-        jobArgs.timeInterval = GfInterval();
-    }
-
-    // Add metadata keys. Multi-use.
-    TfToken::Set includeMetadataKeys;
-    for (unsigned int i = 0; i < argData.numberOfFlagUses("metadata"); ++i)
-    {
-        // Get the i'th usage.
-        MArgList tmpArgList;
-        status = argData.getFlagArgumentList("metadata", i, tmpArgList);
-        // Get the value.
-        MString tmpKey = tmpArgList.asString(0, &status);
-        includeMetadataKeys.insert(TfToken(tmpKey.asChar()));
-    }
-    if (!includeMetadataKeys.empty()) {
-        jobArgs.includeMetadataKeys = includeMetadataKeys;
-    }
-
-    // Add API schema names.  Multi-use.
-    TfToken::Set includeAPINames;
-    for (unsigned int i = 0; i < argData.numberOfFlagUses("apiSchema"); ++i)
-    {
-        // Get the i'th usage.
-        MArgList tmpArgList;
-        status = argData.getFlagArgumentList("apiSchema", i, tmpArgList);
-        // Get the value.
-        MString tmpAPIName = tmpArgList.asString(0, &status);
-        includeAPINames.insert(TfToken(tmpAPIName.asChar()));
-    }
-    if (!includeAPINames.empty()) {
-        jobArgs.includeAPINames = includeAPINames;
+        timeInterval = GfInterval();
     }
 
     // Create the command
@@ -245,6 +195,8 @@ MStatus usdImport::doIt(const MArgList & args)
         delete mUsdReadJob;
     }
 
+    JobImportArgs jobArgs = JobImportArgs::CreateFromDictionary(
+            userArgs, /*importWithProxyShapes*/ false, timeInterval);
 
     // pass in assemblyTypeName and proxyShapeTypeName
     mUsdReadJob = new usdReadJob(mFileName, mPrimPath, mVariants, jobArgs,

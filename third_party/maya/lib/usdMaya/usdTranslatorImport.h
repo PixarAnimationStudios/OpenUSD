@@ -41,14 +41,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-
-const char* const usdTranslatorImportDefaults =
-        "shadingMode=displayColor;"
-        "readAnimData=1;"
-        "useCustomFrameRange=0;"
-        "assemblyRep=Collapsed";
-
-
 class usdTranslatorImport : public MPxFileTranslator
 {
     public:
@@ -81,6 +73,9 @@ class usdTranslatorImport : public MPxFileTranslator
         MString filter() const {
             return PxrUsdMayaTranslatorTokens->UsdFileFilter.GetText();
         }
+
+        PXRUSDMAYA_API
+        static const std::string& GetDefaultOptions();
 
     private:
 

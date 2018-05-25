@@ -32,6 +32,7 @@
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
+#include <maya/MArgList.h>
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
@@ -1450,4 +1451,111 @@ TfRefPtr<PxrUsdMayaUtil::MDataHandleHolder>
 PxrUsdMayaUtil::GetPlugDataHandle(const MPlug& plug)
 {
     return PxrUsdMayaUtil::MDataHandleHolder::New(plug);
+}
+
+VtDictionary
+PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
+    const MArgDatabase& argData,
+    const VtDictionary& guideDict)
+{
+    // We handle three types of arguments:
+    // 1 - bools: Some bools are actual boolean flags (t/f) in Maya, and others
+    //     are false if omitted, true if present (simple flags).
+    // 2 - strings: Just strings!
+    // 3 - vectors (multi-use args): Try to mimic the way they're passed in the
+    //     Python command API. If single arg per flag, make it a vector of
+    //     strings. Multi arg per flag, vector of vector of strings.
+    VtDictionary args;
+    for (const std::pair<std::string, VtValue>& entry : guideDict) {
+        const std::string& key = entry.first;
+        const VtValue& guideValue = entry.second;
+        if (!argData.isFlagSet(key.c_str())) {
+            continue;
+        }
+
+        // The usdExport command must handle bools, strings, and vectors.
+        if (guideValue.IsHolding<bool>()) {
+            // The flag should be either 0-arg or 1-arg. If 0-arg, it's true by
+            // virtue of being present (getFlagArgument won't change val). If
+            // it's 1-arg, then getFlagArgument will set the appropriate true
+            // or false value.
+            bool val = true;
+            argData.getFlagArgument(key.c_str(), 0, val);
+            args[key] = val;
+        }
+        else if (guideValue.IsHolding<std::string>()) {
+            const std::string val =
+                    argData.flagArgumentString(key.c_str(), 0).asChar();
+            args[key] = val;
+        }
+        else if (guideValue.IsHolding<std::vector<VtValue>>()) {
+            unsigned int count = argData.numberOfFlagUses(entry.first.c_str());
+            if (!TF_VERIFY(count > 0)) {
+                // There should be at least one use if isFlagSet() = true.
+                continue;
+            }
+
+            std::vector<MArgList> argLists(count);
+            for (unsigned int i = 0; i < count; ++i) {
+                argData.getFlagArgumentList(key.c_str(), i, argLists[i]);
+            }
+
+            // The flag is either 1-arg or multi-arg. If it's 1-arg, make this
+            // a 1-d vector [arg, arg, ...]. If it's multi-arg, make this a
+            // 2-d vector [[arg1, arg2, ...], [arg1, arg2, ...], ...].
+            std::vector<VtValue> val;
+            if (argLists[0].length() == 1) {
+                for (const MArgList& argList : argLists) {
+                    const std::string arg = argList.asString(0).asChar();
+                    val.push_back(VtValue(arg));
+                }
+            }
+            else {
+                for (const MArgList& argList : argLists) {
+                    std::vector<VtValue> subList;
+                    for (unsigned int i = 0; i < argList.length(); ++i) {
+                        const std::string arg = argList.asString(i).asChar();
+                        subList.push_back(VtValue(arg));
+                    }
+                    val.push_back(VtValue(subList));
+                }
+            }
+            args[key] = val;
+        }
+        else {
+            TF_CODING_ERROR("Can't handle type '%s'",
+                    guideValue.GetTypeName().c_str());
+        }
+    }
+
+    return args;
+}
+
+VtValue
+PxrUsdMayaUtil::ParseArgumentValue(
+    const std::string& key,
+    const std::string& value,
+    const VtDictionary& guideDict)
+{
+    // We handle two types of arguments:
+    // 1 - bools: Should be encoded by translator UI as a "1" or "0" string.
+    // 2 - strings: Just strings!
+    // We don't handle any vectors because none of the translator UIs currently
+    // pass around any of the vector flags.
+    auto iter = guideDict.find(key);
+    if (iter != guideDict.end()) {
+        const VtValue& guideValue = iter->second;
+        // The export UI only has boolean and string parameters.
+        if (guideValue.IsHolding<bool>()) {
+            return VtValue(TfUnstringify<bool>(value));
+        }
+        else if (guideValue.IsHolding<std::string>()) {
+            return VtValue(value);
+        }
+    }
+    else {
+        TF_CODING_ERROR("Unknown flag '%s'", key.c_str());
+    }
+
+    return VtValue();
 }

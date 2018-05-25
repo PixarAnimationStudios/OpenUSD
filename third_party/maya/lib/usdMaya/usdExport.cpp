@@ -56,45 +56,103 @@ MSyntax usdExport::createSyntax()
 {
     MSyntax syntax;
 
-    syntax.addFlag("-v"  , "-verbose", MSyntax::kNoArg);
+    // These flags correspond to entries in JobExportArgs::GetDefaultDictionary.
+    syntax.addFlag("-mt",
+                   PxrUsdExportJobArgsTokens->mergeTransformAndShape.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-ein",
+                   PxrUsdExportJobArgsTokens->exportInstances.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-eri",
+                   PxrUsdExportJobArgsTokens->exportRefsAsInstanceable.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-dsp",
+                   PxrUsdExportJobArgsTokens->exportDisplayColor.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-shd",
+                   PxrUsdExportJobArgsTokens->shadingMode.GetText() ,
+                   MSyntax::kString);
+    syntax.addFlag("-uvs",
+                   PxrUsdExportJobArgsTokens->exportUVs.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-mcs",
+                   PxrUsdExportJobArgsTokens->exportMaterialCollections
+                       .GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-mcp",
+                   PxrUsdExportJobArgsTokens->materialCollectionsPath.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-cbb",
+                   PxrUsdExportJobArgsTokens->exportCollectionBasedBindings
+                       .GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-nuv",
+                   PxrUsdExportJobArgsTokens->normalizeMeshUVs.GetText() ,
+                   MSyntax::kBoolean);
+    syntax.addFlag("-nnu",
+                   PxrUsdExportJobArgsTokens->normalizeNurbs.GetText() ,
+                   MSyntax::kBoolean);
+    syntax.addFlag("-cls",
+                   PxrUsdExportJobArgsTokens->exportColorSets.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-dms",
+                   PxrUsdExportJobArgsTokens->defaultMeshScheme.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-vis",
+                   PxrUsdExportJobArgsTokens->exportVisibility.GetText(),
+                   MSyntax::kBoolean);
+    syntax.addFlag("-skn",
+                   PxrUsdExportJobArgsTokens->exportSkin.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-psc",
+                   PxrUsdExportJobArgsTokens->parentScope.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-ro",
+                   PxrUsdExportJobArgsTokens->renderableOnly.GetText(),
+                   MSyntax::kNoArg);
+    syntax.addFlag("-dc",
+                   PxrUsdExportJobArgsTokens->defaultCameras.GetText(),
+                   MSyntax::kNoArg);
+    syntax.addFlag("-rlm",
+                   PxrUsdExportJobArgsTokens->renderLayerMode.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-k",
+                   PxrUsdExportJobArgsTokens->kind.GetText(),
+                   MSyntax::kString);
 
-    syntax.addFlag("-mt" , "-mergeTransformAndShape", MSyntax::kBoolean);
-    syntax.addFlag("-ein", "-exportInstances", MSyntax::kBoolean);
-    syntax.addFlag("-eri", "-exportRefsAsInstanceable", MSyntax::kBoolean);
-    syntax.addFlag("-dsp" , "-exportDisplayColor", MSyntax::kBoolean);
-    syntax.addFlag("-shd" , "-shadingMode" , MSyntax::kString);
-    syntax.addFlag("-uvs" , "-exportUVs", MSyntax::kBoolean);
-    syntax.addFlag("-mcs" , "-exportMaterialCollections", MSyntax::kBoolean);
-    syntax.addFlag("-mcp" , "-materialCollectionsPath", MSyntax::kString);
-    syntax.addFlag("-cbb" , "-exportCollectionBasedBindings", MSyntax::kBoolean);
-    syntax.addFlag("-nuv" , "-normalizeMeshUVs" , MSyntax::kBoolean);
-    syntax.addFlag("-nnu" , "-normalizeNurbs" , MSyntax::kBoolean);
-    syntax.addFlag("-cls" , "-exportColorSets", MSyntax::kBoolean);
-    syntax.addFlag("-dms" , "-defaultMeshScheme", MSyntax::kString);
-    syntax.addFlag("-vis" , "-exportVisibility", MSyntax::kBoolean);
-    syntax.addFlag("-skn" , "-exportSkin", MSyntax::kString);
-    syntax.addFlag("-psc" , "-parentScope", MSyntax::kString);
+    syntax.addFlag("-chr",
+                   PxrUsdExportJobArgsTokens->chaser.GetText(),
+                   MSyntax::kString);
+    syntax.makeFlagMultiUse(PxrUsdExportJobArgsTokens->chaser.GetText());
 
-    syntax.addFlag("-fr" , "-frameRange"   , MSyntax::kDouble, MSyntax::kDouble);
-    syntax.addFlag("-pr" , "-preRoll"   , MSyntax::kDouble);
-    syntax.addFlag("-fs" , "-frameSample", MSyntax::kDouble);
+    syntax.addFlag("-cha",
+                   PxrUsdExportJobArgsTokens->chaserArgs.GetText(),
+                   MSyntax::kString, MSyntax::kString, MSyntax::kString);
+    syntax.makeFlagMultiUse(PxrUsdExportJobArgsTokens->chaserArgs.GetText());
+
+    syntax.addFlag("-mfc",
+                   PxrUsdExportJobArgsTokens->melPerFrameCallback.GetText(),
+                   MSyntax::kNoArg);
+    syntax.addFlag("-mpc",
+                   PxrUsdExportJobArgsTokens->melPostCallback.GetText(),
+                   MSyntax::kNoArg);
+    syntax.addFlag("-pfc",
+                   PxrUsdExportJobArgsTokens->pythonPerFrameCallback.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag("-ppc",
+                   PxrUsdExportJobArgsTokens->pythonPostCallback.GetText(),
+                   MSyntax::kString);
+
+    // These are additional flags under our control.
+    syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);
+    syntax.addFlag("-fs", "-frameSample", MSyntax::kDouble);
     syntax.makeFlagMultiUse("-frameSample");
 
-    syntax.addFlag("-ro"  , "-renderableOnly", MSyntax::kNoArg);
-    syntax.addFlag("-sl"  , "-selection", MSyntax::kNoArg);
-    syntax.addFlag("-dc"  , "-defaultCameras", MSyntax::kNoArg);
-    syntax.addFlag("-rlm" , "-renderLayerMode" , MSyntax::kString);
+    syntax.addFlag("-a", "-append", MSyntax::kBoolean);
+    syntax.addFlag("-f", "-file", MSyntax::kString);
+    syntax.addFlag("-sl", "-selection", MSyntax::kNoArg);
 
-    syntax.addFlag("-a" , "-append" , MSyntax::kBoolean);
-    syntax.addFlag("-f" , "-file" , MSyntax::kString);
-
-    syntax.addFlag("-chr" , "-chaser", MSyntax::kString);
-    syntax.makeFlagMultiUse("-chaser");
-
-    syntax.addFlag("-cha" , "-chaserArgs", MSyntax::kString, MSyntax::kString, MSyntax::kString);
-    syntax.makeFlagMultiUse("-chaserArgs");
-
-    syntax.addFlag("-k", "-kind", MSyntax::kString);
+    syntax.addFlag("-v", "-verbose", MSyntax::kNoArg);
 
     syntax.enableQuery(false);
     syntax.enableEdit(false);
@@ -126,135 +184,12 @@ try
         return status;
     }
 
+    // Read all of the dictionary args first.
+    const VtDictionary userArgs = PxrUsdMayaUtil::GetDictionaryFromArgDatabase(
+            argData, JobExportArgs::GetDefaultDictionary());
+
+    // Now read all of the other args that are specific to this command.
     bool verbose = argData.isFlagSet("verbose");
-
-    JobExportArgs jobArgs;
-
-    if (argData.isFlagSet("mergeTransformAndShape")) {
-        argData.getFlagArgument("mergeTransformAndShape", 0, jobArgs.mergeTransformAndShape);
-    }
-
-    if (argData.isFlagSet("exportInstances")) {
-        argData.getFlagArgument("exportInstances", 0, jobArgs.exportInstances);
-    }
-
-    if (argData.isFlagSet("exportRefsAsInstanceable")) {
-        argData.getFlagArgument("exportRefsAsInstanceable", 0, jobArgs.exportRefsAsInstanceable);
-    }
-
-    if (argData.isFlagSet("exportDisplayColor")) {
-        argData.getFlagArgument("exportDisplayColor", 0, jobArgs.exportDisplayColor);
-    }
-    
-    if (argData.isFlagSet("shadingMode")) {
-        MString stringVal;
-        argData.getFlagArgument("shadingMode", 0, stringVal);
-        TfToken shadingMode(stringVal.asChar());
-
-        if (!shadingMode.IsEmpty()) {
-            if (PxrUsdMayaShadingModeRegistry::GetInstance()
-                    .GetExporter(shadingMode)) {
-                jobArgs.shadingMode = shadingMode;
-            }
-            else {
-                if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
-                    MGlobal::displayError(TfStringPrintf(
-                            "No shadingMode '%s' found. "
-                            "Setting shadingMode='none'", 
-                            shadingMode.GetText()).c_str());
-                }
-                jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
-            }
-        }
-    }
-
-    if (argData.isFlagSet("exportUVs")) {
-        argData.getFlagArgument("exportUVs", 0, jobArgs.exportMeshUVs);
-        jobArgs.exportNurbsExplicitUV = jobArgs.exportMeshUVs;
-    }
-
-    if (argData.isFlagSet("exportMaterialCollections")) {
-        argData.getFlagArgument("exportMaterialCollections", 0,
-                                jobArgs.exportMaterialCollections);
-    }
-
-    if (argData.isFlagSet("materialCollectionsPath")) {
-        MString stringVal;
-        argData.getFlagArgument("materialCollectionsPath", 0, stringVal);
-        jobArgs.materialCollectionsPath = stringVal.asChar();
-    }
-
-    if (argData.isFlagSet("exportCollectionBasedBindings")) {
-        argData.getFlagArgument("exportCollectionBasedBindings", 0,
-                                jobArgs.exportCollectionBasedBindings);
-    }
-
-    if (argData.isFlagSet("normalizeMeshUVs")) {
-        argData.getFlagArgument("normalizeMeshUVs", 0, jobArgs.normalizeMeshUVs);
-    }
-
-    if (argData.isFlagSet("normalizeNurbs")) {
-        argData.getFlagArgument("normalizeNurbs", 0, jobArgs.normalizeNurbs);
-    }
-
-    if (argData.isFlagSet("exportColorSets")) {
-        argData.getFlagArgument("exportColorSets", 0, jobArgs.exportColorSets);
-    }
-
-    if (argData.isFlagSet("defaultMeshScheme")) {
-        MString stringVal;
-        argData.getFlagArgument("defaultMeshScheme", 0, stringVal);
-
-        const TfToken scheme(stringVal.asChar());
-        if (scheme != UsdGeomTokens->none &&
-                scheme != UsdGeomTokens->catmullClark &&
-                scheme != UsdGeomTokens->loop &&
-                scheme != UsdGeomTokens->bilinear) {
-            MGlobal::displayWarning(
-                    "Incorrect Default Mesh Schema: " + stringVal +
-                    " defaulting to: " +
-                    MString(jobArgs.defaultMeshScheme.GetText()));
-        }
-        else {
-            jobArgs.defaultMeshScheme = scheme;
-        }
-    }
-
-    if (argData.isFlagSet("exportVisibility")) {
-        argData.getFlagArgument("exportVisibility", 0, jobArgs.exportVisibility);
-    }
-
-    if (argData.isFlagSet("exportSkin")) {
-        MString stringVal;
-        argData.getFlagArgument("exportSkin", 0, stringVal);
-
-        const TfToken tok(stringVal.asChar());
-        if (tok == PxUsdExportJobArgsTokens->none) {
-            jobArgs.exportSkin = false;
-        }
-        else if (tok == PxUsdExportJobArgsTokens->auto_) {
-            jobArgs.exportSkin = true;
-            jobArgs.autoSkelRoots = true;
-        }
-        else if (tok == PxUsdExportJobArgsTokens->explicit_) {
-            jobArgs.exportSkin = true;
-            jobArgs.autoSkelRoots = false;
-        }
-        else {
-            MGlobal::displayWarning(
-                    "Incorrect value for -exportSkin flag; assuming "
-                    "'-exportSkin none'");
-            jobArgs.exportSkin = false;
-        }
-    }
-
-    if (argData.isFlagSet("parentScope")) {
-        MString stringVal;
-        argData.getFlagArgument("parentScope", 0,
-                                stringVal);
-        jobArgs.setParentScope(stringVal.asChar());
-    }
-
     bool append = false;
     std::string fileName;
 
@@ -289,35 +224,29 @@ try
         return MS::kFailure;
     }
 
-    double preRoll=0;
-    std::set<double> frameSamples;
-
     // If you provide a frame range we consider this an anim
     // export even if start and end are the same
+    GfInterval timeInterval;
     if (argData.isFlagSet("frameRange")) {
         double startTime = 1;
         double endTime = 1;
         argData.getFlagArgument("frameRange", 0, startTime);
         argData.getFlagArgument("frameRange", 1, endTime);
-        GfInterval timeInterval(startTime, endTime);
-        if (timeInterval.IsEmpty()) {
+        if (startTime > endTime) {
             // If the user accidentally set start > end, resync to the closed
             // interval with the single start point.
-            jobArgs.timeInterval = GfInterval(timeInterval.GetMin());
+            timeInterval = GfInterval(startTime);
         }
         else {
             // Use the user's interval as-is.
-            jobArgs.timeInterval = timeInterval;
+            timeInterval = GfInterval(startTime, endTime);
         }
     } else {
         // No animation, so empty interval.
-        jobArgs.timeInterval = GfInterval();
+        timeInterval = GfInterval();
     }
 
-    if (argData.isFlagSet("preRoll")) {
-        argData.getFlagArgument("preRoll", 0, preRoll);
-    }
-
+    std::set<double> frameSamples;
     unsigned int numFrameSamples = argData.numberOfFlagUses("frameSample");
     for (unsigned int i = 0; i < numFrameSamples; ++i) {
         MArgList tmpArgList;
@@ -328,95 +257,6 @@ try
     if (frameSamples.empty()) {
         frameSamples.insert(0.0);
     }
-
-    jobArgs.excludeInvisible = argData.isFlagSet("renderableOnly");
-    jobArgs.exportDefaultCameras = argData.isFlagSet("defaultCameras");
-
-    if (argData.isFlagSet("renderLayerMode")) {
-        MString stringVal;
-        argData.getFlagArgument("renderLayerMode", 0, stringVal);
-        const TfToken renderLayerMode(stringVal.asChar());
-
-        if (!renderLayerMode.IsEmpty()) {
-            if (renderLayerMode != PxUsdExportJobArgsTokens->defaultLayer &&
-                   renderLayerMode != PxUsdExportJobArgsTokens->currentLayer &&
-                   renderLayerMode != PxUsdExportJobArgsTokens->modelingVariant)
-            {
-                MGlobal::displayError(TfStringPrintf(
-                        "Invalid renderLayerMode '%s'. "
-                        "Defaulting to renderLayerMode='%s'", 
-                        renderLayerMode.GetText(),
-                        jobArgs.renderLayerMode.GetText()).c_str());
-            } else {
-                jobArgs.renderLayerMode = renderLayerMode;
-            }
-        }
-    }
-
-    if (argData.isFlagSet("melPerFrameCallback"))
-    {
-        MString tmpVal;
-        argData.getFlagArgument("melPerFrameCallback", 0, tmpVal);
-        jobArgs.melPerFrameCallback.assign ( tmpVal.asUTF8() );
-    }
-
-    if (argData.isFlagSet("pythonPerFrameCallback"))
-    {
-        MString tmpVal;
-        argData.getFlagArgument("pythonPerFrameCallback", 0, tmpVal);
-        jobArgs.pythonPerFrameCallback.assign ( tmpVal.asUTF8() );
-    }
-
-    if (argData.isFlagSet("melPostJobCallback"))
-    {
-        MString tmpVal;
-        argData.getFlagArgument("melPostJobCallback", 0, tmpVal);
-        jobArgs.melPostCallback.assign ( tmpVal.asUTF8() );
-    }
-
-    if (argData.isFlagSet("pythonPostJobCallback"))
-    {
-        MString tmpVal;
-        argData.getFlagArgument("pythonPostJobCallback", 0, tmpVal);
-        jobArgs.pythonPostCallback.assign ( tmpVal.asUTF8() );
-    }
-
-    unsigned int numChasers = argData.numberOfFlagUses("chaser");
-    for (unsigned int i=0; i < numChasers; i++) {
-        MArgList tmpArgList;
-        argData.getFlagArgumentList("chaser", i, tmpArgList);
-        std::string argValue = std::string(tmpArgList.asString(0).asChar());
-        jobArgs.chaserNames.push_back(argValue);
-    }
-
-    unsigned int numChaserArgs = argData.numberOfFlagUses("chaserArgs");
-    for (unsigned int i=0; i < numChaserArgs; i++) {
-        MArgList tmpArgList;
-        argData.getFlagArgumentList("chaserArgs", i, tmpArgList);
-        std::string chaserName = std::string(tmpArgList.asString(0).asChar());
-        std::string argName = std::string(tmpArgList.asString(1).asChar());
-        std::string argValue = std::string(tmpArgList.asString(2).asChar());
-
-        if (std::find(jobArgs.chaserNames.begin(), 
-                    jobArgs.chaserNames.end(), 
-                    chaserName)
-                != jobArgs.chaserNames.end()) {
-            jobArgs.allChaserArgs[chaserName][argName] = argValue;
-        }
-        else {
-            std::string warning = TfStringPrintf("Bad chaserArg for unknown chaser: '%s'",
-                    chaserName.c_str());
-            MGlobal::displayWarning(MString(warning.c_str()));
-        }
-    }
-
-    if (argData.isFlagSet("kind"))
-    {
-        MString tmpVal;
-        argData.getFlagArgument("kind", 0, tmpVal);
-        jobArgs.rootKind = TfToken(tmpVal.asChar());
-    }
-
 
     // Get the objects to export as a MSelectionList
     MSelectionList objSelList;
@@ -433,14 +273,18 @@ try
     }
 
     // Convert selection list to jobArgs dagPaths
+    PxrUsdMayaUtil::ShapeSet dagPaths;
     for (unsigned int i=0; i < objSelList.length(); i++) {
         MDagPath dagPath;
         status = objSelList.getDagPath(i, dagPath);
         if (status == MS::kSuccess)
         {
-            jobArgs.dagPaths.insert(dagPath);
+            dagPaths.insert(dagPath);
         }
     }
+
+    JobExportArgs jobArgs = JobExportArgs::CreateFromDictionary(
+            userArgs, dagPaths, timeInterval);
 
     // Create WriteJob object
     usdWriteJob usdWriteJob(jobArgs);

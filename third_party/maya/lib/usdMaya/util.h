@@ -33,10 +33,12 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/timeCode.h"
 
+#include <maya/MArgDatabase.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
@@ -480,6 +482,27 @@ bool createNumericAttribute(
         MFnDependencyNode& depNode,
         const MString& attr,
         MFnNumericData::Type type);
+
+/// Reads values from the given \p argData into a VtDictionary, using the
+/// \p guideDict to figure out which keys and what type of values should be read
+/// from \p argData.
+/// Mainly useful for parsing arguments in commands all at once.
+PXRUSDMAYA_API
+VtDictionary GetDictionaryFromArgDatabase(
+    const MArgDatabase& argData,
+    const VtDictionary& guideDict);
+
+/// Parses \p value based on the type of \p key in \p guideDict, returning the
+/// parsed value wrapped in a VtValue.
+/// Raises a coding error if \p key doesn't exist in \p guideDict.
+/// Mainly useful for parsing arguments one-by-one in translators' option
+/// strings. If you have an MArgList/MArgParser/MArgDatabase, it's going to be
+/// way simpler to use GetDictionaryFromArgDatabase() instead.
+PXRUSDMAYA_API
+VtValue ParseArgumentValue(
+    const std::string& key,
+    const std::string& value,
+    const VtDictionary& guideDict);
 
 } // namespace PxrUsdMayaUtil
 

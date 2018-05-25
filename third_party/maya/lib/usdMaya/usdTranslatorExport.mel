@@ -145,7 +145,7 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Export displayColor primvar" exportDisplayColorCheckBox;
 
-        checkBox -l "Make References Instanceable"      exportReferencesAsInstanceableCheckBox;
+        checkBox -l "Make References Instanceable"      exportRefsAsInstanceableCheckBox;
 
         checkBox -l "Export material collections" exportMaterialCollectionsCheckBox;
         textFieldGrp -l "Material collections path:" materialCollectionsPathField;
@@ -154,7 +154,7 @@ global proc int usdTranslatorExport (string $parent,
         
         checkBox -l "Export UVs" exportUVsCheckBox;
 
-        checkBox -l "Normalize UVs" normalizeUVsCheckBox;
+        checkBox -l "Normalize UVs" normalizeMeshUVsCheckBox;
 
         checkBox -l "Export ColorSets" exportColorSetsCheckBox;
 
@@ -162,7 +162,7 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Renderable Only" renderableOnlyCheckBox;
          
-        checkBox -l "Export all cameras" allCamerasCheckBox;
+        checkBox -l "Export all cameras" defaultCamerasCheckBox;
 
         textFieldGrp -l "Parent Scope:" parentScopeField;
 
@@ -171,7 +171,7 @@ global proc int usdTranslatorExport (string $parent,
             menuItem -l "Use Current layer" -ann "currentLayer";
             menuItem -l "Modeling Variant Per Layer" -ann "modelingVariant";
 
-        checkBox -l "Merge Transform and Shape Nodes" mergeXFormCheckBox;
+        checkBox -l "Merge Transform and Shape Nodes" mergeTransformAndShapeCheckBox;
         checkBox -l "Export Instances" exportInstancesCheckBox;
 
 	    optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
@@ -205,8 +205,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
                 } else if ($optionBreakDown[0] == "exportDisplayColor") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
-                } else if ($optionBreakDown[0] == "exportReferencesAsInstanceable") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportReferencesAsInstanceableCheckBox");
+                } else if ($optionBreakDown[0] == "exportRefsAsInstanceable") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportRefsAsInstanceableCheckBox");
                 } else if ($optionBreakDown[0] == "exportUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportMaterialCollections") {
@@ -215,18 +215,18 @@ global proc int usdTranslatorExport (string $parent,
                     textFieldGrp -e -text $optionBreakDown[1] materialCollectionsPathField;
                 } else if ($optionBreakDown[0] == "exportCollectionBasedBindings") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportCollectionBasedBindingsCheckBox");
-                } else if ($optionBreakDown[0] == "normalizeUVs") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeUVsCheckBox");
+                } else if ($optionBreakDown[0] == "normalizeMeshUVs") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "normalizeMeshUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
                 } else if ($optionBreakDown[0] == "renderableOnly") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "renderableOnlyCheckBox");
-                } else if ($optionBreakDown[0] == "allCameras") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "allCamerasCheckBox");
+                } else if ($optionBreakDown[0] == "defaultCameras") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "defaultCamerasCheckBox");
                 } else if ($optionBreakDown[0] == "renderLayerMode") {
                     usdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "renderLayerModePopup");
-                } else if ($optionBreakDown[0] == "mergeXForm") {
-                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeXFormCheckBox");
+                } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeTransformAndShapeCheckBox");
                 } else if ($optionBreakDown[0] == "exportInstances") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
@@ -267,17 +267,17 @@ global proc int usdTranslatorExport (string $parent,
     
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportReferencesAsInstanceable", "exportReferencesAsInstanceableCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportRefsAsInstanceable", "exportRefsAsInstanceableCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportCollectionBasedBindings", "exportCollectionBasedBindingsCheckBox");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeUVs", "normalizeUVsCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "normalizeMeshUVs", "normalizeMeshUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "renderableOnly", "renderableOnlyCheckBox");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "allCameras", "allCamerasCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "defaultCameras", "defaultCamerasCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "renderLayerMode", "renderLayerModePopup");
-        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeXForm", "mergeXFormCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportInstances", "exportInstancesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
         $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "exportSkin", "exportSkinClustersPopup");

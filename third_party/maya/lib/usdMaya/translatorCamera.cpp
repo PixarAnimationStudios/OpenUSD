@@ -389,7 +389,8 @@ PxrUsdMayaTranslatorCamera::ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject)
 {
-    JobImportArgs defaultJobArgs;
+    JobImportArgs defaultJobArgs = JobImportArgs::CreateFromDictionary(
+            JobImportArgs::GetDefaultDictionary());
     PxrUsdMayaPrimReaderArgs args(
             usdCamera.GetPrim(),
             defaultJobArgs.shadingMode,

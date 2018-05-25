@@ -1466,15 +1466,16 @@ bool UsdMayaRepresentationHierBase::activate()
     std::map<std::string, std::string> variantSetSelections =
         usdAssembly->GetVariantSetSelections();
 
-    JobImportArgs importArgs;
-    importArgs.timeInterval = GfInterval::GetFullInterval();
-    if (_ShouldImportWithProxies()) {
-        importArgs.importWithProxyShapes = true;
-
+    VtDictionary userArgs;
+    bool shouldImportWithProxies = _ShouldImportWithProxies();
+    if (shouldImportWithProxies) {
         // In this mode, sub-assembly nodes we create should come in unloaded.
-        importArgs.assemblyRep = TfToken();
+        userArgs[PxrUsdImportJobArgsTokens->assemblyRep] =
+                PxrUsdImportJobArgsTokens->Unloaded.GetString();
     }
 
+    JobImportArgs importArgs = JobImportArgs::CreateFromDictionary(
+            userArgs, shouldImportWithProxies, GfInterval::GetFullInterval());
     usdReadJob readJob(usdFilePath.asChar(),
                        usdPrimPath.asChar(),
                        variantSetSelections,

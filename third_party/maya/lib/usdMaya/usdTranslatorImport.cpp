@@ -70,61 +70,49 @@ MStatus usdTranslatorImport::reader(const MFileObject & file,
 
     bool readAnimData = true;
     bool useCustomFrameRange = false;
-    GfInterval customFrameRange(1.0, 1.0);
+    GfInterval timeInterval(1.0, 1.0);
 
-    JobImportArgs jobArgs;
-    int i;
+    VtDictionary userArgs;
 
     if ( optionsString.length() > 0 ) {
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for(i=0; i<(int)optionList.length(); ++i) {
+        for(int i=0; i<(int)optionList.length(); ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
-            if (theOption[0] == MString("shadingMode")) {
-                TfToken shadingMode(theOption[1].asChar());
-                if (!shadingMode.IsEmpty()) {
-                    if (PxrUsdMayaShadingModeRegistry::GetInstance()
-                            .GetImporter(shadingMode)) {
-                        jobArgs.shadingMode = shadingMode;
-                    }
-                    else {
-                        if (shadingMode != PxrUsdMayaShadingModeTokens->none) {
-                            MGlobal::displayError(TfStringPrintf(
-                                    "No shadingMode '%s' found. "
-                                    "Setting shadingMode='none'", 
-                                    shadingMode.GetText()).c_str());
-                        }
-                        jobArgs.shadingMode = PxrUsdMayaShadingModeTokens->none;
-                    }
-                }
-            } else if (theOption[0] == MString("assemblyRep")) {
-                jobArgs.assemblyRep = TfToken(theOption[1].asChar());
-            } else if (theOption[0] == MString("readAnimData")) {
+            if (theOption.length() != 2) {
+                continue;
+            }
+
+            std::string argName(theOption[0].asChar());
+            if (argName == "readAnimData") {
                 readAnimData = theOption[1].asInt();
-            } else if (theOption[0] == MString("useCustomFrameRange")) {
+            } else if (argName == "useCustomFrameRange") {
                 useCustomFrameRange = theOption[1].asInt();
-            } else if (theOption[0] == MString("startTime")) {
-                customFrameRange.SetMin(theOption[1].asDouble());
-            } else if (theOption[0] == MString("endTime")) {
-                customFrameRange.SetMax(theOption[1].asDouble());
+            } else if (argName == "startTime") {
+                timeInterval.SetMin(theOption[1].asDouble());
+            } else if (argName == "endTime") {
+                timeInterval.SetMax(theOption[1].asDouble());
+            } else {
+                userArgs[argName] = PxrUsdMayaUtil::ParseArgumentValue(
+                    argName, theOption[1].asChar(),
+                    JobImportArgs::GetDefaultDictionary());
             }
         }
     }
 
     if (readAnimData) {
-        if (useCustomFrameRange) {
-            jobArgs.timeInterval = customFrameRange;
-        }
-        else {
-            jobArgs.timeInterval = GfInterval::GetFullInterval();
+        if (!useCustomFrameRange) {
+            timeInterval = GfInterval::GetFullInterval();
         }
     }
     else {
-        jobArgs.timeInterval = GfInterval();
+        timeInterval = GfInterval();
     }
 
+    JobImportArgs jobArgs = JobImportArgs::CreateFromDictionary(
+            userArgs, /*importWithProxyShapes*/ false, timeInterval);
     usdReadJob *mUsdReadJob = new usdReadJob(fileName, primPath, variants, jobArgs,
             _assemblyTypeName, _proxyShapeTypeName);
     std::vector<MDagPath> addedDagPaths;
@@ -156,6 +144,35 @@ usdTranslatorImport::identifyFile(
     }
 
     return retValue;
+}
+
+/* static */
+const std::string&
+usdTranslatorImport::GetDefaultOptions()
+{
+    static std::string defaultOptions;
+    static std::once_flag once;
+    std::call_once(once, []() {
+        std::vector<std::string> entries;
+        for (const std::pair<std::string, VtValue> keyValue :
+                JobImportArgs::GetDefaultDictionary()) {
+            if (keyValue.second.IsHolding<bool>()) {
+                entries.push_back(TfStringPrintf("%s=%d",
+                        keyValue.first.c_str(),
+                        keyValue.second.Get<bool>()));
+            }
+            else if (keyValue.second.IsHolding<std::string>()) {
+                entries.push_back(TfStringPrintf("%s=%s",
+                        keyValue.first.c_str(),
+                        keyValue.second.Get<std::string>().c_str()));
+            }
+        }
+        entries.push_back("readAnimData=0");
+        entries.push_back("useCustomFrameRange=0");
+        defaultOptions = TfStringJoin(entries, ";");
+    });
+
+    return defaultOptions;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
