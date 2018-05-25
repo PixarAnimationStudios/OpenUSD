@@ -124,28 +124,16 @@ MStatus UsdMayaReferenceAssembly::initialize(
     psData->excludePrimPaths =
         typedAttrFn.create("excludePrimPaths","epp",MFnData::kString,MObject::kNullObj,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setConnectable(true);
-    typedAttrFn.setReadable(true);
-    typedAttrFn.setStorable(true);
-    typedAttrFn.setWritable(true);
     status = addAttribute(psData->excludePrimPaths);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     psData->time = unitAttrFn.create("time", "tm", MFnUnitAttribute::kTime, 0.0, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    unitAttrFn.setCached(true);
-    unitAttrFn.setConnectable(true);
-    unitAttrFn.setReadable(true);
-    unitAttrFn.setStorable(true);
-    unitAttrFn.setWritable(true);
     status = addAttribute(psData->time);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     psData->complexity = numericAttrFn.create("complexity", "cplx", MFnNumericData::kInt,0,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    numericAttrFn.setWritable(true);
-    numericAttrFn.setKeyable(true);
     numericAttrFn.setMin(0);
     numericAttrFn.setSoftMax(4);
     numericAttrFn.setMax(8);
@@ -160,10 +148,6 @@ MStatus UsdMayaReferenceAssembly::initialize(
         0,
         &status);
     numericAttrFn.setInternal(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = addAttribute(psData->tint);
@@ -173,11 +157,6 @@ MStatus UsdMayaReferenceAssembly::initialize(
         "tintColor",
         "tcol",
         &status);
-    numericAttrFn.setCached(true);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
-    numericAttrFn.setWritable(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = addAttribute(psData->tintColor);
@@ -187,9 +166,7 @@ MStatus UsdMayaReferenceAssembly::initialize(
     psData->kind =
         typedAttrFn.create("kind","knd",MFnData::kString,MObject::kNullObj,&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
     typedAttrFn.setConnectable(false);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
     status = addAttribute(psData->kind);
@@ -206,10 +183,8 @@ MStatus UsdMayaReferenceAssembly::initialize(
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
     typedAttrFn.setReadable(false);
     typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(true);
     typedAttrFn.setDisconnectBehavior(MFnNumericAttribute::kReset); // on disconnect, reset to Null
     status = addAttribute(psData->inStageData);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -241,7 +216,6 @@ MStatus UsdMayaReferenceAssembly::initialize(
     CHECK_MSTATUS_AND_RETURN_IT(status);
     typedAttrFn.setReadable(false);
     typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(true);
     status = addAttribute(psData->drawMode);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -253,8 +227,6 @@ MStatus UsdMayaReferenceAssembly::initialize(
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
     status = addAttribute(psData->inStageDataCached);
@@ -267,8 +239,6 @@ MStatus UsdMayaReferenceAssembly::initialize(
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    typedAttrFn.setCached(true);
-    typedAttrFn.setReadable(true);
     typedAttrFn.setStorable(false);
     typedAttrFn.setWritable(false);
     status = addAttribute(psData->outStageData);
