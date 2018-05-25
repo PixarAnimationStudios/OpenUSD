@@ -639,8 +639,13 @@ class TreeView(QFrame):
 
         if model:
             if model != self.view.model():
+                # Just in case any node parameters have changed since last
+                # time this model was viewed, sync the model with the node,
+                # then sync the view with the model.
+                model.SyncModelWithNode(node)
                 self.SyncViewWithModel(model)
         else:
+            # Create a new model, then sync the view with the model.
             model = TreeModel(COL_HEADERS, node)
             self.SyncViewWithModel(model)
 

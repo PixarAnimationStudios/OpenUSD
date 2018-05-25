@@ -31,7 +31,7 @@ else:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-from pxr import Usd, Sdf, UsdGeom
+from pxr import Usd, Sdf, UsdGeom, Ar
 
 #
 # Column headers and ID numbers
@@ -176,8 +176,10 @@ class TreeModel(QAbstractItemModel):
             self._namePrimPaths = node.parm(TreeModel.parmNamePrimPaths).eval()
 
             usdFile = node.parm(self._nameUsdFile).eval()
+            resolverContext = Ar.GetResolver().GetCurrentContext()
             try:
-                self._stage = Usd.Stage.Open(usdFile, Usd.Stage.LoadNone)
+                self._stage = Usd.Stage.Open(usdFile, resolverContext,\
+                                             Usd.Stage.LoadNone)
             except:
                 if usdFile != '':
                     print('Error: Tree View failed to open "%s"' % usdFile)
@@ -207,6 +209,19 @@ class TreeModel(QAbstractItemModel):
         self._namePrimPaths = ''
         self._selectionModel.reset()
         self.endResetModel()
+
+    def SyncModelWithNode(self, node):
+        # Check if the node's usdFile parameter resolves to a different
+        # path than that stored in self._stage's rootLayer. If they differ,
+        # clear and rebuild this model.
+        paramPath = node.parm(self._nameUsdFile).eval()
+        storedPath = self._stage.GetRootLayer().realPath
+        if Ar.GetResolver().Resolve(paramPath) != storedPath:
+            self.BuildAll(node, clearExisting=True)
+        else:
+            # The node's usdFile hasn't changed, but its primPaths may
+            # have, so copy them from the node to the this model.
+            self.CopyImportedPrimPathsFromNode(node)
 
     def IsPrimBoundable(self, prim, predicate):
         if prim.IsA(UsdGeom.Boundable):
