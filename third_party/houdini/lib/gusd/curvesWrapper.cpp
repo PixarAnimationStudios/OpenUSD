@@ -603,15 +603,6 @@ _validateData(
 }
 
 
-bool GusdCurvesWrapper::
-getUniqueID(int64& id) const
-{
-    static const int s_id = GT_Primitive::createPrimitiveTypeId();
-    id = s_id;
-    return true;
-}
-
-
 const char* GusdCurvesWrapper::
 className() const
 {

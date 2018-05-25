@@ -488,14 +488,6 @@ GusdNURBSCurvesWrapper::refine(
     return true;
 }
 
-bool GusdNURBSCurvesWrapper::
-getUniqueID(int64& id) const
-{
-    static const int s_id = GT_Primitive::createPrimitiveTypeId();
-    id = s_id;
-    return true;
-}
-
 
 const char* GusdNURBSCurvesWrapper::
 className() const

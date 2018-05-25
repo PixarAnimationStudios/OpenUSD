@@ -81,8 +81,6 @@ public:
 
     virtual GT_PrimitiveHandle doSoftCopy() const override;
 
-    virtual bool getUniqueID(int64& id) const override;
-    
     static int getStaticPrimitiveType();
 
     virtual int getPrimitiveType() const override;
