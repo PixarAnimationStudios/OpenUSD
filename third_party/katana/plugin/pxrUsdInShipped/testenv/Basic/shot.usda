@@ -31,6 +31,7 @@ def Xform "World" (
 
         def Xform "TestCollections" (
             kind = "component"
+            prepend apiSchemas = ["CollectionAPI:ancestor", "CollectionAPI:geomExpandPrims", "CollectionAPI:geomExplicit"]
         )
         {
             uniform token collection:ancestor:expansionRule = "expandPrims"
@@ -57,7 +58,9 @@ def Xform "World" (
                 # a part of the collection imported in katana.
                 </World/anim/Model>
             ]
-            def Xform "Geom" 
+            def Xform "Geom" (
+                prepend apiSchemas = ["CollectionAPI:atGeom", "CollectionAPI:ancestorAtGeom", "CollectionAPI:atGeomAtGeom", "CollectionAPI:descendantAtGeom", "CollectionAPI:union"]
+            )
             {
                 uniform token collection:atGeom:expansionRule = "expandPrims"
                 add rel collection:atGeom:includes = [
@@ -86,7 +89,9 @@ def Xform "World" (
                     </World/anim/TestCollections/Geom/LampBase.collection:descendant>,
                 ]
 
-                def Xform "LampBase"
+                def Xform "LampBase" (
+                    prepend apiSchemas = ["CollectionAPI:descendant"]
+                )
                 {
                     uniform token collection:descendant:expansionRule = "expandPrims"
                     add rel collection:descendant:includes = [

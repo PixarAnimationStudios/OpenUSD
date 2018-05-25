@@ -97,6 +97,15 @@ bool
     return true;
 }
 
+{% if cls.isMultipleApply %}
+/*virtual*/
+bool 
+{{ cls.cppClassName }}::_IsMultipleApplyAPISchema() const 
+{
+    return true;
+}
+
+{% endif %}
 /* static */
 {{ cls.cppClassName }}
 {% if cls.isPrivateApply %}

@@ -371,9 +371,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
     apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -595,9 +593,7 @@ class PxrAovLight "PxrAovLight" (
         displayName = "AOV Name"
         doc = "The name of the AOV to write to."
     )
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -778,7 +774,6 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     doc = "Multiplies the intensity of a given light."
 )
 {
-    uniform token collection:filterLink:expansionRule = "expandPrims"
     uniform bool collection:filterLink:includeRoot = 1
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -909,7 +904,6 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         doc = """Chooses a physical or analytic evaluation model for
         the barn."""
     )
-    uniform token collection:filterLink:expansionRule = "expandPrims"
     uniform bool collection:filterLink:includeRoot = 1
     float edge:bottom = 0 (
         doc = "Additional adjustment to the top region."
@@ -1123,7 +1117,6 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         Otherwise, it only follows the orientation of the filter. WARNING:
         This does not work with dome and mesh lights."""
     )
-    uniform token collection:filterLink:expansionRule = "expandPrims"
     uniform bool collection:filterLink:includeRoot = 1
     float color:contrast = 1 (
         doc = """Contrast control (less than 1 = contrast reduction,
@@ -1285,7 +1278,6 @@ class PxrRampLightFilter "PxrRampLightFilter" (
     doc = "A ramp to modulate how a light falls off with distance."
 )
 {
-    uniform token collection:filterLink:expansionRule = "expandPrims"
     uniform bool collection:filterLink:includeRoot = 1
     float falloffRamp:beginDistance = 0
     float falloffRamp:endDistance = 10
@@ -1380,7 +1372,6 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     doc = "Simulates a rod or capsule-shaped region to modulate light."
 )
 {
-    uniform token collection:filterLink:expansionRule = "expandPrims"
     uniform bool collection:filterLink:includeRoot = 1
     float color:saturation = 1 (
         doc = """Saturation of the result (0=greyscale, 1=normal,

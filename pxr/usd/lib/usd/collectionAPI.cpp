@@ -67,6 +67,13 @@ UsdCollectionAPI::_IsAppliedAPISchema() const
     return true;
 }
 
+/*virtual*/
+bool 
+UsdCollectionAPI::_IsMultipleApplyAPISchema() const 
+{
+    return true;
+}
+
 /* static */
 UsdCollectionAPI
 UsdCollectionAPI::_Apply(const UsdPrim &prim, const TfToken &name)
@@ -137,16 +144,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (excludes)
 );
 
-
-/* virtual */
-bool 
-UsdCollectionAPI::_IsCompatible() const
-{
-    return UsdAPISchemaBase::_IsCompatible() && 
-           !GetName().IsEmpty() && 
-           _GetExpansionRuleAttr();
-}
-
 /* static */
 UsdCollectionAPI 
 UsdCollectionAPI::ApplyCollection(
@@ -190,6 +187,14 @@ UsdCollectionAPI::GetCollection(const UsdStagePtr &stage,
                             collectionName);
 }
 
+/* static */
+UsdCollectionAPI 
+UsdCollectionAPI::GetCollection(const UsdPrim &prim, 
+                                const TfToken &name)
+{
+   return UsdCollectionAPI(prim, name);
+}
+
 SdfPath 
 UsdCollectionAPI::GetCollectionPath() const
 {
@@ -197,24 +202,64 @@ UsdCollectionAPI::GetCollectionPath() const
 }
 
 /* static */
+SdfPath 
+UsdCollectionAPI::GetNamedCollectionPath(
+    const UsdPrim &prim, 
+    const TfToken &collectionName)
+{
+    return prim.GetPath().AppendProperty(TfToken(SdfPath::JoinIdentifier(
+            UsdTokens->collection, collectionName)));
+}
+
+// XXX: This functionality should probably be exposed in the base-class for use 
+// in other API schemas.UsdPrim::HasAPI has similar code as well.
+static std::vector<std::string> 
+_GetCollectionAPIAliases(const TfType &collSchemaType) 
+{
+    // The alias for UsdCollectionAPI is already available as a static token 
+    // in _schemaTokes.
+    std::vector<std::string> collectionAPIAliases{_schemaTokens->CollectionAPI};
+
+    // If there are derived types of the CollectionAPI, include their aliases
+    // too.
+    std::set<TfType> derivedTypes;
+    collSchemaType.GetAllDerivedTypes(&derivedTypes);
+    if (!derivedTypes.empty()) {
+        collectionAPIAliases.reserve(collectionAPIAliases.size() + 
+                                     derivedTypes.size());
+        const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
+        for (const auto& derived : derivedTypes) {
+            for (const auto &derivedAlias : schemaBaseType.GetAliases(derived)){
+                collectionAPIAliases.push_back(derivedAlias);
+            }
+        }
+    }
+
+    return collectionAPIAliases;
+}
+
+/* static */
 std::vector<UsdCollectionAPI>
 UsdCollectionAPI::GetAllCollections(const UsdPrim &prim)
 {
     std::vector<UsdCollectionAPI> collections;
-    
-    std::vector<UsdAttribute> attributes = prim.GetAttributes();
-    for (const auto &attr : attributes) {
-        if (attr.GetBaseName() == UsdTokens->expansionRule) {
-            std::vector<std::string> nameComponents = attr.SplitName();
-            if (nameComponents.size() >= 3 &&
-                nameComponents[0] == UsdTokens->collection) {
-                    
-                std::string collectionName = 
-                    attr.GetNamespace().GetString().substr(
-                        UsdTokens->collection.GetString().size() + 1);
 
-                collections.push_back(
-                        UsdCollectionAPI(prim, TfToken(collectionName)));
+    auto appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return collections;
+    }
+
+    static const std::vector<std::string> collectionAPIAliases = 
+        _GetCollectionAPIAliases(_GetStaticTfType());
+
+    for (const auto &appliedSchema : appliedSchemas) {
+        for (const std::string &alias : collectionAPIAliases) {
+            const std::string collAPIPrefix = alias + 
+                    UsdObject::GetNamespaceDelimiter();
+            if (TfStringStartsWith(appliedSchema, collAPIPrefix)) {
+                const std::string collectionName = 
+                        appliedSchema.GetString().substr(collAPIPrefix.size());
+                collections.emplace_back(prim, TfToken(collectionName));
             }
         }
     }
@@ -489,6 +534,10 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
     // Get this collection's expansionRule.
     TfToken expRule;
     GetExpansionRuleAttr().Get(&expRule);
+
+    if (expRule.IsEmpty()) {
+        expRule = UsdTokens->expandPrims;
+    }
 
     SdfPathVector includes, excludes;
     _GetIncludesRel().GetTargets(&includes);
@@ -782,10 +831,13 @@ bool
 UsdCollectionAPI::Validate(std::string *reason) const
 {
     TfToken expansionRule; 
-    GetExpansionRuleAttr().Get(&expansionRule);
-    
+    if (UsdAttribute expRuleAttr = GetExpansionRuleAttr()) {
+        expRuleAttr.Get(&expansionRule);
+    }
+
     // Validate value of expansionRule.
-    if (expansionRule != UsdTokens->explicitOnly && 
+    if (!expansionRule.IsEmpty() && 
+        expansionRule != UsdTokens->explicitOnly && 
         expansionRule != UsdTokens->expandPrims &&
         expansionRule != UsdTokens->expandPrimsAndProperties) {
 
@@ -837,7 +889,7 @@ UsdCollectionAPI::Validate(std::string *reason) const
 }
 
 bool 
-UsdCollectionAPI::ClearCollection() const
+UsdCollectionAPI::ResetCollection() const
 {
     bool success = true;
     if (UsdRelationship includesRel = GetIncludesRel()) {

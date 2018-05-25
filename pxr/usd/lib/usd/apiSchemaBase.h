@@ -89,11 +89,8 @@ class SdfAssetPath;
 /// applied API schemas include  UsdCollectionAPI, UsdGeomModelAPI and 
 /// UsdGeomMotionAPI
 /// 
-/// An applied API schema can only inherit from another applied API schema or 
-/// from UsdAPISchemaBase directly. Similarly, a non-applied API schema can 
-/// only inherit from a non-applied API Schema or directly from 
-/// UsdAPISchemaBase. This is enforced by C++ static assertions in the auto 
-/// generated schema code.
+/// \anchor UsdAPISchemaBase_SingleVsMultipleApply
+/// \name Single vs. Multiple Apply API Schemas
 /// 
 /// Applied API schemas can further be classified into single-apply and 
 /// multiple-apply API schemas. As the name suggests, a single-apply API schema 
@@ -205,7 +202,14 @@ public:
     /// schema that has to be applied to a prim with a call to auto-generated 
     /// public Apply() (or private _Apply()) method before any schema 
     /// properties are authored.
+    USD_API
     bool IsAppliedAPISchema() const;
+
+    /// Returns whether this API schema is a multiple-apply API schema. 
+    /// 
+    /// See \ref UsdAPISchemaBase_SingleVsMultipleApply
+    USD_API
+    bool IsMultipleApplyAPISchema() const;
 
 private:
     // Returns whether this API schema is an applied API schemas. 
@@ -215,6 +219,12 @@ private:
     // \note Clients should never have to override the method themselves.
     USD_API
     virtual bool _IsAppliedAPISchema() const;
+
+    // Returns whether this API schema is a multiple-apply API schema. 
+    // The default implementation returns false. Auto-generated code in
+    // multiple-apply API schemas override this method and return true.
+    USD_API
+    virtual bool _IsMultipleApplyAPISchema() const;
 
 protected:
     /// Construct a multiple-apply UsdAPISchemaBase on UsdPrim \p prim with 
@@ -317,7 +327,8 @@ protected:
     /// 
     /// If this is an applied API schema, this returns true if the held prim 
     /// is valid and already has the API schema applied to it, along with the 
-    /// specified instanceName (in the case of multiple-apply).
+    /// instanceName (in the case of multiple-apply). The instanceName should 
+    /// not be empty in the case of a multiple-apply API schema.
     /// 
     /// This check is performed when clients invoke the explicit bool conversion
     /// operator, implemented in UsdSchemaBase.

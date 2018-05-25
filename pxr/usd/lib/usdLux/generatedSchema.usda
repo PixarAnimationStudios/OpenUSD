@@ -26,9 +26,7 @@ class "Light" (
     """
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -403,7 +401,6 @@ class LightFilter "LightFilter" (
     """
 )
 {
-    uniform token collection:filterLink:expansionRule = "expandPrims"
     uniform bool collection:filterLink:includeRoot = 1
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -499,9 +496,7 @@ class DistantLight "DistantLight" (
         Higher values broaden the light and therefore soften shadow edges.
         """
     )
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -637,9 +632,7 @@ class DiskLight "DiskLight" (
     The disk is centered in the XY plane and emits light along the -Z axis."""
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -778,9 +771,7 @@ class RectLight "RectLight" (
     The rectangle is 1 unit in length in the X and Y axis."""
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -923,9 +914,7 @@ class SphereLight "SphereLight" (
     doc = "Light emitted outward from a sphere."
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -1071,9 +1060,7 @@ class CylinderLight "CylinderLight" (
     """
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -1220,9 +1207,7 @@ class GeometryLight "GeometryLight" (
     which is typically a mesh."""
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
@@ -1360,9 +1345,7 @@ class DomeLight "DomeLight" (
     such as a sky or IBL light probe."""
 )
 {
-    uniform token collection:lightLink:expansionRule = "expandPrims"
     uniform bool collection:lightLink:includeRoot = 1
-    uniform token collection:shadowLink:expansionRule = "expandPrims"
     uniform bool collection:shadowLink:includeRoot = 1
     color3f color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."

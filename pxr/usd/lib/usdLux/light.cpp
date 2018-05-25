@@ -245,9 +245,7 @@ UsdLuxLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdLuxTokens->collectionLightLinkIncludeRoot,
-        UsdLuxTokens->collectionLightLinkExpansionRule,
         UsdLuxTokens->collectionShadowLinkIncludeRoot,
-        UsdLuxTokens->collectionShadowLinkExpansionRule,
         UsdLuxTokens->intensity,
         UsdLuxTokens->exposure,
         UsdLuxTokens->diffuse,

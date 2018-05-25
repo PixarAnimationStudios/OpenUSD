@@ -115,7 +115,6 @@ UsdLuxLightFilter::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdLuxTokens->collectionFilterLinkIncludeRoot,
-        UsdLuxTokens->collectionFilterLinkExpansionRule,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

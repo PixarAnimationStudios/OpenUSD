@@ -74,26 +74,14 @@ struct UsdLuxTokensType {
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken automatic;
-    /// \brief "collection:filterLink:expansionRule"
-    /// 
-    /// UsdLuxLightFilter
-    const TfToken collectionFilterLinkExpansionRule;
     /// \brief "collection:filterLink:includeRoot"
     /// 
     /// UsdLuxLightFilter
     const TfToken collectionFilterLinkIncludeRoot;
-    /// \brief "collection:lightLink:expansionRule"
-    /// 
-    /// UsdLuxLight
-    const TfToken collectionLightLinkExpansionRule;
     /// \brief "collection:lightLink:includeRoot"
     /// 
     /// UsdLuxLight
     const TfToken collectionLightLinkIncludeRoot;
-    /// \brief "collection:shadowLink:expansionRule"
-    /// 
-    /// UsdLuxLight
-    const TfToken collectionShadowLinkExpansionRule;
     /// \brief "collection:shadowLink:includeRoot"
     /// 
     /// UsdLuxLight
@@ -126,10 +114,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxLight
     const TfToken enableColorTemperature;
-    /// \brief "expandPrims"
-    /// 
-    /// Default value for UsdLuxLightFilter::GetCollectionFilterLinkExpansionRuleAttr(), Default value for UsdLuxLight::GetCollectionLightLinkExpansionRuleAttr(), Default value for UsdLuxLight::GetCollectionShadowLinkExpansionRuleAttr()
-    const TfToken expandPrims;
     /// \brief "exposure"
     /// 
     /// UsdLuxLight

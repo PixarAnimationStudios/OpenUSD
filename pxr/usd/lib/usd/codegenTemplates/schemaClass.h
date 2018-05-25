@@ -258,6 +258,15 @@ private:
     virtual bool _IsAppliedAPISchema() const override;
 
 {% endif %}
+{% if cls.isMultipleApply %}
+    // This override returns true since {{ cls.cppClassName }} is a multiple-
+    // apply API schema.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    virtual bool _IsMultipleApplyAPISchema() const override;
+
+{% endif %}
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName]%}
 {# Only emit Create/Get API and doxygen if apiName is not empty string. #}

@@ -58,9 +58,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # Test an explicitOnly collection.
         explicitColl = Usd.CollectionAPI.ApplyCollection(testPrim, 
                 "test:Explicit:Collection", Usd.Tokens.explicitOnly)
+        
         # The collection is initially empty.
         self.assertTrue(explicitColl.HasNoIncludedPaths())
-        self.assertEqual(['CollectionAPI:test:Explicit:Collection'],
+        self.assertTrue('CollectionAPI:test:Explicit:Collection' in
                          testPrim.GetAppliedSchemas())
         self.assertTrue(testPrim.HasAPI(Usd.CollectionAPI))
         self.assertTrue(testPrim.HasAPI(Usd.CollectionAPI, 
@@ -69,6 +70,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
             instanceName="unknown"))
         self.assertTrue(not testPrim.HasAPI(Usd.CollectionAPI, 
             instanceName="test"))
+
+        self.assertEqual(explicitColl.GetCollectionPath(), 
+                         Usd.CollectionAPI.GetNamedCollectionPath(testPrim, 
+                            "test:Explicit:Collection"))
 
         explicitColl.CreateIncludesRel().AddTarget(sphere.GetPath())
         self.assertFalse(explicitColl.HasNoIncludedPaths())
@@ -114,7 +119,6 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 expandPrimsCollMquery, stage)
         self.assertEqual(len(expandPrimCollIncObjects), 9)
 
-        
         for obj in expandPrimCollIncObjects:
             self.assertTrue(expandPrimsCollMquery.IsPathIncluded(obj.GetPath()))
 
@@ -183,6 +187,12 @@ class TestUsdCollectionAPI(unittest.TestCase):
         for obj in combinedCollIncObjects:
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
         self.assertEqual(len(combinedCollIncObjects), 5)
+
+        expandPrimsColl.ResetCollection()
+        self.assertTrue(expandPrimsColl.HasNoIncludedPaths())
+        
+        explicitColl.BlockCollection()
+        self.assertTrue(explicitColl.HasNoIncludedPaths())
 
     def test_testIncludeAndExcludePath(self):
         geomCollection = Usd.CollectionAPI.ApplyCollection(geom, 

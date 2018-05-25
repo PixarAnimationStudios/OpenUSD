@@ -1,16 +1,16 @@
 <attr type="GroupAttr">
   <attr name="collections" type="GroupAttr">
-    <attr name="ancestorAtGeom" type="GroupAttr">
-      <attr name="cel" tupleSize="1" type="StringAttr">
-        <sample size="1" time="0">
-          <str value="(/root/world/geo/World/anim/TestCollections/$ancestor)"/>
-        </sample>
-      </attr>
-    </attr>
     <attr name="atGeom" type="GroupAttr">
       <attr name="cel" tupleSize="1" type="StringAttr">
         <sample size="1" time="0">
           <str value="((/LampStem /LampStem//* ))"/>
+        </sample>
+      </attr>
+    </attr>
+    <attr name="ancestorAtGeom" type="GroupAttr">
+      <attr name="cel" tupleSize="1" type="StringAttr">
+        <sample size="1" time="0">
+          <str value="(/root/world/geo/World/anim/TestCollections/$ancestor)"/>
         </sample>
       </attr>
     </attr>
@@ -34,6 +34,19 @@
           <str value="(/root/world/geo/World/anim/TestCollections/$ancestor)"/>
           <str value="(//$atGeom)"/>
           <str value="(/LampBase/$descendant)"/>
+        </sample>
+      </attr>
+    </attr>
+  </attr>
+  <attr name="info" type="GroupAttr">
+    <attr name="usd" type="GroupAttr">
+      <attr name="apiSchemas" tupleSize="1" type="StringAttr">
+        <sample size="5" time="0">
+          <str value="CollectionAPI:atGeom"/>
+          <str value="CollectionAPI:ancestorAtGeom"/>
+          <str value="CollectionAPI:atGeomAtGeom"/>
+          <str value="CollectionAPI:descendantAtGeom"/>
+          <str value="CollectionAPI:union"/>
         </sample>
       </attr>
     </attr>

@@ -70,10 +70,15 @@ MaterialReferenceAttrFncCache::createValue(
         materialPath = "/" + materialPath;
     }
 
-    std::string looksGroupLocation = FnAttribute::StringAttribute(
-        args.getChildByName("looksGroupLocation")).getValue("", false);
-    if (!looksGroupLocation.empty()) {
-        materialPath = looksGroupLocation + materialPath;
+    FnAttribute::StringAttribute looksGroupLocationAttr = 
+        args.getChildByName("looksGroupLocation");
+    std::string looksGroupLocation;
+    if (looksGroupLocationAttr.isValid()) {
+        looksGroupLocation = looksGroupLocationAttr.getValue(
+            "", false);
+        if (!looksGroupLocation.empty()) {
+            materialPath = looksGroupLocation + materialPath;
+        }
     }
 
     int flatten = FnKat::IntAttribute(

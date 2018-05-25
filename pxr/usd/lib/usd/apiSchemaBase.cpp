@@ -114,9 +114,23 @@ UsdAPISchemaBase::IsAppliedAPISchema() const
     return _IsAppliedAPISchema();
 }
 
+bool 
+UsdAPISchemaBase::IsMultipleApplyAPISchema() const
+{
+    // Invoke the virtual method that returns the answer.
+    return _IsMultipleApplyAPISchema();
+}
+
 /* virtual */
 bool 
 UsdAPISchemaBase::_IsAppliedAPISchema() const
+{
+    return false;
+}
+
+/* virtual */
+bool 
+UsdAPISchemaBase::_IsMultipleApplyAPISchema() const
 {
     return false;
 }
@@ -201,9 +215,14 @@ UsdAPISchemaBase::_IsCompatible() const
     // This virtual function call tells us whether we're an applied 
     // API schema. For applied API schemas, we'd like to check whether 
     // the API schema has been applied properly on the prim.
-    if (IsAppliedAPISchema()) {
-        return GetPrim()._HasAPI(_GetTfType(), /*validateSchemaType*/ false, 
-                                 _instanceName);
+    if (IsAppliedAPISchema() && 
+        ! GetPrim()._HasAPI(_GetTfType(), /*validateSchemaType*/ false, 
+                            _instanceName)) {
+        return false;
+    }
+
+    if (IsMultipleApplyAPISchema() && _instanceName.IsEmpty()) {
+        return false;
     }
 
     return true;

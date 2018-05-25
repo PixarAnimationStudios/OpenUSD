@@ -156,6 +156,11 @@ private:
     USDCONTRIVED_API
     virtual bool _IsAppliedAPISchema() const override;
 
+    // This override returns true since UsdContrivedMultipleApplyAPI is a multiple-
+    // apply API schema.
+    USDCONTRIVED_API
+    virtual bool _IsMultipleApplyAPISchema() const override;
+
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 

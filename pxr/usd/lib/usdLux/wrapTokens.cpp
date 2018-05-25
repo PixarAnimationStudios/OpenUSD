@@ -67,11 +67,8 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "angle", UsdLuxTokens->angle);
     _AddToken(cls, "angular", UsdLuxTokens->angular);
     _AddToken(cls, "automatic", UsdLuxTokens->automatic);
-    _AddToken(cls, "collectionFilterLinkExpansionRule", UsdLuxTokens->collectionFilterLinkExpansionRule);
     _AddToken(cls, "collectionFilterLinkIncludeRoot", UsdLuxTokens->collectionFilterLinkIncludeRoot);
-    _AddToken(cls, "collectionLightLinkExpansionRule", UsdLuxTokens->collectionLightLinkExpansionRule);
     _AddToken(cls, "collectionLightLinkIncludeRoot", UsdLuxTokens->collectionLightLinkIncludeRoot);
-    _AddToken(cls, "collectionShadowLinkExpansionRule", UsdLuxTokens->collectionShadowLinkExpansionRule);
     _AddToken(cls, "collectionShadowLinkIncludeRoot", UsdLuxTokens->collectionShadowLinkIncludeRoot);
     _AddToken(cls, "color", UsdLuxTokens->color);
     _AddToken(cls, "colorTemperature", UsdLuxTokens->colorTemperature);
@@ -80,7 +77,6 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "cubeMapVerticalCross", UsdLuxTokens->cubeMapVerticalCross);
     _AddToken(cls, "diffuse", UsdLuxTokens->diffuse);
     _AddToken(cls, "enableColorTemperature", UsdLuxTokens->enableColorTemperature);
-    _AddToken(cls, "expandPrims", UsdLuxTokens->expandPrims);
     _AddToken(cls, "exposure", UsdLuxTokens->exposure);
     _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
     _AddToken(cls, "filters", UsdLuxTokens->filters);

@@ -23,6 +23,17 @@
       </attr>
     </attr>
   </attr>
+  <attr name="info" type="GroupAttr">
+    <attr name="usd" type="GroupAttr">
+      <attr name="apiSchemas" tupleSize="1" type="StringAttr">
+        <sample size="3" time="0">
+          <str value="CollectionAPI:ancestor"/>
+          <str value="CollectionAPI:geomExpandPrims"/>
+          <str value="CollectionAPI:geomExplicit"/>
+        </sample>
+      </attr>
+    </attr>
+  </attr>
   <attr name="kind" tupleSize="1" type="StringAttr">
     <sample size="1" time="0">
       <str value="component"/>

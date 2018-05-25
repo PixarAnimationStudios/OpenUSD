@@ -184,7 +184,7 @@ WRAP_CUSTOM {
 
         .def("GetCollection", 
              (UsdCollectionAPI(*)(const UsdPrim &prim, 
-                                        const TfToken &name))
+                                  const TfToken &name))
                 &This::GetCollection,
              (arg("prim"), arg("name")))
         .def("GetCollection", 
@@ -200,6 +200,11 @@ WRAP_CUSTOM {
 
         .def("GetName", &This::GetName)
         .def("GetCollectionPath", &This::GetCollectionPath)
+
+        .def("GetNamedCollectionPath", 
+             &This::GetNamedCollectionPath,
+             (arg("prim"), arg("collectionName")))
+            .staticmethod("GetNamedCollectionPath")
 
         .def("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
             arg("baseName"))
@@ -239,7 +244,7 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
              .staticmethod("ComputeIncludedPaths")
 
-        .def("ClearCollection", &This::ClearCollection)
+        .def("ResetCollection", &This::ResetCollection)
         .def("BlockCollection", &This::BlockCollection)
      ;
 }

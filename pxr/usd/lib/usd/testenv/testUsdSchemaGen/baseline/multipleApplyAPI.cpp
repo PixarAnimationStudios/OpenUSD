@@ -67,6 +67,13 @@ UsdContrivedMultipleApplyAPI::_IsAppliedAPISchema() const
     return true;
 }
 
+/*virtual*/
+bool 
+UsdContrivedMultipleApplyAPI::_IsMultipleApplyAPISchema() const 
+{
+    return true;
+}
+
 /* static */
 UsdContrivedMultipleApplyAPI
 UsdContrivedMultipleApplyAPI::_Apply(const UsdPrim &prim, const TfToken &name)

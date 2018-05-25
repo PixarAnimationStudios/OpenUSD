@@ -246,6 +246,11 @@ private:
     USD_API
     virtual bool _IsAppliedAPISchema() const override;
 
+    // This override returns true since UsdCollectionAPI is a multiple-
+    // apply API schema.
+    USD_API
+    virtual bool _IsMultipleApplyAPISchema() const override;
+
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
@@ -257,15 +262,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-
-protected:
-    // This virtual override customizes the validity checking for a 
-    // UsdCollectionAPI object. It is invoked when the schema object is 
-    // converted to a bool. 
-    // A collection is said to be valid if it has a non-empty instance name and 
-    // has a valid "expansionRule" attribute.
-    USD_API
-    virtual bool _IsCompatible() const override;
 
 public:
     /// Constructor to initialize a UsdCollectionAPI object for a collection 
@@ -300,6 +296,12 @@ public:
     USD_API
     static UsdCollectionAPI GetCollection(const UsdStagePtr &stage, 
                                           const SdfPath &collectionPath);
+
+    /// Returns the schema object representing a collection named \p name on 
+    /// the given \p prim.
+    USD_API
+    static UsdCollectionAPI GetCollection(const UsdPrim &prim, 
+                                          const TfToken &name);
 
     /// Returns all the named collections on the given USD prim. 
     USD_API
@@ -443,10 +445,18 @@ public:
     /// prim defining the collection (which won't really exist as a property 
     /// on the UsdStage, but will be used to refer to the collection).
     /// This is the path to be used to "include" this collection in another
-    /// collectio.
+    /// collection.
     USD_API
     SdfPath GetCollectionPath() const;
 
+    /// Returns the canonical path to the collection named, \p name on the given
+    /// prim, \p prim.
+    /// 
+    /// \sa GetCollectionPath()
+    USD_API
+    static SdfPath GetNamedCollectionPath(
+        const UsdPrim &prim, 
+        const TfToken &collectionName);
 
     /// Returns true if a property with the given base-name, \p baseName 
     /// could be collection schema property.
@@ -622,14 +632,19 @@ public:
     USD_API 
     bool Validate(std::string *reason) const; 
 
-    /// Clears both includes and excludes targets of the collection in the 
-    /// current UsdEditTarget.
+    /// Resets the collection by clearing both the includes and excludes 
+    /// targets of the collection in the current UsdEditTarget.
+    /// 
+    /// \note This does not modify the "includeRoot" attribute which is used 
+    /// to include or exclude everything (i.e. the pseudoRoot) in the USD stage.
     USD_API
-    bool ClearCollection() const; 
+    bool ResetCollection() const; 
 
     /// Blocks the targets of the includes and excludes relationships of the 
-    /// collection, causing the collection to become empty (if there are no
-    /// opinions in stronger edit targets).
+    /// collection, making it 
+    /// <* <i>empty</i> if "includeRoot" is false (or unset) or
+    /// * <i>include everything</i> if "includeRoot" is true.
+    /// (assuming there are no opinions in stronger edit targets).
     USD_API
     bool BlockCollection() const;
 

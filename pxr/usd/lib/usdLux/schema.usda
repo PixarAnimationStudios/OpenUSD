@@ -66,17 +66,7 @@ class "Light" (
             token apiName = ""
         }
     )
-    uniform token collection:lightLink:expansionRule = "expandPrims" (
-        customData = {
-            token apiName = ""
-        }
-    )
     uniform bool collection:shadowLink:includeRoot = 1 (
-        customData = {
-            token apiName = ""
-        }
-    )
-    uniform token collection:shadowLink:expansionRule = "expandPrims" (
         customData = {
             token apiName = ""
         }
@@ -379,11 +369,6 @@ class LightFilter "LightFilter" (
     prepend apiSchemas = ["CollectionAPI:filterLink"]
 ) {
     uniform bool collection:filterLink:includeRoot = 1 (
-        customData = {
-            token apiName = ""
-        }
-    )
-    uniform token collection:filterLink:expansionRule = "expandPrims" (
         customData = {
             token apiName = ""
         }

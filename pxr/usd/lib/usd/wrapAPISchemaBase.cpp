@@ -119,6 +119,11 @@ WRAP_CUSTOM {
             static_cast<bool (*)(void)>( [](){ 
                 return UsdAPISchemaBase::IsAPISchema; }))
         .staticmethod("IsAPISchema")
+
+        .def("IsAppliedAPISchema", &UsdAPISchemaBase::IsAppliedAPISchema)
+        .def("IsMultipleApplyAPISchema", 
+             &UsdAPISchemaBase::IsMultipleApplyAPISchema)
+
     ;
 }
 

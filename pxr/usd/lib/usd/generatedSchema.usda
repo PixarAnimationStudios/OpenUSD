@@ -46,12 +46,9 @@ class "APISchemaBase" (
     applied API schemas include  UsdCollectionAPI, UsdGeomModelAPI and 
     UsdGeomMotionAPI
 
-    An applied API schema can only inherit from another applied API schema or 
-    from UsdAPISchemaBase directly. Similarly, a non-applied API schema can 
-    only inherit from a non-applied API Schema or directly from 
-    UsdAPISchemaBase. This is enforced by C++ static assertions in the auto 
-    generated schema code.
-
+    \\anchor UsdAPISchemaBase_SingleVsMultipleApply
+    \\name Single vs. Multiple Apply API Schemas
+    
     Applied API schemas can further be classified into single-apply and 
     multiple-apply API schemas. As the name suggests, a single-apply API schema 
     can only be applied once to a prim. A multiple-apply API schema can be 
