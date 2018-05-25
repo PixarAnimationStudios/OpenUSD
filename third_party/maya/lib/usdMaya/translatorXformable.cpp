@@ -348,8 +348,6 @@ static bool _pushUSDXformToMayaXform(
                                                    time)) {
                 xlate=GfVec3d(0); rotate=GfVec3d(0); scale=GfVec3d(1);
                 if (!_isIdentityMatrix(localXform)) {
-                     MGlobal::displayWarning("Decomposing non identity 4X4 matrix at: " 
-                    + MString(xformSchema.GetPath().GetText()) + " At sample: " + tSamples[ti]);
                      PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
                              localXform, &xlate, &rotate, &scale);
                 }
@@ -367,8 +365,6 @@ static bool _pushUSDXformToMayaXform(
         if (xformSchema.GetLocalTransformation(&localXform, &resetsXformStack)) {
             xlate=GfVec3d(0); rotate=GfVec3d(0); scale=GfVec3d(1);
             if (!_isIdentityMatrix(localXform)) {
-                MGlobal::displayWarning("Decomposing non identity 4X4 matrix at: " 
-                    + MString(xformSchema.GetPath().GetText()));
                 // XXX if we want to support the old pivotPosition, we can pass
                 // it into this function..
                 PxrUsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
