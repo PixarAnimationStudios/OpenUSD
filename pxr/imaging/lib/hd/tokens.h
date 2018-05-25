@@ -224,7 +224,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (color)                                     \
     (vector)                                    \
     (normal)                                    \
-    (point)
+    (point)                                     \
+    (textureCoordinate)
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);

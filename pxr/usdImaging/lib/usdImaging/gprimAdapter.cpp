@@ -82,6 +82,8 @@ _UsdToHdRole(TfToken const& usdRole)
         return HdPrimvarRoleTokens->vector;
     } else if (usdRole == SdfValueRoleNames->Color) {
         return HdPrimvarRoleTokens->color;
+    } else if (usdRole == SdfValueRoleNames->TextureCoordinate) {
+        return HdPrimvarRoleTokens->textureCoordinate;
     }
     // Empty token means no role specified
     return TfToken();
