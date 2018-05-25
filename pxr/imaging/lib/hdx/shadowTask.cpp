@@ -110,13 +110,13 @@ HdxShadowTask::_Execute(HdTaskContext* ctx)
 
 static void
 _UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState,
-                  HdxShadowTaskParams const &params)
+                   HdxShadowTaskParams const &params)
 {
     renderPassState->SetOverrideColor(params.overrideColor);
     renderPassState->SetWireframeColor(params.wireframeColor);
     renderPassState->SetTessLevel(params.tessLevel);
     renderPassState->SetDrawingRange(params.drawingRange);
-    renderPassState->SetCullStyle(params.cullStyle);
+    renderPassState->SetCullStyle(HdInvertCullStyle(params.cullStyle));
 }
 
 void

@@ -39,4 +39,25 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdInterpolationInstance, "instance");
 }
 
+HdCullStyle
+HdInvertCullStyle(HdCullStyle cs)
+{
+    switch(cs) {
+    case HdCullStyleDontCare:
+        return HdCullStyleDontCare;
+    case HdCullStyleNothing:
+        return HdCullStyleNothing;
+    case HdCullStyleBack:
+        return HdCullStyleFront;
+    case HdCullStyleFront:
+        return HdCullStyleBack;
+    case HdCullStyleBackUnlessDoubleSided:
+        return HdCullStyleFrontUnlessDoubleSided;
+    case HdCullStyleFrontUnlessDoubleSided:
+        return HdCullStyleBackUnlessDoubleSided;
+    default:
+        return cs;
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -39,6 +39,7 @@ pxr_library(hd
         drawingCoord
         drawItem
         engine
+        enums
         extCompCpuComputation
         extCompInputSource
         extCompPrimvarBufferSource
@@ -92,7 +93,6 @@ pxr_library(hd
 
     PUBLIC_HEADERS
         api.h
-        enums.h
         version.h
 
     PRIVATE_CLASSES

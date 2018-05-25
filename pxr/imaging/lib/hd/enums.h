@@ -25,6 +25,7 @@
 #define HD_ENUMS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,6 +84,11 @@ enum HdCullStyle
     HdCullStyleBackUnlessDoubleSided,
     HdCullStyleFrontUnlessDoubleSided
 };
+
+/// Returns the opposite of the given cullstyle; backface culling becomes
+/// frontface and vice versa.
+HD_API
+HdCullStyle HdInvertCullStyle(HdCullStyle cs);
 
 enum HdPolygonMode
 {
