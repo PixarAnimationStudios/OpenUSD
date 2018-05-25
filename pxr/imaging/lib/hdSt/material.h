@@ -54,11 +54,6 @@ public:
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits) override;
 
-    /// Accessor for tasks to get the parameter cached in this sprim object.
-    /// Don't communicate back to scene delegate within this function.
-    HDST_API
-    virtual VtValue Get(TfToken const &token) const override;
-
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
@@ -124,26 +119,26 @@ private:
 inline std::string
 HdStMaterial::GetSurfaceShaderSource(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetSurfaceShaderSource(GetID());
+    return sceneDelegate->GetSurfaceShaderSource(GetId());
 }
 
 inline std::string
 HdStMaterial::GetDisplacementShaderSource(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetDisplacementShaderSource(GetID());
+    return sceneDelegate->GetDisplacementShaderSource(GetId());
 }
 
 inline HdMaterialParamVector
 HdStMaterial::GetMaterialParams(HdSceneDelegate* sceneDelegate) const
 {
-    return sceneDelegate->GetMaterialParams(GetID());
+    return sceneDelegate->GetMaterialParams(GetId());
 }
 
 inline VtValue
 HdStMaterial::GetMaterialParamValue(HdSceneDelegate* sceneDelegate,
                                   TfToken const &paramName) const
 {
-    return sceneDelegate->GetMaterialParamValue(GetID(), paramName);
+    return sceneDelegate->GetMaterialParamValue(GetId(), paramName);
 }
 
 inline HdTextureResource::ID

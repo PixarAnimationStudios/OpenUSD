@@ -53,7 +53,7 @@ HdTexture::Sync(HdSceneDelegate *sceneDelegate,
 
     TF_UNUSED(renderParam);
 
-    SdfPath const& id = GetID();
+    SdfPath const& id = GetId();
     HdDirtyBits bits = *dirtyBits;
 
     // XXX : DirtyParams and DirtyTexture are currently the same but they

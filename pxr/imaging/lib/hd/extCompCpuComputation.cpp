@@ -50,8 +50,6 @@ HdExtCompCpuComputation::HdExtCompCpuComputation(
  , _sceneDelegate(sceneDelegate)
  , _outputValues()
 {
-    // TODO Auto-generated constructor stub
-
 }
 
 HdExtCompCpuComputationSharedPtr
@@ -62,7 +60,7 @@ HdExtCompCpuComputation::CreateComputation(
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
-    const SdfPath &id = computation.GetID();
+    const SdfPath &id = computation.GetId();
 
     Hd_ExtCompInputSourceSharedPtrVector inputs;
     for (const TfToken &inputName: computation.GetSceneInputNames()) {

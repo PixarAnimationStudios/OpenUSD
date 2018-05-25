@@ -58,9 +58,6 @@ public:
                       HdDirtyBits     *dirtyBits) override;
 
     HDST_API
-    virtual VtValue Get(TfToken const &token) const override;
-
-    HDST_API
     HdBufferArrayRangeSharedPtr const & GetInputRange() const {
         return _inputRange;
     }

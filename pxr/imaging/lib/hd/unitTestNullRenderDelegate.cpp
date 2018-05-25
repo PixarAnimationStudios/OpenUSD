@@ -264,10 +264,6 @@ public:
         *dirtyBits = HdMaterial::Clean;
     };
 
-    virtual VtValue Get(TfToken const &token) const override {
-        return VtValue();
-    }
-
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
         return HdMaterial::AllDirty;
     }

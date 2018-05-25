@@ -324,14 +324,6 @@ HdStMaterial::_GetTextureResource(
 }
 
 // virtual
-VtValue
-HdStMaterial::Get(TfToken const &token) const
-{
-    TF_CODING_ERROR("Unused Function");
-    return VtValue();
-}
-
-// virtual
 HdDirtyBits
 HdStMaterial::GetInitialDirtyBitsMask() const
 {

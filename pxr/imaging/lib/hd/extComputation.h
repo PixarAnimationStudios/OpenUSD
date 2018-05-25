@@ -98,9 +98,6 @@ public:
                       HdDirtyBits     *dirtyBits) override;
 
     HD_API
-    virtual VtValue Get(TfToken const &token) const override;
-
-    HD_API
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     HD_API

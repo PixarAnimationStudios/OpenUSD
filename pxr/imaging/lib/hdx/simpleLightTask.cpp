@@ -219,7 +219,7 @@ HdxSimpleLightTask::_Sync(HdTaskContext* ctx)
 
             // XXX: Pass id of light to Glf simple light, so that
             // glim can get access back to the light prim.
-            glfl.SetID(light->GetID());
+            glfl.SetID(light->GetId());
 
             // If the light is in camera space we need to transform
             // the position and spot direction to world space for

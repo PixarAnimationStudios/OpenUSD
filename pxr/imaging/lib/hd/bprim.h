@@ -63,7 +63,7 @@ public:
     /// Returns the identifier by which this buffer is known. This
     /// identifier is a common associative key used by the SceneDelegate,
     /// RenderIndex, and for binding to the buffer
-    SdfPath const& GetID() const { return _id; }
+    SdfPath const& GetId() const { return _id; }
 
     /// Synchronizes state from the delegate to this object.
     /// @param[in, out]  dirtyBits: On input specifies which state is

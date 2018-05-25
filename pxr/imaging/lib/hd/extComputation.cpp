@@ -85,19 +85,19 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
         TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    dirty inputs\n");
         
         _sceneInputNames =
-                sceneDelegate->GetExtComputationSceneInputNames(GetID());
+                sceneDelegate->GetExtComputationSceneInputNames(GetId());
         _computationInputs =
-                sceneDelegate->GetExtComputationInputDescriptors(GetID());
+                sceneDelegate->GetExtComputationInputDescriptors(GetId());
     }
 
     if (bits & DirtyOutputDesc) {
         _computationOutputs =
-                sceneDelegate->GetExtComputationOutputDescriptors(GetID());
+                sceneDelegate->GetExtComputationOutputDescriptors(GetId());
     }
 
     if (bits & DirtyDispatchCount) {
         VtValue vtDispatchCount =
-                sceneDelegate->Get(GetID(), HdTokens->dispatchCount);
+                sceneDelegate->Get(GetId(), HdTokens->dispatchCount);
         // For backward compatibility, allow the dispatch count to be empty.
         if (!vtDispatchCount.IsEmpty()) {
             _dispatchCount = vtDispatchCount.Get<size_t>();
@@ -108,7 +108,7 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & DirtyElementCount) {
         VtValue vtElementCount =
-                sceneDelegate->Get(GetID(), HdTokens->elementCount);
+                sceneDelegate->Get(GetId(), HdTokens->elementCount);
         // For backward compatibility, allow the element count to be empty.
         if (!vtElementCount.IsEmpty()) {
             _elementCount = vtElementCount.Get<size_t>();
@@ -118,7 +118,7 @@ HdExtComputation::_Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & DirtyKernel) {
-        _gpuKernelSource = sceneDelegate->GetExtComputationKernel(GetID());
+        _gpuKernelSource = sceneDelegate->GetExtComputationKernel(GetId());
         TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg("    GpuKernelSource = '%s'\n",
                 _gpuKernelSource.c_str());
         // XXX we should update any created GPU computations as well
@@ -132,12 +132,6 @@ HdDirtyBits
 HdExtComputation::GetInitialDirtyBitsMask() const
 {
     return AllDirty;
-}
-
-VtValue
-HdExtComputation::Get(TfToken const &token) const
-{
-    return VtValue();
 }
 
 size_t

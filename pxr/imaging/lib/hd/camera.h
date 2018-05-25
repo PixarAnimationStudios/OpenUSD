@@ -85,7 +85,7 @@ public:
 
     /// Accessor for tasks to get the parameters cached in this object.
     HD_API
-    virtual VtValue Get(TfToken const &token) const override;
+    VtValue Get(TfToken const &token) const;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
