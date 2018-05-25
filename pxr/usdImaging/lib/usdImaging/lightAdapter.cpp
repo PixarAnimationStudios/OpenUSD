@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/light.h"
+#include "pxr/usd/usdLux/light.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -75,6 +76,13 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
             *timeVaryingBits |= HdLight::DirtyBits::DirtyParams;
         }
     }
+
+    UsdImagingValueCache* valueCache = _GetValueCache();
+
+    // See UsdImagingGprimAdapter::TrackVariability() for reasoning
+    // why we use time 1.0 here.
+    UsdTimeCode time(1.0);
+    valueCache->GetVisible(cachePath) = GetVisible(prim, time);
 }
 
 // Thread safe.
