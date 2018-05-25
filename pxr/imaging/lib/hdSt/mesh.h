@@ -73,6 +73,8 @@ public:
                       TfToken const   &reprName,
                       bool             forcedRepr) override;
 
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
     /// Topology (member) getter
     HDST_API
     virtual HdMeshTopologySharedPtr GetTopology() const override;
@@ -129,7 +131,6 @@ protected:
 
     int _GetRefineLevelForDesc(HdMeshReprDesc desc) const;
 
-    virtual HdDirtyBits _GetInitialDirtyBits() const override;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     virtual void _InitRepr(TfToken const &reprName,

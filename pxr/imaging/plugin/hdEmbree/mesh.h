@@ -80,6 +80,12 @@ public:
     /// (Note: Embree resources are released in Finalize()).
     virtual ~HdEmbreeMesh() = default;
 
+    /// Inform the scene graph which state needs to be downloaded in the
+    /// first Sync() call: in this case, topology and points data to build
+    /// the geometry object in the embree scene graph.
+    ///   \return The initial dirty state this mesh wants to query.
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
     /// Release any resources this class is holding onto: in this case,
     /// destroy the geometry object in the embree scene graph.
     ///   \param renderParam An HdEmbreeRenderParam object containing top-level
@@ -128,11 +134,6 @@ protected:
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
                              TfToken const &reprName,
                              HdDirtyBits *dirtyBits) override;
-
-    // Inform the scene graph which state needs to be downloaded in the
-    // first Sync() call: in this case, topology and points data to build
-    // the geometry object in the embree scene graph.
-    virtual HdDirtyBits _GetInitialDirtyBits() const override;
 
     // This callback from Rprim gives the prim an opportunity to set
     // additional dirty bits based on those already set.  This is done

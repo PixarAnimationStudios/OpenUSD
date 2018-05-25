@@ -100,18 +100,10 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 {
     TF_UNUSED(renderParam);
 
-    // Store the dirty bits because the rprim Sync() might clean
-    // the DirtySurfaceShader bits which are useful later in 
-    // _GetRepr() to detech if the GeometricShader needs to be updated.
-    // Example : An rprim has a binding to a shader without displacement,
-    //           later on, we update that binding to point to a shader 
-    //           with displacement. We want the Geometric Shader to be updated.
-    HdDirtyBits originalDirtyBits = *dirtyBits;
-
-    HdRprim::_Sync(delegate,
-                  reprName,
-                  forcedRepr,
-                  &originalDirtyBits);
+    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
+                       delegate->GetMaterialId(GetId()));
+    }
 
     TfToken calcReprName = _GetReprName(reprName, forcedRepr);
     _UpdateRepr(delegate, calcReprName, dirtyBits);
@@ -1615,7 +1607,7 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 }
 
 HdDirtyBits
-HdStMesh::_GetInitialDirtyBits() const
+HdStMesh::GetInitialDirtyBitsMask() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr

@@ -86,6 +86,8 @@ public:
                       TfToken const &  reprName,
                       bool             forcedRepr) override;
 
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
 protected:
     virtual void _UpdateRepr(HdSceneDelegate *sceneDelegate,
                              TfToken const &reprName,
@@ -104,8 +106,6 @@ protected:
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
-
-    virtual HdDirtyBits _GetInitialDirtyBits() const override;
     virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
     virtual void _InitRepr(TfToken const &reprName,
                            HdDirtyBits *dirtyBits) override;

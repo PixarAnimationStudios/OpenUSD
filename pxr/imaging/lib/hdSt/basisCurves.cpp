@@ -79,10 +79,10 @@ HdStBasisCurves::Sync(HdSceneDelegate* delegate,
 {
     TF_UNUSED(renderParam);
 
-    HdRprim::_Sync(delegate,
-                  reprName,
-                  forcedRepr,
-                  dirtyBits);
+    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
+                       delegate->GetMaterialId(GetId()));
+    }
 
     TfToken calcReprName = _GetReprName(reprName, forcedRepr);
     _UpdateRepr(delegate, calcReprName, dirtyBits);
@@ -762,7 +762,7 @@ HdStBasisCurves::_SupportsUserNormals(HdStDrawItem* drawItem){
 }
 
 HdDirtyBits
-HdStBasisCurves::_GetInitialDirtyBits() const
+HdStBasisCurves::GetInitialDirtyBitsMask() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr

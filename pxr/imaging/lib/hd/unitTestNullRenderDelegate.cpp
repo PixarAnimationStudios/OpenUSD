@@ -218,7 +218,7 @@ public:
     }
 
 
-    virtual HdDirtyBits _GetInitialDirtyBits() const override
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override
     {
         // Set all bits except the varying flag
         return  (HdChangeTracker::AllSceneDirtyBits) &

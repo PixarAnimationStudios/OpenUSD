@@ -85,25 +85,6 @@ HdRprim::GetDrawItems(TfToken const &defaultReprName, bool forced) const
     }
 }
 
-
-void
-HdRprim::_Sync(HdSceneDelegate* delegate,
-              TfToken const &defaultReprName,
-              bool forced,
-              HdDirtyBits *dirtyBits)
-{
-    HdRenderIndex   &renderIndex   = delegate->GetRenderIndex();
-    HdChangeTracker &changeTracker = renderIndex.GetChangeTracker();
-
-    // Check if the rprim has a new material binding associated to it,
-    // if so, we will request the binding from the delegate and set it up in
-    // this rprim.
-    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(changeTracker, delegate->GetMaterialId(GetId()));
-        *dirtyBits &= ~HdChangeTracker::DirtyMaterialId;
-    }
-}
-
 void
 HdRprim::_UpdateReprName(HdSceneDelegate* delegate,
                          HdDirtyBits *dirtyBits)
@@ -262,12 +243,6 @@ HdRprim::SetPrimId(int32_t primId)
 {
     _primId = primId;
     // Don't set DirtyPrimID here, to avoid undesired variability tracking.
-}
-
-HdDirtyBits
-HdRprim::GetInitialDirtyBitsMask() const
-{
-    return _GetInitialDirtyBits();
 }
 
 void

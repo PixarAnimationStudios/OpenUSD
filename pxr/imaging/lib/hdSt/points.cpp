@@ -66,10 +66,10 @@ HdStPoints::Sync(HdSceneDelegate* delegate,
 {
     TF_UNUSED(renderParam);
 
-    HdRprim::_Sync(delegate,
-                  reprName,
-                  forcedRepr,
-                  dirtyBits);
+    if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
+                       delegate->GetMaterialId(GetId()));
+    }
 
     TfToken calcReprName = _GetReprName(reprName, forcedRepr);
     _UpdateRepr(delegate, calcReprName, dirtyBits);
@@ -245,7 +245,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 }
 
 HdDirtyBits 
-HdStPoints::_GetInitialDirtyBits() const
+HdStPoints::GetInitialDirtyBitsMask() const
 {
     HdDirtyBits mask = HdChangeTracker::Clean
         | HdChangeTracker::InitRepr

@@ -82,7 +82,7 @@ HdEmbreeMesh::Finalize(HdRenderParam *renderParam)
 }
 
 HdDirtyBits
-HdEmbreeMesh::_GetInitialDirtyBits() const
+HdEmbreeMesh::GetInitialDirtyBitsMask() const
 {
     // The initial dirty bits control what data is available on the first
     // run through _PopulateRtMesh(), so it should list every data item
