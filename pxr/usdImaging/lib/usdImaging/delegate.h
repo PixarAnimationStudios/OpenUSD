@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/valueCache.h"
 #include "pxr/usdImaging/usdImaging/inheritedCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
@@ -290,6 +291,8 @@ public:
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
     virtual TfToken GetReprName(SdfPath const &id) override;
+    USDIMAGING_API
+    virtual VtArray<TfToken> GetCategories(SdfPath const &id) override;
     USDIMAGING_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(SdfPath const& id,
@@ -632,6 +635,7 @@ private:
     UsdImaging_MaterialBindingCache _materialBindingCache;
     UsdImaging_VisCache _visCache;
     UsdImaging_DrawModeCache _drawModeCache;
+    UsdImaging_CollectionCache _collectionCache;
 
     // Pickability
     PickabilityMap _pickablesMap;

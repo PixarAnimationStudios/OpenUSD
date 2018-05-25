@@ -2349,6 +2349,14 @@ UsdImagingDelegate::GetReprName(SdfPath const &id)
     return _reprFallback;
 }
 
+/*virtual*/
+VtArray<TfToken>
+UsdImagingDelegate::GetCategories(SdfPath const &id)
+{
+    SdfPath usdPath = GetPathForUsd(id);
+    return _collectionCache.ComputeCollectionsContainingPath(usdPath);
+}
+
 // -------------------------------------------------------------------------- //
 // Primvar Support Methods
 // -------------------------------------------------------------------------- //
@@ -2662,34 +2670,45 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     SdfPath usdPath = GetPathForUsd(id);
-
     UsdPrim prim = _GetPrim(usdPath);
     if (!TF_VERIFY(prim)) {
         return VtValue();
     }
-
-    VtValue value;
-    UsdAttribute attr = prim.GetAttribute(paramName);
-    if (!attr) {
-        // Special handling of non-attribute parameters
-
-        // This can be moved to a separate function as we add support for 
-        // other light types that use textures in multiple ways
-        if (paramName == _tokens->texturePath) {
-            UsdLuxDomeLight domeLight(prim);
-            SdfAssetPath asset; 
-            if (!domeLight.GetTextureFileAttr().Get(&asset)) {
-                return VtValue();
-            }
-            return VtValue(asset.GetResolvedPath());
-        }
-
-        return Get(id, paramName);
+    UsdLuxLight light = UsdLuxLight(prim);
+    if (!light) {
+        // XXX Should it be a coding error to query light params
+        // on non-light prims?
+        return VtValue();
     }
 
-    // Reading the value may fail, should we warn here when it does?
-    attr.Get(&value, GetTime());
-    return value;
+    // Special handling of non-attribute parameters
+    if (paramName == _tokens->texturePath) {
+        // This can be moved to a separate function as we add support for 
+        // other light types that use textures in multiple ways
+        UsdLuxDomeLight domeLight(prim);
+        SdfAssetPath asset; 
+        if (!domeLight.GetTextureFileAttr().Get(&asset)) {
+            return VtValue();
+        }
+        return VtValue(asset.GetResolvedPath());
+    } else if (paramName == HdTokens->lightLink) {
+        UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
+        return VtValue(_collectionCache.GetIdForCollection(lightLink));
+    } else if (paramName == HdTokens->shadowLink) {
+        UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
+        return VtValue(_collectionCache.GetIdForCollection(shadowLink));
+    }
+
+    // Fallback to USD attributes.
+    if (prim.HasAttribute(paramName)) {
+        UsdAttribute attr = prim.GetAttribute(paramName);
+        VtValue value;
+        // Reading the value may fail, should we warn here when it does?
+        attr.Get(&value, GetTime());
+        return value;
+    }
+
+    return VtValue();
 }
 
 VtValue

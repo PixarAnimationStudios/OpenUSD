@@ -81,11 +81,12 @@ public:
         DirtyRepr                   = 1 << 18,
         DirtyRenderTag              = 1 << 19,
         DirtyComputationPrimvarDesc = 1 << 20,
-        AllSceneDirtyBits           = ((1<<21) - 1),
+        DirtyCategories             = 1 << 21,
+        AllSceneDirtyBits           = ((1<<22) - 1),
 
-        NewRepr                     = 1 << 21,
+        NewRepr                     = 1 << 22,
 
-        CustomBitsBegin             = 1 << 22,
+        CustomBitsBegin             = 1 << 23,
         CustomBitsEnd               = 1 << 30,
     };
 

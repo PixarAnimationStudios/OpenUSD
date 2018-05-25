@@ -198,6 +198,13 @@ HdSceneDelegate::GetReprName(SdfPath const &id)
     return TfToken();
 }
 
+/*virtual*/
+VtArray<TfToken>
+HdSceneDelegate::GetCategories(SdfPath const& id)
+{
+    return VtArray<TfToken>();
+}
+
 // -----------------------------------------------------------------------//
 /// \name Instancer prototypes
 // -----------------------------------------------------------------------//

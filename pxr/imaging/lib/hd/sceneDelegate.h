@@ -348,6 +348,10 @@ public:
     HD_API
     virtual TfToken GetRenderTag(SdfPath const& id, TfToken const& reprName);
 
+    /// Returns the prim categories.
+    HD_API
+    virtual VtArray<TfToken> GetCategories(SdfPath const& id);
+
     // -----------------------------------------------------------------------//
     /// \name Motion samples
     // -----------------------------------------------------------------------//

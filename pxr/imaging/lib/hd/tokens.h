@@ -84,6 +84,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (layout)                                    \
     (leftHanded)                                \
     (linear)                                    \
+    (lightLink)                                 \
     (materialParams)                            \
     (nonperiodic)                               \
     (normals)                                   \
@@ -109,6 +110,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (ulocDrawRangeNDC)                          \
     (rightHanded)                               \
     (segmented)                                 \
+    (shadowLink)                                \
     (smoothHull)                                \
     (subdivTags)                                \
     (taskState)                                 \

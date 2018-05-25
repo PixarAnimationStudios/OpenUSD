@@ -83,6 +83,15 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
     // why we use time 1.0 here.
     UsdTimeCode time(1.0);
     valueCache->GetVisible(cachePath) = GetVisible(prim, time);
+
+    UsdLuxLight light(prim);
+    if (TF_VERIFY(light)) {
+        UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
+        collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
+        collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
+        // TODO: When collections change we need to invalidate affected
+        // prims with the DirtyCollections flag.
+    }
 }
 
 // Thread safe.

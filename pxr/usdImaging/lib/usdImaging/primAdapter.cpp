@@ -30,6 +30,7 @@
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -473,6 +474,12 @@ UsdImagingPrimAdapter::_MergePrimvar(
         vec->push_back(primvar);
     else
         *it = primvar;
+}
+
+UsdImaging_CollectionCache&
+UsdImagingPrimAdapter::_GetCollectionCache() const
+{
+    return _delegate->_collectionCache;
 }
 
 bool 

@@ -867,6 +867,9 @@ HdChangeTracker::StringifyDirtyBits(HdDirtyBits dirtyBits)
     if (dirtyBits & DirtyRepr) {
         ss << "Repr ";
     }
+    if (dirtyBits & DirtyCategories) {
+        ss << "Categories ";
+    }
     if (dirtyBits & ~AllSceneDirtyBits) {
         ss << "CustomBits:";
         for (size_t i = CustomBitsBegin; i <= CustomBitsEnd; i<<=1) {
