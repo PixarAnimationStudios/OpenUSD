@@ -24,9 +24,11 @@
 #include "pxr/pxr.h"
 #include "usdMaya/JobArgs.h"
 
+#include "usdMaya/registryHelper.h"
 #include "usdMaya/shadingModeRegistry.h"
 
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
@@ -48,6 +50,20 @@ TF_DEFINE_PUBLIC_TOKENS(PxrUsdExportJobArgsTokens,
 
 TF_DEFINE_PUBLIC_TOKENS(PxrUsdImportJobArgsTokens, 
         PXRUSDMAYA_JOBIMPORTARGS_TOKENS);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _usdExportInfoScope,
+
+    (UsdMaya)
+    (UsdExport)
+);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _usdImportInfoScope,
+
+    (UsdMaya)
+    (UsdImport)
+);
 
 /// Extracts a bool at \p key from \p userArgs, or false if it can't extract.
 static bool
@@ -358,6 +374,7 @@ const VtDictionary& JobExportArgs::GetDefaultDictionary()
     static VtDictionary d;
     static std::once_flag once;
     std::call_once(once, []() {
+        // Base defaults.
         d[PxrUsdExportJobArgsTokens->chaser] = std::vector<VtValue>();
         d[PxrUsdExportJobArgsTokens->chaserArgs] = std::vector<VtValue>();
         d[PxrUsdExportJobArgsTokens->defaultCameras] = false;
@@ -387,6 +404,14 @@ const VtDictionary& JobExportArgs::GetDefaultDictionary()
                 PxrUsdExportJobArgsTokens->defaultLayer.GetString();
         d[PxrUsdExportJobArgsTokens->shadingMode] =
                 PxrUsdMayaShadingModeTokens->displayColor.GetString();
+
+        // plugInfo.json site defaults.
+        // The defaults dict should be correctly-typed, so enable
+        // coerceToWeakerOpinionType.
+        const VtDictionary site =
+                PxrUsdMaya_RegistryHelper::GetComposedInfoDictionary(
+                _usdExportInfoScope->allTokens);
+        VtDictionaryOver(site, &d, /*coerceToWeakerOpinionType*/ true);
     });
 
     return d;
@@ -440,6 +465,7 @@ const VtDictionary& JobImportArgs::GetDefaultDictionary()
     static VtDictionary d;
     static std::once_flag once;
     std::call_once(once, []() {
+        // Base defaults.
         d[PxrUsdImportJobArgsTokens->assemblyRep] =
                 PxrUsdImportJobArgsTokens->Collapsed.GetString();
         d[PxrUsdImportJobArgsTokens->apiSchema] = std::vector<VtValue>();
@@ -452,6 +478,14 @@ const VtDictionary& JobImportArgs::GetDefaultDictionary()
                 });
         d[PxrUsdImportJobArgsTokens->shadingMode] =
                 PxrUsdMayaShadingModeTokens->displayColor.GetString();
+
+        // plugInfo.json site defaults.
+        // The defaults dict should be correctly-typed, so enable
+        // coerceToWeakerOpinionType.
+        const VtDictionary site =
+                PxrUsdMaya_RegistryHelper::GetComposedInfoDictionary(
+                _usdImportInfoScope->allTokens);
+        VtDictionaryOver(site, &d, /*coerceToWeakerOpinionType*/ true);
     });
 
     return d;

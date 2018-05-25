@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/dictionary.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,6 +70,20 @@ struct PxrUsdMaya_RegistryHelper
     /// usdMaya will try to load the "mayaPlugin" when shading modes are first accessed.
     static void
         LoadShadingModePlugins();
+
+    /// Searches the plugInfos for metadata dictionaries at the given \p scope,
+    /// and composes them together. 
+    /// The scope are the nested keys to search through in the plugInfo (for
+    /// example, ["UsdMaya", "UsdExport"]).
+    /// The same key under the \p scope must not be defined in multiple
+    /// plugInfo.json files. If this occurs, the key will not be defined in the
+    /// composed result, and this function will raise a coding error indicating
+    /// where the keys have been multiply-defined.
+    /// XXX We might relax the restriction on multiply-defined keys later on
+    /// if there is a need to define values at different scopes, e.g.
+    /// site-specific, department-specific, show-specific values.
+    static VtDictionary GetComposedInfoDictionary(
+            const std::vector<TfToken>& scope);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
