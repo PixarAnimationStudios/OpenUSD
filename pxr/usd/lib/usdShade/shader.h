@@ -180,13 +180,48 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // IMPLEMENTATIONSOURCE 
+    // --------------------------------------------------------------------- //
+    /// Specifies the attribute that should be consulted to get the 
+    /// shader's implementation or its source code.
+    /// 
+    /// * If set to "id", the "info:id" attribute's value is used to 
+    /// determine the shader source from the shader registry.
+    /// * If set to "sourceAsset", the resolved value of the "info:sourceAsset" 
+    /// attribute corresponding to the desired implementation (or source-type)
+    /// is used to locate the shader source.
+    /// * If set to "sourceCode", the value of "info:sourceCode" attribute 
+    /// corresponding to the desired implementation (or source type) is used as 
+    /// the shader source.
+    /// 
+    ///
+    /// \n  C++ Type: TfToken
+    /// \n  Usd Type: SdfValueTypeNames->Token
+    /// \n  Variability: SdfVariabilityUniform
+    /// \n  Fallback Value: id
+    /// \n  \ref UsdShadeTokens "Allowed Values": [id, sourceAsset, sourceCode]
+    USDSHADE_API
+    UsdAttribute GetImplementationSourceAttr() const;
+
+    /// See GetImplementationSourceAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDSHADE_API
+    UsdAttribute CreateImplementationSourceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // ID 
     // --------------------------------------------------------------------- //
     /// The id is an identifier for the type or purpose of the 
     /// shader. E.g.: Texture or FractalFloat.
     /// The use of this id will depend on the render target: some will turn it
-    /// into an actual shader path, some will use it to generate dynamically
-    /// a shader source code.
+    /// into an actual shader path, some will use it to generate shader source 
+    /// code dynamically.
+    /// 
+    /// \sa SetShaderId()
     /// 
     ///
     /// \n  C++ Type: TfToken
@@ -232,6 +267,132 @@ public:
     /// UsdShadeConnectableAPI object.
     USDSHADE_API
     UsdShadeConnectableAPI ConnectableAPI() const;
+
+    // -------------------------------------------------------------------------
+
+    /// \anchor UsdShadeShader_ImplementationSource
+    /// \name Shader Source API
+    /// 
+    /// This section provides API for identifying the source of a shader's 
+    /// implementation.
+    /// 
+    /// @{
+
+    /// Reads the value of info:implementationSource attribute and returns a 
+    /// token identifying the attribute that must be consulted to identify the 
+    /// shader's source program.
+    /// 
+    /// This returns 
+    /// * <b>id</b>, to indicate that the "info:id" attribute must be 
+    /// consulted.
+    /// * <b>sourceAsset</b> to indicate that the asset-valued 
+    /// "info:{sourceType}:sourceAsset" attribute associated with the desired 
+    /// <b>sourceType</b> should be consulted to locate the asset with the 
+    /// shader's source.
+    /// * <b>sourceCode</b> to indicate that the string-valued 
+    /// "info:{sourceType}:sourceCode" attribute associated with the desired
+    /// <b>sourceType</b> should be read to get shader's source.
+    ///
+    /// This issues a warning and returns <b>id</b> if the 
+    /// <i>info:implementationSource</i> attribute has an invalid value.
+    /// 
+    /// <i>{sourceType}</i> above is a place holder for a token that identifies 
+    /// the type of shader source or its implementation. For example: osl, 
+    /// glslfx, riCpp etc. This allows a shader to specify different sourceAsset
+    /// (or sourceCode) values for different sourceTypes. The sourceType tokens 
+    /// usually correspond to the sourceType value of the NdrParserPlugin that's 
+    /// used to parse the shader source (\ref NdrParserPlugin::SourceType).
+    /// 
+    /// When sourceType is empty, the corresponding sourceAsset or sourceCode is 
+    /// considered to be "universal" (or fallback), which is represented by the 
+    /// empty-valued token UsdShadeTokens->universalSourceType. When the 
+    /// sourceAsset (or sourceCode) corresponding to a specific, requested 
+    /// sourceType is unavailable, the universal sourceAsset (or sourceCode) is 
+    /// returned by GetSourceAsset (and GetSourceCode} API, if present.
+    /// 
+    /// \sa GetShaderId()
+    /// \sa GetSourceAsset()
+    /// \sa GetSourceCode()
+    USDSHADE_API
+    TfToken GetImplementationSource() const; 
+    
+    /// Sets the shader's ID value. This also sets the 
+    /// <i>info:implementationSource</i> attribute on the shader to
+    /// <b>UsdShadeTokens->id</b>, if the existing value is different.
+    USDSHADE_API
+    bool SetShaderId(const TfToken &id) const; 
+
+    /// Fetches the shader's ID value from the <i>info:id</i> attribute, if the 
+    /// shader's <i>info:implementationSource</i> is <b>id</b>. 
+    /// 
+    /// Returns <b>true</b> if the shader's implementation source is <b>id</b> 
+    /// and the value was fetched properly into \p id. Returns false otherwise.
+    /// 
+    /// \sa GetImplementationSource()
+    USDSHADE_API
+    bool GetShaderId(TfToken *id) const;
+
+    /// Sets the shader's source-asset path value to \p sourceAsset for the 
+    /// given source type, \p sourceType.
+    /// 
+    /// This also sets the <i>info:implementationSource</i> attribute on the 
+    /// shader to <b>UsdShadeTokens->sourceAsset</b>.
+    USDSHADE_API
+    bool SetSourceAsset(
+        const SdfAssetPath &sourceAsset,
+        const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+
+    /// Fetches the shader's source asset value for the specified 
+    /// \p sourceType value from the <b>info:<i>sourceType:</i>sourceAsset</b> 
+    /// attribute, if the shader's <i>info:implementationSource</i> is 
+    /// <b>sourceAsset</b>. 
+    /// 
+    /// If the <i>sourceAsset</i> attribute corresponding to the requested 
+    /// <i>sourceType</i> isn't present on the shader, then the <i>universal</i> 
+    /// <i>fallback</i> sourceAsset attribute, i.e. <i>info:sourceAsset</i> is 
+    /// consulted, if present, to get the source asset path.
+    /// 
+    /// Returns <b>true</b> if the shader's implementation source is 
+    /// <b>sourceAsset</b> and the source asset path value was fetched 
+    /// successfully into \p sourceAsset. Returns false otherwise.
+    /// 
+    /// \sa GetImplementationSource()
+    USDSHADE_API
+    bool GetSourceAsset(
+        SdfAssetPath *sourceAsset,
+        const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+
+    /// Sets the shader's source-code value to \p sourceCode for the given 
+    /// source type, \p sourceType.
+    /// 
+    /// This also sets the <i>info:implementationSource</i> attribute on the 
+    /// shader to <b>UsdShadeTokens->sourceCode</b>.
+    USDSHADE_API 
+    bool SetSourceCode(
+        const std::string &sourceCode, 
+        const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+
+    /// Fetches the shader's source code for the specified \p sourceType value 
+    /// by reading the <b>info:<i>sourceType:</i>sourceCode</b> attribute, if 
+    /// the shader's <i>info:implementationSource</i> is <b>sourceCode</b>. 
+    /// 
+    /// If the <i>sourceCode</i> attribute corresponding to the 
+    /// requested <i>sourceType</i> isn't present on the shader, then the 
+    /// <i>universal</i> or <i>fallback</i> sourceCode attribute (i.e. 
+    /// <i>info:sourceCode</i>) is consulted, if present, to get the source 
+    /// code.
+    /// 
+    /// Returns <b>true</b> if the shader's implementation source is 
+    /// <b>sourceCode</b> and the source code string was fetched successfully 
+    /// into \p sourceCode. Returns false otherwise.    
+    /// 
+    /// \sa GetImplementationSource()
+    USDSHADE_API
+    bool GetSourceCode(
+        std::string *sourceCode,
+        const TfToken &sourceType=UsdShadeTokens->universalSourceType) const;
+
+    /// @}
 
     /// \name Outputs API
     ///
@@ -294,6 +455,7 @@ public:
 
     /// @}
 
+    
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

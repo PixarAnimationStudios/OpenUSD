@@ -71,7 +71,9 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "displacement", UsdShadeTokens->displacement);
     _AddToken(cls, "fallbackStrength", UsdShadeTokens->fallbackStrength);
     _AddToken(cls, "full", UsdShadeTokens->full);
+    _AddToken(cls, "id", UsdShadeTokens->id);
     _AddToken(cls, "infoId", UsdShadeTokens->infoId);
+    _AddToken(cls, "infoImplementationSource", UsdShadeTokens->infoImplementationSource);
     _AddToken(cls, "inputs", UsdShadeTokens->inputs);
     _AddToken(cls, "interface_", UsdShadeTokens->interface_);
     _AddToken(cls, "interfaceOnly", UsdShadeTokens->interfaceOnly);
@@ -85,9 +87,12 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "outputsSurface", UsdShadeTokens->outputsSurface);
     _AddToken(cls, "outputsVolume", UsdShadeTokens->outputsVolume);
     _AddToken(cls, "preview", UsdShadeTokens->preview);
+    _AddToken(cls, "sourceAsset", UsdShadeTokens->sourceAsset);
+    _AddToken(cls, "sourceCode", UsdShadeTokens->sourceCode);
     _AddToken(cls, "strongerThanDescendants", UsdShadeTokens->strongerThanDescendants);
     _AddToken(cls, "surface", UsdShadeTokens->surface);
     _AddToken(cls, "universalRenderContext", UsdShadeTokens->universalRenderContext);
+    _AddToken(cls, "universalSourceType", UsdShadeTokens->universalSourceType);
     _AddToken(cls, "volume", UsdShadeTokens->volume);
     _AddToken(cls, "weakerThanDescendants", UsdShadeTokens->weakerThanDescendants);
 }

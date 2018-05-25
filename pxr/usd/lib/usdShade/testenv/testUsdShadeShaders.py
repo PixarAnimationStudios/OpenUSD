@@ -135,10 +135,18 @@ class TestUsdShadeShaders(unittest.TestCase):
         ################################
         print('Test asset id')
         ################################
-        pale.CreateIdAttr('SharedFloat_1')
-        whiterPale.CreateIdAttr('SharedColor_1')
-        self.assertEqual(pale.GetIdAttr().Get(), 'SharedFloat_1')
+        self.assertEqual(pale.GetImplementationSource(), UsdShade.Tokens.id)
+        self.assertEqual(whiterPale.GetImplementationSource(), 
+                         UsdShade.Tokens.id)
+
+        self.assertTrue(pale.SetShaderId('SharedFloat_1'))
+        self.assertEqual(pale.GetShaderId(), 'SharedFloat_1')
+
+        self.assertTrue(whiterPale.CreateIdAttr('SharedColor_1'))
         self.assertEqual(whiterPale.GetIdAttr().Get(), 'SharedColor_1')
+
+        self.assertTrue(pale.GetSourceAsset() is None)
+        self.assertTrue(whiterPale.GetSourceCode() is None)
 
         # Test boundaries of parameter type-testing when connecting
         print "Test Typed Input Connections"
@@ -198,6 +206,86 @@ class TestUsdShadeShaders(unittest.TestCase):
 
         # ensure by-value capture in 'inputs'
         self.assertNotEqual(len(pale.GetInputs()), len(inputs))
+
+    def test_ImplementationSource(self):
+        stage = self._SetupStage()
+
+        ################################
+        print ('Testing Implementation Source API')
+        ################################
+
+        pale = UsdShade.Shader.Get(stage, palePath)
+        self.assertTrue(pale)
+
+        whiterPale = UsdShade.Shader.Get(stage, whiterPalePath)
+        self.assertTrue(whiterPale)
+        
+        self.assertEqual(pale.GetImplementationSource(), UsdShade.Tokens.id)
+        self.assertEqual(whiterPale.GetImplementationSource(), 
+                         UsdShade.Tokens.id)
+
+        self.assertTrue(pale.SetShaderId('SharedFloat_1'))
+        self.assertEqual(pale.GetShaderId(), 'SharedFloat_1')
+
+        self.assertTrue(whiterPale.SetShaderId('SharedColor_1'))
+        self.assertEqual(whiterPale.GetShaderId(), 'SharedColor_1')
+
+        pale.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceAsset)
+        self.assertTrue(pale.GetShaderId() is None)
+
+        whiterPale.GetImplementationSourceAttr().Set(UsdShade.Tokens.sourceCode)
+        self.assertTrue(whiterPale.GetShaderId() is None)
+    
+        glslfxSource = "This is the shader source"
+        self.assertTrue(pale.SetSourceCode(sourceCode=glslfxSource, 
+                                           sourceType="glslfx"))
+
+        # Calling SetSourceCode() updates the implementationSource to 'code'.
+        self.assertEqual(pale.GetImplementationSource(), 
+                         UsdShade.Tokens.sourceCode)
+
+        self.assertTrue(pale.GetShaderId() is None)
+
+        self.assertTrue(pale.GetSourceAsset() is None)
+        self.assertTrue(pale.GetSourceAsset(sourceType="glslfx") is None)
+
+        self.assertTrue(pale.GetSourceCode(sourceType="osl") is None)
+        self.assertTrue(pale.GetSourceCode() is None)
+
+        self.assertEqual(pale.GetSourceCode(sourceType="glslfx"), glslfxSource)
+
+        oslAssetPath = Sdf.AssetPath("/source/asset.osl")
+        self.assertTrue(whiterPale.SetSourceAsset(
+                sourceAsset=oslAssetPath, 
+                sourceType=UsdShade.Tokens.universalSourceType))
+
+        # Calling SetSourceAsset() updates the implementationSource to 'asset'.
+        self.assertEqual(whiterPale.GetImplementationSource(), 
+                         UsdShade.Tokens.sourceAsset)
+
+        self.assertTrue(whiterPale.GetShaderId() is None)
+
+        # Since the sourceAsset was set with universal sourceType, we can fetch 
+        # it successfully irrespective of the sourceType that's passed in.
+        self.assertEqual(whiterPale.GetSourceAsset(sourceType="osl"), 
+                         oslAssetPath)
+        self.assertTrue(whiterPale.GetSourceAsset(sourceType="glslfx"), 
+                        oslAssetPath)
+        self.assertEqual(whiterPale.GetSourceAsset(), oslAssetPath)
+
+        self.assertTrue(whiterPale.GetSourceCode() is None)
+        self.assertTrue(whiterPale.GetSourceCode(sourceType="osl") is None)
+
+        # Set another sourceAsset corresponding to a specific sourceType.
+        glslfxAssetPath = Sdf.AssetPath("/source/asset.glslfx")
+        self.assertTrue(whiterPale.SetSourceAsset(
+                sourceAsset=glslfxAssetPath, 
+                sourceType="glslfx"))
+        self.assertEqual(whiterPale.GetSourceAsset(sourceType="osl"), 
+                         oslAssetPath)
+        self.assertTrue(whiterPale.GetSourceAsset(sourceType="glslfx"), 
+                        glslfxAssetPath)
+        self.assertEqual(whiterPale.GetSourceAsset(), oslAssetPath)
 
 if __name__ == '__main__':
     unittest.main()
