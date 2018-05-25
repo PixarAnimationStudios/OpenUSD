@@ -178,6 +178,22 @@ class testUsdExportPointInstancer(unittest.TestCase):
         if self.hasMash:
             self._TestPrototypes("MASH1_Instancer")
 
+    def testMashPrototypes_NoIdsArray(self):
+        """
+        MASH instancers might not have an ids array if using dynamics.
+        Make sure they still export OK.
+        """
+        if not self.hasMash:
+            return
+
+        instancerPrim = self.stage.GetPrimAtPath(
+                "/InstancerTest/MASH2_Instancer")
+        self.assertTrue(instancerPrim)
+
+        instancer = UsdGeom.PointInstancer(instancerPrim)
+        protoIndices = instancer.GetProtoIndicesAttr().Get()
+        self.assertEqual(len(protoIndices), 10)
+
     def _MayaToGfMatrix(self, mayaMatrix):
         scriptUtil = OM.MScriptUtil()
         values = [[scriptUtil.getDouble4ArrayItem(mayaMatrix.matrix, r, c)

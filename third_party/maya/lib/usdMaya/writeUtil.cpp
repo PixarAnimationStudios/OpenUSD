@@ -1144,10 +1144,40 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
 {
     MStatus status;
 
-    // All Maya instancers should provide id's (though this isn't
-    // required by UsdGeomPointInstancer). We need to know the id's attr
-    // in order to figure out how many instances there are.
-    size_t numInstances = 0;
+    // We need to figure out how many instances there are. Some arrays are
+    // sparse (contain less values than there are instances), so just loop
+    // through all the arrays and assume that there are as many instances as the
+    // size of the largest array.
+    unsigned int numInstances = 0;
+    const MStringArray channels = inputPointsData.list();
+    for (unsigned int i = 0; i < channels.length(); ++i) {
+        MFnArrayAttrsData::Type type;
+        if (inputPointsData.checkArrayExist(channels[i], type)) {
+            switch (type) {
+                case MFnArrayAttrsData::kVectorArray: {
+                    MVectorArray arr = inputPointsData.vectorArray(channels[i]);
+                    numInstances = std::max(numInstances, arr.length());
+                } break;
+                case MFnArrayAttrsData::kDoubleArray: {
+                    MDoubleArray arr = inputPointsData.doubleArray(channels[i]);
+                    numInstances = std::max(numInstances, arr.length());
+                } break;
+                case MFnArrayAttrsData::kIntArray: {
+                    MIntArray arr = inputPointsData.intArray(channels[i]);
+                    numInstances = std::max(numInstances, arr.length());
+                } break;
+                case MFnArrayAttrsData::kStringArray: {
+                    MStringArray arr = inputPointsData.stringArray(channels[i]);
+                    numInstances = std::max(numInstances, arr.length());
+                } break;
+                default: break;
+            }
+        }
+    }
+
+    // Most Maya instancer data sources provide id's. If this once doesn't, then
+    // just skip the id's attr because it's optional in USD, and we don't have
+    // a good way to generate sane id's.
     MFnArrayAttrsData::Type type;
     if (inputPointsData.checkArrayExist("id", type) &&
             type == MFnArrayAttrsData::kDoubleArray) {
@@ -1161,11 +1191,9 @@ PxrUsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 return (int64_t) x;
             });
         _SetAttribute(instancer.CreateIdsAttr(), vtArray, usdTime, valueWriter);
-        numInstances = vtArray.size();
     }
     else {
-        TF_WARN("Missing 'id' array attribute on instancer");
-        return false;
+        // Skip.
     }
 
     // Export the rest of the per-instance array attrs.
