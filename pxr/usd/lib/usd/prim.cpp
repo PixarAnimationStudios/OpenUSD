@@ -973,7 +973,7 @@ UsdPrim::ComputeExpandedPrimIndex() const
     _GetStage()->_ReportPcpErrors(
         outputs.allErrors, 
         TfStringPrintf(
-            "Computing expanded prim index for <%s>", GetPath().GetText()));
+            "computing expanded prim index for <%s>", GetPath().GetText()));
     
     return outputs.primIndex;
 }

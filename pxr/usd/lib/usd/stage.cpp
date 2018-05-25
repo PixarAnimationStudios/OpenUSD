@@ -610,7 +610,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
         SdfPathVector(1, SdfPath::AbsoluteRootPath()),
         load == LoadAll ?
         _IncludeAllDiscoveredPayloads : _IncludeNoDiscoveredPayloads,
-        "Instantiating stage");
+        "instantiating stage");
     stage->_pseudoRoot = stage->_InstantiatePrim(SdfPath::AbsoluteRootPath());
     stage->_ComposeSubtreeInParallel(stage->_pseudoRoot);
     stage->_RegisterPerLayerNotices();
@@ -2715,22 +2715,49 @@ UsdStage::_ReportPcpErrors(const PcpErrorVector &errors,
     _ReportErrors(errors, std::vector<std::string>(), context);
 }
 
+// Report any errors.  It's important for error filtering that each
+// error be a single line. It's equally important that we provide
+// some clue to associating the errors to the originating stage
+// (it is caller's responsibility to ensure that any further required
+// context (e.g. prim path) be present in 'context' already).  We choose
+// a balance between total specificity (which would require identifying
+// both the session layer and ArResolverContext and be very long) 
+// and brevity.  We can modulate this behavior with TfDebug if needed.
+// Finally, we use a mutex to ensure there is no interleaving of errors
+// from multiple threads.
 void
 UsdStage::_ReportErrors(const PcpErrorVector &errors,
                         const std::vector<std::string> &otherErrors,
                         const std::string &context) const
 {
-    // Report any errors.
+    static std::mutex   errMutex;
+   
     if (!errors.empty() || !otherErrors.empty()) {
-        std::string message = context + ":\n";
+        std::string  fullContext = TfStringPrintf("(%s on stage @%s@ <%p>)", 
+                                      context.c_str(), 
+                                      GetRootLayer()->GetIdentifier().c_str(),
+                                      this);
+        std::vector<std::string>  allErrors;
+        allErrors.reserve(errors.size() + otherErrors.size());
+
         for (const auto& err : errors) {
-            message += "    " + TfStringReplace(err->ToString(), "\n", "\n    ") 
-                       + '\n';
+            allErrors.push_back(TfStringPrintf("%s %s", 
+                                               err->ToString().c_str(), 
+                                               fullContext.c_str()));
         }
         for (const auto& err : otherErrors) {
-            message += "    " + TfStringReplace(err, "\n", "\n    ") + '\n';
+            allErrors.push_back(TfStringPrintf("%s %s", 
+                                               err.c_str(), 
+                                               fullContext.c_str()));
         }
-        TF_WARN(message);
+
+        {
+            std::lock_guard<std::mutex>  lock(errMutex);
+
+            for (const auto &err : allErrors){
+                TF_WARN(err);
+            }
+        }
     }
 }
 
@@ -2812,7 +2839,7 @@ UsdStage::_ComposeSubtreeImpl(
     // Report any errors.
     if (!errors.empty()) {
         _ReportPcpErrors(
-            errors, TfStringPrintf("Computing prim index <%s>",
+            errors, TfStringPrintf("computing prim index <%s>",
                                    primIndexPath.GetText()));
     }
 
@@ -3939,7 +3966,7 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     Usd_InstanceChanges instanceChanges;
     _ComposePrimIndexesInParallel(
         primPathsToRecompose, _IncludeNewPayloadsIfAncestorWasIncluded,
-        "Recomposing stage", &instanceChanges);
+        "recomposing stage", &instanceChanges);
     
     // Determine what instance master prims on this stage need to
     // be recomposed due to instance prim index changes.

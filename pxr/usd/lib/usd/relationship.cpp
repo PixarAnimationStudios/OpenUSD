@@ -304,7 +304,7 @@ UsdRelationship::GetTargets(SdfPathVector* targets) const
     if (hasErrors) {
         stage->_ReportErrors(
             pcpErrors, otherErrors,
-            TfStringPrintf("Getting targets for relationship <%s>",
+            TfStringPrintf("getting targets for relationship <%s>",
                            GetPath().GetText()));
     }
 
