@@ -300,5 +300,41 @@ class testUsdMayaAdaptor(unittest.TestCase):
         self.assertTrue(
                 UsdMaya.Adaptor("TestParticles").GetSchema(UsdGeom.Points))
 
+    def testUndoRedo(self):
+        """Tests that adaptors work with undo/redo."""
+        cmds.file(new=True, force=True)
+        cmds.group(name="group1", empty=True)
+        adaptor = UsdMaya.Adaptor("group1")
+        self.assertEqual(adaptor.GetAppliedSchemas(), [])
+
+        # Do a single operation, then undo, then redo.
+        adaptor.ApplySchema(UsdGeom.ModelAPI)
+        self.assertEqual(adaptor.GetAppliedSchemas(), ["GeomModelAPI"])
+        cmds.undo()
+        self.assertEqual(adaptor.GetAppliedSchemas(), [])
+        cmds.redo()
+        self.assertEqual(adaptor.GetAppliedSchemas(), ["GeomModelAPI"])
+
+        # Do a compound operation, then undo, then redo.
+        cmds.undoInfo(openChunk=True)
+        adaptor.ApplySchema(UsdGeom.MotionAPI).CreateAttribute(
+                UsdGeom.Tokens.motionVelocityScale).Set(0.42)
+        self.assertEqual(adaptor.GetAppliedSchemas(),
+                ["GeomModelAPI", "MotionAPI"])
+        self.assertAlmostEqual(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
+                UsdGeom.Tokens.motionVelocityScale).Get(), 0.42)
+        cmds.undoInfo(closeChunk=True)
+        cmds.undo()
+        self.assertEqual(adaptor.GetAppliedSchemas(), ["GeomModelAPI"])
+        self.assertFalse(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
+                UsdGeom.Tokens.motionVelocityScale))
+        self.assertIsNone(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
+                UsdGeom.Tokens.motionVelocityScale).Get())
+        cmds.redo()
+        self.assertEqual(adaptor.GetAppliedSchemas(),
+                ["GeomModelAPI", "MotionAPI"])
+        self.assertAlmostEqual(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
+                UsdGeom.Tokens.motionVelocityScale).Get(), 0.42)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -32,6 +32,7 @@
 #include "pxrUsdMayaGL/proxyShapeUI.h"
 
 #include "usdMaya/pluginStaticData.h"
+#include "usdMaya/undoHelperCmd.h"
 #include "usdMaya/usdImport.h"
 #include "usdMaya/usdExport.h"
 #include "usdMaya/usdListShadingModes.h"
@@ -157,6 +158,14 @@ MStatus initializePlugin(
     if (!status) {
         status.perror("registerCommand usdListShadingModes");
     }
+
+    status = plugin.registerCommand("usdUndoHelperCmd",
+                                    PxrUsdMayaUndoHelperCmd::creator,
+                                    PxrUsdMayaUndoHelperCmd::createSyntax);
+
+    if (!status) {
+        status.perror("registerCommand usdUndoHelperCmd");
+    }
     
     status = plugin.registerFileTranslator("pxrUsdImport", 
             "", 
@@ -208,6 +217,11 @@ MStatus uninitializePlugin(
     status = plugin.deregisterCommand("usdListShadingModes");
     if (!status) {
         status.perror("deregisterCommand usdListShadingModes");
+    }
+
+    status = plugin.deregisterCommand("usdUndoHelperCmd");
+    if (!status) {
+        status.perror("deregisterCommand usdUndoHelperCmd");
     }
 
     status = plugin.deregisterFileTranslator("pxrUsdImport");

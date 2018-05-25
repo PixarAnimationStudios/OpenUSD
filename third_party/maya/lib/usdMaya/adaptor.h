@@ -66,10 +66,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// the _usdImport_ command.
 ///
 /// If you are using the C++ API, then some functions will take an MDGModifier,
-/// allowing you to undo the function's operations at a later time. You can use
-/// this to implement undo/redo in commands. If you're using the Python API,
-/// the overloads taking MDGModifier are not currently wrapped, so undo is
-/// unsupported.
+/// allowing you to undo the function's operations at a later time.
+/// If you're using the Python API, there is no direct access to the overloads
+/// taking an MDGModifier, but you can get undo functionality by registering and
+/// loading the \c usdUndoHelperCmd command in Maya. If \c usdUndoHelperCmd is
+/// available, Python adaptor operations will automatically write to the undo
+/// stack.
 ///
 /// \section UsdMaya_Adaptor_examples Examples
 /// If you are familiar with the USD API, then this will be familiar, although
@@ -413,16 +415,30 @@ public:
     /// metadata, and the USD exporter will recognize the API schema when
     /// exporting this node to a USD prim.
     /// Raises a coding error if the type does not correspond to any known
-    /// USD schema, or if it is not an API schema, or if the adaptor is invalid.
+    /// USD schema, or if it is not an API schema, or if it is a non-applied API
+    /// schema, or if the adaptor is invalid.
     PXRUSDMAYA_API
     SchemaAdaptor ApplySchema(const TfType& ty);
+
+    /// Applies the given API schema type on this Maya object via the adaptor
+    /// mechanism. The schema's name is added to the adaptor's apiSchemas
+    /// metadata, and the USD exporter will recognize the API schema when
+    /// exporting this node to a USD prim.
+    /// Raises a coding error if the type does not correspond to any known
+    /// USD schema, or if it is not an API schema, or if it is a non-applied API
+    /// schema, or if the adaptor is invalid.
+    /// \note This overload will call doIt() on the MDGModifier; thus any
+    /// actions will have been committed when the function returns.
+    PXRUSDMAYA_API
+    SchemaAdaptor ApplySchema(const TfType& ty, MDGModifier& modifier);
 
     /// Applies the named API schema on this Maya object via the adaptor
     /// mechanism. The schema's name is added to the adaptor's apiSchemas
     /// metadata, and the USD exporter will recognize the API schema when
     /// exporting this node to a USD prim.
     /// Raises a coding error if there is no known USD schema with this name, or
-    /// if it is not an API schema, or if the adaptor is invalid.
+    /// if it is not an API schema, or if it is a non-applied API schema, or if
+    /// the adaptor is invalid.
     PXRUSDMAYA_API
     SchemaAdaptor ApplySchemaByName(const TfToken& schemaName);
 
@@ -443,6 +459,13 @@ public:
     /// Raises a coding error if the adaptor is invalid.
     PXRUSDMAYA_API
     void UnapplySchema(const TfType& ty);
+
+    /// Removes the given API schema from the adaptor's apiSchemas metadata.
+    /// \note This overload will call doIt() on the MDGModifier; thus any
+    /// actions will have been committed when the function returns.
+    /// Raises a coding error if the adaptor is invalid.
+    PXRUSDMAYA_API
+    void UnapplySchema(const TfType& ty, MDGModifier& modifier);
 
     /// Removes the named API schema from the adaptor's apiSchemas metadata.
     /// Raises a coding error if the adaptor is invalid.
@@ -546,8 +569,17 @@ public:
     /// cannot find any attributes with the default name or the alias names),
     /// it always uses the generated name.
     /// \sa PxrUsdMayaAdaptor::SchemaAdaptor::CreateAttribute()
+    PXRUSDMAYA_API
     static void RegisterAttributeAlias(
             const TfToken& attributeName, const std::string& alias);
+
+    /// Gets the name of all possible Maya attribute names for the given USD
+    /// schema \p attributeName, in the order in which the aliases were
+    /// registered. The default generated name is always the zeroth item in the
+    /// returned vector.
+    PXRUSDMAYA_API
+    static std::vector<std::string> GetAttributeAliases(
+            const TfToken& attributeName);
 
 private:
     MObjectHandle _handle;
