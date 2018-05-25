@@ -158,17 +158,7 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         _lastRenderedVersion = currentSceneVersion;
     }
 
-    // XXX: usdview by convention uses 128x128 or 256x256 buffers for picking.
-    // We don't want picking to interrupt the main render pass, so we
-    // early-out here.  It would be way nicer if we (1) had a better way of
-    // identifying picking render passes and (2) had the ability to queue up
-    // render passes with the render thread, instead of just having a
-    // singleton renderer.
     GfVec4f vp = renderPassState->GetViewport();
-    if ((vp[2] == 128 && vp[3] == 128) ||
-        (vp[2] == 256 && vp[3] == 256)) {
-        return;
-    }
 
     // Determine whether we need to update the renderer camera.
     GfMatrix4d view = renderPassState->GetWorldToViewMatrix();
