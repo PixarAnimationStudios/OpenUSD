@@ -330,17 +330,22 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
             // save new range to registry
             rangeInstance.SetValue(range);
-
-            if (drawItem->GetTopologyRange()) {
-                // if this is a varying topology (we already have one and we're
-                // going to replace it), set the garbage collection needed.
-                sceneDelegate->GetRenderIndex().GetChangeTracker().SetGarbageCollectionNeeded();
-            }
+        }
+        
+        if (drawItem->GetTopologyRange() &&
+            drawItem->GetTopologyRange() != rangeInstance.GetValue()) {
+            // If this is a varying topology (we already have one and we're
+            // going to replace it), ensure we update the draw batches.
+            
+            // Causes a collection change which rebuilds batches.
+            sceneDelegate->GetRenderIndex().GetChangeTracker()
+                .SetGarbageCollectionNeeded();
         }
 
         // TODO: reuse same range for varying topology
-        _sharedData.barContainer.Set(drawItem->GetDrawingCoord()->GetTopologyIndex(),
-                                     rangeInstance.GetValue());
+        _sharedData.barContainer.Set(
+            drawItem->GetDrawingCoord()->GetTopologyIndex(),
+            rangeInstance.GetValue());
     }
 }
 
