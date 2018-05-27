@@ -629,6 +629,9 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
     }
 
     // Parse library path (relative to pluginPath).
+    // LibraryPath may be an empty string in the case where the "plugin"
+    // isn't separately loadable, e.g. monolithic libraries or static 
+    // libraries.
     key = &_Tokens->LibraryPathKey;
     i = topInfo.find(*key);
     if (i != topInfo.end()) {
@@ -636,7 +639,7 @@ Plug_RegistrationMetadata::Plug_RegistrationMetadata(
             errorMessage = "doesn't hold a string";
             goto error;
         }
-        else {
+        else if (!i->second.GetString().empty()) {
             libraryPath = _AppendToRootPath(pluginPath, i->second.GetString());
             if (libraryPath.empty()) {
                 errorMessage = "doesn't hold a valid path";
