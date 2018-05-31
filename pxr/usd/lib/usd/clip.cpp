@@ -1308,6 +1308,11 @@ Usd_Clip::ListTimeSamplesForPath(const SdfAbstractDataSpecId& id) const
             const TimeMapping& m1 = times[i];
             const TimeMapping& m2 = times[i+1];
 
+            // Ignore time mappings that don't apply to this clip.
+            if (m1.externalTime < startTime || m1.externalTime >= endTime) {
+                continue;
+            }
+
             if (m1.internalTime <= t && t <= m2.internalTime) {
                 if (m1.internalTime == m2.internalTime) {
                     timeSamples.insert(m1.externalTime);

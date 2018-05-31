@@ -59,3 +59,18 @@ def "ModelWithSomeClipSamples2" (
 )
 {
 }
+
+def "ModelWithTimesSpanningClips" (
+    references = @./ref.usda@</Model>
+
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./times_1.usda@, @./times_2.usda@]
+            string primPath = "/Model"
+            double2[] active = [(1.0, 0.0), (3.0, 1.0)]
+            double2[] times = [(1.0, 1.0), (4.0, 4.0)]
+        }
+    }
+)
+{
+}
