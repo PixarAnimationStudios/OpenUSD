@@ -525,13 +525,6 @@ struct _NameChildrenPred
     bool operator()(const PcpPrimIndex &index, 
                     TfTokenVector* childNamesToCompose) const 
     {
-        // Compose only the child prims that are included in the population
-        // mask, if any.
-        if (_mask && !_mask->GetIncludedChildNames(
-                index.GetPath(), childNamesToCompose)) {
-            return false;
-        }
-
         // Use a resolver to walk the index and find the strongest active
         // opinion.
         Usd_Resolver res(&index);
@@ -555,6 +548,15 @@ struct _NameChildrenPred
                 || !_instanceCache->GetMasterUsingPrimIndexPath(
                     index.GetPath()).IsEmpty();
             return indexUsedAsMasterSource;
+        }
+
+        // Compose only the child prims that are included in the population
+        // mask, if any, unless we're composing an index that a master uses, in
+        // which case we do the whole thing.
+        if (_mask) {
+            SdfPath const &indexPath = index.GetPath();
+            return _instanceCache->MasterUsesPrimIndexPath(indexPath) ||
+                _mask->GetIncludedChildNames(indexPath, childNamesToCompose);
         }
 
         return true;
