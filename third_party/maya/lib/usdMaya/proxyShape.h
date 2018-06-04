@@ -127,6 +127,10 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         typedef std::function<bool(const UsdMayaProxyShape&, const GfRay&,
                 GfVec3d*)> ClosestPointDelegate;
 
+        /// Delegate function for returning whether object soft select mode is
+        /// currently on
+        typedef std::function<bool(void)> ObjectSoftSelectEnabledDelgate;
+
         PXRUSDMAYA_API
         static void* creator(const PluginStaticData& psData);
 
@@ -138,6 +142,13 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
 
         PXRUSDMAYA_API
         static void SetClosestPointDelegate(ClosestPointDelegate delegate);
+
+        PXRUSDMAYA_API
+        static void SetObjectSoftSelectEnabledDelegate(
+                ObjectSoftSelectEnabledDelgate delegate);
+
+        PXRUSDMAYA_API
+        static bool GetObjectSoftSelectEnabled();
 
         // Virtual function overrides
         PXRUSDMAYA_API
@@ -252,6 +263,8 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         bool _useFastPlayback;
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
+        static ObjectSoftSelectEnabledDelgate
+            _sharedObjectSoftSelectEnabledDelgate;
 };
 
 

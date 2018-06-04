@@ -49,6 +49,7 @@
 #include <maya/MDrawContext.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MMessage.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
@@ -217,6 +218,11 @@ public:
             const GfMatrix4d& projectionMatrix,
             GfVec3d* hitPoint);
 
+    /// Returns whether soft selection for proxy shapes is currently enabled.
+    PXRUSDMAYAGL_API
+    inline bool GetObjectSoftSelectEnabled()
+    { return _objectSoftSelectEnabled; }
+
 private:
 
     friend class TfSingleton<UsdMayaGLBatchRenderer>;
@@ -279,6 +285,12 @@ private:
             MHWRender::MDrawContext& context,
             void* clientData);
 
+    /// Record changes to soft select options
+    ///
+    /// This callback is just so we don't have to query the soft selection
+    /// options through mel every time we have a selection event.
+    static void _OnSoftSelectOptionsChangedCallback(void* clientData);
+
     /// Perform post-render state cleanup.
     ///
     /// For Viewport 2.0, this method gets invoked by
@@ -336,6 +348,8 @@ private:
     MUint64 _lastSelectionFrameStamp;
     bool _legacyRenderPending;
     bool _legacySelectionPending;
+    bool _objectSoftSelectEnabled;
+    MCallbackId _softSelectOptionsCallbackId;
 
     /// Type definition for a set of pointers to shape adapters.
     typedef std::unordered_set<PxrMayaHdShapeAdapter*> _ShapeAdapterSet;
