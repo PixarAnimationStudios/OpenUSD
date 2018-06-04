@@ -499,6 +499,15 @@ Sdf_ChangeManager::DidMoveSpec(const SdfLayerHandle &layer,
             changes[layer].DidChangePrimName(oldPath, newPath);
         } else if (oldPath.IsPropertyPath()) {
             changes[layer].DidChangePropertyName(oldPath, newPath);
+        } else if (oldPath.IsTargetPath()) {
+            const SdfPath& parentPropPath = oldPath.GetParentPath();
+            const SdfSpecType specType = layer->GetSpecType(parentPropPath);
+            if (specType == SdfSpecTypeAttribute) {
+                changes[layer].DidChangeAttributeConnection(parentPropPath);
+            }
+            else if (specType == SdfSpecTypeRelationship) {
+                changes[layer].DidChangeRelationshipTargets(parentPropPath);
+            }
         }
     } else {
         // Reparent
@@ -510,6 +519,18 @@ Sdf_ChangeManager::DidMoveSpec(const SdfLayerHandle &layer,
                 /* hasOnlyRequiredFields = */ false);
             changes[layer].DidAddProperty(newPath, 
                 /* hasOnlyRequiredFields = */ false);
+        } else if (oldPath.IsTargetPath()) {
+            const SdfPath& oldParentPropPath = oldPath.GetParentPath();
+            const SdfPath& newParentPropPath = newPath.GetParentPath();
+            const SdfSpecType specType = layer->GetSpecType(oldParentPropPath);
+            if (specType == SdfSpecTypeAttribute) {
+                changes[layer].DidChangeAttributeConnection(oldParentPropPath);
+                changes[layer].DidChangeAttributeConnection(newParentPropPath);
+            }
+            else if (specType == SdfSpecTypeRelationship) {
+                changes[layer].DidChangeRelationshipTargets(oldParentPropPath);
+                changes[layer].DidChangeRelationshipTargets(newParentPropPath);
+            }
         }
     }
 }
