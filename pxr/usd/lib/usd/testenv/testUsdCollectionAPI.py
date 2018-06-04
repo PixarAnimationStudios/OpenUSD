@@ -465,5 +465,20 @@ class TestUsdCollectionAPI(unittest.TestCase):
             mqueryToPath[mquery] = coll.GetCollectionPath()
         self.assertEqual(len(mqueryToPath.keys()), len(mqueries))
 
+    def test_SchemaPropertyBaseNames(self):
+        self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
+                Usd.Tokens.includeRoot))
+        self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
+                Usd.Tokens.expansionRule))
+        # XXX:"includes" and "excludes" are not public tokens, but they probably 
+        # should be, since API for them will be auto-generated in the future.
+        self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
+                "includes"))
+        self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
+                "excludes"))
+        # "collection" is the prefix, not the base name.
+        self.assertFalse(Usd.CollectionAPI.IsSchemaPropertyBaseName(
+                Usd.Tokens.collection))
+
 if __name__ == "__main__":
     unittest.main()

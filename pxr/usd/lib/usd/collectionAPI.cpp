@@ -471,6 +471,7 @@ UsdCollectionAPI::IsSchemaPropertyBaseName(
     const TfToken &baseName)
 {
     return baseName == UsdTokens->expansionRule ||
+           baseName == UsdTokens->includeRoot ||
            baseName == _tokens->includes ||
            baseName == _tokens->excludes;
 }
