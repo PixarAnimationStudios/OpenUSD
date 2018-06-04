@@ -863,6 +863,13 @@ function(pxr_toplevel_prologue)
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
             )
+            if(WIN32)
+                install(
+                    FILES $<TARGET_PDB_FILE:usd_ms>
+                    DESTINATION ${libInstallPrefix}
+                    OPTIONAL
+                )
+            endif()
         endif()
     endif()
 

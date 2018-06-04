@@ -1314,6 +1314,14 @@ function(_pxr_library NAME)
                 RUNTIME DESTINATION ${libInstallPrefix}
                 PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
             )
+            if(WIN32)
+                install(
+                    FILES $<TARGET_PDB_FILE:${NAME}>
+                    EXPORT pxrTargets
+                    DESTINATION ${libInstallPrefix}
+                    OPTIONAL
+                )
+            endif()
 
             export(TARGETS ${NAME}
                 APPEND
