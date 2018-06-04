@@ -133,6 +133,10 @@ public:
 
     /// @}
 
+    /// Recursively calculates the inclusive counter values from the inclusive 
+    /// and exclusive counts of child nodes.
+    TRACE_API void CalculateInclusiveCounterValues();
+
 
     /// \name Children Accessors
     /// @{

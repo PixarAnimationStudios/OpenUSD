@@ -70,6 +70,12 @@ TraceAggregateNode::Append(TraceAggregateNodeRefPtr child) {
         n->_exclusiveTs += child->_ts;
         n->_recursiveExclusiveTs += child->_ts;
 
+        for (const _CounterValues::value_type& p : child->_counterValues) {
+            _CounterValue& c = n->_counterValues[p.first];
+            c.inclusive += p.second.inclusive; 
+            c.exclusive += p.second.exclusive;
+        }
+
         for (TraceAggregateNodeRefPtr& c : child->_children) {
             n->Append(c);
         }
@@ -358,6 +364,28 @@ TraceAggregateNode::_SetAsRecursionMarker(TraceAggregateNodePtr parent)
     // Note that we'd love to be able to blow away all of our subtrees here,
     // but because we don't the mark call to modify the integrity of the
     // tree, we have to keep them untouched.
+}
+
+void
+TraceAggregateNode::CalculateInclusiveCounterValues()
+{
+    for (TraceAggregateNodeRefPtr& c : _children) {
+        c->CalculateInclusiveCounterValues();
+    }
+
+    // Rest the inclusive count to the exclusive count. Then accumulate inclusive
+    // counts of children.
+    for (_CounterValues::value_type& v : _counterValues) {
+        v.second.inclusive = v.second.exclusive;
+    }
+    for (TraceAggregateNodeRefPtr& c : _children) {
+        for (_CounterValues::value_type& cv : c->_counterValues) {
+            if (cv.second.inclusive != 0) {
+                _CounterValue& values = _counterValues[cv.first];
+                values.inclusive += cv.second.inclusive;
+            }
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

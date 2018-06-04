@@ -86,6 +86,19 @@ static void TestAggregateCounterValue(
         counters.find(counterName);
     TF_AXIOM(it != counters.end());
     TF_AXIOM(it->second == desiredValue);
+    
+}
+
+static void TestAggregateCounterDelta(
+    const TfToken& counterName, const double desiredValue)
+{
+    TraceReporterPtr reporter = TraceReporter::GetGlobalReporter();
+    double value = reporter->GetAggregateTreeRoot()->GetInclusiveCounterValue(
+        reporter->GetCounterIndex(counterName));
+    printf("Node:%s Counter: %s Expected value: %f actual: %f\n",
+        reporter->GetAggregateTreeRoot()->GetKey().GetText(),
+        counterName.GetText(), desiredValue, value);
+    TF_AXIOM(value == desiredValue);
 }
 
 int main(int argc, char* argv[]) {
@@ -98,9 +111,13 @@ int main(int argc, char* argv[]) {
 
     // Test that the aggregate reporter works correctly.
     TestAggregateCounterValue(TfToken("Counter A"), 6.0);
+    TestAggregateCounterDelta(TfToken("Counter A"), 6.0);
     TestAggregateCounterValue(TfToken("Counter B"), 3.0);
+    TestAggregateCounterDelta(TfToken("Counter B"), 0.0);
     TestAggregateCounterValue(TfToken("Counter C"), 2.0);
+    TestAggregateCounterDelta(TfToken("Counter C"), -3.0);
     TestAggregateCounterValue(TfToken("Counter D"), -5.0);
+    TestAggregateCounterDelta(TfToken("Counter D"), 3.0);
 
     // Test that the timeline reporter works correctly
     TestTimelineCounterValues(TfToken("Counter A"), {1.0,3.0,6.0});
@@ -109,21 +126,55 @@ int main(int argc, char* argv[]) {
     TestTimelineCounterValues(TfToken("Counter D"), {1.0,3.0,-5.0});
 
     collector->SetEnabled(true);
+    // A new counter should not affect the reporting oc counters in TestCounters
+    TRACE_COUNTER_DELTA("Counter E", 1);
     TestCounters();
     collector->SetEnabled(false);
     reporter->ReportChromeTracing(std::cout);
 
     // Test that the aggregate reporter works correctly.
     TestAggregateCounterValue(TfToken("Counter A"), 12.0);
+    TestAggregateCounterDelta(TfToken("Counter A"), 12.0);
     TestAggregateCounterValue(TfToken("Counter B"), 3.0);
+    TestAggregateCounterDelta(TfToken("Counter B"), 0.0);
     TestAggregateCounterValue(TfToken("Counter C"), 2.0);
+    TestAggregateCounterDelta(TfToken("Counter C"), -6.0);
     TestAggregateCounterValue(TfToken("Counter D"), -5.0);
+    TestAggregateCounterDelta(TfToken("Counter D"), 6.0);
+    TestAggregateCounterValue(TfToken("Counter E"), 1.0);
+    TestAggregateCounterDelta(TfToken("Counter E"), 1.0);
 
     // Test that the timeline reporter works correctly
     TestTimelineCounterValues(TfToken("Counter A"), {1.0,3.0,6.0,7.0,9.0,12.0});
     TestTimelineCounterValues(TfToken("Counter B"), {1.0,2.0,3.0,1.0,2.0,3.0});
     TestTimelineCounterValues(TfToken("Counter C"), {5.0,4.0,2.0,5.0,4.0,2.0});
     TestTimelineCounterValues(TfToken("Counter D"), {1.0,3.0,-5.0,-4.0,-2.0,-5.0});
+    TestTimelineCounterValues(TfToken("Counter E"), {1.0});
+
+    // Make sure clearing works.
+    reporter->ClearTree();
+
+    collector->SetEnabled(true);
+    TestCounters();
+    collector->SetEnabled(false);
+    reporter->ReportChromeTracing(std::cout);
+
+    // Test that the aggregate reporter works correctly.
+    TestAggregateCounterValue(TfToken("Counter A"), 6.0);
+    TestAggregateCounterDelta(TfToken("Counter A"), 6.0);
+    TestAggregateCounterValue(TfToken("Counter B"), 3.0);
+    TestAggregateCounterDelta(TfToken("Counter B"), 0.0);
+    TestAggregateCounterValue(TfToken("Counter C"), 2.0);
+    TestAggregateCounterDelta(TfToken("Counter C"), -3.0);
+    TestAggregateCounterValue(TfToken("Counter D"), -5.0);
+    TestAggregateCounterDelta(TfToken("Counter D"), 3.0);
+
+    // Test that the timeline reporter works correctly
+    TestTimelineCounterValues(TfToken("Counter A"), {1.0,3.0,6.0});
+    TestTimelineCounterValues(TfToken("Counter B"), {1.0,2.0,3.0});
+    TestTimelineCounterValues(TfToken("Counter C"), {5.0,4.0,2.0});
+    TestTimelineCounterValues(TfToken("Counter D"), {1.0,3.0,-5.0});
+
 
     return 0;
 }

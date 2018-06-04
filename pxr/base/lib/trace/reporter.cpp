@@ -85,57 +85,12 @@ TraceReporter::~TraceReporter()
 void
 TraceReporter::_ComputeInclusiveCounterValues()
 {
-    if (_counters.empty()) {
-        return;
-    }
-
-    // To compute the inclusive counter values, we propagate the inclusive time
-    // from the children, up to the parents. This way, parent nodes will
-    // store a value that is a total of all its children.
-    // Algorithmically, this does a post-order depth-first traversal of the
-    // recently built event graph.
-
-    TfHashSet< TraceAggregateNodeRefPtr, TfHash > pushed;
-    std::vector< TraceAggregateNodeRefPtr > stack(1, _rootAggregateNode);
-    while (!stack.empty()) {
-        TraceAggregateNodeRefPtr &top = stack.back();
-
-        // Push children in a depth first manner
-        const TraceAggregateNodeRefPtrVector &children = top->GetChildrenRef();
-        bool didPushChild = false;
-        for (const TraceAggregateNodeRefPtr& it : children) {
-            if (pushed.insert(it).second) {
-                stack.push_back(it);
-                didPushChild = true;
-                break;
-            }
-        }
-        
-        // Propagate exclusive counter values up to the parent in a
-        // post-order traversal manner.
-        if (!didPushChild) {
-            stack.pop_back();
-
-            if (!stack.empty()) {
-                TraceAggregateNodeRefPtr parent = stack.back();
-                for (const _CounterIndexMap::value_type& it :
-                    _counterIndexMap) {
-                    const int index = it.second;
-                    const double value = top->GetInclusiveCounterValue(index);
-                    if (value > 0) {
-                        parent->AppendInclusiveCounterValue(index, value);
-                    }
-                }
-            }
-        }
-    }
+    _rootAggregateNode->CalculateInclusiveCounterValues();
 }
 
 void
 TraceReporter::OnBeginCollection() 
 {
-    // We'll recompute the counter indices
-    _counterIndex = 0;
     _threadStacks.clear();
 }
 
@@ -655,6 +610,7 @@ TraceReporter::ClearTree()
     _eventTimes.clear();
     _counters.clear();
     _counterIndexMap.clear();
+    _counterIndex = 0;
     _Clear();
 }
 
