@@ -56,7 +56,10 @@ public:
 
     /// Tries to create a TraceCollection from the contexts of \p istr.
     /// Returns a pointer to the created collection if it was successful.
-    TRACE_API static std::unique_ptr<TraceCollection> Read(std::istream& istr);
+    /// If there is an error reading \p istr, \p error will be populated with a
+    /// description.
+    TRACE_API static std::unique_ptr<TraceCollection> Read(std::istream& istr,
+        std::string* error = nullptr);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

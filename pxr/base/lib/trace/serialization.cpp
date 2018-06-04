@@ -64,16 +64,17 @@ TraceSerialization::Write(
 }
 
 std::unique_ptr<TraceCollection>
-TraceSerialization::Read(std::istream& istr)
+TraceSerialization::Read(std::istream& istr, std::string* errorStr)
 {
     JsParseError error;
     JsValue value = JsParseStream(istr, &error);
     if (value.IsNull()) {
-        TF_WARN("Error parsing JSON\n"
-            "line: %d, col: %d ->\n\t%s.\n",
-            error.line, error.column,
-            error.reason.c_str());
-
+        if (errorStr) {
+            *errorStr = TfStringPrintf("Error parsing JSON\n"
+                "line: %d, col: %d ->\n\t%s.\n",
+                error.line, error.column,
+                error.reason.c_str());
+        }
         return nullptr;
     }
     return Trace_JSONSerialization::CollectionFromJSON(value);
