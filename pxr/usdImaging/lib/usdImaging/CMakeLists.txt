@@ -16,7 +16,6 @@ pxr_library(usdImaging
         usd
         usdGeom
         usdLux
-        usdRi
         usdShade
         ar
         ${Boost_PYTHON_LIBRARY}

@@ -431,6 +431,9 @@ protected:
     // Returns whether or not the render delegate can handle material networks.
     bool _CanComputeMaterialNetworks() const;
 
+    // Returns the material context from the renderer delegate.
+    TfToken _GetMaterialNetworkSelector() const;
+
     // Returns \c true if \p usdPath is included in the scene delegate's
     // invised path list.
     bool _IsInInvisedPaths(SdfPath const& usdPath) const;

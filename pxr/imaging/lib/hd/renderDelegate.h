@@ -277,6 +277,13 @@ public:
     HD_API
     virtual bool CanComputeMaterialNetworks() const { return false; }
 
+    ///
+    /// Returns a token that can be used to select among multiple
+    /// material network implementations.  The default is empty.
+    ///
+    HD_API
+    virtual TfToken GetMaterialNetworkSelector() const { return TfToken(); }
+
 protected:
     /// This class must be derived from
     HdRenderDelegate()          = default;

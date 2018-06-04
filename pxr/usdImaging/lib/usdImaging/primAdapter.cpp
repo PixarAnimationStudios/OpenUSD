@@ -454,6 +454,13 @@ UsdImagingPrimAdapter::_CanComputeMaterialNetworks() const
         CanComputeMaterialNetworks();
 }
 
+TfToken
+UsdImagingPrimAdapter::_GetMaterialNetworkSelector() const
+{
+    return _delegate->GetRenderIndex().GetRenderDelegate()->
+        GetMaterialNetworkSelector();
+}
+
 bool 
 UsdImagingPrimAdapter::_IsInInvisedPaths(SdfPath const& usdPath) const
 {
