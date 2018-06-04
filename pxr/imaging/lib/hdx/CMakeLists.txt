@@ -65,6 +65,7 @@ pxr_library(hdx
         shaders/renderPassShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassShadowShader.glslfx
+        shaders/selection.glslfx
 )
 
 if (X11_FOUND OR APPLE)
