@@ -10,7 +10,7 @@ file(GLOB cppFiles
     ${KATANA_API_SOURCE_DIR}/FnGeolibServices/client/*.cpp
     ${KATANA_API_SOURCE_DIR}/FnLogging/client/*.cpp
     ${KATANA_API_SOURCE_DIR}/FnPluginManager/client/*.cpp
-    ${KATANA_API_SOURCE_DIR}/FnPluginSystem/*.cpp
+    ${KATANA_API_SOURCE_DIR}/FnPluginSystem/client/*.cpp
     ${KATANA_API_SOURCE_DIR}/pystring/.cpp
 )
 
@@ -22,3 +22,14 @@ pxr_static_library(${PXR_PACKAGE}
         ${cppFiles}
 )
 
+target_compile_definitions(${PXR_PACKAGE}
+    PRIVATE
+    
+    FNATTRIBUTE_STATIC
+    FNASSET_STATIC
+    FNGEOLIB_STATIC
+    FNGEOLIBSERVICES_STATIC
+    FNPLUGINMANAGER_STATIC
+    FNLOGGING_STATIC
+    PYSTRING_STATIC
+)

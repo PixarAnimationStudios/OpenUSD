@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,6 +36,7 @@ class UsdShadeMaterial;
 /// \brief read \p Material into \p attrs.  If \p flatten is specified, we treat it
 /// as if it is a "standalone" material (i.e. no "material" inheritance in the
 /// katana sense).
+USDKATANA_API
 void
 PxrUsdKatanaReadMaterial(
         const UsdShadeMaterial& material,

@@ -440,7 +440,7 @@ _GetMaterialAttr(
 
     // look for surface
     UsdShadeShader surfaceShader = riMaterialAPI.GetSurface(
-            /*ignoreBaseMaterial*/ not flatten);
+            /*ignoreBaseMaterial*/ !flatten);
     if (surfaceShader.GetPrim()) {
         std::string handle = _CreateShadingNode(
             surfaceShader.GetPrim(), currentTime,
@@ -461,7 +461,7 @@ _GetMaterialAttr(
 
     // look for displacement
     UsdShadeShader displacementShader = riMaterialAPI.GetDisplacement(
-            /*ignoreBaseMaterial*/ not flatten);
+            /*ignoreBaseMaterial*/ !flatten);
     if (displacementShader.GetPrim()) {
         string handle = _CreateShadingNode(
             displacementShader.GetPrim(), currentTime,
@@ -519,7 +519,7 @@ _GetMaterialAttr(
         TF_FOR_ALL(propIter, properties) {
             // if (propIter->Is<UsdRelationship>()) {
             UsdRelationship rel = propIter->As<UsdRelationship>();
-            if (not rel) {
+            if (!rel) {
                 continue;
             }
 
@@ -535,7 +535,7 @@ _GetMaterialAttr(
             }
 
             const SdfPath targetPath = targetPaths[0];
-            if (not targetPath.IsPropertyPath()) {
+            if (!targetPath.IsPropertyPath()) {
                 FnLogWarn("Pattern wants a usd property path, not a prim: "
                     << targetPath.GetString());
                 continue;

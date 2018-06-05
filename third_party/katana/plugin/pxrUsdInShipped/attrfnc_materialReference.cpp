@@ -26,6 +26,9 @@
 #include <FnAttribute/FnGroupBuilder.h>
 
 #include "pxr/pxr.h"
+#ifdef _WIN32
+#   include <FnPlatform/Windows.h>
+#endif
 #include "pxr/usd/usdShade/material.h"
 
 #include "usdKatana/attrMap.h"

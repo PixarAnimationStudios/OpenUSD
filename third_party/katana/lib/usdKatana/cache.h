@@ -28,7 +28,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/singleton.h"
-
+#include "usdKatana/api.h"
 #include <boost/shared_ptr.hpp>
 
 #include <map>
@@ -55,6 +55,7 @@ class UsdKatanaCache : public TfSingleton<UsdKatanaCache>
 {
     friend class TfSingleton<UsdKatanaCache>;
 
+    USDKATANA_API
     UsdKatanaCache();
 
     /// Construct a session layer from the groupAttr encoding of variants
@@ -78,16 +79,19 @@ class UsdKatanaCache : public TfSingleton<UsdKatanaCache>
 
 public:
 
+    USDKATANA_API
     static UsdKatanaCache& GetInstance() {
         return TfSingleton<UsdKatanaCache>::GetInstance();
     }
 
     /// Clear all caches
+    USDKATANA_API
     void Flush();
 
     
     /// Get (or create) a cached usd stage with a sessionLayer containing
     /// variant selections and activations (so far)
+    USDKATANA_API
     UsdStageRefPtr GetStage(std::string const& fileName, 
                             FnAttribute::GroupAttribute sessionAttr,
                             const std::string & sessionRootLocation,
@@ -95,6 +99,7 @@ public:
                             bool forcePopulate);
     
     // Equivalent to GetStage above but without caching
+    USDKATANA_API
     UsdStageRefPtr GetUncachedStage(std::string const& fileName, 
                             FnAttribute::GroupAttribute sessionAttr,
                             const std::string & sessionRootLocation,
@@ -102,26 +107,30 @@ public:
                             bool forcePopulate);
 
     /// Flushes an individual stage if present in the cache
+    USDKATANA_API
     void FlushStage(const UsdStageRefPtr & stage);
 
 
 
 
     /// Get (or create) a cached renderer for a given prim path.
+    USDKATANA_API
     UsdImagingGLSharedPtr const& GetRenderer(UsdStageRefPtr const& stage,
                                              UsdPrim const& root,
                                              std::string const& sessionKey);
 
     /// \brief Find a cached session layer if it exists.  Does NOT create.
+    USDKATANA_API
     SdfLayerRefPtr FindSessionLayer(
         FnAttribute::GroupAttribute sessionAttr, 
         const std::string& rootLocation);
 
 
+    USDKATANA_API
     SdfLayerRefPtr FindSessionLayer(
         const std::string& cacheKey) ;
     
-    
+    USDKATANA_API
     SdfLayerRefPtr FindOrCreateSessionLayer(
         const std::string& sessionAttrXML,
         const std::string& rootLocation);

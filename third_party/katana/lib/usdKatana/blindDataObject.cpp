@@ -232,7 +232,7 @@ UsdKatanaBlindDataObject::GetGroupBuilderKeyForProperty(
             nameToken = "ERROR_EMPTY_TOKEN";
         }
         else {
-            if (nameToken[0] == '_' and nameToken.size() > 1 and
+            if (nameToken[0] == '_' && nameToken.size() > 1 &&
                     isdigit(nameToken[1])) {
                 nameToken = nameToken.substr(1);
             }
@@ -295,7 +295,7 @@ UsdKatanaBlindDataObject::GetKbdAttributes(
 
     TF_FOR_ALL(propItr, props){
         UsdProperty prop = *propItr;
-        if (requestedNameSpace and GetKbdAttributeNameSpace(prop) != nameSpaceToken) {
+        if (requestedNameSpace && GetKbdAttributeNameSpace(prop) != nameSpaceToken) {
             continue;
         }
         validProps.push_back(prop);

@@ -25,6 +25,10 @@
 #define PXRUSDKATANA_USDIN_ARGS_H
 
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
+#ifdef _WIN32
+#   include <FnPlatform/Windows.h>
+#endif
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdSkel/cache.h"
 #include "pxr/base/tf/refPtr.h"
@@ -118,11 +122,13 @@ public:
     }
 
     // bounds computation is kind of important, so we centralize it here.
+    USDKATANA_API
     std::vector<GfBBox3d> ComputeBounds(
         const UsdPrim& prim,
         const std::vector<double>& motionSampleTimes,
         bool applyLocalTransform = false);
 
+    USDKATANA_API
     UsdPrim GetRootPrim() const;
 
     UsdStageRefPtr GetStage() const {
@@ -193,7 +199,7 @@ public:
         return _errorMessage;
     }
 private:
-
+    USDKATANA_API
     PxrUsdKatanaUsdInArgs(
             UsdStageRefPtr stage,
             const std::string& rootLocation,
@@ -210,6 +216,7 @@ private:
             bool verbose,
             const char * errorMessage = 0);
 
+    USDKATANA_API
     ~PxrUsdKatanaUsdInArgs();
 
     UsdStageRefPtr _stage;

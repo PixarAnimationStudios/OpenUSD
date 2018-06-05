@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 #include "usdKatana/locks.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

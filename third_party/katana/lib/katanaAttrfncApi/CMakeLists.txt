@@ -4,7 +4,7 @@ set(PXR_PACKAGE katanaAttrfncApi)
 file(GLOB cppFiles
     ${KATANA_API_SOURCE_DIR}/FnAttribute/client/*.cpp
     ${KATANA_API_SOURCE_DIR}/FnPluginManager/client/*.cpp
-    ${KATANA_API_SOURCE_DIR}/FnPluginSystem/*.cpp
+    ${KATANA_API_SOURCE_DIR}/FnPluginSystem/client/*.cpp
     ${KATANA_API_SOURCE_DIR}/FnAttributeFunction/plugin/*.cpp
 )
 
@@ -16,3 +16,12 @@ pxr_static_library(${PXR_PACKAGE}
         ${cppFiles}
 )
 
+target_compile_definitions(${PXR_PACKAGE}
+    PRIVATE
+    
+    FNATTRIBUTE_STATIC
+    FNATTRIBUTEFUNCTION_STATIC
+    FNGEOLIB_STATIC
+    FNPLUGINMANAGER_STATIC
+    PYSTRING_STATIC
+)

@@ -43,6 +43,9 @@
 #include "pxr/usdImaging/usdImagingGL/gl.h"
 
 #include "katanaPluginApi/FnViewerModifier.h"
+#ifdef _WIN32
+#   include <FnPlatform/Windows.h>
+#endif
 #include <FnAttribute/FnGroupBuilder.h>
 #include <FnAttribute/FnAttribute.h>
 #include "katanaPluginApi/FnViewerModifierInput.h"

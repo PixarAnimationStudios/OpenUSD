@@ -42,7 +42,9 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 
 #include <set>
-#include <regex.h>
+#if !defined(ARCH_COMPILER_MSVC)
+#   include <regex.h>
+#endif // #if !defined(ARCH_COMPILER_MSVC)
 
 #include <pystring/pystring.h>
 
@@ -461,6 +463,7 @@ void
 UsdKatanaCache::_SetMutedLayers(
     const UsdStageRefPtr &stage, const std::string &layerRegex) 
 {
+#if !defined(ARCH_COMPILER_MSVC)
     // Trace this function to track its performance
     TRACE_FUNCTION();
 
@@ -511,6 +514,7 @@ UsdKatanaCache::_SetMutedLayers(
         }
     }
     regfree(&regex);
+#endif // #if !defined(ARCH_COMPILER_MSVC)
 }
 
 UsdKatanaCache::UsdKatanaCache() 

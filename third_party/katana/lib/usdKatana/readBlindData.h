@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,6 +38,7 @@ class UsdKatanaBlindDataObject;
 /// otherwise expressable with the available usd schemas.  
 ///
 /// Usage of this is not recommended.
+USDKATANA_API
 void
 PxrUsdKatanaReadBlindData(
         const UsdKatanaBlindDataObject& kbd,

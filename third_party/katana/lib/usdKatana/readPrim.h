@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -34,18 +35,21 @@ class UsdPrim;
 class UsdGeomImageable;
 
 /// \brief read \p prim into \p attrs.
+USDKATANA_API
 void
 PxrUsdKatanaReadPrim(
         const UsdPrim& prim,
         const PxrUsdKatanaUsdInPrivateData& data,
         PxrUsdKatanaAttrMap& attrs);
 
+USDKATANA_API
 void
 PxrUsdKatanaReadPrimPrmanStatements(
         const UsdPrim& prim,
         double currentTime,
         Foundry::Katana::GroupBuilder& statementBuilder);
 
+USDKATANA_API
 Foundry::Katana::Attribute
 PxrUsdKatanaGeomGetPrimvarGroup(
         const UsdGeomImageable& imageable,

@@ -24,6 +24,9 @@
 #include <FnGeolibServices/FnBuiltInOpArgsUtil.h>
 
 #include "pxr/pxr.h"
+#ifdef _WIN32
+#   include <FnPlatform/Windows.h>
+#endif
 #include "usdKatana/blindDataObject.h"
 #include "usdKatana/cache.h"
 #include "usdKatana/locks.h"
@@ -62,6 +65,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace FnKat = Foundry::Katana;
 
 // convenience macro to report an error.
+#ifdef ERROR
+#undef ERROR    // Defined in WinGDI.h
+#endif 
 #define ERROR(...)\
     interface.setAttr("type", Foundry::Katana::StringAttribute("error"));\
     interface.setAttr("errorMessage", Foundry::Katana::StringAttribute(\
@@ -399,7 +405,7 @@ public:
                 interface.getOutputAttr("__UsdIn.skipAllChildren")).getValue(
                 0, false);
 
-        if (prim.IsMaster() and FnKat::IntAttribute(
+        if (prim.IsMaster() && FnKat::IntAttribute(
                 opArgs.getChildByName("childOfIntermediate")
                 ).getValue(0, false) == 1)
         {

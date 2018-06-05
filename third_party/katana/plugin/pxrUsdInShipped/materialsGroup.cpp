@@ -29,6 +29,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stopwatch.h"     // profiling
+#ifdef _WIN32
+#   include <FnPlatform/Windows.h>
+#endif
 #include "pxr/usd/usdShade/material.h"
 
 #include "usdKatana/blindDataObject.h"

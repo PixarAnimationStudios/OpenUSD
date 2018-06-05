@@ -22,9 +22,16 @@ pxr_shared_library(${PXR_PACKAGE}
         usdUtils
         cameraUtil
         katanaAttrfncApi
+        katanaOpApi
+        katanaPluginApi
+        ${Boost_CHRONO_LIBRARY} 
+        ${Boost_DATE_TIME_LIBRARY} 
         ${Boost_SYSTEM_LIBRARY} 
         ${Boost_THREAD_LIBRARY} 
 
+    PUBLIC_HEADERS
+        api.h
+        
     PUBLIC_CLASSES
         attrMap
         baseMaterialHelpers
@@ -75,3 +82,21 @@ pxr_shared_library(${PXR_PACKAGE}
         schema.usda:usdKatana/schema.usda
 )
 
+target_compile_definitions(${PXR_PACKAGE}
+    PRIVATE
+    
+    FNASSET_STATIC
+    FNATTRIBUTE_STATIC
+    FNATTRIBUTEFUNCTION_STATIC
+    FNATTRIBUTEMODIFIER_STATIC
+    FNCONFIG_STATIC
+    FNDEFAULTATTRIBUTEPRODUCER_STATIC
+    FNGEOLIB_STATIC
+    FNGEOLIBSERVICES_STATIC
+    FNLOGGING_STATIC
+    FNPLUGINMANAGER_STATIC
+    FNRENDEROUTPUTLOCATION_STATIC
+    FNSCENEGRAPHGENERATOR_STATIC
+    FNSCENEGRAPHITERATOR_STATIC
+    PYSTRING_STATIC
+)

@@ -56,7 +56,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_MeshOp, privateData, opArgs, inter
 
     attrs.toInterface(interface);
 
-    if (TfGetEnvSetting(USD_KATANA_IMPORT_FACESET_API) and 
+    if (TfGetEnvSetting(USD_KATANA_IMPORT_FACESET_API) && 
         UsdShadeMaterial::HasMaterialFaceSet(prim)) 
     {
         _CreateFaceSetsFromFaceSetAPI(prim, privateData, interface);

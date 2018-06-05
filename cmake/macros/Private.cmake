@@ -1179,7 +1179,7 @@ function(_pxr_library NAME)
     set(apiPublic "")
     set(apiPrivate ${uppercaseName}_EXPORTS=1)
     if(NOT _building_monolithic AND args_TYPE STREQUAL "STATIC")
-        set(apiPublic PXR_STATIC=1)
+    #    set(apiPublic PXR_STATIC=1)
     endif()
 
     # Final name.

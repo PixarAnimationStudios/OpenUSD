@@ -111,7 +111,7 @@ PxrUsdKatanaUsdInPrivateData::PxrUsdKatanaUsdInPrivateData(
     // for the prim and any of its parents.
     //
     std::vector<std::string> pathsToCheck;
-    if (!parentData and !isolatePath.empty() and
+    if (!parentData && !isolatePath.empty() &&
         pystring::startswith(primPath, isolatePath+"/"))
     {
         std::vector<std::string> parentLocs;

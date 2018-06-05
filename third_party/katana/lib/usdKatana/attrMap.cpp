@@ -27,6 +27,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+PxrUsdKatanaAttrMap::PxrUsdKatanaAttrMap(FnPluginHost* host)
+{
+    if (host)
+    {
+        FnAttribute::GroupBuilder::setHost(host);
+
+        FnAttribute::Attribute::setHost(host);
+
+        Foundry::Katana::PluginManager::setHost(host);
+    }
+}
 
 void
 PxrUsdKatanaAttrMap::set(

@@ -73,7 +73,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, opA
     // Early exit if any errors were encountered.
     //
     if (FnKat::StringAttribute(interface.getOutputAttr("errorMessage"))
-            .isValid() or
+            .isValid() ||
         FnKat::StringAttribute(interface.getOutputAttr("warningMessage"))
             .isValid()) {
         return;
@@ -83,7 +83,7 @@ PXRUSDKATANA_USDIN_PLUGIN_DEFINE(PxrUsdInCore_PointInstancerOp, privateData, opA
     //
     FnKat::GroupAttribute sourcesSSCAttrs = sourcesAttrMap.build();
     FnKat::GroupAttribute instancesSSCAttrs = instancesAttrMap.build();
-    if (not sourcesSSCAttrs.isValid() or not instancesSSCAttrs.isValid())
+    if (!sourcesSSCAttrs.isValid() || !instancesSSCAttrs.isValid())
     {
         return;
     }

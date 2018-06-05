@@ -22,12 +22,16 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 #ifndef PXRUSDKATANA_READXFORMABLE_H
 #define PXRUSDKATANA_READXFORMABLE_H
 
+#ifdef _WIN32
+#   include <FnPlatform/Windows.h>
+#endif
 #include <FnAttribute/FnAttribute.h>
 
 class PxrUsdKatanaAttrMap;
@@ -35,6 +39,7 @@ class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomXformable;
 
 /// \brief read \p xform into \p attrs.
+USDKATANA_API
 void
 PxrUsdKatanaReadXformable(
         const UsdGeomXformable& xform,
@@ -43,6 +48,7 @@ PxrUsdKatanaReadXformable(
 
 /// \brief read \p xform into \p attr.  Returns \c true iff there were any
 /// transformation ops.
+USDKATANA_API
 bool
 PxrUsdKatanaReadXformable(
         const UsdGeomXformable& xform,

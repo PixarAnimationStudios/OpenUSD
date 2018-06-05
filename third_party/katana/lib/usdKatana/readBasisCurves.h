@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,6 +34,7 @@ class PxrUsdKatanaUsdInPrivateData;
 class UsdGeomBasisCurves;
 
 /// \brief read \p basiscurves into \p attrs.
+USDKATANA_API
 void
 PxrUsdKatanaReadBasisCurves(
         const UsdGeomBasisCurves& basisCurves,

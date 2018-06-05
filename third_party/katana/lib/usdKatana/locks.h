@@ -25,14 +25,18 @@
 #define USDKATANA_LOCKS_H
 
 #include "pxr/pxr.h"
+#include "usdKatana/api.h"
 #include <boost/thread/locks.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+USDKATANA_API
 boost::upgrade_mutex& UsdKatanaGetStageLock();
+USDKATANA_API
 boost::upgrade_mutex& UsdKatanaGetRendererCacheLock();
+USDKATANA_API
 boost::upgrade_mutex& UsdKatanaGetSessionCacheLock();
 
 

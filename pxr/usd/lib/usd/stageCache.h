@@ -386,7 +386,7 @@ private:
     void _Subscribe(_Mailbox *);
 
     struct _Data;
-    struct _DataDeleter { void operator()(_Data *); };
+    struct USD_API _DataDeleter { void operator()(_Data *); };
     std::unique_ptr<_Data, _DataDeleter> _data;
 };
 

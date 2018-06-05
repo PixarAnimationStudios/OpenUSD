@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "xutility": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp"
+    }
+}
