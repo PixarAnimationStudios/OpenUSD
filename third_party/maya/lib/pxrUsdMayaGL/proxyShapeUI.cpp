@@ -37,16 +37,20 @@
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
+#include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
+#include <maya/MMessage.h>
+#include <maya/MObject.h>
 #include <maya/MPoint.h>
 #include <maya/MPointArray.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
 #include <maya/MSelectionMask.h>
+#include <maya/MStatus.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -186,12 +190,37 @@ UsdMayaProxyShapeUI::select(
 
 UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() : MPxSurfaceShapeUI()
 {
+    MStatus status;
+    _onNodeRemovedCallbackId = MDGMessage::addNodeRemovedCallback(
+        _OnNodeRemoved,
+        PxrUsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+        this,
+        &status);
+    CHECK_MSTATUS(status);
 }
 
 /* virtual */
 UsdMayaProxyShapeUI::~UsdMayaProxyShapeUI()
 {
+    MMessage::removeCallback(_onNodeRemovedCallbackId);
     UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(&_shapeAdapter);
+}
+
+/* static */
+void
+UsdMayaProxyShapeUI::_OnNodeRemoved(MObject& node, void* clientData)
+{
+    UsdMayaProxyShapeUI* proxyShapeUI =
+        static_cast<UsdMayaProxyShapeUI*>(clientData);
+    if (!proxyShapeUI) {
+        return;
+    }
+
+    const MObject shapeObj = proxyShapeUI->surfaceShape()->thisMObject();
+    if (shapeObj == node && UsdMayaGLBatchRenderer::CurrentlyExists()) {
+        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(
+            &proxyShapeUI->_shapeAdapter);
+    }
 }
 
 
