@@ -757,6 +757,11 @@ class View(QtWidgets.QTextEdit):
         self._ignoreKeyPresses = True
         super(View, self).dragLeaveEvent(e)
 
+    def insertFromMimeData(self, source):
+        if not self._CursorIsInInputArea():
+            self._MoveCursorToEndOfInput()
+        super(View, self).insertFromMimeData(source)
+
     def keyPressEvent(self, e):
         """
         Handle user input a key at a time.
@@ -829,20 +834,29 @@ class View(QtWidgets.QTextEdit):
         elif key == QtCore.Qt.Key_Tab:
             self.AutoComplete()
             e.accept()
-        elif (ctrl or alt):
-            # Ignore built-in QTextEdit hotkeys so we can handle them with
-            # our App-level hotkey system.
-            e.ignore()
-        elif hasSelection and not selectionInInput:
-            # if we have some stuff other than our input line selected,
-            # just deselect and append keypresses
-            cursor = self.textCursor()
-            self._MoveCursorToEndOfInput()
+        elif ((ctrl and key == QtCore.Qt.Key_C) or
+              (shift and key == QtCore.Qt.Key_Insert)):
+            # Copy should never move cursor.
             super(View, self).keyPressEvent(e)
-        elif not cursorInInput:
-            # Ignore keypresses if we're not in the input area.
+        elif ((ctrl and key == QtCore.Qt.Key_X) or
+              (shift and key == QtCore.Qt.Key_Delete)):
+            # Disallow cut from outside the input area so users don't
+            # affect the scrollback buffer.
+            if not selectionInInput:
+                e.ignore()
+            else:
+                super(View, self).keyPressEvent(e)
+        elif (key == QtCore.Qt.Key_Control or
+              key == QtCore.Qt.Key_Alt or
+              key == QtCore.Qt.Key_Shift):
+            # Ignore modifier keypresses by themselves so the cursor
+            # doesn't jump to the end of input when users begin a
+            # key combination.
             e.ignore()
         else:
+            # All other keypresses should append to the end of input.
+            if not cursorInInput:
+                self._MoveCursorToEndOfInput()
             super(View, self).keyPressEvent(e)
 
     def AutoComplete(self):
