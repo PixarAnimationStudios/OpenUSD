@@ -37,12 +37,37 @@ PxrUsdMaya_ModelKindWriter::PxrUsdMaya_ModelKindWriter(
 {
 }
 
+
+/// Returns the root-most ancestor of prim, which is either a component
+/// or a root-level prim.
+static SdfPath
+_FindAncestorRootPrimOrComponent(const UsdPrim& prim)
+{
+    SdfPath rootPath;
+    for (SdfPath p = prim.GetPath(); p != SdfPath::AbsoluteRootPath();
+        p = p.GetParentPath()) {
+
+        UsdPrim ancestor = prim.GetStage()->GetPrimAtPath(p);
+        if (ancestor && ancestor.IsModel()) {
+            TfToken kind;
+            if (UsdModelAPI(ancestor).GetKind(&kind) &&
+               KindRegistry::IsA(kind, KindTokens->component)) {
+                return p;
+            }
+        }
+
+        rootPath = p;
+    }
+    return rootPath;
+}
+
+
 void
 PxrUsdMaya_ModelKindWriter::OnWritePrim(
     const UsdPrim& prim,
     const MayaPrimWriterPtr& primWriter)
 {
-    SdfPath path = prim.GetPath();
+    const SdfPath& path = prim.GetPath();
 
     // Here we save all of the root prims that are assemblies (or derived), so
     // that we can show error messages indicating that there are gprims under
@@ -55,19 +80,17 @@ PxrUsdMaya_ModelKindWriter::OnWritePrim(
         }
     }
 
-    // If exporting a gprim, place the root prim in the set of root prims with
-    // gprims. Then record the actual gprim if its root prim has been tagged as
+    // If exporting a gprim, tag the root-most ancestor of the gprim as
+    // containing gprims. The ancestor traversal is terminated at
+    // kind=component, since what we are ultimately trying to validate is
+    // that gprims are authored beneath components, rather than assemblies.
+    // Then record the actual gprim if its root prim has been tagged as
     // potentially an assembly.
     if (primWriter->exportsGprims()) {
-        auto pathPrefixes = path.GetPrefixes();
-        SdfPath rootPath;
-        if (pathPrefixes.size() > 0) {
-            rootPath = path.GetPrefixes()[0];
-        } else {
-            rootPath = path;
-        }
 
-        _pathsWithExportedGprims.insert(rootPath);
+        SdfPath rootPath = _FindAncestorRootPrimOrComponent(prim);
+        if (!rootPath.IsEmpty())
+            _pathsWithExportedGprims.insert(rootPath);
 
         auto iter = _pathsToExportedGprimsMap.find(rootPath);
         if (iter != _pathsToExportedGprimsMap.end()) {
