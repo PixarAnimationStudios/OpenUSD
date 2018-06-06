@@ -31,7 +31,7 @@ else:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-import re
+import types
 from treemodel import *
 
 #
@@ -71,29 +71,18 @@ def CompatibleNodeTypes():
     return nodeTypes
 
 #
-# Use regular expressions to extract colors from houdini's StyleSheet.
+# Note CheckBoxStyled() is NOT a class definition, but rather is a method
+# that returns an instance of a customized QCheckBox. This enables us to
+# invoke hou.qt.createCheckBox() and bind override methods onto the instance
+# it returns. (The other way to do this would have been to inherit from the
+# class type returned by hou.qt.createCheckBox(), but this isn't possible
+# because that class definition isn't exposed in the houpythonportion module).
 #
-def ExtractColorsFromStyleSheet():
-    qtStyleSheet = hou.ui.qtStyleSheet()
-
-    grpBG = '([\s]+background(-color)?: )'
-    grpRgb = '(?P<rgb>rgb(a)?\(\d{1,3}(, \d{1,3}){2,3}\))'
-
-    # For the TreeView's "editing" base color (the color inside
-    # checkboxes, inside text editing fields, etc) extract the
-    # background color of the QTextEdit widget.
-    grpQTextEdit = '(QTextEdit\n\{[\s\S]*?)'
-    matchBG = re.search(grpQTextEdit + grpBG + grpRgb, qtStyleSheet)
-    if matchBG:
-        # Convert it from a string to a QColor.
-        baseColor = matchBG.groupdict()['rgb'].strip('rgba()')
-        c = [int(channel) for channel in baseColor.split(',')]
-        if len(c) == 3:
-            TreeView.editingBaseColor = QColor(c[0], c[1], c[2])
-        elif len(c) == 4:
-            TreeView.editingBaseColor = QColor(c[0], c[1], c[2], c[3])
-
-class CheckBoxStyled(QCheckBox):
+def CheckBoxStyled():
+    #
+    # The methods defined here are the overrides that will be bound to the
+    # QCheckBox return instance below.
+    #
     def paintEvent(self, event):
         opt = QStyleOptionButton()
         self.initStyleOption(opt)
@@ -102,7 +91,7 @@ class CheckBoxStyled(QCheckBox):
         opt.rect = style.subElementRect(QStyle.SE_CheckBoxClickRect, opt, self)
 
         # Set 'base' color (the color inside the box).
-        opt.palette.setColor(QPalette.Base, TreeView.editingBaseColor)
+        opt.palette.setColor(QPalette.Base, hou.qt.getColor('TextboxBG'))
 
         painter = QStylePainter(self)
         painter.drawControl(QStyle.CE_CheckBox, opt)
@@ -115,6 +104,20 @@ class CheckBoxStyled(QCheckBox):
             # The next state for either of these is Checked.
             self.setCheckState(Qt.Checked)
 
+    # To preserve backward compatibility, houdini versions before 16.5
+    # use a standard QCheckBox with a customized paintEvent. Starting
+    # with houdini 16.5, use a hou.qt.createCheckBox() instance.
+    (major, minor, build) = hou.applicationVersion()
+    if major >= 16 and minor >= 5:
+        checkBox = hou.qt.createCheckBox()
+    else:
+        checkBox = QCheckBox()
+        checkBox.paintEvent = types.MethodType(paintEvent, checkBox)
+
+    # In all versions, override the nextCheckState method.
+    checkBox.nextCheckState = types.MethodType(nextCheckState, checkBox)
+    return checkBox
+
 class ComboBoxStyled(QComboBox):
     def __init__(self, parent = None):
         super(ComboBoxStyled, self).__init__(parent)
@@ -124,7 +127,7 @@ class ComboBoxStyled(QComboBox):
         # ignored, the popup displays as one long list that gets clipped when
         # too long. By not ignoring it, the size of the popup will be clamped
         # and will provide a vertical scroll bar for browsing items.
-        self.setStyleSheet('QComboBox { combobox-popup: 0 };')
+        self.setStyleSheet('QComboBox { combobox-popup: 0; }')
 
         # Create a QListView to replace the QComboBox's view. This allows the
         # item padding and border to be customized.
@@ -132,6 +135,11 @@ class ComboBoxStyled(QComboBox):
         listview.setStyleSheet('QListView::item { padding: 2px; }\
                                 QListView::item::selected { border: 0; }')
         self.setView(listview)
+
+    def SetDisabledBgColor(self, color):
+        styleSheet = 'QComboBox:disabled { background: rgb%s; }'\
+                     % str(color.toTuple())
+        self.setStyleSheet(styleSheet)
 
 class FilterMenu(ComboBoxStyled):
     # Signals
@@ -160,13 +168,8 @@ class FilterMenu(ComboBoxStyled):
         self.EnterText()
 
     def OnStyleChanged(self):
-        styleSheet = 'QComboBox { padding: 2px;'
-        channels = [str(c) for c in TreeView.editingBaseColor.getRgb()]
-        if len(channels) == 3:
-            styleSheet += ' background: rgb(%s);' % ','.join(channels)
-        elif len(channels) == 4:
-            styleSheet += ' background: rgba(%s);' % ','.join(channels)
-        styleSheet += '}'
+        styleSheet = 'QComboBox { padding: 2px; background: rgba%s; }'\
+                     % str(hou.qt.getColor('TextboxBG').toTuple())
         self.setStyleSheet(styleSheet)
 
 class ActiveNodeMenu(ComboBoxStyled):
@@ -272,6 +275,7 @@ class ActiveNodeMenu(ComboBoxStyled):
 class TreeItemEditor(QFrame):
     # Signals
     edited = Signal()
+    styleChanged = Signal('QColor')
 
     # Static members used for computing size hint.
     margins = QMargins(2, 2, 2, 2)
@@ -297,7 +301,7 @@ class TreeItemEditor(QFrame):
         layout.setContentsMargins(TreeItemEditor.margins)
 
         if index.column() == COL_IMPORT:
-            self._checkBox = CheckBoxStyled(self)
+            self._checkBox = CheckBoxStyled()
             self._checkBox.setCheckState(Qt.CheckState(index.data()))
             self._checkBox.stateChanged.connect(self.DataChanged)
             layout.addWidget(self._checkBox, 0, 0, Qt.AlignHCenter)
@@ -318,8 +322,8 @@ class TreeItemEditor(QFrame):
             self._comboBoxes = []
 
             for row, item in enumerate(variants):            
-                self._checkBoxes.append(CheckBoxStyled(self))
-                self._comboBoxes.append(ComboBoxStyled(self))
+                self._checkBoxes.append(CheckBoxStyled())
+                self._comboBoxes.append(ComboBoxStyled())
 
                 checkBox = self._checkBoxes[-1]
                 checkBox.setCheckState(Qt.Checked if item._enabled\
@@ -340,11 +344,24 @@ class TreeItemEditor(QFrame):
                 comboBox.currentIndexChanged.connect(self.DataChanged)
                 checkBox.stateChanged.connect(comboBox.setEnabled)
 
+                # Starting with houdini 16.5, disabled combobox text
+                # displays with a strange shadow; Manually setting the
+                # background color seems to hide the issue.
+                (major, minor, build) = hou.applicationVersion()
+                if major >= 16 and minor >= 5:
+                    comboBox.SetDisabledBgColor(hou.qt.getColor('ButtonGradLow'))
+                    self.styleChanged.connect(comboBox.SetDisabledBgColor)
+
                 layout.addWidget(checkBox, row, 0, Qt.AlignHCenter)
                 layout.addWidget(label, row, 1, Qt.AlignLeft)
                 layout.addWidget(comboBox, row, 2)
 
         self.setLayout(layout)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.StyleChange:
+            self.styleChanged.emit(hou.qt.getColor('ButtonGradLow'))
+        super(TreeItemEditor, self).changeEvent(event)
 
     def DataChanged(self):
         self.edited.emit()
@@ -488,9 +505,6 @@ class TreeView(QFrame):
     # Static model to use for views with no "Active Node".
     emptyModel = TreeModel(COL_HEADERS)
 
-    # This initial default will be updated by ExtractColorsFromStyleSheet()
-    editingBaseColor = QColor(19, 19, 19)
-
     def __init__(self):
         QFrame.__init__(self)
 
@@ -570,7 +584,6 @@ class TreeView(QFrame):
 
     def changeEvent(self, event):
         if event.type() == QEvent.StyleChange:
-            ExtractColorsFromStyleSheet()
             self.styleChanged.emit()
         super(TreeView, self).changeEvent(event)
 
@@ -678,7 +691,6 @@ class TreeView(QFrame):
 
         # Now actually set the new model as the view's model.
         self.view.setModel(model)
-        self.view.setSelectionModel(model.GetSelectionModel())
 
         # Open persistent editors for the top index.
         topIndex = model.index(0, 0, QModelIndex())
@@ -712,6 +724,11 @@ class TreeView(QFrame):
             # If there are no paths specified to be expanded, the
             # default is to expand the first 2 levels of the tree.
             self.view.expandToDepth(2)
+
+        # Now set the view's selectionModel. This triggers a call to
+        # CopyExpandedPrimPathsToNode, so it's important that this
+        # happen only after self.expandedPrimPaths has been updated.
+        self.view.setSelectionModel(model.GetSelectionModel())
 
         # Apply the current filter to this tree view.
         self.OnFilterApplied(self.filterMenu.currentText())
