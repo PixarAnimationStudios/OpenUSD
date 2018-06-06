@@ -113,9 +113,7 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
         testFile = "skinning.usda"
         stage = Usd.Stage.Open(testFile)
 
-        for prim in stage.Traverse():
-            if prim.IsA(UsdSkel.Root):
-                UsdSkel.BakeSkinningLBS(UsdSkel.Root(prim))
+        UsdSkel.BakeSkinning(stage.Traverse())
 
         stage.GetRootLayer().Export("skinning.skinned.usda")
 

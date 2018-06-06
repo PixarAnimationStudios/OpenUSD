@@ -174,7 +174,7 @@ class testUsdExportMesh(unittest.TestCase):
 
         # Check Maya's output mesh versus the UsdSkel-computed result.
         skelRoot = UsdSkel.Root.Get(stage, '/ImplicitSkelRoot')
-        UsdSkel.BakeSkinningLBS(skelRoot)
+        UsdSkel.BakeSkinning(skelRoot)
 
         points = m.GetPointsAttr().Get()
         refSkinnedPoints = mNS.GetPointsAttr().Get()
@@ -212,7 +212,7 @@ class testUsdExportMesh(unittest.TestCase):
 
         # Check Maya's output mesh versus the UsdSkel-computed result.
         skelRoot = UsdSkel.Root.Get(stage, '/ImplicitSkelRoot')
-        UsdSkel.BakeSkinningLBS(skelRoot)
+        UsdSkel.BakeSkinning(skelRoot)
 
         for i in xrange(1, 31):
             points = m.GetPointsAttr().Get(i)
@@ -244,7 +244,7 @@ class testUsdExportMesh(unittest.TestCase):
         # Check Maya's output mesh versus the UsdSkel-computed result.
         skelRoot = UsdSkel.Root.Get(
                 stage, '/ExplicitSkelRoot')
-        UsdSkel.BakeSkinningLBS(skelRoot)
+        UsdSkel.BakeSkinning(skelRoot)
 
         points = m.GetPointsAttr().Get()
         refSkinnedPoints = mNS.GetPointsAttr().Get()

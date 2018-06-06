@@ -47,16 +47,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \defgroup UsdSkel_Utils Utilities
-/// @{
-
-
 class GfMatrix3f;
 class GfMatrix4d;
 class GfRotation;
+class UsdPrimRange;
 class UsdRelationship;
 class UsdSkelRoot;
 class UsdSkelTopology;
+
+
+/// \defgroup UsdSkel_Utils Utilities
+/// @{
 
 
 /// \defgroup UsdSkel_JointTransformUtils Joint Transform Utilities
@@ -343,8 +344,8 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
                         GfMatrix4d* xform);
 
 
-/// Bake the effect of skinning prims using linear blend skinning (LBS)
-/// directly into points and transforms, over \p interval.
+/// Bake the effect of skinning prims directly into points and transforms,
+/// over \p interval.
 /// This is intended to serve as a complete reference implementation,
 /// providing a ground truth for testing and validation purposes.
 /// Since baking the effect of skinning will undo any IO gains that skeletal
@@ -353,9 +354,17 @@ UsdSkelSkinTransformLBS(const GfMatrix4d& geomBindTransform,
 /// animation to an application that does not understand UsdSkel skinning.
 USDSKEL_API
 bool
-UsdSkelBakeSkinningLBS(const UsdSkelRoot& root,
-                       const GfInterval& interval=
-                           GfInterval::GetFullInterval());
+UsdSkelBakeSkinning(const UsdSkelRoot& root,
+                    const GfInterval& interval=GfInterval::GetFullInterval());
+
+
+/// Overload of UsdSkelBakeSkinning, which bakes the effect of skinning prims
+/// directly into points and transforms, for all SkelRoot prims in \p range.
+USDSKEL_API
+bool
+UsdSkelBakeSkinning(const UsdPrimRange& range,
+                    const GfInterval& interval=GfInterval::GetFullInterval());
+
 
 
 /// @}

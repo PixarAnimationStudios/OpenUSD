@@ -150,21 +150,4 @@ bool ComputeSkinnedTransform(const UsdGeomXformable& xformable,
 //! [ComputeSkinnedTransform]
 
 
-//! [BakeSkinningLBS]
-void BakeSkinningLBS(const UsdStagePtr& stage)
-{
-    UsdPrimRange range(stage->Traverse());
-    for(auto it = range.begin(); it != range.end(); ++it) {
-        if(it->IsA<UsdSkelRoot>()) {
-            UsdSkelBakeSkinningLBS(UsdSkelRoot(*it));
-            // No need to traverse further; any nested skel
-            // roots will have already been baked.
-            it->PruneChildren();
-        }
-    }
-    // Note: Don't forget to save or export the stage!
-}
-//! [BakeSkinningLBS]
-
-
 PXR_NAMESPACE_CLOSE_SCOPE

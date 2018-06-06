@@ -86,20 +86,3 @@ def ComputeSkinnedTransform(xformable, skelQuery, skinningQuery, time):
     # Apply skinning.
     return skinningQuery.ComputeSkinnedTransform(xforms, time)
 #! [ComputeSkinnedTransform]
-
-
-#! [BakeSkinningLBS]
-def BakeSkinningLBS(stage):
-
-    it = iter(stage.Traverse())
-    for prim in it:
-        if prim.IsA(UsdSkel.Root):
-            UsdSkel.BakeSkinningLBS(UsdSkel.Root(prim))
-            # No need to traverse further; any nested skel
-            # roots will have already been baked.
-            it.PruneChildren();
-        }
-    }
-    # Note: Don't forget to save or export the stage!
-}
-#! [BakeSkinningLBS]

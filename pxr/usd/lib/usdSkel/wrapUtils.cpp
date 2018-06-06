@@ -30,6 +30,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/relationship.h"
 
 #include "pxr/usd/usdSkel/root.h"
@@ -285,6 +286,11 @@ void wrapUsdSkelUtils()
          arg("jointIndices"),
          arg("jointWeights")));
 
-    def("BakeSkinningLBS", &UsdSkelBakeSkinningLBS,
+    def("BakeSkinning", ((bool (*)(const UsdSkelRoot&,
+                                   const GfInterval&))&UsdSkelBakeSkinning),
         (arg("root"), arg("interval")=GfInterval::GetFullInterval()));
+
+    def("BakeSkinning", ((bool (*)(const UsdPrimRange&,
+                                   const GfInterval&))&UsdSkelBakeSkinning),
+        (arg("range"), arg("interval")=GfInterval::GetFullInterval()));
 }

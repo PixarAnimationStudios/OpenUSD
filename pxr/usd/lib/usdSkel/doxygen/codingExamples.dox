@@ -152,32 +152,40 @@ Code for skinning transforms (in _skeleton space_)
 \snippet examples.py ComputeSkinnedTransform
 
 For a more complete look at how skeletal data is used to apply skinning, see
-the implementation of \ref UsdSkelBakeSkinningLBS, which provides a complete
+the implementation of \ref UsdSkelBakeSkinning, which provides a complete
 reference implementation of skinning, for testing and validation.
 
 \section UsdSkel_CE_BakingSkinning Baking Skinning
 
 The previous section discussed the use of various utility methods to help
 compute skinned points. For the sake of testing and validation, UsdSkel
-provides UsdSkelBakeSkinningLBS, which bakes the result of skinning directly
+provides UsdSkelBakeSkinning, which bakes the result of skinning directly
 into prims on a stage, effectively turning a file that contains prims
 skinned by skeletons into normal primitives with no special skeletal behavior.
 
-Using UsdSkelBakeSkinningLBS, skinning can be baked for an entire stage as
-follows:
+The effect of skinning can be baked either for ranges of prims, or to individual
+UsdSkelRoot primitives. The following demonstrates how to bake skinning for an
+entire stage:
 
 - C++:
-\snippet examples.cpp BakeSkinningLBS
+\code{.cpp}
+UsdSkelBakeSkinning(stage->Traverse());
+// Save or export the stage.
+\endcode
 
 - Python:
-\snippet examples.py BakeSkinningLBS
+\code{.py}
+UsdSkel.BakeSkinning(stage.Travserse());
+# Save or export the stage.
+\endcode
 
-Setting the environment variable `TF_DEBUG=USDSKEL_BAKESKINNING` prior
-to running a process that calls the code above will cause the method
-to output additional debugging information, to help identify any issues
-with malformed data.
+Setting the environment variable `TF_DEBUG=USDSKEL_BAKESKINNING` prior to
+running a process that calls the code above will cause the method to output
+additional debugging information, to help identify any issues with malformed
+data. See the TfDebug documentation for more information on how to enable
+debugging codes.
 
-\warning UsdSkelBakeSkinningLBS is written to provide a ground-truth for
+\warning UsdSkelBakeSkinning is written to provide a ground-truth for
 skinning, and emphasizes correctness over performance. It is meant for
 testing purposes, and should not generally be deployed for actual
 production work. Use with caution.

@@ -1402,7 +1402,7 @@ _UpdateExtentsHints(const UsdPrim& prim,
 
 
 bool
-UsdSkelBakeSkinningLBS(const UsdSkelRoot& root, const GfInterval& interval)
+UsdSkelBakeSkinning(const UsdSkelRoot& root, const GfInterval& interval)
 {
     // Keep in mind that this method is intended for testing and validation.
     // Because of this, we do not try to be robust in the face of errors
@@ -1526,6 +1526,21 @@ UsdSkelBakeSkinningLBS(const UsdSkelRoot& root, const GfInterval& interval)
     _UpdateExtentsHints(root.GetPrim(), allPrimTimeCodes);
     return true;
 }
+
+
+bool
+UsdSkelBakeSkinning(const UsdPrimRange& range, const GfInterval& interval)
+{
+    bool success = true;
+    
+    for(auto it = range.begin(); it != range.end(); ++it) {
+        if(it->IsA<UsdSkelRoot>()) {
+            success &= UsdSkelBakeSkinning(UsdSkelRoot(*it), interval);
+            it.PruneChildren();
+        }
+    }
+    return success;
+}    
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
