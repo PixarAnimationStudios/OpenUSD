@@ -281,8 +281,6 @@ vec4 GetSelectionColor(int mode)
         s = HdGet_selColor();
     else if (mode == 1)
         s = HdGet_selLocateColor();
-    else if (mode == 2)
-        s = HdGet_selMaskColor();
 
     return s;
 }
@@ -317,8 +315,8 @@ vec4 ApplySelectionColor(vec4 color)
             // apply the "prim" selection color first, and then subprim(s).
             vec4 s = GetSelectionColor(mode);
 
-            // Note: We blend mask (over) locate (over) select when an
-            // object is in all three highlight modes.
+            // Note: We blend locate (over) select when an
+            // object is in both highlight modes.
             color.rgb = mix(color.rgb, s.rgb, s.a);
         }
     } // for each highlight mode

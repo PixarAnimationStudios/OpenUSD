@@ -143,7 +143,6 @@ My_TestGLDrawing::InitTest()
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
-    selParam.maskColor = GfVec4f(0, 1, 1, 1);
     _delegate->SetTaskParam(selectionTask, HdTokens->params,
                             VtValue(selParam));
 

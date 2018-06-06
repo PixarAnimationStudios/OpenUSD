@@ -45,7 +45,6 @@ struct HdxSelectionTaskParams
     bool enableSelection;
     GfVec4f selectionColor;
     GfVec4f locateColor;
-    GfVec4f maskColor;
 };
 
 typedef boost::shared_ptr<class HdBufferArrayRange> HdBufferArrayRangeSharedPtr;

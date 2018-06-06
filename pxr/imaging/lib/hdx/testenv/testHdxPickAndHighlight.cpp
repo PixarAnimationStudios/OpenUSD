@@ -180,7 +180,6 @@ My_TestGLDrawing::InitTest()
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
-    selParam.maskColor = GfVec4f(0, 1, 1, 1);
     _delegate->SetTaskParam(selectionTask, HdTokens->params,
                             VtValue(selParam));
 
@@ -397,30 +396,12 @@ My_TestGLDrawing::OffscreenTest()
         TF_VERIFY(indices[0][0] == 0);
     }
 
-    // ------------------------- mask  selection -------------------------------
-    mode = HdSelection::HighlightModeMask;
+    // deselect
+    mode = HdSelection::HighlightModeSelect;
     _picker.SetHighlightMode(mode);
-
-    // select cube2
-    _picker.Pick(GfVec2i(180, 390), GfVec2i(181, 391));
+    _picker.Pick(GfVec2i(0,0), GfVec2i(0,0));
     DrawScene();
-    WriteToFile("color", "color6_mask.png");
-
-     // select cube3, /protoBottom:0
-    _picker.Pick(GfVec2i(408,246), GfVec2i(546,420));
-    DrawScene();
-    WriteToFile("color", "color7_mask.png");
     selection = _picker.GetSelection();
-
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 2);
-    selInstances = _GetSelectedInstances(selection, mode);
-    TF_VERIFY(selInstances.size() == 1);
-    {
-        std::vector<VtIntArray> const& indices
-            = selInstances[SdfPath("/protoBottom")];
-        TF_VERIFY(indices.size() == 1);
-        TF_VERIFY(indices[0][0] == 0);
-    }
 
     // select all instances of protoTop without picking
     // This is to test whether HdSelection::AddInstance allows an empty indices
@@ -429,12 +410,7 @@ My_TestGLDrawing::OffscreenTest()
     _picker.GetSelectionTracker()->SetSelection(selection);
     DrawScene();
     // Expect to see earlier selection as well as all instances of protoTop
-    WriteToFile("color", "color8_mask_all_instances.png");
-
-    // deselect    
-    _picker.Pick(GfVec2i(0,0), GfVec2i(0,0));
-    DrawScene();
-    WriteToFile("color", "color9_unselected.png");
+    WriteToFile("color", "color6_select_all_instances.png");
 }
 
 void

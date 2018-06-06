@@ -46,10 +46,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (selectionUniforms)         \
     (selColor)                  \
     (selLocateColor)            \
-    (selMaskColor)              \
-    (selOffset)                 \
-    (selOffsetMinMax)           \
-    (selValue)                  \
     (drawTargetRenderPasses)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);

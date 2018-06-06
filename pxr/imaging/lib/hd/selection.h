@@ -52,8 +52,7 @@ public:
     enum HighlightMode {
         HighlightModeSelect = 0,
         HighlightModeLocate,
-        HighlightModeMask,
-
+        
         HighlightModeCount
     };
 

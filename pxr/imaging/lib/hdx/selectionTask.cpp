@@ -50,7 +50,7 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     , _hasSelection(false)
     , _selUniformBar(nullptr)
 {
-    _params = {false, GfVec4f(), GfVec4f(), GfVec4f()};
+    _params = {false, GfVec4f(), GfVec4f()};
 }
 
 void
@@ -115,8 +115,6 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
                                       HdTupleType { HdTypeFloatVec4, 1 });
             uniformSpecs.emplace_back(HdxTokens->selLocateColor,
                                       HdTupleType { HdTypeFloatVec4, 1 });
-            uniformSpecs.emplace_back(HdxTokens->selMaskColor,
-                                      HdTupleType { HdTypeFloatVec4, 1 });
             _selUniformBar = resourceRegistry->AllocateUniformBufferArrayRange(
                                                 /*role*/HdxTokens->selection,
                                                 uniformSpecs);
@@ -132,9 +130,6 @@ HdxSelectionTask::_Sync(HdTaskContext* ctx)
         uniformSources.push_back(HdBufferSourceSharedPtr(
                 new HdVtBufferSource(HdxTokens->selLocateColor,
                                      VtValue(_params.locateColor))));
-        uniformSources.push_back(HdBufferSourceSharedPtr(
-                new HdVtBufferSource(HdxTokens->selMaskColor,
-                                     VtValue(_params.maskColor))));
         resourceRegistry->AddSources(_selUniformBar, uniformSources);
 
         //
@@ -164,8 +159,7 @@ std::ostream& operator<<(std::ostream& out,
 {
     out << pv.enableSelection << " ";
     out << pv.selectionColor << " ";
-    out << pv.locateColor << " ";
-    out << pv.maskColor;
+    out << pv.locateColor;
     return out;
 }
 
@@ -173,8 +167,7 @@ bool operator==(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs) {
     return lhs.enableSelection == rhs.enableSelection
         && lhs.selectionColor == rhs.selectionColor 
-        && lhs.locateColor == rhs.locateColor
-        && lhs.maskColor == rhs.maskColor;
+        && lhs.locateColor == rhs.locateColor;
 }
 
 bool operator!=(const HdxSelectionTaskParams& lhs,

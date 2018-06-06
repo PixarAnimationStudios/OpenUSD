@@ -113,19 +113,15 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
     // [--------  header  --------]
     // 
     // Example:
-    // [   3   ] [4,     0,     10] [seloffsets mode0] [seloffsets mode2]
-    //            |              |  ^                  ^
-    //            |              |__|__________________|
-    //            |_________________|
+    //   [2 ]         [4,30]       [seloffsets mode0] [seloffsets mode1]
+    //                 |  |         ^                  ^
+    //                 |  |_________|__________________|
+    //                 |____________|
     //  
     //  Above:
-    //  Index 0 holds the number of selection highlight modes (3)
-    //  Indices [1-3] hold the start index for each mode's data.
+    //  Index 0 holds the number of selection highlight modes (2)
+    //  Indices [1,2] hold the start index for each mode's data.
     //  If a mode doesn't have any selected items, we use 0 to encode this.
-    //  
-    //  Indices [4-9] hold the selection offsets for mode 0.
-    //  Indices [10-x] hold the selection offsets for mode 2.
-    //  Mode 1 can be skipped since its mode offset is 0.
     //  See hdx/shaders/renderPass.glslfx (ApplySelectionColor) for the
     //  shader readback of this buffer
 
