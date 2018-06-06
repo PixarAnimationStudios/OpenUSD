@@ -40,15 +40,21 @@ void wrapGamma()
 {    
     def("ApplyGamma", (GfVec3f(*)(GfVec3f const &,double))GfApplyGamma);
     def("ApplyGamma", (GfVec3d(*)(GfVec3d const &,double))GfApplyGamma);
+    def("ApplyGamma", (GfVec3h(*)(GfVec3h const &,double))GfApplyGamma);
     def("ApplyGamma", (GfVec4f(*)(GfVec4f const &,double))GfApplyGamma);
     def("ApplyGamma", (GfVec4d(*)(GfVec4d const &,double))GfApplyGamma);
+    def("ApplyGamma", (GfVec4h(*)(GfVec4h const &,double))GfApplyGamma);
     def("GetDisplayGamma",GfGetDisplayGamma);
     def("ConvertDisplayToLinear",GfConvertDisplayToLinear<GfVec3f>);
     def("ConvertDisplayToLinear",GfConvertDisplayToLinear<GfVec3d>);
+    def("ConvertDisplayToLinear",GfConvertDisplayToLinear<GfVec3h>);
     def("ConvertDisplayToLinear",GfConvertDisplayToLinear<GfVec4f>);
     def("ConvertDisplayToLinear",GfConvertDisplayToLinear<GfVec4d>);
+    def("ConvertDisplayToLinear",GfConvertDisplayToLinear<GfVec4h>);
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec3f>);
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec3d>);
+    def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec3h>);
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4f>);
     def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4d>);
+    def("ConvertLinearToDisplay",GfConvertLinearToDisplay<GfVec4h>);
 }
