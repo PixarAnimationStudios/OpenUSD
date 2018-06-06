@@ -32,9 +32,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,      "points.glslfx"))
 
-     // point id fallback mixin
-    ((pointIdVS,       "PointId.Vertex"))
-    ((pointIdFS,       "PointId.Fragment.Points"))
+    // point id fallback mixin
+    // The only reason this is here is to generate fallback versions of
+    // functions to keep the compiler happy during code gen.
+    ((pointIdVS,       "PointId.Vertex.None"))
+    ((pointIdFS,       "PointId.Fragment.Fallback"))
 
     // main for all the shader stages
     ((mainVS,          "Point.Vertex"))

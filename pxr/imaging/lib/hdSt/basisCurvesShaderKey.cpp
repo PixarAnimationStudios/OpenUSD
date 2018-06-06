@@ -59,10 +59,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curvesCatmullRom,                "Curves.CatmullRomBasis"))
     ((curvesFallback,                  "Curves.LinearBasis"))
 
-    // point id fallback mixin
-    ((pointIdVS,                       "PointId.Vertex"))
-    ((pointIdFS,                       "PointId.Fragment.Points"))
+    // point id mixins (for point picking & selection)
+    ((pointIdNoneVS,                   "PointId.Vertex.None"))
+    ((pointIdVS,                       "PointId.Vertex.PointParam"))
+    ((pointIdSelDecodeUtilsVS,         "Selection.DecodeUtils"))
+    ((pointIdSelPointSelVS,            "Selection.Vertex.PointSel"))
     ((pointIdFallbackFS,               "PointId.Fragment.Fallback"))
+    ((pointIdFS,                       "PointId.Fragment.PointParam"))
 
     // helper mixins
     ((curveCubicWidthsBasis,           "Curves.Cubic.Widths.Basis"))
@@ -139,15 +142,27 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         primType = HdSt_GeometricShader::PrimitiveType::PRIM_BASIS_CURVES_LINES;
     }
 
+    bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
+
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
-    VS[0]  = _tokens->instancing;
-    VS[1]  = drawThick ? _tokens->curvesVertexPatch 
+    uint8_t vsIndex = 0;
+    VS[vsIndex++]  = _tokens->instancing;
+    VS[vsIndex++]  = drawThick ? _tokens->curvesVertexPatch 
                        : _tokens->curvesVertexWire;
-    VS[2]  = oriented ? _tokens->curvesVertexNormalOriented 
+    VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented 
                       : _tokens->curvesVertexNormalImplicit;
-    VS[3]  = _tokens->pointIdVS;
-    VS[4]  = TfToken();
+    if (isPrimTypePoints) {
+        // Add mixins that allow for picking and sel highlighting of points.
+        // Even though these are more "render pass-ish", we do this here to
+        // reduce the shader code generated when the points repr isn't used.
+        VS[vsIndex++] = _tokens->pointIdVS;
+        VS[vsIndex++] = _tokens->pointIdSelDecodeUtilsVS;
+        VS[vsIndex++] = _tokens->pointIdSelPointSelVS;
+    } else {
+        VS[vsIndex++] = _tokens->pointIdNoneVS;
+    }
+    VS[vsIndex]  = TfToken();
 
     // Setup Tessellation
 
@@ -236,49 +251,49 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     }
 
     // setup fragment shaders
-    FS[0] = _tokens->surfaceFS;
-    FS[1] = _tokens->commonFS;
+    uint8_t fsIndex = 0;
+    FS[fsIndex++] = _tokens->surfaceFS;
+    FS[fsIndex++] = _tokens->commonFS;
 
     // we don't currently ever set primType to PRIM_POINTS for curves, but
     // if we ever want to view them as just points, this allows point picking to
     // work.
-    FS[2] = (primType == HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)?
-            _tokens->pointIdFS : _tokens->pointIdFallbackFS;
+    FS[fsIndex++] = isPrimTypePoints?
+                        _tokens->pointIdFS : _tokens->pointIdFallbackFS;
 
-    size_t fsIndex = 3;
     if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE){
         FS[fsIndex++] = _tokens->curvesFragmentWire;
-        FS[fsIndex] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentRibbonOriented;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::ROUND){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentRibbonRound;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON &&
              normalStyle == HdSt_BasisCurvesShaderKey::HAIR){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentHair;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE &&
              normalStyle == HdSt_BasisCurvesShaderKey::ROUND){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentHalfTube;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else if (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE &&
              normalStyle == HdSt_BasisCurvesShaderKey::HAIR){
         FS[fsIndex++] = _tokens->curvesFragmentPatch;
         FS[fsIndex++] = _tokens->curvesFragmentHair;
-        FS[fsIndex++] = TfToken();  
+        FS[fsIndex++] = TfToken();
     }
     else{
         TF_WARN("Cannot setup fragment shaders for invalid combination of \

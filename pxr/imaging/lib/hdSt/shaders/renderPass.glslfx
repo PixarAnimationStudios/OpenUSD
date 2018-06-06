@@ -87,11 +87,18 @@ float GetTessLevel() {
     return 1;
 #endif
 }
-float GetPointSize(int vertexID) {
+float GetPointSize() {
 #if defined(HD_HAS_pointSize)
     return HdGet_pointSize();
 #else
     return 3.0;
+#endif
+}
+float GetPointSelectedSize() {
+#if defined(HD_HAS_pointSelectedSize)
+    return HdGet_pointSelectedSize();
+#else
+    return 5.0;
 #endif
 }
 vec4  GetWireframeColor() {

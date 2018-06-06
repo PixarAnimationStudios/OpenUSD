@@ -64,9 +64,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeIdRectangleParamFS,  "EdgeId.Fragment.RectangleParam"))
 
     // point id mixins (for point picking & selection)
-    ((pointIdVS,               "PointId.Vertex"))
-    ((pointIdFS,               "PointId.Fragment.Points"))
+    ((pointIdNoneVS,           "PointId.Vertex.None"))
+    ((pointIdVS,               "PointId.Vertex.PointParam"))
+    ((pointIdSelDecodeUtilsVS, "Selection.DecodeUtils"))
+    ((pointIdSelPointSelVS,    "Selection.Vertex.PointSel"))
     ((pointIdFallbackFS,       "PointId.Fragment.Fallback"))
+    ((pointIdFS,               "PointId.Fragment.PointParam"))
 
     // main for all the shader stages
     ((mainVS,                  "Mesh.Vertex"))
@@ -116,13 +119,27 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         polygonMode = HdPolygonModeLine;
     }
 
+    bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
+    bool isPrimTypeQuads  = HdSt_GeometricShader::IsPrimTypeQuads(primType);
+    bool isPrimTypeTris   = HdSt_GeometricShader::IsPrimTypeTriangles(primType);
+
     // vertex shader
-    VS[0] = _tokens->instancing;
-    VS[1] = (smoothNormals ? _tokens->smooth
+    uint8_t vsIndex = 0;
+    VS[vsIndex++] = _tokens->instancing;
+    VS[vsIndex++] = (smoothNormals ? _tokens->smooth
                            : _tokens->flat);
-    VS[2] = _tokens->pointIdVS;
-    VS[3] = _tokens->mainVS;
-    VS[4] = TfToken();
+    if (isPrimTypePoints) {
+        // Add mixins that allow for picking and sel highlighting of points.
+        // Even though these are more "render pass-ish", we do this here to
+        // reduce the shader code generated when the points repr isn't used.
+        VS[vsIndex++] = _tokens->pointIdVS;
+        VS[vsIndex++] = _tokens->pointIdSelDecodeUtilsVS;
+        VS[vsIndex++] = _tokens->pointIdSelPointSelVS;
+    } else {
+        VS[vsIndex++] =  _tokens->pointIdNoneVS;
+    }
+    VS[vsIndex++] = _tokens->mainVS;
+    VS[vsIndex] = TfToken();
 
     // tessellation control shader
     const bool isPrimTypePatches = 
@@ -146,10 +163,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
            : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
               geomStyle == HdMeshGeomStyleHullEdgeOnSurf) ? _tokens->edgeOnSurfGS
                                                           : _tokens->edgeNoneGS);
-
-    bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
-    bool isPrimTypeQuads = HdSt_GeometricShader::IsPrimTypeQuads(primType);
-    bool isPrimTypeTris = HdSt_GeometricShader::IsPrimTypeTriangles(primType);
 
     // emit edge param per vertex to help compute the edgeId
     TfToken gsEdgeIdMixin = isPrimTypePoints ? _tokens->edgeIdNoneGS

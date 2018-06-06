@@ -270,6 +270,31 @@ SelectionResult GetSelectionResult(int mode,
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Selection.Vertex.PointSel
+
+// Decodes the selection buffer to find out if the current vertex (point) is
+// selected. This is called from hdSt/shaders/pointId.glslfx
+bool IsPointSelected(int pointId)
+{
+    bool sel = false;
+    #if defined(HD_HAS_hdxSelectionBuffer)
+    const int numSelectionModes = GetNumSelectionHighlightModes();
+    for (int mode = 0; mode < numSelectionModes; mode++) {
+        // At the VS stage, we don't carry enough state to determine the
+        // elementId and edgeId. So, use fallback values instead.
+        SelectionResult res =
+            GetSelectionResult(mode, /*elementId*/-1, /*edgeId*/-1, pointId);
+        if (res.subprimSel.pointSelected) {
+            sel = true;
+            break;
+        }
+    } // for each highlight mode
+    #endif
+    return sel;
+}
+
+
+--- --------------------------------------------------------------------------
 -- glsl Selection.ComputeColor
 
 #if defined(HD_HAS_hdxSelectionBuffer)

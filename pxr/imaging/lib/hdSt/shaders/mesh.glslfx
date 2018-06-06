@@ -48,6 +48,11 @@ out vec2 tesTessCoord;
 out vec4 gsPatchCoord;
 out vec2 gsTessCoord;
 
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+int GetPointId();
+float GetPointRasterSize(int);
+void ProcessPointId(int);
+
 void main(void)
 {
     ProcessPrimvars();
@@ -69,11 +74,12 @@ void main(void)
     tesPatchCoord = gsPatchCoord = vec4(0);
     tesTessCoord = gsTessCoord = vec2(0);
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-    gl_PointSize = GetPointSize(gl_VertexID);
-    ApplyClipPlanes(outData.Peye);
+    int pointId = GetPointId();
+    gl_PointSize = GetPointRasterSize(pointId);
+    ProcessPointId(pointId);
 
-    ProcessPointId();
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
 }
 
 --- --------------------------------------------------------------------------
