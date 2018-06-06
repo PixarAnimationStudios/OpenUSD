@@ -59,7 +59,8 @@ class TestUsdSkelCache(unittest.TestCase):
 
         cache = UsdSkel.Cache()
         root = UsdSkel.Root(stage.GetPrimAtPath(rootPath))
-        assert cache.Populate(root)
+        print "Expect warnings about invalid skel:skeletonInstance targets"
+        self.assertTrue(cache.Populate(root))
 
         def _GetSkelQuery(path):
             return cache.GetSkelQuery(stage.GetPrimAtPath(path))
@@ -107,6 +108,23 @@ class TestUsdSkelCache(unittest.TestCase):
         skel = _GetSkelQuery(rootPath+"/Model3/SkelWithInactiveAnim")
         self.assertEqual(_GetSkelPath(skel), Sdf.Path("/Skel1"))
         assert not skel.GetAnimQuery()
+
+        # Inheritance of skel:xform?
+        skel = _GetSkelQuery(rootPath+"/IndirectBindings/Instance")
+        self.assertEqual(skel.GetPrim().GetPath(),
+                         Sdf.Path(rootPath+"/IndirectBindings/Instance"))
+
+        indirectSkel = _GetSkelQuery(rootPath+"/IndirectBindings/Indirect")
+        self.assertEqual(indirectSkel.GetPrim().GetPath(),
+                         Sdf.Path(rootPath+"/IndirectBindings/Instance"))
+        self.assertEqual(_GetSkelPath(indirectSkel), Sdf.Path("/Skel1"))
+
+        nestedSkel = _GetSkelQuery(rootPath+"/IndirectBindings/Indirect/Instance")
+        self.assertEqual(nestedSkel.GetPrim().GetPath(),
+                         Sdf.Path(rootPath+"/IndirectBindings/Indirect/Instance"))
+        self.assertEqual(_GetSkelPath(nestedSkel), Sdf.Path("/Skel2"))
+
+        self.assertFalse(_GetSkelQuery(rootPath+"/IndirectBindings/Illegal"))
 
         def _GetSkinningQuery(path):
             return cache.GetSkinningQuery(stage.GetPrimAtPath(path))

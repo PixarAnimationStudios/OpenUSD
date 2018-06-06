@@ -150,7 +150,7 @@ UsdSkelSkeletonQuery::_ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
     } else {
         // Failed to compute anim xforms.
         // Fall back to our rest transforms.
-        // These will have already been uninitialized above,
+        // These will have already been initialized above,
         // unless we have a non-sparse mapping.
         if(!_animToSkelMapper.IsSparse()) {
             *xforms = _definition->GetJointLocalRestTransforms();
@@ -320,7 +320,8 @@ UsdSkelSkeletonQuery::GetDescription() const
 {
     if(IsValid()) {
         return TfStringPrintf(
-            "UsdSkelSkeletonQuery (skel = <%s>, anim = <%s>)",
+            "UsdSkelSkeletonQuery (prim = <%s>, skel = <%s>, anim = <%s>)",
+            _prim.GetPath().GetText(),
             _definition->GetSkeleton().GetPrim().GetPath().GetText(),
             _animQuery.GetPrim().GetPath().GetText());
     }

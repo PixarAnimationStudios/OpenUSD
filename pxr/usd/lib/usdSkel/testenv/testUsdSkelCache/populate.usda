@@ -104,4 +104,26 @@ def SkelRoot "InheritedBindings" {
             rel skel:animationSource = </InactiveAnim>
         }
     }
+
+    def Scope "IndirectBindings" {
+
+        def Scope "Instance" {
+            rel skel:skeleton = </Skel1>
+        }
+
+        def Scope "Indirect" {
+            rel skel:skeletonInstance = <../Instance>
+
+            def Scope "Instance" {
+                # This binding references a different skel.
+                rel skel:skeleton = </Skel2>
+            }
+        }
+
+        def Scope "Illegal" {
+            # It's illegal for skel:skeletonInstance to refer to a prim outside
+            # of the containing SkelRoot.
+            rel skel:skeletonInstance = </Skel1>
+        }
+    }
 }

@@ -100,13 +100,13 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelDefinition(const UsdPrim& prim)
 }
 
 
-UsdSkel_AnimQueryImplRefPtr
+UsdSkelAnimQuery
 UsdSkel_CacheImpl::ReadScope::FindOrCreateAnimQuery(const UsdPrim& prim)
 {
     TRACE_FUNCTION();
 
     if(!prim || !prim.IsActive())
-        return nullptr;
+        return UsdSkelAnimQuery();
 
     if(prim.IsInstanceProxy())
         return FindOrCreateAnimQuery(prim.GetPrimInMaster());
@@ -114,7 +114,7 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateAnimQuery(const UsdPrim& prim)
     {
         _PrimToAnimMap::const_accessor a;
         if(_cache->_animQueryCache.find(a, prim))
-            return a->second;
+            return UsdSkelAnimQuery(a->second);
     }
 
     if(UsdSkel_AnimQueryImpl::IsAnimPrim(prim)) {
@@ -122,9 +122,9 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateAnimQuery(const UsdPrim& prim)
         if(_cache->_animQueryCache.insert(a, prim)) {
             a->second = UsdSkel_AnimQueryImpl::New(prim);
         }
-        return a->second;
+        return UsdSkelAnimQuery(a->second);
     }
-    return nullptr;
+    return UsdSkelAnimQuery();
 }
 
 
@@ -152,9 +152,11 @@ UsdSkel_CacheImpl::ReadScope::_FindOrCreateSkinningQuery(
     _SkinningQueryMap::accessor a;
     if(_cache->_skinningQueryCache.insert(a, key)) {
 
+        UsdSkelSkeletonQuery skelQuery = GetSkelQuery(key.skelInstancePrim);
+
         a->second = UsdSkelSkinningQuery(
             skinnedPrim,
-            key.skelQuery ? key.skelQuery.GetJointOrder() : VtTokenArray(),
+            skelQuery ? skelQuery.GetJointOrder() : VtTokenArray(),
             key.jointIndicesAttr, key.jointWeightsAttr,
             key.geomBindTransformAttr,
             key.jointOrder ? &(*key.jointOrder) : nullptr);
@@ -240,10 +242,14 @@ _MakeIndent(size_t count, int indentSize=2)
 
 
 void
-UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
-                                                 SkinningQueryKey key,
-                                                 UsdSkelAnimQuery animQuery,
-                                                 size_t depth)
+UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(
+    const SdfPath& rootPath,
+    const UsdPrim& prim,
+    SkinningQueryKey key,
+    UsdSkelAnimQuery animQuery,
+    _PrimToPrimMap* instanceBindingMap,
+    _PrimToSkinMap* skinBindingMap,
+    size_t depth)
 {
     if(!prim.IsA<UsdGeomImageable>()) {
         TF_DEBUG(USDSKEL_CACHE).Msg(
@@ -261,8 +267,30 @@ UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
 
     if(UsdRelationship rel = binding.GetAnimationSourceRel()) {
         SdfPathVector targets;
-        if(rel.GetForwardedTargets(&targets)) {
+        if(rel.HasAuthoredTargets()) {
+            rel.GetForwardedTargets(&targets);
             animQuery = FindOrCreateAnimQuery(_GetFirstTarget(rel, targets));
+        }
+    }
+
+    if(UsdRelationship rel = binding.GetSkeletonInstanceRel()) {
+        SdfPathVector targets;
+        if(rel.HasAuthoredTargets()) {
+            rel.GetForwardedTargets(&targets);
+            if(key.skelInstancePrim = _GetFirstTarget(rel, targets)) {
+                if(key.skelInstancePrim.GetPath().HasPrefix(rootPath)) {
+                    if(key.skelInstancePrim != prim) {
+                        instanceBindingMap->emplace(prim, key.skelInstancePrim);
+                    }
+                } else {
+                    TF_WARN("Target <%s> of <%s> is outside of the "
+                            "ancestor SkelRoot (%s): ignoring.",
+                            key.skelInstancePrim.GetPath().GetText(),
+                            rel.GetPath().GetText(), rootPath.GetText());
+
+                    key.skelInstancePrim = UsdPrim();
+                }
+            }
         }
     }
 
@@ -271,15 +299,17 @@ UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
         if(rel.GetForwardedTargets(&targets)) {
             _PrimToSkelQueryMap::accessor a;
             if(_cache->_skelQueryCache.insert(a, prim)) {
-                a->second = _FindOrCreateSkelQuery(
-                    prim, _GetFirstTarget(rel, targets), animQuery);
+                a->second =
+                    _FindOrCreateSkelQuery(prim,
+                                           _GetFirstTarget(rel, targets),
+                                           animQuery);
             }
-            key.skelQuery = a->second;
+            key.skelInstancePrim = prim;
 
             TF_DEBUG(USDSKEL_CACHE).Msg(
-                "[UsdSkelCache]: %sNew skeleton bound at <%s>: %s\n",
+                "[UsdSkelCache]: %sNew skeleton instance bound at <%s>: %s\n",
                 _MakeIndent(depth).c_str(), prim.GetPath().GetText(),
-                key.skelQuery.GetDescription().c_str());
+                a->second.GetDescription().c_str());
         }
     }
 
@@ -302,15 +332,7 @@ UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
     if(prim.IsA<UsdGeomBoundable>() &&
        (key.jointIndicesAttr && key.jointWeightsAttr)) {
 
-        _PrimToSkinningQueryMap::accessor a;
-        if(_cache->_primSkinningQueryCache.insert(a, prim)) {
-            a->second = _FindOrCreateSkinningQuery(prim, key);
-        }
-
-        TF_DEBUG(USDSKEL_CACHE).Msg(
-            "[UsdSkelCache]: %sFound skinnable prim <%s> (valid? %d)\n",
-            _MakeIndent(depth).c_str(), prim.GetPath().GetText(),
-            a->second.IsValid());
+        skinBindingMap->emplace(prim, key);
 
         // Skinnable prims cannot be nested.
         return;
@@ -318,7 +340,8 @@ UsdSkel_CacheImpl::ReadScope::_RecursivePopulate(const UsdPrim& prim,
 
     UsdPrim traversalPrim = !prim.IsInstance() ? prim : prim.GetMaster();
     for(const auto& child : prim.GetChildren()) {
-        _RecursivePopulate(child, key, animQuery, depth+1);
+        _RecursivePopulate(rootPath, child, key, animQuery, 
+                           instanceBindingMap, skinBindingMap, depth+1);
     }
 }
 
@@ -336,8 +359,57 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root)
         return false;
     }
 
-    _RecursivePopulate(root.GetPrim(), SkinningQueryKey(),
-                       UsdSkelAnimQuery(), /*depth*/ 1);
+    // Indirect skel query bindings must be mapped after explicit bindings.
+    // Create a temporary table to hold those indirect bindings.
+    // Since the construction of skinning queries involves use of bound skel
+    // queries, we must also post-apply skinning query bindings.
+    _PrimToPrimMap instanceBindingMap;
+    _PrimToSkinMap skinBindingMap;
+
+    // Recursively traverse beneath the skel root, mapping explicit bindings.
+    _RecursivePopulate(root.GetPrim().GetPath(), root.GetPrim(),
+                       SkinningQueryKey(), UsdSkelAnimQuery(),
+                       &instanceBindingMap, &skinBindingMap, /*depth*/ 1);
+
+    // Apply indirect skeleton instance bindings.
+    if (instanceBindingMap.size() > 0) {
+        TF_DEBUG(USDSKEL_CACHE).Msg(
+            "[UsdSkelCache]: Applying %zu indirect skeleton instance "
+            "bindings beneath <%s>.\n", instanceBindingMap.size(),
+            root.GetPrim().GetPath().GetText());
+        
+        for (const auto& pair : instanceBindingMap) {
+            TF_AXIOM(pair.second != pair.first);
+
+            _PrimToSkelQueryMap::accessor a;
+            if (_cache->_skelQueryCache.insert(a, pair.first)) {
+                a->second = GetSkelQuery(pair.second);
+            }
+        }
+    }
+
+    // Apply skinning queries for all skinnable prims.
+    if (skinBindingMap.size() > 0) {
+        TF_DEBUG(USDSKEL_CACHE).Msg(
+            "[UsdSkelCache]: Applying %zu skinning bindings "
+            "beneath <%s>.\n", skinBindingMap.size(),
+            root.GetPrim().GetPath().GetText());
+
+        for (const auto& pair : skinBindingMap) {
+            
+            _PrimToSkinningQueryMap::accessor a;
+            if (_cache->_primSkinningQueryCache.insert(a, pair.first)) {
+                a->second = _FindOrCreateSkinningQuery(pair.first, pair.second);
+            }
+
+            TF_DEBUG(USDSKEL_CACHE).Msg(
+                "[UsdSkelCache]     Bound skinning query to "
+                "prim <%s> (valid? %d)\n", pair.first.GetPath().GetText(),
+                a->second.IsValid());
+        }
+    }
+        
+
     return true;
 }
 
@@ -354,7 +426,7 @@ UsdSkel_CacheImpl::_HashSkinningQueryKey::equal(const SkinningQueryKey& a,
     return a.jointIndicesAttr == b.jointIndicesAttr &&
            a.jointWeightsAttr == b.jointWeightsAttr &&
            a.geomBindTransformAttr == b.geomBindTransformAttr &&
-           a.skelQuery == b.skelQuery &&
+           a.skelInstancePrim == b.skelInstancePrim &&
            a.jointOrder == b.jointOrder;
 }
 
@@ -365,7 +437,7 @@ UsdSkel_CacheImpl::_HashSkinningQueryKey::hash(const SkinningQueryKey& key)
     size_t hash = hash_value(key.jointIndicesAttr);
     boost::hash_combine(hash, key.jointWeightsAttr);
     boost::hash_combine(hash, key.geomBindTransformAttr);
-    boost::hash_combine(hash, key.skelQuery);
+    boost::hash_combine(hash, key.skelInstancePrim);
     if(key.jointOrder) {
         boost::hash_combine(hash, *key.jointOrder);
     }

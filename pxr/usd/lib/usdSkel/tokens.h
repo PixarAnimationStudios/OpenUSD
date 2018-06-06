@@ -126,6 +126,10 @@ struct UsdSkelTokensType {
     /// 
     /// UsdSkelBindingAPI
     const TfToken skelSkeleton;
+    /// \brief "skel:skeletonInstance"
+    /// 
+    /// UsdSkelBindingAPI
+    const TfToken skelSkeletonInstance;
     /// \brief "translations"
     /// 
     /// UsdSkelPackedJointAnimation

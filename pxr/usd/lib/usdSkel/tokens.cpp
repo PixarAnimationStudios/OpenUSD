@@ -42,6 +42,7 @@ UsdSkelTokensType::UsdSkelTokensType() :
     skelBlendShapeTargets("skel:blendShapeTargets", TfToken::Immortal),
     skelJoints("skel:joints", TfToken::Immortal),
     skelSkeleton("skel:skeleton", TfToken::Immortal),
+    skelSkeletonInstance("skel:skeletonInstance", TfToken::Immortal),
     translations("translations", TfToken::Immortal),
     weight("weight", TfToken::Immortal),
     allTokens({
@@ -61,6 +62,7 @@ UsdSkelTokensType::UsdSkelTokensType() :
         skelBlendShapeTargets,
         skelJoints,
         skelSkeleton,
+        skelSkeletonInstance,
         translations,
         weight
     })

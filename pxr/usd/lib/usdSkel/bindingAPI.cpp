@@ -210,6 +210,19 @@ UsdSkelBindingAPI::CreateSkeletonRel() const
 }
 
 UsdRelationship
+UsdSkelBindingAPI::GetSkeletonInstanceRel() const
+{
+    return GetPrim().GetRelationship(UsdSkelTokens->skelSkeletonInstance);
+}
+
+UsdRelationship
+UsdSkelBindingAPI::CreateSkeletonInstanceRel() const
+{
+    return GetPrim().CreateRelationship(UsdSkelTokens->skelSkeletonInstance,
+                       /* custom = */ false);
+}
+
+UsdRelationship
 UsdSkelBindingAPI::GetBlendShapeTargetsRel() const
 {
     return GetPrim().GetRelationship(UsdSkelTokens->skelBlendShapeTargets);

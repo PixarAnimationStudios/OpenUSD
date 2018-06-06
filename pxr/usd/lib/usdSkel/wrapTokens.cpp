@@ -80,6 +80,7 @@ void wrapUsdSkelTokens()
     _AddToken(cls, "skelBlendShapeTargets", UsdSkelTokens->skelBlendShapeTargets);
     _AddToken(cls, "skelJoints", UsdSkelTokens->skelJoints);
     _AddToken(cls, "skelSkeleton", UsdSkelTokens->skelSkeleton);
+    _AddToken(cls, "skelSkeletonInstance", UsdSkelTokens->skelSkeletonInstance);
     _AddToken(cls, "translations", UsdSkelTokens->translations);
     _AddToken(cls, "weight", UsdSkelTokens->weight);
 }

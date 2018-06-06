@@ -115,6 +115,8 @@ void wrapUsdSkelAnimQuery()
     class_<This>("AnimQuery", no_init)
 
         .def(!self)
+        .def(self == self)
+        .def(self != self)
 
         .def("__str__", &This::GetDescription)
 

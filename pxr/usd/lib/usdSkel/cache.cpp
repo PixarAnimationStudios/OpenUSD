@@ -48,8 +48,8 @@ UsdSkelCache::Clear()
 UsdSkelAnimQuery
 UsdSkelCache::GetAnimQuery(const UsdPrim& prim)
 {
-    return UsdSkelAnimQuery(UsdSkel_CacheImpl::ReadScope(_impl.get())
-                            .FindOrCreateAnimQuery(prim));
+    return UsdSkel_CacheImpl::ReadScope(_impl.get())
+        .FindOrCreateAnimQuery(prim);
 }
 
 
@@ -93,6 +93,8 @@ UsdSkelCache::ComputeSkinnedPrims(
         TF_CODING_ERROR("'pairs' pointer is null.");
         return false;
     }
+    
+    pairs->clear();
     
     auto range = UsdPrimRange(prim);
     for(auto it = range.begin(); it != range.end(); ++it) {

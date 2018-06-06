@@ -57,9 +57,6 @@ public:
     USDSKEL_API
     UsdSkelAnimQuery() {}
 
-    UsdSkelAnimQuery(const UsdSkel_AnimQueryImplRefPtr& impl)
-        :  _impl(impl) {}
-
     /// Return true if this query is valid.
     bool IsValid() const { return (bool)_impl; }
 
@@ -171,7 +168,12 @@ public:
     std::string GetDescription() const;
 
 private:
+    UsdSkelAnimQuery(const UsdSkel_AnimQueryImplRefPtr& impl)
+        :  _impl(impl) {}
+
     UsdSkel_AnimQueryImplRefPtr _impl;
+
+    friend class UsdSkel_CacheImpl;
 };
 
 

@@ -333,6 +333,26 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // SKELETONINSTANCE 
+    // --------------------------------------------------------------------- //
+    /// Optionally specifies a skeleton instance, defined elsewhere
+    /// in the model hierarchy, as the skeleton instance that affects this prim 
+    /// and all of its descendants. The target skeleton instance must be
+    /// contained within the same ancestor SkelRoot as the prim at which this
+    /// relationship is set. If the _skel:skeleton_ relationship is also
+    /// defined on this prim, then a new skeleton instance is established at
+    /// this prim, and this property is ignored.
+    ///
+    USDSKEL_API
+    UsdRelationship GetSkeletonInstanceRel() const;
+
+    /// See GetSkeletonInstanceRel(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
+    USDSKEL_API
+    UsdRelationship CreateSkeletonInstanceRel() const;
+
+public:
+    // --------------------------------------------------------------------- //
     // BLENDSHAPETARGETS 
     // --------------------------------------------------------------------- //
     /// Ordered list of all target blend shapes. This property is not

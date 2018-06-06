@@ -106,6 +106,8 @@ void wrapUsdSkelSkeletonQuery()
     class_<This>("SkeletonQuery", no_init)
 
         .def(!self)
+        .def(self == self)
+        .def(self != self)
         
         .def("__str__", &This::GetDescription)
 

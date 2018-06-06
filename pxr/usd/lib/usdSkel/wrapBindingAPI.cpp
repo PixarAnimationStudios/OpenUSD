@@ -179,6 +179,11 @@ void wrapUsdSkelBindingAPI()
         .def("CreateSkeletonRel",
              &This::CreateSkeletonRel)
         
+        .def("GetSkeletonInstanceRel",
+             &This::GetSkeletonInstanceRel)
+        .def("CreateSkeletonInstanceRel",
+             &This::CreateSkeletonInstanceRel)
+        
         .def("GetBlendShapeTargetsRel",
              &This::GetBlendShapeTargetsRel)
         .def("CreateBlendShapeTargetsRel",

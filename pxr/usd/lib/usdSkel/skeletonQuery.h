@@ -76,11 +76,6 @@ class UsdSkelSkeletonQuery
 public:
     UsdSkelSkeletonQuery() {}
 
-    USDSKEL_API
-    UsdSkelSkeletonQuery(const UsdPrim& prim,
-                         const UsdSkel_SkelDefinitionRefPtr& definition,
-                         const UsdSkelAnimQuery& anim=UsdSkelAnimQuery());
-
     /// Return true if this query is valid.
     bool IsValid() const { return _prim && _definition; }
 
@@ -187,6 +182,13 @@ public:
     std::string GetDescription() const;
 
 private:
+
+    USDSKEL_API
+    UsdSkelSkeletonQuery(const UsdPrim& prim,
+                         const UsdSkel_SkelDefinitionRefPtr& definition,
+                         const UsdSkelAnimQuery& anim=UsdSkelAnimQuery());
+
+
     bool _HasMappableAnim() const;
 
     bool _ComputeJointLocalTransforms(VtMatrix4dArray* xforms,
@@ -205,6 +207,8 @@ private:
     UsdSkel_SkelDefinitionRefPtr _definition;
     UsdSkelAnimQuery _animQuery;
     UsdSkelAnimMapper _animToSkelMapper;
+
+    friend class UsdSkel_CacheImpl;
 };
 
 
