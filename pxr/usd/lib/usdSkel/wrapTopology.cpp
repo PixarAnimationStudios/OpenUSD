@@ -59,6 +59,7 @@ void wrapUsdSkelTopology()
     class_<This>("Topology", no_init)
         .def(init<SdfPathVector>())
         .def(init<VtIntArray>())
+        .def(init<VtTokenArray>())
 
         .def("GetParent", &This::GetParent)
         
